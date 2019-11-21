@@ -1,6 +1,4 @@
-load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest")
-load("@fbcode_macros//build_defs:platform_utils.bzl", "platform_utils")
-load("@fbcode_macros//build_defs/lib:third_party.bzl", "third_party")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "platform_utils", "python_binary", "python_library", "python_unittest", "third_party")
 
 python_library(
     name = "pluggable",

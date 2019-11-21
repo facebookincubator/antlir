@@ -68,4 +68,6 @@ buck_command_alias = shim.buck_command_alias
 buck_genrule = shim.buck_genrule
 config = shim.config
 get_visibility = shim.get_visibility
+platform_utils = shim.platform_utils
 target_utils = shim.target_utils
+third_party = shim.third_party
