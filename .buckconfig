@@ -1,0 +1,2 @@
+[repositories]
+  bazel_skylib = third-party/bazel-skylib
