@@ -1,0 +1,84 @@
+load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
+
+# Split out since `nspawn-in-subvol` depends on it.
+python_library(
+    name = "mount_utils",
+    srcs = ["mount_utils.py"],
+    base_module = "fs_image.compiler.items",
+    deps = ["//fs_image:subvol_utils"],
+)
+
+# Future: split this library, and tests, by item.  The only challenge is to
+# make sure that `common.py` gets coverage -- coverage of its functions is
+# currently distributed across various items.
+python_library(
+    name = "items",
+    srcs = [
+        "common.py",
+        "install_file.py",
+        "make_dirs.py",
+        "make_subvol.py",
+        "mount.py",
+        "phases_provide.py",
+        "remove_path.py",
+        "rpm_action.py",
+        "stat_options.py",
+        "symlink.py",
+        "tarball.py",
+    ],
+    base_module = "fs_image.compiler.items",
+    deps = [
+        ":mount_utils",
+        "//fs_image:nspawn_in_subvol",
+        "//fs_image:subvol_utils",
+        "//fs_image/compiler:procfs_serde",
+        "//fs_image/compiler:requires_provides",
+        "//fs_image/compiler:subvolume_on_disk",
+        "//fs_image/rpm:common",
+        "//fs_image/rpm:rpm_metadata",
+    ],
+)
+
+python_unittest(
+    name = "test-items",
+    srcs = [
+        "tests/common.py",
+        "tests/test_common.py",
+        "tests/test_install_file.py",
+        "tests/test_make_dirs.py",
+        "tests/test_make_subvol.py",
+        "tests/test_mount.py",
+        "tests/test_phases_provide.py",
+        "tests/test_remove_path.py",
+        "tests/test_rpm_action.py",
+        "tests/test_symlink.py",
+        "tests/test_tarball.py",
+    ],
+    base_module = "fs_image.compiler.items",
+    needed_coverage = [
+        (100, ":items"),
+        (100, ":mount_utils"),
+    ],
+    # "fastzip" would break :volume_for_repo in @mode/opt.  "xar" fails
+    # since `root` cannot access the content of an unprivileged XAR.
+    par_style = "zip",
+    resources = {
+        "//fs_image/build_appliance/facebook:fb_build_appliance_testing": "tests/fb-test-build-appliance",
+        "//fs_image/build_appliance/facebook:fb_host_build_appliance_testing": "tests/fb-host-test-build-appliance",
+        "//fs_image/compiler/tests:create_ops-original.sendstream": "tests/create_ops.sendstream",
+        "//fs_image/compiler/tests:fake-build-appliance-from-host": "tests/host-test-build-appliance",
+        "//fs_image/compiler/tests:layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
+        "//fs_image/compiler/tests:rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
+        "//fs_image/compiler/tests:rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
+        "//fs_image/compiler/tests:toy-rpm-build-rpmbuild-setup": "tests/toy-rpmbuild-setup",
+        "//fs_image/rpm:yum-from-test-snapshot": "tests/yum-from-test-snapshot",
+    },
+    deps = [
+        ":items",
+        "//fs_image:find_built_subvol",
+        "//fs_image:testlib_temp_subvolumes",
+        "//fs_image/btrfs_diff:testlib_demo_sendstreams",
+        "//fs_image/btrfs_diff:testlib_render_subvols",
+        "//fs_image/rpm:rpm_metadata",
+    ],
+)

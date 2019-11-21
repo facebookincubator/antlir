@@ -1,0 +1,614 @@
+##
+## image_feature: The goal of this section is to get good coverage for all
+## the syntax variants supported by the `image_feature` converter.  The unit
+## test will then check that they become the right image compiler Items.
+##
+
+load("//fs_image/bzl:image.bzl", "image")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
+load("//fs_image/bzl:wrap_runtime_deps.bzl", "maybe_wrap_runtime_deps_as_build_time_deps")
+
+# The rule `hello_world.tar` must be deterministic to be used in images.
+hello_tar_hash = (
+    "sha256:" +
+    "dd83365abc69fe39990096a9396d9d2d6fbf75f849ab1640a10fdf9614d8d03d"
+)
+
+buck_sh_binary(
+    name = "hello_world_tar_generator.sh",
+    main = "hello_world_tar_generator.sh",
+)
+
+buck_genrule(
+    name = "hello_world.tar",
+    out = "hello_world.tar",
+    bash = '$(exe :hello_world_tar_generator.sh) "\$(basename $OUT)" ' +
+           "\$(dirname $OUT)",
+)
+
+# The next set of layers are used to test our nspawn runtime.
+#
+# They start by making a read-only clone of part of the host filesystem.
+# This is kind of like `systemd-nspawn --volatile`.  A more heremtic
+# solution would be to commit e.g.  a pre-determined Alpine Linux mini image
+# into `fs_image`, but for our simple tests, this is fine.
+
+image.layer(
+    name = "only-for-tests-read-only-host-clone-base",
+    features = [
+        image.mkdir("/", "mnt"),
+        image.mkdir("/", "var"),
+    ] + [
+        image.host_dir_mount(source)
+        for source in [
+            "/bin",
+            "/lib",
+            "/sbin",
+            "/usr",
+            # Future: move these 2 (and the `make_dirs`) into an FB-only feature.
+            "/mnt/gvfs",
+            "/var/facebook",
+        ]
+    ],
+)
+
+image.layer(
+    name = "only-for-tests-read-only-host-clone",
+    parent_layer = ":only-for-tests-read-only-host-clone-base",
+    features = [
+        # `test_non_ephemeral_snapshot` needs a place to write as `nobody`.
+        image.mkdir(
+            "/",
+            "home/nobody",
+            mode = "u+rwx,og+rx",
+            user = "nobody",
+            group = "nobody",
+        ),
+        image.host_dir_mount("/etc"),
+    ],
+)
+
+# The next 2 layers exercise the build appliance logic for RPM installation
+# (and other items in the future?).  This powers two distinct test types:
+#  - a uni tests `test_rpm_action_item_build_appliance` in `test-items`
+#  - a full-layer integration test `test_build_appliance` in `test-image-layer`
+
+image.layer(
+    name = "fake-build-appliance-from-host",
+    parent_layer = ":only-for-tests-read-only-host-clone",
+    features = [
+        # These stub directories are needed to make `yum-from-snapshot`'s host
+        # path protection feature happy.  The alternative is to make all of
+        # these ONLY be protected if they exist, but that has safety downsides,
+        # and involves more code.
+        image.mkdir("/var", "tmp"),
+        image.mkdir("/var", "log"),
+        image.mkdir("/var", "cache/yum"),
+        image.mkdir("/var", "lib/rpm"),
+        image.mkdir("/var/lib", "yum"),
+        image.install_executable("//fs_image/rpm:yum-from-test-snapshot", "/yum-from-snapshot"),
+    ],
+)
+
+# Verified by `test_build_appliance` in `test-image-layer`.
+image.layer(
+    name = "validates-build-appliance",
+    # Compact syntax for RPM installation.
+    features = [
+        image.rpms_install(["rpm-test-milk"]),
+    ],
+    build_opts = image.opts(
+        build_appliance = ":fake-build-appliance-from-host",
+    ),
+)
+
+# The next two targets exercise:
+#  - all forms of constructing a make_dirs request
+#  - specifying `stat` options, like user:group & mode
+
+image.feature(
+    name = "feature_dirs",
+    features = [
+        image.mkdir("/", "foo/bar"),
+        image.mkdir("/foo/bar", "baz"),
+    ],
+)
+
+# The permissions are bad, so any attempt to add this into a layer will fail.
+image.feature(
+    name = "feature_bad_dir",
+    features = [
+        image.mkdir(
+            "/foo",
+            "borf/beep",
+            mode = "mmm",
+            user = "uuu",
+            group = "ggg",
+        ),
+    ],
+)
+
+# Exercises:
+#   - all forms of specifying symlinks
+image.feature(
+    name = "feature_symlinks",
+    features = [
+        image.install_data(":hello_world.tar", "/foo/hello_world.tar"),
+        image.symlink_dir("/foo/bar", "/foo/fighter"),
+        image.symlink_dir("/foo/bar", "/foo/face"),
+        image.symlink_dir("/foo/bar", "/foo/bar/baz/"),  # Rsync style
+        image.symlink_file("/foo/hello_world.tar", "/foo/symlink_to_hello_world.tar"),
+        # /dev/null is whitelisted to be a dangling symlink
+        image.symlink_file("/dev/null", "/foo/symlink_to_dev_null"),
+    ],
+)
+
+# These RPMs were generated with the "rpm-test-cheese.spec".
+# The values should be updated to match the number of the version.
+# You can build the RPMs with `rpmbuild` or update the spec section
+# in fs_image/rpm/tests/temp_repos.py to build with this spec.
+export_file(name = "rpm-test-cheese-1-1.rpm")
+
+export_file(name = "rpm-test-cheese-2-1.rpm")
+
+export_file(name = "rpm-test-cheese-3-1.rpm")
+
+image.layer(
+    name = "layer-with-only-one-locally-installed-rpm",
+    features = [
+        image.rpms_install([
+            # A drive-by test that `image.source` syntax works in "rpms".  This
+            # could have been just a target path, as in `feature_tar_and_rpms`.
+            image.source(":rpm-test-cheese-2-1.rpm"),
+        ]),
+    ],
+    build_opts = image.opts(
+        build_appliance = ":fake-build-appliance-from-host",
+    ),
+)
+
+# Exercises:
+#  - all forms of specifying a tarball to extract
+#  - installing and removing RPMs
+# NB: Unlike `feature_install_files`, this **implicitly** depends on some
+# feature to provide directories `/foo/borf/`.
+image.feature(
+    name = "feature_tar_and_rpms",
+    features = [
+        image.rpms_install([
+            # Local RPM file that is not (yet) installed or published
+            ":rpm-test-cheese-2-1.rpm",
+            "rpm-test-mice",
+        ]),
+        image.rpms_remove_if_exists([
+            "rpm-test-carrot",  # Installed by `parent_layer`
+            # No-op in `child/layer` -- it was never installed
+            "rpm-test-milk",
+        ]),
+        image.tarball(
+            image.source(
+                # Check hash validation
+                ":hello_world.tar",
+                content_hash = hello_tar_hash,
+            ),
+            "foo/borf",
+        ),
+        image.tarball(
+            ":hello_world.tar",  # Hash validation is optional
+            "foo",
+        ),
+    ],
+)
+
+image.feature(
+    name = "feature_mount",
+    features = [
+        image.host_dir_mount("/etc", "/host_etc"),
+        image.layer_mount(":hello_world_base", "/meownt"),
+    ],
+)
+
+python_binary(
+    name = "print-ok",
+    srcs = ["print_ok.py"],
+    base_module = "fs_image",
+    main_module = "fs_image.print_ok",
+)
+
+buck_genrule(
+    name = "dir-print-ok",
+    out = "dir",
+    bash = '''
+    mkdir -p "$OUT/subdir"
+    cp $(location {maybe_wrapped_ok}) "$OUT"/subdir/print-ok
+    echo meow > "$OUT"/kitteh
+    '''.format(
+        # A @mode/dev PAR will break if we copy it into another directory,
+        # since it relies on the linktree being its sibling.  Using this
+        # wrapper prevents that.
+        maybe_wrapped_ok = maybe_wrap_runtime_deps_as_build_time_deps(
+            name = "wrap-print-ok",
+            target = ":print-ok",
+            visibility = None,
+        )[1],
+    ),
+    cacheable = False,  # The wrapper makes our output non-cacheable.
+    # This is required to be able to execute anything out of the directory.
+    executable = True,
+)
+
+# Exercises `install_{data,executables}, taking care to cover all reasonable
+# combinations of :
+#   - Rsync convention
+#   - Data vs executables
+#   - Installing a file from a target that outputs a directory
+#
+# Be sure to add any new installed executables to `test-execute-installed`.
+#
+# NB: Unlike `feature_tar_and_rpms`, this **explicitly** depends on
+# `feature_dirs` to provide directories `/foo/bar/`.  This exercises the
+# case where the same feature is pulled in via several dependency paths.
+image.feature(
+    name = "feature_install_files",
+    features = [
+        ":feature_dirs",  # We use /foo/bar for a couple of installs.
+        image.mkdir("/foo/bar", "installed"),  # Most things will go here.
+        image.install_data(":hello_world.tar", "/foo/bar/hello_world.tar"),
+        image.install_data(
+            ":hello_world.tar",
+            "/foo/bar/hello_world_again.tar",
+            user = "nobody",
+            group = "nobody",
+        ),
+        image.install_data(
+            image.source(
+                ":dir-print-ok",
+                path = "kitteh",
+            ),
+            "/foo/bar/installed/yittal-kitteh",
+        ),
+        image.install_executable(":print-ok", "/foo/bar/installed/print-ok"),
+        image.install_executable(
+            image.source(
+                ":dir-print-ok",
+                path = "subdir/print-ok",
+            ),
+            "/foo/bar/installed/print-ok-too",
+        ),
+    ],
+)
+
+image.layer(
+    name = "installed-executables",
+    parent_layer = ":only-for-tests-read-only-host-clone",
+    features = [":feature_install_files"],
+)
+
+# Omnibus feature for test-compiler and test-image-feature.  It currently
+# cannot be materialized as an `image.layer` because of `feature_bad_dir`.
+#
+# Exercises:
+#  - all forms of specifying target outputs to copy
+#  - copying other targets' outputs into the image, including stat options
+#  - making directories & symlinks
+#  - extracting tarballs
+#  - composition of subsidiary features
+#  - removing paths (NB: much of this logic is at build-time, so this is an
+#    incomplete test, see also `test-items` and `test-add-remove-conflict`)
+#    something installed by an RPM, add T_REMOVE_PATHS to sample_items, etc
+image.feature(
+    name = "feature_kitchen_sink",
+    features = [
+        image.remove("/path/to/remove"),
+        image.remove(
+            "/path/to/remove",
+            must_exist = False,
+        ),
+        image.remove("/another/path/to/remove"),
+        ":feature_bad_dir",
+        ":feature_dirs",
+        ":feature_install_files",
+        ":feature_mount",
+        ":feature_tar_and_rpms",
+        ":feature_symlinks",
+    ],
+)
+
+##
+## The next few targets test the interaction of adding regular,
+## dependency-sorted items with `remove_paths`.  This
+## `test-add-remove-conflict` shows that:
+##     - Removing from a parent layer is OK (`child` layer).
+##     - Removing something added in the same layer is not (`both` feature).
+##
+
+image.feature(
+    name = "feature_addremove_conflict_add",
+    features = [
+        image.mkdir("/", "a/b"),
+    ],
+)
+
+image.feature(
+    name = "feature_addremove_conflict_remove",
+    features = [
+        image.remove("/a"),
+    ],
+)
+
+image.feature(
+    name = "feature_remove_nonexistent",
+    features = [
+        image.remove(
+            "/does/not/exist",
+            must_exist = False,
+        ),
+    ],
+)
+
+# This feature is added to both layers, which validates that `image.layer`
+# can handle an idempotent feature being installed twice.  The layers do not
+# directly repeat `feature_remove_nonexistent` because that would not
+# reproduce a now-fixed bug with repeated features.
+image.feature(
+    name = "feature_repeated_removal",
+    features = [":feature_remove_nonexistent"],
+)
+
+# `test-add-remove-conflict` compiles this feature to produce a failure
+image.feature(
+    name = "feature_addremove_conflict_both",
+    features = [
+        ":feature_addremove_conflict_add",
+        ":feature_addremove_conflict_remove",
+    ],
+)
+
+image.layer(
+    name = "addremove_conflict_parent",
+    features = [
+        ":feature_addremove_conflict_add",
+        ":feature_repeated_removal",
+    ],
+)
+
+image.layer(
+    name = "addremove_conflict_child",
+    parent_layer = ":addremove_conflict_parent",
+    features = [
+        ":feature_addremove_conflict_remove",
+        ":feature_repeated_removal",
+    ],
+)
+
+##
+## The following layers are the basis of an integration test for
+## `image.layer`.  Unlike the `image.feature`s above, they must be actually
+## be buildable, not just amenable to dependency analysis -- for this
+## reason, we cannot e.g. depend on the broken `:feature_bad_dir` target.
+##
+
+image.layer(
+    name = "hello_world_base",
+    features = [
+        image.tarball(
+            image.source(
+                generator = ":hello_world_tar_generator.sh",
+                # Most generators would not have this API wart of externally
+                # specifying the output filename.  This mis-feature only exists
+                # to exercise `generator_args`.
+                generator_args = ["hello_world.tar"],
+                content_hash = hello_tar_hash,
+            ),
+            "//",  # Double-slash tests path normalization
+        ),
+    ],
+    # This tells our hypothetical runtime that in order to mount this layer,
+    # it must invoke the "chicken" mount source (which might just download
+    # and unpack a serialized versions of this layer).
+    mount_config = {"runtime_source": {"type": "chicken"}},
+)
+
+buck_genrule(
+    name = "turkey_mount_config",
+    out = "ignored",
+    bash = '''echo '{"runtime_source": {"type": "turkey"}}' > "$OUT"''',
+)
+
+image.layer(
+    name = "parent_layer",
+    parent_layer = ":hello_world_base",
+    features = [
+        ":feature_dirs",
+        ":feature_symlinks",
+        image.feature(
+            features = [
+                # Test an inline feature nested in another feature.
+                image.install_data(":hello_world.tar", "/foo/bar/even_more_hello_world.tar"),
+            ],
+        ),
+        image.install_data(
+            ":hello_world.tar",
+            # This directory comes from `rpm-test-carrot`.  This tests
+            # that our dependency engine sees RPM contents as a
+            # "provides".
+            "/usr/share/rpm_test/hello_world.tar",
+        ),
+        # NB: `host_dir_mount` is exercised above.
+        image.host_file_mount("/dev/null", "/dev_null"),
+        image.layer_mount(":hello_world_base", "/mounted_hello"),
+        image.rpms_install(["rpm-test-carrot"]),  # Compact syntax for RPM installation.
+    ],
+    build_opts = image.opts(
+        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+    ),
+    # Unlike `hello_world_base`, this checks dynamically generated mount configs
+    mount_config = ":turkey_mount_config",
+)
+
+image.layer(
+    name = "child/layer",  # Checks that `/` is allowed in layer names
+    parent_layer = ":parent_layer",
+    features = [
+        ":feature_tar_and_rpms",
+        image.mkdir("/foo", "borf"),  # for :feature_tar
+        image.mkdir("/foo", "extracted_hello"),
+        image.mkdir(
+            "/foo",
+            "more_extracted_hello",
+            mode = 0o711,
+            user = "nobody",
+            group = "nobody",
+        ),
+        image.tarball(":hello_world.tar", "/foo/extracted_hello"),
+        image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
+    ],
+    build_opts = image.opts(
+        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+    ),
+)
+
+image.package(name = "child/layer.sendstream")
+
+image.package(name = "child/layer.btrfs")
+
+# This will install /usr/share/rpm_test/cheese2.txt.
+image.layer(
+    name = "base_cheese_layer",
+    parent_layer = ":hello_world_base",
+    features = [
+        image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
+    ],
+    build_opts = image.opts(
+        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+    ),
+)
+
+# This downgrades and installs /usr/share/rpm_test/cheese1.txt.
+image.layer(
+    name = "older_cheese_layer",
+    parent_layer = ":base_cheese_layer",
+    features = [
+        image.rpms_install([":rpm-test-cheese-1-1.rpm"]),
+    ],
+    build_opts = image.opts(
+        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+    ),
+)
+
+# This upgrades and installs /usr/share/rpm_test/cheese3.txt.
+image.layer(
+    name = "newer_cheese_layer",
+    parent_layer = ":base_cheese_layer",
+    features = [
+        image.rpms_install([":rpm-test-cheese-3-1.rpm"]),
+    ],
+    build_opts = image.opts(
+        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+    ),
+)
+
+# The following rules will build a basic RPM in an rpmbuild_layer.
+image.rpmbuild_layer(
+    name = "toy-rpm-build",
+    parent_layer = "//tupperware/image/base:rpmbuild-base",
+    specfile = "toy.spec",
+    # Using export file like this (note the trailing slash) for sources means
+    # that it won't have the top dir (toy_srcs/) included as part of the
+    # sources tarball.
+    source = "toy_srcs/",
+)
+
+# This tests installing an RPM from image.rpmbuild_layer into another layer with
+# image.source
+image.layer(
+    name = "install_toy_rpm",
+    parent_layer = ":hello_world_base",
+    features = [
+        image.rpms_install([
+            image.source(
+                layer = ":toy-rpm-build",
+                path = "rpmbuild/RPMS/toy.rpm",
+            ),
+        ]),
+    ],
+    build_opts = image.opts(
+        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+    ),
+)
+
+##
+## These few rules help test `image.sendstream_layer`.
+##
+
+python_binary(
+    name = "save-demo-sendstream",
+    srcs = ["save_demo_sendstream.py"],
+    base_module = "",
+    main_module = "save_demo_sendstream",
+    par_style = "zip",  # testlib_demo_sendstreams needs this in @mode/opt
+    deps = ["//fs_image/btrfs_diff:testlib_demo_sendstreams"],
+)
+
+# Future: it'd be neat to add `mutate_ops`, but that requires some wrangling
+# with btrfs to get it to find the parent subvolume.
+op = "create_ops"
+
+buck_genrule(
+    name = op + "-original.sendstream",
+    out = op + "-original.sendstream",
+    bash = "$(exe :save-demo-sendstream) \"$OUT\" " + op,
+)
+
+image.sendstream_layer(
+    name = op,
+    source = ":" + op + "-original.sendstream",
+    build_opts = image.opts(subvol_name = op),
+)
+
+image.package(name = op + ".sendstream")
+
+##
+## Check other forms of `sendstream_layer`, also verified in `test-image-layer`
+##
+
+buck_genrule(
+    name = "create_ops-dir",
+    out = op + "create_ops-dir",
+    bash = """\
+    mkdir "$OUT"
+    $(exe :save-demo-sendstream) "$OUT"/sendstream create_ops
+    """,
+)
+
+image.sendstream_layer(
+    name = "create_ops-from-dir",
+    source = image.source(
+        ":create_ops-dir",
+        path = "sendstream",
+    ),
+    build_opts = image.opts(subvol_name = "create_ops"),
+)
+
+image.layer(
+    name = "create_ops-layer",
+    features = [
+        image.install_data(":create_ops-original.sendstream", "/sendstream"),
+    ],
+)
+
+image.sendstream_layer(
+    name = "create_ops-from-layer",
+    source = image.source(
+        layer = ":create_ops-layer",
+        path = "sendstream",
+    ),
+    build_opts = image.opts(subvol_name = "create_ops"),
+)
+
+image.layer_alias(
+    name = "create_ops-alias",
+    layer = ":create_ops",
+)
+
+image.layer("empty")  # Just ensure this builds, not checking contents :)

@@ -1,0 +1,5 @@
+[Unit]
+Description=Another Cheesy Test Service that is an image.source
+
+[Service]
+ExecStart=/bin/true

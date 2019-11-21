@@ -1,0 +1,138 @@
+load("//fs_image/bzl:image.bzl", "image")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
+load("//fs_image/bzl:systemd.bzl", "systemd")
+
+python_library(
+    name = "coverage_test_helper",
+    srcs = ["coverage_test_helper.py"],
+    base_module = "",
+)
+
+image.python_unittest(
+    name = "test-image-python-unittest",
+    srcs = ["test_image_python_unittest.py"],
+    layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    needed_coverage = [(100, ":coverage_test_helper")],
+    deps = [":coverage_test_helper"],
+    env = {"kitteh": "meow"},
+)
+
+image.python_unittest(
+    name = "test-boot-image-python-unittest",
+    srcs = ["test_image_python_unittest.py"],
+    layer = "//tupperware/image/slimos:slimos-stable",
+    needed_coverage = [(100, ":coverage_test_helper")],
+    deps = [":coverage_test_helper"],
+    env = {"kitteh": "meow"},
+    boot = True,
+)
+
+image.python_unittest(
+    name = "test-image-hostname-python",
+    srcs = ["test_image_hostname.py"],
+    layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    hostname = "test-hostname.com",
+)
+
+image.cpp_unittest(
+    name = "test-image-cpp-unittest",
+    srcs = ["ImageCppUnittestTest.cpp"],
+    layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    env = {"kitteh": "meow"},
+)
+
+image.cpp_unittest(
+    name = "test-boot-image-cpp-unittest",
+    srcs = ["ImageCppUnittestTest.cpp"],
+    layer = "//tupperware/image/slimos:slimos-stable",
+    env = {"kitteh": "meow"},
+    boot = True,
+)
+
+image.cpp_unittest(
+    name = "test-image-hostname-cpp",
+    srcs = ["ImageHostnameTest.cpp"],
+    layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    env = {},
+    hostname = "test-hostname.com",
+)
+
+# Ensures that BUCK_BUILD_ID isn't just missing from the container tests by
+# accident, but rather that it's explicitly sanitized.
+python_unittest(
+    name = "test-unsanitized-env",
+    srcs = ["test_unsanitized_env.py"],
+    env = {"kitteh": "meow"},
+)
+
+# Tests that the internals of rpmbuild_layer are as we expect.
+image.python_unittest(
+    name = "test-toy-rpm-build",
+    srcs = ["test_toy_rpm_build_unittest.py"],
+    layer = "//fs_image/compiler/tests:toy-rpm-build",
+    deps = ["//fs_image/rpm:rpm_metadata"],
+)
+
+# systemd unit features
+export_file(name = "cheese-export.service")
+
+export_file(name = "cheese-source.service")
+
+buck_genrule(
+    name = "cheese-generator",
+    out = "dir",
+    bash = """
+    mkdir -p ${OUT}
+    cat > ${OUT}/cheese-generated.service <<'EOF'
+[Unit]
+Description=A generated cheese service.
+
+[Service]
+ExecStart=/bin/true
+EOF
+    """,
+)
+
+image.layer(
+    name = "systemd_feature-layer",
+    parent_layer = "//tupperware/image/slimos:slimos-stable",
+    features = [
+        # A target with a dest
+        systemd.install_unit(
+            ":cheese-export.service",
+            dest = "cheese-export-with-dest.service",
+        ),
+        systemd.enable_unit("cheese-export-with-dest.service"),
+
+        # A target with no dest and enabled in a non-default target
+        systemd.install_unit(":cheese-export.service"),
+        systemd.enable_unit(
+            "cheese-export.service",
+            target = "sysinit.target",
+        ),
+
+        # Local file syntax sugar with no dest
+        systemd.install_unit("cheese-file.service"),
+        systemd.enable_unit("cheese-file.service"),
+
+        # Image source from a genrule, with a path
+        systemd.install_unit(image.source(
+            ":cheese-generator",
+            path = "cheese-generated.service",
+        )),
+
+        # Image source with no path
+        systemd.install_unit(image.source(
+            ":cheese-source.service",
+        )),
+        # Mask a unit
+        systemd.mask_units(["cheese-source.service"]),
+    ],
+)
+
+image.python_unittest(
+    name = "test-systemd-features",
+    layer = ":systemd_feature-layer",
+    srcs = ["test_systemd_features.py"],
+    deps = ["//fs_image:fs_utils"],
+)

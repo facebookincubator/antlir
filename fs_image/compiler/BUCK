@@ -1,0 +1,260 @@
+# NB: There is no binary here because the image compiler does not get built
+# by Buck, it is executed in-place using the system Python.
+
+load("//fs_image/bzl:artifacts_require_repo.bzl", "built_artifacts_require_repo")
+load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load(":defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_TARGET_PREFIX", "image_feature_python_unittest")
+
+python_library(
+    name = "subvolume_on_disk",
+    srcs = ["subvolume_on_disk.py"],
+    base_module = "compiler",
+)
+
+python_unittest(
+    name = "test-subvolume-on-disk",
+    srcs = ["tests/test_subvolume_on_disk.py"],
+    base_module = "compiler",
+    needed_coverage = [(
+        100,
+        ":subvolume_on_disk",
+    )],
+    deps = [":subvolume_on_disk"],
+)
+
+python_library(
+    name = "enriched_namedtuple",
+    srcs = ["enriched_namedtuple.py"],
+    base_module = "compiler",
+)
+
+python_unittest(
+    name = "test-enriched-namedtuple",
+    srcs = ["tests/test_enriched_namedtuple.py"],
+    base_module = "compiler",
+    needed_coverage = [(
+        100,
+        ":enriched_namedtuple",
+    )],
+    deps = [":enriched_namedtuple"],
+)
+
+python_library(
+    name = "procfs_serde",
+    srcs = ["procfs_serde.py"],
+    base_module = "compiler",
+)
+
+python_unittest(
+    name = "test-procfs-serde",
+    srcs = ["tests/test_procfs_serde.py"],
+    base_module = "compiler",
+    needed_coverage = [(
+        100,
+        ":procfs_serde",
+    )],
+    # "fastzip" would break :volume_for_repo in @mode/opt.  "xar" fails
+    # since `root` cannot access the content of an unprivileged XAR.
+    par_style = "zip",
+    deps = [
+        ":procfs_serde",
+        "//fs_image:testlib_temp_subvolumes",
+        "//fs_image/btrfs_diff:testlib_render_subvols",
+    ],
+)
+
+python_library(
+    name = "requires_provides",
+    srcs = [
+        "path_object.py",
+        "provides.py",
+        "requires.py",
+    ],
+    base_module = "compiler",
+    deps = [":enriched_namedtuple"],
+)
+
+python_unittest(
+    name = "test-requires-provides",
+    srcs = ["tests/test_requires_provides.py"],
+    base_module = "compiler",
+    needed_coverage = [(
+        100,
+        ":requires_provides",
+    )],
+    deps = [":requires_provides"],
+)
+
+python_library(
+    name = "dep_graph",
+    srcs = ["dep_graph.py"],
+    base_module = "compiler",
+    deps = ["//fs_image/compiler/items:items"],
+)
+
+python_unittest(
+    name = "test-dep-graph",
+    srcs = ["tests/test_dep_graph.py"],
+    base_module = "compiler",
+    needed_coverage = [(
+        100,
+        ":dep_graph",
+    )],
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    deps = [
+        ":dep_graph",
+        "//fs_image:testlib_temp_subvolumes",
+    ],
+)
+
+python_library(
+    name = "items_for_features",
+    srcs = ["items_for_features.py"],
+    base_module = "compiler",
+    deps = ["//fs_image/compiler/items:items"],
+)
+
+python_library(
+    name = "sample_items",
+    srcs = ["tests/sample_items.py"],
+    base_module = "compiler",
+    deps = ["//fs_image/compiler/items:items"],
+)
+
+# Transitive deps of `tests:feature_kitchen_sink` --
+
+TEST_IMAGE_FEATURE_TRANSITIVE_DEPS = [
+    READ_MY_DOC_image_feature_target("feature_dirs"),
+    READ_MY_DOC_image_feature_target("feature_bad_dir"),
+    READ_MY_DOC_image_feature_target("feature_symlinks"),
+    READ_MY_DOC_image_feature_target("feature_tar_and_rpms"),
+    "rpm-test-cheese-2-1.rpm",
+    READ_MY_DOC_image_feature_target("feature_mount"),
+    "print-ok",
+    "dir-print-ok",
+    READ_MY_DOC_image_feature_target("feature_install_files"),
+    READ_MY_DOC_image_feature_target("feature_kitchen_sink"),
+    "hello_world_base",
+    "hello_world.tar",
+] + ([
+    "install_executables_wrap_source__dir-print-ok__4331d20c",
+    "install_executables_wrap_source__print-ok__c032e51d",
+] if built_artifacts_require_repo() else [])
+
+image_feature_python_unittest(
+    name = "test-image-feature",
+    srcs = ["tests/test_image_feature.py"],
+    # I cannot get coverage for `image_feature.py` here, because that is
+    # executed by the Buck Python runtime.  I could conceivably shim all
+    # that out, but it seems entirely not worth the trouble.
+    needed_coverage = [(
+        100,
+        ":items_for_features",
+    )],
+    test_image_feature_transitive_deps = TEST_IMAGE_FEATURE_TRANSITIVE_DEPS,
+    deps = [
+        ":dep_graph",
+        ":items_for_features",
+        "//fs_image:testlib_temp_subvolumes",
+    ],
+)
+
+python_library(
+    name = "compiler",
+    srcs = ["compiler.py"],
+    base_module = "compiler",
+    deps = [
+        ":dep_graph",
+        ":items_for_features",
+        ":subvolume_on_disk",
+    ],
+)
+
+image_feature_python_unittest(
+    name = "test-compiler",
+    srcs = ["tests/test_compiler.py"],
+    needed_coverage = [(
+        100,
+        ":compiler",
+    )],
+    resources = {
+        "//fs_image/rpm:yum-from-test-snapshot": "tests/yum-from-test-snapshot",
+    },
+    test_image_feature_transitive_deps = TEST_IMAGE_FEATURE_TRANSITIVE_DEPS,
+    deps = [":compiler"],
+)
+
+IMAGE_LAYER_DEPS = [
+    "validates-build-appliance",
+    "child/layer",
+    "parent_layer",
+    "base_cheese_layer",
+    "older_cheese_layer",
+    "newer_cheese_layer",
+    "hello_world_base",
+    "install_toy_rpm",
+    "create_ops",
+    "create_ops-from-dir",
+    "create_ops-from-layer",
+    "create_ops-alias",
+]
+
+python_unittest(
+    name = "test-image-layer",
+    srcs = ["tests/test_image_layer.py"],
+    base_module = "compiler",
+    # Python `deps` don't work as you'd expect in fbcode -- they have to be
+    # other `python_*` rules.  `cpp_deps` is the kitchen sink?
+    cpp_deps = [
+        # Buck bug: `env` does not create a dependency; do it explicitly.
+        TEST_TARGET_PREFIX + t
+        for t in IMAGE_LAYER_DEPS
+    ],
+    # NB: We could replace this with `resources` if this breaks, but while
+    # the `env` thing works, the effort isn't worth the reward.  One upside
+    # of ditching `env` is that the test will start working stand-alone
+    # (running `test-image-layer#binary.par`) without needing `buck test`.
+    env = {
+        "test_image_layer_path_to_" + t: "$(location {})".format(
+            TEST_TARGET_PREFIX + t,
+        )
+        for t in IMAGE_LAYER_DEPS
+    },
+    par_style = "zip",  # "fastzip" would break :volume_for_repo in @mode/opt
+    # As with `test-image-feature`, we cannot get `image_layer.py` coverage.
+    deps = [
+        "//fs_image:find_built_subvol",
+        "//fs_image/btrfs_diff:testlib_demo_sendstreams",
+        "//fs_image/btrfs_diff:testlib_render_subvols",
+    ],
+)
+
+# This isn't explicitly covering any single library, so no coverage claims.
+python_unittest(
+    name = "test-add-remove-conflict",
+    srcs = ["tests/test_add_remove_conflict.py"],
+    base_module = "compiler",
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    resources = {
+        TEST_TARGET_PREFIX + READ_MY_DOC_image_feature_target(
+            "feature_addremove_conflict_add",
+        ): "tests/data/feature_add",
+        TEST_TARGET_PREFIX + READ_MY_DOC_image_feature_target(
+            "feature_addremove_conflict_remove",
+        ): "tests/data/feature_remove",
+        TEST_TARGET_PREFIX + READ_MY_DOC_image_feature_target(
+            "feature_addremove_conflict_both",
+        ): "tests/data/feature_both",
+        "//fs_image/compiler/tests:addremove_conflict_child": "tests/data/child",
+        "//fs_image/compiler/tests:addremove_conflict_parent": "tests/data/parent",
+    },
+    deps = [
+        ":compiler",
+        "//fs_image:find_built_subvol",
+        "//fs_image/btrfs_diff:testlib_render_subvols",
+    ],
+)

@@ -1,0 +1,45 @@
+# This file is intended to become a collection of utility features commonly
+# used in constructing images.
+load("//fs_image/bzl:image.bzl", "image")
+
+# To remove a path in this feature it should match these criteria:
+#  - its absence should makes the running image operate no less correctly
+#    than before,
+#  - the image does not become less human-understandable once it's gone, or
+#    the considerable space savings justifies the loss of debuggability.
+image.feature(
+    name = "rpm_cleanup",
+    features = [
+        image.remove(
+            "/var/cache/yum",
+            must_exist = False,
+        ),
+    ],
+)
+
+# Remove filesystem items that should ONLY be created at runtime, but might
+# have leaked into an image at build-time due to bugs.  If an image is
+# constructed only using supported `image.feature` and `image.layer`
+# operations, this clean-up should not be be necessary.  However, this can
+# be useful for assimilating foreign-built images.
+image.feature(
+    name = "build_artifact_cleanup",
+    # Since we generally build images for containers, we should make sure
+    # that they do contain an empty machine-id. The system manager (PID 1)
+    # will populate the file with a generated machine-id as the container
+    # boots.
+    #
+    # The systemd RPM includes a call to `systemd-machine-id-setup` in its
+    # %post script, which leaves a concrete /etc/machine-id file around.
+    # We should truncate it here and ship an empty file instead.
+    features = [
+        image.remove(
+            "/etc/machine-id",
+            must_exist = False,
+        ),
+        image.install_data(
+            "empty-machine-id",
+            "/etc/machine-id",
+        ),
+    ],
+)

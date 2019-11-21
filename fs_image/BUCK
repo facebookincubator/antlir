@@ -1,0 +1,446 @@
+load("//fs_image/bzl:image.bzl", "image")
+load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
+
+TEST_TARGET_PREFIX = "//fs_image/compiler/tests:"
+
+python_library(
+    name = "common",
+    srcs = ["common.py"],
+    # `common` is a "common" module name, so `import common` would collide.
+    base_module = "fs_image",
+)
+
+python_library(
+    name = "fs_utils",
+    srcs = ["fs_utils.py"],
+    base_module = "fs_image",
+    deps = [":common"],
+)
+
+python_unittest(
+    name = "test-fs-utils",
+    srcs = ["tests/test_fs_utils.py"],
+    base_module = "fs_image",
+    needed_coverage = [(
+        100,
+        ":fs_utils",
+    )],
+)
+
+python_library(
+    name = "testlib_temp_subvolumes",
+    srcs = [
+        "tests/temp_subvolumes.py",
+    ],
+    base_module = "",
+    deps = [
+        ":find_built_subvol",
+        ":fs_utils",
+        ":subvol_utils",
+    ],
+)
+
+python_library(
+    name = "unshare",
+    srcs = ["unshare.py"],
+    base_module = "",
+)
+
+python_unittest(
+    name = "test-unshare",
+    srcs = ["tests/test_unshare.py"],
+    base_module = "",
+    needed_coverage = [(
+        100,
+        ":unshare",
+    )],
+)
+
+python_library(
+    name = "btrfs_loopback",
+    srcs = ["btrfs_loopback.py"],
+    base_module = "",
+    deps = [
+        ":common",
+        ":unshare",
+    ],
+)
+
+python_library(
+    name = "subvol_utils",
+    srcs = ["subvol_utils.py"],
+    base_module = "",
+    deps = [
+        ":btrfs_loopback",
+        ":common",
+        ":fs_utils",
+        ":unshare",
+        "//fs_image/compiler:subvolume_on_disk",
+    ],
+)
+
+python_unittest(
+    name = "test-subvol-utils",
+    srcs = ["tests/test_subvol_utils.py"],
+    base_module = "",
+    needed_coverage = [(
+        100,
+        ":subvol_utils",
+    )],
+    par_style = "zip",  # "fastzip" won't work because of `set_up_volume.sh`
+    resources = {
+        "//fs_image/compiler/tests:hello_world_base": "tests/hello-layer",
+        TEST_TARGET_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
+    },
+    deps = [
+        ":subvol_utils",
+        ":testlib_temp_subvolumes",
+        "//fs_image/btrfs_diff:testlib_demo_sendstreams",
+        "//fs_image/btrfs_diff:testlib_render_subvols",
+    ],
+)
+
+python_library(
+    name = "volume_for_repo",
+    srcs = ["volume_for_repo.py"],
+    base_module = "",
+    # `get_volume_for_current_repo()` needs this to be our sibling in the PAR.
+    resources = {"set_up_volume.sh"},
+)
+
+python_unittest(
+    name = "test-volume-for-repo",
+    srcs = ["tests/test_volume_for_repo.py"],
+    base_module = "",
+    needed_coverage = [(
+        100,
+        ":volume_for_repo",
+    )],
+    par_style = "zip",  # "fastzip" won't work because of `set_up_volume.sh`
+    deps = [":volume_for_repo"],
+)
+
+python_library(
+    name = "artifacts_dir",
+    srcs = ["artifacts_dir.py"],
+    base_module = "",
+)
+
+python_library(
+    name = "subvolume_garbage_collector",
+    srcs = ["subvolume_garbage_collector.py"],
+    base_module = "",
+)
+
+python_library(
+    name = "find_built_subvol",
+    srcs = ["find_built_subvol.py"],
+    base_module = "",
+    deps = [
+        ":artifacts_dir",
+        ":fs_utils",
+        ":subvol_utils",
+        ":volume_for_repo",
+        "//fs_image/compiler:subvolume_on_disk",
+    ],
+)
+
+python_binary(
+    name = "find-built-subvol",
+    main_module = "find_built_subvol",
+    par_style = "zip",
+    deps = [":find_built_subvol"],
+)
+
+python_unittest(
+    name = "test-find-built-subvol",
+    srcs = ["tests/test_find_built_subvol.py"],
+    base_module = "",
+    needed_coverage = [(
+        100,
+        ":find_built_subvol",
+    )],
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    resources = {
+        "//fs_image/compiler/tests:hello_world_base": "tests/hello_world_base",
+    },
+    deps = [":find_built_subvol"],
+)
+
+python_binary(
+    name = "layer-mount-config",
+    srcs = ["layer_mount_config.py"],
+    base_module = "fs_image",
+    main_module = "fs_image.layer_mount_config",
+)
+
+python_unittest(
+    name = "test-layer-mount-config",
+    srcs = ["tests/test_layer_mount_config.py"],
+    base_module = "fs_image",
+    needed_coverage = [(100, ":layer-mount-config-library")],
+)
+
+export_file(
+    name = "fake_sudo.sh",
+    src = "tests/fake_sudo.sh",
+)
+
+python_library(
+    # Separate so we can put `sudo` alone in its own directory
+    name = "fake_sudo",
+    base_module = "fake_sudo",
+    resources = {":fake_sudo.sh": "sudo"},
+)
+
+python_library(
+    name = "nspawn_in_subvol",
+    srcs = ["nspawn_in_subvol.py"],
+    base_module = "",
+    resources = {"wrap_systemd_exec.sh"},
+    deps = [
+        ":common",
+        ":find_built_subvol",
+        ":send_fds_and_run",
+        ":testlib_temp_subvolumes",
+        "//fs_image/compiler:procfs_serde",
+        "//fs_image/compiler/items:mount_utils",
+    ],
+)
+
+# This minimal XAR shipped as tests/hello.xar was generated via:
+#
+#   pip install xar && mkdir -p hello &&
+#   echo "print('hello world')" > hello/__main__.py &&
+#   python -m xar.make_xar -- --python hello --output hello.xar
+#
+# NB: Internally, you can use `buck run //tools/xar:make_xar` instead.
+image.layer(
+    name = "host-hello-xar",
+    parent_layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    features = [
+        image.install_data(
+            "tests/hello.xar",
+            "/hello.xar",
+            mode = "a+rx",
+        ),
+    ],
+)
+
+python_unittest(
+    name = "test-nspawn-in-subvol",
+    srcs = ["tests/test_nspawn_in_subvol.py"],
+    base_module = "",
+    needed_coverage = [(
+        100,
+        ":nspawn_in_subvol",
+    )],
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    resources = {
+        ":host-hello-xar": "tests/host-hello-xar",
+        "//fs_image/compiler/tests" +
+        ":only-for-tests-read-only-host-clone": "tests/host",
+        "//tupperware/image/slimos" +
+        ":slimos": "tests/slimos",
+    },
+    deps = [":nspawn_in_subvol"],
+)
+
+python_binary(
+    name = "nspawn-run-in-subvol",
+    main_module = "nspawn_in_subvol",
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    deps = [":nspawn_in_subvol"],
+)
+
+python_binary(
+    name = "nspawn-test-in-subvol",
+    srcs = ["nspawn_test_in_subvol.py"],
+    base_module = "",
+    main_module = "nspawn_test_in_subvol",
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    deps = [":nspawn_in_subvol"],
+)
+
+python_unittest(
+    name = "test-nspawn-test-in-subvol",
+    srcs = ["tests/test_nspawn_test_in_subvol.py"],
+    base_module = "",
+    needed_coverage = [(100, ":nspawn-test-in-subvol-library")],
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    deps = [":nspawn-test-in-subvol-library"],
+)
+
+python_unittest(
+    name = "test-subvolume-garbage-collector",
+    srcs = ["tests/test_subvolume_garbage_collector.py"],
+    base_module = "",
+    needed_coverage = [(
+        100,
+        ":subvolume_garbage_collector",
+    )],
+    par_style = "zip",  # "fastzip" won't work because of `fake_sudo.sh`
+    deps = [
+        ":fake_sudo",
+        ":subvolume_garbage_collector",
+    ],
+)
+
+# No unit-test since this is simple, its output is random, and we are
+# unlikely to need to change it.  Be sure to test your changes manually!
+python_library(
+    name = "subvolume_version",
+    srcs = ["subvolume_version.py"],
+    base_module = "",
+)
+
+# These binaries are basically a work-around for the fact that `sudo -C`
+# is forbidden by default :/
+
+python_binary(
+    name = "recv-fds-and-run",
+    srcs = ["recv_fds_and_run.py"],
+    base_module = "",
+    main_module = "recv_fds_and_run",
+    par_style = "xar",
+    deps = [":common"],
+)
+
+python_library(
+    name = "send_fds_and_run",
+    srcs = ["send_fds_and_run.py"],
+    base_module = "",
+    resources = {":recv-fds-and-run": "recv-fds-and-run"},
+    deps = [":common"],
+)
+
+python_unittest(
+    name = "test-send-fds-and-run",
+    srcs = ["tests/test_send_fds_and_run.py"],
+    needed_coverage = [(100, ":send_fds_and_run")],
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    deps = [":send_fds_and_run"],
+)
+
+python_binary(
+    name = "send-fds-and-run",
+    main_module = "send_fds_and_run",
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    deps = [":send_fds_and_run"],
+)
+
+# These binaries are used by `image_layer.py` as build-time helpers.
+
+python_binary(
+    name = "artifacts-dir",
+    main_module = "artifacts_dir",
+    deps = [":artifacts_dir"],
+)
+
+python_binary(
+    name = "compiler",
+    main_module = "compiler.compiler",
+    # "fastzip" would break :volume_for_repo in @mode/opt.  "xar" fails
+    # since `root` cannot access the content of an unprivileged XAR.
+    par_style = "zip",
+    deps = ["//fs_image/compiler:compiler"],
+)
+
+python_binary(
+    name = "subvolume-garbage-collector",
+    main_module = "subvolume_garbage_collector",
+    deps = [":subvolume_garbage_collector"],
+)
+
+python_binary(
+    name = "subvolume-version",
+    main_module = "subvolume_version",
+    deps = [":subvolume_version"],
+)
+
+python_binary(
+    name = "volume-for-repo",
+    main_module = "volume_for_repo",
+    par_style = "zip",  # "fastzip" breaks @mode/opt for `set_up_volume.sh`
+    deps = [":volume_for_repo"],
+)
+
+python_library(
+    name = "update_package_db",
+    srcs = ["update_package_db.py"],
+    base_module = "fs_image",
+    deps = [
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-update-package-db",
+    srcs = ["tests/test_update_package_db.py"],
+    base_module = "fs_image",
+    needed_coverage = [(100, ":update_package_db")],
+    deps = [":update_package_db"],
+)
+
+python_binary(
+    name = "package-image",
+    srcs = ["package_image.py"],
+    base_module = "",
+    main_module = "package_image",
+    deps = [
+        ":find_built_subvol",
+        ":subvol_utils",
+    ],
+)
+
+# Also tests the Buck macro `image_package.bzl`, but we cannot assert coverage.
+python_unittest(
+    name = "test-package-image",
+    srcs = ["tests/test_package_image.py"],
+    base_module = "compiler",
+    needed_coverage = [(100, ":package-image-library")],
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    resources = {
+        # Same comment re: mutate_ops as in `test_layer_from_demo_sendstreams`.
+        TEST_TARGET_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
+        TEST_TARGET_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
+        TEST_TARGET_PREFIX + "create_ops": "tests/create_ops.layer",
+    },
+    deps = [
+        ":find_built_subvol",
+        ":package-image-library",
+        ":testlib_temp_subvolumes",
+        ":unshare",
+        "//fs_image/btrfs_diff:testlib_render_subvols",
+    ],
+)
+
+python_unittest(
+    name = "test-execute-installed",
+    srcs = ["tests/test_execute_installed.py"],
+    base_module = "fs_image.compiler",
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    resources = {
+        "//fs_image/compiler/tests:installed-executables": "tests/exe-layer",
+    },
+    deps = [":nspawn_in_subvol"],
+)
