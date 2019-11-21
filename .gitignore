@@ -1,0 +1,4 @@
+# buck stuff
+buck-out/
+buck-image-out/
+.buckd/
