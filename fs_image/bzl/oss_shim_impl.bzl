@@ -1,11 +1,10 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 
-# py2 is dead but we still need to explicitly use a separate platform
-# for OSS buck so we'll just force everything here to py3.
-# In the future prehaps there will be a need for a few different
-# OSS platform types (like `dev` vs `opt`), but we'll cross that bridge
-# when we get to it.
-_DEFAULT_PLATFORM = "py3"
+# The default native platform to use for shared libraries and static binary
+# dependencies.  Right now this tooling only supports one platform and so
+# this is not a method, but in the future as we support other native platforms
+# (like Debian, Arch Linux, etc..) this should be expanded to allow for those.
+_DEFAULT_NATIVE_PLATFORM = "fedora31"
 
 def _invert_dict(d):
     """ In OSS Buck some of the dicts used by targets (`srcs` and `resources`
@@ -18,9 +17,31 @@ def _invert_dict(d):
         resources = { "label_of_resource": "//target:name" }
     """
     if d and types.is_dict(d):
-        return {value: key for key, value in d.items()}
+        result = {value: key for key, value in d.items()}
+
+        if len(result) != len(d):
+            fail("_invert_dict fail! len(result): "+len(result)+" != len(d): "+len(d))
+
+        return result
     else:
         return d
+
+def _normalize_deps(deps, more_deps=None):
+    """  Create a single list of deps from one or 2 provided lists of deps.
+    Additionally exclude any deps that have `/facebook` in the path as these
+    are internal and require internal FB infra.
+    """
+
+    _deps = deps or []
+    _more_deps = more_deps or []
+    _deps = _deps + _more_deps
+
+    derps = [] 
+    for dep in _deps:
+        if dep.find('facebook') < 0:
+            derps.append(dep)
+    
+    return derps
 
 def _normalize_visibility(vis, name=None):
     """ OSS Buck has a slightly different handling of visibility.
@@ -42,18 +63,45 @@ def _normalize_pkg_style(style):
     else:
         return 'standalone'
 
-def _cpp_unittest(name, tags='ignored', visibility=None, **kwargs):
+def _third_party_library(project, rule=None, platform=None):
+    """
+    Generate a target for a third-party library.  This will return a target
+    that is normalized into the form (see the README in `//third-party/...`
+    more info on these targets):
+
+        //third-party/<platform>/<project>:<rule>
+
+    Thee are currently only 2 platforms supported in OSS:
+        - python
+        - fedora31
+
+    If `platform` is not provided it is assumed to be `fedora31`.
+
+    If `rule` is not provided it is assumed to be the same as `project`.
+    """
+
+    if not rule:
+        rule = project
+
+    if not platform:
+        platform = _DEFAULT_NATIVE_PLATFORM
+    
+    return "//third-party/" + platform + "/" + project + ":" + rule
+
+def _cpp_unittest(name, tags=[], visibility=None, **kwargs):
     cxx_test(
        name = name,
+       labels = tags,
        visibility = _normalize_visibility(visibility),
        **kwargs
     )
 
-def _python_binary(name, main_module, par_style=None, visibility=None, **kwargs):
-
-    visibility = _normalize_visibility(visibility)
-    python_library(
+def _python_binary(name, main_module, par_style=None, resources=None, 
+        visibility=None, **kwargs):
+  
+    _python_library(
         name = name + "-library",
+        resources = resources,
         visibility = visibility,
         **kwargs
     )
@@ -63,34 +111,33 @@ def _python_binary(name, main_module, par_style=None, visibility=None, **kwargs)
         deps = [":" + name + "-library"],
         main_module = main_module,
         package_style = _normalize_pkg_style(par_style),
-        platform = _DEFAULT_PLATFORM,
-        visibility = visibility,
+        visibility = _normalize_visibility(visibility, name),
     )
 
-def _python_library(name, deps=None, visibility=None, resources=None,
-        srcs=None, **kwargs):
+def _python_library(name, deps=None, 
+        visibility=None, resources=None, srcs=None, **kwargs):
 
     python_library(
         name = name,
-        deps = deps,
+        deps = _normalize_deps(deps),
         resources = _invert_dict(resources),
         srcs = _invert_dict(srcs),
         visibility = _normalize_visibility(visibility, name),
         **kwargs
     )
 
-def _python_unittest(cpp_deps='ignored', deps=None, par_style=None,
-        tags='ignored', resources=None, **kwargs):
+def _python_unittest(cpp_deps='ignored', deps=None,
+        par_style=None, tags=[], resources=None, **kwargs):
 
     python_test(
-        platform=_DEFAULT_PLATFORM,
-        deps = deps,
+        deps = _normalize_deps(deps),
+        labels = tags,
         package_style = _normalize_pkg_style(par_style),
         resources = _invert_dict(resources),
         **kwargs
     )
 
-
+### BEGIN COPY-PASTA (@fbcode_macros//build_defs/lib:rule_target_types.bzl)
 _RuleTargetProvider = provider(fields = [
     "name",  # The name of the rule
     "base_path",  # The base package within the repository
@@ -99,7 +146,9 @@ _RuleTargetProvider = provider(fields = [
 
 def _RuleTarget(repo, base_path, name):
     return _RuleTargetProvider(name = name, base_path = base_path, repo = repo)
+### END COPY-PASTA
 
+### BEGIN COPY-PASTA (@fbcode_macros//build_defs/lib:target_utils.bzl)
 def _parse_target(target, default_repo = None, default_base_path = None):
     if target.count(":") != 1:
         fail('rule name must contain exactly one ":": "{}"'.format(target))
@@ -118,14 +167,16 @@ def _parse_target(target, default_repo = None, default_base_path = None):
 
     return _RuleTarget(repo, base_path, name)
 
+def _to_label(repo, path, name):
+    return "{}//{}:{}".format(repo, path, name)
+### END COPY-PASTA
+
+
 def _get_project_root_from_gen_dir():
     # NB: This will break if "buck-out" is set to something containing 1 or
     # more slashes (e.g.  `/my/buck/out`).  A fix would be to copy-pasta
     # `_get_buck_out_path`, but it seems like an unnecessary complication.
     return "../.."
-
-def _to_label(repo, path, name):
-    return "{}//{}:{}".format(repo, path, name)
 
 shim = struct(
     buck_command_alias = command_alias,
@@ -146,5 +197,7 @@ shim = struct(
         parse_target = _parse_target,
         to_label = _to_label,
     ),
-    third_party = None
+    third_party = struct(
+        library = _third_party_library,
+    ),
 )

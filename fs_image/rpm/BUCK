@@ -15,6 +15,7 @@ python_library(
     srcs = ["common.py"],
     base_module = "rpm",
     deps = [
+        ":yum_dnf_conf",
         "//fs_image:common",
         "//fs_image:fs_utils",
     ],
@@ -32,8 +33,11 @@ python_library(
     name = "open_url",
     srcs = ["open_url.py"],
     base_module = "rpm",
-    external_deps = [
-        third_party.library("python-requests"),
+    deps = [
+        third_party.library(
+            "requests",
+            platform="python"
+        ),
     ],
 )
 
@@ -77,7 +81,7 @@ python_library(
     base_module = "rpm",
     resources = {
         target_location(
-            third_party.library("third-party//busybox:bin/busybox"),
+            third_party.library("busybox", "bin/busybox"),
         ): "busybox-path",
         # NB: It would be great to also use `rpmbuild` from the third-party
         # repo, but doing this is fairly intractable, see D15511231.
@@ -145,6 +149,7 @@ python_library(
     deps = [
         ":common",
         ":repo_objects",
+        "//fs_image/rpm/storage:storage",
         "//fs_image/rpm/storage/facebook:storage",
     ],
 )
@@ -237,9 +242,10 @@ python_unittest(
     deps = [
         ":repo_server",
         ":temp_repos",
-    ],
-    external_deps = [
-        third_party.library("python-requests"),
+        third_party.library(
+            "requests",
+            platform="python"
+        ),
     ],
 )
 
@@ -352,7 +358,6 @@ python_binary(
     srcs = ["tests/temp_snapshot.py"],
     base_module = "rpm",
     main_module = "rpm.tests.temp_snapshot",
-    par_style = "xar",  # Needed for `busybox` to be visible in @mode/opt
     deps = [
         ":db_connection",
         ":snapshot_repos",

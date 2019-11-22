@@ -116,6 +116,7 @@ from fs_image.common import (
 )
 from fs_image.fs_utils import Path, temp_dir
 from .yum_dnf_conf import YumDnf, YumDnfConfParser
+from .common import yum_is_dnf
 
 log = get_file_logger(__file__)
 
@@ -511,7 +512,6 @@ def yum_dnf_from_snapshot(
         # host -- otherwise, we'd be in the awkard situation of leaving them
         # unprotected, or creating them on the host to protect them.
         '/etc/yum.repos.d/',  # dnf ALSO needs this isolated
-        '/etc/yum/',  # dnf ALSO needs this isolated
         f'/etc/{prog_name}/',   # A duplicate for the `yum` case
         f'/var/cache/{prog_name}/',
         f'/var/lib/{prog_name}/',
@@ -521,7 +521,7 @@ def yum_dnf_from_snapshot(
         # Harcode `IMAGE/meta` because it should ALWAYS be off-limits --
         # even though the compiler will redundantly tell us to protect it.
         'meta/',
-    ])
+    ] + ['/etc/yum'] if not yum_is_dnf() else [])  # work with yum not being dnf
 
     # These user-specified arguments could really mess up hermeticity.
     for bad_arg in ['--installroot', '--config', '--setopt', '--downloaddir']:

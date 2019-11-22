@@ -1,0 +1,12 @@
+remote_file(
+    name = "urllib3-download",
+    url = "https://files.pythonhosted.org/packages/b4/40/a9837291310ee1ccc242ceb6ebfd9eb21539649f193a7c8c86ba15b98539/urllib3-1.25.7-py2.py3-none-any.whl",
+    sha1 = "54cb39b7b05ba73a8a5580e822518afffe864ef5",
+    out = "urllib3-1.25.7-py2.py3-none-any.whl",
+)
+
+prebuilt_python_library(
+    name = "urllib3",
+    binary_src = ":urllib3-download",
+    visibility = ["PUBLIC"],
+)
