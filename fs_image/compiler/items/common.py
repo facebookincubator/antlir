@@ -109,6 +109,7 @@ class LayerOpts(NamedTuple):
     yum_from_snapshot: str
     target_to_path: Mapping[str, str]
     subvolumes_dir: str
+    preserve_yum_cache: bool
 
 
 class ImageItem(type):

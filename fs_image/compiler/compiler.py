@@ -39,7 +39,7 @@ def make_target_path_map(targets_followed_by_paths):
     return d
 
 
-def parse_args(args):
+def parse_args(args) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawTextHelpFormatter,
@@ -64,6 +64,12 @@ def parse_args(args):
     parser.add_argument(
         '--build-appliance-json',
         help='Path to the JSON output of target referred by build_appliance',
+    )
+    parser.add_argument(
+        '--preserve-yum-cache', action='store_true',
+        help='RpmAction preserves /var/cache/yum doing yum install. For now, '
+             'if this option is omitted and --build-appliance-json is not '
+             'provided, /var/cache/yum will be preserved anyway.',
     )
     parser.add_argument(
         '--artifacts-may-require-repo', action='store_true',
@@ -106,6 +112,7 @@ def build_image(args):
         build_appliance=get_subvolume_path(
             args.build_appliance_json, args.subvolumes_dir,
         ) if args.build_appliance_json else None,
+        preserve_yum_cache=args.preserve_yum_cache,
         artifacts_may_require_repo=args.artifacts_may_require_repo,
         target_to_path=make_target_path_map(args.child_dependencies),
         subvolumes_dir=args.subvolumes_dir,

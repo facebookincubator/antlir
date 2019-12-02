@@ -20,6 +20,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     artifacts_may_require_repo=True,
     target_to_path=None,
     subvolumes_dir=None,
+    preserve_yum_cache=False,
 )
 
 

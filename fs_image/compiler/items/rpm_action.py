@@ -139,7 +139,7 @@ class RpmActionItem(metaclass=ImageItem):
 
             action_to_names_or_rpms[item.action].add(name_or_rpm)
 
-        def builder(subvol: Subvol):
+        def builder(subvol: Subvol) -> None:
             # Go through the list of RPMs to install and change the action to
             # downgrade if it is a local RPM with a lower version than what is
             # installed.
@@ -208,6 +208,7 @@ class RpmActionItem(metaclass=ImageItem):
                             # order-dependent
                             *sorted(rpms),
                         ],
+                        preserve_yum_cache=layer_opts.preserve_yum_cache,
                     )
         return builder
 
@@ -220,10 +221,15 @@ def _yum_using_build_appliance(
     install_root: Path,
     protected_paths: Iterable[str],
     yum_args: List[str],
-):
+    preserve_yum_cache: bool,
+) -> None:
     work_dir = '/work' + base64.urlsafe_b64encode(
         uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
     ).decode().strip('=')
+    mount_var_cache_yum = '' if preserve_yum_cache else f'''
+                         mkdir -p {work_dir}/var/cache/yum ; \
+                         mount --bind /var/cache/yum {work_dir}/var/cache/yum ;
+                         '''
     opts = nspawn_in_subvol_parse_opts([
         '--layer', 'UNUSED',
         '--user', 'root',
@@ -235,10 +241,9 @@ def _yum_using_build_appliance(
         '--no-private-network',
         '--bindmount-rw', install_root.decode(), work_dir,
         *nspawn_args,
-        '--', 'sh', '-c',
+        '--', 'sh', '-uec',
         f'''
-        mkdir -p {work_dir}/var/cache/yum ;
-        mount --bind /var/cache/yum {work_dir}/var/cache/yum ;
+        {mount_var_cache_yum}
         /yum-from-snapshot \
             {' '.join(
                 '--protected-path=' + shlex.quote(p) for p in protected_paths

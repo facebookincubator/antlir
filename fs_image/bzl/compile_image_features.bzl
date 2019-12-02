@@ -20,11 +20,19 @@ def _build_opts(
         # with yum_from_repo_snapshot: either build_appliance or
         # yum_from_repo_snapshot is required if any dependent
         # `image_feature` specifies `rpms`.
-        build_appliance = None):
+        build_appliance = None,
+        # A boolean knob to govern behavior of RpmAction w.r.t /var/cache/yum
+        # The default is False: yum install won't pollute /var/cache/yum of
+        # destination. Build appliance image is a special case: it is beneficial
+        # to have /var/cache/yum populated because it speeds up RpmAction for
+        # other images (whoever uses build_applince). For now, this knob is
+        # ignored if build_appliance is not set.
+        preserve_yum_cache = False):
     return struct(
         subvol_name = subvol_name,
         yum_from_repo_snapshot = yum_from_repo_snapshot,
         build_appliance = build_appliance,
+        preserve_yum_cache = preserve_yum_cache,
     )
 
 def _query_set(target_paths):
@@ -75,6 +83,7 @@ def compile_image_features(
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \
           {maybe_quoted_build_appliance_args} \
+          {maybe_preserve_yum_cache_args} \
           {maybe_quoted_yum_from_repo_snapshot_args} \
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
@@ -130,6 +139,9 @@ def compile_image_features(
             "--build-appliance-json $(location {})/layer.json".format(
                 build_opts.build_appliance,
             ) if build_opts.build_appliance else ""
+        ),
+        maybe_preserve_yum_cache_args = (
+            "--preserve-yum-cache" if build_opts.preserve_yum_cache else ""
         ),
         maybe_quoted_yum_from_repo_snapshot_args = (
             # In terms of **dependency** structure, we want this to be `exe`

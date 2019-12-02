@@ -17,7 +17,7 @@ from ..common import image_source_item, PhaseOrder
 
 class RpmActionItemTestCase(BaseItemTestCase):
 
-    def _test_rpm_action_item(self, layer_opts):
+    def _test_rpm_action_item(self, layer_opts, preserve_yum_cache=False):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.create('rpm_action')
             self.assertEqual(['(Dir)', {}], render_subvol(subvol))
@@ -105,7 +105,9 @@ class RpmActionItemTestCase(BaseItemTestCase):
             # because rmdir fails if it is not.
             # It is important that the yum cache of built images be empty, to
             # avoid unnecessarily increasing the distributed image size.
-            rm_cmd = ['rmdir'] if layer_opts.build_appliance else ['rm', '-rf']
+            rm_cmd = ['rmdir'] if (
+                layer_opts.build_appliance and not preserve_yum_cache
+            ) else ['rm', '-rf']
             subvol.run_as_root(rm_cmd + [subvol.path('var/cache/yum')])
             subvol.run_as_root([
                 'rmdir',
@@ -149,16 +151,18 @@ class RpmActionItemTestCase(BaseItemTestCase):
             'host-test-build-appliance',
             'fb-host-test-build-appliance',
         ]:
-            self._test_rpm_action_item(layer_opts=DUMMY_LAYER_OPTS._replace(
-                build_appliance=get_subvolume_path(
-                    os.path.join(
-                        os.path.dirname(__file__),
-                        filename,
-                        'layer.json',
+            for preserve_yum_cache in [True, False]:
+                self._test_rpm_action_item(layer_opts=DUMMY_LAYER_OPTS._replace(
+                    build_appliance=get_subvolume_path(
+                        os.path.join(
+                            os.path.dirname(__file__),
+                            filename,
+                            'layer.json',
+                        ),
+                        subvolumes_dir(),
                     ),
-                    subvolumes_dir(),
-                ),
-            ))
+                    preserve_yum_cache=preserve_yum_cache,
+                ), preserve_yum_cache=preserve_yum_cache)
 
     def test_rpm_action_item_auto_downgrade(self):
         parent_subvol = find_built_subvol(
