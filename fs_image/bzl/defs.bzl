@@ -1,6 +1,6 @@
-load(":oss_shim.bzl", "buck_genrule")
+load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 
-def fake_macro_library(name, srcs, deps = None):
+def fake_macro_library(name, srcs, deps = None, visibility = None):
     """
     This rule does not build anything useful! Its only job is to inform
     `buck query`-powered dependency resolvers that `image_*` targets depend
@@ -34,4 +34,5 @@ def fake_macro_library(name, srcs, deps = None):
             ]),
         ),
         type = "fake_macro_library",
+        visibility = get_visibility(visibility, name),
     )
