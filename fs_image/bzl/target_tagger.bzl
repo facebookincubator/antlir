@@ -56,7 +56,7 @@ def tag_required_target_key(tagger, d, target_key, is_layer = False):
         )
     d[target_key] = tag_target(tagger, target = d[target_key], is_layer = is_layer)
 
-def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_prefix, **kwargs):
+def wrap_target(target, wrap_prefix):
     # The target to wrap may be in a different directory, so we normalize
     # its path to ensure the hashing is deterministic.  This assures reuse
     # at least within the current TARGETS files.
@@ -72,7 +72,12 @@ def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_prefix, **k
         name if len(name) < 15 else (name[:6] + "..." + name[-6:])
     ) + "__" + hex_crc32(target)
 
-    if native.rule_exists(wrapped_target):
+    return native.rule_exists(wrapped_target), wrapped_target
+
+def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_prefix, **kwargs):
+    exists, wrapped_target = wrap_target(target, wrap_prefix)
+
+    if exists:
         return True, tag_target(target_tagger, ":" + wrapped_target)
 
     # The `wrap_runtime_deps_as_build_time_deps` docblock explains this:

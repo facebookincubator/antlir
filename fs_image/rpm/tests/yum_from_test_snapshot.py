@@ -10,6 +10,7 @@ from typing import AnyStr, List
 
 from ..common import init_logging, Path
 from ..yum_from_snapshot import add_common_yum_args, yum_from_snapshot
+from fs_image.common import load_location
 
 
 def yum_from_test_snapshot(
@@ -17,7 +18,7 @@ def yum_from_test_snapshot(
     protected_paths: List[AnyStr],
     yum_args: List[AnyStr],
 ):
-    snapshot_dir = Path(__file__).dirname() / 'repo_snapshot'  # via `resources`
+    snapshot_dir = Path(load_location('rpm', 'repo-snapshot'))
     yum_from_snapshot(
         storage_cfg=json.dumps({
             'key': 'test',
