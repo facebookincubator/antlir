@@ -66,6 +66,7 @@ def python_unittest(*args, **kwargs):
 
 buck_command_alias = shim.buck_command_alias
 buck_genrule = shim.buck_genrule
+buck_sh_binary = shim.buck_sh_binary
 config = shim.config
 get_visibility = shim.get_visibility
 platform_utils = shim.platform_utils
