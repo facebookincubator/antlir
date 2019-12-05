@@ -10,17 +10,18 @@ be 100% trustworthy, we just need to trust the provenance of the
 Here is how to run a test invocation of this server -- just be sure to use
 the same `--storage` configuration as you did for your test snapshot:
 
-python3 -c '
-import os, socket, subprocess, sys
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # if fixing a port
-s.bind(("127.0.0.1", 0))
-print("Socket bound - {}:{}".format(*s.getsockname()), file=sys.stderr)
-os.set_inheritable(s.fileno(), True)
-os.execlp(sys.argv[1], *sys.argv[1:], str(s.fileno()))
-' buck run .../rpm:repo-server -- --storage \\
-    '{"key": "test", "kind": "filesystem", "base_dir": "YOUR_PATH"}' \\
-  --snapshot-dir YOUR_SNAPSHOT/ --socket-fd
+  $ buck build //fs_image/rpm:repo-server
+  $ python3 -c '
+  import os, socket, subprocess, sys
+  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # if fixing a port
+  s.bind(("127.0.0.1", 0))
+  print("Socket bound - {}:{}".format(*s.getsockname()), file=sys.stderr)
+  os.set_inheritable(s.fileno(), True)
+  os.execlp(sys.argv[1], *sys.argv[1:], str(s.fileno()))
+  ' buck-out/gen/fs_image/rpm/repo-server.par --storage \\
+      '{"key": "test", "kind": "filesystem", "base_dir": "YOUR_PATH"}' \\
+    --snapshot-dir YOUR_SNAPSHOT/ --socket-fd
 
 '''
 import json
