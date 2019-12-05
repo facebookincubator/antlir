@@ -546,10 +546,7 @@ image.rpmbuild_layer(
     name = "toy-rpm-build",
     parent_layer = "//tupperware/image/base:rpmbuild-base",
     specfile = "toy.spec",
-    # Using export file like this (note the trailing slash) for sources means
-    # that it won't have the top dir (toy_srcs/) included as part of the
-    # sources tarball.
-    source = "toy_srcs/",
+    source = "toy_srcs",
 )
 
 # This tests installing an RPM from image.rpmbuild_layer into another layer with
