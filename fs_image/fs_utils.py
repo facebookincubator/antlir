@@ -61,6 +61,10 @@ class Path(bytes):
         # Python uses `surrogateescape` for `sys.argv`.
         return Path(s.encode(errors='surrogateescape'))
 
+    def read_text(self) -> str:
+        with open(self) as infile:
+            return infile.read()
+
 
 @contextmanager
 def temp_dir(**kwargs) -> Iterable[Path]:
