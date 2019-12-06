@@ -12,10 +12,7 @@ from contextlib import contextmanager
 from typing import Dict, List, NamedTuple, Optional
 
 from ..common import Path, temp_dir
-
-
-def busybox_path() -> str:
-    return os.path.join(os.path.dirname(__file__), 'third_party/busybox')
+from fs_image.common import load_location
 
 
 def rpmbuild_path() -> str:
@@ -41,7 +38,9 @@ class Rpm(NamedTuple):
                     if self.override_contents is None
                     else self.override_contents
             ),
-            'quoted_busybox_path': shlex.quote(busybox_path()),
+            'quoted_busybox_path': shlex.quote(
+                load_location('rpm', 'busybox-path')
+            )
         }
 
         common_spec = textwrap.dedent('''\
