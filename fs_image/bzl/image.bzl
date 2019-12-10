@@ -1,7 +1,7 @@
 "This provides a more friendly UI to the image_* macros."
 
 load("//fs_image/bzl/image_actions:feature.bzl", "image_feature")
-load("//fs_image/bzl/image_actions:install.bzl", "image_install_data", "image_install_executable")
+load("//fs_image/bzl/image_actions:install.bzl", "image_install_buck_runnable", "image_install_data")
 load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//fs_image/bzl/image_actions:mount.bzl", "image_host_dir_mount", "image_host_file_mount", "image_layer_mount")
 load("//fs_image/bzl/image_actions:remove.bzl", "image_remove")
@@ -20,7 +20,7 @@ image = struct(
     feature = image_feature,
     mkdir = image_mkdir,
     install_data = image_install_data,
-    install_executable = image_install_executable,
+    install_buck_runnable = image_install_buck_runnable,
     tarball = image_tarball,
     remove = image_remove,
     rpms_install = image_rpms_install,

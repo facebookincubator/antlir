@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//fs_image/bzl/image_actions:install.bzl", "image_install_executable")
+load("//fs_image/bzl/image_actions:install.bzl", "image_install_buck_runnable")
 load(":image_layer.bzl", "image_layer")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
 
@@ -68,7 +68,7 @@ def _nspawn_wrapper_properties(
     image_layer(
         name = test_layer,
         parent_layer = layer,
-        features = [image_install_executable(inner_test_target, binary_path)],
+        features = [image_install_buck_runnable(inner_test_target, binary_path)],
         visibility = visibility,
     )
 

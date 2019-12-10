@@ -25,15 +25,15 @@ class InstallFileItem(metaclass=ImageItem):
     fields = [
         'source',
         'dest',
-        'is_executable_',  # None after `customize_fields`
+        'is_buck_runnable_',  # None after `customize_fields`
     ] + STAT_OPTION_FIELDS
 
     def customize_fields(kwargs):  # noqa: B902
         coerce_path_field_normal_relative(kwargs, 'dest')
         customize_stat_options(
             kwargs,
-            default_mode=0o555 if _pop_and_make_None(kwargs, 'is_executable_')
-                else 0o444,
+            default_mode=0o555
+                if _pop_and_make_None(kwargs, 'is_buck_runnable_') else 0o444,
         )
 
     def provides(self):

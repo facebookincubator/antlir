@@ -125,9 +125,9 @@ def compile_image_features(
         maybe_artifacts_require_repo = (
             "--artifacts-may-require-repo" if
             # Future: Consider **only** emitting this flag if the image is
-            # actually contains executables (via `install_executable`).
+            # actually contains executables (via `install_buck_runnable`).
             # NB: This may not actually be 100% doable at macro parse time,
-            # since `install_executable_tree` does not know if it is
+            # since `install_buck_runnable_tree` does not know if it is
             # installing an executable file or a data file until build-time.
             # That said, the parse-time test would already narrow the scope
             # when the repo is mounted, and one could potentially extend the

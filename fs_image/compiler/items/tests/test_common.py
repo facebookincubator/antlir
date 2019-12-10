@@ -19,7 +19,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
             None,
             InstallFileItem(
                 from_target='t', source={'source': 'a'}, dest='b',
-                is_executable_=False,
+                is_buck_runnable_=False,
             ).phase_order(),
         )
         self.assertEqual(PhaseOrder.RPM_INSTALL, RpmActionItem(
@@ -33,7 +33,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
         with self.assertRaisesRegex(AssertionError, r'cannot start with \.\.'):
             InstallFileItem(
                 from_target='t', source={'source': 'a'}, dest='a/../../b',
-                is_executable_=False,
+                is_buck_runnable_=False,
             )
 
     def test_stat_options(self):

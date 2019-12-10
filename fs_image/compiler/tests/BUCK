@@ -115,7 +115,7 @@ image.layer(
         image.mkdir("/var", "cache/yum"),
         image.mkdir("/var", "lib/rpm"),
         image.mkdir("/var/lib", "yum"),
-        image.install_executable("//fs_image/rpm:yum-from-test-snapshot", "/yum-from-snapshot"),
+        image.install_buck_runnable("//fs_image/rpm:yum-from-test-snapshot", "/yum-from-snapshot"),
     ],
 )
 
@@ -266,8 +266,8 @@ buck_genrule(
     executable = True,
 )
 
-# Exercises `install_{data,executables}, taking care to cover all reasonable
-# combinations of :
+# Exercises `install_{data,buck_runnable}, taking care to cover all
+# reasonable combinations of:
 #   - Rsync convention
 #   - Data vs executables
 #   - Installing a file from a target that outputs a directory
@@ -296,8 +296,8 @@ image.feature(
             ),
             "/foo/bar/installed/yittal-kitteh",
         ),
-        image.install_executable(":print-ok", "/foo/bar/installed/print-ok"),
-        image.install_executable(
+        image.install_buck_runnable(":print-ok", "/foo/bar/installed/print-ok"),
+        image.install_buck_runnable(
             image.source(
                 ":dir-print-ok",
                 path = "subdir/print-ok",

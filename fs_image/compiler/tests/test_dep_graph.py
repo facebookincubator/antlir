@@ -22,11 +22,11 @@ PATH_TO_ITEM = {
     '/a/d/e': MakeDirsItem(from_target='', into_dir='a', path_to_make='d/e'),
     '/a/b/c/F': InstallFileItem(
         from_target='', source='x', dest='a/b/c/F',
-        is_executable_=False,
+        is_buck_runnable_=False,
     ),
     '/a/d/e/G': InstallFileItem(
         from_target='', source='G', dest='a/d/e/G',
-        is_executable_=False,
+        is_buck_runnable_=False,
     ),
 }
 
@@ -56,7 +56,7 @@ class ValidateReqsProvsTestCase(unittest.TestCase):
             ValidatedReqsProvs([
                 InstallFileItem(
                     from_target='', source='x', dest='y/x',
-                    is_executable_=False
+                    is_buck_runnable_=False
                 ),
                 MakeDirsItem(from_target='', into_dir='/', path_to_make='y/x'),
             ])
@@ -64,7 +64,7 @@ class ValidateReqsProvsTestCase(unittest.TestCase):
     def test_unmatched_requirement(self):
         item = InstallFileItem(
             from_target='', source='x', dest='y',
-            is_executable_=False,
+            is_buck_runnable_=False,
         )
         with self.assertRaises(
             RuntimeError,
