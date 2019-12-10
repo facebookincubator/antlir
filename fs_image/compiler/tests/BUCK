@@ -162,7 +162,7 @@ image.feature(
 image.feature(
     name = "feature_symlinks",
     features = [
-        image.install_data(":hello_world.tar", "/foo/hello_world.tar"),
+        image.install(":hello_world.tar", "/foo/hello_world.tar"),
         image.symlink_dir("/foo/bar", "/foo/fighter"),
         image.symlink_dir("/foo/bar", "/foo/face"),
         image.symlink_dir("/foo/bar", "/foo/bar/baz/"),  # Rsync style
@@ -282,14 +282,14 @@ image.feature(
     features = [
         ":feature_dirs",  # We use /foo/bar for a couple of installs.
         image.mkdir("/foo/bar", "installed"),  # Most things will go here.
-        image.install_data(":hello_world.tar", "/foo/bar/hello_world.tar"),
-        image.install_data(
+        image.install(":hello_world.tar", "/foo/bar/hello_world.tar"),
+        image.install(
             ":hello_world.tar",
             "/foo/bar/hello_world_again.tar",
             user = "nobody",
             group = "nobody",
         ),
-        image.install_data(
+        image.install(
             image.source(
                 ":dir-print-ok",
                 path = "kitteh",
@@ -457,10 +457,10 @@ image.layer(
         image.feature(
             features = [
                 # Test an inline feature nested in another feature.
-                image.install_data(":hello_world.tar", "/foo/bar/even_more_hello_world.tar"),
+                image.install(":hello_world.tar", "/foo/bar/even_more_hello_world.tar"),
             ],
         ),
-        image.install_data(
+        image.install(
             ":hello_world.tar",
             # This directory comes from `rpm-test-carrot`.  This tests
             # that our dependency engine sees RPM contents as a
@@ -623,7 +623,7 @@ image.sendstream_layer(
 image.layer(
     name = "create_ops-layer",
     features = [
-        image.install_data(":create_ops-original.sendstream", "/sendstream"),
+        image.install(":create_ops-original.sendstream", "/sendstream"),
     ],
 )
 

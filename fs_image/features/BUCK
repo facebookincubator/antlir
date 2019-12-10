@@ -37,7 +37,7 @@ image.feature(
             "/etc/machine-id",
             must_exist = False,
         ),
-        image.install_data(
+        image.install(
             "empty-machine-id",
             "/etc/machine-id",
         ),

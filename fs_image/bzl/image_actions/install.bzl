@@ -2,15 +2,15 @@
 `image.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
 buck-runnable artifact `exe` to `dir/foo` in the image.
 
-`image.install_data("//path/fs:data", "dir/bar")` copies artifact `data` to
+`image.install("//path/fs:data", "dir/bar")` copies artifact `data` to
 `dir/bar` in the image.
 
-## When to use `install_buck_runnable` vs `install_data`?
+## When to use `install_buck_runnable` vs `install`?
 
 If the file being copied is a buck-runnable (e.g.  `cpp_binary`,
 `python_binary`), use `install_buck_runnable`.  Ditto for copying executable
 files from inside directories output by buck-runnable rules.  For everything
-else, use `install_data` [1].
+else, use `install` [1].
 
 Important: failing to use `install_buck_runnable` will cause your binary to
 be unusable in image tests in @mode/dev.
@@ -22,7 +22,7 @@ from a directory or layer output, docs in `image_source.bzl`), or as string
 target paths.
 
 `stat (2)` attributes can be changed via these keys (defaults shown below):
-  - 'mode': 'a+r' for `install_data`, 'a+rx' for `install_buck_runnable`
+  - 'mode': 'a+r' for `install`, 'a+rx' for `install_buck_runnable`
   - 'user': 'root'
   - 'group': 'root'
 
@@ -46,7 +46,7 @@ your real, production `@mode/opt`.
 
 [1] Corner case: if you want to copy a non-executable file from inside a
 directory output by a Buck-runnable target, then you should use
-`install_data`, even though the underlying rule is executable.
+`install`, even though the underlying rule is executable.
 """
 
 load("//fs_image/bzl:add_stat_options.bzl", "add_stat_options")
@@ -93,7 +93,7 @@ def image_install_buck_runnable(source, dest, mode = None, user = None, group = 
         extra_deps = ["//fs_image/bzl/image_actions:install"],
     )
 
-def image_install_data(source, dest, mode = None, user = None, group = None):
+def image_install(source, dest, mode = None, user = None, group = None):
     target_tagger = new_target_tagger()
     install_spec = {
         "dest": dest,
@@ -106,7 +106,7 @@ def image_install_data(source, dest, mode = None, user = None, group = None):
     # non-executable, as I suggested on Q15839. This should probably go in
     # `tag_required_target_key` to ensure that we avoid "unwrapped executable"
     # bugs everywhere.  A possible reason NOT to do this is that it would
-    # require fixes to `install_data` invocations that extract non-executable
+    # require fixes to `install` invocations that extract non-executable
     # contents out of a directory target that is executable.
     return target_tagger_to_feature(
         target_tagger,
