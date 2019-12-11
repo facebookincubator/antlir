@@ -56,11 +56,19 @@ load("//fs_image/bzl:add_stat_options.bzl", "add_stat_options")
 load("//fs_image/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//fs_image/bzl:target_tagger.bzl", "extract_tagged_target", "image_source_as_target_tagged_dict", "new_target_tagger", "tag_and_maybe_wrap_executable_target", "target_tagger_to_feature")
 
+def _forbid_layer_source(source_dict):
+    if source_dict["layer"] != None:
+        fail(
+            "Cannot use image.source(layer=...) with `image.install*` " +
+            "actions: {}".format(source_dict),
+        )
+
 def image_install_buck_runnable(source, dest, mode = None, user = None, group = None):
     target_tagger = new_target_tagger()
 
     # Normalize to the `image.source` interface
     tagged_source = image_source_as_target_tagged_dict(target_tagger, maybe_export_file(source))
+    _forbid_layer_source(tagged_source)
 
     # NB: We don't have to wrap executables because they already come from a
     # layer, which would have wrapped them if needed.
@@ -98,6 +106,7 @@ def image_install(source, dest, mode = None, user = None, group = None):
         "dest": dest,
         "source": image_source_as_target_tagged_dict(target_tagger, maybe_export_file(source)),
     }
+    _forbid_layer_source(install_spec["source"])
     add_stat_options(install_spec, mode, user, group)
 
     # Future: We might use a Buck macro that enforces that the target is
