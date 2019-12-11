@@ -36,7 +36,6 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             # We need a source file to validate a SymlinkToFileItem
             InstallFileItem(
                 from_target='t', source='/dev/null', dest='/file',
-                is_buck_runnable_=False,
             ).build(subvol, DUMMY_LAYER_OPTS)
             SymlinkToDirItem(
                 from_target='t', source='/dir', dest='/dir_symlink'

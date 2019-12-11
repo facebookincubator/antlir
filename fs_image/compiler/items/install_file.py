@@ -14,26 +14,22 @@ from .stat_options import (
 RAISE_KEY_ERROR = object()
 
 
-def _pop_and_make_None(d, k, default=RAISE_KEY_ERROR):
-    'Like dict.pop, but inserts None into `d` afterwards.'
-    v = d.pop(k) if default is RAISE_KEY_ERROR else d.pop(k, default)
-    d[k] = None
-    return v
-
-
 class InstallFileItem(metaclass=ImageItem):
     fields = [
         'source',
         'dest',
-        'is_buck_runnable_',  # None after `customize_fields`
     ] + STAT_OPTION_FIELDS
 
     def customize_fields(kwargs):  # noqa: B902
         coerce_path_field_normal_relative(kwargs, 'dest')
         customize_stat_options(
             kwargs,
+            # This tests whether the build repo user can execute the file. 
+            # This is a very natural test for build artifacts, and files in
+            # the repo.  Note that this can be affected if the ambient umask
+            # is pathological, which is why `compiler.py` checks the umask.
             default_mode=0o555
-                if _pop_and_make_None(kwargs, 'is_buck_runnable_') else 0o444,
+                if os.access(kwargs['source'], os.X_OK) else 0o444,
         )
 
     def provides(self):

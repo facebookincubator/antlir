@@ -22,11 +22,9 @@ PATH_TO_ITEM = {
     '/a/d/e': MakeDirsItem(from_target='', into_dir='a', path_to_make='d/e'),
     '/a/b/c/F': InstallFileItem(
         from_target='', source='x', dest='a/b/c/F',
-        is_buck_runnable_=False,
     ),
     '/a/d/e/G': InstallFileItem(
         from_target='', source='G', dest='a/d/e/G',
-        is_buck_runnable_=False,
     ),
 }
 
@@ -54,18 +52,12 @@ class ValidateReqsProvsTestCase(unittest.TestCase):
             RuntimeError, '^Both .* and .* from .* provide the same path$'
         ):
             ValidatedReqsProvs([
-                InstallFileItem(
-                    from_target='', source='x', dest='y/x',
-                    is_buck_runnable_=False
-                ),
+                InstallFileItem(from_target='', source='x', dest='y/x'),
                 MakeDirsItem(from_target='', into_dir='/', path_to_make='y/x'),
             ])
 
     def test_unmatched_requirement(self):
-        item = InstallFileItem(
-            from_target='', source='x', dest='y',
-            is_buck_runnable_=False,
-        )
+        item = InstallFileItem(from_target='', source='x', dest='y')
         with self.assertRaises(
             RuntimeError,
             msg='^At /: nothing in set() matches the requirement '

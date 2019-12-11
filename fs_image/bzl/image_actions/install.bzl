@@ -12,17 +12,20 @@ If the file being copied is a buck-runnable (e.g.  `cpp_binary`,
 files from inside directories output by buck-runnable rules.  For everything
 else, use `install` [1].
 
-Important: failing to use `install_buck_runnable` will cause your binary to
-be unusable in image tests in @mode/dev.
+Important: failing to use `install_buck_runnable` will cause the installed
+binary to be unusable in image tests in @mode/dev.
 
 ## Basic usage of `install_*` actions
 
-Files to copy can be specified using `image.source` (use this to grab one file
-from a directory or layer output, docs in `image_source.bzl`), or as string
-target paths.
+Files to copy are specified using `image.source` syntax, except that
+`layer=` is prohibited (use `image.clone` instead, to be implemented).  Docs
+are in `image_source.bzl`, but briefly: target paths, repo file paths, and
+`image.source` objects are accepted.  The latter form is useful for
+extracting a part of a directory output.
 
 `stat (2)` attributes can be changed via these keys (defaults shown below):
-  - 'mode': 'a+r' for `install`, 'a+rx' for `install_buck_runnable`
+  - 'mode': 'a+rx' if the build artifact is executable by the Buck repo
+            user, 'a+r' otherwise
   - 'user': 'root'
   - 'group': 'root'
 
@@ -79,11 +82,7 @@ def image_install_buck_runnable(source, dest, mode = None, user = None, group = 
             # compiler does not have to.
             tagged_source["path"] = None
 
-    install_spec = {
-        "dest": dest,
-        "is_buck_runnable_": True,  # Changes default permissions
-        "source": tagged_source,
-    }
+    install_spec = {"dest": dest, "source": tagged_source}
     add_stat_options(install_spec, mode, user, group)
 
     return target_tagger_to_feature(
@@ -97,7 +96,6 @@ def image_install(source, dest, mode = None, user = None, group = None):
     target_tagger = new_target_tagger()
     install_spec = {
         "dest": dest,
-        "is_buck_runnable_": False,  # Changes default permissions
         "source": image_source_as_target_tagged_dict(target_tagger, maybe_export_file(source)),
     }
     add_stat_options(install_spec, mode, user, group)
