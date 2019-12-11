@@ -220,13 +220,7 @@ python_library(
 image.layer(
     name = "host-hello-xar",
     parent_layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
-    features = [
-        image.install(
-            "tests/hello.xar",
-            "/hello.xar",
-            mode = "a+rx",
-        ),
-    ],
+    features = [image.install("tests/hello.xar", "/hello.xar")],
 )
 
 python_unittest(
