@@ -237,8 +237,8 @@ python_unittest(
         ":host-hello-xar": "tests/host-hello-xar",
         "//fs_image/compiler/tests" +
         ":only-for-tests-read-only-host-clone": "tests/host",
-        "//tupperware/image/slimos" +
-        ":slimos": "tests/slimos",
+        "//tupperware/image/base" +
+        ":base": "tests/bootable-systemd-os",
     },
     deps = [":nspawn_in_subvol"],
 )
