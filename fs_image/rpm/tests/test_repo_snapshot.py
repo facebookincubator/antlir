@@ -36,11 +36,13 @@ class RepoSnapshotTestCase(unittest.TestCase):
             build_timestamp=None,
         )
         rpm_base = Rpm(  # Reuse this template for all RPMs
-            location=None,  # `_replace`d below
-            checksum=Checksum('c', 'd'),
-            canonical_checksum=Checksum('e', 'f'),
-            size=78,
+            name=None, epoch=None, version=None, release=None, arch=None,
             build_timestamp=90,
+            canonical_checksum=Checksum('e', 'f'),
+            checksum=Checksum('c', 'd'),
+            location=None,  # `_replace`d below
+            size=78,
+            source_rpm=None,
         )
         rpm_normal = rpm_base._replace(location='normal.rpm')
         rpm_file_integrity = rpm_base._replace(location='file_integrity_error')

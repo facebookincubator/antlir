@@ -273,6 +273,9 @@ class RepoDownloader:
             ):  # May raise a ReportableError
                 canonical_hash.update(chunk)
                 output.write(chunk)
+            # NB: We can also query the RPM as we download it above, via
+            # something like P123285392.  However, at present, all necessary
+            # metadata can be retrieved via `parse_metadata.py`.
             rpm = rpm._replace(canonical_checksum=Checksum(
                 algorithm=CANONICAL_HASH, hexdigest=canonical_hash.hexdigest(),
             ))

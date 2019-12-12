@@ -85,19 +85,32 @@ class SQLiteRpmParser(AbstractContextManager):
                 break
         if self._unpacker.eof:  # We yield **everything** once the DB is ready
             self._tmp_db.flush()
-            for loc, chk_type, chk_val, size, build_time in sqlite3.connect(
+            for (
+                location, chk_type, chk_val, size,
+                build_time, name, epoch, version, release,
+                arch, source_rpm,
+            ) in sqlite3.connect(
                 self._tmp_db.name,
             ).execute(
-                'SELECT "location_href", "checksum_type", "pkgId", '
-                '"size_package", "time_build" FROM "packages";'
+                'SELECT '
+                '  "location_href", "checksum_type", "pkgId", "size_package", '
+                '  "time_build", "name", "epoch", "version", "release", '
+                '  "arch", "rpm_sourcerpm" '
+                'FROM "packages";'
             ).fetchall():
                 yield Rpm(
-                    location=loc,
+                    epoch=int(epoch),
+                    name=name,
+                    version=version,
+                    release=release,
+                    arch=arch,
+                    build_timestamp=build_time,
                     # The canonical checksum is set after we download the RPM
                     canonical_checksum=None,
                     checksum=Checksum(algorithm=chk_type, hexdigest=chk_val),
+                    location=location,
+                    source_rpm=source_rpm,
                     size=size,
-                    build_timestamp=build_time,
                 )
 
 
@@ -109,15 +122,43 @@ class XMLRpmParser(AbstractContextManager):
      - Avoid `minidom`: it is horrendously slow.
      - `Element.clear()` after every package helps a lot.
      - Feeding small (e.g. 16KB) chunks to XMLPullParser is a lot more
-       performatn than feeding multi-megabyte chunks.
+       performant than feeding multi-megabyte chunks.
     '''
+
+    _KNOWN_TAGS = (
+        # ENVRA
+        _NAME,
+        _VERSION,  # contains version, release, and epoch
+        _ARCH,
+        # The rest of these are in lexicographic order.
+        _CHECKSUM,
+        _LOCATION,
+        _PACKAGE,
+        _SIZE,
+        _SOURCE_RPM,
+        _TIME,
+    ) = (
+        # Be careful: these are pasted into a regex unescaped.
+        'name',
+        'version',
+        'arch',
+        'checksum',
+        'location',
+        'package',
+        'size',
+        # NB: This is not in the `common` XML namespace, but in `rpm`, but
+        # the way our regex tag matching works, we don't care.
+        'sourcerpm',
+        'time',
+    )
+    assert len(_KNOWN_TAGS) == len(set(_KNOWN_TAGS))
 
     def __init__(self):
         self.decompressor = zlib.decompressobj(wbits=zlib.MAX_WBITS + 16)
         self.xml_parser = ElementTree.XMLPullParser(['end'])
         # ElementTree mangles the tags thus: '{xml_namespace}tag_name'
         self.tag_re = re.compile(
-            '({[^}]+}|)(location|size|checksum|package|time)$'
+            '({[^}]+}|)(' + '|'.join(self._KNOWN_TAGS) + ')$'
         )
         # Package state must persist across `feed()` calls, since a
         # package element may straddle a chunk boundary.
@@ -148,29 +189,49 @@ class XMLRpmParser(AbstractContextManager):
             chunk = self.decompressor.unconsumed_tail
             for _, elt in self.xml_parser.read_events():
                 m = self.tag_re.match(elt.tag)
-                if m:
-                    if m.group(2) == 'location':
-                        self._package['location'] = elt.attrib['href']
-                    elif m.group(2) == 'size':
-                        self._package['size'] = elt.attrib['package']
-                    elif m.group(2) == 'checksum':
-                        assert elt.attrib['pkgid'] == 'YES'
-                        self._package['checksum'] = Checksum(
-                            algorithm=elt.attrib['type'], hexdigest=elt.text,
-                        )
-                    elif m.group(2) == 'time':
-                        self._package['build_time'] = elt.attrib['build']
-                    elif m.group(2) == 'package':
-                        yield Rpm(
-                            location=self._package['location'],
-                            # This is set after we download the RPM
-                            canonical_checksum=None,
-                            checksum=self._package['checksum'],
-                            size=int(self._package['size']),
-                            build_timestamp=int(self._package['build_time']),
-                        )
-                        self._package = {}  # Detect missing fields
-                        elt.clear()  # Uses less RAM, speeds up the run 50%
+                if not m:
+                    continue
+                # Keep these `elif` clauses in _KNOWN_TAGS order
+                elif m.group(2) == self._NAME:
+                    self._package[self._NAME] = elt.text
+                elif m.group(2) == self._VERSION:
+                    self._package[self._VERSION] = tuple(
+                        elt.attrib[x] for x in ('epoch', 'ver', 'rel')
+                    )
+                elif m.group(2) == self._ARCH:
+                    self._package[self._ARCH] = elt.text
+                elif m.group(2) == self._CHECKSUM:
+                    assert elt.attrib['pkgid'] == 'YES'
+                    self._package[self._CHECKSUM] = Checksum(
+                        algorithm=elt.attrib['type'], hexdigest=elt.text,
+                    )
+                elif m.group(2) == self._LOCATION:
+                    self._package[self._LOCATION] = elt.attrib['href']
+                elif m.group(2) == self._PACKAGE:
+                    epoch, version, release = self._package[self._VERSION]
+                    yield Rpm(
+                        # Keep these kwargs in _KNOWN_TAGS order
+                        epoch=int(epoch),
+                        name=self._package[self._NAME],
+                        version=version,
+                        release=release,
+                        arch=self._package[self._ARCH],
+                        checksum=self._package[self._CHECKSUM],
+                        location=self._package[self._LOCATION],
+                        size=int(self._package[self._SIZE]),
+                        source_rpm=self._package[self._SOURCE_RPM],
+                        build_timestamp=int(self._package[self._TIME]),
+                        # This is set after we download the RPM
+                        canonical_checksum=None,
+                    )
+                    self._package = {}  # Detect missing fields
+                    elt.clear()  # Uses less RAM, speeds up the run 50%
+                elif m.group(2) == self._SIZE:
+                    self._package[self._SIZE] = elt.attrib['package']
+                elif m.group(2) == self._SOURCE_RPM:
+                    self._package[self._SOURCE_RPM] = elt.text
+                elif m.group(2) == self._TIME:
+                    self._package[self._TIME] = elt.attrib['build']
 
 
 def pick_primary_repodata(repodatas: Repodata) -> Repodata:
@@ -197,4 +258,4 @@ def get_rpm_parser(repodata: Repodata) -> Union[SQLiteRpmParser, XMLRpmParser]:
         return SQLiteRpmParser(repodata.location)
     elif repodata.is_primary_xml():
         return XMLRpmParser()
-    assert False, f'Not reached: {repodata}'
+    raise NotImplementedError(f'Not reached: {repodata}')

@@ -129,7 +129,7 @@ class ParseRepodataTestCase(unittest.TestCase):
             ]
             with self.assertRaisesRegex(RuntimeError, ' no known primary '):
                 self.assertIs(xml_rd, pick_primary_repodata(non_primary_rds))
-            with self.assertRaisesRegex(AssertionError, 'Not reached'):
+            with self.assertRaisesRegex(NotImplementedError, 'Not reached'):
                 get_rpm_parser(non_primary_rds[0])
 
     def test_sqlite_edge_cases(self):

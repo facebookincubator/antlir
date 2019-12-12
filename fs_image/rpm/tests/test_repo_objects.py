@@ -24,11 +24,17 @@ class RepoObjectsTestCase(unittest.TestCase):
 
     def test_rpm(self):
         rpm = Rpm(
-            location='a/b.rpm',
+            epoch=2,
+            name='foo-bar',
+            version=2,
+            release='rc0',
+            arch='aarch64',
+            build_timestamp=1337,
             checksum=Checksum.from_string('algo:fabcab'),
             canonical_checksum=None,
+            location='a/b.rpm',
             size=14,
-            build_timestamp=1337,
+            source_rpm='foo-bar-2-rc0.src.rpm',
         )
         self.assertEqual(rpm.filename(), 'b.rpm')
         self.assertEqual('algo:fabcab', str(rpm.best_checksum()))

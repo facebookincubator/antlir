@@ -10,6 +10,7 @@ import json
 from typing import Mapping, NamedTuple, Union
 
 from .common import get_file_logger, create_ro, Path
+from .repo_objects import Repodata, RepoMetadata, Rpm
 
 log = get_file_logger(__file__)
 
@@ -75,9 +76,9 @@ MaybeStorageID = Union[str, ReportableError]
 
 
 class RepoSnapshot(NamedTuple):
-    repomd: 'RepoMetadata'
-    storage_id_to_repodata: Mapping[MaybeStorageID, 'Repodata']
-    storage_id_to_rpm: Mapping[MaybeStorageID, 'Rpm']
+    repomd: RepoMetadata
+    storage_id_to_repodata: Mapping[MaybeStorageID, Repodata]
+    storage_id_to_rpm: Mapping[MaybeStorageID, Rpm]
 
     def to_directory(self, path: Path):
         # Future: we could potentially assert that the objects written are

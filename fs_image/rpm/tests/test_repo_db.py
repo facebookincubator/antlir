@@ -9,6 +9,20 @@ from ..repo_db import RepodataTable, RepoDBContext, RpmTable, SQLDialect
 from ..repo_objects import Repodata, RepoMetadata, Rpm
 from ..db_connection import DBConnectionContext
 
+_FAKE_RPM = Rpm(
+    name=None,
+    epoch=None,
+    version=None,
+    release=None,
+    arch=None,
+    build_timestamp=37,
+    checksum=None,  # populated separately by each test
+    canonical_checksum=None,  # populated separately by each test
+    location='packages/fake.rpm',
+    size=1337,
+    source_rpm=None,
+)
+
 
 def _get_schema(conn):
     return conn.execute(
@@ -158,12 +172,9 @@ class RepoDBTestCase(unittest.TestCase):
         # NB: For RPMs, only `maybe_store` is used as part of the public API.
         self._check_maybe_store_and_get_storage_id(
             RpmTable(),
-            Rpm(
-                location='packages/fake.rpm',
+            _FAKE_RPM._replace(
                 checksum=Checksum('fake', 'fake'),
                 canonical_checksum=Checksum('fake', 'fake'),
-                size=1337,
-                build_timestamp=37,
             ),
         )
 
@@ -171,13 +182,10 @@ class RepoDBTestCase(unittest.TestCase):
         table = RpmTable()
         # We'll have two entries for the same exact RPM, but the different
         # repos that contain it will have computed different checksums.
-        rpm1 = Rpm(
-            location='packages/fake.rpm',
+        rpm1 = _FAKE_RPM._replace(
             checksum=Checksum('fa', 'ke1'),
             # At this point, we are trying to look this up:
             canonical_checksum=None,
-            size=1337,
-            build_timestamp=37,
         )
         # This second repo **also** stores the same RPM filename in a
         # different location, no problem there.
@@ -217,30 +225,31 @@ class RepoDBTestCase(unittest.TestCase):
             # These two entries into the `rpm` table refer to the same RPM
             # (same canonical checksum), but this illustrates that the
             # contents of such an RPM will currently be stored twice.
-            self.assertEqual('sid_same1', db_ctx.maybe_store(table, Rpm(
-                location='packages/fake.rpm',
-                checksum=Checksum('fa', 'ke1'),
-                canonical_checksum=canonical1,
-                size=1337,
-                build_timestamp=37,
-            ), 'sid_same1'))
-            self.assertEqual('sid_same2', db_ctx.maybe_store(table, Rpm(
-                location='packages/fake.rpm',
-                checksum=Checksum('fa', 'ke2'),
-                canonical_checksum=canonical1,
-                size=1337,
-                build_timestamp=37,
-            ), 'sid_same2'))
+            self.assertEqual(
+                'sid_same1',
+                db_ctx.maybe_store(table, _FAKE_RPM._replace(
+                    checksum=Checksum('fa', 'ke1'),
+                    canonical_checksum=canonical1,
+                ), 'sid_same1'),
+            )
+            self.assertEqual(
+                'sid_same2',
+                db_ctx.maybe_store(table, _FAKE_RPM._replace(
+                    checksum=Checksum('fa', 'ke2'),
+                    canonical_checksum=canonical1,
+                ), 'sid_same2'),
+            )
 
             # This here is an actual bug in the RPM repos: same RPM filename,
             # but different contents. Uh-oh.
-            self.assertEqual('sid_diff', db_ctx.maybe_store(table, Rpm(
-                location='buggy/fake.rpm',
-                checksum=Checksum('fa', 'ke3'),
-                canonical_checksum=canonical2,
-                size=420,
-                build_timestamp=73,
-            ), 'sid_diff'))
+            self.assertEqual(
+                'sid_diff',
+                db_ctx.maybe_store(table, _FAKE_RPM._replace(
+                    location='buggy/fake.rpm',  # only the basename matters
+                    checksum=Checksum('fa', 'ke3'),
+                    canonical_checksum=canonical2,
+                ), 'sid_diff'),
+            )
 
             # Whew, we can detect this mutable RPM file in our repos.
             self.assertEqual(

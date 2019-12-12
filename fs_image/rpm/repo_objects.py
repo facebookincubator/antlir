@@ -31,13 +31,26 @@ CANONICAL_HASH = 'sha384'
 
 
 class Rpm(NamedTuple):
-    location: str  # location href from the primary repodata
+
+    # ENVRA
+
+    epoch: int
+    name: str
+    version: str
+    release: str
+    arch: str
+
+    # The remaining args are in lexicographic order
+
+    build_timestamp: int  # build time from the primary metadata
     # pkgId from the current repo's primary repodata -- never None
     checksum: Checksum
     # Computed by us, see CANONICAL_HASH -- None until after the download
     canonical_checksum: Checksum
+    # NB: The basename should be `n-v-r.a.rpm`, but we don't enforce this.
+    location: str  # location href from the primary repodata
     size: int  # package size from the primary repodata
-    build_timestamp: int  # build time from the primary metadata
+    source_rpm: str
 
     def filename(self) -> str:
         return os.path.basename(self.location)

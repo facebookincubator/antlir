@@ -19,6 +19,8 @@ from ..repo_server import _CHUNK_SIZE, repo_server, read_snapshot_dir
 from ..repo_snapshot import RepoSnapshot, MutableRpmError
 from ..storage import Storage
 
+_FAKE_RPM = Rpm(*([None] * len(Rpm._fields)))
+
 
 def _checksum(algo: str, data: bytes) -> Checksum:
     h = hashlib.new(algo)
@@ -187,7 +189,7 @@ class RepoServerTestCase(unittest.TestCase):
         )
 
         rpm_bytes, rpm_sid = self._write(b'This is our test Rpm')
-        rpm = Rpm(
+        rpm = _FAKE_RPM._replace(
             location='pkgs/good.rpm',
             checksum=_checksum('sha256', rpm_bytes),
             canonical_checksum=_checksum('sha384', rpm_bytes),
@@ -196,7 +198,7 @@ class RepoServerTestCase(unittest.TestCase):
         )
 
         rpm_mutable_bytes, rpm_mutable_sid = self._write(b'mutable')
-        rpm_mutable = Rpm(
+        rpm_mutable = _FAKE_RPM._replace(
             location='pkgs/mutable.rpm',
             checksum=_checksum('sha256', rpm_mutable_bytes),
             canonical_checksum=_checksum('sha384', rpm_mutable_bytes),
