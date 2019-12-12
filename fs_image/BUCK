@@ -199,7 +199,6 @@ python_library(
     name = "nspawn_in_subvol",
     srcs = ["nspawn_in_subvol.py"],
     base_module = "",
-    resources = {"wrap_systemd_exec.sh"},
     deps = [
         ":common",
         ":find_built_subvol",

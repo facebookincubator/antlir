@@ -107,6 +107,7 @@ import re
 import signal
 import subprocess
 import sys
+import textwrap
 import uuid
 
 from contextlib import contextmanager
@@ -211,6 +212,34 @@ def _nspawn_cmd(nspawn_subvol):
         # Future: Uncomment.  This is good container hygiene.  It had to go
         # since it breaks XAR binaries, which rely on a setuid bootstrap.
         # '--no-new-privileges=1',
+    ]
+
+
+def _wrap_systemd_exec():
+    return [
+        '/bin/bash', '-eu', '-o', 'pipefail', '-c',
+        # This script will be invoked with a writable FD forwarded into the
+        # namespace this is being executed in as fd #3.
+        #
+        # It will then get the parent pid of the 'grep' process, which will be
+        # the pid of the script itself (running as PID 1 inside the namespace),
+        # so eventually the pid of systemd.
+        #
+        # We don't close the forwarded FD in this script. Instead we rely on
+        # systemd to close all FDs it doesn't know about during its
+        # initialization sequence.
+        #
+        # We rely on this because systemd will only close FDs after it creates
+        # the /run/systemd/private socket (which makes systemctl usable) and
+        # after setting up the necessary signal handlers to process the
+        # SIGRTMIN+3 shutdown signal that we need to shut down the container
+        # after invoking a command inside it.
+        textwrap.dedent('''\
+            grep ^PPid: /outerproc/self/status >&3
+            umount -R /outerproc
+            rmdir /outerproc
+            exec /usr/lib/systemd/systemd
+        '''),
     ]
 
 
@@ -411,28 +440,14 @@ def nspawn_in_subvol(
 
         # We want to run a command in a booted container
         elif opts.boot:
-            def copy_wrapper_cmd(sv) -> str:
-                # Copy in the wrapper script for exfiltrating the pid of systemd
-                # to the outside world.
-                wrapper_path = sv.path('wrap_systemd_exec.sh')
-                wrapper_source = os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)),
-                    "wrap_systemd_exec.sh"
-                )
-                sv.run_as_root(['cp', '-a', wrapper_source, wrapper_path])
-
-                # Return a path that is abs *within* the container filesystem
-                # since nspawn will execute this inside the container.
-                return os.path.join(b'/', os.path.basename(wrapper_path))
-
-            # Instead of using the `--boot` argument to `systemd-nspawn` we
-            # are going to ask systemd-nspawn to invoke a wrapper to the
-            # init system so that we can exfiltrate the process id of the
-            # process.
+            # Instead of using the `--boot` argument to `systemd-nspawn` we are
+            # going to ask systemd-nspawn to invoke a simple shell script so
+            # that we can exfiltrate the process id of the process. After
+            # sending that information out, the shell script execs systemd.
             cmd.extend([
                 '--bind-ro=/proc:/outerproc',
                 '--',
-                copy_wrapper_cmd(nspawn_subvol)
+                *_wrap_systemd_exec(),
             ])
 
             # Create a partial of the popen with stdout/stderr setup as
@@ -443,8 +458,8 @@ def nspawn_in_subvol(
             )
 
             # Create a pipe that we can forward into the namespace that our
-            # wrapper can use to exfil data about the namespace we've been put
-            # into before we hand control over to the init system.
+            # shell script can use to exfil data about the namespace we've been
+            # put into before we hand control over to the init system.
             exfil_r, exfil_w = os.pipe()
             with (
                 popen_and_inject_fds_after_sudo(
