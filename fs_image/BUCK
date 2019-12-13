@@ -238,7 +238,7 @@ python_unittest(
         "//fs_image/compiler/tests" +
         ":only-for-tests-read-only-host-clone": "tests/host",
         "//tupperware/image/base" +
-        ":base": "tests/bootable-systemd-os",
+        ":base-bootable": "tests/bootable-systemd-os",
     },
     deps = [":nspawn_in_subvol"],
 )
