@@ -4,6 +4,8 @@ import os
 import unittest
 
 from contextlib import contextmanager
+from grp import getgrnam
+from pwd import getpwnam
 
 from btrfs_diff.tests.render_subvols import render_sendstream
 from btrfs_diff.tests.demo_sendstreams_expected import render_demo_subvols
@@ -241,4 +243,39 @@ class ImageLayerTestCase(unittest.TestCase):
                     'log': ['(Dir)', {}],
                     'tmp': ['(Dir)', {}],
                 }],
+            }], r)
+
+    def test_installed_files(self):
+        with self.target_subvol('installed-files') as sv:
+            r = render_sendstream(sv.mark_readonly_and_get_sendstream())
+
+            # We don't know the exact sizes because these 2 may be wrapped
+            ino, = _pop_path(r, 'foo/bar/installed/print-ok')
+            self.assertRegex(ino, r'^\(File m555 d[0-9]+\)$')
+            ino, = _pop_path(r, 'foo/bar/installed/print-ok-too')
+            self.assertRegex(ino, r'^\(File m555 d[0-9]+\)$')
+
+            uid = getpwnam('nobody').pw_uid
+            gid = getgrnam('nobody').gr_gid
+            self.assertEqual(['(Dir)', {
+                'foo': ['(Dir)', {'bar': ['(Dir)', {
+                    'baz': ['(Dir)', {}],
+                    'hello_world.tar': ['(File m444 d10240)'],
+                    'hello_world_again.tar': [
+                        f'(File m444 o{uid}:{gid} d10240)'
+                    ],
+                    'installed': ['(Dir)', {
+                        'yittal-kitteh': ['(File m444 d5)'],
+                        'script-dir': ['(Dir)', {
+                            'subdir': ['(Dir)', {
+                                'exe.sh': ['(File m555 d21)'],
+                            }],
+                            'data.txt': ['(File m444 d6)'],
+                        }],
+                        'solo-exe.sh': ['(File m555 d21)'],
+                    }],
+                }]}],
+                'meta': ['(Dir)', {'private': ['(Dir)', {'opts': ['(Dir)', {
+                    'artifacts_may_require_repo': ['(File d2)'],
+                }]}]}],
             }], r)

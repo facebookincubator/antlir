@@ -16,15 +16,18 @@ from ..dep_graph import (
 from ..provides import ProvidesDirectory, ProvidesDoNotAccess, ProvidesFile
 from ..requires import require_directory
 
-
+# Since the constructor of `InstallFileItem` tries to `os.stat` its input,
+# we need to give it filenames that exist.
+_FILE1 = '/etc/passwd'
+_FILE2 = '/etc/group'
 PATH_TO_ITEM = {
     '/a/b/c': MakeDirsItem(from_target='', into_dir='/', path_to_make='a/b/c'),
     '/a/d/e': MakeDirsItem(from_target='', into_dir='a', path_to_make='d/e'),
     '/a/b/c/F': InstallFileItem(
-        from_target='', source='x', dest='a/b/c/F',
+        from_target='', source=_FILE1, dest='a/b/c/F',
     ),
     '/a/d/e/G': InstallFileItem(
-        from_target='', source='G', dest='a/d/e/G',
+        from_target='', source=_FILE2, dest='a/d/e/G',
     ),
 }
 
@@ -52,12 +55,12 @@ class ValidateReqsProvsTestCase(unittest.TestCase):
             RuntimeError, '^Both .* and .* from .* provide the same path$'
         ):
             ValidatedReqsProvs([
-                InstallFileItem(from_target='', source='x', dest='y/x'),
+                InstallFileItem(from_target='', source=_FILE1, dest='y/x'),
                 MakeDirsItem(from_target='', into_dir='/', path_to_make='y/x'),
             ])
 
     def test_unmatched_requirement(self):
-        item = InstallFileItem(from_target='', source='x', dest='y')
+        item = InstallFileItem(from_target='', source=_FILE1, dest='y')
         with self.assertRaises(
             RuntimeError,
             msg='^At /: nothing in set() matches the requirement '

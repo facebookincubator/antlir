@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import tempfile
 
 from compiler.provides import ProvidesDirectory, ProvidesFile
 from compiler.requires import require_directory, require_file
@@ -34,9 +35,10 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             subvol.run_as_root(['mkdir', subvol.path('dir')])
 
             # We need a source file to validate a SymlinkToFileItem
-            InstallFileItem(
-                from_target='t', source='/dev/null', dest='/file',
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            with tempfile.NamedTemporaryFile() as tf:
+                InstallFileItem(
+                    from_target='t', source=tf.name, dest='/file',
+                ).build(subvol, DUMMY_LAYER_OPTS)
             SymlinkToDirItem(
                 from_target='t', source='/dir', dest='/dir_symlink'
             ).build(subvol, DUMMY_LAYER_OPTS)

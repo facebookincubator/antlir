@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import tempfile
 import unittest.mock
 
 from tests.temp_subvolumes import TempSubvolumes
@@ -16,7 +17,8 @@ from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
 class RemovePathItemTestCase(BaseItemTestCase):
 
     def test_remove_item(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, \
+                tempfile.NamedTemporaryFile() as empty_tf:
             subvol = temp_subvolumes.create('remove_action')
             self.assertEqual(['(Dir)', {}], render_subvol(subvol))
 
@@ -25,7 +27,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
             ).build(subvol, DUMMY_LAYER_OPTS)
             for d in ['d', 'e']:
                 InstallFileItem(
-                    from_target='t', source='/dev/null', dest=f'/a/b/c/{d}',
+                    from_target='t', source=empty_tf.name, dest=f'/a/b/c/{d}',
                 ).build(subvol, DUMMY_LAYER_OPTS)
             MakeDirsItem(
                 from_target='t', path_to_make='/f/g', into_dir='/',
@@ -36,7 +38,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
             ).build(subvol, DUMMY_LAYER_OPTS)
             for d in ['h', 'i']:
                 InstallFileItem(
-                    from_target='t', source='/dev/null', dest=f'/f/{d}',
+                    from_target='t', source=empty_tf.name, dest=f'/f/{d}',
                 ).build(subvol, DUMMY_LAYER_OPTS)
             SymlinkToDirItem(
                 from_target='t', source='/f/i', dest='/f/i_sym',

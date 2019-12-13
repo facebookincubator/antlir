@@ -27,6 +27,7 @@ T_PRINT_OK = f'{T_BASE}:print-ok'
 T_EXE_WRAP_PRINT_OK = \
     f'{T_BASE}:install_buck_runnable_wrap_source__print-ok__c032e51d'
 T_DIR_PRINT_OK = f'{T_BASE}:dir-print-ok'
+T_DIR_WITH_SCRIPT = f'{T_BASE}:dir-with-script'
 T_EXE_WRAP_DIR_PRINT_OK = \
     f'{T_BASE}:install_buck_runnable_wrap_source__dir-print-ok__4331d20c'
 T_INSTALL_FILES = f'{T_BASE}:feature_install_files'
@@ -194,6 +195,16 @@ ID_TO_ITEM = {
                 Path(TARGET_TO_PATH[T_DIR_PRINT_OK]) / 'subdir/print-ok'
             ),
         dest='/foo/bar/installed/print-ok-too',
+    ),
+    'foo/bar/installed/script-dir': InstallFileItem(
+        from_target=T_INSTALL_FILES,
+        source=Path(TARGET_TO_PATH[T_DIR_WITH_SCRIPT]),
+        dest='/foo/bar/installed/script-dir',
+    ),
+    'foo/bar/installed/solo-exe.sh': InstallFileItem(
+        from_target=T_INSTALL_FILES,
+        source=Path(TARGET_TO_PATH[T_DIR_WITH_SCRIPT]) / 'subdir/exe.sh',
+        dest='/foo/bar/installed/solo-exe.sh',
     ),
 
     # From `feature_kitchen_sink`:

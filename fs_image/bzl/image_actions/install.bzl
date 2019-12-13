@@ -1,9 +1,11 @@
 """
 `image.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
-buck-runnable artifact `exe` to `dir/foo` in the image.
+buck-runnable artifact `exe` to `dir/foo` in the image.  Unlike `install`,
+this supports only single files -- though you can extract a file from a
+buck-runnable directory via `image.source`, see below.
 
-`image.install("//path/fs:data", "dir/bar")` copies artifact `data` to
-`dir/bar` in the image.
+`image.install("//path/fs:data", "dir/bar")` installs file or directory
+`data` to `dir/bar` in the image.
 
 ## When to use `install_buck_runnable` vs `install`?
 
@@ -15,21 +17,35 @@ else, use `install` [1].
 Important: failing to use `install_buck_runnable` will cause the installed
 binary to be unusable in image tests in @mode/dev.
 
-## Basic usage of `install_*` actions
+## Usage of `install_*` actions
 
-Files to copy are specified using `image.source` syntax, except that
-`layer=` is prohibited (use `image.clone` instead, to be implemented).  Docs
-are in `image_source.bzl`, but briefly: target paths, repo file paths, and
-`image.source` objects are accepted.  The latter form is useful for
+The object to be installed is specified using `image.source` syntax, except
+that `layer=` is prohibited (use `image.clone` instead, to be implemented).
+Docs are in `image_source.bzl`, but briefly: target paths, repo file paths,
+and `image.source` objects are accepted.  The latter form is useful for
 extracting a part of a directory output.
 
-`stat (2)` attributes can be changed via these keys (defaults shown below):
-  - 'mode': 'a+rx' if the build artifact is executable by the Buck repo
-            user, 'a+r' otherwise
-  - 'user': 'root'
-  - 'group': 'root'
+The source must not contains anything but regular files or directories.
 
-Prefer to omit the keys instead of repeating the defaults in your spec.
+`stat (2)` attributes of the source are NOT preserved.  Rather, they are set
+uniformly, as follows.
+
+Ownership can be set via the kwargs `user` and `group`, with these defaults:
+    user = "root"
+    group = "root"
+
+Mode for single source files:
+    mode = "a+rx" if it is executable by the Buck repo user, "a+r" otherwise
+
+Mode in directory sources:
+    dir_mode = "u+rwx,og+rx" (used for directories)
+    exe_mode = "a+rx" (used for source files executable by the Buck repo user)
+    data_mode = "a+r" (used for other source files)
+
+Directories are currently left as writable since adding files seems natural,
+but we may later reconsider the default (and patch existing users).
+
+Prefer to omit the above kwargs instead of repeating the defaults.
 
 `dest` must be an image-absolute path, including a filename for the file being
 copied. The parent directory of `dest` must get created by another image

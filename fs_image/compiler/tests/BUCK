@@ -248,6 +248,7 @@ buck_genrule(
     name = "dir-print-ok",
     out = "dir",
     bash = '''
+    set -ue -o pipefail -o noclobber
     mkdir -p "$OUT/subdir"
     cp $(location {maybe_wrapped_ok}) "$OUT"/subdir/print-ok
     echo meow > "$OUT"/kitteh
@@ -262,15 +263,31 @@ buck_genrule(
         )[1],
     ),
     cacheable = False,  # The wrapper makes our output non-cacheable.
-    # This is required to be able to execute anything out of the directory.
+    # As of now, I'm not sure whether this tests anything until we add
+    # support for directories to `install_buck_runnable`.  The original
+    # comment was: "This is required to be able to `buck run` anything out
+    # of the directory."
     executable = True,
+)
+
+buck_genrule(
+    name = "dir-with-script",
+    out = "dir",
+    bash = '''
+    set -ue -o pipefail -o noclobber
+    mkdir -p "$OUT/subdir"
+    echo '#!/bin/sh\necho Hello' > "$OUT"/subdir/exe.sh
+    chmod u+x "$OUT"/subdir/exe.sh
+    echo Hello > "$OUT"/data.txt
+    ''',
 )
 
 # Exercises `install_{data,buck_runnable}, taking care to cover all
 # reasonable combinations of:
-#   - Rsync convention
-#   - Data vs executables
-#   - Installing a file from a target that outputs a directory
+#   - `buck run`nable targets vs non-executable targets
+#   - Non-`buck run`nable files having & lacking executable bits.
+#   - Installing a single file from a target that outputs a directory
+#   - Installing an entire target that outputs a directory
 #
 # Be sure to add any new installed executables to `test-execute-installed`.
 #
@@ -304,12 +321,28 @@ image.feature(
             ),
             "/foo/bar/installed/print-ok-too",
         ),
+        # Test installing a directory.  Also test a non-`buck run`nable
+        # executable both as part of a directory, and solo (these are
+        # different code paths)
+        image.install(":dir-with-script", "/foo/bar/installed/script-dir"),
+        image.install(
+            image.source(
+                ":dir-with-script",
+                path = "subdir/exe.sh",
+            ),
+            "/foo/bar/installed/solo-exe.sh",
+        ),
     ],
 )
 
 image.layer(
     name = "installed-executables",
     parent_layer = ":only-for-tests-read-only-host-clone",
+    features = [":feature_install_files"],
+)
+
+image.layer(
+    name = "installed-files",
     features = [":feature_install_files"],
 )
 
