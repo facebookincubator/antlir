@@ -1,5 +1,6 @@
 # Implementation detail for `image_layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("//fs_image/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl/image_actions:feature.bzl", "normalize_features")
 load(":artifacts_require_repo.bzl", "built_artifacts_require_repo")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -52,9 +53,26 @@ def compile_image_features(
         build_opts):
     if features == None:
         features = []
-    build_opts = _build_opts(**(
-        build_opts._asdict() if build_opts else {}
-    ))
+
+    build_opts_dict = build_opts._asdict() if build_opts else {}
+
+    # DO_NOT_USE_BUILD_APPLIANCE serves the single purpose: to avoid circular
+    # dependency
+    if (
+        "build_appliance" in build_opts_dict and
+        build_opts_dict["build_appliance"] == DO_NOT_USE_BUILD_APPLIANCE
+    ):
+        build_opts_dict.pop("build_appliance")
+    elif (
+        "build_appliance" not in build_opts_dict and
+        "yum_from_repo_snapshot" not in build_opts_dict
+    ):
+        build_opts_dict["build_appliance"] = native.read_config(
+            "fs_image",
+            "build_appliance",
+        )
+
+    build_opts = _build_opts(**(build_opts_dict))
 
     target_tagger = new_target_tagger()
     normalized_features = normalize_features(
