@@ -469,6 +469,7 @@ image.layer(
             "//",  # Double-slash tests path normalization
         ),
     ],
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
     # This tells our hypothetical runtime that in order to mount this layer,
     # it must invoke the "chicken" mount source (which might just download
     # and unpack a serialized versions of this layer).
@@ -506,7 +507,7 @@ image.layer(
         image.rpms_install(["rpm-test-carrot"]),  # Compact syntax for RPM installation.
     ],
     build_opts = image.opts(
-        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+        build_appliance = ":fake-build-appliance-from-host",
     ),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
@@ -530,7 +531,7 @@ image.layer(
         image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
     ],
     build_opts = image.opts(
-        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+        build_appliance = ":fake-build-appliance-from-host",
     ),
 )
 
@@ -546,7 +547,7 @@ image.layer(
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],
     build_opts = image.opts(
-        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+        build_appliance = ":fake-build-appliance-from-host",
     ),
 )
 
@@ -558,7 +559,7 @@ image.layer(
         image.rpms_install([":rpm-test-cheese-1-1.rpm"]),
     ],
     build_opts = image.opts(
-        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+        build_appliance = ":fake-build-appliance-from-host",
     ),
 )
 
@@ -570,7 +571,7 @@ image.layer(
         image.rpms_install([":rpm-test-cheese-3-1.rpm"]),
     ],
     build_opts = image.opts(
-        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+        build_appliance = ":fake-build-appliance-from-host",
     ),
 )
 
@@ -596,7 +597,7 @@ image.layer(
         ]),
     ],
     build_opts = image.opts(
-        yum_from_repo_snapshot = "//fs_image/rpm:yum-from-test-snapshot",
+        build_appliance = ":fake-build-appliance-from-host",
     ),
 )
 

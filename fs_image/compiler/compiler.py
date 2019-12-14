@@ -59,10 +59,6 @@ def parse_args(args) -> argparse.Namespace:
             'should already exist.',
     )
     parser.add_argument(
-        '--yum-from-repo-snapshot',
-        help='Path to a binary taking `--install-root PATH -- SOME YUM ARGS`.',
-    )
-    parser.add_argument(
         '--build-appliance-json',
         help='Path to the JSON output of target referred by build_appliance',
     )
@@ -119,7 +115,6 @@ def build_image(args):
     subvol = Subvol(os.path.join(args.subvolumes_dir, args.subvolume_rel_path))
     layer_opts = LayerOpts(
         layer_target=args.child_layer_target,
-        yum_from_snapshot=args.yum_from_repo_snapshot,
         build_appliance=get_subvolume_path(
             args.build_appliance_json, args.subvolumes_dir,
         ) if args.build_appliance_json else None,

@@ -8,19 +8,15 @@ load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_
 def _build_opts(
         # The name of the btrfs subvolume to create.
         subvol_name = "volume",
-        # Path to a binary target, with this CLI signature:
-        #   yum_from_repo_snapshot --install-root PATH -- SOME YUM ARGS
-        # Mutually exclusive with build_appliance: either
-        # yum_from_repo_snapshot or build_appliance is required
-        # if any dependent `image_feature` specifies `rpms`.
-        yum_from_repo_snapshot = None,
         # Path to a target outputting a btrfs send-stream of a build appliance:
         # a self-contained file tree with /yum-from-snapshot and other tools
         # like btrfs, yum, tar, ln used for image builds along with all
-        # their dependencies (but /usr/local/fbcode).  Mutually exclusive
-        # with yum_from_repo_snapshot: either build_appliance or
-        # yum_from_repo_snapshot is required if any dependent
-        # `image_feature` specifies `rpms`.
+        # their dependencies (but /usr/local/fbcode).
+        # Additionally, your `.buckconfig` can specify a global default via:
+        #   [fs_image]
+        #   build_appliance = //some/target:path
+        # In current implementation build_appliance is required only if any
+        # dependent `image_feature` specifies `rpms`.
         build_appliance = None,
         # A boolean knob to govern behavior of RpmAction w.r.t /var/cache/yum
         # The default is False: yum install won't pollute /var/cache/yum of
@@ -31,7 +27,6 @@ def _build_opts(
         preserve_yum_cache = False):
     return struct(
         subvol_name = subvol_name,
-        yum_from_repo_snapshot = yum_from_repo_snapshot,
         build_appliance = build_appliance,
         preserve_yum_cache = preserve_yum_cache,
     )
@@ -63,10 +58,7 @@ def compile_image_features(
         build_opts_dict["build_appliance"] == DO_NOT_USE_BUILD_APPLIANCE
     ):
         build_opts_dict.pop("build_appliance")
-    elif (
-        "build_appliance" not in build_opts_dict and
-        "yum_from_repo_snapshot" not in build_opts_dict
-    ):
+    elif "build_appliance" not in build_opts_dict:
         build_opts_dict["build_appliance"] = native.read_config(
             "fs_image",
             "build_appliance",
@@ -90,7 +82,6 @@ def compile_image_features(
     )
 
     return '''
-        {maybe_yum_from_repo_snapshot_dep}
         # Take note of `targets_and_outputs` below -- this enables the
         # compiler to map the `target_tagger` target sigils in the outputs
         # of `image_feature` to those targets' outputs.
@@ -102,7 +93,6 @@ def compile_image_features(
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \
           {maybe_quoted_build_appliance_args} \
           {maybe_preserve_yum_cache_args} \
-          {maybe_quoted_yum_from_repo_snapshot_args} \
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
           --child-dependencies {feature_deps_query_macro} \
@@ -160,24 +150,5 @@ def compile_image_features(
         ),
         maybe_preserve_yum_cache_args = (
             "--preserve-yum-cache" if build_opts.preserve_yum_cache else ""
-        ),
-        maybe_quoted_yum_from_repo_snapshot_args = (
-            # In terms of **dependency** structure, we want this to be `exe`
-            # (see `image_package.py` for why).  However the string output
-            # of the `exe` macro may actually be a shell snippet, which
-            # would break here.  To work around this, we add a no-op $(exe)
-            # dependency via `maybe_yum_from_repo_snapshot_dep`.
-            "--yum-from-repo-snapshot $(location {})".format(
-                build_opts.yum_from_repo_snapshot,
-            ) if build_opts.yum_from_repo_snapshot else ""
-        ),
-        maybe_yum_from_repo_snapshot_dep = (
-            # Building the layer has a runtime depepndency on the yum
-            # target.  We don't need this for `build_appliance` because any
-            # @mode/dev executables inside a layer should already have been
-            # wrapped via `wrap_runtime_deps`.
-            "echo $(exe {}) > /dev/null".format(
-                build_opts.yum_from_repo_snapshot,
-            ) if build_opts.yum_from_repo_snapshot else ""
         ),
     )

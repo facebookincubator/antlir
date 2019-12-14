@@ -41,7 +41,6 @@ class ImageFeatureTestCase(unittest.TestCase):
             ],
             layer_opts=LayerOpts(
                 layer_target='for error messages only',
-                yum_from_snapshot=None,
                 build_appliance=None,
                 artifacts_may_require_repo=None,
                 target_to_path=si.TARGET_TO_PATH

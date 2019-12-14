@@ -181,7 +181,7 @@ image_feature_python_unittest(
         ":compiler",
     )],
     resources = {
-        "//fs_image/rpm:yum-from-test-snapshot": "tests/yum-from-test-snapshot",
+        "//fs_image/compiler/tests:fake-build-appliance-from-host": "tests/host-test-build-appliance",
     },
     test_image_feature_transitive_deps = TEST_IMAGE_FEATURE_TRANSITIVE_DEPS,
     deps = [":compiler"],

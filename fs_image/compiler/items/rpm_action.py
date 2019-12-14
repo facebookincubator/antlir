@@ -105,15 +105,9 @@ class RpmActionItem(metaclass=ImageItem):
     ):
         # Do as much validation as possible outside of the builder to give
         # fast feedback to the user.
-        assert (layer_opts.yum_from_snapshot is not None or
-                layer_opts.build_appliance is not None), (
+        assert (layer_opts.build_appliance is not None), (
             f'`image_layer` {layer_opts.layer_target} must set '
-            '`yum_from_repo_snapshot or build_appliance`'
-        )
-        assert (layer_opts.yum_from_snapshot is None or
-                layer_opts.build_appliance is None), (
-            f'`image_layer` {layer_opts.layer_target} must not set '
-            '`both yum_from_repo_snapshot and build_appliance`'
+            '`build_appliance`'
         )
 
         conflict_detector = _RpmActionConflictDetector()
@@ -162,54 +156,23 @@ class RpmActionItem(metaclass=ImageItem):
 
                 # Future: `yum-from-snapshot` is actually designed to run
                 # unprivileged (but we have no nice abstraction for this).
-                if layer_opts.build_appliance is None:
-                    subvol.run_as_root([
-                        # Since `yum-from-snapshot` variants are generally
-                        # Python binaries built from this very repo, in
-                        # @mode/dev, we would run a symlink-PAR from the
-                        # buck-out tree as `root`.  This would leave behind
-                        # root-owned `__pycache__` directories, which would
-                        # break Buck's fragile cleanup, and cause us to leak old
-                        # build artifacts.  This eventually runs the host out of
-                        # disk space.  Un-deletable *.pyc files can also
-                        # interfere with e.g.  `test-image-layer`, since that
-                        # test relies on there being just one `create_ops`
-                        # subvolume in `buck-image-out` with the "received UUID"
-                        # that was committed to VCS as part of the test
-                        # sendstream.
-                        'env', 'PYTHONDONTWRITEBYTECODE=1',
-                        layer_opts.yum_from_snapshot,
-                        *sum((
-                            ['--protected-path', d]
-                                for d in protected_path_set(subvol)
-                        ), []),
-                        '--install-root', subvol.path(), '--',
+                rpms, bind_ro_args = _rpms_and_bind_ro_args(nors)
+                _yum_using_build_appliance(
+                    build_appliance=Subvol(
+                        layer_opts.build_appliance, already_exists=True,
+                    ),
+                    nspawn_args=bind_ro_args,
+                    install_root=subvol.path(),
+                    protected_paths=protected_path_set(subvol),
+                    yum_args=[
                         RPM_ACTION_TYPE_TO_YUM_CMD[action],
+                        '--assumeyes',
                         # Sort ensures determinism even if `yum` is
                         # order-dependent
-                        '--assumeyes', '--', *sorted((
-                            nor.path if isinstance(nor, _LocalRpm)
-                                else nor.encode()
-                        ) for nor in nors),
-                    ])
-                else:
-                    rpms, bind_ro_args = _rpms_and_bind_ro_args(nors)
-                    _yum_using_build_appliance(
-                        build_appliance=Subvol(
-                            layer_opts.build_appliance, already_exists=True,
-                        ),
-                        nspawn_args=bind_ro_args,
-                        install_root=subvol.path(),
-                        protected_paths=protected_path_set(subvol),
-                        yum_args=[
-                            RPM_ACTION_TYPE_TO_YUM_CMD[action],
-                            '--assumeyes',
-                            # Sort ensures determinism even if `yum` is
-                            # order-dependent
-                            *sorted(rpms),
-                        ],
-                        preserve_yum_cache=layer_opts.preserve_yum_cache,
-                    )
+                        *sorted(rpms),
+                    ],
+                    preserve_yum_cache=layer_opts.preserve_yum_cache,
+                )
         return builder
 
 

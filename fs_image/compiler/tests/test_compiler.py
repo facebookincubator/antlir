@@ -12,6 +12,7 @@ from contextlib import contextmanager
 import subvol_utils
 
 from find_built_subvol import subvolumes_dir
+from fs_image.compiler.items import rpm_action
 from fs_image.fs_utils import Path, temp_dir
 from tests.temp_subvolumes import TempSubvolumes
 
@@ -44,6 +45,7 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     fn = unittest.mock.patch.object(os.path, 'lexists')(fn)
     fn = unittest.mock.patch.object(subvol_utils, '_path_is_btrfs_subvol')(fn)
     fn = unittest.mock.patch.object(subvol_utils.Subvol, 'run_as_root')(fn)
+    fn = unittest.mock.patch.object(rpm_action, 'nspawn_in_subvol')(fn)
     return fn
 
 
@@ -57,7 +59,6 @@ def _run_as_root(args, **kwargs):
         ret = unittest.mock.Mock()
         ret.stdout = f'd {_SUBVOLS_DIR}/{_FAKE_SUBVOL}\0'.encode()
         return ret
-
 
 def _os_path_lexists(path):
     '''
@@ -121,15 +122,21 @@ class CompilerTestCase(unittest.TestCase):
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
-        # This works @mode/opt since the yum binary is baked into our PAR
-        self.yum_path = os.path.join(
-            os.path.dirname(__file__), 'yum-from-test-snapshot',
+        self.ba_path = os.path.join(
+            os.path.dirname(__file__),
+            'host-test-build-appliance',
+            'layer.json',
         )
 
     @_subvol_mock_lexists_is_btrfs_and_run_as_root
     @unittest.mock.patch.object(svod, '_btrfs_get_volume_props')
     def _compile(
-        self, args, btrfs_get_volume_props, lexists, is_btrfs, run_as_root,
+        self,
+        args,
+        btrfs_get_volume_props,
+        lexists, is_btrfs,
+        run_as_root,
+        nspawn_in_subvol,
     ):
         lexists.side_effect = _os_path_lexists
         run_as_root.side_effect = _run_as_root
@@ -141,7 +148,7 @@ class CompilerTestCase(unittest.TestCase):
             '--artifacts-may-require-repo',  # Must match LayerOpts below
             '--subvolumes-dir', _SUBVOLS_DIR,
             '--subvolume-rel-path', _FAKE_SUBVOL,
-            '--yum-from-repo-snapshot', self.yum_path,
+            '--build-appliance', self.ba_path,
             '--child-layer-target', 'CHILD_TARGET',
             '--child-feature-json',
                 si.TARGET_TO_PATH[si.mangle(si.T_KITCHEN_SINK)],
@@ -188,7 +195,13 @@ class CompilerTestCase(unittest.TestCase):
         return run_as_root_calls
 
     @_subvol_mock_lexists_is_btrfs_and_run_as_root  # Mocks from _compile()
-    def _expected_run_as_root_calls(self, lexists, is_btrfs, run_as_root):
+    def _expected_run_as_root_calls(
+        self,
+        lexists,
+        is_btrfs,
+        run_as_root,
+        nspawn_in_subvol
+    ):
         'Get the commands that each of the *expected* sample items would run'
         lexists.side_effect = _os_path_lexists
         is_btrfs.return_value = True
@@ -198,8 +211,10 @@ class CompilerTestCase(unittest.TestCase):
         )
         layer_opts = LayerOpts(
             layer_target='fake-target',
-            yum_from_snapshot=self.yum_path,
-            build_appliance=None,
+            build_appliance=subvol_utils.get_subvolume_path(
+                self.ba_path,
+                subvolumes_dir(),
+            ),
             artifacts_may_require_repo=True,  # Must match CLI arg in `_compile`
             target_to_path=si.TARGET_TO_PATH,
             subvolumes_dir=_SUBVOLS_DIR,

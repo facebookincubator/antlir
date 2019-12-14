@@ -15,6 +15,16 @@ from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
 from ..common import image_source_item, PhaseOrder
 
 
+def _subvol_from_resource(name):
+    return get_subvolume_path(
+        os.path.join(
+            os.path.dirname(__file__),
+            name,
+            'layer.json',
+        ),
+        subvolumes_dir(),
+    )
+
 class RpmActionItemTestCase(BaseItemTestCase):
 
     def _test_rpm_action_item(self, layer_opts, preserve_yum_cache=False):
@@ -134,14 +144,6 @@ class RpmActionItemTestCase(BaseItemTestCase):
                 }],
             }], render_subvol(subvol))
 
-    def test_rpm_action_item_yum_from_snapshot(self):
-        self._test_rpm_action_item(layer_opts=DUMMY_LAYER_OPTS._replace(
-            # This works in @mode/opt since this binary is baked into the XAR
-            yum_from_snapshot=os.path.join(
-                os.path.dirname(__file__), 'yum-from-test-snapshot',
-            ),
-        ))
-
     def test_rpm_action_item_build_appliance(self):
         # We have two test build appliances: one fake one assembled from
         # host mounts, and another FB-specific one that is an actual
@@ -153,14 +155,7 @@ class RpmActionItemTestCase(BaseItemTestCase):
         ]:
             for preserve_yum_cache in [True, False]:
                 self._test_rpm_action_item(layer_opts=DUMMY_LAYER_OPTS._replace(
-                    build_appliance=get_subvolume_path(
-                        os.path.join(
-                            os.path.dirname(__file__),
-                            filename,
-                            'layer.json',
-                        ),
-                        subvolumes_dir(),
-                    ),
+                    build_appliance=_subvol_from_resource(filename),
                     preserve_yum_cache=preserve_yum_cache,
                 ), preserve_yum_cache=preserve_yum_cache)
 
@@ -189,8 +184,9 @@ class RpmActionItemTestCase(BaseItemTestCase):
                     action=RpmAction.install,
                 )],
                 DUMMY_LAYER_OPTS._replace(
-                    yum_from_snapshot=Path(__file__).dirname() /
-                        'yum-from-test-snapshot',
+                    build_appliance=_subvol_from_resource(
+                        'fb-test-build-appliance',
+                    ),
                 ),
             )(subvol)
             subvol.run_as_root([
@@ -211,7 +207,7 @@ class RpmActionItemTestCase(BaseItemTestCase):
 
     def test_rpm_action_conflict(self):
         layer_opts = DUMMY_LAYER_OPTS._replace(
-            yum_from_snapshot='required but ignored'
+            build_appliance='required but ignored'
         )
         # Test both install-install, install-remove, and install-downgrade
         # conflicts.
