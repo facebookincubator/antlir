@@ -82,7 +82,7 @@ class NspawnTestCase(unittest.TestCase):
         # manager when it first boots the container. Furthermore, this will
         # not cause the firstboot + presets behavior that is triggered when the
         # machine-id file does not exist.
-        self._nspawn_in('slimos', [
+        self._nspawn_in('bootable-systemd-os', [
             '--', 'sh', '-uexc',
             # Ensure the machine-id file exists and is empty.
             'test -e /etc/machine-id -a ! -s /etc/machine-id',
@@ -226,7 +226,7 @@ class NspawnTestCase(unittest.TestCase):
         )
 
     def test_boot_cmd_is_system_running(self):
-        ret = self._nspawn_in('slimos', [
+        ret = self._nspawn_in('bootable-systemd-os', [
             '--boot',
             # This needs to be root because we don't yet create a proper
             # login session for non-privileged users when we execute commands.
@@ -252,7 +252,7 @@ class NspawnTestCase(unittest.TestCase):
         # self.assertEqual(b'', ret.stderr)
 
     def test_boot_cmd_failure(self):
-        ret = self._nspawn_in('slimos', [
+        ret = self._nspawn_in('bootable-systemd-os', [
             '--boot',
             '--',
             '/usr/bin/false',
@@ -266,7 +266,7 @@ class NspawnTestCase(unittest.TestCase):
         with tempfile.TemporaryFile() as tf:
             tf.write(b'hello')
             tf.seek(0)
-            ret = self._nspawn_in('slimos', [
+            ret = self._nspawn_in('bootable-systemd-os', [
                 '--boot',
                 '--forward-fd', str(tf.fileno()),
                 '--',
@@ -279,7 +279,7 @@ class NspawnTestCase(unittest.TestCase):
             self.assertEqual(b'hellogoodbye\n', tf.read())
 
     def test_boot_unprivileged_user(self):
-        ret = self._nspawn_in('slimos', [
+        ret = self._nspawn_in('bootable-systemd-os', [
             '--boot',
             '--',
             '/bin/whoami',
@@ -289,7 +289,7 @@ class NspawnTestCase(unittest.TestCase):
         self.assertEqual(b'', ret.stderr)
 
     def test_boot_env_clean(self):
-        ret = self._nspawn_in('slimos', [
+        ret = self._nspawn_in('bootable-systemd-os', [
             '--boot',
             '--',
             '/bin/env',
@@ -307,7 +307,7 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(b'TERM', ret.stdout)
 
     def test_boot_proc_results(self):
-        ret = self._nspawn_in('slimos', [
+        ret = self._nspawn_in('bootable-systemd-os', [
             '--boot',
             '--',
             '/bin/true',

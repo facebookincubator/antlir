@@ -88,7 +88,7 @@ def _install_unit(
 
     _fail_if_path(dest, "Install Unit Dest")
 
-    return image.install_data(
+    return image.install(
         source,
         paths.join(install_root, dest),
     )

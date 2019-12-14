@@ -12,6 +12,7 @@ and invokes `.build()` to apply each item to actually construct the subvol.
 
 import argparse
 import os
+import stat
 import sys
 
 from contextlib import ExitStack
@@ -105,6 +106,16 @@ def parse_args(args) -> argparse.Namespace:
 
 
 def build_image(args):
+    # We want check the umask since it can affect the result of the
+    # `os.access` check for `image.install*` items.  That said, having a
+    # umask that denies execute permission to "user" is likely to break this
+    # code earlier, since new directories wouldn't be traversible.  At least
+    # this check gives a nice error message.
+    cur_umask = os.umask(0)
+    os.umask(cur_umask)
+    assert cur_umask & stat.S_IXUSR == 0, \
+        f'Refusing to run with pathological umask 0o{cur_umask:o}'
+
     subvol = Subvol(os.path.join(args.subvolumes_dir, args.subvolume_rel_path))
     layer_opts = LayerOpts(
         layer_target=args.child_layer_target,

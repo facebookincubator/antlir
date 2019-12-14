@@ -1,4 +1,5 @@
-load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "platform_utils", "python_binary", "python_library", "python_unittest", "third_party")
+load("//fs_image/bzl:defs.bzl", "target_location")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
 
 python_library(
     name = "pluggable",
@@ -28,7 +29,9 @@ python_library(
     name = "open_url",
     srcs = ["open_url.py"],
     base_module = "rpm",
-    external_deps = ["python-requests"],
+    external_deps = [
+        third_party.library("python-requests"),
+    ],
 )
 
 python_unittest(
@@ -70,10 +73,9 @@ python_library(
     srcs = ["tests/temp_repos.py"],
     base_module = "rpm",
     resources = {
-        third_party.replace_third_party_repo(
-            "third-party//busybox:bin/busybox",
-            platform_utils.get_platform_for_current_buildfile(),
-        ): "tests/third_party/busybox",
+        target_location(
+            third_party.library("third-party//busybox:bin/busybox"),
+        ): "busybox-path",
         # NB: It would be great to also use `rpmbuild` from the third-party
         # repo, but doing this is fairly intractable, see D15511231.
     },
@@ -227,7 +229,9 @@ python_unittest(
         ":repo_server",
         ":temp_repos",
     ],
-    external_deps = ["python-requests"],
+    external_deps = [
+        third_party.library("python-requests"),
+    ],
 )
 
 python_binary(
@@ -373,7 +377,9 @@ python_binary(
     main_module = "rpm.tests.yum_from_test_snapshot",
     # Needed for `repo_server` & `repo_snapshot` to be visible in @mode/opt
     par_style = "xar",
-    resources = {":repo_snapshot_dir_for_tests": "tests/repo_snapshot"},
+    resources = {
+        target_location(":repo_snapshot_dir_for_tests"): "repo-snapshot",
+    },
     deps = [":yum-from-snapshot-library"],
 )
 
@@ -436,7 +442,9 @@ python_library(
         "//fs_image:subvol_utils",
     ],
     external_deps = [
-        ("rpm", None, "python-rpm"),
+        third_party.library(
+            ("rpm", None, "python-rpm"),
+        ),
     ],
 )
 

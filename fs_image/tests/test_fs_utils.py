@@ -59,6 +59,13 @@ class TestFsUtils(unittest.TestCase):
             ast.literal_eval(res.stdout.rstrip(b'\n').decode())
         ))
 
+    def test_path_read_text(self):
+        with temp_dir() as td:
+            tmp_path = Path(td / 'foo.txt')
+            with open(tmp_path, 'w+') as f:
+                f.write('hello\n')
+            self.assertEqual('hello\n', tmp_path.read_text())
+
     def test_open_for_read_decompress(self):
         # The goal is that our stream should be bigger than any buffers
         # involved (so we get to test edge effects), but not so big that the

@@ -87,7 +87,7 @@ The consequences of this information hiding are:
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//fs_image/bzl/image_actions:install.bzl", "image_install_data")
+load("//fs_image/bzl/image_actions:install.bzl", "image_install")
 load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//fs_image/bzl/image_actions:tarball.bzl", "image_tarball")
 load(":compile_image_features.bzl", "compile_image_features")
@@ -360,7 +360,7 @@ def image_rpmbuild_layer(
         name = setup_layer,
         parent_layer = parent_layer,
         features = [
-            image_install_data(specfile, "/rpmbuild/SPECS/specfile.spec"),
+            image_install(specfile, "/rpmbuild/SPECS/specfile.spec"),
             image_mkdir("/", "rpmbuild"),
             image_mkdir("/rpmbuild", "BUILD"),
             image_mkdir("/rpmbuild", "BUILDROOT"),

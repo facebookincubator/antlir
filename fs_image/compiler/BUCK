@@ -139,8 +139,8 @@ TEST_IMAGE_FEATURE_TRANSITIVE_DEPS = [
     "hello_world_base",
     "hello_world.tar",
 ] + ([
-    "install_executables_wrap_source__dir-print-ok__4331d20c",
-    "install_executables_wrap_source__print-ok__c032e51d",
+    "install_buck_runnable_wrap_source__dir-print-ok__4331d20c",
+    "install_buck_runnable_wrap_source__print-ok__c032e51d",
 ] if built_artifacts_require_repo() else [])
 
 image_feature_python_unittest(

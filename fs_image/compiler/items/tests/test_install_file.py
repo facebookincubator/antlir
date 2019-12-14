@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
+import os
+import stat
 import subprocess
 import sys
+import tempfile
 
 from compiler.provides import ProvidesFile
 from compiler.requires import require_directory
@@ -26,24 +29,24 @@ def _install_file_item(**kwargs):
 class InstallFileItemTestCase(BaseItemTestCase):
 
     def test_install_file(self):
-        exe_item = _install_file_item(
-            from_target='t', source={'source': 'a/b/c'}, dest='d/c',
-            is_executable_=True,
-        )
+        with tempfile.NamedTemporaryFile() as tf:
+            os.chmod(tf.name, stat.S_IXUSR)
+            exe_item = _install_file_item(
+                from_target='t', source={'source': tf.name}, dest='d/c',
+            )
         self.assertEqual(0o555, exe_item.mode)
-        self.assertEqual(b'a/b/c', exe_item.source)
+        self.assertEqual(tf.name.encode(), exe_item.source)
         self._check_item(
             exe_item,
             {ProvidesFile(path='d/c')},
             {require_directory('d')},
         )
 
-        # Checks `image.source(path=...)`, as well as "is_executable_=False"
+        # Checks `image.source(path=...)`
         data_item = _install_file_item(
             from_target='t',
             source={'source': 'a', 'path': '/b/q'},
             dest='d',
-            is_executable_=False,
         )
         self.assertEqual(0o444, data_item.mode)
         self.assertEqual(b'a/b/q', data_item.source)
@@ -61,7 +64,6 @@ class InstallFileItemTestCase(BaseItemTestCase):
         with self.assertRaisesRegex(AssertionError, 'cannot start with meta/'):
             _install_file_item(
                 from_target='t', source={'source': 'a/b/c'}, dest='/meta/foo',
-                is_executable_=False,
             )
 
     def test_install_file_from_layer(self):
@@ -73,7 +75,6 @@ class InstallFileItemTestCase(BaseItemTestCase):
             from_target='t',
             source={'layer': layer, 'path': '/' + path_in_layer.decode()},
             dest='cheese2',
-            is_executable_=False,
         )
         self.assertEqual(0o444, item.mode)
         self.assertEqual(Path(layer.path(path_in_layer)), item.source)
@@ -91,7 +92,6 @@ class InstallFileItemTestCase(BaseItemTestCase):
 
             _install_file_item(
                 from_target='t', source={'source': '/dev/null'}, dest='/d/null',
-                is_executable_=False,
             ).build(subvol, DUMMY_LAYER_OPTS)
             self.assertEqual(
                 ['(Dir)', {'d': ['(Dir)', {'null': ['(File m444)']}]}],
@@ -102,7 +102,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 _install_file_item(
                     from_target='t', source={'source': '/dev/null'},
-                    dest='/no_dir/null', is_executable_=False,
+                    dest='/no_dir/null',
                 ).build(subvol, DUMMY_LAYER_OPTS)
 
             # Running a second copy to the same destination. This just
@@ -112,7 +112,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 from_target='t', source={'source': '/dev/null'}, dest='/d/null',
                 # A non-default mode & owner shows that the file was
                 # overwritten, and also exercises HasStatOptions.
-                mode='u+rw', user_group='12:34', is_executable_=False,
+                mode='u+rw', user_group='12:34',
             ).build(subvol, DUMMY_LAYER_OPTS)
             self.assertEqual(
                 ['(Dir)', {'d': ['(Dir)', {'null': ['(File m600 o12:34)']}]}],

@@ -115,7 +115,7 @@ image.layer(
         image.mkdir("/var", "cache/yum"),
         image.mkdir("/var", "lib/rpm"),
         image.mkdir("/var/lib", "yum"),
-        image.install_executable("//fs_image/rpm:yum-from-test-snapshot", "/yum-from-snapshot"),
+        image.install_buck_runnable("//fs_image/rpm:yum-from-test-snapshot", "/yum-from-snapshot"),
     ],
 )
 
@@ -162,7 +162,7 @@ image.feature(
 image.feature(
     name = "feature_symlinks",
     features = [
-        image.install_data(":hello_world.tar", "/foo/hello_world.tar"),
+        image.install(":hello_world.tar", "/foo/hello_world.tar"),
         image.symlink_dir("/foo/bar", "/foo/fighter"),
         image.symlink_dir("/foo/bar", "/foo/face"),
         image.symlink_dir("/foo/bar", "/foo/bar/baz/"),  # Rsync style
@@ -266,8 +266,8 @@ buck_genrule(
     executable = True,
 )
 
-# Exercises `install_{data,executables}, taking care to cover all reasonable
-# combinations of :
+# Exercises `install_{data,buck_runnable}, taking care to cover all
+# reasonable combinations of:
 #   - Rsync convention
 #   - Data vs executables
 #   - Installing a file from a target that outputs a directory
@@ -282,22 +282,22 @@ image.feature(
     features = [
         ":feature_dirs",  # We use /foo/bar for a couple of installs.
         image.mkdir("/foo/bar", "installed"),  # Most things will go here.
-        image.install_data(":hello_world.tar", "/foo/bar/hello_world.tar"),
-        image.install_data(
+        image.install(":hello_world.tar", "/foo/bar/hello_world.tar"),
+        image.install(
             ":hello_world.tar",
             "/foo/bar/hello_world_again.tar",
             user = "nobody",
             group = "nobody",
         ),
-        image.install_data(
+        image.install(
             image.source(
                 ":dir-print-ok",
                 path = "kitteh",
             ),
             "/foo/bar/installed/yittal-kitteh",
         ),
-        image.install_executable(":print-ok", "/foo/bar/installed/print-ok"),
-        image.install_executable(
+        image.install_buck_runnable(":print-ok", "/foo/bar/installed/print-ok"),
+        image.install_buck_runnable(
             image.source(
                 ":dir-print-ok",
                 path = "subdir/print-ok",
@@ -457,10 +457,10 @@ image.layer(
         image.feature(
             features = [
                 # Test an inline feature nested in another feature.
-                image.install_data(":hello_world.tar", "/foo/bar/even_more_hello_world.tar"),
+                image.install(":hello_world.tar", "/foo/bar/even_more_hello_world.tar"),
             ],
         ),
-        image.install_data(
+        image.install(
             ":hello_world.tar",
             # This directory comes from `rpm-test-carrot`.  This tests
             # that our dependency engine sees RPM contents as a
@@ -546,10 +546,7 @@ image.rpmbuild_layer(
     name = "toy-rpm-build",
     parent_layer = "//tupperware/image/base:rpmbuild-base",
     specfile = "toy.spec",
-    # Using export file like this (note the trailing slash) for sources means
-    # that it won't have the top dir (toy_srcs/) included as part of the
-    # sources tarball.
-    source = "toy_srcs/",
+    source = "toy_srcs",
 )
 
 # This tests installing an RPM from image.rpmbuild_layer into another layer with
@@ -626,7 +623,7 @@ image.sendstream_layer(
 image.layer(
     name = "create_ops-layer",
     features = [
-        image.install_data(":create_ops-original.sendstream", "/sendstream"),
+        image.install(":create_ops-original.sendstream", "/sendstream"),
     ],
 )
 

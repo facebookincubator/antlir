@@ -25,10 +25,10 @@ T_SYMLINKS = f'{T_BASE}:feature_symlinks'
 T_TAR = f'{T_BASE}:feature_tar_and_rpms'
 T_PRINT_OK = f'{T_BASE}:print-ok'
 T_EXE_WRAP_PRINT_OK = \
-    f'{T_BASE}:install_executables_wrap_source__print-ok__c032e51d'
+    f'{T_BASE}:install_buck_runnable_wrap_source__print-ok__c032e51d'
 T_DIR_PRINT_OK = f'{T_BASE}:dir-print-ok'
 T_EXE_WRAP_DIR_PRINT_OK = \
-    f'{T_BASE}:install_executables_wrap_source__dir-print-ok__4331d20c'
+    f'{T_BASE}:install_buck_runnable_wrap_source__dir-print-ok__4331d20c'
 T_INSTALL_FILES = f'{T_BASE}:feature_install_files'
 T_KITCHEN_SINK = f'{T_BASE}:feature_kitchen_sink'
 T_HELLO_WORLD_BASE = f'{T_BASE}:hello_world_base'
@@ -95,7 +95,6 @@ ID_TO_ITEM = {
         from_target=T_SYMLINKS,
         source=Path(TARGET_TO_PATH[T_HELLO_WORLD_TAR]),
         dest='/foo/hello_world.tar',
-        is_executable_=False,
     ),
     'foo/symlink_to_hello_world.tar': SymlinkToFileItem(
         from_target=T_SYMLINKS,
@@ -164,14 +163,12 @@ ID_TO_ITEM = {
         from_target=T_INSTALL_FILES,
         source=Path(TARGET_TO_PATH[T_HELLO_WORLD_TAR]),
         dest='/foo/bar/hello_world.tar',
-        is_executable_=False,
     ),
     'foo/bar/hello_world_again.tar': InstallFileItem(
         from_target=T_INSTALL_FILES,
         source=Path(TARGET_TO_PATH[T_HELLO_WORLD_TAR]),
         dest='/foo/bar/hello_world_again.tar',
         user_group='nobody:nobody',
-        is_executable_=False,
     ),
     'foo/bar/installed': MakeDirsItem(
         from_target=T_INSTALL_FILES,
@@ -182,7 +179,6 @@ ID_TO_ITEM = {
         from_target=T_INSTALL_FILES,
         source=Path(TARGET_TO_PATH[T_DIR_PRINT_OK]) / 'kitteh',
         dest='/foo/bar/installed/yittal-kitteh',
-        is_executable_=False,
     ),
     'foo/bar/installed/print-ok': InstallFileItem(
         from_target=T_INSTALL_FILES,
@@ -190,7 +186,6 @@ ID_TO_ITEM = {
             T_EXE_WRAP_PRINT_OK if _NONPORTABLE_ARTIFACTS else T_PRINT_OK
         ]),
         dest='/foo/bar/installed/print-ok',
-        is_executable_=True,
     ),
     'foo/bar/installed/print-ok-too': InstallFileItem(
         from_target=T_INSTALL_FILES,
@@ -199,7 +194,6 @@ ID_TO_ITEM = {
                 Path(TARGET_TO_PATH[T_DIR_PRINT_OK]) / 'subdir/print-ok'
             ),
         dest='/foo/bar/installed/print-ok-too',
-        is_executable_=True,
     ),
 
     # From `feature_kitchen_sink`:

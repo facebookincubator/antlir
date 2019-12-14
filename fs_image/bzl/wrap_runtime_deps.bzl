@@ -32,7 +32,7 @@ def maybe_wrap_runtime_deps_as_build_time_deps(
       - `path_in_output` sets the wrapper to execute a fixed file out of a
         directory that is output by an executable rule.
 
-      - `dynamic_path_in_output` was made for `install_executable_trees`,
+      - `dynamic_path_in_output` was made for `install_buck_runnable_trees`,
          where we need the wrapper to be able to execute multiple files from
          a directory that was output by an executable target, and the file
          paths are not known at runtime.

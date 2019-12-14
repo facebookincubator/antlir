@@ -199,7 +199,6 @@ python_library(
     name = "nspawn_in_subvol",
     srcs = ["nspawn_in_subvol.py"],
     base_module = "",
-    resources = {"wrap_systemd_exec.sh"},
     deps = [
         ":common",
         ":find_built_subvol",
@@ -220,13 +219,7 @@ python_library(
 image.layer(
     name = "host-hello-xar",
     parent_layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
-    features = [
-        image.install_data(
-            "tests/hello.xar",
-            "/hello.xar",
-            mode = "a+rx",
-        ),
-    ],
+    features = [image.install("tests/hello.xar", "/hello.xar")],
 )
 
 python_unittest(
@@ -244,8 +237,8 @@ python_unittest(
         ":host-hello-xar": "tests/host-hello-xar",
         "//fs_image/compiler/tests" +
         ":only-for-tests-read-only-host-clone": "tests/host",
-        "//tupperware/image/slimos" +
-        ":slimos": "tests/slimos",
+        "//tupperware/image/base" +
+        ":base": "tests/bootable-systemd-os",
     },
     deps = [":nspawn_in_subvol"],
 )

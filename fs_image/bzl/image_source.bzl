@@ -1,8 +1,15 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":maybe_export_file.bzl", "maybe_export_file")
 
+# Note to users: all callsites accepting `image.source` objects also accept
+# plain strings, which are interpreted as `image.source(<the string>)`.
 def _image_source_impl(
         # Buck target outputting file or directory, conflicts with `layer`.
+        #
+        # You may also pass a relative path inside the repo, so long as it
+        # does not contain `:` or `../`.  In that case, an internal
+        # `export_file` target will automatically be created and used.
+        #
         # Can be combined with `path` and `content_hash`.
         #
         # Internal note: If `source` is a struct, it is interpreted as an

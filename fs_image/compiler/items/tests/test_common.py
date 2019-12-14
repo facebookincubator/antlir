@@ -18,8 +18,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
         self.assertIs(
             None,
             InstallFileItem(
-                from_target='t', source={'source': 'a'}, dest='b',
-                is_executable_=False,
+                from_target='t', source='/etc/passwd', dest='b',
             ).phase_order(),
         )
         self.assertEqual(PhaseOrder.RPM_INSTALL, RpmActionItem(
@@ -32,8 +31,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
     def test_enforce_no_parent_dir(self):
         with self.assertRaisesRegex(AssertionError, r'cannot start with \.\.'):
             InstallFileItem(
-                from_target='t', source={'source': 'a'}, dest='a/../../b',
-                is_executable_=False,
+                from_target='t', source='/etc/passwd', dest='a/../../b',
             )
 
     def test_stat_options(self):
