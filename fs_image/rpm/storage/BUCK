@@ -1,4 +1,4 @@
-load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
 
 # NB: For anything that runs at Facebook, depend on `facebook:storage`, but
 # import the outer `rpm.storage` module.
@@ -44,4 +44,23 @@ python_unittest(
         (100, ":filesystem_storage"),
     ],
     deps = [":testlib_storage_base_test"],
+)
+
+python_binary(
+    name = "cli",
+    srcs = ["cli.py"],
+    base_module = "rpm.storage",
+    main_module = "rpm.storage.cli",
+    deps = [
+        "//fs_image/rpm:common",
+        "//fs_image/rpm/storage/facebook:storage",
+    ],
+)
+
+python_unittest(
+    name = "test-cli",
+    srcs = ["tests/test_cli.py"],
+    base_module = "rpm.storage",
+    needed_coverage = [(100, ":cli-library")],
+    deps = [":cli-library"],
 )
