@@ -25,7 +25,7 @@ def yum_from_test_snapshot(
             'kind': 'filesystem',
             'base_dir': (snapshot_dir / 'storage').decode(),
         }),
-        snapshot_dir=snapshot_dir / 'repos',
+        snapshot_dir=snapshot_dir,
         install_root=Path(install_root),
         protected_paths=protected_paths,
         yum_args=yum_args,

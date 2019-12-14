@@ -23,6 +23,7 @@ we have today) across many shards, and once most of the snapshots are
 up-to-date to do the 0:1 snapshot with the above `repomd.xml` checks.
 '''
 import argparse
+import os
 import sys
 
 from io import StringIO
@@ -59,13 +60,14 @@ def snapshot_repos(
     saved_sizer = RepoSizer()
     with create_ro(dest / 'yum.conf', 'w') as out:
         out.write(yum_conf_content)
+    os.mkdir(dest / 'repos')
     repos = list(YumConfParser(StringIO(yum_conf_content)).gen_repos())
     with RepoSnapshot.add_sqlite_to_storage(storage, dest) as db:
         # Randomize the order to reduce contention from concurrent writers
         for repo in shuffled(repos):
             log.info(f'Downloading repo {repo.name} from {repo.base_url}')
             with populate_temp_dir_and_rename(
-                dest / repo.name, overwrite=True
+                dest / 'repos' / repo.name, overwrite=True
             ) as td:
                 # This is outside the retry_fn not to mask transient
                 # verification failures.  I don't expect many infra failures.

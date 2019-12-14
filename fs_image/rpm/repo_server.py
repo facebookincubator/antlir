@@ -98,7 +98,8 @@ def read_snapshot_dir(path: Path):  # pragma: no cover
 
 # Future: we could query the RPM table lazily, which would save ~1 second of
 # startup time for the FB production repo snapshot.
-def add_snapshot_db_objs(location_to_obj, db):
+def add_snapshot_db_objs(db):
+    location_to_obj = {}
     for repo, build_timestamp, metadata_xml in db.execute('''
     SELECT "repo", "build_timestamp", "metadata_xml" FROM "repomd"
     ''').fetchall():
@@ -135,30 +136,20 @@ def add_snapshot_db_objs(location_to_obj, db):
             else:  # pragma: no cover
                 raise AssertionError(f'{storage_id} {error} {error_json}')
             set_new_key(location_to_obj, os.path.join(repo, path), obj)
+    return location_to_obj
 
 
 def read_new_snapshot_dir(path: Path):
-    location_to_obj = {}
-    for repo in os.listdir(path.decode()):
-        if repo in ('yum.conf', 'snapshot.storage_id') or \
-                 repo.startswith('snapshot.sql3-'):
-            # FIXME: This is definitely covered by test_repo_server.py, just
-            # try adding `assert False` here to see, but it seems like the
-            # coverage infra fails to detect this.
-            continue  # pragma: no cover
-        repo_path = path / repo
-
-        # Most repo objects (repomd, repodata, rpm) live in a Sqlite DB.
-        if repo == 'snapshot.sql3':
-            add_snapshot_db_objs(location_to_obj, sqlite3.connect(repo_path))
-            continue
-
+    db_path = path / 'snapshot.sql3'
+    assert os.path.exists(db_path), f'no {db_path}, use rpm_repo_snapshot()'
+    location_to_obj = add_snapshot_db_objs(sqlite3.connect(db_path))
+    for repo in os.listdir(path / 'repos'):
         # Make JSON metadata for the repo's GPG keys.
-        key_dir = repo_path / 'gpg_keys'
+        key_dir = path / 'repos' / repo / 'gpg_keys'
         for key_filename in os.listdir(key_dir.decode()):
             with open(key_dir / key_filename, 'rb') as infile:
                 key_content = infile.read()
-            location_to_obj[os.path.join(repo, key_filename)] = {
+            location_to_obj[os.path.join(repo.decode(), key_filename)] = {
                 'size': len(key_content),
                 # We don't have a good timestamp for these, so set it to
                 # "now".  Caching efficiency losses should be negligible :)
@@ -264,7 +255,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_head()
 
     def send_head(self) -> Tuple[str, dict]:
-        'Returns (location, obj) from the repo JSON snapshot.'
+        'Returns (location, obj) from the repo snapshot.'
         # Ignore query parameters & fragment, remove leading / if present.
         # Promoting to unicode since we get our repo snapshot from JSON, and
         # though ideally we'd use `unquote_to_bytes`.

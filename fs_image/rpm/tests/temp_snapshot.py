@@ -35,32 +35,38 @@ def make_temp_snapshot(
     repos, out_dir, gpg_key_path, gpg_key_whitelist_dir,
 ) -> Path:
     'Generates temporary RPM repo snapshots for tests to use as inputs.'
-    repo_json_dir = td / 'repos'
-    os.mkdir(repo_json_dir)
+    snapshot_dir = out_dir / 'temp_snapshot_dir'
+    os.mkdir(snapshot_dir)
 
     with temp_repos_steps(repo_change_steps=[repos]) as repos_root:
         snapshot_repos(
-            dest=repo_json_dir,
+            dest=snapshot_dir,
             yum_conf_content=_make_test_yum_conf(
                 # Snapshot the 0th step only, since only that is defined
                 repos_root / '0', gpg_key_path,
             ),
             repo_db_ctx=RepoDBContext(
                 DBConnectionContext.make(
-                    kind='sqlite', db_path=(td / 'db.sqlite3').decode(),
+                    kind='sqlite', db_path=(out_dir / 'db.sqlite3').decode(),
                 ),
                 SQLDialect.SQLITE3,
             ),
             storage=Storage.make(
                 key='test',
                 kind='filesystem',
-                base_dir=(td / b'storage').decode(),
+                base_dir=(out_dir / 'storage').decode(),
             ),
             rpm_shard=RpmShard(shard=0, modulo=1),
             gpg_key_whitelist_dir=no_gpg_keys_yet,
             retries=0,  # Nothing here should require retries, it's a bug.
         )
 
+    # Merge the repo snapshot with the storage & RPM DB -- this makes our
+    # test snapshot build target look very much like prod snapshots.
+    for f in os.listdir(snapshot_dir):
+        assert not os.path.exists(out_dir / f), f'Must not overwrite {f}'
+        os.rename(snapshot_dir / f, out_dir / f)
+    os.rmdir(snapshot_dir)
 
 if __name__ == '__main__':
     import argparse

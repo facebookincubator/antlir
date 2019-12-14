@@ -377,7 +377,6 @@ $(exe :temp-snapshot) "$OUT" &> "$logfile" || (cat "$logfile" 1>&2 ; exit 1)
 rpm_repo_snapshot(
     name = "repo_snapshot_dir_for_tests",
     src = ":bare_repo_snapshot_dir_for_tests",
-    repo_subdir = "repos",
     storage = {
         "base_dir": "$(location :bare_repo_snapshot_dir_for_tests)/storage",
         "key": "test",
