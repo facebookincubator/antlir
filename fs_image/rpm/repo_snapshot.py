@@ -1,18 +1,28 @@
 #!/usr/bin/env python3
 '''
-If several `RepoSnapshot`s are serialized under `snapshot-dir/`, you can
-list all `ReportableError`s via:
+If you have an `rpm_repo_snapshot` target named //foo:bar, you can
+tally all `ReportableError`s via:
 
-    jq '.[].error | select(. != null)' $(find snapshot-dir/ -name '*.json')
+    echo '
+    SELECT "error", COUNT(1) FROM "rpm" WHERE "error" IS NOT NULL
+    GROUP BY "error";
+    ' | sqlite3 file://"$(readlink -f "$(
+      buck build //foo:bar --show-full-output | cut -f 2 -d ' '
+    )")"/snapshot.sql3?mode=ro
 '''
 import json
+import sqlite3
+import sys
 
-from typing import Mapping, NamedTuple, Union
+from typing import Any, Callable, Iterable, Mapping, NamedTuple, Union
 
 from .common import get_file_logger, create_ro, Path
 from .repo_objects import Repodata, RepoMetadata, Rpm
 
 log = get_file_logger(__file__)
+
+# Places making this assumption should be findable by the string "3.7"
+assert sys.hexversion >= 0x030700F0, 'This relies on dicts being ordered.'
 
 
 class ReportableError(Exception):
@@ -79,6 +89,138 @@ class RepoSnapshot(NamedTuple):
     repomd: RepoMetadata
     storage_id_to_repodata: Mapping[MaybeStorageID, Repodata]
     storage_id_to_rpm: Mapping[MaybeStorageID, Rpm]
+
+    _RPM_COLUMNS = {  # We're on 3.7+, so this dict is ordered
+        'repo': 'TEXT NOT NULL',
+        'path': 'TEXT NOT NULL',
+        'name': 'TEXT NOT NULL',
+        'version': 'TEXT NOT NULL',
+        'release': 'TEXT NOT NULL',
+        'epoch': 'INTEGER NOT NULL',
+        'arch': 'TEXT NOT NULL',
+        'build_timestamp': 'INTEGER NOT NULL',
+        'checksum': 'TEXT NOT NULL',
+        'error': 'TEXT',
+        'error_json': 'TEXT',
+        'size': 'INTEGER NOT NULL',
+        'source_rpm': 'TEXT NOT NULL',
+        'storage_id': 'TEXT',
+    }
+
+    _REPODATA_COLUMNS = {  # We're on 3.7+, so this dict is ordered
+        'repo': 'TEXT NOT NULL',
+        'path': 'TEXT NOT NULL',
+        'build_timestamp': 'INTEGER NOT NULL',
+        'checksum': 'TEXT NOT NULL',
+        'error': 'TEXT',
+        'error_json': 'TEXT',
+        'size': 'INTEGER NOT NULL',
+        'storage_id': 'TEXT',
+    }
+
+    _REPOMD_COLUMNS = {  # We're on 3.7+, so this dict is ordered
+        'repo': 'TEXT NOT NULL',
+        'build_timestamp': 'INTEGER NOT NULL',
+        'metadata_xml': 'TEXT NOT NULL',
+    }
+
+    @classmethod
+    def create_sqlite_tables(cls, db: sqlite3.Connection):
+        # For `repo_server.py` we need repo + path lookup, so that's the
+        # primary key.
+        #
+        # For repo debugging & exploration, we want global lookup on
+        # name-version-release -- hence the `nvrea` index.  It's unimportant
+        # to index on arch & epoch, or not to index on repo, since the total
+        # number of rows for a given NVR should be low.
+        db.executescript('''
+        CREATE TABLE "rpm" ({rpm_cols}, PRIMARY KEY ("repo", "path"));
+        CREATE INDEX "rpm_nvrea" ON "rpm" (
+            "name", "version", "release", "epoch", "arch"
+        );
+        CREATE TABLE "repodata" ({repodata_cols}, PRIMARY KEY ("repo", "path"));
+        CREATE TABLE "repomd" ({repomd_cols}, PRIMARY KEY ("repo"));
+        '''.format(**{
+            f'{table}_cols': ',\n'.join(
+
+                f'"{k}" {v}' for k, v in col_spec.items()
+            ) for table, col_spec in [
+                ('rpm', cls._RPM_COLUMNS),
+                ('repodata', cls._REPODATA_COLUMNS),
+                ('repomd', cls._REPOMD_COLUMNS),
+            ]
+        }))
+
+    def _gen_object_rows(
+        self,
+        repo: str,
+        sid_to_obj: Union[
+            Mapping[MaybeStorageID, Union[Rpm]],
+            Mapping[MaybeStorageID, Union[Repodata]],
+        ],
+        expected_columns: Iterable[str],
+        get_other_cols_fn: Union[
+            Callable[[Rpm], Mapping[str, Any]],
+            Callable[[Repodata], Mapping[str, Any]],
+        ],
+    ):
+        for sid, obj in sid_to_obj.items():
+            if isinstance(sid, ReportableError):
+                error_dict = sid.to_dict()
+                error = error_dict.pop('error')
+                sid = error_dict.pop('storage_id', None)
+            else:
+                error_dict = None
+                error = None
+            d = {
+                'repo': repo,
+                'path': obj.location,
+                'build_timestamp': obj.build_timestamp,
+                'checksum': str(obj.best_checksum()),
+                'error': error,
+                'error_json': json.dumps(error_dict, sort_keys=True)
+                    if error_dict else None,
+                'size': obj.size,
+                'storage_id': sid,
+            }
+            other_d = get_other_cols_fn(obj)
+            assert not (set(d) & set(other_d)), (d, other_d)
+            d.update(other_d)
+            assert set(d) == set(expected_columns), (d, expected_columns)
+            yield d
+
+    def to_sqlite(self, repo: str, db: sqlite3.Connection):
+        for table, columns, gen_rows in [
+            ('rpm', self._RPM_COLUMNS, self._gen_object_rows(
+                repo,
+                self.storage_id_to_rpm,
+                self._RPM_COLUMNS,
+                lambda rpm: {
+                    'name': rpm.name,
+                    'version': rpm.version,
+                    'release': rpm.release,
+                    'epoch': rpm.epoch,
+                    'arch': rpm.arch,
+                    'source_rpm': rpm.source_rpm,
+                },
+            )),
+            ('repodata', self._REPODATA_COLUMNS, self._gen_object_rows(
+                repo,
+                self.storage_id_to_repodata,
+                self._REPODATA_COLUMNS,
+                lambda repodata: {},
+            )),
+            ('repomd', self._REPOMD_COLUMNS, [{
+                'repo': repo,
+                'build_timestamp': self.repomd.build_timestamp,
+                'metadata_xml': self.repomd.xml.decode(),
+            }]),
+        ]:
+            db.executemany('INSERT INTO {} ("{}") VALUES ({});'.format(
+                table,
+                '", "'.join(columns),
+                ', '.join(['?'] * len(columns)),
+            ), ([d[k] for k in columns] for d in gen_rows))
 
     def to_directory(self, path: Path):
         # Future: we could potentially assert that the objects written are

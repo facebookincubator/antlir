@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import sqlite3
 import tempfile
 import unittest
 import unittest.mock
@@ -10,6 +11,14 @@ from ..repo_objects import Repodata, RepoMetadata, Rpm
 from ..repo_snapshot import (
     FileIntegrityError, HTTPError, MutableRpmError, RepoSnapshot,
 )
+
+
+def _get_db_rows(db: sqlite3.Connection, table: str):
+    cur = db.execute(f'SELECT * FROM "{table}"')
+    return [
+        {desc[0]: val for desc, val in zip(cur.description, row)}
+            for row in cur.fetchall()
+    ]
 
 
 class RepoSnapshotTestCase(unittest.TestCase):
@@ -33,16 +42,20 @@ class RepoSnapshotTestCase(unittest.TestCase):
             repodatas=None,
             checksum=None,
             size=None,
-            build_timestamp=None,
+            build_timestamp=7654321,
         )
         rpm_base = Rpm(  # Reuse this template for all RPMs
-            name=None, epoch=None, version=None, release=None, arch=None,
+            epoch=37,
+            name='foo-bar',
+            version='3.14',
+            release='rc0',
+            arch='i386',
             build_timestamp=90,
             canonical_checksum=Checksum('e', 'f'),
             checksum=Checksum('c', 'd'),
             location=None,  # `_replace`d below
             size=78,
-            source_rpm=None,
+            source_rpm='foo-bar-3.14-rc0.src.rpm',
         )
         rpm_normal = rpm_base._replace(location='normal.rpm')
         rpm_file_integrity = rpm_base._replace(location='file_integrity_error')
@@ -72,7 +85,28 @@ class RepoSnapshotTestCase(unittest.TestCase):
             },
         )
 
-        # Check the serialization
+        file_integrity_error_dict = {
+            'message': error_file_integrity.to_dict()['message'],
+            'location': rpm_file_integrity.location,
+            'failed_check': 'size',
+            # These are stringified because they might have been
+            # checksums...  seems OK for now.
+            'expected': '42',
+            'actual': '7',
+        }
+        http_error_dict = {
+            'message': error_http.to_dict()['message'],
+            'location': rpm_http.location,
+            'http_status': 404,
+        }
+        mutable_rpm_error_dict = {
+            'message': error_mutable_rpm.to_dict()['message'],
+            'location': rpm_mutable.location,
+            'checksum': 'g:h',
+            'other_checksums': ['i:j', 'k:l'],
+        }
+
+        # Check the `to_directory` serialization
         with tempfile.TemporaryDirectory() as td:
             snapshot.to_directory(Path(td))
             self.assertEqual(
@@ -101,38 +135,95 @@ class RepoSnapshotTestCase(unittest.TestCase):
                     rpm_file_integrity.location: {
                         'error': {
                             'error': 'file_integrity',
-                            'message':
-                                error_file_integrity.to_dict()['message'],
-                            'location': rpm_file_integrity.location,
-                            'failed_check': 'size',
-                            # These are stringified because they might have
-                            # been checksums... seems OK for now.
-                            'expected': '42',
-                            'actual': '7',
+                            **file_integrity_error_dict,
                         },
                         **ser_base,
                     },
                     rpm_http.location: {
                         'error': {
                             'error': 'http',
-                            'message': error_http.to_dict()['message'],
-                            'location': rpm_http.location,
-                            'http_status': 404,
+                            **http_error_dict,
                         },
                         **ser_base,
                     },
                     rpm_mutable.location: {
                         'error': {
                             'error': 'mutable_rpm',
-                            'message': error_mutable_rpm.to_dict()['message'],
-                            'location': rpm_mutable.location,
                             'storage_id': 'rpm_mutable_sid',
-                            'checksum': 'g:h',
-                            'other_checksums': ['i:j', 'k:l'],
+                            **mutable_rpm_error_dict,
                         },
                         **ser_base,
                     },
                 }, json.loads(f.read()))
+
+        # Check the `to_sqlite` serialization
+        with sqlite3.connect(':memory:') as db:
+            RepoSnapshot.create_sqlite_tables(db)
+            snapshot.to_sqlite('fake_repo', db)
+
+            self.assertEqual([{
+                'repo': 'fake_repo',
+                'metadata_xml': repomd.xml.decode(),
+                'build_timestamp': repomd.build_timestamp,
+            }], _get_db_rows(db, 'repomd'))
+
+            self.assertEqual([{
+                'repo': 'fake_repo',
+                'path': 'repodata_loc',
+                'build_timestamp': 456,
+                'checksum': 'a:b',
+                'error': None,
+                'error_json': None,
+                'size': 123,
+                'storage_id': 'repodata_sid',
+            }], _get_db_rows(db, 'repodata'))
+
+            base_row = {
+                'repo': 'fake_repo',
+                'epoch': rpm_base.epoch,
+                'name': rpm_base.name,
+                'version': rpm_base.version,
+                'release': rpm_base.release,
+                'arch': rpm_base.arch,
+                'build_timestamp': rpm_base.build_timestamp,
+                'checksum': str(rpm_base.best_checksum()),
+                'size': rpm_base.size,
+                'source_rpm': rpm_base.source_rpm,
+            }
+            self.assertEqual(sorted(
+                json.dumps(row, sort_keys=True) for row in [{
+                    **base_row,
+                    'path': rpm_normal.location,
+                    'error': None,
+                    'error_json': None,
+                    'storage_id': 'rpm_normal_sid',
+                }, {
+                    **base_row,
+                    'path': rpm_file_integrity.location,
+                    'error': 'file_integrity',
+                    'error_json': json.dumps(
+                        file_integrity_error_dict, sort_keys=True,
+                    ),
+                    'storage_id': None,
+                }, {
+                    **base_row,
+                    'path': rpm_http.location,
+                    'error': 'http',
+                    'error_json': json.dumps(http_error_dict, sort_keys=True),
+                    'storage_id': None,
+                }, {
+                    **base_row,
+                    'path': rpm_mutable.location,
+                    'error': 'mutable_rpm',
+                    'error_json': json.dumps(
+                        mutable_rpm_error_dict, sort_keys=True,
+                    ),
+                    'storage_id': 'rpm_mutable_sid',
+                }]
+            ), sorted(
+                json.dumps(row, sort_keys=True)
+                    for row in _get_db_rows(db, 'rpm')
+            ))
 
         # Check the visitor
         mock = unittest.mock.MagicMock()
