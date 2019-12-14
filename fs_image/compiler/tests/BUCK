@@ -126,9 +126,7 @@ image.layer(
     features = [
         image.rpms_install(["rpm-test-milk"]),
     ],
-    build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
-    ),
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
 # The next two targets exercise:
@@ -191,9 +189,7 @@ image.layer(
             image.source(":rpm-test-cheese-2-1.rpm"),
         ]),
     ],
-    build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
-    ),
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
 # Exercises:
@@ -506,9 +502,7 @@ image.layer(
         image.layer_mount(":hello_world_base", "/mounted_hello"),
         image.rpms_install(["rpm-test-carrot"]),  # Compact syntax for RPM installation.
     ],
-    build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
-    ),
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
 )
@@ -530,9 +524,7 @@ image.layer(
         image.tarball(":hello_world.tar", "/foo/extracted_hello"),
         image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
     ],
-    build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
-    ),
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
 image.package(name = "child/layer.sendstream")
@@ -546,9 +538,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],
-    build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
-    ),
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
 # This downgrades and installs /usr/share/rpm_test/cheese1.txt.
@@ -558,9 +548,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-1-1.rpm"]),
     ],
-    build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
-    ),
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
 # This upgrades and installs /usr/share/rpm_test/cheese3.txt.
@@ -570,9 +558,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-3-1.rpm"]),
     ],
-    build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
-    ),
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
 # The following rules will build a basic RPM in an rpmbuild_layer.
@@ -596,9 +582,7 @@ image.layer(
             ),
         ]),
     ],
-    build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
-    ),
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
 ##
