@@ -264,38 +264,6 @@ class RepoSnapshot(NamedTuple):
                 ', '.join(['?'] * len(columns)),
             ), ([d[k] for k in columns] for d in gen_rows))
 
-    def to_directory(self, path: Path):
-        # Future: we could potentially assert that the objects written are
-        # exactly:
-        #  - (for repodatas) the ones listed in repomd.xml
-        #  - (for RPMs) the ones listed in the primary repodata
-        # This amounts to a quick re-parsing and comparison of keys, but I'm
-        # not sure it's worthwhile -- good test coverage seems better.
-        with create_ro(path / 'repomd.xml', 'wb') as out:
-            out.write(self.repomd.xml)
-
-        for filename, sid_to_obj in (
-            ('repodata.json', self.storage_id_to_repodata),
-            ('rpm.json', self.storage_id_to_rpm),
-        ):
-            with create_ro(path / filename, 'w') as out:
-                obj_map = {
-                    obj.location: {
-                        'checksum': str(obj.best_checksum()),
-                        'size': obj.size,
-                        'build_timestamp': obj.build_timestamp,
-                        **(
-                            {'error': sid.to_dict()}
-                                if isinstance(sid, ReportableError)
-                                    else {'storage_id': sid}
-                        ),
-                    } for sid, obj in sid_to_obj.items()
-                }
-                assert len(obj_map) == len(sid_to_obj), \
-                    f'location collided {filename}'
-                json.dump(obj_map, out, sort_keys=True, indent=4)
-        return self
-
     def visit(self, visitor):
         'Visits the objects in this snapshot (i.e. this shard)'
         visitor.visit_repomd(self.repomd)

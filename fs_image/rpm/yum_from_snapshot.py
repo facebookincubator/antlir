@@ -63,8 +63,8 @@ The current tool works well, with these caveats:
         serving multiple files in parallel, (ii) the Facebook-production
         blob store has some notes on how to eliminate the ~1 second-per-blob
         fetch latency at the expense of 1-2 days of work, (iii) some caching
-        of blobs may help, (iv) we could add a SQLite version of the
-        JSON snapshot data into the blobstore for faster boot.
+        of blobs may help, (iv) `repo_server.py` can start faster if
+        it avoids eagerly loading the `rpm` table into RAM.
 
       * Since we typically run `yum` in an empty clean install-root, the
         initial run is extra-slow due to having to download the repodata,
@@ -567,8 +567,7 @@ if __name__ == '__main__':  # pragma: no cover
     )
     parser.add_argument(
         '--snapshot-dir', required=True, type=Path.from_argparse,
-        help='Multi-repo snapshot directory, with per-repo subdirectories, '
-            'each containing repomd.xml, repodata.json, and rpm.json',
+        help='Multi-repo snapshot directory.',
     )
     parser.add_argument(
         '--storage', required=True,

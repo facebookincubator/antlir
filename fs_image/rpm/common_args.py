@@ -12,11 +12,9 @@ def add_standard_args(parser):
     parser.add_argument(  # Pass this to `populate_temp_dir_and_rename`
         '--snapshot-dir', required=True, type=Path.from_argparse,
         help='Create or overwrite an RPM repo snapshot at this location. '
-            'This consists of top-level repo metadata plus JSON indexes '
-            'that provide `storage_id`s for the large binary blobs, which '
-            'are actually written to `--storage`. The snapshot is meant '
-            'to be committed into a version-control system, so it is concise '
-            'and textual.',
+            'It is to be committed into a version-control system, so it '
+            'is concise and textual, hiding repo data behind references '
+            'to `--storage`.',
     )
     parser.add_argument(  # Pass this to `snapshot_gpg_keys`
         '--gpg-key-whitelist-dir', required=True, type=Path.from_argparse,

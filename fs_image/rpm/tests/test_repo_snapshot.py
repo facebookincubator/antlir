@@ -88,77 +88,6 @@ class RepoSnapshotTestCase(unittest.TestCase):
             },
         )
 
-        file_integrity_error_dict = {
-            'message': error_file_integrity.to_dict()['message'],
-            'location': rpm_file_integrity.location,
-            'failed_check': 'size',
-            # These are stringified because they might have been
-            # checksums...  seems OK for now.
-            'expected': '42',
-            'actual': '7',
-        }
-        http_error_dict = {
-            'message': error_http.to_dict()['message'],
-            'location': rpm_http.location,
-            'http_status': 404,
-        }
-        mutable_rpm_error_dict = {
-            'message': error_mutable_rpm.to_dict()['message'],
-            'location': rpm_mutable.location,
-            'checksum': 'g:h',
-            'other_checksums': ['i:j', 'k:l'],
-        }
-
-        # Check the `to_directory` serialization
-        with temp_dir() as td:
-            snapshot.to_directory(td)
-            self.assertEqual(
-                sorted([b'repomd.xml', b'repodata.json', b'rpm.json']),
-                sorted(os.listdir(td)),
-            )
-            with open(td / 'repomd.xml', 'rb') as f:
-                self.assertEqual(b'foo', f.read())
-            with open(td / 'repodata.json') as f:
-                self.assertEqual({
-                    'repodata_loc': {
-                        'checksum': 'a:b',
-                        'size': 123,
-                        'build_timestamp': 456,
-                        'storage_id': 'repodata_sid',
-                    }
-                }, json.loads(f.read()))
-            # We only serialize `best_checksum()`
-            ser_base = {'checksum': 'e:f', 'size': 78, 'build_timestamp': 90}
-            with open(td / 'rpm.json') as f:
-                self.assertEqual({
-                    rpm_normal.location: {
-                        'storage_id': 'rpm_normal_sid',
-                        **ser_base,
-                    },
-                    rpm_file_integrity.location: {
-                        'error': {
-                            'error': 'file_integrity',
-                            **file_integrity_error_dict,
-                        },
-                        **ser_base,
-                    },
-                    rpm_http.location: {
-                        'error': {
-                            'error': 'http',
-                            **http_error_dict,
-                        },
-                        **ser_base,
-                    },
-                    rpm_mutable.location: {
-                        'error': {
-                            'error': 'mutable_rpm',
-                            'storage_id': 'rpm_mutable_sid',
-                            **mutable_rpm_error_dict,
-                        },
-                        **ser_base,
-                    },
-                }, json.loads(f.read()))
-
         # Check the `to_sqlite` serialization
         with temp_dir() as td:
             storage = FilesystemStorage(key='test', base_dir=td / 'storage')
@@ -210,24 +139,37 @@ class RepoSnapshotTestCase(unittest.TestCase):
                         **base_row,
                         'path': rpm_file_integrity.location,
                         'error': 'file_integrity',
-                        'error_json': json.dumps(
-                            file_integrity_error_dict, sort_keys=True,
-                        ),
+                        'error_json': json.dumps({
+                            'message':
+                                error_file_integrity.to_dict()['message'],
+                            'location': rpm_file_integrity.location,
+                            'failed_check': 'size',
+                            # These are stringified because they might have
+                            # been checksums...  seems OK for now.
+                            'expected': '42',
+                            'actual': '7',
+                        }, sort_keys=True),
                         'storage_id': None,
                     }, {
                         **base_row,
                         'path': rpm_http.location,
                         'error': 'http',
-                        'error_json':
-                            json.dumps(http_error_dict, sort_keys=True),
+                        'error_json': json.dumps({
+                            'message': error_http.to_dict()['message'],
+                            'location': rpm_http.location,
+                            'http_status': 404,
+                        }, sort_keys=True),
                         'storage_id': None,
                     }, {
                         **base_row,
                         'path': rpm_mutable.location,
                         'error': 'mutable_rpm',
-                        'error_json': json.dumps(
-                            mutable_rpm_error_dict, sort_keys=True,
-                        ),
+                        'error_json': json.dumps({
+                            'message': error_mutable_rpm.to_dict()['message'],
+                            'location': rpm_mutable.location,
+                            'checksum': 'g:h',
+                            'other_checksums': ['i:j', 'k:l'],
+                        }, sort_keys=True),
                         'storage_id': 'rpm_mutable_sid',
                     }]
                 ), sorted(

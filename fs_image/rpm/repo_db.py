@@ -10,11 +10,9 @@ As implemented, the database is sufficient to reconstruct all snapshots that
 were ever made.  One first pulls out a `repomd.xml` from the `repo_metadata`
 table for a given `fetch_timestamp`, then one looks up repo database blobs
 via the `repodata` table, and lastly one looks up RPM files via the `rpm`
-table.  In this sense, the JSON index in source control is 100% redundant --
-it primarily exists because many repo databases are XML, which is horribly
-slow to parse at RPM fetch time.  (NB: There's probably a better solution
-than storing JSON in the repo -- e.g. storing a sqlite DB in our key-value
-store would be easier to query and would not spam the repo).
+table.  In this sense, the SQLite index linked from source control is 100%
+redundant -- it primarily exists because many repo databases are XML, which
+is horribly slow to parse at RPM fetch time.
 
 All the query logic is in `RepoDBContext` below, so that's a good docblock
 to read next.
@@ -32,8 +30,8 @@ to read next.
 Logically, this RPM repo snapshotter just wants to commit an atomic snapshot
 of each RPM repo to this source control repo.  The physical reality is more
 complex -- big binary blobs (RPMs and RPM databases) are stored in an
-immutable key-value store via `storage/`, while we only commit a lightweight
-JSON index of these blobs to source control, see `to_directory` in
+immutable key-value store via `storage/`, while we only commit a `Storage`
+ID of a SQLite index of these blobs to source control, see `to_sqlite` in
 `repo_snapshot.py`.
 
 This extra indirection is worthwhile for two reasons:
@@ -65,7 +63,7 @@ A database adds value in two key ways:
             snapshot_repos $shard mod 100 &  # all write to DB, KV store
         done
         wait
-        snapshot_repos 0 mod 1  # produce a complete snapshot, write JSON index
+        snapshot_repos 0 mod 1  # produce a complete snapshot
 
 
 ## Implementation detail: Why do you have `byteme` everywhere?
@@ -158,7 +156,6 @@ class RpmTable(StorageTable):
     '''
     NAME = 'rpm'
     KEY_COLUMNS = ('filename', 'checksum')
-    CLASS = Rpm
 
     def _column_funcs(self):
         return [
@@ -186,7 +183,6 @@ class RepodataTable(StorageTable):
     '''
     NAME = 'repodata'
     KEY_COLUMNS = ('checksum',)
-    CLASS = Repodata
 
     def key(self, obj):  # Update KEY_COLUMNS, _TABLE_KEYS if changing this
         return (byteme(str(obj.checksum)),)
@@ -501,9 +497,7 @@ class RepoDBContext(AbstractContextManager):
         assert storage_id is not None
         # In theory, when this is storing the primary repodata, we could do
         # a consistency check asserting that all its RPMs are in the DB, but
-        # this would make the transaction slow, and thus isn't worth it.  We
-        # can do this kind of expensive check before writing out a JSON view
-        # of the current repo to the filesystem for version control.
+        # this would make the transaction slow, and thus isn't worth it.
         with self._cursor() as cursor:
             col_names = table.column_names()
             cursor.execute(f'''

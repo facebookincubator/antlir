@@ -49,53 +49,6 @@ log = get_file_logger(__file__)
 _CHUNK_SIZE = 2 ** 21
 
 
-# REVIEWERS: This OLD code path will be deleted later on this stack.
-def read_snapshot_dir(path: Path):  # pragma: no cover
-    if os.path.exists(path / 'snapshot.sql3'):
-        return read_new_snapshot_dir(path)
-
-    location_to_obj = {}
-    for repo in os.listdir(path.decode()):
-        if repo == 'yum.conf':
-            continue
-        repo_path = path / repo
-
-        for filename in ['rpm.json', 'repodata.json']:
-            with open(repo_path / filename) as infile:
-                for location, obj in json.load(infile).items():
-                    set_new_key(
-                        location_to_obj, os.path.join(repo, location), obj,
-                    )
-
-        # Re-parse and serialize the metadata to a format that ALMOST
-        # matches the other blobs (imitating `RepoSnapshot.to_directory()`).
-        # If useful, it would not be offensive to make such a `repomd.json`
-        # be emitted by RepoSnapshot, instead of `repomd.xml`.  Caveat: JSON
-        # isn't suitable for bytes, and the XML is currently bytes.
-        with open(repo_path / 'repomd.xml', 'rb') as infile:
-            repomd = RepoMetadata.new(xml=infile.read())
-        location_to_obj[os.path.join(repo, 'repodata/repomd.xml')] = {
-            'size': repomd.size,
-            'build_timestamp': repomd.build_timestamp,
-            'content_bytes': repomd.xml,  # Instead of `storage_id`
-        }
-
-        # Similarly, make JSON metadata for the repo's GPG keys.
-        key_dir = repo_path / 'gpg_keys'
-        for key_filename in os.listdir(key_dir.decode()):
-            with open(key_dir / key_filename, 'rb') as infile:
-                key_content = infile.read()
-            location_to_obj[os.path.join(repo, key_filename)] = {
-                'size': len(key_content),
-                # We don't have a good timestamp for these, so set it to
-                # "now".  Caching efficiency losses should be negligible :)
-                'build_timestamp': int(time.time()),
-                'content_bytes': key_content,  # Instead of `storage_id`
-            }
-
-    return location_to_obj
-
-
 # Future: we could query the RPM table lazily, which would save ~1 second of
 # startup time for the FB production repo snapshot.
 def add_snapshot_db_objs(db):
@@ -139,7 +92,7 @@ def add_snapshot_db_objs(db):
     return location_to_obj
 
 
-def read_new_snapshot_dir(path: Path):
+def read_snapshot_dir(path: Path):
     db_path = path / 'snapshot.sql3'
     assert os.path.exists(db_path), f'no {db_path}, use rpm_repo_snapshot()'
     location_to_obj = add_snapshot_db_objs(sqlite3.connect(db_path))
@@ -257,8 +210,9 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
     def send_head(self) -> Tuple[str, dict]:
         'Returns (location, obj) from the repo snapshot.'
         # Ignore query parameters & fragment, remove leading / if present.
-        # Promoting to unicode since we get our repo snapshot from JSON, and
-        # though ideally we'd use `unquote_to_bytes`.
+        # Promoting to unicode since because historically our repo paths
+        # have been strings, and though ideally we'd update
+        # `RepoSnapshot.to_sqlite` and use `unquote_to_bytes`.
         location = urllib.parse.unquote(
             urllib.parse.urlparse(self.path).path.lstrip('/'),
             'utf-8', 'surrogateescape',  # paper over invalid unicode :D

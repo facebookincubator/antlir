@@ -14,6 +14,7 @@ from .common_args import add_standard_args
 from .repo_db import RepoDBContext
 from .repo_downloader import RepoDownloader
 from .repo_sizer import RepoSizer
+from .repo_snapshot import RepoSnapshot
 from .gpg_keys import snapshot_gpg_keys
 
 log = get_file_logger(__file__)
@@ -45,7 +46,9 @@ def snapshot_repo(argv):
 
     init_logging(debug=args.debug)
 
-    with populate_temp_dir_and_rename(args.snapshot_dir, overwrite=True) as td:
+    with populate_temp_dir_and_rename(
+        args.snapshot_dir, overwrite=True,
+    ) as td, RepoSnapshot.add_sqlite_to_storage(args.storage, td) as db:
         sizer = RepoSizer()
         # This is outside the retry_fn not to mask transient verification
         # failures.  I don't expect many infra failures.
@@ -63,7 +66,7 @@ def snapshot_repo(argv):
             ).download(rpm_shard=args.rpm_shard),
             delays=[0] * args.retries,
             what=f'Downloading {args.repo_name} from {args.repo_url} failed',
-        ).visit(sizer).to_directory(td)
+        ).visit(sizer).to_sqlite(args.repo_name, db)
         log.info(sizer.get_report(f'This {args.rpm_shard} snapshot weighs'))
 
 

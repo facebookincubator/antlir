@@ -2,13 +2,16 @@
 import json
 import os
 import shutil
+import sqlite3
 import unittest
 import tempfile
 
 from . import temp_repos
 
 from ..common import temp_dir
+from ..repo_snapshot import RepoSnapshot
 from ..snapshot_repo import snapshot_repo
+from ..storage import Storage
 
 
 class SnapshotRepoTestCase(unittest.TestCase):
@@ -24,17 +27,18 @@ class SnapshotRepoTestCase(unittest.TestCase):
             os.mkdir(whitelist_dir)
             shutil.copy(td / 'fake_gpg_key', whitelist_dir)
 
+            storage_dict = {
+                'key': 'test',
+                'kind': 'filesystem',
+                'base_dir': (td / 'storage').decode(),
+            }
             snapshot_repo([
                 '--repo-name', 'dog',
                 '--repo-url', (repos_root / '0/dog').file_url(),
                 '--gpg-key-whitelist-dir', whitelist_dir.decode(),
                 '--gpg-url', (td / 'fake_gpg_key').file_url(),
                 '--snapshot-dir', (td / 'snap').decode(),
-                '--storage', json.dumps({
-                    'key': 'test',
-                    'kind': 'filesystem',
-                    'base_dir': (td / 'storage').decode(),
-                }),
+                '--storage', json.dumps(storage_dict),
                 '--db', json.dumps({
                     'kind': 'sqlite',
                     'db_path': (td / 'db.sqlite3').decode(),
@@ -44,9 +48,17 @@ class SnapshotRepoTestCase(unittest.TestCase):
             # bother looking inside the DB or Storage, or inspecting the
             # details of the snapshot -- those should all be covered by
             # lower-level tests.
-            with open(td / 'snap/rpm.json') as rpm_path:
+            with sqlite3.connect(RepoSnapshot.fetch_sqlite_from_storage(
+                Storage.make(**storage_dict),
+                td / 'snap',
+                td / 'snapshot.sql3',
+            )) as db:
                 self.assertEqual({
                     'dog-pkgs/rpm-test-carrot-2-rc0.x86_64.rpm',
                     'dog-pkgs/rpm-test-mice-0.1-a.x86_64.rpm',
                     'dog-pkgs/rpm-test-milk-1.41-42.x86_64.rpm',
-                }, set(json.load(rpm_path).keys()))
+                }, {
+                    path for path, in db.execute(
+                        'SELECT "path" FROM "rpm";'
+                    ).fetchall()
+                })
