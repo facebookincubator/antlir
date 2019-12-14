@@ -4,7 +4,9 @@ import stat
 import uuid
 
 from contextlib import contextmanager
-from typing import ContextManager
+from typing import AnyStr, ContextManager
+
+from fs_image.fs_utils import Path
 
 from .storage import _CommitCallback, Storage, StorageInput, StorageOutput
 
@@ -19,9 +21,9 @@ class FilesystemStorage(Storage, plugin_kind='filesystem'):
     distributed store, and migrate there.
     '''
 
-    def __init__(self, *, key: str, base_dir: str):
+    def __init__(self, *, key: str, base_dir: AnyStr):
         self.key = key
-        self.base_dir = os.path.abspath(base_dir)
+        self.base_dir = Path(os.path.abspath(base_dir))
 
     def _path_for_storage_id(self, sid: str) -> str:
         '''
@@ -29,14 +31,14 @@ class FilesystemStorage(Storage, plugin_kind='filesystem'):
         You'd need about 300 trillion blobs before the leaf subdirs have an
         average of 4096 subdirs each.
         '''
-        return os.path.join(self.base_dir, sid[:3], sid[3:6], sid[6:9], sid[9:])
+        return self.base_dir / sid[:3] / sid[3:6] / sid[6:9] / sid[9:]
 
     @contextmanager
     def writer(self) -> ContextManager[StorageOutput]:
         sid = str(uuid.uuid4()).replace('-', '')
         sid_path = self._path_for_storage_id(sid)
         try:
-            os.makedirs(os.path.dirname(sid_path))
+            os.makedirs(sid_path.dirname())
         except FileExistsError:  # pragma: no cover
             pass
 
@@ -67,13 +69,13 @@ class FilesystemStorage(Storage, plugin_kind='filesystem'):
 
     def remove(self, sid: str) -> None:
         sid_path = self._path_for_storage_id(self.strip_key(sid))
-        assert sid_path.startswith(self.base_dir + '/')
+        assert sid_path.startswith(self.base_dir + b'/')
         os.remove(sid_path)
         # Remove any empty directories up to `self.filesystem_path`.
-        dir_path = os.path.dirname(sid_path)
+        dir_path = sid_path.dirname()
         while dir_path != self.base_dir:
             try:
                 os.rmdir(dir_path)
             except OSError:  # pragma: no cover
                 break
-            dir_path = os.path.dirname(dir_path)
+            dir_path = dir_path.dirname()

@@ -139,6 +139,7 @@ python_library(
     deps = [
         ":common",
         ":repo_objects",
+        "//fs_image/rpm/storage/facebook:storage",
     ],
 )
 

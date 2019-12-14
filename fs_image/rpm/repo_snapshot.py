@@ -13,11 +13,14 @@ tally all `ReportableError`s via:
 import json
 import sqlite3
 import sys
+import tempfile
 
+from contextlib import contextmanager
 from typing import Any, Callable, Iterable, Mapping, NamedTuple, Union
 
-from .common import get_file_logger, create_ro, Path
+from .common import get_file_logger, create_ro, Path, read_chunks
 from .repo_objects import Repodata, RepoMetadata, Rpm
+from .storage import Storage
 
 log = get_file_logger(__file__)
 
@@ -124,8 +127,9 @@ class RepoSnapshot(NamedTuple):
         'metadata_xml': 'TEXT NOT NULL',
     }
 
+
     @classmethod
-    def create_sqlite_tables(cls, db: sqlite3.Connection):
+    def _create_sqlite_tables(cls, db: sqlite3.Connection):
         # For `repo_server.py` we need repo + path lookup, so that's the
         # primary key.
         #
@@ -150,6 +154,44 @@ class RepoSnapshot(NamedTuple):
                 ('repomd', cls._REPOMD_COLUMNS),
             ]
         }))
+
+    _STORAGE_CHUNK_SIZE = 2 ** 20  # Anything that's not too small is OK.
+    _STORAGE_ID_FILE = 'snapshot.storage_id'
+
+    @classmethod
+    @contextmanager
+    def add_sqlite_to_storage(
+        cls, storage: Storage, dest_dir: Path,
+    ) -> Iterable[sqlite3.Connection]:
+        with tempfile.NamedTemporaryFile() as db_tf:
+            with sqlite3.connect(db_tf.name) as db:
+                RepoSnapshot._create_sqlite_tables(db)
+                yield db
+            db.close()
+            with storage.writer() as db_out:
+                for chunk in read_chunks(db_tf, cls._STORAGE_CHUNK_SIZE):
+                    db_out.write(chunk)
+                with create_ro(dest_dir / cls._STORAGE_ID_FILE, 'w') as sidf:
+                    sidf.write(db_out.commit() + '\n')
+
+    @classmethod
+    def fetch_sqlite_from_storage(
+        cls, storage: Storage, from_dir: Path, dest: Path,
+    ) -> Path:
+        '''
+        At present, this is just a helper for tests. Real builds should
+        use `rpm_repo_snapshot()` to fetch the `.sql3` DB
+
+        Returns the populated `dest` for convenience.
+        '''
+        with open(from_dir / cls._STORAGE_ID_FILE) as sid_in:
+            sid = sid_in.read()
+            assert sid[-1] == '\n', repr(sid)
+            sid = sid[:-1]
+        with storage.reader(sid) as db_in, create_ro(dest, 'wb') as db_out:
+            for chunk in read_chunks(db_in, cls._STORAGE_CHUNK_SIZE):
+                db_out.write(chunk)
+        return dest
 
     def _gen_object_rows(
         self,

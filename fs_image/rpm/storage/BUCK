@@ -13,6 +13,7 @@ python_library(
     name = "filesystem_storage",
     srcs = ["filesystem_storage.py"],
     base_module = "rpm.storage",
+    deps = ["//fs_image:fs_utils"],
 )
 
 # Depend on this rather than on e.g. :base_storage or :filesystem_storage above

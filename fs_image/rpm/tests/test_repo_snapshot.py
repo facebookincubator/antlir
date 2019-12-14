@@ -6,11 +6,14 @@ import tempfile
 import unittest
 import unittest.mock
 
-from ..common import Checksum, Path
+from fs_image.fs_utils import temp_dir
+
+from ..common import Checksum
 from ..repo_objects import Repodata, RepoMetadata, Rpm
 from ..repo_snapshot import (
     FileIntegrityError, HTTPError, MutableRpmError, RepoSnapshot,
 )
+from ..storage.filesystem_storage import FilesystemStorage
 
 
 def _get_db_rows(db: sqlite3.Connection, table: str):
@@ -107,15 +110,15 @@ class RepoSnapshotTestCase(unittest.TestCase):
         }
 
         # Check the `to_directory` serialization
-        with tempfile.TemporaryDirectory() as td:
-            snapshot.to_directory(Path(td))
+        with temp_dir() as td:
+            snapshot.to_directory(td)
             self.assertEqual(
-                sorted(['repomd.xml', 'repodata.json', 'rpm.json']),
+                sorted([b'repomd.xml', b'repodata.json', b'rpm.json']),
                 sorted(os.listdir(td)),
             )
-            with open(os.path.join(td, 'repomd.xml'), 'rb') as f:
+            with open(td / 'repomd.xml', 'rb') as f:
                 self.assertEqual(b'foo', f.read())
-            with open(os.path.join(td, 'repodata.json')) as f:
+            with open(td / 'repodata.json') as f:
                 self.assertEqual({
                     'repodata_loc': {
                         'checksum': 'a:b',
@@ -126,7 +129,7 @@ class RepoSnapshotTestCase(unittest.TestCase):
                 }, json.loads(f.read()))
             # We only serialize `best_checksum()`
             ser_base = {'checksum': 'e:f', 'size': 78, 'build_timestamp': 90}
-            with open(os.path.join(td, 'rpm.json')) as f:
+            with open(td / 'rpm.json') as f:
                 self.assertEqual({
                     rpm_normal.location: {
                         'storage_id': 'rpm_normal_sid',
@@ -157,73 +160,80 @@ class RepoSnapshotTestCase(unittest.TestCase):
                 }, json.loads(f.read()))
 
         # Check the `to_sqlite` serialization
-        with sqlite3.connect(':memory:') as db:
-            RepoSnapshot.create_sqlite_tables(db)
-            snapshot.to_sqlite('fake_repo', db)
+        with temp_dir() as td:
+            storage = FilesystemStorage(key='test', base_dir=td / 'storage')
+            os.mkdir(td / 'snapshot')
+            with RepoSnapshot.add_sqlite_to_storage(
+                storage, td / 'snapshot',
+            ) as db:
+                snapshot.to_sqlite('fake_repo', db)
+            with sqlite3.connect(RepoSnapshot.fetch_sqlite_from_storage(
+                storage, td / 'snapshot', td / 'snapshot.sql3'
+            )) as db:
+                self.assertEqual([{
+                    'repo': 'fake_repo',
+                    'metadata_xml': repomd.xml.decode(),
+                    'build_timestamp': repomd.build_timestamp,
+                }], _get_db_rows(db, 'repomd'))
 
-            self.assertEqual([{
-                'repo': 'fake_repo',
-                'metadata_xml': repomd.xml.decode(),
-                'build_timestamp': repomd.build_timestamp,
-            }], _get_db_rows(db, 'repomd'))
-
-            self.assertEqual([{
-                'repo': 'fake_repo',
-                'path': 'repodata_loc',
-                'build_timestamp': 456,
-                'checksum': 'a:b',
-                'error': None,
-                'error_json': None,
-                'size': 123,
-                'storage_id': 'repodata_sid',
-            }], _get_db_rows(db, 'repodata'))
-
-            base_row = {
-                'repo': 'fake_repo',
-                'epoch': rpm_base.epoch,
-                'name': rpm_base.name,
-                'version': rpm_base.version,
-                'release': rpm_base.release,
-                'arch': rpm_base.arch,
-                'build_timestamp': rpm_base.build_timestamp,
-                'checksum': str(rpm_base.best_checksum()),
-                'size': rpm_base.size,
-                'source_rpm': rpm_base.source_rpm,
-            }
-            self.assertEqual(sorted(
-                json.dumps(row, sort_keys=True) for row in [{
-                    **base_row,
-                    'path': rpm_normal.location,
+                self.assertEqual([{
+                    'repo': 'fake_repo',
+                    'path': 'repodata_loc',
+                    'build_timestamp': 456,
+                    'checksum': 'a:b',
                     'error': None,
                     'error_json': None,
-                    'storage_id': 'rpm_normal_sid',
-                }, {
-                    **base_row,
-                    'path': rpm_file_integrity.location,
-                    'error': 'file_integrity',
-                    'error_json': json.dumps(
-                        file_integrity_error_dict, sort_keys=True,
-                    ),
-                    'storage_id': None,
-                }, {
-                    **base_row,
-                    'path': rpm_http.location,
-                    'error': 'http',
-                    'error_json': json.dumps(http_error_dict, sort_keys=True),
-                    'storage_id': None,
-                }, {
-                    **base_row,
-                    'path': rpm_mutable.location,
-                    'error': 'mutable_rpm',
-                    'error_json': json.dumps(
-                        mutable_rpm_error_dict, sort_keys=True,
-                    ),
-                    'storage_id': 'rpm_mutable_sid',
-                }]
-            ), sorted(
-                json.dumps(row, sort_keys=True)
-                    for row in _get_db_rows(db, 'rpm')
-            ))
+                    'size': 123,
+                    'storage_id': 'repodata_sid',
+                }], _get_db_rows(db, 'repodata'))
+
+                base_row = {
+                    'repo': 'fake_repo',
+                    'epoch': rpm_base.epoch,
+                    'name': rpm_base.name,
+                    'version': rpm_base.version,
+                    'release': rpm_base.release,
+                    'arch': rpm_base.arch,
+                    'build_timestamp': rpm_base.build_timestamp,
+                    'checksum': str(rpm_base.best_checksum()),
+                    'size': rpm_base.size,
+                    'source_rpm': rpm_base.source_rpm,
+                }
+                self.assertEqual(sorted(
+                    json.dumps(row, sort_keys=True) for row in [{
+                        **base_row,
+                        'path': rpm_normal.location,
+                        'error': None,
+                        'error_json': None,
+                        'storage_id': 'rpm_normal_sid',
+                    }, {
+                        **base_row,
+                        'path': rpm_file_integrity.location,
+                        'error': 'file_integrity',
+                        'error_json': json.dumps(
+                            file_integrity_error_dict, sort_keys=True,
+                        ),
+                        'storage_id': None,
+                    }, {
+                        **base_row,
+                        'path': rpm_http.location,
+                        'error': 'http',
+                        'error_json':
+                            json.dumps(http_error_dict, sort_keys=True),
+                        'storage_id': None,
+                    }, {
+                        **base_row,
+                        'path': rpm_mutable.location,
+                        'error': 'mutable_rpm',
+                        'error_json': json.dumps(
+                            mutable_rpm_error_dict, sort_keys=True,
+                        ),
+                        'storage_id': 'rpm_mutable_sid',
+                    }]
+                ), sorted(
+                    json.dumps(row, sort_keys=True)
+                        for row in _get_db_rows(db, 'rpm')
+                ))
 
         # Check the visitor
         mock = unittest.mock.MagicMock()
