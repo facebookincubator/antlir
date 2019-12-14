@@ -3,6 +3,7 @@ import email
 import hashlib
 import os
 import socket
+import sqlite3
 import requests
 import tempfile
 import threading
@@ -11,15 +12,30 @@ import unittest
 from contextlib import contextmanager
 from typing import Mapping, Tuple
 
+from fs_image.fs_utils import temp_dir
+
 from . import temp_repos
 
-from ..common import Checksum, Path
+from ..common import Checksum
 from ..repo_objects import Repodata, RepoMetadata, Rpm
 from ..repo_server import _CHUNK_SIZE, repo_server, read_snapshot_dir
 from ..repo_snapshot import RepoSnapshot, MutableRpmError
 from ..storage import Storage
 
-_FAKE_RPM = Rpm(*([None] * len(Rpm._fields)))
+# We need these fields to be real enough to satisfy `to_sqlite`.
+_FAKE_RPM = Rpm(
+    epoch=123,
+    name='not null',
+    version='not null',
+    release='not null',
+    arch='not null',
+    build_timestamp=456,
+    checksum='not null',
+    canonical_checksum='not null',
+    location=None,  # _replaced later
+    size=789,
+    source_rpm='not null',
+)
 
 
 def _checksum(algo: str, data: bytes) -> Checksum:
@@ -212,18 +228,20 @@ class RepoServerTestCase(unittest.TestCase):
             other_checksums={_checksum('sha256', b'changeable')},
         )
 
-        with tempfile.TemporaryDirectory() as td:
-            os.mkdir(os.path.join(td, 'yum.conf'))  # yum.conf is ignored
-            repo_dir = Path(td) / 'mine'
+        with temp_dir() as td:
+            os.mkdir(td / 'yum.conf')  # yum.conf is ignored
+            repo_dir = td / 'mine'
             os.mkdir(repo_dir)
-            RepoSnapshot(
-                repomd=repomd,
-                storage_id_to_repodata={repodata_sid: repodata},
-                storage_id_to_rpm={
-                    rpm_sid: rpm,
-                    error_mutable_rpm: rpm_mutable,
-                },
-            ).to_directory(repo_dir)
+            with sqlite3.connect(td / 'snapshot.sql3') as db:
+                RepoSnapshot._create_sqlite_tables(db)
+                RepoSnapshot(
+                    repomd=repomd,
+                    storage_id_to_repodata={repodata_sid: repodata},
+                    storage_id_to_rpm={
+                        rpm_sid: rpm,
+                        error_mutable_rpm: rpm_mutable,
+                    },
+                ).to_sqlite('mine', db)
             os.mkdir(repo_dir / 'gpg_keys')
             with open(repo_dir / 'gpg_keys' / 'RPM-GPG-safekey', 'wb') as outf:
                 outf.write(b'public key')

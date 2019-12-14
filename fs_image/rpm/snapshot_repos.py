@@ -31,14 +31,15 @@ from typing import List
 from fs_image.common import get_file_logger, shuffled
 
 from .common import (
-    create_ro, init_logging, Path, populate_temp_dir_and_rename, retry_fn,
-    RpmShard,
+    create_ro, init_logging, Path, populate_temp_dir_and_rename,
+    read_chunks, retry_fn, RpmShard,
 )
 from .common_args import add_standard_args
 from .gpg_keys import snapshot_gpg_keys
 from .repo_db import RepoDBContext
 from .repo_downloader import RepoDownloader
 from .repo_sizer import RepoSizer
+from .repo_snapshot import RepoSnapshot
 from .storage import Storage
 from .yum_conf import YumConfParser
 
@@ -59,26 +60,30 @@ def snapshot_repos(
     with create_ro(dest / 'yum.conf', 'w') as out:
         out.write(yum_conf_content)
     repos = list(YumConfParser(StringIO(yum_conf_content)).gen_repos())
-    # Snapshot in random order to reduce contention from concurrent writers
-    for repo in shuffled(repos):
-        log.info(f'Downloading repo {repo.name} from {repo.base_url}')
-        with populate_temp_dir_and_rename(
-            dest / repo.name, overwrite=True
-        ) as td:
-            # This is outside the retry_fn not to mask transient
-            # verification failures.  I don't expect many infra failures.
-            snapshot_gpg_keys(
-                key_urls=repo.gpg_key_urls,
-                whitelist_dir=gpg_key_whitelist_dir,
-                snapshot_dir=td,
-            )
-            retry_fn(
-                lambda: RepoDownloader(
-                    repo.name, repo.base_url, repo_db_ctx, storage
-                ).download(rpm_shard=rpm_shard, visitors=[declared_sizer]),
-                delays=[0] * retries,
-                what=f'Downloading {repo.name} from {repo.base_url} failed',
-            ).visit(saved_sizer).to_directory(td)
+    with RepoSnapshot.add_sqlite_to_storage(storage, dest) as db:
+        # Randomize the order to reduce contention from concurrent writers
+        for repo in shuffled(repos):
+            log.info(f'Downloading repo {repo.name} from {repo.base_url}')
+            with populate_temp_dir_and_rename(
+                dest / repo.name, overwrite=True
+            ) as td:
+                # This is outside the retry_fn not to mask transient
+                # verification failures.  I don't expect many infra failures.
+                snapshot_gpg_keys(
+                    key_urls=repo.gpg_key_urls,
+                    whitelist_dir=gpg_key_whitelist_dir,
+                    snapshot_dir=td,
+                )
+                retry_fn(
+                    lambda: RepoDownloader(
+                        repo.name, repo.base_url, repo_db_ctx, storage
+                    ).download(
+                        rpm_shard=rpm_shard, visitors=[declared_sizer]
+                    ),
+                    delays=[0] * retries,
+                    what=f'Download failed: {repo.name} from {repo.base_url}',
+                ).visit(saved_sizer).to_sqlite(repo.name, db)
+
     log.info(declared_sizer.get_report(
         f'According to their repodata, these {len(repos)} repos weigh'
     ))

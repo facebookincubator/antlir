@@ -1,5 +1,6 @@
 load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
+load("//fs_image/rpm:snapshot.bzl", "rpm_repo_snapshot")
 
 python_library(
     name = "pluggable",
@@ -361,7 +362,7 @@ python_binary(
 # non-negligible amount of I/O.  Building this only once results massively
 # speeds up `buck test fs_image/...`.
 buck_genrule(
-    name = "repo_snapshot_dir_for_tests",
+    name = "bare_repo_snapshot_dir_for_tests",
     out = "unused",
     bash = """
 set -ue
@@ -369,6 +370,19 @@ logfile=\\$(mktemp)
 # Only print the logs on error.
 $(exe :temp-snapshot) "$OUT" &> "$logfile" || (cat "$logfile" 1>&2 ; exit 1)
 """,
+)
+
+# It would be easy to have `make_temp_snapshot` create `snapshot.sql3`, but
+# this makes our test snapshot more prod-like.
+rpm_repo_snapshot(
+    name = "repo_snapshot_dir_for_tests",
+    src = ":bare_repo_snapshot_dir_for_tests",
+    repo_subdir = "repos",
+    storage = {
+        "base_dir": "$(location :bare_repo_snapshot_dir_for_tests)/storage",
+        "key": "test",
+        "kind": "filesystem",
+    },
 )
 
 python_binary(

@@ -27,6 +27,7 @@ the same `--storage` configuration as you did for your test snapshot:
 import json
 import os
 import socket
+import sqlite3
 import time
 import urllib.parse
 
@@ -35,31 +36,35 @@ from http.server import BaseHTTPRequestHandler, HTTPStatus
 from typing import Mapping, Tuple
 
 from fs_image.common import get_file_logger, set_new_key
+from fs_image.fs_utils import Path
 
-from .common import Checksum, Path
+from .common import Checksum
 from .repo_objects import RepoMetadata
 from .repo_snapshot import FileIntegrityError, ReportableError
 from .storage import Storage
 
 log = get_file_logger(__file__)
 
-
 # How big are our reads against Storage? Exposed for the unit test.
 _CHUNK_SIZE = 2 ** 21
 
 
-def read_snapshot_dir(path: str):
+# REVIEWERS: This OLD code path will be deleted later on this stack.
+def read_snapshot_dir(path: Path):  # pragma: no cover
+    if os.path.exists(path / 'snapshot.sql3'):
+        return read_new_snapshot_dir(path)
+
     location_to_obj = {}
-    for repo in os.listdir(path):
+    for repo in os.listdir(path.decode()):
         if repo == 'yum.conf':
             continue
-        repo_path = Path(path) / repo
+        repo_path = path / repo
 
         for filename in ['rpm.json', 'repodata.json']:
             with open(repo_path / filename) as infile:
                 for location, obj in json.load(infile).items():
                     set_new_key(
-                        location_to_obj, os.path.join(repo, location), obj
+                        location_to_obj, os.path.join(repo, location), obj,
                     )
 
         # Re-parse and serialize the metadata to a format that ALMOST
@@ -88,6 +93,78 @@ def read_snapshot_dir(path: str):
                 'content_bytes': key_content,  # Instead of `storage_id`
             }
 
+    return location_to_obj
+
+
+# Future: we could query the RPM table lazily, which would save ~1 second of
+# startup time for the FB production repo snapshot.
+def add_snapshot_db_objs(location_to_obj, db):
+    for repo, build_timestamp, metadata_xml in db.execute('''
+    SELECT "repo", "build_timestamp", "metadata_xml" FROM "repomd"
+    ''').fetchall():
+        set_new_key(
+            location_to_obj,
+            os.path.join(repo, 'repodata/repomd.xml'),
+            {
+                'size': len(metadata_xml),
+                'build_timestamp': build_timestamp,
+                'content_bytes': metadata_xml.encode(),
+            }
+        )
+    for table in ['repodata', 'rpm']:
+        for (
+            repo, path, build_timestamp, checksum, error, error_json, size,
+            storage_id,
+        ) in db.execute(f'''
+        SELECT
+            "repo", "path", "build_timestamp", "checksum", "error",
+            "error_json", "size", "storage_id"
+        FROM "{table}"
+        ''').fetchall():
+            obj = {
+                'checksum': checksum,
+                'size': size,
+                'build_timestamp': build_timestamp,
+            }
+            # `storage_id` is populated in the DB table for `mutable_rpm`
+            # errors, but we don't want to serve up those files.
+            if storage_id and not error and not error_json:
+                obj['storage_id'] = storage_id
+            elif error and error_json:
+                obj['error'] = {'error': error, **json.loads(error_json)}
+            else:  # pragma: no cover
+                raise AssertionError(f'{storage_id} {error} {error_json}')
+            set_new_key(location_to_obj, os.path.join(repo, path), obj)
+
+
+def read_new_snapshot_dir(path: Path):
+    location_to_obj = {}
+    for repo in os.listdir(path.decode()):
+        if repo in ('yum.conf', 'snapshot.storage_id') or \
+                 repo.startswith('snapshot.sql3-'):
+            # FIXME: This is definitely covered by test_repo_server.py, just
+            # try adding `assert False` here to see, but it seems like the
+            # coverage infra fails to detect this.
+            continue  # pragma: no cover
+        repo_path = path / repo
+
+        # Most repo objects (repomd, repodata, rpm) live in a Sqlite DB.
+        if repo == 'snapshot.sql3':
+            add_snapshot_db_objs(location_to_obj, sqlite3.connect(repo_path))
+            continue
+
+        # Make JSON metadata for the repo's GPG keys.
+        key_dir = repo_path / 'gpg_keys'
+        for key_filename in os.listdir(key_dir.decode()):
+            with open(key_dir / key_filename, 'rb') as infile:
+                key_content = infile.read()
+            location_to_obj[os.path.join(repo, key_filename)] = {
+                'size': len(key_content),
+                # We don't have a good timestamp for these, so set it to
+                # "now".  Caching efficiency losses should be negligible :)
+                'build_timestamp': int(time.time()),
+                'content_bytes': key_content,  # Instead of `storage_id`
+            }
     return location_to_obj
 
 
@@ -195,12 +272,16 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             urllib.parse.urlparse(self.path).path.lstrip('/'),
             'utf-8', 'surrogateescape',  # paper over invalid unicode :D
         )
-        # Future: consider adding directory listing support.
         obj = self.location_to_obj.get(location)
         if obj is None:
             self.send_error(HTTPStatus.NOT_FOUND, 'File not found')
             return None, None
-        if 'storage_id' not in obj and 'content_bytes' not in obj:
+        if (
+            ('storage_id' not in obj and 'content_bytes' not in obj) or
+            # `error` is not currently populated simultaneously with
+            # `storage_id`, but better safe than sorry.
+            ('error' in obj)
+        ):
             self.send_error(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 f'Repo snapshot error: {obj.get("error")}',
@@ -315,7 +396,7 @@ if __name__ == '__main__':  # pragma: no cover
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        '--snapshot-dir', required=True,
+        '--snapshot-dir', required=True, type=Path.from_argparse,
         help='Multi-repo snapshot directory, with per-repo subdirectories, '
             'each containing repomd.xml, repodata.json, and rpm.json',
     )
