@@ -1,2 +1,5 @@
 [repositories]
   bazel_skylib = third-party/bazel-skylib
+
+[python#py3]
+  interpreter = /usr/bin/python3
