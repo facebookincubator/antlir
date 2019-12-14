@@ -10,6 +10,7 @@ import tempfile
 import urllib.parse
 
 from contextlib import contextmanager
+from io import BytesIO
 from typing import AnyStr, Callable, Iterable, List, NamedTuple, TypeVar
 
 # Hide the fact that some of our dependencies aren't in `rpm` any more, the
@@ -89,3 +90,11 @@ class Checksum(NamedTuple):
         if self.algorithm == 'sha':
             return hashlib.sha1()
         return hashlib.new(self.algorithm)
+
+
+def read_chunks(input: BytesIO, chunk_size: int) -> Iterable[bytes]:
+    while True:
+        chunk = input.read(chunk_size)
+        if not chunk:
+            break
+        yield chunk

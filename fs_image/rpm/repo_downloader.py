@@ -33,12 +33,11 @@ import requests
 import urllib.parse
 
 from contextlib import contextmanager
-from io import BytesIO
-from typing import Iterator, Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Iterable, List, Mapping, Optional, Set, Tuple
 
 from fs_image.common import get_file_logger, nullcontext, set_new_key, shuffled
 
-from .common import RpmShard
+from .common import read_chunks, RpmShard
 from .deleted_mutable_rpms import deleted_mutable_rpms
 from .open_url import open_url
 from .parse_repodata import get_rpm_parser, pick_primary_repodata
@@ -60,14 +59,6 @@ log = get_file_logger(__file__)
 
 class RepodataParseError(Exception):
     pass
-
-
-def _read_chunks(input: BytesIO) -> Iterator[bytes]:
-    while True:
-        chunk = input.read(BUFFER_BYTES)
-        if not chunk:
-            break
-        yield chunk
 
 
 def _verify_chunk_stream(
@@ -184,7 +175,7 @@ class RepoDownloader:
         ) as output:
             log.info(f'Fetching {repodata}')
             for chunk in _verify_chunk_stream(
-                _read_chunks(input),
+                read_chunks(input, BUFFER_BYTES),
                 [repodata.checksum],
                 repodata.size,
                 repodata.location,
@@ -266,7 +257,7 @@ class RepoDownloader:
             # trigger our "different hashes" detector for a sane RPM.
             canonical_hash = hashlib.new(CANONICAL_HASH)
             for chunk in _verify_chunk_stream(
-                _read_chunks(input),
+                read_chunks(input, BUFFER_BYTES),
                 [rpm.checksum],
                 rpm.size,
                 rpm.location,

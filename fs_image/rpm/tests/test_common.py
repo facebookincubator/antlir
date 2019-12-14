@@ -2,11 +2,14 @@
 import time
 import unittest
 
-from ..common import Checksum, log as common_log, retry_fn, RpmShard
+from io import BytesIO
+
+from ..common import (
+    Checksum, log as common_log, read_chunks, retry_fn, RpmShard,
+)
 
 
 class TestCommon(unittest.TestCase):
-
 
     def test_rpm_shard(self):
         self.assertEqual(
@@ -78,3 +81,9 @@ class TestCommon(unittest.TestCase):
                 for o in log_ctx.output
         ))
         self.assertEqual((8,), ex_ctx.exception.args)
+
+    def test_read_chunks(self):
+        self.assertEqual(
+            [b'first', b'secon', b'd'],
+            list(read_chunks(BytesIO(b'firstsecond'), 5)),
+        )
