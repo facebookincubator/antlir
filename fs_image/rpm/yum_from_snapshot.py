@@ -558,6 +558,7 @@ def add_common_yum_args(parser: 'argparse.ArgumentParser'):  # pragma: no cover
 # there's not much logic to cover.
 if __name__ == '__main__':  # pragma: no cover
     import argparse
+    import json
 
     from .common import init_logging
 
@@ -570,17 +571,23 @@ if __name__ == '__main__':  # pragma: no cover
         help='Multi-repo snapshot directory.',
     )
     parser.add_argument(
-        '--storage', required=True,
+        '--storage', required=True, type=json.loads,
         help='What Storage do the storage IDs of the snapshots refer to? '
             'Run `repo-server --help` to learn the syntax.',
     )
     add_common_yum_args(parser)
     args = parser.parse_args()
 
+    # For tests, we want relative `base_dir` to point into the snapshot dir.
+    if args.storage['kind'] == 'filesystem':
+        args.storage['base_dir'] = (
+            args.snapshot_dir / args.storage['base_dir']
+        ).normpath().decode()
+
     init_logging()
 
     yum_from_snapshot(
-        storage_cfg=args.storage,
+        storage_cfg=json.dumps(args.storage),
         snapshot_dir=args.snapshot_dir,
         install_root=args.install_root,
         protected_paths=args.protected_path,

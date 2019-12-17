@@ -154,8 +154,6 @@ class RpmActionItem(metaclass=ImageItem):
                 if not nors:
                     continue
 
-                # Future: `yum-from-snapshot` is actually designed to run
-                # unprivileged (but we have no nice abstraction for this).
                 rpms, bind_ro_args = _rpms_and_bind_ro_args(nors)
                 _yum_using_build_appliance(
                     build_appliance=Subvol(
@@ -176,8 +174,6 @@ class RpmActionItem(metaclass=ImageItem):
         return builder
 
 
-# Besides aiding readability, this is a separate helper so that
-# `test-yum-from-snapshot` can use it in the near future.
 def _yum_using_build_appliance(
     *, build_appliance: Subvol,
     nspawn_args: List[str],
@@ -207,7 +203,7 @@ def _yum_using_build_appliance(
         '--', 'sh', '-uec',
         f'''
         {mount_var_cache_yum}
-        /yum-from-snapshot \
+        /rpm-repo-snapshot/default/yum \
             {' '.join(
                 '--protected-path=' + shlex.quote(p) for p in protected_paths
             )} \

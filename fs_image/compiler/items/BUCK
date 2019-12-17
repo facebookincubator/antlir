@@ -71,7 +71,6 @@ python_unittest(
         "//fs_image/compiler/tests:rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
         "//fs_image/compiler/tests:rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
         "//fs_image/compiler/tests:toy-rpm-build-rpmbuild-setup": "tests/toy-rpmbuild-setup",
-        "//fs_image/rpm:yum-from-test-snapshot": "tests/yum-from-test-snapshot",
     },
     deps = [
         ":items",

@@ -1,6 +1,6 @@
 load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
-load("//fs_image/rpm:snapshot.bzl", "rpm_repo_snapshot")
+load("//fs_image/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
 
 python_library(
     name = "pluggable",
@@ -356,11 +356,6 @@ python_binary(
     ],
 )
 
-# This is a genrule for performance reasons.  Many tests depend on
-# `yum-from-test-snapshot`, but generating this snapshot takes quite a few
-# seconds -- the RPM toolchain is not blazing fast, and it does a
-# non-negligible amount of I/O.  Building this only once results massively
-# speeds up `buck test fs_image/...`.
 buck_genrule(
     name = "bare_repo_snapshot_dir_for_tests",
     out = "unused",
@@ -372,29 +367,17 @@ $(exe :temp-snapshot) "$OUT" &> "$logfile" || (cat "$logfile" 1>&2 ; exit 1)
 """,
 )
 
-# It would be easy to have `make_temp_snapshot` create `snapshot.sql3`, but
-# this makes our test snapshot more prod-like.
 rpm_repo_snapshot(
-    name = "repo_snapshot_dir_for_tests",
+    name = "repo-snapshot-for-tests",
     src = ":bare_repo_snapshot_dir_for_tests",
     storage = {
-        "base_dir": "$(location :bare_repo_snapshot_dir_for_tests)/storage",
+        # We have hacks to interpret this path as relative to the snapshot
+        # directory, even as the snapshot is copied from `src` to the build
+        # appliance.
+        "base_dir": "storage",
         "key": "test",
         "kind": "filesystem",
     },
-)
-
-python_binary(
-    name = "yum-from-test-snapshot",
-    srcs = ["tests/yum_from_test_snapshot.py"],
-    base_module = "rpm",
-    main_module = "rpm.tests.yum_from_test_snapshot",
-    # Needed for `repo_server` & `repo_snapshot` to be visible in @mode/opt
-    par_style = "xar",
-    resources = {
-        target_location(":repo_snapshot_dir_for_tests"): "repo-snapshot",
-    },
-    deps = [":yum-from-snapshot-library"],
 )
 
 python_unittest(
@@ -403,13 +386,12 @@ python_unittest(
     base_module = "rpm",
     needed_coverage = [
         (100, ":yum-from-snapshot-library"),
-        (100, ":yum-from-test-snapshot-library"),
     ],
-    par_style = "xar",  # Lets us embed `tests/snapshot`
-    deps = [
-        ":yum-from-snapshot-library",
-        ":yum-from-test-snapshot-library",
-    ],
+    par_style = "xar",
+    resources = {
+        target_location(":repo-snapshot-for-tests"): "repo-snapshot",
+    },
+    deps = [":yum-from-snapshot-library"],
 )
 
 python_library(

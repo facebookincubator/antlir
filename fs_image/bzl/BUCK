@@ -51,6 +51,15 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "rpm_repo_snapshot",
+    srcs = ["rpm_repo_snapshot.bzl"],
+    deps = [
+        ":maybe_export_file",
+        ":target_tagger",
+    ],
+)
+
+fake_macro_library(
     name = "wrap_runtime_deps",
     srcs = ["wrap_runtime_deps.bzl"],
     deps = [":artifacts_require_repo"],

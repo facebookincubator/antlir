@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import os
 import tempfile
 import subprocess
@@ -6,9 +7,10 @@ import unittest
 
 from contextlib import contextmanager
 
-from ..common import init_logging, Path
+from fs_image.common import load_location
 
-from .yum_from_test_snapshot import yum_from_test_snapshot
+from ..common import init_logging, Path
+from ..yum_from_snapshot import yum_from_snapshot
 
 _INSTALL_ARGS = ['install', '--assumeyes', 'rpm-test-carrot', 'rpm-test-milk']
 
@@ -29,9 +31,19 @@ class YumFromSnapshotTestCase(unittest.TestCase):
                     os.makedirs(os.path.dirname(install_root / p))
                     with open(install_root / p, 'wb'):
                         pass
-
-            yum_from_test_snapshot(
-                install_root,
+            snapshot_dir = Path(load_location('rpm', 'repo-snapshot'))
+            # Note: this can't use `_yum_using_build_appliance` because that
+            # would lose coverage info on `yum_from_snapshot.py`.  A
+            # possible option is to try to make this test an
+            # `image.python_unittest` that runs in the BA image.
+            yum_from_snapshot(
+                storage_cfg=json.dumps({
+                    'key': 'test',
+                    'kind': 'filesystem',
+                    'base_dir': (snapshot_dir / 'storage').decode(),
+                }),
+                snapshot_dir=snapshot_dir,
+                install_root=Path(install_root),
                 protected_paths=protected_paths,
                 yum_args=_INSTALL_ARGS,
             )

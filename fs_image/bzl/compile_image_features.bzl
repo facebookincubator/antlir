@@ -8,11 +8,10 @@ load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_
 def _build_opts(
         # The name of the btrfs subvolume to create.
         subvol_name = "volume",
-        # Path to a target outputting a btrfs send-stream of a build appliance:
-        # a self-contained file tree with /yum-from-snapshot and other tools
-        # like btrfs, yum, tar, ln used for image builds along with all
-        # their dependencies (but /usr/local/fbcode).
-        # Additionally, your `.buckconfig` can specify a global default via:
+        # Path to a layer target of a build appliance, containing an
+        # installed `rpm_repo_snapshot()`, plus an OS image with other
+        # image build tools like `btrfs`, `yum`, `tar`, `ln`, ...
+        # Additionally, `.buckconfig` can specify a global default via:
         #   [fs_image]
         #   build_appliance = //some/target:path
         # In current implementation build_appliance is required only if any

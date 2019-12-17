@@ -6,6 +6,7 @@
 
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
+load("//fs_image/bzl:rpm_repo_snapshot.bzl", "RPM_SNAPSHOT_BASE_DIR", "install_rpm_repo_snapshot")
 load("//fs_image/bzl:wrap_runtime_deps.bzl", "maybe_wrap_runtime_deps_as_build_time_deps")
 
 # While the reproducible-builds.org instructions (see below) ensure that a
@@ -115,7 +116,8 @@ image.layer(
         image.mkdir("/var", "cache/yum"),
         image.mkdir("/var", "lib/rpm"),
         image.mkdir("/var/lib", "yum"),
-        image.install_buck_runnable("//fs_image/rpm:yum-from-test-snapshot", "/yum-from-snapshot"),
+        image.mkdir("/", RPM_SNAPSHOT_BASE_DIR),
+        install_rpm_repo_snapshot("//fs_image/rpm:repo-snapshot-for-tests"),
     ],
 )
 
