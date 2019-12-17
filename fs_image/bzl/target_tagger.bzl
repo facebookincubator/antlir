@@ -56,22 +56,37 @@ def tag_required_target_key(tagger, d, target_key, is_layer = False):
         )
     d[target_key] = tag_target(tagger, target = d[target_key], is_layer = is_layer)
 
-def wrap_target(target, wrap_prefix):
+# Makes a deterministic and unique "nonce" from a target path, which can
+# itself be used as part of a target name.  Its form is:
+#   <original target name prefix>...<original target name suffix>__<hash>
+#
+# DO NOT RELY ON THE DETAILS OF THIS MANGLING -- they are subject to change.
+#
+# `min_abbrev` guarantees that the suffix & prefix will never be shorter
+# than that many characters.  Including the original target is intended to
+# aid debugging.  At the same time, we don't want to mangle the full target
+# path since that can easily exceed the OS's maximum filename length.
+#
+# The hash is meant to disambiguate identically-named targets from different
+# directories.
+def mangle_target(target, min_abbrev = 15):
     # The target to wrap may be in a different directory, so we normalize
-    # its path to ensure the hashing is deterministic.  This assures reuse
-    # at least within the current TARGETS files.
+    # its path to ensure the hashing is deterministic.  This means that
+    # `wrap_target` below can reuse identical "wrapped" targets that are
+    # requested from the same project (aka BUCK/TARGETS file).
     target = normalize_target(target)
 
-    # The wrapper target is plumbing, so it will start with the provided
-    # prefix to hide it from e.g.  tab-completion.  Then, it includes an
-    # excerpt of the original target name to ease debugging.  Lastly, a hash
-    # of the full target path accounts for identically-named targets from
-    # different directories.
     _, name = target.split(":")
-    wrapped_target = wrap_prefix + "__" + (
-        name if len(name) < 15 else (name[:6] + "..." + name[-6:])
+    return (
+        name if len(name) < (2 * min_abbrev + 3) else (
+            name[:min_abbrev] + "..." + name[-min_abbrev:]
+        )
     ) + "__" + hex_crc32(target)
 
+def wrap_target(target, wrap_prefix):
+    # The wrapper target is plumbing, so it will start with the provided
+    # prefix to hide it from e.g. tab-completion.
+    wrapped_target = wrap_prefix + "__" + mangle_target(target)
     return native.rule_exists(wrapped_target), wrapped_target
 
 def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_prefix, **kwargs):
