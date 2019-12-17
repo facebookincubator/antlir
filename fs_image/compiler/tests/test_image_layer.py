@@ -77,24 +77,20 @@ class ImageLayerTestCase(unittest.TestCase):
 
         # :feature_symlinks
         for source, dest in [
-            (b'foo/bar', b'foo/fighter'),
-            (b'foo/bar', b'foo/face'),
-            (b'foo/bar', b'foo/bar/baz/bar'),
-            (b'foo/hello_world.tar', b'foo/symlink_to_hello_world.tar'),
+            (b'bar', b'foo/fighter'),
+            (b'bar', b'foo/face'),
+            (b'..', b'foo/bar/baz/bar'),
+            (b'hello_world.tar', b'foo/symlink_to_hello_world.tar'),
         ]:
-            self.assertTrue(
-                os.path.exists(os.path.join(subvol_path, source)),
-                source
-            )
-
+            self.assertTrue(os.path.exists(os.path.join(
+                subvol_path, os.path.dirname(dest), source,
+            )), (dest, source))
             self.assertTrue(
                 os.path.islink(os.path.join(subvol_path, dest)),
                 dest
             )
-
             self.assertEqual(
-                os.path.join(b'/', source),
-                os.readlink(os.path.join(subvol_path, dest))
+                source, os.readlink(os.path.join(subvol_path, dest))
             )
 
     def _check_child(self, subvol_path):

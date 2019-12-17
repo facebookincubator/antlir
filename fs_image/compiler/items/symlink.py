@@ -40,10 +40,26 @@ class SymlinkBase:
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         dest = subvol.path(self.dest)
-        # Source is always absolute inside the image subvolume
-        source = os.path.join('/', self.source)
+        # Best-practice would tell us to do `subvol.path(self.source)`.
+        # However, this will trigger the paranoid check in the `path()`
+        # implementation if any component of `source` inside the image is an
+        # absolute symlink.  We are not writing to `source`, so that
+        # safeguard isn't useful here.
+        #
+        # We DO check below that the relative symlink we made does not point
+        # outside the image.  However, a non-chrooted process resolving our
+        # well-formed relative link might still traverse pre-existing
+        # absolute symlinks on the filesystem, and go outside of the image
+        # root.
+        abs_source = subvol.path() / self.source
+        # Make all symlinks relative because this makes it easy to inspect
+        # the subvolums from outside the container.  We can add an
+        # `absolute` option if needed.
+        rel_source = os.path.relpath(abs_source, dest.dirname())
+        assert os.path.normpath(dest / rel_source).startswith(subvol.path()), \
+            '{self}: A symlink to {rel_source} would point outside the image'
         subvol.run_as_root(
-            ['ln', '--symbolic', '--no-dereference', source, dest]
+            ['ln', '--symbolic', '--no-dereference', rel_source, dest]
         )
 
 

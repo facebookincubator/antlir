@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import shlex
 import sys
 import tempfile
 
@@ -39,6 +40,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 InstallFileItem(
                     from_target='t', source=tf.name, dest='/file',
                 ).build(subvol, DUMMY_LAYER_OPTS)
+
             SymlinkToDirItem(
                 from_target='t', source='/dir', dest='/dir_symlink'
             ).build(subvol, DUMMY_LAYER_OPTS)
@@ -46,9 +48,43 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 from_target='t', source='file', dest='/file_symlink'
             ).build(subvol, DUMMY_LAYER_OPTS)
 
+            def quoted_subvol_path(p):
+                return shlex.quote(subvol.path(p).decode())
+
+            # Make a couple of absolute symlinks to test our behavior on
+            # linking to paths that contain those.
+            subvol.run_as_root(['bash', '-c', f'''\
+                ln -s /file {quoted_subvol_path('abs_link_to_file')}
+                mkdir {quoted_subvol_path('my_dir')}
+                touch {quoted_subvol_path('my_dir/inner')}
+                ln -s /my_dir {quoted_subvol_path('my_dir_link')}
+            '''])
+            # A simple case: we link to an absolute link.
+            SymlinkToFileItem(
+                from_target='t',
+                source='/abs_link_to_file',
+                dest='/link_to_abs_link',
+            ).build(subvol, DUMMY_LAYER_OPTS)
+            # This link traverses a directory that is an absolute link.  The
+            # resulting relative symlink is not traversible from outside the
+            # container.
+            SymlinkToFileItem(
+                from_target='t',
+                source='my_dir_link/inner',
+                dest='/dir/inner_link',
+            ).build(subvol, DUMMY_LAYER_OPTS)
+
             self.assertEqual(['(Dir)', {
-                'dir': ['(Dir)', {}],
-                'dir_symlink': ['(Symlink /dir)'],
+                'dir': ['(Dir)', {
+                    'inner_link': ['(Symlink ../my_dir_link/inner)'],
+                }],
+                'dir_symlink': ['(Symlink dir)'],
                 'file': ['(File m444)'],
-                'file_symlink': ['(Symlink /file)'],
+                'file_symlink': ['(Symlink file)'],
+
+                'abs_link_to_file': ['(Symlink /file)'],
+                'my_dir': ['(Dir)', {'inner': ['(File)']}],
+                'my_dir_link': ['(Symlink /my_dir)'],
+
+                'link_to_abs_link': ['(Symlink abs_link_to_file)'],
             }], render_subvol(subvol))

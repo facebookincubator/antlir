@@ -1,8 +1,14 @@
 """
 `image.symlink_dir("/a", "/b/c")` symlinks directory `/a` to `/b/c`,
 `image.symlink_file("/d", "/e/f")` symlinks file `/d` to `/e/f` --
-  - `link_target` is the source file/dir of the symlink.  This file must
-     exist as we do not support dangling symlinks.
+
+  - `link_target` is the image-absolute source file/dir of the symlink.
+     This file must exist as we do not support dangling symlinks.
+
+     IMPORTANT: The emitted symlink will be **relative** by default,
+     enabling easier inspection if images via `buck-image-out`.  If this is
+     a problem for you, we can add an `absolute` boolean kwarg.
+
   - `link_name` is an image-absolute path.  We follow the `rsync`
      convention -- if `dest` ends with a slash, the copy will be at
      `dest/output` filename of source.  Otherwise, `dest` is a full

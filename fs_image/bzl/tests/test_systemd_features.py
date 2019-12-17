@@ -62,4 +62,5 @@ class TestSystemdFeatures(unittest.TestCase):
             if masked:
                 masked_unit = ADMIN_ROOT / unit
 
-                self.assertEqual(os.readlink(masked_unit), b'/dev/null')
+                # Yes, systemd (at least in v243) is OK with a relative link
+                self.assertEqual(os.readlink(masked_unit), b'../../../dev/null')

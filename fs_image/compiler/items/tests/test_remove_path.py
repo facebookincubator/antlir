@@ -50,14 +50,14 @@ class RemovePathItemTestCase(BaseItemTestCase):
                             'd': ['(File m444)'],
                             'e': ['(File m444)'],
                         }],
-                        'f_sym': ['(Symlink /f)'],
+                        'f_sym': ['(Symlink ../../f)'],
                     }],
                 }],
                 'f': ['(Dir)', {
                     'g': ['(Dir)', {}],
                     'h': ['(File m444)'],
                     'i': ['(File m444)'],
-                    'i_sym': ['(Symlink /f/i)'],
+                    'i_sym': ['(Symlink i)'],
                 }],
             }]
             self.assertEqual(intact_subvol, render_subvol(subvol))

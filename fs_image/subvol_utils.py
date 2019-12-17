@@ -103,7 +103,7 @@ class Subvol:
 
     def path(
         self, path_in_subvol: AnyStr=b'.', *, no_dereference_leaf=False,
-    ) -> bytes:
+    ) -> Path:
         '''
         The only safe way to access paths inside the subvolume.  Do NOT
         `os.path.join(subvol.path('a/path'), 'more/path')`, since that skips
@@ -150,7 +150,7 @@ class Subvol:
         ), os.path.realpath(self._path))
         if root_relative.startswith(b'../') or root_relative == b'..':
             raise AssertionError(f'{path_in_subvol} is outside the subvol')
-        return result_path
+        return Path(result_path)
 
     # This differs from the regular `subprocess.Popen` interface in these ways:
     #   - stdout maps to stderr by default (to protect the caller's stdout),
