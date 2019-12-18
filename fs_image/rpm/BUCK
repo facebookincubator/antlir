@@ -329,6 +329,15 @@ python_library(
     resources = {":repo-server": "repo-server"},
 )
 
+# This is extracted from the RPM `yum-versionlock-1.1.31`, and is injected
+# into `yum`'s container by `yum-from-snapshot` code.  In the near future,
+# we should eliminate this and just `yum install` the RPM into the
+# corresponding build appliance.
+export_file(
+    name = "yum-plugin-versionlock",
+    src = "third-party/yum-versionlock.py",
+)
+
 python_binary(
     name = "yum-from-snapshot",
     srcs = ["yum_from_snapshot.py"],
