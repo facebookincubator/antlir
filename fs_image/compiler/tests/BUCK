@@ -77,7 +77,6 @@ image.layer(
             "/usr",
             # Future: move these 2 (and the `make_dirs`) into an FB-only feature.
             "/mnt/gvfs",
-            "/var/facebook",
         ]
     ],
 )
