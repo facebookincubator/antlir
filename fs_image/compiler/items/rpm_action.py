@@ -203,7 +203,7 @@ def _yum_using_build_appliance(
         '--', 'sh', '-uec',
         f'''
         {mount_var_cache_yum}
-        /rpm-repo-snapshot/default/yum \
+        /rpm-repo-snapshot/default/bin/yum \
             {' '.join(
                 '--protected-path=' + shlex.quote(p) for p in protected_paths
             )} \

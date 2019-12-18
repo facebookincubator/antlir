@@ -123,3 +123,5 @@ fake_macro_library(
     srcs = ["image_cpp_unittest.bzl"],
     deps = [":image_unittest_helpers"],
 )
+
+export_file(name = "files/yum.sh")

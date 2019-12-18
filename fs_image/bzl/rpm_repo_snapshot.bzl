@@ -3,7 +3,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load(":image.bzl", "image")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule")
-load(":target_tagger.bzl", "mangle_target")
+load(":target_tagger.bzl", "mangle_target", "maybe_wrap_executable_target")
 
 # This constant is duplicated in `yum_using_build_appliance`.
 RPM_SNAPSHOT_BASE_DIR = "rpm-repo-snapshot"
@@ -21,6 +21,13 @@ def rpm_repo_snapshot(name, src, storage):
             src,
             cli_storage["base_dir"],
         )
+
+    # We need a wrapper to `cp` a `buck run`nable target in @mode/dev.
+    _, yum_from_snapshot_wrapper = maybe_wrap_executable_target(
+        target = "//fs_image/rpm:yum-from-snapshot",
+        wrap_prefix = "__rpm_repo_snapshot",
+        visibility = [],
+    )
     buck_genrule(
         name = name,
         out = "unused",
@@ -30,11 +37,11 @@ set -ue -o pipefail -o noclobber
 # Rebuild RPM snapshots if this bzl (or its dependencies) change
 echo $(location //fs_image/bzl:rpm_repo_snapshot) > /dev/null
 
+# Copy the basic snapshot, e.g. `snapshot.storage_id`, `repos`, `yum.conf`
 cp --no-target-directory -r $(location {src}) "$OUT"
 
 $(exe //fs_image/rpm/storage:cli) --storage {quoted_cli_storage_cfg} \
     get "\\$(cat "$OUT"/snapshot.storage_id)" > "$OUT"/snapshot.sql3
-
 # Write-protect the SQLite DB because it's common to use the `sqlite3` to
 # inspect it, and it's otherwise very easy to accidentally mutate the build
 # artifact, which is a big no-no.
@@ -42,45 +49,28 @@ chmod a-w "$OUT"/snapshot.sql3
 
 # This lets `nspawn-in-subvol` access the storage config, and not just `yum`
 echo {quoted_storage_cfg} > "$OUT"/storage.json
-echo {quoted_yum_sh} > "$OUT"/yum
-chmod u+x "$OUT"/yum
+
+cp $(location {yum_from_snapshot_wrapper}) "$OUT"/yum-from-snapshot
+
+# The `bin` directory exists so that "porcelain" binaries can potentially be
+# added to `PATH`.  But we should avoid doing this in production code.
+mkdir "$OUT"/bin
+
+cp $(location {yum_sh_target}) "$OUT"/bin/yum
         '''.format(
             src = maybe_export_file(src),
             quoted_cli_storage_cfg = shell.quote(struct(**cli_storage).to_json()),
             quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
-            # Hack alert: this refers to a sibling `yum-from-snapshot`,
-            # which is NOT part of this target.  The reason for this is that
-            # `image.install` currently lacks support for `buck run`nable
-            # directories (a comment in `InstallFileItem` explains why).  So
-            # instead, we have `install_rpm_repo_snapshot` inject the
-            # buck-runnable binary.
-            #
-            # NB: At present, this is not **quite** CLI-compatible with `yum`.
-            quoted_yum_sh = shell.quote(
-                '''\
-#!/bin/bash -ue
-set -o pipefail -o noclobber
-my_path=\\$(readlink -f "$0")
-my_dir=\\$(dirname "$my_path")
-exec "$my_dir"/yum-from-snapshot \
-    --snapshot-dir "$my_dir" --storage "\\$(cat "$my_dir"/storage.json)" "$@"
-''',
-            ),
+            yum_sh_target = "//fs_image/bzl:files/yum.sh",
+            yum_from_snapshot_wrapper = yum_from_snapshot_wrapper,
         ),
     )
 
-# Requires /<RPM_SNAPSHOT_BASE_DIR>/` to already have been created.
+# Requires some other feature to make the directory `/<RPM_SNAPSHOT_BASE_DIR>`
 def install_rpm_repo_snapshot(snapshot, make_default = True):
     base_dir = paths.join("/", RPM_SNAPSHOT_BASE_DIR)
     dest_dir = paths.join(base_dir, mangle_target(snapshot))
-    features = [
-        image.install(snapshot, dest_dir),
-        # See "Hack alert" above.
-        image.install_buck_runnable(
-            "//fs_image/rpm:yum-from-snapshot",
-            paths.join(dest_dir, "yum-from-snapshot"),
-        ),
-    ]
+    features = [image.install(snapshot, dest_dir)]
     if make_default:
         features.append(
             image.symlink_dir(dest_dir, paths.join(base_dir, "default")),

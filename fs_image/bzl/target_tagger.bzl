@@ -89,11 +89,11 @@ def wrap_target(target, wrap_prefix):
     wrapped_target = wrap_prefix + "__" + mangle_target(target)
     return native.rule_exists(wrapped_target), wrapped_target
 
-def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_prefix, **kwargs):
+def maybe_wrap_executable_target(target, wrap_prefix, **kwargs):
     exists, wrapped_target = wrap_target(target, wrap_prefix)
 
     if exists:
-        return True, tag_target(target_tagger, ":" + wrapped_target)
+        return True, ":" + wrapped_target
 
     # The `wrap_runtime_deps_as_build_time_deps` docblock explains this:
     was_wrapped, maybe_target = maybe_wrap_runtime_deps_as_build_time_deps(
@@ -101,7 +101,15 @@ def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_prefix, **k
         target = target,
         **kwargs
     )
-    return was_wrapped, tag_target(target_tagger, maybe_target)
+    return was_wrapped, maybe_target
+
+def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_prefix, **kwargs):
+    was_wrapped, wrapped_target = maybe_wrap_executable_target(
+        target,
+        wrap_prefix,
+        **kwargs
+    )
+    return was_wrapped, tag_target(target_tagger, wrapped_target)
 
 def image_source_as_target_tagged_dict(target_tagger, user_source):
     src = image_source(user_source)._asdict()
