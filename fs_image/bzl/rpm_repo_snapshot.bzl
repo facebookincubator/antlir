@@ -32,7 +32,7 @@ echo $(location //fs_image/bzl:rpm_repo_snapshot) > /dev/null
 
 cp --no-target-directory -r $(location {src}) "$OUT"
 
-$(exe //fs_image/rpm/storage:cli) --storage {quoted_storage_cfg} \
+$(exe //fs_image/rpm/storage:cli) --storage {quoted_cli_storage_cfg} \
     get "\\$(cat "$OUT"/snapshot.storage_id)" > "$OUT"/snapshot.sql3
 
 # Write-protect the SQLite DB because it's common to use the `sqlite3` to
@@ -40,11 +40,14 @@ $(exe //fs_image/rpm/storage:cli) --storage {quoted_storage_cfg} \
 # artifact, which is a big no-no.
 chmod a-w "$OUT"/snapshot.sql3
 
+# This lets `nspawn-in-subvol` access the storage config, and not just `yum`
+echo {quoted_storage_cfg} > "$OUT"/storage.json
 echo {quoted_yum_sh} > "$OUT"/yum
 chmod u+x "$OUT"/yum
         '''.format(
             src = maybe_export_file(src),
-            quoted_storage_cfg = shell.quote(struct(**cli_storage).to_json()),
+            quoted_cli_storage_cfg = shell.quote(struct(**cli_storage).to_json()),
+            quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
             # Hack alert: this refers to a sibling `yum-from-snapshot`,
             # which is NOT part of this target.  The reason for this is that
             # `image.install` currently lacks support for `buck run`nable
@@ -53,16 +56,16 @@ chmod u+x "$OUT"/yum
             # buck-runnable binary.
             #
             # NB: At present, this is not **quite** CLI-compatible with `yum`.
-            quoted_yum_sh = shell.quote('''\
+            quoted_yum_sh = shell.quote(
+                '''\
 #!/bin/bash -ue
 set -o pipefail -o noclobber
 my_path=\\$(readlink -f "$0")
 my_dir=\\$(dirname "$my_path")
 exec "$my_dir"/yum-from-snapshot \
-    --snapshot-dir "$my_dir" --storage {quoted_storage_cfg} "$@"
-            '''.format(
-                quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
-            )),
+    --snapshot-dir "$my_dir" --storage "\\$(cat "$my_dir"/storage.json)" "$@"
+''',
+            ),
         ),
     )
 
