@@ -216,6 +216,7 @@ python_library(
         ":common",
         ":repo_objects",
         ":repo_snapshot",
+        "//fs_image/rpm/storage:storage",
         "//fs_image/rpm/storage/facebook:storage",
     ],
 )
@@ -248,7 +249,9 @@ python_library(
     base_module = "rpm",
     deps = [
         ":common",
+        "//fs_image/rpm:db_connection",
         "//fs_image/rpm/facebook:db_connection",
+        "//fs_image/rpm/storage:storage",
         "//fs_image/rpm/storage/facebook:storage",
     ],
 )
