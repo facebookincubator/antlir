@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from configparser import ConfigParser
-from typing import Iterable, Iterator, NamedTuple, Tuple
+from typing import Iterable, Iterator, NamedTuple, TextIO, Tuple
 
 # NB: The 'main' section in `yum.conf` acts similarly to ConfigParser's
 # magic 'DEFAULT', in that it provides default values for some of the repo
@@ -91,8 +91,9 @@ class YumConfIsolator:
         self._isolated_repos = True
         return self
 
-    def isolate_main(self, *, install_root: str, config_path: str) \
-            -> 'YumConfIsolator':
+    def isolate_main(
+        self, *, install_root: str, config_path: str, versionlock_dir: str,
+    ) -> 'YumConfIsolator':
         '''
         Set keys that could cause `yum` to interact with the host filesystem.
         IMPORTANT: See the class docblock, this is not **ENOUGH**.
@@ -126,16 +127,19 @@ class YumConfIsolator:
         main_sec['syslog_device'] = ''  # We'll just use `logfile`.
         assert not main_sec.get('commands')  # This option seems dodgy.
         main_sec.pop('proxy', None)  # We talk only to a local reposerver.
-        # Allowing plugins seems likely to break isolation.
-        main_sec['plugins'] = '0'
-        main_sec['pluginpath'] = '/dev/null'
-        main_sec['pluginconfpath'] = '/dev/null'
+
+        # Allowing arbitrary plugins might well break isolation, but
+        # we are actually only allowing our custom versionlock here.
+        main_sec['plugins'] = '1'
+        main_sec['pluginpath'] = versionlock_dir
+        main_sec['pluginconfpath'] = versionlock_dir
+
         main_sec['bugtracker_url'] = ''  # Yum is unmaintained anyway.
         main_sec['fssnap_devices'] = '!*'  # Snapshots don't make sense.
         self._isolated_main = True
         return self
 
-    def write(self, out: 'TextIO'):
+    def write(self, out: TextIO):
         'Outputs a `yum.conf` file with the changed configuration.'
         assert self._isolated_main and self._isolated_repos
         self._cp.write(out)
@@ -143,7 +147,7 @@ class YumConfIsolator:
 
 class YumConfParser:
 
-    def __init__(self, yum_conf: 'TextIO'):
+    def __init__(self, yum_conf: TextIO):
         self._cp = ConfigParser()
         self._cp.read_file(yum_conf)
 

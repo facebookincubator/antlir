@@ -43,6 +43,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                 td / 'snapshot.sql3',
             )) as db:
                 self.assertEqual({
+                    'cat-pkgs/rpm-test-carrot-1-lockme.x86_64.rpm',
                     'cat-pkgs/rpm-test-mice-0.1-a.x86_64.rpm',
                     'cat-pkgs/rpm-test-milk-2.71-8.x86_64.rpm',
                     'dog-pkgs/rpm-test-carrot-2-rc0.x86_64.rpm',

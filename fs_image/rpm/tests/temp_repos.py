@@ -132,6 +132,8 @@ SAMPLE_STEPS = [
                 test_post_install=True,
             ),
             Rpm('mice', '0.1', 'a'),
+            # Since this is older than version `2-rc0` it needs versionlock.
+            Rpm('carrot', '1', 'lockme'),
         ]),
         'dog': Repo([
             Rpm('milk', '1.41', '42'),

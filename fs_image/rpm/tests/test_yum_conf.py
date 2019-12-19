@@ -61,6 +61,7 @@ class YumConfTestCase(unittest.TestCase):
         self.yum_conf.isolate().isolate_repos(isolated_repos).isolate_main(
             install_root='/install_root',
             config_path='/config_path',
+            versionlock_dir='/versionlock_dir',
         ).write(out)
 
         self.assertEqual(textwrap.dedent('''\
@@ -75,9 +76,9 @@ class YumConfTestCase(unittest.TestCase):
         installroot = /install_root
         config_file_path = /config_path
         syslog_device =\x20
-        plugins = 0
-        pluginpath = /dev/null
-        pluginconfpath = /dev/null
+        plugins = 1
+        pluginpath = /versionlock_dir
+        pluginconfpath = /versionlock_dir
         bugtracker_url =\x20
         fssnap_devices = !*
 

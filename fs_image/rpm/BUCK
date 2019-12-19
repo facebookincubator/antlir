@@ -336,9 +336,12 @@ python_library(
 # into `yum`'s container by `yum-from-snapshot` code.  In the near future,
 # we should eliminate this and just `yum install` the RPM into the
 # corresponding build appliance.
+#
+# It is gzipped to highlight the fact that we treat it as an immutable
+# binary blob to be installed into an image, not like source.
 export_file(
-    name = "yum-plugin-versionlock",
-    src = "third-party/yum-versionlock.py",
+    name = "yum_versionlock.gz",
+    src = "third-party/yum-versionlock.py.gz",
 )
 
 python_binary(
@@ -347,10 +350,12 @@ python_binary(
     base_module = "rpm",
     main_module = "rpm.yum_from_snapshot",
     par_style = "xar",  # Lets us embed the `repo-server` binary
+    resources = {":yum_versionlock.gz": "yum_versionlock.gz"},
     deps = [
         ":common",
         ":repo_server_binary",
         ":yum_conf",
+        "//fs_image:fs_utils",
     ],
 )
 

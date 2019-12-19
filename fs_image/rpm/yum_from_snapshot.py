@@ -108,8 +108,11 @@ building a "yum appliance", along these lines:
         One could `nspawn --bind /install_root --private-network -x` into
         the image to use `yum-from-snapshot` in a truly hermetic way.
 '''
+import gzip
+import importlib
 import os
 import shlex
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -124,7 +127,7 @@ from fs_image.common import (
     check_popen_returncode, FD_UNIX_SOCK_TIMEOUT, get_file_logger,
     listen_temporary_unix_socket, recv_fds_from_unix_sock,
 )
-from .common import Path
+from fs_image.fs_utils import Path, temp_dir
 from .yum_conf import YumConfParser
 
 log = get_file_logger(__file__)
@@ -133,7 +136,7 @@ log = get_file_logger(__file__)
 @contextmanager
 def _prepare_isolated_yum_conf(
     inp: TextIO, out: tempfile.NamedTemporaryFile,
-    install_root: Path, host: str, port: int,
+    install_root: Path, host: str, port: int, versionlock_dir: Path,
 ):
     '''
     Reads a "yum.conf" from `inp`, and writes a modified version to `out`,
@@ -159,6 +162,7 @@ def _prepare_isolated_yum_conf(
     ).isolate_main(
         install_root=install_root.decode(),
         config_path=out.name,
+        versionlock_dir=versionlock_dir.decode(),
     ).write(out)
     out.flush()
     yield  # The config we wrote is valid only inside the context.
@@ -377,6 +381,8 @@ def _dummy_dev() -> str:
         subprocess.run(['sudo', 'rm', '-r', dummy_dev])
 
 
+
+
 @contextmanager
 def _dummies_for_protected_paths(protected_paths) -> Mapping[str, str]:
     '''
@@ -403,9 +409,54 @@ def _dummies_for_protected_paths(protected_paths) -> Mapping[str, str]:
             assert expected == actual, \
                 f'Some RPM wrote {actual} to {protected_paths}'
 
+
+@contextmanager
+def _prepare_versionlock_dir(versionlock_list: Path) -> Path:
+    '''
+    This prepares a directory containing:
+      - the versionlock plugin code (see the Buck target for its provenance)
+      - the plugin configuration
+      - the actual list of locked versions
+
+    This directory is used by `YumConfIsolator.isolate_main` to tell
+    `yum` to use the plugin.
+    '''
+    with temp_dir() as d:
+        vl_conf = textwrap.dedent(f'''\
+            [main]
+            enabled = 1
+            locklist = {d.decode()}/versionlock.list
+        ''')
+        with open(d / 'versionlock.conf', 'w') as outf:
+            outf.write(vl_conf)
+
+        shutil.copyfile(versionlock_list, d / 'versionlock.list')
+
+        with importlib.resources.path('rpm', 'yum_versionlock.gz') as p, \
+                gzip.open(p) as f_in, open(d / 'versionlock.py', 'wb') as f_out:
+            f_out.write(f_in.read())
+
+        yield d
+
+        # Clean up, making sure that there are no new files.
+
+        # Comparing the contents of the plugin & its list is too much effort
+        with open(d / 'versionlock.conf') as infile:
+            assert infile.read() == vl_conf
+
+        assert (set(os.listdir(d)) - {b'versionlock.pyc'}) == {
+            b'versionlock.conf', b'versionlock.list', b'versionlock.py',
+        }, os.listdir(d)
+
+
 def yum_from_snapshot(
-    *, storage_cfg: str, snapshot_dir: Path, install_root: Path,
-    protected_paths: List[str], yum_args: List[str],
+    *,
+    storage_cfg: str,
+    snapshot_dir: Path,
+    install_root: Path,
+    protected_paths: List[str],
+    versionlock_list: Path,
+    yum_args: List[str],
 ):
     # The paths that have trailing slashes are directories, others are
     # files.  There's a separate code path for protecting some files above.
@@ -501,8 +552,10 @@ def yum_from_snapshot(
             repo_server_sock, storage_cfg, snapshot_dir
         ) as server_proc, \
                 open(snapshot_dir / 'yum.conf') as in_yum_conf, \
+                _prepare_versionlock_dir(versionlock_list) as versionlock_td, \
                 _prepare_isolated_yum_conf(
-                    in_yum_conf, out_yum_conf, install_root, host, port
+                    in_yum_conf, out_yum_conf, install_root, host, port,
+                    versionlock_td,
                 ):
 
             log.info('Waiting for repo server to listen')
@@ -542,6 +595,11 @@ def add_common_yum_args(parser: 'argparse.ArgumentParser'):  # pragma: no cover
             'is a host path. Otherwise, it is relative to --install-root. '
             'The path must already exist. There are some internal defaults '
             'that cannot be un-protected. May be repeated.',
+    )
+    parser.add_argument(
+        '--versionlock-list', default='/dev/null',
+        help='A file listing allowed RPM versions in the format that that '
+            '`yum-versionlock` expects: one E:N-V-R.A per line.',
     )
     parser.add_argument(
         'yum_args', nargs='+',
@@ -591,5 +649,6 @@ if __name__ == '__main__':  # pragma: no cover
         snapshot_dir=args.snapshot_dir,
         install_root=args.install_root,
         protected_paths=args.protected_path,
+        versionlock_list=args.versionlock_list,
         yum_args=args.yum_args,
     )
