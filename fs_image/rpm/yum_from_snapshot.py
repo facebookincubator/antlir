@@ -169,7 +169,12 @@ def _prepare_isolated_yum_conf(
 
 
 @contextmanager
-def _repo_server(sock: socket.socket, storage_cfg: str, snapshot_dir: Path):
+def _repo_server(
+    repo_server_bin: Path,
+    sock: socket.socket,
+    storage_cfg: str,
+    snapshot_dir: Path
+):
     '''
     Invokes `repo-server` with the given storage & snapshot; passes it
     ownership of the bound TCP socket -- it listens & accepts connections.
@@ -178,7 +183,7 @@ def _repo_server(sock: socket.socket, storage_cfg: str, snapshot_dir: Path):
     # involved in mixing threads & subprocess (yes, lots of programs do,
     # but yes, far fewer do it safely).
     with sock, subprocess.Popen([
-        os.path.join(os.path.dirname(__file__), 'repo-server'),
+        repo_server_bin,
         '--socket-fd', str(sock.fileno()),
         '--storage', storage_cfg,
         '--snapshot-dir', snapshot_dir,
@@ -451,6 +456,7 @@ def _prepare_versionlock_dir(versionlock_list: Path) -> Path:
 
 def yum_from_snapshot(
     *,
+    repo_server_bin: Path,
     storage_cfg: str,
     snapshot_dir: Path,
     install_root: Path,
@@ -549,7 +555,7 @@ def yum_from_snapshot(
 
         # The server takes ownership of the socket, so we don't enter it here.
         with _repo_server(
-            repo_server_sock, storage_cfg, snapshot_dir
+            repo_server_bin, repo_server_sock, storage_cfg, snapshot_dir
         ) as server_proc, \
                 open(snapshot_dir / 'yum.conf') as in_yum_conf, \
                 _prepare_versionlock_dir(versionlock_list) as versionlock_td, \
@@ -625,6 +631,10 @@ if __name__ == '__main__':  # pragma: no cover
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
+        '--repo-server', required=True, type=Path.from_argparse,
+        help='Path to repo-server binary',
+    )
+    parser.add_argument(
         '--snapshot-dir', required=True, type=Path.from_argparse,
         help='Multi-repo snapshot directory.',
     )
@@ -645,6 +655,7 @@ if __name__ == '__main__':  # pragma: no cover
     init_logging()
 
     yum_from_snapshot(
+        repo_server_bin=args.repo_server,
         storage_cfg=json.dumps(args.storage),
         snapshot_dir=args.snapshot_dir,
         install_root=args.install_root,

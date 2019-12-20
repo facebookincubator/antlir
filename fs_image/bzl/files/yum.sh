@@ -4,5 +4,6 @@ my_path=$(readlink -f "$0")
 my_dir=$(dirname "$my_path")
 base_dir=$(dirname "$my_dir")
 exec "$base_dir"/yum-from-snapshot \
+    --repo-server "$base_dir/repo-server" \
     --snapshot-dir "$base_dir" \
     --storage "$(cat "$base_dir"/storage.json)" "$@"

@@ -28,6 +28,11 @@ def rpm_repo_snapshot(name, src, storage, visibility = None):
         wrap_prefix = "__rpm_repo_snapshot",
         visibility = [],
     )
+    _, repo_server_wrapper = maybe_wrap_executable_target(
+        target = "//fs_image/rpm:repo-server",
+        wrap_prefix = "__rpm_repo_snapshot",
+        visibility = [],
+    )
     buck_genrule(
         name = name,
         out = "unused",
@@ -51,6 +56,7 @@ chmod a-w "$OUT"/snapshot.sql3
 echo {quoted_storage_cfg} > "$OUT"/storage.json
 
 cp $(location {yum_from_snapshot_wrapper}) "$OUT"/yum-from-snapshot
+cp $(location {repo_server_wrapper}) "$OUT"/repo-server
 
 # The `bin` directory exists so that "porcelain" binaries can potentially be
 # added to `PATH`.  But we should avoid doing this in production code.
@@ -63,6 +69,7 @@ cp $(location {yum_sh_target}) "$OUT"/bin/yum
             quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
             yum_sh_target = "//fs_image/bzl:files/yum.sh",
             yum_from_snapshot_wrapper = yum_from_snapshot_wrapper,
+            repo_server_wrapper = repo_server_wrapper,
         ),
         visibility = get_visibility(visibility, name),
     )

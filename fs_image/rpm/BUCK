@@ -324,14 +324,6 @@ python_unittest(
     deps = [":yum_conf"],
 )
 
-# This is split out so that our coverage tool doesn't complain that the
-# `repo-server` binary has 0% coverage. T24586337
-python_library(
-    name = "repo_server_binary",
-    base_module = "rpm",
-    resources = {":repo-server": "repo-server"},
-)
-
 # This is extracted from the RPM `yum-versionlock-1.1.31`, and is injected
 # into `yum`'s container by `yum-from-snapshot` code.  In the near future,
 # we should eliminate this and just `yum install` the RPM into the
@@ -353,7 +345,6 @@ python_binary(
     resources = {":yum_versionlock.gz": "yum_versionlock.gz"},
     deps = [
         ":common",
-        ":repo_server_binary",
         ":yum_conf",
         "//fs_image:fs_utils",
     ],
@@ -407,6 +398,7 @@ python_unittest(
     par_style = "xar",
     resources = {
         target_location(":repo-snapshot-for-tests"): "repo-snapshot",
+        target_location(":repo-server"): "repo-server",
     },
     deps = [":yum-from-snapshot-library"],
 )

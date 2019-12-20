@@ -43,6 +43,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
                     tf.write('\n'.join(version_lock) + '\n')
                 tf.flush()
                 yum_from_snapshot(
+                    repo_server_bin=Path(load_location('rpm', 'repo-server')),
                     storage_cfg=json.dumps({
                         'key': 'test',
                         'kind': 'filesystem',
