@@ -2,7 +2,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load(":image.bzl", "image")
 load(":maybe_export_file.bzl", "maybe_export_file")
-load(":oss_shim.bzl", "buck_genrule")
+load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 load(":target_tagger.bzl", "mangle_target", "maybe_wrap_executable_target")
 
 # This constant is duplicated in `yum_using_build_appliance`.
@@ -12,7 +12,7 @@ RPM_SNAPSHOT_BASE_DIR = "rpm-repo-snapshot"
 # `"base_dir"` is relative, it will magically be interpreted to be relative
 # to the snapshot dir, both by this code, and later by `yum-from-snapshot`
 # that runs in the build appliance.
-def rpm_repo_snapshot(name, src, storage):
+def rpm_repo_snapshot(name, src, storage, visibility = None):
     # For tests, we want relative `base_dir` to point into the snapshot dir.
     cli_storage = storage.copy()
     if cli_storage["kind"] == "filesystem" and \
@@ -64,6 +64,7 @@ cp $(location {yum_sh_target}) "$OUT"/bin/yum
             yum_sh_target = "//fs_image/bzl:files/yum.sh",
             yum_from_snapshot_wrapper = yum_from_snapshot_wrapper,
         ),
+        visibility = get_visibility(visibility, name),
     )
 
 # Requires some other feature to make the directory `/<RPM_SNAPSHOT_BASE_DIR>`

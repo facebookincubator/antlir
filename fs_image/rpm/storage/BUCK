@@ -53,6 +53,7 @@ python_binary(
     main_module = "rpm.storage.cli",
     deps = [
         "//fs_image/rpm:common",
+        "//fs_image/rpm/storage:storage",
         "//fs_image/rpm/storage/facebook:storage",
     ],
 )
