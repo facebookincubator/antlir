@@ -4,6 +4,7 @@
 ## test will then check that they become the right image compiler Items.
 ##
 
+load("//fs_image/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "RPM_SNAPSHOT_BASE_DIR", "install_rpm_repo_snapshot")
@@ -79,6 +80,9 @@ image.layer(
             "/mnt/gvfs",
         ]
     ],
+    build_opts = image.opts(
+        build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
+    ),
 )
 
 image.layer(
@@ -95,6 +99,9 @@ image.layer(
         ),
         image.host_dir_mount("/etc"),
     ],
+    build_opts = image.opts(
+        build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
+    ),
 )
 
 # The next 2 layers exercise the build appliance logic for RPM installation
@@ -118,6 +125,9 @@ image.layer(
         image.mkdir("/", RPM_SNAPSHOT_BASE_DIR),
         install_rpm_repo_snapshot("//fs_image/rpm:repo-snapshot-for-tests"),
     ],
+    build_opts = image.opts(
+        build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
+    ),
 )
 
 # Verified by `test_build_appliance` in `test-image-layer`.
