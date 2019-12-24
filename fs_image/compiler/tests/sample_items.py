@@ -15,7 +15,7 @@ _NONPORTABLE_ARTIFACTS = int(os.environ.get(
     'test_image_feature_built_artifacts_require_repo'
 ))
 
-T_BASE = '//fs_image/compiler/tests'
+T_BASE = '//fs_image/compiler/test_images'
 # Use the "debug", human-readable forms of the image_feature targets here,
 # since that's what we are testing.
 T_DIRS = f'{T_BASE}:feature_dirs'
@@ -25,11 +25,11 @@ T_SYMLINKS = f'{T_BASE}:feature_symlinks'
 T_TAR = f'{T_BASE}:feature_tar_and_rpms'
 T_PRINT_OK = f'{T_BASE}:print-ok'
 T_EXE_WRAP_PRINT_OK = \
-    f'{T_BASE}:install_buck_runnable_wrap_source__print-ok__c032e51d'
+    f'{T_BASE}:install_buck_runnable_wrap_source__print-ok__80cbde81'
 T_DIR_PRINT_OK = f'{T_BASE}:dir-print-ok'
 T_DIR_WITH_SCRIPT = f'{T_BASE}:dir-with-script'
 T_EXE_WRAP_DIR_PRINT_OK = \
-    f'{T_BASE}:install_buck_runnable_wrap_source__dir-print-ok__4331d20c'
+    f'{T_BASE}:install_buck_runnable_wrap_source__dir-print-ok__2f3b9d05'
 T_INSTALL_FILES = f'{T_BASE}:feature_install_files'
 T_KITCHEN_SINK = f'{T_BASE}:feature_kitchen_sink'
 T_HELLO_WORLD_BASE = f'{T_BASE}:hello_world_base'
@@ -54,8 +54,8 @@ def mangle(feature_target):
 
 
 # This should be a faithful transcription of the `image_feature`
-# specifications in `test/TARGETS`.  The IDs currently have no semantics,
-# existing only to give names to specific items.
+# specifications in `test_images/TARGETS`.  The IDs currently have no
+# semantics, existing only to give names to specific items.
 ID_TO_ITEM = {
     '/': FilesystemRootItem(from_target=None),
 

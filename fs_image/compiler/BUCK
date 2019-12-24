@@ -3,7 +3,7 @@
 
 load("//fs_image/bzl:artifacts_require_repo.bzl", "built_artifacts_require_repo")
 load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
-load(":defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_TARGET_PREFIX", "image_feature_python_unittest")
+load(":defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_IMAGE_PREFIX", "image_feature_python_unittest")
 
 python_library(
     name = "subvolume_on_disk",
@@ -140,8 +140,8 @@ TEST_IMAGE_FEATURE_TRANSITIVE_DEPS = [
     "hello_world_base",
     "hello_world.tar",
 ] + ([
-    "install_buck_runnable_wrap_source__dir-print-ok__4331d20c",
-    "install_buck_runnable_wrap_source__print-ok__c032e51d",
+    "install_buck_runnable_wrap_source__dir-print-ok__2f3b9d05",
+    "install_buck_runnable_wrap_source__print-ok__80cbde81",
 ] if built_artifacts_require_repo() else [])
 
 image_feature_python_unittest(
@@ -181,7 +181,7 @@ image_feature_python_unittest(
         ":compiler",
     )],
     resources = {
-        "//fs_image/compiler/tests:fake-build-appliance-from-host": "tests/host-test-build-appliance",
+        TEST_IMAGE_PREFIX + "fake-build-appliance-from-host": "tests/host-test-build-appliance",
     },
     test_image_feature_transitive_deps = TEST_IMAGE_FEATURE_TRANSITIVE_DEPS,
     deps = [":compiler"],
@@ -211,7 +211,7 @@ python_unittest(
     # other `python_*` rules.  `cpp_deps` is the kitchen sink?
     cpp_deps = [
         # Buck bug: `env` does not create a dependency; do it explicitly.
-        TEST_TARGET_PREFIX + t
+        TEST_IMAGE_PREFIX + t
         for t in IMAGE_LAYER_DEPS
     ],
     # NB: We could replace this with `resources` if this breaks, but while
@@ -220,13 +220,14 @@ python_unittest(
     # (running `test-image-layer#binary.par`) without needing `buck test`.
     env = {
         "test_image_layer_path_to_" + t: "$(location {})".format(
-            TEST_TARGET_PREFIX + t,
+            TEST_IMAGE_PREFIX + t,
         )
         for t in IMAGE_LAYER_DEPS
     },
     par_style = "zip",  # "fastzip" would break :volume_for_repo in @mode/opt
     # As with `test-image-feature`, we cannot get `image_layer.py` coverage.
     deps = [
+        ":sample_items",
         "//fs_image:find_built_subvol",
         "//fs_image/btrfs_diff:testlib_demo_sendstreams",
         "//fs_image/btrfs_diff:testlib_render_subvols",
@@ -242,17 +243,17 @@ python_unittest(
     # `root` cannot access the content of unprivileged XARs.
     par_style = "zip",
     resources = {
-        TEST_TARGET_PREFIX + READ_MY_DOC_image_feature_target(
+        TEST_IMAGE_PREFIX + READ_MY_DOC_image_feature_target(
             "feature_addremove_conflict_add",
         ): "tests/data/feature_add",
-        TEST_TARGET_PREFIX + READ_MY_DOC_image_feature_target(
+        TEST_IMAGE_PREFIX + READ_MY_DOC_image_feature_target(
             "feature_addremove_conflict_remove",
         ): "tests/data/feature_remove",
-        TEST_TARGET_PREFIX + READ_MY_DOC_image_feature_target(
+        TEST_IMAGE_PREFIX + READ_MY_DOC_image_feature_target(
             "feature_addremove_conflict_both",
         ): "tests/data/feature_both",
-        "//fs_image/compiler/tests:addremove_conflict_child": "tests/data/child",
-        "//fs_image/compiler/tests:addremove_conflict_parent": "tests/data/parent",
+        TEST_IMAGE_PREFIX + "addremove_conflict_child": "tests/data/child",
+        TEST_IMAGE_PREFIX + "addremove_conflict_parent": "tests/data/parent",
     },
     deps = [
         ":compiler",

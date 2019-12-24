@@ -42,7 +42,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 'is_directory': True,
                 'build_source': {
                     'type': 'layer',
-                    'source': '//fs_image/compiler/tests:' + target,
+                    'source': '//fs_image/compiler/test_images:' + target,
                 },
             }
             if mount_config:
@@ -183,7 +183,7 @@ class ImageLayerTestCase(unittest.TestCase):
             ('create_ops', 'create_ops-alias', {
                 'build_source': {
                     'type': 'layer',
-                    'source': '//fs_image/compiler/tests:create_ops',
+                    'source': '//fs_image/compiler/test_images:create_ops',
                 }
             }),
         ]:

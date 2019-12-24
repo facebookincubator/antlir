@@ -1,4 +1,5 @@
 load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 # Split out since `nspawn-in-subvol` depends on it.
 python_library(
@@ -65,12 +66,12 @@ python_unittest(
     resources = {
         "//fs_image/build_appliance/facebook:fb_build_appliance_testing": "tests/fb-test-build-appliance",
         "//fs_image/build_appliance/facebook:fb_host_build_appliance_testing": "tests/fb-host-test-build-appliance",
-        "//fs_image/compiler/tests:create_ops-original.sendstream": "tests/create_ops.sendstream",
-        "//fs_image/compiler/tests:fake-build-appliance-from-host": "tests/host-test-build-appliance",
-        "//fs_image/compiler/tests:layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
-        "//fs_image/compiler/tests:rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
-        "//fs_image/compiler/tests:rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
-        "//fs_image/compiler/tests:toy-rpm-build-rpmbuild-setup": "tests/toy-rpmbuild-setup",
+        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
+        TEST_IMAGE_PREFIX + "fake-build-appliance-from-host": "tests/host-test-build-appliance",
+        TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
+        TEST_IMAGE_PREFIX + "rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
+        TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
+        TEST_IMAGE_PREFIX + "toy-rpm-build-rpmbuild-setup": "tests/toy-rpmbuild-setup",
     },
     deps = [
         ":items",

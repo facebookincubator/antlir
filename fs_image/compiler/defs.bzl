@@ -1,7 +1,7 @@
 load("//fs_image/bzl:artifacts_require_repo.bzl", "built_artifacts_require_repo")
 load("//fs_image/bzl:oss_shim.bzl", "python_unittest")
 
-TEST_TARGET_PREFIX = "//fs_image/compiler/tests:"
+TEST_IMAGE_PREFIX = "//fs_image/compiler/test_images:"
 
 def READ_MY_DOC_image_feature_target(name):
     """
@@ -22,7 +22,7 @@ def image_feature_python_unittest(test_image_feature_transitive_deps, deps = Non
     env = env or {}
     env.update({
         "test_image_feature_path_to_" + t: "$(location {})".format(
-            TEST_TARGET_PREFIX + t,
+            TEST_IMAGE_PREFIX + t,
         )
         for t in test_image_feature_transitive_deps
     })
@@ -33,7 +33,7 @@ def image_feature_python_unittest(test_image_feature_transitive_deps, deps = Non
 
     # For now cpp_deps is raw buck deps for python_ targets
     cpp_deps = [
-        TEST_TARGET_PREFIX + t
+        TEST_IMAGE_PREFIX + t
         for t in test_image_feature_transitive_deps
     ]
     return python_unittest(

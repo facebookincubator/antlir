@@ -1,7 +1,6 @@
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
-
-TEST_TARGET_PREFIX = "//fs_image/compiler/tests:"
+load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 python_library(
     name = "common",
@@ -89,8 +88,8 @@ python_unittest(
     )],
     par_style = "zip",  # "fastzip" won't work because of `set_up_volume.sh`
     resources = {
-        "//fs_image/compiler/tests:hello_world_base": "tests/hello-layer",
-        TEST_TARGET_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
+        TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello-layer",
+        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
     },
     deps = [
         ":subvol_utils",
@@ -164,7 +163,7 @@ python_unittest(
     # `root` cannot access the content of unprivileged XARs.
     par_style = "zip",
     resources = {
-        "//fs_image/compiler/tests:hello_world_base": "tests/hello_world_base",
+        TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello_world_base",
     },
     deps = [":find_built_subvol"],
 )
@@ -218,7 +217,7 @@ python_library(
 # NB: Internally, you can use `buck run //tools/xar:make_xar` instead.
 image.layer(
     name = "host-hello-xar",
-    parent_layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    parent_layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
     features = [image.install("tests/hello.xar", "/hello.xar")],
 )
 
@@ -235,8 +234,7 @@ python_unittest(
     par_style = "zip",
     resources = {
         ":host-hello-xar": "tests/host-hello-xar",
-        "//fs_image/compiler/tests" +
-        ":only-for-tests-read-only-host-clone": "tests/host",
+        TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone": "tests/host",
         "//tupperware/image/base" +
         ":base-bootable": "tests/bootable-systemd-os",
     },
@@ -412,9 +410,9 @@ python_unittest(
     par_style = "zip",
     resources = {
         # Same comment re: mutate_ops as in `test_layer_from_demo_sendstreams`.
-        TEST_TARGET_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
-        TEST_TARGET_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
-        TEST_TARGET_PREFIX + "create_ops": "tests/create_ops.layer",
+        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
+        TEST_IMAGE_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
+        TEST_IMAGE_PREFIX + "create_ops": "tests/create_ops.layer",
     },
     deps = [
         ":find_built_subvol",
@@ -433,7 +431,7 @@ python_unittest(
     # `root` cannot access the content of unprivileged XARs.
     par_style = "zip",
     resources = {
-        "//fs_image/compiler/tests:installed-executables": "tests/exe-layer",
+        TEST_IMAGE_PREFIX + "installed-executables": "tests/exe-layer",
     },
     deps = [":nspawn_in_subvol"],
 )

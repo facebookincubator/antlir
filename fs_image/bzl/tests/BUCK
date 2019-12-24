@@ -1,6 +1,7 @@
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 load("//fs_image/bzl:systemd.bzl", "systemd")
+load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 python_library(
     name = "coverage_test_helper",
@@ -11,7 +12,7 @@ python_library(
 image.python_unittest(
     name = "test-image-python-unittest",
     srcs = ["test_image_python_unittest.py"],
-    layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
     needed_coverage = [(100, ":coverage_test_helper")],
     deps = [":coverage_test_helper"],
     env = {"kitteh": "meow"},
@@ -30,14 +31,14 @@ image.python_unittest(
 image.python_unittest(
     name = "test-image-hostname-python",
     srcs = ["test_image_hostname.py"],
-    layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
     hostname = "test-hostname.com",
 )
 
 image.cpp_unittest(
     name = "test-image-cpp-unittest",
     srcs = ["ImageCppUnittestTest.cpp"],
-    layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
     env = {"kitteh": "meow"},
 )
 
@@ -52,7 +53,7 @@ image.cpp_unittest(
 image.cpp_unittest(
     name = "test-image-hostname-cpp",
     srcs = ["ImageHostnameTest.cpp"],
-    layer = "//fs_image/compiler/tests:only-for-tests-read-only-host-clone",
+    layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
     env = {},
     hostname = "test-hostname.com",
 )
@@ -69,7 +70,7 @@ python_unittest(
 image.python_unittest(
     name = "test-toy-rpm-build",
     srcs = ["test_toy_rpm_build_unittest.py"],
-    layer = "//fs_image/compiler/tests:toy-rpm-build",
+    layer = TEST_IMAGE_PREFIX + "toy-rpm-build",
     deps = ["//fs_image/rpm:rpm_metadata"],
 )
 

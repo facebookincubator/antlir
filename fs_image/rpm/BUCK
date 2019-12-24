@@ -1,6 +1,7 @@
 load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
+load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 python_library(
     name = "pluggable",
@@ -462,8 +463,8 @@ python_unittest(
     ],
     par_style = "zip",
     resources = {
-        "//fs_image/compiler/tests:child/layer": "tests/child-layer",
-        "//fs_image/compiler/tests:hello_world_base": "tests/hello-layer",
+        TEST_IMAGE_PREFIX + "child/layer": "tests/child-layer",
+        TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello-layer",
     },
     deps = [
         ":common",

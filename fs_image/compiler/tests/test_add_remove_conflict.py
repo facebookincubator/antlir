@@ -13,7 +13,7 @@ from ..subvolume_on_disk import SubvolumeOnDisk
 
 
 def _test_feature_target(feature_target):
-    return '//fs_image/compiler/tests:' + feature_target + (
+    return '//fs_image/compiler/test_images:' + feature_target + (
         '_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN_'
         'SO_DO_NOT_DO_THIS_EVER_PLEASE_KTHXBAI'
     )
