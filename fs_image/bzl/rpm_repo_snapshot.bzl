@@ -71,6 +71,13 @@ cp $(location {yum_sh_target}) "$OUT"/bin/yum
             yum_from_snapshot_wrapper = yum_from_snapshot_wrapper,
             repo_server_wrapper = repo_server_wrapper,
         ),
+        # This rule is not cacheable due to `maybe_wrap_executable_target`
+        # above.  Technically, we could make it cacheable in @mode/opt, but
+        # since this is essentially a cache-retrieval rule already, that
+        # doesn't seem useful.  For the same reason, nor does it seem that
+        # useful to move the binary installation as `install_buck_runnable`
+        # into `install_rpm_repo_snapshot`.
+        cacheable = False,
         visibility = get_visibility(visibility, name),
     )
 
