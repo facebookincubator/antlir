@@ -10,7 +10,7 @@ RPM_SNAPSHOT_BASE_DIR = "rpm-repo-snapshot"
 
 # Hack alert: If you pass `storage["kind"] == "filesystem"`, and its
 # `"base_dir"` is relative, it will magically be interpreted to be relative
-# to the snapshot dir, both by this code, and later by `yum-from-snapshot`
+# to the snapshot dir, both by this code, and later by `yum-dnf-from-snapshot`
 # that runs in the build appliance.
 def rpm_repo_snapshot(name, src, storage, visibility = None):
     # For tests, we want relative `base_dir` to point into the snapshot dir.
@@ -23,8 +23,8 @@ def rpm_repo_snapshot(name, src, storage, visibility = None):
         )
 
     # We need a wrapper to `cp` a `buck run`nable target in @mode/dev.
-    _, yum_from_snapshot_wrapper = maybe_wrap_executable_target(
-        target = "//fs_image/rpm:yum-from-snapshot",
+    _, yum_dnf_from_snapshot_wrapper = maybe_wrap_executable_target(
+        target = "//fs_image/rpm:yum-dnf-from-snapshot",
         wrap_prefix = "__rpm_repo_snapshot",
         visibility = [],
     )
@@ -42,7 +42,7 @@ set -ue -o pipefail -o noclobber
 # Rebuild RPM snapshots if this bzl (or its dependencies) change
 echo $(location //fs_image/bzl:rpm_repo_snapshot) > /dev/null
 
-# Copy the basic snapshot, e.g. `snapshot.storage_id`, `repos`, `yum.conf`
+# Copy the basic snapshot, e.g. `snapshot.storage_id`, `repos`, `yum|dnf.conf`
 cp --no-target-directory -r $(location {src}) "$OUT"
 
 $(exe //fs_image/rpm/storage:cli) --storage {quoted_cli_storage_cfg} \
@@ -52,10 +52,10 @@ $(exe //fs_image/rpm/storage:cli) --storage {quoted_cli_storage_cfg} \
 # artifact, which is a big no-no.
 chmod a-w "$OUT"/snapshot.sql3
 
-# This lets `nspawn-in-subvol` access the storage config, and not just `yum`
+# Many programs access the storage config: `yum`, `dnf`, `nspawn-in-subvol`
 echo {quoted_storage_cfg} > "$OUT"/storage.json
 
-cp $(location {yum_from_snapshot_wrapper}) "$OUT"/yum-from-snapshot
+cp $(location {yum_dnf_from_snapshot_wrapper}) "$OUT"/yum-dnf-from-snapshot
 cp $(location {repo_server_wrapper}) "$OUT"/repo-server
 
 # The `bin` directory exists so that "porcelain" binaries can potentially be
@@ -67,9 +67,9 @@ cp $(location {yum_sh_target}) "$OUT"/bin/yum
             src = maybe_export_file(src),
             quoted_cli_storage_cfg = shell.quote(struct(**cli_storage).to_json()),
             quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
-            yum_sh_target = "//fs_image/bzl:files/yum.sh",
-            yum_from_snapshot_wrapper = yum_from_snapshot_wrapper,
+            yum_dnf_from_snapshot_wrapper = yum_dnf_from_snapshot_wrapper,
             repo_server_wrapper = repo_server_wrapper,
+            yum_sh_target = "//fs_image/bzl:files/yum.sh",
         ),
         # This rule is not cacheable due to `maybe_wrap_executable_target`
         # above.  Technically, we could make it cacheable in @mode/opt, but

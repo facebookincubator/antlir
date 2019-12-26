@@ -268,8 +268,8 @@ def _yum_dnf_using_build_appliance(
         '--user', 'root',
         # You can see below --no-private-network in conjunction with
         # --cap-net-admin.  CAP_NET_ADMIN is not intended to administer the
-        # host's network stack.  See how yum_from_snapshot() brings loopback
-        # interface up under protection of "unshare --net".
+        # host's network stack.  See how yum_dnf_from_snapshot() brings
+        # loopback interface up under protection of "unshare --net".
         '--cap-net-admin',
         '--no-private-network',
         '--bindmount-rw', install_root.decode(), work_dir,

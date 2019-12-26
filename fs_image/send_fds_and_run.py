@@ -49,7 +49,7 @@ from fs_image.common import (
 log = get_file_logger(__file__)
 
 
-# NB: This was copy-pasta'd from yum_from_snapshot.py
+# NB: This was copy-pasta'd from yum_dnf_from_snapshot.py
 def send_fds(sock, fds):
     msg = b'unused'
     num_sent = sock.sendmsg([msg], [(

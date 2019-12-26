@@ -1,31 +1,38 @@
 #!/usr/bin/env python3
 '''
-This tool wraps `yum`, with two changes to ensure more hermetic behavior:
+This tool wraps `yum` and its successor `dnf`, with two changes to ensure
+more hermetic behavior:
 
-  - The `yum.conf`, the repo metadata, and the RPM contents are all served
-    out of a directory produced `snapshot-repos`, **not** against some kind
-    of live, external RPM repo collection.  So if both the snapshot, and
-    `fs_images/rpm` are committed to the same version control, then a single
-    version ID completely determines the outcome of a yum command.
+  - The `{yum,dnf}.conf`, the repo metadata, and the RPM contents are all
+    served out of a directory produced `snapshot-repos`, **not** against
+    some kind of live, external RPM repo collection.  So if both the
+    snapshot, and `fs_images/rpm` are committed to the same version control,
+    then a single version ID completely determines the outcome of a package
+    manager invocation.
 
-  - The `yum` invocation runs in a Linux namespaces sandbox with an isolated
-    network, and with some additional bind mounts that are intended to
-    prevent `yum` from accessing host configuration, state, or caches.
+  - The `yum` or `dnf` invocation runs in a Linux namespaces sandbox with an
+    isolated network, and with some additional bind mounts that are intended
+    to prevent it from accessing host configuration, state, or caches.
 
-Put in other words, we first configure yum to act in a deterministic
-fashion, and later execute it in a sandbox to prevent its non-isolatable
-features from behaving non-determinitically.
+Put in other words, we first configure `yum` or `dnf` to act in a
+deterministic fashion, and later execute it in a sandbox to prevent its
+non-isolatable features from behaving non-determinitically.
+
+Note that `dnf` support was "bolted on" to this tool, and may be less
+mature.  However, the isolation features are no longer very important, since
+we now do all RPM installs from a "build appliance", so this code-path will
+be significantly simplified soon.
 
 Sample usage:
 
-    buck run TARGET_PATH:yum-from-snapshot -- \\
+    buck run TARGET_PATH:yum-dnf-from-snapshot -- \\
         --storage '{"key": "SOME_KEY", "kind": "SOME_KIND", ...}' \\
         --snapshot-dir REPOS_PATH --install-root TARGET_DIR -- \\
-            install --assumeyes some-package-name
+            dnf install --assumeyes some-package-name
 
 Note that we have TWO `--` arguments, with the first protecting the
-wrapper's arguments from `buck`, and the second protecting `yum`'s arguments
-from the wrapper.
+wrapper's arguments from `buck`, and the second protecting `yum` or `dnf`'s
+arguments from the wrapper.
 
 It should be safe to `--assumeyes` (which auto-imports GPG keys), because:
   - The snapshot repo server runs on localhost and only listens inside an
@@ -37,27 +44,27 @@ It should be safe to `--assumeyes` (which auto-imports GPG keys), because:
     predetermined whitelist, protecting us against transient key injections.
     Many other sanity checks happen at snapshot time.
 
-Note that this still uses the host system's `yum`, so version upgrades can
-definitely break reproducibility & hermeticity.  See the notes in "Future
-Work" about a "yum appliance", which would address this concern.
+This binary normally runs inside a build appliance (see `RpmActionItem`).
+The code here thus uses the BA's `yum` or `dnf` binary, so build appliance
+upgrades can break this code.
 
 ## Future work
 
 The current tool works well, with these caveats:
 
-  - Yum leaves various caches inside `--install-root`, which bloat the image.
-    The image-building infra must support some kind of cleanup layer.
+  - `yum` & `dnf` leaves various caches inside `--install-root`, which bloat
+    the image.  `RpmActionItem` has a bind-mount to prevent this leakage,
+    and we also provide `//fs_image/features:rpm_cleanup` which should be
+    included in all production layers.
 
   - Base CentOS packages deposit a vanilla CentOS `yum` configuration into
     the install root via `/etc/yum.repos.d/`, bearing no relation to the
-    `yum.conf` that was used to install packages into the image.
+    `yum.conf` that was used to install packages into the image.  Note that
+    `dnf` would try to look in the same `yum.repos.d` if we did not hide it.
 
-  - Using the host `yum` may cause hermeticity issues due to OS upgrades.
-    This would be fixed by the "yum appliance" work below.
-
-  - This is significantly slower than vanilla `yum`. On a flash-disk host,
-    a vanilla `yum install net-tools` takes about 1:00, while the current
-    `yum-from-snapshot` needs 3:40. The two major reasons are:
+  - This is significantly slower than vanilla `yum/dnf`.  On an SSD host, a
+    vanilla `yum install net-tools` takes about 1:00, while the current
+    `yum-dnf-from-snapshot` needs 3:40.  The two major reasons are:
 
       * `repo-server` could be faster, specifically it (i) should support
         serving multiple files in parallel, (ii) the Facebook-production
@@ -66,10 +73,11 @@ The current tool works well, with these caveats:
         of blobs may help, (iv) `repo_server.py` can start faster if
         it avoids eagerly loading the `rpm` table into RAM.
 
-      * Since we typically run `yum` in an empty clean install-root, the
-        initial run is extra-slow due to having to download the repodata,
-        and build the local DB / populate local caches.  The "yum appliance"
-        work below will speed this up dramatically.
+      * Since we typically run `yum/dnf` in an empty clean install-root, the
+        initial run can extra-slow due to having to download the repodata,
+        and build the local DB / populate local caches.  However, the
+        `RpmActionItem` "build appliance" normally mitigates this by
+        providing warm caches for the repo snapshot.
 
   - This brings up and tears down network namespaces frequently. According
     to ast@kernel.org, bugs are routinely introduced that break NETNS
@@ -78,35 +86,14 @@ The current tool works well, with these caveats:
     along the lines of the program in `bind4_prog_load` in the kernel's
     `test_sock_addr.c`.
 
-  - When installing into a blank root, `yum` cannot discover the release, so
-    it literally has `/repos/x86_64/$releasever` as the 'persistdir'
-    subdirectory.  How should we determine the correct release for a
-    snapshot-based install?  Fake it?  Add `/etc/*-release` from the
+  - When installing into a blank root, `yum/dnf` cannot discover the
+    release, so it literally has `/repos/x86_64/$releasever` as the
+    'persistdir' subdirectory.  How should we determine the correct release
+    for a snapshot-based install?  Fake it?  Add `/etc/*-release` from the
     snapshot host to the snapshot?
 
-Besides the easy fix of parallelizing `repo-server`, the best
-reward-for-effort improvement to `yum-from-snapshot` would come from
-building a "yum appliance", along these lines:
-
-  - For each new repo snapshot, we eagerly construct an OS image (either via
-    continuous integration + build cache, or by doing it at snapshot time
-    and committing it as a blob to `--storage` with a pointer from the repo
-    snapshot directory, or both).
-
-  - The image should contain:
-      * `yum-from-snapshot install yum` -- i.e. we use the current script
-        to bootstrap the image.
-      * A pre-configured `yum.conf` deriving from the repo snapshot that
-        originated the `yum` RPM in the image.
-      * Warm YUM caches / persistent directories. I believe the bootstrap
-        `yum` will already populate these, but this remains to be tested.
-        One would also tweak `yum.conf` or `cachecookie`s to ensure the
-        cache never expires.
-      * [optionally] The repo snapshot data to allow running `repo-server`
-        against the appliance image.
-      * [optionally] `yum-from-snapshot` with its baked-in `repo-server`.
-        One could `nspawn --bind /install_root --private-network -x` into
-        the image to use `yum-from-snapshot` in a truly hermetic way.
+We're on the verge of shipping the easy fix of parallelizing `repo-server`
+very soon, but other perf improvements will be wanted.
 '''
 import gzip
 import importlib
@@ -134,17 +121,17 @@ log = get_file_logger(__file__)
 
 
 @contextmanager
-def _prepare_isolated_yum_conf(
+def _prepare_isolated_yum_dnf_conf(
     inp: TextIO, out: tempfile.NamedTemporaryFile,
     install_root: Path, host: str, port: int, versionlock_dir: Path,
 ):
     '''
-    Reads a "yum.conf" from `inp`, and writes a modified version to `out`,
-    installing into `install_root`, and getting packages + GPG keys from a
-    snapshot `repo-server` at `http://host:port`.
+    Reads a "{yum,dnf}.conf" from `inp`, and writes a modified version to
+    `out`, installing into `install_root`, and getting packages + GPG keys
+    from a snapshot `repo-server` at `http://host:port`.
 
     This is a context manager because in a prior iteration, the resulting
-    isolated "yum.conf" was only valid for as long as some associated
+    isolated "{yum,dnf}.conf" was only valid for as long as some associated
     temporary directories continued to exist.  I'm keeping this contract in
     case we need to do this again in the future.
     '''
@@ -202,23 +189,23 @@ def _temp_fifo() -> str:
         yield path
 
 
-def _isolate_yum_and_wait_until_ready(
+def _isolate_yum_dnf_and_wait_until_ready(
     install_root, dummy_dev, protected_path_to_dummy, netns_fifo, ready_fifo,
 ):
     '''
-    Isolate yum from the host filesystem. Also, now that we have a network
+    Isolate yum/dnf from the host filesystem.  Also, since we have a network
     namespace, we must wait for the parent to set up a socket inside.
     '''
     # Yum is incorrigible -- it is impossible to give it a set of options
     # that will completely prevent it from accessing host configuration &
     # caches.  So instead, we do this:
     #
-    #  - `YumConfIsolator` coerces the config to "isolated" or "default", as
-    #    much as possible.
+    #  - `YumDnfConfIsolator` coerces the config to "isolated" or "default",
+    #    as much as possible.
     #
     #  - In our mount namespace, we bind-mount no-op files and directories
-    #    on top of all the configuration paths that Yum might try to access
-    #    on the host (whether it does or not).  The sources for this
+    #    on top of all the configuration paths that `yum` might try to
+    #    access on the host (whether it does or not).  The sources for this
     #    information are (i) `man yum.conf`, (ii) `man rpm`, and (iii)
     #    adding `strace -ff -e trace=file -oyumtrace` below.  To check the
     #    isolation, one may grep for "/(etc|var)" in the traces, keeping in
@@ -259,14 +246,14 @@ def _isolate_yum_and_wait_until_ready(
     # must open it before `netns_fifo` not to deadlock.
     exec 3< {quoted_ready_fifo}
     echo -n /proc/$$/ns/net > {quoted_netns_fifo}
-    # Yum will talk to the repo snapshot server via loopback, but it is
-    # `down` by default in a new network namespace.
+    # `yum` & `dnf` will talk to the repo snapshot server via loopback, but
+    # it is `down` by default in a new network namespace.
     ifconfig lo up
 
     # The image needs to have a valid `/dev` so that e.g.  RPM post-install
     # scripts can work correctly (true bug: a script writing a regular file
-    # at `/dev/null`).  Unfortunately, the way we are invoking `yum` now,
-    # it's not feasible to use `systemd-nspawn`, so we hack it like so:
+    # at `/dev/null`).  Unfortunately, the way we are invoking `yum`/`dnf`
+    # now, it's not feasible to use `systemd-nspawn`, so we hack it like so:
     install_root={quoted_install_root}
     mkdir -p "$install_root"/dev/
     chown root:root "$install_root"/dev/
@@ -277,7 +264,7 @@ def _isolate_yum_and_wait_until_ready(
     mount {quoted_dummy_dev} "$install_root"/dev/ -o bind
     mount /dev/null "$install_root"/dev/null -o bind
 
-    # Ensure the log exists, so we can guarantee our yum doesn't write to it.
+    # Ensure the log exists, so we can guarantee we don't write to the host.
     touch /var/log/yum.log
 
     {quoted_protected_paths}
@@ -299,13 +286,13 @@ def _isolate_yum_and_wait_until_ready(
         fi
     done
 
-    # Yum also uses the host's /var/tmp, and since I don't trust it to
-    # always isolate itself, let's also relocate that.
+    # `yum` & `dnf` also use the host's /var/tmp, and since I don't trust
+    # them to isolate themselves, let's also relocate that.
     var_tmp=$(mktemp -d --suffix=_isolated_yum_var_tmp)
     mount "$var_tmp" /var/tmp -o bind
 
     # Clean up the isolation directories. Since we're running as `root`,
-    # `rmdir` feels a lot safer, and also asserts that `yum` did not litter.
+    # `rmdir` feels a lot safer, and also asserts that we did not litter.
     trap 'rmdir "$var_tmp"' EXIT
 
     # Wait for the repo server to be up.
@@ -463,7 +450,7 @@ def _prepare_versionlock_dir(yum_dnf: YumDnf, list_path: Path) -> Path:
         }, os.listdir(d)
 
 
-def yum_from_snapshot(
+def yum_dnf_from_snapshot(
     *,
     repo_server_bin: Path,
     storage_cfg: str,
@@ -471,7 +458,7 @@ def yum_from_snapshot(
     install_root: Path,
     protected_paths: List[str],
     versionlock_list: Path,
-    yum_args: List[str],
+    yum_dnf_args: List[str],
 ):
     # The paths that have trailing slashes are directories, others are
     # files.  There's a separate code path for protecting some files above.
@@ -496,13 +483,13 @@ def yum_from_snapshot(
 
     # These user-specified arguments could really mess up hermeticity.
     for bad_arg in ['--installroot', '--config', '--setopt', '--downloaddir']:
-        for arg in yum_args:
+        for arg in yum_dnf_args:
             assert arg != '-c'
             assert not arg.startswith(bad_arg), f'{arg} is prohibited'
 
     with _temp_fifo() as netns_fifo, _temp_fifo(
-                # Lets the child wait for yum_conf to be ready. This could
-                # be done via an `flock` on `yum_conf.name`, but that's not
+                # Lets the child wait for `out_conf` to be ready. This could
+                # be done via an `flock` on `out_conf.name`, but that's not
                 # robust on some network filesystems, so let's use a pipe.
             ) as ready_fifo, \
             tempfile.NamedTemporaryFile('w', suffix='yum') as out_yum_conf, \
@@ -516,19 +503,19 @@ def yum_from_snapshot(
                 # Note that `--mount` implies `mount --make-rprivate /` for
                 # all recent `util-linux` releases (since 2.27 circa 2015).
                 'unshare', '--mount', '--uts', '--ipc', '--net',
-                *_isolate_yum_and_wait_until_ready(
+                *_isolate_yum_dnf_and_wait_until_ready(
                     install_root, dummy_dev, protected_path_to_dummy,
                     netns_fifo, ready_fifo,
                 ),
-                'yum-from-snapshot',  # argv[0]
+                'yum-dnf-from-snapshot',  # argv[0]
                 'yum',
-                # Most `yum` options are isolated by our `YumConfIsolator`.
+                # Config options are isolated by our `YumDnfConfIsolator`.
                 '--config', out_yum_conf.name,
                 # NB: We omit `--downloaddir` because the default behavior
                 # is to put any downloaded RPMs in `$installroot/$cachedir`,
                 # which is reasonable, and easy to clean up in a post-pass.
-                *yum_args,
-            ]) as yum_proc, \
+                *yum_dnf_args,
+            ]) as yum_dnf_proc, \
             open(
                 # ORDER IS IMPORTANT: In case of error, this must be closed
                 # before `proc.__exit__` calls `wait`, or we'll deadlock.
@@ -536,9 +523,9 @@ def yum_from_snapshot(
             ) as ready_out:
 
         # To start the repo server we must obtain a socket that belongs to
-        # the network namespace of the `yum` container, and we must bring up
-        # the loopback device to later bind to it.  Since this parent
-        # process has low privileges, we do this via a `sudo` helper.
+        # the network namespace of the `yum` / `dnf` container, and we must
+        # bring up the loopback device to later bind to it.  Since this
+        # parent process has low privileges, we do this via a `sudo` helper.
         with open(netns_fifo, 'r') as netns_in:
             netns_path = netns_in.read()
 
@@ -557,7 +544,7 @@ def yum_from_snapshot(
             repo_server_sock = socket.socket(fileno=repo_server_sock_fd)
         check_popen_returncode(sock_proc)
 
-        # Binds the socket to the loopback inside yum's netns
+        # Binds the socket to the loopback inside yum/dnf's netns
         repo_server_sock.bind(('127.0.0.1', 0))
         host, port = repo_server_sock.getsockname()
         log.info(f'Bound {netns_path} socket to {host}:{port}')
@@ -570,7 +557,7 @@ def yum_from_snapshot(
                 _prepare_versionlock_dir(
                     YumDnf.yum, versionlock_list,
                 ) as versionlock_td, \
-                _prepare_isolated_yum_conf(
+                _prepare_isolated_yum_dnf_conf(
                     in_yum_conf, out_yum_conf, install_root, host, port,
                     versionlock_td,
                 ):
@@ -584,12 +571,12 @@ def yum_from_snapshot(
                 time.sleep(0.1)
 
             log.info('Ready to run yum')
-            ready_out.write('ready')  # `yum` can run now.
+            ready_out.write('ready')  # `yum` / `dnf` can run now.
             ready_out.close()  # Proceed past the inner `read`.
 
-            # Wait **before** we tear down all the `yum.conf` isolation.
-            yum_proc.wait()
-            check_popen_returncode(yum_proc)
+            # Wait **before** we tear down all the `yum/dnf.conf` isolation.
+            yum_dnf_proc.wait()
+            check_popen_returncode(yum_dnf_proc)
 
 
 # This argument-parsing logic is covered by RpmActionItem tests.
@@ -619,20 +606,21 @@ if __name__ == '__main__':  # pragma: no cover
     parser.add_argument(
         '--install-root', required=True, type=Path.from_argparse,
         help='All packages will be installed under this root. This is '
-            'literally `yum --installroot`, but it is required here because '
-            'most users of `yum-from-snapshot` should not install to /.',
+            'identical to the underlying `--installroot` option, but it '
+            'is required here because most users of `yum-dnf-from-snapshot` '
+            'should not install to /.',
     )
     parser.add_argument(
         '--protected-path', action='append', default=[],
         # Future: if desired, the trailing / convention could be relaxed,
         # see `_protected_path_set`.  If so, this program would just need to
         # run `os.path.isdir` against each of the paths.
-        help='When `yum` runs, this path will have an empty file or directory '
-            'read-only bind-mounted on top. If the path has a trailing /, it '
-            'is a directory, otherwise -- a file. If the path is absolute, it '
-            'is a host path. Otherwise, it is relative to --install-root. '
-            'The path must already exist. There are some internal defaults '
-            'that cannot be un-protected. May be repeated.',
+        help='When `yum` or `dnf` runs, this path will have an empty file or '
+            'directory read-only bind-mounted on top. If the path has a '
+            'trailing /, it is a directory, otherwise -- a file. If the path '
+            'is absolute, it is a host path. Otherwise, it is relative to '
+            '--install-root. The path must already exist. There are some '
+            'internal defaults that cannot be un-protected. May be repeated.',
     )
     parser.add_argument(
         '--versionlock-list', default='/dev/null',
@@ -640,10 +628,10 @@ if __name__ == '__main__':  # pragma: no cover
             'following TAB-separated format: N\\tE\\tV\\tR\\tA.',
     )
     parser.add_argument(
-        'yum_args', nargs='+',
-        help='Pass these through to `yum`. You will want to use -- before '
-            'any argument for `yum` to prevent `yum-from-snapshot` from '
-            'parsing them. Avoid arguments that might break hermeticity '
+        'args', nargs='+',
+        help='Pass these through to `yum` or `dnf`. You will want to use -- '
+            'before any such argument to prevent `yum-dnf-from-snapshot` '
+            'from parsing them. Avoid arguments that might break hermeticity '
             '(e.g. affecting the host system, or making us depend on the '
             'host system) -- this tool implements protections, but it '
             'may not be foolproof.',
@@ -658,12 +646,12 @@ if __name__ == '__main__':  # pragma: no cover
 
     init_logging()
 
-    yum_from_snapshot(
+    yum_dnf_from_snapshot(
         repo_server_bin=args.repo_server,
         storage_cfg=json.dumps(args.storage),
         snapshot_dir=args.snapshot_dir,
         install_root=args.install_root,
         protected_paths=args.protected_path,
         versionlock_list=args.versionlock_list,
-        yum_args=args.yum_args,
+        yum_dnf_args=args.args,
     )

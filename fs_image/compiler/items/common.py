@@ -75,8 +75,8 @@ class PhaseOrder(enum.Enum):
     Future: the complexity around protected paths is a symptom of a lack of
     a strong runtime abstraction.  Specifically, if `Subvol.run_as_root`
     used mount namespaces and read-only bind mounts to enforce protected
-    paths (as is done today in `yum-from-snapshot`), then it would not be
-    necessary for the compiler to know about them.
+    paths (as is done today in `yum-dnf-from-snapshot`), then it would not
+    be necessary for the compiler to know about them.
     '''
     # This phase creates the subvolume, so it must precede all others.
     # There can only ever be one item in this phase.
@@ -199,14 +199,15 @@ def protected_path_set(subvol: Optional[Subvol]) -> Set[str]:
     Future: The trailing / convention could be eliminated, since any place
     actually manipulating these paths can inspect what's on disk, and act
     appropriately.  If the convention proves burdensome, this is an easy
-    change -- mostly affecting this file, and `yum_from_snapshot.py`.
+    change -- mostly affecting this file, and `yum_dnf_from_snapshot.py`.
     '''
     paths = {META_DIR}
     if subvol is not None:
         # NB: The returned paths here already follow the trailing / rule.
         for mountpoint in mountpoints_from_subvol_meta(subvol):
             paths.add(mountpoint.lstrip('/'))
-    # Never absolute: yum-from-snapshot interprets absolute paths as host paths
+    # Never absolute: yum-dnf-from-snapshot interprets absolute paths as
+    # host paths.
     assert not any(p.startswith('/') for p in paths), paths
     return paths
 

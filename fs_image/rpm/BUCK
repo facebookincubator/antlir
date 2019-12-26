@@ -350,10 +350,10 @@ export_file(
 )
 
 python_binary(
-    name = "yum-from-snapshot",
-    srcs = ["yum_from_snapshot.py"],
+    name = "yum-dnf-from-snapshot",
+    srcs = ["yum_dnf_from_snapshot.py"],
     base_module = "rpm",
-    main_module = "rpm.yum_from_snapshot",
+    main_module = "rpm.yum_dnf_from_snapshot",
     par_style = "xar",  # Lets us embed the `repo-server` binary
     resources = {
         ":dnf_versionlock.gz": "dnf_versionlock.gz",
@@ -405,18 +405,18 @@ rpm_repo_snapshot(
 )
 
 python_unittest(
-    name = "test-yum-from-snapshot",
-    srcs = ["tests/test_yum_from_snapshot.py"],
+    name = "test-yum-dnf-from-snapshot",
+    srcs = ["tests/test_yum_dnf_from_snapshot.py"],
     base_module = "rpm",
     needed_coverage = [
-        (100, ":yum-from-snapshot-library"),
+        (100, ":yum-dnf-from-snapshot-library"),
     ],
     par_style = "xar",
     resources = {
         target_location(":repo-snapshot-for-tests"): "repo-snapshot",
         target_location(":repo-server"): "repo-server",
     },
-    deps = [":yum-from-snapshot-library"],
+    deps = [":yum-dnf-from-snapshot-library"],
 )
 
 python_library(

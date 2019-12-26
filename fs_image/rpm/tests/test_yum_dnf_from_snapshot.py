@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from fs_image.common import load_location
 
 from ..common import init_logging, Path
-from ..yum_from_snapshot import yum_from_snapshot
+from ..yum_dnf_from_snapshot import yum_dnf_from_snapshot
 
 _INSTALL_ARGS = ['install', '--assumeyes', 'rpm-test-carrot', 'rpm-test-milk']
 
@@ -20,7 +20,7 @@ init_logging()
 class YumFromSnapshotTestCase(unittest.TestCase):
 
     @contextmanager
-    def _yum_install(self, *, protected_paths, version_lock=None):
+    def _install(self, *, protected_paths, version_lock=None):
         install_root = Path(tempfile.mkdtemp())
         try:
             # IMAGE_ROOT/meta/ is always required since it's always protected
@@ -33,7 +33,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
                         pass
             snapshot_dir = Path(load_location('rpm', 'repo-snapshot'))
             # Note: this can't use `_yum_using_build_appliance` because that
-            # would lose coverage info on `yum_from_snapshot.py`.  A
+            # would lose coverage info on `yum_dnf_from_snapshot.py`.  A
             # possible option is to try to make this test an
             # `image.python_unittest` that runs in the BA image, once
             # our BA image is guaranteed to have the versionlock plugin.
@@ -42,7 +42,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
                 if version_lock:
                     tf.write('\n'.join(version_lock) + '\n')
                 tf.flush()
-                yum_from_snapshot(
+                yum_dnf_from_snapshot(
                     repo_server_bin=Path(load_location('rpm', 'repo-server')),
                     storage_cfg=json.dumps({
                         'key': 'test',
@@ -53,7 +53,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
                     install_root=Path(install_root),
                     protected_paths=protected_paths,
                     versionlock_list=tf.name,
-                    yum_args=_INSTALL_ARGS,
+                    yum_dnf_args=_INSTALL_ARGS,
                 )
             yield install_root
         finally:
@@ -74,7 +74,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
         # Remove /bin/sh
         remove.append(install_root / 'bin/sh')
 
-        # Yum also writes some indexes & metadata.
+        # `yum` & `dnf` also write some indexes & metadata.
         for path in [
             'var/lib/yum', 'var/lib/rpm', 'var/cache/yum',
             'usr/lib/.build-id'
@@ -106,14 +106,14 @@ class YumFromSnapshotTestCase(unittest.TestCase):
             'milk.txt': 'milk 2.71 8\n',
             'post.txt': 'stuff\n',  # From `milk-2.71` post-install
         }
-        with self._yum_install(protected_paths=['meta/']) as install_root:
+        with self._install(protected_paths=['meta/']) as install_root:
             self._check_installed_content(install_root, {
                 **milk,
                 'carrot.txt': 'carrot 2 rc0\n',
             })
 
         # Version-locking carrot causes a non-latest version to be installed
-        with self._yum_install(
+        with self._install(
             protected_paths=['meta/'],
             version_lock=['0\trpm-test-carrot\t1\tlockme\tx86_64'],
         ) as install_root:
@@ -126,7 +126,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
         # to install the requested package, but this is what yum semantics
         # give us right now, and it'd take some effort to make it otherwise
         # (it's easier to do this error-checking in `RpmActionItem` anyway)
-        with self._yum_install(
+        with self._install(
             protected_paths=['meta/'],
             version_lock=['0\trpm-test-carrot\t3333\tnonesuch\tx86_64'],
         ) as install_root:
@@ -135,13 +135,13 @@ class YumFromSnapshotTestCase(unittest.TestCase):
     def test_fail_to_write_to_protected_path(self):
         # Nothing fails with no specified protection, or with /meta:
         for p in [[], ['meta/']]:
-            with self._yum_install(protected_paths=p):
+            with self._install(protected_paths=p):
                 pass
         with self.assertRaises(subprocess.CalledProcessError) as ctx:
-            with self._yum_install(protected_paths=['usr/share/rpm_test/']):
+            with self._install(protected_paths=['usr/share/rpm_test/']):
                 pass
         with self.assertRaises(subprocess.CalledProcessError) as ctx:
-            with self._yum_install(protected_paths=[
+            with self._install(protected_paths=[
                 'usr/share/rpm_test/milk.txt'
             ]):
                 pass

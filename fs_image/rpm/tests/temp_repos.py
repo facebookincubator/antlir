@@ -60,28 +60,25 @@ class Rpm(NamedTuple):
         mkdir -p "$RPM_BUILD_ROOT"/bin
         ''').format(**format_kwargs)
 
-        return common_spec + textwrap.dedent((
-            '''\
+        return common_spec + textwrap.dedent(('''\
             %files
             /usr/share/rpm_test/{name}.txt
-            '''
-        ) if not self.test_post_install else (
-            '''\
+        ''') if not self.test_post_install else ('''\
             cp {quoted_busybox_path} "$RPM_BUILD_ROOT"/bin/sh
             %post
             '''
-            # yum-from-snapshot prepares /dev in a subtle way to protect host
-            # system from side-effects of rpm post-install scripts. The command
-            # below lets us test that /dev/null is prepared properly: if
-            # "echo > /dev/null" fails, tests will catch the absence of post.txt
+            # yum-dnf-from-snapshot prepares /dev in a subtle way to protect
+            # host system from side-effects of rpm post-install scripts.
+            # The command below lets us test that /dev/null is prepared
+            # properly: if "echo > /dev/null" fails, tests will catch the
+            # absence of post.txt
             '''\
             echo > /dev/null && echo 'stuff' > \
               "$RPM_BUILD_ROOT"/usr/share/rpm_test/post.txt
             %files
             /bin/sh
             /usr/share/rpm_test/{name}.txt
-            '''
-        )).format(**format_kwargs)
+        ''')).format(**format_kwargs)
 
 
 class Repo(NamedTuple):
@@ -128,7 +125,7 @@ SAMPLE_STEPS = [
             Rpm(
                 'milk', '2.71', '8',  # Newer version than in `dog`
                 # Installing at least one such package is important for
-                # validating the `yum-from-snapshot` runtime.
+                # validating the `yum-dnf-from-snapshot` runtime.
                 test_post_install=True,
             ),
             Rpm('mice', '0.1', 'a'),

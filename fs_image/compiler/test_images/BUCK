@@ -113,14 +113,17 @@ image.layer(
     name = "fake-build-appliance-from-host",
     parent_layer = ":only-for-tests-read-only-host-clone",
     features = [
-        # These stub directories are needed to make `yum-from-snapshot`'s host
-        # path protection feature happy.  The alternative is to make all of
-        # these ONLY be protected if they exist, but that has safety downsides,
-        # and involves more code.
+        # These stub directories are needed to make
+        # `yum-dnf-from-snapshot`'s host path protection feature happy.  The
+        # alternative is to make all of these ONLY be protected if they
+        # exist, but that has safety downsides, and involves more code.
         image.mkdir("/var", "tmp"),
         image.mkdir("/var", "log"),
-        image.mkdir("/var", "cache/yum"),
+        image.mkdir("/var", "cache"),
+        image.mkdir("/var/cache", "dnf"),
+        image.mkdir("/var/cache", "yum"),
         image.mkdir("/var", "lib/rpm"),
+        image.mkdir("/var/lib", "dnf"),
         image.mkdir("/var/lib", "yum"),
         image.mkdir("/", RPM_SNAPSHOT_BASE_DIR),
         install_rpm_repo_snapshot("//fs_image/rpm:repo-snapshot-for-tests"),

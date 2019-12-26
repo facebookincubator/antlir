@@ -35,7 +35,7 @@ class RpmActionItemTestBase:
             RpmActionItem.get_phase_builder([], layer_opts)(subvol)
             self.assertEqual(['(Dir)', {}], render_subvol(subvol))
 
-            # `yum-from-snapshot` needs a `/meta` directory to work
+            # `yum-dnf-from-snapshot` needs a `/meta` directory to work
             subvol.run_as_root(['mkdir', subvol.path('meta')])
             self.assertEqual(
                 # No `opts/artifacts_may_require_repo` here because we directly
@@ -90,8 +90,8 @@ class RpmActionItemTestBase:
                 ],
                 layer_opts,
             )(subvol)
-            # Clean up the `yum` & `rpm` litter before checking the packages.
-            # Maybe fixme: As a result, we end up not asserting ownership /
+            # Clean up the `dnf`, `yum` & `rpm` litter before checking the
+            # packages.  Maybe fixme: We end up not asserting ownership /
             # permissions / etc on directories like /var and /dev.
             subvol.run_as_root([
                 'rm', '-rf',
@@ -102,12 +102,12 @@ class RpmActionItemTestBase:
                 subvol.path('usr/lib/.build-id'),
                 subvol.path('bin/sh'),
             ])
-            # The way that RpmActionItem invokes systemd_nspawn on
-            # build_appliance must gurantee that /var/cache/yum is empty.
-            # Next two lines test that the /var/cache/yum directory is empty
-            # because rmdir fails if it is not.
-            # It is important that the yum cache of built images be empty, to
-            # avoid unnecessarily increasing the distributed image size.
+            # The way that `RpmActionItem` nspawns into build_appliance must
+            # gurantee that `/var/cache/{dnf,yum}` is empty.  The next two
+            # lines test that the cache directory is empty because `rmdir`
+            # fails if it is not.  It is important that the cache of built
+            # images be empty, to avoid unnecessarily increasing the
+            # distributed image size.
             rm_cmd = ['rmdir'] if (
                 layer_opts.build_appliance
                     and not layer_opts.preserve_yum_dnf_cache
@@ -115,7 +115,7 @@ class RpmActionItemTestBase:
             subvol.run_as_root(rm_cmd + [subvol.path('var/cache/yum')])
             subvol.run_as_root([
                 'rmdir',
-                subvol.path('dev'),  # made by yum_from_snapshot.py
+                subvol.path('dev'),  # made by yum_dnf_from_snapshot.py
                 subvol.path('meta'),
                 subvol.path('var/cache'),
                 subvol.path('var/lib'),
