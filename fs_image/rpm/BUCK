@@ -337,6 +337,18 @@ export_file(
     src = "third-party/yum-versionlock.py.gz",
 )
 
+# This is extracted from the RPM `python2-dnf-plugin-versionlock-4.0.7`, and
+# into `dnf`'s container by `yum-dnf-from-snapshot` code.  In the near
+# future, we should eliminate this and just install the RPM into the
+# corresponding build appliance.
+#
+# It is gzipped to highlight the fact that we treat it as an immutable
+# binary blob to be installed into an image, not like source code.
+export_file(
+    name = "dnf_versionlock.gz",
+    src = "third-party/dnf-versionlock.py.gz",
+)
+
 python_binary(
     name = "yum-from-snapshot",
     srcs = ["yum_from_snapshot.py"],
