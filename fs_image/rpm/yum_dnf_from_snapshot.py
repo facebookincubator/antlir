@@ -122,7 +122,7 @@ log = get_file_logger(__file__)
 
 @contextmanager
 def _prepare_isolated_yum_dnf_conf(
-    inp: TextIO, out: tempfile.NamedTemporaryFile,
+    yum_dnf: YumDnf, inp: TextIO, out: tempfile.NamedTemporaryFile,
     install_root: Path, host: str, port: int, versionlock_dir: Path,
 ):
     '''
@@ -136,7 +136,7 @@ def _prepare_isolated_yum_dnf_conf(
     case we need to do this again in the future.
     '''
     server_url = urlparse(f'http://{host}:{port}')
-    yc = YumDnfConfParser(YumDnf.yum, inp)
+    yc = YumDnfConfParser(yum_dnf, inp)
     yc.isolate().isolate_repos(
         repo._replace(
             base_url=urlunparse(server_url._replace(path=repo.name)),
@@ -190,6 +190,7 @@ def _temp_fifo() -> str:
 
 
 def _isolate_yum_dnf_and_wait_until_ready(
+    yum_dnf: YumDnf,
     install_root, dummy_dev, protected_path_to_dummy, netns_fifo, ready_fifo,
 ):
     '''
@@ -265,7 +266,7 @@ def _isolate_yum_dnf_and_wait_until_ready(
     mount /dev/null "$install_root"/dev/null -o bind
 
     # Ensure the log exists, so we can guarantee we don't write to the host.
-    touch /var/log/yum.log
+    touch /var/log/{prog_name}.log
 
     {quoted_protected_paths}
 
@@ -273,7 +274,7 @@ def _isolate_yum_dnf_and_wait_until_ready(
     # exist on the host.  We don't expect these to be written, only read, so
     # failing to protect the non-existent ones is OK.
     for bad_file in \
-            /etc/yum.conf \
+            {conf_file} \
             ~/.rpmrc \
             /etc/rpmrc \
             ~/.rpmmacros \
@@ -288,7 +289,7 @@ def _isolate_yum_dnf_and_wait_until_ready(
 
     # `yum` & `dnf` also use the host's /var/tmp, and since I don't trust
     # them to isolate themselves, let's also relocate that.
-    var_tmp=$(mktemp -d --suffix=_isolated_yum_var_tmp)
+    var_tmp=$(mktemp -d --suffix=_isolated_{prog_name}_var_tmp)
     mount "$var_tmp" /var/tmp -o bind
 
     # Clean up the isolation directories. Since we're running as `root`,
@@ -304,6 +305,11 @@ def _isolate_yum_dnf_and_wait_until_ready(
     # child, but that's not a problem.
     exec "$@"
     ''').format(
+        prog_name=yum_dnf.value,
+        conf_file={
+            YumDnf.yum: '/etc/yum.conf',
+            YumDnf.dnf: '/etc/dnf/dnf.conf',
+        }[yum_dnf],
         quoted_dummy_dev=dummy_dev,
         quoted_install_root=shlex.quote(install_root.decode()),
         quoted_netns_fifo=shlex.quote(netns_fifo),
@@ -452,6 +458,7 @@ def _prepare_versionlock_dir(yum_dnf: YumDnf, list_path: Path) -> Path:
 
 def yum_dnf_from_snapshot(
     *,
+    yum_dnf: YumDnf,
     repo_server_bin: Path,
     storage_cfg: str,
     snapshot_dir: Path,
@@ -460,19 +467,21 @@ def yum_dnf_from_snapshot(
     versionlock_list: Path,
     yum_dnf_args: List[str],
 ):
+    prog_name = yum_dnf.value
     # The paths that have trailing slashes are directories, others are
     # files.  There's a separate code path for protecting some files above.
     # The rationale is that those files are not guaranteed to exist.
     protected_paths.extend([
-        '/var/log/yum.log',  # Created above if it doesn't exist
-        # See the `_isolate_yum_and_wait_until_ready` docblock for how (and
-        # why) this list was produced.  All are assumed to exist on the host
-        # -- otherwise, we'd be in the awkard situation of either leaving
-        # them unprotected, or creating them on the host to protect them.
-        '/etc/yum.repos.d/',
-        '/etc/yum/',
-        '/var/cache/yum/',
-        '/var/lib/yum/',
+        f'/var/log/{prog_name}.log',  # Created above if it doesn't exist
+        # See the `_isolate_yum_dnf_and_wait_until_ready` docblock for how
+        # (and why) this list was produced.  All are assumed to exist on the
+        # host -- otherwise, we'd be in the awkard situation of leaving them
+        # unprotected, or creating them on the host to protect them.
+        '/etc/yum.repos.d/',  # dnf ALSO needs this isolated
+        '/etc/yum/',  # dnf ALSO needs this isolated
+        f'/etc/{prog_name}/',   # A duplicate for the `yum` case
+        f'/var/cache/{prog_name}/',
+        f'/var/lib/{prog_name}/',
         '/etc/pki/rpm-gpg/',
         '/etc/rpm/',
         '/var/lib/rpm/',
@@ -492,7 +501,7 @@ def yum_dnf_from_snapshot(
                 # be done via an `flock` on `out_conf.name`, but that's not
                 # robust on some network filesystems, so let's use a pipe.
             ) as ready_fifo, \
-            tempfile.NamedTemporaryFile('w', suffix='yum') as out_yum_conf, \
+            tempfile.NamedTemporaryFile('w', suffix=prog_name) as out_conf, \
             _dummy_dev() as dummy_dev, \
             _dummies_for_protected_paths(
                 protected_paths,
@@ -504,13 +513,13 @@ def yum_dnf_from_snapshot(
                 # all recent `util-linux` releases (since 2.27 circa 2015).
                 'unshare', '--mount', '--uts', '--ipc', '--net',
                 *_isolate_yum_dnf_and_wait_until_ready(
-                    install_root, dummy_dev, protected_path_to_dummy,
-                    netns_fifo, ready_fifo,
+                    yum_dnf, install_root, dummy_dev,
+                    protected_path_to_dummy, netns_fifo, ready_fifo,
                 ),
                 'yum-dnf-from-snapshot',  # argv[0]
-                'yum',
+                prog_name,
                 # Config options are isolated by our `YumDnfConfIsolator`.
-                '--config', out_yum_conf.name,
+                '--config', out_conf.name,
                 # NB: We omit `--downloaddir` because the default behavior
                 # is to put any downloaded RPMs in `$installroot/$cachedir`,
                 # which is reasonable, and easy to clean up in a post-pass.
@@ -553,12 +562,12 @@ def yum_dnf_from_snapshot(
         with _repo_server(
             repo_server_bin, repo_server_sock, storage_cfg, snapshot_dir
         ) as server_proc, \
-                open(snapshot_dir / 'yum.conf') as in_yum_conf, \
+                open(snapshot_dir / f'{prog_name}.conf') as in_conf, \
                 _prepare_versionlock_dir(
-                    YumDnf.yum, versionlock_list,
+                    yum_dnf, versionlock_list,
                 ) as versionlock_td, \
                 _prepare_isolated_yum_dnf_conf(
-                    in_yum_conf, out_yum_conf, install_root, host, port,
+                    yum_dnf, in_conf, out_conf, install_root, host, port,
                     versionlock_td,
                 ):
 
@@ -570,7 +579,7 @@ def yum_dnf_from_snapshot(
                     break
                 time.sleep(0.1)
 
-            log.info('Ready to run yum')
+            log.info(f'Ready to run {prog_name}')
             ready_out.write('ready')  # `yum` / `dnf` can run now.
             ready_out.close()  # Proceed past the inner `read`.
 
@@ -627,6 +636,7 @@ if __name__ == '__main__':  # pragma: no cover
         help='A file listing allowed RPM versions, one per line, in the '
             'following TAB-separated format: N\\tE\\tV\\tR\\tA.',
     )
+    parser.add_argument('yum_dnf', type=YumDnf, help='yum or dnf')
     parser.add_argument(
         'args', nargs='+',
         help='Pass these through to `yum` or `dnf`. You will want to use -- '
@@ -647,6 +657,7 @@ if __name__ == '__main__':  # pragma: no cover
     init_logging()
 
     yum_dnf_from_snapshot(
+        yum_dnf=args.yum_dnf,
         repo_server_bin=args.repo_server,
         storage_cfg=json.dumps(args.storage),
         snapshot_dir=args.snapshot_dir,

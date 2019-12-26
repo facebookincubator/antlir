@@ -10,14 +10,14 @@ from contextlib import contextmanager
 from fs_image.common import load_location
 
 from ..common import init_logging, Path
-from ..yum_dnf_from_snapshot import yum_dnf_from_snapshot
+from ..yum_dnf_from_snapshot import YumDnf, yum_dnf_from_snapshot
 
 _INSTALL_ARGS = ['install', '--assumeyes', 'rpm-test-carrot', 'rpm-test-milk']
 
 init_logging()
 
 
-class YumFromSnapshotTestCase(unittest.TestCase):
+class YumFromSnapshotTestImpl:
 
     @contextmanager
     def _install(self, *, protected_paths, version_lock=None):
@@ -43,6 +43,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
                     tf.write('\n'.join(version_lock) + '\n')
                 tf.flush()
                 yum_dnf_from_snapshot(
+                    yum_dnf=self._YUM_DNF,
                     repo_server_bin=Path(load_location('rpm', 'repo-server')),
                     storage_cfg=json.dumps({
                         'key': 'test',
@@ -74,14 +75,16 @@ class YumFromSnapshotTestCase(unittest.TestCase):
         # Remove /bin/sh
         remove.append(install_root / 'bin/sh')
 
+        prog_name = self._YUM_DNF.value
+
         # `yum` & `dnf` also write some indexes & metadata.
         for path in [
-            'var/lib/yum', 'var/lib/rpm', 'var/cache/yum',
+            f'var/lib/{prog_name}', 'var/lib/rpm', f'var/cache/{prog_name}',
             'usr/lib/.build-id'
         ]:
             remove.append(install_root / path)
-            self.assertTrue(os.path.isdir(remove[-1]))
-        remove.append(install_root / 'var/log/yum.log')
+            self.assertTrue(os.path.isdir(remove[-1]), remove[-1])
+        remove.append(install_root / f'var/log/{prog_name}.log')
         self.assertTrue(os.path.exists(remove[-1]))
 
         # Check that the above list of paths is complete.
@@ -122,15 +125,21 @@ class YumFromSnapshotTestCase(unittest.TestCase):
                 'carrot.txt': 'carrot 1 lockme\n',
             })
 
-        # Future: We'd actually want this to fail loudly instead of failing
-        # to install the requested package, but this is what yum semantics
-        # give us right now, and it'd take some effort to make it otherwise
-        # (it's easier to do this error-checking in `RpmActionItem` anyway)
-        with self._install(
-            protected_paths=['meta/'],
-            version_lock=['0\trpm-test-carrot\t3333\tnonesuch\tx86_64'],
-        ) as install_root:
-            self._check_installed_content(install_root, milk)
+        def _install_nonexistent():
+            return self._install(
+                protected_paths=['meta/'],
+                version_lock=['0\trpm-test-carrot\t3333\tnonesuch\tx86_64'],
+            )
+
+        if self._YUM_DNF == YumDnf.yum:
+            # For `yum`, we'd actually want this to fail loudly instead of
+            # failing to install the requested package, but this is what it
+            # does now, and it'd take some effort to make it otherwise (it's
+            # easier to do this error-checking in `RpmActionItem` anyway)
+            with _install_nonexistent() as install_root:
+                self._check_installed_content(install_root, milk)
+        else:
+            raise NotImplementedError(self._YUM_DNF)
 
     def test_fail_to_write_to_protected_path(self):
         # Nothing fails with no specified protection, or with /meta:
@@ -147,3 +156,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
                 pass
         # It was none other than `yum install` that failed.
         self.assertEqual(_INSTALL_ARGS, ctx.exception.cmd[-len(_INSTALL_ARGS):])
+
+
+class YumFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
+    _YUM_DNF = YumDnf.yum

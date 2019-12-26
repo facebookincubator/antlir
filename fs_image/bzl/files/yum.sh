@@ -6,4 +6,4 @@ base_dir=$(dirname "$my_dir")
 exec "$base_dir"/yum-dnf-from-snapshot \
     --repo-server "$base_dir/repo-server" \
     --snapshot-dir "$base_dir" \
-    --storage "$(cat "$base_dir"/storage.json)" "$@"
+    --storage "$(cat "$base_dir"/storage.json)" yum "$@"
