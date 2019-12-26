@@ -310,19 +310,19 @@ python_unittest(
 )
 
 python_library(
-    name = "yum_conf",
-    srcs = ["yum_conf.py"],
+    name = "yum_dnf_conf",
+    srcs = ["yum_dnf_conf.py"],
     base_module = "rpm",
 )
 
 python_unittest(
-    name = "test-yum-conf",
-    srcs = ["tests/test_yum_conf.py"],
+    name = "test-yum-dnf-conf",
+    srcs = ["tests/test_yum_dnf_conf.py"],
     base_module = "rpm",
     needed_coverage = [
-        (100, ":yum_conf"),
+        (100, ":yum_dnf_conf"),
     ],
-    deps = [":yum_conf"],
+    deps = [":yum_dnf_conf"],
 )
 
 # This is extracted from the RPM `yum-versionlock-1.1.31`, and is injected
@@ -358,7 +358,7 @@ python_binary(
     resources = {":yum_versionlock.gz": "yum_versionlock.gz"},
     deps = [
         ":common",
-        ":yum_conf",
+        ":yum_dnf_conf",
         "//fs_image:fs_utils",
     ],
 )
@@ -427,7 +427,7 @@ python_library(
         ":repo_db",
         ":repo_downloader",
         ":repo_sizer",
-        ":yum_conf",
+        ":yum_dnf_conf",
     ],
 )
 

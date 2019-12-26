@@ -42,7 +42,7 @@ from .repo_downloader import RepoDownloader
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
 from .storage import Storage
-from .yum_conf import YumConfParser
+from .yum_dnf_conf import YumDnf, YumDnfConfParser
 
 log = get_file_logger(__file__)
 
@@ -61,7 +61,9 @@ def snapshot_repos(
     with create_ro(dest / 'yum.conf', 'w') as out:
         out.write(yum_conf_content)
     os.mkdir(dest / 'repos')
-    repos = list(YumConfParser(StringIO(yum_conf_content)).gen_repos())
+    repos = list(YumDnfConfParser(
+        YumDnf.yum, StringIO(yum_conf_content),
+    ).gen_repos())
     with RepoSnapshot.add_sqlite_to_storage(storage, dest) as db:
         # Randomize the order to reduce contention from concurrent writers
         for repo in shuffled(repos):

@@ -3,16 +3,18 @@ import io
 import textwrap
 import unittest
 
-from ..yum_conf import YumConfRepo, YumConfParser
+from ..yum_dnf_conf import YumDnf, YumDnfConfRepo, YumDnfConfParser
 
 
-class YumConfTestCase(unittest.TestCase):
+# This is the base class for two test classes at the bottom of the file.
+class YumDnfConfTestCaseImpl:
+
     def setUp(self):
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
-        self.yum_conf = YumConfParser(io.StringIO(textwrap.dedent('''\
+        conf_str = io.StringIO(textwrap.dedent('''\
         # Unfortunately, comments are discarded by ConfigParser, but I don't
         # want to depend on `ConfigObj` or `iniparse` for this.
         [main]
@@ -28,12 +30,13 @@ class YumConfTestCase(unittest.TestCase):
         gpgkey=https://example.com/zupa
         \thttps://example.com/super/safe
         enabled=1
-        ''')))
+        '''))
+        self.conf = YumDnfConfParser(self._YUM_DNF, conf_str)
 
     def test_gen_repos(self):
         self.assertEqual([
-            YumConfRepo('potato', 'file:///pot.at/to', ()),
-            YumConfRepo(
+            YumDnfConfRepo('potato', 'file:///pot.at/to', ()),
+            YumDnfConfRepo(
                 name='oleander',
                 base_url='http://example.com/oleander',
                 gpg_key_urls=(
@@ -41,24 +44,24 @@ class YumConfTestCase(unittest.TestCase):
                     'https://example.com/super/safe',
                 ),
             ),
-        ], list(self.yum_conf.gen_repos()))
+        ], list(self.conf.gen_repos()))
 
     def test_isolate_repos(self):
-        isolated_repos = [YumConfRepo(
+        isolated_repos = [YumDnfConfRepo(
             name='potato',
             base_url='https://example.com/potato',
             gpg_key_urls=('file:///much/secure/so/hack_proof', 'https://cat'),
         )]
         with self.assertRaisesRegex(AssertionError, 'Failed to isolate '):
-            self.yum_conf.isolate().isolate_repos(isolated_repos)
-        isolated_repos.append(YumConfRepo(
+            self.conf.isolate().isolate_repos(isolated_repos)
+        isolated_repos.append(YumDnfConfRepo(
             name='oleander',
             base_url='https://zupa.example.com/sup',
             gpg_key_urls=(),
         ))
 
         out = io.StringIO()
-        self.yum_conf.isolate().isolate_repos(isolated_repos).isolate_main(
+        self.conf.isolate().isolate_repos(isolated_repos).isolate_main(
             install_root='/install_root',
             config_path='/config_path',
             versionlock_dir='/versionlock_dir',
@@ -68,17 +71,18 @@ class YumConfTestCase(unittest.TestCase):
         [main]
         debuglevel = 2
         gpgcheck = 1
-        cachedir = /var/cache/yum
-        persistdir = /var/lib/yum
-        usercache = 0
+        cachedir = /var/cache/{prog_name}
+        persistdir = /var/lib/{prog_name}
         reposdir = /dev/null
-        logfile = /var/log/yum.log
+        logfile = /var/log/{prog_name}.log
         installroot = /install_root
         config_file_path = /config_path
-        syslog_device =\x20
         plugins = 1
         pluginpath = /versionlock_dir
         pluginconfpath = /versionlock_dir
+        varsdir = /dev/null
+        usercache = 0
+        syslog_device =\x20
         bugtracker_url =\x20
         fssnap_devices = !*
 
@@ -93,4 +97,17 @@ class YumConfTestCase(unittest.TestCase):
         gpgkey =\x20
         enabled = 1
 
-        '''), out.getvalue())
+        '''.format(prog_name={
+            # This is deliberately verbose, replacing `self._YUM_DNF.value`
+            # The idea is to assert that the enum values matter.
+            YumDnf.yum: 'yum',
+            YumDnf.dnf: 'dnf',
+        }[self._YUM_DNF])), out.getvalue())
+
+
+class YumConfTestCase(YumDnfConfTestCaseImpl, unittest.TestCase):
+    _YUM_DNF = YumDnf.yum
+
+
+class DnfConfTestCase(YumDnfConfTestCaseImpl, unittest.TestCase):
+    _YUM_DNF = YumDnf.dnf

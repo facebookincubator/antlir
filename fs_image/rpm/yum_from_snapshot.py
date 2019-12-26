@@ -128,7 +128,7 @@ from fs_image.common import (
     listen_temporary_unix_socket, recv_fds_from_unix_sock,
 )
 from fs_image.fs_utils import Path, temp_dir
-from .yum_conf import YumConfParser
+from .yum_dnf_conf import YumDnf, YumDnfConfParser
 
 log = get_file_logger(__file__)
 
@@ -149,7 +149,7 @@ def _prepare_isolated_yum_conf(
     case we need to do this again in the future.
     '''
     server_url = urlparse(f'http://{host}:{port}')
-    yc = YumConfParser(inp)
+    yc = YumDnfConfParser(YumDnf.yum, inp)
     yc.isolate().isolate_repos(
         repo._replace(
             base_url=urlunparse(server_url._replace(path=repo.name)),

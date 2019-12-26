@@ -1,16 +1,33 @@
 #!/usr/bin/env python3
+'''
+Since `yum` and `dnf` configs are extremely similar in core syntax and
+function, we use the same code to handle both.
+
+Support for `dnf` config isolation is less complete, since we made no
+systematic effort to find ways in which `dnf` affects the host system.  The
+reason for this was that from now on, both package managers are always
+expected to run in read-only or ephemeral build appliance images, never on
+an actual host.
+'''
+
 from configparser import ConfigParser
+from enum import Enum
 from typing import Iterable, Iterator, NamedTuple, TextIO, Tuple
 
-# NB: The 'main' section in `yum.conf` acts similarly to ConfigParser's
-# magic 'DEFAULT', in that it provides default values for some of the repo
-# options.  I did not investigate this in enough detail to say that setting
-# `default_section='main'` would be appropriate.  Since this code currently
-# only cares about `baseurl`, this is good enough.
+# NB: The 'main' section in `{yum,dnf}.conf` acts similarly to
+# ConfigParser's magic 'DEFAULT', in that it provides default values for
+# some of the repo options.  I did not investigate this in enough detail to
+# say that setting `default_section='main'` would be appropriate.  Since
+# this code currently only cares about `baseurl`, this is good enough.
 _NON_REPO_SECTIONS = ['DEFAULT', 'main']
 
 
-class YumConfRepo(NamedTuple):
+class YumDnf(Enum):
+    yum = 'yum'
+    dnf = 'dnf'
+
+
+class YumDnfConfRepo(NamedTuple):
     name: str
     base_url: str
     gpg_key_urls: Tuple[str]
@@ -18,7 +35,7 @@ class YumConfRepo(NamedTuple):
     @classmethod
     def from_config_section(cls, name, cfg_sec):
         assert '/' not in name and '\0' not in name, f'Bad repo name {name}'
-        return YumConfRepo(
+        return YumDnfConfRepo(
             name=name,
             base_url=cfg_sec['baseurl'],
             gpg_key_urls=tuple(cfg_sec['gpgkey'].split('\n'))
@@ -26,13 +43,15 @@ class YumConfRepo(NamedTuple):
         )
 
 
-class YumConfIsolator:
+class YumDnfConfIsolator:
     '''
-    The functions in this class ATTEMPT to edit `yum.conf` in such a way
-    that it will:
+    The functions in this class ATTEMPT to edit `{yum,dnf}.conf` in such a
+    way that the package manager will:
       - never interact with state, caches, or configuration from the host
         filesystem,
       - never interact with servers outside of the ones we specify.
+
+    As per the file-docblock note, `dnf` isolation is likely incomplete.
 
     IMPORTANT: With `yum`, it is actually impossible to configure it such
     that it does not touch the host filesystem.  A couple of specific
@@ -46,25 +65,28 @@ class YumConfIsolator:
         `/etc/yum/vars` from the host, breaking isolation of configuration.
 
     There are other examples. To see the bind-mount protections we use to
-    avoid leakage from the host, read `_isolate_yum_and_wait_until_ready` --
-    and of course, the larger purpose of `yum-from-snapshot` is to run its
-    `yum` inside a private network namespace to guarantee no off-host repo
-    accesses.
+    avoid leakage from the host, read `_isolate_yum_dnf_and_wait_until_ready` --
+    and of course, the larger purpose of `yum-dnf-from-snapshot` is to run
+    its `yum` or `dnf` inside a private network namespace to guarantee no
+    off-host repo accesses.
     '''
 
-    def __init__(self, cp: ConfigParser):
+    def __init__(self, yum_dnf: YumDnf, cp: ConfigParser):
+        self._yum_dnf = yum_dnf
         self._cp = ConfigParser()
         self._cp.read_dict(cp)  # Make a copy
         self._isolated_main = False
         self._isolated_repos = False
 
-    def isolate_repos(self, repos: Iterable[YumConfRepo]) -> 'YumConfIsolator':
+    def isolate_repos(
+        self, repos: Iterable[YumDnfConfRepo],
+    ) -> 'YumDnfConfIsolator':
         '''
         Asserts that the passed repos are exactly those defined in the
         config file. This ensures that we leave no repo unisolated.
 
         For each specified repo, sets the config values specified in its
-        `YumConfRepo`, and clears `proxy`.  Other config keys are left
+        `YumDnfConfRepo`, and clears `proxy`.  Other config keys are left
         unchanged -- but seeing some "known bad" configs in the config file
         will cause an assertion error.
 
@@ -93,69 +115,79 @@ class YumConfIsolator:
 
     def isolate_main(
         self, *, install_root: str, config_path: str, versionlock_dir: str,
-    ) -> 'YumConfIsolator':
+    ) -> 'YumDnfConfIsolator':
         '''
-        Set keys that could cause `yum` to interact with the host filesystem.
-        IMPORTANT: See the class docblock, this is not **ENOUGH**.
+        Set keys that could cause `yum` or `dnf` to interact with the host
+        filesystem.  IMPORTANT: See the class docblock, this is not ENOUGH.
         '''
+        prog_name = self._yum_dnf.value
         main_sec = self._cp['main']
         assert (
             'include' not in main_sec and 'include' not in self._cp['DEFAULT']
         ), 'Includes are not supported'
-        # This list was obtained by scrolling through `man yum.conf`.
-        # Future: to be really thorough, we'd also remove glob filesystem
-        # dependencies from options like `exclude`, `includepkgs`,
-        # `protected_packages`, `exactarchlist`, etc -- but then, I'd rather
-        # nspawn a `yum` appliance -- The Right Way (TM) for isolation.
+        # This list was obtained by scrolling through `man yum.conf`.  To be
+        # really thorough, we'd also remove glob filesystem dependencies
+        # from options like `exclude`, `includepkgs`, `protected_packages`,
+        # `exactarchlist`, etc -- but this is a moot point now that all RPM
+        # installs go trough a build appliance.
         #
         # `cachedir` and `persistdir` are under `--installroot`, so no
         # isolation needed.  However, ensuring defaults makes later
         # container customization (e.g.  cleanup) easier.  These can be
-        # optionalized later if a good reason arises.
-        main_sec['cachedir'] = '/var/cache/yum'  # default
-        main_sec['persistdir'] = '/var/lib/yum'  # default
-        # Shouldn't make a difference for as-root runs, but it's good hygiene
-        main_sec['usercache'] = '0'
-        # Specify repos only via this `yum.conf` -- that eases isolating them.
+        # optionalized later if a good reason arises.  In that case,
+        # remember that `RpmActionItem` has special handling for `cachedir`.
+        main_sec['cachedir'] = f'/var/cache/{prog_name}'  # default
+        main_sec['persistdir'] = f'/var/lib/{prog_name}'  # default
+        # Specify repos only via this `.conf` -- that eases isolating them.
         main_sec['reposdir'] = '/dev/null'
         # See the note about `cachedir` -- the same logic applies.
-        main_sec['logfile'] = '/var/log/yum.log'  # default
+        main_sec['logfile'] = f'/var/log/{prog_name}.log'  # default
         main_sec['installroot'] = install_root
         main_sec['config_file_path'] = config_path
-        # NB: `sslcacert`, `sslclientcert`, and `sslclientkey` are left
-        # as-is, though these read from the host filesystem.
-        main_sec['syslog_device'] = ''  # We'll just use `logfile`.
-        assert not main_sec.get('commands')  # This option seems dodgy.
         main_sec.pop('proxy', None)  # We talk only to a local reposerver.
 
-        # Allowing arbitrary plugins might well break isolation, but
-        # we are actually only allowing our custom versionlock here.
+        # NB: `sslcacert`, `sslclientcert`, and `sslclientkey` are left
+        # as-is, though these read from the host filesystem.
+
+        # Allowing arbitrary plugins could easily break isolation, but we
+        # are actually only allowing our custom versionlock here.
         main_sec['plugins'] = '1'
         main_sec['pluginpath'] = versionlock_dir
         main_sec['pluginconfpath'] = versionlock_dir
 
-        main_sec['bugtracker_url'] = ''  # Yum is unmaintained anyway.
+        # This option seems to only exist for `dnf`.
+        main_sec['varsdir'] = '/dev/null'
+
+        # This final block of options seems only to exist for `yum`.
+        #
+        # Shouldn't make a difference for as-root runs, but it's good hygiene
+        main_sec['usercache'] = '0'
+        main_sec['syslog_device'] = ''  # We'll just use `logfile`.
+        main_sec['bugtracker_url'] = ''
         main_sec['fssnap_devices'] = '!*'  # Snapshots don't make sense.
+        assert not main_sec.get('commands')  # This option seems dodgy.
+
         self._isolated_main = True
         return self
 
     def write(self, out: TextIO):
-        'Outputs a `yum.conf` file with the changed configuration.'
+        'Outputs a `{yum,dnf}.conf` file with the changed configuration.'
         assert self._isolated_main and self._isolated_repos
         self._cp.write(out)
 
 
-class YumConfParser:
+class YumDnfConfParser:
 
-    def __init__(self, yum_conf: TextIO):
+    def __init__(self, yum_dnf: YumDnf, conf: TextIO):
+        self._yum_dnf = yum_dnf
         self._cp = ConfigParser()
-        self._cp.read_file(yum_conf)
+        self._cp.read_file(conf)
 
-    def gen_repos(self) -> Iterator[YumConfRepo]:
+    def gen_repos(self) -> Iterator[YumDnfConfRepo]:
         'Raises if repo names cannot be used as directory names.'
         for repo, cfg in self._cp.items():
             if repo not in _NON_REPO_SECTIONS:
-                yield YumConfRepo.from_config_section(repo, cfg)
+                yield YumDnfConfRepo.from_config_section(repo, cfg)
 
-    def isolate(self) -> YumConfIsolator:
-        return YumConfIsolator(self._cp)
+    def isolate(self) -> YumDnfConfIsolator:
+        return YumDnfConfIsolator(self._yum_dnf, self._cp)
