@@ -39,25 +39,38 @@ python_library(
     ],
 )
 
+python_library(
+    name = "rpm_action_base_testlib",
+    srcs = ["tests/rpm_action_base.py"],
+    base_module = "fs_image.compiler.items",
+    resources = {
+        TEST_IMAGE_PREFIX + "rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
+    },
+    deps = [
+        ":common_testlib",
+        ":rpm_action",
+        "//fs_image:fs_utils",
+        "//fs_image:testlib_temp_subvolumes",
+    ],
+)
+
 python_unittest(
     name = "test-rpm-action",
     srcs = ["tests/test_rpm_action.py"],
     base_module = "fs_image.compiler.items",
     needed_coverage = [(100, ":rpm_action")],
     resources = {
-        "//fs_image/build_appliance/facebook:fb_build_appliance_testing": "tests/fb-test-build-appliance",
-        "//fs_image/build_appliance/facebook:fb_host_build_appliance_testing": "tests/fb-host-test-build-appliance",
-        TEST_IMAGE_PREFIX + "fake-build-appliance-from-host": "tests/host-test-build-appliance",
-        TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
-        TEST_IMAGE_PREFIX + "rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
+        target_location(
+            TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
+        ): "host-test-build-appliance",
+        target_location(
+            TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
+        ): "test-with-one-local-rpm",
         TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
     },
     deps = [
-        ":common_testlib",
-        ":rpm_action",
+        ":rpm_action_base_testlib",
         "//fs_image:find_built_subvol",
-        "//fs_image:fs_utils",
-        "//fs_image:testlib_temp_subvolumes",
     ],
 )
 
