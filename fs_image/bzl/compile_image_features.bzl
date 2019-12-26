@@ -10,24 +10,23 @@ def _build_opts(
         subvol_name = "volume",
         # Path to a layer target of a build appliance, containing an
         # installed `rpm_repo_snapshot()`, plus an OS image with other
-        # image build tools like `btrfs`, `yum`, `tar`, `ln`, ...
+        # image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
         # Additionally, `.buckconfig` can specify a global default via:
         #   [fs_image]
         #   build_appliance = //some/target:path
         # In current implementation build_appliance is required only if any
         # dependent `image_feature` specifies `rpms`.
         build_appliance = None,
-        # A boolean knob to govern behavior of RpmAction w.r.t /var/cache/yum
-        # The default is False: yum install won't pollute /var/cache/yum of
-        # destination. Build appliance image is a special case: it is beneficial
-        # to have /var/cache/yum populated because it speeds up RpmAction for
-        # other images (whoever uses build_applince). For now, this knob is
-        # ignored if build_appliance is not set.
-        preserve_yum_cache = False):
+        # By default `RpmActionItem` will not populate
+        # `/var/cache/{dnf,yum}` in the built image.  We set this flag to
+        # `True` for the special case of a build appliance (BA) image.  It
+        # is beneficial to have the BA's cache populated because it speeds
+        # up `RpmActionItem` in builds based on this BA.
+        preserve_yum_dnf_cache = False):
     return struct(
         subvol_name = subvol_name,
         build_appliance = build_appliance,
-        preserve_yum_cache = preserve_yum_cache,
+        preserve_yum_dnf_cache = preserve_yum_dnf_cache,
     )
 
 def _query_set(target_paths):
@@ -91,7 +90,7 @@ def compile_image_features(
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \
           {maybe_quoted_build_appliance_args} \
-          {maybe_preserve_yum_cache_args} \
+          {maybe_preserve_yum_dnf_cache_args} \
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
           --child-dependencies {feature_deps_query_macro} \
@@ -147,7 +146,7 @@ def compile_image_features(
                 build_opts.build_appliance,
             ) if build_opts.build_appliance else ""
         ),
-        maybe_preserve_yum_cache_args = (
-            "--preserve-yum-cache" if build_opts.preserve_yum_cache else ""
+        maybe_preserve_yum_dnf_cache_args = (
+            "--preserve-yum-dnf-cache" if build_opts.preserve_yum_dnf_cache else ""
         ),
     )

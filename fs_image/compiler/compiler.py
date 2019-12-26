@@ -63,10 +63,11 @@ def parse_args(args) -> argparse.Namespace:
         help='Path to the JSON output of target referred by build_appliance',
     )
     parser.add_argument(
-        '--preserve-yum-cache', action='store_true',
-        help='RpmAction preserves /var/cache/yum doing yum install. For now, '
-             'if this option is omitted and --build-appliance-json is not '
-             'provided, /var/cache/yum will be preserved anyway.',
+        '--preserve-yum-dnf-cache', action='store_true',
+        help='RpmActionItem will write to `/var/cache/{dnf,yum}` on the '
+            'subvolume when installing RPMs. The caches will contain repodata '
+            'from the current repo snapshot, so this is most useful for '
+            'constructing build-appliance images.',
     )
     parser.add_argument(
         '--artifacts-may-require-repo', action='store_true',
@@ -118,7 +119,8 @@ def build_image(args):
         build_appliance=get_subvolume_path(
             args.build_appliance_json, args.subvolumes_dir,
         ) if args.build_appliance_json else None,
-        preserve_yum_cache=args.preserve_yum_cache,
+        force_yum_dnf=None,  # This is currently only used in `test-items`
+        preserve_yum_dnf_cache=args.preserve_yum_dnf_cache,
         artifacts_may_require_repo=args.artifacts_may_require_repo,
         target_to_path=make_target_path_map(args.child_dependencies),
         subvolumes_dir=args.subvolumes_dir,

@@ -20,13 +20,13 @@ class RpmActionItemTestBase:
         return find_built_subvol(load_location(module, name))
 
     def _check_rpm_action_item_build_appliance(self, ba_path: Path):
-        for preserve_yum_cache in [True, False]:
+        for preserve_yum_dnf_cache in [True, False]:
             self._check_rpm_action_item(layer_opts=DUMMY_LAYER_OPTS._replace(
                 build_appliance=ba_path,
-                preserve_yum_cache=preserve_yum_cache,
-            ), preserve_yum_cache=preserve_yum_cache)
+                preserve_yum_dnf_cache=preserve_yum_dnf_cache,
+            ))
 
-    def _check_rpm_action_item(self, layer_opts, preserve_yum_cache=False):
+    def _check_rpm_action_item(self, layer_opts):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.create('rpm_action')
             self.assertEqual(['(Dir)', {}], render_subvol(subvol))
@@ -109,7 +109,8 @@ class RpmActionItemTestBase:
             # It is important that the yum cache of built images be empty, to
             # avoid unnecessarily increasing the distributed image size.
             rm_cmd = ['rmdir'] if (
-                layer_opts.build_appliance and not preserve_yum_cache
+                layer_opts.build_appliance
+                    and not layer_opts.preserve_yum_dnf_cache
             ) else ['rm', '-rf']
             subvol.run_as_root(rm_cmd + [subvol.path('var/cache/yum')])
             subvol.run_as_root([

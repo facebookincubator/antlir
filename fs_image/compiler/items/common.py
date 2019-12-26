@@ -20,6 +20,7 @@ from typing import AnyStr, List, Mapping, NamedTuple, Optional, Set
 from compiler import procfs_serde
 from compiler.enriched_namedtuple import metaclass_new_enriched_namedtuple
 from fs_image.fs_utils import Path
+from rpm.yum_dnf_conf import YumDnf
 from subvol_utils import Subvol
 
 from .mount_utils import mountpoints_from_subvol_meta
@@ -108,7 +109,9 @@ class LayerOpts(NamedTuple):
     layer_target: str
     target_to_path: Mapping[str, str]
     subvolumes_dir: str
-    preserve_yum_cache: bool
+    # If set, overrides the snapshot-default package manager in `RpmActionItem`
+    force_yum_dnf: Optional[YumDnf]
+    preserve_yum_dnf_cache: bool
 
 
 class ImageItem(type):

@@ -259,7 +259,7 @@ def _yum_dnf_using_build_appliance(
         uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
     ).decode().strip('=')
     prog_name = 'yum'  # `dnf` support coming soon
-    mount_cache = '' if layer_opts.preserve_yum_cache else f'''
+    mount_cache = '' if layer_opts.preserve_yum_dnf_cache else f'''
         mkdir -p {work_dir}/var/cache/{prog_name} ; \
         mount --bind /var/cache/{prog_name} {work_dir}/var/cache/{prog_name} ;
     '''

@@ -218,7 +218,8 @@ class CompilerTestCase(unittest.TestCase):
             artifacts_may_require_repo=True,  # Must match CLI arg in `_compile`
             target_to_path=si.TARGET_TO_PATH,
             subvolumes_dir=_SUBVOLS_DIR,
-            preserve_yum_cache=False,
+            force_yum_dnf=None,
+            preserve_yum_dnf_cache=False,
         )
         phase_item_ids = set()
         for builder_maker, item_ids in si.ORDERED_PHASES:

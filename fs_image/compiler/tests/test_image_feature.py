@@ -46,7 +46,8 @@ class ImageFeatureTestCase(unittest.TestCase):
                 target_to_path=si.TARGET_TO_PATH
                     if target_to_path is None else target_to_path,
                 subvolumes_dir=None,
-                preserve_yum_cache=False,
+                force_yum_dnf=None,
+                preserve_yum_dnf_cache=False,
             ),
         ))
 
