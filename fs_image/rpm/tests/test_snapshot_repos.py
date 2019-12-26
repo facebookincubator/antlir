@@ -26,6 +26,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                 'base_dir': (td / 'storage').decode(),
             }
             snapshot_repos_from_args([
+                '--dnf-conf', (repos_root / '0/dnf.conf').decode(),
                 '--yum-conf', (repos_root / '0/yum.conf').decode(),
                 '--gpg-key-whitelist-dir', (td / 'gpg_whitelist').decode(),
                 '--snapshot-dir', (td / 'snap').decode(),

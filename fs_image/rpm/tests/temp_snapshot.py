@@ -11,13 +11,15 @@ from ..snapshot_repos import snapshot_repos
 from ..tests.temp_repos import SAMPLE_STEPS, temp_repos_steps
 
 
-def _make_test_yum_conf(repos_path: Path, gpg_key_path: Path) -> str:
-    return textwrap.dedent('''\
+def _make_test_yum_dnf_conf(
+    yum_dnf: str, repos_path: Path, gpg_key_path: Path,
+) -> str:
+    return textwrap.dedent(f'''\
         [main]
-        cachedir=/var/cache/yum
+        cachedir=/var/cache/{yum_dnf}
         debuglevel=2
         keepcache=1
-        logfile=/var/log/yum.log
+        logfile=/var/log/{yum_dnf}.log
         pkgpolicy=newest
         showdupesfromrepos=1
     ''') + '\n\n'.join(
@@ -27,7 +29,8 @@ def _make_test_yum_conf(repos_path: Path, gpg_key_path: Path) -> str:
             enabled=1
             name={repo}
             gpgkey={gpg_key_path.file_url()}
-        ''') for repo in os.listdir(repos_path.decode()) if repo != 'yum.conf'
+        ''') for repo in os.listdir(repos_path.decode())
+            if repo not in ('dnf.conf', 'yum.conf')
     )
 
 
@@ -41,9 +44,12 @@ def make_temp_snapshot(
     with temp_repos_steps(repo_change_steps=[repos]) as repos_root:
         snapshot_repos(
             dest=snapshot_dir,
-            yum_conf_content=_make_test_yum_conf(
-                # Snapshot the 0th step only, since only that is defined
-                repos_root / '0', gpg_key_path,
+            # Snapshot the 0th step only, since only that is defined
+            yum_conf_content=_make_test_yum_dnf_conf(
+                'yum', repos_root / '0', gpg_key_path,
+            ),
+            dnf_conf_content=_make_test_yum_dnf_conf(
+                'dnf', repos_root / '0', gpg_key_path,
             ),
             repo_db_ctx=RepoDBContext(
                 DBConnectionContext.make(

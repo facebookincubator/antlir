@@ -192,11 +192,11 @@ def make_repo_steps(
                 repos[repo_name] = repo
         step_dir = out_dir / step
         os.makedirs(step_dir)
-        yum_conf = ConfigParser()
-        yum_conf['main'] = {}
+        yum_dnf_conf = ConfigParser()
+        yum_dnf_conf['main'] = {}
         for repo_name, repo in repos.items():
             repo_dir = step_dir / repo_name
-            yum_conf[repo_name] = {'baseurl': repo_dir.file_url()}
+            yum_dnf_conf[repo_name] = {'baseurl': repo_dir.file_url()}
             if isinstance(repo, str):  # Alias of another repo
                 assert repo in repos
                 if avoid_symlinks:
@@ -227,8 +227,9 @@ def make_repo_steps(
                     )
             # Now that all RPMs were built, we can generate the Yum metadata
             subprocess.run(['createrepo_c', repo_dir], check=True)
-        with open(step_dir / 'yum.conf', 'w') as out_f:
-            yum_conf.write(out_f)
+        for prog_name in ['dnf', 'yum']:
+            with open(step_dir / f'{prog_name}.conf', 'w') as out_f:
+                yum_dnf_conf.write(out_f)
 
 @contextmanager
 def temp_repos_steps(base_dir=None, arch: str = 'x86_64', *args, **kwargs):
