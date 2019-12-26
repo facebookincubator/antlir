@@ -14,7 +14,8 @@ from fs_image.compiler.items.make_subvol import (
 )
 from fs_image.compiler.items.mount import MountItem
 from fs_image.compiler.items.remove_path import RemovePathItem
-from fs_image.compiler.items.rpm_action import RpmActionItem, RpmBuildItem
+from fs_image.compiler.items.rpm_action import RpmActionItem
+from fs_image.compiler.items.rpm_build import RpmBuildItem
 from fs_image.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from fs_image.compiler.items.tarball import TarballItem
 
@@ -50,7 +51,7 @@ def replace_targets_by_paths(x, layer_opts: LayerOpts):
         return [replace_targets_by_paths(v, layer_opts) for v in x]
     elif type(x) in [int, float, str, bool, type(None)]:
         return x
-    assert False, f'Unknown {type(x)} for {x}'  # pragma: no cover
+    raise AssertionError(f'Unknown {type(x)} for {x}')  # pragma: no cover
 
 
 def gen_items_for_features(

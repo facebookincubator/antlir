@@ -1,7 +1,62 @@
+load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
-# Split out since `nspawn-in-subvol` depends on it.
+# Needs dedicated test coverage. For now, is covered by `test-items`.
+python_library(
+    name = "common",
+    srcs = ["common.py"],
+    base_module = "fs_image.compiler.items",
+    deps = [
+        "//fs_image:fs_utils",
+        "//fs_image:subvol_utils",
+        "//fs_image/compiler:enriched_namedtuple",
+        "//fs_image/compiler:procfs_serde",
+        "//fs_image/rpm:yum_conf",
+    ],
+)
+
+# A helper for tests, so lacks its own tests.
+python_library(
+    name = "common_testlib",
+    srcs = ["tests/common.py"],
+    base_module = "fs_image.compiler.items",
+    deps = [
+        ":common",
+        "//fs_image/btrfs_diff:testlib_render_subvols",
+        "//fs_image/compiler:requires_provides",
+    ],
+)
+
+python_library(
+    name = "rpm_build",
+    srcs = ["rpm_build.py"],
+    base_module = "fs_image.compiler.items",
+    deps = [
+        ":common",
+        "//fs_image:nspawn_in_subvol",
+    ],
+)
+
+python_unittest(
+    name = "test-rpm-build",
+    srcs = ["tests/test_rpm_build.py"],
+    base_module = "fs_image.compiler.items",
+    needed_coverage = [(100, ":rpm_build")],
+    resources = {
+        target_location(
+            TEST_IMAGE_PREFIX + "toy-rpm-build-rpmbuild-setup",
+        ): "toy-rpmbuild-setup",
+    },
+    deps = [
+        ":common_testlib",
+        "//fs_image:common",
+        "//fs_image:find_built_subvol",
+        "//fs_image:testlib_temp_subvolumes",
+    ],
+)
+
+# Split out since `nspawn-in-subvol` depends on it. Covered by `test-items`.
 python_library(
     name = "mount_utils",
     srcs = ["mount_utils.py"],
@@ -9,9 +64,9 @@ python_library(
     deps = ["//fs_image:subvol_utils"],
 )
 
-# Future: split this library, and tests, by item.  The only challenge is to
-# make sure that `common.py` gets coverage -- coverage of its functions is
-# currently distributed across various items.
+# Future: Finish splitting this library, and tests, by item.  The only
+# challenge is to make sure that `common.py` gets coverage -- coverage of
+# its functions is currently distributed across various items.
 python_library(
     name = "items",
     srcs = [
@@ -29,13 +84,11 @@ python_library(
     ],
     base_module = "fs_image.compiler.items",
     deps = [
+        ":common",
         ":mount_utils",
         "//fs_image:nspawn_in_subvol",
-        "//fs_image:subvol_utils",
-        "//fs_image/compiler:procfs_serde",
         "//fs_image/compiler:requires_provides",
         "//fs_image/compiler:subvolume_on_disk",
-        "//fs_image/rpm:common",
         "//fs_image/rpm:rpm_metadata",
     ],
 )
@@ -43,7 +96,6 @@ python_library(
 python_unittest(
     name = "test-items",
     srcs = [
-        "tests/common.py",
         "tests/test_common.py",
         "tests/test_install_file.py",
         "tests/test_make_dirs.py",
@@ -57,6 +109,7 @@ python_unittest(
     ],
     base_module = "fs_image.compiler.items",
     needed_coverage = [
+        (100, ":common"),
         (100, ":items"),
         (100, ":mount_utils"),
     ],
@@ -71,14 +124,13 @@ python_unittest(
         TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
         TEST_IMAGE_PREFIX + "rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
         TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
-        TEST_IMAGE_PREFIX + "toy-rpm-build-rpmbuild-setup": "tests/toy-rpmbuild-setup",
     },
     deps = [
+        ":common_testlib",
         ":items",
         "//fs_image:find_built_subvol",
         "//fs_image:testlib_temp_subvolumes",
         "//fs_image/btrfs_diff:testlib_demo_sendstreams",
-        "//fs_image/btrfs_diff:testlib_render_subvols",
         "//fs_image/rpm:rpm_metadata",
     ],
 )

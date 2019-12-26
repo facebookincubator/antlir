@@ -113,7 +113,10 @@ python_library(
     name = "items_for_features",
     srcs = ["items_for_features.py"],
     base_module = "compiler",
-    deps = ["//fs_image/compiler/items:items"],
+    deps = [
+        "//fs_image/compiler/items:items",
+        "//fs_image/compiler/items:rpm_build",
+    ],
 )
 
 python_library(
