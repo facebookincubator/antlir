@@ -126,6 +126,11 @@ fake_macro_library(
 )
 
 export_file(
+    name = "files/dnf.sh",
+    visibility = get_visibility(None, None),
+)
+
+export_file(
     name = "files/yum.sh",
     visibility = get_visibility(None, None),
 )

@@ -402,6 +402,16 @@ rpm_repo_snapshot(
         "key": "test",
         "kind": "filesystem",
     },
+    # `test-yum-dnf-from-snapshot` exercises both package managers, and it
+    # doesn't use the `yum_dnf_default*` file that this writes.
+    #
+    # `test-rpm-action-item` tests this default.  But it also has special
+    # logic to **also** test all its build appliances with `yum`, overriding
+    # this `dnf` default here.
+    #
+    # All other RPM installations via one of the ~3 build appliances that
+    # install this snapshot will use this default.
+    yum_dnf_default = "dnf",  # If changing, fix MaybeDnfRpmActionItemTestCase
 )
 
 python_unittest(

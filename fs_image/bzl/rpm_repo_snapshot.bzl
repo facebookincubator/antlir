@@ -8,11 +8,25 @@ load(":target_tagger.bzl", "mangle_target", "maybe_wrap_executable_target")
 # This constant is duplicated in `yum_using_build_appliance`.
 RPM_SNAPSHOT_BASE_DIR = "rpm-repo-snapshot"
 
+# Takes a bare in-repo snapshot, enriches it with `storage.sql3` from
+# storage, and injects some auxiliary binaries.  This prepares the snapshot
+# for installation into a build appliance via `install_rpm_repo_snapshot`.
+#
+# The snapshot picks the default package manager via `yum_dnf_default`,
+# because the snapshotted repos might be compatible with (or tested with)
+# only one but not the other.
+#
 # Hack alert: If you pass `storage["kind"] == "filesystem"`, and its
 # `"base_dir"` is relative, it will magically be interpreted to be relative
 # to the snapshot dir, both by this code, and later by `yum-dnf-from-snapshot`
 # that runs in the build appliance.
-def rpm_repo_snapshot(name, src, storage, visibility = None):
+def rpm_repo_snapshot(name, src, storage, yum_dnf_default, visibility = None):
+    if yum_dnf_default not in ["yum", "dnf"]:
+        fail(
+            'Must be "yum" or "dnf", got {}'.format(yum_dnf_default),
+            "yum_dnf_default",
+        )
+
     # For tests, we want relative `base_dir` to point into the snapshot dir.
     cli_storage = storage.copy()
     if cli_storage["kind"] == "filesystem" and \
@@ -58,10 +72,16 @@ echo {quoted_storage_cfg} > "$OUT"/storage.json
 cp $(location {yum_dnf_from_snapshot_wrapper}) "$OUT"/yum-dnf-from-snapshot
 cp $(location {repo_server_wrapper}) "$OUT"/repo-server
 
+# `RpmActionItem` uses this to select the default package manager.  This has
+# a trailing newline to be bash-friendly.  It's part of the contract.  In
+# the future, we might also add an `"$OUT"/yum_dnf_default` binary.
+echo {quoted_yum_dnf_default} > "$OUT"/yum_dnf_default.name
+
 # The `bin` directory exists so that "porcelain" binaries can potentially be
 # added to `PATH`.  But we should avoid doing this in production code.
 mkdir "$OUT"/bin
 
+cp $(location {dnf_sh_target}) "$OUT"/bin/dnf
 cp $(location {yum_sh_target}) "$OUT"/bin/yum
         '''.format(
             src = maybe_export_file(src),
@@ -69,6 +89,8 @@ cp $(location {yum_sh_target}) "$OUT"/bin/yum
             quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
             yum_dnf_from_snapshot_wrapper = yum_dnf_from_snapshot_wrapper,
             repo_server_wrapper = repo_server_wrapper,
+            quoted_yum_dnf_default = shell.quote(yum_dnf_default),
+            dnf_sh_target = "//fs_image/bzl:files/dnf.sh",
             yum_sh_target = "//fs_image/bzl:files/yum.sh",
         ),
         # This rule is not cacheable due to `maybe_wrap_executable_target`
