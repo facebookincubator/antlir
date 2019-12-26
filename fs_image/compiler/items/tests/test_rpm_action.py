@@ -74,6 +74,46 @@ class RpmActionItemTestCase(RpmActionItemTestBase, BaseItemTestCase):
                 }],
             }], render_subvol(subvol))
 
+    def _check_cheese_removal(self, local_rpm_path: Path):
+        parent_subvol = self._subvol_from_resource(
+            'fs_image.compiler.items', 'test-with-one-local-rpm',
+        )
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+            # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
+            assert os.path.isfile(
+                parent_subvol.path('/usr/share/rpm_test/cheese2.txt')
+            )
+            subvol = temp_subvolumes.snapshot(parent_subvol, 'remove_cheese')
+            RpmActionItem.get_phase_builder(
+                [RpmActionItem(
+                    from_target='t',
+                    source=local_rpm_path,
+                    action=RpmAction.remove_if_exists,
+                )],
+                DUMMY_LAYER_OPTS._replace(
+                    build_appliance=self._subvol_from_resource(
+                        'fs_image.compiler.items', 'host-test-build-appliance',
+                    ).path(),
+                ),
+            )(subvol)
+            subvol.run_as_root([
+                'rm', '-rf',
+                subvol.path('dev'),
+                subvol.path('meta'),
+                subvol.path('var'),
+            ])
+            self.assertEqual(['(Dir)', {
+                # No more `usr/share/rpm_test/cheese2.txt` here.
+            }], render_subvol(subvol))
+
+    def test_rpm_action_item_remove_local(self):
+        # We expect the removal to be based just on the name of the RPM
+        # in the metadata, so removing cheese-2 should be fine via either:
+        for ver in [1, 2]:
+            self._check_cheese_removal(
+                Path(__file__).dirname() / f'rpm-test-cheese-{ver}-1.rpm',
+            )
+
     def test_rpm_action_conflict(self):
         layer_opts = DUMMY_LAYER_OPTS._replace(
             build_appliance='required but ignored'
@@ -116,14 +156,4 @@ class RpmActionItemTestCase(RpmActionItemTestBase, BaseItemTestCase):
                     ),
                 ],
                 layer_opts,
-            )
-
-    def test_rpm_action_no_passing_downgrade(self):
-        with self.assertRaisesRegex(
-            AssertionError, '\'downgrade\' cannot be passed'
-        ):
-            RpmActionItem(
-                from_target='t',
-                name='derp',
-                action=RpmAction.downgrade
             )
