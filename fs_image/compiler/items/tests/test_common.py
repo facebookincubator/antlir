@@ -2,31 +2,33 @@
 from compiler.provides import ProvidesDirectory
 from compiler.requires import require_directory
 
-from ..common import PhaseOrder
+from ..common import ImageItem, image_source_item
 from ..install_file import InstallFileItem
 from ..make_dirs import MakeDirsItem
 from ..make_subvol import FilesystemRootItem, ParentLayerItem
-from ..rpm_action import RpmAction, RpmActionItem
 
-from .common import BaseItemTestCase
+from .common import BaseItemTestCase, DUMMY_LAYER_OPTS
+
+
+class FakeImageSourceItem(metaclass=ImageItem):
+    fields = ['source', 'kitteh']
 
 
 class ItemsCommonTestCase(BaseItemTestCase):
 
-    # Future: move these into the per-item TestCases, reuse existing items
-    def test_phase_orders(self):
-        self.assertIs(
-            None,
-            InstallFileItem(
-                from_target='t', source='/etc/passwd', dest='b',
-            ).phase_order(),
+    def test_image_source_item(self):
+        # Cover the `source=None` branch in `image_source_item`.
+        it = image_source_item(
+            FakeImageSourceItem,
+            exit_stack=None,
+            layer_opts=DUMMY_LAYER_OPTS,
+        )(from_target='m', source=None, kitteh='meow')
+        self.assertEqual(
+            FakeImageSourceItem(from_target='m', source=None, kitteh='meow'),
+            it,
         )
-        self.assertEqual(PhaseOrder.RPM_INSTALL, RpmActionItem(
-            from_target='t', name='n', action=RpmAction.install,
-        ).phase_order())
-        self.assertEqual(PhaseOrder.RPM_REMOVE, RpmActionItem(
-            from_target='t', name='n', action=RpmAction.remove_if_exists,
-        ).phase_order())
+        self.assertIsNone(it.source)
+        self.assertEqual('meow', it.kitteh)
 
     def test_enforce_no_parent_dir(self):
         with self.assertRaisesRegex(AssertionError, r'cannot start with \.\.'):

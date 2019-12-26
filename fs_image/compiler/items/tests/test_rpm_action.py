@@ -27,6 +27,14 @@ def _subvol_from_resource(name):
 
 class RpmActionItemTestCase(BaseItemTestCase):
 
+    def test_phase_orders(self):
+        self.assertEqual(PhaseOrder.RPM_INSTALL, RpmActionItem(
+            from_target='t', name='n', action=RpmAction.install,
+        ).phase_order())
+        self.assertEqual(PhaseOrder.RPM_REMOVE, RpmActionItem(
+            from_target='t', name='n', action=RpmAction.remove_if_exists,
+        ).phase_order())
+
     def _test_rpm_action_item(self, layer_opts, preserve_yum_cache=False):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.create('rpm_action')
@@ -185,7 +193,7 @@ class RpmActionItemTestCase(BaseItemTestCase):
                 )],
                 DUMMY_LAYER_OPTS._replace(
                     build_appliance=_subvol_from_resource(
-                        'fb-test-build-appliance',
+                        'host-test-build-appliance',
                     ),
                 ),
             )(subvol)

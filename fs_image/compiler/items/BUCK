@@ -29,6 +29,39 @@ python_library(
 )
 
 python_library(
+    name = "rpm_action",
+    srcs = ["rpm_action.py"],
+    base_module = "fs_image.compiler.items",
+    deps = [
+        ":common",
+        "//fs_image:nspawn_in_subvol",
+        "//fs_image/rpm:rpm_metadata",
+    ],
+)
+
+python_unittest(
+    name = "test-rpm-action",
+    srcs = ["tests/test_rpm_action.py"],
+    base_module = "fs_image.compiler.items",
+    needed_coverage = [(100, ":rpm_action")],
+    resources = {
+        "//fs_image/build_appliance/facebook:fb_build_appliance_testing": "tests/fb-test-build-appliance",
+        "//fs_image/build_appliance/facebook:fb_host_build_appliance_testing": "tests/fb-host-test-build-appliance",
+        TEST_IMAGE_PREFIX + "fake-build-appliance-from-host": "tests/host-test-build-appliance",
+        TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
+        TEST_IMAGE_PREFIX + "rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
+        TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
+    },
+    deps = [
+        ":common_testlib",
+        ":rpm_action",
+        "//fs_image:find_built_subvol",
+        "//fs_image:fs_utils",
+        "//fs_image:testlib_temp_subvolumes",
+    ],
+)
+
+python_library(
     name = "rpm_build",
     srcs = ["rpm_build.py"],
     base_module = "fs_image.compiler.items",
@@ -77,7 +110,6 @@ python_library(
         "mount.py",
         "phases_provide.py",
         "remove_path.py",
-        "rpm_action.py",
         "stat_options.py",
         "symlink.py",
         "tarball.py",
@@ -89,7 +121,6 @@ python_library(
         "//fs_image:nspawn_in_subvol",
         "//fs_image/compiler:requires_provides",
         "//fs_image/compiler:subvolume_on_disk",
-        "//fs_image/rpm:rpm_metadata",
     ],
 )
 
@@ -103,7 +134,6 @@ python_unittest(
         "tests/test_mount.py",
         "tests/test_phases_provide.py",
         "tests/test_remove_path.py",
-        "tests/test_rpm_action.py",
         "tests/test_symlink.py",
         "tests/test_tarball.py",
     ],
@@ -117,13 +147,8 @@ python_unittest(
     # since `root` cannot access the content of an unprivileged XAR.
     par_style = "zip",
     resources = {
-        "//fs_image/build_appliance/facebook:fb_build_appliance_testing": "tests/fb-test-build-appliance",
-        "//fs_image/build_appliance/facebook:fb_host_build_appliance_testing": "tests/fb-host-test-build-appliance",
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
-        TEST_IMAGE_PREFIX + "fake-build-appliance-from-host": "tests/host-test-build-appliance",
         TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
-        TEST_IMAGE_PREFIX + "rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
-        TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
     },
     deps = [
         ":common_testlib",
@@ -131,6 +156,15 @@ python_unittest(
         "//fs_image:find_built_subvol",
         "//fs_image:testlib_temp_subvolumes",
         "//fs_image/btrfs_diff:testlib_demo_sendstreams",
-        "//fs_image/rpm:rpm_metadata",
+    ],
+)
+
+# `items_for_features` and `sample_items` always depend on ~all items.
+python_library(
+    name = "all-items",
+    deps = [
+        ":items",
+        ":rpm_action",
+        ":rpm_build",
     ],
 )

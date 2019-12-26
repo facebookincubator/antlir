@@ -28,6 +28,14 @@ def _install_file_item(**kwargs):
 
 class InstallFileItemTestCase(BaseItemTestCase):
 
+    def test_phase_order(self):
+        self.assertIs(
+            None,
+            InstallFileItem(
+                from_target='t', source='/etc/passwd', dest='b',
+            ).phase_order(),
+        )
+
     def test_install_file(self):
         with tempfile.NamedTemporaryFile() as tf:
             os.chmod(tf.name, stat.S_IXUSR)
