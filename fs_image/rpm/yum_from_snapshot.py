@@ -581,9 +581,30 @@ def yum_from_snapshot(
             check_popen_returncode(yum_proc)
 
 
-# This is used by the CLIs, and so it's tested indirectly (e.g. via the
-# image compiler's test targets.
-def add_common_yum_args(parser: 'argparse.ArgumentParser'):  # pragma: no cover
+# This argument-parsing logic is covered by RpmActionItem tests.
+if __name__ == '__main__':  # pragma: no cover
+    import argparse
+    import json
+
+    from .common import init_logging
+
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        '--repo-server', required=True, type=Path.from_argparse,
+        help='Path to repo-server binary',
+    )
+    parser.add_argument(
+        '--snapshot-dir', required=True, type=Path.from_argparse,
+        help='Multi-repo snapshot directory.',
+    )
+    parser.add_argument(
+        '--storage', required=True, type=json.loads,
+        help='What Storage do the storage IDs of the snapshots refer to? '
+            'Run `repo-server --help` to learn the syntax.',
+    )
     parser.add_argument(
         '--install-root', required=True, type=Path.from_argparse,
         help='All packages will be installed under this root. This is '
@@ -616,34 +637,6 @@ def add_common_yum_args(parser: 'argparse.ArgumentParser'):  # pragma: no cover
             'host system) -- this tool implements protections, but it '
             'may not be foolproof.',
     )
-
-
-# This is not a production CLI, but a development helper. In any case,
-# there's not much logic to cover.
-if __name__ == '__main__':  # pragma: no cover
-    import argparse
-    import json
-
-    from .common import init_logging
-
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        '--repo-server', required=True, type=Path.from_argparse,
-        help='Path to repo-server binary',
-    )
-    parser.add_argument(
-        '--snapshot-dir', required=True, type=Path.from_argparse,
-        help='Multi-repo snapshot directory.',
-    )
-    parser.add_argument(
-        '--storage', required=True, type=json.loads,
-        help='What Storage do the storage IDs of the snapshots refer to? '
-            'Run `repo-server --help` to learn the syntax.',
-    )
-    add_common_yum_args(parser)
     args = parser.parse_args()
 
     # For tests, we want relative `base_dir` to point into the snapshot dir.
