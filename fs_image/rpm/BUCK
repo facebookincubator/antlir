@@ -326,12 +326,12 @@ python_unittest(
 )
 
 # This is extracted from the RPM `yum-versionlock-1.1.31`, and is injected
-# into `yum`'s container by `yum-from-snapshot` code.  In the near future,
-# we should eliminate this and just `yum install` the RPM into the
+# into `yum`'s container by `yum-dnf-from-snapshot` code.  In the near
+# future, we should eliminate this and just `yum install` the RPM into the
 # corresponding build appliance.
 #
 # It is gzipped to highlight the fact that we treat it as an immutable
-# binary blob to be installed into an image, not like source.
+# binary blob to be installed into an image, not like source code.
 export_file(
     name = "yum_versionlock.gz",
     src = "third-party/yum-versionlock.py.gz",
@@ -355,7 +355,10 @@ python_binary(
     base_module = "rpm",
     main_module = "rpm.yum_from_snapshot",
     par_style = "xar",  # Lets us embed the `repo-server` binary
-    resources = {":yum_versionlock.gz": "yum_versionlock.gz"},
+    resources = {
+        ":dnf_versionlock.gz": "dnf_versionlock.gz",
+        ":yum_versionlock.gz": "yum_versionlock.gz",
+    },
     deps = [
         ":common",
         ":yum_dnf_conf",

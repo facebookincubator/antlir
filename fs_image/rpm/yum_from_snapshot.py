@@ -416,15 +416,15 @@ def _dummies_for_protected_paths(protected_paths) -> Mapping[str, str]:
 
 
 @contextmanager
-def _prepare_versionlock_dir(versionlock_list: Path) -> Path:
+def _prepare_versionlock_dir(yum_dnf: YumDnf, list_path: Path) -> Path:
     '''
     This prepares a directory containing:
       - the versionlock plugin code (see the Buck target for its provenance)
       - the plugin configuration
       - the actual list of locked versions
 
-    This directory is used by `YumConfIsolator.isolate_main` to tell
-    `yum` to use the plugin.
+    This directory is used by `YumDnfConfIsolator.isolate_main` to tell
+    `yum` / `dnf` to use the plugin.
     '''
     with temp_dir() as d:
         vl_conf = textwrap.dedent(f'''\
@@ -435,11 +435,20 @@ def _prepare_versionlock_dir(versionlock_list: Path) -> Path:
         with open(d / 'versionlock.conf', 'w') as outf:
             outf.write(vl_conf)
 
-        shutil.copyfile(versionlock_list, d / 'versionlock.list')
+        # `dnf` and `yum` expect different formats, so we parse our own.
+        template = {
+            YumDnf.yum: '{e}:{n}-{v}-{r}.{a}',
+            YumDnf.dnf: '{n}-{e}:{v}-{r}.{a}',
+        }[yum_dnf]
+        with open(list_path) as rf, open(d / 'versionlock.list', 'w') as wf:
+            for l in rf:
+                e, n, v, r, a = l.split('\t')
+                wf.write(template.format(e=e, n=n, v=v, r=r, a=a))
 
-        with importlib.resources.path('rpm', 'yum_versionlock.gz') as p, \
-                gzip.open(p) as f_in, open(d / 'versionlock.py', 'wb') as f_out:
-            f_out.write(f_in.read())
+        with importlib.resources.path(
+            'rpm', f'{yum_dnf.value}_versionlock.gz',
+        ) as p, gzip.open(p) as rf, open(d / 'versionlock.py', 'wb') as wf:
+            wf.write(rf.read())
 
         yield d
 
@@ -558,7 +567,9 @@ def yum_from_snapshot(
             repo_server_bin, repo_server_sock, storage_cfg, snapshot_dir
         ) as server_proc, \
                 open(snapshot_dir / 'yum.conf') as in_yum_conf, \
-                _prepare_versionlock_dir(versionlock_list) as versionlock_td, \
+                _prepare_versionlock_dir(
+                    YumDnf.yum, versionlock_list,
+                ) as versionlock_td, \
                 _prepare_isolated_yum_conf(
                     in_yum_conf, out_yum_conf, install_root, host, port,
                     versionlock_td,
@@ -625,8 +636,8 @@ if __name__ == '__main__':  # pragma: no cover
     )
     parser.add_argument(
         '--versionlock-list', default='/dev/null',
-        help='A file listing allowed RPM versions in the format that that '
-            '`yum-versionlock` expects: one E:N-V-R.A per line.',
+        help='A file listing allowed RPM versions, one per line, in the '
+            'following TAB-separated format: N\\tE\\tV\\tR\\tA.',
     )
     parser.add_argument(
         'yum_args', nargs='+',

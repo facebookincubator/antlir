@@ -115,7 +115,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
         # Version-locking carrot causes a non-latest version to be installed
         with self._yum_install(
             protected_paths=['meta/'],
-            version_lock=['0:rpm-test-carrot-1-lockme.x86_64'],
+            version_lock=['0\trpm-test-carrot\t1\tlockme\tx86_64'],
         ) as install_root:
             self._check_installed_content(install_root, {
                 **milk,
@@ -128,7 +128,7 @@ class YumFromSnapshotTestCase(unittest.TestCase):
         # (it's easier to do this error-checking in `RpmActionItem` anyway)
         with self._yum_install(
             protected_paths=['meta/'],
-            version_lock=['0:rpm-test-carrot-3333-nonexistent.x86_64'],
+            version_lock=['0\trpm-test-carrot\t3333\tnonesuch\tx86_64'],
         ) as install_root:
             self._check_installed_content(install_root, milk)
 
