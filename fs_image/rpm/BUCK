@@ -335,7 +335,7 @@ python_unittest(
 # binary blob to be installed into an image, not like source code.
 export_file(
     name = "yum_versionlock.gz",
-    src = "third-party/yum-versionlock.py.gz",
+    src = "third_party/yum-versionlock.py.gz",
 )
 
 # This is extracted from the RPM `python2-dnf-plugin-versionlock-4.0.7`, and
@@ -501,4 +501,21 @@ python_unittest(
         ":temp_repos",
         "//fs_image:find_built_subvol",
     ],
+)
+
+python_library(
+    name = "union_find",
+    srcs = ["third_party/union_find.py"],
+    base_module = "rpm",
+    deps = [],
+)
+
+python_unittest(
+    name = "test-union-find",
+    srcs = ["third_party/test_union_find.py"],
+    base_module = "rpm",
+    needed_coverage = [
+        (100, ":union_find"),
+    ],
+    deps = [":union_find"],
 )
