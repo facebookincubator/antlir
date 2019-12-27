@@ -64,11 +64,23 @@ class _ObjectCounter:
             rep_sizes[rep] = rep_size
         return sum(rep_sizes.values())
 
+    def __iadd__(self, other: '_ObjectCounter') -> '_ObjectCounter':
+        for chk, rep in other._synonyms.checksums.items():
+            self._set_size(chk, other._synonyms.checksum_size[chk])
+            self._set_size(rep, other._synonyms.checksum_size[rep])
+            self._synonyms.checksums.union(rep, chk)
+        return self
+
 
 class RepoSizer:
     def __init__(self):
         # Count each type of objects separately
         self._type_to_counter = defaultdict(_ObjectCounter)
+
+    def __iadd__(self, other: 'RepoSizer') -> 'RepoSizer':
+        for typ, ctr in other._type_to_counter.items():
+            self._type_to_counter[typ] += ctr
+        return self
 
     def _add_object(self, obj: Any) -> None:
         self._type_to_counter[type(obj)].add_repo_obj(obj)
