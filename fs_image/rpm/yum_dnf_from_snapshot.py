@@ -74,7 +74,7 @@ The current tool works well, with these caveats:
         it avoids eagerly loading the `rpm` table into RAM.
 
       * Since we typically run `yum/dnf` in an empty clean install-root, the
-        initial run can extra-slow due to having to download the repodata,
+        initial run can be extra-slow due to having to download the repodata,
         and build the local DB / populate local caches.  However, the
         `RpmActionItem` "build appliance" normally mitigates this by
         providing warm caches for the repo snapshot.

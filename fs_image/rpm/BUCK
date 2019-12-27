@@ -1,4 +1,5 @@
 load("//fs_image/bzl:defs.bzl", "target_location")
+load("//fs_image/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -414,18 +415,21 @@ rpm_repo_snapshot(
     yum_dnf_default = "dnf",  # If changing, fix MaybeDnfRpmActionItemTestCase
 )
 
-python_unittest(
+image_python_unittest(
     name = "test-yum-dnf-from-snapshot",
     srcs = ["tests/test_yum_dnf_from_snapshot.py"],
     base_module = "rpm",
+    # This is necessary because our CI environment does not guarantee that
+    # `/var/lib/dnf` is installed.
+    layer = "//fs_image/compiler/test_images:fake-build-appliance-from-host",
     needed_coverage = [
         (100, ":yum-dnf-from-snapshot-library"),
     ],
-    par_style = "xar",
     resources = {
         target_location(":repo-snapshot-for-tests"): "repo-snapshot",
         target_location(":repo-server"): "repo-server",
     },
+    run_as_user = "root",  # We run `yum` / `dnf`
     deps = [":yum-dnf-from-snapshot-library"],
 )
 

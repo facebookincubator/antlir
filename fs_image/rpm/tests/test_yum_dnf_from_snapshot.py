@@ -33,11 +33,11 @@ class YumFromSnapshotTestImpl:
                         pass
             snapshot_dir = Path(load_location('rpm', 'repo-snapshot'))
             # Note: this can't use `_yum_using_build_appliance` because that
-            # would lose coverage info on `yum_dnf_from_snapshot.py`.  A
-            # possible option is to try to make this test an
-            # `image.python_unittest` that runs in the BA image, once
-            # our BA image is guaranteed to have the versionlock plugin.
-            # Right now, we use a host BA, which might not have it.
+            # would lose coverage info on `yum_dnf_from_snapshot.py`.  On
+            # the other hand, running this test against the host is fragile
+            # since it depends on the system packages available on CI
+            # containers.  For this reason, this entire test is an
+            # `image.python_unittest` that runs in a build appliance.
             with tempfile.NamedTemporaryFile(mode='w') as tf:
                 if version_lock:
                     tf.write('\n'.join(version_lock) + '\n')
