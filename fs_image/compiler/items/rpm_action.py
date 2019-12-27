@@ -247,6 +247,22 @@ class RpmActionItem(metaclass=ImageItem):
         return builder
 
 
+def _get_yum_or_dnf(build_appliance: Subvol, layer_opts: LayerOpts) -> str:
+    if layer_opts.force_yum_dnf:
+        # Normally, the snapshot knows what package manager is preferred.
+        # For tests, we want the ability to override this.
+        return layer_opts.force_yum_dnf.value
+    # We build BAs so that this is world-readable:
+    with open(build_appliance.path(
+        '/rpm-repo-snapshot/default/yum_dnf_default.name'
+    )) as rf:
+        prog_name = rf.read()
+    assert prog_name.endswith('\n')
+    prog_name = prog_name[:-1]
+    assert prog_name in ('yum', 'dnf'), repr(prog_name)
+    return prog_name
+
+
 def _yum_dnf_using_build_appliance(
     *, build_appliance: Subvol,
     nspawn_args: List[str],
@@ -258,7 +274,7 @@ def _yum_dnf_using_build_appliance(
     work_dir = '/work' + base64.urlsafe_b64encode(
         uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
     ).decode().strip('=')
-    prog_name = 'yum'  # `dnf` support coming soon
+    prog_name = _get_yum_or_dnf(build_appliance, layer_opts)
     mount_cache = '' if layer_opts.preserve_yum_dnf_cache else f'''
         mkdir -p {work_dir}/var/cache/{prog_name} ; \
         mount --bind /var/cache/{prog_name} {work_dir}/var/cache/{prog_name} ;

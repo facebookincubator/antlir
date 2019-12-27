@@ -4,6 +4,8 @@ import sys
 
 from fs_image.fs_utils import Path
 from rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
+from rpm.yum_dnf_conf import YumDnf
+
 from tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
@@ -13,7 +15,10 @@ from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
 from .rpm_action_base import RpmActionItemTestBase
 
 
-class RpmActionItemTestCase(RpmActionItemTestBase, BaseItemTestCase):
+class RpmActionItemTestImpl(RpmActionItemTestBase):
+
+    def _opts(self):
+        return DUMMY_LAYER_OPTS._replace(force_yum_dnf=self._YUM_DNF)
 
     def test_phase_orders(self):
         self.assertEqual(PhaseOrder.RPM_INSTALL, RpmActionItem(
@@ -52,7 +57,7 @@ class RpmActionItemTestCase(RpmActionItemTestBase, BaseItemTestCase):
                     source=src_rpm,
                     action=RpmAction.install,
                 )],
-                DUMMY_LAYER_OPTS._replace(
+                self._opts()._replace(
                     build_appliance=self._subvol_from_resource(
                         'fs_image.compiler.items', 'host-test-build-appliance',
                     ).path(),
@@ -61,6 +66,7 @@ class RpmActionItemTestCase(RpmActionItemTestBase, BaseItemTestCase):
             subvol.run_as_root([
                 'rm', '-rf',
                 subvol.path('dev'),
+                subvol.path('etc'),
                 subvol.path('meta'),
                 subvol.path('var'),
             ])
@@ -90,7 +96,7 @@ class RpmActionItemTestCase(RpmActionItemTestBase, BaseItemTestCase):
                     source=local_rpm_path,
                     action=RpmAction.remove_if_exists,
                 )],
-                DUMMY_LAYER_OPTS._replace(
+                self._opts()._replace(
                     build_appliance=self._subvol_from_resource(
                         'fs_image.compiler.items', 'host-test-build-appliance',
                     ).path(),
@@ -99,6 +105,7 @@ class RpmActionItemTestCase(RpmActionItemTestBase, BaseItemTestCase):
             subvol.run_as_root([
                 'rm', '-rf',
                 subvol.path('dev'),
+                subvol.path('etc'),
                 subvol.path('meta'),
                 subvol.path('var'),
             ])
@@ -115,7 +122,7 @@ class RpmActionItemTestCase(RpmActionItemTestBase, BaseItemTestCase):
             )
 
     def test_rpm_action_conflict(self):
-        layer_opts = DUMMY_LAYER_OPTS._replace(
+        layer_opts = self._opts()._replace(
             build_appliance='required but ignored'
         )
         # Test both install-install, install-remove, and install-downgrade
@@ -157,3 +164,17 @@ class RpmActionItemTestCase(RpmActionItemTestBase, BaseItemTestCase):
                 ],
                 layer_opts,
             )
+
+
+class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
+    _YUM_DNF = YumDnf.yum
+
+
+class MaybeDnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
+    # "repo-snapshot-for-tests" defaults to "dnf".  However, this test also
+    # exercises some other build appliances at present (fixme!), which are
+    # pinned to "yum" for now.
+    #
+    # Even if that corner case were fixed, we'd want to leave this at `None`
+    # because this exercises the key "defaulted package manager" code path.
+    _YUM_DNF = None

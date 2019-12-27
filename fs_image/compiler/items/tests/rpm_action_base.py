@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import subprocess
 import sys
 
@@ -98,10 +99,23 @@ class RpmActionItemTestBase:
                 # Annotate all paths since `sudo rm -rf` is scary.
                 subvol.path('var/lib/rpm'),
                 subvol.path('var/lib/yum'),
+                subvol.path('var/lib/dnf'),
                 subvol.path('var/log/yum.log'),
+                *(subvol.path('var/log/' + log) for log in [
+                    'yum.log', 'dnf.log', 'dnf.librepo.log', 'dnf.rpm.log',
+                    'hawkey.log',
+                ]),
                 subvol.path('usr/lib/.build-id'),
                 subvol.path('bin/sh'),
             ])
+            # We cannot just know whether `dnf` is in use by looking at
+            # `self._YUM_DNF`, see `MaybeDnfRpmActionItemTestCase`.
+            is_dnf = os.path.exists(subvol.path('etc/dnf/modules.d'))
+            if is_dnf:
+                subvol.run_as_root([
+                    'rmdir', subvol.path('etc/dnf/modules.d'),
+                    subvol.path('etc/dnf'), subvol.path('etc'),
+                ])
             # The way that `RpmActionItem` nspawns into build_appliance must
             # gurantee that `/var/cache/{dnf,yum}` is empty.  The next two
             # lines test that the cache directory is empty because `rmdir`
@@ -112,7 +126,9 @@ class RpmActionItemTestBase:
                 layer_opts.build_appliance
                     and not layer_opts.preserve_yum_dnf_cache
             ) else ['rm', '-rf']
-            subvol.run_as_root(rm_cmd + [subvol.path('var/cache/yum')])
+            subvol.run_as_root(rm_cmd + [
+                subvol.path(f'var/cache/{"dnf" if is_dnf else "yum"}')
+            ])
             subvol.run_as_root([
                 'rmdir',
                 subvol.path('dev'),  # made by yum_dnf_from_snapshot.py

@@ -196,6 +196,14 @@ class ImageLayerTestCase(unittest.TestCase):
                 )
 
     def test_build_appliance(self):
+        # The appliance this uses defaults to `dnf`.  This is not a dual
+        # test, unlike `test-rpm-action-item`, because force-overriding the
+        # package manager is not currently exposed to the `.bzl` layer.  So
+        # we only have the `dnf` build artifact to test here.
+        #
+        # If the extra coverage were thought important, we could either pass
+        # this flag to the compiler CLI via `image.opts`, or just add a copy
+        # of `repo-snapshot-for-tests` defaulting to `yum`.
         with self.target_subvol('validates-build-appliance') as sv:
             r = render_sendstream(sv.mark_readonly_and_get_sendstream())
 
@@ -204,15 +212,18 @@ class ImageLayerTestCase(unittest.TestCase):
             # the migration diffs land, the [75] can become a 5.
             self.assertRegex(ino, r'^\(File m[75]55 d[0-9]+\)$')
 
-            ino, = _pop_path(r, 'var/log/yum.log')
-            self.assertRegex(ino, r'^\(File m600 d[0-9]+\)$')
+            for logname in [
+                'dnf.log', 'dnf.librepo.log', 'dnf.rpm.log', 'hawkey.log',
+            ]:
+                ino, = _pop_path(r, f'var/log/{logname}')
+                self.assertRegex(ino, r'^\(File d[0-9]+\)$', logname)
 
             # Ignore a bunch of yum & RPM spam
             for ignore_dir in [
                 'usr/lib/.build-id',
-                'var/cache/yum',
+                'var/cache/dnf',
                 'var/lib/rpm',
-                'var/lib/yum',
+                'var/lib/dnf',
             ]:
                 ino, _ = _pop_path(r, ignore_dir)
                 self.assertEqual('(Dir)', ino)
@@ -220,6 +231,9 @@ class ImageLayerTestCase(unittest.TestCase):
             self.assertEqual(['(Dir)', {
                 'bin': ['(Dir)', {}],
                 'dev': ['(Dir)', {}],
+                'etc': ['(Dir)', {
+                    'dnf': ['(Dir)', {'modules.d': ['(Dir)', {}]}],
+                }],
                 'meta': ['(Dir)', {'private': ['(Dir)', {'opts': ['(Dir)', {
                     'artifacts_may_require_repo': ['(File d2)'],
                 }]}]}],
