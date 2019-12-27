@@ -31,7 +31,9 @@ class YumFromSnapshotTestImpl:
                     os.makedirs(os.path.dirname(install_root / p))
                     with open(install_root / p, 'wb'):
                         pass
-            snapshot_dir = Path(load_location('rpm', 'repo-snapshot'))
+            # This is the same hard coded path used by the `RpmActionItem` in
+            # the compiler.
+            snapshot_dir = Path("/rpm-repo-snapshot/default")
             # Note: this can't use `_yum_using_build_appliance` because that
             # would lose coverage info on `yum_dnf_from_snapshot.py`.  On
             # the other hand, running this test against the host is fragile
@@ -44,7 +46,7 @@ class YumFromSnapshotTestImpl:
                 tf.flush()
                 yum_dnf_from_snapshot(
                     yum_dnf=self._YUM_DNF,
-                    repo_server_bin=Path(load_location('rpm', 'repo-server')),
+                    repo_server_bin=Path(snapshot_dir) / 'repo-server',
                     storage_cfg=json.dumps({
                         'key': 'test',
                         'kind': 'filesystem',

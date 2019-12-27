@@ -428,10 +428,6 @@ image_python_unittest(
     needed_coverage = [
         (100, ":yum-dnf-from-snapshot-library"),
     ],
-    resources = {
-        target_location(":repo-snapshot-for-tests"): "repo-snapshot",
-        target_location(":repo-server"): "repo-server",
-    },
     run_as_user = "root",  # We run `yum` / `dnf`
     deps = [":yum-dnf-from-snapshot-library"],
 )
