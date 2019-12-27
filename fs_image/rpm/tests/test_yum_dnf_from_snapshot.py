@@ -86,6 +86,9 @@ class YumFromSnapshotTestImpl:
             self.assertTrue(os.path.isdir(remove[-1]), remove[-1])
         remove.append(install_root / f'var/log/{prog_name}.log')
         self.assertTrue(os.path.exists(remove[-1]))
+        if self._YUM_DNF == YumDnf.dnf:  # `dnf` loves log files
+            for logfile in ['dnf.librepo.log', 'dnf.rpm.log', 'hawkey.log']:
+                remove.append(install_root / 'var/log' / logfile)
 
         # Check that the above list of paths is complete.
         for path in remove:
@@ -97,7 +100,9 @@ class YumFromSnapshotTestImpl:
             'sudo', 'rmdir',
             'usr/share/rpm_test', 'usr/share', 'usr/lib', 'usr',
             'var/lib', 'var/cache', 'var/log', 'var/tmp', 'var',
-            'bin',
+            'bin', *([
+                'etc/dnf/modules.d', 'etc/dnf', 'etc'
+            ] if self._YUM_DNF == YumDnf.dnf else []),
         ], check=True, cwd=install_root)
         required_dirs = sorted([b'dev', b'meta'])
         self.assertEqual(required_dirs, sorted(os.listdir(install_root)))
@@ -138,6 +143,12 @@ class YumFromSnapshotTestImpl:
             # easier to do this error-checking in `RpmActionItem` anyway)
             with _install_nonexistent() as install_root:
                 self._check_installed_content(install_root, milk)
+        elif self._YUM_DNF == YumDnf.dnf:
+            # Unlike `yum`, `dnf` actually fails with:
+            #   Error: Unable to find a match: rpm-test-carrot
+            with self.assertRaises(subprocess.CalledProcessError):
+                with _install_nonexistent():
+                    pass
         else:
             raise NotImplementedError(self._YUM_DNF)
 
@@ -160,3 +171,7 @@ class YumFromSnapshotTestImpl:
 
 class YumFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
     _YUM_DNF = YumDnf.yum
+
+
+class DnfFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
+    _YUM_DNF = YumDnf.dnf
