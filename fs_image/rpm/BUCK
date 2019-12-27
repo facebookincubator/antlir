@@ -102,7 +102,10 @@ python_library(
     name = "repo_sizer",
     srcs = ["repo_sizer.py"],
     base_module = "rpm",
-    deps = [":repo_objects"],
+    deps = [
+        ":repo_objects",
+        ":union_find",
+    ],
 )
 
 python_unittest(

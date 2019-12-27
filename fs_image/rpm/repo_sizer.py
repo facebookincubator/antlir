@@ -11,16 +11,22 @@ implements the `RepoObjectVisitor` interface, featuring these methods:
 In the future, it can be officially declared, if useful.
 '''
 from collections import defaultdict
-from typing import Dict, NamedTuple, Set
+from typing import Any, Dict, NamedTuple, Union
+
+from .third_party.union_find import UnionFind
+
+from .common import Checksum
+from .repo_objects import Repodata, RepoMetadata, Rpm
 
 
 class Synonyms(NamedTuple):
-    size: int
-    # Different checksums can refer to the same file (see `_ObjectCounter.add`)
-    synonyms: Set['Checksum']
-    # This is the canonical representative of all the synonyms -- but not
-    # necessarily a CANONICAL_HASH.
-    primary: 'Checksum'
+    checksum_size: Dict[Checksum, int]
+    # `checksums` is a disjoint-set data structure which contains sets of
+    # checksums and tracks equivalencies (when two different checksums point to
+    # the same repo object). Note that the `representative` in the UnionFind is
+    # not necessarily the `canonical_checksum`, instead it's just a random
+    # checksum representing the set to which it belongs
+    checksums: UnionFind
 
 
 class _ObjectCounter:
@@ -29,57 +35,34 @@ class _ObjectCounter:
         # keys like `checksum` for `Repodata` and `filename` for `Rpm`.
         # Uniformly using checksums gracefully handles `MutableRpmError`,
         # and keeps this code generic.
-        self._checksum_to_synonyms = {}
+        self._synonyms = Synonyms({}, UnionFind())
 
-    def _get_synonyms(self, checksum: 'Checksum', size: int) -> Synonyms:
-        synonyms = self._checksum_to_synonyms.get(checksum)
-        return synonyms if synonyms is not None \
-            else Synonyms(size=size, primary=checksum, synonyms=set())
+    def _set_size(self, chk, obj_size):
+        """Helper to add a key into `checksum_size` while also performing
+        a sanity check to ensure that, if the checksum already existed in the
+        map, the size is the same.
+        """
+        size = self._synonyms.checksum_size.setdefault(chk, obj_size)
+        assert size == obj_size, \
+            f'{chk} has prior size {size}, while the new size is {obj_size}'
 
-    def add(self, obj):
-        # IMPORTANT: We do make no updates until all sanity-checks have been
-        # done -- a user error shouldn't corrupt our prior state.
-        best_synonyms = self._get_synonyms(obj.best_checksum(), obj.size)
-        assert best_synonyms.size == obj.size, \
-            f'{obj} best checksum has prior size {best_synonyms.size}'
-
-        # If we have two checksums, merge their synonym sets.
-        #
-        # RPMs may be hashed with different algorithms in different repos.
-        # To avoid double-counting these, `best_checksum` provides the
-        # canonical checksum, if available.
-        #
-        # When `--rpm-shard` is in use, we won't have the canonical checksum
-        # for RPMs outside of our shard (or within the shard, for RPMs that
-        # failed to download).  This means we may double-count those RPMs
-        # that occur in multiple repos, with the repos using different hash
-        # algorithms.
+    def add_repo_obj(self, obj: Union[Rpm, Repodata, RepoMetadata]) -> None:
+        self._set_size(obj.checksum, obj.size)
         if obj.best_checksum() != obj.checksum:
-            # Again, perform all checks before mutating state.
-            other_synonyms = self._get_synonyms(obj.checksum, obj.size)
-            assert other_synonyms.size == obj.size, \
-                f'{obj} other checksum has prior size {other_synonyms.size}'
-            for synonym in other_synonyms.synonyms:
-                # No equivalent check for .primary because this might be a
-                # brand-new object, and if it isn't, this check is trivial.
-                assert self._checksum_to_synonyms[synonym] is other_synonyms
-            assert other_synonyms.size == best_synonyms.size  # redundant
-            # All checks passed, so we can merge `other_synonyms` into
-            # `best_synonyms`.
-            best_synonyms.synonyms.update(other_synonyms.synonyms)
-            for synonym in other_synonyms.synonyms:
-                self._checksum_to_synonyms[synonym] = best_synonyms
-            best_synonyms.synonyms.add(other_synonyms.primary)
-            self._checksum_to_synonyms[other_synonyms.primary] = best_synonyms
+            self._set_size(obj.best_checksum(), obj.size)
+            self._synonyms.checksums.union(obj.best_checksum(), obj.checksum)
+        else:
+            self._synonyms.checksums.add(obj.checksum)
 
-        # All checks passed, it is now safe to mutate state
-        self._checksum_to_synonyms[obj.best_checksum()] = best_synonyms
-
-    def total_size(self):
-        return sum(
-            s.size for c, s in self._checksum_to_synonyms.items()
-                if s.primary == c
-        )
+    def total_size(self) -> int:
+        rep_sizes = {}
+        for chk, rep in self._synonyms.checksums.items():
+            # Ensure all checksums considered synonyms have the same size
+            chk_size = self._synonyms.checksum_size[chk]
+            rep_size = self._synonyms.checksum_size[rep]
+            assert chk_size == rep_size, (chk, chk_size, rep, rep_size)
+            rep_sizes[rep] = rep_size
+        return sum(rep_sizes.values())
 
 
 class RepoSizer:
@@ -87,8 +70,8 @@ class RepoSizer:
         # Count each type of objects separately
         self._type_to_counter = defaultdict(_ObjectCounter)
 
-    def _add_object(self, obj):
-        self._type_to_counter[type(obj)].add(obj)
+    def _add_object(self, obj: Any) -> None:
+        self._type_to_counter[type(obj)].add_repo_obj(obj)
 
     # Separate visitor methods in case we want to stop doing type introspection
     visit_repodata = _add_object

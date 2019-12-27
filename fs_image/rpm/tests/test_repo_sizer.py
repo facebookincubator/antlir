@@ -26,7 +26,7 @@ class RepoSizerTestCase(unittest.TestCase):
             size=1_000,
         )
         self.assertNotEqual(rpm1.best_checksum(), rpm2.best_checksum())
-        with self.assertRaisesRegex(AssertionError, ' other checksum '):
+        with self.assertRaisesRegex(AssertionError, ' has prior size '):
             sizer.visit_rpm(rpm2)
         sizer.visit_rpm(rpm2._replace(size=1_000_000))
         # These will also get mapped to the same synonym.
@@ -47,7 +47,7 @@ class RepoSizerTestCase(unittest.TestCase):
             size=1_000_000,
         )
         sizer.visit_rpm(rpm3)
-        with self.assertRaisesRegex(AssertionError, ' best checksum '):
+        with self.assertRaisesRegex(AssertionError, ' has prior size '):
             sizer.visit_rpm(rpm3._replace(size=123))
         self.assertEqual({'Rpm': 2_000_000}, sizer._get_classname_to_size())
         # Now, they got merged again
