@@ -108,7 +108,17 @@ def _add_run_in_subvol_target(name, kind, extra_args = None):
 
 def _current_target(target_name):
     return target_utils.to_label(
-        config.get_current_repo_name(),
+        # Note: we don't use the `config.get_current_repo_name()` here because
+        # currently in the OSS setup the current repo ends up being `@`, which
+        # doesn't work when we compile the layer. It doesn't work because
+        # a target like `//fs_image/compiler/test_images:parent_layer` is not
+        # equivalent to `@//fs_image/compiler/test_images:parent_layer`.
+        # Technically we should use the current repo name when constructing
+        # __all__ target labels. That would require a hefty refactor for all
+        # usages of hard coded targets. This should be done but can wait until
+        # the OSS repository is ready to be embedded/included in other projects
+        # as a proper repo/cell.
+        "",
         native.package_name(),
         target_name,
     )
