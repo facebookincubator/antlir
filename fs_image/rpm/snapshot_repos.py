@@ -23,11 +23,12 @@ we have today) across many shards, and once most of the snapshots are
 up-to-date to do the 0:1 snapshot with the above `repomd.xml` checks.
 '''
 import argparse
+import json
 import os
 import sys
 
 from io import StringIO
-from typing import Iterable, List
+from typing import Callable, Iterable, List
 
 from fs_image.common import get_file_logger, shuffled
 
@@ -81,6 +82,7 @@ def _write_confs_get_repos(
 
 def snapshot_repos(
     dest: Path, *,
+    repo_to_universe: Callable[[YumDnfConfRepo], str],
     yum_conf_content: str,
     dnf_conf_content: str,
     repo_db_ctx: RepoDBContext,
@@ -94,8 +96,12 @@ def snapshot_repos(
     repos = _write_confs_get_repos(dest, yum_conf_content, dnf_conf_content)
     os.mkdir(dest / 'repos')
     with RepoSnapshot.add_sqlite_to_storage(storage, dest) as db:
-        # Randomize the order to reduce contention from concurrent writers
-        for repo in shuffled(repos):
+        # Randomize the order to reduce contention from concurrent writers.
+        for repo, repo_universe in shuffled(
+            # Evaluate `repo_to_universe` eagerly to fail fast if some repos
+            # cannot be resolved.
+            (repo, repo_to_universe(repo)) for repo in repos
+        ):
             log.info(f'Downloading repo {repo.name} from {repo.base_url}')
             with populate_temp_dir_and_rename(
                 dest / 'repos' / repo.name, overwrite=True
@@ -109,7 +115,11 @@ def snapshot_repos(
                 )
                 retry_fn(
                     lambda: RepoDownloader(
-                        repo.name, repo.base_url, repo_db_ctx, storage
+                        repo_universe=repo_universe,
+                        repo_name=repo.name,
+                        repo_url=repo.base_url,
+                        repo_db_ctx=repo_db_ctx,
+                        storage=storage,
                     ).download(
                         rpm_shard=rpm_shard, visitors=[declared_sizer]
                     ),
@@ -140,13 +150,42 @@ def snapshot_repos_from_args(argv: List[str]):
         '--yum-conf', type=Path.from_argparse,
         help='Snapshot this `yum.conf`; see help for `--dnf-conf`',
     )
+
+    universe_warning = (
+        'Described in the `repo_db.py` docblock. In production, it is '
+        'important for the universe name to match existing conventions -- '
+        'DO NOT JUST MAKE ONE UP.'
+    )
+    universe_group = parser.add_mutually_exclusive_group(required=True)
+    universe_group.add_argument(
+        '--repo-to-universe-json', type=Path.from_argparse,
+        help='JSON dict of repo name to universe name. ' + universe_warning,
+    )
+    universe_group.add_argument(
+        '--one-univese-for-all-repos',
+        help='Snapshot all repos under this universe name. ' + universe_warning,
+    )
+
     args = parser.parse_args(argv)
 
     init_logging(debug=args.debug)
 
+    if args.one_univese_for_all_repos:
+        def repo_to_universe(_repo):
+            return args.one_univese_for_all_repos
+    elif args.repo_to_universe_json:
+        with open(args.repo_to_universe_json) as ru_json:
+            repo_to_universe_json = json.load(ru_json)
+
+        def repo_to_universe(repo):
+            return repo_to_universe_json[repo.name]
+    else:  # pragma: no cover
+        raise AssertionError(args)
+
     with populate_temp_dir_and_rename(args.snapshot_dir, overwrite=True) as td:
         snapshot_repos(
             dest=td,
+            repo_to_universe=repo_to_universe,
             yum_conf_content=args.yum_conf.read_text()
                 if args.yum_conf else None,
             dnf_conf_content=args.dnf_conf.read_text()

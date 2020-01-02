@@ -40,13 +40,14 @@ class RepoDBTestCase(unittest.TestCase):
         for (a_name, a_sql), (e_name, e_sql) in zip(_get_schema(conn), [
             ('rpm', (
                 'CREATE TABLE `rpm` ('
+                ' `universe` BLOB NOT NULL,'
                 ' `filename` BLOB NOT NULL,'
                 ' `checksum` BLOB NOT NULL,'
                 ' `canonical_checksum` BLOB NOT NULL,'
                 ' `size` INTEGER NOT NULL,'
                 ' `build_timestamp` INTEGER NOT NULL,'
                 ' `storage_id` BLOB NOT NULL,'
-                ' PRIMARY KEY (`filename`, `checksum`)'
+                ' PRIMARY KEY (`universe`, `filename`, `checksum`)'
                 ' )'
             )),
             ('repodata', (
@@ -60,13 +61,15 @@ class RepoDBTestCase(unittest.TestCase):
             )),
             ('repo_metadata', (
                 'CREATE TABLE `repo_metadata` ('
+                ' `universe` BLOB NOT NULL,'
                 ' `repo` BLOB NOT NULL,'
                 ' `fetch_timestamp` INTEGER NOT NULL,'
                 ' `build_timestamp` INTEGER NOT NULL,'
                 ' `checksum` BLOB NOT NULL,'
                 ' `xml` BLOB NOT NULL,'
-                ' PRIMARY KEY (`repo`, `fetch_timestamp`),'
-                ' UNIQUE (`repo`, `checksum`)'
+                ' PRIMARY KEY (`universe`, `repo`, `fetch_timestamp`, '
+                    '`checksum`),'
+                ' UNIQUE (`universe`, `repo`, `checksum`)'
                 ' )'
             )),
         ]):
@@ -134,7 +137,7 @@ class RepoDBTestCase(unittest.TestCase):
             ), self._make_db_ctx(conn_ctx) as db_ctx:
                 self.assertEqual(
                     db_repomd.fetch_timestamp,
-                    db_ctx.store_repomd('fake_repo', insert_repomd),
+                    db_ctx.store_repomd('fakevers', 'fake_repo', insert_repomd),
                 )
                 if do_commit:
                     db_ctx.commit()
@@ -171,7 +174,7 @@ class RepoDBTestCase(unittest.TestCase):
     def test_rpm_maybe_store_and_get_storage_id(self):
         # NB: For RPMs, only `maybe_store` is used as part of the public API.
         self._check_maybe_store_and_get_storage_id(
-            RpmTable(),
+            RpmTable('fakeverse'),
             _FAKE_RPM._replace(
                 checksum=Checksum('fake', 'fake'),
                 canonical_checksum=Checksum('fake', 'fake'),
@@ -179,7 +182,7 @@ class RepoDBTestCase(unittest.TestCase):
         )
 
     def test_get_rpm_storage_id_and_checksum(self):
-        table = RpmTable()
+        table = RpmTable('fakeverse')
         # We'll have two entries for the same exact RPM, but the different
         # repos that contain it will have computed different checksums.
         rpm1 = _FAKE_RPM._replace(
@@ -218,7 +221,7 @@ class RepoDBTestCase(unittest.TestCase):
                     )
 
     def test_get_rpm_canonical_checksums(self):
-        table = RpmTable()
+        table = RpmTable('fakeverse')
         canonical1 = Checksum('can', 'onical1')
         canonical2 = Checksum('can', 'onical2')
         with self._make_db_ctx(self._make_conn_ctx()) as db_ctx:

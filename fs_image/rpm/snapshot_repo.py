@@ -27,6 +27,12 @@ def snapshot_repo(argv):
     )
     add_standard_args(parser)
     parser.add_argument(
+        '--repo-universe', required=True,
+        help='This is explained in the `repo_db.py` docblock. In production, '
+            'it is important for the universe name to match existing '
+            'conventions -- DO NOT JUST MAKE ONE UP.',
+    )
+    parser.add_argument(
         '--repo-name', required=True,
         help="Used to distinguish this repo's metadata from others' in the DB.",
     )
@@ -59,10 +65,11 @@ def snapshot_repo(argv):
         )
         retry_fn(
             lambda: RepoDownloader(
-                args.repo_name,
-                args.repo_url,
-                RepoDBContext(args.db, args.db.SQL_DIALECT),
-                args.storage,
+                repo_universe=args.repo_universe,
+                repo_name=args.repo_name,
+                repo_url=args.repo_url,
+                repo_db_ctx=RepoDBContext(args.db, args.db.SQL_DIALECT),
+                storage=args.storage,
             ).download(rpm_shard=args.rpm_shard),
             delays=[0] * args.retries,
             what=f'Downloading {args.repo_name} from {args.repo_url} failed',

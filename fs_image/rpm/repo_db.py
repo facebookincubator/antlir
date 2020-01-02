@@ -15,7 +15,34 @@ redundant -- it primarily exists because many repo databases are XML, which
 is horribly slow to parse at RPM fetch time.
 
 All the query logic is in `RepoDBContext` below, so that's a good docblock
-to read next.
+to read after this one.
+
+
+## What is this "universe" column?
+
+The top-level object that we typically snapshot is a `{dnf,yum}.conf` file,
+which refers to multiple repos.
+
+It is normal to have many different config files in production.
+
+ - Two such files may use the same name to refer to completely **different**
+   repos.  For example, the repo name "os" may refer to the universe
+   "centos7" or "centos8".  Having the extra column allows us to store
+   distinct `repomd.xml` files for these configs.
+
+ - Conversely, the same "release-agnostic" repo may occur in two different
+   config files, alongside with "centos7" and "centos8" repos mentioned
+   above. We might put this repo in the "generic" universe.
+
+From the above, you can see that the "universe" concept gives us the
+flexibility to distinguish same-name repos that are different between config
+files, or to share backing storage for repos that are the same.
+
+Moreover, repos in different universes need not be related in any way.  So,
+we cannot expect the same RPM filenames to have the same contents across
+universes.  For example, two universes might represent the same OS, but
+built with incompatible compiler & linker flags.  For this reason,
+"universe" namespaces not just the `repo_metadata` table, but also `rpm`.
 
 
 ## Bugs
@@ -140,7 +167,8 @@ class RpmTable(StorageTable):
     Records all instances of RPM files that ever existed in our repos.
 
     The same RPM may occur in different repos, at different locations, so
-    this table includes neither the repo, nor the location.
+    this table includes neither the repo, nor the location.  The doc for
+    `_TABLE_KEYS` explains why we additionally key on `universe`.
 
     Moreover, repos may use different checksum algorithms for the same file.
     In that case, this table will include MULTIPLE ROWS with the same
@@ -155,10 +183,14 @@ class RpmTable(StorageTable):
     prevent this. Thus, we do not have a `UNIQUE` constraint for this.
     '''
     NAME = 'rpm'
-    KEY_COLUMNS = ('filename', 'checksum')
+    KEY_COLUMNS = ('universe', 'filename', 'checksum')
+
+    def __init__(self, universe: str):
+        self._universe = universe
 
     def _column_funcs(self):
         return [
+            ('universe', lambda obj: byteme(self._universe)),
             ('filename', lambda obj: byteme(obj.filename())),
             (
                 'canonical_checksum',
@@ -168,7 +200,11 @@ class RpmTable(StorageTable):
         ]
 
     def key(self, obj):  # Update KEY_COLUMNS, _TABLE_KEYS if changing this
-        return (byteme(obj.filename()), byteme(str(obj.checksum)))
+        return (
+            byteme(self._universe),
+            byteme(obj.filename()),
+            byteme(str(obj.checksum)),
+        )
 
 
 class RepodataTable(StorageTable):
@@ -223,6 +259,7 @@ class RepoDBContext(AbstractContextManager):
             'canonical_checksum': 'BLOB',
             'fetch_timestamp': 'INTEGER',
             'build_timestamp': 'INTEGER',
+            'universe': 'BLOB',
             'filename': 'BLOB',
             'repo': 'BLOB',
             'size': 'INTEGER',
@@ -235,15 +272,17 @@ class RepoDBContext(AbstractContextManager):
             'canonical_checksum': 'VARBINARY(255)',
             'fetch_timestamp': 'BIGINT',  # THE EPOCHALYPSE IS NEAR
             'build_timestamp': 'BIGINT',
+            'universe': 'VARBINARY(255)',  # Larger than is reasonable
             'filename': 'VARBINARY(255)',  # Linux max filename
             'repo': 'VARBINARY(255)',  # Linux max filename
             'size': 'BIGINT',
-            'storage_id': 'VARBINARY(255)',  # Larger than reasonable.
+            'storage_id': 'VARBINARY(255)',  # Larger than is reasonable
             'xml': 'BLOB',  # 64KB ought to be enough
         },
     }
     _TABLE_COLUMNS = {
         RpmTable.NAME: {
+            'universe': 'NOT NULL',  # See "universe" in the file docblock
             'filename': 'NOT NULL',
             'checksum': 'NOT NULL',  # As specified by the primary repodata
             'canonical_checksum': 'NOT NULL',  # As computed by us
@@ -258,6 +297,7 @@ class RepoDBContext(AbstractContextManager):
             'storage_id': 'NOT NULL',
         },
         'repo_metadata': {
+            'universe': 'NOT NULL',  # See "universe" in the file docblock
             'repo': 'NOT NULL',
             # The fetch time lets us reconstruct what all repos looked like
             # at a certain point in time. The build times may be much older.
@@ -268,16 +308,37 @@ class RepoDBContext(AbstractContextManager):
         },
     }
     _TABLE_KEYS = {
-        RpmTable.NAME: ['PRIMARY KEY (`filename`, `checksum`)'],
+        # The key includes a filename because we try to detect when the same
+        # filename occurs with different contents in a set of repos.
+        #
+        # The key also includes a `universe` to allow different repo sets to
+        # use the same filename to refer to different contents.
+        #
+        # Note that this strategy will store the same contents twice if it
+        # occurs with different filenames.  This should be rare, so we
+        # accept the ineffciency to keep the code simpler.
+        RpmTable.NAME: ['PRIMARY KEY (`universe`, `filename`, `checksum`)'],
+        # These don't need to be namespaced by `universe` because they are
+        # only ever looked up by checksum.
         RepodataTable.NAME: ['PRIMARY KEY (`checksum`)'],
-        # Unlike RpmTable and RepoTable, the top-level metadata is keyed on
-        # the repo name.  That lets us handle repos that are aliases of each
-        # other without copying large repodata blobs.
+        # Unlike RepoTable, the top-level metadata is keyed on the repo
+        # name, not just on checksum.  We need this to be able to
+        # reconstruct the full repo state starting from a `{dnf,yum}.conf`.
+        # Specifically, the config may have repo names that are aliases of
+        # the same repo.  In that case, this table will store 2 copies of
+        # the XML, which will resolve to the same rows in the repodata & rpm
+        # tables.
+        #
+        # Keying on `universe` allows different `{yum,dnf}.conf` instances
+        # to use the same name to refer to different repos.
         'repo_metadata': [
-            'PRIMARY KEY (`repo`, `fetch_timestamp`)',
-            # We don't store redundant copies, so if a repomd.xml stays
+            # Includes `checksum` because it's technically possible for the
+            # same `repomd.xml` to be fetched twice in the same second with
+            # different results -- `test-snapshot-repos` hits this case.
+            'PRIMARY KEY (`universe`, `repo`, `fetch_timestamp`, `checksum`)',
+            # Don't store redundant copies, so if a repomd.xml stays
             # constant over a number of fetches, we only store the oldest.
-            'UNIQUE (`repo`, `checksum`)',
+            'UNIQUE (`universe`, `repo`, `checksum`)',
         ],
     }
 
@@ -360,11 +421,14 @@ class RepoDBContext(AbstractContextManager):
                         raise  # pragma: no cover
                     _ensure_line_is_covered()
 
-    def store_repomd(self, repo_str: str, repomd: RepoMetadata) -> int:
+    def store_repomd(
+        self, universe_s: str, repo_s: str, repomd: RepoMetadata,
+    ) -> int:
         'Returns the inserted `fetch_timestamp`, ours or from a racing writer'
         with self._cursor() as cursor:
             # Prepare columns, see above "Why is `byteme` everywhere?"
-            repo = byteme(repo_str)
+            universe = byteme(universe_s)
+            repo = byteme(repo_s)
             fts = repomd.fetch_timestamp
             bts = repomd.build_timestamp
             checksum = byteme(str(repomd.checksum))
@@ -378,9 +442,10 @@ class RepoDBContext(AbstractContextManager):
             p = self._placeholder()
             cursor.execute(f'''
                 INSERT {self._or_ignore()} INTO `repo_metadata` (
-                `repo`, `fetch_timestamp`, `build_timestamp`, `checksum`, `xml`
-                ) VALUES ({p}, {p}, {p}, {p}, {p});
-            ''', (repo, fts, bts, checksum, repomd_xml))
+                    `universe`, `repo`, `fetch_timestamp`,
+                    `build_timestamp`, `checksum`, `xml`
+                ) VALUES ({p}, {p}, {p}, {p}, {p}, {p});
+            ''', (universe, repo, fts, bts, checksum, repomd_xml))
             if cursor.rowcount:
                 return fts  # Our timestamp was the one that got inserted.
 
@@ -388,8 +453,8 @@ class RepoDBContext(AbstractContextManager):
             # We don't need to check `build_timestamp`, it comes from `xml`.
             cursor.execute(f'''
                 SELECT `fetch_timestamp`, `xml` FROM `repo_metadata`
-                WHERE (`repo` = {p} AND `checksum` = {p});
-            ''', (repo, checksum))
+                WHERE (`universe` = {p} AND `repo` = {p} AND `checksum` = {p});
+            ''', (universe, repo, checksum))
             (db_fts, db_repomd_xml), = cursor.fetchall()
             # Allow a generous 1 minute of clock skew
             assert fts + 60 >= db_fts, f'{fts} + 60 < {db_fts}'
@@ -403,6 +468,7 @@ class RepoDBContext(AbstractContextManager):
         with self._cursor() as cursor:
             p = self._placeholder()
             checksum = byteme(str(rpm.checksum))
+            universe = byteme(tbl._universe)
             # This query does not have a perfect index, but because our
             # primary key starts with `filename`, it only has to iterate
             # over all the known checksums for a given filename, which would
@@ -410,10 +476,10 @@ class RepoDBContext(AbstractContextManager):
             cursor.execute(f'''
                 SELECT {self._identifiers(tbl.column_names())}, `storage_id`
                 FROM `{tbl.NAME}`
-                WHERE (`filename` = {p} AND (
+                WHERE (`universe` = {p} AND `filename` = {p} AND (
                     `checksum` = {p} OR `canonical_checksum` = {p}
                 ))
-            ''', (byteme(rpm.filename()), checksum, checksum))
+            ''', (universe, byteme(rpm.filename()), checksum, checksum))
             results = cursor.fetchall()
             if not results:
                 return None, None
@@ -448,13 +514,14 @@ class RepoDBContext(AbstractContextManager):
 
     def get_rpm_canonical_checksums(self, table: RpmTable, filename: str) \
             -> Iterator[Checksum]:
+        p = self._placeholder()
         with self._cursor() as cursor:
             # Like in `get_rpm_storage_id_and_checksums`, the primary
             # key helps make this query efficient.
             cursor.execute(f'''
                 SELECT `canonical_checksum` FROM `{table.NAME}`
-                WHERE (`filename` = {self._placeholder()})
-            ''', (byteme(filename),))
+                WHERE (`universe` = {p} AND `filename` = {p})
+            ''', (byteme(table._universe), byteme(filename),))
             for (canonical_checksum,) in cursor.fetchall():
                 yield Checksum.from_string(canonical_checksum.decode())
 
@@ -480,10 +547,13 @@ class RepoDBContext(AbstractContextManager):
             for col_name, db_val, val in zip(
                 table.column_names(), db_values[:-1], table.column_values(obj),
             ):
-                # Explained in this field's declaration in `Repodata`
-                if col_name == 'build_timestamp' and type(obj) is Repodata:
-                    assert db_val <= val, (db_val, val, obj)
-                else:
+                # This `if` is explained in the `Repodata.build_timestamp`
+                # doc.  In essence, we could have seen the same repodata
+                # from a `repomd.xml` that was built either earlier or later
+                # than the one already in the DB.
+                if not (
+                    col_name == 'build_timestamp' and type(obj) is Repodata
+                ):
                     assert db_val == val, (db_val, val, obj)
             return db_values[-1].decode('latin-1')  # We put `storage_id` last
 

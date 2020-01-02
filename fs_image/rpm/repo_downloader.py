@@ -117,15 +117,17 @@ def _reportable_http_errors(location):
 
 class RepoDownloader:
     def __init__(
-        self,
+        self, *,
+        repo_universe: str,
         repo_name: str,
         repo_url: str,  # Use `Path.file_url` to get correct quoting
         repo_db_ctx: RepoDBContext,
         storage: Storage,
     ):
+        self._repo_universe = repo_universe
         self._repo_name = repo_name
         self._repodata_table = RepodataTable()
-        self._rpm_table = RpmTable()
+        self._rpm_table = RpmTable(repo_universe)
         if not repo_url.endswith('/'):
             repo_url += '/'  # `urljoin` needs a trailing / to work right
         self._repo_url = repo_url
@@ -401,7 +403,7 @@ class RepoDownloader:
                     set_new_key(
                         unneeded_storage_id_to_repodata, storage_id, repodata,
                     )
-            repo_db.store_repomd(self._repo_name, repomd)
+            repo_db.store_repomd(self._repo_universe, self._repo_name, repomd)
             repo_db.commit()
             # The DB commit was successful, and we're about to exit the
             # repo_db context, which might, at worst, raise its own error.

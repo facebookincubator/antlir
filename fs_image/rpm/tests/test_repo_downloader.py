@@ -117,10 +117,14 @@ class RepoDownloaderTestCase(unittest.TestCase):
 
     def _make_downloader(self, storage_dir, step_and_repo, db_context=None):
         return repo_downloader.RepoDownloader(
-            step_and_repo,
-            (self.repos_root / step_and_repo).file_url(),
-            self._make_db_context() if db_context is None else db_context,
-            Storage.make(key='test', kind='filesystem', base_dir=storage_dir),
+            repo_universe='fakeverse',
+            repo_name=step_and_repo,
+            repo_url=(self.repos_root / step_and_repo).file_url(),
+            repo_db_ctx=self._make_db_context()
+                if db_context is None else db_context,
+            storage=Storage.make(
+                key='test', kind='filesystem', base_dir=storage_dir,
+            ),
         )
 
     def _check_storage_id_error(self, storage_id_to_obj, error_cls):

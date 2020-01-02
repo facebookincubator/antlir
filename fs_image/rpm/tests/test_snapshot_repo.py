@@ -33,6 +33,7 @@ class SnapshotRepoTestCase(unittest.TestCase):
                 'base_dir': (td / 'storage').decode(),
             }
             snapshot_repo([
+                '--repo-universe', 'fakeverse',
                 '--repo-name', 'dog',
                 '--repo-url', (repos_root / '0/dog').file_url(),
                 '--gpg-key-whitelist-dir', whitelist_dir.decode(),
@@ -57,6 +58,7 @@ class SnapshotRepoTestCase(unittest.TestCase):
                     'dog-pkgs/rpm-test-carrot-2-rc0.x86_64.rpm',
                     'dog-pkgs/rpm-test-mice-0.1-a.x86_64.rpm',
                     'dog-pkgs/rpm-test-milk-1.41-42.x86_64.rpm',
+                    'dog-pkgs/rpm-test-mutable-a-f.x86_64.rpm',
                 }, {
                     path for path, in db.execute(
                         'SELECT "path" FROM "rpm";'

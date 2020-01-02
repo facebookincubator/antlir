@@ -136,13 +136,33 @@ SAMPLE_STEPS = [
             Rpm('milk', '1.41', '42'),
             Rpm('mice', '0.1', 'a'),
             Rpm('carrot', '2', 'rc0'),  # Same version as in `bunny`
+            Rpm('mutable', 'a', 'f'),
         ]),
         'puppy': 'dog',
     },
+    # This step 1 exists primarily for the multi-universe, multi-snapshot
+    # `test-snapshot-repos`.  It is only used incidentally by
+    # `test-parse-repodata`.
     {
         'bunny': None,
-        'cat': Repo([Rpm('milk', '3.14', '15')]),  # New version
-        'dog': Repo([Rpm('bone', '5i', 'beef'), Rpm('carrot', '2', 'rc0')]),
+        'cat': Repo([
+            Rpm('mice', '0.2', 'rc0'),  # New version
+            # Compared to step 0, this lacks a post-install.  This lets us
+            # create a mutable RPM error in `test-snapshot-repos`, since
+            # both variants occur in the "zombie" universe, via "cat" and
+            # "kitteh" at step 1.
+            Rpm('milk', '2.71', '8', test_post_install=False),
+            # This is a "different contents" version of "mutable" from the
+            # step 0 "dog".  In `test-snapshot-repos`, these are not in the
+            # same universe, so there is no "mutable PRM" error.
+            # Specifically, "cat" places this variant of "mutable" in
+            # "zombies", while the origianl "dog" copy is in "mammals".
+            Rpm('mutable', 'a', 'f', override_contents='oops i br0k it again'),
+        ]),
+        'dog': Repo([
+            Rpm('bone', '5i', 'beef'),
+            Rpm('carrot', '2', 'rc0'),
+        ]),
         'kitty': 'cat',
     },
 ]
@@ -180,8 +200,8 @@ def make_repo_steps(
     rpm_to_path = {}
     # The repos that exist at the current step.
     repos = {}
-    for step, repo_changes in enumerate(repo_change_steps):
-        step = Path(str(step))
+    for step_i, repo_changes in enumerate(repo_change_steps):
+        step = Path(str(step_i))
         for repo_name, repo in repo_changes.items():
             if repo is None:
                 del repos[repo_name]
@@ -194,6 +214,14 @@ def make_repo_steps(
         for repo_name, repo in repos.items():
             repo_dir = step_dir / repo_name
             yum_dnf_conf[repo_name] = {'baseurl': repo_dir.file_url()}
+            if repo_name not in repo_changes:  # Same as at previous step
+                # This is a copy to avoid changing the `build_timestamp` in
+                # the `repomd.xml`.
+                if avoid_symlinks:
+                    shutil.copytree(out_dir / str(step_i - 1) / repo, repo_dir)
+                else:
+                    os.symlink(f'../{step_i - 1}/{repo_name}', repo_dir)
+                continue
             if isinstance(repo, str):  # Alias of another repo
                 assert repo in repos
                 if avoid_symlinks:

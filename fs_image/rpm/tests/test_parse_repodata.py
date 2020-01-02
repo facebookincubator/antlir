@@ -89,26 +89,28 @@ class ParseRepodataTestCase(unittest.TestCase):
                 # we had exactly the RPMs that were specified.
                 step = int(repo_path.dirname().basename())
                 repo = repo_path.basename().decode()  # `Repo` or `str` (name)
-                # If it's an alias, search in `step`, not `last_step`, since
-                # an alias refers to the step being queried, not the step
-                # when it was established. NB: These semantics aren't in any
-                # way "uniquely right", it is just what `temp_repos.py` does.
+                # Resolve a string alias to the `Repo` object corresponding
+                # to it.  At present, an alias refers to the repo as it
+                # existed at the step that introduced the alias.  NB: These
+                # semantics aren't in any way "uniquely right", it is just
+                # what `temp_repos.py` does.
+                search_step = step
                 while isinstance(repo, str):
                     repo_name = repo
                     # Find the most recent step that defined this repo name
-                    last_step = step
                     while True:
-                        repo = SAMPLE_STEPS[last_step].get(repo_name)
+                        repo = SAMPLE_STEPS[search_step].get(repo_name)
                         if repo is not None:
                             break
-                        last_step -= 1
-                        assert last_step >= 0
+                        search_step -= 1
+                        assert search_step >= 0
                 self.assertEqual(
                     {
                         f'rpm-test-{r.name}-{r.version}-{r.release}.x86_64.rpm'
                             for r in repo.rpms
                     },
                     {os.path.basename(r.location) for r in sql_rpms},
+                    (repo, repo_name, repo_path),
                 )
                 unseen_steps[step].pop(repo_path.basename().decode(), None)
         self.assertEqual([], [s for s in unseen_steps if s])
