@@ -127,6 +127,7 @@ IMPORTANT: We must byte-coerce (`byteme`) all strings that go into the DB:
     Out[2]: ([(b'bytes',), ('str',)], -1)
 '''
 import enum
+import re
 
 from contextlib import AbstractContextManager, contextmanager
 from typing import AnyStr, ContextManager, Iterator, Optional, Tuple, Union
@@ -134,6 +135,20 @@ from typing import AnyStr, ContextManager, Iterator, Optional, Tuple, Union
 
 from .common import byteme
 from .repo_objects import Checksum, Repodata, RepoMetadata, Rpm
+
+# Deliberately excludes `-` since that is used by RPM filename parsing.
+# Keeping `-` out of universe names allows `U-N-E:V-R.A` as a possible
+# format, though we don't currently rely on that -- and probably should not,
+# since it's 2020 and `json.dumps` / `repr` are cheap enough.
+_VALID_UNIVERSE_REGEX = re.compile('^[a-zA-Z0-9.]*$')
+
+
+def validate_universe_name(u):
+    if not _VALID_UNIVERSE_REGEX.match(u):
+        raise RuntimeError(
+            f'Universe {u} must match {_VALID_UNIVERSE_REGEX.pattern}'
+        )
+    return u
 
 
 def unbyteme(s: AnyStr) -> str:
@@ -186,7 +201,7 @@ class RpmTable(StorageTable):
     KEY_COLUMNS = ('universe', 'filename', 'checksum')
 
     def __init__(self, universe: str):
-        self._universe = universe
+        self._universe = validate_universe_name(universe)
 
     def _column_funcs(self):
         return [
@@ -425,6 +440,7 @@ class RepoDBContext(AbstractContextManager):
         self, universe_s: str, repo_s: str, repomd: RepoMetadata,
     ) -> int:
         'Returns the inserted `fetch_timestamp`, ours or from a racing writer'
+        validate_universe_name(universe_s)
         with self._cursor() as cursor:
             # Prepare columns, see above "Why is `byteme` everywhere?"
             universe = byteme(universe_s)

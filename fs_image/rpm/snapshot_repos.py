@@ -38,7 +38,7 @@ from .common import (
 )
 from .common_args import add_standard_args
 from .gpg_keys import snapshot_gpg_keys
-from .repo_db import RepoDBContext
+from .repo_db import RepoDBContext, validate_universe_name
 from .repo_downloader import RepoDownloader
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
@@ -100,7 +100,8 @@ def snapshot_repos(
         for repo, repo_universe in shuffled(
             # Evaluate `repo_to_universe` eagerly to fail fast if some repos
             # cannot be resolved.
-            (repo, repo_to_universe(repo)) for repo in repos
+            (repo, validate_universe_name(repo_to_universe(repo)))
+                for repo in repos
         ):
             log.info(f'Downloading repo {repo.name} from {repo.base_url}')
             with populate_temp_dir_and_rename(

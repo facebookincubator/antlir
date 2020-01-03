@@ -174,7 +174,7 @@ class RepoDBTestCase(unittest.TestCase):
     def test_rpm_maybe_store_and_get_storage_id(self):
         # NB: For RPMs, only `maybe_store` is used as part of the public API.
         self._check_maybe_store_and_get_storage_id(
-            RpmTable('fakeverse'),
+            RpmTable('fake.verse'),
             _FAKE_RPM._replace(
                 checksum=Checksum('fake', 'fake'),
                 canonical_checksum=Checksum('fake', 'fake'),
@@ -259,3 +259,9 @@ class RepoDBTestCase(unittest.TestCase):
                 {canonical1, canonical2},
                 set(db_ctx.get_rpm_canonical_checksums(table, 'fake.rpm')),
             )
+
+    def test_universe_charset(self):
+        # Until convinced otherwise, we hate underscores since they look
+        # like spaces and needlessly exacerbate our RSI.
+        with self.assertRaisesRegex(RuntimeError, 'fake_verse must match'):
+            RpmTable('fake_verse')
