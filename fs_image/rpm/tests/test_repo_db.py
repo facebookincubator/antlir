@@ -10,15 +10,15 @@ from ..repo_objects import Repodata, RepoMetadata, Rpm
 from ..db_connection import DBConnectionContext
 
 _FAKE_RPM = Rpm(
-    name=None,
-    epoch=None,
-    version=None,
-    release=None,
-    arch=None,
+    name='fake',
+    epoch=0,
+    version='a',
+    release='3b',
+    arch='aarch64',
     build_timestamp=37,
     checksum=None,  # populated separately by each test
     canonical_checksum=None,  # populated separately by each test
-    location='packages/fake.rpm',
+    location=None,  # not used by repo_db code
     size=1337,
     source_rpm=None,
 )
@@ -40,32 +40,37 @@ class RepoDBTestCase(unittest.TestCase):
         for (a_name, a_sql), (e_name, e_sql) in zip(_get_schema(conn), [
             ('rpm', (
                 'CREATE TABLE `rpm` ('
-                ' `universe` BLOB NOT NULL,'
-                ' `filename` BLOB NOT NULL,'
-                ' `checksum` BLOB NOT NULL,'
-                ' `canonical_checksum` BLOB NOT NULL,'
+                ' `universe` TEXT NOT NULL,'
+                ' `name` TEXT NOT NULL,'
+                ' `epoch` INTEGER NOT NULL,'
+                ' `version` TEXT NOT NULL,'
+                ' `release` TEXT NOT NULL,'
+                ' `arch` TEXT NOT NULL,'
+                ' `checksum` TEXT NOT NULL,'
+                ' `canonical_checksum` TEXT NOT NULL,'
                 ' `size` INTEGER NOT NULL,'
                 ' `build_timestamp` INTEGER NOT NULL,'
-                ' `storage_id` BLOB NOT NULL,'
-                ' PRIMARY KEY (`universe`, `filename`, `checksum`)'
+                ' `storage_id` TEXT NOT NULL,'
+                ' PRIMARY KEY (`universe`, `name`, `epoch`, `version`, '
+                    '`release`, `arch`, `checksum`)'
                 ' )'
             )),
             ('repodata', (
                 'CREATE TABLE `repodata` ('
-                ' `checksum` BLOB NOT NULL,'
+                ' `checksum` TEXT NOT NULL,'
                 ' `size` INTEGER NOT NULL,'
                 ' `build_timestamp` INTEGER NOT NULL,'
-                ' `storage_id` BLOB NOT NULL,'
+                ' `storage_id` TEXT NOT NULL,'
                 ' PRIMARY KEY (`checksum`)'
                 ' )'
             )),
             ('repo_metadata', (
                 'CREATE TABLE `repo_metadata` ('
-                ' `universe` BLOB NOT NULL,'
-                ' `repo` BLOB NOT NULL,'
+                ' `universe` TEXT NOT NULL,'
+                ' `repo` TEXT NOT NULL,'
                 ' `fetch_timestamp` INTEGER NOT NULL,'
                 ' `build_timestamp` INTEGER NOT NULL,'
-                ' `checksum` BLOB NOT NULL,'
+                ' `checksum` TEXT NOT NULL,'
                 ' `xml` BLOB NOT NULL,'
                 ' PRIMARY KEY (`universe`, `repo`, `fetch_timestamp`, '
                     '`checksum`),'
@@ -190,10 +195,7 @@ class RepoDBTestCase(unittest.TestCase):
             # At this point, we are trying to look this up:
             canonical_checksum=None,
         )
-        # This second repo **also** stores the same RPM filename in a
-        # different location, no problem there.
         rpm2 = rpm1._replace(
-            location='RPMs/fake.rpm',
             checksum=Checksum('fa', 'ke2'),
         )
         canonical = Checksum('can', 'onical')
@@ -248,7 +250,6 @@ class RepoDBTestCase(unittest.TestCase):
             self.assertEqual(
                 'sid_diff',
                 db_ctx.maybe_store(table, _FAKE_RPM._replace(
-                    location='buggy/fake.rpm',  # only the basename matters
                     checksum=Checksum('fa', 'ke3'),
                     canonical_checksum=canonical2,
                 ), 'sid_diff'),
@@ -257,7 +258,7 @@ class RepoDBTestCase(unittest.TestCase):
             # Whew, we can detect this mutable RPM file in our repos.
             self.assertEqual(
                 {canonical1, canonical2},
-                set(db_ctx.get_rpm_canonical_checksums(table, 'fake.rpm')),
+                set(db_ctx.get_rpm_canonical_checksums(table, _FAKE_RPM)),
             )
 
     def test_universe_charset(self):

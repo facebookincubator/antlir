@@ -498,10 +498,10 @@ class RepoDownloaderTestCase(unittest.TestCase):
         # The mice object which was "previously stored" via the mocks
         mice_rpms = []
 
-        def my_get_canonical(self, table, filename):
-            if filename == 'rpm-test-mice-0.1-a.x86_64.rpm':
+        def my_get_canonical(self, table, rpm):
+            if rpm.nevra() == 'rpm-test-mice-0:0.1-a.x86_64':
                 return {mice_canonical_checksums[0]}
-            return original_get_canonical(self, table, filename)
+            return original_get_canonical(self, table, rpm)
 
         original_maybe_store = RepoDBContext.maybe_store
 

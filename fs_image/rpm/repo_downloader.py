@@ -303,15 +303,15 @@ class RepoDownloader:
                 continue
             with self._repo_db_ctx as db:
                 # If we get no `storage_id` back, there are 3 possibilities:
-                #  - `rpm.filename` was never seen before.
-                #  - `rpm.filename` was seen before, but it was hashed with
+                #  - `rpm.nevra()` was never seen before.
+                #  - `rpm.nevra()` was seen before, but it was hashed with
                 #     different algorithm(s), so we MUST download and
                 #     compute the canonical checksum to know if its contents
                 #     are the same.
-                #  - `rpm.filename` was seen before, **AND** one of the
+                #  - `rpm.nevra()` was seen before, **AND** one of the
                 #    prior checksums used `rpm.checksum.algorithms`, but
                 #    produced a different hash value.  In other words, this
-                #    is a `MutableRpmError`, because the same filename must
+                #    is a `MutableRpmError`, because the same NEVRA must
                 #    have had two different contents.  We COULD explicitly
                 #    detect this error here, and avoid the download.
                 #    However, this severe error should be infrequent, and we
@@ -337,7 +337,7 @@ class RepoDownloader:
                     # same RPM name occurs with different checksums, etc.
                     storage_id = ex
 
-            # Detect if this RPM filename occurs with different contents.
+            # Detect if this RPM NEVRA occurs with different contents.
             if not isinstance(storage_id, ReportableError):
                 storage_id = self._detect_mutable_rpms(rpm, storage_id)
 
@@ -349,19 +349,19 @@ class RepoDownloader:
     def _detect_mutable_rpms(self, rpm: Rpm, storage_id: str):
         with self._repo_db_ctx as repo_db:
             all_canonical_checksums = set(repo_db.get_rpm_canonical_checksums(
-                self._rpm_table, rpm.filename(),
+                self._rpm_table, rpm,
             ))
         assert all_canonical_checksums, (rpm, storage_id)
         assert all(
             c.algorithm == CANONICAL_HASH for c in all_canonical_checksums
         ), all_canonical_checksums
         all_canonical_checksums.remove(rpm.canonical_checksum)
-        deleted_checksums = deleted_mutable_rpms.get(rpm.filename(), set())
+        deleted_checksums = deleted_mutable_rpms.get(rpm.nevra(), set())
         assert rpm.canonical_checksum not in deleted_checksums, \
             f'{rpm} was in deleted_mutable_rpms, but still exists in repos'
         all_canonical_checksums.difference_update(deleted_checksums)
         if all_canonical_checksums:
-            # Future: It would be nice to mark all mentions of the filename
+            # Future: It would be nice to mark all mentions of the NEVRA
             # as bad, but that requires messy updates of multiple
             # `RepoSnapshot`s.  For now, we rely on the fact that the next
             # `snapshot-repos` run will do this anyway.

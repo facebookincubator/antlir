@@ -90,67 +90,69 @@ class SnapshotReposTestCase(unittest.TestCase):
                     FROM "repo_metadata"
                 ''').fetchall())
                 self.assertEqual([
-                    (b'mammal', b'bunny', 451),  # both snap0 and snap1
-                    (b'mammal', b'cat', 451),  # snap0
+                    ('mammal', 'bunny', 451),  # both snap0 and snap1
+                    ('mammal', 'cat', 451),  # snap0
                     # There are two different `repomd`s in snap0 and snap1
-                    (b'mammal', b'dog', 451),
-                    (b'mammal', b'dog', 451),
-                    (b'mammal', b'kitteh', 451),  # snap0 -- index -3
-                    (b'zombie', b'cat', 451),  # snap1
-                    (b'zombie', b'kitteh', 451),  # snap1 -- index -1
+                    ('mammal', 'dog', 451),
+                    ('mammal', 'dog', 451),
+                    ('mammal', 'kitteh', 451),  # snap0 -- index -3
+                    ('zombie', 'cat', 451),  # snap1
+                    ('zombie', 'kitteh', 451),  # snap1 -- index -1
                 ], [r[:3] for r in repo_mds])
                 # The kittehs have the same checksums, but exist separately
                 # due to being in different universes.
                 self.assertEqual(repo_mds[-1][1:], repo_mds[-3][1:])
 
+                def _fetch_sorted_by_nevra(nevra):
+                    return sorted(db.execute('''
+                    SELECT "universe", "name", "epoch", "version",
+                        "release", "arch", "checksum"
+                    FROM "rpm"
+                    WHERE "name" = ? AND "epoch" = ? AND "version" = ? AND
+                        "release" = ? AND "arch" = ?
+                    ''', nevra).fetchall())
+
                 # We expect this identical "carrot" RPM (same checksums) to
                 # be repeated because it occurs in two different universes.
-                kitteh_carrot_filename = b'rpm-test-carrot-1-lockme.x86_64.rpm'
-                kitteh_carrots = sorted(db.execute('''
-                    SELECT "universe", "filename", "checksum" FROM "rpm"
-                    WHERE "filename" == ?
-                ''', [kitteh_carrot_filename]).fetchall())
-                kitteh_carrot_chksum = kitteh_carrots[0][2]
+                kitteh_carrot_nevra = [
+                    'rpm-test-carrot', 0, '1', 'lockme', 'x86_64',
+                ]
+                kitteh_carrots = _fetch_sorted_by_nevra(kitteh_carrot_nevra)
+                kitteh_carrot_chksum = kitteh_carrots[0][-1]
                 self.assertEqual([
-                    (b'mammal', kitteh_carrot_filename, kitteh_carrot_chksum),
-                    (b'zombie', kitteh_carrot_filename, kitteh_carrot_chksum),
+                    ('mammal', *kitteh_carrot_nevra, kitteh_carrot_chksum),
+                    ('zombie', *kitteh_carrot_nevra, kitteh_carrot_chksum),
                 ], kitteh_carrots)
 
                 # This RPM has two variants for its contents at step 1.
                 # This creates a mutable RPM error in `snap1`.
-                milk2_filename = b'rpm-test-milk-2.71-8.x86_64.rpm'
-                milk2s = sorted(db.execute('''
-                    SELECT "universe", "filename", "checksum" FROM "rpm"
-                    WHERE "filename" == ?
-                ''', [milk2_filename]).fetchall())
-                milk2_chksum_step0 = milk2s[0][2]  # mammal sorts first
-                milk2_chksum_step1, = {milk2s[1][2], milk2s[2][2]} - {
+                milk2_nevra = ['rpm-test-milk', 0, '2.71', '8', 'x86_64']
+                milk2s = _fetch_sorted_by_nevra(milk2_nevra)
+                milk2_chksum_step0 = milk2s[0][-1]  # mammal sorts first
+                milk2_chksum_step1, = {milk2s[1][-1], milk2s[2][-1]} - {
                     milk2_chksum_step0
                 }
                 self.assertEqual(sorted([
                     # snap0 cat & kitteh
-                    (b'mammal', milk2_filename, milk2_chksum_step0),
+                    ('mammal', *milk2_nevra, milk2_chksum_step0),
                     # snap1 kitteh -- mutable RPM error vs "snap1 cat"
-                    (b'zombie', milk2_filename, milk2_chksum_step0),
+                    ('zombie', *milk2_nevra, milk2_chksum_step0),
                     # snap1 cat -- mutable RPM error vs "snap1 kitteh"
-                    (b'zombie', milk2_filename, milk2_chksum_step1),
+                    ('zombie', *milk2_nevra, milk2_chksum_step1),
                 ]), milk2s)
 
                 # This RPM changes contents between step 0 and step 1, but
                 # since they land in different universes, there is no
                 # mutable RPM error.
-                mutable_filename = b'rpm-test-mutable-a-f.x86_64.rpm'
-                mutables = sorted(db.execute('''
-                    SELECT "universe", "filename", "checksum" FROM "rpm"
-                    WHERE "filename" == ?
-                ''', [mutable_filename]).fetchall())
-                mutable_chksum_dog = mutables[0][2]  # mammal sorts first
-                mutable_chksum_cat = mutables[1][2]
+                mutable_nevra = ['rpm-test-mutable', 0, 'a', 'f', 'x86_64']
+                mutables = _fetch_sorted_by_nevra(mutable_nevra)
+                mutable_chksum_dog = mutables[0][-1]  # mammal sorts first
+                mutable_chksum_cat = mutables[1][-1]
                 self.assertEqual(sorted([
                     # snap0 dog
-                    (b'mammal', mutable_filename, mutable_chksum_dog),
+                    ('mammal', *mutable_nevra, mutable_chksum_dog),
                     # snap1 cat
-                    (b'zombie', mutable_filename, mutable_chksum_cat),
+                    ('zombie', *mutable_nevra, mutable_chksum_cat),
                 ]), mutables)
 
             # As with `test_snapshot_repo`, this is not a complete check of

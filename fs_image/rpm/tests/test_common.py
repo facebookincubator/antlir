@@ -17,11 +17,11 @@ class TestCommon(unittest.TestCase):
         )
 
         class FakeRpm:
-            def __init__(self, filename):
-                self._filename = filename
+            def __init__(self, nevra):
+                self._nevra = nevra
 
-            def filename(self):
-                return self._filename
+            def nevra(self):
+                return self._nevra
 
         self.assertEqual(
             [('foo', True), ('bar', False), ('foo', False), ('bar', True)],

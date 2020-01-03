@@ -60,14 +60,14 @@ class RpmShard(NamedTuple):
         return RpmShard(shard=shard, modulo=mod)
 
     def in_shard(self, rpm):
-        # Our contract is that the RPM filename is the global primary key,
+        # Our contract is that the RPM NEVRA is the global primary key,
         #
         # We use the last 8 bytes of SHA1, since we need a deterministic
         # hash for parallel downloads, and Python standard library lacks
         # fast non-cryptographic hashes like CityHash or SpookyHashV2.
         # adler32 is faster, but way too collision-prone to bother.
         h, = _UINT64_STRUCT.unpack_from(
-            hashlib.sha1(byteme(rpm.filename())).digest(), 12
+            hashlib.sha1(byteme(rpm.nevra())).digest(), 12
         )
         return h % self.modulo == self.shard
 

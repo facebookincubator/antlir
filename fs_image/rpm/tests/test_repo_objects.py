@@ -36,7 +36,7 @@ class RepoObjectsTestCase(unittest.TestCase):
             size=14,
             source_rpm='foo-bar-2-rc0.src.rpm',
         )
-        self.assertEqual(rpm.filename(), 'b.rpm')
+        self.assertEqual(rpm.nevra(), 'foo-bar-2:2-rc0.aarch64')
         self.assertEqual('algo:fabcab', str(rpm.best_checksum()))
         self.assertEqual('zalgo:e1de41', str(rpm._replace(
             canonical_checksum=Checksum(algorithm='zalgo', hexdigest='e1de41'),

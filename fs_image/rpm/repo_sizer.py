@@ -32,7 +32,7 @@ class Synonyms(NamedTuple):
 class _ObjectCounter:
     def __init__(self):
         # An alternative to keying everything on checksum would be to use
-        # keys like `checksum` for `Repodata` and `filename` for `Rpm`.
+        # keys like `checksum` for `Repodata` and `nevra` for `Rpm`.
         # Uniformly using checksums gracefully handles `MutableRpmError`,
         # and keeps this code generic.
         self._synonyms = Synonyms({}, UnionFind())

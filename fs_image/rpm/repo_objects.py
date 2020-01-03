@@ -14,7 +14,6 @@ All objects are expected to have:
     .build_timestamp
 '''
 import hashlib
-import os
 import time
 
 from typing import Iterable, Iterator, NamedTuple
@@ -52,8 +51,9 @@ class Rpm(NamedTuple):
     size: int  # package size from the primary repodata
     source_rpm: str
 
-    def filename(self) -> str:
-        return os.path.basename(self.location)
+    def nevra(self) -> str:
+        r = self
+        return f'{r.name}-{r.epoch}:{r.version}-{r.release}.{r.arch}'
 
     def best_checksum(self) -> Checksum:
         return self.canonical_checksum or self.checksum  # never None

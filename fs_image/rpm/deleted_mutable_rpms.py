@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 '''
-If two distinct copies of an RPM with the same file name are committed to a
-repo (e.g. due to signing key changes), this will trip "mutable_rpm_error"
-and prevent either RPM from being accessed.
+If two distinct copies of an RPM with the same NEVRA are committed to a repo
+(e.g. due to signing key changes), this will trip "mutable_rpm_error" and
+prevent either RPM from being accessed.
 
 We consider mutable RPMs to be a bug, but if the bugs do happen, we need
 to be able to delete any version we consider non-canonical, and resume
@@ -28,7 +28,7 @@ Design rationale: These "remediated" hashes are not in the database, because:
     the remediated RPMs to the source tree.
 '''
 deleted_mutable_rpms = {
-    # filename: {Checksum(...), Checksum(...)},
+    # Rpm.nevra(): {Checksum(...), Checksum(...)},
 }
 
 try:

@@ -36,7 +36,7 @@ def add_standard_args(parser):
     parser.add_argument(  # Pass this to `RepoDownloader`
         '--rpm-shard',
         default='0:1', metavar='SHARD:MOD', type=RpmShard.from_string,
-        help='Only fetch RPMs whose filenames hash to SHARD modulo MOD. '
+        help='Only fetch RPMs whose NEVRAs hash to SHARD modulo MOD. '
             'Good for parallel downloads, or for quick-iteration testing. '
             'Defaults to downloading all RPMs.',
     )

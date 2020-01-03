@@ -74,13 +74,13 @@ class MutableRpmError(ReportableError):
     def __init__(self, *, location, storage_id, checksum, other_checksums):
         super().__init__(
             error='mutable_rpm',
-            message='Found MULTIPLE canonical checksums for one RPM filename. '
-                'This means that the same file exists (or had existed) with '
+            message='Found MULTIPLE canonical checksums for one RPM NEVRA. '
+                'This means that the same RPM exists (or had existed) with '
                 'different variants of its content.',
             location=location,
             storage_id=storage_id,  # This bad RPM is still retrievable
             checksum=str(checksum),  # Canonical checksum of this `storage_id`
-            # Canonical checksums with other storage IDs & the same filename:
+            # Canonical checksums with other storage IDs & the same NEVRA:
             other_checksums=sorted(str(c) for c in other_checksums),
         )
 

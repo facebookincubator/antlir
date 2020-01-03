@@ -39,7 +39,7 @@ flexibility to distinguish same-name repos that are different between config
 files, or to share backing storage for repos that are the same.
 
 Moreover, repos in different universes need not be related in any way.  So,
-we cannot expect the same RPM filenames to have the same contents across
+we cannot expect the same RPM NEVRAs to have the same contents across
 universes.  For example, two universes might represent the same OS, but
 built with incompatible compiler & linker flags.  For this reason,
 "universe" namespaces not just the `repo_metadata` table, but also `rpm`.
@@ -91,40 +91,6 @@ A database adds value in two key ways:
         done
         wait
         snapshot_repos 0 mod 1  # produce a complete snapshot
-
-
-## Implementation detail: Why do you have `byteme` everywhere?
-
-IMPORTANT: We must byte-coerce (`byteme`) all strings that go into the DB:
-
-  - We store Linux paths, not airport novels, so the DBs should not be
-    text-encoding aware, and so the column types are BLOB & VARBINARY.
-
-  - MySQL then silently coerces strings to byte-strings:
-
-    In [1]: import MySQLdb
-       ...:
-       ...: mconn = MySQLdb.connect(...)
-       ...: mcur = mconn.cursor()
-       ...: mcur.execute('CREATE TABLE IF NOT EXISTS `foo` (`bar` BLOB);')
-       ...: mcur.execute('INSERT INTO `foo` (`bar`) VALUES (%s)', (b'bytes',))
-       ...: mcur.execute('INSERT INTO `foo` (`bar`) VALUES (%s)', ('str',))
-       ...: mcur.execute('SELECT `bar` FROM `foo`;')
-       ...: mcur.fetchall(), mcur.rowcount
-    Out[1]: (((b'bytes',), (b'str',)), 2)
-
-  - SQLite stores byte-strings differently than unicode-strings:
-
-    In [2]: import sqlite3
-       ...:
-       ...: sconn = sqlite3.connect(':memory:')
-       ...: scur = sconn.cursor()
-       ...: scur.execute('CREATE TABLE IF NOT EXISTS `foo` (`bar` BLOB);')
-       ...: scur.execute('INSERT INTO `foo` (`bar`) VALUES (?)', (b'bytes',))
-       ...: scur.execute('INSERT INTO `foo` (`bar`) VALUES (?)', ('str',))
-       ...: scur.execute('SELECT `bar` FROM `foo`;')
-       ...: scur.fetchall(), scur.rowcount
-    Out[2]: ([(b'bytes',), ('str',)], -1)
 '''
 import enum
 import re
@@ -132,8 +98,8 @@ import re
 from contextlib import AbstractContextManager, contextmanager
 from typing import AnyStr, ContextManager, Iterator, Optional, Tuple, Union
 
+from fs_image.common import byteme
 
-from .common import byteme
 from .repo_objects import Checksum, Repodata, RepoMetadata, Rpm
 
 # Deliberately excludes `-` since that is used by RPM filename parsing.
@@ -151,10 +117,6 @@ def validate_universe_name(u):
     return u
 
 
-def unbyteme(s: AnyStr) -> str:
-    return s.decode() if isinstance(s, bytes) else s
-
-
 class StorageTable:
     '''
     A base class for correct `SELECT` / `INSERT` queries against all colums.
@@ -165,9 +127,9 @@ class StorageTable:
         # NB: We do not store `obj.location` in the DB, because the same
         # object can occur in different repos at different locations.
         return [
-            ('checksum', lambda obj: byteme(str(obj.checksum))),
-            ('build_timestamp', lambda obj: byteme(obj.build_timestamp)),
-            ('size', lambda obj: byteme(obj.size)),
+            ('checksum', lambda obj: str(obj.checksum)),
+            ('build_timestamp', lambda obj: obj.build_timestamp),
+            ('size', lambda obj: obj.size),
         ]
 
     def column_names(self):
@@ -187,38 +149,48 @@ class RpmTable(StorageTable):
 
     Moreover, repos may use different checksum algorithms for the same file.
     In that case, this table will include MULTIPLE ROWS with the same
-    filename -- in fact, the primary key is (`filename`, `checksum`), which
-    permits efficient retrieval of all checksums for a filename.
+    NEVRA -- in fact, the primary key is (<NEVRA>, `checksum`), which
+    permits efficient retrieval of all checksums for a NEVRA.
 
-    To detect different content hiding under the same filename, we also
-    store a "canonical_checksum".  Thus (`filename`, `canonical_checksum`)
+    To detect different content hiding under the same NEVRA, we also
+    store a "canonical_checksum".  Thus (<NEVRA>, `canonical_checksum`)
     must be unique for compliant RPMs -- any duplication signals that
     somebody changed the RPM content without changing the version. Since
     this is a snapshotting tool, we can only hope to detect, but not to
     prevent this. Thus, we do not have a `UNIQUE` constraint for this.
     '''
     NAME = 'rpm'
-    KEY_COLUMNS = ('universe', 'filename', 'checksum')
+    KEY_COLUMNS = (
+        'universe', 'name', 'epoch', 'version', 'release', 'arch', 'checksum',
+    )
 
     def __init__(self, universe: str):
         self._universe = validate_universe_name(universe)
 
     def _column_funcs(self):
         return [
-            ('universe', lambda obj: byteme(self._universe)),
-            ('filename', lambda obj: byteme(obj.filename())),
+            ('universe', lambda obj: self._universe),
+            ('name', lambda obj: obj.name),
+            ('epoch', lambda obj: obj.epoch),
+            ('version', lambda obj: obj.version),
+            ('release', lambda obj: obj.release),
+            ('arch', lambda obj: obj.arch),
             (
                 'canonical_checksum',
-                lambda obj: byteme(str(obj.canonical_checksum)),
+                lambda obj: str(obj.canonical_checksum),
             ),
             *super()._column_funcs(),
         ]
 
     def key(self, obj):  # Update KEY_COLUMNS, _TABLE_KEYS if changing this
         return (
-            byteme(self._universe),
-            byteme(obj.filename()),
-            byteme(str(obj.checksum)),
+            self._universe,
+            obj.name,
+            obj.epoch,
+            obj.version,
+            obj.release,
+            obj.arch,
+            str(obj.checksum),
         )
 
 
@@ -236,7 +208,7 @@ class RepodataTable(StorageTable):
     KEY_COLUMNS = ('checksum',)
 
     def key(self, obj):  # Update KEY_COLUMNS, _TABLE_KEYS if changing this
-        return (byteme(str(obj.checksum)),)
+        return (str(obj.checksum),)
 
 
 class SQLDialect(enum.Enum):
@@ -270,35 +242,46 @@ class RepoDBContext(AbstractContextManager):
     _DIALECT_TO_PLACEHOLDER = {SQLDialect.SQLITE3: '?', SQLDialect.MYSQL: '%s'}
     _DIALECT_TO_COLUMN_TYPE = {
         SQLDialect.SQLITE3: {
-            'checksum': 'BLOB',
-            'canonical_checksum': 'BLOB',
+            'checksum': 'TEXT',
+            'canonical_checksum': 'TEXT',
             'fetch_timestamp': 'INTEGER',
             'build_timestamp': 'INTEGER',
-            'universe': 'BLOB',
-            'filename': 'BLOB',
-            'repo': 'BLOB',
+            'universe': 'TEXT',
+            'name': 'TEXT',
+            'epoch': 'INTEGER',
+            'version': 'TEXT',
+            'release': 'TEXT',
+            'arch': 'TEXT',
+            'repo': 'TEXT',
             'size': 'INTEGER',
-            'storage_id': 'BLOB',
+            'storage_id': 'TEXT',
             'xml': 'BLOB',
         },
-        # VARBINARY to avoid dealing with charsets.
         SQLDialect.MYSQL: {
-            'checksum': 'VARBINARY(255)',  # Room for algo prefix + hex digest
-            'canonical_checksum': 'VARBINARY(255)',
+            'checksum': 'VARCHAR(255)',  # Room for algo prefix + hex digest
+            'canonical_checksum': 'VARCHAR(255)',
             'fetch_timestamp': 'BIGINT',  # THE EPOCHALYPSE IS NEAR
             'build_timestamp': 'BIGINT',
-            'universe': 'VARBINARY(255)',  # Larger than is reasonable
-            'filename': 'VARBINARY(255)',  # Linux max filename
-            'repo': 'VARBINARY(255)',  # Linux max filename
+            'universe': 'VARCHAR(255)',  # Larger than is reasonable
+            'name': 'VARCHAR(255)',  # Linux max filename
+            'epoch': 'BIGINT',  # I've not seen an epoch above 99, but ...
+            'version': 'VARCHAR(255)',  # Linux max filename
+            'release': 'VARCHAR(255)',  # Linux max filename
+            'arch': 'VARCHAR(255)',  # Linux max filename
+            'repo': 'VARCHAR(255)',  # Linux max filename
             'size': 'BIGINT',
-            'storage_id': 'VARBINARY(255)',  # Larger than is reasonable
+            'storage_id': 'VARCHAR(255)',  # Larger than is reasonable
             'xml': 'BLOB',  # 64KB ought to be enough
         },
     }
     _TABLE_COLUMNS = {
         RpmTable.NAME: {
             'universe': 'NOT NULL',  # See "universe" in the file docblock
-            'filename': 'NOT NULL',
+            'name': 'NOT NULL',
+            'epoch': 'NOT NULL',
+            'version': 'NOT NULL',
+            'release': 'NOT NULL',
+            'arch': 'NOT NULL',
             'checksum': 'NOT NULL',  # As specified by the primary repodata
             'canonical_checksum': 'NOT NULL',  # As computed by us
             'size': 'NOT NULL',
@@ -323,16 +306,19 @@ class RepoDBContext(AbstractContextManager):
         },
     }
     _TABLE_KEYS = {
-        # The key includes a filename because we try to detect when the same
-        # filename occurs with different contents in a set of repos.
+        # The key includes NEVRA because we try to detect when the same
+        # NEVRA occurs with different contents in a set of repos.
         #
-        # The key also includes a `universe` to allow different repo sets to
-        # use the same filename to refer to different contents.
+        # The key also includes a `universe` to allow completely unrelated
+        # repo sets to use the same NEVRA to refer to different contents.
         #
         # Note that this strategy will store the same contents twice if it
-        # occurs with different filenames.  This should be rare, so we
-        # accept the ineffciency to keep the code simpler.
-        RpmTable.NAME: ['PRIMARY KEY (`universe`, `filename`, `checksum`)'],
+        # occurs with different NEVRAs.  This should be rare, so we accept
+        # the inefficiency to keep the code simpler.
+        RpmTable.NAME: [
+            'PRIMARY KEY (`universe`, `name`, `epoch`, `version`, `release`, '
+            '`arch`, `checksum`)'
+        ],
         # These don't need to be namespaced by `universe` because they are
         # only ever looked up by checksum.
         RepodataTable.NAME: ['PRIMARY KEY (`checksum`)'],
@@ -437,17 +423,14 @@ class RepoDBContext(AbstractContextManager):
                     _ensure_line_is_covered()
 
     def store_repomd(
-        self, universe_s: str, repo_s: str, repomd: RepoMetadata,
+        self, universe: str, repo: str, repomd: RepoMetadata,
     ) -> int:
         'Returns the inserted `fetch_timestamp`, ours or from a racing writer'
-        validate_universe_name(universe_s)
+        validate_universe_name(universe)
         with self._cursor() as cursor:
-            # Prepare columns, see above "Why is `byteme` everywhere?"
-            universe = byteme(universe_s)
-            repo = byteme(repo_s)
             fts = repomd.fetch_timestamp
             bts = repomd.build_timestamp
-            checksum = byteme(str(repomd.checksum))
+            checksum = str(repomd.checksum)
             repomd_xml = byteme(repomd.xml)
 
             # Future: We could start with a sanity check like below.  I'm
@@ -483,19 +466,23 @@ class RepoDBContext(AbstractContextManager):
         assert rpm.canonical_checksum is None
         with self._cursor() as cursor:
             p = self._placeholder()
-            checksum = byteme(str(rpm.checksum))
-            universe = byteme(tbl._universe)
             # This query does not have a perfect index, but because our
-            # primary key starts with `filename`, it only has to iterate
-            # over all the known checksums for a given filename, which would
-            # at worst be a handful.
+            # primary key starts with NEVRA, it only has to iterate over all
+            # the known checksums for a given NEVRA, which would at worst be
+            # a handful.
             cursor.execute(f'''
                 SELECT {self._identifiers(tbl.column_names())}, `storage_id`
                 FROM `{tbl.NAME}`
-                WHERE (`universe` = {p} AND `filename` = {p} AND (
-                    `checksum` = {p} OR `canonical_checksum` = {p}
-                ))
-            ''', (universe, byteme(rpm.filename()), checksum, checksum))
+                WHERE (
+                    `universe` = {p} AND `name` = {p} AND `epoch` = {p} AND
+                    `version` = {p} AND `release` = {p} AND `arch` = {p} AND (
+                        `checksum` = {p} OR `canonical_checksum` = {p}
+                    )
+                )
+            ''', (
+                tbl._universe, rpm.name, rpm.epoch, rpm.version,
+                rpm.release, rpm.arch, str(rpm.checksum), str(rpm.checksum),
+            ))
             results = cursor.fetchall()
             if not results:
                 return None, None
@@ -509,18 +496,14 @@ class RepoDBContext(AbstractContextManager):
             other_checksums = set()
             storage_ids = set()
             for db_values in results:
-                storage_ids.add(db_values[-1].decode('latin-1'))
+                storage_ids.add(db_values[-1])
                 for col_name, db_val, val in zip(
                     tbl.column_names(), db_values[:-1], tbl.column_values(rpm),
                 ):
                     if col_name == 'checksum':
-                        other_checksums.add(
-                            Checksum.from_string(unbyteme(db_val))
-                        )
+                        other_checksums.add(Checksum.from_string(db_val))
                     elif col_name == 'canonical_checksum':
-                        canonical_checksums.add(
-                            Checksum.from_string(unbyteme(db_val))
-                        )
+                        canonical_checksums.add(Checksum.from_string(db_val))
                     else:
                         assert db_val == val, f'{col_name} {db_val} {val}'
             assert len(storage_ids) == 1, storage_ids
@@ -528,18 +511,25 @@ class RepoDBContext(AbstractContextManager):
             assert rpm.checksum in (other_checksums | canonical_checksums)
             return (storage_ids.pop(), canonical_checksums.pop())
 
-    def get_rpm_canonical_checksums(self, table: RpmTable, filename: str) \
+    def get_rpm_canonical_checksums(self, table: RpmTable, rpm: Rpm) \
             -> Iterator[Checksum]:
+        'Only the NEVRA part of `rpm` is used for the lookup.'
         p = self._placeholder()
         with self._cursor() as cursor:
             # Like in `get_rpm_storage_id_and_checksums`, the primary
             # key helps make this query efficient.
             cursor.execute(f'''
                 SELECT `canonical_checksum` FROM `{table.NAME}`
-                WHERE (`universe` = {p} AND `filename` = {p})
-            ''', (byteme(table._universe), byteme(filename),))
+                WHERE (
+                    `universe` = {p} AND `name` = {p} AND `epoch` = {p} AND
+                    `version` = {p} AND `release` = {p} AND `arch` = {p}
+                )
+            ''', (
+                table._universe, rpm.name, rpm.epoch, rpm.version,
+                rpm.release, rpm.arch,
+            ))
             for (canonical_checksum,) in cursor.fetchall():
-                yield Checksum.from_string(canonical_checksum.decode())
+                yield Checksum.from_string(canonical_checksum)
 
     def get_storage_id(
         self, table: StorageTable, obj: Union['Rpm', Repodata],
@@ -571,7 +561,7 @@ class RepoDBContext(AbstractContextManager):
                     col_name == 'build_timestamp' and type(obj) is Repodata
                 ):
                     assert db_val == val, (db_val, val, obj)
-            return db_values[-1].decode('latin-1')  # We put `storage_id` last
+            return db_values[-1]  # We put `storage_id` last
 
     def maybe_store(self, table: StorageTable, obj, storage_id: str) -> str:
         '''
@@ -592,7 +582,7 @@ class RepoDBContext(AbstractContextManager):
                 VALUES ({
                     ', '.join([self._placeholder()] * (len(col_names) + 1))
                 })
-            ''', (*table.column_values(obj), byteme(storage_id)))
+            ''', (*table.column_values(obj), storage_id))
             if cursor.rowcount:
                 return storage_id  # We won the race to insert our storage_id
             # Our storage_id will not be used, find the already-stored one.

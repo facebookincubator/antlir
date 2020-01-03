@@ -48,7 +48,9 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind='sqlite'):
 #       def __enter__(self):
 #           assert self._conn is None, 'MySQLConnectionContext not reentrant'
 #           # Reconnect every time, since MySQL connections go away quickly.
-#           self._conn = MySQLdb.connect(...)
+#           self._conn = MySQLdb.connect(
+#               ..., charset="ascii", use_unicode=True,
+#           )
 #           return self._conn
 #
 #       # Does not suppress exceptions
