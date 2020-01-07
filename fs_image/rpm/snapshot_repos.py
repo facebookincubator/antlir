@@ -163,7 +163,7 @@ def snapshot_repos_from_args(argv: List[str]):
         help='JSON dict of repo name to universe name. ' + universe_warning,
     )
     universe_group.add_argument(
-        '--one-univese-for-all-repos',
+        '--one-universe-for-all-repos',
         help='Snapshot all repos under this universe name. ' + universe_warning,
     )
 
@@ -171,9 +171,9 @@ def snapshot_repos_from_args(argv: List[str]):
 
     init_logging(debug=args.debug)
 
-    if args.one_univese_for_all_repos:
+    if args.one_universe_for_all_repos:
         def repo_to_universe(_repo):
-            return args.one_univese_for_all_repos
+            return args.one_universe_for_all_repos
     elif args.repo_to_universe_json:
         with open(args.repo_to_universe_json) as ru_json:
             repo_to_universe_json = json.load(ru_json)

@@ -63,7 +63,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                     }),
                 ]
                 snapshot_repos_from_args(common_args + [
-                    '--one-univese-for-all-repos', 'mammal',
+                    '--one-universe-for-all-repos', 'mammal',
                     '--dnf-conf', (repos_root / '0/dnf.conf').decode(),
                     '--yum-conf', (repos_root / '0/yum.conf').decode(),
                     '--snapshot-dir', (td / 'snap0').decode(),
