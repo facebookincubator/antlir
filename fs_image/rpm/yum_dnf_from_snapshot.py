@@ -451,7 +451,7 @@ def _prepare_versionlock_dir(yum_dnf: YumDnf, list_path: Path) -> Path:
         with open(d / 'versionlock.conf') as infile:
             assert infile.read() == vl_conf
 
-        assert (set(os.listdir(d)) - {b'versionlock.pyc'}) == {
+        assert (set(os.listdir(d)) - {b'versionlock.pyc', b'__pycache__'}) == {
             b'versionlock.conf', b'versionlock.list', b'versionlock.py',
         }, os.listdir(d)
 
