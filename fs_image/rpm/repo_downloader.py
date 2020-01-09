@@ -250,9 +250,9 @@ class RepoDownloader:
     # May raise a `requests.HTTPError` if the download fails.
     def _download_rpm(self, rpm: Rpm) -> Tuple[str, Rpm]:
         'Returns a storage_id and a copy of `rpm` with a canonical checksum.'
+        log.info(f'Downloading {rpm}')
         with self._download(rpm.location) as input, \
                 self._storage.writer() as output:
-            log.info(f'Downloading {rpm}')
             # Before committing to the DB, let's standardize on one hash
             # algorithm.  Otherwise, it might happen that two repos may
             # store the same RPM hashed with different algorithms, and thus
@@ -324,6 +324,7 @@ class RepoDownloader:
             # update its `.canonical_checksum`.
             if storage_id:
                 rpm = rpm._replace(canonical_checksum=canonical_checksum)
+                log.info(f'Already stored under {storage_id}: {rpm}')
             else:  # We have to download the RPM.
                 try:
                     with _reportable_http_errors(rpm.location):
