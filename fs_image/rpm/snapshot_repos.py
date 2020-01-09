@@ -95,14 +95,15 @@ def snapshot_repos(
     saved_sizer = RepoSizer()
     repos = _write_confs_get_repos(dest, yum_conf_content, dnf_conf_content)
     os.mkdir(dest / 'repos')
+    repos_and_universes = [
+        # Evaluated eagerly for `all_snapshot_universes`.  Bonus: this also
+        # fails fast if some repos cannot be resolved.
+        (repo, validate_universe_name(repo_to_universe(repo)))
+            for repo in repos
+    ]
     with RepoSnapshot.add_sqlite_to_storage(storage, dest) as db:
         # Randomize the order to reduce contention from concurrent writers.
-        for repo, repo_universe in shuffled(
-            # Evaluate `repo_to_universe` eagerly to fail fast if some repos
-            # cannot be resolved.
-            (repo, validate_universe_name(repo_to_universe(repo)))
-                for repo in repos
-        ):
+        for repo, repo_universe in shuffled(repos_and_universes):
             log.info(f'Downloading repo {repo.name} from {repo.base_url}')
             with populate_temp_dir_and_rename(
                 dest / 'repos' / repo.name, overwrite=True
@@ -117,6 +118,9 @@ def snapshot_repos(
                 retry_fn(
                     lambda: RepoDownloader(
                         repo_universe=repo_universe,
+                        all_snapshot_universes={
+                            u for _, u in repos_and_universes
+                        },
                         repo_name=repo.name,
                         repo_url=repo.base_url,
                         repo_db_ctx=repo_db_ctx,

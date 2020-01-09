@@ -118,6 +118,7 @@ class RepoDownloaderTestCase(unittest.TestCase):
     def _make_downloader(self, storage_dir, step_and_repo, db_context=None):
         return repo_downloader.RepoDownloader(
             repo_universe='fakeverse',
+            all_snapshot_universes={'fakeverse'},
             repo_name=step_and_repo,
             repo_url=(self.repos_root / step_and_repo).file_url(),
             repo_db_ctx=self._make_db_context()
@@ -498,10 +499,12 @@ class RepoDownloaderTestCase(unittest.TestCase):
         # The mice object which was "previously stored" via the mocks
         mice_rpms = []
 
-        def my_get_canonical(self, table, rpm):
+        def my_get_canonical(self, table, rpm, all_snapshot_universes):
             if rpm.nevra() == 'rpm-test-mice-0:0.1-a.x86_64':
                 return {mice_canonical_checksums[0]}
-            return original_get_canonical(self, table, rpm)
+            return original_get_canonical(
+                self, table, rpm, all_snapshot_universes,
+            )
 
         original_maybe_store = RepoDBContext.maybe_store
 

@@ -66,6 +66,7 @@ def snapshot_repo(argv):
         retry_fn(
             lambda: RepoDownloader(
                 repo_universe=args.repo_universe,
+                all_snapshot_universes=[args.repo_universe],
                 repo_name=args.repo_name,
                 repo_url=args.repo_url,
                 repo_db_ctx=RepoDBContext(args.db, args.db.SQL_DIALECT),

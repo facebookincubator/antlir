@@ -119,12 +119,15 @@ class RepoDownloader:
     def __init__(
         self, *,
         repo_universe: str,
+        all_snapshot_universes: Iterable[str],  # Should include `repo_universe`
         repo_name: str,
         repo_url: str,  # Use `Path.file_url` to get correct quoting
         repo_db_ctx: RepoDBContext,
         storage: Storage,
     ):
         self._repo_universe = repo_universe
+        self._all_snapshot_universes = frozenset(all_snapshot_universes)
+        assert repo_universe in self._all_snapshot_universes
         self._repo_name = repo_name
         self._repodata_table = RepodataTable()
         self._rpm_table = RpmTable(repo_universe)
@@ -350,7 +353,7 @@ class RepoDownloader:
     def _detect_mutable_rpms(self, rpm: Rpm, storage_id: str):
         with self._repo_db_ctx as repo_db:
             all_canonical_checksums = set(repo_db.get_rpm_canonical_checksums(
-                self._rpm_table, rpm,
+                self._rpm_table, rpm, self._all_snapshot_universes,
             ))
         assert all_canonical_checksums, (rpm, storage_id)
         assert all(

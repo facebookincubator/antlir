@@ -43,6 +43,8 @@ we cannot expect the same RPM NEVRAs to have the same contents across
 universes.  For example, two universes might represent the same OS, but
 built with incompatible compiler & linker flags.  For this reason,
 "universe" namespaces not just the `repo_metadata` table, but also `rpm`.
+The precise rules for mutable RPM errors are described in the doc for
+`get_rpm_canonical_checksums` below.
 
 
 ## Bugs
@@ -96,7 +98,7 @@ import enum
 import re
 
 from contextlib import AbstractContextManager, contextmanager
-from typing import AnyStr, ContextManager, Iterator, Optional, Tuple, Union
+from typing import ContextManager, Iterator, Optional, Set, Tuple, Union
 
 from fs_image.common import byteme
 
@@ -161,7 +163,7 @@ class RpmTable(StorageTable):
     '''
     NAME = 'rpm'
     KEY_COLUMNS = (
-        'universe', 'name', 'epoch', 'version', 'release', 'arch', 'checksum',
+        'name', 'epoch', 'version', 'release', 'arch', 'universe', 'checksum',
     )
 
     def __init__(self, universe: str):
@@ -169,12 +171,12 @@ class RpmTable(StorageTable):
 
     def _column_funcs(self):
         return [
-            ('universe', lambda obj: self._universe),
             ('name', lambda obj: obj.name),
             ('epoch', lambda obj: obj.epoch),
             ('version', lambda obj: obj.version),
             ('release', lambda obj: obj.release),
             ('arch', lambda obj: obj.arch),
+            ('universe', lambda obj: self._universe),
             (
                 'canonical_checksum',
                 lambda obj: str(obj.canonical_checksum),
@@ -184,12 +186,12 @@ class RpmTable(StorageTable):
 
     def key(self, obj):  # Update KEY_COLUMNS, _TABLE_KEYS if changing this
         return (
-            self._universe,
             obj.name,
             obj.epoch,
             obj.version,
             obj.release,
             obj.arch,
+            self._universe,
             str(obj.checksum),
         )
 
@@ -276,12 +278,12 @@ class RepoDBContext(AbstractContextManager):
     }
     _TABLE_COLUMNS = {
         RpmTable.NAME: {
-            'universe': 'NOT NULL',  # See "universe" in the file docblock
             'name': 'NOT NULL',
             'epoch': 'NOT NULL',
             'version': 'NOT NULL',
             'release': 'NOT NULL',
             'arch': 'NOT NULL',
+            'universe': 'NOT NULL',  # See "universe" in the file docblock
             'checksum': 'NOT NULL',  # As specified by the primary repodata
             'canonical_checksum': 'NOT NULL',  # As computed by us
             'size': 'NOT NULL',
@@ -312,12 +314,26 @@ class RepoDBContext(AbstractContextManager):
         # The key also includes a `universe` to allow completely unrelated
         # repo sets to use the same NEVRA to refer to different contents.
         #
+        # `universe` follows NEVRA for a few reasons:
+        #   - In `get_rpm_canonical_checksums`, we query a NEVRA among
+        #     multiple universes, and this is efficient if NEVRA is first.
+        #   - We do not commonly query for "all NEVRAs in a universe".  We
+        #     also expect the number of universes to be small, constant, and
+        #     comparable in size, so incurring a full-table scan for this
+        #     scenario is not bad.
+        #   - We expect NEVRA (especially `name`) to be far more
+        #     discriminating than `universe`, so this improves point queries.
+        #
+        # `checksum` follows `universe` because it's long and is only useful
+        # when we know exactly the row we want -- for our query patterns, it
+        # is never not a "partial" disambiguator.
+        #
         # Note that this strategy will store the same contents twice if it
         # occurs with different NEVRAs.  This should be rare, so we accept
         # the inefficiency to keep the code simpler.
         RpmTable.NAME: [
-            'PRIMARY KEY (`universe`, `name`, `epoch`, `version`, `release`, '
-            '`arch`, `checksum`)'
+            'PRIMARY KEY (`name`, `epoch`, `version`, `release`, `arch`, '
+                '`universe`, `checksum`)'
         ],
         # These don't need to be namespaced by `universe` because they are
         # only ever looked up by checksum.
@@ -474,14 +490,14 @@ class RepoDBContext(AbstractContextManager):
                 SELECT {self._identifiers(tbl.column_names())}, `storage_id`
                 FROM `{tbl.NAME}`
                 WHERE (
-                    `universe` = {p} AND `name` = {p} AND `epoch` = {p} AND
-                    `version` = {p} AND `release` = {p} AND `arch` = {p} AND (
+                    `name` = {p} AND `epoch` = {p} AND `version` = {p} AND
+                    `release` = {p} AND `arch` = {p} AND `universe` = {p} AND (
                         `checksum` = {p} OR `canonical_checksum` = {p}
                     )
                 )
             ''', (
-                tbl._universe, rpm.name, rpm.epoch, rpm.version,
-                rpm.release, rpm.arch, str(rpm.checksum), str(rpm.checksum),
+                rpm.name, rpm.epoch, rpm.version, rpm.release, rpm.arch,
+                tbl._universe, str(rpm.checksum), str(rpm.checksum),
             ))
             results = cursor.fetchall()
             if not results:
@@ -511,22 +527,34 @@ class RepoDBContext(AbstractContextManager):
             assert rpm.checksum in (other_checksums | canonical_checksums)
             return (storage_ids.pop(), canonical_checksums.pop())
 
-    def get_rpm_canonical_checksums(self, table: RpmTable, rpm: Rpm) \
-            -> Iterator[Checksum]:
-        'Only the NEVRA part of `rpm` is used for the lookup.'
+    def get_rpm_canonical_checksums(
+        self, table: RpmTable, rpm: Rpm, all_snapshot_universes: Set[str],
+    ) -> Iterator[Checksum]:
+        '''
+        Only the NEVRA part of `rpm` is used for the lookup.  We check for
+        this NEVRA in all the universes involved in this snapshot, since any
+        mutable RPM errors within the snapshot are bad, whether in the same
+        universe, or in two different ones.  On the other hand, looking for
+        mutable RPMs in completely unrelated universes does not make sense
+        -- one design principle of universes that unrelated ones can
+        legitimately use the same NEVRA to refer to different contents.
+        '''
         p = self._placeholder()
+        assert table._universe in all_snapshot_universes
+        all_snapshot_universe_ps = ', '.join([p] * len(all_snapshot_universes))
         with self._cursor() as cursor:
             # Like in `get_rpm_storage_id_and_checksums`, the primary
             # key helps make this query efficient.
             cursor.execute(f'''
                 SELECT `canonical_checksum` FROM `{table.NAME}`
                 WHERE (
-                    `universe` = {p} AND `name` = {p} AND `epoch` = {p} AND
-                    `version` = {p} AND `release` = {p} AND `arch` = {p}
+                    `name` = {p} AND `epoch` = {p} AND `version` = {p} AND
+                    `release` = {p} AND `arch` = {p} AND
+                    `universe` IN ({all_snapshot_universe_ps})
                 )
             ''', (
-                table._universe, rpm.name, rpm.epoch, rpm.version,
-                rpm.release, rpm.arch,
+                rpm.name, rpm.epoch, rpm.version, rpm.release, rpm.arch,
+                *all_snapshot_universes,
             ))
             for (canonical_checksum,) in cursor.fetchall():
                 yield Checksum.from_string(canonical_checksum)

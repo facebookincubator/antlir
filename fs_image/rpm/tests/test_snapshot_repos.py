@@ -28,11 +28,12 @@ class SnapshotReposTestCase(unittest.TestCase):
                 'dog': temp_repos.SAMPLE_STEPS[0]['dog'],
                 'kitteh': 'cat',
             },
-            {  # Some of these are "zombie"s, see `ru_json` below.
-                # 'bunny' stays unchanged, with the same `repomd.xml`
+            # None of these are in the "mammal" universe, see `ru_json` below.
+            {
+                # 'bunny' stays unchanged, with the step 0 `repomd.xml`
                 'cat': temp_repos.SAMPLE_STEPS[1]['cat'],
                 'dog': temp_repos.SAMPLE_STEPS[1]['dog'],
-                # 'kitteh' stays unchanged, with the same `repomd.xml`
+                # 'kitteh' stays unchanged, with the step 0 `repomd.xml`
             },
         ]) as repos_root, temp_dir() as td:
             storage_dict = {
@@ -68,11 +69,18 @@ class SnapshotReposTestCase(unittest.TestCase):
                     '--yum-conf', (repos_root / '0/yum.conf').decode(),
                     '--snapshot-dir', (td / 'snap0').decode(),
                 ])
+                # We want to avoid involving the "mammal" universe to
+                # exercise the fact that a universe **not** mentioned in a
+                # snapshot is not used for mutable RPM detection.  The fact
+                # that we also have a "zombie" exercises the fact that we do
+                # detect cross-universe mutable RPMs when the universes
+                # occur in the same snapshot.  Search below for
+                # `rpm-test-mutable` and `rpm-test-milk`.
                 json.dump({
-                    'bunny': 'mammal',  # Same content as in snap0
+                    'bunny': 'marsupial',  # Same content as in snap0
                     'cat': 'zombie',  # Changes content from snap0
-                    'dog': 'mammal',  # Changes content from snap0
-                    'kitteh': 'zombie',  # Same content as in snap0
+                    'dog': 'marsupial',  # Changes content from snap0
+                    'kitteh': 'marsupial',  # Same content as in snap0
                 }, ru_json)
                 ru_json.flush()
                 snapshot_repos_from_args(common_args + [
@@ -90,18 +98,18 @@ class SnapshotReposTestCase(unittest.TestCase):
                     FROM "repo_metadata"
                 ''').fetchall())
                 self.assertEqual([
-                    ('mammal', 'bunny', 451),  # both snap0 and snap1
+                    ('mammal', 'bunny', 451),  # snap0
                     ('mammal', 'cat', 451),  # snap0
-                    # There are two different `repomd`s in snap0 and snap1
-                    ('mammal', 'dog', 451),
-                    ('mammal', 'dog', 451),
-                    ('mammal', 'kitteh', 451),  # snap0 -- index -3
+                    ('mammal', 'dog', 451),   # snap0
+                    ('mammal', 'kitteh', 451),  # snap0 -- index -5
+                    ('marsupial', 'bunny', 451),  # snap1
+                    ('marsupial', 'dog', 451),  # snap1
+                    ('marsupial', 'kitteh', 451),  # snap1 -- index -2
                     ('zombie', 'cat', 451),  # snap1
-                    ('zombie', 'kitteh', 451),  # snap1 -- index -1
                 ], [r[:3] for r in repo_mds])
                 # The kittehs have the same checksums, but exist separately
                 # due to being in different universes.
-                self.assertEqual(repo_mds[-1][1:], repo_mds[-3][1:])
+                self.assertEqual(repo_mds[-2][1:], repo_mds[-5][1:])
 
                 def _fetch_sorted_by_nevra(nevra):
                     return sorted(db.execute('''
@@ -120,30 +128,34 @@ class SnapshotReposTestCase(unittest.TestCase):
                 kitteh_carrots = _fetch_sorted_by_nevra(kitteh_carrot_nevra)
                 kitteh_carrot_chksum = kitteh_carrots[0][-1]
                 self.assertEqual([
+                    # step0 cat & kitteh
                     ('mammal', *kitteh_carrot_nevra, kitteh_carrot_chksum),
-                    ('zombie', *kitteh_carrot_nevra, kitteh_carrot_chksum),
+                    # step1 kitteh
+                    ('marsupial', *kitteh_carrot_nevra, kitteh_carrot_chksum),
                 ], kitteh_carrots)
 
                 # This RPM has two variants for its contents at step 1.
-                # This creates a mutable RPM error in `snap1`.
+                # This creates a mutable RPM error in `snap1`.  Note that we
+                # detect it even though the variants are in different
+                # universes.
                 milk2_nevra = ['rpm-test-milk', 0, '2.71', '8', 'x86_64']
                 milk2s = _fetch_sorted_by_nevra(milk2_nevra)
                 milk2_chksum_step0 = milk2s[0][-1]  # mammal sorts first
                 milk2_chksum_step1, = {milk2s[1][-1], milk2s[2][-1]} - {
                     milk2_chksum_step0
                 }
-                self.assertEqual(sorted([
+                self.assertEqual([
                     # snap0 cat & kitteh
                     ('mammal', *milk2_nevra, milk2_chksum_step0),
                     # snap1 kitteh -- mutable RPM error vs "snap1 cat"
-                    ('zombie', *milk2_nevra, milk2_chksum_step0),
+                    ('marsupial', *milk2_nevra, milk2_chksum_step0),
                     # snap1 cat -- mutable RPM error vs "snap1 kitteh"
                     ('zombie', *milk2_nevra, milk2_chksum_step1),
-                ]), milk2s)
+                ], milk2s)
 
                 # This RPM changes contents between step 0 and step 1, but
-                # since they land in different universes, there is no
-                # mutable RPM error.
+                # since the "mammal" universe is not used in step 1, there
+                # is no mutable RPM error.
                 mutable_nevra = ['rpm-test-mutable', 0, 'a', 'f', 'x86_64']
                 mutables = _fetch_sorted_by_nevra(mutable_nevra)
                 mutable_chksum_dog = mutables[0][-1]  # mammal sorts first

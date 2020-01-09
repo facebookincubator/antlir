@@ -40,19 +40,19 @@ class RepoDBTestCase(unittest.TestCase):
         for (a_name, a_sql), (e_name, e_sql) in zip(_get_schema(conn), [
             ('rpm', (
                 'CREATE TABLE `rpm` ('
-                ' `universe` TEXT NOT NULL,'
                 ' `name` TEXT NOT NULL,'
                 ' `epoch` INTEGER NOT NULL,'
                 ' `version` TEXT NOT NULL,'
                 ' `release` TEXT NOT NULL,'
                 ' `arch` TEXT NOT NULL,'
+                ' `universe` TEXT NOT NULL,'
                 ' `checksum` TEXT NOT NULL,'
                 ' `canonical_checksum` TEXT NOT NULL,'
                 ' `size` INTEGER NOT NULL,'
                 ' `build_timestamp` INTEGER NOT NULL,'
                 ' `storage_id` TEXT NOT NULL,'
-                ' PRIMARY KEY (`universe`, `name`, `epoch`, `version`, '
-                    '`release`, `arch`, `checksum`)'
+                ' PRIMARY KEY (`name`, `epoch`, `version`, `release`, `arch`, '
+                    '`universe`, `checksum`)'
                 ' )'
             )),
             ('repodata', (
@@ -258,7 +258,9 @@ class RepoDBTestCase(unittest.TestCase):
             # Whew, we can detect this mutable RPM file in our repos.
             self.assertEqual(
                 {canonical1, canonical2},
-                set(db_ctx.get_rpm_canonical_checksums(table, _FAKE_RPM)),
+                set(db_ctx.get_rpm_canonical_checksums(
+                    table, _FAKE_RPM, {'fakeverse'},
+                )),
             )
 
     def test_universe_charset(self):
