@@ -26,7 +26,14 @@ class TestFsUtils(unittest.TestCase):
         self.assertEqual(b'bom', Path('/bim/bom').basename())
         self.assertEqual(b'/bim', Path('/bim/bom').dirname())
         self.assertEqual(b'ta/da', Path('./ta//gr/../da/').normpath())
+        self.assertEqual(Path('foo'), Path('foo'))
+        self.assertNotEqual('foo', Path('foo'))
         self.assertIsNone(Path.or_none(None))
+
+    def test_path_is_hashable(self):
+        # Path must be hashable to be added to a set
+        ts = set()
+        ts.add(Path('foo'))
 
     def test_bad_utf_is_bad(self):
         with self.assertRaises(UnicodeDecodeError):

@@ -23,6 +23,16 @@ class Path(bytes):
     def __new__(cls, arg, *args, **kwargs):
         return super().__new__(cls, byteme(arg), *args, **kwargs)
 
+    def __eq__(self, obj) -> bool:
+        if isinstance(obj, str):
+            return False
+        return super().__eq__(obj)
+
+    def __ne__(self, obj) -> bool:
+        return not self.__eq__(obj)
+
+    __hash__ = bytes.__hash__
+
     @classmethod
     def or_none(cls, arg, *args, **kwargs):
         if arg is None:
