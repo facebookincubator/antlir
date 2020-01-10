@@ -39,7 +39,6 @@ from fs_image.common import get_file_logger, set_new_key
 from fs_image.fs_utils import Path
 
 from .common import Checksum
-from .repo_objects import RepoMetadata
 from .repo_snapshot import FileIntegrityError, ReportableError
 from .storage import Storage
 
@@ -95,7 +94,9 @@ def add_snapshot_db_objs(db):
 def read_snapshot_dir(path: Path):
     db_path = path / 'snapshot.sql3'
     assert os.path.exists(db_path), f'no {db_path}, use rpm_repo_snapshot()'
-    location_to_obj = add_snapshot_db_objs(sqlite3.connect(db_path))
+    with sqlite3.connect(db_path) as db:
+        location_to_obj = add_snapshot_db_objs(db)
+    db.close()
     for repo in os.listdir(path / 'repos'):
         # Make JSON metadata for the repo's GPG keys.
         key_dir = path / 'repos' / repo / 'gpg_keys'

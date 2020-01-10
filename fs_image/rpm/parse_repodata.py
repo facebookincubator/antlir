@@ -85,19 +85,20 @@ class SQLiteRpmParser(AbstractContextManager):
                 break
         if self._unpacker.eof:  # We yield **everything** once the DB is ready
             self._tmp_db.flush()
+            with sqlite3.connect(self._tmp_db.name) as tmp_db:
+                select_res = tmp_db.execute(
+                    'SELECT '
+                    '  "location_href", "checksum_type", "pkgId", '
+                    '  "size_package", "time_build", "name", "epoch", '
+                    '  "version", "release", "arch", "rpm_sourcerpm" '
+                    'FROM "packages";'
+                ).fetchall()
+            tmp_db.close()
             for (
                 location, chk_type, chk_val, size,
                 build_time, name, epoch, version, release,
                 arch, source_rpm,
-            ) in sqlite3.connect(
-                self._tmp_db.name,
-            ).execute(
-                'SELECT '
-                '  "location_href", "checksum_type", "pkgId", "size_package", '
-                '  "time_build", "name", "epoch", "version", "release", '
-                '  "arch", "rpm_sourcerpm" '
-                'FROM "packages";'
-            ).fetchall():
+            ) in select_res:
                 yield Rpm(
                     epoch=int(epoch),
                     name=name,
