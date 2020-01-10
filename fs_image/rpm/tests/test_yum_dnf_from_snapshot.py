@@ -7,8 +7,6 @@ import unittest
 
 from contextlib import contextmanager
 
-from fs_image.common import load_location
-
 from ..common import init_logging, Path
 from ..yum_dnf_from_snapshot import YumDnf, yum_dnf_from_snapshot
 
