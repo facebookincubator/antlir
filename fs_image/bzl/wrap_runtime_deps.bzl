@@ -135,12 +135,17 @@ def maybe_wrap_runtime_deps_as_build_time_deps(
     dependency problem since C++ & Python build artifacts are
     self-contained, making the two dependency types identical.
 
-    NB: This check here causes the target graphs to be subtly different
-    between @mode/dev and @mode/opt.  I don't expect this to cause
-    problems for CI, however, because this internal target shouldn't have
-    any semantics for our test or build infrastructure.
+    Note: Because our CI always lists targets with @mode/dev, projects that
+    can only build in @mode/opt will fail because it will not be able to find
+    this target. Output a dummy target (in place of the wrapper) in this case
+    to appease it.
     """
     if not _ARTIFACTS_REQUIRE_REPO:
+        buck_genrule(
+            name = name,
+            out = "dummyfile",
+            bash = 'touch "$OUT"',
+        )
         return False, target
     buck_genrule(
         name = name,
