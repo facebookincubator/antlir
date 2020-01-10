@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import re
+import tempfile
 import unittest
 
+from contextlib import contextmanager
 from unittest import mock
 
 from ..common import Checksum
@@ -81,26 +83,30 @@ class RepoDBTestCase(unittest.TestCase):
             self.assertEqual(e_name, a_name)
             self.assertEqual(e_sql, re.sub(r'\s+', ' ', a_sql))
 
+    @contextmanager
     def _make_conn_ctx(self):
-        return DBConnectionContext.make(kind='sqlite', db_path=':memory:')
+        with tempfile.NamedTemporaryFile() as tf:
+            yield DBConnectionContext.make(kind='sqlite', db_path=tf.name)
+
+    @contextmanager
+    def _make_db_ctx(self):
+        with self._make_conn_ctx() as conn_ctx:
+            with RepoDBContext(conn_ctx, SQLDialect.SQLITE3) as db_ctx:
+                yield db_ctx
 
     def test_create_tables(self):
-        conn_ctx = self._make_conn_ctx()
-
-        # At first, there are no tables.
-        with conn_ctx as conn:
-            self.assertEqual([], _get_schema(conn))
-
-        # The two iterations test different scenarios:
-        # 0: The tables already existed, creating the context again is a no-op.
-        # 1: Creating the context will ensures that all tables exist.
-        for _ in range(2):
-            RepoDBContext(conn_ctx, SQLDialect.SQLITE3)
+        with self._make_conn_ctx() as conn_ctx:
+            # At first, there are no tables.
             with conn_ctx as conn:
-                self._check_schema(conn)
+                self.assertEqual([], _get_schema(conn))
 
-    def _make_db_ctx(self, conn_ctx):
-        return RepoDBContext(conn_ctx, SQLDialect.SQLITE3)
+            # The two iterations test different scenarios:
+            # 0: The tables already existed, creating context again is a no-op.
+            # 1: Creating the context will ensures that all tables exist.
+            for _ in range(2):
+                RepoDBContext(conn_ctx, SQLDialect.SQLITE3)
+                with conn_ctx as conn:
+                    self._check_schema(conn)
 
     def _fake_repomd(self, fetch_timestamp):
         repomd_xml = b'''
@@ -123,32 +129,35 @@ class RepoDBTestCase(unittest.TestCase):
         repomd73 = self._fake_repomd(73)
         self.assertGreater(repomd73.fetch_timestamp, repomd37.fetch_timestamp)
 
-        conn_ctx = self._make_conn_ctx()
-        # Exercise both the code path where our repomd to insert wins (gets
-        # inserted), and the path where a racing writer had already inserted
-        # the same repomd.
-        for insert_repomd, db_repomd, do_commit in [
-            (repomd37, repomd37, False),
-            (repomd73, repomd73, False),
-            (repomd37, repomd37, True),  # 37 is committed, won't be overwritten
-            (repomd73, repomd37, False),
-            (repomd73, repomd37, True),
-            (repomd37, repomd37, True),
-        ]:
-            with self.subTest(
-                insert_t=insert_repomd.fetch_timestamp,
-                db_t=db_repomd.fetch_timestamp,
-                do_commit=do_commit,
-            ), self._make_db_ctx(conn_ctx) as db_ctx:
-                self.assertEqual(
-                    db_repomd.fetch_timestamp,
-                    db_ctx.store_repomd('fakevers', 'fake_repo', insert_repomd),
-                )
-                if do_commit:
-                    db_ctx.commit()
+        with self._make_conn_ctx() as conn_ctx:
+            # Exercise both the code path where our repomd to insert wins (gets
+            # inserted), and the path where a racing writer had already inserted
+            # the same repomd.
+            for insert_repomd, db_repomd, do_commit in [
+                (repomd37, repomd37, False),
+                (repomd73, repomd73, False),
+                # 37 is committed, won't be overwritten
+                (repomd37, repomd37, True),
+                (repomd73, repomd37, False),
+                (repomd73, repomd37, True),
+                (repomd37, repomd37, True),
+            ]:
+                with self.subTest(
+                    insert_t=insert_repomd.fetch_timestamp,
+                    db_t=db_repomd.fetch_timestamp,
+                    do_commit=do_commit,
+                ), RepoDBContext(conn_ctx, SQLDialect.SQLITE3) as db_ctx:
+                    self.assertEqual(
+                        db_repomd.fetch_timestamp,
+                        db_ctx.store_repomd(
+                            'fakevers', 'fake_repo', insert_repomd
+                        ),
+                    )
+                    if do_commit:
+                        db_ctx.commit()
 
     def _check_maybe_store_and_get_storage_id(self, table, obj):
-        with self._make_db_ctx(self._make_conn_ctx()) as db_ctx:
+        with self._make_db_ctx() as db_ctx:
             self.assertIs(None, db_ctx.get_storage_id(table, obj))
             self.assertEqual(
                 'fake1', db_ctx.maybe_store(table, obj, 'fake1')
@@ -201,7 +210,7 @@ class RepoDBTestCase(unittest.TestCase):
         canonical = Checksum('can', 'onical')
         # It is also OK to have the checksum be the same as the canonical one.
         rpm_canon = rpm1._replace(checksum=canonical)
-        with self._make_db_ctx(self._make_conn_ctx()) as db_ctx:
+        with self._make_db_ctx() as db_ctx:
             # Nothing was inserted, yet.
             self.assertEqual(
                 (None, None),
@@ -226,7 +235,7 @@ class RepoDBTestCase(unittest.TestCase):
         table = RpmTable('fakeverse')
         canonical1 = Checksum('can', 'onical1')
         canonical2 = Checksum('can', 'onical2')
-        with self._make_db_ctx(self._make_conn_ctx()) as db_ctx:
+        with self._make_db_ctx() as db_ctx:
             # These two entries into the `rpm` table refer to the same RPM
             # (same canonical checksum), but this illustrates that the
             # contents of such an RPM will currently be stored twice.

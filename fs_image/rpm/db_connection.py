@@ -21,10 +21,11 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind='sqlite'):
     SQL_DIALECT = SQLDialect.SQLITE3
 
     def __init__(self, db_path: str):
-        # We can reuse the SQLite connection since it never times out.
-        self._conn = sqlite3.connect(db_path)
+        self.db_path = db_path
+        self._conn = None
 
     def __enter__(self):
+        self._conn = sqlite3.connect(self.db_path)
         return self._conn
 
     # Does not suppress exceptions
@@ -32,6 +33,8 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind='sqlite'):
         # We must act equivalently to the MySQL context in rolling back
         # uncommitted changes on context exit.
         self._conn.rollback()
+        self._conn.close()
+        self._conn = None
 
 
 # NB: If needed, it would be trivial to add a plain MySQL context. I'm
