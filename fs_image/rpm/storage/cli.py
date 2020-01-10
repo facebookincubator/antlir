@@ -12,14 +12,16 @@ _CHUNK_SIZE = 2 ** 20  # Not too important, anything large enough is fine.
 
 
 def put(args):
-    with args.storage.writer() as fout:
+    storage = Storage.from_json(args.storage)
+    with storage.writer() as fout:
         for chunk in read_chunks(args.from_file, _CHUNK_SIZE):
             fout.write(chunk)
         args.to_file.write((fout.commit() + '\n').encode())
 
 
 def get(args):
-    with args.storage.reader(args.storage_id) as fin:
+    storage = Storage.from_json(args.storage)
+    with storage.reader(args.storage_id) as fin:
         for chunk in read_chunks(fin, _CHUNK_SIZE):
             args.to_file.write(chunk)
 

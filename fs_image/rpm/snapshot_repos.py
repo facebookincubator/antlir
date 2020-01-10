@@ -37,6 +37,7 @@ from .common import (
     RpmShard,
 )
 from .common_args import add_standard_args
+from .db_connection import DBConnectionContext
 from .gpg_keys import snapshot_gpg_keys
 from .repo_db import RepoDBContext, validate_universe_name
 from .repo_downloader import RepoDownloader
@@ -187,6 +188,7 @@ def snapshot_repos_from_args(argv: List[str]):
     else:  # pragma: no cover
         raise AssertionError(args)
 
+    db = DBConnectionContext.from_json(args.db)
     with populate_temp_dir_and_rename(args.snapshot_dir, overwrite=True) as td:
         snapshot_repos(
             dest=td,
@@ -195,8 +197,8 @@ def snapshot_repos_from_args(argv: List[str]):
                 if args.yum_conf else None,
             dnf_conf_content=args.dnf_conf.read_text()
                 if args.dnf_conf else None,
-            repo_db_ctx=RepoDBContext(args.db, args.db.SQL_DIALECT),
-            storage=args.storage,
+            repo_db_ctx=RepoDBContext(db, db.SQL_DIALECT),
+            storage=Storage.from_json(args.storage),
             rpm_shard=args.rpm_shard,
             gpg_key_whitelist_dir=args.gpg_key_whitelist_dir,
             retries=args.retries,

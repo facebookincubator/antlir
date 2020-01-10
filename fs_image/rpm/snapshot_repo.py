@@ -11,10 +11,12 @@ from .common import (
     get_file_logger, init_logging, populate_temp_dir_and_rename, retry_fn,
 )
 from .common_args import add_standard_args
+from .db_connection import DBConnectionContext
 from .repo_db import RepoDBContext
 from .repo_downloader import RepoDownloader
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
+from .storage import Storage
 from .gpg_keys import snapshot_gpg_keys
 
 log = get_file_logger(__file__)
@@ -49,12 +51,14 @@ def snapshot_repo(argv):
             '`--gpg-key-whitelist-dir`',
     )
     args = parser.parse_args(argv)
+    storage = Storage.from_json(args.storage)
+    db = DBConnectionContext.from_json(args.db)
 
     init_logging(debug=args.debug)
 
     with populate_temp_dir_and_rename(
         args.snapshot_dir, overwrite=True,
-    ) as td, RepoSnapshot.add_sqlite_to_storage(args.storage, td) as db:
+    ) as td, RepoSnapshot.add_sqlite_to_storage(storage, td) as sqlite_db:
         sizer = RepoSizer()
         # This is outside the retry_fn not to mask transient verification
         # failures.  I don't expect many infra failures.
@@ -69,12 +73,12 @@ def snapshot_repo(argv):
                 all_snapshot_universes=[args.repo_universe],
                 repo_name=args.repo_name,
                 repo_url=args.repo_url,
-                repo_db_ctx=RepoDBContext(args.db, args.db.SQL_DIALECT),
-                storage=args.storage,
+                repo_db_ctx=RepoDBContext(db, db.SQL_DIALECT),
+                storage=storage,
             ).download(rpm_shard=args.rpm_shard),
             delays=[0] * args.retries,
             what=f'Downloading {args.repo_name} from {args.repo_url} failed',
-        ).visit(sizer).to_sqlite(args.repo_name, db)
+        ).visit(sizer).to_sqlite(args.repo_name, sqlite_db)
         log.info(sizer.get_report(f'This {args.rpm_shard} snapshot weighs'))
 
 

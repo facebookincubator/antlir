@@ -20,6 +20,28 @@ class SnapshotReposTestCase(unittest.TestCase):
     def setUp(self):
         self.maxDiff = 12345
 
+    def test_invalid_json(self):
+        args = [
+            '--gpg-key-whitelist-dir', ('not_used/gpg_whitelist'),
+            '--storage', json.dumps(
+                {'key': 'test', 'kindd': 'filesystem', 'base_dir': 'foo'}
+            ),
+            '--db', json.dumps({'kind': 'sqlite', 'db_path': 'foo_path'}),
+           '--one-universe-for-all-repos', 'not_used',
+            '--dnf-conf', 'not_used',
+            '--yum-conf', 'not_used',
+            '--snapshot-dir', 'not_used',
+        ]
+        with self.assertRaises(KeyError):
+            snapshot_repos_from_args(args)
+
+        args[3] = json.dumps(
+            {'key': 'test', 'kindd': 'filesystem', 'base_dir': 'foo'}
+        )
+        args[5] = json.dumps({'kind': 'sqlite', 'bd_path': 'bad_key'})
+        with self.assertRaises(KeyError):
+            snapshot_repos_from_args(args)
+
     def test_snapshot(self):
         with temp_repos.temp_repos_steps(repo_change_steps=[
             {  # All of the `snap0` repos are in the "mammal" universe

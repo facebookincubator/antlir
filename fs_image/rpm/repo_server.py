@@ -361,7 +361,7 @@ if __name__ == '__main__':  # pragma: no cover
     with repo_server(
         socket.socket(fileno=opts.socket_fd),
         read_snapshot_dir(opts.snapshot_dir),
-        opts.storage,
+        Storage.from_json(opts.storage),
     ) as httpd:
         httpd.server_activate()
         log.info(f'HTTP repo server is listening')

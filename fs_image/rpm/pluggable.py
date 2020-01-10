@@ -45,6 +45,12 @@ class Pluggable:
         return cls._pluggable_base._pluggable_kind_to_cls[kind](**kwargs)
 
     @classmethod
+    def argparse_json(cls, arg_json: str) -> str:
+        # Make bad JSON fail at argument parse-time
+        cls._pluggable_base.from_json(arg_json)
+        return arg_json
+
+    @classmethod
     def add_argparse_arg(cls, parser, *args, help='', **kwargs):
         plugins = '; '.join(
             f'''`{n}` taking {', '.join(
@@ -56,7 +62,7 @@ class Pluggable:
         )
         parser.add_argument(
             *args,
-            type=cls._pluggable_base.from_json,
+            type=cls.argparse_json,
             help=f'{help}A JSON dictionary containing the key "kind", which '
                 f'identifies a {cls._pluggable_base.__name__} subclass, plus '
                 f'"key", which is a user-specified [-_a-zA-Z0-9]+ string '
