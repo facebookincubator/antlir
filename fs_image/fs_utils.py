@@ -24,8 +24,8 @@ class Path(bytes):
         return super().__new__(cls, byteme(arg), *args, **kwargs)
 
     def __eq__(self, obj) -> bool:
-        if isinstance(obj, str):
-            return False
+        if not isinstance(obj, bytes):
+            raise TypeError
         return super().__eq__(obj)
 
     def __ne__(self, obj) -> bool:

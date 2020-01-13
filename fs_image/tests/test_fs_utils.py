@@ -27,8 +27,19 @@ class TestFsUtils(unittest.TestCase):
         self.assertEqual(b'/bim', Path('/bim/bom').dirname())
         self.assertEqual(b'ta/da', Path('./ta//gr/../da/').normpath())
         self.assertEqual(Path('foo'), Path('foo'))
-        self.assertNotEqual('foo', Path('foo'))
         self.assertIsNone(Path.or_none(None))
+        with self.assertRaises(TypeError):
+            Path('foo') == 'foo'
+        with self.assertRaises(TypeError):
+            Path('foo') != 'foo'
+        with self.assertRaises(TypeError):
+            Path('foo') > 'foo'
+        with self.assertRaises(TypeError):
+            Path('foo') >= 'foo'
+        with self.assertRaises(TypeError):
+            Path('foo') < 'foo'
+        with self.assertRaises(TypeError):
+            Path('foo') <= 'foo'
 
     def test_path_is_hashable(self):
         # Path must be hashable to be added to a set
@@ -145,7 +156,7 @@ class TestFsUtils(unittest.TestCase):
             with populate_temp_dir_and_rename(foo_path) as td2:
                 self.assertTrue(td2.startswith(td + b'/'))
                 self.assertEqual(td2, td / td2.basename())
-                self.assertNotEqual(td2.basename(), 'foo')
+                self.assertNotEqual(td2.basename(), Path('foo'))
                 with create_ro(td2 / 'hello', 'w') as out_f:
                     out_f.write('world')
             self._check_has_one_file(foo_path, 'hello', 'world')
