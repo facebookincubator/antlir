@@ -10,7 +10,7 @@ import unittest
 from ..common import check_popen_returncode
 from ..fs_utils import (
     create_ro, open_for_read_decompress, Path, populate_temp_dir_and_rename,
-    temp_dir,
+    temp_dir, populate_temp_file_and_rename,
 )
 
 _BAD_UTF = b'\xc3('
@@ -174,3 +174,59 @@ class TestFsUtils(unittest.TestCase):
                 with create_ro(td2 / 'farewell', 'w') as out_f:
                     out_f.write('arms')
             self._check_has_one_file(foo_path, 'farewell', 'arms')
+
+    def test_populate_temp_file_and_rename_success(self):
+        with temp_dir() as td:
+            path = td / 'dog'
+            with populate_temp_file_and_rename(path) as outfile:
+                outfile.write('woof')
+                tmp_path = outfile.name
+            # Temp file should be deleted
+            self.assertFalse(os.path.exists(tmp_path))
+            # Ensure that file exists and contains correct content
+            self.assertTrue(os.path.exists(path))
+            self.assertEqual(path.read_text(), 'woof')
+
+    def test_populate_temp_file_fail_to_overwrite(self):
+        with temp_dir() as td:
+            path = td / 'dog'
+            with open(path, 'w') as outfile:
+                outfile.write('woof')
+            # Fail to write due to existing file
+            with self.assertRaises(FileExistsError):
+                with populate_temp_file_and_rename(path) as outfile:
+                    outfile.write('meow')
+                    tmp_path = outfile.name
+            # Temp file should be deleted
+            self.assertFalse(os.path.exists(tmp_path))
+            # Original file is untouched
+            self.assertEqual(path.read_text(), 'woof')
+
+    def test_populate_temp_file_force_overwrite(self):
+        with temp_dir() as td:
+            path = td / 'dog'
+            with open(path, 'w') as outfile:
+                outfile.write('woof')
+            # Succeeds in overwriting contents in "dog"
+            with populate_temp_file_and_rename(path, overwrite=True) as outfile:
+                outfile.write('meow')
+                tmp_path = outfile.name
+            # Temp file should no longer exist (as it has been renamed)
+            self.assertFalse(os.path.exists(tmp_path))
+            # Original file is modified
+            self.assertEqual(path.read_text(), 'meow')
+
+    def test_populate_temp_file_and_rename_error(self):
+        with temp_dir() as td:
+            path = td / 'dog'
+            with open(path, 'w') as outfile:
+                outfile.write('woof')
+            with self.assertRaisesRegex(RuntimeError, '^woops$'):
+                with populate_temp_file_and_rename(path) as outfile:
+                    outfile.write('meow')
+                    tmp_path = outfile.name
+                    raise RuntimeError('woops')
+            # Temp file should be deleted
+            self.assertFalse(os.path.exists(tmp_path))
+            # the original file is untouched
+            self.assertEqual(path.read_text(), 'woof')

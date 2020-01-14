@@ -29,13 +29,13 @@ import copy
 import hashlib
 import json
 import os
-import tempfile
 
-from contextlib import contextmanager
 from typing import Callable, List, Mapping, Tuple
 
 from fs_image.common import get_file_logger, init_logging
-from fs_image.fs_utils import Path, populate_temp_dir_and_rename
+from fs_image.fs_utils import (
+    Path, populate_temp_dir_and_rename, populate_temp_file_and_rename,
+)
 
 _GENERATED = '@' + 'generated'
 _JSON = '.json'
@@ -124,25 +124,12 @@ def _buildifier_repr(x, depth=0, *, is_inline=False):
         ) for k, v in sorted(x.items())) + (',\n' if x else '') + indent + '}'
 
 
-@contextmanager
-def _populate_temp_file_and_rename(dest_path: Path, *, mode='w'):
-    with tempfile.NamedTemporaryFile(
-        mode=mode, dir=dest_path.dirname(), delete=False,
-    ) as tf:
-        try:
-            yield tf
-        except BaseException:
-            os.unlink(tf.name)
-            raise
-        # NB: This will fail to replace a directory, preventing us from
-        # transparently converting JSON to BZL databases without using
-        # `--out-db`.  This is fine since the DB paths should look different
-        # anyhow (`dirname` vs `filename.bzl`).
-        os.rename(tf.name, dest_path)
-
-
 def _write_bzl_db(db: PackageTagDb, path: Path, how_to_generate: str):
-    with _populate_temp_file_and_rename(path) as outfile:
+    # NB: This will fail to replace a directory, preventing us from
+    # transparently converting JSON to BZL databases without using
+    # `--out-db`.  This is fine since the DB paths should look different
+    # anyhow (`dirname` vs `filename.bzl`).
+    with populate_temp_file_and_rename(path, overwrite=True) as outfile:
         outfile.write(_with_generated_header(
             _BZL_DB_PREFIX + _buildifier_repr(db) + '\n',
             how_to_generate,

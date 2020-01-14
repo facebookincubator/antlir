@@ -113,7 +113,7 @@ def create_ro(path, mode):
 
 
 @contextmanager
-def populate_temp_dir_and_rename(dest_path, overwrite=False) -> Path:
+def populate_temp_dir_and_rename(dest_path, *, overwrite=False) -> Path:
     '''
     Returns a Path to a temporary directory. The context block may populate
     this directory, which will then be renamed to `dest_path`, optionally
@@ -160,3 +160,44 @@ def populate_temp_dir_and_rename(dest_path, overwrite=False) -> Path:
     except BaseException:
         shutil.rmtree(td)
         raise
+
+
+@contextmanager
+def populate_temp_file_and_rename(dest_path: Path, *, overwrite=False,
+                                    mode='w'):
+    '''
+    Opens a temporary file for writing in the same directory as the desired
+    file `dest_path`. Yields a `file`-like object to be populated inside
+    the context.
+
+    On successfully exiting the with-block, one of two things will happen:
+
+    1. Default: If `overwrite` is not set, then the temporary file will
+       attempt to be renamed to the `dest_path`. If `dest_path` already
+       exists (determined through a race-prone `os.path.exists` check),
+       the temporary file will be removed and an `FileExistsError` will
+       be raised. If `dest_path` does not exist, the renaming will be an
+       atomic operation (this is a POSIX requirement).
+    2. If `overwrite` is set, then the temporary file will replace any
+       file existing at `dest_path` and all of its content.
+
+    If the with-block is exited unsuccessfully, the temporary file
+    will be deleted. If the dest_path specifies a directory, it will
+    fail to replace the directory. This behaviour is regardless of
+    the `overwrite` value provided and is subject to change (should not
+    be relied on).
+    '''
+    with tempfile.NamedTemporaryFile(
+        mode=mode, dir=dest_path.dirname(), delete=False,
+    ) as tf:
+        try:
+            yield tf
+            if not overwrite and os.path.exists(dest_path):
+                # Race prone to check to determine if file exists.
+                # If eliminating the possibility of a race is important
+                # look into using `renameat2` via `ctypes`
+                raise FileExistsError
+            os.rename(tf.name, dest_path)
+        except BaseException:  # Clean up even on Ctrl-C
+            os.unlink(tf.name)
+            raise

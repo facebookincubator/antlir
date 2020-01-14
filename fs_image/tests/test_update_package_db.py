@@ -17,22 +17,6 @@ class UpdatePackageDbTestCase(unittest.TestCase):
         with open(path) as infile:
             self.assertEqual(content, infile.read())
 
-    def test_temp_file_error(self):
-        with temp_dir() as td:
-            path = td / 'dog'
-            with open(path, 'w') as outfile:
-                outfile.write('woof')
-            with self.assertRaisesRegex(RuntimeError, '^woops$'):
-                with updb._populate_temp_file_and_rename(path) as outfile:
-                    outfile.write('meow')
-                    tmp_path = outfile.name
-                    raise RuntimeError('woops')
-            # Potentially can race with another tempfile creation, but this
-            # should be vanishingly unlikely.
-            self.assertFalse(os.path.exists(tmp_path))
-            # Importantly, the original file is untouched.
-            self._check_file(td / 'dog', 'woof')
-
     def _write_bzl_db(self, db_path, dct):
         with open(db_path, 'w') as outfile:
             # Not using `_with_generated_header` to ensure that we are
