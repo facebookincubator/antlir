@@ -2,7 +2,11 @@
 'DANGER: The resulting PAR will not work if copied outside of buck-out.'
 import os
 import shutil
+import stat
 import subprocess
+import textwrap
+
+from fs_image.fs_utils import Path, populate_temp_file_and_rename
 
 
 def _maybe_make_symlink_to_scratch(
@@ -89,7 +93,29 @@ def ensure_per_repo_artifacts_dir_exists(path_in_repo: str) -> str:
         os.mkdir(real_dir)
     except FileExistsError:
         pass  # May race with another mkdir from a concurrent artifacts_dir.py
+
+    ensure_clean_sh_exists(Path(artifacts_dir))
     return artifacts_dir
+
+
+def ensure_clean_sh_exists(artifacts_dir: Path):
+    clean_sh_path = artifacts_dir / 'clean.sh'
+    with populate_temp_file_and_rename(clean_sh_path,
+                                        overwrite=True, mode='w') as f:
+        # We do not want to remove image_build.log because the potential
+        # debugging value far exceeds the disk waste
+        f.write(textwrap.dedent('''\
+            #!/bin/bash
+            set -ue -o pipefail
+            buck clean
+            sudo umount -l buck-image-out/volume
+            rm buck-image-out/image.btrfs
+            rm buck-image-out/clean.sh
+        '''))
+    os.chmod(
+        clean_sh_path,
+        os.stat(clean_sh_path).st_mode
+        | (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
 
 
 if __name__ == '__main__':
