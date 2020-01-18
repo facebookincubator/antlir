@@ -384,9 +384,10 @@ def nspawn_in_subvol(
             else nullcontext(src_subvol)
     ) as nspawn_subvol:
 
-        # The `popen_` prefix is required since we use the outer
-        # scope's `stdout` and `stderr` in this nested function.
-        def popen(cmd, popen_stdout=None, popen_stderr=None):
+        def popen(cmd, stdout=None, stderr=None, *,
+                _default_stdout=1 if stdout is None else stdout,
+                _default_stderr=stderr,
+        ):
             return nspawn_subvol.popen_as_root(
                 cmd,
                 # This is a safeguard in case `sudo` lets through these
@@ -395,9 +396,8 @@ def nspawn_in_subvol(
                 # popen_as_root will redirect stdout to stderr if it is None,
                 # don't do that because it will break things that don't
                 # expect that.
-                stdout=(popen_stdout if popen_stdout else (
-                    1 if stdout is None else stdout)),
-                stderr=popen_stderr if popen_stderr else stderr,
+                stdout=stdout if stdout else _default_stdout,
+                stderr=stderr if stderr else _default_stderr,
                 check=check,
             )
 
@@ -453,8 +453,8 @@ def nspawn_in_subvol(
             # Create a partial of the popen with stdout/stderr setup as
             # requested for the boot process.
             boot_popen = functools.partial(popen,
-                popen_stdout=subprocess.PIPE,
-                popen_stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
 
             # Create a pipe that we can forward into the namespace that our
