@@ -85,7 +85,10 @@ class RpmMetadataTestCase(unittest.TestCase):
             ((0, '^1', '3'), (0, '^', '3'), 1),        # 0:^1-3 > 0:^-3
             ((0, '^', '3'), (0, '^1', '3'), -1),       # 0:^-3 < 0:^1-3
             ((0, '0333', 'b'), (0, '0033', 'b'), 1),   # 0:0333-b > 0:0033-b
+            ((0, '0033', 'b'), (0, '0333', 'b'), -1),  # 0:0033-b < 0:0333-b
             ((0, '3', '~~'), (0, '3', '~~~'), 1),      # 0:3-~~ > 0:3-~~~
+            ((0, '3', '~~~'), (0, '3', '~~'), -1),     # 0:3-~~~ < 0:3-~~
+            ((0, '3', '~~~'), (0, '3', '~~~'), 0),     # 0:3-~~~ == 0:3-~~~
             ((0, 'a2aa', 'b'), (0, 'a2a', 'b'), 1),    # 0:a2aa-b > 0:a2a-b
             ((0, '33', 'b'), (0, 'aaa', 'b'), 1),      # 0:33-b > 0:aaa-b
         ]
@@ -93,4 +96,5 @@ class RpmMetadataTestCase(unittest.TestCase):
         for evr1, evr2, expected in test_data:
             a = RpmMetadata('test-name', *evr1)
             b = RpmMetadata('test-name', *evr2)
-            self.assertEqual(compare_rpm_versions(a, b), expected)
+            self.assertEqual(compare_rpm_versions(a, b),
+                    expected, f'failed: {evr1}, {evr2}, {expected}')

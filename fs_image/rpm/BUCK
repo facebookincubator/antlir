@@ -475,11 +475,6 @@ python_library(
         ":common",
         "//fs_image:subvol_utils",
     ],
-    external_deps = [
-        third_party.library(
-            ("rpm", None, "python-rpm"),
-        ),
-    ],
 )
 
 python_unittest(
