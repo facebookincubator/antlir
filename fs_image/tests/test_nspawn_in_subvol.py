@@ -6,9 +6,10 @@ import tempfile
 import unittest
 import unittest.mock
 
+from pwd import struct_passwd
 from nspawn_in_subvol import (
     find_repo_root, find_built_subvol, nspawn_in_subvol, parse_opts,
-    _nspawn_version,
+    _nspawn_version, _create_extra_nspawn_args,
 )
 from tests.temp_subvolumes import with_temp_subvols
 
@@ -29,6 +30,130 @@ class NspawnTestCase(unittest.TestCase):
             '--layer', os.path.join(os.path.dirname(__file__), rsrc_name),
         ] + args)
         return nspawn_in_subvol(find_built_subvol(opts.layer), opts, **kwargs)
+
+    def _wrapper_args_to_nspawn_args(
+        self, args, *, artifacts_may_require_repo=False
+    ):
+        return _create_extra_nspawn_args(
+            parse_opts(args),
+            struct_passwd([
+                'pw_name', 'pw_passwd', 123, 123,
+                'pw_gecos', '/test/home', '/test/sh',
+            ]),
+            artifacts_may_require_repo=artifacts_may_require_repo,
+        )
+
+    def _assertIsSubseq(self, subseq, seq, msg=None):
+        subseqs = [
+            seq[i:i+len(subseq)] for i in range(len(seq) - len(subseq) + 1)
+        ]
+        self.assertIn(subseq, subseqs)
+
+    def test_extra_nspawn_args_boot_opts(self):
+        # !opts.boot
+        self.assertIn('--as-pid2', self._wrapper_args_to_nspawn_args(
+            ['--layer', 'test']
+        ))
+        self.assertIn('--user=somebody', self._wrapper_args_to_nspawn_args(
+            ['--layer', 'test', '--user', 'somebody']
+        ))
+        # opts.boot
+        self.assertIn('--user=root', self._wrapper_args_to_nspawn_args(
+            ['--layer', 'test', '--boot']
+        ))
+
+    def test_extra_nspawn_args_private_network_opts(self):
+        # opts.private_network
+        self.assertIn('--private-network', self._wrapper_args_to_nspawn_args(
+            ['--layer', 'test']
+        ))
+        # !opts.private_network
+        self.assertNotIn('--private-network', self._wrapper_args_to_nspawn_args(
+            ['--layer', 'test', '--no-private-network']
+        ))
+
+    def test_extra_nspawn_args_bindmount_opts(self):
+        # opts.bindmount_rw
+        self._assertIsSubseq(['--bind', '/src:/dest'],
+            self._wrapper_args_to_nspawn_args(
+                ['--layer', 'test', '--bindmount-rw', '/src', '/dest']
+            )
+        )
+        # opts.bindmount_ro
+        self._assertIsSubseq(['--bind-ro', '/src:/dest'],
+            self._wrapper_args_to_nspawn_args(
+                ['--layer', 'test', '--bindmount-ro', '/src', '/dest']
+            )
+        )
+
+    def test_extra_nspawn_args_bind_repo_opts(self):
+        with unittest.mock.patch('nspawn_in_subvol.find_repo_root') as root:
+            root.return_value = "/repo/root"
+            # opts.bind_repo_ro
+            self.assertIn('/repo/root:/repo/root',
+                self._wrapper_args_to_nspawn_args(
+                    ['--layer', 'test', '--bind-repo-ro']
+                )
+            )
+            # artifacts_may_require_repo
+            self.assertIn('/repo/root:/repo/root',
+                self._wrapper_args_to_nspawn_args(
+                    ['--layer', 'test'], artifacts_may_require_repo=True
+                )
+            )
+
+    def test_extra_nspawn_args_log_tmpfs_opts(self):
+        # opts.logs_tmpfs
+        self.assertIn(
+            '--tmpfs=/logs:uid=123,gid=123,mode=0755,nodev,nosuid,noexec',
+            self._wrapper_args_to_nspawn_args(['--layer', 'test']),
+        )
+        # !opts.logs_tmpfs
+        self.assertNotIn(
+            '--tmpfs=/logs:uid=123,gid=123,mode=0755,nodev,nosuid,noexec',
+            self._wrapper_args_to_nspawn_args(
+                ['--layer', 'test', '--no-logs-tmpfs']
+            ),
+        )
+
+    def test_extra_nspawn_args_cap_net_admin_opts(self):
+        # opts.cap_net_admin
+        self.assertIn(
+            '--capability=CAP_NET_ADMIN', self._wrapper_args_to_nspawn_args(
+                ['--layer', 'test', '--cap-net-admin']
+            ),
+        )
+
+    def test_extra_nspawn_args_hostname_opts(self):
+        # opts.hostname
+        self.assertIn(
+            '--hostname=test-host', self._wrapper_args_to_nspawn_args(
+                ['--layer', 'test', '--hostname', 'test-host']
+            ),
+        )
+
+    def test_extra_nspawn_args_quiet_opts(self):
+        # opts.quiet
+        self.assertIn('--quiet', self._wrapper_args_to_nspawn_args(
+            ['--layer', 'test', '--quiet']
+        ))
+
+    def test_extra_nspawn_args_foward_tls_env_opts(self):
+        # opts.foward_tls_env
+        pw = struct_passwd([
+                'pw_name', 'pw_passwd', 123, 123,
+                'pw_gecos', '/test/home', '/test/sh',
+        ])
+        with unittest.mock.patch.dict(
+            os.environ, {'THRIFT_TLS_TEST': 'test_val'}
+        ):
+            opts = parse_opts(
+                ['--layer', 'test', '--forward-tls-env']
+            )
+            _create_extra_nspawn_args(
+                opts, pw, artifacts_may_require_repo=False,
+            )
+            self.assertIn('THRIFT_TLS_TEST=test_val', opts.setenv)
 
     def test_nspawn_version(self):
         with unittest.mock.patch('subprocess.check_output') as version:
