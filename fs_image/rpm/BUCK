@@ -104,7 +104,7 @@ python_library(
     base_module = "rpm",
     deps = [
         ":repo_objects",
-        ":union_find",
+        "//fs_image/rpm/third_party:union_find",
     ],
 )
 
@@ -329,30 +329,6 @@ python_unittest(
     deps = [":yum_dnf_conf"],
 )
 
-# This is extracted from the RPM `yum-versionlock-1.1.31`, and is injected
-# into `yum`'s container by `yum-dnf-from-snapshot` code.  In the near
-# future, we should eliminate this and just `yum install` the RPM into the
-# corresponding build appliance.
-#
-# It is gzipped to highlight the fact that we treat it as an immutable
-# binary blob to be installed into an image, not like source code.
-export_file(
-    name = "yum_versionlock.gz",
-    src = "third_party/yum-versionlock.py.gz",
-)
-
-# This is extracted from the RPM `python2-dnf-plugin-versionlock-4.0.7`, and
-# into `dnf`'s container by `yum-dnf-from-snapshot` code.  In the near
-# future, we should eliminate this and just install the RPM into the
-# corresponding build appliance.
-#
-# It is gzipped to highlight the fact that we treat it as an immutable
-# binary blob to be installed into an image, not like source code.
-export_file(
-    name = "dnf_versionlock.gz",
-    src = "third_party/dnf-versionlock.py.gz",
-)
-
 python_binary(
     name = "yum-dnf-from-snapshot",
     srcs = ["yum_dnf_from_snapshot.py"],
@@ -360,8 +336,8 @@ python_binary(
     main_module = "rpm.yum_dnf_from_snapshot",
     par_style = "xar",  # Lets us embed the `repo-server` binary
     resources = {
-        ":dnf_versionlock.gz": "dnf_versionlock.gz",
-        ":yum_versionlock.gz": "yum_versionlock.gz",
+        "//fs_image/rpm/third_party:dnf_versionlock.gz": "dnf_versionlock.gz",
+        "//fs_image/rpm/third_party:yum_versionlock.gz": "yum_versionlock.gz",
     },
     deps = [
         ":common",
@@ -462,11 +438,6 @@ python_library(
         ":common",
         "//fs_image:subvol_utils",
     ],
-    external_deps = [
-        third_party.library(
-            ("rpm", None, "python-rpm"),
-        ),
-    ],
 )
 
 python_unittest(
@@ -480,6 +451,7 @@ python_unittest(
     resources = {
         TEST_IMAGE_PREFIX + "child/layer": "tests/child-layer",
         TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello-layer",
+        "//fs_image/rpm/third_party:version-compare-tests": "version-compare-tests",
     },
     deps = [
         ":common",
@@ -487,21 +459,4 @@ python_unittest(
         ":temp_repos",
         "//fs_image:find_built_subvol",
     ],
-)
-
-python_library(
-    name = "union_find",
-    srcs = ["third_party/union_find.py"],
-    base_module = "rpm",
-    deps = [],
-)
-
-python_unittest(
-    name = "test-union-find",
-    srcs = ["third_party/test_union_find.py"],
-    base_module = "rpm",
-    needed_coverage = [
-        (100, ":union_find"),
-    ],
-    deps = [":union_find"],
 )
