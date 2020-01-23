@@ -1,8 +1,8 @@
 load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
-load("//fs_image/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+load(":defs.bzl", "test_rpm_repo_snapshot")
 
 python_library(
     name = "pluggable",
@@ -384,28 +384,9 @@ python_binary(
     ],
 )
 
-buck_genrule(
-    name = "bare_repo_snapshot_dir_for_tests",
-    out = "unused",
-    bash = """
-set -ue
-logfile=\\$(mktemp)
-# Only print the logs on error.
-$(exe :temp-snapshot) "$OUT" &> "$logfile" || (cat "$logfile" 1>&2 ; exit 1)
-""",
-)
-
-rpm_repo_snapshot(
+test_rpm_repo_snapshot(
     name = "repo-snapshot-for-tests",
-    src = ":bare_repo_snapshot_dir_for_tests",
-    storage = {
-        # We have hacks to interpret this path as relative to the snapshot
-        # directory, even as the snapshot is copied from `src` to the build
-        # appliance.
-        "base_dir": "storage",
-        "key": "test",
-        "kind": "filesystem",
-    },
+    kind = "sample-step-0",
     # `test-yum-dnf-from-snapshot` exercises both package managers, and it
     # doesn't use the `yum_dnf_default*` file that this writes.
     #

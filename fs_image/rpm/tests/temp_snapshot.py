@@ -79,10 +79,15 @@ def make_temp_snapshot(
 if __name__ == '__main__':
     import argparse
 
+    kind_to_steps = {
+        'sample-step-0': SAMPLE_STEPS[0],  # Used by most tests
+    }
+
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument('--kind', choices=list(kind_to_steps))
     parser.add_argument(
         'out_dir', help='Write the temporary snapshot to this directory.',
     )
@@ -97,4 +102,6 @@ if __name__ == '__main__':
         # placeholder to make the gpg key directories non-empty.
         gpg_key_path = no_gpg_keys_yet / 'placeholder'
         open(gpg_key_path, 'a').close()
-        make_temp_snapshot(SAMPLE_STEPS[0], td, gpg_key_path, no_gpg_keys_yet)
+        make_temp_snapshot(
+            kind_to_steps[args.kind], td, gpg_key_path, no_gpg_keys_yet,
+        )
