@@ -350,7 +350,7 @@ export_file(
 # binary blob to be installed into an image, not like source code.
 export_file(
     name = "dnf_versionlock.gz",
-    src = "third-party/dnf-versionlock.py.gz",
+    src = "third_party/dnf-versionlock.py.gz",
 )
 
 python_binary(
