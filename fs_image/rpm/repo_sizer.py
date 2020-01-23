@@ -13,7 +13,7 @@ In the future, it can be officially declared, if useful.
 from collections import defaultdict
 from typing import Any, Dict, NamedTuple, Union
 
-from .third_party.union_find import UnionFind
+from fs_image.unionfind import UnionFind
 
 from .common import Checksum
 from .repo_objects import Repodata, RepoMetadata, Rpm

@@ -436,3 +436,20 @@ python_unittest(
     },
     deps = [":nspawn_in_subvol"],
 )
+
+python_library(
+    name = "unionfind",
+    srcs = ["unionfind.py"],
+    base_module = "fs_image",
+    deps = [],
+)
+
+python_unittest(
+    name = "test-unionfind",
+    srcs = ["tests/test_unionfind.py"],
+    base_module = "fs_image",
+    needed_coverage = [
+        (100, ":unionfind"),
+    ],
+    deps = [":unionfind"],
+)

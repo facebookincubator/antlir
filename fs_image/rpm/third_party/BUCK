@@ -34,19 +34,4 @@ export_file(
 )
 
 
-python_library(
-    name = "union_find",
-    srcs = ["union_find.py"],
-    base_module = "rpm.third_party",
-    deps = [],
-)
 
-python_unittest(
-    name = "test-union-find",
-    srcs = ["test_union_find.py"],
-    base_module = "rpm.third_party",
-    needed_coverage = [
-        (100, ":union_find"),
-    ],
-    deps = [":union_find"],
-)

@@ -104,7 +104,7 @@ python_library(
     base_module = "rpm",
     deps = [
         ":repo_objects",
-        "//fs_image/rpm/third_party:union_find",
+        "//fs_image:unionfind",
     ],
 )
 

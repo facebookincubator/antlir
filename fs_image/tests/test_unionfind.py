@@ -3,7 +3,7 @@
 
 import unittest
 
-from .union_find import UnionFind
+from fs_image.unionfind import UnionFind
 
 
 class TestUnionFind(unittest.TestCase):
