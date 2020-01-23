@@ -127,6 +127,10 @@ image.layer(
         image.mkdir("/var/lib", "yum"),
         image.mkdir("/", RPM_SNAPSHOT_BASE_DIR),
         install_rpm_repo_snapshot("//fs_image/rpm:repo-snapshot-for-tests"),
+        install_rpm_repo_snapshot(
+            "//fs_image/rpm:non-default-repo-snapshot-for-tests",
+            make_default = False,
+        ),
     ],
     build_opts = image.opts(
         build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
@@ -204,6 +208,16 @@ image.layer(
         ]),
     ],
     build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+)
+
+# Checks installing from a non-default snapshot
+image.layer(
+    name = "layer-with-non-default-snapshot-rpm",
+    features = [image.rpms_install(["rpm-test-cake"])],
+    build_opts = image.opts(
+        build_appliance = ":fake-build-appliance-from-host",
+        rpm_repo_snapshot = "//fs_image/rpm:non-default-repo-snapshot-for-tests",
+    ),
 )
 
 # Exercises:

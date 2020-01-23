@@ -48,6 +48,7 @@ class ImageFeatureTestCase(unittest.TestCase):
                 subvolumes_dir=None,
                 force_yum_dnf=None,
                 preserve_yum_dnf_cache=False,
+                rpm_repo_snapshot='default',
             ),
         ))
 

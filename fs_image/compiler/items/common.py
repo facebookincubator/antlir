@@ -107,6 +107,7 @@ class LayerOpts(NamedTuple):
     artifacts_may_require_repo: bool
     build_appliance: str
     layer_target: str
+    rpm_repo_snapshot: str
     target_to_path: Mapping[str, str]
     subvolumes_dir: str
     # If set, overrides the snapshot-default package manager in `RpmActionItem`

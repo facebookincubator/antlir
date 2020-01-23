@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import copy
 import json
 import os
 import unittest
@@ -10,6 +11,7 @@ from pwd import getpwnam
 from btrfs_diff.tests.render_subvols import render_sendstream
 from btrfs_diff.tests.demo_sendstreams_expected import render_demo_subvols
 from find_built_subvol import find_built_subvol
+from rpm.yum_dnf_conf import YumDnf
 
 
 TARGET_ENV_VAR_PREFIX = 'test_image_layer_path_to_'
@@ -195,6 +197,54 @@ class ImageLayerTestCase(unittest.TestCase):
                     render_sendstream(sv.mark_readonly_and_get_sendstream()),
                 )
 
+    def _check_rpm_common(self, rendered_subvol, yum_dnf: YumDnf):
+        r = copy.deepcopy(rendered_subvol)
+
+        # Ignore a bunch of yum / dnf / rpm spam
+
+        if yum_dnf == YumDnf.yum:
+            ino, = _pop_path(r, f'var/log/yum.log')
+            self.assertRegex(ino, r'^\(File m600 d[0-9]+\)$')
+            for ignore_dir in ['var/cache/yum', 'var/lib/yum']:
+                ino, _ = _pop_path(r, ignore_dir)
+                self.assertEqual('(Dir)', ino)
+        elif yum_dnf == YumDnf.dnf:
+            self.assertEqual(['(Dir)', {
+                'dnf': ['(Dir)', {'modules.d': ['(Dir)', {}]}],
+            }], _pop_path(r, 'etc'))
+            for logname in [
+                'dnf.log', 'dnf.librepo.log', 'dnf.rpm.log', 'hawkey.log',
+            ]:
+                ino, = _pop_path(r, f'var/log/{logname}')
+                self.assertRegex(ino, r'^\(File d[0-9]+\)$', logname)
+            for ignore_dir in ['var/cache/dnf', 'var/lib/dnf']:
+                ino, _ = _pop_path(r, ignore_dir)
+                self.assertEqual('(Dir)', ino)
+            self.assertEqual(['(Dir)', {}], _pop_path(r, 'var/tmp'))
+        else:
+            raise AssertionError(yum_dnf)
+
+        ino, _ = _pop_path(r, 'var/lib/rpm')
+        self.assertEqual('(Dir)', ino)
+
+        self.assertEqual(['(Dir)', {
+            'dev': ['(Dir)', {}],
+            'meta': ['(Dir)', {'private': ['(Dir)', {'opts': ['(Dir)', {
+                'artifacts_may_require_repo': ['(File d2)'],
+            }]}]}],
+            'usr': ['(Dir)', {
+                'share': ['(Dir)', {
+                    # Whatever is here should be `_pop_path`ed before
+                    # calling `_check_rpm_common`.
+                }],
+            }],
+            'var': ['(Dir)', {
+                'cache': ['(Dir)', {}],
+                'lib': ['(Dir)', {}],
+                'log': ['(Dir)', {}],
+            }],
+        }], r)
+
     def test_build_appliance(self):
         # The appliance this uses defaults to `dnf`.  This is not a dual
         # test, unlike `test-rpm-action-item`, because force-overriding the
@@ -212,48 +262,28 @@ class ImageLayerTestCase(unittest.TestCase):
             # the migration diffs land, the [75] can become a 5.
             self.assertRegex(ino, r'^\(File m[75]55 d[0-9]+\)$')
 
-            for logname in [
-                'dnf.log', 'dnf.librepo.log', 'dnf.rpm.log', 'hawkey.log',
-            ]:
-                ino, = _pop_path(r, f'var/log/{logname}')
-                self.assertRegex(ino, r'^\(File d[0-9]+\)$', logname)
+            self.assertEqual(['(Dir)', {
+                'milk.txt': ['(File d12)'],
+                # From the `rpm-test-milk` post-install script
+                'post.txt': ['(File d6)'],
+            }], _pop_path(r, 'usr/share/rpm_test'))
 
-            # Ignore a bunch of yum & RPM spam
-            for ignore_dir in [
-                'usr/lib/.build-id',
-                'var/cache/dnf',
-                'var/lib/rpm',
-                'var/lib/dnf',
-            ]:
-                ino, _ = _pop_path(r, ignore_dir)
-                self.assertEqual('(Dir)', ino)
+            ino, _ = _pop_path(r, 'usr/lib/.build-id')
+            self.assertEqual('(Dir)', ino)
+            self.assertEqual(['(Dir)', {}], _pop_path(r, 'bin'))
+            self.assertEqual(['(Dir)', {}], _pop_path(r, 'usr/lib'))
+
+            self._check_rpm_common(r, YumDnf.dnf)
+
+    def test_non_default_rpm_snapshot(self):
+        with self.target_subvol('layer-with-non-default-snapshot-rpm') as sv:
+            r = render_sendstream(sv.mark_readonly_and_get_sendstream())
 
             self.assertEqual(['(Dir)', {
-                'bin': ['(Dir)', {}],
-                'dev': ['(Dir)', {}],
-                'etc': ['(Dir)', {
-                    'dnf': ['(Dir)', {'modules.d': ['(Dir)', {}]}],
-                }],
-                'meta': ['(Dir)', {'private': ['(Dir)', {'opts': ['(Dir)', {
-                    'artifacts_may_require_repo': ['(File d2)'],
-                }]}]}],
-                'usr': ['(Dir)', {
-                    'lib': ['(Dir)', {}],
-                    'share': ['(Dir)', {
-                        'rpm_test': ['(Dir)', {
-                            'milk.txt': ['(File d12)'],
-                            # From the `rpm-test-milk` post-install script
-                            'post.txt': ['(File d6)'],
-                        }],
-                    }],
-                }],
-                'var': ['(Dir)', {
-                    'cache': ['(Dir)', {}],
-                    'lib': ['(Dir)', {}],
-                    'log': ['(Dir)', {}],
-                    'tmp': ['(Dir)', {}],
-                }],
-            }], r)
+                'cake.txt': ['(File d17)'],
+            }], _pop_path(r, 'usr/share/rpm_test'))
+
+            self._check_rpm_common(r, YumDnf.yum)
 
     def test_installed_files(self):
         with self.target_subvol('installed-files') as sv:

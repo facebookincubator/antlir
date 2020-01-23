@@ -254,7 +254,8 @@ def _get_yum_or_dnf(build_appliance: Subvol, layer_opts: LayerOpts) -> str:
         return layer_opts.force_yum_dnf.value
     # We build BAs so that this is world-readable:
     with open(build_appliance.path(
-        '/rpm-repo-snapshot/default/yum_dnf_default.name'
+        Path('/rpm-repo-snapshot') / layer_opts.rpm_repo_snapshot /
+            'yum_dnf_default.name'
     )) as rf:
         prog_name = rf.read()
     assert prog_name.endswith('\n')
@@ -293,7 +294,9 @@ def _yum_dnf_using_build_appliance(
         '--', 'sh', '-uec',
         f'''
         {mount_cache}
-        /rpm-repo-snapshot/default/bin/{prog_name} \
+        /rpm-repo-snapshot/{
+            shlex.quote(layer_opts.rpm_repo_snapshot)
+        }/bin/{prog_name} \
             {' '.join(
                 '--protected-path=' + shlex.quote(p) for p in protected_paths
             )} \

@@ -8,7 +8,7 @@ from ..db_connection import DBConnectionContext
 from ..repo_db import RepoDBContext, SQLDialect
 from ..storage import Storage
 from ..snapshot_repos import snapshot_repos
-from ..tests.temp_repos import SAMPLE_STEPS, temp_repos_steps
+from ..tests.temp_repos import Repo, Rpm, SAMPLE_STEPS, temp_repos_steps
 
 
 def _make_test_yum_dnf_conf(
@@ -81,6 +81,8 @@ if __name__ == '__main__':
 
     kind_to_steps = {
         'sample-step-0': SAMPLE_STEPS[0],  # Used by most tests
+        # Used to test non-default repo snapshot selection
+        'non-default': {'cheese': Repo([Rpm('cake', 'non', 'default')])},
     }
 
     parser = argparse.ArgumentParser(

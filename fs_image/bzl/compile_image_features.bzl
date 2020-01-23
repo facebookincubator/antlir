@@ -3,7 +3,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//fs_image/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl/image_actions:feature.bzl", "normalize_features")
 load(":artifacts_require_repo.bzl", "built_artifacts_require_repo")
-load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
+load(":target_tagger.bzl", "mangle_target", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
 def _build_opts(
         # The name of the btrfs subvolume to create.
@@ -17,6 +17,14 @@ def _build_opts(
         # In current implementation build_appliance is required only if any
         # dependent `image_feature` specifies `rpms`.
         build_appliance = None,
+        # Syntactically, this is a Buck target path.  But, it is **not**
+        # used to depend on a Buck target.  A target may not even exist in
+        # the current repo at this path.  Rather, this target path is
+        # normalized, mangled, and then used to select a non-default child
+        # of `/rpm-repo-snapshot/` in the build appliance.  So this refers
+        # to a target that got incorporated into the build appliance,
+        # whenever that image was built.  `None` uses the default.
+        rpm_repo_snapshot = None,
         # By default `RpmActionItem` will not populate
         # `/var/cache/{dnf,yum}` in the built image.  We set this flag to
         # `True` for the special case of a build appliance (BA) image.  It
@@ -24,9 +32,12 @@ def _build_opts(
         # up `RpmActionItem` in builds based on this BA.
         preserve_yum_dnf_cache = False):
     return struct(
-        subvol_name = subvol_name,
         build_appliance = build_appliance,
         preserve_yum_dnf_cache = preserve_yum_dnf_cache,
+        rpm_repo_snapshot = (
+            mangle_target(rpm_repo_snapshot) if rpm_repo_snapshot else None
+        ),
+        subvol_name = subvol_name,
     )
 
 def _query_set(target_paths):
@@ -90,6 +101,7 @@ def compile_image_features(
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \
           {maybe_quoted_build_appliance_args} \
+          {maybe_quoted_rpm_repo_snapshot_args} \
           {maybe_preserve_yum_dnf_cache_args} \
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
@@ -145,6 +157,11 @@ def compile_image_features(
             "--build-appliance-json $(location {})/layer.json".format(
                 build_opts.build_appliance,
             ) if build_opts.build_appliance else ""
+        ),
+        maybe_quoted_rpm_repo_snapshot_args = (
+            "--rpm-repo-snapshot {}".format(
+                shell.quote(build_opts.rpm_repo_snapshot),
+            ) if build_opts.rpm_repo_snapshot else ""
         ),
         maybe_preserve_yum_dnf_cache_args = (
             "--preserve-yum-dnf-cache" if build_opts.preserve_yum_dnf_cache else ""
