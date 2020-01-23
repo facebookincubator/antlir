@@ -18,11 +18,13 @@ seems more flexible and less messy than maintaining a look-aside list of
 targets whose paths the `image_layer` converter would need to resolve.
 """
 
+load(":artifacts_require_repo.bzl", "built_artifacts_require_repo")
 load(":crc32.bzl", "hex_crc32")
 load(":oss_shim.bzl", "target_utils")
 load(":image_source.bzl", "image_source")
 load(":wrap_runtime_deps.bzl", "maybe_wrap_runtime_deps_as_build_time_deps")
 
+_ARTIFACTS_REQUIRE_REPO = built_artifacts_require_repo()
 _TargetTaggerInfo = provider(fields = ["targets"])
 
 def new_target_tagger():
@@ -92,7 +94,13 @@ def wrap_target(target, wrap_prefix):
 def maybe_wrap_executable_target(target, wrap_prefix, **kwargs):
     exists, wrapped_target = wrap_target(target, wrap_prefix)
 
+    # Reuse a pre-existing wrapper for the same target (CRC32 collisions
+    # shouldn't be *that* likely in TARGETS, but we need a better hash).
     if exists:
+        # With self-contained artifacts, we create a dummy wrapper target to
+        # satisfy the CI target determinator, but we must not use it.
+        if not _ARTIFACTS_REQUIRE_REPO:
+            return False, target  # Don't create another dummy wrapper
         return True, ":" + wrapped_target
 
     # The `wrap_runtime_deps_as_build_time_deps` docblock explains this:
