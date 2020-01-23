@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
 
 def test_rpm_repo_snapshot(name, kind, yum_dnf_default):
