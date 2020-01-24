@@ -237,7 +237,7 @@ python_unittest(
         ":host-hello-xar": "tests/host-hello-xar",
         TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone": "tests/host",
         "//tupperware/image/base" +
-        ":base-bootable": "tests/bootable-systemd-os",
+        ":base": "tests/bootable-systemd-os",
     },
     deps = [":nspawn_in_subvol"],
 )
