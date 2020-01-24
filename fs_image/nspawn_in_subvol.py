@@ -535,7 +535,19 @@ def nspawn_in_subvol(
             else nullcontext(src_subvol)
     ) as nspawn_subvol:
 
-        def popen(cmd, stdout=None, stderr=None, *,
+        # We use a popen wrapper here to call popen_as_root and do the
+        # necessary steps to run the command as root.
+        #
+        # Furthermore, we default stdout and stderr to the ones passed to this
+        # function (and further default stdout to fd 1 if None is passed here.)
+        #
+        # Since we want to preserve the subprocess.Popen API (which take named
+        # stdout and stderr arguments) and these arguments would get shadowed
+        # here, let's pass the variables from the external scope in private
+        # arguments _default_stdout and _default_stderr here. (This also gives
+        # us a chance to default stdout to 1 if None is passed outside of the
+        # inner function.)
+        def popen(cmd, *, stdout=None, stderr=None,
                 _default_stdout=1 if stdout is None else stdout,
                 _default_stderr=stderr,
         ):
