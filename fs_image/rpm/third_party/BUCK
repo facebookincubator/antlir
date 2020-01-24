@@ -7,6 +7,7 @@
 export_file(
     name = "version-compare-tests",
     src = "rpmvercmp.at",
+    visibility = ["//fs_image/rpm/..."],
 )
 
 # This is extracted from the RPM `yum-versionlock-1.1.31`, and is injected
@@ -19,6 +20,7 @@ export_file(
 export_file(
     name = "yum_versionlock.gz",
     src = "yum-versionlock.py.gz",
+    visibility = ["//fs_image/rpm/..."],
 )
 
 # This is extracted from the RPM `python2-dnf-plugin-versionlock-4.0.7`, and
@@ -31,7 +33,5 @@ export_file(
 export_file(
     name = "dnf_versionlock.gz",
     src = "dnf-versionlock.py.gz",
+    visibility = ["//fs_image/rpm/..."],
 )
-
-
-
