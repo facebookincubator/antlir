@@ -3,7 +3,7 @@
 import inspect
 import json
 
-from typing import Mapping
+from typing import Dict, Mapping
 
 
 class Pluggable:
@@ -34,21 +34,21 @@ class Pluggable:
             d[plugin_kind] = cls
 
     @classmethod
-    def from_json(cls, json_cfg: str) -> 'Pluggable':
+    def from_json(cls, json_cfg: Dict[str, str]) -> 'Pluggable':
         'Uniform parsing for Storage configs e.g. on the command-line.'
-        cfg = json.loads(json_cfg)
-        cfg['kind']  # KeyError if not set, or if not a dict
-        return cls.make(**cfg)
+        json_cfg['kind']  # KeyError if not set, or if not a dict
+        return cls.make(**json_cfg)
 
     @classmethod
     def make(cls, kind, **kwargs) -> 'Pluggable':
         return cls._pluggable_base._pluggable_kind_to_cls[kind](**kwargs)
 
     @classmethod
-    def argparse_json(cls, arg_json: str) -> str:
+    def argparse_json(cls, arg_json: str) -> Dict[str, str]:
         # Make bad JSON fail at argument parse-time
-        cls._pluggable_base.from_json(arg_json)
-        return arg_json
+        json_cfg = json.loads(arg_json)
+        cls._pluggable_base.from_json(json_cfg)
+        return json_cfg
 
     @classmethod
     def add_argparse_arg(cls, parser, *args, help='', **kwargs):

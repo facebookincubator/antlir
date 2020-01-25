@@ -357,6 +357,12 @@ if __name__ == '__main__':  # pragma: no cover
     )
     opts = parser.parse_args()
 
+    # We want relative `base_dir` to point into the snapshot dir.
+    if opts.storage['kind'] == 'filesystem':
+        opts.storage['base_dir'] = (
+            opts.snapshot_dir / opts.storage['base_dir']
+        ).normpath().decode()
+
     init_logging()
 
     with repo_server(

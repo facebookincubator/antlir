@@ -659,12 +659,6 @@ if __name__ == '__main__':  # pragma: no cover
     )
     args = parser.parse_args()
 
-    # For tests, we want relative `base_dir` to point into the snapshot dir.
-    if args.storage['kind'] == 'filesystem':
-        args.storage['base_dir'] = (
-            args.snapshot_dir / args.storage['base_dir']
-        ).normpath().decode()
-
     init_logging()
 
     yum_dnf_from_snapshot(
