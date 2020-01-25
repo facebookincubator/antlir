@@ -113,6 +113,7 @@ class LayerOpts(NamedTuple):
     # If set, overrides the snapshot-default package manager in `RpmActionItem`
     force_yum_dnf: Optional[YumDnf]
     preserve_yum_dnf_cache: bool
+    debug: bool = False
 
 
 class ImageItem(type):

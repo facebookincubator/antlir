@@ -47,7 +47,7 @@ def _wrap_bash_build_in_common_boilerplate(
           cat "$my_log" || :
       ) |& flock "$collected_logs" tee -a "$collected_logs"
       # If we had an error, also dump the log to stderr.
-      if [[ "$exit_code" != 0 ]] ; then
+      if [[ "$exit_code" != 0 || -n "${{FS_IMAGE_DEBUG:-}}" ]] ; then
         cat "$my_log" 1>&2
       fi
       rm "$my_log"

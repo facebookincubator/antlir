@@ -96,7 +96,11 @@ def compile_image_features(
         # of `image_feature` to those targets' outputs.
         #
         # `exe` vs `location` is explained in `image_package.py`.
+        #
+        # We access `FS_IMAGE_DEBUG` because this is never expected to
+        # change the output, so it's deliberately not a Buck input.
         $(exe //fs_image:compiler) {maybe_artifacts_require_repo} \
+          ${{FS_IMAGE_DEBUG:+--debug}} \
           --subvolumes-dir "$subvolumes_dir" \
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \

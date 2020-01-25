@@ -112,7 +112,7 @@ from typing import List, Mapping, TextIO
 
 from fs_image.common import (
     check_popen_returncode, FD_UNIX_SOCK_TIMEOUT, get_file_logger,
-    listen_temporary_unix_socket, recv_fds_from_unix_sock,
+    init_logging, listen_temporary_unix_socket, recv_fds_from_unix_sock,
 )
 from fs_image.fs_utils import Path, temp_dir
 from .yum_dnf_conf import YumDnf, YumDnfConfParser
@@ -161,7 +161,8 @@ def launch_repo_server(
     repo_server_bin: Path,
     sock: socket.socket,
     storage_cfg: str,
-    snapshot_dir: Path
+    snapshot_dir: Path,
+    *, debug: bool,
 ):
     '''
     Invokes `repo-server` with the given storage & snapshot; passes it
@@ -175,6 +176,7 @@ def launch_repo_server(
         '--socket-fd', str(sock.fileno()),
         '--storage', storage_cfg,
         '--snapshot-dir', snapshot_dir,
+        *(['--debug'] if debug else []),
     ], pass_fds=[sock.fileno()]) as server_proc:
         try:
             yield server_proc
@@ -490,6 +492,7 @@ def yum_dnf_from_snapshot(
     protected_paths: List[str],
     versionlock_list: Path,
     yum_dnf_args: List[str],
+    debug: bool = False,
 ):
     prog_name = yum_dnf.value
     # The paths that have trailing slashes are directories, others are
@@ -571,7 +574,8 @@ def yum_dnf_from_snapshot(
 
         # The server takes ownership of the socket, so we don't enter it here.
         with launch_repo_server(
-            repo_server_bin, repo_server_sock, storage_cfg, snapshot_dir
+            repo_server_bin, repo_server_sock, storage_cfg, snapshot_dir,
+            debug=debug,
         ) as server_proc, \
                 open(snapshot_dir / f'{prog_name}.conf') as in_conf, \
                 prepare_versionlock_dir(
@@ -603,8 +607,6 @@ def yum_dnf_from_snapshot(
 if __name__ == '__main__':  # pragma: no cover
     import argparse
     import json
-
-    from .common import init_logging
 
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -647,6 +649,7 @@ if __name__ == '__main__':  # pragma: no cover
         help='A file listing allowed RPM versions, one per line, in the '
             'following TAB-separated format: N\\tE\\tV\\tR\\tA.',
     )
+    parser.add_argument('--debug', action='store_true', help='Log more')
     parser.add_argument('yum_dnf', type=YumDnf, help='yum or dnf')
     parser.add_argument(
         'args', nargs='+',
@@ -659,7 +662,7 @@ if __name__ == '__main__':  # pragma: no cover
     )
     args = parser.parse_args()
 
-    init_logging()
+    init_logging(debug=args.debug)
 
     yum_dnf_from_snapshot(
         yum_dnf=args.yum_dnf,
@@ -670,4 +673,5 @@ if __name__ == '__main__':  # pragma: no cover
         protected_paths=args.protected_path,
         versionlock_list=args.versionlock_list,
         yum_dnf_args=args.args,
+        debug=args.debug,
     )

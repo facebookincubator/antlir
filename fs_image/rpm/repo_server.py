@@ -35,7 +35,7 @@ from socketserver import BaseServer
 from http.server import BaseHTTPRequestHandler, HTTPStatus
 from typing import Mapping, Tuple
 
-from fs_image.common import get_file_logger, set_new_key
+from fs_image.common import get_file_logger, init_logging, set_new_key
 from fs_image.fs_utils import Path
 
 from .common import Checksum
@@ -155,9 +155,11 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         bytes_left = obj['size']
         checksum = Checksum.from_string(obj['checksum'])
         with self.storage.reader(obj['storage_id']) as input:
+            log.debug(f'Got storage for {location}')
             hash = checksum.hasher()
             while True:
                 chunk = input.read(_CHUNK_SIZE)
+                log.debug(f'{len(chunk)}-byte chunk for {location}')
                 bytes_left -= len(chunk)
                 if not chunk:
                     if bytes_left != 0:  # The client will see an error.
@@ -205,6 +207,8 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
                 # If this is the last chunk, the stream was error-free.
                 self.wfile.write(chunk)
 
+        log.debug(f'Normal exit for GET {location}')
+
     def do_HEAD(self):
         self.send_head()
 
@@ -218,6 +222,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             urllib.parse.urlparse(self.path).path.lstrip('/'),
             'utf-8', 'surrogateescape',  # paper over invalid unicode :D
         )
+        log.debug(f'HEAD {location}')
         obj = self.location_to_obj.get(location)
         if obj is None:
             self.send_error(HTTPStatus.NOT_FOUND, 'File not found')
@@ -335,8 +340,6 @@ def repo_server(sock, location_to_obj: Mapping[str, dict], storage: Storage):
 if __name__ == '__main__':  # pragma: no cover
     import argparse
 
-    from .common import init_logging
-
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -351,6 +354,7 @@ if __name__ == '__main__':  # pragma: no cover
         help='Listen on this socket. We assume that another process creates '
             'and binds the socket for us.',
     )
+    parser.add_argument('--debug', action='store_true', help='Log more')
     Storage.add_argparse_arg(
         parser, '--storage', required=True,
         help='What Storage do the storage IDs of the snapshots refer to? ',
@@ -363,7 +367,7 @@ if __name__ == '__main__':  # pragma: no cover
             opts.snapshot_dir / opts.storage['base_dir']
         ).normpath().decode()
 
-    init_logging()
+    init_logging(debug=opts.debug)
 
     with repo_server(
         socket.socket(fileno=opts.socket_fd),

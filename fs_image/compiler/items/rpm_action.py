@@ -301,6 +301,7 @@ def _yum_dnf_using_build_appliance(
                 '--protected-path=' + shlex.quote(p) for p in protected_paths
             )} \
             --install-root {work_dir} \
+            {'--debug' if layer_opts.debug else ''} \
             -- {' '.join(shlex.quote(arg) for arg in yum_dnf_args)}
         ''',
     ])

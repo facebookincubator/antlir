@@ -104,6 +104,7 @@ def parse_args(args) -> argparse.Namespace:
             'The argument immediately following each target name must be a '
             'path to the output of that target on disk.',
     )
+    parser.add_argument('--debug', action='store_true', help='Log more')
     return parser.parse_args(args)
 
 
@@ -130,6 +131,7 @@ def build_image(args):
         artifacts_may_require_repo=args.artifacts_may_require_repo,
         target_to_path=make_target_path_map(args.child_dependencies),
         subvolumes_dir=args.subvolumes_dir,
+        debug=args.debug,
     )
 
     # This stack allows build items to hold temporary state on disk.
@@ -170,4 +172,8 @@ def build_image(args):
 
 
 if __name__ == '__main__':  # pragma: no cover
-    build_image(parse_args(sys.argv[1:])).to_json_file(sys.stdout)
+    from fs_image.common import init_logging
+
+    args = parse_args(sys.argv[1:])
+    init_logging(debug=args.debug)
+    build_image(args).to_json_file(sys.stdout)
