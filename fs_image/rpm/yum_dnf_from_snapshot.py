@@ -108,7 +108,7 @@ import time
 
 from contextlib import contextmanager
 from urllib.parse import urlparse, urlunparse
-from typing import Iterator, List, Mapping, TextIO
+from typing import List, Mapping, TextIO
 
 from fs_image.common import (
     check_popen_returncode, FD_UNIX_SOCK_TIMEOUT, get_file_logger,
@@ -121,9 +121,10 @@ log = get_file_logger(__file__)
 
 
 @contextmanager
-def _prepare_isolated_yum_dnf_conf(
+def prepare_isolated_yum_dnf_conf(
     yum_dnf: YumDnf, inp: TextIO, out: tempfile.NamedTemporaryFile,
     install_root: Path, host: str, port: int, versionlock_dir: Path,
+    config_file_path: Path,
 ):
     '''
     Reads a "{yum,dnf}.conf" from `inp`, and writes a modified version to
@@ -148,7 +149,7 @@ def _prepare_isolated_yum_dnf_conf(
         ) for repo in yc.gen_repos()
     ).isolate_main(
         install_root=install_root.decode(),
-        config_path=out.name,
+        config_path=config_file_path.decode(),
         versionlock_dir=versionlock_dir.decode(),
     ).write(out)
     out.flush()
@@ -156,7 +157,7 @@ def _prepare_isolated_yum_dnf_conf(
 
 
 @contextmanager
-def _repo_server(
+def launch_repo_server(
     repo_server_bin: Path,
     sock: socket.socket,
     storage_cfg: str,
@@ -360,6 +361,29 @@ def _make_socket_and_send_via(*, unix_sock_fd):
     ''')]
 
 
+def create_socket_inside_netns(netns_path):
+    '''
+    Creates TCP stream socket inside the container.
+
+    Returns the socket.socket() object.
+    '''
+    with listen_temporary_unix_socket() as (
+        unix_sock_path, list_sock
+    ), subprocess.Popen([
+        # NB: /usr/local/fbcode/bin must come first because /bin/python3
+        # may be very outdated
+        'sudo', 'env', 'PATH=/usr/local/fbcode/bin:/bin',
+        'nsenter', f'--net={netns_path}',
+        # NB: We pass our listening socket as FD 1 to avoid dealing with
+        # the `sudo` option of `-C`.  Nothing here writes to `stdout`:
+        *_make_socket_and_send_via(unix_sock_fd=1),
+    ], stdout=list_sock.fileno()) as sock_proc:
+        repo_server_sock_fd, = recv_fds_from_unix_sock(unix_sock_path, 1)
+        repo_server_sock = socket.socket(fileno=repo_server_sock_fd)
+    check_popen_returncode(sock_proc)
+    return repo_server_sock
+
+
 @contextmanager
 def _dummy_dev() -> str:
     'A whitelist of devices is safer than the entire host /dev'
@@ -409,7 +433,7 @@ def _dummies_for_protected_paths(protected_paths) -> Mapping[str, str]:
 
 
 @contextmanager
-def _prepare_versionlock_dir(yum_dnf: YumDnf, list_path: Path) -> Path:
+def prepare_versionlock_dir(yum_dnf: YumDnf, list_path: Path) -> Path:
     '''
     This prepares a directory containing:
       - the versionlock plugin code (see the Buck target for its provenance)
@@ -538,20 +562,7 @@ def yum_dnf_from_snapshot(
         with open(netns_fifo, 'r') as netns_in:
             netns_path = netns_in.read()
 
-        with listen_temporary_unix_socket() as (
-            unix_sock_path, list_sock
-        ), subprocess.Popen([
-            # NB: /usr/local/fbcode/bin must come first because /bin/python3
-            # may be very outdated
-            'sudo', 'env', 'PATH=/usr/local/fbcode/bin:/bin', 'nsenter',
-            '--net=' + netns_path,
-            # NB: We pass our listening socket as FD 1 to avoid dealing with
-            # the `sudo` option of `-C`.  Nothing here writes to `stdout`:
-            *_make_socket_and_send_via(unix_sock_fd=1),
-        ], stdout=list_sock.fileno()) as sock_proc:
-            repo_server_sock_fd, = recv_fds_from_unix_sock(unix_sock_path, 1)
-            repo_server_sock = socket.socket(fileno=repo_server_sock_fd)
-        check_popen_returncode(sock_proc)
+        repo_server_sock = create_socket_inside_netns(netns_path)
 
         # Binds the socket to the loopback inside yum/dnf's netns
         repo_server_sock.bind(('127.0.0.1', 0))
@@ -559,16 +570,16 @@ def yum_dnf_from_snapshot(
         log.info(f'Bound {netns_path} socket to {host}:{port}')
 
         # The server takes ownership of the socket, so we don't enter it here.
-        with _repo_server(
+        with launch_repo_server(
             repo_server_bin, repo_server_sock, storage_cfg, snapshot_dir
         ) as server_proc, \
                 open(snapshot_dir / f'{prog_name}.conf') as in_conf, \
-                _prepare_versionlock_dir(
+                prepare_versionlock_dir(
                     yum_dnf, versionlock_list,
                 ) as versionlock_td, \
-                _prepare_isolated_yum_dnf_conf(
+                prepare_isolated_yum_dnf_conf(
                     yum_dnf, in_conf, out_conf, install_root, host, port,
-                    versionlock_td,
+                    versionlock_td, Path(out_conf.name),
                 ):
 
             log.info('Waiting for repo server to listen')
