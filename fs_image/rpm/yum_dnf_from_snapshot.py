@@ -179,6 +179,12 @@ def launch_repo_server(
         *(['--debug'] if debug else []),
     ], pass_fds=[sock.fileno()]) as server_proc:
         try:
+            log.info('Waiting for repo server to listen')
+            while server_proc.poll() is None:
+                if sock.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN):
+                    break
+                time.sleep(0.1)
+
             yield server_proc
         finally:
             server_proc.kill()  # It's a read-only proxy, abort ASAP
@@ -576,7 +582,7 @@ def yum_dnf_from_snapshot(
         with launch_repo_server(
             repo_server_bin, repo_server_sock, storage_cfg, snapshot_dir,
             debug=debug,
-        ) as server_proc, \
+        ), \
                 open(snapshot_dir / f'{prog_name}.conf') as in_conf, \
                 prepare_versionlock_dir(
                     yum_dnf, versionlock_list,
@@ -585,15 +591,6 @@ def yum_dnf_from_snapshot(
                     yum_dnf, in_conf, out_conf, install_root, host, port,
                     versionlock_td, Path(out_conf.name),
                 ):
-
-            log.info('Waiting for repo server to listen')
-            while server_proc.poll() is None:
-                if repo_server_sock.getsockopt(
-                    socket.SOL_SOCKET, socket.SO_ACCEPTCONN,
-                ):
-                    break
-                time.sleep(0.1)
-
             log.info(f'Ready to run {prog_name}')
             ready_out.write('ready')  # `yum` / `dnf` can run now.
             ready_out.close()  # Proceed past the inner `read`.
