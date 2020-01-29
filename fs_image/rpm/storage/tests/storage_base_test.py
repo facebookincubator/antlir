@@ -65,7 +65,7 @@ class StorageBaseTestCase(unittest.TestCase):
 
         # Check that `remove` would have been called, and then call it.
         mock_remove.assert_called_once_with(id_to_remove)
-        storage.remove(id_to_remove)  # Excercise the real `remove`
+        storage.remove(id_to_remove)  # Exercise the real `remove`
         if remove_is_immediate:
             # The removed ID should not longer be available.
             with self.assertRaises(Exception):

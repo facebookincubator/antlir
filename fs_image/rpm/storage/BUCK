@@ -10,10 +10,24 @@ python_library(
 )
 
 python_library(
+    name = "cli_object_storage",
+    srcs = ["cli_object_storage.py"],
+    base_module = "rpm.storage",
+    deps = ["//fs_image/rpm:common"],
+)
+
+python_library(
     name = "filesystem_storage",
     srcs = ["filesystem_storage.py"],
     base_module = "rpm.storage",
     deps = ["//fs_image:fs_utils"],
+)
+
+python_library(
+    name = "s3_storage",
+    srcs = ["s3_storage.py"],
+    base_module = "rpm.storage",
+    deps = [":cli_object_storage"],
 )
 
 # Depend on this rather than on e.g. :base_storage or :filesystem_storage above
@@ -23,7 +37,9 @@ python_library(
     base_module = "rpm.storage",
     deps = [
         ":base_storage",
+        ":cli_object_storage",
         ":filesystem_storage",
+        ":s3_storage",
     ],
 )
 
@@ -34,8 +50,15 @@ python_library(
     deps = [":storage"],
 )
 
+python_library(
+    name = "testlib_cli_object_storage_base_test",
+    srcs = ["tests/cli_object_storage_base_test.py"],
+    base_module = "rpm.storage",
+    deps = [":testlib_storage_base_test"],
+)
+
 python_unittest(
-    name = "test-storage",
+    name = "test-filesystem-storage",
     srcs = ["tests/test_filesystem_storage.py"],
     base_module = "rpm.storage",
     needed_coverage = [
@@ -44,6 +67,25 @@ python_unittest(
         (100, ":filesystem_storage"),
     ],
     deps = [":testlib_storage_base_test"],
+)
+
+python_unittest(
+    name = "test-s3-storage",
+    srcs = ["tests/test_s3_storage.py"],
+    base_module = "rpm.storage",
+    needed_coverage = [
+        (100, ":storage"),
+        (100, ":base_storage"),
+        (100, ":cli_object_storage"),
+        (100, ":s3_storage"),
+    ],
+    tags = [
+        "slow",
+        "disabled",
+    ],
+    deps = [
+        ":testlib_cli_object_storage_base_test",
+    ],
 )
 
 python_binary(
