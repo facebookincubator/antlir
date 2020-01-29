@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 import unittest.mock
 
@@ -445,3 +446,23 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(b'Welcome to', ret.boot.stdout)
         self.assertIn(b'Reached target', ret.boot.stdout)
         self.assertIn(b'Stopped target', ret.boot.stdout)
+
+    def test_proc_with_repo_server(self):
+        ret = self._nspawn_in('bootable-systemd-os', [
+            '--repo-server-snapshot-dir',
+            os.path.join(os.path.dirname(__file__), 'repo-snapshot'),
+            '--',
+            '/bin/sh', '-c',
+            textwrap.dedent('''\
+                set -ex
+                yum --config=/repo-server/yum.conf -y install rpm-test-carrot
+                test -f /usr/share/rpm_test/carrot.txt
+                contents=$(cat /usr/share/rpm_test/carrot.txt)
+                test "${contents}" = "carrot 2 rc0"
+            '''),
+        ], stdout=subprocess.PIPE, check=True)
+        self.assertEqual(0, ret.returncode)
+        self.assertIn(
+            b'---> Package rpm-test-carrot.x86_64 0:2-rc0 will be installed',
+            ret.stdout)
+        self.assertIn(b'Complete!', ret.stdout)

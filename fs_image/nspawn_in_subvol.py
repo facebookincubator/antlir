@@ -101,12 +101,14 @@ user, which we should probably never do).
 '''
 import argparse
 import functools
+import logging
 import os
 import pwd
 import re
 import signal
 import subprocess
 import sys
+import tempfile
 import textwrap
 import uuid
 
@@ -115,14 +117,28 @@ from contextlib import contextmanager
 from artifacts_dir import find_repo_root
 from compiler import procfs_serde
 from find_built_subvol import find_built_subvol, Subvol
-from fs_image.common import nullcontext
+from fs_image.common import (
+    init_logging,
+    nullcontext,
+    pipe,
+)
 from fs_image.compiler.items.mount_utils import clone_mounts
+from fs_image.fs_utils import Path
+from rpm.yum_dnf_from_snapshot import (
+    create_socket_inside_netns,
+    launch_repo_server,
+    prepare_isolated_yum_dnf_conf,
+)
+from rpm.yum_dnf_conf import YumDnf
 from send_fds_and_run import popen_and_inject_fds_after_sudo
 from tests.temp_subvolumes import TempSubvolumes
 from typing import AnyStr, List
 
 
 DEFAULT_SHELL = '/bin/bash'
+
+REPO_SERVER_CONFIG_DIR = '/repo-server'
+
 
 def _colon_quote_path(path):
     return re.sub('[\\\\:]', lambda m: '\\' + m.group(0), path)
@@ -244,6 +260,174 @@ def _wrap_systemd_exec():
     ]
 
 
+def _exfiltrate_container_pid_and_wait_for_ready_cmd(exfil_fd, ready_fd):
+    return [
+        '/bin/bash', '-eu', '-o', 'pipefail', '-c',
+        # This script will exfiltrate the outer PID of a process inside the
+        # container's namespace. (See _wrap_systemd_exec for more details.)
+        #
+        # After sending this information, it will block on the "ready" FD to
+        # wait for this script to complete setup.  Once the "ready" signal is
+        # received, it will continue to execute the final command.
+        textwrap.dedent(f'''\
+            grep ^PPid: /outerproc/self/status >&{exfil_fd}
+            umount -R /outerproc
+            rmdir /outerproc
+            exec {exfil_fd}>&-
+            read line <&{ready_fd}
+            if [[ "$line" != "ready" ]] ; then
+                echo 'Did not get ready signal' 1>&2
+                exit 1
+            fi
+            exec {ready_fd}<&-
+            exec "$@"
+        '''),
+        # pass 'bash' as $0, then opts.cmd will become the additional args in
+        # $@ for the final `exec` command in the script above.
+        'bash',
+    ]
+
+
+@contextmanager
+def _exfiltrate_container_pid_and_wait_for_ready(
+    nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
+    repo_server_config
+):
+    cmd = nspawn_cmd[:]
+
+    # Create a pipe that we can forward into the namespace that our
+    # shell script can use to exfil data about the namespace we've
+    # been put into before we hand control over to the init system.
+    #
+    # And a pipe that we can use to signal the bash script that it
+    # should go ahead and exec the final command.
+    with pipe() as (exfil_r, exfil_w), pipe() as (ready_r, ready_w):
+
+        # We'll add the read end of the pipe to the end of forward_fds,
+        # which will then start at FD (3 + len(opts.forward_fd)) inside
+        # the subprocess.
+        forward_fds = forward_fds[:]
+        exfil_fd = 3 + len(forward_fds)
+        ready_fd = 4 + len(forward_fds)
+        forward_fds.extend([exfil_w.fileno(), ready_r.fileno()])
+
+        cmd.extend([
+            f'--bind-ro={repo_server_config}:{REPO_SERVER_CONFIG_DIR}',
+            '--bind-ro=/proc:/outerproc',
+            '--',
+        ])
+        cmd.extend(
+            _exfiltrate_container_pid_and_wait_for_ready_cmd(
+                exfil_fd, ready_fd)
+        )
+        cmd.extend(container_cmd)
+        with popen_and_inject_fds_after_sudo(
+            cmd, forward_fds, popen_for_nspawn, set_listen_fds=True
+        ) as cmd_proc:
+            exfil_w.close()
+            ready_r.close()
+
+            # outer PID of a process inside the container.
+            container_pid = int(exfil_r.read().decode().split(':')[1].strip())
+            exfil_r.close()
+
+            ready_sent = False
+
+            def send_ready():
+                nonlocal ready_sent
+                if ready_sent:
+                    raise RuntimeError(  # pragma: no cover
+                        "Can't send ready twice"
+                    )
+                ready_w.write(b'ready\n')
+                ready_w.close()
+                ready_sent = True
+
+            try:
+                yield container_pid, cmd_proc, send_ready
+            finally:
+                if not ready_sent:
+                    send_ready()  # pragma: no cover
+
+
+def bind_socket_inside_netns(sock):
+    # Binds the socket to the loopback inside yum's netns
+    sock.bind(('127.0.0.1', 0))
+    host, port = sock.getsockname()
+    logging.info(
+        f'Bound socket inside netns to {host}:{port}'
+    )
+    return host, port
+
+
+def _get_repo_server_storage_config(snapshot_dir):
+    with open(os.path.join(snapshot_dir, b'storage.json')) as f:
+        return f.read()
+
+
+@contextmanager
+def _write_yum_configs(
+    repo_server_config_dir, repo_server_snapshot_dir, host, port
+):
+    os.makedirs(
+        os.path.join(repo_server_config_dir, 'yum/pluginconf.d')
+    )
+    with open(
+        os.path.join(repo_server_snapshot_dir, b'yum.conf')
+    ) as in_conf, open(
+        os.path.join(repo_server_config_dir, 'yum.conf'), 'w'
+    ) as out_conf, prepare_isolated_yum_dnf_conf(
+        YumDnf.yum,
+        in_conf,
+        out_conf,
+        Path('/'),
+        host,
+        port,
+        Path(REPO_SERVER_CONFIG_DIR) / 'yum/pluginconf.d',
+        Path(REPO_SERVER_CONFIG_DIR) / 'yum.conf',
+    ):
+        yield
+
+
+@contextmanager
+def _popen_and_inject_repo_server(
+    nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
+    repo_server_snapshot_dir, *, debug
+):
+    # We're running a repo-server with a socket inside the network
+    # namespace.
+
+    with tempfile.TemporaryDirectory() as repo_server_config_dir:
+        with _exfiltrate_container_pid_and_wait_for_ready(
+            nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
+            repo_server_config_dir
+        ) as (container_pid, cmd_proc, send_ready):
+
+            repo_server_sock = create_socket_inside_netns(
+                f'/proc/{container_pid}/ns/net'
+            )
+            logging.info(
+                f'Got socket at FD {repo_server_sock.fileno()}'
+            )
+            # Binds the socket to the loopback inside yum's netns
+            host, port = bind_socket_inside_netns(repo_server_sock)
+
+            with launch_repo_server(
+                os.path.join(repo_server_snapshot_dir, Path('repo-server')),
+                repo_server_sock,
+                _get_repo_server_storage_config(repo_server_snapshot_dir),
+                repo_server_snapshot_dir,
+                debug=debug,
+            ), _write_yum_configs(
+                repo_server_config_dir,
+                repo_server_snapshot_dir,
+                host,
+                port,
+            ):
+                send_ready()
+                yield cmd_proc
+
+
 def nspawn_sanitize_env():
     env = os.environ.copy()
     # `systemd-nspawn` responds to a bunch of semi-private and intentionally
@@ -298,6 +482,11 @@ def _create_extra_nspawn_args(
 ) -> List[AnyStr]:
     if opts.boot:
         extra_nspawn_args = ['--user=root']
+    elif opts.repo_server_snapshot_dir:
+        # Same as when --boot is passed, running the repo-server requires
+        # exfiltrating the PID, and that currently requires root (in order to
+        # unmount and rmdir /outerproc), so let's enforce that here.
+        extra_nspawn_args = ['--as-pid2', '--user=root']
     else:
         # If we are not booting nspawn run as PID 2. Some commands
         # we run directly will not work correctly as PID 1.
@@ -366,29 +555,36 @@ def _create_extra_nspawn_args(
 
 
 def _run_non_booted_nspawn(
-    cmd, opts, version, popen
+    nspawn_cmd, opts, version, popen
 ) -> subprocess.CompletedProcess:
     # This is last to let the user have final say over the environment.
+    cmd = nspawn_cmd[:]
     cmd.extend(['--setenv=' + se for se in opts.setenv])
-    cmd.extend([
+    if version >= 242 and opts.cmd[0] != DEFAULT_SHELL:
         # If we have a cmd to pass to nspawn then lets tell nspawn to
         # use the --pipe option.  This will bite us if someone tries to
         # run an interactive repl or directly invoke a shell that is not
         # the default.
-        *(['--pipe']
-            if (version >= 242 and opts.cmd[0] != DEFAULT_SHELL)
-            else []),
-        # Ensure that the command is not interpreted as nspawn args
-        '--', *opts.cmd
-    ])
+        cmd.append('--pipe')
 
     with (
-        popen_and_inject_fds_after_sudo(
+        _popen_and_inject_repo_server(
             cmd,
+            opts.cmd,
             opts.forward_fd,
             popen,
-            set_listen_fds=True,
-        ) if opts.forward_fd else popen(cmd)
+            opts.repo_server_snapshot_dir,
+            debug=opts.debug,
+        ) if opts.repo_server_snapshot_dir
+        else (
+            popen_and_inject_fds_after_sudo(
+                cmd + ['--'] + opts.cmd,
+                opts.forward_fd,
+                popen,
+                set_listen_fds=True,
+            ) if opts.forward_fd
+            else popen(cmd + ['--'] + opts.cmd)
+        )
     ) as cmd_proc:
         cmd_stdout, cmd_stderr = cmd_proc.communicate()
 
@@ -401,12 +597,13 @@ def _run_non_booted_nspawn(
 
 
 def _run_booted_nspawn(
-    cmd, opts, pw, nspawn_subvol, popen
+    nspawn_cmd, opts, pw, nspawn_subvol, popen
 ) -> subprocess.CompletedProcess:
     # Instead of using the `--boot` argument to `systemd-nspawn` we are
     # going to ask systemd-nspawn to invoke a simple shell script so
     # that we can exfiltrate the process id of the process. After
     # sending that information out, the shell script execs systemd.
+    cmd = nspawn_cmd[:]
     cmd.extend([
         '--bind-ro=/proc:/outerproc',
         '--',
@@ -436,11 +633,8 @@ def _run_booted_nspawn(
         # can read from this side.
         os.close(exfil_w)
 
-        f = os.fdopen(exfil_r, 'r')
-        try:
+        with os.fdopen(exfil_r, 'r') as f:
             systemd_pid = f.read().split(':')[1].strip()
-        finally:
-            f.close()
 
         # A set of default environment variables that should be
         # setup for the command inside the container.  This list models
@@ -564,15 +758,17 @@ def nspawn_in_subvol(
                 check=check,
             )
 
-        cmd = [
+        nspawn_cmd = [
             *_nspawn_cmd(nspawn_subvol),
             *extra_nspawn_args,
         ]
 
         if not opts.boot:
-            return _run_non_booted_nspawn(cmd, opts, version, popen)
+            return _run_non_booted_nspawn(nspawn_cmd, opts, version, popen)
         elif opts.boot:  # We want to run a command in a booted container
-            return _run_booted_nspawn(cmd, opts, pw, nspawn_subvol, popen)
+            return _run_booted_nspawn(
+                    nspawn_cmd, opts, pw, nspawn_subvol, popen
+            )
         else:
             raise RuntimeError("This should be impossible")  # pragma: nocover
 
@@ -701,6 +897,18 @@ def parse_opts(argv):
             'a command is not specified the default is to invoke a bash '
             'shell.'
     )
+    parser.add_argument('--debug', action='store_true', help='Log more')
+    # Arguments to run a repo_server with a socket inside the nspawn'd
+    # container.
+    parser.add_argument(
+        '--repo-server-snapshot-dir', type=Path.from_argparse,
+        help='Multi-repo snapshot directory, with per-repo subdirectories, '
+            'each containing repomd.xml, repodata.json, and rpm.json. '
+            'The top directory should also contain a storage.json (to '
+            'specify the storage configuration to use as package source) '
+            'and a repo-server binary (or possibly a symlink or shell '
+            'script) to allow running an instance of the repo-server proxy.',
+    )
     opts = parser.parse_args(argv)
     assert not opts.snapshot_into or opts.snapshot, opts
     return opts
@@ -709,6 +917,7 @@ def parse_opts(argv):
 # The manual test is in the first paragraph of the top docblock.
 if __name__ == '__main__':  # pragma: no cover
     opts = parse_opts(sys.argv[1:])
+    init_logging(debug=opts.debug)
     sys.exit(nspawn_in_subvol(
         find_built_subvol(opts.layer), opts, check=False,
     ).returncode)

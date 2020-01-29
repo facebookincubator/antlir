@@ -204,8 +204,11 @@ python_library(
         ":find_built_subvol",
         ":send_fds_and_run",
         ":testlib_temp_subvolumes",
+        "//fs_image:fs_utils",
         "//fs_image/compiler:procfs_serde",
         "//fs_image/compiler/items:mount_utils",
+        "//fs_image/rpm:yum-dnf-from-snapshot-library",
+        "//fs_image/rpm:yum_dnf_conf",
     ],
 )
 
@@ -233,11 +236,12 @@ python_unittest(
     # Ensures we can read resources in @mode/opt. "xar" cannot work because
     # `root` cannot access the content of unprivileged XARs.
     par_style = "zip",
+    # @unsorted-dict-items
     resources = {
         ":host-hello-xar": "tests/host-hello-xar",
         TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone": "tests/host",
-        "//tupperware/image/base" +
-        ":base": "tests/bootable-systemd-os",
+        "//fs_image/rpm:repo-snapshot-for-tests": "tests/repo-snapshot",
+        "//tupperware/image/base:base": "tests/bootable-systemd-os",
     },
     deps = [":nspawn_in_subvol"],
 )
