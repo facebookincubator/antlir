@@ -137,7 +137,7 @@ from typing import AnyStr, List
 
 DEFAULT_SHELL = '/bin/bash'
 
-REPO_SERVER_CONFIG_DIR = '/repo-server'
+REPO_SERVER_CONFIG_DIR = Path('/repo-server')
 
 
 def _colon_quote_path(path):
@@ -312,7 +312,8 @@ def _exfiltrate_container_pid_and_wait_for_ready(
         forward_fds.extend([exfil_w.fileno(), ready_r.fileno()])
 
         cmd.extend([
-            f'--bind-ro={repo_server_config}:{REPO_SERVER_CONFIG_DIR}',
+            f'--bind-ro={repo_server_config.decode()}'
+            f':{REPO_SERVER_CONFIG_DIR.decode()}',
             '--bind-ro=/proc:/outerproc',
             '--',
         ])
@@ -361,30 +362,56 @@ def bind_socket_inside_netns(sock):
 
 
 def _get_repo_server_storage_config(snapshot_dir):
-    with open(os.path.join(snapshot_dir, b'storage.json')) as f:
+    with open(snapshot_dir / b'storage.json') as f:
         return f.read()
 
 
 @contextmanager
-def _write_yum_configs(
-    repo_server_config_dir, repo_server_snapshot_dir, host, port
+def _write_yum_or_dnf_configs(
+    yum_dnf, repo_server_config_dir, repo_server_snapshot_dir, host, port
 ):
-    os.makedirs(
-        os.path.join(repo_server_config_dir, 'yum/pluginconf.d')
-    )
+    config_filename = {
+        YumDnf.yum: Path('yum.conf'),
+        YumDnf.dnf: Path('dnf.conf'),
+    }[yum_dnf]
+    plugin_directory = {
+        YumDnf.yum: Path('yum/pluginconf.d'),
+        YumDnf.dnf: Path('dnf/plugins'),
+    }[yum_dnf]
+    os.makedirs(repo_server_config_dir / plugin_directory)
     with open(
-        os.path.join(repo_server_snapshot_dir, b'yum.conf')
+        repo_server_snapshot_dir / config_filename
     ) as in_conf, open(
-        os.path.join(repo_server_config_dir, 'yum.conf'), 'w'
+        repo_server_config_dir / config_filename, 'w'
     ) as out_conf, prepare_isolated_yum_dnf_conf(
-        YumDnf.yum,
+        yum_dnf,
         in_conf,
         out_conf,
         Path('/'),
         host,
         port,
-        Path(REPO_SERVER_CONFIG_DIR) / 'yum/pluginconf.d',
-        Path(REPO_SERVER_CONFIG_DIR) / 'yum.conf',
+        REPO_SERVER_CONFIG_DIR / plugin_directory,
+        REPO_SERVER_CONFIG_DIR / config_filename,
+    ):
+        yield
+
+
+@contextmanager
+def _write_yum_and_dnf_configs(
+    repo_server_config_dir, repo_server_snapshot_dir, host, port
+):
+    with _write_yum_or_dnf_configs(
+        YumDnf.yum,
+        repo_server_config_dir,
+        repo_server_snapshot_dir,
+        host,
+        port,
+    ), _write_yum_or_dnf_configs(
+        YumDnf.dnf,
+        repo_server_config_dir,
+        repo_server_snapshot_dir,
+        host,
+        port,
     ):
         yield
 
@@ -398,6 +425,7 @@ def _popen_and_inject_repo_server(
     # namespace.
 
     with tempfile.TemporaryDirectory() as repo_server_config_dir:
+        repo_server_config_dir = Path(repo_server_config_dir)
         with _exfiltrate_container_pid_and_wait_for_ready(
             nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
             repo_server_config_dir
@@ -418,7 +446,7 @@ def _popen_and_inject_repo_server(
                 _get_repo_server_storage_config(repo_server_snapshot_dir),
                 repo_server_snapshot_dir,
                 debug=debug,
-            ), _write_yum_configs(
+            ), _write_yum_and_dnf_configs(
                 repo_server_config_dir,
                 repo_server_snapshot_dir,
                 host,

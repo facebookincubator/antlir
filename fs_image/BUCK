@@ -240,6 +240,7 @@ python_unittest(
     resources = {
         ":host-hello-xar": "tests/host-hello-xar",
         TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone": "tests/host",
+        "//fs_image/compiler/test_images:fake-build-appliance-from-host": "tests/build-appliance",
         "//fs_image/rpm:repo-snapshot-for-tests": "tests/repo-snapshot",
         "//tupperware/image/base:base": "tests/bootable-systemd-os",
     },

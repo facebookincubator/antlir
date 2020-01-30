@@ -447,22 +447,42 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(b'Reached target', ret.boot.stdout)
         self.assertIn(b'Stopped target', ret.boot.stdout)
 
-    def test_proc_with_repo_server(self):
-        ret = self._nspawn_in('bootable-systemd-os', [
+    def _run_yum_or_dnf(self, progname, package,
+            expected_filename, expected_contents, expected_logline
+    ):
+        ret = self._nspawn_in('build-appliance', [
             '--repo-server-snapshot-dir',
             os.path.join(os.path.dirname(__file__), 'repo-snapshot'),
             '--',
             '/bin/sh', '-c',
-            textwrap.dedent('''\
+            textwrap.dedent(f'''\
                 set -ex
-                yum --config=/repo-server/yum.conf -y install rpm-test-carrot
-                test -f /usr/share/rpm_test/carrot.txt
-                contents=$(cat /usr/share/rpm_test/carrot.txt)
-                test "${contents}" = "carrot 2 rc0"
+                mkdir /target
+                {progname} --config=/repo-server/{progname}.conf \\
+                        --installroot=/target -y install {package}
+                test -f /target{expected_filename}
+                contents=$(cat /target{expected_filename})
+                test "$contents" = "{expected_contents}"
             '''),
         ], stdout=subprocess.PIPE, check=True)
         self.assertEqual(0, ret.returncode)
-        self.assertIn(
-            b'---> Package rpm-test-carrot.x86_64 0:2-rc0 will be installed',
-            ret.stdout)
+        self.assertIn(expected_logline, ret.stdout)
         self.assertIn(b'Complete!', ret.stdout)
+
+    def test_yum_with_repo_server(self):
+        self._run_yum_or_dnf(
+            'yum',
+            'rpm-test-carrot',
+            '/usr/share/rpm_test/carrot.txt',
+            'carrot 2 rc0',
+            b'---> Package rpm-test-carrot.x86_64 0:2-rc0 will be installed',
+        )
+
+    def test_dnf_with_repo_server(self):
+        self._run_yum_or_dnf(
+            'dnf',
+            'rpm-test-mice',
+            '/usr/share/rpm_test/mice.txt',
+            'mice 0.1 a',
+            b'Installing       : rpm-test-mice-0.1-a.x86_64',
+        )
