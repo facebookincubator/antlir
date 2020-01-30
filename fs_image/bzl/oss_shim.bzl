@@ -26,7 +26,17 @@ def cpp_unittest(*args, **kwargs):
     shim.cpp_unittest(**kwargs)
 
 _PYTHON_BINARY_KWARGS = _setify(
-    ["name", "base_module", "deps", "main_module", "par_style", "resources", "srcs", "visibility"],
+    [
+        "name",
+        "base_module",
+        "deps",
+        "main_module",
+        "par_style",
+        "resources",
+        "runtime_deps",
+        "srcs",
+        "visibility",
+    ],
 )
 
 def python_binary(*args, **kwargs):
@@ -34,7 +44,16 @@ def python_binary(*args, **kwargs):
     shim.python_binary(**kwargs)
 
 _PYTHON_LIBRARY_KWARGS = _setify(
-    ["name", "base_module", "deps", "external_deps", "resources", "srcs", "visibility"],
+    [
+        "name",
+        "base_module",
+        "deps",
+        "external_deps",
+        "resources",
+        "runtime_deps",
+        "srcs",
+        "visibility",
+    ],
 )
 
 def python_library(*args, **kwargs):
