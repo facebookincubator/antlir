@@ -170,11 +170,7 @@ class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.yum
 
 
-class MaybeDnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
-    # "repo-snapshot-for-tests" defaults to "dnf".  However, this test also
-    # exercises some other build appliances at present (fixme!), which are
-    # pinned to "yum" for now.
-    #
-    # Even if that corner case were fixed, we'd want to leave this at `None`
-    # because this exercises the key "defaulted package manager" code path.
+class DefaultDnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
+    # "repo-snapshot-for-tests" defaults to "dnf".  This is set to `None`
+    # to exercise the crucial "defaulted package manager" code path.
     _YUM_DNF = None
