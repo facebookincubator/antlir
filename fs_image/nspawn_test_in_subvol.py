@@ -22,8 +22,9 @@ from nspawn_in_subvol import parse_opts, nspawn_in_subvol
 @contextmanager
 def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
     '''
-    The FB test main has an `--output PATH` option, which requires us to
-    exfiltrate data from inside the container to the host.
+    The TestPilot CLI interface can have a `--output PATH` or `--list-tests`
+    option, which requires us to exfiltrate data from inside the container
+    to the host.
 
     There are a couple of complications with this:
       - The user running `buck test` will commonly be different from the
@@ -48,15 +49,28 @@ def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
     # Our partial parser must not accept abbreviated long options like
     # `--ou`, since this parser does not know all the test main arguments.
     parser = argparse.ArgumentParser(allow_abbrev=False)
-    # Future: this option may be specific to `python_unittest`.
+
+    # Future: these options may be specific to `python_unittest`.
     parser.add_argument('--output', '-o')
+    parser.add_argument('--list-tests')
     test_opts, unparsed_args = parser.parse_known_args(cmd[1:])
 
-    if test_opts.output is None:
+    if test_opts.output is None and test_opts.list_tests is None:
         yield cmd, None
         return
 
-    with open(test_opts.output, 'wb') as f:
+    # we don't expect both --output and --list-tests
+    assert test_opts.output is None or test_opts.list_tests is None, cmd
+
+    if test_opts.output:
+        output_file = test_opts.output
+        output_opt = '--output'
+    else:
+        assert test_opts.list_tests
+        output_file = test_opts.list_tests
+        output_opt = '--list-tests'
+
+    with open(output_file, 'wb') as f:
         # It's not great to assume that the container has a `/bin/bash`, but
         # eliminating this dependency is low-priority since current test
         # binaries will depend on it, too (PAR).
@@ -69,7 +83,7 @@ def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
             # the original file -- owned by the `buck test` user.  But we
             # want the container user to be able to open it.  So this `cat`
             # here straddles a privilege boundary.
-            '--output', f'>(cat >&{next_fd})',
+            output_opt, f'>(cat >&{next_fd})',
             *(shlex.quote(arg) for arg in unparsed_args),
         ])], f.fileno()
 
@@ -87,12 +101,22 @@ def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
 #    )" -- /layer-test-binary -ba r --baz=3 --output $(mktemp) --ou ; echo $?
 #
 if __name__ == '__main__':  # pragma: no cover
+    argv = []
+
+    # Propagate env vars used by FB test runner
+    # /!\ /!\ /!\
+    # When editing these lines, make sure you are not breaking test pilot
+    # behaviour and you are not letting test targets pass even when they
+    # should fail. Also check tests are properly discovered.
+    for k, v in os.environ.items():
+        if k.startswith('TEST_PILOT'):
+            argv.extend(['--setenv', f'{k}={v}'])
+
     # When used as part of the `image.python_unittest` implementation, there
     # is no good way to pass arguments to this nspawn wrapper.  So, we
     # package the `image.layer` as a resource, and the remaining arguments
     # as Python source module.  These are optional only to allow the kind of
     # manual test shown above.
-    argv = []
     packaged_layer = os.path.join(
         os.path.dirname(__file__), 'nspawn-in-test-subvol-layer',
     )

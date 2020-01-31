@@ -1,6 +1,10 @@
 load(":oss_shim.bzl", "get_visibility", "python_unittest")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 
+# This exists to hack around a complex FB-internal migration. *sigh*
+# It should be removable when this is done:  https://fburl.com/nxc3u5mk
+_TEMP_TP_TAG = "use-testpilot-adapter"
+
 def image_python_unittest(
         name,
         layer,
@@ -48,7 +52,12 @@ def image_python_unittest(
 
     python_unittest(
         name = helpers.hidden_test_name(name),
-        tags = helpers.tags_to_hide_test(),
+        tags = helpers.tags_to_hide_test() + (
+            [] if _TEMP_TP_TAG not in wrapper_props.outer_test_kwargs.get(
+                "tags",
+                {},
+            ) else [_TEMP_TP_TAG]
+        ),
         par_style = par_style,
         visibility = visibility,
         **wrapper_props.inner_test_kwargs

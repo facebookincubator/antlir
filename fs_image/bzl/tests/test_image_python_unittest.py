@@ -49,6 +49,9 @@ class ImagePythonUnittestTest(unittest.TestCase):
             'SCRIBE_LOG_USAGE',
             'LC_ALL',
             'LC_CTYPE',
+
+            # FB test runner
+            'TEST_PILOT'
         }
         for var in os.environ:
             if var.startswith('FB_PAR_'):  # Set for non-in-place build modes
