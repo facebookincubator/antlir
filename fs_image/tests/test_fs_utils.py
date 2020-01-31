@@ -84,6 +84,13 @@ class TestFsUtils(unittest.TestCase):
                 f.write('hello\n')
             self.assertEqual('hello\n', tmp_path.read_text())
 
+    def test_path_touch(self):
+        with temp_dir() as td:
+            tmp_path = td / 'touchme'
+            tmp_path.touch()
+
+            self.assertTrue(os.path.exists(tmp_path))
+
     def test_open_for_read_decompress(self):
         # The goal is that our stream should be bigger than any buffers
         # involved (so we get to test edge effects), but not so big that the

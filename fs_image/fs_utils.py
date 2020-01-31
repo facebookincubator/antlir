@@ -75,6 +75,10 @@ class Path(bytes):
         with open(self) as infile:
             return infile.read()
 
+    def touch(self) -> 'Path':
+        with open(self, 'a'):
+            pass
+        return self
 
 @contextmanager
 def temp_dir(**kwargs) -> Iterable[Path]:

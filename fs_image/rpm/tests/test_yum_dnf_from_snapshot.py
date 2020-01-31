@@ -7,7 +7,7 @@ import unittest
 
 from contextlib import contextmanager
 
-from ..common import init_logging, Path
+from ..common import init_logging, Path, yum_is_dnf
 from ..yum_dnf_from_snapshot import YumDnf, yum_dnf_from_snapshot
 
 _INSTALL_ARGS = ['install', '--assumeyes', 'rpm-test-carrot', 'rpm-test-milk']
@@ -169,6 +169,7 @@ class YumFromSnapshotTestImpl:
         self.assertEqual(_INSTALL_ARGS, ctx.exception.cmd[-len(_INSTALL_ARGS):])
 
 
+@unittest.skipIf(yum_is_dnf(), "yum == dnf")
 class YumFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
     _YUM_DNF = YumDnf.yum
 

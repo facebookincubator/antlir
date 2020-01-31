@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 import time
+import os
 import unittest
 
 from io import BytesIO
+from unittest import mock
 
 from ..common import (
-    Checksum, log as common_log, read_chunks, retry_fn, RpmShard,
+    Checksum, log as common_log, read_chunks, retry_fn, RpmShard, yum_is_dnf
 )
+
+from fs_image.fs_utils import Path, temp_dir
 
 
 class TestCommon(unittest.TestCase):
@@ -87,3 +91,29 @@ class TestCommon(unittest.TestCase):
             [b'first', b'secon', b'd'],
             list(read_chunks(BytesIO(b'firstsecond'), 5)),
         )
+
+    def test_yum_is_dnf(self):
+        # Setup for yum not being the same as dnf, modeled after fb
+        with temp_dir() as td:
+            yum_path = Path(td / 'yum').touch()
+
+            with mock.patch('shutil.which') as mock_which:
+                mock_which.return_value = yum_path.decode()
+
+                self.assertFalse(yum_is_dnf())
+
+        # Setup for yum being the same as dnf, modeled after fedora
+        # where `/bin/yum -> dnf-3`
+        with temp_dir() as td:
+            dnf_name = 'dnf-3'
+            dnf_path = Path(td / dnf_name).touch()
+            yum_path = td / 'yum'
+            # Symlink to the name for a relative symlink that ends up
+            # as yum -> dnf-3
+            os.symlink(dnf_name, yum_path)
+
+            with mock.patch('shutil.which') as mock_which:
+                mock_paths = {dnf_name: dnf_path, 'yum': yum_path}
+                mock_which.side_effect = lambda p: mock_paths[p].decode()
+
+                self.assertTrue(yum_is_dnf())

@@ -6,7 +6,6 @@ import shutil
 import stat
 import struct
 import time
-import tempfile
 import urllib.parse
 
 from contextlib import contextmanager
@@ -98,3 +97,20 @@ def read_chunks(input: BytesIO, chunk_size: int) -> Iterable[bytes]:
         if not chunk:
             break
         yield chunk
+
+
+def yum_is_dnf():
+    """ Determine if yum is really just dnf by looking at `which yum`"""
+    yum_path = shutil.which('yum')
+
+    # If yum is not a symlink then it's not dnf
+    if not os.path.islink(yum_path):
+        return False
+
+    maybe_dnf = os.path.basename(os.readlink(yum_path))
+    dnf_exists = os.path.exists(shutil.which(maybe_dnf))
+    assert dnf_exists, f'Yum points to invalid path: {maybe_dnf}'
+
+    # Inspect the name of the binary yum points to and assume that if
+    # it starts with `dnf` its probably dnf
+    return maybe_dnf.startswith('dnf')
