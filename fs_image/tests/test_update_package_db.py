@@ -63,12 +63,12 @@ class UpdatePackageDbTestCase(unittest.TestCase):
             self._main([
                 '--db', db_path.decode(),
                 '--replace', 'p1', 'tik', '{"choo": "choo"}',
-                '--create', 'p2', 'tak', '{"boo": "hoo"}',
+                '--create', 'p2', 'tak', '{"boo": true}',
                 '--create', 'never', 'seen', '{"oompa": "loompa"}',
                 '--no-update-existing',
             ])
             self._check_file(db_path, '# ' + _GENERATED + textwrap.dedent(''' \
-            SignedSource<<37820c384800aad6bf6ebe97f7e7c1a1>>
+            SignedSource<<1b43eea483a42dd704883a7021e259e0>>
             # Update via `how`
             package_db = {
                 "never": {
@@ -83,7 +83,7 @@ class UpdatePackageDbTestCase(unittest.TestCase):
                 },
                 "p2": {
                     "tak": {
-                        "boo": "hoo",
+                        "boo": True,
                     },
                     "tok": {
                         "a": "b",

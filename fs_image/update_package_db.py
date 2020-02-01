@@ -117,6 +117,8 @@ def _buildifier_repr(x, depth=0, *, is_inline=False):
             x.encode('unicode_escape').decode('ascii').replace('"', '\\"') +
             '"'
         )
+    elif isinstance(x, bool):
+        return first_indent + str(x)
     elif isinstance(x, dict):
         return first_indent + '{\n' + ',\n'.join((
             _buildifier_repr(k, depth + 1) + ': ' +
