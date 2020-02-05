@@ -1,7 +1,7 @@
 "This provides a more friendly UI to the image_* macros."
 
 load("//fs_image/bzl/image_actions:feature.bzl", "image_feature")
-load("//fs_image/bzl/image_actions:install.bzl", "image_install_buck_runnable", "image_install")
+load("//fs_image/bzl/image_actions:install.bzl", "image_install", "image_install_buck_runnable")
 load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//fs_image/bzl/image_actions:mount.bzl", "image_host_dir_mount", "image_host_file_mount", "image_layer_mount")
 load("//fs_image/bzl/image_actions:remove.bzl", "image_remove")
@@ -9,10 +9,12 @@ load("//fs_image/bzl/image_actions:rpms.bzl", "image_rpms_install", "image_rpms_
 load("//fs_image/bzl/image_actions:symlink.bzl", "image_symlink_dir", "image_symlink_file")
 load("//fs_image/bzl/image_actions:tarball.bzl", "image_tarball")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
-load(":image_layer.bzl", "image_layer", "image_rpmbuild_layer", "image_sendstream_layer")
+load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_package.bzl", "image_package")
 load(":image_python_unittest.bzl", "image_python_unittest")
+load(":image_rpmbuild_layer.bzl", "image_rpmbuild_layer")
+load(":image_sendstream_layer.bzl", "image_sendstream_layer")
 load(":image_source.bzl", "image_source")
 
 image = struct(

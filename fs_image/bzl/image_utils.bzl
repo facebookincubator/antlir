@@ -1,3 +1,5 @@
+load(":oss_shim.bzl", "target_utils")
+
 def _wrap_bash_build_in_common_boilerplate(
         self_dependency,
         bash,
@@ -84,7 +86,25 @@ def _wrap_bash_build_in_common_boilerplate(
         self_dependency = self_dependency,
     )
 
+def _current_target(target_name):
+    return target_utils.to_label(
+        # Note: we don't use the `config.get_current_repo_name()` here because
+        # currently in the OSS setup the current repo ends up being `@`, which
+        # doesn't work when we compile the layer. It doesn't work because
+        # a target like `//fs_image/compiler/test_images:parent_layer` is not
+        # equivalent to `@//fs_image/compiler/test_images:parent_layer`.
+        # Technically we should use the current repo name when constructing
+        # __all__ target labels. That would require a hefty refactor for all
+        # usages of hard coded targets. This should be done but can wait until
+        # the OSS repository is ready to be embedded/included in other projects
+        # as a proper repo/cell.
+        "",
+        native.package_name(),
+        target_name,
+    )
+
 image_utils = struct(
+    current_target = _current_target,
     wrap_bash_build_in_common_boilerplate =
         _wrap_bash_build_in_common_boilerplate,
 )
