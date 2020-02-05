@@ -327,7 +327,7 @@ class RepoDownloader:
             # update its `.canonical_checksum`.
             if storage_id:
                 rpm = rpm._replace(canonical_checksum=canonical_checksum)
-                log.info(f'Already stored under {storage_id}: {rpm}')
+                log.debug(f'Already stored under {storage_id}: {rpm}')
             else:  # We have to download the RPM.
                 try:
                     with _reportable_http_errors(rpm.location):
