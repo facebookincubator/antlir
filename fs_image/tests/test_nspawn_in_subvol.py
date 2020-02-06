@@ -191,16 +191,12 @@ class NspawnTestCase(unittest.TestCase):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         self.assertEqual(b'ohai\n', ret.stdout)
-
-        # Nspawn as of version 242 started dumping a message to stderr when
-        # trying to set capabilities that are not currently in the bounding
-        # set. In FB production, we drop `cap_sys_boot` and because we do that
-        # nspawn (as of version 242) will inform us of that this capability
-        # cannot be set.  Since we don't drop `cap_sys_boot` in normal cases
-        # we need the 'assertIn' so that test can pass when not run in a
-        # container that drops `cap_sys_boot`.
-        # T48760757
-        self.assertIn(b'abracadabra\n', ret.stderr)
+        target_stderr = b'abracadabra\n'
+        if _nspawn_version() >= 244:
+            self.assertEqual(target_stderr, ret.stderr)
+        else:
+            # versions < 244 did not properly respect --quiet
+            self.assertIn(target_stderr, ret.stderr)
 
     def test_machine_id(self):
         # Images meant to be used as a container root should include an empty
@@ -346,10 +342,12 @@ class NspawnTestCase(unittest.TestCase):
             '--user', 'root', '--quiet', '--', 'mknod', '/foo', 'c', '1', '3',
         ], stderr=subprocess.PIPE, check=False)
         self.assertNotEqual(0, ret.returncode)
-        # Note this should be `assertEquals`, but T48760757
-        self.assertIn(
-            b"mknod: '/foo': Operation not permitted\n", ret.stderr,
-        )
+        target_stderr = b"mknod: '/foo': Operation not permitted\n"
+        if _nspawn_version() >= 244:
+            self.assertEqual(target_stderr, ret.stderr)
+        else:
+            # versions < 244 did not properly respect --quiet
+            self.assertIn(target_stderr, ret.stderr)
 
     def test_boot_cmd_is_system_running(self):
         ret = self._nspawn_in('bootable-systemd-os', [
@@ -374,8 +372,9 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(ret.returncode, [0, 1], msg=ret.stderr.strip())
         self.assertIn(ret.stdout.strip(),
                 [b'running', b'degraded'], msg=ret.stderr.strip())
-        # T48760757
-        # self.assertEqual(b'', ret.stderr)
+        # versions < 244 did not properly respect --quiet
+        if _nspawn_version() >= 244:
+            self.assertEqual(b'', ret.stderr)
 
     def test_boot_cmd_failure(self):
         ret = self._nspawn_in('bootable-systemd-os', [
@@ -385,8 +384,9 @@ class NspawnTestCase(unittest.TestCase):
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
         self.assertEqual(1, ret.returncode)
         self.assertEqual(b'', ret.stdout)
-        # T48760757
-        # self.assertEqual(b'', ret.stderr)
+        # versions < 244 did not properly respect --quiet
+        if _nspawn_version() >= 244:
+            self.assertEqual(b'', ret.stderr)
 
     def test_boot_forward_fd(self):
         with tempfile.TemporaryFile() as tf:

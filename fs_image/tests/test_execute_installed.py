@@ -10,7 +10,9 @@ import os
 import subprocess
 import unittest
 
-from nspawn_in_subvol import find_built_subvol, nspawn_in_subvol, parse_opts
+from nspawn_in_subvol import (
+    find_built_subvol, nspawn_in_subvol, parse_opts, _nspawn_version
+)
 
 
 class ExecuteInstalledTestCase(unittest.TestCase):
@@ -40,9 +42,8 @@ class ExecuteInstalledTestCase(unittest.TestCase):
                 ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
-            self.assertEqual(b'ok\n', ret.stdout)
-            # systemd-nspawn >= 242 dumps out an error about capabilities when
-            # run in an environment that drops cap_sys_boot (such as the FB
-            # container runtime).
-            # T48760757
-            # self.assertEqual(b'', ret.stderr)
+            if _nspawn_version() >= 244:
+                self.assertEqual((b'ok\n', b''), (ret.stdout, ret.stderr))
+            else:
+                # versions < 244 did not properly respect --quiet
+                self.assertEqual(b'ok\n', ret.stdout)
