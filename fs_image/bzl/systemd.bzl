@@ -34,6 +34,23 @@ def _mask_units(
 
     return image.feature(features = symlink_actions)
 
+def _unmask_units(
+        # list of systemd units to unmask (e.g. sshd.service). This should be in
+        # the full form of the service, ie: unit.service, unit.mount,
+        # unit.socket, etc..
+        units):
+    remove_actions = []
+    for unit in units:
+        _fail_if_path(unit, "Unmask Unit")
+
+        remove_actions.append(
+            image.remove(
+                paths.join(ADMIN_ROOT, unit),
+            ),
+        )
+
+    return image.feature(features = remove_actions)
+
 # Generate an image feature that enables a unit in the specified systemd target.
 def _enable_unit(
         # The name of the systemd unit to enable.  This should be in the
@@ -97,4 +114,5 @@ systemd = struct(
     enable_unit = _enable_unit,
     install_unit = _install_unit,
     mask_units = _mask_units,
+    unmask_units = _unmask_units,
 )
