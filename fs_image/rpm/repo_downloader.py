@@ -30,9 +30,11 @@ time, as opposed to a sheared mix of the repo at various points in time) if:
 '''
 import hashlib
 import requests
+import time
 import urllib.parse
 
 from contextlib import contextmanager
+from functools import wraps
 from typing import Iterable, List, Mapping, Optional, Set, Tuple
 
 from fs_image.common import get_file_logger, nullcontext, set_new_key, shuffled
@@ -115,6 +117,24 @@ def _reportable_http_errors(location):
         )
 
 
+def _log_size(what_str: str, total_bytes: int):
+    log.info(f'{what_str} {total_bytes/10**9:,.4f} GB')
+
+
+def timeit(what):
+    def wrapper(fn):
+        @wraps(fn)
+        def decorated(*args, **kwargs):
+            what_str = what(args)
+            start_t = time.time()
+            ret = fn(*args, **kwargs)
+            total_t = time.time() - start_t
+            log.info(f"{what_str} {total_t:.4f} seconds")
+            return ret
+        return decorated
+    return wrapper
+
+
 class RepoDownloader:
     def __init__(
         self, *,
@@ -146,6 +166,7 @@ class RepoDownloader:
             yield input
 
     # May raise `ReportableError`s to be caught by `_download_repodatas`
+    @timeit(what=lambda args: f"{args[1]} took")
     def _download_repodata(
         self, repodata: 'Repodata', *, is_primary: bool
     ) -> Tuple[bool, str, Optional[List[Rpm]]]:
@@ -210,9 +231,10 @@ class RepoDownloader:
         rpms = None  # We'll extract these from the primary repodata
         storage_id_to_repodata = {}  # Newly stored **and** pre-existing
         primary_repodata = pick_primary_repodata(repomd.repodatas)
-        log.info(f'''`{self._repo_name}` repodata weighs {
+        _log_size(
+            f'`{self._repo_name}` repodata weighs',
             sum(rd.size for rd in repomd.repodatas)
-        :,} bytes''')
+        )
         # Visitors see all declared repodata, even if some downloads fail.
         for visitor in visitors:
             for repodata in repomd.repodatas:
@@ -251,6 +273,7 @@ class RepoDownloader:
 
     # May raise `ReportableError`s to be caught by `_download_rpms`.
     # May raise a `requests.HTTPError` if the download fails.
+    @timeit(what=lambda args: f"{args[1]} took")
     def _download_rpm(self, rpm: Rpm) -> Tuple[str, Rpm]:
         'Returns a storage_id and a copy of `rpm` with a canonical checksum.'
         log.info(f'Downloading {rpm}')
@@ -296,9 +319,10 @@ class RepoDownloader:
                 return db_storage_id, rpm
 
     def _download_rpms(self, rpms: Iterable[Rpm], shard: RpmShard):
-        log.info(f'''`{self._repo_name}` has {len(rpms)} RPMs weighing {
+        _log_size(
+            f'`{self._repo_name}` has {len(rpms)} RPMs weighing',
             sum(r.size for r in rpms)
-        :,} bytes''')
+        )
         storage_id_to_rpm = {}
         # Download in random order to reduce collisions from racing writers.
         for rpm in shuffled(rpms):
@@ -418,6 +442,10 @@ class RepoDownloader:
                 unneeded_storage_id_to_repodata
             )
 
+    @timeit(
+        what=lambda args:
+            f"Repo {args[0]._repo_name} at {args[0]._repo_url} took"
+    )
     def download(
         self, *,
         rpm_shard: RpmShard = None,  # get all RPMs
