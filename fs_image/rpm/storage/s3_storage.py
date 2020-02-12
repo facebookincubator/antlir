@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 
+from typing import List
+
 from .cli_object_storage import CLIObjectStorage
 
 
@@ -17,27 +19,25 @@ class S3Storage(CLIObjectStorage, plugin_kind='s3'):
     def _path_for_storage_id(self, sid: str) -> str:
         return os.path.join(self.AWS_S3_BUCKET, 'flat', sid)
 
-    def _cmd(self, *args, path: str, operation: str):
-        cmd = [
+    def _base_cmd(self, *args) -> List[str]:
+        return [
             'aws', 's3',
             '--cli-read-timeout', str(self.timeout_seconds),
             '--cli-connect-timeout', str(self.timeout_seconds),
             *args,
         ]
-        if operation == 'read':
-            # `-` implies local file stream (stdout)
-            cmd += ['cp', path, '-']
-        elif operation == 'write':
-            # `-` implies local file stream (stdin)
-            cmd += ['cp', '-', path]
-        elif operation == 'remove':
-            cmd += ['rm', path]
-        elif operation == 'exists':
-            cmd += ['ls', path]
-        else:
-            raise NotImplementedError  # pragma: no cover
 
-        return cmd
+    def _read_cmd(self, *args, path: str) -> List[str]:
+        return self._base_cmd(*args) + ['cp', path, '-']
+
+    def _write_cmd(self, *args, path: str) -> List[str]:
+        return self._base_cmd(*args) + ['cp', '-', path]
+
+    def _remove_cmd(self, *args, path: str) -> List[str]:
+        return self._base_cmd(*args) + ['rm', path]
+
+    def _exists_cmd(self, *args, path: str) -> List[str]:
+        return self._base_cmd(*args) + ['ls', path]
 
     def _configured_env(self):
         # Configure env with AWS credentials

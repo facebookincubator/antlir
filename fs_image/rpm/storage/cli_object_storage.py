@@ -19,11 +19,10 @@ class _StorageRemover(NamedTuple):
     def remove(self, sid: str) -> None:
         self.procs.append(
             subprocess.Popen(
-                self.storage._cmd(
+                self.storage._remove_cmd(
                     path=self.storage._path_for_storage_id(
                         self.storage.strip_key(sid)
                     ),
-                    operation="remove",
                 ),
                 env=self.storage._configured_env(),
                 stdout=2
@@ -32,13 +31,29 @@ class _StorageRemover(NamedTuple):
 
 
 class CLIObjectStorage(Storage):
-
+    '''
+    This abstract base class exists because most blob-store CLIs will
+    behave very similarly, and can reuse the plumbing that turns them
+    into `Storage` objects. Look at `S3Storage` for a concrete example.
+    '''
     @abstractmethod
     def _path_for_storage_id(self, sid: str) -> str:
         ...
 
     @abstractmethod
-    def _cmd(self, *args, path: str, operation: str) -> str:
+    def _read_cmd(self, *args, path: str) -> List[str]:
+        ...
+
+    @abstractmethod
+    def _write_cmd(self, *args, path: str) -> List[str]:
+        ...
+
+    @abstractmethod
+    def _remove_cmd(self, *args, path: str) -> List[str]:
+        ...
+
+    @abstractmethod
+    def _exists_cmd(self, *args, path: str) -> List[str]:
         ...
 
     @abstractmethod
@@ -53,11 +68,12 @@ class CLIObjectStorage(Storage):
     @contextmanager
     def writer(self) -> ContextManager[StorageOutput]:
         sid = self._make_storage_id()
-
-        with subprocess.Popen(self._cmd(
-            # Read from stdin -- I assume `cli` does not use it.
-            path=self._path_for_storage_id(sid),
-            operation="write",
+        path = self._path_for_storage_id(sid)
+        log_prefix = f'{self.__class__.__name__}'
+        log.debug(f'{log_prefix} - Writing to {path}')
+        with subprocess.Popen(self._write_cmd(
+            # The underlying CLI is expected to read the blob from stdin
+            path=path,
         ), env=self._configured_env(), stdin=subprocess.PIPE, stdout=2) as proc:
 
             @contextmanager
@@ -66,7 +82,12 @@ class CLIObjectStorage(Storage):
                 # `sid` is available to read after the `yield`.
                 try:
                     proc.stdin.close()
+                    log.debug(f'{log_prefix} - Wait for {path} PUT')
                     proc.wait()
+                    log.debug(
+                        f'{log_prefix} - Exit code {proc.returncode}'
+                        f' from {path} PUT'
+                    )
                     check_popen_returncode(proc)
                 # Clean up even on KeyboardInterrupt -- we cannot assume
                 # that the blob was stored unless `cli` exited cleanly.
@@ -79,16 +100,17 @@ class CLIObjectStorage(Storage):
                         # the return code.  Future: Following the idea in
                         # remove(), we could plop this cleanup on the
                         # innermost remover.
-                        subprocess.run(['setsid'] + self._cmd(
+                        subprocess.run(['setsid'] + self._remove_cmd(
                             path=self._path_for_storage_id(sid),
-                            operation="remove",
                         ), env=self._configured_env(), stdout=2)
                     # To cover this, I'd need `setsid` or `cli` not to
                     # exist, neither is a useful test.  The validity of the
                     # f-string is ensured by `flake8`.
                     except Exception:  # pragma: no cover
                         # Log & ignore: we'll re-raise the original exception
-                        log.exception(f'While cleaning up partial {sid}')
+                        log.exception(
+                            f'{log_prefix} - While cleaning up partial {sid}'
+                        )
                     raise
                 yield sid
 
@@ -97,11 +119,19 @@ class CLIObjectStorage(Storage):
 
     @contextmanager
     def reader(self, sid: str) -> ContextManager[StorageInput]:
-        with subprocess.Popen(self._cmd(
-            path=self._path_for_storage_id(self.strip_key(sid)),
-            operation="read",
+        # We currently waste significant time per read waiting for CLIs
+        # to start, which is terrible for small reads (most system
+        # RPMs are small).
+        path = self._path_for_storage_id(self.strip_key(sid))
+        log_prefix = f'{self.__class__.__name__}'
+        with subprocess.Popen(self._read_cmd(
+            path=path,
         ), env=self._configured_env(), stdout=subprocess.PIPE) as proc:
+            log.debug(f'{log_prefix} - Started {path} GET proc')
             yield StorageInput(input=proc.stdout)
+            log.debug(f'{log_prefix} - Waiting for {path} GET')
+        log.debug(f'{log_prefix} - Exit code {proc.returncode} from  {path} GET')
+        # No `finally`: this doesn't need to run if the context block raises.
         check_popen_returncode(proc)
 
     @contextmanager
@@ -118,7 +148,7 @@ class CLIObjectStorage(Storage):
                     proc.wait()
                 # Unit-testing this error-within-error case is hard, but all
                 # it would verify is that we properly re-raise `ex`.  I
-                # tested this by hand in an interpreter.
+                # tested this by hand in an interpreter, see P60127851.
                 except Exception as ex:  # pragma: no cover
                     last_ex = ex
             # Raise the **last** of the "wait()" exceptions.
@@ -130,5 +160,9 @@ class CLIObjectStorage(Storage):
                 check_popen_returncode(proc)
 
     def remove(self, sid: str) -> None:
+        # Future: for automatic removes, we could improve latency by placing
+        # them into the innermost `remover`.  This would require us to keep
+        # a `remover` stack on hand, with the outermost remover attached to
+        # the Storage itself (maybe make it a context manager?).
         with self.remover() as rm:
             rm.remove(sid)
