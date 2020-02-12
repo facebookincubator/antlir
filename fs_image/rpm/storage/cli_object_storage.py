@@ -38,27 +38,27 @@ class CLIObjectStorage(Storage):
     '''
     @abstractmethod
     def _path_for_storage_id(self, sid: str) -> str:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     def _read_cmd(self, *args, path: str) -> List[str]:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     def _write_cmd(self, *args, path: str) -> List[str]:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     def _remove_cmd(self, *args, path: str) -> List[str]:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     def _exists_cmd(self, *args, path: str) -> List[str]:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     def _configured_env(self) -> Mapping:
-        ...
+        ...  # pragma: no cover
 
     # Separate function so the unit-test can mock it.
     @classmethod

@@ -1,3 +1,4 @@
+load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
 
 # NB: For anything that runs at Facebook, depend on `facebook:storage`, but
@@ -79,12 +80,15 @@ python_unittest(
         (100, ":cli_object_storage"),
         (100, ":s3_storage"),
     ],
+    resources = {
+        target_location(":mock-s3-cli"): "tests/mock-s3-cli",
+    },
     tags = [
         "slow",
-        "disabled",
     ],
     deps = [
         ":testlib_cli_object_storage_base_test",
+        "//fs_image:fs_utils",
     ],
 )
 
@@ -106,4 +110,11 @@ python_unittest(
     base_module = "rpm.storage",
     needed_coverage = [(100, ":cli-library")],
     deps = [":cli-library"],
+)
+
+python_binary(
+    name = "mock-s3-cli",
+    srcs = ["tests/mock_s3_cli.py"],
+    main_module = "fs_image.rpm.storage.tests.mock_s3_cli",
+    deps = ["//fs_image:common"],
 )

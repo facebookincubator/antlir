@@ -9,7 +9,7 @@ from .cli_object_storage import CLIObjectStorage
 class S3Storage(CLIObjectStorage, plugin_kind='s3'):
 
     AWS_S3_BUCKET = 's3://AWS_S3_BUCKET'
-    AWS_ACCESS_KEY_ID = 'AWS_SECRET_ACCESS_KEY'
+    AWS_ACCESS_KEY_ID = 'AWS_ACCESS_KEY_ID'
     AWS_SECRET_ACCESS_KEY = 'AWS_SECRET_ACCESS_KEY'
 
     def __init__(self, *, key: str, timeout_seconds: float=400):
