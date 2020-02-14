@@ -33,11 +33,11 @@ import requests
 import time
 import urllib.parse
 
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from functools import wraps
 from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
-from fs_image.common import get_file_logger, nullcontext, set_new_key, shuffled
+from fs_image.common import get_file_logger, set_new_key, shuffled
 
 from .common import read_chunks, RpmShard
 from .db_connection import DBConnectionContext
@@ -100,24 +100,6 @@ def _log_if_storage_ids_differ(obj, storage_id, db_storage_id):
         )
 
 
-@contextmanager
-def _reportable_http_errors(location):
-    try:
-        yield
-    except requests.exceptions.HTTPError as ex:
-        # E.g. we can see 404 errors if packages were deleted
-        # without updating the repodata.
-        #
-        # Future: If we see lots of transient error status codes
-        # in practice, we could retry automatically before
-        # waiting for the next snapshot, but the complexity is
-        # not worth it for now.
-        raise HTTPError(
-            location=location,
-            http_status=ex.response.status_code,
-        )
-
-
 def _log_size(what_str: str, total_bytes: int):
     log.info(f'{what_str} {total_bytes/10**9:,.4f} GB')
 
@@ -161,10 +143,23 @@ class RepoDownloader:
     @contextmanager
     def _download(self, relative_url):
         assert not relative_url.startswith('/')
-        with open_url(
-            urllib.parse.urljoin(self._repo_url, relative_url)
-        ) as input:
-            yield input
+        try:
+            with open_url(
+                urllib.parse.urljoin(self._repo_url, relative_url)
+            ) as input:
+                yield input
+        except requests.exceptions.HTTPError as ex:
+            # E.g. we can see 404 errors if packages were deleted
+            # without updating the repodata.
+            #
+            # Future: If we see lots of transient error status codes
+            # in practice, we could retry automatically before
+            # waiting for the next snapshot, but the complexity is
+            # not worth it for now.
+            raise HTTPError(
+                location=relative_url,
+                http_status=ex.response.status_code,
+            )
 
     # May raise `ReportableError`s to be caught by `_download_repodatas`
     @timeit(what=lambda args: f"{args[1]} took")
@@ -188,42 +183,51 @@ class RepoDownloader:
             storage_id = repo_db.get_storage_id(
                 self._repodata_table, repodata
             )
-        if is_primary:
-            rpms = []
-        elif storage_id:
-            return False, storage_id, None  # Nothing stored, not primary
-        else:
-            rpms = None
 
-        with (
-            # We will parse the selected primary file to discover the RPMs.
-            get_rpm_parser(repodata) if is_primary else nullcontext()
-        ) as rpm_parser, (
-            # Read the primary from storage if we already have an ID --
-            # downloading is more likely to fail due to repo updates.
-            storage.reader(storage_id) if storage_id
-                else self._download(repodata.location)
-        ) as input, (
-            # Only write to storage if it's not already there.
-            storage.writer() if not storage_id else nullcontext()
-        ) as output:
+        # Nothing to do -- only need to download repodata if it's the primary
+        # (so we can parse it for RPMs), or if it's not already in the DB.
+        if not is_primary and storage_id:
+            return (False, storage_id, None)
+        rpms = [] if is_primary else None
+
+        # Remaining possibilities are that we've got a primary with or without
+        # a storage_id, or a non-primary without a storage_id
+        with ExitStack() as cm:
+            rpm_parser = None
+            if is_primary:
+                # We'll parse the selected primary file to discover the RPMs.
+                rpm_parser = cm.enter_context(get_rpm_parser(repodata))
+
+            if storage_id:
+                # Read the primary from storage as we already have an ID
+                infile = cm.enter_context(storage.reader(storage_id))
+                # No need to write as this repodata was already stored
+                outfile = None
+            else:
+                # Nothing stored, must download - can fail due to repo updates
+                infile = cm.enter_context(self._download(repodata.location))
+                # Want to persist the downloaded repodata into storage so that
+                # future runs don't need to redownload it
+                outfile = cm.enter_context(storage.writer())
+
             log.info(f'Fetching {repodata}')
             for chunk in _verify_chunk_stream(
-                read_chunks(input, BUFFER_BYTES),
+                read_chunks(infile, BUFFER_BYTES),
                 [repodata.checksum],
                 repodata.size,
                 repodata.location,
             ):  # May raise a ReportableError
-                if output:
-                    output.write(chunk)
+                if outfile:
+                    outfile.write(chunk)
                 if rpm_parser:
                     try:
                         rpms.extend(rpm_parser.feed(chunk))
                     except Exception as ex:
+                        # Not a ReportableError so it won't trigger a retry
                         raise RepodataParseError((repodata.location, ex))
             # Must commit from inside the output context to get a storage_id.
-            if output:
-                return True, output.commit(), rpms
+            if outfile:
+                return True, outfile.commit(), rpms
         # The repodata was already stored, and we parsed it for RPMs.
         assert storage_id is not None
         return False, storage_id, rpms
@@ -250,11 +254,9 @@ class RepoDownloader:
         # Download in random order to reduce collisions from racing writers.
         for repodata in shuffled(repomd.repodatas):
             try:
-                with _reportable_http_errors(repodata.location):
-                    newly_stored, storage_id, maybe_rpms = \
-                        self._download_repodata(
-                            repodata, is_primary=repodata is primary_repodata,
-                        )
+                newly_stored, storage_id, maybe_rpms = self._download_repodata(
+                    repodata, is_primary=repodata is primary_repodata,
+                )
                 if newly_stored:
                     set_new_key(
                         persist_storage_id_to_repodata, storage_id, repodata,
@@ -367,8 +369,7 @@ class RepoDownloader:
                 log.debug(f'Already stored under {storage_id}: {rpm}')
             else:  # We have to download the RPM.
                 try:
-                    with _reportable_http_errors(rpm.location):
-                        storage_id, rpm = self._download_rpm(rpm)
+                    storage_id, rpm = self._download_rpm(rpm)
                 # IMPORTANT: All the classes of errors that we handle below
                 # have the property that we would not have stored anything
                 # new in the DB, meaning that such failed RPMs will be
@@ -463,12 +464,12 @@ class RepoDownloader:
     )
     def download(
         self, *,
-        rpm_shard: RpmShard = None,  # get all RPMs
+        rpm_shard: RpmShard = None,
         visitors: Iterable['RepoObjectVisitor'] = (),
     ) -> RepoSnapshot:
         'See the top-of-file docblock.'
         if rpm_shard is None:
-            rpm_shard = RpmShard(shard=0, modulo=1)
+            rpm_shard = RpmShard(shard=0, modulo=1)  # get all RPMs
         with self._download('repodata/repomd.xml') as repomd_stream:
             repomd = RepoMetadata.new(xml=repomd_stream.read())
             for visitor in visitors:
