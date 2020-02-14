@@ -30,16 +30,15 @@ import sys
 from io import StringIO
 from typing import Callable, Dict, Iterable, List
 
-from fs_image.common import get_file_logger, shuffled
+from fs_image.common import get_file_logger
 
 from .common import (
-    create_ro, init_logging, Path, populate_temp_dir_and_rename, retry_fn,
-    RpmShard,
+    create_ro, init_logging, Path, populate_temp_dir_and_rename, RpmShard,
 )
 from .common_args import add_standard_args
 from .gpg_keys import snapshot_gpg_keys
 from .repo_db import validate_universe_name
-from .repo_downloader import RepoDownloader
+from .repo_downloader import download_repos
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
 from .storage import Storage
@@ -104,35 +103,25 @@ def snapshot_repos(
     with RepoSnapshot.add_sqlite_to_storage(
         Storage.from_json(storage_cfg), dest
     ) as db:
-        # Randomize the order to reduce contention from concurrent writers.
-        for repo, repo_universe in shuffled(repos_and_universes):
-            log.info(f'Downloading repo {repo.name} from {repo.base_url}')
+        for repo, snapshot in download_repos(
+            repos_and_universes=repos_and_universes,
+            db_cfg=db_cfg,
+            storage_cfg=storage_cfg,
+            rpm_shard=rpm_shard,
+            visitors=[declared_sizer]
+        ):
+            snapshot.visit(saved_sizer).to_sqlite(repo.name, db)
+            # This is done outside of the repo snapshot as we only want to
+            # perform it upon successful snapshot. It's also a quick operation
+            # and thus doesn't benefit from the added complexity of threading
             with populate_temp_dir_and_rename(
                 dest / 'repos' / repo.name, overwrite=True
             ) as td:
-                # This is outside the retry_fn not to mask transient
-                # verification failures.  I don't expect many infra failures.
                 snapshot_gpg_keys(
                     key_urls=repo.gpg_key_urls,
                     whitelist_dir=gpg_key_whitelist_dir,
                     snapshot_dir=td,
                 )
-                retry_fn(
-                    lambda: RepoDownloader(
-                        repo_universe=repo_universe,
-                        all_snapshot_universes={
-                            u for _, u in repos_and_universes
-                        },
-                        repo_name=repo.name,
-                        repo_url=repo.base_url,
-                        db_cfg=db_cfg,
-                        storage_cfg=storage_cfg,
-                    ).download(
-                        rpm_shard=rpm_shard, visitors=[declared_sizer]
-                    ),
-                    delays=[0] * retries,
-                    what=f'Download failed: {repo.name} from {repo.base_url}',
-                ).visit(saved_sizer).to_sqlite(repo.name, db)
 
     log.info(declared_sizer.get_report(
         f'According to their repodata, these {len(repos)} repos weigh'

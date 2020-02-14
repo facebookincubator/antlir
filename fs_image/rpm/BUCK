@@ -194,6 +194,7 @@ python_library(
         ":repo_db",
         ":repo_objects",
         ":repo_snapshot",
+        ":yum_dnf_conf",
     ],
 )
 

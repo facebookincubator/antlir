@@ -11,13 +11,12 @@ from .common import (
     get_file_logger, init_logging, populate_temp_dir_and_rename, retry_fn,
 )
 from .common_args import add_standard_args
-from .db_connection import DBConnectionContext
-from .repo_db import RepoDBContext
-from .repo_downloader import RepoDownloader
+from .repo_downloader import download_repos
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
 from .storage import Storage
 from .gpg_keys import snapshot_gpg_keys
+from .yum_dnf_conf import YumDnfConfRepo
 
 log = get_file_logger(__file__)
 
@@ -67,18 +66,18 @@ def snapshot_repo(argv):
             whitelist_dir=args.gpg_key_whitelist_dir,
             snapshot_dir=td,
         )
-        retry_fn(
-            lambda: RepoDownloader(
-                repo_universe=args.repo_universe,
-                all_snapshot_universes=[args.repo_universe],
-                repo_name=args.repo_name,
-                repo_url=args.repo_url,
-                db_cfg=args.db,
-                storage_cfg=args.storage,
-            ).download(rpm_shard=args.rpm_shard),
-            delays=[0] * args.retries,
-            what=f'Downloading {args.repo_name} from {args.repo_url} failed',
-        ).visit(sizer).to_sqlite(args.repo_name, sqlite_db)
+        repo = YumDnfConfRepo(
+            name=args.repo_name,
+            base_url=args.repo_url,
+            gpg_key_urls=args.gpg_url
+        )
+        _, snapshot = next(download_repos(
+            repos_and_universes=[(repo, args.repo_universe)],
+            db_cfg=args.db,
+            storage_cfg=args.storage,
+            rpm_shard=args.rpm_shard,
+        ))
+        snapshot.visit(sizer).to_sqlite(args.repo_name, sqlite_db)
         log.info(sizer.get_report(f'This {args.rpm_shard} snapshot weighs'))
 
 
