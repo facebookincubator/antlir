@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-'''
+"""
 If you have an `rpm_repo_snapshot` target named //foo:bar, you can
 tally all `ReportableError`s via:
 
@@ -9,7 +9,7 @@ tally all `ReportableError`s via:
     ' | sqlite3 file://"$(readlink -f "$(
       buck build //foo:bar --show-full-output | cut -f 2 -d ' '
     )")"/snapshot.sql3?mode=ro
-'''
+"""
 import json
 import sqlite3
 import sys

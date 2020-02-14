@@ -51,14 +51,14 @@ def snapshot_repo(argv):
             '`--gpg-key-whitelist-dir`',
     )
     args = parser.parse_args(argv)
-    storage = Storage.from_json(args.storage)
-    db = DBConnectionContext.from_json(args.db)
 
     init_logging(debug=args.debug)
 
     with populate_temp_dir_and_rename(
         args.snapshot_dir, overwrite=True,
-    ) as td, RepoSnapshot.add_sqlite_to_storage(storage, td) as sqlite_db:
+    ) as td, RepoSnapshot.add_sqlite_to_storage(
+        Storage.from_json(args.storage), td
+    ) as sqlite_db:
         sizer = RepoSizer()
         # This is outside the retry_fn not to mask transient verification
         # failures.  I don't expect many infra failures.
@@ -73,8 +73,8 @@ def snapshot_repo(argv):
                 all_snapshot_universes=[args.repo_universe],
                 repo_name=args.repo_name,
                 repo_url=args.repo_url,
-                repo_db_ctx=RepoDBContext(db, db.SQL_DIALECT),
-                storage=storage,
+                db_cfg=args.db,
+                storage_cfg=args.storage,
             ).download(rpm_shard=args.rpm_shard),
             delays=[0] * args.retries,
             what=f'Downloading {args.repo_name} from {args.repo_url} failed',

@@ -29,9 +29,7 @@ from . import temp_repos
 from .. import repo_downloader
 
 from ..common import RpmShard
-from ..storage import Storage
-from ..db_connection import DBConnectionContext
-from ..repo_db import RepoDBContext, SQLDialect
+from ..repo_db import RepoDBContext
 from ..repo_snapshot import (
     FileIntegrityError, HTTPError, MutableRpmError, RepoSnapshot,
 )
@@ -110,23 +108,20 @@ class RepoDownloaderTestCase(unittest.TestCase):
         self.maxDiff = 12345
 
     @contextmanager
-    def _make_db_context(self):
+    def _make_db_cfg(self):
         with tempfile.NamedTemporaryFile() as tf:
-            yield RepoDBContext(
-                DBConnectionContext.make(kind='sqlite', db_path=tf.name),
-                SQLDialect.SQLITE3,
-            )
+            yield {'kind': 'sqlite', 'db_path': tf.name}
 
-    def _make_downloader(self, storage_dir, step_and_repo, db_context):
+    def _make_downloader(self, storage_dir, step_and_repo, db_cfg):
         return repo_downloader.RepoDownloader(
             repo_universe='fakeverse',
             all_snapshot_universes={'fakeverse'},
             repo_name=step_and_repo,
             repo_url=(self.repos_root / step_and_repo).file_url(),
-            repo_db_ctx=db_context,
-            storage=Storage.make(
-                key='test', kind='filesystem', base_dir=storage_dir,
-            ),
+            db_cfg=db_cfg,
+            storage_cfg={
+                'key': 'test', 'kind': 'filesystem', 'base_dir': storage_dir,
+            },
         )
 
     def _check_storage_id_error(self, storage_id_to_obj, error_cls):
@@ -189,9 +184,9 @@ class RepoDownloaderTestCase(unittest.TestCase):
             return original_open_url(url)
 
         with tempfile.TemporaryDirectory() as storage_dir, \
-          self._make_db_context() as db_ctx:
+          self._make_db_cfg() as db_cfg:
             downloader = self._make_downloader(
-                storage_dir, '0/good_dog', db_ctx
+                storage_dir, '0/good_dog', db_cfg
             )
             with mock.patch.object(repo_downloader, 'open_url') as mock_fn:
                 mock_fn.side_effect = my_open_url
@@ -296,8 +291,8 @@ class RepoDownloaderTestCase(unittest.TestCase):
                 -3, int(error_dict['actual']) - int(error_dict['expected']),
             )
 
-    def _download_repo_twice(self, storage_dir, repo, step_and_repo, db_ctx):
-        downloader = self._make_downloader(storage_dir, step_and_repo, db_ctx)
+    def _download_repo_twice(self, storage_dir, repo, step_and_repo, db_cfg):
+        downloader = self._make_downloader(storage_dir, step_and_repo, db_cfg)
         snap1 = downloader.download()
         snap2 = downloader.download()
         self._check_repomd_equal(snap1.repomd, snap2.repomd)
@@ -311,12 +306,12 @@ class RepoDownloaderTestCase(unittest.TestCase):
 
     def test_download_evolving_multi_repos(self):
         with tempfile.TemporaryDirectory() as storage_dir, \
-             self._make_db_context() as db_ctx:
+             self._make_db_cfg() as db_cfg:
             snap_dog, snap_cat, snap_dog2, snap_cat2 = (
                 # Downloading a repo twice in a row should always be a
                 # no-op, so we do that for all repos here just in case.
                 self._download_repo_twice(
-                    storage_dir, repo, step_and_repo, db_ctx,
+                    storage_dir, repo, step_and_repo, db_cfg,
                 ) for repo, step_and_repo in [
                     (_GOOD_DOG, '0/good_dog'),
                     (_CHAOS_CAT, '0/chaos_cat'),
@@ -441,9 +436,9 @@ class RepoDownloaderTestCase(unittest.TestCase):
                 self.rpms.add(rpm)
 
         with tempfile.TemporaryDirectory() as storage_dir, \
-             self._make_db_context() as db_ctx:
+             self._make_db_cfg() as db_cfg:
             downloader = self._make_downloader(
-                storage_dir, '0/good_dog', db_ctx
+                storage_dir, '0/good_dog', db_cfg
             )
             visitor_all = Visitor()
             self._check_visitors_match_snapshot(
@@ -481,9 +476,9 @@ class RepoDownloaderTestCase(unittest.TestCase):
         with mock.patch.object(
             RepoDBContext, 'maybe_store', new=my_maybe_store
         ), tempfile.TemporaryDirectory() as storage_dir, \
-          self._make_db_context() as db_ctx:
+          self._make_db_cfg() as db_cfg:
             snapshot = self._make_downloader(
-                storage_dir, '0/good_dog', db_ctx
+                storage_dir, '0/good_dog', db_cfg
             ).download()
             faked_obj, = faked_objs
             # We should be using the winning writer's storage ID.
@@ -529,9 +524,9 @@ class RepoDownloaderTestCase(unittest.TestCase):
         ), mock.patch.object(
             RepoDBContext, 'maybe_store', new=my_maybe_store
         ), tempfile.TemporaryDirectory() as storage_dir, \
-          self._make_db_context() as db_ctx:
+          self._make_db_cfg() as db_cfg:
             snapshot = self._make_downloader(
-                storage_dir, '0/good_dog', db_ctx
+                storage_dir, '0/good_dog', db_cfg
             ).download()
             mice_rpm, = mice_rpms
             # We should be using the winning writer's storage ID.
@@ -544,13 +539,13 @@ class RepoDownloaderTestCase(unittest.TestCase):
 
     def test_mutable_rpm(self):
         with tempfile.TemporaryDirectory() as storage_dir, \
-             self._make_db_context() as db_ctx:
+             self._make_db_cfg() as db_cfg:
             good_snapshot = self._make_downloader(
-                storage_dir, '0/good_dog', db_ctx
+                storage_dir, '0/good_dog', db_cfg
             ).download()
             self._check_snapshot(good_snapshot, _GOOD_DOG_LOCATIONS)
             bad_snapshot = self._make_downloader(
-                storage_dir, '0/bad_dog', db_ctx
+                storage_dir, '0/bad_dog', db_cfg
             ).download()
             bad_location, = _BAD_DOG.locations('bad_dog')
             self._check_snapshot(
@@ -581,7 +576,7 @@ class RepoDownloaderTestCase(unittest.TestCase):
             # Now, even fetching `good_dog` will show a mutable_rpm error.
             self._check_snapshot(
                 self._make_downloader(
-                    storage_dir, '0/good_dog', db_ctx
+                    storage_dir, '0/good_dog', db_cfg
                 ).download(), _GOOD_DOG_LOCATIONS, has_errors=True,
             )
 
@@ -596,6 +591,6 @@ class RepoDownloaderTestCase(unittest.TestCase):
             ):
                 self._check_snapshot(
                     self._make_downloader(
-                        storage_dir, '0/good_dog', db_ctx
+                        storage_dir, '0/good_dog', db_cfg
                     ).download(), _GOOD_DOG_LOCATIONS, has_errors=True,
                 )

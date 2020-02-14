@@ -28,7 +28,7 @@ import os
 import sys
 
 from io import StringIO
-from typing import Callable, Iterable, List
+from typing import Callable, Dict, Iterable, List
 
 from fs_image.common import get_file_logger, shuffled
 
@@ -37,9 +37,8 @@ from .common import (
     RpmShard,
 )
 from .common_args import add_standard_args
-from .db_connection import DBConnectionContext
 from .gpg_keys import snapshot_gpg_keys
-from .repo_db import RepoDBContext, validate_universe_name
+from .repo_db import validate_universe_name
 from .repo_downloader import RepoDownloader
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
@@ -86,8 +85,8 @@ def snapshot_repos(
     repo_to_universe: Callable[[YumDnfConfRepo], str],
     yum_conf_content: str,
     dnf_conf_content: str,
-    repo_db_ctx: RepoDBContext,
-    storage: Storage,
+    db_cfg: Dict[str, str],
+    storage_cfg: Dict[str, str],
     rpm_shard: RpmShard,
     gpg_key_whitelist_dir: str,
     retries: int,
@@ -102,7 +101,9 @@ def snapshot_repos(
         (repo, validate_universe_name(repo_to_universe(repo)))
             for repo in repos
     ]
-    with RepoSnapshot.add_sqlite_to_storage(storage, dest) as db:
+    with RepoSnapshot.add_sqlite_to_storage(
+        Storage.from_json(storage_cfg), dest
+    ) as db:
         # Randomize the order to reduce contention from concurrent writers.
         for repo, repo_universe in shuffled(repos_and_universes):
             log.info(f'Downloading repo {repo.name} from {repo.base_url}')
@@ -124,8 +125,8 @@ def snapshot_repos(
                         },
                         repo_name=repo.name,
                         repo_url=repo.base_url,
-                        repo_db_ctx=repo_db_ctx,
-                        storage=storage,
+                        db_cfg=db_cfg,
+                        storage_cfg=storage_cfg,
                     ).download(
                         rpm_shard=rpm_shard, visitors=[declared_sizer]
                     ),
@@ -188,7 +189,6 @@ def snapshot_repos_from_args(argv: List[str]):
     else:  # pragma: no cover
         raise AssertionError(args)
 
-    db = DBConnectionContext.from_json(args.db)
     with populate_temp_dir_and_rename(args.snapshot_dir, overwrite=True) as td:
         snapshot_repos(
             dest=td,
@@ -197,8 +197,8 @@ def snapshot_repos_from_args(argv: List[str]):
                 if args.yum_conf else None,
             dnf_conf_content=args.dnf_conf.read_text()
                 if args.dnf_conf else None,
-            repo_db_ctx=RepoDBContext(db, db.SQL_DIALECT),
-            storage=Storage.from_json(args.storage),
+            db_cfg=args.db,
+            storage_cfg=args.storage,
             rpm_shard=args.rpm_shard,
             gpg_key_whitelist_dir=args.gpg_key_whitelist_dir,
             retries=args.retries,

@@ -53,17 +53,14 @@ def make_temp_snapshot(
             dnf_conf_content=_make_test_yum_dnf_conf(
                 'dnf', repos_root / '0', gpg_key_path,
             ),
-            repo_db_ctx=RepoDBContext(
-                DBConnectionContext.make(
-                    kind='sqlite', db_path=(out_dir / 'db.sqlite3').decode(),
-                ),
-                SQLDialect.SQLITE3,
-            ),
-            storage=Storage.make(
-                key='test',
-                kind='filesystem',
-                base_dir=(out_dir / 'storage').decode(),
-            ),
+            db_cfg={
+                'kind': 'sqlite', 'db_path': (out_dir / 'db.sqlite3').decode()
+            },
+            storage_cfg={
+                'key': 'test',
+                'kind': 'filesystem',
+                'base_dir': (out_dir / 'storage').decode(),
+            },
             rpm_shard=RpmShard(shard=0, modulo=1),
             gpg_key_whitelist_dir=no_gpg_keys_yet,
             retries=0,  # Nothing here should require retries, it's a bug.

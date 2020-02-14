@@ -35,11 +35,12 @@ import urllib.parse
 
 from contextlib import contextmanager
 from functools import wraps
-from typing import Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
 from fs_image.common import get_file_logger, nullcontext, set_new_key, shuffled
 
 from .common import read_chunks, RpmShard
+from .db_connection import DBConnectionContext
 from .deleted_mutable_rpms import deleted_mutable_rpms
 from .open_url import open_url
 from .parse_repodata import get_rpm_parser, pick_primary_repodata
@@ -142,8 +143,8 @@ class RepoDownloader:
         all_snapshot_universes: Iterable[str],  # Should include `repo_universe`
         repo_name: str,
         repo_url: str,  # Use `Path.file_url` to get correct quoting
-        repo_db_ctx: RepoDBContext,
-        storage: Storage,
+        db_cfg: Dict[str, str],
+        storage_cfg: Dict[str, str],
     ):
         self._repo_universe = repo_universe
         self._all_snapshot_universes = frozenset(all_snapshot_universes)
@@ -154,8 +155,8 @@ class RepoDownloader:
         if not repo_url.endswith('/'):
             repo_url += '/'  # `urljoin` needs a trailing / to work right
         self._repo_url = repo_url
-        self._repo_db_ctx = repo_db_ctx
-        self._storage = storage
+        self._db_cfg = db_cfg
+        self._storage_cfg = storage_cfg
 
     @contextmanager
     def _download(self, relative_url):
@@ -168,7 +169,10 @@ class RepoDownloader:
     # May raise `ReportableError`s to be caught by `_download_repodatas`
     @timeit(what=lambda args: f"{args[1]} took")
     def _download_repodata(
-        self, repodata: 'Repodata', *, is_primary: bool
+        self,
+        repodata: Repodata,
+        *,
+        is_primary: bool
     ) -> Tuple[bool, str, Optional[List[Rpm]]]:
         '''
           - Returns True only if we just downloaded & stored this Repodata.
@@ -176,10 +180,14 @@ class RepoDownloader:
           - For the selected primary repodata, returns a list of RPMs.
             Returns None for all others.
         '''
+        db_conn = DBConnectionContext.from_json(self._db_cfg)
+        storage = Storage.from_json(self._storage_cfg)
         # We only need to download the repodata if is not already in the DB,
         # or if it is primary (so we can parse it for RPMs).
-        with self._repo_db_ctx as repo_db:
-            storage_id = repo_db.get_storage_id(self._repodata_table, repodata)
+        with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
+            storage_id = repo_db.get_storage_id(
+                self._repodata_table, repodata
+            )
         if is_primary:
             rpms = []
         elif storage_id:
@@ -193,11 +201,11 @@ class RepoDownloader:
         ) as rpm_parser, (
             # Read the primary from storage if we already have an ID --
             # downloading is more likely to fail due to repo updates.
-            self._storage.reader(storage_id) if storage_id
+            storage.reader(storage_id) if storage_id
                 else self._download(repodata.location)
         ) as input, (
             # Only write to storage if it's not already there.
-            self._storage.writer() if not storage_id else nullcontext()
+            storage.writer() if not storage_id else nullcontext()
         ) as output:
             log.info(f'Fetching {repodata}')
             for chunk in _verify_chunk_stream(
@@ -277,8 +285,9 @@ class RepoDownloader:
     def _download_rpm(self, rpm: Rpm) -> Tuple[str, Rpm]:
         'Returns a storage_id and a copy of `rpm` with a canonical checksum.'
         log.info(f'Downloading {rpm}')
+        storage = Storage.from_json(self._storage_cfg)
         with self._download(rpm.location) as input, \
-                self._storage.writer() as output:
+                storage.writer() as output:
             # Before committing to the DB, let's standardize on one hash
             # algorithm.  Otherwise, it might happen that two repos may
             # store the same RPM hashed with different algorithms, and thus
@@ -302,7 +311,8 @@ class RepoDownloader:
             # Remove the blob if we error before the DB commit below.
             storage_id = output.commit(remove_on_exception=True)
 
-            with self._repo_db_ctx as repo_db:
+            db_conn = DBConnectionContext.from_json(self._db_cfg)
+            with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
                 db_storage_id = repo_db.maybe_store(
                     self._rpm_table, rpm, storage_id,
                 )
@@ -315,7 +325,7 @@ class RepoDownloader:
                     repo_db.commit()  # Our `Rpm` got inserted into the DB.
                 else:  # We lost the race to commit `rpm`.
                     # Future: batch removes in Storage if this is slow
-                    self._storage.remove(storage_id)
+                    storage.remove(storage_id)
                 return db_storage_id, rpm
 
     def _download_rpms(self, rpms: Iterable[Rpm], shard: RpmShard):
@@ -323,12 +333,13 @@ class RepoDownloader:
             f'`{self._repo_name}` has {len(rpms)} RPMs weighing',
             sum(r.size for r in rpms)
         )
+        db_conn = DBConnectionContext.from_json(self._db_cfg)
         storage_id_to_rpm = {}
         # Download in random order to reduce collisions from racing writers.
         for rpm in shuffled(rpms):
             if not shard.in_shard(rpm):
                 continue
-            with self._repo_db_ctx as db:
+            with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
                 # If we get no `storage_id` back, there are 3 possibilities:
                 #  - `rpm.nevra()` was never seen before.
                 #  - `rpm.nevra()` was seen before, but it was hashed with
@@ -346,7 +357,9 @@ class RepoDownloader:
                 #    this lets us know whether the file is wrong or the
                 #    repodata is wrong.
                 storage_id, canonical_checksum = \
-                    db.get_rpm_storage_id_and_checksum(self._rpm_table, rpm)
+                    repo_db.get_rpm_storage_id_and_checksum(
+                        self._rpm_table, rpm
+                    )
             # If the RPM is already stored with a matching checksum, just
             # update its `.canonical_checksum`.
             if storage_id:
@@ -375,7 +388,8 @@ class RepoDownloader:
         return storage_id_to_rpm
 
     def _detect_mutable_rpms(self, rpm: Rpm, storage_id: str):
-        with self._repo_db_ctx as repo_db:
+        db_conn = DBConnectionContext.from_json(self._db_cfg)
+        with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
             all_canonical_checksums = set(repo_db.get_rpm_canonical_checksums(
                 self._rpm_table, rpm, self._all_snapshot_universes,
             ))
@@ -409,7 +423,8 @@ class RepoDownloader:
         # Will retain only those IDs that are unused by the DB and need cleanup
         persist_storage_id_to_repodata: Mapping[str, Repodata],
     ):
-        with self._repo_db_ctx as repo_db:
+        db_conn = DBConnectionContext.from_json(self._db_cfg)
+        with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
             # We cannot touch `persist_storage_id_to_repodata` in the loop
             # because until the transaction commits, we must be ready to
             # delete all new storage IDs.  So instead, we will construct the
@@ -511,9 +526,10 @@ class RepoDownloader:
         finally:
             if persist_storage_id_to_repodata:
                 log.info('Deleting uncommitted blobs, do not Ctrl-C')
+            storage = Storage.from_json(self._storage_cfg)
             for storage_id in persist_storage_id_to_repodata.keys():
                 try:
-                    self._storage.remove(storage_id)
+                    storage.remove(storage_id)
                 # Yes, catch even KeyboardInterrupt to minimize our litter
                 except BaseException:  # pragma: no cover
                     log.exception(f'Failed to remove {storage_id}')
