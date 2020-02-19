@@ -1,4 +1,3 @@
-load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
@@ -195,89 +194,6 @@ python_library(
     resources = {":fake_sudo.sh": "sudo"},
 )
 
-python_library(
-    name = "nspawn_in_subvol",
-    srcs = ["nspawn_in_subvol.py"],
-    base_module = "",
-    deps = [
-        ":common",
-        ":find_built_subvol",
-        ":send_fds_and_run",
-        ":testlib_temp_subvolumes",
-        "//fs_image:fs_utils",
-        "//fs_image/compiler:procfs_serde",
-        "//fs_image/compiler/items:mount_utils",
-        "//fs_image/rpm:yum-dnf-from-snapshot-library",
-        "//fs_image/rpm:yum_dnf_conf",
-    ],
-)
-
-# This minimal XAR shipped as tests/hello.xar was generated via:
-#
-#   pip install xar && mkdir -p hello &&
-#   echo "print('hello world')" > hello/__main__.py &&
-#   python -m xar.make_xar -- --python hello --output hello.xar
-#
-# NB: Internally, you can use `buck run //tools/xar:make_xar` instead.
-image.layer(
-    name = "host-hello-xar",
-    parent_layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
-    features = [image.install("tests/hello.xar", "/hello.xar")],
-)
-
-python_unittest(
-    name = "test-nspawn-in-subvol",
-    srcs = ["tests/test_nspawn_in_subvol.py"],
-    base_module = "",
-    needed_coverage = [(
-        100,
-        ":nspawn_in_subvol",
-    )],
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
-    # @unsorted-dict-items
-    resources = {
-        ":host-hello-xar": "tests/host-hello-xar",
-        TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone": "tests/host",
-        "//fs_image/compiler/test_images:fake-build-appliance-from-host": "tests/build-appliance",
-        "//fs_image/rpm:repo-snapshot-for-tests": "tests/repo-snapshot",
-        "//tupperware/image/base:base": "tests/bootable-systemd-os",
-    },
-    deps = [":nspawn_in_subvol"],
-)
-
-python_binary(
-    name = "nspawn-run-in-subvol",
-    main_module = "nspawn_in_subvol",
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
-    deps = [":nspawn_in_subvol"],
-)
-
-python_binary(
-    name = "nspawn-test-in-subvol",
-    srcs = ["nspawn_test_in_subvol.py"],
-    base_module = "",
-    main_module = "nspawn_test_in_subvol",
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
-    deps = [":nspawn_in_subvol"],
-)
-
-python_unittest(
-    name = "test-nspawn-test-in-subvol",
-    srcs = ["tests/test_nspawn_test_in_subvol.py"],
-    base_module = "",
-    needed_coverage = [(100, ":nspawn-test-in-subvol-library")],
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
-    deps = [":nspawn-test-in-subvol-library"],
-)
-
 python_unittest(
     name = "test-subvolume-garbage-collector",
     srcs = ["tests/test_subvolume_garbage_collector.py"],
@@ -439,7 +355,7 @@ python_unittest(
     resources = {
         TEST_IMAGE_PREFIX + "installed-executables": "tests/exe-layer",
     },
-    deps = [":nspawn_in_subvol"],
+    deps = ["//fs_image/nspawn_in_subvol:run-library"],
 )
 
 python_library(

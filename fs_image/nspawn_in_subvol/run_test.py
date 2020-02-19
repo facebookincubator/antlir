@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 '''
-This is almost identical to `nspawn-run-in-subvol`, so read its `--help`, or
-the docblock at the top of `nspawn_in_subvol.py`, for an introduction.
+This is intended to execute a Buck test target from inside an `image.layer`
+container.
 
-However, this expects to run a specific command, `/layer-test-binary`,
-inside the image, and takes the liberty of rewriting one of its arguments,
-as documented in `rewrite_test_cmd`.
+At a high level, this is very similar identical to `run.py`, so read that
+file's docblock for a an introduction.  Also try `--help` for the `run-test`
+binary.  You will note that some options are missing compared to `run`, and
+that a couple of test-runner specific options are added.
+
+This test wrapper expects to run a specific command, `/layer-test-binary`,
+to exist inside the image, and takes the liberty of rewriting some of its
+arguments, as documented in `rewrite_test_cmd`.
 '''
 import argparse
 import os
@@ -15,8 +20,8 @@ import sys
 from contextlib import contextmanager
 from typing import List, Tuple
 
-from find_built_subvol import find_built_subvol
-from nspawn_in_subvol import parse_opts, nspawn_in_subvol
+from .args import _parse_cli_args
+from .run import nspawn_in_subvol
 
 
 @contextmanager
@@ -89,16 +94,16 @@ def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
 
 
 # Integration coverage is provided by `image.python_unittest` targets, which
-# use `nspawn-test-in-subvol` in their implementation.  However, here is a
-# basic smoke test, which, incidentally, demonstrates our test error
+# use `nspawn_in_subvol/run_test.py` in their implementation.  However, here
+# is a basic smoke test, which, incidentally, demonstrates our test error
 # handling is sane since `/layer-test-binary` is absent in that image,
 # causing the container to exit with code 1.
 #
-#   buck run //fs_image:nspawn-test-in-subvol -- --layer "$(
-#        buck build --show-output \
-#            //fs_image/compiler/tests:only-for-tests-read-only-host-clone |
-#                cut -f 2- -d ' '
-#    )" -- /layer-test-binary -ba r --baz=3 --output $(mktemp) --ou ; echo $?
+#   buck run //fs_image/nspawn_in_subvol:run-test -- --layer "$(
+#     buck build --show-output \
+#       //fs_image/compiler/test_images:only-for-tests-read-only-host-clone |
+#         cut -f 2- -d ' '
+#   )" -- /layer-test-binary -ba r --baz=3 --output $(mktemp) --ou ; echo $?
 #
 if __name__ == '__main__':  # pragma: no cover
     argv = []
@@ -122,18 +127,24 @@ if __name__ == '__main__':  # pragma: no cover
     )
     if os.path.exists(packaged_layer):
         argv.extend(['--layer', packaged_layer])
-        import __image_python_unittest_spec__
+        from fs_image.nspawn_in_subvol import __image_python_unittest_spec__
         argv.extend(__image_python_unittest_spec__.nspawn_in_subvol_args())
 
-    opts = parse_opts(argv + sys.argv[1:])
+    args = _parse_cli_args(argv + sys.argv[1:], allow_debug_only_opts=False)
 
     with rewrite_test_cmd(
-        opts.cmd, next_fd=3 + len(opts.forward_fd),
+        args.opts.cmd, next_fd=3 + len(args.opts.forward_fd),
     ) as (new_cmd, fd_to_forward):
-        opts.cmd = new_cmd
-        if fd_to_forward is not None:
-            opts.forward_fd.append(fd_to_forward)
-        ret = nspawn_in_subvol(find_built_subvol(opts.layer), opts, check=False)
+        ret = nspawn_in_subvol(
+            args.opts._replace(
+                cmd=new_cmd,
+                forward_fd=args.opts.forward_fd + (
+                    [] if fd_to_forward is None else [fd_to_forward]
+                ),
+            ),
+            boot=args.boot,
+            check=False,
+        )
 
     # Only trigger SystemExit after the context was cleaned up.
     sys.exit(ret.returncode)

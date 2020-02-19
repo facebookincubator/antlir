@@ -2,7 +2,7 @@
 import tempfile
 import unittest
 
-from nspawn_test_in_subvol import rewrite_test_cmd
+from fs_image.nspawn_in_subvol.run_test import rewrite_test_cmd
 
 
 class NspawnTestInSubvolTestCase(unittest.TestCase):

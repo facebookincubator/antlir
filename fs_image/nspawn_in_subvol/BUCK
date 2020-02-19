@@ -1,0 +1,143 @@
+# Future: we should eventually add per-library unit test coverage, as
+# appropriate, while also retaining integration test coverage.
+
+load("@fbcode_macros//build_defs:python_binary.bzl", "python_binary")
+load("@fbcode_macros//build_defs:python_library.bzl", "python_library")
+load("@fbcode_macros//build_defs:python_unittest.bzl", "python_unittest")
+load("//fs_image/bzl:image.bzl", "image")
+load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+
+python_library(
+    name = "args",
+    srcs = ["args.py"],
+    deps = [
+        "//fs_image:find_built_subvol",
+        "//fs_image:fs_utils",
+    ],
+)
+
+python_library(
+    name = "common",
+    srcs = ["common.py"],
+)
+
+python_library(
+    name = "cmd",
+    srcs = ["cmd.py"],
+    deps = [
+        ":args",
+        "//fs_image:artifacts_dir",
+        "//fs_image:common",
+        "//fs_image:find_built_subvol",
+        "//fs_image:testlib_temp_subvolumes",
+        "//fs_image/compiler:procfs_serde",
+        "//fs_image/compiler/items:mount_utils",
+    ],
+)
+
+python_library(
+    name = "repo_server",
+    srcs = ["repo_server.py"],
+    deps = [
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+        "//fs_image:send_fds_and_run",
+        "//fs_image/rpm:yum-dnf-from-snapshot-library",
+        "//fs_image/rpm:yum_dnf_conf",
+    ],
+)
+
+python_library(
+    name = "booted",
+    srcs = ["booted.py"],
+    deps = [
+        ":common",
+        "//fs_image:send_fds_and_run",
+    ],
+)
+
+python_library(
+    name = "non_booted",
+    srcs = ["non_booted.py"],
+    deps = [
+        ":common",
+        ":repo_server",
+        "//fs_image:send_fds_and_run",
+    ],
+)
+
+python_binary(
+    name = "run",
+    srcs = ["run.py"],
+    main_module = "fs_image.nspawn_in_subvol.run",
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    deps = [
+        ":args",
+        ":booted",
+        ":cmd",
+        ":non_booted",
+        "//fs_image:common",
+    ],
+)
+
+# This minimal XAR shipped as tests/hello.xar was generated via:
+#
+#   pip install xar && mkdir -p hello &&
+#   echo "print('hello world')" > hello/__main__.py &&
+#   python -m xar.make_xar -- --python hello --output hello.xar
+#
+# NB: Internally, you can use `buck run //tools/xar:make_xar` instead.
+image.layer(
+    name = "host-hello-xar",
+    parent_layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
+    features = [image.install("tests/hello.xar", "/hello.xar")],
+)
+
+python_unittest(
+    name = "test-run",
+    srcs = ["tests/test_run.py"],
+    # This is the integration test for the CLI and underlying library, so
+    # it's supposed to cover everything.
+    needed_coverage = [(100, target) for target in [
+        ":args",
+        ":booted",
+        ":cmd",
+        ":common",
+        ":non_booted",
+        ":repo_server",
+        ":run-library",
+    ]],
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    resources = {
+        TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone": "tests/host",
+        "//fs_image/compiler/test_images:fake-build-appliance-from-host": "tests/build-appliance",
+        "//fs_image/rpm:repo-snapshot-for-tests": "tests/repo-snapshot",
+        "//tupperware/image/base:base": "tests/bootable-systemd-os",
+        ":host-hello-xar": "tests/host-hello-xar",
+    },
+    deps = [":run-library"],
+)
+
+python_binary(
+    name = "run-test",
+    srcs = ["run_test.py"],
+    main_module = "fs_image.nspawn_in_subvol.run_test",
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    deps = [":run-library"],
+)
+
+python_unittest(
+    name = "test-run-test",
+    srcs = ["tests/test_run_test.py"],
+    needed_coverage = [(100, ":run-test-library")],
+    # Ensures we can read resources in @mode/opt. "xar" cannot work because
+    # `root` cannot access the content of unprivileged XARs.
+    par_style = "zip",
+    deps = [":run-test-library"],
+)

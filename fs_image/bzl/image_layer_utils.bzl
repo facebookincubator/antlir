@@ -10,7 +10,7 @@ def _add_run_in_subvol_target(name, kind, extra_args = None):
         args = ["--layer", "$(location {})".format(":" + name)] + (
             extra_args if extra_args else []
         ),
-        exe = "//fs_image:nspawn-run-in-subvol",
+        exe = "//fs_image/nspawn_in_subvol:run",
         visibility = [],
     )
 
