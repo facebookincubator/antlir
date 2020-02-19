@@ -40,14 +40,6 @@ def add_standard_args(parser):
             'Good for parallel downloads, or for quick-iteration testing. '
             'Defaults to downloading all RPMs.',
     )
-    parser.add_argument(  # E.g. for `retry_fn` as `delays=[0] * args.retries`
-        '--retries', default=10, type=int,
-        help='How many times per repo to retry downloading + writing to '
-            '--storage and --db (writes to --snapshot-dir are not retried). '
-            'Use a reasonably high value -- failures are normal. For example, '
-            'if we race with any repo change, we are liable to get HTTP 404 '
-            'for deleted repodata objects.',
-    )
     parser.add_argument(  # Pass this to `init_logging`
         '--debug', action='store_true',
         help='Should we print debug log messages?',

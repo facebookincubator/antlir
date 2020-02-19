@@ -29,7 +29,7 @@ from . import temp_repos
 
 from .. import repo_downloader
 
-from ..common import RpmShard
+from ..common import RpmShard, log as common_log
 from ..repo_db import RepoDBContext
 from ..repo_snapshot import (
     FileIntegrityError, HTTPError, MutableRpmError, RepoSnapshot,
@@ -53,6 +53,8 @@ def _location_basename(rpm):
 
 
 MICE_01_RPM_REGEX = r'.*/rpm-test-mice-0\.1-a\.x86_64\.rpm$'
+# Used to target a specific RPM
+_MICE_LOCATION = 'good_dog-pkgs/rpm-test-mice-0.1-a.x86_64.rpm'
 FILELISTS_REPODATA_REGEX = r'repodata/[0-9a-f]*-filelists\.xml\.gz$'
 
 _GOOD_DOG = temp_repos.Repo([
@@ -197,7 +199,7 @@ class DownloadReposTestCase(unittest.TestCase):
         )
 
     @contextmanager
-    def _check_download_error(self, url_regex, corrupt_file_fn, error_cls):
+    def _break_open_url(self, url_regex, corrupt_file_fn):
         original_open_url = repo_downloader.open_url
 
         def my_open_url(url):
@@ -206,9 +208,14 @@ class DownloadReposTestCase(unittest.TestCase):
                     return BytesIO(corrupt_file_fn(f.read()))
             return original_open_url(url)
 
+        with mock.patch.object(repo_downloader, 'open_url') as mock_fn:
+            mock_fn.side_effect = my_open_url
+            yield mock_fn
+
+    @contextmanager
+    def _check_download_error(self, url_regex, corrupt_file_fn, error_cls):
         with self._make_downloader('0/good_dog') as downloader:
-            with mock.patch.object(repo_downloader, 'open_url') as mock_fn:
-                mock_fn.side_effect = my_open_url
+            with self._break_open_url(url_regex, corrupt_file_fn):
                 res, = list(downloader())
                 bad_repo, bad_snapshot = res
                 self.assertEqual('0/good_dog', bad_repo.name)
@@ -236,10 +243,6 @@ class DownloadReposTestCase(unittest.TestCase):
                     good_snapshot.storage_id_to_rpm,
                     bad_snapshot.storage_id_to_rpm
                 ),
-                (
-                    good_snapshot.storage_id_to_repodata,
-                    bad_snapshot.storage_id_to_repodata,
-                ),
             ]:
                 # Compare the bad snapshot with the good.
                 self.assertEqual(len(good_sito), len(bad_sito))
@@ -253,14 +256,14 @@ class DownloadReposTestCase(unittest.TestCase):
                     #     We can't compare much since it's annoying to find
                     #     the corresponding object in `good_sido`.
 
+    @mock.patch('time.sleep', mock.Mock())
     def test_rpm_download_errors(self):
-        mice_location = 'good_dog-pkgs/rpm-test-mice-0.1-a.x86_64.rpm'
 
         extra_bytes = b'change size'
         with self._check_download_error(
             MICE_01_RPM_REGEX, lambda s: s + extra_bytes, FileIntegrityError,
         ) as error_dict:
-            self.assertEqual(mice_location, error_dict['location'])
+            self.assertEqual(_MICE_LOCATION, error_dict['location'])
             self.assertEqual('size', error_dict['failed_check'])
             self.assertEqual(
                 len(extra_bytes),
@@ -272,14 +275,31 @@ class DownloadReposTestCase(unittest.TestCase):
             lambda s: b'dog' + s[3:],  # change contents
             FileIntegrityError,
         ) as error_dict:
-            self.assertEqual(mice_location, error_dict['location'])
+            self.assertEqual(_MICE_LOCATION, error_dict['location'])
             self.assertEqual('sha256', error_dict['failed_check'])
 
+    @mock.patch('time.sleep')
+    def test_rpm_download_errors_no_retry(self, mock_time):
         with self._check_download_error(
             MICE_01_RPM_REGEX, raise_fake_http_error, HTTPError,
         ) as error_dict:
-            self.assertEqual(mice_location, error_dict['location'])
+            self.assertEqual(_MICE_LOCATION, error_dict['location'])
             self.assertEqual(404, error_dict['http_status'])
+        # Shouldn't have retried for a 404 error
+        mock_time.assert_not_called()
+
+    @mock.patch('time.sleep')
+    def test_repomd_download_error(self, mock_sleep):
+        with self._make_downloader('0/good_dog') as downloader:
+            with self._break_open_url(
+                r'.*repomd.xml', raise_fake_http_error
+            ), self.assertRaises(HTTPError):
+                # Since the download failed no snapshots are returned
+                next(downloader())
+            self.assertEqual(
+                len(repo_downloader.REPOMD_MAX_RETRY_S),
+                len(mock_sleep.call_args_list)
+            )
 
     def test_repodata_download_errors(self):
         # These are not reported as "storage IDs" because a failure to parse
@@ -691,3 +711,13 @@ class DownloadReposTestCase(unittest.TestCase):
             # This is essentially showing that the storage_id was correctly
             # reused for duplicate RPMs
             self.assertEqual(unique_fake_rpms, len(unique_storage_ids))
+
+    def test_retries(self):
+        @repo_downloader.retryable('got {a}, {b}, {c}', [0])
+        def to_be_retried(a: int, b: int, c: int = 5):
+            raise RuntimeError('retrying...')
+
+        with self.assertRaises(RuntimeError), \
+             self.assertLogs(common_log) as logs:
+            to_be_retried(1, b=2)
+        self.assertIn('got 1, 2, 5', ''.join(logs.output))

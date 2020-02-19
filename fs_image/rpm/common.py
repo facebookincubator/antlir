@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
-import errno
 import hashlib
 import os
 import shutil
-import stat
 import struct
 import time
-import urllib.parse
 
-from contextlib import contextmanager
 from io import BytesIO
-from typing import AnyStr, Callable, Iterable, List, NamedTuple, TypeVar
+from typing import Callable, Iterable, NamedTuple, Optional, TypeVar
 
 # Hide the fact that some of our dependencies aren't in `rpm` any more, the
 # `rpm` library still imports them from `rpm.common`.
@@ -28,19 +24,34 @@ T = TypeVar('T')
 
 
 def retry_fn(
-    fn: Callable[[], T], *, delays: List[float] = None, what: str,
+    retryable_fn: Callable[[], T],
+    is_exception_retryable: Optional[Callable[[Exception], bool]] = None,
+    *,
+    delays: Optional[Iterable[float]] = None,
+    what: str,
 ) -> T:
-    'Delays are in seconds.'
+    '''Allows functions to be retried `len(delays)` times, with each iteration
+    sleeping for its respective index into `delays`. `is_exception_retryable`
+    is an optional function that takes the raised exception and potentially
+    evaluate to False, at which case no retry will occur and the exception will
+    be re-raised.
+
+    Delays are in seconds.
+    '''
+    if delays is None:
+        delays = []
     for i, delay in enumerate(delays):
         try:
-            return fn()
-        except Exception:
+            return retryable_fn()
+        except Exception as e:
+            if is_exception_retryable and not is_exception_retryable(e):
+                raise
             log.exception(
                 f'\n\n[Retry {i + 1} of {len(delays)}] {what} -- waiting '
                 f'{delay} seconds.\n\n'
             )
             time.sleep(delay)
-    return fn()  # With 0 retries, we should still run the function.
+    return retryable_fn()  # With 0 retries, we should still run the function.
 
 
 class RpmShard(NamedTuple):

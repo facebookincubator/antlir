@@ -61,7 +61,7 @@ class TestCommon(unittest.TestCase):
                 raise RuntimeError(self.attempts)
 
         self.assertEqual(1, retry_fn(
-            Retriable().run, delays=[], what='succeeds immediately'
+            Retriable().run, what='succeeds immediately'
         ))
 
         # Check log messages, and ensure that delays add up as expected
@@ -85,6 +85,21 @@ class TestCommon(unittest.TestCase):
                 for o in log_ctx.output
         ))
         self.assertEqual((8,), ex_ctx.exception.args)
+
+        # Test is_exception_retriable
+        def _is_retryable(e):
+            if isinstance(e, RuntimeError):
+                return False
+            return True
+
+        with self.assertRaises(RuntimeError) as ex_ctx:
+            retry_fn(
+                Retriable(10).run,
+                _is_retryable,
+                delays=[0] * 5,
+                what='never retries',
+            )
+        self.assertEqual((1,), ex_ctx.exception.args)
 
     def test_read_chunks(self):
         self.assertEqual(

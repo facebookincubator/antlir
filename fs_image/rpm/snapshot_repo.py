@@ -7,9 +7,7 @@ all repos from a given `yum.conf`.
 import argparse
 import sys
 
-from .common import (
-    get_file_logger, init_logging, populate_temp_dir_and_rename, retry_fn,
-)
+from .common import get_file_logger, init_logging, populate_temp_dir_and_rename
 from .common_args import add_standard_args
 from .repo_downloader import download_repos
 from .repo_sizer import RepoSizer
@@ -59,8 +57,6 @@ def snapshot_repo(argv):
         Storage.from_json(args.storage), td
     ) as sqlite_db:
         sizer = RepoSizer()
-        # This is outside the retry_fn not to mask transient verification
-        # failures.  I don't expect many infra failures.
         snapshot_gpg_keys(
             key_urls=args.gpg_url,
             whitelist_dir=args.gpg_key_whitelist_dir,

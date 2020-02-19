@@ -29,18 +29,20 @@ time, as opposed to a sheared mix of the repo at various points in time) if:
     available all the new RPMs & repodatas.
 '''
 import hashlib
+import inspect
 import requests
-import time
 import urllib.parse
 
 from contextlib import contextmanager, ExitStack
 from functools import wraps
 from io import BytesIO
-from typing import Dict, Iterable, Iterator, List, Mapping, Optional, Set, Tuple
+from typing import (
+    Dict, Iterable, Iterator, List, Mapping, Optional, Set, Tuple
+)
 
 from fs_image.common import get_file_logger, set_new_key, shuffled
 
-from .common import read_chunks, RpmShard
+from .common import read_chunks, retry_fn, RpmShard
 from .db_connection import DBConnectionContext
 from .deleted_mutable_rpms import deleted_mutable_rpms
 from .open_url import open_url
@@ -59,6 +61,8 @@ from .yum_dnf_conf import YumDnfConfRepo
 # incremental decompression in `parse_repodata.py`, and its API has a
 # complexity bug that makes it slow for large INPUT_CHUNK/OUTPUT_CHUNK.
 BUFFER_BYTES = 2 ** 19
+REPOMD_MAX_RETRY_S = [2 ** i for i in range(8)]  # 256 sec ==  4m16s
+RPM_MAX_RETRY_S = [2 ** i for i in range(9)]  # 512 sec ==  8m32s
 log = get_file_logger(__file__)
 
 
@@ -106,16 +110,33 @@ def _log_size(what_str: str, total_bytes: int):
     log.info(f'{what_str} {total_bytes/10**9:,.4f} GB')
 
 
-def timeit(what):
+def retryable(
+    format_msg: str,
+    delays: Iterable[float],
+    *,
+    skip_non_5xx: bool = False
+):
+    '''Decorator used to retry a function if exceptions are thrown. `format_msg`
+    should be a format string that can access any args provided to the
+    decorated function. `delays` are the delays between retries, in seconds.
+    `skip_non_5xx` will not retry if the exception is an HTTPError and the
+    status code is not 5xx. See uses below for examples.
+    '''
+    def _is_exc_5xx(e: Exception):
+        return (
+            isinstance(e, HTTPError) and e.to_dict()['http_status'] // 100 == 5
+        )
+
     def wrapper(fn):
         @wraps(fn)
         def decorated(*args, **kwargs):
-            what_str = what(args)
-            start_t = time.time()
-            ret = fn(*args, **kwargs)
-            total_t = time.time() - start_t
-            log.info(f"{what_str} {total_t:.4f} seconds")
-            return ret
+            fn_args = inspect.getcallargs(fn, *args, **kwargs)
+            return retry_fn(
+                lambda: fn(*args, **kwargs),
+                is_exception_retryable=_is_exc_5xx if skip_non_5xx else None,
+                delays=delays,
+                what=format_msg.format(**fn_args)
+            )
         return decorated
     return wrapper
 
@@ -145,7 +166,6 @@ def _download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
 
 
 # May raise `ReportableError`s to be caught by `_download_repodatas`
-@timeit(what=lambda args: f"{args[0]} took")
 def _download_repodata(
     repodata: Repodata,
     repo_url: str,
@@ -279,8 +299,9 @@ def _download_repodatas(
 
 
 # May raise `ReportableError`s to be caught by `_download_rpms`.
-# May raise a `requests.HTTPError` if the download fails.
-@timeit(what=lambda args: f"{args[0]} took")
+# May raise an `HTTPError` if the download fails, which won't trigger a
+# retry if they're not 5xx errors.
+@retryable('Download failed: {rpm}', RPM_MAX_RETRY_S, skip_non_5xx=True)
 def _download_rpm(
     rpm: Rpm,
     repo_url: str,
@@ -483,6 +504,10 @@ def _commit_repodata_and_cancel_cleanup(
         )
 
 
+# This should realistically only fail on HTTP errors
+@retryable(
+    'Download failed: {repo.name} from {repo.base_url}', REPOMD_MAX_RETRY_S
+)
 def _download_repomd(
     repo: YumDnfConfRepo,
     repo_universe: str,
@@ -513,6 +538,7 @@ def download_repos(
     # Randomize the order to reduce contention from concurrent writers.
     for repo, repo_universe in shuffled(repos_and_universes):
         repomd = _download_repomd(repo, repo_universe, visitors)
+
         rpm_table = RpmTable(repo_universe)
         # When we store a repodata blob, its ID gets added to this dict.
         # The `finally` clause below will remove any IDs in the list, while
