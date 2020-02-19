@@ -99,85 +99,34 @@ user, which we should probably never do).
   - Can we get any mileage out of --system-call-filter?
 
 '''
-import os
-import subprocess
 import sys
 
-from fs_image.common import init_logging
+from fs_image.common import init_logging, nullcontext
 
-from .args import _NspawnOpts, _parse_cli_args
-from .cmd import _nspawn_setup
-from .booted import _run_booted_nspawn
-from .non_booted import _run_non_booted_nspawn
-
-
-def nspawn_sanitize_env():
-    env = os.environ.copy()
-    # `systemd-nspawn` responds to a bunch of semi-private and intentionally
-    # (mostly) undocumented environment variables.  Many of these can
-    # compromise namespacing / isolation, which we emphatically do not want,
-    # so let's prevent the ambient environment from changing them!
-    #
-    # Of course, this leaves alone a lot of the canonical variables
-    # LINES/COLUMNS, or locale controls.  Those should be OK.
-    for var in list(env.keys()):
-        # No test coverage for this because (a) systemd does not pass such
-        # environment vars to the container, so the only way to observe them
-        # being set (or not) is via indirect side effects, (b) all the side
-        # effects are annoying to test.
-        if var.startswith('SYSTEMD_NSPAWN_'):  # pragma: no cover
-            env.pop(var)
-    return env
-
-
-def nspawn_in_subvol(
-    opts: _NspawnOpts, *,
-    # Fixme: will be removed in a later diff, in favor of 2 separate functions.
-    boot: bool,
-    # These keyword-only arguments generally follow those of `subprocess.run`.
-    #   - `check` defaults to True instead of False.
-    #   - Unlike `run_as_root`, `stdout` is NOT default-redirected to `stderr`.
-    stdout=None, stderr=None, check=True, quiet=False,
-) -> subprocess.CompletedProcess:
-    with _nspawn_setup(opts) as nspawn_setup:
-        # We use a popen wrapper here to call popen_as_root and do the
-        # necessary steps to run the command as root.
-        #
-        # Furthermore, we default stdout and stderr to the ones passed to this
-        # function (and further default stdout to fd 1 if None is passed here.)
-        #
-        # Since we want to preserve the subprocess.Popen API (which take named
-        # stdout and stderr arguments) and these arguments would get shadowed
-        # here, let's pass the variables from the external scope in private
-        # arguments _default_stdout and _default_stderr here. (This also gives
-        # us a chance to default stdout to 1 if None is passed outside of the
-        # inner function.)
-        def popen(cmd, *, stdout=None, stderr=None,
-                _default_stdout=1 if stdout is None else stdout,
-                _default_stderr=stderr,
-        ):
-            return nspawn_setup.subvol.popen_as_root(
-                cmd,
-                # This is a safeguard in case `sudo` lets through these
-                # unwanted environment variables.
-                env=nspawn_sanitize_env(),
-                # popen_as_root will redirect stdout to stderr if it is None,
-                # don't do that because it will break things that don't
-                # expect that.
-                stdout=stdout if stdout else _default_stdout,
-                stderr=stderr if stderr else _default_stderr,
-                check=check,
-            )
-
-        if boot:
-            return _run_booted_nspawn(nspawn_setup, popen)
-        return _run_non_booted_nspawn(nspawn_setup, popen)
+from .args import _parse_cli_args
+from .cmd import PopenArgs
+from .booted import run_booted_nspawn
+from .non_booted import run_non_booted_nspawn
 
 
 # The manual test is in the first paragraph of the top docblock.
 if __name__ == '__main__':  # pragma: no cover
     args = _parse_cli_args(sys.argv[1:], allow_debug_only_opts=True)
     init_logging(debug=args.opts.debug_only_opts.debug)
-    sys.exit(nspawn_in_subvol(
-        args.opts, boot=args.boot, check=False,
-    ).returncode)
+    with (
+        open(args.append_boot_console, 'ab')
+            # By default, we send `systemd` console to `stderr`.
+            if args.boot and args.append_boot_console else nullcontext()
+    ) as boot_console:
+        popen_args = PopenArgs(
+            boot_console=boot_console,
+            check=False,  # We forward the return code below
+            # By default, our internal `Popen` analogs redirect `stdout` to
+            # `stderr` to protect stdout from subprocess spam.  Undo that,
+            # since we want this CLI to be usable in pipelines.
+            stdout=1,
+        )
+        ret = (
+            run_booted_nspawn if args.boot else run_non_booted_nspawn
+        )(args.opts, popen_args)
+    sys.exit(ret.returncode)

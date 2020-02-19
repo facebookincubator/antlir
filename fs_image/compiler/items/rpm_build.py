@@ -4,8 +4,8 @@ import sys
 
 from typing import Iterable
 
-from fs_image.nspawn_in_subvol.args import new_nspawn_opts
-from fs_image.nspawn_in_subvol.run import nspawn_in_subvol
+from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
+from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder
@@ -34,12 +34,11 @@ class RpmBuildItem(metaclass=ImageItem):
                     "--define '_rpmfilename %%{NAME}.rpm' "
                     f"-bb {item.rpmbuild_dir}/SPECS/specfile.spec"
             )
-
-            nspawn_in_subvol(new_nspawn_opts(
+            run_non_booted_nspawn(new_nspawn_opts(
                 cmd=['sh', '-c', f'{build_cmd}'],
                 layer=subvol,
                 user=pwd.getpwnam('root'),
                 snapshot=False,
-            ), boot=False, stdout=sys.stderr)
+            ), PopenArgs())
 
         return builder

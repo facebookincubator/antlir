@@ -355,7 +355,7 @@ python_unittest(
     resources = {
         TEST_IMAGE_PREFIX + "installed-executables": "tests/exe-layer",
     },
-    deps = ["//fs_image/nspawn_in_subvol:run-library"],
+    deps = ["//fs_image/nspawn_in_subvol:non_booted"],
 )
 
 python_library(

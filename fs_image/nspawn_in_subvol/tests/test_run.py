@@ -10,11 +10,15 @@ from contextlib import contextmanager
 from pwd import struct_passwd
 from unittest import mock
 
+# Get "coverage" on this file, in case we later add untested code there.
+import fs_image.nspawn_in_subvol.run  # noqa: F401
+
 from artifacts_dir import find_repo_root
-from fs_image.nspawn_in_subvol.args import _parse_cli_args
+from fs_image.nspawn_in_subvol.args import _parse_cli_args, PopenArgs
+from fs_image.nspawn_in_subvol.booted import run_booted_nspawn
 from fs_image.nspawn_in_subvol.common import _nspawn_version
 from fs_image.nspawn_in_subvol.cmd import _extra_nspawn_args_and_env
-from fs_image.nspawn_in_subvol.run import nspawn_in_subvol
+from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from tests.temp_subvolumes import with_temp_subvols
 
 
@@ -44,11 +48,11 @@ def _mocks_for_extra_nspawn_args(*, artifacts_may_require_repo):
 
 class NspawnTestCase(unittest.TestCase):
     def setUp(self):
-        # Setup expected stdout line endings depending on the version
-        # of systemd-nspawn.  Version 242 'fixed' stdout line endings.
-        # The extra newline for versions < 242 is due to T40936918 mentioned
-        # in `nspawn_in_subvol.py`.  It would disappear if we passed `--quiet`
-        # to nspawn, but we want to retain the extra debug logging.
+        # Setup expected stdout line endings depending on the version of
+        # systemd-nspawn.  Version 242 'fixed' stdout line endings.  The
+        # extra newline for versions < 242 is due to T40936918 mentioned in
+        # `run.py`.  It would disappear if we passed `--quiet` to nspawn,
+        # but we want to retain the extra debug logging.
         self.nspawn_version = _nspawn_version()
         self.maybe_extra_ending = b'\n' if self.nspawn_version < 242 else b''
 
@@ -57,7 +61,9 @@ class NspawnTestCase(unittest.TestCase):
             # __file__ works in @mode/opt since the resource is inside the XAR
             '--layer', os.path.join(os.path.dirname(__file__), rsrc_name),
         ] + argv, allow_debug_only_opts=True)
-        return nspawn_in_subvol(args.opts, boot=args.boot, **kwargs)
+        return (
+            run_booted_nspawn if args.boot else run_non_booted_nspawn
+        )(args.opts, PopenArgs(**kwargs))
 
     def _wrapper_args_to_nspawn_args(
         self, argv, *, artifacts_may_require_repo=False,
@@ -445,7 +451,7 @@ class NspawnTestCase(unittest.TestCase):
             '--boot',
             '--',
             '/bin/true',
-        ], stdout=subprocess.PIPE, check=True)
+        ], boot_console=subprocess.PIPE, stdout=subprocess.PIPE, check=True)
         self.assertEqual(0, ret.returncode)
 
         self.assertIsNotNone(ret.boot)

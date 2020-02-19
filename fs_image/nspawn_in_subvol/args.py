@@ -21,10 +21,42 @@ from typing import (
 from find_built_subvol import find_built_subvol, Subvol
 from fs_image.fs_utils import Path
 
-
 _DEFAULT_SHELL = '/bin/bash'
 _NOBODY_USER = pwd.getpwnam('nobody')
 T = TypeVar('T')
+# This typehint marks values that accept the types that are allowed by
+# `subprocess`'s `std{in,out,err}` redirects.
+SubprocessRedirect = Any
+
+
+class PopenArgs(NamedTuple):
+    '''
+    These are `subprocess.Popen`-style args that are exposed as part of the
+    public `nspawn_in_subvol` API. Our contract diverges in some key ways:
+
+    (1) A few settings diverge in semantics:
+      - `check` defaults to `True` because ignoring return codes is insane.
+      - `stdout=None` redirects to `stderr`, because most in-code uses of
+        our API must never write to `stdout` by accident.
+
+    (2) Some settings are deliberately omitted:
+      - `cmd` is in `opts`
+      - `env` is not exposed for direct user control, callers should instead
+        use `opts.setenv`, which has different semantics
+      - `pass_fds` is replaced by `opts.forward_fd`, with differing semantics
+
+    (3) This also includes a nonstandard field: `boot_console`.  It lets
+        callers separate console logspam from actual program output.  By
+        default, it goes to `stderr` for ease of debugging.  Notes:
+          - We don't have a special `boot_stderr` because that just receives
+            logspam from `systemd-nspawn`, which is silenced by `--quiet`.
+          - We could add `boot_stdin`; for now, we use `--console=read-only`.
+    '''
+    boot_console: SubprocessRedirect = None  # Must be None for non-booted runs
+    check: bool = True
+    stdin: SubprocessRedirect = None
+    stdout: SubprocessRedirect = None
+    stderr: SubprocessRedirect = None
 
 
 # For interactive experimentation with `-container` and `-boot` targets,
@@ -51,7 +83,6 @@ class _NspawnDebugOnlyNotForProdOpts(NamedTuple):
     Keep in sync with `_parser_add_debug_only_not_for_prod_opts`.
     That function documents the individual options.
     '''
-    boot_console_stdout: bool = False  # Future: remove very soon
     forward_tls_env: bool = False
     logs_tmpfs: bool = True
     snapshot_into: Optional[Path] = None
@@ -72,12 +103,6 @@ _DEBUG_OPTS_FOR_PROD = _new_nspawn_debug_only_not_for_prod_opts()
 def _parser_add_debug_only_not_for_prod_opts(parser: argparse.ArgumentParser):
     'Keep in sync with `_NspawnDebugOnlyNotForProdOpts`'
     defaults = _NspawnDebugOnlyNotForProdOpts._field_defaults
-    parser.add_argument(
-        '--boot-console-stdout', action='store_true',
-        help='Print console output on stdout after the booted container has '
-             'exited. This only matters when using the --boot option and is '
-             'really only useful for manual debugging.',
-    )
     parser.add_argument('--debug', action='store_true', help='Log more')
     parser.add_argument(
         '--forward-tls-env', action='store_true',
@@ -298,6 +323,7 @@ class _NspawnCLIArgs(NamedTuple):
     Keep in sync with `_parse_cli_args`. That documents the options.
     '''
     boot: bool
+    append_boot_console: Optional[str]
     opts: _NspawnOpts
 
 
@@ -322,10 +348,16 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
         help='Boot the container with nspawn.  This means invoke systemd '
             'as pid 1 and let it start up services',
     )
+    parser.add_argument(
+        '--append-boot-console', default=None,
+        help='Use with `--boot` to redirect output from the systemd console '
+            'PTY into a file. By default it goes to stdout for easy debugging.',
+    )
     _parser_add_nspawn_opts(parser)
     if allow_debug_only_opts:
         _parser_add_debug_only_not_for_prod_opts(parser)
     args = parser.parse_args(argv)
+    assert args.boot or not args.append_boot_console, args
 
     return _extract_opts_from_dict(
         _new_nspawn_cli_args, _NspawnCLIArgs._fields, args.__dict__,
