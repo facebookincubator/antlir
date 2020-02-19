@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
+import pwd
 import sys
 
 from typing import Iterable
 
-from nspawn_in_subvol import nspawn_in_subvol, \
-    parse_opts as nspawn_in_subvol_parse_opts
+from fs_image.nspawn_in_subvol.args import new_nspawn_opts
+from fs_image.nspawn_in_subvol.run import nspawn_in_subvol
 from subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder
@@ -34,13 +35,11 @@ class RpmBuildItem(metaclass=ImageItem):
                     f"-bb {item.rpmbuild_dir}/SPECS/specfile.spec"
             )
 
-            opts = nspawn_in_subvol_parse_opts([
-                '--layer', 'UNUSED',
-                '--user', 'root',
-                '--no-snapshot',
-                '--',
-                'sh', '-c', f'{build_cmd}',
-            ])
-            nspawn_in_subvol(subvol, opts, stdout=sys.stderr)
+            nspawn_in_subvol(new_nspawn_opts(
+                cmd=['sh', '-c', f'{build_cmd}'],
+                layer=subvol,
+                user=pwd.getpwnam('root'),
+                snapshot=False,
+            ), boot=False, stdout=sys.stderr)
 
         return builder

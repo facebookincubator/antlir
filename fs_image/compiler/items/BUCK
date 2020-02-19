@@ -34,7 +34,7 @@ python_library(
     base_module = "fs_image.compiler.items",
     deps = [
         ":common",
-        "//fs_image:nspawn_in_subvol",
+        "//fs_image/nspawn_in_subvol:run-library",
         "//fs_image/rpm:rpm_metadata",
     ],
 )
@@ -80,7 +80,7 @@ python_library(
     base_module = "fs_image.compiler.items",
     deps = [
         ":common",
-        "//fs_image:nspawn_in_subvol",
+        "//fs_image/nspawn_in_subvol:run-library",
     ],
 )
 
@@ -102,7 +102,7 @@ python_unittest(
     ],
 )
 
-# Split out since `nspawn-in-subvol` depends on it. Covered by `test-items`.
+# Split out since `nspawn_in_subvol` depends on it. Covered by `test-items`.
 python_library(
     name = "mount_utils",
     srcs = ["mount_utils.py"],
@@ -131,7 +131,6 @@ python_library(
     deps = [
         ":common",
         ":mount_utils",
-        "//fs_image:nspawn_in_subvol",
         "//fs_image/compiler:requires_provides",
         "//fs_image/compiler:subvolume_on_disk",
     ],

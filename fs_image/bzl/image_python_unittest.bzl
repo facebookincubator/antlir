@@ -94,7 +94,7 @@ def image_python_unittest(
             target: "_dep_for_test_wrapper_{}".format(idx)
             for idx, target in enumerate(wrapper_props.porcelain_deps)
         },
-        main_module = "nspawn_test_in_subvol",
+        main_module = "fs_image.nspawn_in_subvol.run_test",
         deps = [wrapper_props.impl_python_library],
         # Ensures we can read resources in @mode/opt.  "xar" cannot work
         # because `root` cannot access the content of unprivileged XARs.

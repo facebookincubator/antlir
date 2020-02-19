@@ -33,7 +33,7 @@ def image_cpp_unittest(
     wrapper_binary = "layer-test-wrapper-" + name
     python_binary(
         name = wrapper_binary,
-        main_module = "nspawn_test_in_subvol",
+        main_module = "fs_image.nspawn_in_subvol.run_test",
         deps = [wrapper_props.impl_python_library],
         # Ensures we can read resources in @mode/opt.  "xar" cannot work
         # because `root` cannot access the content of unprivileged XARs.

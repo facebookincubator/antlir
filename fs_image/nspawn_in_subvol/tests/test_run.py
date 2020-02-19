@@ -5,14 +5,41 @@ import sys
 import tempfile
 import textwrap
 import unittest
-import unittest.mock
 
+from contextlib import contextmanager
 from pwd import struct_passwd
-from nspawn_in_subvol import (
-    find_repo_root, find_built_subvol, nspawn_in_subvol, parse_opts,
-    _nspawn_version, _create_extra_nspawn_args,
-)
+from unittest import mock
+
+from artifacts_dir import find_repo_root
+from fs_image.nspawn_in_subvol.args import _parse_cli_args
+from fs_image.nspawn_in_subvol.common import _nspawn_version
+from fs_image.nspawn_in_subvol.cmd import _extra_nspawn_args_and_env
+from fs_image.nspawn_in_subvol.run import nspawn_in_subvol
 from tests.temp_subvolumes import with_temp_subvols
+
+
+@contextmanager
+def _mocks_for_parse_cli_args():
+    with mock.patch(
+        'fs_image.nspawn_in_subvol.args.pwd.getpwnam'
+    ) as getpwnam_mock, mock.patch(
+        'fs_image.nspawn_in_subvol.args.find_built_subvol'
+    ) as find_built_subvol_mock:
+        getpwnam_mock.side_effect = [struct_passwd([
+            'pw_name', 'pw_passwd', 123, 123, 'pw_gecos', '/test/home',
+            '/test/sh',
+        ])]
+        find_built_subvol_mock.side_effect = [None]
+        yield
+
+
+@contextmanager
+def _mocks_for_extra_nspawn_args(*, artifacts_may_require_repo):
+    with mock.patch(
+        'fs_image.nspawn_in_subvol.cmd._artifacts_may_require_repo'
+    ) as amrr_mock:
+        amrr_mock.side_effect = [artifacts_may_require_repo]
+        yield
 
 
 class NspawnTestCase(unittest.TestCase):
@@ -25,43 +52,29 @@ class NspawnTestCase(unittest.TestCase):
         self.nspawn_version = _nspawn_version()
         self.maybe_extra_ending = b'\n' if self.nspawn_version < 242 else b''
 
-    def _nspawn_in(self, rsrc_name, args, **kwargs):
-        opts = parse_opts([
+    def _nspawn_in(self, rsrc_name, argv, **kwargs):
+        args = _parse_cli_args([
             # __file__ works in @mode/opt since the resource is inside the XAR
             '--layer', os.path.join(os.path.dirname(__file__), rsrc_name),
-        ] + args)
-        return nspawn_in_subvol(find_built_subvol(opts.layer), opts, **kwargs)
+        ] + argv, allow_debug_only_opts=True)
+        return nspawn_in_subvol(args.opts, boot=args.boot, **kwargs)
 
     def _wrapper_args_to_nspawn_args(
-        self, args, *, artifacts_may_require_repo=False
+        self, argv, *, artifacts_may_require_repo=False,
     ):
-        return _create_extra_nspawn_args(
-            parse_opts(args),
-            struct_passwd([
-                'pw_name', 'pw_passwd', 123, 123,
-                'pw_gecos', '/test/home', '/test/sh',
-            ]),
+        with _mocks_for_parse_cli_args():
+            args = _parse_cli_args(argv, allow_debug_only_opts=True)
+        with _mocks_for_extra_nspawn_args(
             artifacts_may_require_repo=artifacts_may_require_repo,
-        )
+        ):
+            args, _env = _extra_nspawn_args_and_env(args.opts)
+            return args
 
     def _assertIsSubseq(self, subseq, seq, msg=None):
         subseqs = [
-            seq[i:i+len(subseq)] for i in range(len(seq) - len(subseq) + 1)
+            seq[i:i + len(subseq)] for i in range(len(seq) - len(subseq) + 1)
         ]
         self.assertIn(subseq, subseqs)
-
-    def test_extra_nspawn_args_boot_opts(self):
-        # !opts.boot
-        self.assertIn('--as-pid2', self._wrapper_args_to_nspawn_args(
-            ['--layer', 'test']
-        ))
-        self.assertIn('--user=somebody', self._wrapper_args_to_nspawn_args(
-            ['--layer', 'test', '--user', 'somebody']
-        ))
-        # opts.boot
-        self.assertIn('--user=root', self._wrapper_args_to_nspawn_args(
-            ['--layer', 'test', '--boot']
-        ))
 
     def test_extra_nspawn_args_private_network_opts(self):
         # opts.private_network
@@ -87,9 +100,9 @@ class NspawnTestCase(unittest.TestCase):
             )
         )
 
-    def test_extra_nspawn_args_bind_repo_opts(self):
-        with unittest.mock.patch('nspawn_in_subvol.find_repo_root') as root:
-            root.return_value = "/repo/root"
+    @mock.patch('fs_image.nspawn_in_subvol.cmd.find_repo_root')
+    def test_extra_nspawn_args_bind_repo_opts(self, root_mock):
+            root_mock.return_value = '/repo/root'
             # opts.bind_repo_ro
             self.assertIn('/repo/root:/repo/root',
                 self._wrapper_args_to_nspawn_args(
@@ -99,22 +112,21 @@ class NspawnTestCase(unittest.TestCase):
             # artifacts_may_require_repo
             self.assertIn('/repo/root:/repo/root',
                 self._wrapper_args_to_nspawn_args(
-                    ['--layer', 'test'], artifacts_may_require_repo=True
+                    ['--layer', 'test'], artifacts_may_require_repo=True,
                 )
             )
 
     def test_extra_nspawn_args_log_tmpfs_opts(self):
+        base_argv = ['--layer', 'test', '--user=is_mocked']
         # opts.logs_tmpfs
         self.assertIn(
             '--tmpfs=/logs:uid=123,gid=123,mode=0755,nodev,nosuid,noexec',
-            self._wrapper_args_to_nspawn_args(['--layer', 'test']),
+            self._wrapper_args_to_nspawn_args(base_argv),
         )
         # !opts.logs_tmpfs
         self.assertNotIn(
             '--tmpfs=/logs:uid=123,gid=123,mode=0755,nodev,nosuid,noexec',
-            self._wrapper_args_to_nspawn_args(
-                ['--layer', 'test', '--no-logs-tmpfs']
-            ),
+            self._wrapper_args_to_nspawn_args(base_argv + ['--no-logs-tmpfs']),
         )
 
     def test_extra_nspawn_args_cap_net_admin_opts(self):
@@ -141,23 +153,19 @@ class NspawnTestCase(unittest.TestCase):
 
     def test_extra_nspawn_args_foward_tls_env_opts(self):
         # opts.foward_tls_env
-        pw = struct_passwd([
-                'pw_name', 'pw_passwd', 123, 123,
-                'pw_gecos', '/test/home', '/test/sh',
-        ])
-        with unittest.mock.patch.dict(
-            os.environ, {'THRIFT_TLS_TEST': 'test_val'}
-        ):
-            opts = parse_opts(
-                ['--layer', 'test', '--forward-tls-env']
+        with _mocks_for_parse_cli_args():
+            args = _parse_cli_args(
+                ['--layer', 'test', '--forward-tls-env'],
+                allow_debug_only_opts=True,
             )
-            _create_extra_nspawn_args(
-                opts, pw, artifacts_may_require_repo=False,
-            )
-            self.assertIn('THRIFT_TLS_TEST=test_val', opts.setenv)
+        with _mocks_for_extra_nspawn_args(
+            artifacts_may_require_repo=False,
+        ), mock.patch.dict(os.environ, {'THRIFT_TLS_TEST': 'test_val'}):
+            _nspawn_args, cmd_env = _extra_nspawn_args_and_env(args.opts)
+            self.assertIn('THRIFT_TLS_TEST=test_val', cmd_env)
 
     def test_nspawn_version(self):
-        with unittest.mock.patch('subprocess.check_output') as version:
+        with mock.patch('subprocess.check_output') as version:
             version.return_value = (
                 'systemd 602214076 (v602214076-2.fb1)\n+AVOGADROS SYSTEMD\n')
             self.assertEqual(602214076, _nspawn_version())
@@ -263,7 +271,7 @@ class NspawnTestCase(unittest.TestCase):
             'grep', 'supercalifragilisticexpialidocious',
             os.path.join(
                 os.path.realpath(find_repo_root(sys.argv[0])),
-                'fs_image/tests',
+                'fs_image/nspawn_in_subvol/tests',
                 os.path.basename(__file__),
             ),
         ])
@@ -282,7 +290,7 @@ class NspawnTestCase(unittest.TestCase):
         ], stdout=subprocess.PIPE, check=True)
         self.assertEqual(b'test-host.com\n', ret.stdout)
 
-    @unittest.mock.patch.dict('os.environ', {
+    @mock.patch.dict('os.environ', {
         'THRIFT_TLS_KITTEH': 'meow', 'UNENCRYPTED_KITTEH': 'woof',
     })
     def test_tls_environment(self):
@@ -325,7 +333,7 @@ class NspawnTestCase(unittest.TestCase):
                 ])
                 self.assertEqual(
                     "touch: cannot touch '/tmp/testfile': " +
-                        "Read-only file system",
+                        'Read-only file system',
                     ret.stdout,
                 )
 
@@ -448,10 +456,11 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(b'Stopped target', ret.boot.stdout)
 
     def _run_yum_or_dnf(self, progname, package,
-            expected_filename, expected_contents, expected_logline
+        expected_filename, expected_contents, expected_logline,
     ):
         ret = self._nspawn_in('build-appliance', [
-            '--repo-server-snapshot-dir',
+            '--user=root',
+            '--serve-rpm-snapshot-dir',
             os.path.join(os.path.dirname(__file__), 'repo-snapshot'),
             '--',
             '/bin/sh', '-c',

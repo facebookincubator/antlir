@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import base64
 import enum
+import pwd
 import shlex
 import sys
 import uuid
@@ -8,8 +9,8 @@ import uuid
 from typing import Iterable, List, Mapping, NamedTuple, Tuple, Union
 
 from fs_image.fs_utils import Path
-from nspawn_in_subvol import nspawn_in_subvol, \
-    parse_opts as nspawn_in_subvol_parse_opts
+from fs_image.nspawn_in_subvol.args import new_nspawn_opts
+from fs_image.nspawn_in_subvol.run import nspawn_in_subvol
 from rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from subvol_utils import Subvol
 
@@ -166,11 +167,11 @@ def _convert_actions_to_commands(
     return cmd_to_names_or_rpms
 
 
-def _rpms_and_bind_ro_args(
+def _rpms_and_bind_ros(
     names_or_rpms: List[Union[str, _LocalRpm]],
 ) -> Tuple[List[str], List[str]]:
     rpms = []
-    bind_ro_args = []
+    bind_ros = []
     for idx, nor in enumerate(names_or_rpms):
         if isinstance(nor, _LocalRpm):
             # For custom bind mount destinations, nspawn is strict on
@@ -178,11 +179,11 @@ def _rpms_and_bind_ro_args(
             # Because of that, we bind all the local RPMs in "/" with
             # uniquely prefix-ed names.
             dest = f'/localhostrpm_{idx}_{nor.path.basename().decode()}'
-            bind_ro_args.extend(['--bindmount-ro', nor.path.decode(), dest])
+            bind_ros.append((nor.path.decode(), dest))
             rpms.append(dest)
         else:
             rpms.append(nor)
-    return rpms, bind_ro_args
+    return rpms, bind_ros
 
 
 # These items are part of a phase, so they don't get dependency-sorted, so
@@ -227,12 +228,12 @@ class RpmActionItem(metaclass=ImageItem):
             for cmd, nors in sorted(_convert_actions_to_commands(
                 subvol, action_to_names_or_rpms,
             ).items(), key=lambda cn: YUM_DNF_COMMAND_ORDER[cn[0]]):
-                rpms, bind_ro_args = _rpms_and_bind_ro_args(nors)
+                rpms, bind_ros = _rpms_and_bind_ros(nors)
                 _yum_dnf_using_build_appliance(
                     build_appliance=Subvol(
                         layer_opts.build_appliance, already_exists=True,
                     ),
-                    nspawn_args=bind_ro_args,
+                    bind_ros=bind_ros,
                     install_root=subvol.path(),
                     protected_paths=protected_path_set(subvol),
                     yum_dnf_args=[
@@ -266,7 +267,7 @@ def _get_yum_or_dnf(build_appliance: Subvol, layer_opts: LayerOpts) -> str:
 
 def _yum_dnf_using_build_appliance(
     *, build_appliance: Subvol,
-    nspawn_args: List[str],
+    bind_ros: List[Tuple[str, str]],
     install_root: Path,
     protected_paths: Iterable[str],
     yum_dnf_args: List[str],
@@ -280,30 +281,33 @@ def _yum_dnf_using_build_appliance(
         mkdir -p {work_dir}/var/cache/{prog_name} ; \
         mount --bind /var/cache/{prog_name} {work_dir}/var/cache/{prog_name} ;
     '''
-    opts = nspawn_in_subvol_parse_opts([
-        '--layer', 'UNUSED',
-        '--user', 'root',
-        # You can see below --no-private-network in conjunction with
-        # --cap-net-admin.  CAP_NET_ADMIN is not intended to administer the
-        # host's network stack.  See how yum_dnf_from_snapshot() brings
-        # loopback interface up under protection of "unshare --net".
-        '--cap-net-admin',
-        '--no-private-network',
-        '--bindmount-rw', install_root.decode(), work_dir,
-        *nspawn_args,
-        '--', 'sh', '-uec',
-        f'''
-        {mount_cache}
-        /rpm-repo-snapshot/{
-            shlex.quote(layer_opts.rpm_repo_snapshot)
-        }/bin/{prog_name} \
-            {' '.join(
-                '--protected-path=' + shlex.quote(p) for p in protected_paths
-            )} \
-            --install-root {work_dir} \
-            {'--debug' if layer_opts.debug else ''} \
-            -- {' '.join(shlex.quote(arg) for arg in yum_dnf_args)}
-        ''',
-    ])
+    opts = new_nspawn_opts(
+        cmd=[
+            'sh', '-uec',
+            f'''
+            {mount_cache}
+            /rpm-repo-snapshot/{
+                shlex.quote(layer_opts.rpm_repo_snapshot)
+            }/bin/{prog_name} \
+                {' '.join(
+                    '--protected-path=' + shlex.quote(p)
+                        for p in protected_paths
+                )} \
+                --install-root {work_dir} \
+                {'--debug' if layer_opts.debug else ''} \
+                -- {' '.join(shlex.quote(arg) for arg in yum_dnf_args)}
+            ''',
+        ],
+        layer=build_appliance,
+        bindmount_ro=bind_ros,
+        bindmount_rw=[(install_root.decode(), work_dir)],
+        user=pwd.getpwnam('root'),
+        # CAP_NET_ADMIN is not intended to administer the host's network
+        # stack, but to allow `yum_dnf_from_snapshot()` to bring loopback
+        # interface up under protection of "unshare --net".
+        cap_net_admin=True,
+        private_network=False,  # So that repo-server can access `Strorage`
+    )
+    # Fixme: Redirecting `stdout` will be the default soon.
     # Don't pollute stdout with logging
-    nspawn_in_subvol(build_appliance, opts, stdout=sys.stderr)
+    nspawn_in_subvol(opts, boot=False, stdout=sys.stderr)

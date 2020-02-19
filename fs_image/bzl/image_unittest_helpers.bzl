@@ -107,8 +107,9 @@ def nspawn_in_subvol_args():
     )
 
     # To execute the wrapped test, the caller must make this library's
-    # `nspawn_test_in_subvol` the `main_module` of a `python_binary`, and
-    # arrange for the binary to be run as if it were of the inner test type.
+    # `fs_image.nspawn_in_subvol.run_test` the `main_module` of a
+    # `python_binary`, and arrange for the binary to be run as if it were of
+    # the inner test type.
     #
     # IMPORTANT: If you add more dependencies to THIS LIBRARY, or to any of
     # the AUXILIARY TARGETS above, you must add their externally observable
@@ -118,13 +119,14 @@ def nspawn_in_subvol_args():
         name = wrapper_impl_library,
         visibility = visibility,
 
-        # This library puts at the root of the source archive:
-        #  - `nspawn_test_in_subvol.py` with the business logic
+        # This library puts the following files under
+        # `fs_image/nspawn_in_subvol` in the source archive:
+        #  - `run_test.py` with the business logic
         #  - `test_layer` from above
         #  - `test_spec_py` from above
-        # This makes it easy for `nspawn_test_in_subvol` to find its data.
-        base_module = "",
-        deps = ["//fs_image:nspawn-test-in-subvol-library"],
+        # This makes it easy for `nspawn_test_in_subvol()` to find its data.
+        base_module = "fs_image.nspawn_in_subvol",
+        deps = ["//fs_image/nspawn_in_subvol:run-test-library"],
         resources = {":" + test_layer: "nspawn-in-test-subvol-layer"},
         srcs = {":" + test_spec_py: "__image_python_unittest_spec__.py"},
     )
@@ -178,11 +180,11 @@ def nspawn_in_subvol_args():
             caller_fake_library,  # Should depend on `:image_unittest_helpers`
 
             # Future: This currently lacks a direct dependency on
-            # `nspawn_in_test_subvol.py` & friends, but adding that
-            # dependency via `//fs_image:nspawn-test-in-subvol` would force
-            # builds to wait for that unnecessary PAR to be built.  Leaving
-            # it out for now, we can change our mind if our risk vs speed
-            # assessment changes.
+            # `nspawn_in_subvol/run_test.py` & friends, but adding that
+            # dependency via `//fs_image/nspawn_in_subvol:run-test` would
+            # force builds to wait for that unnecessary PAR to be built.
+            # Leaving it out for now, we can change our mind if our risk vs
+            # speed assessment changes.
         ],
     )
 
