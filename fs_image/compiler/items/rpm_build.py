@@ -25,17 +25,16 @@ class RpmBuildItem(metaclass=ImageItem):
         assert isinstance(item, RpmBuildItem), item
 
         def builder(subvol: Subvol):
-            # For rpmbuild:
-            #   - define _topdir to move where the RPM gets built
-            #   - use -bb so it only builds from the specfile
-            #   - define _rpmfilename to strip version from the result files
-            build_cmd = (
-                f"rpmbuild --define '_topdir {item.rpmbuild_dir}' "
-                    "--define '_rpmfilename %%{NAME}.rpm' "
-                    f"-bb {item.rpmbuild_dir}/SPECS/specfile.spec"
-            )
             run_non_booted_nspawn(new_nspawn_opts(
-                cmd=['sh', '-c', f'{build_cmd}'],
+                cmd=[
+                    'rpmbuild',
+                    # Change the destination for the built RPMs
+                    f'--define=_topdir {item.rpmbuild_dir}',
+                    # Don't include the version in the resulting RPM filenames
+                    '--define=_rpmfilename %%{NAME}.rpm',
+                    '-bb',  # Only build the binary packages (no SRPMs)
+                    f'{item.rpmbuild_dir}/SPECS/specfile.spec',
+                ],
                 layer=subvol,
                 user=pwd.getpwnam('root'),
                 snapshot=False,
