@@ -159,7 +159,7 @@ def _download_repodata(
         - Returns True only if we just downloaded & stored this Repodata.
         - Returns our new storage_id, or the previous one from the DB.
         - For the selected primary repodata, returns a list of RPMs.
-        Returns None for all others.
+          Returns None for all others.
     '''
     db_conn = DBConnectionContext.from_json(db_cfg)
     storage = Storage.from_json(storage_cfg)
@@ -173,7 +173,7 @@ def _download_repodata(
     # Nothing to do -- only need to download repodata if it's the primary
     # (so we can parse it for RPMs), or if it's not already in the DB.
     if not is_primary and storage_id:
-        return (repodata, storage_id, None)
+        return (False, storage_id, None)
     rpms = [] if is_primary else None
 
     # Remaining possibilities are that we've got a primary with or without
