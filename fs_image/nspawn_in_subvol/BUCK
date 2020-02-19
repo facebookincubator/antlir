@@ -51,7 +51,8 @@ python_library(
     name = "booted",
     srcs = ["booted.py"],
     deps = [
-        ":common",
+        ":args",
+        ":cmd",
         "//fs_image:send_fds_and_run",
     ],
 )
@@ -60,9 +61,10 @@ python_library(
     name = "non_booted",
     srcs = ["non_booted.py"],
     deps = [
+        ":args",
+        ":cmd",
         ":common",
         ":repo_server",
-        "//fs_image:send_fds_and_run",
     ],
 )
 
@@ -129,7 +131,12 @@ python_binary(
     # Ensures we can read resources in @mode/opt. "xar" cannot work because
     # `root` cannot access the content of unprivileged XARs.
     par_style = "zip",
-    deps = [":run-library"],
+    deps = [
+        ":args",
+        ":booted",
+        ":cmd",
+        ":non_booted",
+    ],
 )
 
 python_unittest(

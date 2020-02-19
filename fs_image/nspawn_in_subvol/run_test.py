@@ -21,7 +21,9 @@ from contextlib import contextmanager
 from typing import List, Tuple
 
 from .args import _parse_cli_args
-from .run import nspawn_in_subvol
+from .cmd import PopenArgs
+from .booted import run_booted_nspawn
+from .non_booted import run_non_booted_nspawn
 
 
 @contextmanager
@@ -135,15 +137,24 @@ if __name__ == '__main__':  # pragma: no cover
     with rewrite_test_cmd(
         args.opts.cmd, next_fd=3 + len(args.opts.forward_fd),
     ) as (new_cmd, fd_to_forward):
-        ret = nspawn_in_subvol(
+        ret = (
+            run_booted_nspawn if args.boot else run_non_booted_nspawn
+        )(
             args.opts._replace(
                 cmd=new_cmd,
                 forward_fd=args.opts.forward_fd + (
                     [] if fd_to_forward is None else [fd_to_forward]
                 ),
             ),
-            boot=args.boot,
-            check=False,
+            PopenArgs(
+                check=False,  # We forward the return code below
+                # By default, our internal `Popen` analogs redirect `stdout`
+                # to `stderr` to protect stdout from subprocess spam.  Undo
+                # that, since we want this CLI to be usable in pipelines.
+                stdout=1,
+                # Default `boot_console` -- for booted containers, let the
+                # console go to stderr so that tests are easier to debug.
+            ),
         )
 
     # Only trigger SystemExit after the context was cleaned up.

@@ -9,8 +9,8 @@ import uuid
 from typing import Iterable, List, Mapping, NamedTuple, Tuple, Union
 
 from fs_image.fs_utils import Path
-from fs_image.nspawn_in_subvol.args import new_nspawn_opts
-from fs_image.nspawn_in_subvol.run import nspawn_in_subvol
+from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
+from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from subvol_utils import Subvol
 
@@ -308,6 +308,4 @@ def _yum_dnf_using_build_appliance(
         cap_net_admin=True,
         private_network=False,  # So that repo-server can access `Strorage`
     )
-    # Fixme: Redirecting `stdout` will be the default soon.
-    # Don't pollute stdout with logging
-    nspawn_in_subvol(opts, boot=False, stdout=sys.stderr)
+    run_non_booted_nspawn(opts, PopenArgs())

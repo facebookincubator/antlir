@@ -11,22 +11,22 @@ import subprocess
 import unittest
 
 from find_built_subvol import find_built_subvol
-from fs_image.nspawn_in_subvol.args import new_nspawn_opts
+from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from fs_image.nspawn_in_subvol.common import _nspawn_version
-from fs_image.nspawn_in_subvol.run import nspawn_in_subvol
+from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 
 
 class ExecuteInstalledTestCase(unittest.TestCase):
 
     def _nspawn_in(self, rsrc_name, cmd, **kwargs):
-        return nspawn_in_subvol(new_nspawn_opts(
+        return run_non_booted_nspawn(new_nspawn_opts(
             cmd=cmd,
             # __file__ works in @mode/opt since the resource is inside the XAR
             layer=find_built_subvol(
                 os.path.join(os.path.dirname(__file__), rsrc_name)
             ),
             quiet=True,  # Easier to assert the output.
-        ), boot=False, **kwargs)
+        ), PopenArgs(**kwargs))
 
     def test_execute(self):
         for print_ok in [

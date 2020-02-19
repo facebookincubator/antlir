@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 '''
-No externally useful functions here.  Read the `run.py` docblock instead.
+Read the `run.py` docblock first.  Then, review the docs for
+`new_nspawn_opts` and `PopenArgs`, and invoke `run_booted_nspawn`.
 
 This file uses `systemd-nspawn` to boot up `systemd` as the container's PID
 1, and later uses `nsenter` to execute `opts.cmd` in the container
@@ -13,12 +14,12 @@ import functools
 import os
 import signal
 import subprocess
-import sys
+import textwrap
 
 from send_fds_and_run import popen_and_inject_fds_after_sudo
 
-from .cmd import _NspawnSetup
-from .common import _wrap_systemd_exec
+from .args import _NspawnOpts, PopenArgs
+from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
 
 
 class BootedCompletedProcess(subprocess.CompletedProcess):
@@ -32,9 +33,42 @@ class BootedCompletedProcess(subprocess.CompletedProcess):
         )
 
 
-def _run_booted_nspawn(
-    setup: _NspawnSetup, popen
-) -> subprocess.CompletedProcess:
+def run_booted_nspawn(
+    opts: _NspawnOpts, popen_args: PopenArgs
+) -> BootedCompletedProcess:
+    with _nspawn_setup(opts, popen_args) as setup:
+        return _run_booted_nspawn(setup)
+
+
+def _wrap_systemd_exec():
+    return [
+        '/bin/bash', '-eu', '-o', 'pipefail', '-c',
+        # This script will be invoked with a writable FD forwarded into the
+        # namespace this is being executed in as fd #3.
+        #
+        # It will then get the parent pid of the 'grep' process, which will be
+        # the pid of the script itself (running as PID 1 inside the namespace),
+        # so eventually the pid of systemd.
+        #
+        # We don't close the forwarded FD in this script. Instead we rely on
+        # systemd to close all FDs it doesn't know about during its
+        # initialization sequence.
+        #
+        # We rely on this because systemd will only close FDs after it creates
+        # the /run/systemd/private socket (which makes systemctl usable) and
+        # after setting up the necessary signal handlers to process the
+        # SIGRTMIN+4 shutdown signal that we need to shut down the container
+        # after invoking a command inside it.
+        textwrap.dedent('''\
+            grep ^PPid: /outerproc/self/status >&3
+            umount -R /outerproc
+            rmdir /outerproc
+            exec /usr/lib/systemd/systemd
+        '''),
+    ]
+
+
+def _run_booted_nspawn(setup: _NspawnSetup) -> BootedCompletedProcess:
     opts = setup.opts
     # We need `root` to boot `systemd`. The user for `opts.cmd` is set later.
     cmd = [*setup.nspawn_cmd, '--user=root']
@@ -43,29 +77,33 @@ def _run_booted_nspawn(
     # that we can exfiltrate the process id of the process. After
     # sending that information out, the shell script execs systemd.
     cmd.extend([
+        '--console=read-only',  # `stdin` is attached to `cmd` via `nsenter`
         '--bind-ro=/proc:/outerproc',
         '--',
         *_wrap_systemd_exec(),
     ])
 
-    # Create a partial of the popen with stdout/stderr setup as
-    # requested for the boot process.
-    boot_popen = functools.partial(popen,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-
     # Create a pipe that we can forward into the namespace that our
     # shell script can use to exfil data about the namespace we've been
     # put into before we hand control over to the init system.
     exfil_r, exfil_w = os.pipe()
-    with (
-        popen_and_inject_fds_after_sudo(
-            cmd,
-            [exfil_w],  # Forward the write fd of the pipe
-            boot_popen,
-            set_listen_fds=True
-        )
+    with popen_and_inject_fds_after_sudo(
+        cmd,
+        [exfil_w],  # Forward the write fd of the pipe
+        popen=functools.partial(
+            # NB: If `boot_console` is None, this will redirect it to
+            # `stderr`, this is the right default for the most common use of
+            # this API, which is to run a helper process in a container.
+            # The result is that we get the helper's logs, but not `stdout`
+            # contamination, so the parent remains usable in pipelines.
+            setup.subvol.popen_as_root,
+            check=setup.popen_args.check,
+            env=setup.nspawn_env,
+            stdin=subprocess.DEVNULL,  # We boot with `--console=read-only`
+            stdout=setup.popen_args.boot_console,  # See `PopenArgs`
+            stderr=setup.popen_args.stderr,  # Only systemd logspam goes here
+        ),
+        set_listen_fds=True
     ) as boot_proc:
         # Close the write fd of the pipe from this process so we
         # can read from this side.
@@ -104,13 +142,20 @@ def _run_booted_nspawn(
             *opts.cmd,
         ]
 
-        with (
-            popen_and_inject_fds_after_sudo(
-                nsenter_cmd,
-                opts.forward_fd,
-                popen,
-                set_listen_fds=True,
-            ) if opts.forward_fd else popen(nsenter_cmd)
+        with maybe_popen_and_inject_fds(
+            nsenter_cmd,
+            opts,
+            popen=functools.partial(
+                # NB: stdout is stderr if stdout is None, this is also our API.
+                setup.subvol.popen_as_root,
+                check=setup.popen_args.check,
+                # We don't bind `env` because that's set via `nsenter_cmd`.
+                stdin=setup.popen_args.stdin,
+                stdout=setup.popen_args.stdout,
+                stderr=setup.popen_args.stderr,
+            ),
+            # This command is not executing `systemd-nspawn`.
+            set_listen_fds=False,
         ) as nsenter_proc:
             nsenter_stdout, nsenter_stderr = nsenter_proc.communicate()
 
@@ -120,11 +165,6 @@ def _run_booted_nspawn(
             ['kill', '-s', str(signal.SIGRTMIN + 4), systemd_pid])
 
         boot_stdout, boot_stderr = boot_proc.communicate()
-
-        # this is uncovered because this is only useful for manually
-        # debugging
-        if opts.debug_only_opts.boot_console_stdout:  # pragma: no cover
-            sys.stdout.buffer.write(boot_stdout)
 
     # What we care about is the return status/data from the cmd we
     # wanted to execute.

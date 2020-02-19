@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 '''
-No externally useful functions here.  Read the `run.py` docblock instead.
+Read the `run.py` docblock first.  Then, review the docs for
+`new_nspawn_opts` and `PopenArgs`, and invoke `run_non_booted_nspawn`.
 
 This file uses `systemd-nspawn --as-pid2` to run nspawn's internal "stub
 init" as PID 1 of the container, and have that start `opts.cmd` as PID 2.
@@ -9,18 +10,23 @@ Security note: We use `--console=pipe`, which means that FDs that point at
 your terminal may make it inside the container, allowing the guest to
 synthesize keystrokes on the host.
 '''
+import functools
 import subprocess
 
-from send_fds_and_run import popen_and_inject_fds_after_sudo
-
-from .cmd import _NspawnSetup
+from .args import _NspawnOpts, PopenArgs
+from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
 from .common import _nspawn_version
 from .repo_server import _popen_and_inject_repo_server
 
 
-def _run_non_booted_nspawn(
-    setup: _NspawnSetup, popen,
+def run_non_booted_nspawn(
+    opts: _NspawnOpts, popen_args: PopenArgs,
 ) -> subprocess.CompletedProcess:
+    with _nspawn_setup(opts, popen_args) as setup:
+        return _run_non_booted_nspawn(setup)
+
+
+def _run_non_booted_nspawn(setup: _NspawnSetup) -> subprocess.CompletedProcess:
     opts = setup.opts
     # Lets get the version locally right up front.  If this fails we'd like to
     # know early rather than later.
@@ -66,23 +72,30 @@ def _run_non_booted_nspawn(
         #     may yet propose it to upstream.
         cmd.append('--console=pipe')
 
+    assert setup.popen_args.boot_console is None, setup  # Should be unset
+    cmd_popen = functools.partial(
+        # NB: stdout is stderr if stdout is None, this is also our contract.
+        setup.subvol.popen_as_root,
+        check=setup.popen_args.check,
+        env=setup.nspawn_env,  # `cmd_env` is set via `nspawn` args
+        stdin=setup.popen_args.stdin,
+        stdout=setup.popen_args.stdout,
+        stderr=setup.popen_args.stderr,
+    )
     with (
         _popen_and_inject_repo_server(
             cmd,
             opts.cmd,
             opts.forward_fd,
-            popen,
+            cmd_popen,
             opts.serve_rpm_snapshot_dir,
             debug=opts.debug_only_opts.debug,
         ) if opts.serve_rpm_snapshot_dir
-        else (
-            popen_and_inject_fds_after_sudo(
-                cmd + ['--'] + opts.cmd,
-                opts.forward_fd,
-                popen,
-                set_listen_fds=True,
-            ) if opts.forward_fd
-            else popen(cmd + ['--'] + opts.cmd)
+        else maybe_popen_and_inject_fds(
+            cmd + ['--'] + opts.cmd,
+            opts,
+            cmd_popen,
+            set_listen_fds=True,  # We must pass FDs through `systemd-nspawn`
         )
     ) as cmd_proc:
         cmd_stdout, cmd_stderr = cmd_proc.communicate()

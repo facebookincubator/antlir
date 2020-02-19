@@ -34,7 +34,7 @@ python_library(
     base_module = "fs_image.compiler.items",
     deps = [
         ":common",
-        "//fs_image/nspawn_in_subvol:run-library",
+        "//fs_image/nspawn_in_subvol:non_booted",
         "//fs_image/rpm:rpm_metadata",
     ],
 )
@@ -80,7 +80,7 @@ python_library(
     base_module = "fs_image.compiler.items",
     deps = [
         ":common",
-        "//fs_image/nspawn_in_subvol:run-library",
+        "//fs_image/nspawn_in_subvol:non_booted",
     ],
 )
 

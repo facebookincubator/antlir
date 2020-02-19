@@ -8,18 +8,20 @@ import os
 import re
 import sys
 import uuid
+import subprocess
 
 from contextlib import contextmanager
-from typing import AnyStr, Iterable, List, NamedTuple, Optional, Tuple
+from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
 from artifacts_dir import find_repo_root
 from compiler import procfs_serde
 from find_built_subvol import Subvol
 from fs_image.common import nullcontext
 from fs_image.compiler.items.mount_utils import clone_mounts
+from send_fds_and_run import popen_and_inject_fds_after_sudo
 from tests.temp_subvolumes import TempSubvolumes
 
-from .args import _NspawnOpts
+from .args import _NspawnOpts, PopenArgs
 
 
 def _colon_quote_path(path):
@@ -203,15 +205,49 @@ def _snapshot_subvol(
             yield nspawn_subvol
 
 
+def nspawn_sanitize_env():
+    env = os.environ.copy()
+    # `systemd-nspawn` responds to a bunch of semi-private and intentionally
+    # (mostly) undocumented environment variables.  Many of these can
+    # compromise namespacing / isolation, which we emphatically do not want,
+    # so let's prevent the ambient environment from changing them!
+    #
+    # Of course, this leaves alone a lot of the canonical variables
+    # LINES/COLUMNS, or locale controls.  Those should be OK.
+    for var in list(env.keys()):
+        # No test coverage for this because (a) systemd does not pass such
+        # environment vars to the container, so the only way to observe them
+        # being set (or not) is via indirect side effects, (b) all the side
+        # effects are annoying to test.
+        if var.startswith('SYSTEMD_NSPAWN_'):  # pragma: no cover
+            env.pop(var)
+    return env
+
+
+def maybe_popen_and_inject_fds(
+    cmd: List[str], opts: _NspawnOpts, popen, *, set_listen_fds,
+) -> subprocess.Popen:
+    if not opts.forward_fd:
+        return popen(cmd)
+    return popen_and_inject_fds_after_sudo(
+        cmd,
+        opts.forward_fd,
+        popen,
+        set_listen_fds=set_listen_fds,
+    )
+
+
 class _NspawnSetup(NamedTuple):
     subvol: Subvol
     nspawn_cmd: Iterable[AnyStr]  # How to invoke `systemd-nspawn`
+    nspawn_env: Mapping[str, str]  # `{K: V}` env vars for `systemd-nspawn`
     opts: _NspawnOpts
     cmd_env: Iterable[AnyStr]  # `K=V` env vars for `opts.cmd`
+    popen_args: PopenArgs
 
 
 @contextmanager
-def _nspawn_setup(opts: _NspawnOpts) -> _NspawnSetup:
+def _nspawn_setup(opts: _NspawnOpts, popen_args: PopenArgs) -> _NspawnSetup:
     with (
         _snapshot_subvol(
             opts.layer, opts.debug_only_opts.snapshot_into
@@ -221,6 +257,10 @@ def _nspawn_setup(opts: _NspawnOpts) -> _NspawnSetup:
         yield _NspawnSetup(
             subvol=nspawn_subvol,
             nspawn_cmd=(*_nspawn_cmd(nspawn_subvol), *nspawn_args),
+            # This is a safeguard in case the `sudo` policy lets through any
+            # unwanted environment variables.
+            nspawn_env=nspawn_sanitize_env(),
             opts=opts,
             cmd_env=tuple(cmd_env),
+            popen_args=popen_args,
         )

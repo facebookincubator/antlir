@@ -45,7 +45,7 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     fn = unittest.mock.patch.object(os.path, 'lexists')(fn)
     fn = unittest.mock.patch.object(subvol_utils, '_path_is_btrfs_subvol')(fn)
     fn = unittest.mock.patch.object(subvol_utils.Subvol, 'run_as_root')(fn)
-    fn = unittest.mock.patch.object(rpm_action, 'nspawn_in_subvol')(fn)
+    fn = unittest.mock.patch.object(rpm_action, 'run_non_booted_nspawn')(fn)
     return fn
 
 
@@ -136,7 +136,7 @@ class CompilerTestCase(unittest.TestCase):
         btrfs_get_volume_props,
         lexists, is_btrfs,
         run_as_root,
-        nspawn_in_subvol,
+        run_non_booted_nspawn,
     ):
         lexists.side_effect = _os_path_lexists
         run_as_root.side_effect = _run_as_root
@@ -200,7 +200,7 @@ class CompilerTestCase(unittest.TestCase):
         lexists,
         is_btrfs,
         run_as_root,
-        nspawn_in_subvol
+        run_non_booted_nspawn,
     ):
         'Get the commands that each of the *expected* sample items would run'
         lexists.side_effect = _os_path_lexists
