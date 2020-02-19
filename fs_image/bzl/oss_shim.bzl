@@ -73,6 +73,7 @@ _PYTHON_UNITTEST_KWARGS = _setify(
         "needed_coverage",
         "par_style",
         "resources",
+        "runtime_deps",
         "srcs",
         "tags",
         "visibility",
