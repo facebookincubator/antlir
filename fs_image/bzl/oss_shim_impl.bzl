@@ -131,6 +131,7 @@ shim = struct(
     buck_command_alias = command_alias,
     buck_genrule = genrule,
     buck_sh_binary = sh_binary,
+    buck_sh_test = sh_test,
     cpp_unittest = _cpp_unittest,
     config = struct(
         get_current_repo_name = native.repository_name,
