@@ -18,7 +18,7 @@ def _setify(l):
     return {k: 1 for k in l}
 
 _CPP_UNITTEST_KWARGS = _setify(
-    ["name", "deps", "env", "srcs", "tags", "use_default_test_main", "visibility"],
+    ["name", "deps", "env", "srcs", "tags", "use_default_test_main", "visibility", "external_deps"],
 )
 
 def cpp_unittest(*args, **kwargs):
