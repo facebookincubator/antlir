@@ -34,7 +34,7 @@ def _normalize_visibility(vis, name=None):
 
 def _normalize_pkg_style(style):
     """
-    Internally, zip and fastzip internally behave similar to how an 
+    Internally, zip and fastzip internally behave similar to how an
     `inplace` python binary behaves in OSS Buck.
     """
     if style and style in ('zip', 'fastzip'):
