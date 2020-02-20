@@ -10,8 +10,8 @@ from fs_image.fs_utils import Path, populate_temp_file_and_rename
 
 
 def _maybe_make_symlink_to_scratch(
-    symlink_path, target_in_scratch, path_in_repo,
-):
+    symlink_path: str, target_in_scratch, path_in_repo: str,
+) -> str:
     '''
     IMPORTANT: This must be safe against races with other concurrent copies
     of `artifacts_dir.py`.
@@ -98,7 +98,7 @@ def ensure_per_repo_artifacts_dir_exists(path_in_repo: str) -> str:
     return artifacts_dir
 
 
-def ensure_clean_sh_exists(artifacts_dir: Path):
+def ensure_clean_sh_exists(artifacts_dir: Path) -> None:
     clean_sh_path = artifacts_dir / 'clean.sh'
     with populate_temp_file_and_rename(clean_sh_path,
                                         overwrite=True, mode='w') as f:
