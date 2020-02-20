@@ -46,6 +46,9 @@ class SubvolOpts(NamedTuple):
     # For sending subvolumes to an image, whether to leave the
     # subvolume read only
     readonly: bool = True
+    # Make the resulting subvolume a seed device, where another disk can be
+    # provided for writes
+    seed_device: bool = False
 
 
 _default_subvol_opts = SubvolOpts()
@@ -272,6 +275,17 @@ class Subvol:
             'true' if readonly else 'false',
         ])
 
+    def set_seed_device(self, output_path: str):
+        # Clearing the seeding flag on a device may be dangerous. If a
+        # previously-seeding device is changed, all filesystems that used that
+        # device will become unmountable. Setting the seeding flag back will
+        # not fix that.
+        # Due to this danger and the limited usefulness we don't support
+        # clearing the seed flag.
+        self.run_as_root([
+            'btrfstune', '-S', '1', output_path
+        ])
+
     def sync(self):
         self.run_as_root(['btrfs', 'filesystem', 'sync', self.path()])
 
@@ -428,6 +442,8 @@ class Subvol:
             ):
                 break
             log.warning(f'{self._path} did not fit in {fs_bytes} bytes')
+        if subvol_opts.seed_device:
+            self.set_seed_device(output_path)
         # Future: It would not be unreasonable to run some sanity checks on
         # the resulting filesystem here. Ideas:
         #  - See if we have an unexpectedly large amount of unused metadata

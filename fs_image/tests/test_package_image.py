@@ -43,7 +43,8 @@ class PackageImageTestCase(unittest.TestCase):
         self,
         layer_path: str,
         format: str,
-        writable_subvolume: bool = False
+        writable_subvolume: bool = False,
+        seed_device: bool = False,
     ) -> Iterator[str]:
         with tempfile.TemporaryDirectory() as td:
             out_path = os.path.join(td, format)
@@ -53,6 +54,7 @@ class PackageImageTestCase(unittest.TestCase):
                 '--format', format,
                 '--output-path', out_path,
                 *(['--writable-subvolume'] if writable_subvolume else []),
+                *(['--seed-device'] if seed_device else []),
             ])
             yield out_path
 
@@ -135,6 +137,32 @@ class PackageImageTestCase(unittest.TestCase):
                 ))
             finally:
                 nsenter_as_root(unshare, 'umount', mount_dir)
+
+    def test_package_image_as_btrfs_seed_device(self):
+        with self._package_image(
+            self._sibling_path('create_ops.layer'),
+            'btrfs',
+            writable_subvolume=True,
+            seed_device=True,
+        ) as out_path:
+            proc = subprocess.run(
+                ["btrfs", "inspect-internal", "dump-super", out_path],
+                check=True,
+                stdout=subprocess.PIPE
+            )
+            self.assertIn(b"SEEDING", proc.stdout)
+        with self._package_image(
+            self._sibling_path('create_ops.layer'),
+            'btrfs',
+            writable_subvolume=True,
+            seed_device=False,
+        ) as out_path:
+            proc = subprocess.run(
+                ["btrfs", "inspect-internal", "dump-super", out_path],
+                check=True,
+                stdout=subprocess.PIPE
+            )
+            self.assertNotIn(b"SEEDING", proc.stdout)
 
     def test_format_name_collision(self):
         with self.assertRaisesRegex(AssertionError, 'share format_name'):
