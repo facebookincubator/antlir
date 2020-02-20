@@ -334,6 +334,12 @@ def parse_args(argv):
         help=f'By default, the subvolume inside a loopback is marked read-only.'
         ' Pass this flag to mark it writable.',
     )
+
+    parser.add_argument(
+        '--seed-device', action='store_true',
+        default=False,
+        help=f'Pass this flag to make the resulting image a btrfs seed device',
+    )
     # Future: To add support for incremental send-streams, we'd want to
     # use this (see `--ancestor-jsons` in `image_package.bzl`)
     #
@@ -386,7 +392,10 @@ def package_image(argv):
         find_built_subvol(args.layer_path, subvolumes_dir=args.subvolumes_dir),
         output_path=args.output_path,
         opts=_Opts(
-            subvol_opts=SubvolOpts(readonly=not args.writable_subvolume),
+            subvol_opts=SubvolOpts(
+                readonly=not args.writable_subvolume,
+                seed_device=args.seed_device,
+            ),
         ),
     )
     # Paranoia: images are read-only after being built

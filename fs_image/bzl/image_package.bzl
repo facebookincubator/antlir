@@ -22,7 +22,8 @@ def image_package(
         # If possible, do not set this. Prefer the standard naming convention.
         layer = None,
         visibility = None,
-        writable_subvolume = False):
+        writable_subvolume = False,
+        seed_device = False):
     visibility = get_visibility(visibility, name)
     sendstream_zst = ".sendstream.zst"
     if name.endswith(sendstream_zst):
@@ -60,11 +61,13 @@ def image_package(
               --layer-path $(query_outputs {layer}) \
               --format {format} \
               --output-path "$OUT" \
-              {rw}
+              {rw} \
+              {seed} 
             '''.format(
                 format = format,
                 layer = layer,
                 rw = "--writable-subvolume" if writable_subvolume else "",
+                seed = "--seed-device" if seed_device else "",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,
                 # so that the packager can verify that the specified

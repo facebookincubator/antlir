@@ -148,6 +148,27 @@ class SubvolTestCase(unittest.TestCase):
                     loop_path.name, subvol_opts=SubvolOpts(readonly=False)),
             )
 
+    @with_temp_subvols
+    def test_mark_readonly_and_send_to_new_loopback_seed_device(
+        self,
+        temp_subvols
+    ):
+        # `test_package_image_as_btrfs_seed_device` actually
+        # tests that the resulting image has the SEEDING flag set, here we just
+        # test that the subvol util helper method works
+        sv = temp_subvols.create('subvol')
+        sv.run_as_root([
+            'dd', 'if=/dev/zero', b'of=' + sv.path('d'), 'bs=1M', 'count=200',
+        ])
+        sv.run_as_root(['mkdir', sv.path('0')])
+        sv.run_as_root(['tee', sv.path('0/0')], input=b'0123456789')
+        with tempfile.NamedTemporaryFile() as loop_path:
+            self.assertEqual(
+                1, sv.mark_readonly_and_send_to_new_loopback(
+                    loop_path.name,
+                    subvol_opts=SubvolOpts(readonly=False, seed_device=True)),
+            )
+
     def test_get_subvolume_path(self):
         layer_json = os.path.join(
             os.path.dirname(__file__), 'hello-layer', 'layer.json',
