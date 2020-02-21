@@ -1,9 +1,7 @@
 # Future: we should eventually add per-library unit test coverage, as
 # appropriate, while also retaining integration test coverage.
 
-load("@fbcode_macros//build_defs:python_binary.bzl", "python_binary")
-load("@fbcode_macros//build_defs:python_library.bzl", "python_library")
-load("@fbcode_macros//build_defs:python_unittest.bzl", "python_unittest")
+load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
