@@ -1,4 +1,4 @@
-# This file redeclares (and potentially validates) JUST the part of the
+# Thi file redeclares (and potentially validates) JUST the part of the
 # fbcode macro API that is allowed within `fs_image/`.  This way,
 # FB-internal contributors will be less likely to accidentally break
 # open-source by starting to use un-shimmed features.
@@ -48,7 +48,6 @@ _PYTHON_LIBRARY_KWARGS = _setify(
         "name",
         "base_module",
         "deps",
-        "external_deps",
         "resources",
         "runtime_deps",
         "srcs",
@@ -66,7 +65,6 @@ _PYTHON_UNITTEST_KWARGS = _setify(
         "check_types",
         "cpp_deps",
         "deps",
-        "external_deps",
         "env",
         "main_module",
         "name",
