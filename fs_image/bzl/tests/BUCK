@@ -161,11 +161,10 @@ cpp_container_and_vm_test(
     deps = ["//common/files:files"],
 )
 
-python_container_and_vm_test(                                                                            
+python_container_and_vm_test(
     name = "test-python-runs-in-layer",
     srcs = ["test_runs_in_layer.py"],
-    layer = ":layer-with-unique-path",                                                                   
-    needed_coverage = [(100, ":coverage_test_helper")],                                                  
-    runtime_deps = ["//common/files:files"],                                                             
+    layer = ":layer-with-unique-path",
+    needed_coverage = [(100, ":coverage_test_helper")],
     deps = [":coverage_test_helper"],
 )
