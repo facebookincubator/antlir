@@ -1,4 +1,4 @@
-# Thi file redeclares (and potentially validates) JUST the part of the
+# This file redeclares (and potentially validates) JUST the part of the
 # fbcode macro API that is allowed within `fs_image/`.  This way,
 # FB-internal contributors will be less likely to accidentally break
 # open-source by starting to use un-shimmed features.

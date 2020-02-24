@@ -1,5 +1,5 @@
 load("//fs_image/bzl:image.bzl", "image")
-load("//fs_image/bzl:oss_shim_vm.bzl", "image_vm_cpp_unittest")
+load("//fs_image/bzl:oss_shim_vm.bzl", "image_vm_cpp_unittest", "image_vm_python_unittest")
 
 def cpp_container_and_vm_test(
         name,
@@ -17,7 +17,7 @@ def cpp_container_and_vm_test(
     # image_vm_cpp_unittest is not yet available in OSS
     if image_vm_cpp_unittest:
         image_vm_cpp_unittest(
-            name = name  "-in-vm",
+            name = name + "-in-vm",
             layer = layer,
             kernel_opts = kernel_opts,
             visibility = visibility,
