@@ -155,7 +155,7 @@ image.layer(
 )
 
 cpp_container_and_vm_test(
-    name = "test-cpp-runs-in-layer"
+    name = "test-cpp-runs-in-layer",
     srcs = ["RunsInLayerTest.cpp"],
     layer = ":layer-with-unique-path",
     deps = ["//common/files:files"],

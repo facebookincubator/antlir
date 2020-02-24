@@ -6,7 +6,7 @@ from coverage_test_helper import coverage_test_helper
 
 
 class RunsInLayerTest(unittest.TestCase):
-    
+
     def test_unique_path_exists(self):
         # This should cause our 100% coverage assertion to pass.
         coverage_test_helper()
