@@ -1,5 +1,21 @@
 [repositories]
   bazel_skylib = third-party/bazel-skylib
 
-[python#py3]
+# There is only one python platform we support, and that is python3 with
+# inplace packages.  This will be expanded in the future to support
+# standalone python binaries, but it will always be python3.
+[python]
   interpreter = /usr/bin/python3
+  package_style = inplace
+
+[test]
+  # This is needed to ensure that the test runner only executes the 
+  # 'in image' unittest targets, and not the `IGNORE-ME*` wrapper tests
+  # (see fs_image/bzl/image_*_unittest.bzl for more crazy implementation
+  #  details).
+  # 
+  # Note, because buck doesn't have a config to always ignore
+  # these excluded labels you must run `buck test` with the `--always-exclude`
+  # option.
+  # ie:  `buck test //fs_image/rpm:test-yum-dnf-from-snapshot --always-exclude`
+  excluded_labels = exclude_test_if_transitive_dep

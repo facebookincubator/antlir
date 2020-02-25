@@ -88,8 +88,8 @@ class MountItem(metaclass=ImageItem):
 
         kwargs['build_source'] = _BuildSource(**cfg.pop('build_source'))
         if kwargs['build_source'].type == 'host' and not (
-            kwargs['from_target'].startswith('//fs_image/features/host_mounts')
-            or kwargs['from_target'].startswith('//fs_image/compiler/test')
+            '//fs_image/features/host_mounts' in kwargs['from_target']
+            or '//fs_image/compiler/test' in kwargs['from_target']
         ):
             raise AssertionError(
                 'Host mounts cause containers to be non-hermetic and fragile, '

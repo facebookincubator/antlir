@@ -1,0 +1,18 @@
+remote_file(
+    name = "busybox-download",
+    url = "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/b/busybox-1.30.1-2.fc31.x86_64.rpm",
+    sha1 = "68e3cf78e6e0ced54b657bc5a56afd4ce901494a",
+    out = "busybox-1.30.1-2.fc31.x86_64.rpm",
+)
+
+genrule(
+    name = "bin/busybox",
+    out = "bin/busybox",
+    bash = """
+set -ue
+mkdir `dirname ${OUT}`
+rpm2cpio $(location :busybox-download) | cpio -idv -D ${TMP} ./sbin/busybox
+mv ${TMP}/sbin/busybox ${OUT}
+    """,
+    visibility = ["PUBLIC"],
+)

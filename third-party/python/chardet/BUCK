@@ -1,0 +1,12 @@
+remote_file(
+    name = "chardet-download",
+    url = "https://files.pythonhosted.org/packages/bc/a9/01ffebfb562e4274b6487b4bb1ddec7ca55ec7510b22e4c51f14098443b8/chardet-3.0.4-py2.py3-none-any.whl",
+    sha1 = "96faab7de7e9a71b37f22adb64daf2898e967e3e",
+    out = "chardet-3.0.4-py2.py3-none-any.whl",
+)
+
+prebuilt_python_library(
+    name = "chardet",
+    binary_src = ":chardet-download",
+    visibility = ["PUBLIC"],
+)
