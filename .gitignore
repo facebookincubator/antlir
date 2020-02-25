@@ -1,4 +1,7 @@
 # buck stuff
-buck-out/
-buck-image-out/
+buck-out
+buck-image-out
 .buckd/
+
+# vim stuff
+**.swp

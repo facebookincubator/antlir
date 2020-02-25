@@ -15,6 +15,7 @@ python_library(
     srcs = ["common.py"],
     base_module = "rpm",
     deps = [
+        ":yum_dnf_conf",
         "//fs_image:common",
         "//fs_image:fs_utils",
     ],
@@ -148,6 +149,7 @@ python_library(
     deps = [
         ":common",
         ":repo_objects",
+        "//fs_image/rpm/storage:storage",
         "//fs_image/rpm/storage/facebook:storage",
     ],
 )
@@ -356,7 +358,6 @@ python_binary(
     srcs = ["tests/temp_snapshot.py"],
     base_module = "rpm",
     main_module = "rpm.tests.temp_snapshot",
-    par_style = "xar",  # Needed for `busybox` to be visible in @mode/opt
     deps = [
         ":db_connection",
         ":snapshot_repos",

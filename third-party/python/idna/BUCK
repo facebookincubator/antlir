@@ -1,0 +1,12 @@
+remote_file(
+    name = "idna-download",
+    url = "https://files.pythonhosted.org/packages/14/2c/cd551d81dbe15200be1cf41cd03869a46fe7226e7450af7a6545bfc474c9/idna-2.8-py2.py3-none-any.whl",
+    sha1 = "428950b762f04cb88c215188c4b60b2d8def8ecd",
+    out = "idna-2.8-py2.py3-none-any.whl",
+)
+
+prebuilt_python_library(
+    name = "idna",
+    binary_src = ":idna-download",
+    visibility = ["PUBLIC"],
+)

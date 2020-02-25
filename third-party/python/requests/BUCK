@@ -1,0 +1,18 @@
+remote_file(
+    name = "requests-download",
+    url = "https://files.pythonhosted.org/packages/51/bd/23c926cd341ea6b7dd0b2a00aba99ae0f828be89d72b2190f27c11d4b7fb/requests-2.22.0-py2.py3-none-any.whl",
+    sha1 = "e1fc28120002395fe1f2da9aacea4e15a449d9ee",
+    out = "requests-2.22.0-py2.py3-none-any.whl",
+)
+
+prebuilt_python_library(
+    name = "requests",
+    binary_src = ":requests-download",
+    deps = [
+        "//third-party/python/urllib3:urllib3",
+        "//third-party/python/certifi:certifi",
+        "//third-party/python/chardet:chardet",
+        "//third-party/python/idna:idna",
+    ],
+    visibility = ["PUBLIC"],
+)
