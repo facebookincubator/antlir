@@ -13,7 +13,7 @@ class Pluggable:
     subclasses of C.
 
     You can then use `C.make(kind=...)` to create plugins by kind, or
-    `C.from_json('{"kind": ...})` to create plugins from JSON configs.
+    `C.from_json({'kind': ...})` to create plugins from JSON configs.
     Because of the JSON-config feature, `__init__` for all plugins should
     accept only plain-old-data kwargs.
     '''
