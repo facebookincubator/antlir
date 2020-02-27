@@ -86,20 +86,31 @@ DO_NOT_DEPEND_ON_FEATURES_SUFFIX = (
     "SO_DO_NOT_DO_THIS_EVER_PLEASE_KTHXBAI"
 )
 
+# Use mutual recursion so that buildifier doesn't complain about recursion. 
+# Allows for easier handling of aribtary depth feature nesting.
+def _assign_target_to_features_trololo(*args):
+    return _assign_target_to_features(*args)
+
+def _assign_target_to_features(features, target):
+    for feature in features:
+        feature["target"] = target
+        _assign_target_to_features_trololo(feature.get("features", []), target)
+
 def normalize_features(porcelain_targets_or_structs, human_readable_target):
     targets = []
-    inline_dicts = []
+    inline_features = []
     direct_deps = []
     for f in porcelain_targets_or_structs:
         if types.is_string(f):
             targets.append(f + DO_NOT_DEPEND_ON_FEATURES_SUFFIX)
         else:
             direct_deps.extend(f.deps)
-            inline_dicts.append(f.items._asdict())
-            inline_dicts[-1]["target"] = human_readable_target
+            inline_features.append(f.items._asdict())
+            _assign_target_to_features(inline_features, human_readable_target)
+
     return struct(
         targets = targets,
-        inline_dicts = inline_dicts,
+        inline_features = inline_features,
         direct_deps = direct_deps,
     )
 
@@ -167,7 +178,7 @@ def image_feature(name = None, features = None, visibility = None):
             features = [
                 tag_target(target_tagger, t)
                 for t in normalized_features.targets
-            ] + normalized_features.inline_dicts,
+            ] + normalized_features.inline_features,
         ),
         extra_deps = normalized_features.direct_deps + [
             # The `fake_macro_library` docblock explains this self-dependency

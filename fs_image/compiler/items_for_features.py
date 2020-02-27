@@ -66,7 +66,7 @@ def gen_items_for_features(
     key_to_item_factory = {
         'install_files': image_sourcify(InstallFileItem),
         'make_dirs': MakeDirsItem,
-        'mounts': MountItem,
+        'mounts': lambda **kwargs: MountItem.new(layer_opts, **kwargs),
         'parent_layer': ParentLayerItem,
         'rpms': image_sourcify(RpmActionItem),
         'remove_paths': RemovePathItem,

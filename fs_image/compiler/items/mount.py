@@ -55,18 +55,22 @@ class _BuildSource(NamedTuple):
 
 
 class MountItem(metaclass=ImageItem):
+    # `MountItem.new` knows how to construct this from image feature JSON.
+    # Do not use the default contstructor.
+
     fields = [
         'mountpoint',
-        ('build_source', NonConstructibleField),
-        ('runtime_source', NonConstructibleField),
-        ('is_directory', NonConstructibleField),
+        ('build_source', None),
+        ('runtime_source', None),
+        ('is_directory', None),
         # The next two are always None, their content moves into the above
-        # `NonConstructibleField`s
+        # potentially `None` fields
         'target',
         'mount_config',
     ]
 
-    def customize_fields(kwargs):  # noqa: B902
+    @classmethod
+    def new(cls, layer_opts: LayerOpts, **kwargs):
         target = kwargs.pop('target')
         cfg = kwargs.pop('mount_config')
         assert (target is None) ^ (cfg is None), \
@@ -88,12 +92,13 @@ class MountItem(metaclass=ImageItem):
 
         kwargs['build_source'] = _BuildSource(**cfg.pop('build_source'))
         if kwargs['build_source'].type == 'host' and not (
-            '//fs_image/features/host_mounts' in kwargs['from_target']
-            or '//fs_image/compiler/test' in kwargs['from_target']
+            kwargs['from_target'] in layer_opts.allowed_host_mount_targets
+            or kwargs['from_target'].startswith('//fs_image/compiler/test')
         ):
             raise AssertionError(
-                'Host mounts cause containers to be non-hermetic and fragile, '
-                'so they must be located under `fs_image/features/host_mounts` '
+                'Host mounts cause containers to be non-hermetic and '
+                'fragile, so they must be located under one of '
+                f'{layer_opts.allowed_host_mount_targets} '
                 'to enable close review by the owners of `fs_image`.'
             )
 
@@ -113,6 +118,8 @@ class MountItem(metaclass=ImageItem):
         # These must be set to appease enriched_namedtuple
         kwargs['target'] = None
         kwargs['mount_config'] = None
+
+        return cls(**kwargs)
 
     def provides(self):
         # For now, nesting of mounts is not supported, and we certainly

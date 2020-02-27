@@ -75,6 +75,13 @@ def compile_image_features(
 
     build_opts = _build_opts(**(build_opts_dict))
 
+    allowed_host_mount_targets = native.read_config(
+        "fs_image",
+        "allowed_host_mount_targets",
+        None,
+    )
+    allowed_host_mount_targets = allowed_host_mount_targets.split(",") if allowed_host_mount_targets else []
+
     target_tagger = new_target_tagger()
     normalized_features = normalize_features(
         features + (
@@ -107,6 +114,7 @@ def compile_image_features(
           {maybe_quoted_build_appliance_args} \
           {maybe_quoted_rpm_repo_snapshot_args} \
           {maybe_preserve_yum_dnf_cache_args} \
+          {maybe_allowed_host_mount_target_args} \
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
           --child-dependencies {feature_deps_query_macro} \
@@ -120,9 +128,15 @@ def compile_image_features(
         ] + (
             ["--child-feature-json <(echo {})".format(shell.quote(struct(
                 target = current_target,
-                features = normalized_features.inline_dicts,
-            ).to_json()))] if normalized_features.inline_dicts else []
+                features = normalized_features.inline_features,
+            ).to_json()))] if normalized_features.inline_features else []
         )),
+        maybe_allowed_host_mount_target_args = (
+            " ".join([
+                "--allowed-host-mount-target={}".format(t.strip())
+                for t in allowed_host_mount_targets
+            ])
+        ),
         # We will ask Buck to ensure that the outputs of the direct
         # dependencies of our `image_feature`s are available on local disk.
         #
