@@ -15,7 +15,7 @@ import os
 import subprocess
 import tempfile
 
-from typing import AnyStr, List, Mapping, NamedTuple, Optional, Set
+from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
 from compiler import procfs_serde
 from compiler.enriched_namedtuple import metaclass_new_enriched_namedtuple
@@ -114,6 +114,7 @@ class LayerOpts(NamedTuple):
     force_yum_dnf: Optional[YumDnf]
     preserve_yum_dnf_cache: bool
     debug: bool = False
+    allowed_host_mount_targets: FrozenSet[str] = frozenset()
 
 
 class ImageItem(type):

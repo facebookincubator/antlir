@@ -105,6 +105,10 @@ def parse_args(args) -> argparse.Namespace:
             'path to the output of that target on disk.',
     )
     parser.add_argument('--debug', action='store_true', help='Log more')
+    parser.add_argument(
+        '--allowed-host-mount-target', action='append', default=[],
+        help='Target name that is allowed to contain host mounts used as '
+        'build_sources.  Can be specified more than once.')
     return parser.parse_args(args)
 
 
@@ -132,6 +136,7 @@ def build_image(args):
         target_to_path=make_target_path_map(args.child_dependencies),
         subvolumes_dir=args.subvolumes_dir,
         debug=args.debug,
+        allowed_host_mount_targets=frozenset(args.allowed_host_mount_target),
     )
 
     # This stack allows build items to hold temporary state on disk.

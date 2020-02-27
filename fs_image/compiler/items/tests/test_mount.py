@@ -16,6 +16,17 @@ from ..phases_provide import PhasesProvideItem
 from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
 
 
+def _mount_item_new(from_target, mount_config):
+    return MountItem.new(
+        DUMMY_LAYER_OPTS._replace(
+            allowed_host_mount_targets=['//dummy/host_mounts:t'],
+        ),
+        from_target=from_target,
+        mountpoint='/lala',
+        target=None,
+        mount_config=mount_config,
+    )
+
 class MountItemTestCase(BaseItemTestCase):
 
     def test_mount_item_file_from_host(self):
@@ -24,28 +35,15 @@ class MountItemTestCase(BaseItemTestCase):
             'build_source': {'type': 'host', 'source': '/dev/null'},
         }
 
-        def _mount_item(from_target):
-            return MountItem(
-                from_target=from_target,
-                mountpoint='/lala',
-                target=None,
-                mount_config=mount_config,
-            )
-
         with self.assertRaisesRegex(AssertionError, 'must be located under'):
-            _mount_item('t')
-
-        mount_item = _mount_item('//fs_image/features/host_mounts:t')
+            _mount_item_new('t', mount_config)
 
         bad_mount_config = mount_config.copy()
         bad_mount_config['runtime_source'] = bad_mount_config['build_source']
         with self.assertRaisesRegex(AssertionError, 'Only `build_source` may '):
-            MountItem(
-                from_target='//fs_image/features/host_mounts:t',
-                mountpoint='/lala',
-                target=None,
-                mount_config=bad_mount_config,
-            )
+            _mount_item_new('//dummy/host_mounts:t', bad_mount_config)
+
+        mount_item = _mount_item_new('//dummy/host_mounts:t', mount_config)
 
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.create('mounter')
@@ -81,13 +79,15 @@ class MountItemTestCase(BaseItemTestCase):
     def _make_mount_item(self, *, mountpoint, target, mount_config,
                          from_target='t'):
         'Ensures that `target` and `mount_config` make the same item.'
-        item_from_file = MountItem(
+        item_from_file = MountItem.new(
+            DUMMY_LAYER_OPTS,
             from_target=from_target,
             mountpoint=mountpoint,
             target=target,
             mount_config=None,
         )
-        self.assertEqual(item_from_file, MountItem(
+        self.assertEqual(item_from_file, MountItem.new(
+            DUMMY_LAYER_OPTS,
             from_target=from_target,
             mountpoint=mountpoint,
             target=None,
@@ -106,7 +106,8 @@ class MountItemTestCase(BaseItemTestCase):
             # Since our initial mountconfig lacks `default_mountpoint`, the
             # item requires its `mountpoint` to be set.
             with self.assertRaisesRegex(AssertionError, 'lacks mountpoint'):
-                MountItem(
+                MountItem.new(
+                    DUMMY_LAYER_OPTS,
                     from_target='t',
                     mountpoint=None,
                     target=mnt_target,
@@ -297,7 +298,8 @@ class MountItemTestCase(BaseItemTestCase):
 
             # Check that we refuse to create nested mounts.
             nested_mounter = temp_subvolumes.create('nested_mounter')
-            nested_item = MountItem(
+            nested_item = MountItem.new(
+                DUMMY_LAYER_OPTS,
                 from_target='t',
                 mountpoint='/whatever',
                 target=None,

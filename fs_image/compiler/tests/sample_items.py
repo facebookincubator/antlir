@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 
+from fs_image.compiler.items.common import LayerOpts
 from fs_image.compiler.items.install_file import InstallFileItem
 from fs_image.compiler.items.make_dirs import MakeDirsItem
 from fs_image.compiler.items.make_subvol import FilesystemRootItem
@@ -52,6 +53,22 @@ def mangle(feature_target):
         'SO_DO_NOT_DO_THIS_EVER_PLEASE_KTHXBAI'
     )
 
+
+# Shamelessly copied from `compiler/items/tests/common.py` to avoid
+# dependencies.
+DUMMY_LAYER_OPTS = LayerOpts(
+    layer_target='fake target',  # Only used by error messages
+    build_appliance=None,
+    # For a handful of tests, this must be a boolean value so the layer
+    # emits it it into /meta, but the value is not important.
+    artifacts_may_require_repo=True,
+    target_to_path=None,
+    subvolumes_dir=None,
+    force_yum_dnf=None,
+    preserve_yum_dnf_cache=False,
+    rpm_repo_snapshot='default',
+    allowed_host_mount_targets=[],
+)
 
 # This should be a faithful transcription of the `image_feature`
 # specifications in `test_images/TARGETS`.  The IDs currently have no
@@ -143,13 +160,15 @@ ID_TO_ITEM = {
     ),
 
     # From `feature_mount`:
-    'meownt': MountItem(
+    'meownt': MountItem.new(
+        DUMMY_LAYER_OPTS,
         from_target=T_MOUNT,
         mountpoint='meownt',
         target=TARGET_TO_PATH[T_HELLO_WORLD_BASE],
         mount_config=None,
     ),
-    'host_etc': MountItem(
+    'host_etc': MountItem.new(
+        DUMMY_LAYER_OPTS,
         from_target=T_MOUNT,
         mountpoint='host_etc',
         target=None,
