@@ -43,17 +43,40 @@ as opposed to a sheared mix of the repo at various points in time) if:
 from typing import Iterable, Iterator, Tuple
 
 from fs_image.common import get_file_logger
-from fs_image.rpm.downloader.common import DownloadConfig
+from fs_image.rpm.downloader.common import DownloadConfig, DownloadResult
 from fs_image.rpm.downloader.repomd_downloader import download_repomds
 from fs_image.rpm.downloader.repodata_downloader import (
-    get_repodatas_from_repomds
+    gen_repodatas_from_repomds
 )
-from fs_image.rpm.downloader.rpm_downloader import get_rpms_from_repodatas
+from fs_image.rpm.downloader.rpm_downloader import gen_rpms_from_repodatas
 from rpm.repo_db import RepoDBContext
 from rpm.repo_snapshot import RepoSnapshot
 from rpm.yum_dnf_conf import YumDnfConfRepo
 
 log = get_file_logger(__file__)
+
+
+def visit_results(
+    results: Iterable[DownloadResult],
+    visitors: Iterable['RepoObjectVisitor']
+):
+    for res in results:
+        for visitor in visitors:
+            visitor.visit_repomd(res.repomd)
+            # Visitors see all declared repodata, even if some downloads fail.
+            for repodata in res.repomd.repodatas:
+                visitor.visit_repodata(repodata)
+            # Visitors inspect all RPMs, whether or not they belong to the
+            # current shard.  For the RPMs in this shard, visiting after
+            # downloading allows us to pass in an `Rpm` structure with
+            # `.canonical_checksum` set, to better detect identical RPMs from
+            # different repos.
+            for rpm in {
+                **{r.location: r for r in res.rpms},
+                # Post-download Rpm objects override the pre-download ones
+                **{r.location: r for r in res.storage_id_to_rpm.values()},
+            }.values():
+                visitor.visit_rpm(rpm)
 
 
 def download_repos(
@@ -69,16 +92,14 @@ def download_repos(
         repo_db_ctx.ensure_tables_exist()
 
     # Concurrently download repomds, aggregate results
-    repomd_results = download_repomds(
-        repos_and_universes, cfg, visitors
-    )
-    repodata_results = get_repodatas_from_repomds(
-        repomd_results, cfg, visitors
-    )
+    repomd_results = download_repomds(repos_and_universes, cfg)
+    repodata_results = gen_repodatas_from_repomds(repomd_results, cfg)
     # Cast to run the generators before storing into the db
-    rpm_results = list(get_rpms_from_repodatas(
-        repodata_results, cfg, visitors, all_snapshot_universes
-    ))
+    rpm_results = list(
+        gen_rpms_from_repodatas(
+            repodata_results, cfg, all_snapshot_universes
+        )
+    )
 
     # All downloads have completed - we now want to atomically persist repomds.
     with db_ctx as repo_db_ctx:
@@ -103,6 +124,8 @@ def download_repos(
             log.exception(f'Exception when trying to commit repomd')
             raise
 
+    # Visit after having persisted all of our work
+    visit_results(rpm_results, visitors)
     return (
         (
             res.repo,

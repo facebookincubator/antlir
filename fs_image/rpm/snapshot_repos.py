@@ -108,8 +108,8 @@ def snapshot_repos(
     exclude: FrozenSet[str],
     threads: int,
 ):
-    declared_sizer = RepoSizer()
-    saved_sizer = RepoSizer()
+    all_repos_sizer = RepoSizer()
+    shard_sizer = RepoSizer()
     repos = _write_confs_get_repos(
         dest, yum_conf_content, dnf_conf_content, exclude_repos=exclude
     )
@@ -132,9 +132,9 @@ def snapshot_repos(
                 rpm_shard=rpm_shard,
                 threads=threads,
             ),
-            visitors=[declared_sizer],
+            visitors=[all_repos_sizer],
         ):
-            snapshot.visit(saved_sizer).to_sqlite(repo.name, db)
+            snapshot.visit(shard_sizer).to_sqlite(repo.name, db)
             # This is done outside of the repo snapshot as we only want to
             # perform it upon successful snapshot. It's also a quick operation
             # and thus doesn't benefit from the added complexity of threading
@@ -147,10 +147,10 @@ def snapshot_repos(
                     snapshot_dir=td,
                 )
 
-    log.info(declared_sizer.get_report(
+    log.info(all_repos_sizer.get_report(
         f'According to their repodata, these {len(repos)} repos weigh'
     ))
-    log.info(saved_sizer.get_report(f'This {rpm_shard} snapshot weighs'))
+    log.info(shard_sizer.get_report(f'This {rpm_shard} snapshot weighs'))
 
 
 def snapshot_repos_from_args(argv: List[str]):

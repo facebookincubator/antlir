@@ -205,10 +205,9 @@ def _download_rpms(
     return storage_id_to_rpm
 
 
-def get_rpms_from_repodatas(
+def gen_rpms_from_repodatas(
     repodata_results: Iterable[DownloadResult],
     cfg: DownloadConfig,
-    visitors: Iterable['RepoObjectVisitor'],
     all_snapshot_universes: FrozenSet[str],
 ) -> Iterator[DownloadResult]:
     for res in repodata_results:
@@ -219,18 +218,6 @@ def get_rpms_from_repodatas(
             all_snapshot_universes,
             cfg,
         )
-        # Visitors inspect all RPMs, whether or not they belong to the
-        # current shard.  For the RPMs in this shard, visiting after
-        # `_download_rpms` allows us to pass in an `Rpm` structure
-        # with `.canonical_checksum` set, to better detect identical
-        # RPMs from different repos.
-        for visitor in visitors:
-            for rpm in {
-                **{r.location: r for r in res.rpms},
-                # Post-download Rpm objects override the pre-download ones
-                **{r.location: r for r in storage_id_to_rpm.values()},
-            }.values():
-                visitor.visit_rpm(rpm)
         yield res._replace(
             storage_id_to_rpm=MappingProxyType(storage_id_to_rpm)
         )
