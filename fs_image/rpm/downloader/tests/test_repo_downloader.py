@@ -26,18 +26,23 @@ from unittest import mock
 from fs_image.common import set_new_key
 from fs_image.fs_utils import temp_dir
 
-from . import temp_repos
+from rpm.tests import temp_repos
 
-from .. import repo_downloader
-
-from ..common import RpmShard, log as common_log
-from ..db_connection import DBConnectionContext
-from ..repo_db import RepodataTable, RepoDBContext
-from ..repo_snapshot import (
+from fs_image.rpm.downloader import repo_downloader
+from fs_image.rpm.downloader.common import open_url
+from fs_image.rpm.downloader.repomd_downloader import REPOMD_MAX_RETRY_S
+from fs_image.rpm.downloader.repodata_downloader import (
+    RepodataParseError, _download_repodata_impl
+)
+from fs_image.rpm.downloader.rpm_downloader import RPM_MAX_RETRY_S
+from rpm.common import RpmShard
+from rpm.db_connection import DBConnectionContext
+from rpm.repo_db import RepodataTable, RepoDBContext
+from rpm.repo_snapshot import (
     FileIntegrityError, HTTPError, MutableRpmError, RepoSnapshot,
 )
-from ..yum_dnf_conf import YumDnfConfRepo
-from ..tests.temp_repos import temp_repos_steps
+from rpm.yum_dnf_conf import YumDnfConfRepo
+from rpm.tests.temp_repos import temp_repos_steps
 
 
 def raise_fake_http_error(_contents):
@@ -54,6 +59,7 @@ def _location_basename(rpm):
     return rpm._replace(location=os.path.basename(rpm.location))
 
 
+SUT = 'fs_image.rpm.downloader.'
 # We default to spreading the downloads across 4 threads in tests
 _THREADS = 4
 MICE_01_RPM_REGEX = r'.*/rpm-test-mice-0\.1-a\.x86_64\.rpm$'
@@ -210,7 +216,7 @@ class DownloadReposTestCase(unittest.TestCase):
 
     @contextmanager
     def _break_open_url(self, url_regex, corrupt_file_fn):
-        original_open_url = repo_downloader.open_url
+        original_open_url = open_url
 
         def my_open_url(url):
             if re.match(url_regex, url):
@@ -218,7 +224,7 @@ class DownloadReposTestCase(unittest.TestCase):
                     return BytesIO(corrupt_file_fn(f.read()))
             return original_open_url(url)
 
-        with mock.patch.object(repo_downloader, 'open_url') as mock_fn:
+        with mock.patch(SUT + 'common.open_url') as mock_fn:
             mock_fn.side_effect = my_open_url
             yield mock_fn
 
@@ -307,7 +313,7 @@ class DownloadReposTestCase(unittest.TestCase):
                 # Since the download failed no snapshots are returned
                 self.assertIsNone(next(downloader()))
         self.assertEqual(
-            len(repo_downloader.REPOMD_MAX_RETRY_S),
+            len(REPOMD_MAX_RETRY_S),
             len(mock_sleep.call_args_list)
         )
 
@@ -326,7 +332,7 @@ class DownloadReposTestCase(unittest.TestCase):
             self.assertEqual(mice_location, error_dict['location'])
             self.assertEqual(500, error_dict['http_status'])
             self.assertEqual(
-                len(repo_downloader.RPM_MAX_RETRY_S),
+                len(RPM_MAX_RETRY_S),
                 len(mock_sleep.call_args_list)
             )
 
@@ -341,7 +347,7 @@ class DownloadReposTestCase(unittest.TestCase):
             with self._break_open_url(
                 r'.*/good_dog/repodata/[0-9a-f]*-primary\.sqlite\.bz2$',
                 lambda s: s[3:],  # change contents
-            ), self.assertRaises(repo_downloader.RepodataParseError):
+            ), self.assertRaises(RepodataParseError):
                 # Since there was only one repo and it failed, fn exits early
                 # and nothing is returned
                 self.assertIsNone(next(downloader()))
@@ -628,10 +634,10 @@ class DownloadReposTestCase(unittest.TestCase):
 
     # Test case of having dangling repodata refs without a repomd
     def test_dangling_repodatas(self):
-        orig_rd = repo_downloader._download_repodata_impl
+        orig_rd = _download_repodata_impl
         with mock.patch.object(RepoDBContext, 'store_repomd') as mock_store, \
-             mock.patch.object(
-                 repo_downloader, '_download_repodata_impl'
+             mock.patch(
+                 SUT + 'repodata_downloader._download_repodata_impl'
              ) as mock_rd, tempfile.NamedTemporaryFile() as tmp_db, \
              temp_dir() as storage_dir:
             db_cfg = {'kind': 'sqlite', 'db_path': tmp_db.name}
@@ -713,8 +719,8 @@ class DownloadReposTestCase(unittest.TestCase):
 
             # But using the "deleted_mutable_rpms" facility, we can forget
             # about the error.
-            with mock.patch.object(
-                repo_downloader, 'deleted_mutable_rpms', new={
+            with mock.patch(
+                SUT + 'rpm_downloader.deleted_mutable_rpms', new={
                     os.path.basename(bad_rpm.location): {
                         bad_rpm.canonical_checksum
                     },
@@ -793,13 +799,3 @@ class DownloadReposTestCase(unittest.TestCase):
             # This is essentially showing that the storage_id was correctly
             # reused for duplicate RPMs
             self.assertEqual(unique_fake_rpms, len(unique_storage_ids))
-
-    def test_retries(self):
-        @repo_downloader.retryable('got {a}, {b}, {c}', [0])
-        def to_be_retried(a: int, b: int, c: int = 5):
-            raise RuntimeError('retrying...')
-
-        with self.assertRaises(RuntimeError), \
-             self.assertLogs(common_log) as logs:
-            to_be_retried(1, b=2)
-        self.assertIn('got 1, 2, 5', ''.join(logs.output))

@@ -32,7 +32,7 @@ deleted_mutable_rpms = {
 }
 
 try:
-    from .facebook.deleted_mutable_rpms import (
+    from rpm.facebook.deleted_mutable_rpms import (
         deleted_mutable_rpms as _fb_deleted_mutable_rpms
     )
     deleted_mutable_rpms.update(_fb_deleted_mutable_rpms)
@@ -40,7 +40,7 @@ except ImportError:  # pragma: no cover
     pass
 
 
-from .repo_objects import CANONICAL_HASH
+from rpm.repo_objects import CANONICAL_HASH
 
 
 for _checksums in deleted_mutable_rpms.values():

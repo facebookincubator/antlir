@@ -62,13 +62,6 @@ python_library(
 )
 
 python_library(
-    name = "deleted_mutable_rpms",
-    srcs = ["deleted_mutable_rpms.py"],
-    base_module = "rpm",
-    deps = ["//fs_image/rpm/facebook:deleted_mutable_rpms"],
-)
-
-python_library(
     name = "repo_objects",
     srcs = ["repo_objects.py"],
     base_module = "rpm",
@@ -188,38 +181,6 @@ python_unittest(
 )
 
 python_library(
-    name = "repo_downloader",
-    srcs = ["repo_downloader.py"],
-    base_module = "rpm",
-    deps = [
-        ":common",
-        ":deleted_mutable_rpms",
-        ":open_url",
-        ":parse_repodata",
-        ":repo_db",
-        ":repo_objects",
-        ":repo_snapshot",
-        ":yum_dnf_conf",
-    ],
-)
-
-python_unittest(
-    name = "test-repo-downloader",
-    srcs = ["tests/test_repo_downloader.py"],
-    base_module = "rpm",
-    needed_coverage = [
-        (100, ":repo_downloader"),
-    ],
-    deps = [
-        ":db_connection",
-        ":repo_db",
-        ":repo_downloader",
-        ":temp_repos",
-        "//fs_image/rpm/storage:storage",
-    ],
-)
-
-python_library(
     name = "repo_server",
     srcs = ["repo_server.py"],
     base_module = "rpm",
@@ -296,8 +257,9 @@ python_library(
         ":common_args",
         ":gpg_keys",
         ":repo_db",
-        ":repo_downloader",
         ":repo_sizer",
+        "//fs_image/rpm/downloader:common",
+        "//fs_image/rpm/downloader:repo_downloader",
     ],
 )
 
@@ -411,9 +373,10 @@ python_library(
         ":common_args",
         ":gpg_keys",
         ":repo_db",
-        ":repo_downloader",
         ":repo_sizer",
         ":yum_dnf_conf",
+        "//fs_image/rpm/downloader:common",
+        "//fs_image/rpm/downloader:repo_downloader",
     ],
 )
 

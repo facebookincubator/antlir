@@ -7,7 +7,8 @@ from io import BytesIO
 from unittest import mock
 
 from ..common import (
-    Checksum, log as common_log, read_chunks, retry_fn, RpmShard, yum_is_dnf
+    Checksum, log as common_log, read_chunks, retryable, retry_fn, RpmShard,
+    yum_is_dnf
 )
 
 from fs_image.fs_utils import Path, temp_dir
@@ -100,6 +101,33 @@ class TestCommon(unittest.TestCase):
                 what='never retries',
             )
         self.assertEqual((1,), ex_ctx.exception.args)
+
+    def test_retryable(self):
+        @retryable('got {a}, {b}, {c}', [0])
+        def to_be_retried(a: int, b: int, c: int = 5):
+            raise RuntimeError('retrying...')
+
+        with self.assertRaises(RuntimeError), \
+             self.assertLogs(common_log) as logs:
+            to_be_retried(1, b=2)
+        self.assertIn('got 1, 2, 5', ''.join(logs.output))
+
+    def test_retryable_skip(self):
+        iters = 0
+
+        @retryable(
+            'got {a}, {b}, {c}',
+            [0, 0, 0],
+            is_exception_retryable=lambda _: False
+        )
+        def to_be_retried(a: int, b: int, c: int = 5):
+            nonlocal iters
+            iters += 1
+            raise RuntimeError('retrying...')
+
+        with self.assertRaises(RuntimeError):
+            to_be_retried(1, b=2)
+        self.assertEqual(1, iters)
 
     def test_read_chunks(self):
         self.assertEqual(

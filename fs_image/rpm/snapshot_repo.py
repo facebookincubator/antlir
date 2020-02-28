@@ -7,9 +7,10 @@ all repos from a given `yum.conf`.
 import argparse
 import sys
 
+from fs_image.rpm.downloader.common import DownloadConfig
+from fs_image.rpm.downloader.repo_downloader import download_repos
 from .common import get_file_logger, init_logging, populate_temp_dir_and_rename
 from .common_args import add_standard_args
-from .repo_downloader import DownloadConfig, download_repos
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
 from .storage import Storage
