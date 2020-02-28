@@ -666,6 +666,10 @@ def download_repos(
 ) -> Iterator[Tuple[YumDnfConfRepo, RepoSnapshot]]:
     'See the top-of-file docblock.'
     all_snapshot_universes = frozenset(u for _, u in repos_and_universes)
+    db_conn = cfg.new_db_conn()
+    db_ctx = RepoDBContext(db_conn, db_conn.SQL_DIALECT)
+    with db_ctx as repo_db_ctx:
+        repo_db_ctx.ensure_tables_exist()
 
     # Concurrently download repomds, aggregate results
     repomd_results = _download_repomds_threaded(
@@ -680,8 +684,7 @@ def download_repos(
     ))
 
     # All downloads have completed - we now want to atomically persist repomds.
-    db_conn = cfg.new_db_conn()
-    with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
+    with db_ctx as repo_db_ctx:
         # Even though a valid snapshot of a single repo is intrinsically valid,
         # we only want to operate on coherent collections of repos (as they
         # existed at roughly the same point in time). For this reason, we'd
@@ -691,11 +694,11 @@ def download_repos(
         # commits a full snasphot, given that the repodata & RPM objects will
         # now be referenced).
         for res in rpm_results:
-            repo_db.store_repomd(
+            repo_db_ctx.store_repomd(
                 res.repo_universe, res.repo.name, res.repomd
             )
         try:
-            repo_db.commit()
+            repo_db_ctx.commit()
         except Exception:  # pragma: no cover
             # This is bad, but we hope this commit was atomic and thus none of
             # the repomds got inserted, in which case our snapshot's failed but
