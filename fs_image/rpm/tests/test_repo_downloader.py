@@ -24,13 +24,15 @@ from typing import List, Tuple
 from unittest import mock
 
 from fs_image.common import set_new_key
+from fs_image.fs_utils import temp_dir
 
 from . import temp_repos
 
 from .. import repo_downloader
 
 from ..common import RpmShard, log as common_log
-from ..repo_db import RepoDBContext
+from ..db_connection import DBConnectionContext
+from ..repo_db import RepodataTable, RepoDBContext
 from ..repo_snapshot import (
     FileIntegrityError, HTTPError, MutableRpmError, RepoSnapshot,
 )
@@ -125,7 +127,9 @@ class DownloadReposTestCase(unittest.TestCase):
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
-    def _make_downloader_from_ctx(self, step_and_repo, tmp_db, dir_name):
+    def _make_downloader_from_ctx(
+        self, step_and_repo, tmp_db, dir_name, rpm_shard=None
+    ):
         repo = YumDnfConfRepo(
             name=step_and_repo,
             base_url=(self.repos_root / step_and_repo).file_url(),
@@ -134,19 +138,22 @@ class DownloadReposTestCase(unittest.TestCase):
         return partial(
             repo_downloader.download_repos,
             repos_and_universes=[(repo, 'fakeverse')],
-            db_cfg={'kind': 'sqlite', 'db_path': tmp_db.name},
-            storage_cfg={
-                'key': 'test',
-                'kind': 'filesystem',
-                'base_dir': dir_name,
-            },
-            threads=_THREADS,
+            cfg=repo_downloader.DownloadConfig(
+                db_cfg={'kind': 'sqlite', 'db_path': tmp_db.name},
+                storage_cfg={
+                    'key': 'test',
+                    'kind': 'filesystem',
+                    'base_dir': dir_name,
+                },
+                rpm_shard=rpm_shard or RpmShard(shard=0, modulo=1),
+                threads=_THREADS,
+            )
         )
 
     @contextmanager
     def _make_downloader(self, step_and_repo):
         with tempfile.NamedTemporaryFile() as tmp_db, \
-             tempfile.TemporaryDirectory() as storage_dir:
+             temp_dir() as storage_dir:
             yield self._make_downloader_from_ctx(
                 step_and_repo, tmp_db, storage_dir
             )
@@ -304,26 +311,31 @@ class DownloadReposTestCase(unittest.TestCase):
             len(mock_sleep.call_args_list)
         )
 
+    @mock.patch('time.sleep', mock.Mock())
     def test_repodata_download_errors(self):
-        # These are not reported as "storage IDs" because a failure to parse
-        # the primary repodata is fatal -- we'd have no list of RPMs.
-        with self.assertRaises(repo_downloader.RepodataParseError):
-            with self._check_download_error(
+        with self._make_downloader('0/good_dog') as downloader:
+
+            # These are not reported as "storage IDs" because a failure to
+            # parse the primary repodata is fatal -- we'd have no list of RPMs.
+            # This will raise a RepodataParseError, which is not a
+            # ReportableError
+            with self._break_open_url(
                 r'.*/good_dog/repodata/[0-9a-f]*-primary\.sqlite\.bz2$',
                 lambda s: s[3:],  # change contents
-                FileIntegrityError,
-            ):
-                pass
+            ), self.assertRaises(repo_downloader.RepodataParseError):
+                # Since there was only one repo and it failed, fn exits early
+                # and nothing is returned
+                self.assertIsNone(next(downloader()))
 
-        # Since RepodataParseError is not a ReportableError, this is a
-        # different code path:
-        with self.assertRaises(HTTPError):
-            with self._check_download_error(
+            # Since RepodataParseError is not a ReportableError (but HTTPError
+            # is), this is a different code path
+            with self._break_open_url(
                 r'.*/good_dog/repodata/[0-9a-f]*-primary\.sqlite\.bz2$',
                 raise_fake_http_error,
-                HTTPError,
-            ):
-                pass
+            ), self.assertRaises(HTTPError):
+                # Since there was only one repo and it failed, fn exits early
+                # and nothing is returned
+                self.assertIsNone(next(downloader()))
 
         # Failure to get non-primary repodata does not abort a snapshot.
         with self._check_download_error(
@@ -357,7 +369,7 @@ class DownloadReposTestCase(unittest.TestCase):
 
     def test_download_evolving_multi_repos(self):
         with tempfile.NamedTemporaryFile() as tmp_db, \
-             tempfile.TemporaryDirectory() as storage_dir:
+             temp_dir() as storage_dir:
             snap_dog, snap_cat, snap_dog2, snap_cat2 = (
                 # Downloading a repo twice in a row should always be a
                 # no-op, so we do that for all repos here just in case.
@@ -493,19 +505,25 @@ class DownloadReposTestCase(unittest.TestCase):
                 assert rpm not in self.rpms
                 self.rpms.add(rpm)
 
-        with self._make_downloader('0/good_dog') as downloader:
+        with tempfile.NamedTemporaryFile() as tmp_db, \
+             temp_dir() as storage_dir:
+            partial_downloader = partial(
+                self._make_downloader_from_ctx,
+                '0/good_dog',
+                tmp_db,
+                storage_dir
+            )
             visitor_all = Visitor()
-            res, = list(downloader(visitors=[visitor_all]))
+            res, = list(partial_downloader()(visitors=[visitor_all]))
             repo, snapshot = res
             self._check_visitors_match_snapshot([visitor_all], snapshot)
 
             visitors = [Visitor() for _ in range(10)]
             repo_snapshots = []
             for shard, visitor in enumerate(visitors):
-                repo_snapshots += downloader(
-                    visitors=[visitor],
-                    rpm_shard=RpmShard(shard, len(visitors)),
-                )
+                repo_snapshots += partial_downloader(
+                    RpmShard(shard, len(visitors))
+                )(visitors=[visitor])
 
             # It's about 1:1000 that all 3 RPMs end up in one shard, and
             # since this test is deterministic, it won't be flaky.
@@ -589,9 +607,46 @@ class DownloadReposTestCase(unittest.TestCase):
                 ],
             )
 
+    # Test case of having dangling repodata refs without a repomd
+    def test_dangling_repodatas(self):
+        orig_rd = repo_downloader._download_repodata_impl
+        with mock.patch.object(RepoDBContext, 'store_repomd') as mock_store, \
+             mock.patch.object(
+                 repo_downloader, '_download_repodata_impl'
+             ) as mock_rd, tempfile.NamedTemporaryFile() as tmp_db, \
+             temp_dir() as storage_dir:
+            db_cfg = {'kind': 'sqlite', 'db_path': tmp_db.name}
+            mock_rd.side_effect = orig_rd
+            mock_store.side_effect = RuntimeError
+            with self.assertRaises(RuntimeError):
+                next(self._make_downloader_from_ctx(
+                    '0/good_dog', tmp_db, storage_dir
+                )())
+            # Get the repodatas that the mocked fn was passed
+            called_rds = [x[0][0] for x in mock_rd.call_args_list]
+            db_conn = DBConnectionContext.from_json(db_cfg)
+            db_ctx = RepoDBContext(db_conn, db_conn.SQL_DIALECT)
+            repodata_table = RepodataTable()
+            with db_ctx as repo_db_ctx:
+                storage_ids = [
+                    repo_db_ctx.get_storage_id(repodata_table, rd)
+                    for rd in called_rds
+                ]
+            # All of these repodatas got stored in the db
+            self.assertEqual(len(called_rds), len(storage_ids))
+
+            # Now ensure that no repomds got inserted (i.e. nothing to
+            # reference the above repodatas)
+            mock_store.assert_called_once()
+            with db_ctx as repo_db_ctx:
+                with repo_db_ctx._cursor() as cursor:
+                    cursor.execute('SELECT COUNT(*) from repo_metadata')
+                    res = cursor.fetchone()
+            self.assertEqual(0, res[0])
+
     def test_mutable_rpm(self):
         with tempfile.NamedTemporaryFile() as tmp_db, \
-             tempfile.TemporaryDirectory() as storage_dir:
+             temp_dir() as storage_dir:
             good_res, = list(self._make_downloader_from_ctx(
                 '0/good_dog', tmp_db, storage_dir
             )())
@@ -667,13 +722,16 @@ class DownloadReposTestCase(unittest.TestCase):
             repo_snapshots = list(
                 repo_downloader.download_repos(
                     repos_and_universes=[(repo, 'fakeverse') for repo in repos],
-                    db_cfg={'kind': 'sqlite', 'db_path': tmp_db.name},
-                    storage_cfg={
-                        'key': 'test',
-                        'kind': 'filesystem',
-                        'base_dir': storage_dir,
-                    },
-                    threads=_THREADS,
+                    cfg=repo_downloader.DownloadConfig(
+                        db_cfg={'kind': 'sqlite', 'db_path': tmp_db.name},
+                        storage_cfg={
+                            'key': 'test',
+                            'kind': 'filesystem',
+                            'base_dir': storage_dir,
+                        },
+                        rpm_shard=RpmShard(shard=0, modulo=1),
+                        threads=_THREADS,
+                    )
                 )
             )
             # Each snapshot will have unique repomds

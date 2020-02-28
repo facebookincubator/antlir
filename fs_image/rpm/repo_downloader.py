@@ -32,13 +32,14 @@ import hashlib
 import inspect
 import requests
 import urllib.parse
-
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager, ExitStack
 from functools import wraps
 from io import BytesIO
+from types import MappingProxyType
 from typing import (
-    Dict, Iterable, Iterator, List, Mapping, NamedTuple, Optional, Set, Tuple
+    Dict, FrozenSet, Iterable, Iterator, List, Mapping, NamedTuple, Optional,
+    Set, Tuple, Union
 )
 
 from fs_image.common import get_file_logger, set_new_key, shuffled
@@ -52,7 +53,7 @@ from .repo_objects import CANONICAL_HASH, Checksum, Repodata, RepoMetadata, Rpm
 from .repo_db import RepoDBContext, RepodataTable, RpmTable
 from .repo_snapshot import (
     FileIntegrityError, HTTPError, MutableRpmError, ReportableError,
-    RepoSnapshot,
+    RepoSnapshot, MaybeStorageID
 )
 from .storage import Storage
 from .yum_dnf_conf import YumDnfConfRepo
@@ -63,8 +64,10 @@ from .yum_dnf_conf import YumDnfConfRepo
 # complexity bug that makes it slow for large INPUT_CHUNK/OUTPUT_CHUNK.
 BUFFER_BYTES = 2 ** 19
 REPOMD_MAX_RETRY_S = [2 ** i for i in range(8)]  # 256 sec ==  4m16s
+REPODATA_MAX_RETRY_S = [2 ** i for i in range(10)]  # 1024sec == 17m4s
 RPM_MAX_RETRY_S = [2 ** i for i in range(9)]  # 512 sec ==  8m32s
 log = get_file_logger(__file__)
+RepodataReturnType = Tuple[Repodata, bool, MaybeStorageID, Optional[List[Rpm]]]
 
 
 class RepodataParseError(Exception):
@@ -83,6 +86,18 @@ class DownloadConfig(NamedTuple):
 
     def new_storage(self):
         return Storage.from_json(self.storage_cfg)
+
+
+# Gets incrementally populated throughout repo downloading; used to carry info
+# through the concurrent downloads until the final repo snapshot is built
+class DownloadResult(NamedTuple):
+    repo: YumDnfConfRepo
+    repo_universe: str
+    repomd: RepoMetadata
+    # Below 3 params are populated incrementally after the initial 3
+    storage_id_to_repodata: Optional[Mapping[MaybeStorageID, Repodata]] = None
+    storage_id_to_rpm: Optional[Mapping[MaybeStorageID, Rpm]] = None
+    rpms: Optional[FrozenSet[Rpm]] = None
 
 
 def _verify_chunk_stream(
@@ -178,6 +193,28 @@ def _download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
             location=relative_url,
             http_status=ex.response.status_code,
         )
+
+
+# Note that we use this function serially from the master thread after
+# performing the downloads. This is because it's possible for SQLite to run
+# into locking issues with many concurrent writers. Additionally, these writes
+# are a minor portion of our overall execution time and thus we see negligible
+# perf gains by parallelizing them.
+def _maybe_write_id(
+    repo_obj: Union[Repodata, Rpm],
+    storage_id: MaybeStorageID,
+    table: RepodataTable,
+    db_ctx: RepoDBContext,
+):
+    '''Used to write a storage_id to repo_db after a possible download.'''
+    # Don't store errors into the repo db
+    if isinstance(storage_id, ReportableError):
+        return storage_id
+    with db_ctx as repo_db_ctx:
+        db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
+        repo_db_ctx.commit()
+    _log_if_storage_ids_differ(repo_obj, storage_id, db_storage_id)
+    return db_storage_id
 
 
 def _detect_mutable_rpms(
@@ -340,34 +377,63 @@ def _download_rpms(
     return storage_id_to_rpm
 
 
+def _get_rpms_from_repodatas(
+    repodata_results: Iterable[DownloadResult],
+    cfg: DownloadConfig,
+    visitors: Iterable['RepoObjectVisitor'],
+    all_snapshot_universes: FrozenSet[str],
+) -> Iterator[DownloadResult]:
+    for res in repodata_results:
+        storage_id_to_rpm = _download_rpms(
+            res.repo,
+            RpmTable(res.repo_universe),
+            res.rpms,
+            all_snapshot_universes,
+            cfg,
+        )
+        # Visitors inspect all RPMs, whether or not they belong to the
+        # current shard.  For the RPMs in this shard, visiting after
+        # `_download_rpms` allows us to pass in an `Rpm` structure
+        # with `.canonical_checksum` set, to better detect identical
+        # RPMs from different repos.
+        for visitor in visitors:
+            for rpm in {
+                **{r.location: r for r in res.rpms},
+                # Post-download Rpm objects override the pre-download ones
+                **{r.location: r for r in storage_id_to_rpm.values()},
+            }.values():
+                visitor.visit_rpm(rpm)
+        yield res._replace(
+            storage_id_to_rpm=MappingProxyType(storage_id_to_rpm)
+        )
+
+
 # May raise `ReportableError`s to be caught by `_download_repodatas`
-def _download_repodata(
+def _download_repodata_impl(
     repodata: Repodata,
+    *,
     repo_url: str,
     repodata_table: RepodataTable,
     cfg: DownloadConfig,
-    *,
     is_primary: bool
-) -> Tuple[bool, str, Optional[List[Rpm]]]:
-    '''
-        - Returns True only if we just downloaded & stored this Repodata.
-        - Returns our new storage_id, or the previous one from the DB.
-        - For the selected primary repodata, returns a list of RPMs.
-          Returns None for all others.
+) -> RepodataReturnType:
+    '''This function behaves differently depending on two main characteristics:
+      - Whether or not the provided repodata is primary, and
+      - Whether or not it already exists in storage
+    Which actions are taken depends on which of the above true, and this
+    branching is explained within the function.
     '''
     db_conn = cfg.new_db_conn()
     storage = cfg.new_storage()
     # We only need to download the repodata if is not already in the DB,
     # or if it is primary (so we can parse it for RPMs).
     with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
-        storage_id = repo_db.get_storage_id(
-            repodata_table, repodata
-        )
+        storage_id = repo_db.get_storage_id(repodata_table, repodata)
 
     # Nothing to do -- only need to download repodata if it's the primary
     # (so we can parse it for RPMs), or if it's not already in the DB.
     if not is_primary and storage_id:
-        return (False, storage_id, None)
+        return repodata, False, storage_id, None
     rpms = [] if is_primary else None
 
     # Remaining possibilities are that we've got a primary with or without
@@ -407,25 +473,54 @@ def _download_repodata(
                 except Exception as ex:
                     # Not a ReportableError so it won't trigger a retry
                     raise RepodataParseError((repodata.location, ex))
-        # Must commit from inside the output context to get a storage_id.
+        # Must commit the output context to get a storage_id.
         if outfile:
-            return True, outfile.commit(), rpms
-    # The repodata was already stored, and we parsed it for RPMs.
+            return repodata, True, outfile.commit(), rpms
+    # The primary repodata was already stored, and we just parsed it for RPMs.
     assert storage_id is not None
-    return False, storage_id, rpms
+    return repodata, False, storage_id, rpms
 
 
-def _download_repodatas(
+@retryable(
+    'Download failed: repodata at {repodata.location}',
+    REPODATA_MAX_RETRY_S
+)
+def _download_repodata(
+    repodata, is_primary: bool, **kwargs
+) -> RepodataReturnType:
+    '''Wrapper to handle ReportableError and force a retry if we're trying
+    to retrieve the primary.
+
+    RepodataReturnType is a 3-tuple with the following properties:
+        - [0]: The repodata that was operated on
+        - [1]: A new storage_id (if it was just downloaded), an existing
+                storage_id if it was already in the db, or an error if this was
+                a non-primary repodata and a ReportableError was raised.
+        - [2]: List of RPMs if it was primary repodata, else None.
+    '''
+    try:
+        return _download_repodata_impl(
+            repodata, **kwargs, is_primary=is_primary
+        )
+    except ReportableError as e:
+        # Can't proceed without primary file; raise to trigger retry.
+        if is_primary:
+            raise e
+        # This "fake" storage_id is stored in `storage_id_to_repodata`, so the
+        # error is propagated to the sqlite db through the repo snapshot. It
+        # isn't written to repo_db however as that explicitly skip errors.
+        return repodata, False, e, None
+
+
+def _download_repodatas_threaded(
     repo: YumDnfConfRepo,
     repomd: RepoMetadata,
-    # We mutate this dictionary on-commit to allow the caller to clean
-    # up any stored repodata blobs if the download fails part-way.
-    persist_storage_id_to_repodata: Mapping[str, Repodata],
     visitors: Iterable['RepoObjectVisitor'],
     cfg: DownloadConfig,
 ) -> Tuple[Set[Rpm], Mapping[str, Repodata]]:
     rpms = None  # We'll extract these from the primary repodata
     storage_id_to_repodata = {}  # Newly stored **and** pre-existing
+    repodata_table = RepodataTable()
     primary_repodata = pick_primary_repodata(repomd.repodatas)
     _log_size(
         f'`{repo.name}` repodata weighs',
@@ -435,85 +530,77 @@ def _download_repodatas(
     for visitor in visitors:
         for repodata in repomd.repodatas:
             visitor.visit_repodata(repodata)
-    repodata_table = RepodataTable()
-    # Download in random order to reduce collisions from racing writers.
-    for repodata in shuffled(repomd.repodatas):
-        try:
-            newly_stored, storage_id, maybe_rpms = _download_repodata(
+    db_conn = cfg.new_db_conn()
+    db_ctx = RepoDBContext(db_conn, db_conn.SQL_DIALECT)
+    with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
+        futures = [
+            executor.submit(
+                _download_repodata,
                 repodata,
-                repo.base_url,
-                repodata_table,
-                cfg,
-                is_primary=repodata is primary_repodata,
+                repo_url=repo.base_url,
+                repodata_table=repodata_table,
+                cfg=cfg,
+                is_primary=repodata is primary_repodata
             )
+            for repodata in shuffled(repomd.repodatas)
+        ]
+
+        for future in as_completed(futures):
+            repodata, newly_stored, storage_id_or_err, maybe_rpms = \
+                future.result()
             if newly_stored:
-                set_new_key(
-                    persist_storage_id_to_repodata, storage_id, repodata,
+                # This repodata was newly downloaded and stored in storage, so
+                # we store its storage_id to repo_db regardless of whether we
+                # encounter fatal errors later on in the execution and don't
+                # finish the snapshot - see top-level docblock for reasoning
+                storage_id_or_err = _maybe_write_id(
+                    repodata, storage_id_or_err, repodata_table, db_ctx
                 )
             if maybe_rpms is not None:
+                # RPMs will only have been returned by the primary, thus we
+                # should only enter this block once
+                assert rpms is None
                 # Convert to a set to work around buggy repodatas, which
                 # list the same RPM object twice.
-                rpms = set(maybe_rpms)
-        except ReportableError as ex:
-            # We cannot proceed without the primary file -- raise here
-            # to trigger the "top-level retry" in the snapshot driver.
-            if repodata is primary_repodata:
-                raise
-            # This fake "storage ID" is not written to
-            # `persist_storage_id_to_repodata`, so we will never attempt
-            # to write it to the DB.  However, it does end up in
-            # `repodata.json`, so the error is visible.
-            storage_id = ex
-        set_new_key(storage_id_to_repodata, storage_id, repodata)
-
+                rpms = frozenset(maybe_rpms)
+            set_new_key(
+                storage_id_to_repodata, storage_id_or_err, repodata
+            )
+    # It's possible that for non-primary repodatas we received errors when
+    # downloading - in that case we store the error in the sqlite db, thus the
+    # dict should contain an entry for every single repodata
     assert len(storage_id_to_repodata) == len(repomd.repodatas)
     assert rpms, 'Is the repo empty?'
     return rpms, storage_id_to_repodata
 
 
-def _commit_repodata_and_cancel_cleanup(
-    repomd: RepoMetadata,
-    repo_universe: str,
-    repo_name: str,
-    # We'll replace our IDs by those that actually ended up in the DB
-    storage_id_to_repodata: Mapping[str, Repodata],
-    # Will retain only those IDs that are unused by the DB and need cleanup
-    persist_storage_id_to_repodata: Mapping[str, Repodata],
-    db_cfg: Dict[str, str],
-):
-    db_conn = DBConnectionContext.from_json(db_cfg)
-    repodata_table = RepodataTable()
-    with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
-        # We cannot touch `persist_storage_id_to_repodata` in the loop
-        # because until the transaction commits, we must be ready to
-        # delete all new storage IDs.  So instead, we will construct the
-        # post-commit version of that dictionary (i.e. blobs we need to
-        # delete even if the transaction lands), in this variable:
-        unneeded_storage_id_to_repodata = {}
-        for storage_id, repodata in persist_storage_id_to_repodata.items():
-            assert not isinstance(storage_id, ReportableError), repodata
-            db_storage_id = repo_db.maybe_store(
-                repodata_table, repodata, storage_id
-            )
-            _log_if_storage_ids_differ(repodata, storage_id, db_storage_id)
-            if db_storage_id != storage_id:
-                set_new_key(
-                    storage_id_to_repodata,
-                    db_storage_id,
-                    storage_id_to_repodata.pop(storage_id),
-                )
-                set_new_key(
-                    unneeded_storage_id_to_repodata, storage_id, repodata,
-                )
-        repo_db.store_repomd(repo_universe, repo_name, repomd)
-        repo_db.commit()
-        # The DB commit was successful, and we're about to exit the
-        # repo_db context, which might, at worst, raise its own error.
-        # Therefore, let's prevent the `finally` cleanup from deleting
-        # the blobs whose IDs we just committed to the DB.
-        persist_storage_id_to_repodata.clear()
-        persist_storage_id_to_repodata.update(
-            unneeded_storage_id_to_repodata
+def _get_repodatas_from_repomds(
+    repomd_results: Iterable[DownloadResult],
+    cfg: DownloadConfig,
+    visitors: Iterable['RepoObjectVisitor'],
+) -> Iterator[DownloadResult]:
+    # For each downloaded repomd, concurrently download the contained
+    # repodatas. This driver runs serially, but each repomd's repodatas are
+    # downloaded in parallel. We could run this driver concurrently as well,
+    # but we're likely already saturating the network with the downloads for a
+    # single repomd and won't see a perf increase from further parallelization.
+    for res in repomd_results:
+        # We explicitly omit any complex clean-up logic here, and store
+        # repodatas regardless of whether they end up actually being used (i.e.
+        # their referencing repomd gets committed).
+        #
+        # The main reason for this is that the cost we pay to store these
+        # dangling repodatas is fairly negligible when compared to the size of
+        # the overall repos, and if we ever run into issues of these extra
+        # objects taking up too much space, we can easily add a periodic job to
+        # scan the db and remove any unused references. We are also able to
+        # avoid implementing a lot of complex cleanup logic this way.
+        rpm_set, storage_id_to_repodata = _download_repodatas_threaded(
+            res.repo, res.repomd, visitors, cfg,
+        )
+        yield res._replace(
+            storage_id_to_repodata=MappingProxyType(storage_id_to_repodata),
+            rpms=rpm_set,
         )
 
 
@@ -532,11 +619,11 @@ def _download_repomd(
     return repo, repo_universe, repomd
 
 
-def _download_repomds(
+def _download_repomds_threaded(
     repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]],
     cfg: DownloadConfig,
     visitors: Iterable['RepoObjectVisitor'] = (),
-) -> Iterator[Tuple[YumDnfConfRepo, str, RepoMetadata]]:
+) -> Iterator[DownloadResult]:
     '''Downloads all repo metadatas concurrently'''
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = []
@@ -549,101 +636,66 @@ def _download_repomds(
             repo, repo_universe, repomd = future.result()
             for visitor in visitors:
                 visitor.visit_repomd(repomd)
-            yield (repo, repo_universe, repomd)
+            yield DownloadResult(
+                repo=repo,
+                repo_universe=repo_universe,
+                repomd=repomd,
+            )
 
 
 def download_repos(
     repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]],
     *,
-    db_cfg: Dict[str, str],
-    storage_cfg: Dict[str, str],
-    threads: int,
-    rpm_shard: RpmShard = None,
+    cfg: DownloadConfig,
     visitors: Iterable['RepoObjectVisitor'] = (),
 ) -> Iterator[Tuple[YumDnfConfRepo, RepoSnapshot]]:
     'See the top-of-file docblock.'
-    if rpm_shard is None:
-        rpm_shard = RpmShard(shard=0, modulo=1)  # get all RPMs
     all_snapshot_universes = frozenset(u for _, u in repos_and_universes)
-    cfg = DownloadConfig(
-        db_cfg=db_cfg,
-        storage_cfg=storage_cfg,
-        rpm_shard=rpm_shard,
-        threads=threads,
-    )
 
     # Concurrently download repomds, aggregate results
-    repomd_results = _download_repomds(
+    repomd_results = _download_repomds_threaded(
         repos_and_universes, cfg, visitors
     )
+    repodata_results = _get_repodatas_from_repomds(
+        repomd_results, cfg, visitors
+    )
+    # Cast to run the generators before storing into the db
+    rpm_results = list(_get_rpms_from_repodatas(
+        repodata_results, cfg, visitors, all_snapshot_universes
+    ))
 
-    for repo, repo_universe, repomd in repomd_results:
-        rpm_table = RpmTable(repo_universe)
-        # ## Rationale for this cleanup logic
-        #
-        # For any sizable repo, the initial RPM download will be slow.
-        #
-        # At this point, none of the downloaded repodata is committed to the
-        # DB, and all the associated blobs are still subject to
-        # auto-cleanup.  The rationale is that if we fail partway through
-        # the download, the repo content has likely changed and it's best to
-        # redownload the metadata when we retry, rather than to persist some
-        # partial and unusable metadata.
-        #
-        # We do two things to minimize that chances of persisting
-        # partial metadata:
-        #  (1) Write metadata to the DB in a single transaction.
-        #  (2) Keep `remove_unneeded_storage_ids` ready to delete all
-        #      newly stored (and thus unreferenced from the DB) repodata
-        #      blobs, up until the moment that the transaction commits.
-        persist_storage_id_to_repodata = {}
+    # All downloads have completed - we now want to atomically persist repomds.
+    db_conn = cfg.new_db_conn()
+    with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
+        # Even though a valid snapshot of a single repo is intrinsically valid,
+        # we only want to operate on coherent collections of repos (as they
+        # existed at roughly the same point in time). For this reason, we'd
+        # rather leak already-committed repodata & RPM objects (subject to GC
+        # later, if we choose) if we were not able to store a full snapshot,
+        # while not doing so for repomds (as committing those essentially
+        # commits a full snasphot, given that the repodata & RPM objects will
+        # now be referenced).
+        for res in rpm_results:
+            repo_db.store_repomd(
+                res.repo_universe, res.repo.name, res.repomd
+            )
         try:
-            # Download the repodata blobs to storage, and add them to
-            # `persist_storage_id_to_repodata` to enable automatic cleanup on
-            # error via `finally`.
-            rpm_set, storage_id_to_repodata = _download_repodatas(
-                repo, repomd, persist_storage_id_to_repodata, visitors, cfg,
-            )
+            repo_db.commit()
+        except Exception:  # pragma: no cover
+            # This is bad, but we hope this commit was atomic and thus none of
+            # the repomds got inserted, in which case our snapshot's failed but
+            # we at least don't have a semi-complete snapshot in the db.
+            log.exception(f'Exception when trying to commit repomd')
+            raise
 
-            storage_id_to_rpm = _download_rpms(
-                repo, rpm_table, rpm_set, all_snapshot_universes, cfg
+    return (
+        (
+            res.repo,
+            RepoSnapshot(
+                repomd=res.repomd,
+                storage_id_to_repodata=res.storage_id_to_repodata,
+                storage_id_to_rpm=res.storage_id_to_rpm,
             )
-            # Visitors inspect all RPMs, whether or not they belong to the
-            # current shard.  For the RPMs in this shard, visiting after
-            # `_download_rpms` allows us to pass in an `Rpm` structure
-            # with `.canonical_checksum` set, to better detect identical
-            # RPMs from different repos.
-            for visitor in visitors:
-                for rpm in {
-                    **{r.location: r for r in rpm_set},
-                    # Post-download Rpm objects override the pre-download ones
-                    **{r.location: r for r in storage_id_to_rpm.values()},
-                }.values():
-                    visitor.visit_rpm(rpm)
-
-            # Commit all the repo metadata, inactivate the `finally` cleanup
-            # (except for blobs that we don't want to retain, after all.)
-            _commit_repodata_and_cancel_cleanup(
-                repomd,
-                repo_universe,
-                repo.name,
-                storage_id_to_repodata,
-                persist_storage_id_to_repodata,
-                db_cfg
-            )
-        finally:
-            if persist_storage_id_to_repodata:
-                log.info('Deleting uncommitted blobs, do not Ctrl-C')
-            storage = cfg.new_storage()
-            for storage_id in persist_storage_id_to_repodata.keys():
-                try:
-                    storage.remove(storage_id)
-                # Yes, catch even KeyboardInterrupt to minimize our litter
-                except BaseException:  # pragma: no cover
-                    log.exception(f'Failed to remove {storage_id}')
-
-        yield repo, RepoSnapshot(
-            repomd=repomd,
-            storage_id_to_repodata=storage_id_to_repodata,
-            storage_id_to_rpm=storage_id_to_rpm,
         )
+        for res in rpm_results
+    )
