@@ -289,14 +289,14 @@ class DownloadReposTestCase(unittest.TestCase):
             self.assertEqual('sha256', error_dict['failed_check'])
 
     @mock.patch('time.sleep')
-    def test_rpm_download_errors_no_retry(self, mock_time):
+    def test_rpm_download_errors_no_retry(self, mock_sleep):
         with self._check_download_error(
             MICE_01_RPM_REGEX, raise_fake_http_error, HTTPError,
         ) as error_dict:
             self.assertEqual(_MICE_LOCATION, error_dict['location'])
             self.assertEqual(404, error_dict['http_status'])
         # Shouldn't have retried for a 404 error
-        mock_time.assert_not_called()
+        mock_sleep.assert_not_called()
 
     @mock.patch('time.sleep')
     def test_repomd_download_error(self, mock_sleep):
@@ -310,6 +310,25 @@ class DownloadReposTestCase(unittest.TestCase):
             len(repo_downloader.REPOMD_MAX_RETRY_S),
             len(mock_sleep.call_args_list)
         )
+
+    @mock.patch('time.sleep')
+    def test_rpm_download_errors_http_5xx(self, mock_sleep):
+        def raise_5xx(_):
+            raise requests.exceptions.HTTPError(
+                response=mock.Mock(status_code=500)
+            )
+        mice_location = 'good_dog-pkgs/rpm-test-mice-0.1-a.x86_64.rpm'
+        # Unlike 4xx errors, we retry 5xx ones (and 408s) on the presumption
+        # that server errors may be transient and succeed in a future attempt
+        with self._check_download_error(
+            MICE_01_RPM_REGEX, raise_5xx, HTTPError,
+        ) as error_dict:
+            self.assertEqual(mice_location, error_dict['location'])
+            self.assertEqual(500, error_dict['http_status'])
+            self.assertEqual(
+                len(repo_downloader.RPM_MAX_RETRY_S),
+                len(mock_sleep.call_args_list)
+            )
 
     @mock.patch('time.sleep', mock.Mock())
     def test_repodata_download_errors(self):
