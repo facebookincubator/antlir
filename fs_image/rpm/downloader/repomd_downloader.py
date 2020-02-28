@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Tuple, Iterable, Iterator
+from typing import Iterable, Iterator, Tuple
 
 from fs_image.common import get_file_logger
 from fs_image.rpm.downloader.common import (
@@ -12,6 +12,7 @@ from rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 REPOMD_MAX_RETRY_S = [2 ** i for i in range(8)]  # 256 sec ==  4m16s
+LOOP_LIMIT = 5  # Times we'll loop downloading repomds before exiting
 log = get_file_logger(__file__)
 
 
@@ -30,7 +31,7 @@ def _download_repomd(
     return repo, repo_universe, repomd
 
 
-def download_repomds(
+def _download_repomds(
     repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]],
     cfg: DownloadConfig,
 ) -> Iterator[DownloadResult]:
@@ -48,3 +49,39 @@ def download_repomds(
                 repo_universe=repo_universe,
                 repomd=repomd,
             )
+
+
+def gen_repomds_from_repos(
+    repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]],
+    cfg: DownloadConfig,
+) -> Iterator[DownloadResult]:
+    # Concurrently download repomds and aggregate results
+    repomd_results = list(
+        _download_repomds(repos_and_universes, cfg)
+    )
+    # Perform the repomd download at least twice in a row, and ensure that the
+    # checksums from the two downloads match up. This gives us added protection
+    # against the scenario where a repo object wasn't atomically moved between
+    # repos.
+    #
+    # We arbitrarily limit the iterations to ensure we don't get stuck looping
+    # infinitely if there's an underlying integrity issue.
+    for _ in range(LOOP_LIMIT):
+        prev_repomd_results = repomd_results
+        repomd_results = list(
+            _download_repomds(repos_and_universes, cfg)
+        )
+        if (
+            sorted(res.repomd.checksum for res in prev_repomd_results)
+            == sorted(res.repomd.checksum for res in repomd_results)
+        ):
+            break
+    else:
+        # We hit our loop limit, so there's likely an integrity issue to fix
+        log.critical(
+            'Failed to download repomd because each successive download '
+            'produced a different set of repomds. This indicates an integrity '
+            'issue with the repos.'
+        )
+        raise RuntimeError('Integrity issue with repos')
+    yield from repomd_results

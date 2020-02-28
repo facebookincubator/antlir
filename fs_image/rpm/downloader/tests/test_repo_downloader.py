@@ -799,3 +799,23 @@ class DownloadReposTestCase(unittest.TestCase):
             # This is essentially showing that the storage_id was correctly
             # reused for duplicate RPMs
             self.assertEqual(unique_fake_rpms, len(unique_storage_ids))
+
+    def test_download_changing_repomds(self):
+        original_open_url = open_url
+        i = 0
+
+        def my_open_url(url):
+            nonlocal i
+            postfix = 'repodata/repomd.xml'
+            if postfix in url:
+                i += 1
+                return original_open_url(re.sub(rf'/(\d)/', rf'/{i % 2}/', url))
+            return original_open_url(url)
+
+        with mock.patch(SUT + 'common.open_url') as mock_fn:
+            mock_fn.side_effect = my_open_url
+            with self._make_downloader('0/good_dog') as downloader:
+                with self.assertRaisesRegex(
+                    RuntimeError, 'Integrity issue with repos'
+                ):
+                    list(downloader())
