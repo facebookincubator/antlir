@@ -32,7 +32,7 @@ from fs_image.rpm.downloader import repo_downloader
 from fs_image.rpm.downloader.common import open_url
 from fs_image.rpm.downloader.repomd_downloader import REPOMD_MAX_RETRY_S
 from fs_image.rpm.downloader.repodata_downloader import (
-    RepodataParseError, _download_repodata_impl
+    RepodataParseError, _download_repodata
 )
 from fs_image.rpm.downloader.rpm_downloader import RPM_MAX_RETRY_S
 from rpm.common import RpmShard
@@ -339,40 +339,30 @@ class DownloadReposTestCase(unittest.TestCase):
     @mock.patch('time.sleep', mock.Mock())
     def test_repodata_download_errors(self):
         with self._make_downloader('0/good_dog') as downloader:
-
-            # These are not reported as "storage IDs" because a failure to
-            # parse the primary repodata is fatal -- we'd have no list of RPMs.
             # This will raise a RepodataParseError, which is not a
-            # ReportableError
+            # ReportableError -- but this should still fail the snapshot.
             with self._break_open_url(
                 r'.*/good_dog/repodata/[0-9a-f]*-primary\.sqlite\.bz2$',
                 lambda s: s[3:],  # change contents
             ), self.assertRaises(RepodataParseError):
-                # Since there was only one repo and it failed, fn exits early
-                # and nothing is returned
-                self.assertIsNone(next(downloader()))
+                downloader()
 
-            # Since RepodataParseError is not a ReportableError (but HTTPError
-            # is), this is a different code path
+        # Since RepodataParseError is not a ReportableError (but HTTPError is),
+        # this is a different code path
+        with self._make_downloader('0/good_dog') as downloader:
             with self._break_open_url(
                 r'.*/good_dog/repodata/[0-9a-f]*-primary\.sqlite\.bz2$',
                 raise_fake_http_error,
             ), self.assertRaises(HTTPError):
-                # Since there was only one repo and it failed, fn exits early
-                # and nothing is returned
-                self.assertIsNone(next(downloader()))
+                downloader()
 
-        # Failure to get non-primary repodata does not abort a snapshot.
-        with self._check_download_error(
-            r'.*/good_dog/' + FILELISTS_REPODATA_REGEX,
-            lambda s: s[3:],  # change size
-            FileIntegrityError,
-        ) as error_dict:
-            self.assertRegex(error_dict['location'], FILELISTS_REPODATA_REGEX)
-            self.assertEqual('size', error_dict['failed_check'])
-            self.assertEqual(
-                -3, int(error_dict['actual']) - int(error_dict['expected']),
-            )
+        # Failure to get non-primary repodata should also abort a snapshot.
+        with self._make_downloader('0/good_dog') as downloader:
+            with self._break_open_url(
+                r'.*/good_dog/' + FILELISTS_REPODATA_REGEX,
+                raise_fake_http_error,
+            ), self.assertRaises(HTTPError):
+                downloader()
 
     def _download_repo_twice(self, repo, step_and_repo, tmp_db, storage_dir):
         downloader = self._make_downloader_from_ctx(
@@ -634,10 +624,10 @@ class DownloadReposTestCase(unittest.TestCase):
 
     # Test case of having dangling repodata refs without a repomd
     def test_dangling_repodatas(self):
-        orig_rd = _download_repodata_impl
+        orig_rd = _download_repodata
         with mock.patch.object(RepoDBContext, 'store_repomd') as mock_store, \
              mock.patch(
-                 SUT + 'repodata_downloader._download_repodata_impl'
+                 SUT + 'repodata_downloader._download_repodata'
              ) as mock_rd, tempfile.NamedTemporaryFile() as tmp_db, \
              temp_dir() as storage_dir:
             db_cfg = {'kind': 'sqlite', 'db_path': tmp_db.name}

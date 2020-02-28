@@ -3,7 +3,7 @@ from contextlib import ExitStack
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from types import MappingProxyType
 from typing import (
-    Tuple, Iterable, Iterator, List, Mapping, Optional, Set
+    Tuple, Iterable, Iterator, List, Mapping, NamedTuple, Optional, Set
 )
 
 from fs_image.common import get_file_logger, set_new_key, shuffled
@@ -15,31 +15,45 @@ from rpm.common import read_chunks, retryable
 from rpm.parse_repodata import get_rpm_parser, pick_primary_repodata
 from rpm.repo_db import RepoDBContext, RepodataTable
 from rpm.repo_objects import RepoMetadata, Repodata, Rpm
-from rpm.repo_snapshot import MaybeStorageID, ReportableError
 from rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 REPODATA_MAX_RETRY_S = [2 ** i for i in range(10)]  # 1024sec == 17m4s
 log = get_file_logger(__file__)
-RepodataReturnType = Tuple[Repodata, bool, MaybeStorageID, Optional[List[Rpm]]]
 
 
 class RepodataParseError(Exception):
     pass
 
 
-# May raise `ReportableError`s to be caught by `_download_repodatas`
-def _download_repodata_impl(
+class DownloadRepodataReturnType(NamedTuple):
+    # The repodata that was operated on
+    repodata: Repodata
+    # True if the repodata was stored into storage on this run, else False
+    newly_stored: bool
+    # A new storage_id (if it was just downloaded), or an existing storage_id if
+    # it was already in the db.
+    storage_id: str
+    # List of RPMs if it was primary repodata, else None.
+    maybe_rpms: Optional[List[Rpm]]
+
+
+# May raise `ReportableError`, which will abort the snapshot
+@retryable(
+    'Download failed: repodata at {repodata.location}',
+    REPODATA_MAX_RETRY_S
+)
+def _download_repodata(
     repodata: Repodata,
     *,
     repo_url: str,
     repodata_table: RepodataTable,
     cfg: DownloadConfig,
     is_primary: bool
-) -> RepodataReturnType:
+) -> DownloadRepodataReturnType:
     '''This function behaves differently depending on two main characteristics:
       - Whether or not the provided repodata is primary, and
-      - Whether or not it already exists in storage
+      - Whether or not it already exists in storage.
     Which actions are taken depends on which of the above true, and this
     branching is explained within the function.
     '''
@@ -53,7 +67,7 @@ def _download_repodata_impl(
     # Nothing to do -- only need to download repodata if it's the primary
     # (so we can parse it for RPMs), or if it's not already in the DB.
     if not is_primary and storage_id:
-        return repodata, False, storage_id, None
+        return DownloadRepodataReturnType(repodata, False, storage_id, None)
     rpms = [] if is_primary else None
 
     # Remaining possibilities are that we've got a primary with or without
@@ -95,41 +109,12 @@ def _download_repodata_impl(
                     raise RepodataParseError((repodata.location, ex))
         # Must commit the output context to get a storage_id.
         if outfile:
-            return repodata, True, outfile.commit(), rpms
+            return DownloadRepodataReturnType(
+                repodata, True, outfile.commit(), rpms
+            )
     # The primary repodata was already stored, and we just parsed it for RPMs.
     assert storage_id is not None
-    return repodata, False, storage_id, rpms
-
-
-@retryable(
-    'Download failed: repodata at {repodata.location}',
-    REPODATA_MAX_RETRY_S
-)
-def _download_repodata(
-    repodata, is_primary: bool, **kwargs
-) -> RepodataReturnType:
-    '''Wrapper to handle ReportableError and force a retry if we're trying
-    to retrieve the primary.
-
-    RepodataReturnType is a 3-tuple with the following properties:
-        - [0]: The repodata that was operated on
-        - [1]: A new storage_id (if it was just downloaded), an existing
-                storage_id if it was already in the db, or an error if this was
-                a non-primary repodata and a ReportableError was raised.
-        - [2]: List of RPMs if it was primary repodata, else None.
-    '''
-    try:
-        return _download_repodata_impl(
-            repodata, **kwargs, is_primary=is_primary
-        )
-    except ReportableError as e:
-        # Can't proceed without primary file; raise to trigger retry.
-        if is_primary:
-            raise e
-        # This "fake" storage_id is stored in `storage_id_to_repodata`, so the
-        # error is propagated to the sqlite db through the repo snapshot. It
-        # isn't written to repo_db however as that explicitly skip errors.
-        return repodata, False, e, None
+    return DownloadRepodataReturnType(repodata, False, storage_id, rpms)
 
 
 def _download_repodatas(
@@ -161,26 +146,25 @@ def _download_repodatas(
         ]
 
         for future in as_completed(futures):
-            repodata, newly_stored, storage_id_or_err, maybe_rpms = \
-                future.result()
-            if newly_stored:
+            res = future.result()
+            if res.newly_stored:
                 # This repodata was newly downloaded and stored in storage, so
                 # we store its storage_id to repo_db regardless of whether we
                 # encounter fatal errors later on in the execution and don't
                 # finish the snapshot - see top-level docblock for reasoning
-                storage_id_or_err = maybe_write_id(
-                    repodata, storage_id_or_err, repodata_table, db_ctx
+                storage_id = maybe_write_id(
+                    res.repodata, res.storage_id, repodata_table, db_ctx
                 )
-            if maybe_rpms is not None:
+            else:
+                storage_id = res.storage_id
+            if res.maybe_rpms is not None:
                 # RPMs will only have been returned by the primary, thus we
                 # should only enter this block once
                 assert rpms is None
                 # Convert to a set to work around buggy repodatas, which
                 # list the same RPM object twice.
-                rpms = frozenset(maybe_rpms)
-            set_new_key(
-                storage_id_to_repodata, storage_id_or_err, repodata
-            )
+                rpms = frozenset(res.maybe_rpms)
+            set_new_key(storage_id_to_repodata, storage_id, res.repodata)
     # It's possible that for non-primary repodatas we received errors when
     # downloading - in that case we store the error in the sqlite db, thus the
     # dict should contain an entry for every single repodata
