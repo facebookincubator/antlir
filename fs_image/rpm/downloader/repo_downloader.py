@@ -44,7 +44,7 @@ from typing import Iterable, Iterator, Tuple
 
 from fs_image.common import get_file_logger
 from fs_image.rpm.downloader.common import DownloadConfig, DownloadResult
-from fs_image.rpm.downloader.repomd_downloader import download_repomds
+from fs_image.rpm.downloader.repomd_downloader import gen_repomds_from_repos
 from fs_image.rpm.downloader.repodata_downloader import (
     gen_repodatas_from_repomds
 )
@@ -91,14 +91,12 @@ def download_repos(
     with db_ctx as repo_db_ctx:
         repo_db_ctx.ensure_tables_exist()
 
-    # Concurrently download repomds, aggregate results
-    repomd_results = download_repomds(repos_and_universes, cfg)
-    repodata_results = gen_repodatas_from_repomds(repomd_results, cfg)
-    # Cast to run the generators before storing into the db
+    # Concurrently download repomds, repodatas and RPMs. Materialize the
+    # generators to aggregate the results between each successive step.
+    repomd_results = list(gen_repomds_from_repos(repos_and_universes, cfg))
+    repodata_results = list(gen_repodatas_from_repomds(repomd_results, cfg))
     rpm_results = list(
-        gen_rpms_from_repodatas(
-            repodata_results, cfg, all_snapshot_universes
-        )
+        gen_rpms_from_repodatas(repodata_results, cfg, all_snapshot_universes)
     )
 
     # All downloads have completed - we now want to atomically persist repomds.
