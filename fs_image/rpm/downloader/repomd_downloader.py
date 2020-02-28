@@ -33,7 +33,6 @@ def _download_repomd(
 def download_repomds(
     repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]],
     cfg: DownloadConfig,
-    visitors: Iterable['RepoObjectVisitor'] = (),
 ) -> Iterator[DownloadResult]:
     '''Downloads all repo metadatas concurrently'''
     log.info('Downloading repomds for all repos')
@@ -44,8 +43,6 @@ def download_repomds(
         ]
         for future in as_completed(futures):
             repo, repo_universe, repomd = future.result()
-            for visitor in visitors:
-                visitor.visit_repomd(repomd)
             yield DownloadResult(
                 repo=repo,
                 repo_universe=repo_universe,

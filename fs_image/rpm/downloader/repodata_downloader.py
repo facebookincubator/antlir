@@ -135,7 +135,6 @@ def _download_repodata(
 def _download_repodatas(
     repo: YumDnfConfRepo,
     repomd: RepoMetadata,
-    visitors: Iterable['RepoObjectVisitor'],
     cfg: DownloadConfig,
 ) -> Tuple[Set[Rpm], Mapping[str, Repodata]]:
     rpms = None  # We'll extract these from the primary repodata
@@ -146,10 +145,6 @@ def _download_repodatas(
         f'`{repo.name}` repodata weighs',
         sum(rd.size for rd in repomd.repodatas)
     )
-    # Visitors see all declared repodata, even if some downloads fail.
-    for visitor in visitors:
-        for repodata in repomd.repodatas:
-            visitor.visit_repodata(repodata)
     db_conn = cfg.new_db_conn()
     db_ctx = RepoDBContext(db_conn, db_conn.SQL_DIALECT)
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
@@ -194,10 +189,9 @@ def _download_repodatas(
     return rpms, storage_id_to_repodata
 
 
-def get_repodatas_from_repomds(
+def gen_repodatas_from_repomds(
     repomd_results: Iterable[DownloadResult],
     cfg: DownloadConfig,
-    visitors: Iterable['RepoObjectVisitor'],
 ) -> Iterator[DownloadResult]:
     # For each downloaded repomd, concurrently download the contained
     # repodatas. This driver runs serially, but each repomd's repodatas are
@@ -216,7 +210,7 @@ def get_repodatas_from_repomds(
         # scan the db and remove any unused references. We are also able to
         # avoid implementing a lot of complex cleanup logic this way.
         rpm_set, storage_id_to_repodata = _download_repodatas(
-            res.repo, res.repomd, visitors, cfg,
+            res.repo, res.repomd, cfg,
         )
         yield res._replace(
             storage_id_to_repodata=MappingProxyType(storage_id_to_repodata),
