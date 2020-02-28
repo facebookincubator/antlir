@@ -180,6 +180,166 @@ def _download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
         )
 
 
+def _detect_mutable_rpms(
+    rpm: Rpm,
+    rpm_table: RpmTable,
+    storage_id: str,
+    all_snapshot_universes: Set[str],
+    db_cfg: Dict[str, str]
+):
+    db_conn = DBConnectionContext.from_json(db_cfg)
+    with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
+        all_canonical_checksums = set(repo_db.get_rpm_canonical_checksums(
+            rpm_table, rpm, all_snapshot_universes,
+        ))
+    assert all_canonical_checksums, (rpm, storage_id)
+    assert all(
+        c.algorithm == CANONICAL_HASH for c in all_canonical_checksums
+    ), all_canonical_checksums
+    all_canonical_checksums.remove(rpm.canonical_checksum)
+    deleted_checksums = deleted_mutable_rpms.get(rpm.nevra(), set())
+    assert rpm.canonical_checksum not in deleted_checksums, \
+        f'{rpm} was in deleted_mutable_rpms, but still exists in repos'
+    all_canonical_checksums.difference_update(deleted_checksums)
+    if all_canonical_checksums:
+        # Future: It would be nice to mark all mentions of the NEVRA
+        # as bad, but that requires messy updates of multiple
+        # `RepoSnapshot`s.  For now, we rely on the fact that the next
+        # `snapshot-repos` run will do this anyway.
+        return MutableRpmError(
+            location=rpm.location,
+            storage_id=storage_id,
+            checksum=rpm.canonical_checksum,
+            other_checksums=all_canonical_checksums,
+        )
+    return storage_id
+
+
+# May raise `ReportableError`s to be caught by `_download_rpms`.
+# May raise an `HTTPError` if the download fails, which won't trigger a
+# retry if they're not 5xx errors.
+@retryable('Download failed: {rpm}', RPM_MAX_RETRY_S, skip_non_5xx=True)
+def _download_rpm(
+    rpm: Rpm,
+    repo_url: str,
+    rpm_table: RpmTable,
+    cfg: DownloadConfig,
+) -> Tuple[str, Rpm]:
+    'Returns a storage_id and a copy of `rpm` with a canonical checksum.'
+    log.info(f'Downloading {rpm}')
+    storage = cfg.new_storage()
+    with _download_resource(repo_url, rpm.location) as input, \
+            storage.writer() as output:
+        # Before committing to the DB, let's standardize on one hash
+        # algorithm.  Otherwise, it might happen that two repos may
+        # store the same RPM hashed with different algorithms, and thus
+        # trigger our "different hashes" detector for a sane RPM.
+        canonical_hash = hashlib.new(CANONICAL_HASH)
+        for chunk in _verify_chunk_stream(
+            read_chunks(input, BUFFER_BYTES),
+            [rpm.checksum],
+            rpm.size,
+            rpm.location,
+        ):  # May raise a ReportableError
+            canonical_hash.update(chunk)
+            output.write(chunk)
+        # NB: We can also query the RPM as we download it above, via
+        # something like P123285392.  However, at present, all necessary
+        # metadata can be retrieved via `parse_metadata.py`.
+        rpm = rpm._replace(canonical_checksum=Checksum(
+            algorithm=CANONICAL_HASH, hexdigest=canonical_hash.hexdigest(),
+        ))
+
+        # Remove the blob if we error before the DB commit below.
+        storage_id = output.commit(remove_on_exception=True)
+
+        db_conn = cfg.new_db_conn()
+        with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
+            db_storage_id = repo_db.maybe_store(rpm_table, rpm, storage_id)
+            _log_if_storage_ids_differ(rpm, storage_id, db_storage_id)
+            # By this point, `maybe_store` would have already asserted
+            # that the stored `canonical_checksum` matches ours.  If it
+            # did not, something is seriously wrong with our writer code
+            # -- we should not be raising a `ReportableError` for that.
+            if db_storage_id == storage_id:  # We won the race to store rpm
+                repo_db.commit()  # Our `Rpm` got inserted into the DB.
+            else:  # We lost the race to commit `rpm`.
+                # Future: batch removes in Storage if this is slow
+                storage.remove(storage_id)
+            return db_storage_id, rpm
+
+
+def _download_rpms(
+    repo: YumDnfConfRepo,
+    rpm_table: RpmTable,
+    rpms: Iterable[Rpm],
+    all_snapshot_universes: Set[str],
+    cfg: DownloadConfig,
+):
+    _log_size(
+        f'`{repo.name}` has {len(rpms)} RPMs weighing',
+        sum(r.size for r in rpms)
+    )
+    db_conn = cfg.new_db_conn()
+    storage_id_to_rpm = {}
+    # Download in random order to reduce collisions from racing writers.
+    for rpm in shuffled(rpms):
+        if not cfg.rpm_shard.in_shard(rpm):
+            continue
+        with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
+            # If we get no `storage_id` back, there are 3 possibilities:
+            #  - `rpm.nevra()` was never seen before.
+            #  - `rpm.nevra()` was seen before, but it was hashed with
+            #     different algorithm(s), so we MUST download and
+            #     compute the canonical checksum to know if its contents
+            #     are the same.
+            #  - `rpm.nevra()` was seen before, **AND** one of the
+            #    prior checksums used `rpm.checksum.algorithms`, but
+            #    produced a different hash value.  In other words, this
+            #    is a `MutableRpmError`, because the same NEVRA must
+            #    have had two different contents.  We COULD explicitly
+            #    detect this error here, and avoid the download.
+            #    However, this severe error should be infrequent, and we
+            #    actually get valuable information from the download --
+            #    this lets us know whether the file is wrong or the
+            #    repodata is wrong.
+            storage_id, canonical_checksum = \
+                repo_db.get_rpm_storage_id_and_checksum(
+                    rpm_table, rpm
+                )
+        # If the RPM is already stored with a matching checksum, just
+        # update its `.canonical_checksum`.
+        if storage_id:
+            rpm = rpm._replace(canonical_checksum=canonical_checksum)
+            log.debug(f'Already stored under {storage_id}: {rpm}')
+        else:  # We have to download the RPM.
+            try:
+                storage_id, rpm = _download_rpm(
+                    rpm, repo.base_url, rpm_table, cfg
+                )
+            # IMPORTANT: All the classes of errors that we handle below
+            # have the property that we would not have stored anything
+            # new in the DB, meaning that such failed RPMs will be
+            # retried on the next snapshot attempt.
+            except ReportableError as ex:
+                # RPM checksum validation errors, scenarios where the
+                # same RPM name occurs with different checksums, etc.
+                storage_id = ex
+
+        # Detect if this RPM NEVRA occurs with different contents.
+        if not isinstance(storage_id, ReportableError):
+            storage_id = _detect_mutable_rpms(
+                rpm, rpm_table, storage_id, all_snapshot_universes, cfg.db_cfg
+            )
+
+        set_new_key(storage_id_to_rpm, storage_id, rpm)
+
+    assert len(storage_id_to_rpm) == sum(
+        cfg.rpm_shard.in_shard(r) for r in rpms
+    )
+    return storage_id_to_rpm
+
+
 # May raise `ReportableError`s to be caught by `_download_repodatas`
 def _download_repodata(
     repodata: Repodata,
@@ -309,166 +469,6 @@ def _download_repodatas(
     assert len(storage_id_to_repodata) == len(repomd.repodatas)
     assert rpms, 'Is the repo empty?'
     return rpms, storage_id_to_repodata
-
-
-# May raise `ReportableError`s to be caught by `_download_rpms`.
-# May raise an `HTTPError` if the download fails, which won't trigger a
-# retry if they're not 5xx errors.
-@retryable('Download failed: {rpm}', RPM_MAX_RETRY_S, skip_non_5xx=True)
-def _download_rpm(
-    rpm: Rpm,
-    repo_url: str,
-    rpm_table: RpmTable,
-    cfg: DownloadConfig,
-) -> Tuple[str, Rpm]:
-    'Returns a storage_id and a copy of `rpm` with a canonical checksum.'
-    log.info(f'Downloading {rpm}')
-    storage = cfg.new_storage()
-    with _download_resource(repo_url, rpm.location) as input, \
-            storage.writer() as output:
-        # Before committing to the DB, let's standardize on one hash
-        # algorithm.  Otherwise, it might happen that two repos may
-        # store the same RPM hashed with different algorithms, and thus
-        # trigger our "different hashes" detector for a sane RPM.
-        canonical_hash = hashlib.new(CANONICAL_HASH)
-        for chunk in _verify_chunk_stream(
-            read_chunks(input, BUFFER_BYTES),
-            [rpm.checksum],
-            rpm.size,
-            rpm.location,
-        ):  # May raise a ReportableError
-            canonical_hash.update(chunk)
-            output.write(chunk)
-        # NB: We can also query the RPM as we download it above, via
-        # something like P123285392.  However, at present, all necessary
-        # metadata can be retrieved via `parse_metadata.py`.
-        rpm = rpm._replace(canonical_checksum=Checksum(
-            algorithm=CANONICAL_HASH, hexdigest=canonical_hash.hexdigest(),
-        ))
-
-        # Remove the blob if we error before the DB commit below.
-        storage_id = output.commit(remove_on_exception=True)
-
-        db_conn = cfg.new_db_conn()
-        with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
-            db_storage_id = repo_db.maybe_store(rpm_table, rpm, storage_id)
-            _log_if_storage_ids_differ(rpm, storage_id, db_storage_id)
-            # By this point, `maybe_store` would have already asserted
-            # that the stored `canonical_checksum` matches ours.  If it
-            # did not, something is seriously wrong with our writer code
-            # -- we should not be raising a `ReportableError` for that.
-            if db_storage_id == storage_id:  # We won the race to store rpm
-                repo_db.commit()  # Our `Rpm` got inserted into the DB.
-            else:  # We lost the race to commit `rpm`.
-                # Future: batch removes in Storage if this is slow
-                storage.remove(storage_id)
-            return db_storage_id, rpm
-
-
-def _download_rpms(
-    repo: YumDnfConfRepo,
-    rpm_table: RpmTable,
-    rpms: Iterable[Rpm],
-    all_snapshot_universes: Set[str],
-    cfg: DownloadConfig,
-):
-    _log_size(
-        f'`{repo.name}` has {len(rpms)} RPMs weighing',
-        sum(r.size for r in rpms)
-    )
-    db_conn = cfg.new_db_conn()
-    storage_id_to_rpm = {}
-    # Download in random order to reduce collisions from racing writers.
-    for rpm in shuffled(rpms):
-        if not cfg.rpm_shard.in_shard(rpm):
-            continue
-        with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
-            # If we get no `storage_id` back, there are 3 possibilities:
-            #  - `rpm.nevra()` was never seen before.
-            #  - `rpm.nevra()` was seen before, but it was hashed with
-            #     different algorithm(s), so we MUST download and
-            #     compute the canonical checksum to know if its contents
-            #     are the same.
-            #  - `rpm.nevra()` was seen before, **AND** one of the
-            #    prior checksums used `rpm.checksum.algorithms`, but
-            #    produced a different hash value.  In other words, this
-            #    is a `MutableRpmError`, because the same NEVRA must
-            #    have had two different contents.  We COULD explicitly
-            #    detect this error here, and avoid the download.
-            #    However, this severe error should be infrequent, and we
-            #    actually get valuable information from the download --
-            #    this lets us know whether the file is wrong or the
-            #    repodata is wrong.
-            storage_id, canonical_checksum = \
-                repo_db.get_rpm_storage_id_and_checksum(
-                    rpm_table, rpm
-                )
-        # If the RPM is already stored with a matching checksum, just
-        # update its `.canonical_checksum`.
-        if storage_id:
-            rpm = rpm._replace(canonical_checksum=canonical_checksum)
-            log.debug(f'Already stored under {storage_id}: {rpm}')
-        else:  # We have to download the RPM.
-            try:
-                storage_id, rpm = _download_rpm(
-                    rpm, repo.base_url, rpm_table, cfg
-                )
-            # IMPORTANT: All the classes of errors that we handle below
-            # have the property that we would not have stored anything
-            # new in the DB, meaning that such failed RPMs will be
-            # retried on the next snapshot attempt.
-            except ReportableError as ex:
-                # RPM checksum validation errors, scenarios where the
-                # same RPM name occurs with different checksums, etc.
-                storage_id = ex
-
-        # Detect if this RPM NEVRA occurs with different contents.
-        if not isinstance(storage_id, ReportableError):
-            storage_id = _detect_mutable_rpms(
-                rpm, rpm_table, storage_id, all_snapshot_universes, cfg.db_cfg
-            )
-
-        set_new_key(storage_id_to_rpm, storage_id, rpm)
-
-    assert len(storage_id_to_rpm) == sum(
-        cfg.rpm_shard.in_shard(r) for r in rpms
-    )
-    return storage_id_to_rpm
-
-
-def _detect_mutable_rpms(
-    rpm: Rpm,
-    rpm_table: RpmTable,
-    storage_id: str,
-    all_snapshot_universes: Set[str],
-    db_cfg: Dict[str, str]
-):
-    db_conn = DBConnectionContext.from_json(db_cfg)
-    with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
-        all_canonical_checksums = set(repo_db.get_rpm_canonical_checksums(
-            rpm_table, rpm, all_snapshot_universes,
-        ))
-    assert all_canonical_checksums, (rpm, storage_id)
-    assert all(
-        c.algorithm == CANONICAL_HASH for c in all_canonical_checksums
-    ), all_canonical_checksums
-    all_canonical_checksums.remove(rpm.canonical_checksum)
-    deleted_checksums = deleted_mutable_rpms.get(rpm.nevra(), set())
-    assert rpm.canonical_checksum not in deleted_checksums, \
-        f'{rpm} was in deleted_mutable_rpms, but still exists in repos'
-    all_canonical_checksums.difference_update(deleted_checksums)
-    if all_canonical_checksums:
-        # Future: It would be nice to mark all mentions of the NEVRA
-        # as bad, but that requires messy updates of multiple
-        # `RepoSnapshot`s.  For now, we rely on the fact that the next
-        # `snapshot-repos` run will do this anyway.
-        return MutableRpmError(
-            location=rpm.location,
-            storage_id=storage_id,
-            checksum=rpm.canonical_checksum,
-            other_checksums=all_canonical_checksums,
-        )
-    return storage_id
 
 
 def _commit_repodata_and_cancel_cleanup(
