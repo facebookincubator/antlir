@@ -39,7 +39,7 @@ from .common import (
 from .common_args import add_standard_args
 from .gpg_keys import snapshot_gpg_keys
 from .repo_db import validate_universe_name
-from .repo_downloader import download_repos
+from .repo_downloader import DownloadConfig, download_repos
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
 from .storage import Storage
@@ -125,11 +125,13 @@ def snapshot_repos(
     ) as db:
         for repo, snapshot in download_repos(
             repos_and_universes=repos_and_universes,
-            db_cfg=db_cfg,
-            storage_cfg=storage_cfg,
-            rpm_shard=rpm_shard,
+            cfg=DownloadConfig(
+                db_cfg=db_cfg,
+                storage_cfg=storage_cfg,
+                rpm_shard=rpm_shard,
+                threads=threads,
+            ),
             visitors=[declared_sizer],
-            threads=threads,
         ):
             snapshot.visit(saved_sizer).to_sqlite(repo.name, db)
             # This is done outside of the repo snapshot as we only want to

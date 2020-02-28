@@ -9,7 +9,7 @@ import sys
 
 from .common import get_file_logger, init_logging, populate_temp_dir_and_rename
 from .common_args import add_standard_args
-from .repo_downloader import download_repos
+from .repo_downloader import DownloadConfig, download_repos
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
 from .storage import Storage
@@ -69,10 +69,12 @@ def snapshot_repo(argv):
         )
         _, snapshot = next(download_repos(
             repos_and_universes=[(repo, args.repo_universe)],
-            db_cfg=args.db,
-            storage_cfg=args.storage,
-            rpm_shard=args.rpm_shard,
-            threads=args.threads,
+            cfg=DownloadConfig(
+                db_cfg=args.db,
+                storage_cfg=args.storage,
+                rpm_shard=args.rpm_shard,
+                threads=args.threads,
+            ),
         ))
         snapshot.visit(sizer).to_sqlite(args.repo_name, sqlite_db)
         log.info(sizer.get_report(f'This {args.rpm_shard} snapshot weighs'))
