@@ -1,30 +1,42 @@
 #!/usr/bin/env python3
 '''
-"Atomically" [1] downloads a snapshot of a single RPM repo.  Uses the
-`repo_db.py` and `storage.py` abstractions to store the snapshot, while
+"Atomically" [1] downloads a snapshot of a sequence of RPM repos. Uses the
+`repo_db.py` and `storage.py` abstractions to store the snapshots, while
 avoiding duplication of RPMs that existed in prior snapshots.
 
-Specifically, the user calls `RepoDownloader(...).download()`, which:
-
+Specifically, the user calls `download_repos(...)`, which, for each repo:
   - Downloads & parses `repomd.xml`.
-
   - Downloads the repodatas referenced there. Parses a primary repodata.
-
   - Downloads the RPMs referenced in the primary repodata.
 
-Returns a `RepoSnapshot` containing descriptions to the stored objects.  The
-dictionary keys are either "storage IDs" from the supplied `Storage` class,
-or `ReportableError` instances for those that were not correctly downloaded
-and stored.
+To increase performance, each of the above steps is performed concurrently,
+with `download_repos` being the driver that aggregates the thread results and
+returns the final list of snapshots. Additionally, the single driver thread
+performs all writes to mitigate potential concurrency issues with SQLite.
 
-[1] The snapshot is only atomic (i.e. representative of a single point in
-time, as opposed to a sheared mix of the repo at various points in time) if:
+`download_repos` returns a list of `RepoSnapshot`s containing descriptions of
+the stored objects. The dictionary keys are either "storage IDs" from the
+supplied `Storage` class, or `ReportableError` instances for those that were
+not correctly downloaded and stored. If a download fatally fails for a
+particular repo (e.g. repomd download failed, or a primary repodata couldn't be
+retrieved), the exception will be raised and the entire snapshot will fail.
 
+Note that in the case of the snapshot failing part way through, we omit any
+complex logic to clean up objects that have already been committed. This is
+mainly because until the very last point of the snapshot, where repomds are
+committed, these inserted repo objects should be unreferenced, and thus will
+essentially just be taking up extra space in storage without causing any
+integrity issues. Additionally, if this leaking becomes substantial, it's
+possible to simply have a periodic clean-up job run which garbage collects any
+unreferenced blobs - which is a much simpler approach compared to ensuring we
+always clean up unfinished work.
+
+[1] The snapshot is only atomic (i.e. representative of a single point in time,
+as opposed to a sheared mix of the repo at various points in time) if:
   - Repodata files and RPM files are never mutated after creation. For
     repodata, this is plausible because their names include their hash.  For
-    RPMs, this code includes a "mutable RPM" guard to detect files, whos
+    RPMs, this code includes a "mutable RPM" guard to detect files whose
     contents changed.
-
   - `repomd.xml` is replaced atomically (i.e.  via `rename`) after making
     available all the new RPMs & repodatas.
 '''
