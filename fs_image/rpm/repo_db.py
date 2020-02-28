@@ -373,8 +373,6 @@ class RepoDBContext(AbstractContextManager):
         self._conn_ctx = conn_ctx
         self._conn = None  # __enter__ this context to get a connection.
         self._dialect = dialect
-        with self as db:
-            db._ensure_tables_exist()
 
     def __enter__(self):
         assert self._conn is None, 'RepoDBContext is not reentrant'
@@ -402,7 +400,7 @@ class RepoDBContext(AbstractContextManager):
     def _identifiers(self, identifiers):
         return ', '.join(f'`{i}`' for i in identifiers)
 
-    def _ensure_tables_exist(self, _ensure_line_is_covered=lambda: None):
+    def ensure_tables_exist(self, _ensure_line_is_covered=lambda: None):
         # Future: it would be better if this function checked that the table
         # schemas in the DB are exactly as we would create them, and that
         # the DB's "canonical hash" algorithm matches ours.  For now, we'll

@@ -647,6 +647,7 @@ class DownloadReposTestCase(unittest.TestCase):
             db_ctx = RepoDBContext(db_conn, db_conn.SQL_DIALECT)
             repodata_table = RepodataTable()
             with db_ctx as repo_db_ctx:
+                repo_db_ctx.ensure_tables_exist()
                 storage_ids = [
                     repo_db_ctx.get_storage_id(repodata_table, rd)
                     for rd in called_rds

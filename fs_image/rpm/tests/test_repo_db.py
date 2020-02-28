@@ -92,6 +92,7 @@ class RepoDBTestCase(unittest.TestCase):
     def _make_db_ctx(self):
         with self._make_conn_ctx() as conn_ctx:
             with RepoDBContext(conn_ctx, SQLDialect.SQLITE3) as db_ctx:
+                db_ctx.ensure_tables_exist()
                 yield db_ctx
 
     def test_create_tables(self):
@@ -104,7 +105,8 @@ class RepoDBTestCase(unittest.TestCase):
             # 0: The tables already existed, creating context again is a no-op.
             # 1: Creating the context will ensures that all tables exist.
             for _ in range(2):
-                RepoDBContext(conn_ctx, SQLDialect.SQLITE3)
+                with RepoDBContext(conn_ctx, SQLDialect.SQLITE3) as db_ctx:
+                    db_ctx.ensure_tables_exist()
                 with conn_ctx as conn:
                     self._check_schema(conn)
 
@@ -147,6 +149,7 @@ class RepoDBTestCase(unittest.TestCase):
                     db_t=db_repomd.fetch_timestamp,
                     do_commit=do_commit,
                 ), RepoDBContext(conn_ctx, SQLDialect.SQLITE3) as db_ctx:
+                    db_ctx.ensure_tables_exist()
                     self.assertEqual(
                         db_repomd.fetch_timestamp,
                         db_ctx.store_repomd(
