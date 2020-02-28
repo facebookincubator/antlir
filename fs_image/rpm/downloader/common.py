@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import requests
+import time
 import urllib.parse
 from contextlib import contextmanager
 from io import BytesIO
@@ -95,14 +96,27 @@ def log_size(what_str: str, total_bytes: int):
 
 
 @contextmanager
+def timeit(operation_msg: str, threshold_s: int):
+    start_t = time.time()
+    try:
+        yield
+    finally:
+        duration = time.time() - start_t
+        if duration > threshold_s:
+            log.info(
+                f'Operation exceeded threshold, {duration} > {threshold_s} secs'
+            )
+
+
+@contextmanager
 def download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
     if not repo_url.endswith('/'):
         repo_url += '/'  # `urljoin` needs a trailing / to work right
     assert not relative_url.startswith('/')
     try:
-        with open_url(
-            urllib.parse.urljoin(repo_url, relative_url)
-        ) as input:
+        full_url = urllib.parse.urljoin(repo_url, relative_url)
+        with timeit(f'Downloading resource {full_url}', threshold_s=60 * 10), \
+             open_url(full_url) as input:
             yield input
     except requests.exceptions.HTTPError as ex:
         # E.g. we can see 404 errors if packages were deleted
@@ -133,8 +147,9 @@ def maybe_write_id(
     # Don't store errors into the repo db
     if isinstance(storage_id, ReportableError):
         return storage_id
-    with db_ctx as repo_db_ctx:
-        db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
-        repo_db_ctx.commit()
+    with timeit(f'Writing storage ID {storage_id}', threshold_s=60):
+        with db_ctx as repo_db_ctx:
+            db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
+            repo_db_ctx.commit()
     _log_if_storage_ids_differ(repo_obj, storage_id, db_storage_id)
     return db_storage_id
