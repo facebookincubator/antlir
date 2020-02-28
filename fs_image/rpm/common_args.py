@@ -40,6 +40,10 @@ def add_standard_args(parser):
             'Good for parallel downloads, or for quick-iteration testing. '
             'Defaults to downloading all RPMs.',
     )
+    parser.add_argument(  # Pass this to `RepoDownloader`
+        '--threads', type=int, required=True,
+        help=('Amount of threads across which the downloads will run. ')
+    )
     parser.add_argument(  # Pass this to `init_logging`
         '--debug', action='store_true',
         help='Should we print debug log messages?',

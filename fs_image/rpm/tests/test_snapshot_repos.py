@@ -37,6 +37,7 @@ class SnapshotReposTestCase(unittest.TestCase):
             ),
             '--db', json.dumps({'kind': 'sqlite', 'db_path': 'foo_path'}),
            '--one-universe-for-all-repos', 'not_used',
+            '--threads', '4',
             '--dnf-conf', 'not_used',
             '--yum-conf', 'not_used',
             '--snapshot-dir', 'not_used',
@@ -94,6 +95,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                         'kind': 'sqlite',
                         'db_path': repo_db_path.decode(),
                     }),
+                    '--threads', '4',
                 ]
                 snapshot_repos_from_args(common_args + [
                     '--one-universe-for-all-repos', 'mammal',

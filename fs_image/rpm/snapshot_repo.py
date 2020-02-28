@@ -72,6 +72,7 @@ def snapshot_repo(argv):
             db_cfg=args.db,
             storage_cfg=args.storage,
             rpm_shard=args.rpm_shard,
+            threads=args.threads,
         ))
         snapshot.visit(sizer).to_sqlite(args.repo_name, sqlite_db)
         log.info(sizer.get_report(f'This {args.rpm_shard} snapshot weighs'))

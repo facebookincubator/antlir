@@ -33,11 +33,12 @@ import inspect
 import requests
 import urllib.parse
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager, ExitStack
 from functools import wraps
 from io import BytesIO
 from typing import (
-    Dict, Iterable, Iterator, List, Mapping, Optional, Set, Tuple
+    Dict, Iterable, Iterator, List, Mapping, NamedTuple, Optional, Set, Tuple
 )
 
 from fs_image.common import get_file_logger, set_new_key, shuffled
@@ -68,6 +69,20 @@ log = get_file_logger(__file__)
 
 class RepodataParseError(Exception):
     pass
+
+
+# Lightweight configuration used by various parts of the download
+class DownloadConfig(NamedTuple):
+    db_cfg: Dict[str, str]
+    storage_cfg: Dict[str, str]
+    rpm_shard: RpmShard
+    threads: int
+
+    def new_db_conn(self):
+        return DBConnectionContext.from_json(self.db_cfg)
+
+    def new_storage(self):
+        return Storage.from_json(self.storage_cfg)
 
 
 def _verify_chunk_stream(
@@ -170,8 +185,7 @@ def _download_repodata(
     repodata: Repodata,
     repo_url: str,
     repodata_table: RepodataTable,
-    db_cfg: Dict[str, str],
-    storage_cfg: Dict[str, str],
+    cfg: DownloadConfig,
     *,
     is_primary: bool
 ) -> Tuple[bool, str, Optional[List[Rpm]]]:
@@ -181,8 +195,8 @@ def _download_repodata(
         - For the selected primary repodata, returns a list of RPMs.
           Returns None for all others.
     '''
-    db_conn = DBConnectionContext.from_json(db_cfg)
-    storage = Storage.from_json(storage_cfg)
+    db_conn = cfg.new_db_conn()
+    storage = cfg.new_storage()
     # We only need to download the repodata if is not already in the DB,
     # or if it is primary (so we can parse it for RPMs).
     with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
@@ -248,15 +262,15 @@ def _download_repodatas(
     # up any stored repodata blobs if the download fails part-way.
     persist_storage_id_to_repodata: Mapping[str, Repodata],
     visitors: Iterable['RepoObjectVisitor'],
-    db_cfg: Dict[str, str],
-    storage_cfg: Dict[str, str],
+    cfg: DownloadConfig,
 ) -> Tuple[Set[Rpm], Mapping[str, Repodata]]:
     rpms = None  # We'll extract these from the primary repodata
     storage_id_to_repodata = {}  # Newly stored **and** pre-existing
     primary_repodata = pick_primary_repodata(repomd.repodatas)
-    log.info(f'''`{repo.name}` repodata weighs {
+    _log_size(
+        f'`{repo.name}` repodata weighs',
         sum(rd.size for rd in repomd.repodatas)
-    :,} bytes''')
+    )
     # Visitors see all declared repodata, even if some downloads fail.
     for visitor in visitors:
         for repodata in repomd.repodatas:
@@ -269,8 +283,7 @@ def _download_repodatas(
                 repodata,
                 repo.base_url,
                 repodata_table,
-                db_cfg,
-                storage_cfg,
+                cfg,
                 is_primary=repodata is primary_repodata,
             )
             if newly_stored:
@@ -306,12 +319,11 @@ def _download_rpm(
     rpm: Rpm,
     repo_url: str,
     rpm_table: RpmTable,
-    db_cfg: Dict[str, str],
-    storage_cfg: Dict[str, str],
+    cfg: DownloadConfig,
 ) -> Tuple[str, Rpm]:
     'Returns a storage_id and a copy of `rpm` with a canonical checksum.'
     log.info(f'Downloading {rpm}')
-    storage = Storage.from_json(storage_cfg)
+    storage = cfg.new_storage()
     with _download_resource(repo_url, rpm.location) as input, \
             storage.writer() as output:
         # Before committing to the DB, let's standardize on one hash
@@ -337,7 +349,7 @@ def _download_rpm(
         # Remove the blob if we error before the DB commit below.
         storage_id = output.commit(remove_on_exception=True)
 
-        db_conn = DBConnectionContext.from_json(db_cfg)
+        db_conn = cfg.new_db_conn()
         with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
             db_storage_id = repo_db.maybe_store(rpm_table, rpm, storage_id)
             _log_if_storage_ids_differ(rpm, storage_id, db_storage_id)
@@ -357,19 +369,18 @@ def _download_rpms(
     repo: YumDnfConfRepo,
     rpm_table: RpmTable,
     rpms: Iterable[Rpm],
-    shard: RpmShard,
     all_snapshot_universes: Set[str],
-    db_cfg: Dict[str, str],
-    storage_cfg: Dict[str, str],
+    cfg: DownloadConfig,
 ):
-    log.info(f'''`{repo.name}` has {len(rpms)} RPMs weighing {
+    _log_size(
+        f'`{repo.name}` has {len(rpms)} RPMs weighing',
         sum(r.size for r in rpms)
-    :,} bytes''')
-    db_conn = DBConnectionContext.from_json(db_cfg)
+    )
+    db_conn = cfg.new_db_conn()
     storage_id_to_rpm = {}
     # Download in random order to reduce collisions from racing writers.
     for rpm in shuffled(rpms):
-        if not shard.in_shard(rpm):
+        if not cfg.rpm_shard.in_shard(rpm):
             continue
         with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db:
             # If we get no `storage_id` back, there are 3 possibilities:
@@ -400,7 +411,7 @@ def _download_rpms(
         else:  # We have to download the RPM.
             try:
                 storage_id, rpm = _download_rpm(
-                    rpm, repo.base_url, rpm_table, db_cfg, storage_cfg
+                    rpm, repo.base_url, rpm_table, cfg
                 )
             # IMPORTANT: All the classes of errors that we handle below
             # have the property that we would not have stored anything
@@ -414,12 +425,14 @@ def _download_rpms(
         # Detect if this RPM NEVRA occurs with different contents.
         if not isinstance(storage_id, ReportableError):
             storage_id = _detect_mutable_rpms(
-                rpm, rpm_table, storage_id, all_snapshot_universes, db_cfg
+                rpm, rpm_table, storage_id, all_snapshot_universes, cfg.db_cfg
             )
 
         set_new_key(storage_id_to_rpm, storage_id, rpm)
 
-    assert len(storage_id_to_rpm) == sum(shard.in_shard(r) for r in rpms)
+    assert len(storage_id_to_rpm) == sum(
+        cfg.rpm_shard.in_shard(r) for r in rpms
+    )
     return storage_id_to_rpm
 
 
@@ -511,15 +524,32 @@ def _commit_repodata_and_cancel_cleanup(
 def _download_repomd(
     repo: YumDnfConfRepo,
     repo_universe: str,
-    visitors: Iterable['RepoObjectVisitor'] = (),
-) -> Tuple[YumDnfConfRepo, RepoMetadata, 'RepoObjectVisitor']:
+) -> Tuple[YumDnfConfRepo, str, RepoMetadata]:
     with _download_resource(
         repo.base_url, 'repodata/repomd.xml'
     ) as repomd_stream:
         repomd = RepoMetadata.new(xml=repomd_stream.read())
-        for visitor in visitors:
-            visitor.visit_repomd(repomd)
-    return repomd
+    return repo, repo_universe, repomd
+
+
+def _download_repomds(
+    repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]],
+    cfg: DownloadConfig,
+    visitors: Iterable['RepoObjectVisitor'] = (),
+) -> Iterator[Tuple[YumDnfConfRepo, str, RepoMetadata]]:
+    '''Downloads all repo metadatas concurrently'''
+    with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
+        futures = []
+        for repo, repo_universe in repos_and_universes:
+            log.info(f'Downloading repo {repo.name} from {repo.base_url}')
+            futures.append(
+                executor.submit(_download_repomd, repo, repo_universe)
+            )
+        for future in as_completed(futures):
+            repo, repo_universe, repomd = future.result()
+            for visitor in visitors:
+                visitor.visit_repomd(repomd)
+            yield (repo, repo_universe, repomd)
 
 
 def download_repos(
@@ -527,6 +557,7 @@ def download_repos(
     *,
     db_cfg: Dict[str, str],
     storage_cfg: Dict[str, str],
+    threads: int,
     rpm_shard: RpmShard = None,
     visitors: Iterable['RepoObjectVisitor'] = (),
 ) -> Iterator[Tuple[YumDnfConfRepo, RepoSnapshot]]:
@@ -534,16 +565,20 @@ def download_repos(
     if rpm_shard is None:
         rpm_shard = RpmShard(shard=0, modulo=1)  # get all RPMs
     all_snapshot_universes = frozenset(u for _, u in repos_and_universes)
+    cfg = DownloadConfig(
+        db_cfg=db_cfg,
+        storage_cfg=storage_cfg,
+        rpm_shard=rpm_shard,
+        threads=threads,
+    )
 
-    # Randomize the order to reduce contention from concurrent writers.
-    for repo, repo_universe in shuffled(repos_and_universes):
-        repomd = _download_repomd(repo, repo_universe, visitors)
+    # Concurrently download repomds, aggregate results
+    repomd_results = _download_repomds(
+        repos_and_universes, cfg, visitors
+    )
 
+    for repo, repo_universe, repomd in repomd_results:
         rpm_table = RpmTable(repo_universe)
-        # When we store a repodata blob, its ID gets added to this dict.
-        # The `finally` clause below will remove any IDs in the list, while
-        # `_commit_repodata_and_cancel_cleanup` will clear it on success.
-        #
         # ## Rationale for this cleanup logic
         #
         # For any sizable repo, the initial RPM download will be slow.
@@ -567,13 +602,11 @@ def download_repos(
             # `persist_storage_id_to_repodata` to enable automatic cleanup on
             # error via `finally`.
             rpm_set, storage_id_to_repodata = _download_repodatas(
-                repo, repomd, persist_storage_id_to_repodata, visitors, db_cfg,
-                storage_cfg
+                repo, repomd, persist_storage_id_to_repodata, visitors, cfg,
             )
 
             storage_id_to_rpm = _download_rpms(
-                repo, rpm_table, rpm_set, rpm_shard, all_snapshot_universes,
-                db_cfg, storage_cfg
+                repo, rpm_table, rpm_set, all_snapshot_universes, cfg
             )
             # Visitors inspect all RPMs, whether or not they belong to the
             # current shard.  For the RPMs in this shard, visiting after
@@ -601,7 +634,7 @@ def download_repos(
         finally:
             if persist_storage_id_to_repodata:
                 log.info('Deleting uncommitted blobs, do not Ctrl-C')
-            storage = Storage.from_json(storage_cfg)
+            storage = cfg.new_storage()
             for storage_id in persist_storage_id_to_repodata.keys():
                 try:
                     storage.remove(storage_id)
