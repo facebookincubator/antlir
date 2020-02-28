@@ -4,15 +4,24 @@ import sqlite3
 import unittest
 import unittest.mock
 import tempfile
+from typing import FrozenSet
 
 from . import temp_repos
 
-from ..common import temp_dir
+from ..common import temp_dir, Path
 
 from .. import repo_db
 from ..repo_snapshot import RepoSnapshot
 from ..snapshot_repos import snapshot_repos_from_args
 from ..storage import Storage
+
+
+def _read_conf_headers(conf_path: Path) -> FrozenSet[str]:
+    with open(conf_path) as f:
+        header_list = [l.strip() for l in f.readlines() if l.startswith('[')]
+        headers = frozenset(header_list)
+        assert len(headers) == len(header_list), header_list
+        return headers
 
 
 class SnapshotReposTestCase(unittest.TestCase):
@@ -49,6 +58,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                 'cat': temp_repos.SAMPLE_STEPS[0]['cat'],
                 'dog': temp_repos.SAMPLE_STEPS[0]['dog'],
                 'kitteh': 'cat',
+                'gonna_skip_for_0': 'bunny',
             },
             # None of these are in the "mammal" universe, see `ru_json` below.
             {
@@ -90,6 +100,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                     '--dnf-conf', (repos_root / '0/dnf.conf').decode(),
                     '--yum-conf', (repos_root / '0/yum.conf').decode(),
                     '--snapshot-dir', (td / 'snap0').decode(),
+                    '--exclude', 'gonna_skip_for_0',
                 ])
                 # We want to avoid involving the "mammal" universe to
                 # exercise the fact that a universe **not** mentioned in a
@@ -103,6 +114,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                     'cat': 'zombie',  # Changes content from snap0
                     'dog': 'marsupial',  # Changes content from snap0
                     'kitteh': 'marsupial',  # Same content as in snap0
+                    'gonna_skip_for_0': 'thisone',
                 }, ru_json)
                 ru_json.flush()
                 snapshot_repos_from_args(common_args + [
@@ -111,6 +123,24 @@ class SnapshotReposTestCase(unittest.TestCase):
                     '--yum-conf', (repos_root / '1/yum.conf').decode(),
                     '--snapshot-dir', (td / 'snap1').decode(),
                 ])
+
+            updated_headers = {}
+            orig_headers = {}
+            for snap, conf_type in zip(['snap0', 'snap1'], ['yum', 'dnf']):
+                updated_path = td / snap / f'{conf_type}.conf'
+                orig_path = Path(updated_path.decode() + '.orig')
+                updated_headers[snap] = _read_conf_headers(updated_path)
+                orig_headers[snap] = _read_conf_headers(orig_path)
+
+            # For snap0, orig file should differ from conf since we excluded
+            excluded = '[gonna_skip_for_0]'
+            self.assertNotIn(excluded, updated_headers['snap0'])
+            self.assertEqual(
+                updated_headers['snap0'] | {excluded},
+                orig_headers['snap0']
+            )
+            # For snap1, orig file should equal conf
+            self.assertEqual(updated_headers['snap1'], orig_headers['snap1'])
 
             with sqlite3.connect(repo_db_path) as db:
                 # Check that repomd rows are repeated or duplicated as we'd
@@ -127,11 +157,12 @@ class SnapshotReposTestCase(unittest.TestCase):
                     ('marsupial', 'bunny', 451),  # snap1
                     ('marsupial', 'dog', 451),  # snap1
                     ('marsupial', 'kitteh', 451),  # snap1 -- index -2
+                    ('thisone', 'gonna_skip_for_0', 451),  # snap1
                     ('zombie', 'cat', 451),  # snap1
                 ], [r[:3] for r in repo_mds])
                 # The kittehs have the same checksums, but exist separately
                 # due to being in different universes.
-                self.assertEqual(repo_mds[-2][1:], repo_mds[-5][1:])
+                self.assertEqual(repo_mds[-3][1:], repo_mds[-6][1:])
 
                 def _fetch_sorted_by_nevra(nevra):
                     return sorted(db.execute('''
@@ -225,6 +256,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                     ('cat', 'cat-pkgs/rpm-test-mutable-a-f'),
                     ('dog', 'dog-pkgs/rpm-test-carrot-2-rc0'),
                     ('dog', 'dog-pkgs/rpm-test-bone-5i-beef'),
+                    ('gonna_skip_for_0', 'bunny-pkgs/rpm-test-carrot-2-rc0'),
                     ('kitteh', 'cat-pkgs/rpm-test-carrot-1-lockme'),
                     ('kitteh', 'cat-pkgs/rpm-test-mice-0.1-a'),
                     ('kitteh', 'cat-pkgs/rpm-test-milk-2.71-8'),  # may error

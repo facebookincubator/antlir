@@ -4,9 +4,6 @@ import os
 import textwrap
 
 from ..common import Path, temp_dir, RpmShard, populate_temp_dir_and_rename
-from ..db_connection import DBConnectionContext
-from ..repo_db import RepoDBContext, SQLDialect
-from ..storage import Storage
 from ..snapshot_repos import snapshot_repos
 from ..tests.temp_repos import Repo, Rpm, SAMPLE_STEPS, temp_repos_steps
 
@@ -63,6 +60,7 @@ def make_temp_snapshot(
             },
             rpm_shard=RpmShard(shard=0, modulo=1),
             gpg_key_whitelist_dir=no_gpg_keys_yet,
+            exclude=frozenset(),
         )
 
     # Merge the repo snapshot with the storage & RPM DB -- this makes our
@@ -71,6 +69,7 @@ def make_temp_snapshot(
         assert not os.path.exists(out_dir / f), f'Must not overwrite {f}'
         os.rename(snapshot_dir / f, out_dir / f)
     os.rmdir(snapshot_dir)
+
 
 if __name__ == '__main__':
     import argparse
