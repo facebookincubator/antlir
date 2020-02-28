@@ -144,6 +144,9 @@ class YumDnfConfIsolator:
         main_sec['logfile'] = f'/var/log/{prog_name}.log'  # default
         main_sec['installroot'] = install_root
         main_sec['config_file_path'] = config_path
+        # Our download path isn't very fast, nor are the CI hosts. So, we make
+        # the fetch timeout higher than might be desired on bare-metal hosts.
+        main_sec['timeout'] = '60'
         main_sec.pop('proxy', None)  # We talk only to a local reposerver.
 
         # NB: `sslcacert`, `sslclientcert`, and `sslclientkey` are left
