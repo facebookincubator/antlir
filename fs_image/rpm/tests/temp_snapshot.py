@@ -61,6 +61,7 @@ def make_temp_snapshot(
             rpm_shard=RpmShard(shard=0, modulo=1),
             gpg_key_whitelist_dir=no_gpg_keys_yet,
             exclude=frozenset(),
+            threads=4,
         )
 
     # Merge the repo snapshot with the storage & RPM DB -- this makes our

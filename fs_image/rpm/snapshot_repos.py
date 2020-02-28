@@ -105,6 +105,7 @@ def snapshot_repos(
     rpm_shard: RpmShard,
     gpg_key_whitelist_dir: str,
     exclude: FrozenSet[str],
+    threads: int,
 ):
     declared_sizer = RepoSizer()
     saved_sizer = RepoSizer()
@@ -127,7 +128,8 @@ def snapshot_repos(
             db_cfg=db_cfg,
             storage_cfg=storage_cfg,
             rpm_shard=rpm_shard,
-            visitors=[declared_sizer]
+            visitors=[declared_sizer],
+            threads=threads,
         ):
             snapshot.visit(saved_sizer).to_sqlite(repo.name, db)
             # This is done outside of the repo snapshot as we only want to
@@ -214,6 +216,7 @@ def snapshot_repos_from_args(argv: List[str]):
             rpm_shard=args.rpm_shard,
             gpg_key_whitelist_dir=args.gpg_key_whitelist_dir,
             exclude=frozenset(args.exclude),
+            threads=args.threads,
         )
 
 

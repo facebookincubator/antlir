@@ -52,6 +52,8 @@ def _location_basename(rpm):
     return rpm._replace(location=os.path.basename(rpm.location))
 
 
+# We default to spreading the downloads across 4 threads in tests
+_THREADS = 4
 MICE_01_RPM_REGEX = r'.*/rpm-test-mice-0\.1-a\.x86_64\.rpm$'
 # Used to target a specific RPM
 _MICE_LOCATION = 'good_dog-pkgs/rpm-test-mice-0.1-a.x86_64.rpm'
@@ -138,6 +140,7 @@ class DownloadReposTestCase(unittest.TestCase):
                 'kind': 'filesystem',
                 'base_dir': dir_name,
             },
+            threads=_THREADS,
         )
 
     @contextmanager
@@ -295,11 +298,11 @@ class DownloadReposTestCase(unittest.TestCase):
                 r'.*repomd.xml', raise_fake_http_error
             ), self.assertRaises(HTTPError):
                 # Since the download failed no snapshots are returned
-                next(downloader())
-            self.assertEqual(
-                len(repo_downloader.REPOMD_MAX_RETRY_S),
-                len(mock_sleep.call_args_list)
-            )
+                self.assertIsNone(next(downloader()))
+        self.assertEqual(
+            len(repo_downloader.REPOMD_MAX_RETRY_S),
+            len(mock_sleep.call_args_list)
+        )
 
     def test_repodata_download_errors(self):
         # These are not reported as "storage IDs" because a failure to parse
@@ -670,6 +673,7 @@ class DownloadReposTestCase(unittest.TestCase):
                         'kind': 'filesystem',
                         'base_dir': storage_dir,
                     },
+                    threads=_THREADS,
                 )
             )
             # Each snapshot will have unique repomds

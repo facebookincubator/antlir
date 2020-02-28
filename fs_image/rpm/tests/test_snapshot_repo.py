@@ -4,7 +4,6 @@ import os
 import shutil
 import sqlite3
 import unittest
-import tempfile
 
 from . import temp_repos
 
@@ -44,6 +43,7 @@ class SnapshotRepoTestCase(unittest.TestCase):
                     'kind': 'sqlite',
                     'db_path': (td / 'db.sqlite3').decode(),
                 }),
+                '--threads', '4',
             ])
             # This test simply checks the overall integration, so we don't
             # bother looking inside the DB or Storage, or inspecting the

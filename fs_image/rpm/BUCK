@@ -227,6 +227,7 @@ python_library(
         ":common",
         ":repo_objects",
         ":repo_snapshot",
+        ":yum_dnf_conf",
         "//fs_image/rpm/storage:storage",
         "//fs_image/rpm/storage/facebook:storage",
     ],
