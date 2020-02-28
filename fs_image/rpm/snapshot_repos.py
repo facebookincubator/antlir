@@ -32,6 +32,8 @@ from io import StringIO
 from typing import Callable, Dict, FrozenSet, Iterable, List
 
 from fs_image.common import get_file_logger
+from fs_image.rpm.downloader.common import DownloadConfig
+from fs_image.rpm.downloader.repo_downloader import download_repos
 
 from .common import (
     create_ro, init_logging, Path, populate_temp_dir_and_rename, RpmShard,
@@ -39,7 +41,6 @@ from .common import (
 from .common_args import add_standard_args
 from .gpg_keys import snapshot_gpg_keys
 from .repo_db import validate_universe_name
-from .repo_downloader import DownloadConfig, download_repos
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot
 from .storage import Storage

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import hashlib
+import inspect
 import os
 import shutil
 import struct
 import time
+from functools import wraps
 
 from io import BytesIO
 from typing import Callable, Iterable, NamedTuple, Optional, TypeVar
@@ -52,6 +54,31 @@ def retry_fn(
             )
             time.sleep(delay)
     return retryable_fn()  # With 0 retries, we should still run the function.
+
+
+def retryable(
+    format_msg: str,
+    delays: Iterable[float],
+    *,
+    is_exception_retryable: Optional[Callable[[Exception], bool]] = None,
+):
+    '''Decorator used to retry a function if exceptions are thrown. `format_msg`
+    should be a format string that can access any args provided to the
+    decorated function. `delays` are the delays between retries, in seconds.
+    `is_exception_retryable` is forwarded to `retry_fn`, see its docblock.
+    '''
+    def wrapper(fn):
+        @wraps(fn)
+        def decorated(*args, **kwargs):
+            fn_args = inspect.getcallargs(fn, *args, **kwargs)
+            return retry_fn(
+                lambda: fn(*args, **kwargs),
+                is_exception_retryable,
+                delays=delays,
+                what=format_msg.format(**fn_args)
+            )
+        return decorated
+    return wrapper
 
 
 class RpmShard(NamedTuple):
