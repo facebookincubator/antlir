@@ -630,7 +630,9 @@ class DownloadReposTestCase(unittest.TestCase):
                  SUT + 'repodata_downloader._download_repodata'
              ) as mock_rd, tempfile.NamedTemporaryFile() as tmp_db, \
              temp_dir() as storage_dir:
-            db_cfg = {'kind': 'sqlite', 'db_path': tmp_db.name}
+            db_cfg = {
+                'kind': 'sqlite', 'db_path': tmp_db.name, 'readonly': False
+            }
             mock_rd.side_effect = orig_rd
             mock_store.side_effect = RuntimeError
             with self.assertRaises(RuntimeError):
@@ -643,7 +645,6 @@ class DownloadReposTestCase(unittest.TestCase):
             db_ctx = RepoDBContext(db_conn, db_conn.SQL_DIALECT)
             repodata_table = RepodataTable()
             with db_ctx as repo_db_ctx:
-                repo_db_ctx.ensure_tables_exist()
                 storage_ids = [
                     repo_db_ctx.get_storage_id(repodata_table, rd)
                     for rd in called_rds

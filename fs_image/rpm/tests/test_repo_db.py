@@ -86,7 +86,9 @@ class RepoDBTestCase(unittest.TestCase):
     @contextmanager
     def _make_conn_ctx(self):
         with tempfile.NamedTemporaryFile() as tf:
-            yield DBConnectionContext.make(kind='sqlite', db_path=tf.name)
+            yield DBConnectionContext.make(
+                kind='sqlite', db_path=tf.name, readonly=False
+            )
 
     @contextmanager
     def _make_db_ctx(self):
