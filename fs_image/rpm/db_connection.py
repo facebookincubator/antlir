@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sqlite3
+import urllib.parse
 
 from contextlib import AbstractContextManager
 
@@ -20,12 +21,18 @@ class DBConnectionContext(AbstractContextManager, Pluggable):
 class SQLiteConnectionContext(DBConnectionContext, plugin_kind='sqlite'):
     SQL_DIALECT = SQLDialect.SQLITE3
 
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str, readonly: bool = False):
+        self.readonly = readonly
         self.db_path = db_path
         self._conn = None
 
     def __enter__(self):
-        self._conn = sqlite3.connect(self.db_path)
+        if self.readonly:
+            self._conn = sqlite3.connect(
+                f'file:{urllib.parse.quote(self.db_path)}?mode=ro', uri=True
+            )
+        else:
+            self._conn = sqlite3.connect(self.db_path)
         return self._conn
 
     # Does not suppress exceptions

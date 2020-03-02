@@ -117,8 +117,7 @@ def _handle_rpm(
     all_snapshot_universes: Set[str],
     cfg: DownloadConfig,
 ) -> Tuple[Rpm, MaybeStorageID]:
-    db_conn = cfg.new_db_conn()
-    with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db_ctx:
+    with cfg.new_db_ctx(readonly=True) as ro_repo_db:
         # If we get no `storage_id` back, there are 3 possibilities:
         #  - `rpm.nevra()` was never seen before.
         #  - `rpm.nevra()` was seen before, but it was hashed with
@@ -135,12 +134,13 @@ def _handle_rpm(
         #    actually get valuable information from the download --
         #    this lets us know whether the file is wrong or the
         #    repodata is wrong.
-        storage_id, canonical_checksum = \
-            repo_db_ctx.get_rpm_storage_id_and_checksum(rpm_table, rpm)
+        storage_id, canonical_chk = ro_repo_db.get_rpm_storage_id_and_checksum(
+            rpm_table, rpm
+        )
     # If the RPM is already stored with a matching checksum, just update its
     # `.canonical_checksum`.
     if storage_id:
-        rpm = rpm._replace(canonical_checksum=canonical_checksum)
+        rpm = rpm._replace(canonical_checksum=canonical_chk)
         # This is a very common case and thus noisy log, so we write to debug
         log.debug(f'Already stored under {storage_id}: {rpm}')
         return rpm, storage_id
@@ -167,8 +167,8 @@ def _download_rpms(
         sum(r.size for r in rpms)
     )
     storage_id_to_rpm = {}
-    db_conn = cfg.new_db_conn()
-    db_ctx = RepoDBContext(db_conn, db_conn.SQL_DIALECT)
+    rw_db_ctx = cfg.new_db_ctx(readonly=False)
+    ro_db_ctx = cfg.new_db_ctx(readonly=True)
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
             executor.submit(
@@ -189,13 +189,13 @@ def _download_rpms(
             # whether we encounter fatal errors later on in the execution and
             # don't finish the snapshot - see top-level docblock for reasoning
             storage_id_or_err = maybe_write_id(
-                rpm, res_storage_id, rpm_table, db_ctx
+                rpm, res_storage_id, rpm_table, rw_db_ctx
             )
             # Detect if this RPM NEVRA occurs with different contents.
             if not isinstance(storage_id_or_err, ReportableError):
                 storage_id_or_err = _detect_mutable_rpms(
                     rpm, rpm_table, storage_id_or_err, all_snapshot_universes,
-                    db_ctx
+                    ro_db_ctx
                 )
             set_new_key(storage_id_to_rpm, storage_id_or_err, rpm)
 

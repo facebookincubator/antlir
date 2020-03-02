@@ -57,12 +57,11 @@ def _download_repodata(
     Which actions are taken depends on which of the above true, and this
     branching is explained within the function.
     '''
-    db_conn = cfg.new_db_conn()
     storage = cfg.new_storage()
     # We only need to download the repodata if is not already in the DB,
     # or if it is primary (so we can parse it for RPMs).
-    with RepoDBContext(db_conn, db_conn.SQL_DIALECT) as repo_db_ctx:
-        storage_id = repo_db_ctx.get_storage_id(repodata_table, repodata)
+    with cfg.new_db_ctx(readonly=True) as ro_repo_db:
+        storage_id = ro_repo_db.get_storage_id(repodata_table, repodata)
 
     # Nothing to do -- only need to download repodata if it's the primary
     # (so we can parse it for RPMs), or if it's not already in the DB.
@@ -130,8 +129,7 @@ def _download_repodatas(
         f'`{repo.name}` repodata weighs',
         sum(rd.size for rd in repomd.repodatas)
     )
-    db_conn = cfg.new_db_conn()
-    db_ctx = RepoDBContext(db_conn, db_conn.SQL_DIALECT)
+    rw_db_ctx = cfg.new_db_ctx(readonly=False)
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
             executor.submit(
@@ -153,7 +151,7 @@ def _download_repodatas(
                 # encounter fatal errors later on in the execution and don't
                 # finish the snapshot - see top-level docblock for reasoning
                 storage_id = maybe_write_id(
-                    res.repodata, res.storage_id, repodata_table, db_ctx
+                    res.repodata, res.storage_id, repodata_table, rw_db_ctx
                 )
             else:
                 storage_id = res.storage_id

@@ -36,8 +36,16 @@ class DownloadConfig(NamedTuple):
     rpm_shard: RpmShard
     threads: int
 
-    def new_db_conn(self):
-        return DBConnectionContext.from_json(self.db_cfg)
+    def new_db_conn(self, *, readonly: bool):
+        assert 'readonly' not in self.db_cfg, 'readonly is picked by the caller'
+        return DBConnectionContext.from_json({
+            **self.db_cfg,
+            'readonly': readonly,
+        })
+
+    def new_db_ctx(self, *, readonly: bool):
+        db_conn = self.new_db_conn(readonly=readonly)
+        return RepoDBContext(db_conn, db_conn.SQL_DIALECT)
 
     def new_storage(self):
         return Storage.from_json(self.storage_cfg)
