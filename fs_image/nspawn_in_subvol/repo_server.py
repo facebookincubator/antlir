@@ -61,7 +61,7 @@ def _exfiltrate_container_pid_and_wait_for_ready(
     nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
     repo_server_config
 ):
-    cmd = nspawn_cmd[:]
+    cmd = list(nspawn_cmd)
 
     # Create a pipe that we can forward into the namespace that our
     # shell script can use to exfil data about the namespace we've
@@ -74,7 +74,7 @@ def _exfiltrate_container_pid_and_wait_for_ready(
         # We'll add the read end of the pipe to the end of forward_fds,
         # which will then start at FD (3 + len(opts.forward_fd)) inside
         # the subprocess.
-        forward_fds = forward_fds[:]
+        forward_fds = list(forward_fds)
         exfil_fd = 3 + len(forward_fds)
         ready_fd = 4 + len(forward_fds)
         forward_fds.extend([exfil_w.fileno(), ready_r.fileno()])
