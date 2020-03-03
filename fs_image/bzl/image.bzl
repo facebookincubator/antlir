@@ -9,6 +9,7 @@ load("//fs_image/bzl/image_actions:rpms.bzl", "image_rpms_install", "image_rpms_
 load("//fs_image/bzl/image_actions:symlink.bzl", "image_symlink_dir", "image_symlink_file")
 load("//fs_image/bzl/image_actions:tarball.bzl", "image_tarball")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
+load(":image_kernel_opts.bzl", "image_kernel_opts")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_package.bzl", "image_package")
@@ -35,6 +36,7 @@ image = struct(
     layer = image_layer,
     layer_alias = image_layer_alias,
     opts = struct,
+    kernel_opts = image_kernel_opts,
     package = image_package,
     python_unittest = image_python_unittest,
     rpmbuild_layer = image_rpmbuild_layer,
