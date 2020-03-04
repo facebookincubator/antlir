@@ -1,4 +1,4 @@
-load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 
 python_library(
     name = "common",
@@ -43,6 +43,10 @@ python_library(
     deps = [
         ":common",
         ":deleted_mutable_rpms",
+        third_party.library(
+            "python-MySQLdb",
+            "python-MySQLdb-py",
+        ),
     ],
 )
 
