@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import contextlib
 import functools
+import logging
 import os
 import sys
 import tempfile
@@ -128,5 +129,6 @@ class TempSubvolumes(contextlib.AbstractContextManager):
             try:
                 subvol.delete()
             except BaseException:  # Ctrl-C does not interrupt cleanup
-                pass
+                logging.exception(
+                        f'Deleting volume {subvol.path().decode()} failed.')
         return self._temp_dir_ctx.__exit__(exc_type, exc_val, exc_tb)
