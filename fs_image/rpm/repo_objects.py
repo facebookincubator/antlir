@@ -125,8 +125,9 @@ class RepoMetadata(NamedTuple):
     # there are no guarantees that this will be a timestamp always.
     build_timestamp: int
 
+    # NamedTuple.__new__ cannot be overridden
     @classmethod
-    def new(cls, *, xml: bytes):  # NamedTuple.__new__ cannot be overridden
+    def new(cls, *, xml: bytes) -> 'RepoMetadata':
         repodatas = frozenset(_parse_repomd(xml))
         return cls.__new__(
             cls,
