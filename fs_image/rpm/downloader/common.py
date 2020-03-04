@@ -155,7 +155,7 @@ def maybe_write_id(
     # Don't store errors into the repo db
     if isinstance(storage_id, ReportableError):
         return storage_id
-    with timeit(f'Writing storage ID {storage_id}', threshold_s=60):
+    with timeit(f'Writing storage ID {storage_id}', threshold_s=10):
         with db_ctx as repo_db_ctx:
             db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
             repo_db_ctx.commit()

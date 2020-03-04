@@ -498,32 +498,32 @@ class RepoDBContext(AbstractContextManager):
                 tbl._universe, str(rpm.checksum), str(rpm.checksum),
             ))
             results = cursor.fetchall()
-            if not results:
-                return None, None
+        if not results:
+            return None, None
 
-            # We can get multiple results:
-            #  - at most 1 match on the `checksum` column
-            #  - many matches on the `canonical_checksum` column
-            # However, they should all have the same size, canonical
-            # checksum, and storage ID, so let's assert that.
-            canonical_checksums = set()
-            other_checksums = set()
-            storage_ids = set()
-            for db_values in results:
-                storage_ids.add(db_values[-1])
-                for col_name, db_val, val in zip(
-                    tbl.column_names(), db_values[:-1], tbl.column_values(rpm),
-                ):
-                    if col_name == 'checksum':
-                        other_checksums.add(Checksum.from_string(db_val))
-                    elif col_name == 'canonical_checksum':
-                        canonical_checksums.add(Checksum.from_string(db_val))
-                    else:
-                        assert db_val == val, f'{col_name} {db_val} {val}'
-            assert len(storage_ids) == 1, storage_ids
-            assert len(canonical_checksums) == 1, canonical_checksums
-            assert rpm.checksum in (other_checksums | canonical_checksums)
-            return (storage_ids.pop(), canonical_checksums.pop())
+        # We can get multiple results:
+        #  - at most 1 match on the `checksum` column
+        #  - many matches on the `canonical_checksum` column
+        # However, they should all have the same size, canonical
+        # checksum, and storage ID, so let's assert that.
+        canonical_checksums = set()
+        other_checksums = set()
+        storage_ids = set()
+        for db_values in results:
+            storage_ids.add(db_values[-1])
+            for col_name, db_val, val in zip(
+                tbl.column_names(), db_values[:-1], tbl.column_values(rpm),
+            ):
+                if col_name == 'checksum':
+                    other_checksums.add(Checksum.from_string(db_val))
+                elif col_name == 'canonical_checksum':
+                    canonical_checksums.add(Checksum.from_string(db_val))
+                else:
+                    assert db_val == val, f'{col_name} {db_val} {val}'
+        assert len(storage_ids) == 1, storage_ids
+        assert len(canonical_checksums) == 1, canonical_checksums
+        assert rpm.checksum in (other_checksums | canonical_checksums)
+        return (storage_ids.pop(), canonical_checksums.pop())
 
     def get_rpm_canonical_checksums(
         self, table: RpmTable, rpm: Rpm, all_snapshot_universes: Set[str],

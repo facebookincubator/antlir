@@ -6,6 +6,8 @@ from typing import (
     FrozenSet, Iterable, Iterator, Set, Tuple
 )
 
+import MySQLdb
+
 from fs_image.common import get_file_logger, set_new_key, shuffled
 from fs_image.rpm.downloader.common import (
     BUFFER_BYTES, DownloadConfig, DownloadResult, download_resource, log_size,
@@ -21,16 +23,21 @@ from rpm.repo_snapshot import (
 from rpm.yum_dnf_conf import YumDnfConfRepo
 
 RPM_MAX_RETRY_S = [2 ** i for i in range(9)]  # 512 sec ==  8m32s
+DB_MAX_RETRY_S = [2 ** i for i in range(8)]  # 256 sec == 4m16s
 log = get_file_logger(__file__)
 
 
-def _is_e_skippable(e: Exception):
+def _is_retryable_http_err(e: Exception):
     if not isinstance(e, HTTPError):
         return False
     # 408 is 'Request Timeout' and, as with 5xx, can reasonably be presumed
     # to be a transient issue that's worth retrying
     status = e.to_dict()['http_status']
     return status // 100 == 5 or status == 408
+
+
+def _is_retryable_mysql_err(e: Exception):  # pragma: no cover
+    return isinstance(e, MySQLdb.OperationalError)
 
 
 def _detect_mutable_rpms(
@@ -73,7 +80,7 @@ def _detect_mutable_rpms(
 @retryable(
     'Download failed: {rpm}',
     RPM_MAX_RETRY_S,
-    is_exception_retryable=_is_e_skippable
+    is_exception_retryable=_is_retryable_http_err
 )
 def _download_rpm(
     rpm: Rpm,
@@ -110,13 +117,16 @@ def _download_rpm(
     return rpm, storage_id
 
 
-def _handle_rpm(
-    rpm: Rpm,
-    repo_url: str,
+@retryable(
+    'Exception while querying database for {rpm}',
+    DB_MAX_RETRY_S,
+    is_exception_retryable=_is_retryable_mysql_err,
+)
+def _get_rpm_storage_id_and_checksum(
     rpm_table: RpmTable,
-    all_snapshot_universes: Set[str],
+    rpm: Rpm,
     cfg: DownloadConfig,
-) -> Tuple[Rpm, MaybeStorageID]:
+) -> Tuple[str, Checksum]:
     with cfg.new_db_ctx(readonly=True) as ro_repo_db:
         # If we get no `storage_id` back, there are 3 possibilities:
         #  - `rpm.nevra()` was never seen before.
@@ -134,9 +144,19 @@ def _handle_rpm(
         #    actually get valuable information from the download --
         #    this lets us know whether the file is wrong or the
         #    repodata is wrong.
-        storage_id, canonical_chk = ro_repo_db.get_rpm_storage_id_and_checksum(
-            rpm_table, rpm
-        )
+        return ro_repo_db.get_rpm_storage_id_and_checksum(rpm_table, rpm)
+
+
+def _handle_rpm(
+    rpm: Rpm,
+    repo_url: str,
+    rpm_table: RpmTable,
+    all_snapshot_universes: Set[str],
+    cfg: DownloadConfig,
+) -> Tuple[Rpm, MaybeStorageID]:
+    storage_id, canonical_chk = _get_rpm_storage_id_and_checksum(
+        rpm_table, rpm, cfg
+    )
     # If the RPM is already stored with a matching checksum, just update its
     # `.canonical_checksum`.
     if storage_id:
