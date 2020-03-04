@@ -91,6 +91,9 @@ class PhaseOrder(enum.Enum):
     # Building RPMs should be close to last as it expects all other actions to
     # set up for the RPM build.
     RPM_BUILD = enum.auto()
+    # Phase order for Facebook-only items. In this future this should be
+    # removed in favor of enforcing custom layers for those features.
+    FACEBOOK = enum.auto()
     # This MUST be a separate phase that comes after all the regular items
     # because the dependency sorter has no provisions for eliminating
     # something that another item `provides()`.
