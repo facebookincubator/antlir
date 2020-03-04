@@ -224,17 +224,20 @@ def nspawn_sanitize_env():
     return env
 
 
+# NB: This could have been a function that returns a ctx manager, but that
+# would create confusion since `popen`'s result **need not** be entered to
+# be used, while that of `popen_and_inject_fds` must be.
+@contextmanager
 def maybe_popen_and_inject_fds(
     cmd: List[str], opts: _NspawnOpts, popen, *, set_listen_fds,
-) -> subprocess.Popen:
-    if not opts.forward_fd:
-        return popen(cmd)
-    return popen_and_inject_fds_after_sudo(
+) -> Iterable[subprocess.Popen]:
+    with (popen_and_inject_fds_after_sudo(
         cmd,
         opts.forward_fd,
         popen,
         set_listen_fds=set_listen_fds,
-    )
+    ) if opts.forward_fd else popen(cmd)) as proc:
+        yield proc
 
 
 class _NspawnSetup(NamedTuple):
