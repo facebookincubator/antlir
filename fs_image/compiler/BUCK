@@ -114,7 +114,10 @@ python_library(
     name = "items_for_features",
     srcs = ["items_for_features.py"],
     base_module = "compiler",
-    deps = ["//fs_image/compiler/items:all-items"],
+    deps = [
+        "//fs_image/compiler/items:all-items",
+        "//fs_image/compiler/items/facebook:fb_items_for_features",
+    ],
 )
 
 python_library(
