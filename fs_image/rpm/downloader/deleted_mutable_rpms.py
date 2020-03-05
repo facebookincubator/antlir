@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-'''
+"""
 If two distinct copies of an RPM with the same NEVRA are committed to a repo
 (e.g. due to signing key changes), this will trip "mutable_rpm_error" and
 prevent either RPM from being accessed.
@@ -26,15 +26,16 @@ Design rationale: These "remediated" hashes are not in the database, because:
     store a timestamp in the DB and only remediate hashes older than the
     current source tree, but this is just a more complicated way of pinning
     the remediated RPMs to the source tree.
-'''
+"""
 deleted_mutable_rpms = {
     # Rpm.nevra(): {Checksum(...), Checksum(...)},
 }
 
 try:
     from rpm.facebook.deleted_mutable_rpms import (
-        deleted_mutable_rpms as _fb_deleted_mutable_rpms
+        deleted_mutable_rpms as _fb_deleted_mutable_rpms,
     )
+
     deleted_mutable_rpms.update(_fb_deleted_mutable_rpms)
 except ImportError:  # pragma: no cover
     pass

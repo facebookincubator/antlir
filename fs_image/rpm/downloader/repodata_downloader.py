@@ -2,14 +2,17 @@
 from contextlib import ExitStack
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from types import MappingProxyType
-from typing import (
-    Tuple, Iterable, Iterator, List, Mapping, NamedTuple, Optional, Set
-)
+from typing import Tuple, Iterable, Iterator, List, Mapping, NamedTuple, Optional, Set
 
 from fs_image.common import get_file_logger, set_new_key, shuffled
 from fs_image.rpm.downloader.common import (
-    BUFFER_BYTES, DownloadConfig, DownloadResult, download_resource, log_size,
-    maybe_write_id, verify_chunk_stream
+    BUFFER_BYTES,
+    DownloadConfig,
+    DownloadResult,
+    download_resource,
+    log_size,
+    maybe_write_id,
+    verify_chunk_stream,
 )
 from rpm.common import read_chunks, retryable
 from rpm.parse_repodata import get_rpm_parser, pick_primary_repodata
@@ -39,24 +42,21 @@ class DownloadRepodataReturnType(NamedTuple):
 
 
 # May raise `ReportableError`, which will abort the snapshot
-@retryable(
-    'Download failed: repodata at {repodata.location}',
-    REPODATA_MAX_RETRY_S
-)
+@retryable("Download failed: repodata at {repodata.location}", REPODATA_MAX_RETRY_S)
 def _download_repodata(
     repodata: Repodata,
     *,
     repo_url: str,
     repodata_table: RepodataTable,
     cfg: DownloadConfig,
-    is_primary: bool
+    is_primary: bool,
 ) -> DownloadRepodataReturnType:
-    '''This function behaves differently depending on two main characteristics:
+    """This function behaves differently depending on two main characteristics:
       - Whether or not the provided repodata is primary, and
       - Whether or not it already exists in storage.
     Which actions are taken depends on which of the above true, and this
     branching is explained within the function.
-    '''
+    """
     storage = cfg.new_storage()
     # We only need to download the repodata if is not already in the DB,
     # or if it is primary (so we can parse it for RPMs).
@@ -84,14 +84,12 @@ def _download_repodata(
             outfile = None
         else:
             # Nothing stored, must download - can fail due to repo updates
-            infile = cm.enter_context(
-                download_resource(repo_url, repodata.location)
-            )
+            infile = cm.enter_context(download_resource(repo_url, repodata.location))
             # Want to persist the downloaded repodata into storage so that
             # future runs don't need to redownload it
             outfile = cm.enter_context(storage.writer())
 
-        log.info(f'Fetching {repodata}')
+        log.info(f"Fetching {repodata}")
         for chunk in verify_chunk_stream(
             read_chunks(infile, BUFFER_BYTES),
             [repodata.checksum],
@@ -108,27 +106,20 @@ def _download_repodata(
                     raise RepodataParseError((repodata.location, ex))
         # Must commit the output context to get a storage_id.
         if outfile:
-            return DownloadRepodataReturnType(
-                repodata, True, outfile.commit(), rpms
-            )
+            return DownloadRepodataReturnType(repodata, True, outfile.commit(), rpms)
     # The primary repodata was already stored, and we just parsed it for RPMs.
     assert storage_id is not None
     return DownloadRepodataReturnType(repodata, False, storage_id, rpms)
 
 
 def _download_repodatas(
-    repo: YumDnfConfRepo,
-    repomd: RepoMetadata,
-    cfg: DownloadConfig,
+    repo: YumDnfConfRepo, repomd: RepoMetadata, cfg: DownloadConfig
 ) -> Tuple[Set[Rpm], Mapping[str, Repodata]]:
     rpms = None  # We'll extract these from the primary repodata
     storage_id_to_repodata = {}  # Newly stored **and** pre-existing
     repodata_table = RepodataTable()
     primary_repodata = pick_primary_repodata(repomd.repodatas)
-    log_size(
-        f'`{repo.name}` repodata weighs',
-        sum(rd.size for rd in repomd.repodatas)
-    )
+    log_size(f"`{repo.name}` repodata weighs", sum(rd.size for rd in repomd.repodatas))
     rw_db_ctx = cfg.new_db_ctx(readonly=False)
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
@@ -138,7 +129,7 @@ def _download_repodatas(
                 repo_url=repo.base_url,
                 repodata_table=repodata_table,
                 cfg=cfg,
-                is_primary=repodata is primary_repodata
+                is_primary=repodata is primary_repodata,
             )
             for repodata in shuffled(repomd.repodatas)
         ]
@@ -167,13 +158,12 @@ def _download_repodatas(
     # downloading - in that case we store the error in the sqlite db, thus the
     # dict should contain an entry for every single repodata
     assert len(storage_id_to_repodata) == len(repomd.repodatas)
-    assert rpms, 'Is the repo empty?'
+    assert rpms, "Is the repo empty?"
     return rpms, storage_id_to_repodata
 
 
 def gen_repodatas_from_repomds(
-    repomd_results: Iterable[DownloadResult],
-    cfg: DownloadConfig,
+    repomd_results: Iterable[DownloadResult], cfg: DownloadConfig
 ) -> Iterator[DownloadResult]:
     # For each downloaded repomd, concurrently download the contained
     # repodatas. This driver runs serially, but each repomd's repodatas are
@@ -191,9 +181,7 @@ def gen_repodatas_from_repomds(
         # objects taking up too much space, we can easily add a periodic job to
         # scan the db and remove any unused references. We are also able to
         # avoid implementing a lot of complex cleanup logic this way.
-        rpm_set, storage_id_to_repodata = _download_repodatas(
-            res.repo, res.repomd, cfg,
-        )
+        rpm_set, storage_id_to_repodata = _download_repodatas(res.repo, res.repomd, cfg)
         yield res._replace(
             storage_id_to_repodata=MappingProxyType(storage_id_to_repodata),
             rpms=rpm_set,
