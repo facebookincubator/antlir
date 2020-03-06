@@ -4,8 +4,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from types import MappingProxyType
 from typing import FrozenSet, Iterable, Iterator, Set, Tuple
 
-import MySQLdb
-
 from fs_image.common import get_file_logger, set_new_key, shuffled
 from fs_image.rpm.downloader.common import (
     BUFFER_BYTES,
@@ -33,7 +31,7 @@ DB_MAX_RETRY_S = [2 ** i for i in range(8)]  # 256 sec == 4m16s
 log = get_file_logger(__file__)
 
 
-def _is_retryable_http_err(e: Exception):
+def _is_retryable_http_err(e: Exception) -> bool:
     if not isinstance(e, HTTPError):
         return False
     # 408 is 'Request Timeout' and, as with 5xx, can reasonably be presumed
@@ -42,8 +40,15 @@ def _is_retryable_http_err(e: Exception):
     return status // 100 == 5 or status == 408
 
 
-def _is_retryable_mysql_err(e: Exception):  # pragma: no cover
-    return isinstance(e, MySQLdb.OperationalError)
+def _is_retryable_mysql_err(e: Exception) -> bool:  # pragma: no cover
+    # Want to catch MySQLdb.OperationalError, which indicates a potentially
+    # transient error, but don't want to import MySQLdb here, as it isn't a
+    # dependency of this module otherwise. This approach is tested in
+    # rpm/facebook/tests/test_fb_rpm_downloader.py
+    return (
+        type(e).__module__ == 'MySQLdb._exceptions'
+        and type(e).__qualname__ == 'OperationalError'
+    )
 
 
 def _detect_mutable_rpms(

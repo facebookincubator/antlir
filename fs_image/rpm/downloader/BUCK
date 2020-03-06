@@ -43,10 +43,6 @@ python_library(
     deps = [
         ":common",
         ":deleted_mutable_rpms",
-        third_party.library(
-            "python-MySQLdb",
-            "python-MySQLdb-py",
-        ),
     ],
 )
 
