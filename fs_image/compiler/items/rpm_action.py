@@ -6,7 +6,8 @@ import shlex
 import sys
 import uuid
 
-from typing import Iterable, List, Mapping, NamedTuple, Tuple, Union
+from dataclasses import dataclass
+from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
@@ -188,14 +189,15 @@ def _rpms_and_bind_ros(
 
 # These items are part of a phase, so they don't get dependency-sorted, so
 # there is no `requires()` or `provides()` or `build()` method.
-class RpmActionItem(metaclass=ImageItem):
-    fields = [
-        ('name', None),
-        ('source', None),
-        'action',
-    ]
+@dataclass(init=False, frozen=True)
+class RpmActionItem(ImageItem):
+    action: RpmAction
+    name: Optional[str] = None
+    source: Optional[str] = None
 
-    def customize_fields(kwargs):  # noqa: B902
+    @classmethod
+    def customize_fields(cls, kwargs):
+        super().customize_fields(kwargs)
         assert (kwargs.get('name') is None) ^ (kwargs.get('source') is None), \
             f'Exactly one of `name` or `source` must be set in {kwargs}'
         kwargs['action'] = RpmAction(kwargs['action'])

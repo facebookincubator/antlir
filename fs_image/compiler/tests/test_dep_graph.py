@@ -2,6 +2,8 @@
 import sys
 import unittest
 
+from dataclasses import dataclass
+
 from tests.temp_subvolumes import TempSubvolumes
 
 from fs_image.compiler.items.common import ImageItem, PhaseOrder
@@ -40,7 +42,8 @@ class ValidateReqsProvsTestCase(unittest.TestCase):
 
     def test_duplicate_paths_in_same_item(self):
 
-        class BadDuplicatePathItem(metaclass=ImageItem):
+        @dataclass(init=False, frozen=True)
+        class BadDuplicatePathItem(ImageItem):
             def requires(self):
                 yield require_directory('a')
 
@@ -202,7 +205,8 @@ class DependencyOrderItemsTestCase(unittest.TestCase):
 
         def requires_provides_directory_class(requires_dir, provides_dir):
 
-            class RequiresProvidesDirectory(metaclass=ImageItem):
+            @dataclass(init=False, frozen=True)
+            class RequiresProvidesDirectory(ImageItem):
                 def requires(self):
                     yield require_directory(requires_dir)
 

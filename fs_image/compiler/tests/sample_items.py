@@ -160,15 +160,15 @@ ID_TO_ITEM = {
     ),
 
     # From `feature_mount`:
-    'meownt': MountItem.new(
-        DUMMY_LAYER_OPTS,
+    'meownt': MountItem(
+        layer_opts=DUMMY_LAYER_OPTS,
         from_target=T_MOUNT,
         mountpoint='meownt',
         target=TARGET_TO_PATH[T_HELLO_WORLD_BASE],
         mount_config=None,
     ),
-    'host_etc': MountItem.new(
-        DUMMY_LAYER_OPTS,
+    'host_etc': MountItem(
+        layer_opts=DUMMY_LAYER_OPTS,
         from_target=T_MOUNT,
         mountpoint='host_etc',
         target=None,

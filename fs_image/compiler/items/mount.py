@@ -8,13 +8,13 @@ NB: Surprisingly, we don't need any special cleanup for the `mount` operations
 import json
 import os
 
+from dataclasses import dataclass
 from typing import Mapping, NamedTuple
 
 from subvol_utils import Subvol
 from find_built_subvol import find_built_subvol
 
 from compiler import procfs_serde
-from compiler.enriched_namedtuple import NonConstructibleField
 from compiler.provides import ProvidesDoNotAccess
 from compiler.requires import require_directory
 
@@ -54,23 +54,16 @@ class _BuildSource(NamedTuple):
             )
 
 
-class MountItem(metaclass=ImageItem):
-    # `MountItem.new` knows how to construct this from image feature JSON.
-    # Do not use the default contstructor.
-
-    fields = [
-        'mountpoint',
-        ('build_source', None),
-        ('runtime_source', None),
-        ('is_directory', None),
-        # The next two are always None, their content moves into the above
-        # potentially `None` fields
-        'target',
-        'mount_config',
-    ]
+@dataclass(init=False, frozen=True)
+class MountItem(ImageItem):
+    mountpoint: str
+    build_source: _BuildSource
+    runtime_source: str
+    is_directory: bool
 
     @classmethod
-    def new(cls, layer_opts: LayerOpts, **kwargs):
+    def customize_fields(cls, kwargs):
+        layer_opts = kwargs.pop('layer_opts', None)
         target = kwargs.pop('target')
         cfg = kwargs.pop('mount_config')
         assert (target is None) ^ (cfg is None), \
@@ -115,11 +108,6 @@ class MountItem(metaclass=ImageItem):
         kwargs['runtime_source'] = json.dumps(runtime_source, sort_keys=True)
 
         assert cfg == {}, f'Unparsed fields in {kwargs} mount_config: {cfg}'
-        # These must be set to appease enriched_namedtuple
-        kwargs['target'] = None
-        kwargs['mount_config'] = None
-
-        return cls(**kwargs)
 
     def provides(self):
         # For now, nesting of mounts is not supported, and we certainly

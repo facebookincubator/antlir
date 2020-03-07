@@ -9,14 +9,18 @@ import itertools
 import os
 import subprocess
 
+from dataclasses import dataclass
+
 from compiler.provides import (
     ProvidesDirectory, ProvidesDoNotAccess, ProvidesFile,
 )
+from subvol_utils import Subvol
 from .common import ImageItem, is_path_protected, protected_path_set
 
 
-class PhasesProvideItem(metaclass=ImageItem):
-    fields = ['subvol']
+@dataclass(init=False, frozen=True)
+class PhasesProvideItem(ImageItem):
+    subvol: Subvol
 
     def provides(self):
         protected_paths = protected_path_set(self.subvol)

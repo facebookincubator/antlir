@@ -2,6 +2,7 @@
 import pwd
 import sys
 
+from dataclasses import dataclass
 from typing import Iterable
 
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
@@ -11,8 +12,9 @@ from subvol_utils import Subvol
 from .common import ImageItem, LayerOpts, PhaseOrder
 
 
-class RpmBuildItem(metaclass=ImageItem):
-    fields = ['rpmbuild_dir']
+@dataclass(init=False, frozen=True)
+class RpmBuildItem(ImageItem):
+    rpmbuild_dir: str
 
     def phase_order(self):
         return PhaseOrder.RPM_BUILD

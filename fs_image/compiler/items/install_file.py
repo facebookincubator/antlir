@@ -3,19 +3,18 @@ import itertools
 import os
 import stat
 
-from typing import Iterable, NamedTuple, Union
+from dataclasses import dataclass
+from typing import Iterable, NamedTuple, Optional, Union
 
 from fs_image.fs_utils import Path
 from subvol_utils import Subvol
 
-from compiler.enriched_namedtuple import NonConstructibleField
 from compiler.provides import ProvidesDirectory, ProvidesFile
 from compiler.requires import require_directory
 
 from .common import coerce_path_field_normal_relative, ImageItem, LayerOpts
 from .stat_options import (
     build_stat_options, customize_stat_options, Mode, mode_to_str,
-    STAT_OPTION_FIELDS,
 )
 
 RAISE_KEY_ERROR = object()
@@ -61,20 +60,24 @@ def _recurse_into_source(
                 raise RuntimeError(f'{source}: neither a file nor a directory')
 
 
-class InstallFileItem(metaclass=ImageItem):
-    fields = [
-        # Populated by `customize_fields`
-        ('paths', NonConstructibleField),
+@dataclass(init=False, frozen=True)
+class InstallFileItem(ImageItem):
 
-        # The next 5 fields come from `.bzl` code.  All but `dest` become
-        # `None` after `customize_fields`.
-        'source',
-        'dest',
-        # These 3 must be set instead of `mode` for directory sources.
-        ('dir_mode', None),
-        ('exe_mode', None),
-        ('data_mode', None),
-    ] + STAT_OPTION_FIELDS  # `mode` is `None` after `customize_fields`
+    source: str
+    dest: str
+
+    # These 3 must be set instead of `mode` for directory sources.
+    dir_mode: Optional[Mode] = None
+    exe_mode: Optional[Mode] = None
+    data_mode: Optional[Mode] = None
+
+    # Stat option fields
+    # `mode` is `None` after `customize_fields`
+    mode: Optional[Mode] = None
+    user_group: Optional[str] = None
+
+    # Populated by `customize_fields`
+    paths: Optional[Iterable[_InstallablePath]] = None
 
     # Future enhancement notes:
     #
@@ -95,7 +98,9 @@ class InstallFileItem(metaclass=ImageItem):
     #  (2) If we ever need to support layer sources, generalize
     #      `PhasesProvideItem` -- we would need to do the same traversal,
     #      but disallowing non-regular files.
-    def customize_fields(kwargs):  # noqa: B902
+    @classmethod
+    def customize_fields(cls, kwargs):
+        super().customize_fields(kwargs)
         coerce_path_field_normal_relative(kwargs, 'dest')
         customize_stat_options(kwargs, default_mode=None)  # Defaulted later
 
@@ -104,7 +109,7 @@ class InstallFileItem(metaclass=ImageItem):
 
         popped_args = ['mode', 'exe_mode', 'data_mode', 'dir_mode']
         mode, dir_mode, exe_mode, data_mode = (
-            kwargs.pop(a) for a in popped_args
+            kwargs.pop(a, None) for a in popped_args
         )
 
         st_source = os.stat(source, follow_symlinks=False)

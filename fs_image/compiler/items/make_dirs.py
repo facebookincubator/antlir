@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 
+from dataclasses import dataclass
+
 from subvol_utils import Subvol
 
 from compiler.provides import ProvidesDirectory
@@ -8,14 +10,22 @@ from compiler.requires import require_directory
 
 from .common import coerce_path_field_normal_relative, ImageItem, LayerOpts
 from .stat_options import (
-    build_stat_options, customize_stat_options, STAT_OPTION_FIELDS,
+    build_stat_options, customize_stat_options, Mode,
 )
 
 
-class MakeDirsItem(metaclass=ImageItem):
-    fields = ['into_dir', 'path_to_make'] + STAT_OPTION_FIELDS
+@dataclass(init=False, frozen=True)
+class MakeDirsItem(ImageItem):
+    into_dir: str
+    path_to_make: str
 
-    def customize_fields(kwargs):  # noqa: B902
+    # Stat option fields
+    mode: Mode
+    user_group: str
+
+    @classmethod
+    def customize_fields(cls, kwargs):
+        super().customize_fields(kwargs)
         coerce_path_field_normal_relative(kwargs, 'into_dir')
         coerce_path_field_normal_relative(kwargs, 'path_to_make')
         # Unlike files, leave directories as writable by the owner by

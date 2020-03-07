@@ -9,8 +9,10 @@ To understand how the methods `provides()` and `requires()` affect
 dependency resolution / installation order, start with the docblock at the
 top of `provides.py`.
 '''
+import dataclasses
 import enum
 import hashlib
+import inspect
 import os
 import subprocess
 import tempfile
@@ -18,7 +20,6 @@ import tempfile
 from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
 from compiler import procfs_serde
-from compiler.enriched_namedtuple import metaclass_new_enriched_namedtuple
 from fs_image.fs_utils import Path
 from rpm.yum_dnf_conf import YumDnf
 from subvol_utils import Subvol
@@ -120,32 +121,52 @@ class LayerOpts(NamedTuple):
     allowed_host_mount_targets: FrozenSet[str] = frozenset()
 
 
-class ImageItem(type):
-    'A metaclass for the types of items that can be installed into images.'
-    def __new__(metacls, classname, bases, dct):
+@dataclasses.dataclass(init=False, frozen=True)
+class ImageItem:
+    'Base class for the types of items that can be installed into images.'
 
-        # Future: `deepfrozen` has a less clunky way of doing this
-        def customize_fields(kwargs):
-            fn = dct.get('customize_fields')
-            if fn:
-                fn(kwargs)
-            return kwargs
+    from_target: str
 
-        # Some items, like RPM actions, are not sorted by dependencies, but
-        # get a fixed installation order.  The absence of a phase means the
-        # item is ordered via the topo-sort in `dep_graph.py`.
-        class PhaseOrderBase:
-            __slots__ = ()
+    def phase_order(self) -> PhaseOrder:
+        return None
 
-            def phase_order(self):
-                return None
+    @classmethod
+    def customize_fields(cls, kwargs):
+        pass
 
-        return metaclass_new_enriched_namedtuple(
-            __class__,
-            ['from_target'],
-            metacls, classname, (PhaseOrderBase,) + bases, dct,
-            customize_fields
-        )
+    def __init__(self, **kwargs):
+        """Constructor for ImageItem subclass.
+
+        Differently from the constructor of a Python dataclass, this allows
+        pre-processing the arguments before passing them to the original
+        dataclass constructor.
+
+        Furthermore, we only accept named arguments.
+
+        We call class method `customize_fields` to modify kwargs (in place)
+        before passing them to the original constructor of the dataclass.
+        """
+        self.__class__.customize_fields(kwargs)
+
+        # We reproduce the logic from the constructor created by dataclasses.
+        # Since we're pulling an internal function from the dataclasses module,
+        # we need to cope with the API change introduced to that function in
+        # Python 3.9, adding a new `globals` argument. We use `inspect` to
+        # detect that case.
+        dataclasses._init_fn(
+            fields=[
+                f for f in dataclasses.fields(self)
+                if f._field_type in (
+                    dataclasses._FIELD,
+                    dataclasses._FIELD_INITVAR)],
+            frozen=True,
+            has_post_init=False,
+            self_name='self',
+            **({'globals': {}}
+                if 'globals' in inspect.getfullargspec(
+                    dataclasses._init_fn).args
+                else {})
+        )(self, **kwargs)
 
 
 META_ARTIFACTS_REQUIRE_REPO = os.path.join(
