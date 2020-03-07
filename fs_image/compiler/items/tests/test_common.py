@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+from dataclasses import dataclass, field
+from typing import List
+
 from compiler.provides import ProvidesDirectory
 from compiler.requires import require_directory
 
@@ -10,8 +14,12 @@ from ..make_subvol import FilesystemRootItem, ParentLayerItem
 from .common import BaseItemTestCase, DUMMY_LAYER_OPTS
 
 
-class FakeImageSourceItem(metaclass=ImageItem):
-    fields = ['source', 'kitteh']
+@dataclass(init=False, frozen=True)
+class FakeImageSourceItem(ImageItem):
+    source: str
+    kitteh: str
+    myint: int = 1
+    mylist: List = field(default_factory=list)
 
 
 class ItemsCommonTestCase(BaseItemTestCase):
@@ -48,3 +56,25 @@ class ItemsCommonTestCase(BaseItemTestCase):
             {ProvidesDirectory(path='x/y'), ProvidesDirectory(path='x/y/z')},
             {require_directory('x')},
         )
+
+    def test_image_non_default_after_default(self):
+        @dataclass(init=False, frozen=True)
+        class TestImageSourceItem(FakeImageSourceItem):
+            invalid: str
+        with self.assertRaisesRegex(TypeError, 'follows default'):
+            TestImageSourceItem(
+                    from_target='m', source='x', kitteh='y', invalid='z')
+
+    def test_image_defaults(self):
+        item = FakeImageSourceItem(from_target='m', source='x', kitteh='y')
+        self.assertEqual(item.myint, 1)
+        self.assertEqual(item.mylist, [])
+
+    def test_image_missing(self):
+        with self.assertRaisesRegex(TypeError, 'missing .* required'):
+            FakeImageSourceItem(from_target='m', source='x')
+
+    def test_image_unexpected(self):
+        with self.assertRaisesRegex(TypeError, 'unexpected keyword argument'):
+            FakeImageSourceItem(from_target='m', source='x', kitteh='y',
+                    unexpected='a', another='b', lastone='c')

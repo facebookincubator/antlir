@@ -17,9 +17,9 @@ Mode = Union[str, int]  # human-readable, or octal
 
 def customize_stat_options(kwargs, *, default_mode):
     'Mutates `kwargs`.'
-    if kwargs['mode'] is None:
+    if kwargs.get('mode') is None:
         kwargs['mode'] = default_mode
-    if kwargs['user_group'] is None:
+    if kwargs.get('user_group') is None:
         kwargs['user_group'] = 'root:root'
 
 

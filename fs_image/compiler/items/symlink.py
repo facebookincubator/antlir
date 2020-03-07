@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 
+from dataclasses import dataclass
 from subvol_utils import Subvol
 
 from compiler.provides import ProvidesDirectory, ProvidesFile
@@ -27,11 +28,14 @@ def _make_rsync_style_dest_path(dest: str, source: str) -> str:
     )
 
 
-class SymlinkBase:
-    __slots__ = ()
-    fields = ['source', 'dest']
+@dataclass(init=False, frozen=True)
+class SymlinkBase(ImageItem):
+    source: str
+    dest: str
 
-    def _customize_fields_impl(kwargs):  # noqa: B902
+    @classmethod
+    def customize_fields(cls, kwargs):
+        super().customize_fields(kwargs)
         coerce_path_field_normal_relative(kwargs, 'source')
 
         kwargs['dest'] = _make_rsync_style_dest_path(
@@ -63,9 +67,8 @@ class SymlinkBase:
         )
 
 
-class SymlinkToDirItem(SymlinkBase, metaclass=ImageItem):
-    customize_fields = SymlinkBase._customize_fields_impl
-
+@dataclass(init=False, frozen=True)
+class SymlinkToDirItem(SymlinkBase, ImageItem):
     def provides(self):
         yield ProvidesDirectory(path=self.dest)
 
@@ -82,9 +85,8 @@ def _whitelisted_symlink_source(source: str) -> bool:
     ]
 
 
-class SymlinkToFileItem(SymlinkBase, metaclass=ImageItem):
-    customize_fields = SymlinkBase._customize_fields_impl
-
+@dataclass(init=False, frozen=True)
+class SymlinkToFileItem(SymlinkBase, ImageItem):
     def provides(self):
         yield ProvidesFile(path=self.dest)
 

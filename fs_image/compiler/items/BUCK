@@ -10,7 +10,6 @@ python_library(
     deps = [
         "//fs_image:fs_utils",
         "//fs_image:subvol_utils",
-        "//fs_image/compiler:enriched_namedtuple",
         "//fs_image/compiler:procfs_serde",
         "//fs_image/rpm:yum_dnf_conf",
     ],

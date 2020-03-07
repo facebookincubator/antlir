@@ -17,8 +17,8 @@ from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
 
 
 def _mount_item_new(from_target, mount_config):
-    return MountItem.new(
-        DUMMY_LAYER_OPTS._replace(
+    return MountItem(
+        layer_opts=DUMMY_LAYER_OPTS._replace(
             allowed_host_mount_targets=['//dummy/host_mounts:t'],
         ),
         from_target=from_target,
@@ -79,15 +79,15 @@ class MountItemTestCase(BaseItemTestCase):
     def _make_mount_item(self, *, mountpoint, target, mount_config,
                          from_target='t'):
         'Ensures that `target` and `mount_config` make the same item.'
-        item_from_file = MountItem.new(
-            DUMMY_LAYER_OPTS,
+        item_from_file = MountItem(
+            layer_opts=DUMMY_LAYER_OPTS,
             from_target=from_target,
             mountpoint=mountpoint,
             target=target,
             mount_config=None,
         )
-        self.assertEqual(item_from_file, MountItem.new(
-            DUMMY_LAYER_OPTS,
+        self.assertEqual(item_from_file, MountItem(
+            layer_opts=DUMMY_LAYER_OPTS,
             from_target=from_target,
             mountpoint=mountpoint,
             target=None,
@@ -106,8 +106,8 @@ class MountItemTestCase(BaseItemTestCase):
             # Since our initial mountconfig lacks `default_mountpoint`, the
             # item requires its `mountpoint` to be set.
             with self.assertRaisesRegex(AssertionError, 'lacks mountpoint'):
-                MountItem.new(
-                    DUMMY_LAYER_OPTS,
+                MountItem(
+                    layer_opts=DUMMY_LAYER_OPTS,
                     from_target='t',
                     mountpoint=None,
                     target=mnt_target,
@@ -298,8 +298,8 @@ class MountItemTestCase(BaseItemTestCase):
 
             # Check that we refuse to create nested mounts.
             nested_mounter = temp_subvolumes.create('nested_mounter')
-            nested_item = MountItem.new(
-                DUMMY_LAYER_OPTS,
+            nested_item = MountItem(
+                layer_opts=DUMMY_LAYER_OPTS,
                 from_target='t',
                 mountpoint='/whatever',
                 target=None,

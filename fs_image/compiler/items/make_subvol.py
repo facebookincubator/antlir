@@ -3,6 +3,7 @@
 Exactly one item must exist in this phase.  If none is specified by the
 `.bzl` code, then `dep_graph.py` injects a `FilesystemRootItem`.
 '''
+from dataclasses import dataclass
 from typing import Iterable
 
 from fs_image.fs_utils import open_for_read_decompress
@@ -12,8 +13,9 @@ from .common import ensure_meta_dir_exists, ImageItem, LayerOpts, PhaseOrder
 from .mount_utils import clone_mounts
 
 
-class ParentLayerItem(metaclass=ImageItem):
-    fields = ['subvol']
+@dataclass(init=False, frozen=True)
+class ParentLayerItem(ImageItem):
+    subvol: Subvol
 
     def phase_order(self):
         return PhaseOrder.MAKE_SUBVOL
@@ -34,9 +36,9 @@ class ParentLayerItem(metaclass=ImageItem):
         return builder
 
 
-class FilesystemRootItem(metaclass=ImageItem):
+@dataclass(init=False, frozen=True)
+class FilesystemRootItem(ImageItem):
     'A simple item to endow parent-less layers with a standard-permissions /'
-    fields = []
 
     def phase_order(self):
         return PhaseOrder.MAKE_SUBVOL
@@ -59,8 +61,9 @@ class FilesystemRootItem(metaclass=ImageItem):
         return builder
 
 
-class ReceiveSendstreamItem(metaclass=ImageItem):
-    fields = ['source']
+@dataclass(init=False, frozen=True)
+class ReceiveSendstreamItem(ImageItem):
+    source: str
 
     def phase_order(self):
         return PhaseOrder.MAKE_SUBVOL

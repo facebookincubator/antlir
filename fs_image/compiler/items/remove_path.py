@@ -2,13 +2,14 @@
 import enum
 import os
 
+from dataclasses import dataclass
 from typing import Iterable
 
 from subvol_utils import Subvol
 
 from .common import (
     coerce_path_field_normal_relative, ImageItem, is_path_protected,
-    LayerOpts, PhaseOrder, protected_path_set,
+    LayerOpts, PhaseOrder, protected_path_set
 )
 
 
@@ -17,10 +18,15 @@ class RemovePathAction(enum.Enum):
     if_exists = 'if_exists'
 
 
-class RemovePathItem(metaclass=ImageItem):
-    fields = ['path', 'action']
+@dataclass(init=False, frozen=True)
+class RemovePathItem(ImageItem):
 
-    def customize_fields(kwargs):  # noqa: B902
+    path: str
+    action: RemovePathAction
+
+    @classmethod
+    def customize_fields(cls, kwargs):
+        super().customize_fields(kwargs)
         coerce_path_field_normal_relative(kwargs, 'path')
         kwargs['action'] = RemovePathAction(kwargs['action'])
 

@@ -3,6 +3,7 @@ import os
 import subprocess
 
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import List
 
 from fs_image.fs_utils import open_for_read_decompress
@@ -13,14 +14,19 @@ from compiler.requires import require_directory
 
 from .common import (
     coerce_path_field_normal_relative, ImageItem, LayerOpts,
-    make_path_normal_relative,
+    make_path_normal_relative
 )
 
 
-class TarballItem(metaclass=ImageItem):
-    fields = ['into_dir', 'source', 'force_root_ownership']
+@dataclass(init=False, frozen=True)
+class TarballItem(ImageItem):
+    into_dir: str
+    source: str
+    force_root_ownership: bool
 
-    def customize_fields(kwargs):  # noqa: B902
+    @classmethod
+    def customize_fields(cls, kwargs):
+        super().customize_fields(kwargs)
         coerce_path_field_normal_relative(kwargs, 'into_dir')
         assert kwargs['force_root_ownership'] in [True, False], kwargs
 
