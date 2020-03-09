@@ -11,7 +11,7 @@ import subprocess
 
 from dataclasses import dataclass
 
-from compiler.provides import (
+from compiler.requires_provides import (
     ProvidesDirectory, ProvidesDoNotAccess, ProvidesFile,
 )
 from subvol_utils import Subvol

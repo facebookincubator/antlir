@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 '''
-Directly tests `requires.py` and `provides.py`, indirectly tests
-`path_object.py`.
+Directly tests `requires_provides.py` and indirectly tests `path_object.py`.
 '''
 import unittest
 
-from ..provides import ProvidesDirectory, ProvidesFile
-from ..requires import require_directory, require_file
+from ..requires_provides import (
+    ProvidesDirectory, ProvidesFile, require_directory, require_file,
+)
 
 
 class RequiresProvidesTestCase(unittest.TestCase):

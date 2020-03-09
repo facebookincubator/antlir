@@ -67,8 +67,7 @@ python_library(
     name = "requires_provides",
     srcs = [
         "path_object.py",
-        "provides.py",
-        "requires.py",
+        "requires_provides.py",
     ],
     base_module = "compiler",
     deps = [":enriched_namedtuple"],

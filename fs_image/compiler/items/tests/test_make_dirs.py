@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import sys
 
-from compiler.provides import ProvidesDirectory
-from compiler.requires import require_directory
+from compiler.requires_provides import ProvidesDirectory, require_directory
 from tests.temp_subvolumes import TempSubvolumes
 
 from ..make_dirs import MakeDirsItem

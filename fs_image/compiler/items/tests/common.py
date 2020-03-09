@@ -6,7 +6,7 @@ import unittest
 from contextlib import contextmanager
 
 from btrfs_diff.tests.render_subvols import render_sendstream
-from compiler.provides import ProvidesDirectory, ProvidesFile
+from compiler.requires_provides import ProvidesDirectory, ProvidesFile
 
 from ..common import LayerOpts
 

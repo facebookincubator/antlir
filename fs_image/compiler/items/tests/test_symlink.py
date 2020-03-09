@@ -3,8 +3,9 @@ import shlex
 import sys
 import tempfile
 
-from compiler.provides import ProvidesDirectory, ProvidesFile
-from compiler.requires import require_directory, require_file
+from compiler.requires_provides import (
+    ProvidesDirectory, ProvidesFile, require_directory, require_file
+)
 from tests.temp_subvolumes import TempSubvolumes
 
 from ..install_file import InstallFileItem

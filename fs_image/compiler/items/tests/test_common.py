@@ -3,9 +3,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from compiler.provides import ProvidesDirectory
-from compiler.requires import require_directory
-
+from compiler.requires_provides import ProvidesDirectory, require_directory
 from ..common import ImageItem, image_source_item
 from ..install_file import InstallFileItem
 from ..make_dirs import MakeDirsItem

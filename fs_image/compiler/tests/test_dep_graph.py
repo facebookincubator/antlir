@@ -15,8 +15,9 @@ from fs_image.compiler.items.phases_provide import PhasesProvideItem
 from ..dep_graph import (
     DependencyGraph, ItemProv, ItemReq, ItemReqsProvs, ValidatedReqsProvs,
 )
-from ..provides import ProvidesDirectory, ProvidesDoNotAccess, ProvidesFile
-from ..requires import require_directory
+from ..requires_provides import (
+    ProvidesDirectory, ProvidesDoNotAccess, ProvidesFile, require_directory
+)
 
 # Since the constructor of `InstallFileItem` tries to `os.stat` its input,
 # we need to give it filenames that exist.

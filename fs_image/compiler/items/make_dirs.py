@@ -5,8 +5,7 @@ from dataclasses import dataclass
 
 from subvol_utils import Subvol
 
-from compiler.provides import ProvidesDirectory
-from compiler.requires import require_directory
+from compiler.requires_provides import ProvidesDirectory, require_directory
 
 from .common import coerce_path_field_normal_relative, ImageItem, LayerOpts
 from .stat_options import (
