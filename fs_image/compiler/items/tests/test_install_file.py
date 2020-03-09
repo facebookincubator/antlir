@@ -5,8 +5,9 @@ import subprocess
 import sys
 import tempfile
 
-from compiler.provides import ProvidesDirectory, ProvidesFile
-from compiler.requires import require_directory
+from compiler.requires_provides import (
+    ProvidesDirectory, ProvidesFile, require_directory
+)
 from find_built_subvol import find_built_subvol
 from fs_image.fs_utils import temp_dir, Path
 from tests.temp_subvolumes import TempSubvolumes

@@ -2,7 +2,7 @@
 import os
 import sys
 
-from compiler.provides import ProvidesDirectory, ProvidesDoNotAccess
+from compiler.requires_provides import ProvidesDirectory, ProvidesDoNotAccess
 from tests.temp_subvolumes import TempSubvolumes
 
 from ..phases_provide import PhasesProvideItem

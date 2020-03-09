@@ -27,9 +27,39 @@ to define its relationship with every Requires predicate, thus:
       "provides" objects will let us resolve symlinks.
       """
       return True or False
+
+Future: we might want to add permissions constraints, tackle following
+symlinks (or not following them), maybe hardlinks, etc.  This would
+likely best be tackled via predicate composition with And/Or/Not support
+with short-circuiting.  E.g. FollowsSymlinks(Pred) would expand to:
+
+  Or(
+    And(IsSymlink(Path), Pred(SymlinkTarget(Path))),
+    And(Not(IsSymlink(Path)), Pred(SymlinkTarget(Path)),
+  )
+
+The predicates would then be wrapped into a PathObject.
 '''
 
+from collections import namedtuple
+
 from .path_object import PathObject
+
+
+IsDirectory = namedtuple('IsDirectory', [])
+IsFile = namedtuple('IsFile', [])
+
+
+class PathRequiresPredicate(metaclass=PathObject):
+    fields = ['predicate']
+
+
+def require_directory(path):
+    return PathRequiresPredicate(path=path, predicate=IsDirectory())
+
+
+def require_file(path):
+    return PathRequiresPredicate(path=path, predicate=IsFile())
 
 
 class ProvidesPathObject:

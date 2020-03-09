@@ -4,8 +4,9 @@ import os
 import sys
 import tempfile
 
-from compiler.provides import ProvidesDirectory, ProvidesDoNotAccess
-from compiler.requires import require_directory
+from compiler.requires_provides import (
+    ProvidesDirectory, ProvidesDoNotAccess, require_directory
+)
 from compiler.subvolume_on_disk import SubvolumeOnDisk
 from tests.temp_subvolumes import TempSubvolumes
 

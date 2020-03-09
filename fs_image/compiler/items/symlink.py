@@ -4,8 +4,9 @@ import os
 from dataclasses import dataclass
 from subvol_utils import Subvol
 
-from compiler.provides import ProvidesDirectory, ProvidesFile
-from compiler.requires import require_directory, require_file
+from compiler.requires_provides import (
+    ProvidesDirectory, ProvidesFile, require_directory, require_file
+)
 
 from .common import (
     coerce_path_field_normal_relative, ImageItem, LayerOpts,

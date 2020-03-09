@@ -9,8 +9,9 @@ from typing import Iterable, NamedTuple, Optional, Union
 from fs_image.fs_utils import Path
 from subvol_utils import Subvol
 
-from compiler.provides import ProvidesDirectory, ProvidesFile
-from compiler.requires import require_directory
+from compiler.requires_provides import (
+    ProvidesDirectory, ProvidesFile, require_directory
+)
 
 from .common import coerce_path_field_normal_relative, ImageItem, LayerOpts
 from .stat_options import (

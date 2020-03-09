@@ -9,8 +9,9 @@ from typing import List
 from fs_image.fs_utils import open_for_read_decompress
 from subvol_utils import Subvol
 
-from compiler.provides import ProvidesDirectory, ProvidesFile
-from compiler.requires import require_directory
+from compiler.requires_provides import (
+    ProvidesDirectory, ProvidesFile, require_directory
+)
 
 from .common import (
     coerce_path_field_normal_relative, ImageItem, LayerOpts,

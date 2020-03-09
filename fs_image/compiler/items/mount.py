@@ -15,8 +15,7 @@ from subvol_utils import Subvol
 from find_built_subvol import find_built_subvol
 
 from compiler import procfs_serde
-from compiler.provides import ProvidesDoNotAccess
-from compiler.requires import require_directory
+from compiler.requires_provides import ProvidesDoNotAccess, require_directory
 
 from .common import coerce_path_field_normal_relative, ImageItem, LayerOpts
 from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER, ro_rbind_mount
