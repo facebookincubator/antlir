@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 To start, read the docblock of `provides.py`. The code in this file verifies
 that a set of Items can be correctly installed (all requirements are

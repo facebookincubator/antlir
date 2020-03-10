@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-# Duplicated from fbcode/libfb/py/union_find.py
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 This is used by RepoSizer, which is part of our OSS for buck images. We've
 duplicated it here given that it's a simple library unlikely to be updated, and

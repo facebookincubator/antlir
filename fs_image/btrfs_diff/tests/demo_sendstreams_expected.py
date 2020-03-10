@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 `demo_sendstreams.py` performs filesystem operations to generate some
 send-stream data, this records the send-stream we would expect to see from

@@ -1,4 +1,9 @@
 #!/bin/bash -uex
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 #
 # `tests/test_subvolume_garbage_collector.py` uses this fake in order to
 # avoid instantiating actual btrfs subvolumes to delete.

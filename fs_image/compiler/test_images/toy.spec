@@ -4,7 +4,7 @@ Release:      1
 Summary:      A specfile for a toy RPM.
 
 Group:        Facebook/script
-License:      BSD
+License:      MIT 
 Source0:      toy_src_file
 BuildArch:    noarch
 

@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 When writing tests, it is counterproductive to manually add traversal IDs to
 subvolume inodes.  Instead, we add them automatically, using `InodeRepr` as

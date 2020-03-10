@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 'See `temp_repo_steps` and `SAMPLE_STEPS` for documentation.'
 import os
 import shlex
@@ -48,7 +53,7 @@ class Rpm(NamedTuple):
         Name: rpm-test-{name}
         Version: {version}
         Release: {release}
-        License: BSD
+        License: MIT
         Group: Facebook/Script
         Vendor: Facebook, Inc.
         Packager: somebody@example.com
