@@ -25,6 +25,8 @@ genrule(
     cmd = """
         cd $OUT
         rpm2cpio $(location :kernel-core-5.3.7-301.fc31.x86_64.rpm) | cpio -idm
+        rm -r lib/modules/5.3.7-301.fc31.x86_64/build
+        rm -r lib/modules/5.3.7-301.fc31.x86_64/source
     """
 )
 
