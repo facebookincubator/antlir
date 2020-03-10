@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//third-party/fedora31/kernel:kernels.bzl", "kernels")
 
 # The default native platform to use for shared libraries and static binary
 # dependencies.  Right now this tooling only supports one platform and so
@@ -25,6 +26,15 @@ def _invert_dict(d):
         return result
     else:
         return d
+
+def _kernel_artifact_version(version):
+    """ Resolve a kernel version to its corresponding kernel artifact.
+    Internally, the kernel artifacts are in `//kernel/kernels:kernel.bzl`
+    """
+    if version in kernels:
+        return kernels[version]
+    else:
+        fail("Unknown kernel version: {}".format(version))
 
 def _normalize_deps(deps, more_deps = None):
     """  Create a single list of deps from one or 2 provided lists of deps.
@@ -202,6 +212,10 @@ shim = struct(
         get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
     ),
     get_visibility = _normalize_visibility,
+    kernel_artifact = struct(
+        default_kernel = _kernel_artifact_version("5.3.7-301.fc31.x86_64"),
+        version = _kernel_artifact_version,
+    ),
     platform_utils = None,
     python_binary = _python_binary,
     python_library = _python_library,

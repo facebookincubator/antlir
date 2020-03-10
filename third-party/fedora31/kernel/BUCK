@@ -1,22 +1,22 @@
 remote_file(
-    name = "kernel-core-5.3.7-301.fc31.x86_64.rpm",
+    name = "5.3.7-301.fc31.x86_64-core.rpm",
     url = "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/k/kernel-core-5.3.7-301.fc31.x86_64.rpm",
     sha1 = "dae4263b23930c4f25a7eae28a1fda606abfd561",
-    out = "kernel-core-5.3.7-301.fc31.x86_64.rpm",
+    out = "5.3.7-301.fc31.x86_64-core.rpm",
 )
 
 remote_file(
-    name = "kernel-headers-5.3.6-300.fc31.x86_64.rpm",
+    name = "5.3.6-300.fc31.x86_64-headers.rpm",
     url = "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/k/kernel-headers-5.3.6-300.fc31.x86_64.rpm",
     sha1 = "7fe40f1592bb8ac3c47d3f97b447a7bf6f2e0a05",
-    out = "kernel-headers-5.3.6-300.fc31.x86_64.rpm",
+    out = "5.3.6-300.fc31.x86_64-headers.rpm",
 )
 
 remote_file(
-    name = "kernel-devel-5.3.7-301.fc31.x86_64.rpm", 
+    name = "5.3.7-301.fc31.x86_64-devel.rpm",
     url = "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/k/kernel-devel-5.3.7-301.fc31.x86_64.rpm",
     sha1 = "ff5bebf0be74228591bc046175815a3e5ce927f2",
-    out = "kernel-devel-5.3.7-301.fc31.x86_64.rpm",
+    out = "5.3.7-301.fc31.x86_64-devel.rpm",
 )
 
 genrule(
@@ -24,7 +24,7 @@ genrule(
     out = ".",
     cmd = """
         cd $OUT
-        rpm2cpio $(location :kernel-core-5.3.7-301.fc31.x86_64.rpm) | cpio -idm
+        rpm2cpio $(location :5.3.7-301.fc31.x86_64-core.rpm) | cpio -idm
         rm -r lib/modules/5.3.7-301.fc31.x86_64/build
         rm -r lib/modules/5.3.7-301.fc31.x86_64/source
     """
