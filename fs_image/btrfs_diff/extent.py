@@ -7,7 +7,43 @@
 import enum
 import itertools
 
-from typing import NamedTuple, Optional, Tuple, Union
+from typing import List, NamedTuple, Optional, Tuple, Union
+
+
+class Action(enum.Enum):
+    _RECURSE = 'recurse'
+    _YIELD = 'yield'
+
+
+def _get_trimmed_leaves(
+    extent: 'Extent', offset: int = 0, length: Optional[int] = None,
+) -> Tuple[Action, Union[
+    Tuple[int, int, 'Extent'],  # _YIELD case
+    List[Tuple['Extent', int, int]],  # _RECURSE case
+]]:
+    max_length = extent.length - offset
+    if length is None:
+        length = max_length
+    # These don't print `extent` since that would recurse into this func
+    assert length <= max_length, f'len {length}, offset {offset}'
+    assert offset >= 0 and length >= 0, f'offset {offset}, length {length}'
+    assert offset <= extent.length, f'offset {offset}'
+
+    if isinstance(extent.content, Extent.Kind):
+        trimmed_length = min(length, extent.length - offset)
+        if trimmed_length > 0:
+            return Action._YIELD, (offset, trimmed_length, extent)
+
+    offset += extent.offset
+    recurse_list = []
+    for e in extent.content:
+        if e.length > offset:
+            recurse_list.append((e, offset, min(length, e.length - offset)))
+            length -= (e.length - offset)
+            if length <= 0:
+                break
+        offset -= min(offset, e.length)
+    return Action._RECURSE, recurse_list
 
 
 # Future: use `deepfrozentype` for true immutability.
@@ -207,29 +243,29 @@ class Extent(NamedTuple):
         subextent, using the semantics described in `__new()`'s argument
         list.  In contrast, `subextent.offset` is, by definition, always 0.
         '''
-        max_length = self.length - offset
-        if length is None:
-            length = max_length
-        assert length <= max_length, f'len {length}, offset {offset}, {self}'
-        assert offset >= 0 and length >= 0, f'offset {offset}, length {length}'
-        assert offset <= self.length, f'offset {offset}, self {self}'
+        # This loop exists just to replace lexical recursion with manual
+        # recusion using an explicit stack.  We have to do this to handle
+        # files larger than about 100MB, which would otherwise exceed
+        # Python's recursion limit.
+        #
+        # Future: we might want to add detection for infinite recursion, but
+        # it's a bit tricky, so skipping for now.
+        stack = [[0, [(self, offset, length)]]]
+        while stack:
+            idx, calls = stack[-1]
+            assert idx <= len(calls)
+            if idx == len(calls):
+                stack.pop()
+                continue
+            stack[-1][0] += 1
 
-        if isinstance(self.content, Extent.Kind):
-            trimmed_length = min(length, self.length - offset)
-            if trimmed_length > 0:
-                yield offset, trimmed_length, self
-            return
+            action, res = _get_trimmed_leaves(*calls[idx])
+            if action is Action._YIELD:
+                yield res
+                continue
 
-        offset += self.offset
-        for e in self.content:
-            if e.length > offset:
-                yield from e.gen_trimmed_leaves(
-                    offset=offset, length=min(length, e.length - offset)
-                )
-                length -= (e.length - offset)
-                if length <= 0:
-                    break
-            offset -= min(offset, e.length)
+            assert action is Action._RECURSE
+            stack.append([0, res])
 
     def _gen_leaf_reprs(self):
         for _, length, leaf in self.gen_trimmed_leaves():

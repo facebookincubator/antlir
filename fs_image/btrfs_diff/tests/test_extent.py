@@ -8,6 +8,7 @@ import copy
 import functools
 import itertools
 import math
+import sys
 import unittest
 
 from types import SimpleNamespace
@@ -35,6 +36,15 @@ class ExtentTestCase(unittest.TestCase):
             ), 0, 11),
             Extent.empty().write(offset=5, length=6),
         )
+
+    # When `gen_trimmed_leaves` was recursive, this would fail.
+    def test_deep_recursion(self):
+        n = sys.getrecursionlimit()
+        # Stitch together hole-data `n` times.
+        e = Extent.empty()
+        for i in range(n):
+            e = e.write(offset=2 * i + 1, length=1)
+        self.assertEqual('h1d1' * n, repr(e))
 
     def test_write_and_clone(self):
         # 3-byte hole, 4-byte data, 5-byte hole, 6-byte data
