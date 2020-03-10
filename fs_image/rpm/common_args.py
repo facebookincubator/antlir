@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 'Arguments shared between `snapshot-repo` and `snapshot-repos`.'
 from .common import Path, RpmShard
 from .storage import Storage

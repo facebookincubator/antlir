@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 Prints a pickled dict of test data to stdout. As a binary, does NOT work
 in @mode/opt -- in that role, it's just a development tool.

@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """
 "Atomically" [1] downloads a snapshot of a sequence of RPM repos. Uses the
 `repo_db.py` and `storage.py` abstractions to store the snapshots, while

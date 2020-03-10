@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 Exactly one item must exist in this phase.  If none is specified by the
 `.bzl` code, then `dep_graph.py` injects a `FilesystemRootItem`.

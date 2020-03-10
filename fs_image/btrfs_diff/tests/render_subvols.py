@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 If your test has a subvolume or a sendstream, these helpers here make it
 easy to make assertions against its content. Grep around for usage examples.

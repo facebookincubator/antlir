@@ -5,7 +5,7 @@ Summary:  The "cheese" package.
 
 Group:    Facebook/script
 BuildArch: noarch
-License:  BSD
+License:  MIT
 
 BuildRequires:  coreutils
 

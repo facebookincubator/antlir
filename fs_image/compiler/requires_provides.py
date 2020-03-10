@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 Images are composed of a bunch of Items. These are declared by the user
 in an order-independent fashion, but they have to be installed in a specific

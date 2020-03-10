@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 A `SubvolumeSet` maps path subtrees to `Subvolume`s. Therefore, it only
 knows how to apply the initial `SendStreamItems` types that set the

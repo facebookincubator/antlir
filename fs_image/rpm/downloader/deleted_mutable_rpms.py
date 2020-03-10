@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """
 If two distinct copies of an RPM with the same NEVRA are committed to a repo
 (e.g. due to signing key changes), this will trip "mutable_rpm_error" and

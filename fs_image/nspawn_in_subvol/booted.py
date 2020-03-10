@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 '''
 Read the `run.py` docblock first.  Then, review the docs for
 `new_nspawn_opts` and `PopenArgs`, and invoke `run_booted_nspawn`.

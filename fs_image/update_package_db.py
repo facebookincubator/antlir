@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 # The following docblock describes the CLI of the binary that can be built
 # from this library.  To create such a binary, you will need to call `main`
 # -- refer to its docblock for usage.
