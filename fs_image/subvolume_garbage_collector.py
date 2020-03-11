@@ -49,11 +49,13 @@ import stat
 import subprocess
 import sys
 
+from typing import Iterator
+
 log = logging.Logger(os.path.basename(__file__))  # __name__ is __main__
 
 
 @contextlib.contextmanager
-def nonblocking_flock(path) -> 'Iterator[bool]':
+def nonblocking_flock(path) -> Iterator[bool]:
     'Yields True if we got the lock, False otherwise.'
     # We don't set CLOEXEC on this FD because we want e.g. `sudo btrfs` to
     # inherit it and hold the lock while it does its thing.  It seems OK to

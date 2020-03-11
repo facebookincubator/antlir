@@ -19,8 +19,9 @@ from ..inode_utils import (
     SELinuxXAttrStats,
 )
 from ..parse_send_stream import parse_send_stream
-from ..rendered_tree import emit_non_unique_traversal_ids
+from ..rendered_tree import emit_non_unique_traversal_ids, RenderedTree
 from ..subvolume_set import SubvolumeSet, SubvolumeSetMutator
+from ..subvolume import Subvolume
 
 from .subvolume_utils import expected_subvol_add_traversal_ids
 

@@ -16,6 +16,7 @@ from collections import Counter
 from typing import Optional, Tuple, Union, Iterator
 
 from .incomplete_inode import IncompleteInode, IncompleteDir
+from .inode import InodeOwner
 
 _SELINUX_XATTR = b'security.selinux'
 

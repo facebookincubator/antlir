@@ -324,7 +324,7 @@ def _leaf_ref_to_chunk_clones_from_clone_ops(
             assert op.ref not in active_ops
             active_ops[op.ref] = op
         else:
-            assert False, op  # pragma: no cover
+            raise AssertionError(op)  # pragma: no cover
     return leaf_ref_to_chunk_clones
 
 

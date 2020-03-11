@@ -46,7 +46,7 @@ class InodeID(NamedTuple):
     #  - We check `inner_id_map` identity at runtime (below) to ensure at
     #    runtime that `InodeID`s are used only with their maps.
     #  - An identifiable repr is nice for ease of testing/debugging.
-    inner_id_map: 'InnerInodeIDMap'
+    inner_id_map: '_InnerInodeIDMap'
 
     def __repr__(self):
         paths = list(self.inner_id_map.gen_paths(self))
