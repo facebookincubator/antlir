@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from grp import getgrnam
 from pwd import getpwnam
 
-from btrfs_diff.tests.render_subvols import render_sendstream
+from btrfs_diff.tests.render_subvols import render_sendstream, pop_path
 from btrfs_diff.tests.demo_sendstreams_expected import render_demo_subvols
 from find_built_subvol import find_built_subvol
 from rpm.yum_dnf_conf import YumDnf
@@ -25,13 +25,6 @@ TARGET_TO_PATH = {
         for target, path in os.environ.items()
             if target.startswith(TARGET_ENV_VAR_PREFIX)
 }
-
-
-def _pop_path(render, path):
-    parts = path.split('/')
-    for part in parts[:-1]:
-        render = render[1][part]
-    return render[1].pop(parts[-1])
 
 
 class ImageLayerTestCase(unittest.TestCase):
@@ -208,28 +201,28 @@ class ImageLayerTestCase(unittest.TestCase):
         # Ignore a bunch of yum / dnf / rpm spam
 
         if yum_dnf == YumDnf.yum:
-            ino, = _pop_path(r, f'var/log/yum.log')
+            ino, = pop_path(r, f'var/log/yum.log')
             self.assertRegex(ino, r'^\(File m600 d[0-9]+\)$')
             for ignore_dir in ['var/cache/yum', 'var/lib/yum']:
-                ino, _ = _pop_path(r, ignore_dir)
+                ino, _ = pop_path(r, ignore_dir)
                 self.assertEqual('(Dir)', ino)
         elif yum_dnf == YumDnf.dnf:
             self.assertEqual(['(Dir)', {
                 'dnf': ['(Dir)', {'modules.d': ['(Dir)', {}]}],
-            }], _pop_path(r, 'etc'))
+            }], pop_path(r, 'etc'))
             for logname in [
                 'dnf.log', 'dnf.librepo.log', 'dnf.rpm.log', 'hawkey.log',
             ]:
-                ino, = _pop_path(r, f'var/log/{logname}')
+                ino, = pop_path(r, f'var/log/{logname}')
                 self.assertRegex(ino, r'^\(File d[0-9]+\)$', logname)
             for ignore_dir in ['var/cache/dnf', 'var/lib/dnf']:
-                ino, _ = _pop_path(r, ignore_dir)
+                ino, _ = pop_path(r, ignore_dir)
                 self.assertEqual('(Dir)', ino)
-            self.assertEqual(['(Dir)', {}], _pop_path(r, 'var/tmp'))
+            self.assertEqual(['(Dir)', {}], pop_path(r, 'var/tmp'))
         else:
             raise AssertionError(yum_dnf)
 
-        ino, _ = _pop_path(r, 'var/lib/rpm')
+        ino, _ = pop_path(r, 'var/lib/rpm')
         self.assertEqual('(Dir)', ino)
 
         self.assertEqual(['(Dir)', {
@@ -239,7 +232,7 @@ class ImageLayerTestCase(unittest.TestCase):
             }]}]}],
             'usr': ['(Dir)', {
                 'share': ['(Dir)', {
-                    # Whatever is here should be `_pop_path`ed before
+                    # Whatever is here should be `pop_path`ed before
                     # calling `_check_rpm_common`.
                 }],
             }],
@@ -262,7 +255,7 @@ class ImageLayerTestCase(unittest.TestCase):
         with self.target_subvol('validates-build-appliance') as sv:
             r = render_sendstream(sv.mark_readonly_and_get_sendstream())
 
-            ino, = _pop_path(r, 'bin/sh')  # Busybox from `rpm-test-milk`
+            ino, = pop_path(r, 'bin/sh')  # Busybox from `rpm-test-milk`
             # NB: We changed permissions on this at some point, but after
             # the migration diffs land, the [75] can become a 5.
             self.assertRegex(ino, r'^\(File m[75]55 d[0-9]+\)$')
@@ -271,12 +264,12 @@ class ImageLayerTestCase(unittest.TestCase):
                 'milk.txt': ['(File d12)'],
                 # From the `rpm-test-milk` post-install script
                 'post.txt': ['(File d6)'],
-            }], _pop_path(r, 'usr/share/rpm_test'))
+            }], pop_path(r, 'usr/share/rpm_test'))
 
-            ino, _ = _pop_path(r, 'usr/lib/.build-id')
+            ino, _ = pop_path(r, 'usr/lib/.build-id')
             self.assertEqual('(Dir)', ino)
-            self.assertEqual(['(Dir)', {}], _pop_path(r, 'bin'))
-            self.assertEqual(['(Dir)', {}], _pop_path(r, 'usr/lib'))
+            self.assertEqual(['(Dir)', {}], pop_path(r, 'bin'))
+            self.assertEqual(['(Dir)', {}], pop_path(r, 'usr/lib'))
 
             self._check_rpm_common(r, YumDnf.dnf)
 
@@ -286,7 +279,7 @@ class ImageLayerTestCase(unittest.TestCase):
 
             self.assertEqual(['(Dir)', {
                 'cake.txt': ['(File d17)'],
-            }], _pop_path(r, 'usr/share/rpm_test'))
+            }], pop_path(r, 'usr/share/rpm_test'))
 
             self._check_rpm_common(r, YumDnf.yum)
 
@@ -295,9 +288,9 @@ class ImageLayerTestCase(unittest.TestCase):
             r = render_sendstream(sv.mark_readonly_and_get_sendstream())
 
             # We don't know the exact sizes because these 2 may be wrapped
-            ino, = _pop_path(r, 'foo/bar/installed/print-ok')
+            ino, = pop_path(r, 'foo/bar/installed/print-ok')
             self.assertRegex(ino, r'^\(File m555 d[0-9]+\)$')
-            ino, = _pop_path(r, 'foo/bar/installed/print-ok-too')
+            ino, = pop_path(r, 'foo/bar/installed/print-ok-too')
             self.assertRegex(ino, r'^\(File m555 d[0-9]+\)$')
 
             uid = getpwnam('nobody').pw_uid
