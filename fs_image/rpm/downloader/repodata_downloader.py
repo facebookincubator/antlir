@@ -16,13 +16,14 @@ from fs_image.rpm.downloader.common import (
     DownloadResult,
     download_resource,
     log_size,
-    maybe_write_id,
+    write_storage_id,
     verify_chunk_stream,
 )
 from rpm.common import read_chunks, retryable
 from rpm.parse_repodata import get_rpm_parser, pick_primary_repodata
-from rpm.repo_db import RepoDBContext, RepodataTable
+from rpm.repo_db import RepodataTable
 from rpm.repo_objects import RepoMetadata, Repodata, Rpm
+from rpm.repo_snapshot import ReportableError
 from rpm.yum_dnf_conf import YumDnfConfRepo
 
 
@@ -107,7 +108,6 @@ def _download_repodata(
                 try:
                     rpms.extend(rpm_parser.feed(chunk))
                 except Exception as ex:
-                    # Not a ReportableError so it won't trigger a retry
                     raise RepodataParseError((repodata.location, ex))
         # Must commit the output context to get a storage_id.
         if outfile:
@@ -142,15 +142,17 @@ def _download_repodatas(
         for future in as_completed(futures):
             res = future.result()
             if res.newly_stored:
+                # Don't want to store errors into the repo db -- this should
+                # never be the case as `newly_stored` is only True when we
+                # successfully commit a new repodata to storage
+                assert not isinstance(res.storage_id, ReportableError)
                 # This repodata was newly downloaded and stored in storage, so
                 # we store its storage_id to repo_db regardless of whether we
                 # encounter fatal errors later on in the execution and don't
                 # finish the snapshot - see top-level docblock for reasoning
-                storage_id = maybe_write_id(
+                write_storage_id(
                     res.repodata, res.storage_id, repodata_table, rw_db_ctx
                 )
-            else:
-                storage_id = res.storage_id
             if res.maybe_rpms is not None:
                 # RPMs will only have been returned by the primary, thus we
                 # should only enter this block once
@@ -158,7 +160,7 @@ def _download_repodatas(
                 # Convert to a set to work around buggy repodatas, which
                 # list the same RPM object twice.
                 rpms = frozenset(res.maybe_rpms)
-            set_new_key(storage_id_to_repodata, storage_id, res.repodata)
+            set_new_key(storage_id_to_repodata, res.storage_id, res.repodata)
     # It's possible that for non-primary repodatas we received errors when
     # downloading - in that case we store the error in the sqlite db, thus the
     # dict should contain an entry for every single repodata

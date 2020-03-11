@@ -26,12 +26,7 @@ from rpm.db_connection import DBConnectionContext
 from rpm.open_url import open_url
 from rpm.repo_db import RepoDBContext, RepodataTable
 from rpm.repo_objects import Checksum, Repodata, RepoMetadata, Rpm
-from rpm.repo_snapshot import (
-    FileIntegrityError,
-    HTTPError,
-    ReportableError,
-    MaybeStorageID,
-)
+from rpm.repo_snapshot import FileIntegrityError, HTTPError, MaybeStorageID
 from rpm.storage import Storage
 from rpm.yum_dnf_conf import YumDnfConfRepo
 
@@ -99,14 +94,6 @@ def verify_chunk_stream(
             )
 
 
-def _log_if_storage_ids_differ(obj, storage_id, db_storage_id):
-    if db_storage_id != storage_id:
-        log.warning(
-            f"Another writer already committed {obj} at {db_storage_id}, "
-            f"will delete our copy at {storage_id}"
-        )
-
-
 def log_size(what_str: str, total_bytes: int):
     log.info(f"{what_str} {total_bytes/10**9:,.4f} GB")
 
@@ -149,19 +136,16 @@ def download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
 # into locking issues with many concurrent writers. Additionally, these writes
 # are a minor portion of our overall execution time and thus we see negligible
 # perf gains by parallelizing them.
-def maybe_write_id(
+def write_storage_id(
     repo_obj: Union[Repodata, Rpm],
-    storage_id: MaybeStorageID,
+    storage_id: str,
     table: RepodataTable,
     db_ctx: RepoDBContext,
 ):
-    """Used to write a storage_id to repo_db after a possible download."""
-    # Don't store errors into the repo db
-    if isinstance(storage_id, ReportableError):
-        return storage_id
+    """Used to write a storage_id to repo_db after a download."""
     with timeit(f"Writing storage ID {storage_id}", threshold_s=10):
         with db_ctx as repo_db_ctx:
             db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
             repo_db_ctx.commit()
-    _log_if_storage_ids_differ(repo_obj, storage_id, db_storage_id)
-    return db_storage_id
+        # Should never have any racing writers that would cause this to change
+        assert db_storage_id == storage_id, (db_storage_id, storage_id)
