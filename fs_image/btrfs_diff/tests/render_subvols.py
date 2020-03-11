@@ -26,6 +26,13 @@ from ..subvolume import Subvolume
 from .subvolume_utils import expected_subvol_add_traversal_ids
 
 
+def pop_path(render, path):
+    parts = path.split('/')
+    for part in parts[:-1]:
+        render = render[1][part]
+    return render[1].pop(parts[-1])
+
+
 def expected_rendering(expected_subvol):
     'Takes a `RenderedTree` with `InodeRepr` for some of the inodes.'
     return emit_non_unique_traversal_ids(expected_subvol_add_traversal_ids(
