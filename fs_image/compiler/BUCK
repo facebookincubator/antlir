@@ -65,12 +65,9 @@ python_unittest(
 
 python_library(
     name = "requires_provides",
-    srcs = [
-        "path_object.py",
-        "requires_provides.py",
-    ],
+    srcs = ["requires_provides.py"],
     base_module = "compiler",
-    deps = [":enriched_namedtuple"],
+    deps = ["//fs_image:fs_utils"],
 )
 
 python_unittest(

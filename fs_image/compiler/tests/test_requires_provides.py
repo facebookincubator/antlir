@@ -5,16 +5,22 @@
 # LICENSE file in the root directory of this source tree.
 
 '''
-Directly tests `requires_provides.py` and indirectly tests `path_object.py`.
+Tests `requires_provides.py`.
 '''
 import unittest
 
 from ..requires_provides import (
-    ProvidesDirectory, ProvidesFile, require_directory, require_file,
+    ProvidesDirectory, ProvidesFile, ProvidesDoNotAccess,
+    require_directory, require_file, _normalize_path,
 )
 
 
 class RequiresProvidesTestCase(unittest.TestCase):
+
+    def test_normalize_path(self):
+        self.assertEqual('/a', _normalize_path('a//.'))
+        self.assertEqual('/b/d', _normalize_path('/b/c//../d'))
+        self.assertEqual('/x/y', _normalize_path('///x/./y/'))
 
     def test_path_normalization(self):
         self.assertEqual('/a', require_directory('a//.').path)
@@ -71,6 +77,12 @@ class RequiresProvidesTestCase(unittest.TestCase):
                     ):
                         p.matches(path_to_reqs_provs, r)
 
+    def test_provides_do_not_access(self):
+        with self.assertRaisesRegex(
+            AssertionError, '^predicate .* not implemented by .*$'
+        ):
+            ProvidesDoNotAccess(path='//a/b').matches(
+                    {}, require_file('/a/b'))
 
 if __name__ == '__main__':
     unittest.main()
