@@ -23,7 +23,7 @@ class Pluggable:
     accept only plain-old-data kwargs.
     '''
 
-    def __init_subclass__(cls, plugin_kind: str=None, **kwargs):
+    def __init_subclass__(cls, plugin_kind: str=None, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         # We're in the base of this family of plugins, set it up.
         if Pluggable in cls.__bases__:
@@ -45,7 +45,7 @@ class Pluggable:
         return cls.make(**json_cfg)
 
     @classmethod
-    def make(cls, kind, **kwargs) -> 'Pluggable':
+    def make(cls, kind: str, **kwargs) -> 'Pluggable':
         return cls._pluggable_base._pluggable_kind_to_cls[kind](**kwargs)
 
     @classmethod
