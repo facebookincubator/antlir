@@ -25,7 +25,7 @@ Requires and Provides must interact in some way -- either
 The first arrangement seemed more maintainable, so each Provides object has
 to define its relationship with every Requires predicate, thus:
 
-  def matches_NameOfRequiresPredicate(self, path_to_reqs_provs, predicate):
+  def matches(self, path_to_reqs_provs, predicate):
       """
       `path_to_reqs_provs` is the map constructed by `ValidatedReqsProvs`.
       This is a breadcrumb for the future -- having the full set of
@@ -42,60 +42,82 @@ with short-circuiting.  E.g. FollowsSymlinks(Pred) would expand to:
     And(IsSymlink(Path), Pred(SymlinkTarget(Path))),
     And(Not(IsSymlink(Path)), Pred(SymlinkTarget(Path)),
   )
-
-The predicates would then be wrapped into a PathObject.
 '''
-
-from collections import namedtuple
-
-from .path_object import PathObject
-
-
-IsDirectory = namedtuple('IsDirectory', [])
-IsFile = namedtuple('IsFile', [])
+import os
+from enum import Enum, auto
+from dataclasses import dataclass
 
 
-class PathRequiresPredicate(metaclass=PathObject):
-    fields = ['predicate']
+def _normalize_path(path: str) -> str:
+    # Normalize paths as image-absolute. This is crucial since we
+    # will use `path` as a dictionary key.
+    return os.path.normpath(
+        # The `lstrip` is needed because `normpath does not
+        # normalize away leading slashes: //b/c
+        os.path.join('/', path.lstrip('/'))
+    )
 
 
-def require_directory(path):
-    return PathRequiresPredicate(path=path, predicate=IsDirectory())
+class _Predicate(Enum):
+    IS_DIRECTORY = auto()
+    IS_FILE = auto()
 
 
-def require_file(path):
-    return PathRequiresPredicate(path=path, predicate=IsFile())
+@dataclass(frozen=True)
+class PathRequiresPredicate:
+    path: str
+    predicate: _Predicate
+
+    def __init__(self, *, path: str, predicate: _Predicate) -> None:
+        object.__setattr__(self, 'path', _normalize_path(path))
+        object.__setattr__(self, 'predicate', predicate)
 
 
+def require_directory(path: str):
+    return PathRequiresPredicate(path=path, predicate=_Predicate.IS_DIRECTORY)
+
+
+def require_file(path: str):
+    return PathRequiresPredicate(path=path, predicate=_Predicate.IS_FILE)
+
+
+@dataclass(frozen=True)
 class ProvidesPathObject:
-    __slots__ = ()
-    fields = []  # In the future, we might add permissions, etc here.
+    path: str
+    # In the future, we might add permissions, etc here.
 
-    def matches(self, path_to_reqs_provs, path_predicate):
+    def __init__(self, *, path: str) -> None:
+        object.__setattr__(self, 'path', _normalize_path(path))
+
+    def matches(
+            self,
+            path_to_reqs_provs,
+            path_predicate: PathRequiresPredicate,
+    ) -> bool:
         assert path_predicate.path == self.path, (
             'Tried to match {} against {}'.format(path_predicate, self)
         )
-        fn = getattr(
-            self, 'matches_' + type(path_predicate.predicate).__name__, None
-        )
-        assert fn is not None, (
+        assert self._matches_predicate(path_predicate.predicate), (
             'predicate {} not implemented by {}'.format(path_predicate, self)
         )
-        return fn(path_to_reqs_provs, path_predicate.predicate)
-
-
-class ProvidesDirectory(ProvidesPathObject, metaclass=PathObject):
-    def matches_IsDirectory(self, _path_to_reqs_provs, predicate):
         return True
 
+    def _matches_predicate(self, predicate):
+        return False
 
-class ProvidesFile(ProvidesPathObject, metaclass=PathObject):
+
+class ProvidesDirectory(ProvidesPathObject):
+    def _matches_predicate(self, predicate):
+        return predicate == _Predicate.IS_DIRECTORY
+
+
+class ProvidesFile(ProvidesPathObject):
     'Does not have to be a regular file, just any leaf in the FS tree'
-    def matches_IsFile(self, _path_to_reqs_provs, predicate):
-        return True
+    def _matches_predicate(self, predicate):
+        return predicate == _Predicate.IS_FILE
 
 
-class ProvidesDoNotAccess(ProvidesPathObject, metaclass=PathObject):
+class ProvidesDoNotAccess(ProvidesPathObject):
     # Deliberately matches no predicates -- this used to mark paths as "off
     # limits" to further writes.
     pass
