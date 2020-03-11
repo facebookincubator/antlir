@@ -29,7 +29,17 @@ def _invert_dict(d):
 
 def _kernel_artifact_version(version):
     """ Resolve a kernel version to its corresponding kernel artifact.
-    Internally, the kernel artifacts are in `//kernel/kernels:kernel.bzl`
+    Currently, the only `kernel_artifact` available is in
+    //third-party/fedora31/kernel:kernels.bzl.
+
+    a `kernel_artifact`is a struct containing the following members:
+    - uname
+    - vmlinuz: compressed vmlinux
+    - modules: kernel modules
+    - headers: Includes the C header files that specify the interface between the
+               Linux kernel and user-space libraries and programs.
+    - devel:   Contains the kernel headers and makefiles sufficient to build modules
+               against the kernel package.
     """
     if version in kernels:
         return kernels[version]
