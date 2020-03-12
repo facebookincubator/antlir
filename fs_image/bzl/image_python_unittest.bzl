@@ -19,6 +19,7 @@ def image_python_unittest(
     wrapper_props = helpers.nspawn_wrapper_properties(
         name = name,
         layer = layer,
+        test_type = "pyunit",
         boot = boot,
         run_as_user = run_as_user,
         inner_test_kwargs = python_unittest_kwargs,

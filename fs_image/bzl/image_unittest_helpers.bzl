@@ -42,6 +42,7 @@ def _tags_to_hide_test():
 def _nspawn_wrapper_properties(
         name,
         layer,
+        test_type,  # Has to be supported by `run_test.py`
         boot,
         run_as_user,
         inner_test_kwargs,
@@ -85,6 +86,7 @@ def _nspawn_wrapper_properties(
         out = "unused_name.py",
         bash = 'echo {} > "$OUT"'.format(shell.quote(("""\
 import os
+TEST_TYPE={quoted_test_type}
 def nspawn_in_subvol_args():
     return [
         '--user', {user_repr},
@@ -102,6 +104,8 @@ def nspawn_in_subvol_args():
             binary_path_repr = repr(binary_path),
             maybe_boot = "'--boot'" if boot else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
+            # For test type names, shell-quoting is the same as Python-quoting
+            quoted_test_type = shell.quote(test_type),
         ))),
         visibility = visibility,
     )
