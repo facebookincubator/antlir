@@ -1,0 +1,19 @@
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule")
+
+export_file(
+    name = "init.sh",
+    src = "init.sh",
+)
+
+# compile this binary with system gcc since we always need it to be static, and
+# there does not seem to be a way (for good reason) to always make static
+# binaries from fbcode without @mode/opt, which we need to support in vmtest
+# seedroot _must_ be a static binary since it runs in the initramfs we are
+# building here which has no access to the shared libraries that may be on the
+# host
+buck_genrule(
+    name = "seedroot",
+    srcs = ["seedroot.c"],
+    out = "seedroot",
+    cmd = "gcc -static -o $OUT seedroot.c",
+)
