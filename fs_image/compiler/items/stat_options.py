@@ -46,7 +46,7 @@ def build_stat_options(
     # never occur, so just let the exception fly.
     subvol.run_as_root(['test', '!', '-L', full_target_path])
     if do_not_set_mode:
-        assert item.mode is None, item
+        assert getattr(item, 'mode', None) is None, item
     else:
         # -R is not a problem since it cannot be the case that we are
         # creating a directory that already has something inside it.  On the
