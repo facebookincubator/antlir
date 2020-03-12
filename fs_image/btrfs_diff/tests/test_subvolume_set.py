@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import dataclasses
 import unittest
 
 from ..freeze import freeze
@@ -60,7 +61,7 @@ class SubvolumeSetTestCase(unittest.TestCase):
         )
         with self.assertRaisesRegex(RuntimeError, 'Unknown from_uuid '):
             cat_mutator.apply_item(bad_clone)
-        cat_mutator.apply_item(bad_clone._replace(from_uuid=b'abe'))
+        cat_mutator.apply_item(dataclasses.replace(bad_clone, from_uuid=b'abe'))
         cat = cat_mutator.subvolume
         self.assertEqual('cat', repr(cat.id_map.inner.description))
         self.assertEqual('cat', repr(cat.id_map.inner.description))

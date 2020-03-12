@@ -172,6 +172,12 @@ class ParseBtrfsDumpTestCase(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'in line details:'):
                 _parse_lines_to_list(bad_lines)
 
+    def test_str_uses_unqualified_class_name(self):
+        self.assertEqual(
+            "mkfile(path='cat and dog')",
+            str(SendStreamItems.mkfile(path='cat and dog')),
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
