@@ -72,14 +72,6 @@ class InstallFileItem(ImageItem):
     source: str
     dest: str
 
-    # These 3 must be set instead of `mode` for directory sources.
-    dir_mode: Optional[Mode] = None
-    exe_mode: Optional[Mode] = None
-    data_mode: Optional[Mode] = None
-
-    # Stat option fields
-    # `mode` is `None` after `customize_fields`
-    mode: Optional[Mode] = None
     user_group: Optional[str] = None
 
     # Populated by `customize_fields`
@@ -113,6 +105,8 @@ class InstallFileItem(ImageItem):
         source = kwargs['source']
         dest = kwargs['dest']
 
+        # The 3 separate `*_mode` arguments must be set instead of `mode` for
+        # directory sources.
         popped_args = ['mode', 'exe_mode', 'data_mode', 'dir_mode']
         mode, dir_mode, exe_mode, data_mode = (
             kwargs.pop(a, None) for a in popped_args
@@ -146,12 +140,6 @@ class InstallFileItem(ImageItem):
             raise RuntimeError(
                 f'{source} must be a regular file or directory, got {st_source}'
             )
-
-        # These must be set for `enriched_namedtuple`.  Set them last to
-        # prevent accidental access.
-        for a in popped_args:
-            assert a not in kwargs, f'{a} was set in {kwargs}'
-            kwargs[a] = None
 
     def provides(self):
         for i in self.paths:
