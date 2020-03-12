@@ -23,23 +23,6 @@ python_unittest(
 )
 
 python_library(
-    name = "enriched_namedtuple",
-    srcs = ["enriched_namedtuple.py"],
-    base_module = "compiler",
-)
-
-python_unittest(
-    name = "test-enriched-namedtuple",
-    srcs = ["tests/test_enriched_namedtuple.py"],
-    base_module = "compiler",
-    needed_coverage = [(
-        100,
-        ":enriched_namedtuple",
-    )],
-    deps = [":enriched_namedtuple"],
-)
-
-python_library(
     name = "procfs_serde",
     srcs = ["procfs_serde.py"],
     base_module = "compiler",
