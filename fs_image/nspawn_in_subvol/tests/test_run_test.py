@@ -4,12 +4,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import tempfile
+import os
 import unittest
+
+from unittest import mock
+
+from fs_image.fs_utils import temp_dir
 
 from fs_image.nspawn_in_subvol.run_test import (
     do_not_rewrite_cmd, forward_test_runner_env_vars,
-    rewrite_testpilot_python_cmd,
+    rewrite_testpilot_python_cmd, rewrite_tpx_gtest_cmd,
 )
 
 
@@ -35,11 +39,13 @@ class NspawnTestInSubvolTestCase(unittest.TestCase):
             self.assertEqual((cmd, []), cmd_and_fd)
 
         for rewritten_opt in ('--output', '--list-tests'):
-            with tempfile.NamedTemporaryFile(suffix='.json') as t:
+            with temp_dir() as td:
+                tmp = td / 'foo.json'
+                self.assertFalse(os.path.exists(tmp))  # Will be created
                 prefix = ['--zap=3', '--ou', 'boo', '--ou=3']
                 suffix = ['garr', '-abc', '-gh', '-d', '--e"f']
                 with rewrite_testpilot_python_cmd(
-                    [bin, *prefix, f'{rewritten_opt}={t.name}', *suffix],
+                    [bin, *prefix, f'{rewritten_opt}={tmp.decode()}', *suffix],
                     next_fd=37,
                 ) as (new_cmd, fds_to_forward):
                     fd_to_forward, = fds_to_forward
@@ -53,3 +59,31 @@ class NspawnTestInSubvolTestCase(unittest.TestCase):
                             """'--e"f'""",
                         ])
                     ], new_cmd)
+                    self.assertTrue(os.path.exists(tmp))  # Was created
+
+    def test_rewrite_tpx_gtest_cmd(self):
+        bin = '/layer-test-binary'
+        # The last argument deliberately requires shell quoting.
+        cmd = [bin, 'foo', '--bar', 'beep', '--baz', '--e"f']
+
+        # Test no-op rewriting
+        with mock.patch.dict(os.environ, {'NO_GTEST': 'env is set'}), \
+                rewrite_tpx_gtest_cmd(cmd, next_fd=1337) as cmd_and_fd:
+            self.assertEqual((cmd, []), cmd_and_fd)
+
+        with temp_dir() as td:
+            tmp = td / 'bar.xml'
+            self.assertFalse(os.path.exists(tmp))  # Will be created
+            with mock.patch.dict(os.environ, {
+                'GTEST_OUTPUT': f'xml:{tmp.decode()}',
+            }), rewrite_tpx_gtest_cmd(cmd, next_fd=37) as (new_cmd, fds):
+                fd_to_forward, = fds
+                self.assertIsInstance(fd_to_forward, int)
+                self.assertEqual([
+                    '/bin/bash', '-c', ' '.join([
+                        f'GTEST_OUTPUT=xml:>(cat >&37)',
+                        'exec',
+                        *cmd[:-1], """'--e"f'""",  # Yes, it's shell-quoted
+                    ])
+                ], new_cmd)
+                self.assertTrue(os.path.exists(tmp))  # Was created

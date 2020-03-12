@@ -117,9 +117,45 @@ def rewrite_testpilot_python_cmd(
         ])], [f.fileno()]
 
 
+@contextmanager
+def rewrite_tpx_gtest_cmd(
+    cmd: List[str], next_fd: int,
+) -> Tuple[List[str], List[int]]:
+    '''
+    The new test runner TPX expects gtest to write XML to a file specified
+    by an environment variable. We'll give the test container access to the
+    host's output file by forwarding an FD into the container.
+    '''
+    gtest_output = os.environ.get('GTEST_OUTPUT')
+    if gtest_output is None:
+        yield cmd, []
+        return
+
+    # TPX only uses XML output, so fail on anything else.
+    prefix = 'xml:'
+    assert gtest_output.startswith(prefix)
+    gtest_output = gtest_output[len(prefix):]
+
+    with open(gtest_output, 'wb') as f:
+        # It's not great to assume that the container has a `/bin/bash`, but
+        # eliminating this dependency is low-priority since current test
+        # binaries will depend on it, too (PAR).
+        yield ['/bin/bash', '-c', ' '.join([
+            # We cannot just pass `/proc/self/fd/{next_fd}` as the path,
+            # even though that's technically a functional path.  The catch
+            # is that the permissions to `open` this path will be those of
+            # the original file -- owned by the `buck test` user.  But we
+            # want the container user to be able to open it.  So this `cat`
+            # here straddles a privilege boundary.
+            f'GTEST_OUTPUT={shlex.quote(prefix)}>(cat >&{next_fd})',
+            'exec',  # Try to save a wrapper
+            *(shlex.quote(c) for c in cmd),
+        ])], [f.fileno()]
+
+
 _TEST_TYPE_TO_REWRITE_CMD = {
     'pyunit': rewrite_testpilot_python_cmd,
-    'gtest': do_not_rewrite_cmd,
+    'gtest': rewrite_tpx_gtest_cmd,
 }
 
 # Integration coverage is provided by `image.python_unittest` targets, which
