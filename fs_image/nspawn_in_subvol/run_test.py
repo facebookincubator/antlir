@@ -23,7 +23,7 @@ import shlex
 import sys
 
 from contextlib import contextmanager
-from typing import List, Tuple
+from typing import Dict, Iterable, List, Tuple
 
 from .args import _parse_cli_args
 from .cmd import PopenArgs
@@ -31,8 +31,28 @@ from .booted import run_booted_nspawn
 from .non_booted import run_non_booted_nspawn
 
 
+def forward_test_runner_env_vars(environ: Dict[str, str]) -> Iterable[str]:
+    'Propagate env vars used by FB test runners'
+    for k, v in environ.items():
+        # IMPORTANT: When editing these lines, make sure you are not
+        # breaking TestPilot behaviour and you are not letting test targets
+        # pass even when they should fail.  Also check tests are properly
+        # discovered.
+        if k.startswith('TEST_PILOT'):
+            yield f'--setenv={k}={v}'
+
+
 @contextmanager
-def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
+def do_not_rewrite_cmd(
+    cmd: List[str], next_fd: int,
+) -> Tuple[List[str], List[int]]:
+    yield cmd, []
+
+
+@contextmanager
+def rewrite_testpilot_python_cmd(
+    cmd: List[str], next_fd: int,
+) -> Tuple[List[str], List[int]]:
     '''
     The TestPilot CLI interface can have a `--output PATH` or `--list-tests`
     option, which requires us to exfiltrate data from inside the container
@@ -55,9 +75,6 @@ def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
       - forwards the resulting FD into the container, and injects an
         accessor for the received FD into the test's command-line.
     '''
-    # This should only used only for image unit-tests, so check the binary path.
-    assert cmd[0] == '/layer-test-binary', cmd
-
     # Our partial parser must not accept abbreviated long options like
     # `--ou`, since this parser does not know all the test main arguments.
     parser = argparse.ArgumentParser(allow_abbrev=False)
@@ -68,7 +85,7 @@ def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
     test_opts, unparsed_args = parser.parse_known_args(cmd[1:])
 
     if test_opts.output is None and test_opts.list_tests is None:
-        yield cmd, None
+        yield cmd, []
         return
 
     # we don't expect both --output and --list-tests
@@ -97,8 +114,13 @@ def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
             # here straddles a privilege boundary.
             output_opt, f'>(cat >&{next_fd})',
             *(shlex.quote(arg) for arg in unparsed_args),
-        ])], f.fileno()
+        ])], [f.fileno()]
 
+
+_TEST_TYPE_TO_REWRITE_CMD = {
+    'pyunit': rewrite_testpilot_python_cmd,
+    'gtest': do_not_rewrite_cmd,
+}
 
 # Integration coverage is provided by `image.python_unittest` targets, which
 # use `nspawn_in_subvol/run_test.py` in their implementation.  However, here
@@ -115,14 +137,7 @@ def rewrite_test_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], int]:
 if __name__ == '__main__':  # pragma: no cover
     argv = []
 
-    # Propagate env vars used by FB test runner
-    # /!\ /!\ /!\
-    # When editing these lines, make sure you are not breaking test pilot
-    # behaviour and you are not letting test targets pass even when they
-    # should fail. Also check tests are properly discovered.
-    for k, v in os.environ.items():
-        if k.startswith('TEST_PILOT'):
-            argv.extend(['--setenv', f'{k}={v}'])
+    argv.extend(forward_test_runner_env_vars(os.environ))
 
     # When used as part of the `image.python_unittest` implementation, there
     # is no good way to pass arguments to this nspawn wrapper.  So, we
@@ -136,20 +151,26 @@ if __name__ == '__main__':  # pragma: no cover
         argv.extend(['--layer', packaged_layer])
         from fs_image.nspawn_in_subvol import __image_python_unittest_spec__
         argv.extend(__image_python_unittest_spec__.nspawn_in_subvol_args())
+        rewrite_cmd = _TEST_TYPE_TO_REWRITE_CMD[
+            __image_python_unittest_spec__.TEST_TYPE
+        ]
+    else:
+        rewrite_cmd = do_not_rewrite_cmd   # Used only for the manual test
 
     args = _parse_cli_args(argv + sys.argv[1:], allow_debug_only_opts=False)
 
-    with rewrite_test_cmd(
+    # This should only used only for image unit-tests, so check the binary path.
+    assert args.opts.cmd[0] == '/layer-test-binary', args.opts.cmd
+
+    with rewrite_cmd(
         args.opts.cmd, next_fd=3 + len(args.opts.forward_fd),
-    ) as (new_cmd, fd_to_forward):
+    ) as (new_cmd, fds_to_forward):
         ret = (
             run_booted_nspawn if args.boot else run_non_booted_nspawn
         )(
             args.opts._replace(
                 cmd=new_cmd,
-                forward_fd=args.opts.forward_fd + (
-                    [] if fd_to_forward is None else [fd_to_forward]
-                ),
+                forward_fd=args.opts.forward_fd + fds_to_forward,
             ),
             PopenArgs(
                 check=False,  # We forward the return code below
