@@ -7,6 +7,8 @@
 import stat
 import unittest
 
+from dataclasses import dataclass
+
 from ..inode import InodeOwner, InodeUtimes
 from ..incomplete_inode import (
     IncompleteDevice, IncompleteDir, IncompleteFifo, IncompleteFile,
@@ -70,7 +72,8 @@ class IncompleteInodeTestCase(unittest.TestCase):
             repr(ino)
         )
 
-        class FakeItem(metaclass=SendStreamItem):
+        @dataclass(frozen=True)
+        class FakeItem(SendStreamItem):
             pass
 
         with self.assertRaisesRegex(RuntimeError, 'cannot apply FakeItem'):

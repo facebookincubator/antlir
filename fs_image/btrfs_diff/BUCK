@@ -157,9 +157,6 @@ python_library(
         "send_stream.py",
     ],
     base_module = "btrfs_diff",
-    deps = [
-        "//fs_image/compiler:enriched_namedtuple",
-    ],
 )
 
 # Read the docblock of `demo_sendtreams.py` to learn about the gold data.

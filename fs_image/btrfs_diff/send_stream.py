@@ -12,25 +12,45 @@ output of `btrfs receive --dump`.  The latter parse is imperfect and has a
 number of limitations, but we find it useful for testing -- refer to the
 `parse_dump.py` docblock.
 '''
+import re
 from collections import Counter
-from typing import Callable, Iterable
-
-from compiler.enriched_namedtuple import metaclass_new_enriched_namedtuple
+from dataclasses import dataclass
+from typing import AnyStr, Callable, ClassVar, Iterable
 
 _SELINUX_XATTR = b'security.selinux'
 
 
-class SendStreamItem(type):
-    'Metaclass for the btrfs sendstream commands.'
-    def __new__(metacls, classname, bases, dct):
-        return metaclass_new_enriched_namedtuple(
-            __class__,
-            # This is relative to the subvolume directory, except for the
-            # subvolume-making commands `subvol` and `snapshot`, where it
-            # **is** the name of the subvolume directory.
-            ['path'],
-            metacls, classname, bases, {'sets_subvol_name': False, **dct},
-        )
+# We should replace these types with the true types soon
+class FixmeType:
+    pass
+
+
+@dataclass(frozen=True)
+class SendStreamItem:
+    path: AnyStr
+    # This is a constant attribute, so we set it up with init=False, since it
+    # won't ever be set from the constructor.
+    #
+    # Using init=False is necessary, because when we have subclasses defining
+    # their own attributes, the subclass attributes may not follow attributes
+    # with a default. Using init=False avoids that issue altogether.
+    sets_subvol_name: ClassVar[bool] = False
+
+    def __str__(self):
+        # The default __repr__ of a dataclass includes the __qualname__ of the
+        # class, which in our case includes the outer class SendStreamItems.
+        #
+        # This behavior is different from namedtuple, which includes only
+        # __name__ as part of the repr.
+        #
+        # It turns out that we depend on the output of __str__, which we use on
+        # exception messages such as "Can only <action> on <object>."
+        #
+        # We have some tests that match those messages by regex. And it turns
+        # out that it actually looks better if the "<action>" is a single word,
+        # so let's override the __str__ method here to match the namedtuple
+        # format.
+        return re.sub(r'^((\w+|<\w+>)\.)*', '', repr(self))
 
 
 class SendStreamItems:
@@ -50,94 +70,124 @@ class SendStreamItems:
     # operations making new subvolumes
     #
 
-    class subvol(metaclass=SendStreamItem):
-        fields = ['uuid', 'transid']
-        sets_subvol_name = True
+    @dataclass(frozen=True)
+    class subvol(SendStreamItem):
+        uuid: FixmeType
+        transid: FixmeType
+        sets_subvol_name: ClassVar[bool] = True
 
-    class snapshot(metaclass=SendStreamItem):
-        fields = ['uuid', 'transid', 'parent_uuid', 'parent_transid']
-        sets_subvol_name = True
+    @dataclass(frozen=True)
+    class snapshot(SendStreamItem):
+        uuid: FixmeType
+        transid: FixmeType
+        parent_uuid: FixmeType
+        parent_transid: FixmeType
+        sets_subvol_name: ClassVar[bool] = True
 
     #
     # operations making new inodes
     #
 
-    class mkfile(metaclass=SendStreamItem):
+    @dataclass(frozen=True)
+    class mkfile(SendStreamItem):
         pass
 
-    class mkdir(metaclass=SendStreamItem):
+    @dataclass(frozen=True)
+    class mkdir(SendStreamItem):
         pass
 
-    class mknod(metaclass=SendStreamItem):
-        fields = ['mode', 'dev']
+    @dataclass(frozen=True)
+    class mknod(SendStreamItem):
+        mode: FixmeType
+        dev: FixmeType
 
-    class mkfifo(metaclass=SendStreamItem):
+    @dataclass(frozen=True)
+    class mkfifo(SendStreamItem):
         pass
 
-    class mksock(metaclass=SendStreamItem):
+    @dataclass(frozen=True)
+    class mksock(SendStreamItem):
         pass
 
-    class symlink(metaclass=SendStreamItem):
-        fields = ['dest']
+    @dataclass(frozen=True)
+    class symlink(SendStreamItem):
+        dest: FixmeType
 
     #
     # operations on the path -> inode mapping
     #
 
-    class rename(metaclass=SendStreamItem):
-        fields = ['dest']
+    @dataclass(frozen=True)
+    class rename(SendStreamItem):
+        dest: FixmeType
 
-    class link(metaclass=SendStreamItem):
+    @dataclass(frozen=True)
+    class link(SendStreamItem):
         # WATCH OUT: This `dest` does not mean what you think it means.  We
         # will create a hardlink from `dest` to `path`.  So the `dest` the
         # destination of the new link being created.  Awkward!  This
         # unfortunate naming was borrowed from `btrfs receive --dump`.
-        fields = ['dest']
+        dest: FixmeType
 
-    class unlink(metaclass=SendStreamItem):
+    @dataclass(frozen=True)
+    class unlink(SendStreamItem):
         pass
 
-    class rmdir(metaclass=SendStreamItem):
+    @dataclass(frozen=True)
+    class rmdir(SendStreamItem):
         pass
 
     #
     # per-inode operations
     #
 
-    class write(metaclass=SendStreamItem):
-        fields = ['offset', 'data']
+    @dataclass(frozen=True)
+    class write(SendStreamItem):
+        offset: FixmeType
+        data: FixmeType
 
-    class clone(metaclass=SendStreamItem):
-        fields = [
-            'offset',
-            'len',
-            'from_uuid',  # `btrfs receive --dump` does NOT display this :/
-            'from_transid',  # ... nor this.
-            'from_path',
-            'clone_offset',
-        ]
+    @dataclass(frozen=True)
+    class clone(SendStreamItem):
+        offset: FixmeType
+        len: FixmeType
+        from_uuid: FixmeType  # `btrfs receive --dump` does NOT display this :/
+        from_transid: FixmeType  # ... nor this.
+        from_path: FixmeType
+        clone_offset: FixmeType
 
-    class set_xattr(metaclass=SendStreamItem):
-        fields = ['name', 'data']
+    @dataclass(frozen=True)
+    class set_xattr(SendStreamItem):
+        name: FixmeType
+        data: FixmeType
 
-    class remove_xattr(metaclass=SendStreamItem):
-        fields = ['name']
+    @dataclass(frozen=True)
+    class remove_xattr(SendStreamItem):
+        name: FixmeType
 
-    class truncate(metaclass=SendStreamItem):
-        fields = ['size']
+    @dataclass(frozen=True)
+    class truncate(SendStreamItem):
+        size: FixmeType
 
-    class chmod(metaclass=SendStreamItem):
-        fields = ['mode']
+    @dataclass(frozen=True)
+    class chmod(SendStreamItem):
+        mode: FixmeType
 
-    class chown(metaclass=SendStreamItem):
-        fields = ['gid', 'uid']
+    @dataclass(frozen=True)
+    class chown(SendStreamItem):
+        gid: FixmeType
+        uid: FixmeType
 
-    class utimes(metaclass=SendStreamItem):
-        fields = ['atime', 'mtime', 'ctime']
+    @dataclass(frozen=True)
+    class utimes(SendStreamItem):
+        atime: FixmeType
+        mtime: FixmeType
+        ctime: FixmeType
 
     # Just like `write` but with no data, used by `btrfs send --no-data`.
-    class update_extent(metaclass=SendStreamItem):
-        fields = ['offset', 'len']
+    @dataclass(frozen=True)
+    class update_extent(SendStreamItem):
+        offset: FixmeType
+        len: FixmeType
 
 
 def get_frequency_of_selinux_xattrs(items):
