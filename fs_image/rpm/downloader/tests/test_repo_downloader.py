@@ -501,6 +501,77 @@ class DownloadReposTestCase(unittest.TestCase):
                 visitors, self._reduce_equal_snapshots(repo_snapshots)
             )
 
+    def test_lose_repodata_commit_race(self):
+        "We downloaded & stored a repodata, but in the meantime some other "
+        "writer committed the same repodata."
+
+        original_maybe_store = RepoDBContext.maybe_store
+        faked_objs = []
+
+        def my_maybe_store(self, table, obj, storage_id):
+            if re.match(FILELISTS_REPODATA_REGEX, obj.location):
+                faked_objs.append(obj)
+                return f"fake_already_stored_{obj.location}"
+            return original_maybe_store(self, table, obj, storage_id)
+
+        with mock.patch.object(
+            RepoDBContext, "maybe_store", new=my_maybe_store
+        ), self._make_downloader("0/good_dog") as downloader:
+            res, = list(downloader())
+            _, snapshot = res
+            faked_obj, = faked_objs
+            # We should be using the winning writer's storage ID.
+            self.assertEqual(
+                faked_obj,
+                snapshot.storage_id_to_repodata[
+                    f"fake_already_stored_{faked_obj.location}"
+                ],
+            )
+
+    def test_lose_rpm_commit_race(self):
+        "We downloaded & stored an RPM, but in the meantime some other "
+        "writer committed the same RPM."
+        original_get_canonical = RepoDBContext.get_rpm_canonical_checksums
+
+        # When we download the RPM, the mock `my_maybe_store` writes a
+        # single `Checksum` here, the canonical one for the `mice` RPM.
+        # Then, during mutable RPM detection, the mock `my_get_canonical`
+        # grabs this checksum (since it's not actually in the DB).
+        mice_canonical_checksums = []
+        # The mice object which was "previously stored" via the mocks
+        mice_rpms = []
+
+        def my_get_canonical(self, table, rpm, all_snapshot_universes):
+            if rpm.nevra() == "rpm-test-mice-0:0.1-a.x86_64":
+                return {mice_canonical_checksums[0]}
+            return original_get_canonical(self, table, rpm, all_snapshot_universes)
+
+        original_maybe_store = RepoDBContext.maybe_store
+
+        def my_maybe_store(self, table, obj, storage_id):
+            if re.match(MICE_01_RPM_REGEX, obj.location):
+                mice_rpms.append(obj)
+                assert not mice_canonical_checksums, mice_canonical_checksums
+                mice_canonical_checksums.append(obj.canonical_checksum)
+                return f"fake_already_stored_{obj.location}"
+            return original_maybe_store(self, table, obj, storage_id)
+
+        with mock.patch.object(
+            RepoDBContext, "get_rpm_canonical_checksums", new=my_get_canonical
+        ), mock.patch.object(
+            RepoDBContext, "maybe_store", new=my_maybe_store
+        ), self._make_downloader(
+            "0/good_dog"
+        ) as downloader:
+            res, = list(downloader())
+            _, snapshot = res
+            mice_rpm, = mice_rpms
+            # We should be using the winning writer's storage ID.
+            self.assertEqual(
+                mice_rpm,
+                snapshot.storage_id_to_rpm[f"fake_already_stored_{mice_rpm.location}"],
+            )
+
     # Test case of having dangling repodata refs without a repomd
     def test_dangling_repodatas(self):
         orig_rd = _download_repodata
