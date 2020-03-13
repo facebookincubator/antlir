@@ -105,13 +105,25 @@ user, which we should probably never do).
 
 '''
 import sys
+import subprocess
+
+from typing import Optional, Tuple
 
 from fs_image.common import init_logging, nullcontext
 
-from .args import _parse_cli_args
-from .cmd import PopenArgs
+from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .booted import run_booted_nspawn
 from .non_booted import run_non_booted_nspawn
+
+
+# This is split out for tests.  At the moment, I think most real callsites
+# should use `run_{booted,non_booted}_nspawn` directly.
+def run_nspawn(
+    opts: _NspawnOpts, popen_args: PopenArgs, *, boot: bool
+) -> Tuple[subprocess.CompletedProcess, Optional[subprocess.CompletedProcess]]:
+    if boot:
+        return run_booted_nspawn(opts, popen_args)
+    return run_non_booted_nspawn(opts, popen_args), None
 
 
 # The manual test is in the first paragraph of the top docblock.
@@ -131,7 +143,5 @@ if __name__ == '__main__':  # pragma: no cover
             # since we want this CLI to be usable in pipelines.
             stdout=1,
         )
-        ret = (
-            run_booted_nspawn if args.boot else run_non_booted_nspawn
-        )(args.opts, popen_args)
+        ret, _boot_ret = run_nspawn(args.opts, popen_args, boot=args.boot)
     sys.exit(ret.returncode)

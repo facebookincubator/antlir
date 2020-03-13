@@ -131,9 +131,8 @@ python_binary(
     par_style = "zip",
     deps = [
         ":args",
-        ":booted",
         ":cmd",
-        ":non_booted",
+        ":run-library",
     ],
 )
 

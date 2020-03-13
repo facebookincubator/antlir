@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import threading
 import unittest
 
 from contextlib import contextmanager
@@ -19,11 +20,11 @@ from unittest import mock
 import fs_image.nspawn_in_subvol.run  # noqa: F401
 
 from artifacts_dir import find_repo_root
+from fs_image.common import pipe
 from fs_image.nspawn_in_subvol.args import _parse_cli_args, PopenArgs
-from fs_image.nspawn_in_subvol.booted import run_booted_nspawn
 from fs_image.nspawn_in_subvol.common import _nspawn_version
 from fs_image.nspawn_in_subvol.cmd import _extra_nspawn_args_and_env
-from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from fs_image.nspawn_in_subvol.run import run_nspawn
 from tests.temp_subvolumes import with_temp_subvols
 
 
@@ -61,14 +62,16 @@ class NspawnTestCase(unittest.TestCase):
         self.nspawn_version = _nspawn_version()
         self.maybe_extra_ending = b'\n' if self.nspawn_version < 242 else b''
 
-    def _nspawn_in(self, rsrc_name, argv, **kwargs):
+    def _nspawn_in_boot_ret(self, rsrc_name, argv, **kwargs):
         args = _parse_cli_args([
             # __file__ works in @mode/opt since the resource is inside the XAR
             '--layer', os.path.join(os.path.dirname(__file__), rsrc_name),
         ] + argv, allow_debug_only_opts=True)
-        return (
-            run_booted_nspawn if args.boot else run_non_booted_nspawn
-        )(args.opts, PopenArgs(**kwargs))
+        return run_nspawn(args.opts, PopenArgs(**kwargs), boot=args.boot)
+
+    def _nspawn_in(self, rsrc_name, argv, **kwargs):
+        ret, _boot_ret = self._nspawn_in_boot_ret(rsrc_name, argv, **kwargs)
+        return ret
 
     def _wrapper_args_to_nspawn_args(
         self, argv, *, artifacts_may_require_repo=False,
@@ -452,19 +455,47 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(b'TERM', ret.stdout)
 
     def test_boot_proc_results(self):
-        ret = self._nspawn_in('bootable-systemd-os', [
-            '--boot',
-            '--',
-            '/bin/true',
-        ], boot_console=subprocess.PIPE, stdout=subprocess.PIPE, check=True)
+        console_singleton = []
+        with pipe() as (r, w):
+
+            def read_console():
+                nonlocal console_singleton
+                console_singleton.append(r.read())
+
+            # We have to consume the read end of the pipe from a thread
+            # because otherwise `systemd` could deadlock during shutdown.
+            # This is explained in the `booted.py` docblock.
+            reader_thread = threading.Thread(target=read_console)
+            reader_thread.start()
+
+            ret, ret_boot = self._nspawn_in_boot_ret('bootable-systemd-os', [
+                '--boot',
+                '--',
+                '/bin/true',
+            ], boot_console=w, check=True)
+        reader_thread.join()
+
         self.assertEqual(0, ret.returncode)
 
-        self.assertIsNotNone(ret.boot)
-        self.assertIsNotNone(ret.boot.returncode)
-        self.assertEqual(0, ret.boot.returncode)
-        self.assertIn(b'Welcome to', ret.boot.stdout)
-        self.assertIn(b'Reached target', ret.boot.stdout)
-        self.assertIn(b'Stopped target', ret.boot.stdout)
+        self.assertIsNotNone(ret_boot)
+        self.assertIsNotNone(ret_boot.returncode)
+        self.assertEqual(0, ret_boot.returncode)
+
+        console, = console_singleton
+        self.assertIn(b'Welcome to', console)
+        self.assertIn(b'Reached target', console)
+        self.assertIn(b'Stopped target', console)
+
+    def test_boot_no_console_pipe(self):
+        with self.assertRaisesRegex(
+            RuntimeError, ' does not support `subprocess.PIPE` ',
+        ):
+            # This is identical to `test_boot_proc_results` except for the pipe
+            self._nspawn_in('bootable-systemd-os', [
+                '--boot',
+                '--',
+                '/bin/true',
+            ], boot_console=subprocess.PIPE, check=True)
 
     def _run_yum_or_dnf(self, progname, package,
         expected_filename, expected_contents, expected_logline,
