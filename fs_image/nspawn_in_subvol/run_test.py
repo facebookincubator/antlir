@@ -27,8 +27,7 @@ from typing import Dict, Iterable, List, Tuple
 
 from .args import _parse_cli_args
 from .cmd import PopenArgs
-from .booted import run_booted_nspawn
-from .non_booted import run_non_booted_nspawn
+from .run import run_nspawn
 
 
 def forward_test_runner_env_vars(environ: Dict[str, str]) -> Iterable[str]:
@@ -201,9 +200,7 @@ if __name__ == '__main__':  # pragma: no cover
     with rewrite_cmd(
         args.opts.cmd, next_fd=3 + len(args.opts.forward_fd),
     ) as (new_cmd, fds_to_forward):
-        ret = (
-            run_booted_nspawn if args.boot else run_non_booted_nspawn
-        )(
+        ret, _boot_ret = run_nspawn(
             args.opts._replace(
                 cmd=new_cmd,
                 forward_fd=args.opts.forward_fd + fds_to_forward,
@@ -217,6 +214,7 @@ if __name__ == '__main__':  # pragma: no cover
                 # Default `boot_console` -- for booted containers, let the
                 # console go to stderr so that tests are easier to debug.
             ),
+            boot=args.boot,
         )
 
     # Only trigger SystemExit after the context was cleaned up.
