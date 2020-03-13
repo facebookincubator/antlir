@@ -16,7 +16,7 @@ from fs_image.rpm.downloader.common import (
     DownloadResult,
     download_resource,
     log_size,
-    write_storage_id,
+    maybe_write_id,
     verify_chunk_stream,
 )
 from rpm.common import read_chunks, retryable
@@ -150,9 +150,11 @@ def _download_repodatas(
                 # we store its storage_id to repo_db regardless of whether we
                 # encounter fatal errors later on in the execution and don't
                 # finish the snapshot - see top-level docblock for reasoning
-                write_storage_id(
+                storage_id = maybe_write_id(
                     res.repodata, res.storage_id, repodata_table, rw_db_ctx
                 )
+            else:
+                storage_id = res.storage_id
             if res.maybe_rpms is not None:
                 # RPMs will only have been returned by the primary, thus we
                 # should only enter this block once
@@ -160,7 +162,7 @@ def _download_repodatas(
                 # Convert to a set to work around buggy repodatas, which
                 # list the same RPM object twice.
                 rpms = frozenset(res.maybe_rpms)
-            set_new_key(storage_id_to_repodata, res.storage_id, res.repodata)
+            set_new_key(storage_id_to_repodata, storage_id, res.repodata)
     # It's possible that for non-primary repodatas we received errors when
     # downloading - in that case we store the error in the sqlite db, thus the
     # dict should contain an entry for every single repodata

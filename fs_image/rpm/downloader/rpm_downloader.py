@@ -16,8 +16,8 @@ from fs_image.rpm.downloader.common import (
     DownloadResult,
     download_resource,
     log_size,
+    maybe_write_id,
     verify_chunk_stream,
-    write_storage_id,
 )
 from fs_image.rpm.downloader.deleted_mutable_rpms import deleted_mutable_rpms
 from rpm.common import read_chunks, retryable
@@ -208,17 +208,19 @@ def _download_rpms(
             if cfg.rpm_shard.in_shard(rpm)
         ]
         for future in as_completed(futures):
-            rpm, storage_id = future.result()
-            # If it's valid, we store this storage_id to repo_db regardless of
-            # whether we encounter fatal errors later on in the execution and
-            # don't finish the snapshot - see top-level docblock for reasoning
-            # Detect if this RPM NEVRA occurs with different contents.
-            if not isinstance(storage_id, ReportableError):
-                write_storage_id(rpm, storage_id, rpm_table, rw_db_ctx)
-                storage_id = _detect_mutable_rpms(
-                    rpm, rpm_table, storage_id, all_snapshot_universes, ro_db_ctx
+            rpm, res_storage_id = future.result()
+            if not isinstance(res_storage_id, ReportableError):
+                # If it's valid, we store this storage_id to repo_db regardless of
+                # whether we encounter fatal errors later on in the execution and
+                # don't finish the snapshot - see top-level docblock for reasoning
+                res_storage_id = maybe_write_id(
+                    rpm, res_storage_id, rpm_table, rw_db_ctx
                 )
-            set_new_key(storage_id_to_rpm, storage_id, rpm)
+                # Detect if this RPM NEVRA occurs with different contents.
+                res_storage_id = _detect_mutable_rpms(
+                    rpm, rpm_table, res_storage_id, all_snapshot_universes, ro_db_ctx
+                )
+            set_new_key(storage_id_to_rpm, res_storage_id, rpm)
 
     assert len(storage_id_to_rpm) == sum(cfg.rpm_shard.in_shard(r) for r in rpms)
     return storage_id_to_rpm

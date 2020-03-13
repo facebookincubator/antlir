@@ -94,6 +94,13 @@ def verify_chunk_stream(
             )
 
 
+def _log_if_storage_ids_differ(obj, storage_id, db_storage_id):
+    if db_storage_id != storage_id:
+        log.warning(
+            f"Another writer already committed {obj} at {db_storage_id}"
+        )
+
+
 def log_size(what_str: str, total_bytes: int):
     log.info(f"{what_str} {total_bytes/10**9:,.4f} GB")
 
@@ -136,7 +143,7 @@ def download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
 # into locking issues with many concurrent writers. Additionally, these writes
 # are a minor portion of our overall execution time and thus we see negligible
 # perf gains by parallelizing them.
-def write_storage_id(
+def maybe_write_id(
     repo_obj: Union[Repodata, Rpm],
     storage_id: str,
     table: RepodataTable,
@@ -147,5 +154,5 @@ def write_storage_id(
         with db_ctx as repo_db_ctx:
             db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
             repo_db_ctx.commit()
-        # Should never have any racing writers that would cause this to change
-        assert db_storage_id == storage_id, (db_storage_id, storage_id)
+    _log_if_storage_ids_differ(repo_obj, storage_id, db_storage_id)
+    return db_storage_id
