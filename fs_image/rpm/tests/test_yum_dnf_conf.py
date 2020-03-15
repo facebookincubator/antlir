@@ -72,6 +72,13 @@ class YumDnfConfTestCaseImpl:
             versionlock_dir='/versionlock_dir',
         ).write(out)
 
+        extra_directives = ''
+        if self._YUM_DNF == YumDnf.yum:
+            extra_directives = textwrap.dedent('''\
+                skip_missing_names_on_install = 0
+                skip_missing_names_on_update = 0
+            ''')
+
         self.assertEqual(textwrap.dedent('''\
         [main]
         debuglevel = 2
@@ -91,6 +98,7 @@ class YumDnfConfTestCaseImpl:
         syslog_device =\x20
         bugtracker_url =\x20
         fssnap_devices = !*
+        {extra_directives}\
 
         [potato]
         baseurl = https://example.com/potato
@@ -103,12 +111,15 @@ class YumDnfConfTestCaseImpl:
         gpgkey =\x20
         enabled = 1
 
-        '''.format(prog_name={
-            # This is deliberately verbose, replacing `self._YUM_DNF.value`
-            # The idea is to assert that the enum values matter.
-            YumDnf.yum: 'yum',
-            YumDnf.dnf: 'dnf',
-        }[self._YUM_DNF])), out.getvalue())
+        ''').format(
+            prog_name={
+                # This is deliberately verbose, replacing `self._YUM_DNF.value`
+                # The idea is to assert that the enum values matter.
+                YumDnf.yum: 'yum',
+                YumDnf.dnf: 'dnf',
+            }[self._YUM_DNF],
+            extra_directives=extra_directives,
+        ), out.getvalue())
 
 
 class YumConfTestCase(YumDnfConfTestCaseImpl, unittest.TestCase):
