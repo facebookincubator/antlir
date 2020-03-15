@@ -175,6 +175,11 @@ class YumDnfConfIsolator:
         main_sec['fssnap_devices'] = '!*'  # Snapshots don't make sense.
         assert not main_sec.get('commands')  # This option seems dodgy.
 
+        # Make yum fail if one package in a list can't be installed.
+        if self._yum_dnf == YumDnf.yum:
+            main_sec['skip_missing_names_on_install'] = '0'
+            main_sec['skip_missing_names_on_update'] = '0'
+
         self._isolated_main = True
         return self
 

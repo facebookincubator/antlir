@@ -23,7 +23,11 @@ init_logging()
 class YumFromSnapshotTestImpl:
 
     @contextmanager
-    def _install(self, *, protected_paths, version_lock=None):
+    def _install(
+        self, *, protected_paths, version_lock=None, install_args=None
+    ):
+        if install_args is None:
+            install_args = _INSTALL_ARGS
         install_root = Path(tempfile.mkdtemp())
         try:
             # IMAGE_ROOT/meta/ is always required since it's always protected
@@ -59,7 +63,7 @@ class YumFromSnapshotTestImpl:
                     install_root=Path(install_root),
                     protected_paths=protected_paths,
                     versionlock_list=tf.name,
-                    yum_dnf_args=_INSTALL_ARGS,
+                    yum_dnf_args=install_args,
                 )
             yield install_root
         finally:
@@ -141,19 +145,38 @@ class YumFromSnapshotTestImpl:
                 version_lock=['0\trpm-test-carrot\t3333\tnonesuch\tx86_64'],
             )
 
+        with self.assertRaises(subprocess.CalledProcessError):
+            with _install_nonexistent():
+                pass
+
+        # Fail when installing a package by its Provides: name, even when there
+        # are more than one package in the list. Yum will only exit with an
+        # error code here when specific options are explicitly set in the
+        # yum.conf file.
+        def _install_by_provides():
+            return self._install(
+                protected_paths=[],
+                install_args=[
+                    'install-n',
+                    '--assumeyes',
+                    'virtual-carrot',
+                    'rpm-test-milk'
+                ],
+            )
+
         if self._YUM_DNF == YumDnf.yum:
-            # For `yum`, we'd actually want this to fail loudly instead of
-            # failing to install the requested package, but this is what it
-            # does now, and it'd take some effort to make it otherwise (it's
-            # easier to do this error-checking in `RpmActionItem` anyway)
-            with _install_nonexistent() as install_root:
-                self._check_installed_content(install_root, milk)
-        elif self._YUM_DNF == YumDnf.dnf:
-            # Unlike `yum`, `dnf` actually fails with:
-            #   Error: Unable to find a match: rpm-test-carrot
             with self.assertRaises(subprocess.CalledProcessError):
-                with _install_nonexistent():
+                with _install_by_provides():
                     pass
+        elif self._YUM_DNF == YumDnf.dnf:
+            # DNF allows `install-n` to install by a "Provides:" name. We don't
+            # particularly like the inconsistency with the behavior of yum, but
+            # since we have a test for it, let's assert it here.
+            with _install_by_provides() as install_root:
+                self._check_installed_content(install_root, {
+                    **milk,
+                    'carrot.txt': 'carrot 2 rc0\n',
+                })
         else:
             raise NotImplementedError(self._YUM_DNF)
 

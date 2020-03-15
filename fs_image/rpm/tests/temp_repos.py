@@ -53,6 +53,7 @@ class Rpm(NamedTuple):
         Name: rpm-test-{name}
         Version: {version}
         Release: {release}
+        Provides: virtual-{name}
         License: MIT
         Group: Facebook/Script
         Vendor: Facebook, Inc.
