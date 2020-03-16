@@ -167,7 +167,8 @@ def _download_repodatas(
     # downloading - in that case we store the error in the sqlite db, thus the
     # dict should contain an entry for every single repodata
     assert len(storage_id_to_repodata) == len(repomd.repodatas)
-    assert rpms, "Is the repo empty?"
+    if not rpms:
+        log.warning(f"Repo {repo} has no RPMs")
     return rpms, storage_id_to_repodata
 
 
