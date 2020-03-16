@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load(":image.bzl", "image")
@@ -20,7 +21,28 @@ RPM_SNAPSHOT_BASE_DIR = "rpm-repo-snapshot"
 # `"base_dir"` is relative, it will magically be interpreted to be relative
 # to the snapshot dir, both by this code, and later by `yum-dnf-from-snapshot`
 # that runs in the build appliance.
-def rpm_repo_snapshot(name, src, storage, yum_dnf_default, visibility = None):
+def rpm_repo_snapshot(
+        name,
+        src,
+        storage,
+        yum_dnf_default,
+        # We need to hardcode some localhost ports on which the RPM repo
+        # snapshots will be served, because the server URI is part of the cache
+        # key for `dnf`. Moreover, hardcoded ports make container setup easier.
+        #
+        # The main impact of this port list is that its **size** determines the
+        # maximum number of repo objects (e.g.  RPMs) that `yum` / `dnf` can
+        # concurrently fetch at installation time.
+        #
+        # We should not have any issues with port collisions, because nothing
+        # else should be running in the container when we install RPMs.  If some
+        # weird service did collide, they are easy enough to change.
+        #
+        # The defaults were picked at random from [16384, 32768) to avoid the
+        # default ephemeral port range of 32768+, and to avoid lower port #s
+        # which tend to be reserved for services.
+        repo_server_ports = (28889, 28890, 28891, 28892),
+        visibility = None):
     if yum_dnf_default not in ["yum", "dnf"]:
         fail(
             'Must be "yum" or "dnf", got {}'.format(yum_dnf_default),
@@ -71,6 +93,7 @@ echo {quoted_storage_cfg} > "$OUT"/storage.json
 
 cp $(location {yum_dnf_from_snapshot_wrapper}) "$OUT"/yum-dnf-from-snapshot
 cp $(location {repo_server_wrapper}) "$OUT"/repo-server
+echo {quoted_repo_server_ports} > "$OUT"/repo_server_ports
 
 # `RpmActionItem` uses this to select the default package manager.  This has
 # a trailing newline to be bash-friendly.  It's part of the contract.  In
@@ -89,6 +112,12 @@ cp $(location {yum_sh_target}) "$OUT"/bin/yum
             quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
             yum_dnf_from_snapshot_wrapper = yum_dnf_from_snapshot_wrapper,
             repo_server_wrapper = repo_server_wrapper,
+            quoted_repo_server_ports = shell.quote(
+                " ".join([
+                    str(p)
+                    for p in sorted(collections.uniq(repo_server_ports))
+                ]),
+            ),
             quoted_yum_dnf_default = shell.quote(yum_dnf_default),
             dnf_sh_target = "//fs_image/bzl:files/dnf.sh",
             yum_sh_target = "//fs_image/bzl:files/yum.sh",
