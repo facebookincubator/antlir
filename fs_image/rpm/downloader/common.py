@@ -96,9 +96,7 @@ def verify_chunk_stream(
 
 def _log_if_storage_ids_differ(obj, storage_id, db_storage_id):
     if db_storage_id != storage_id:
-        log.warning(
-            f"Another writer already committed {obj} at {db_storage_id}"
-        )
+        log.warning(f"Another writer already committed {obj} at {db_storage_id}")
 
 
 def log_size(what_str: str, total_bytes: int):

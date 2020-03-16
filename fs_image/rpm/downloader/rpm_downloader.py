@@ -51,8 +51,8 @@ def _is_retryable_mysql_err(e: Exception) -> bool:  # pragma: no cover
     # dependency of this module otherwise. This approach is tested in
     # rpm/facebook/tests/test_fb_rpm_downloader.py
     return (
-        type(e).__module__ == 'MySQLdb._exceptions'
-        and type(e).__qualname__ == 'OperationalError'
+        type(e).__module__ == "MySQLdb._exceptions"
+        and type(e).__qualname__ == "OperationalError"
     )
 
 
