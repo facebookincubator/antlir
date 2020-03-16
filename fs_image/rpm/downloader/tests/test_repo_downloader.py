@@ -101,6 +101,9 @@ _BAD_DOG = temp_repos.Repo(
     [temp_repos.Rpm("milk", "1.41", "42", override_contents="differs from good_dog")]
 )
 
+# Tests case of having a repo with no RPMs
+_EMPTY_EEL = temp_repos.Repo([])
+
 
 class DownloadReposTestCase(unittest.TestCase):
     @classmethod
@@ -117,7 +120,11 @@ class DownloadReposTestCase(unittest.TestCase):
         cls.temp_repos_ctx = temp_repos_steps(
             repo_change_steps=[
                 {"good_dog": _GOOD_DOG, "chaos_cat": _CHAOS_CAT, "bad_dog": _BAD_DOG},
-                {"good_dog": _GOOD_DOG2, "chaos_cat": _CHAOS_CAT2},
+                {
+                    "good_dog": _GOOD_DOG2,
+                    "chaos_cat": _CHAOS_CAT2,
+                    "empty_eel": _EMPTY_EEL,
+                },
                 cls.multi_repo_dict,
             ]
         )
@@ -738,3 +745,12 @@ class DownloadReposTestCase(unittest.TestCase):
             with self._make_downloader("0/good_dog") as downloader:
                 with self.assertRaisesRegex(RuntimeError, "Integrity issue with repos"):
                     list(downloader())
+
+    def test_empty_repo(self):
+        with self._make_downloader("1/empty_eel") as downloader:
+            res = list(downloader())
+        self.assertEqual(1, len(res))
+        repo, snapshot = res[0]
+        self.assertEqual("1/empty_eel", repo.name)
+        self.assertFalse(snapshot.storage_id_to_rpm)
+        self._check_snapshot(snapshot, rpm_locations=[])
