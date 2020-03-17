@@ -213,6 +213,7 @@ def _get_project_root_from_gen_dir():
 
 shim = struct(
     buck_command_alias = command_alias,
+    buck_filegroup = filegroup,
     buck_genrule = genrule,
     buck_sh_binary = sh_binary,
     buck_sh_test = sh_test,
