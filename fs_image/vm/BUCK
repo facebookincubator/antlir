@@ -1,4 +1,28 @@
-load("//fs_image/bzl:oss_shim.bzl", "buck_genrule")
+load("//fs_image/bzl:oss_shim.bzl", "buck_filegroup", "buck_genrule", "python_library", "third_party")
+
+python_library(
+    name = "vm",
+    srcs = [
+        "guest_agent.py",
+        "vm.py",
+    ],
+    resources = {
+        third_party.library("qemu"): "qemu",
+        "//fs_image/vm:qemu_bioses": "qemu_bioses",
+    },
+    deps = [
+        ":share",
+        "//fs_image/facebook/vm:share_fbcode_runtime",
+        "//fs_image/rpm:common",
+    ],
+)
+
+# defines the `Share` dataclass for vm
+python_library(
+    name = "share",
+    srcs = ["share.py"],
+    base_module = "fs_image.vm",
+)
 
 export_file(
     name = "init.sh",
@@ -16,4 +40,23 @@ buck_genrule(
     srcs = ["seedroot.c"],
     out = "seedroot",
     cmd = "gcc -static -o $OUT seedroot.c",
+)
+
+# this set of blobs are the bios binaries that qemu needs to boot our VMs
+bioses = [
+    "bios-256k.bin",
+    "kvmvapic.bin",
+    "linuxboot_dma.bin",
+    "vgabios-stdvga.bin",
+]
+
+buck_filegroup(
+    name = "qemu_bioses",
+    srcs = [
+        third_party.library(
+            "qemu",
+            "share/qemu/{}".format(b),
+        )
+        for b in bioses
+    ],
 )
