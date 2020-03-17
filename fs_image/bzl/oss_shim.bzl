@@ -88,5 +88,6 @@ buck_sh_binary = shim.buck_sh_binary
 buck_sh_test = shim.buck_sh_test
 config = shim.config
 get_visibility = shim.get_visibility
+kernel_artifact = shim.kernel_artifact
 target_utils = shim.target_utils
 third_party = shim.third_party
