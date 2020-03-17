@@ -83,6 +83,7 @@ def python_unittest(*args, **kwargs):
     shim.python_unittest(**kwargs)
 
 buck_command_alias = shim.buck_command_alias
+buck_filegroup = shim.buck_filegroup
 buck_genrule = shim.buck_genrule
 buck_sh_binary = shim.buck_sh_binary
 buck_sh_test = shim.buck_sh_test
