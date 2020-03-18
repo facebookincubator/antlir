@@ -27,6 +27,19 @@ def _invert_dict(d):
     else:
         return d
 
+def _normalize_dict(d):
+    """ Exclude any resources that have `.facebook` in the path as these
+    are internal and require internal FB infra.
+
+    This should be used before `_invert_dict()`
+    """
+    if d and types.is_dict(d):
+        _normalized_dict_keys = _normalize_deps(d.keys())
+
+        return {key: d[key] for key in _normalized_dict_keys}
+    else:
+        return d
+
 def _kernel_artifact_version(version):
     """ Resolve a kernel version to its corresponding kernel artifact.
     Currently, the only `kernel_artifact` available is in
@@ -148,7 +161,7 @@ def _python_library(
     python_library(
         name = name,
         deps = _normalize_deps(deps),
-        resources = _invert_dict(resources),
+        resources = _invert_dict(_normalize_dict(resources)),
         srcs = _invert_dict(srcs),
         visibility = _normalize_visibility(visibility, name),
         **kwargs
@@ -165,7 +178,7 @@ def _python_unittest(
         deps = _normalize_deps(deps),
         labels = tags if tags else [],
         package_style = _normalize_pkg_style(par_style),
-        resources = _invert_dict(resources),
+        resources = _invert_dict(_normalize_dict(resources)),
         **kwargs
     )
 
