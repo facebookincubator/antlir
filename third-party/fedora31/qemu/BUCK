@@ -1,0 +1,11 @@
+# fs_image uses qemu system emulation in order to run vm tests
+# users are expected to have `qemu-system-x86_64` installed and on `PATH` 
+sh_binary(
+    name = "qemu-binary",
+    main = "qemu-binary.sh",
+)
+
+export_file(
+    name = "qemu",
+    src = ":qemu-binary",
+)
