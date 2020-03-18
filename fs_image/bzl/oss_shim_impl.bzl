@@ -7,7 +7,7 @@ load("//third-party/fedora31/kernel:kernels.bzl", "kernels")
 # (like Debian, Arch Linux, etc..) this should be expanded to allow for those.
 _DEFAULT_NATIVE_PLATFORM = "fedora31"
 
-def _invert_and_normalize_dict(d):
+def _invert_dict(d):
     """ In OSS Buck some of the dicts used by targets (`srcs` and `resources`
     specifically) are inverted, where internally this:
 
@@ -16,18 +16,12 @@ def _invert_and_normalize_dict(d):
     In OSS Buck this is:
 
         resources = { "label_of_resource": "//target:name" }
-
-    In addition, this excludes any resources of type dict that have `/facebook`
-    in the path as these are internal and require internal FB infra.
     """
     if d and types.is_dict(d):
-        _normalized_dict_keys = _normalize_deps(d.keys())
-        _normalized_d = {key: d[key] for key in _normalized_dict_keys}
+        result = {value: key for key, value in d.items()}
 
-        result = {value: key for key, value in _normalized_d.items()}
-
-        if len(result) != len(_normalized_d):
-            fail("_invert_and_normalize_dict fail! len(result): " + len(result) + " != len(d): " + len(_normalized_d))
+        if len(result) != len(d):
+            fail("_invert_dict fail! len(result): " + len(result) + " != len(d): " + len(d))
 
         return result
     else:
@@ -68,6 +62,22 @@ def _normalize_deps(deps, more_deps = None):
             derps.append(dep)
 
     return derps
+
+def _normalize_resources(resources):
+    """ Exclude any resources that have `/facebook` in the path as these
+    are internal and require internal FB infra. Only applies to resources
+    specified in the `dict` format
+
+    Will also go ahead an invert the dictionary using `_invert_dict`
+    """
+    if resources and types.is_dict(resources):
+        _normalized_dict_keys = _normalize_deps(resources.keys())
+        _normalized_resources = {key: resources[key] for key in _normalized_dict_keys}
+
+        return _invert_dict(_normalized_resources)
+    else:
+        return resources
+
 
 def _normalize_visibility(vis, name = None):
     """ OSS Buck has a slightly different handling of visibility.
@@ -154,8 +164,8 @@ def _python_library(
     python_library(
         name = name,
         deps = _normalize_deps(deps),
-        resources = _invert_and_normalize_dict(resources),
-        srcs = _invert_and_normalize_dict(srcs),
+        resources = _normalize_resources(resources),
+        srcs = _invert_dict(srcs),
         visibility = _normalize_visibility(visibility, name),
         **kwargs
     )
@@ -171,7 +181,7 @@ def _python_unittest(
         deps = _normalize_deps(deps),
         labels = tags if tags else [],
         package_style = _normalize_pkg_style(par_style),
-        resources = _invert_and_normalize_dict(resources),
+        resources = _normalize_resources(resources),
         **kwargs
     )
 
