@@ -1,4 +1,4 @@
-load("//fs_image/bzl:oss_shim.bzl", "buck_filegroup", "buck_genrule", "python_library", "third_party")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_library", "third_party")
 
 python_library(
     name = "vm",
@@ -8,7 +8,7 @@ python_library(
     ],
     resources = {
         third_party.library("qemu"): "qemu",
-        "//fs_image/vm:qemu_bioses": "qemu_bioses",
+        "//fs_image/facebook/vm:qemu_bioses": "qemu_bioses",
     },
     deps = [
         ":share",
@@ -40,23 +40,4 @@ buck_genrule(
     srcs = ["seedroot.c"],
     out = "seedroot",
     cmd = "gcc -static -o $OUT seedroot.c",
-)
-
-# this set of blobs are the bios binaries that qemu needs to boot our VMs
-bioses = [
-    "bios-256k.bin",
-    "kvmvapic.bin",
-    "linuxboot_dma.bin",
-    "vgabios-stdvga.bin",
-]
-
-buck_filegroup(
-    name = "qemu_bioses",
-    srcs = [
-        third_party.library(
-            "qemu",
-            "share/qemu/{}".format(b),
-        )
-        for b in bioses
-    ],
 )

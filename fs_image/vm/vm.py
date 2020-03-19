@@ -38,6 +38,15 @@ class KernelResources(object):
 
 @contextmanager
 def kernel_resources() -> ContextManager[KernelResources]:
+    try:
+        # QEMU BIOSes are a FB-specific resource
+        with importlib.resources.path(
+            "fs_image.vm", "qemu_bioses"
+        ) as qemu_bioses:
+            bios_dir = qemu_bioses
+    except FileNotFoundError:
+        bios_dir = None
+
     with importlib.resources.path(
         "fs_image.vm", "vmlinuz"
     ) as vmlinuz, importlib.resources.path(
@@ -46,9 +55,7 @@ def kernel_resources() -> ContextManager[KernelResources]:
         "fs_image.vm", "modules"
     ) as modules, importlib.resources.path(
         "fs_image.vm", "qemu"
-    ) as qemu, importlib.resources.path(
-        "fs_image.vm", "qemu_bioses"
-    ) as bios_dir:
+    ) as qemu:
         yield KernelResources(
             vmlinuz=vmlinuz,
             initrd=initrd,
@@ -150,9 +157,12 @@ async def kernel_vm(
             "virtio-serial",
             "-device",
             "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0",
-            "-L",
-            str(kernel.qemu_bioses),
         ]
+
+        # Only set directory for the BIOS if qemu_bioses are provided
+        if kernel.qemu_bioses:
+            args.extend(["-L", str(kernel.qemu_bioses)])
+
         if os.access("/dev/kvm", os.R_OK | os.W_OK):
             args += ["-enable-kvm"]
         else:
