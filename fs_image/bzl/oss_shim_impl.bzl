@@ -63,6 +63,22 @@ def _normalize_deps(deps, more_deps = None):
 
     return derps
 
+def _normalize_resources(resources):
+    """ Exclude any resources that have `/facebook` in the path as these
+    are internal and require internal FB infra. Only applies to resources
+    specified in the `dict` format
+
+    Will also go ahead an invert the dictionary using `_invert_dict`
+    """
+    if resources and types.is_dict(resources):
+        _normalized_dict_keys = _normalize_deps(resources.keys())
+        _normalized_resources = {key: resources[key] for key in _normalized_dict_keys}
+
+        return _invert_dict(_normalized_resources)
+    else:
+        return resources
+
+
 def _normalize_visibility(vis, name = None):
     """ OSS Buck has a slightly different handling of visibility.
     The default is to be not visible.
@@ -148,7 +164,7 @@ def _python_library(
     python_library(
         name = name,
         deps = _normalize_deps(deps),
-        resources = _invert_dict(resources),
+        resources = _normalize_resources(resources),
         srcs = _invert_dict(srcs),
         visibility = _normalize_visibility(visibility, name),
         **kwargs
@@ -165,7 +181,7 @@ def _python_unittest(
         deps = _normalize_deps(deps),
         labels = tags if tags else [],
         package_style = _normalize_pkg_style(par_style),
-        resources = _invert_dict(resources),
+        resources = _normalize_resources(resources),
         **kwargs
     )
 
