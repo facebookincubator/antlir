@@ -22,7 +22,7 @@ from .open_url import open_url
 
 def snapshot_gpg_keys(
     *, key_urls: Iterable[str], whitelist_dir: Path, snapshot_dir: Path,
-):
+) -> None:
     os.mkdir(snapshot_dir / 'gpg_keys')
     for url in key_urls:
         with open_url(url) as key_file:
