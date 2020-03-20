@@ -21,9 +21,10 @@ def _build_opts(
         # used to depend on a Buck target.  A target may not even exist in
         # the current repo at this path.  Rather, this target path is
         # normalized, mangled, and then used to select a non-default child
-        # of `/rpm-repo-snapshot/` in the build appliance.  So this refers
-        # to a target that got incorporated into the build appliance,
-        # whenever that image was built.  `None` uses the default.
+        # of `/__fs_image__/rpm-repo-snapshot/` in the build appliance.  So
+        # this refers to a target that got incorporated into the build
+        # appliance, whenever that image was built.  `None` uses the
+        # default.
         rpm_repo_snapshot = None,
         # By default `RpmActionItem` will not populate
         # `/var/cache/{dnf,yum}` in the built image.  We set this flag to
