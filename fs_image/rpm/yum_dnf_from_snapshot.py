@@ -112,52 +112,18 @@ import time
 
 from contextlib import contextmanager, ExitStack
 from urllib.parse import urlparse, urlunparse
-from typing import ContextManager, List, Mapping, TextIO, Tuple
+from typing import Dict, Iterable, List, Mapping
 
 from fs_image.common import (
     check_popen_returncode, FD_UNIX_SOCK_TIMEOUT, get_file_logger,
     init_logging, listen_temporary_unix_socket, recv_fds_from_unix_sock,
+    set_new_key,
 )
-from fs_image.fs_utils import Path, temp_dir
+from fs_image.fs_utils import create_ro, Path, temp_dir
 from .yum_dnf_conf import YumDnf, YumDnfConfParser
 from .common import yum_is_dnf
 
 log = get_file_logger(__file__)
-
-
-@contextmanager
-def prepare_isolated_yum_dnf_conf(
-    yum_dnf: YumDnf, inp: TextIO, out: tempfile.NamedTemporaryFile,
-    host: str, port: int, versionlock_dir: Path,
-    config_file_path: Path,
-):
-    '''
-    Reads a "{yum,dnf}.conf" from `inp`, and writes a modified version to
-    `out`, and getting packages + GPG keys from a snapshot `repo-server` at
-    `http://host:port`.
-
-    This is a context manager because in a prior iteration, the resulting
-    isolated "{yum,dnf}.conf" was only valid for as long as some associated
-    temporary directories continued to exist.  I'm keeping this contract in
-    case we need to do this again in the future.
-    '''
-    server_url = urlparse(f'http://{host}:{port}')
-    yc = YumDnfConfParser(yum_dnf, inp)
-    yc.isolate().isolate_repos(
-        repo._replace(
-            base_url=urlunparse(server_url._replace(path=repo.name)),
-            gpg_key_urls=[
-                urlunparse(server_url._replace(path=os.path.join(
-                    repo.name, os.path.basename(urlparse(key_url).path),
-                ))) for key_url in repo.gpg_key_urls
-            ],
-        ) for repo in yc.gen_repos()
-    ).isolate_main(
-        config_path=config_file_path.decode(),
-        versionlock_dir=versionlock_dir.decode(),
-    ).write(out)
-    out.flush()
-    yield  # The config we wrote is valid only inside the context.
 
 
 @contextmanager
@@ -187,8 +153,7 @@ def _launch_repo_server(
                 if sock.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN):
                     break
                 time.sleep(0.1)
-
-            yield server_proc
+            yield
         finally:
             server_proc.kill()  # It's a read-only proxy, abort ASAP
 
@@ -328,11 +293,11 @@ def _isolate_yum_dnf_and_wait_until_ready(
         quoted_ready_fifo=shlex.quote(ready_fifo),
         quoted_protected_paths='\n'.join(
             'mount {} {} -o bind,ro'.format(
-                shlex.quote(dummy),
+                dummy.shell_quote(),
                 (
                     # Convention: relative for image, or absolute for host.
-                    '' if prot_path.startswith('/') else '"$install_root"/'
-                ) + shlex.quote(prot_path),
+                    '' if prot_path.startswith(b'/') else '"$install_root"/'
+                ) + prot_path.shell_quote(),
             ) for prot_path, dummy in protected_path_to_dummy.items()
         ),
     )]
@@ -412,7 +377,7 @@ def _create_sockets_inside_netns(
 @contextmanager
 def launch_repo_servers_in_netns(
     *, target_pid: int, snapshot_dir: Path, **kwargs,
-) -> ContextManager[List[Tuple[int, int]]]:
+):
     '''
     Creates sockets inside the supplied netns, and binds them to the
     supplied ports on localhost.
@@ -421,23 +386,20 @@ def launch_repo_servers_in_netns(
     '''
     with open(snapshot_dir / 'repo_server_ports') as infile:
         repo_server_ports = {int(v) for v in infile.read().split() if v}
-    hostports = []
     with ExitStack() as stack:
-        # The servers take ownership of the sockets, so we don't enter them.
+        # Start a repo-server instance per port.  Give each one a socket
+        # bound to the loopback inside the supplied netns.  We don't
+        # `__enter__` the sockets since the servers take ownership of them.
         for sock, port in zip(
             _create_sockets_inside_netns(target_pid, len(repo_server_ports)),
             repo_server_ports,
         ):
-            # Bind the sockets to the loopback inside the supplied netns.
             sock.bind(('127.0.0.1', port))
-            hostports.append(sock.getsockname())
             stack.enter_context(_launch_repo_server(
                 sock=sock, snapshot_dir=snapshot_dir, **kwargs,
             ))
-        log.info(
-            f"Launched repo-servers on {hostports} in {target_pid}'s netns"
-        )
-        yield hostports
+            log.info(f"Launched repo-server on {port} in {target_pid}'s netns")
+        yield
 
 
 @contextmanager
@@ -460,7 +422,9 @@ def _dummy_dev() -> str:
 
 
 @contextmanager
-def _dummies_for_protected_paths(protected_paths) -> Mapping[str, str]:
+def _dummies_for_protected_paths(
+    protected_paths: Iterable[str],
+) -> Mapping[Path, Path]:
     '''
     Some locations (e.g. /meta/ and mountpoints) should be off-limits to
     writes by RPMs.  We enforce that by bind-mounting an empty file or
@@ -472,7 +436,7 @@ def _dummies_for_protected_paths(protected_paths) -> Mapping[str, str]:
         # one arbitrarily, and if the type on disk is different, we will
         # fail at mount time.  This doesn't seem worth an explicit check.
         yield {
-            os.path.normpath(p): (td.decode() if p.endswith('/') else tf.name)
+            Path(p).normpath(): (td if p.endswith('/') else Path(tf.name))
                 for p in protected_paths
         }
         # NB: The bind mount is read-only, so this is just paranoia.  If it
@@ -483,51 +447,37 @@ def _dummies_for_protected_paths(protected_paths) -> Mapping[str, str]:
 
 
 @contextmanager
-def prepare_versionlock_dir(yum_dnf: YumDnf, list_path: Path) -> Path:
+def _prepare_versionlock_lists(
+    snapshot_dir: Path, list_path: Path
+) -> Dict[str, str]:
     '''
-    This prepares a directory containing:
-      - the versionlock plugin code (see the Buck target for its provenance)
-      - the plugin configuration
-      - the actual list of locked versions
-
-    This directory is used by `YumDnfConfIsolator.isolate_main` to tell
-    `yum` / `dnf` to use the plugin.
+    Returns a map of "in-snapshot path" -> "tempfile with its contents",
+    with the intention that the tempfile in the value will be a read-only
+    bind-mount over the path in the key.
     '''
+    # `dnf` and `yum` expect different formats, so we parse our own.
+    with open(list_path) as rf:
+        envras = [l.split('\t') for l in rf]
+    templates = {b'yum': '{e}:{n}-{v}-{r}.{a}', b'dnf': '{n}-{e}:{v}-{r}.{a}'}
+    dest_to_src = {}
     with temp_dir() as d:
-        vl_conf = textwrap.dedent(f'''\
-            [main]
-            enabled = 1
-            locklist = {d}/versionlock.list
-        ''')
-        with open(d / 'versionlock.conf', 'w') as outf:
-            outf.write(vl_conf)
-
-        # `dnf` and `yum` expect different formats, so we parse our own.
-        template = {
-            YumDnf.yum: '{e}:{n}-{v}-{r}.{a}',
-            YumDnf.dnf: '{n}-{e}:{v}-{r}.{a}',
-        }[yum_dnf]
-        with open(list_path) as rf, open(d / 'versionlock.list', 'w') as wf:
-            for l in rf:
-                e, n, v, r, a = l.split('\t')
-                wf.write(template.format(e=e, n=n, v=v, r=r, a=a))
-
-        with importlib.resources.path(
-            'rpm', f'{yum_dnf.value}_versionlock.gz',
-        ) as p, gzip.open(p) as rf, open(d / 'versionlock.py', 'wb') as wf:
-            wf.write(rf.read())
-
-        yield d
-
-        # Clean up, making sure that there are no new files.
-
-        # Comparing the contents of the plugin & its list is too much effort
-        with open(d / 'versionlock.conf') as infile:
-            assert infile.read() == vl_conf
-
-        assert (set(d.listdir()) - {b'versionlock.pyc', b'__pycache__'}) == {
-            b'versionlock.conf', b'versionlock.list', b'versionlock.py',
-        }, d.listdir()
+        # Only bind-mount lists for those binaries that exist in the snapshot.
+        for prog in (snapshot_dir / 'bin').listdir():
+            template = templates.get(prog)
+            # For now, `bin` has <= 2 binaries, but this can be relaxed later:
+            assert template, prog
+            src = d / (prog + b'-versionlock.list')
+            with create_ro(src, 'w') as wf:
+                for e, n, v, r, a in envras:
+                    wf.write(template.format(e=e, n=n, v=v, r=r, a=a))
+            set_new_key(
+                dest_to_src,
+                # This path convention must match how `write_yum_dnf_conf.py`
+                # and `rpm_repo_snapshot.bzl` set up their output.
+                snapshot_dir / f'etc/{prog}/plugins/versionlock.list',
+                src,
+            )
+        yield dest_to_src
 
 
 def yum_dnf_from_snapshot(
@@ -570,15 +520,16 @@ def yum_dnf_from_snapshot(
             assert not arg.startswith(bad_arg), f'{arg} is prohibited'
 
     with _temp_fifo() as netns_fifo, _temp_fifo(
-                # Lets the child wait for `out_conf` to be ready. This could
-                # be done via an `flock` on `out_conf.name`, but that's not
-                # robust on some network filesystems, so let's use a pipe.
+                # This FIFO is used by the child to wait for the
+                # `repo-server`s to come up.
             ) as ready_fifo, \
-            tempfile.NamedTemporaryFile('w', suffix=prog_name) as out_conf, \
             _dummy_dev() as dummy_dev, \
             _dummies_for_protected_paths(
                 protected_paths,
             ) as protected_path_to_dummy, \
+            _prepare_versionlock_lists(
+                snapshot_dir, versionlock_list,
+            ) as versionlock_list_path_to_tempfile, \
             subprocess.Popen([
                 'sudo',
                 # Cannot do --pid or --cgroup without extra work (nspawn).
@@ -587,12 +538,20 @@ def yum_dnf_from_snapshot(
                 'unshare', '--mount', '--uts', '--ipc', '--net',
                 *_isolate_yum_dnf_and_wait_until_ready(
                     yum_dnf, install_root, dummy_dev,
-                    protected_path_to_dummy, netns_fifo, ready_fifo,
+                    {
+                        **versionlock_list_path_to_tempfile,
+                        **protected_path_to_dummy,
+                    },
+                    netns_fifo, ready_fifo,
                 ),
                 'yum-dnf-from-snapshot',  # argv[0]
                 prog_name,
-                # Config options are isolated by our `YumDnfConfIsolator`.
-                '--config', out_conf.name,
+                # Config options get isolated by our `YumDnfConfIsolator`
+                # when `write-yum-dnf-conf` builds this file.
+                '--config',
+                # This path convention must match how `write_yum_dnf_conf.py`
+                # and `rpm_repo_snapshot.bzl` set up their output.
+                snapshot_dir / f'etc/{yum_dnf.value}/{yum_dnf.value}.conf',
                 '--installroot', install_root,
                 # NB: We omit `--downloaddir` because the default behavior
                 # is to put any downloaded RPMs in `$installroot/$cachedir`,
@@ -612,28 +571,17 @@ def yum_dnf_from_snapshot(
         with open(netns_fifo, 'r') as netns_in:
             netns_pid = int(netns_in.read())
 
-        # TEMPORARY: The generated config just uses the first host:port.
-        # Stacked diffs will rip out config generation and use the config
-        # that was included in the snapshot.
         with launch_repo_servers_in_netns(
             target_pid=netns_pid,
             repo_server_bin=repo_server_bin,
             snapshot_dir=snapshot_dir,
             debug=debug,
-        ) as hostports, \
-                open(snapshot_dir / f'{prog_name}.conf') as in_conf, \
-                prepare_versionlock_dir(
-                    yum_dnf, versionlock_list,
-                ) as versionlock_td, \
-                prepare_isolated_yum_dnf_conf(
-                    yum_dnf, in_conf, out_conf, *hostports[0], versionlock_td,
-                    Path(out_conf.name),
-                ):
+        ):
             log.info(f'Ready to run {prog_name}')
             ready_out.write('ready')  # `yum` / `dnf` can run now.
             ready_out.close()  # Proceed past the inner `read`.
 
-            # Wait **before** we tear down all the `yum/dnf.conf` isolation.
+            # Wait **before** we tear down all the `yum` / `dnf` isolation.
             yum_dnf_proc.wait()
             check_popen_returncode(yum_dnf_proc)
 

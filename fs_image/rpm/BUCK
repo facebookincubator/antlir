@@ -330,10 +330,6 @@ python_binary(
     base_module = "rpm",
     main_module = "rpm.yum_dnf_from_snapshot",
     par_style = "xar",  # Lets us embed the `repo-server` binary
-    resources = {
-        "//fs_image/rpm/third_party:dnf_versionlock.gz": "dnf_versionlock.gz",
-        "//fs_image/rpm/third_party:yum_versionlock.gz": "yum_versionlock.gz",
-    },
     deps = [
         ":common",
         ":yum_dnf_conf",

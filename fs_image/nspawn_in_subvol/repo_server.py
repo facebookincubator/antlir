@@ -16,20 +16,16 @@ change on a later diff.
 import os
 import textwrap
 
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
+from typing import Iterable
 
 from fs_image.common import get_file_logger, pipe
-from fs_image.fs_utils import Path, temp_dir
-from rpm.yum_dnf_from_snapshot import (
-    launch_repo_servers_in_netns,
-    prepare_isolated_yum_dnf_conf,
-)
-from rpm.yum_dnf_conf import YumDnf
+from fs_image.fs_utils import Path
+from rpm.yum_dnf_from_snapshot import launch_repo_servers_in_netns
 from send_fds_and_run import popen_and_inject_fds_after_sudo
 
 
 log = get_file_logger(__file__)
-REPO_SERVER_CONFIG_DIR = Path('/repo-server')
 
 
 def _exfiltrate_container_pid_and_wait_for_ready_cmd(exfil_fd, ready_fd):
@@ -63,7 +59,6 @@ def _exfiltrate_container_pid_and_wait_for_ready_cmd(exfil_fd, ready_fd):
 @contextmanager
 def _exfiltrate_container_pid_and_wait_for_ready(
     nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
-    repo_server_config
 ):
     cmd = list(nspawn_cmd)
 
@@ -84,7 +79,6 @@ def _exfiltrate_container_pid_and_wait_for_ready(
         forward_fds.extend([exfil_w.fileno(), ready_r.fileno()])
 
         cmd.extend([
-            f'--bind-ro={repo_server_config}:{REPO_SERVER_CONFIG_DIR}',
             '--bind-ro=/proc:/outerproc',
             '--',
         ])
@@ -123,80 +117,23 @@ def _exfiltrate_container_pid_and_wait_for_ready(
 
 
 @contextmanager
-def _write_yum_or_dnf_configs(
-    yum_dnf, repo_server_config_dir, repo_server_snapshot_dir, host, port
-):
-    config_filename = {
-        YumDnf.yum: Path('yum.conf'),
-        YumDnf.dnf: Path('dnf.conf'),
-    }[yum_dnf]
-    plugin_directory = {
-        YumDnf.yum: Path('yum/pluginconf.d'),
-        YumDnf.dnf: Path('dnf/plugins'),
-    }[yum_dnf]
-    os.makedirs(repo_server_config_dir / plugin_directory)
-    with open(
-        repo_server_snapshot_dir / config_filename
-    ) as in_conf, open(
-        repo_server_config_dir / config_filename, 'w'
-    ) as out_conf, prepare_isolated_yum_dnf_conf(
-        yum_dnf,
-        in_conf,
-        out_conf,
-        host,
-        port,
-        REPO_SERVER_CONFIG_DIR / plugin_directory,
-        REPO_SERVER_CONFIG_DIR / config_filename,
-    ):
-        yield
-
-
-@contextmanager
-def _write_yum_and_dnf_configs(
-    repo_server_config_dir, repo_server_snapshot_dir, host, port
-):
-    with _write_yum_or_dnf_configs(
-        YumDnf.yum,
-        repo_server_config_dir,
-        repo_server_snapshot_dir,
-        host,
-        port,
-    ), _write_yum_or_dnf_configs(
-        YumDnf.dnf,
-        repo_server_config_dir,
-        repo_server_snapshot_dir,
-        host,
-        port,
-    ):
-        yield
-
-
-@contextmanager
-def _popen_and_inject_repo_server(
+def _popen_and_inject_repo_servers(
     nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
-    repo_server_snapshot_dir, *, debug
+    serve_rpm_snapshots: Iterable[Path], *, debug
 ):
-    # We're running a repo-server with a socket inside the network
-    # namespace.
-
-    with temp_dir() as repo_server_config_dir:
-        with _exfiltrate_container_pid_and_wait_for_ready(
-            nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
-            repo_server_config_dir
-        ) as (
-            container_pid, cmd_proc, send_ready
-        ), launch_repo_servers_in_netns(
-            target_pid=container_pid,
-            repo_server_bin=repo_server_snapshot_dir / 'repo-server',
-            snapshot_dir=repo_server_snapshot_dir,
-            debug=debug,
-        ) as hostports, _write_yum_and_dnf_configs(
-            repo_server_config_dir,
-            repo_server_snapshot_dir,
-            # TEMPORARY: The generated config just uses the first
-            # host:port.  Stacked diffs will rip out config generation
-            # and use the config that was included in the snapshot.
-            *hostports[0],
-        ):
-            send_ready()
-            yield cmd_proc
+    with ExitStack() as stack:
+        # We're running repo-servers with a socket inside the network namespace.
+        container_pid, cmd_proc, send_ready = stack.enter_context(
+            _exfiltrate_container_pid_and_wait_for_ready(
+                nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
+            )
+        )
+        for serve_rpm_snapshot in serve_rpm_snapshots:
+            stack.enter_context(launch_repo_servers_in_netns(
+                target_pid=container_pid,
+                repo_server_bin=serve_rpm_snapshot / 'repo-server',
+                snapshot_dir=serve_rpm_snapshot,
+                debug=debug,
+            ))
+        send_ready()
+        yield cmd_proc

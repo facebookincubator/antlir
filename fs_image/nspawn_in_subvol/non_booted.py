@@ -24,7 +24,7 @@ from typing import Iterable
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
 from .common import _nspawn_version
-from .repo_server import _popen_and_inject_repo_server
+from .repo_server import _popen_and_inject_repo_servers
 
 
 def run_non_booted_nspawn(
@@ -107,14 +107,14 @@ def _popen_non_booted_nspawn(setup: _NspawnSetup) -> Iterable[subprocess.Popen]:
         stderr=setup.popen_args.stderr,
     )
     with (
-        _popen_and_inject_repo_server(
+        _popen_and_inject_repo_servers(
             cmd,
             opts.cmd,
             opts.forward_fd,
             cmd_popen,
-            opts.serve_rpm_snapshot_dir,
+            [setup.subvol.path(p) for p in opts.serve_rpm_snapshots],
             debug=opts.debug_only_opts.debug,
-        ) if opts.serve_rpm_snapshot_dir
+        ) if opts.serve_rpm_snapshots
         else maybe_popen_and_inject_fds(
             cmd + ['--'] + opts.cmd,
             opts,
