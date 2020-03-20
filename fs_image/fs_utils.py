@@ -9,6 +9,7 @@ import argparse
 import errno
 import json
 import os
+import shlex
 import shutil
 import stat
 import subprocess
@@ -103,6 +104,10 @@ class Path(bytes):
 
     def normpath(self) -> 'Path':
         return Path(os.path.normpath(self))
+
+    # Returns `str` because shell scripts are normally strings, not bytes.
+    def shell_quote(self) -> str:
+        return shlex.quote(self.decode())
 
     def decode(self, encoding='utf-8', errors=None) -> str:
         # Python uses `surrogateescape` for invalid UTF-8 from the filesystem.

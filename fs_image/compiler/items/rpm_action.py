@@ -297,10 +297,10 @@ def _yum_dnf_using_build_appliance(
             'sh', '-uec',
             f'''
             {mount_cache}
-            {shlex.quote((
+            {(
                 RPM_SNAPSHOT_BASE_DIR / layer_opts.rpm_repo_snapshot
                     / 'bin' / prog_name
-            ).decode())} \
+            ).shell_quote()} \
                 {' '.join(
                     '--protected-path=' + shlex.quote(p)
                         for p in protected_paths
