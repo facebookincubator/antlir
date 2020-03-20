@@ -9,6 +9,26 @@ load(":target_tagger.bzl", "mangle_target", "maybe_wrap_executable_target")
 # This constant is duplicated in `yum_using_build_appliance`.
 RPM_SNAPSHOT_BASE_DIR = "rpm-repo-snapshot"
 
+def yum_or_dnf_wrapper(name):
+    if name not in ("yum", "dnf"):
+        fail("Must be `yum` or `dnf`", "yum_or_dnf")
+    buck_genrule(
+        name = name,
+        out = "ignored",
+        bash = 'echo {} > "$OUT" && chmod u+rx "$OUT"'.format(shell.quote(
+            """\
+set -ue -o pipefail -o noclobber
+my_path=\\$(readlink -f "$0")
+my_dir=\\$(dirname "$my_path")
+base_dir=\\$(dirname "$my_dir")
+exec "$base_dir"/yum-dnf-from-snapshot \\
+    --repo-server "$base_dir/repo-server" \\
+    --snapshot-dir "$base_dir" \\
+    --storage "\\$(cat "$base_dir"/storage.json)" {yum_or_dnf} "$@"
+""".format(yum_or_dnf = shell.quote(name)),
+        )),
+    )
+
 # Takes a bare in-repo snapshot, enriches it with `storage.sql3` from
 # storage, and injects some auxiliary binaries.  This prepares the snapshot
 # for installation into a build appliance via `install_rpm_repo_snapshot`.
@@ -74,7 +94,7 @@ def rpm_repo_snapshot(
     )
     buck_genrule(
         name = name,
-        out = "unused",
+        out = "ignored",
         bash = '''\
 set -ue -o pipefail -o noclobber
 
@@ -123,10 +143,10 @@ mkdir "$OUT"/bin
             quoted_yum_dnf_default = shell.quote(yum_dnf[0]),
             # Only install binaries this snapshot claims to support.
             maybe_add_bin_dnf = (
-                'cp $(location //fs_image/bzl:files/dnf.sh) "$OUT"/bin/dnf'
+                'cp $(location //fs_image/bzl:dnf) "$OUT"/bin/dnf'
             ) if "dnf" in yum_dnf else "",
             maybe_add_bin_yum = (
-                'cp $(location //fs_image/bzl:files/yum.sh) "$OUT"/bin/yum'
+                'cp $(location //fs_image/bzl:yum) "$OUT"/bin/yum'
             ) if "yum" in yum_dnf else "",
         ),
         # This rule is not cacheable due to `maybe_wrap_executable_target`

@@ -1,5 +1,6 @@
 load(":defs.bzl", "fake_macro_library")
 load(":oss_shim.bzl", "get_visibility")
+load(":rpm_repo_snapshot.bzl", "yum_or_dnf_wrapper")
 
 # IMPORTANT: If you add new `.bzl` files or dependencies in `fs_image/`,
 # make sure their dependency structure is reflected below.  Just run `grep
@@ -130,12 +131,6 @@ fake_macro_library(
     deps = [":image_unittest_helpers"],
 )
 
-export_file(
-    name = "files/dnf.sh",
-    visibility = get_visibility(None, None),
-)
+yum_or_dnf_wrapper(name = "dnf")
 
-export_file(
-    name = "files/yum.sh",
-    visibility = get_visibility(None, None),
-)
+yum_or_dnf_wrapper(name = "yum")
