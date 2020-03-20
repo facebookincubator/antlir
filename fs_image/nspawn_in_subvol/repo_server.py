@@ -158,7 +158,6 @@ def _write_yum_or_dnf_configs(
         yum_dnf,
         in_conf,
         out_conf,
-        Path('/'),
         host,
         port,
         REPO_SERVER_CONFIG_DIR / plugin_directory,

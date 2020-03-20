@@ -67,7 +67,6 @@ class YumDnfConfTestCaseImpl:
 
         out = io.StringIO()
         self.conf.isolate().isolate_repos(isolated_repos).isolate_main(
-            install_root='/install_root',
             config_path='/config_path',
             versionlock_dir='/versionlock_dir',
         ).write(out)
@@ -87,7 +86,6 @@ class YumDnfConfTestCaseImpl:
         persistdir = /var/lib/{prog_name}
         reposdir = /dev/null
         logfile = /var/log/{prog_name}.log
-        installroot = /install_root
         config_file_path = /config_path
         timeout = 60
         plugins = 1
