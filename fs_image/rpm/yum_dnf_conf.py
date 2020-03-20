@@ -119,7 +119,7 @@ class YumDnfConfIsolator:
         return self
 
     def isolate_main(
-        self, *, install_root: str, config_path: str, versionlock_dir: str,
+        self, *, config_path: str, versionlock_dir: str,
     ) -> 'YumDnfConfIsolator':
         '''
         Set keys that could cause `yum` or `dnf` to interact with the host
@@ -147,7 +147,6 @@ class YumDnfConfIsolator:
         main_sec['reposdir'] = '/dev/null'
         # See the note about `cachedir` -- the same logic applies.
         main_sec['logfile'] = f'/var/log/{prog_name}.log'  # default
-        main_sec['installroot'] = install_root
         main_sec['config_file_path'] = config_path
         # Our download path isn't very fast, nor are the CI hosts. So, we make
         # the fetch timeout higher than might be desired on bare-metal hosts.

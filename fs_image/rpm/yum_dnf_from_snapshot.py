@@ -129,13 +129,13 @@ log = get_file_logger(__file__)
 @contextmanager
 def prepare_isolated_yum_dnf_conf(
     yum_dnf: YumDnf, inp: TextIO, out: tempfile.NamedTemporaryFile,
-    install_root: Path, host: str, port: int, versionlock_dir: Path,
+    host: str, port: int, versionlock_dir: Path,
     config_file_path: Path,
 ):
     '''
     Reads a "{yum,dnf}.conf" from `inp`, and writes a modified version to
-    `out`, installing into `install_root`, and getting packages + GPG keys
-    from a snapshot `repo-server` at `http://host:port`.
+    `out`, and getting packages + GPG keys from a snapshot `repo-server` at
+    `http://host:port`.
 
     This is a context manager because in a prior iteration, the resulting
     isolated "{yum,dnf}.conf" was only valid for as long as some associated
@@ -154,7 +154,6 @@ def prepare_isolated_yum_dnf_conf(
             ],
         ) for repo in yc.gen_repos()
     ).isolate_main(
-        install_root=install_root.decode(),
         config_path=config_file_path.decode(),
         versionlock_dir=versionlock_dir.decode(),
     ).write(out)
@@ -558,6 +557,7 @@ def yum_dnf_from_snapshot(
                 prog_name,
                 # Config options are isolated by our `YumDnfConfIsolator`.
                 '--config', out_conf.name,
+                '--installroot', install_root,
                 # NB: We omit `--downloaddir` because the default behavior
                 # is to put any downloaded RPMs in `$installroot/$cachedir`,
                 # which is reasonable, and easy to clean up in a post-pass.
@@ -593,8 +593,8 @@ def yum_dnf_from_snapshot(
                     yum_dnf, versionlock_list,
                 ) as versionlock_td, \
                 prepare_isolated_yum_dnf_conf(
-                    yum_dnf, in_conf, out_conf, install_root, host, port,
-                    versionlock_td, Path(out_conf.name),
+                    yum_dnf, in_conf, out_conf, host, port, versionlock_td,
+                    Path(out_conf.name),
                 ):
             log.info(f'Ready to run {prog_name}')
             ready_out.write('ready')  # `yum` / `dnf` can run now.
