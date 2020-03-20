@@ -31,7 +31,6 @@ be significantly simplified soon.
 Sample usage:
 
     buck run TARGET_PATH:yum-dnf-from-snapshot -- \\
-        --storage '{"key": "SOME_KEY", "kind": "SOME_KIND", ...}' \\
         --snapshot-dir REPOS_PATH --install-root TARGET_DIR -- \\
             dnf install --assumeyes some-package-name
 
@@ -166,13 +165,12 @@ def _launch_repo_server(
     *,
     repo_server_bin: Path,
     sock: socket.socket,
-    storage_cfg: str,
     snapshot_dir: Path,
     debug: bool,
 ):
     '''
-    Invokes `repo-server` with the given storage & snapshot; passes it
-    ownership of the bound TCP socket -- it listens & accepts connections.
+    Invokes `repo-server` with the given snapshot; passes it ownership of
+    the bound TCP socket -- it listens & accepts connections.
     '''
     # This could be a thread, but it's probably not worth the risks
     # involved in mixing threads & subprocess (yes, lots of programs do,
@@ -180,7 +178,6 @@ def _launch_repo_server(
     with sock, subprocess.Popen([
         repo_server_bin,
         '--socket-fd', str(sock.fileno()),
-        '--storage', storage_cfg,
         '--snapshot-dir', snapshot_dir,
         *(['--debug'] if debug else []),
     ], pass_fds=[sock.fileno()]) as server_proc:
@@ -537,7 +534,6 @@ def yum_dnf_from_snapshot(
     *,
     yum_dnf: YumDnf,
     repo_server_bin: Path,
-    storage_cfg: str,
     snapshot_dir: Path,
     install_root: Path,
     protected_paths: List[str],
@@ -622,7 +618,6 @@ def yum_dnf_from_snapshot(
         with launch_repo_servers_in_netns(
             target_pid=netns_pid,
             repo_server_bin=repo_server_bin,
-            storage_cfg=storage_cfg,
             snapshot_dir=snapshot_dir,
             debug=debug,
         ) as hostports, \
@@ -659,11 +654,6 @@ if __name__ == '__main__':  # pragma: no cover
     parser.add_argument(
         '--snapshot-dir', required=True, type=Path.from_argparse,
         help='Multi-repo snapshot directory.',
-    )
-    parser.add_argument(
-        '--storage', required=True, type=json.loads,
-        help='What Storage do the storage IDs of the snapshots refer to? '
-            'Run `repo-server --help` to learn the syntax.',
     )
     parser.add_argument(
         '--install-root', required=True, type=Path.from_argparse,
@@ -707,7 +697,6 @@ if __name__ == '__main__':  # pragma: no cover
     yum_dnf_from_snapshot(
         yum_dnf=args.yum_dnf,
         repo_server_bin=args.repo_server,
-        storage_cfg=json.dumps(args.storage),
         snapshot_dir=args.snapshot_dir,
         install_root=args.install_root,
         protected_paths=args.protected_path,

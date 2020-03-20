@@ -8,12 +8,11 @@
 Given a `--socket-fd`, serves over HTTP a `--snapshot-dir` that was
 previously produced by `snapshot-repos`.
 
-Validates content checksums, so the specified `--storage` does not have to
-be 100% trustworthy, we just need to trust the provenance of the
+Validates content checksums, so the snapshot's blobstore does not have to be
+100% trustworthy, we just need to trust the provenance of the
 `--snapshot-dir`.
 
-Here is how to run a test invocation of this server -- just be sure to use
-the same `--storage` configuration as you did for your test snapshot:
+Here is how to run a test invocation of this server:
 
   $ buck build //fs_image/rpm:repo-server
   $ python3 -c '
@@ -23,10 +22,8 @@ the same `--storage` configuration as you did for your test snapshot:
   s.bind(("127.0.0.1", 0))
   print("Socket bound - {}:{}".format(*s.getsockname()), file=sys.stderr)
   os.set_inheritable(s.fileno(), True)
-  os.execlp(sys.argv[1], *sys.argv[1:], str(s.fileno()))
-  ' buck-out/gen/fs_image/rpm/repo-server.par --storage \\
-      '{"key": "test", "kind": "filesystem", "base_dir": "YOUR_PATH"}' \\
-    --snapshot-dir YOUR_SNAPSHOT/ --socket-fd
+  os.execlp(sys.argv[1], *sys.argv[1:], "--socket-fd", str(s.fileno()))
+  ' buck-out/gen/fs_image/rpm/repo-server.par --snapshot-dir YOUR_SNAPSHOT/
 
 '''
 import json
@@ -360,24 +357,22 @@ if __name__ == '__main__':  # pragma: no cover
             'and binds the socket for us.',
     )
     parser.add_argument('--debug', action='store_true', help='Log more')
-    Storage.add_argparse_arg(
-        parser, '--storage', required=True,
-        help='What Storage do the storage IDs of the snapshots refer to? ',
-    )
-    opts = parser.parse_args()
+    args = parser.parse_args()
 
+    with open(args.snapshot_dir / 'storage.json') as f:
+        storage = json.load(f)
     # We want relative `base_dir` to point into the snapshot dir.
-    if opts.storage['kind'] == 'filesystem':
-        opts.storage['base_dir'] = (
-            opts.snapshot_dir / opts.storage['base_dir']
+    if storage['kind'] == 'filesystem':
+        storage['base_dir'] = (
+            args.snapshot_dir / storage['base_dir']
         ).normpath()
 
-    init_logging(debug=opts.debug)
+    init_logging(debug=args.debug)
 
     with repo_server(
-        socket.socket(fileno=opts.socket_fd),
-        read_snapshot_dir(opts.snapshot_dir),
-        Storage.from_json(opts.storage),
+        socket.socket(fileno=args.socket_fd),
+        read_snapshot_dir(args.snapshot_dir),
+        Storage.from_json(storage),
     ) as httpd:
         httpd.server_activate()
         log.info(f'HTTP repo server is listening')
