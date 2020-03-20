@@ -7,7 +7,7 @@ load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 load(":target_tagger.bzl", "mangle_target", "maybe_wrap_executable_target")
 
 # This constant is duplicated in `yum_using_build_appliance`.
-RPM_SNAPSHOT_BASE_DIR = "rpm-repo-snapshot"
+RPM_SNAPSHOT_BASE_DIR = "__fs_image__/rpm-repo-snapshot"
 
 def yum_or_dnf_wrapper(name):
     if name not in ("yum", "dnf"):

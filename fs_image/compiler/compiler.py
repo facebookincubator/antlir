@@ -69,8 +69,8 @@ def parse_args(args) -> argparse.Namespace:
     )
     parser.add_argument(
         '--rpm-repo-snapshot', default='default',
-        help='Which subdirectory to use under /rpm-repo-snapshot/ in the '
-            'build appliance image. Defaults to "default".',
+        help='Which subdirectory to use under /__fs_image__/rpm-repo-snapshot/ '
+            'in the build appliance image. Defaults to "default".',
     )
     parser.add_argument(
         '--preserve-yum-dnf-cache', action='store_true',

@@ -40,7 +40,7 @@ class YumFromSnapshotTestImpl:
                         pass
             # This is the same hard coded path used by the `RpmActionItem` in
             # the compiler.
-            snapshot_dir = Path("/rpm-repo-snapshot/default")
+            snapshot_dir = Path("/__fs_image__/rpm-repo-snapshot/default")
             # Note: this can't use `_yum_using_build_appliance` because that
             # would lose coverage info on `yum_dnf_from_snapshot.py`.  On
             # the other hand, running this test against the host is fragile

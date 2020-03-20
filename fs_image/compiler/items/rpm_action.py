@@ -255,6 +255,10 @@ class RpmActionItem(ImageItem):
         return builder
 
 
+# This was copied from `bzl/rpm_repo_snapshot.bzl`
+RPM_SNAPSHOT_BASE_DIR = Path('__fs_image__/rpm-repo-snapshot')
+
+
 def _get_yum_or_dnf(build_appliance: Subvol, layer_opts: LayerOpts) -> str:
     if layer_opts.force_yum_dnf:
         # Normally, the snapshot knows what package manager is preferred.
@@ -262,8 +266,8 @@ def _get_yum_or_dnf(build_appliance: Subvol, layer_opts: LayerOpts) -> str:
         return layer_opts.force_yum_dnf.value
     # We build BAs so that this is world-readable:
     with open(build_appliance.path(
-        Path('/rpm-repo-snapshot') / layer_opts.rpm_repo_snapshot /
-            'yum_dnf_default.name'
+        RPM_SNAPSHOT_BASE_DIR / layer_opts.rpm_repo_snapshot
+            / 'yum_dnf_default.name'
     )) as rf:
         prog_name = rf.read()
     assert prog_name.endswith('\n')
@@ -293,9 +297,10 @@ def _yum_dnf_using_build_appliance(
             'sh', '-uec',
             f'''
             {mount_cache}
-            /rpm-repo-snapshot/{
-                shlex.quote(layer_opts.rpm_repo_snapshot)
-            }/bin/{prog_name} \
+            {shlex.quote((
+                RPM_SNAPSHOT_BASE_DIR / layer_opts.rpm_repo_snapshot
+                    / 'bin' / prog_name
+            ).decode())} \
                 {' '.join(
                     '--protected-path=' + shlex.quote(p)
                         for p in protected_paths
