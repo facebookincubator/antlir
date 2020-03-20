@@ -102,7 +102,8 @@ class YumDnfConfIsolator:
             unchanged_repos.remove(repo.name)
             assert repo.name not in _NON_REPO_SECTIONS
             repo_sec = self._cp[repo.name]
-            repo_sec['baseurl'] = repo.base_url
+            repo_sec['baseurl'] = '\n'.join(repo.base_url) \
+                if isinstance(repo.base_url, list) else repo.base_url
             repo_sec['gpgkey'] = '\n'.join(repo.gpg_key_urls)
             repo_sec.pop('proxy', None)  # We talk only to a local reposerver.
             # These are not handled for now, but could be supported. The

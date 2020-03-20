@@ -301,6 +301,30 @@ python_unittest(
 )
 
 python_binary(
+    name = "write-yum-dnf-conf",
+    srcs = ["write_yum_dnf_conf.py"],
+    main_module = "fs_image.rpm.write_yum_dnf_conf",
+    par_style = "xar",  # To access resources in @mode/opt
+    resources = {
+        "//fs_image/rpm/third_party:dnf_versionlock.gz": "dnf_versionlock.gz",
+        "//fs_image/rpm/third_party:yum_versionlock.gz": "yum_versionlock.gz",
+    },
+    deps = [
+        ":yum_dnf_conf",
+        "//fs_image:fs_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-write-yum-dnf-conf",
+    srcs = ["tests/test_write_yum_dnf_conf.py"],
+    needed_coverage = [
+        (100, ":write-yum-dnf-conf-library"),
+    ],
+    deps = [":write-yum-dnf-conf-library"],
+)
+
+python_binary(
     name = "yum-dnf-from-snapshot",
     srcs = ["yum_dnf_from_snapshot.py"],
     base_module = "rpm",

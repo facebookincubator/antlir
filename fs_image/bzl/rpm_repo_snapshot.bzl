@@ -29,9 +29,13 @@ exec "$base_dir"/yum-dnf-from-snapshot \\
         )),
     )
 
+def snapshot_install_dir(snapshot):
+    return paths.join("/", RPM_SNAPSHOT_BASE_DIR, mangle_target(snapshot))
+
 # Takes a bare in-repo snapshot, enriches it with `storage.sql3` from
-# storage, and injects some auxiliary binaries.  This prepares the snapshot
-# for installation into a build appliance via `install_rpm_repo_snapshot`.
+# storage, and injects some auxiliary binaries & data.  This prepares the
+# snapshot for installation into a build appliance (or
+# `image_foreign_layer`) via `install_rpm_repo_snapshot`.
 #
 # The snapshot uses the first element of `yum_dnf` as the default package
 # manager.  The tuple is allowed to contain just one element because the
@@ -92,6 +96,12 @@ def rpm_repo_snapshot(
         wrap_prefix = "__rpm_repo_snapshot",
         visibility = [],
     )
+    quoted_repo_server_ports = shell.quote(
+        " ".join([
+            str(p)
+            for p in sorted(collections.uniq(repo_server_ports))
+        ]),
+    )
     buck_genrule(
         name = name,
         out = "ignored",
@@ -116,12 +126,19 @@ echo {quoted_storage_cfg} > "$OUT"/storage.json
 
 cp $(location {yum_dnf_from_snapshot_wrapper}) "$OUT"/yum-dnf-from-snapshot
 cp $(location {repo_server_wrapper}) "$OUT"/repo-server
+# It's possible but harder to parse these from a rewritten `yum|dnf.conf`.
 echo {quoted_repo_server_ports} > "$OUT"/repo_server_ports
 
 # `RpmActionItem` uses this to select the default package manager.  This has
 # a trailing newline to be bash-friendly.  It's part of the contract.  In
 # the future, we might also add an `"$OUT"/yum_dnf_default` binary.
 echo {quoted_yum_dnf_default} > "$OUT"/yum_dnf_default.name
+
+# Save rewritten `yum|dnf.conf` files that are ready to serve the snapshot.
+$(exe //fs_image/rpm:write-yum-dnf-conf) \\
+    --output-dir "$OUT"/etc \\
+    --install-dir {quoted_install_dir}/etc \\
+    {quoted_write_conf_args}
 
 # The `bin` directory exists so that "porcelain" binaries can potentially be
 # added to `PATH`.  But we should avoid doing this in production code.
@@ -134,13 +151,16 @@ mkdir "$OUT"/bin
             quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
             yum_dnf_from_snapshot_wrapper = yum_dnf_from_snapshot_wrapper,
             repo_server_wrapper = repo_server_wrapper,
-            quoted_repo_server_ports = shell.quote(
-                " ".join([
-                    str(p)
-                    for p in sorted(collections.uniq(repo_server_ports))
-                ]),
-            ),
+            quoted_repo_server_ports = quoted_repo_server_ports,
             quoted_yum_dnf_default = shell.quote(yum_dnf[0]),
+            quoted_install_dir = shell.quote(snapshot_install_dir(":" + name)),
+            quoted_write_conf_args = " ".join([
+                '--write-conf {k} "$OUT"/{k}.conf {p}'.format(
+                    k = shell.quote(kind),
+                    p = quoted_repo_server_ports,
+                )
+                for kind in yum_dnf
+            ]),
             # Only install binaries this snapshot claims to support.
             maybe_add_bin_dnf = (
                 'cp $(location //fs_image/bzl:dnf) "$OUT"/bin/dnf'
@@ -161,11 +181,11 @@ mkdir "$OUT"/bin
 
 # Requires some other feature to make the directory `/<RPM_SNAPSHOT_BASE_DIR>`
 def install_rpm_repo_snapshot(snapshot, make_default = True):
-    base_dir = paths.join("/", RPM_SNAPSHOT_BASE_DIR)
-    dest_dir = paths.join(base_dir, mangle_target(snapshot))
+    dest_dir = snapshot_install_dir(snapshot)
     features = [image.install(snapshot, dest_dir)]
     if make_default:
-        features.append(
-            image.symlink_dir(dest_dir, paths.join(base_dir, "default")),
-        )
+        features.append(image.symlink_dir(
+            dest_dir,
+            paths.join("/", RPM_SNAPSHOT_BASE_DIR, "default"),
+        ))
     return image.feature(features = features)
