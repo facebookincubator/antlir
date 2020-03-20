@@ -21,8 +21,7 @@ from contextlib import contextmanager
 from fs_image.common import get_file_logger, pipe
 from fs_image.fs_utils import Path, temp_dir
 from rpm.yum_dnf_from_snapshot import (
-    create_socket_inside_netns,
-    launch_repo_server,
+    launch_repo_servers_in_netns,
     prepare_isolated_yum_dnf_conf,
 )
 from rpm.yum_dnf_conf import YumDnf
@@ -123,12 +122,6 @@ def _exfiltrate_container_pid_and_wait_for_ready(
                     send_ready()  # pragma: no cover
 
 
-def bind_socket_inside_netns(sock):
-    # Binds the socket to the loopback inside yum's netns
-    sock.bind(('127.0.0.1', 0))
-    host, port = sock.getsockname()
-    log.info(f'Bound socket inside netns to {host}:{port}')
-    return host, port
 
 
 def _get_repo_server_storage_config(snapshot_dir):
@@ -197,26 +190,23 @@ def _popen_and_inject_repo_server(
         with _exfiltrate_container_pid_and_wait_for_ready(
             nspawn_cmd, container_cmd, forward_fds, popen_for_nspawn,
             repo_server_config_dir
-        ) as (container_pid, cmd_proc, send_ready):
-
-            repo_server_sock = create_socket_inside_netns(
-                f'/proc/{container_pid}/ns/net'
-            )
-            log.info(f'Got socket at FD {repo_server_sock.fileno()}')
-            # Binds the socket to the loopback inside yum's netns
-            host, port = bind_socket_inside_netns(repo_server_sock)
-
-            with launch_repo_server(
-                os.path.join(repo_server_snapshot_dir, Path('repo-server')),
-                repo_server_sock,
-                _get_repo_server_storage_config(repo_server_snapshot_dir),
-                repo_server_snapshot_dir,
-                debug=debug,
-            ), _write_yum_and_dnf_configs(
-                repo_server_config_dir,
-                repo_server_snapshot_dir,
-                host,
-                port,
-            ):
-                send_ready()
-                yield cmd_proc
+        ) as (
+            container_pid, cmd_proc, send_ready
+        ), launch_repo_servers_in_netns(
+            target_pid=container_pid,
+            repo_server_bin=repo_server_snapshot_dir / 'repo-server',
+            storage_cfg=_get_repo_server_storage_config(
+                repo_server_snapshot_dir
+            ),
+            snapshot_dir=repo_server_snapshot_dir,
+            debug=debug,
+        ) as hostports, _write_yum_and_dnf_configs(
+            repo_server_config_dir,
+            repo_server_snapshot_dir,
+            # TEMPORARY: The generated config just uses the first
+            # host:port.  Stacked diffs will rip out config generation
+            # and use the config that was included in the snapshot.
+            *hostports[0],
+        ):
+            send_ready()
+            yield cmd_proc

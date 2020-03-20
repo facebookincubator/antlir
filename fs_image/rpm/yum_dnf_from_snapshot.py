@@ -111,9 +111,9 @@ import tempfile
 import textwrap
 import time
 
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from urllib.parse import urlparse, urlunparse
-from typing import List, Mapping, TextIO
+from typing import ContextManager, List, Mapping, TextIO, Tuple
 
 from fs_image.common import (
     check_popen_returncode, FD_UNIX_SOCK_TIMEOUT, get_file_logger,
@@ -162,12 +162,13 @@ def prepare_isolated_yum_dnf_conf(
 
 
 @contextmanager
-def launch_repo_server(
+def _launch_repo_server(
+    *,
     repo_server_bin: Path,
     sock: socket.socket,
     storage_cfg: str,
     snapshot_dir: Path,
-    *, debug: bool,
+    debug: bool,
 ):
     '''
     Invokes `repo-server` with the given storage & snapshot; passes it
@@ -260,7 +261,7 @@ def _isolate_yum_dnf_and_wait_until_ready(
     # This must be open so the parent can `open(ready_fifo, 'w')`, and we
     # must open it before `netns_fifo` not to deadlock.
     exec 3< {quoted_ready_fifo}
-    echo -n /proc/$$/ns/net > {quoted_netns_fifo}
+    echo -n $$ > {quoted_netns_fifo}
     # `yum` & `dnf` will talk to the repo snapshot server via loopback, but
     # it is `down` by default in a new network namespace.
     ifconfig lo up
@@ -340,7 +341,7 @@ def _isolate_yum_dnf_and_wait_until_ready(
     )]
 
 
-def _make_socket_and_send_via(*, unix_sock_fd):
+def _make_sockets_and_send_via(*, num_socks: int, unix_sock_fd: int):
     '''
     Creates a TCP stream socket and sends it elsewhere via the provided Unix
     domain socket file descriptor.  This is useful for obtaining a socket
@@ -351,8 +352,8 @@ def _make_socket_and_send_via(*, unix_sock_fd):
     '''
     # NB: Some code here is (sort of) copy-pasta'd in `send_fds_and_run.py`,
     # but it's not obviously worthwhile to reuse it here.
-    return ['python3', '-c', textwrap.dedent('''\
-    import array, socket, sys
+    return ['python3', '-c', textwrap.dedent('''
+    import array, contextlib, socket, sys
 
     def send_fds(sock, msg: bytes, fds: 'List[int]'):
         num_sent = sock.sendmsg([msg], [(
@@ -362,19 +363,30 @@ def _make_socket_and_send_via(*, unix_sock_fd):
         )])
         assert len(msg) == num_sent, (msg, num_sent)
 
-    # Make a socket in this netns, and send it to the parent.
-    with socket.socket(fileno=''' + str(unix_sock_fd) + ''') as lsock:
-        print(f'Sending FD to parent', file=sys.stderr)
+    num_socks = ''' + str(num_socks) + '''
+    print(f'Sending {num_socks} FDs to parent', file=sys.stderr)
+    with contextlib.ExitStack() as stack:
+        # Make a socket in this netns, and send it to the parent.
+        lsock = stack.enter_context(
+            socket.socket(fileno=''' + str(unix_sock_fd) + ''')
+        )
         lsock.settimeout(''' + str(FD_UNIX_SOCK_TIMEOUT) + ''')
-        with lsock.accept()[0] as csock, socket.socket(
-            socket.AF_INET, socket.SOCK_STREAM
-        ) as inet_sock:
-            csock.settimeout(''' + str(FD_UNIX_SOCK_TIMEOUT) + ''')
-            send_fds(csock, b'ohai', [inet_sock.fileno()])
+
+        csock = stack.enter_context(lsock.accept()[0])
+        csock.settimeout(''' + str(FD_UNIX_SOCK_TIMEOUT) + ''')
+
+        send_fds(csock, b'ohai', [
+            stack.enter_context(socket.socket(
+                socket.AF_INET, socket.SOCK_STREAM
+            )).fileno()
+                for _ in range(num_socks)
+        ])
     ''')]
 
 
-def create_socket_inside_netns(netns_path):
+def _create_sockets_inside_netns(
+    target_pid: int, num_socks: int,
+) -> List[socket.socket]:
     '''
     Creates TCP stream socket inside the container.
 
@@ -386,15 +398,49 @@ def create_socket_inside_netns(netns_path):
         # NB: /usr/local/fbcode/bin must come first because /bin/python3
         # may be very outdated
         'sudo', 'env', 'PATH=/usr/local/fbcode/bin:/bin',
-        'nsenter', f'--net={netns_path}',
+        'nsenter', '--net', '--target', str(target_pid),
         # NB: We pass our listening socket as FD 1 to avoid dealing with
         # the `sudo` option of `-C`.  Nothing here writes to `stdout`:
-        *_make_socket_and_send_via(unix_sock_fd=1),
+        *_make_sockets_and_send_via(unix_sock_fd=1, num_socks=num_socks),
     ], stdout=list_sock.fileno()) as sock_proc:
-        repo_server_sock_fd, = recv_fds_from_unix_sock(unix_sock_path, 1)
-        repo_server_sock = socket.socket(fileno=repo_server_sock_fd)
+        repo_server_socks = [
+            socket.socket(fileno=fd)
+                for fd in recv_fds_from_unix_sock(unix_sock_path, num_socks)
+        ]
+        assert len(repo_server_socks) == num_socks, len(repo_server_socks)
     check_popen_returncode(sock_proc)
-    return repo_server_sock
+    return repo_server_socks
+
+
+@contextmanager
+def launch_repo_servers_in_netns(
+    *, target_pid: int, snapshot_dir: Path, **kwargs,
+) -> ContextManager[List[Tuple[int, int]]]:
+    '''
+    Creates sockets inside the supplied netns, and binds them to the
+    supplied ports on localhost.
+
+    Yields a list of (host, port) pairs where the servers will listen.
+    '''
+    with open(snapshot_dir / 'repo_server_ports') as infile:
+        repo_server_ports = {int(v) for v in infile.read().split() if v}
+    hostports = []
+    with ExitStack() as stack:
+        # The servers take ownership of the sockets, so we don't enter them.
+        for sock, port in zip(
+            _create_sockets_inside_netns(target_pid, len(repo_server_ports)),
+            repo_server_ports,
+        ):
+            # Bind the sockets to the loopback inside the supplied netns.
+            sock.bind(('127.0.0.1', port))
+            hostports.append(sock.getsockname())
+            stack.enter_context(_launch_repo_server(
+                sock=sock, snapshot_dir=snapshot_dir, **kwargs,
+            ))
+        log.info(
+            f"Launched repo-servers on {hostports} in {target_pid}'s netns"
+        )
+        yield hostports
 
 
 @contextmanager
@@ -414,8 +460,6 @@ def _dummy_dev() -> str:
         # like `filesystem` can touch this dummy directory.  We will discard
         # their writes, which do not, anyhow, belong in a container image.
         subprocess.run(['sudo', 'rm', '-r', dummy_dev])
-
-
 
 
 @contextmanager
@@ -570,26 +614,24 @@ def yum_dnf_from_snapshot(
         # bring up the loopback device to later bind to it.  Since this
         # parent process has low privileges, we do this via a `sudo` helper.
         with open(netns_fifo, 'r') as netns_in:
-            netns_path = netns_in.read()
+            netns_pid = int(netns_in.read())
 
-        repo_server_sock = create_socket_inside_netns(netns_path)
-
-        # Binds the socket to the loopback inside yum/dnf's netns
-        repo_server_sock.bind(('127.0.0.1', 0))
-        host, port = repo_server_sock.getsockname()
-        log.info(f'Bound {netns_path} socket to {host}:{port}')
-
-        # The server takes ownership of the socket, so we don't enter it here.
-        with launch_repo_server(
-            repo_server_bin, repo_server_sock, storage_cfg, snapshot_dir,
+        # TEMPORARY: The generated config just uses the first host:port.
+        # Stacked diffs will rip out config generation and use the config
+        # that was included in the snapshot.
+        with launch_repo_servers_in_netns(
+            target_pid=netns_pid,
+            repo_server_bin=repo_server_bin,
+            storage_cfg=storage_cfg,
+            snapshot_dir=snapshot_dir,
             debug=debug,
-        ), \
+        ) as hostports, \
                 open(snapshot_dir / f'{prog_name}.conf') as in_conf, \
                 prepare_versionlock_dir(
                     yum_dnf, versionlock_list,
                 ) as versionlock_td, \
                 prepare_isolated_yum_dnf_conf(
-                    yum_dnf, in_conf, out_conf, host, port, versionlock_td,
+                    yum_dnf, in_conf, out_conf, *hostports[0], versionlock_td,
                     Path(out_conf.name),
                 ):
             log.info(f'Ready to run {prog_name}')
