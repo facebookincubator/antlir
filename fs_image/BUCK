@@ -129,6 +129,7 @@ python_library(
     name = "subvolume_garbage_collector",
     srcs = ["subvolume_garbage_collector.py"],
     base_module = "",
+    deps = [":fs_utils"],
 )
 
 python_library(
@@ -226,7 +227,10 @@ python_binary(
     base_module = "",
     main_module = "recv_fds_and_run",
     par_style = "xar",
-    deps = [":common"],
+    deps = [
+        ":common",
+        ":fs_utils",
+    ],
 )
 
 python_library(
@@ -234,7 +238,10 @@ python_library(
     srcs = ["send_fds_and_run.py"],
     base_module = "",
     resources = {":recv-fds-and-run": "recv-fds-and-run"},
-    deps = [":common"],
+    deps = [
+        ":common",
+        ":fs_utils",
+    ],
 )
 
 python_unittest(

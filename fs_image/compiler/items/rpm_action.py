@@ -184,8 +184,8 @@ def _rpms_and_bind_ros(
             # destinations where the parent directories don't exist.
             # Because of that, we bind all the local RPMs in "/" with
             # uniquely prefix-ed names.
-            dest = f'/localhostrpm_{idx}_{nor.path.basename().decode()}'
-            bind_ros.append((nor.path.decode(), dest))
+            dest = f'/localhostrpm_{idx}_{nor.path.basename()}'
+            bind_ros.append((nor.path, dest))
             rpms.append(dest)
         else:
             rpms.append(nor)
@@ -312,7 +312,7 @@ def _yum_dnf_using_build_appliance(
         ],
         layer=build_appliance,
         bindmount_ro=bind_ros,
-        bindmount_rw=[(install_root.decode(), work_dir)],
+        bindmount_rw=[(install_root, work_dir)],
         user=pwd.getpwnam('root'),
         # CAP_NET_ADMIN is not intended to administer the host's network
         # stack, but to allow `yum_dnf_from_snapshot()` to bring loopback

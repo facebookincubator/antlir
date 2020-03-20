@@ -9,6 +9,8 @@ import argparse
 
 from io import BytesIO
 
+from fs_image.fs_utils import Path
+
 from ..common import init_logging, read_chunks
 
 from .storage import Storage
@@ -55,7 +57,7 @@ def main(argv, from_file: BytesIO, to_file: BytesIO):
     parser_put.set_defaults(to_file=to_file)  # For the storage ID
     parser_put.set_defaults(func=put)
 
-    args = parser.parse_args(argv)
+    args = Path.parse_args(parser, argv)
     init_logging(debug=args.debug)
 
     args.func(args)

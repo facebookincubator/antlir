@@ -70,8 +70,8 @@ class SendFdsAndRunTestCase(unittest.TestCase):
                     try:
                         ret, out, err = _run([
                             *sudo_args,
-                            '--fd', str(w_fd3.fileno()),
-                            '--fd', str(r_fd4.fileno()),
+                            f'--fd={w_fd3.fileno()}',
+                            f'--fd={r_fd4.fileno()}',
                             '--', 'bash', '-c',
                             'echo "$LISTEN_FDS" ; cat <&4 ; echo doh >&3',
                         ])

@@ -45,7 +45,7 @@ class UpdatePackageDbTestCase(unittest.TestCase):
         with temp_dir() as td:
             db_path = td / 'db.bzl'
             self._write_bzl_db(db_path, {'pkg': {'tag': {'foo': 'bar'}}})
-            self._main(['--db', db_path.decode()])
+            self._main([f'--db={db_path}'])
             self._check_file(db_path, '# ' + _GENERATED + textwrap.dedent(''' \
             SignedSource<<69d45bae7b77e0bd2ee0d5a285d6fdb3>>
             # Update via `how`
@@ -66,10 +66,10 @@ class UpdatePackageDbTestCase(unittest.TestCase):
                 'p2': {'tok': {'a': 'b'}},  # preserved
             })
             self._main([
-                '--db', db_path.decode(),
-                '--replace', 'p1', 'tik', '{"choo": "choo"}',
-                '--create', 'p2', 'tak', '{"boo": true}',
-                '--create', 'never', 'seen', '{"oompa": "loompa"}',
+                f'--db={db_path}',
+                *('--replace', 'p1', 'tik', '{"choo": "choo"}'),
+                *('--create', 'p2', 'tak', '{"boo": true}'),
+                *('--create', 'never', 'seen', '{"oompa": "loompa"}'),
                 '--no-update-existing',
             ])
             self._check_file(db_path, '# ' + _GENERATED + textwrap.dedent(''' \
@@ -102,18 +102,14 @@ class UpdatePackageDbTestCase(unittest.TestCase):
             db_path = td / 'db.bzl'
             self._write_bzl_db(db_path, {'p1': {'a': {}}, 'p2': {'b': {}}})
             with self.assertRaisesRegex(AssertionError, "'p1', 'a'"):
-                self._main([
-                    '--db', db_path.decode(), '--create', 'p1', 'a', '{}',
-                ])
+                self._main([f'--db={db_path}', '--create', 'p1', 'a', '{}'])
             with self.assertRaisesRegex(AssertionError, "'p2', 'c'"):
-                self._main([
-                    '--db', db_path.decode(), '--replace', 'p2', 'c', '{}',
-                ])
+                self._main([f'--db={db_path}', '--replace', 'p2', 'c', '{}'])
             with self.assertRaisesRegex(RuntimeError, 'Conflicting "replace"'):
                 self._main([
-                    '--db', db_path.decode(),
-                    '--replace', 'p2', 'b', '{}',
-                    '--replace', 'p2', 'b', '{}',
+                    f'--db={db_path}',
+                    *('--replace', 'p2', 'b', '{}'),
+                    *('--replace', 'p2', 'b', '{}'),
                 ])
 
     def test_json_db(self):
@@ -128,12 +124,9 @@ class UpdatePackageDbTestCase(unittest.TestCase):
                 {'pkg': {'tag': {'foo': 'bar'}}},
                 updb._read_json_dir_db(td / 'idb'),
             )
-            self._main([
-                '--db', (td / 'idb').decode(),
-                '--out-db', (td / 'odb').decode(),
-            ])
-            self.assertEqual([b'pkg'], os.listdir(td / 'odb'))
-            self.assertEqual([b'tag.json'], os.listdir(td / 'odb/pkg'))
+            self._main([f'--db={td / "idb"}', f'--out-db={td / "odb"}'])
+            self.assertEqual([b'pkg'], (td / 'odb').listdir())
+            self.assertEqual([b'tag.json'], (td / 'odb/pkg').listdir())
             self._check_file(
                 td / 'odb/pkg/tag.json',
                 '# ' + _GENERATED + textwrap.dedent(''' \

@@ -51,6 +51,8 @@ import sys
 
 from typing import Iterator
 
+from fs_image.fs_utils import Path
+
 log = logging.Logger(os.path.basename(__file__))  # __name__ is __main__
 
 
@@ -188,7 +190,7 @@ def parse_args(argv):
             'and hard-link into `--refcounts-dir` for refcounting purposes. '
             'The image compiler will then write data into this file.',
     )
-    return parser.parse_args(argv)
+    return Path.parse_args(parser, argv)
 
 
 def has_new_subvolume(args):
@@ -202,7 +204,8 @@ def has_new_subvolume(args):
             '/' in args.new_subvolume_wrapper_dir
         ):
             raise RuntimeError(
-                f'--new-subvolume-wrapper-dir must contain : but not /'
+                '--new-subvolume-wrapper-dir must contain : but not /, got '
+                f'{args.new_subvolume_wrapper_dir}'
             )
         wrapper_path = os.path.join(
             args.subvolumes_dir, args.new_subvolume_wrapper_dir,

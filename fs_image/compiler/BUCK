@@ -153,6 +153,7 @@ python_library(
         ":dep_graph",
         ":items_for_features",
         ":subvolume_on_disk",
+        "//fs_image:fs_utils",
     ],
 )
 

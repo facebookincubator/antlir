@@ -54,10 +54,10 @@ class YumFromSnapshotTestImpl:
                 yum_dnf_from_snapshot(
                     yum_dnf=self._YUM_DNF,
                     repo_server_bin=Path(snapshot_dir) / 'repo-server',
-                    storage_cfg=json.dumps({
+                    storage_cfg=Path.json_dumps({
                         'key': 'test',
                         'kind': 'filesystem',
-                        'base_dir': (snapshot_dir / 'storage').decode(),
+                        'base_dir': snapshot_dir / 'storage',
                     }),
                     snapshot_dir=snapshot_dir,
                     install_root=Path(install_root),
@@ -113,10 +113,10 @@ class YumFromSnapshotTestImpl:
                 'etc/dnf/modules.d', 'etc/dnf', 'etc'
             ] if self._YUM_DNF == YumDnf.dnf else []),
         ], check=True, cwd=install_root)
-        required_dirs = sorted([b'dev', b'meta'])
-        self.assertEqual(required_dirs, sorted(os.listdir(install_root)))
+        required_dirs = {b'dev', b'meta'}
+        self.assertEqual(required_dirs, set(install_root.listdir()))
         for d in required_dirs:
-            self.assertEqual([], os.listdir(install_root / d))
+            self.assertEqual([], (install_root / d).listdir())
 
     def test_verify_contents_of_install_from_snapshot(self):
         milk = {

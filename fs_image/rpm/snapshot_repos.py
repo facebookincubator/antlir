@@ -36,13 +36,12 @@ from configparser import ConfigParser
 from io import StringIO
 from typing import Callable, Dict, FrozenSet, Iterable, List
 
-from fs_image.common import get_file_logger
+from fs_image.common import get_file_logger, init_logging
+from fs_image.fs_utils import create_ro, Path, populate_temp_dir_and_rename
 from fs_image.rpm.downloader.common import DownloadConfig
 from fs_image.rpm.downloader.repo_downloader import download_repos
 
-from .common import (
-    create_ro, init_logging, Path, populate_temp_dir_and_rename, RpmShard,
-)
+from .common import RpmShard
 from .common_args import add_standard_args
 from .gpg_keys import snapshot_gpg_keys
 from .repo_db import validate_universe_name
@@ -195,7 +194,7 @@ def snapshot_repos_from_args(argv: List[str]):
         help='Snapshot all repos under this universe name. ' + universe_warning,
     )
 
-    args = parser.parse_args(argv)
+    args = Path.parse_args(parser, argv)
 
     init_logging(debug=args.debug)
 

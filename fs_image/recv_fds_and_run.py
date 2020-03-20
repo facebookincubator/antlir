@@ -30,6 +30,7 @@ import sys
 from fs_image.common import (
     get_file_logger, init_logging, recv_fds_from_unix_sock,
 )
+from fs_image.fs_utils import Path
 
 log = get_file_logger(__file__)
 
@@ -57,7 +58,7 @@ def parse_opts(argv):
     parser.add_argument(
         'cmd', nargs='+', help='The command to wrap and supply with FDs.',
     )
-    return parser.parse_args(argv)
+    return Path.parse_args(parser, argv)
 
 
 # This cannot be tested as a library since it `exec`s and rewrites the file

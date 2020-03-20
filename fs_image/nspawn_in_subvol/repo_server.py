@@ -85,8 +85,7 @@ def _exfiltrate_container_pid_and_wait_for_ready(
         forward_fds.extend([exfil_w.fileno(), ready_r.fileno()])
 
         cmd.extend([
-            f'--bind-ro={repo_server_config.decode()}'
-                f':{REPO_SERVER_CONFIG_DIR.decode()}',
+            f'--bind-ro={repo_server_config}:{REPO_SERVER_CONFIG_DIR}',
             '--bind-ro=/proc:/outerproc',
             '--',
         ])

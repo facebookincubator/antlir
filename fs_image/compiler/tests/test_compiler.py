@@ -337,8 +337,8 @@ class CompilerTestCase(unittest.TestCase):
                     expected_calls_with_parent,
                     self._compiler_run_as_root_calls(
                         parent_feature_json=[
-                            '--child-feature-json',
-                            (parent_dir / 'feature.json').decode(),
+                            '--child-feature-json='
+                                + f'{parent_dir / "feature.json"}',
                         ],
                         parent_dep=['//fake:parent', parent_dir.decode()],
                     ),

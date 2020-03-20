@@ -12,6 +12,8 @@ import tempfile
 import subvolume_garbage_collector as sgc
 import subprocess
 
+from fs_image.fs_utils import temp_dir
+
 
 class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
 
@@ -92,14 +94,14 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
 
         # Instead of creating a fake namespace, actually parse some args
         def dir_json(wrapper_dir, json):
-            return sgc.parse_args([
-                '--refcounts-dir', 'fake',
-                '--subvolumes-dir', 'fake',
-                '--new-subvolume-wrapper-dir', wrapper_dir,
-                '--new-subvolume-json', json,
-            ])
+            args = ['--refcounts-dir=fake', '--subvolumes-dir=fake']
+            if wrapper_dir is not None:
+                args.append(f'--new-subvolume-wrapper-dir={wrapper_dir}')
+            if json is not None:
+                args.append(f'--new-subvolume-json={json}')
+            return sgc.parse_args(args)
 
-        self.assertFalse(sgc.has_new_subvolume(dir_json(*[None] * 2)))
+        self.assertFalse(sgc.has_new_subvolume(dir_json(None, None)))
         self.assertTrue(sgc.has_new_subvolume(dir_json('x:y', 'z')))
 
         for bad_example in [('x:y', None), (None, 'z')]:
@@ -118,10 +120,10 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             os.mkdir(os.path.join(td, 'x:y'))
             with self.assertRaisesRegex(RuntimeError, 'wrapper-dir exists'):
                 sgc.has_new_subvolume(sgc.parse_args([
-                    '--refcounts-dir', 'fake',
-                    '--subvolumes-dir', td,
-                    '--new-subvolume-wrapper-dir', 'x:y',
-                    '--new-subvolume-json', 'fake',
+                    '--refcounts-dir=fake',
+                    f'--subvolumes-dir={td}',
+                    '--new-subvolume-wrapper-dir=x:y',
+                    '--new-subvolume-json=fake',
                 ]))
 
     def test_gc_fails_when_wrapper_has_more_than_one(self):
@@ -133,8 +135,8 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 RuntimeError, 'must contain only the subvol'
             ):
                 sgc.subvolume_garbage_collector([
-                    '--refcounts-dir', refs_dir,
-                    '--subvolumes-dir', subs_dir,
+                    f'--refcounts-dir={refs_dir}',
+                    f'--subvolumes-dir={subs_dir}',
                 ])
 
     @contextlib.contextmanager
@@ -206,8 +208,8 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
 
     def _gc_only(self, n):
         sgc.subvolume_garbage_collector([
-            '--refcounts-dir', n.refs_dir,
-            '--subvolumes-dir', n.subs_dir,
+            f'--refcounts-dir={n.refs_dir}',
+            f'--subvolumes-dir={n.subs_dir}',
         ])
 
     def test_garbage_collect_subvolumes(self):
@@ -229,16 +231,15 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
 
                 # Sneak in a test that new subvolume creation fails when
                 # its refcount already exists.
-                with tempfile.TemporaryDirectory() as json_dir, \
-                     self.assertRaisesRegex(
-                         RuntimeError, 'Refcount already exists:',
-                     ):
+                with temp_dir() as json_dir, self.assertRaisesRegex(
+                    RuntimeError, 'Refcount already exists:',
+                ):
                     sgc.subvolume_garbage_collector([
-                        '--refcounts-dir', n.refs_dir,
-                        '--subvolumes-dir', n.subs_dir,
+                        f'--refcounts-dir={n.refs_dir}',
+                        f'--subvolumes-dir={n.subs_dir}',
                         # This refcount was created by `_gc_test_case`.
-                        '--new-subvolume-wrapper-dir', '3link:1',
-                        '--new-subvolume-json', os.path.join(json_dir, 'OUT'),
+                        '--new-subvolume-wrapper-dir=3link:1',
+                        f'--new-subvolume-json={json_dir / "OUT"}',
                     ])
 
             finally:
@@ -252,15 +253,14 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             )
 
     def test_garbage_collect_and_make_new_subvolume(self):
-        with self._gc_test_case() as n, \
-             tempfile.TemporaryDirectory() as json_dir:
+        with self._gc_test_case() as n, temp_dir() as json_dir:
             sgc.subvolume_garbage_collector([
-                '--refcounts-dir', n.refs_dir,
-                '--subvolumes-dir', n.subs_dir,
-                '--new-subvolume-wrapper-dir', 'new:subvol',
-                '--new-subvolume-json', os.path.join(json_dir, 'OUT'),
+                f'--refcounts-dir={n.refs_dir}',
+                f'--subvolumes-dir={n.subs_dir}',
+                '--new-subvolume-wrapper-dir=new:subvol',
+                f'--new-subvolume-json={json_dir / "OUT"}',
             ])
-            self.assertEqual(['OUT'], os.listdir(json_dir))
+            self.assertEqual([b'OUT'], os.listdir(json_dir))
             self.assertEqual(
                 n.kept_refs | {'new:subvol.json'}, set(os.listdir(n.refs_dir)),
             )

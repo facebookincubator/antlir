@@ -31,8 +31,8 @@ def _make_test_yum_dnf_conf(
             enabled=1
             name={repo}
             gpgkey={gpg_key_path.file_url()}
-        ''') for repo in os.listdir(repos_path.decode())
-            if repo not in ('dnf.conf', 'yum.conf')
+        ''') for repo in repos_path.listdir()
+            if repo not in (b'dnf.conf', b'yum.conf')
     )
 
 
@@ -55,13 +55,11 @@ def make_temp_snapshot(
             dnf_conf_content=_make_test_yum_dnf_conf(
                 'dnf', repos_root / '0', gpg_key_path,
             ),
-            db_cfg={
-                'kind': 'sqlite', 'db_path': (out_dir / 'db.sqlite3').decode()
-            },
+            db_cfg={'kind': 'sqlite', 'db_path': out_dir / 'db.sqlite3'},
             storage_cfg={
                 'key': 'test',
                 'kind': 'filesystem',
-                'base_dir': (out_dir / 'storage').decode(),
+                'base_dir': out_dir / 'storage',
             },
             rpm_shard=RpmShard(shard=0, modulo=1),
             gpg_key_whitelist_dir=no_gpg_keys_yet,
@@ -71,7 +69,7 @@ def make_temp_snapshot(
 
     # Merge the repo snapshot with the storage & RPM DB -- this makes our
     # test snapshot build target look very much like prod snapshots.
-    for f in os.listdir(snapshot_dir):
+    for f in snapshot_dir.listdir():
         assert not os.path.exists(out_dir / f), f'Must not overwrite {f}'
         os.rename(snapshot_dir / f, out_dir / f)
     os.rmdir(snapshot_dir)

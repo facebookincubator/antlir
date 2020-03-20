@@ -135,5 +135,5 @@ class TempSubvolumes(contextlib.AbstractContextManager):
                 subvol.delete()
             except BaseException:  # Ctrl-C does not interrupt cleanup
                 logging.exception(
-                        f'Deleting volume {subvol.path().decode()} failed.')
+                        f'Deleting volume {subvol.path()} failed.')
         return self._temp_dir_ctx.__exit__(exc_type, exc_val, exc_tb)

@@ -22,6 +22,7 @@ from artifacts_dir import find_repo_root
 from compiler import procfs_serde
 from find_built_subvol import Subvol
 from fs_image.common import nullcontext
+from fs_image.fs_utils import Path
 from fs_image.compiler.items.mount_utils import clone_mounts
 from send_fds_and_run import popen_and_inject_fds_after_sudo
 from tests.temp_subvolumes import TempSubvolumes
@@ -29,8 +30,8 @@ from tests.temp_subvolumes import TempSubvolumes
 from .args import _NspawnOpts, PopenArgs
 
 
-def _colon_quote_path(path):
-    return re.sub('[\\\\:]', lambda m: '\\' + m.group(0), path)
+def _colon_quote_path(path: AnyStr) -> Path:
+    return Path(re.sub(b'[\\\\:]', lambda m: b'\\' + m.group(0), Path(path)))
 
 
 # NB: This assumes the path is readable to unprivileged users.

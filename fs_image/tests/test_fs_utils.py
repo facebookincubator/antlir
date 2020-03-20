@@ -5,12 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 
 import ast
+import argparse
 import errno
+import json
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
+
+from io import StringIO
 
 from ..common import check_popen_returncode
 from ..fs_utils import (
@@ -72,6 +76,12 @@ class TestFsUtils(unittest.TestCase):
                 res.stdout.decode(),
             )
 
+    def test_path_format(self):
+        first = Path('a/b')
+        second = Path(_BAD_UTF)
+        formatted = '^a/b       >' + _BAD_UTF.decode(errors='surrogateescape')
+        self.assertEqual(formatted, f'^{first:10}>{second}')
+
     def test_path_from_argparse(self):
         res = subprocess.run([
             sys.executable, '-c', 'import sys;print(repr(sys.argv[1]))',
@@ -81,6 +91,42 @@ class TestFsUtils(unittest.TestCase):
         self.assertEqual(_BAD_UTF, Path.from_argparse(
             ast.literal_eval(res.stdout.rstrip(b'\n').decode())
         ))
+
+    def test_path_json(self):
+        # We can serialize `Path` to JSON, including invalid UTF-8.
+        # Unfortunately, `json` doesn't allow us to custom-serialize keys.
+        obj_in = {'a': Path('b'), 'c': Path(_BAD_UTF), 'builtin': 3}
+        # Deserializing to `Path` requires the consumer to know the type
+        # schema.
+        obj_out = {
+            'a': 'b',
+            'c': _BAD_UTF.decode(errors='surrogateescape'),
+            'builtin': 3,
+        }
+        self.assertEqual(obj_out, json.loads(Path.json_dumps(obj_in)))
+        f = StringIO()
+        Path.json_dump(obj_in, f)
+        f.seek(0)
+        self.assertEqual(obj_out, json.load(f))
+        with self.assertRaises(TypeError):
+            Path.json_dumps({'not serializable': object()})
+
+    def test_path_listdir(self):
+        with temp_dir() as td:
+            (td / 'a').touch()
+            a, = td.listdir()
+            self.assertIsInstance(a, Path)
+            self.assertEqual(b'a', a)
+
+    def test_path_parse_args(self):
+        p = argparse.ArgumentParser()
+        p.add_argument('--path', action='append', type=Path.from_argparse)
+        # Check that `Path` is now allowed, and that we can round-trip bad UTF.
+        argv = ['--path', Path('a'), '--path', Path(_BAD_UTF)]
+        with self.assertRaises(TypeError):
+            p.parse_args(argv)
+        args = Path.parse_args(p, argv)
+        self.assertEqual([Path('a'), Path(_BAD_UTF)], args.path)
 
     def test_path_read_text(self):
         with temp_dir() as td:

@@ -12,8 +12,10 @@ all repos from a given `yum.conf`.
 import argparse
 import sys
 
+from fs_image.fs_utils import Path
 from fs_image.rpm.downloader.common import DownloadConfig
 from fs_image.rpm.downloader.repo_downloader import download_repos
+
 from .common import get_file_logger, init_logging, populate_temp_dir_and_rename
 from .common_args import add_standard_args
 from .repo_sizer import RepoSizer
@@ -53,7 +55,7 @@ def snapshot_repo(argv):
             'case this is an HTTP URL), they are verified against '
             '`--gpg-key-whitelist-dir`',
     )
-    args = parser.parse_args(argv)
+    args = Path.parse_args(parser, argv)
 
     init_logging(debug=args.debug)
 

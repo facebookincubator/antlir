@@ -77,7 +77,7 @@ class SnapshotReposTestCase(unittest.TestCase):
             storage_dict = {
                 'key': 'test',
                 'kind': 'filesystem',
-                'base_dir': (td / 'storage').decode(),
+                'base_dir': td / 'storage',
             }
             repo_db_path = td / 'db.sqlite3'
 
@@ -94,20 +94,20 @@ class SnapshotReposTestCase(unittest.TestCase):
                     )
             ), tempfile.NamedTemporaryFile('w') as ru_json:
                 common_args = [
-                    '--gpg-key-whitelist-dir', (td / 'gpg_whitelist').decode(),
-                    '--storage', json.dumps(storage_dict),
-                    '--db', json.dumps({
+                    f'--gpg-key-whitelist-dir={td / "gpg_whitelist"}',
+                    '--storage=' + Path.json_dumps(storage_dict),
+                    '--db=' + Path.json_dumps({
                         'kind': 'sqlite',
-                        'db_path': repo_db_path.decode(),
+                        'db_path': repo_db_path,
                     }),
-                    '--threads', '4',
+                    '--threads=4',
                 ]
                 snapshot_repos_from_args(common_args + [
-                    '--one-universe-for-all-repos', 'mammal',
-                    '--dnf-conf', (repos_root / '0/dnf.conf').decode(),
-                    '--yum-conf', (repos_root / '0/yum.conf').decode(),
-                    '--snapshot-dir', (td / 'snap0').decode(),
-                    '--exclude', 'gonna_skip_for_0',
+                    '--one-universe-for-all-repos=mammal',
+                    f'--dnf-conf={repos_root / "0/dnf.conf"}',
+                    f'--yum-conf={repos_root / "0/yum.conf"}',
+                    f'--snapshot-dir={td / "snap0"}',
+                    '--exclude=gonna_skip_for_0',
                 ])
                 # We want to avoid involving the "mammal" universe to
                 # exercise the fact that a universe **not** mentioned in a
@@ -125,17 +125,17 @@ class SnapshotReposTestCase(unittest.TestCase):
                 }, ru_json)
                 ru_json.flush()
                 snapshot_repos_from_args(common_args + [
-                    '--repo-to-universe-json', ru_json.name,
-                    '--dnf-conf', (repos_root / '1/dnf.conf').decode(),
-                    '--yum-conf', (repos_root / '1/yum.conf').decode(),
-                    '--snapshot-dir', (td / 'snap1').decode(),
+                    f'--repo-to-universe-json={ru_json.name}',
+                    f'--dnf-conf={repos_root / "1/dnf.conf"}',
+                    f'--yum-conf={repos_root / "1/yum.conf"}',
+                    f'--snapshot-dir={td / "snap1"}',
                 ])
 
             updated_headers = {}
             orig_headers = {}
             for snap, conf_type in zip(['snap0', 'snap1'], ['yum', 'dnf']):
                 updated_path = td / snap / f'{conf_type}.conf'
-                orig_path = Path(updated_path.decode() + '.orig')
+                orig_path = Path(updated_path + b'.orig')
                 updated_headers[snap] = _read_conf_headers(updated_path)
                 orig_headers[snap] = _read_conf_headers(orig_path)
 

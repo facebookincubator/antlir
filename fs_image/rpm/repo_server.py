@@ -102,13 +102,13 @@ def read_snapshot_dir(path: Path):
     with sqlite3.connect(db_path) as db:
         location_to_obj = add_snapshot_db_objs(db)
     db.close()
-    for repo in os.listdir(path / 'repos'):
+    for repo in (path / 'repos').listdir():
         # Make JSON metadata for the repo's GPG keys.
         key_dir = path / 'repos' / repo / 'gpg_keys'
-        for key_filename in os.listdir(key_dir.decode()):
+        for key_filename in key_dir.listdir():
             with open(key_dir / key_filename, 'rb') as infile:
                 key_content = infile.read()
-            location_to_obj[os.path.join(repo.decode(), key_filename)] = {
+            location_to_obj[(repo / key_filename).decode()] = {
                 'size': len(key_content),
                 # We don't have a good timestamp for these, so set it to
                 # "now".  Caching efficiency losses should be negligible :)
@@ -370,7 +370,7 @@ if __name__ == '__main__':  # pragma: no cover
     if opts.storage['kind'] == 'filesystem':
         opts.storage['base_dir'] = (
             opts.snapshot_dir / opts.storage['base_dir']
-        ).normpath().decode()
+        ).normpath()
 
     init_logging(debug=opts.debug)
 
