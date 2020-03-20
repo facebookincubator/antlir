@@ -41,3 +41,18 @@ buck_genrule(
     out = "seedroot",
     cmd = "gcc -static -o $OUT seedroot.c",
 )
+
+python_library(
+    # @autodeps-skip
+    name = "vmtest",
+    srcs = [
+        "vmtest.py",
+    ],
+    deps = [
+        third_party.library(
+            "click",
+            platform = "python",
+        ),
+        "//fs_image:artifacts_dir",
+    ],
+)
