@@ -13,9 +13,10 @@ RPM_SNAPSHOT_BASE_DIR = "rpm-repo-snapshot"
 # storage, and injects some auxiliary binaries.  This prepares the snapshot
 # for installation into a build appliance via `install_rpm_repo_snapshot`.
 #
-# The snapshot picks the default package manager via `yum_dnf_default`,
-# because the snapshotted repos might be compatible with (or tested with)
-# only one but not the other.
+# The snapshot uses the first element of `yum_dnf` as the default package
+# manager.  The tuple is allowed to contain just one element because the
+# snapshotted repos might be compatible with (or tested with) only one but
+# not the other.
 #
 # Hack alert: If you pass `storage["kind"] == "filesystem"`, and its
 # `"base_dir"` is relative, it will magically be interpreted to be relative
@@ -25,7 +26,9 @@ def rpm_repo_snapshot(
         name,
         src,
         storage,
-        yum_dnf_default,
+        # Tuple with `yum`, or `dnf`, or both.  ORDER MATTERS: the first
+        # package manager is the one that gets used by default.
+        yum_dnf,
         # We need to hardcode some localhost ports on which the RPM repo
         # snapshots will be served, because the server URI is part of the cache
         # key for `dnf`. Moreover, hardcoded ports make container setup easier.
@@ -43,10 +46,10 @@ def rpm_repo_snapshot(
         # which tend to be reserved for services.
         repo_server_ports = (28889, 28890, 28891, 28892),
         visibility = None):
-    if yum_dnf_default not in ["yum", "dnf"]:
+    if not yum_dnf or not all([(p in ["yum", "dnf"]) for p in yum_dnf]):
         fail(
-            'Must be "yum" or "dnf", got {}'.format(yum_dnf_default),
-            "yum_dnf_default",
+            'Must list at least one of "yum" / "dnf", got {}'.format(yum_dnf),
+            "yum_dnf",
         )
 
     # For tests, we want relative `base_dir` to point into the snapshot dir.
@@ -103,9 +106,8 @@ echo {quoted_yum_dnf_default} > "$OUT"/yum_dnf_default.name
 # The `bin` directory exists so that "porcelain" binaries can potentially be
 # added to `PATH`.  But we should avoid doing this in production code.
 mkdir "$OUT"/bin
-
-cp $(location {dnf_sh_target}) "$OUT"/bin/dnf
-cp $(location {yum_sh_target}) "$OUT"/bin/yum
+{maybe_add_bin_dnf}
+{maybe_add_bin_yum}
         '''.format(
             src = maybe_export_file(src),
             quoted_cli_storage_cfg = shell.quote(struct(**cli_storage).to_json()),
@@ -118,9 +120,14 @@ cp $(location {yum_sh_target}) "$OUT"/bin/yum
                     for p in sorted(collections.uniq(repo_server_ports))
                 ]),
             ),
-            quoted_yum_dnf_default = shell.quote(yum_dnf_default),
-            dnf_sh_target = "//fs_image/bzl:files/dnf.sh",
-            yum_sh_target = "//fs_image/bzl:files/yum.sh",
+            quoted_yum_dnf_default = shell.quote(yum_dnf[0]),
+            # Only install binaries this snapshot claims to support.
+            maybe_add_bin_dnf = (
+                'cp $(location //fs_image/bzl:files/dnf.sh) "$OUT"/bin/dnf'
+            ) if "dnf" in yum_dnf else "",
+            maybe_add_bin_yum = (
+                'cp $(location //fs_image/bzl:files/yum.sh) "$OUT"/bin/yum'
+            ) if "yum" in yum_dnf else "",
         ),
         # This rule is not cacheable due to `maybe_wrap_executable_target`
         # above.  Technically, we could make it cacheable in @mode/opt, but
