@@ -20,7 +20,8 @@ import argparse
 import pwd
 
 from typing import (
-    Any, AnyStr, Iterable, Mapping, NamedTuple, Optional, Tuple, Type, TypeVar,
+    Any, AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Type,
+    TypeVar,
 )
 
 from find_built_subvol import find_built_subvol, Subvol
@@ -155,7 +156,7 @@ class _NspawnOpts(NamedTuple):
     hostname: Optional[str] = None  # for `image.*_unittest`
     quiet: bool = False
     # For `RpmActionItem` and foreign layers that install RPMs:
-    serve_rpm_snapshot_dir: Optional[Path] = None
+    serve_rpm_snapshots: List[Path] = ()
     # For now, these have the form `K=V`. Future: make this a map?
     setenv: Iterable[AnyStr] = ()  # for `image.*_unittest`
     snapshot: bool = True  # For `RpmBuildItem`
@@ -183,8 +184,8 @@ def new_nspawn_opts(**kwargs):
     # Neither `yum` nor `dnf` work without root.  Less importantly, running
     # the `repo-server` under `--as-pid2` currently requires `root` to
     # unmount and remove /outerproc/.
-    assert not opts.serve_rpm_snapshot_dir or opts.user.pw_name == 'root', \
-        f'You must set --user=root to use --serve-rpm-snapshot-dir: {opts}'
+    assert not opts.serve_rpm_snapshots or opts.user.pw_name == 'root', \
+        f'You must set --user=root to use --serve-rpm-snapshot: {opts}'
     return opts
 
 
@@ -245,14 +246,14 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         '--quiet', action='store_true', help='See `man systemd-nspawn`.',
     )
     parser.add_argument(
-        '--serve-rpm-snapshot-dir', type=Path.from_argparse,
-        # Future: Very soon, this contract will change.
-        help='Multi-repo snapshot directory, with per-repo subdirectories, '
-            'each containing repomd.xml, repodata.json, and rpm.json. '
-            'The top directory should also contain a storage.json (to '
-            'specify the storage configuration to use as package source) '
-            'and a repo-server binary (or possibly a symlink or shell '
-            'script) to allow running an instance of the repo-server proxy.',
+        '--serve-rpm-snapshot', action='append', dest='serve_rpm_snapshots',
+        type=Path.from_argparse,
+        help='Container-relative path to an RPM repo snapshot directory, '
+            'normally located under `RPM_SNAPSHOT_BASE_DIR`. Your container '
+            'will be provided with `repo-server`s listening on the ports '
+            'specified in the `etc/{yum,dnf}/{yum,dnf}.conf` of the snapshot, '
+            'so you can simply run `{yum,dnf} -c PATH_TO_CONF` to use them. '
+            'This option may be repeated to serve multiple snapshots.',
     )
     assert defaults['setenv'] == ()  # The argparse default must be mutable
     parser.add_argument(
@@ -335,7 +336,7 @@ class _NspawnCLIArgs(NamedTuple):
 def _new_nspawn_cli_args(**kwargs):
     args = _NspawnCLIArgs(**kwargs)
     # Fixme: Will be removed in a later diff, boot should also work.
-    assert not args.boot or not args.opts.serve_rpm_snapshot_dir, args
+    assert not args.boot or not args.opts.serve_rpm_snapshots, args
     return args
 
 

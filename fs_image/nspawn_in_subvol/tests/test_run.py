@@ -500,17 +500,18 @@ class NspawnTestCase(unittest.TestCase):
     def _run_yum_or_dnf(self, progname, package,
         expected_filename, expected_contents, expected_logline,
     ):
+        snapshot_dir = '/__fs_image__/rpm-repo-snapshot/default'
         ret = self._nspawn_in('build-appliance', [
             '--user=root',
-            '--serve-rpm-snapshot-dir',
-            os.path.join(os.path.dirname(__file__), 'repo-snapshot'),
+            '--serve-rpm-snapshot', snapshot_dir,
             '--',
             '/bin/sh', '-c',
             textwrap.dedent(f'''\
                 set -ex
                 mkdir /target
-                {progname} --config=/repo-server/{progname}.conf \\
-                        --installroot=/target -y install {package}
+                {progname} \\
+                    --config={snapshot_dir}/etc/{progname}/{progname}.conf \\
+                    --installroot=/target -y install {package}
                 test -f /target{expected_filename}
                 contents=$(cat /target{expected_filename})
                 test "$contents" = "{expected_contents}"
