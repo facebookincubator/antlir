@@ -223,7 +223,7 @@ import subprocess
 from typing import Mapping, NamedTuple
 
 from find_built_subvol import find_built_subvol
-from fs_image.fs_utils import create_ro
+from fs_image.fs_utils import Path, create_ro
 from fs_image.common import init_logging, check_popen_returncode
 from subvol_utils import Subvol, SubvolOpts
 
@@ -354,7 +354,7 @@ def parse_args(argv):
     #     help='Consumes the remaining arguments on the command-line. '
     #         'A list of image_layer JSON output files.',
     # )
-    return parser.parse_args(argv)
+    return Path.parse_args(parser, argv)
 
 
 # Future: For incremental snapshots, an important sanity check is to verify

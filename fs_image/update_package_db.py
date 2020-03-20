@@ -179,9 +179,9 @@ def _read_bzl_db(path: Path) -> PackageTagDb:
 
 def _read_json_dir_db(path: Path) -> PackageTagDb:
     db = {}
-    for package in os.listdir(path):
+    for package in path.listdir():
         tag_to_info = db.setdefault(package.decode(), {})
-        for tag_json in os.listdir(path / package):
+        for tag_json in (path / package).listdir():
             tag_json = tag_json.decode()
             assert tag_json.endswith(_JSON), (path, package, tag_json)
             with open(path / package / tag_json) as infile:
@@ -315,7 +315,7 @@ def _parse_args(argv, *, overview_doc, options_doc):
     parser.add_argument(  # Pass this to `init_logging`
         '--debug', action='store_true', help='Enable verbose logging',
     )
-    return parser.parse_args(argv)
+    return Path.parse_args(parser, argv)
 
 
 def main(

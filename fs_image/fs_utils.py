@@ -5,7 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 
 'Utilities to make Python systems programming more palatable.'
+import argparse
 import errno
+import json
 import os
 import shutil
 import stat
@@ -14,7 +16,7 @@ import urllib.parse
 import tempfile
 
 from contextlib import contextmanager
-from typing import AnyStr, Iterable
+from typing import AnyStr, Iterable, List, Union
 
 from .common import byteme, check_popen_returncode, get_file_logger
 
@@ -23,14 +25,42 @@ log = get_file_logger(__file__)
 
 # `pathlib` refuses to operate on `bytes`, which is the only sane way on Linux.
 class Path(bytes):
-    'A byte path that supports joining via the / operator.'
+    '''
+    A `bytes` path that supports joining via the / operator.
+
+    `Path` can mostly be used in place of `bytes`, with a few key differences:
+      - It is an error to compare it to `str`, preventing a common bug.
+      - It formats as a surrogate-escaped string, not as a quoted
+        byte-string.  If you need the latter, use `repr()`.
+
+    Most operations (including construction, and `/`) accept `str` and
+    `bytes`.
+
+    We always interconvert with `str` as if the ambient encoding is `utf-8`.
+    No provisions are made for other encodings, but if a use-case arose,
+    this could be improved.
+
+    `Path` exposes many helper methods borrowed from `os` and `os.path`, and
+    a some `pathlib`-style methods (`read_text`, `touch`).
+
+    Additionally, it has integration with these commonly used tools:
+      - `argparse`: `from_argparse` and `parse_args`
+      - `json`: `json_load` and `json_loads`
+      - `Optional[Path]`: `or_none`
+      - `urllib`: `file_url`
+    '''
 
     def __new__(cls, arg, *args, **kwargs):
         return super().__new__(cls, byteme(arg), *args, **kwargs)
 
     def __eq__(self, obj) -> bool:
         if not isinstance(obj, bytes):
-            raise TypeError
+            # NB: The verbose error can be expensive, but this error must
+            # never occur in correct code, so optimize for debuggability.
+            raise TypeError(
+                f'Cannot compare `Path` {repr(self)} with '
+                f'`{type(obj)}` {repr(obj)}.'
+            )
         return super().__eq__(obj)
 
     def __ne__(self, obj) -> bool:
@@ -59,6 +89,18 @@ class Path(bytes):
     def dirname(self) -> 'Path':
         return Path(os.path.dirname(self))
 
+    # NB: A lazy `gen_dir_names()` was briefly considered, but rejected (for
+    # now) because:
+    #   (1) `listdir` is clearly analogous to the standard `os` module
+    #   (2) `gen_dir_paths` has just 1 use-case in `test_parse_repodata.py`
+    #   (3) `listdir` is shorter, and the cost of a spurious list is low
+    def listdir(self) -> List['Path']:
+        '''
+        Prefer over `os.listdir` for conciseness, and because downstream
+        code might want a `Path` (for example, to use in f-strings).
+        '''
+        return [Path(p) for p in os.listdir(self)]
+
     def normpath(self) -> 'Path':
         return Path(os.path.normpath(self))
 
@@ -76,6 +118,20 @@ class Path(bytes):
         # Python uses `surrogateescape` for `sys.argv`.
         return Path(s.encode(errors='surrogateescape'))
 
+    @classmethod
+    def parse_args(
+        cls, parser: argparse.ArgumentParser, argv: Iterable[Union[str, 'Path']]
+    ) -> argparse.Namespace:
+        '''
+        Use this instead of `ArgumentParser.parse_args` because,
+        inconveniently, it does not accept `bytes`, which makes it harder to
+        write tests that use `Path` by default.
+        '''
+        return parser.parse_args([
+            a.decode(errors='surrogateescape') if isinstance(a, bytes) else a
+                for a in argv
+        ])
+
     def read_text(self) -> str:
         with open(self) as infile:
             return infile.read()
@@ -84,6 +140,35 @@ class Path(bytes):
         with open(self, 'a'):
             pass
         return self
+
+    @classmethod
+    def json_dumps(cls, *args, **kwargs) -> str:
+        'Use instead of `json.dumps` to serializing `Path` values.'
+        assert 'cls' not in kwargs
+        return json.dumps(*args, **kwargs, cls=_PathJSONEncoder)
+
+    @classmethod
+    def json_dump(cls, *args, **kwargs) -> str:
+        'Use instead of `json.dump` to allow serializing `Path` values.'
+        assert 'cls' not in kwargs
+        return json.dump(*args, **kwargs, cls=_PathJSONEncoder)
+
+    def __format__(self, spec) -> str:
+        'Allow usage of `Path` in f-strings.'
+        return self.decode(errors='surrogateescape').__format__(spec)
+
+
+# Future: If it becomes necessary to serialize dict keys that are `Path`,
+# the `json` module currently does not support custom key serialization.  In
+# that case, we would delete this and replace it with an explicit recursive
+# traversal on the input that returns a new structure.  Yay, `json`.
+class _PathJSONEncoder(json.JSONEncoder):
+    'Implementation detail for `Path.json_dump` & `Path.json_dumps`.'
+    def default(self, obj):
+        if isinstance(obj, Path):
+            return obj.decode(errors='surrogateescape')
+        return super().default(self, obj)
+
 
 @contextmanager
 def temp_dir(**kwargs) -> Iterable[Path]:

@@ -270,7 +270,7 @@ class NspawnTestCase(unittest.TestCase):
         # the unique place we have to do it, keep it simple.
         dest_subvol._exists = True
         self._nspawn_in('host', [
-            '--snapshot-into', dest_subvol.path().decode(), '--',
+            f'--snapshot-into={dest_subvol.path()}', '--',
             # Also tests that we are a non-root user in the container.
             'sh', '-c', 'echo ohaibai "$USER" > /home/nobody/poke',
         ])

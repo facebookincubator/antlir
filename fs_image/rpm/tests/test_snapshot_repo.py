@@ -4,15 +4,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import json
 import os
 import shutil
 import sqlite3
 import unittest
 
+from fs_image.fs_utils import Path, temp_dir
+
 from . import temp_repos
 
-from ..common import temp_dir
 from ..repo_snapshot import RepoSnapshot
 from ..snapshot_repo import snapshot_repo
 from ..storage import Storage
@@ -34,21 +34,21 @@ class SnapshotRepoTestCase(unittest.TestCase):
             storage_dict = {
                 'key': 'test',
                 'kind': 'filesystem',
-                'base_dir': (td / 'storage').decode(),
+                'base_dir': td / 'storage',
             }
             snapshot_repo([
-                '--repo-universe', 'fakeverse',
-                '--repo-name', 'dog',
-                '--repo-url', (repos_root / '0/dog').file_url(),
-                '--gpg-key-whitelist-dir', whitelist_dir.decode(),
-                '--gpg-url', (td / 'fake_gpg_key').file_url(),
-                '--snapshot-dir', (td / 'snap').decode(),
-                '--storage', json.dumps(storage_dict),
-                '--db', json.dumps({
+                '--repo-universe=fakeverse',
+                '--repo-name=dog',
+                '--repo-url=' + (repos_root / "0/dog").file_url(),
+                f'--gpg-key-whitelist-dir={whitelist_dir}',
+                '--gpg-url=' + (td / 'fake_gpg_key').file_url(),
+                f'--snapshot-dir={td / "snap"}',
+                f'--storage={Path.json_dumps(storage_dict)}',
+                f'--db=' + Path.json_dumps({
                     'kind': 'sqlite',
-                    'db_path': (td / 'db.sqlite3').decode(),
+                    'db_path': td / 'db.sqlite3',
                 }),
-                '--threads', '4',
+                '--threads=4',
             ])
             # This test simply checks the overall integration, so we don't
             # bother looking inside the DB or Storage, or inspecting the

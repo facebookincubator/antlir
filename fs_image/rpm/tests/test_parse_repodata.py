@@ -18,13 +18,13 @@ from ..parse_repodata import get_rpm_parser, pick_primary_repodata
 from ..tests.temp_repos import SAMPLE_STEPS, temp_repos_steps
 
 
-def _listdir(path: Path) -> Set[Path]:
-    return {path / p for p in os.listdir(path)}
+def _dir_paths(path: Path) -> Set[Path]:
+    return {path / p for p in path.listdir()}
 
 
 def find_test_repos(repos_root: Path) -> Iterator[Tuple[Path, RepoMetadata]]:
-    for step_path in _listdir(repos_root):
-        for p in _listdir(step_path):
+    for step_path in _dir_paths(repos_root):
+        for p in _dir_paths(step_path):
             if p.basename() in [b'yum.conf', b'dnf.conf']:
                 continue
             with open(p / 'repodata/repomd.xml', 'rb') as f:

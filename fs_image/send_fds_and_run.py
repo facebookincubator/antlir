@@ -50,6 +50,7 @@ from fs_image.common import (
     FD_UNIX_SOCK_TIMEOUT, get_file_logger, init_logging,
     listen_temporary_unix_socket,
 )
+from fs_image.fs_utils import Path
 
 log = get_file_logger(__file__)
 
@@ -140,7 +141,7 @@ def parse_opts(argv):
     parser.add_argument(
         'cmd', nargs='+', help='The command to wrap and supply with FDs.',
     )
-    opts = parser.parse_args(argv)
+    opts = Path.parse_args(parser, argv)
     assert not opts.sudo_arg or opts.sudo, '--sudo-arg requires --sudo'
     return opts
 

@@ -45,7 +45,7 @@ class NspawnTestInSubvolTestCase(unittest.TestCase):
                 prefix = ['--zap=3', '--ou', 'boo', '--ou=3']
                 suffix = ['garr', '-abc', '-gh', '-d', '--e"f']
                 with rewrite_testpilot_python_cmd(
-                    [bin, *prefix, f'{rewritten_opt}={tmp.decode()}', *suffix],
+                    [bin, *prefix, f'{rewritten_opt}={tmp}', *suffix],
                     next_fd=37,
                 ) as (new_cmd, fds_to_forward):
                     fd_to_forward, = fds_to_forward
@@ -74,9 +74,8 @@ class NspawnTestInSubvolTestCase(unittest.TestCase):
         with temp_dir() as td:
             tmp = td / 'bar.xml'
             self.assertFalse(os.path.exists(tmp))  # Will be created
-            with mock.patch.dict(os.environ, {
-                'GTEST_OUTPUT': f'xml:{tmp.decode()}',
-            }), rewrite_tpx_gtest_cmd(cmd, next_fd=37) as (new_cmd, fds):
+            with mock.patch.dict(os.environ, {'GTEST_OUTPUT': f'xml:{tmp}'}), \
+                    rewrite_tpx_gtest_cmd(cmd, next_fd=37) as (new_cmd, fds):
                 fd_to_forward, = fds
                 self.assertIsInstance(fd_to_forward, int)
                 self.assertEqual([

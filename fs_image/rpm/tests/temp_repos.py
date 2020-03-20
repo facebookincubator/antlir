@@ -174,7 +174,7 @@ SAMPLE_STEPS = [
 ]
 
 
-def build_rpm(package_dir: Path, arch: str, rpm: Rpm) -> bytes:
+def build_rpm(package_dir: Path, arch: str, rpm: Rpm) -> Path:
     'Returns the filename of the built RPM.'
     with temp_dir(dir=package_dir) as td, tempfile.NamedTemporaryFile() as tf:
         tf.write(rpm.spec().encode())
@@ -190,7 +190,7 @@ def build_rpm(package_dir: Path, arch: str, rpm: Rpm) -> bytes:
         # `rpmbuild` has a non-configurable output layout, so
         # we'll move the resulting rpm into our package dir.
         rpms_dir = td / 'home/rpmbuild/RPMS' / arch
-        rpm_name, = os.listdir(rpms_dir)
+        rpm_name, = rpms_dir.listdir()
         os.rename(rpms_dir / rpm_name, package_dir / rpm_name)
         return rpm_name
 

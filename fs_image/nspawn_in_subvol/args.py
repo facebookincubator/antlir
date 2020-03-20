@@ -148,8 +148,8 @@ class _NspawnOpts(NamedTuple):
     layer: Subvol
     bind_repo_ro: bool = False  # to support @mode/dev
     # Future: maybe make these `Path`?
-    bindmount_ro: Iterable[Tuple[str, str]] = ()  # for `RpmActionItem`
-    bindmount_rw: Iterable[Tuple[str, str]] = ()  # for `RpmActionItem`
+    bindmount_ro: Iterable[Tuple[AnyStr, AnyStr]] = ()  # for `RpmActionItem`
+    bindmount_rw: Iterable[Tuple[AnyStr, AnyStr]] = ()  # for `RpmActionItem`
     forward_fd: Iterable[int] = ()  # for `image.*_unittest`
     # The default is to let `systemd-nspawn` pick a random hostname.
     hostname: Optional[str] = None  # for `image.*_unittest`
@@ -361,7 +361,7 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     _parser_add_nspawn_opts(parser)
     if allow_debug_only_opts:
         _parser_add_debug_only_not_for_prod_opts(parser)
-    args = parser.parse_args(argv)
+    args = Path.parse_args(parser, argv)
     assert args.boot or not args.append_boot_console, args
 
     return _extract_opts_from_dict(

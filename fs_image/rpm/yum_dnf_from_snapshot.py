@@ -425,22 +425,18 @@ def _dummies_for_protected_paths(protected_paths) -> Mapping[str, str]:
     writes by RPMs.  We enforce that by bind-mounting an empty file or
     directory on top of each one of them.
     '''
-    with tempfile.TemporaryDirectory() as td_name, \
-            tempfile.NamedTemporaryFile() as tf:
+    with temp_dir() as td, tempfile.NamedTemporaryFile() as tf:
         # NB: There may be duplicates in protected_paths, so we normalize.
         # If the duplicates include both a file and a directory, this picks
         # one arbitrarily, and if the type on disk is different, we will
         # fail at mount time.  This doesn't seem worth an explicit check.
         yield {
-            os.path.normpath(p): (td_name if p.endswith('/') else tf.name)
+            os.path.normpath(p): (td.decode() if p.endswith('/') else tf.name)
                 for p in protected_paths
         }
         # NB: The bind mount is read-only, so this is just paranoia.  If it
         # were left RW, we'd need to check its owner / permissions too.
-        for expected, actual in (
-            ([], os.listdir(td_name)),
-            (b'', tf.read()),
-        ):
+        for expected, actual in (([], td.listdir()), (b'', tf.read())):
             assert expected == actual, \
                 f'Some RPM wrote {actual} to {protected_paths}'
 
@@ -460,7 +456,7 @@ def prepare_versionlock_dir(yum_dnf: YumDnf, list_path: Path) -> Path:
         vl_conf = textwrap.dedent(f'''\
             [main]
             enabled = 1
-            locklist = {d.decode()}/versionlock.list
+            locklist = {d}/versionlock.list
         ''')
         with open(d / 'versionlock.conf', 'w') as outf:
             outf.write(vl_conf)
@@ -488,9 +484,9 @@ def prepare_versionlock_dir(yum_dnf: YumDnf, list_path: Path) -> Path:
         with open(d / 'versionlock.conf') as infile:
             assert infile.read() == vl_conf
 
-        assert (set(os.listdir(d)) - {b'versionlock.pyc', b'__pycache__'}) == {
+        assert (set(d.listdir()) - {b'versionlock.pyc', b'__pycache__'}) == {
             b'versionlock.conf', b'versionlock.list', b'versionlock.py',
-        }, os.listdir(d)
+        }, d.listdir()
 
 
 def yum_dnf_from_snapshot(
