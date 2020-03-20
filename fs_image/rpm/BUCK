@@ -341,13 +341,17 @@ test_rpm_repo_snapshot(
     #
     # All other RPM installations via one of the ~3 build appliances that
     # install this snapshot will use this default.
-    yum_dnf_default = "dnf",  # If changing, fix MaybeDnfRpmActionItemTestCase
+    yum_dnf = (
+        # If you change this order, fix MaybeDnfRpmActionItemTestCase
+        "dnf",
+        "yum",
+    ),
 )
 
 test_rpm_repo_snapshot(
     name = "non-default-repo-snapshot-for-tests",
     kind = "non-default",
-    yum_dnf_default = "yum",  # Just because the other one defaults to "dnf"
+    yum_dnf = ("yum", "dnf"),  # Just because the other one defaults to "dnf"
 )
 
 image_python_unittest(
