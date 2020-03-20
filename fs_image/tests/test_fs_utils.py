@@ -135,6 +135,12 @@ class TestFsUtils(unittest.TestCase):
                 f.write('hello\n')
             self.assertEqual('hello\n', tmp_path.read_text())
 
+    def test_path_shell_quote(self):
+        self.assertEqual(
+            Path(r'''/a\ b/c d/e'"f/( \t/''').shell_quote(),
+            r"""'/a\ b/c d/e'"'"'"f/( \t/'""",
+        )
+
     def test_path_touch(self):
         with temp_dir() as td:
             tmp_path = td / 'touchme'

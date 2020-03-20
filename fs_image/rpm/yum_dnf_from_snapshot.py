@@ -323,7 +323,7 @@ def _isolate_yum_dnf_and_wait_until_ready(
             YumDnf.dnf: '/etc/dnf/dnf.conf',
         }[yum_dnf],
         quoted_dummy_dev=dummy_dev,
-        quoted_install_root=shlex.quote(install_root.decode()),
+        quoted_install_root=install_root.shell_quote(),
         quoted_netns_fifo=shlex.quote(netns_fifo),
         quoted_ready_fifo=shlex.quote(ready_fifo),
         quoted_protected_paths='\n'.join(

@@ -54,16 +54,13 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 from_target='t', source='file', dest='/file_symlink'
             ).build(subvol, DUMMY_LAYER_OPTS)
 
-            def quoted_subvol_path(p):
-                return shlex.quote(subvol.path(p).decode())
-
             # Make a couple of absolute symlinks to test our behavior on
             # linking to paths that contain those.
             subvol.run_as_root(['bash', '-c', f'''\
-                ln -s /file {quoted_subvol_path('abs_link_to_file')}
-                mkdir {quoted_subvol_path('my_dir')}
-                touch {quoted_subvol_path('my_dir/inner')}
-                ln -s /my_dir {quoted_subvol_path('my_dir_link')}
+                ln -s /file {subvol.path('abs_link_to_file').shell_quote()}
+                mkdir {subvol.path('my_dir').shell_quote()}
+                touch {subvol.path('my_dir/inner').shell_quote()}
+                ln -s /my_dir {subvol.path('my_dir_link').shell_quote()}
             '''])
             # A simple case: we link to an absolute link.
             SymlinkToFileItem(
