@@ -155,7 +155,7 @@ class _NspawnOpts(NamedTuple):
     hostname: Optional[str] = None  # for `image.*_unittest`
     quiet: bool = False
     # For `RpmActionItem` and foreign layers that install RPMs:
-    serve_rpm_snapshot_dir: Optional[str] = None
+    serve_rpm_snapshot_dir: Optional[Path] = None
     # For now, these have the form `K=V`. Future: make this a map?
     setenv: Iterable[AnyStr] = ()  # for `image.*_unittest`
     snapshot: bool = True  # For `RpmBuildItem`
