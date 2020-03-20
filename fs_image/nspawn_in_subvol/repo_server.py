@@ -122,13 +122,6 @@ def _exfiltrate_container_pid_and_wait_for_ready(
                     send_ready()  # pragma: no cover
 
 
-
-
-def _get_repo_server_storage_config(snapshot_dir):
-    with open(snapshot_dir / b'storage.json') as f:
-        return f.read()
-
-
 @contextmanager
 def _write_yum_or_dnf_configs(
     yum_dnf, repo_server_config_dir, repo_server_snapshot_dir, host, port
@@ -195,9 +188,6 @@ def _popen_and_inject_repo_server(
         ), launch_repo_servers_in_netns(
             target_pid=container_pid,
             repo_server_bin=repo_server_snapshot_dir / 'repo-server',
-            storage_cfg=_get_repo_server_storage_config(
-                repo_server_snapshot_dir
-            ),
             snapshot_dir=repo_server_snapshot_dir,
             debug=debug,
         ) as hostports, _write_yum_and_dnf_configs(

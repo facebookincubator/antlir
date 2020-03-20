@@ -24,7 +24,7 @@ base_dir=\\$(dirname "$my_dir")
 exec "$base_dir"/yum-dnf-from-snapshot \\
     --repo-server "$base_dir/repo-server" \\
     --snapshot-dir "$base_dir" \\
-    --storage "\\$(cat "$base_dir"/storage.json)" {yum_or_dnf} "$@"
+    {yum_or_dnf} "$@"
 """.format(yum_or_dnf = shell.quote(name)),
         )),
     )

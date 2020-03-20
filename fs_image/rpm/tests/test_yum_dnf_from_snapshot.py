@@ -54,11 +54,6 @@ class YumFromSnapshotTestImpl:
                 yum_dnf_from_snapshot(
                     yum_dnf=self._YUM_DNF,
                     repo_server_bin=Path(snapshot_dir) / 'repo-server',
-                    storage_cfg=Path.json_dumps({
-                        'key': 'test',
-                        'kind': 'filesystem',
-                        'base_dir': snapshot_dir / 'storage',
-                    }),
                     snapshot_dir=snapshot_dir,
                     install_root=Path(install_root),
                     protected_paths=protected_paths,
