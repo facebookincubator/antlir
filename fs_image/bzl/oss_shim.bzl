@@ -88,6 +88,7 @@ buck_genrule = shim.buck_genrule
 buck_sh_binary = shim.buck_sh_binary
 buck_sh_test = shim.buck_sh_test
 config = shim.config
+default_vm_layer = shim.default_vm_layer
 get_visibility = shim.get_visibility
 kernel_artifact = shim.kernel_artifact
 target_utils = shim.target_utils
