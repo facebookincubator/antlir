@@ -77,7 +77,8 @@ class Repodata(NamedTuple):
 
     def is_primary_sqlite(self) -> bool:
         return self.location.endswith('-primary.sqlite.bz2') or \
-            self.location.endswith('-primary.sqlite.gz')
+            self.location.endswith('-primary.sqlite.gz') or \
+                self.location.endswith('-primary.sqlite.xz')
 
     def is_primary_xml(self) -> bool:
         return self.location.endswith('-primary.xml.gz')
@@ -149,3 +150,6 @@ class RepoMetadata(NamedTuple):
 
     def best_checksum(self) -> Checksum:
         return self.checksum
+
+    def __repr__(self):
+        return f'RepoMetadata(fetch_timestamp: {self.fetch_timestamp}, checksum: {self.checksum}, size: {self.size}, build_timestamp: {self.build_timestamp}'

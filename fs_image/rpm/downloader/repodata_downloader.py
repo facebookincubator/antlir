@@ -68,11 +68,17 @@ def _download_repodata(
     # or if it is primary (so we can parse it for RPMs).
     with cfg.new_db_ctx(readonly=True) as ro_repo_db:
         storage_id = ro_repo_db.get_storage_id(repodata_table, repodata)
+        log.debug(f"repodata.location: {repodata.location}, storage_id: {storage_id}")
 
     # Nothing to do -- only need to download repodata if it's the primary
     # (so we can parse it for RPMs), or if it's not already in the DB.
+
+    # TODO(ls): Why do we have to redownload the primary every time?  If it hasn't changed
+    # (the checksum is the same), then we shouldn't need to get it again?
     if not is_primary and storage_id:
+        log.debug(f"No need to redownload {repodata.location}")
         return DownloadRepodataReturnType(repodata, False, storage_id, None)
+
     rpms = [] if is_primary else None
 
     # Remaining possibilities are that we've got a primary with or without
@@ -82,8 +88,10 @@ def _download_repodata(
         if is_primary:
             # We'll parse the selected primary file to discover the RPMs.
             rpm_parser = cm.enter_context(get_rpm_parser(repodata))
+            log.debug(f"{repodata.location} is primary, rpm_parser:{rpm_parser}")
 
         if storage_id:
+            log.debug(f"{repodata.location} has storage_id: {storage_id}")
             # Read the primary from storage as we already have an ID
             infile = cm.enter_context(storage.reader(storage_id))
             # No need to write as this repodata was already stored
@@ -95,7 +103,7 @@ def _download_repodata(
             # future runs don't need to redownload it
             outfile = cm.enter_context(storage.writer())
 
-        log.info(f"Fetching {repodata}")
+        log.info(f"Fetching {repodata} via: {infile}")
         for chunk in verify_chunk_stream(
             read_chunks(infile, BUFFER_BYTES),
             [repodata.checksum],
@@ -109,9 +117,11 @@ def _download_repodata(
                     rpms.extend(rpm_parser.feed(chunk))
                 except Exception as ex:
                     raise RepodataParseError((repodata.location, ex))
+
         # Must commit the output context to get a storage_id.
         if outfile:
             return DownloadRepodataReturnType(repodata, True, outfile.commit(), rpms)
+
     # The primary repodata was already stored, and we just parsed it for RPMs.
     assert storage_id is not None
     return DownloadRepodataReturnType(repodata, False, storage_id, rpms)
@@ -123,7 +133,10 @@ def _download_repodatas(
     rpms = None  # We'll extract these from the primary repodata
     storage_id_to_repodata = {}  # Newly stored **and** pre-existing
     repodata_table = RepodataTable()
+
     primary_repodata = pick_primary_repodata(repomd.repodatas)
+    log.debug(f"Found primary repo data: {primary_repodata}")
+
     log_size(f"`{repo.name}` repodata weighs", sum(rd.size for rd in repomd.repodatas))
     rw_db_ctx = cfg.new_db_ctx(readonly=False)
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
@@ -162,6 +175,9 @@ def _download_repodatas(
                 # Convert to a set to work around buggy repodatas, which
                 # list the same RPM object twice.
                 rpms = frozenset(res.maybe_rpms)
+                # rpms = frozenset(res.maybe_rpms[:10])
+                log.debug(f"repo: {repo.name} has {len(rpms)} rpms")
+
             set_new_key(storage_id_to_repodata, storage_id, res.repodata)
     # It's possible that for non-primary repodatas we received errors when
     # downloading - in that case we store the error in the sqlite db, thus the
@@ -181,6 +197,7 @@ def gen_repodatas_from_repomds(
     # but we're likely already saturating the network with the downloads for a
     # single repomd and won't see a perf increase from further parallelization.
     for res in repomd_results:
+        log.debug(f'Download repo data for: {res.repo}')
         # We explicitly omit any complex clean-up logic here, and store
         # repodatas regardless of whether they end up actually being used (i.e.
         # their referencing repomd gets committed).

@@ -138,7 +138,10 @@ def snapshot_repos(
             ),
             visitors=[all_repos_sizer],
         ):
+            log.debug(f"repo.name: {repo.name}, repo.base_url: {repo.base_url}")
             snapshot.visit(shard_sizer).to_sqlite(repo.name, db)
+
+            log.debug(f'repo.gpg_key_urls: {repo.gpg_key_urls}')
             # This is done outside of the repo snapshot as we only want to
             # perform it upon successful snapshot. It's also a quick operation
             # and thus doesn't benefit from the added complexity of threading

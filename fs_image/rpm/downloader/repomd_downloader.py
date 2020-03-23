@@ -37,7 +37,7 @@ def _download_repomds(
     repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]], cfg: DownloadConfig
 ) -> Iterator[DownloadResult]:
     """Downloads all repo metadatas concurrently"""
-    log.info("Downloading repomds for all repos")
+    log.info(f"Downloading repomds for all repos: {repos_and_universes}")
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
             executor.submit(_download_repomd, repo, repo_universe)
