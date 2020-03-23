@@ -6,6 +6,7 @@ image.layer(
     name = "fedora31_build_appliance",
     features = [
         image.mkdir("/", RPM_SNAPSHOT_BASE_DIR),
+        image.mkdir("/etc", "yum"),
         install_rpm_repo_snapshot(
             "//snapshot:fedora31",
             make_default = True,
@@ -14,6 +15,8 @@ image.layer(
             "btrfs-progs",
             "coreutils",
             "dnf",
+            "iproute",
+            "sudo",
         ]),
     ],
     build_opts = image.opts(

@@ -226,7 +226,7 @@ def _isolate_yum_dnf_and_wait_until_ready(
     echo -n $$ > {quoted_netns_fifo}
     # `yum` & `dnf` will talk to the repo snapshot server via loopback, but
     # it is `down` by default in a new network namespace.
-    ifconfig lo up
+    ip link set dev lo up
 
     # The image needs to have a valid `/dev` so that e.g.  RPM post-install
     # scripts can work correctly (true bug: a script writing a regular file

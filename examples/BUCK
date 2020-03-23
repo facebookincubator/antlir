@@ -1,0 +1,10 @@
+load("//fs_image/bzl:image.bzl", "image")
+
+image.layer(
+    name = "base",
+    features = [
+        image.rpms_install([
+            "btrfs-progs",
+        ]),
+    ],
+)

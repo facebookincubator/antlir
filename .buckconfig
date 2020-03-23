@@ -21,4 +21,5 @@
   excluded_labels = exclude_test_if_transitive_dep
 
 [fs_image]
+  build_appliance = //appliance:fedora31_build_appliance
   allowed_host_mount_targets = //appliance:host_build_appliance

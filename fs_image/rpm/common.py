@@ -211,8 +211,8 @@ def yum_is_dnf():
     """ Determine if yum is really just dnf by looking at `which yum`"""
     yum_path = shutil.which('yum')
 
-    # If yum is not a symlink then it's not dnf
-    if not os.path.islink(yum_path):
+    # If yum does not exist or it's not a symlink then it's not dnf
+    if not yum_path or not os.path.islink(yum_path):
         return False
 
     maybe_dnf = os.path.basename(os.readlink(yum_path))
