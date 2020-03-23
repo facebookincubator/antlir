@@ -238,7 +238,7 @@ shim = struct(
         get_current_repo_name = native.repository_name,
         get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
     ),
-    default_vm_layer = None,
+    default_vm_layer = "//fs_image/vm:base",
     get_visibility = _normalize_visibility,
     kernel_artifact = struct(
         default_kernel = _kernel_artifact_version("5.3.7-301.fc31.x86_64"),

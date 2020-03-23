@@ -1,3 +1,4 @@
+load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_library", "third_party")
 
 python_library(
@@ -54,5 +55,17 @@ python_library(
             platform = "python",
         ),
         "//fs_image:artifacts_dir",
+    ],
+)
+
+image.layer(
+    name = "base",
+    build_opts = image.opts(
+        build_appliance = "//appliance:fedora31_build_appliance",
+    ),
+    features = [
+        image.rpms_install([
+            "btrfs-progs",
+        ]),
     ],
 )
