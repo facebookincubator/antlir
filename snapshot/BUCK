@@ -1,0 +1,14 @@
+load("//fs_image/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
+
+rpm_repo_snapshot(
+    name = "fedora31",
+    src = "fedora31",
+    storage = {
+        "bucket": "fs-image",
+        "key": "s3",
+        "kind": "s3",
+        "prefix": "fedora31",
+        "region": "us-west-2",
+    },
+    yum_dnf_default = "dnf",
+)

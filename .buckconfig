@@ -19,3 +19,6 @@
   # option.
   # ie:  `buck test //fs_image/rpm:test-yum-dnf-from-snapshot --always-exclude`
   excluded_labels = exclude_test_if_transitive_dep
+
+[fs_image]
+  allowed_host_mount_targets = //appliance:host_build_appliance
