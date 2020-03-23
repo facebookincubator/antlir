@@ -1,0 +1,52 @@
+load("//fs_image/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")                                      
+load("//fs_image/bzl:image.bzl", "image")
+load("//fs_image/bzl:rpm_repo_snapshot.bzl", "RPM_SNAPSHOT_BASE_DIR", "install_rpm_repo_snapshot")   
+
+image.layer(
+    name = "fedora31_build_appliance",
+    features = [
+        image.mkdir("/", RPM_SNAPSHOT_BASE_DIR),
+        image.mkdir("/var/lib", "dnf"),
+        install_rpm_repo_snapshot(                                                                      
+            "//snapshot:fedora31",                                                      
+            make_default = True,
+        ),
+        image.rpms_install([
+            "coreutils",
+            "dnf",
+        ]),
+    ],
+    build_opts = image.opts(
+        build_appliance = ":host_build_appliance",
+    ),
+)
+
+image.layer(                                                                                            
+    name = "host_build_appliance",                                                                   
+    features = [                                                                                        
+        image.mkdir("/", "var"),                                                                        
+        image.mkdir("/var", "tmp"),                                                                     
+        image.mkdir("/var", "log"),                                                                     
+        image.mkdir("/var", "cache"),                                                                   
+        image.mkdir("/var/cache", "dnf"),                                                               
+        image.mkdir("/var", "lib/rpm"),                                                                 
+        image.mkdir("/var/lib", "dnf"),                                                                 
+        image.mkdir("/", RPM_SNAPSHOT_BASE_DIR),                                                        
+        install_rpm_repo_snapshot(                                                                      
+            "//snapshot:fedora31",
+            make_default = True,
+        ),                                                                                              
+    ] + [                                                                                               
+        image.host_dir_mount(source)                                                                    
+        for source in [                                                                                 
+            "/bin",                                                                                     
+            "/etc",                                                                                     
+            "/lib",                                                                                     
+            "/sbin",                                                                                    
+            "/usr",                                                                                     
+        ]                                                                                               
+    ],                                                                                                  
+    build_opts = image.opts(                                                                            
+        build_appliance = DO_NOT_USE_BUILD_APPLIANCE,                                                   
+    ),                                                                                                  
+) 

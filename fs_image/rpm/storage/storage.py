@@ -107,7 +107,7 @@ class Storage(Pluggable):
 
     def _add_key(self, sid: str) -> str:
         '_CommitCallback uses this to mark an ID before returning to the user'
-        assert self._KEY_REGEX.match(self.key)
+        assert self._KEY_REGEX.match(self.key), f"{self.key} does not match regex: {self._KEY_REGEX}"
         return f'{self.key}:{sid}'
 
     def strip_key(self, sid: str) -> str:

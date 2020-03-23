@@ -28,7 +28,10 @@ python_library(
     name = "s3_storage",
     srcs = ["s3_storage.py"],
     base_module = "rpm.storage",
-    deps = [":cli_object_storage"],
+    deps = [
+        ":cli_object_storage",
+        "//fs_image/rpm:open_url",
+    ],
 )
 
 # Depend on this rather than on e.g. :base_storage or :filesystem_storage above
