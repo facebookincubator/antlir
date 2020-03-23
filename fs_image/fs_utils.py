@@ -162,6 +162,10 @@ class Path(bytes):
         'Allow usage of `Path` in f-strings.'
         return self.decode(errors='surrogateescape').__format__(spec)
 
+    def __str__(self) -> str:
+        'Matches `__format__` since people expect `f"{p}" == str(p)`.'
+        return self.decode(errors='surrogateescape')
+
 
 # Future: If it becomes necessary to serialize dict keys that are `Path`,
 # the `json` module currently does not support custom key serialization.  In
