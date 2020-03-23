@@ -30,6 +30,8 @@ gpgkey=https://example.com/zupa
 enabled=1
 '''
 
+# Below, we use \x20 (hex-quoted space) to silence the linter that bans
+# trailing whitespace.
 _CONF_OUT = '''\
 [main]
 debuglevel = 2
@@ -54,7 +56,7 @@ fssnap_devices = !*
 baseurl = http://localhost:1234/potato
 \thttp://localhost:5678/potato
 enabled = 1
-gpgkey =''' + ' ' + '''
+gpgkey =\x20
 
 [oleander]
 baseurl = http://localhost:1234/oleander

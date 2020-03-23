@@ -141,6 +141,12 @@ class TestFsUtils(unittest.TestCase):
             r"""'/a\ b/c d/e'"'"'"f/( \t/'""",
         )
 
+    def test_path_str(self):
+        self.assertEqual('a/b', str(Path('a/b')))
+        self.assertEqual(
+            _BAD_UTF.decode(errors='surrogateescape'), str(Path(_BAD_UTF)),
+        )
+
     def test_path_touch(self):
         with temp_dir() as td:
             tmp_path = td / 'touchme'

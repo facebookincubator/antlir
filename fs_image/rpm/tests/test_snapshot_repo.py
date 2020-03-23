@@ -44,7 +44,7 @@ class SnapshotRepoTestCase(unittest.TestCase):
                 '--gpg-url=' + (td / 'fake_gpg_key').file_url(),
                 f'--snapshot-dir={td / "snap"}',
                 f'--storage={Path.json_dumps(storage_dict)}',
-                f'--db=' + Path.json_dumps({
+                '--db=' + Path.json_dumps({
                     'kind': 'sqlite',
                     'db_path': td / 'db.sqlite3',
                 }),
