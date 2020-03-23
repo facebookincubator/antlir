@@ -27,6 +27,7 @@ exec "$base_dir"/yum-dnf-from-snapshot \\
     {yum_or_dnf} "$@"
 """.format(yum_or_dnf = shell.quote(name)),
         )),
+        visibility = get_visibility(None),
     )
 
 def snapshot_install_dir(snapshot):

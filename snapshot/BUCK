@@ -10,5 +10,5 @@ rpm_repo_snapshot(
         "prefix": "fedora31",
         "region": "us-west-2",
     },
-    yum_dnf_default = "dnf",
+    yum_dnf = ["dnf"],
 )
