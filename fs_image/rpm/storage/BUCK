@@ -97,6 +97,8 @@ python_binary(
     srcs = ["cli.py"],
     base_module = "rpm.storage",
     main_module = "rpm.storage.cli",
+    # Some FB-internal storage implementations embed binaries in this PAR.
+    par_style = "xar",
     deps = [
         "//fs_image:fs_utils",
         "//fs_image/rpm:common",

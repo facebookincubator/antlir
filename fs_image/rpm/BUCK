@@ -1,6 +1,6 @@
 load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:image_python_unittest.bzl", "image_python_unittest")
-load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
+load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load(":defs.bzl", "test_rpm_repo_snapshot")
 
@@ -214,6 +214,8 @@ python_unittest(
 python_binary(
     name = "repo-server",
     main_module = "rpm.repo_server",
+    # Some FB-internal storage implementations embed binaries in this PAR
+    par_style = "xar",
     deps = [":repo_server"],
 )
 
