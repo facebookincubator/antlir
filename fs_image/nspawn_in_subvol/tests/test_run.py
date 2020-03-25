@@ -16,16 +16,14 @@ from contextlib import contextmanager
 from pwd import struct_passwd
 from unittest import mock
 
-# Get "coverage" on this file, in case we later add untested code there.
-import fs_image.nspawn_in_subvol.run  # noqa: F401
-
 from artifacts_dir import find_repo_root
 from fs_image.common import pipe
-from fs_image.nspawn_in_subvol.args import _parse_cli_args, PopenArgs
-from fs_image.nspawn_in_subvol.common import _nspawn_version
-from fs_image.nspawn_in_subvol.cmd import _extra_nspawn_args_and_env
-from fs_image.nspawn_in_subvol.run import run_nspawn
 from tests.temp_subvolumes import with_temp_subvols
+
+from ..args import _parse_cli_args, PopenArgs
+from ..common import _nspawn_version
+from ..cmd import _extra_nspawn_args_and_env
+from ..run import _set_up_run_cli
 
 
 @contextmanager
@@ -63,11 +61,20 @@ class NspawnTestCase(unittest.TestCase):
         self.maybe_extra_ending = b'\n' if self.nspawn_version < 242 else b''
 
     def _nspawn_in_boot_ret(self, rsrc_name, argv, **kwargs):
-        args = _parse_cli_args([
-            # __file__ works in @mode/opt since the resource is inside the XAR
-            '--layer', os.path.join(os.path.dirname(__file__), rsrc_name),
-        ] + argv, allow_debug_only_opts=True)
-        return run_nspawn(args.opts, PopenArgs(**kwargs), boot=args.boot)
+        # It'd be nice to replace this `__file__` with `Path.resource`, but
+        # the challenge is that `rsrc_name` is a directory, which does
+        # not work in the current model. Possible fixes are:
+        #   - Make `Path.resource` handle directories transparently. This
+        #     is clean, but for large directories is grossly inefficient.
+        #   - Add some nasty hackery to resolve the `layer.json` that we
+        #     actually need from this directory, as a resource.
+        layer_path = os.path.join(os.path.dirname(__file__), rsrc_name)
+        with _set_up_run_cli(['--layer', layer_path, *argv]) as cli_setup:
+            if 'boot_console' in kwargs:
+                cli_setup = cli_setup._replace(
+                    boot_console=kwargs.pop('boot_console')
+                )
+            return cli_setup._run_nspawn(PopenArgs(**kwargs))
 
     def _nspawn_in(self, rsrc_name, argv, **kwargs):
         ret, _boot_ret = self._nspawn_in_boot_ret(rsrc_name, argv, **kwargs)

@@ -27,7 +27,7 @@ from typing import Dict, Iterable, List, Tuple
 
 from .args import _parse_cli_args
 from .cmd import PopenArgs
-from .run import run_nspawn
+from .run import _set_up_run_cli
 
 
 def forward_test_runner_env_vars(environ: Dict[str, str]) -> Iterable[str]:
@@ -192,29 +192,27 @@ if __name__ == '__main__':  # pragma: no cover
     else:
         rewrite_cmd = do_not_rewrite_cmd   # Used only for the manual test
 
-    args = _parse_cli_args(argv + sys.argv[1:], allow_debug_only_opts=False)
-
-    # This should only used only for image unit-tests, so check the binary path.
-    assert args.opts.cmd[0] == '/layer-test-binary', args.opts.cmd
-
-    with rewrite_cmd(
-        args.opts.cmd, next_fd=3 + len(args.opts.forward_fd),
+    with _set_up_run_cli(argv + sys.argv[1:]) as cli_setup, rewrite_cmd(
+        cli_setup.opts.cmd, next_fd=3 + len(cli_setup.opts.forward_fd),
     ) as (new_cmd, fds_to_forward):
-        ret, _boot_ret = run_nspawn(
-            args.opts._replace(
+        # This should only used only for `image.*_unittest` targets.
+        assert cli_setup.opts.cmd[0] == '/layer-test-binary'
+        # Always use the default `boot_console` -- for booted containers,
+        # let the console go to stderr so that tests are easier to debug.
+        assert cli_setup.boot_console is None
+        ret, _boot_ret = cli_setup._replace(
+            opts=cli_setup.opts._replace(
                 cmd=new_cmd,
-                forward_fd=args.opts.forward_fd + fds_to_forward,
+                forward_fd=cli_setup.opts.forward_fd + fds_to_forward,
             ),
+        )._run_nspawn(
             PopenArgs(
                 check=False,  # We forward the return code below
                 # By default, our internal `Popen` analogs redirect `stdout`
                 # to `stderr` to protect stdout from subprocess spam.  Undo
                 # that, since we want this CLI to be usable in pipelines.
                 stdout=1,
-                # Default `boot_console` -- for booted containers, let the
-                # console go to stderr so that tests are easier to debug.
             ),
-            boot=args.boot,
         )
 
     # Only trigger SystemExit after the context was cleaned up.
