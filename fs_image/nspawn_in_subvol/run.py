@@ -104,10 +104,11 @@ user, which we should probably never do).
   - Can we get any mileage out of --system-call-filter?
 
 '''
-import sys
 import subprocess
 
-from typing import Iterable, Optional, Tuple
+from contextlib import contextmanager
+from typing import Iterable, NamedTuple, Optional, Tuple
+from io import BytesIO
 
 from fs_image.common import init_logging, nullcontext
 
@@ -117,34 +118,56 @@ from .common import _PopenWrapper
 from .non_booted import run_non_booted_nspawn
 
 
-# This is split out for tests.  At the moment, I think most real callsites
-# should use `run_{booted,non_booted}_nspawn` directly.
-def run_nspawn(
-    opts: _NspawnOpts, popen_args: PopenArgs,
-    *, boot: bool, popen_wrappers: Iterable[_PopenWrapper] = (),
-) -> Tuple[subprocess.CompletedProcess, Optional[subprocess.CompletedProcess]]:
-    res = (
-        run_booted_nspawn if boot else run_non_booted_nspawn
-    )(opts, popen_args, popen_wrappers=popen_wrappers)
-    return res if boot else (res, None)
+class _CliSetup(NamedTuple):
+    boot: bool
+    boot_console: BytesIO
+    opts: _NspawnOpts
+    popen_wrappers: Iterable[_PopenWrapper]
+
+    def _run_nspawn(self, popen_args: PopenArgs) -> Tuple[
+        subprocess.CompletedProcess, Optional[subprocess.CompletedProcess],
+    ]:
+        # Enforce a single source of truth for `PopenArgs.boot_console`.
+        assert popen_args.boot_console is None, \
+            'To set `boot_console`, use `_CliSetup._replace(boot_console=)`.'
+        res = (
+            run_booted_nspawn if self.boot else run_non_booted_nspawn
+        )(
+            self.opts,
+            popen_args._replace(boot_console=self.boot_console),
+            popen_wrappers=self.popen_wrappers,
+        )
+        return res if self.boot else (res, None)
 
 
-# The manual test is in the first paragraph of the top docblock.
-if __name__ == '__main__':  # pragma: no cover
-    args = _parse_cli_args(sys.argv[1:], allow_debug_only_opts=True)
+@contextmanager
+def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
+    args = _parse_cli_args(argv, allow_debug_only_opts=True)
     init_logging(debug=args.opts.debug_only_opts.debug)
     with (
         open(args.append_boot_console, 'ab')
             # By default, we send `systemd` console to `stderr`.
             if args.boot and args.append_boot_console else nullcontext()
     ) as boot_console:
-        popen_args = PopenArgs(
+        yield _CliSetup(
+            boot=args.boot,
             boot_console=boot_console,
-            check=False,  # We forward the return code below
-            # By default, our internal `Popen` analogs redirect `stdout` to
-            # `stderr` to protect stdout from subprocess spam.  Undo that,
-            # since we want this CLI to be usable in pipelines.
-            stdout=1,
+            opts=args.opts,
+            popen_wrappers=(),
         )
-        ret, _boot_ret = run_nspawn(args.opts, popen_args, boot=args.boot)
+
+
+# The manual test is in the first paragraph of the top docblock.
+if __name__ == '__main__':  # pragma: no cover
+    import sys
+    with _set_up_run_cli(sys.argv[1:]) as cli_setup:
+        ret, _boot_ret = cli_setup._run_nspawn(
+            PopenArgs(
+                check=False,  # We forward the return code below
+                # By default, our internal `Popen` analogs redirect `stdout`
+                # to `stderr` to protect stdout from subprocess spam.  Undo
+                # that, since we want this CLI to be usable in pipelines.
+                stdout=1,
+            ),
+        )
     sys.exit(ret.returncode)
