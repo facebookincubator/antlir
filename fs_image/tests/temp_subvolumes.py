@@ -132,6 +132,7 @@ class TempSubvolumes(contextlib.AbstractContextManager):
                 pass
         for subvol in reversed(self.subvols):
             try:
+                subvol._delete_inner_subvols()
                 subvol.delete()
             except BaseException:  # Ctrl-C does not interrupt cleanup
                 logging.exception(

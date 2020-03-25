@@ -10,7 +10,7 @@ import subprocess
 import time
 
 from contextlib import contextmanager
-from typing import AnyStr, BinaryIO, Iterator, NamedTuple
+from typing import AnyStr, BinaryIO, Iterator, Iterable, NamedTuple
 
 from btrfs_loopback import LoopbackVolume, run_stdout_to_err
 from fs_image.common import (
@@ -273,6 +273,79 @@ class Subvol:
     def delete(self):
         self.run_as_root(['btrfs', 'subvolume', 'delete', self.path()])
         self._exists = False
+
+    def _delete_inner_subvols(self):
+        '''
+        This is currently a private call, separate from `delete` because
+        it's only used by `TempSubvolumes` for cleanup of temporary
+        subvolumes, which are NOT owned by `TempSubvolumes` or other context
+        managers.  This would require more attention before being used in
+        non-test scenarios.  For example, it's not great that:
+          - This could delete an inner subvolume that is already managed by
+            another `Subvol` object wihout updating its `_exists`.
+          - This doesn't have any handling for read-only subvols (perhaps
+            this is OK?)
+        '''
+        # Delete from the innermost to the outermost
+        for inner_path in sorted(self._gen_inner_subvol_paths(), reverse=True):
+            assert _path_is_btrfs_subvol(inner_path), inner_path
+            self.run_as_root(['btrfs', 'subvolume', 'delete', inner_path])
+
+    def _gen_inner_subvol_paths(self) -> Iterable[Path]:
+        '''
+        Implementation detail for `_delete_inner_subvols`, do not use
+        otherwise without strengthening the API contract & tests.
+
+        The intent of the code below is to make as many assertions as
+        possible to avoid accidentally deleting a subvolume that's not a
+         descendant of `self.` So, we write many assertions.  Additionally,
+        this gets some implicit safeguards from other `Subvol` methods.
+          - `.path` checks the inner subvol paths to ensure they're not
+            traversing symlinks to go outside of the subvol.
+          - The fact that `Subvol` exists means that we checked that it's a
+            subvolume at construction time -- this is important since `btrfs
+            subvol list -o` returns bad results for non-subvolume paths.
+            Moreover, our `btrfs subvol show` reconfirms it.
+        '''
+        # `btrfs subvol {show,list}` both use the subvolume's path relative
+        # to the volume root.
+        my_rel, _ = self.run_as_root(
+            ['btrfs', 'subvolume', 'show', self.path()], stdout=subprocess.PIPE,
+        ).stdout.split(b'\n', 1)
+
+        my_path = self.path()
+        # NB: The below will fire if `Subvol` is the root subvol, since its
+        # relative path is `/`.  However, that's not a case we need to
+        # support in any foreseeable future, and it would also require
+        # special-casing in the prefix search logic.
+        assert not my_rel.startswith(b'/'), my_rel
+        assert my_path.endswith(b'/' + my_rel), (my_path, my_rel)
+        vol_dir = my_path[:-len(my_rel)]
+
+        # We need a trailing slash to chop off this path prefix below.
+        my_prefix = my_rel + (b'' if my_rel.endswith(b'/') else b'/')
+
+        # NB: The `-o` option does not work correctly, don't even bother.
+        for inner_line in self.run_as_root(
+            ['btrfs', 'subvolume', 'list', vol_dir],
+            stdout=subprocess.PIPE,
+        ).stdout.split(b'\n'):
+            if not inner_line:  # Handle the trailing newline
+                continue
+
+            l = {}  # Used to check that the labels are as expected
+            (
+                l['ID'], _, l['gen'], _, l['top'], l['level'], _, l['path'], p,
+            ) = inner_line.split(b' ', 8)
+            for k, v in l.items():
+                assert k.encode() == v, (k, v)
+
+            if not p.startswith(my_prefix):  # Skip non-inner subvolumes
+                continue
+
+            inner_subvol = p[len(my_prefix):]
+            assert inner_subvol == os.path.normpath(inner_subvol), inner_subvol
+            yield self.path(inner_subvol)
 
     def set_readonly(self, readonly: bool):
         self.run_as_root([
