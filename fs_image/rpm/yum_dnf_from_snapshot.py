@@ -100,7 +100,6 @@ We're on the verge of shipping the easy fix of parallelizing `repo-server`
 very soon, but other perf improvements will be wanted.
 '''
 import gzip
-import importlib
 import os
 import shlex
 import shutil

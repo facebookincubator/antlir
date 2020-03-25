@@ -17,7 +17,6 @@ into a directory.
 '''
 import argparse
 import gzip
-import importlib
 import os
 import textwrap
 
@@ -44,8 +43,8 @@ def populate_versionlock_conf(
 
     # Side-load the appropriate versionlock plugin, we currently don't have
     # a good way to install this via an RPM.
-    with importlib.resources.path(
-        'fs_image.rpm', f'{yum_dnf.value}_versionlock.gz',
+    with Path.resource(
+        __package__, f'{yum_dnf.value}_versionlock.gz', exe=False,
     ) as p, \
             gzip.open(p) as rf, \
             create_ro(out_dir / 'versionlock.py', 'wb') as wf:

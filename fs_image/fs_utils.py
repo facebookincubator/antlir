@@ -7,6 +7,7 @@
 'Utilities to make Python systems programming more palatable.'
 import argparse
 import errno
+import importlib
 import json
 import os
 import shlex
@@ -140,6 +141,63 @@ class Path(bytes):
     def read_text(self) -> str:
         with open(self) as infile:
             return infile.read()
+
+    @classmethod
+    @contextmanager
+    def resource(cls, package, name, *, exe: bool) -> 'Path':
+        '''
+        An improved `importlib.resources.path`. The main differences:
+          - Returns an `fs_utils.Path` instead of a `pathlib` object.
+          - Unlike `importlib`, the resulting path can be executed if
+            `exe=True`.  This argument should the actual mode of the
+            resource, but unfortunately, `importlib` does not give us a way
+            to inspect the pre-existing mode in all cases, and we don't want
+            to hardcode details of FB-internal packaging formats here.
+
+        CAUTION: The yielded path may be temporary, to be deleted upon
+        exiting the context.
+
+        This is intended to work with all supported FB-internal and
+        open-source Python package formats: "zip", "fastzip", "pex", "xar".
+        '''
+        with importlib.resources.open_binary(package, name) as rsrc_in:
+            # This check is clowny, but `importlib` doesn't provide a clean
+            # way to ask if the resource already exists on disk.
+            if hasattr(rsrc_in, 'name'):
+                # Future: once the bug with the XAR `access` implementation
+                # is fixed (https://fburl.com/42s41c0g), this can just check
+                # for boolean equality.
+                if exe and not os.access(rsrc_in.name, os.X_OK):
+                    raise RuntimeError(  # pragma: no cover
+                        '{package}.{name} is not executable'
+                    )
+                yield Path(os.path.abspath(rsrc_in.name))
+            else:  # pragma: no cover
+                # The resource has no path, so we have to materialize it.
+                #
+                # This code path is not reached by our coverage harness,
+                # since resources in '@mode/dev will always have a real
+                # filesystem path.  However, we get all the needed signal
+                # from running `test-fs-utils-path-resource-*' in
+                # `@mode/dev` and `@mode/opt'.
+                #
+                # Wrap in a temporary directory so we can `chmod 755` below.
+                with temp_dir() as td:
+                    with open(td / name, 'wb') as rsrc_out:
+                        # We can't use `os.sendfile` because `rsrc_in` may
+                        # not be backed by a real FD.
+                        while True:
+                            # Read 512KiB chunks to mask the syscall cost
+                            chunk = rsrc_in.read(2 ** 19)
+                            if not chunk:
+                                break
+                            rsrc_out.write(chunk)
+                    if exe:
+                        # The temporary directory protects us from undesired
+                        # access.  The goal is to let both the current user
+                        # and `root` execute this path, but nobody else.
+                        os.chmod(td / name, 0o755)
+                    yield td / name
 
     def touch(self) -> 'Path':
         with open(self, 'a'):
