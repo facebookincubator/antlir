@@ -15,15 +15,46 @@ python_library(
     deps = [":common"],
 )
 
+# This helper for the `Path.resource` test exercises our most fragile
+# use-case, embedding binaries within binaries.
+python_binary(
+    name = "test-helper-binary",
+    srcs = ["tests/test_helper_binary.py"],
+    main_module = "fs_image.tests.test_helper_binary",
+)
+
 python_unittest(
     name = "test-fs-utils",
-    srcs = ["tests/test_fs_utils.py"],
-    base_module = "fs_image",
+    srcs = [
+        "tests/test_fs_utils.py",
+        # Added for coverage, redundant with `test-fs-utils-path-resource-*`
+        "tests/test_fs_utils_path_resource.py",
+    ],
     needed_coverage = [(
         100,
         ":fs_utils",
     )],
+    resources = {":test-helper-binary": "tests/helper-binary"},
 )
+
+# The following targets the default `par_style` because we want to exercise
+# embedding resources in all supported binary formats.
+[
+    python_unittest(
+        name = "test-fs-utils-path-resource-" + style,
+        srcs = ["tests/test_fs_utils_path_resource.py"],
+        # The "fastzip" test is very important, it is the analog of the
+        # open-source PEX format.
+        par_style = style,
+        resources = {":test-helper-binary": "tests/helper-binary"},
+        deps = [":fs_utils"],
+    )
+    for style in [
+        "fastzip",
+        "xar",
+        "zip",
+    ]
+]
 
 python_library(
     name = "testlib_temp_subvolumes",
