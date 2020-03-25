@@ -72,9 +72,13 @@ from send_fds_and_run import popen_and_inject_fds_after_sudo
 
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
+from .common import _PopenWrapper
 
 
-def run_booted_nspawn(opts: _NspawnOpts, popen_args: PopenArgs) -> Tuple[
+def run_booted_nspawn(
+    opts: _NspawnOpts, popen_args: PopenArgs,
+    *, popen_wrappers: Iterable[_PopenWrapper] = (),  # Doc on `_PopenWrapper`
+) -> Tuple[
     subprocess.CompletedProcess, subprocess.CompletedProcess,
 ]:
     '''
@@ -84,7 +88,9 @@ def run_booted_nspawn(opts: _NspawnOpts, popen_args: PopenArgs) -> Tuple[
     The second one is for the `systemd` process representing the container
     boot process itself.
     '''
-    with popen_booted_nspawn(opts, popen_args) as (nsp, bp):
+    with functools.reduce(
+        (lambda x, f: f(x)), popen_wrappers, popen_booted_nspawn
+    )(opts, popen_args) as (nsp, bp):
         ns_stdout, ns_stderr = nsp.communicate()
         # We don't make any provisions for pipes to the boot process,
         # see the file docblock.

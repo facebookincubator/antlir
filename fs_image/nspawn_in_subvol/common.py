@@ -7,6 +7,14 @@
 'No externally useful functions here.  Read the `run.py` docblock instead.'
 import subprocess
 
+from typing import Any, Callable
+
+_PopenCtxMgr = Any  # Quacks like `popen_{non_,}booted_nspawn`
+# The intention of this wrapper API is to allow users of `run_*_nspawn` to
+# wrap the underlying `popen_*_nspawn` implementation uniformly, without
+# having to distinguish between the booted and non-booted cases.
+_PopenWrapper = Callable[[_PopenCtxMgr], _PopenCtxMgr]
+
 
 def _nspawn_version():
     '''
