@@ -107,23 +107,26 @@ user, which we should probably never do).
 import sys
 import subprocess
 
-from typing import Optional, Tuple
+from typing import Iterable, Optional, Tuple
 
 from fs_image.common import init_logging, nullcontext
 
 from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .booted import run_booted_nspawn
+from .common import _PopenWrapper
 from .non_booted import run_non_booted_nspawn
 
 
 # This is split out for tests.  At the moment, I think most real callsites
 # should use `run_{booted,non_booted}_nspawn` directly.
 def run_nspawn(
-    opts: _NspawnOpts, popen_args: PopenArgs, *, boot: bool
+    opts: _NspawnOpts, popen_args: PopenArgs,
+    *, boot: bool, popen_wrappers: Iterable[_PopenWrapper] = (),
 ) -> Tuple[subprocess.CompletedProcess, Optional[subprocess.CompletedProcess]]:
-    if boot:
-        return run_booted_nspawn(opts, popen_args)
-    return run_non_booted_nspawn(opts, popen_args), None
+    res = (
+        run_booted_nspawn if boot else run_non_booted_nspawn
+    )(opts, popen_args, popen_wrappers=popen_wrappers)
+    return res if boot else (res, None)
 
 
 # The manual test is in the first paragraph of the top docblock.

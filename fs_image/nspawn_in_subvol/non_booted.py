@@ -23,14 +23,17 @@ from typing import Iterable
 
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
-from .common import _nspawn_version
+from .common import _nspawn_version, _PopenWrapper
 from .repo_server import _popen_and_inject_repo_servers
 
 
 def run_non_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
+    *, popen_wrappers: Iterable[_PopenWrapper] = (),  # Doc on `_PopenWrapper`
 ) -> subprocess.CompletedProcess:
-    with popen_non_booted_nspawn(opts, popen_args) as proc:
+    with functools.reduce(
+        (lambda x, f: f(x)), popen_wrappers, popen_non_booted_nspawn
+    )(opts, popen_args) as proc:
         cmd_stdout, cmd_stderr = proc.communicate()
     return subprocess.CompletedProcess(
         args=proc.args,

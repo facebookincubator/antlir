@@ -51,6 +51,7 @@ python_library(
     deps = [
         ":args",
         ":cmd",
+        ":common",
         "//fs_image:send_fds_and_run",
     ],
 )
