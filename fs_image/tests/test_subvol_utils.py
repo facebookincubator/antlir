@@ -12,7 +12,7 @@ import unittest.mock
 
 from btrfs_diff.tests.render_subvols import render_sendstream
 from btrfs_diff.tests.demo_sendstreams_expected import render_demo_subvols
-from find_built_subvol import subvolumes_dir
+from find_built_subvol import subvolumes_dir, volume_dir
 from fs_image.fs_utils import Path, temp_dir
 from subvol_utils import Subvol, SubvolOpts, get_subvolume_path
 
@@ -86,6 +86,43 @@ class SubvolTestCase(unittest.TestCase):
         self.assertEqual(b'a/b', os.path.relpath(sv.path('a/b'), sv.path()))
 
         self.assertTrue(not sv.path('.').endswith(b'/.'))
+
+    def test_delete_inner_subvols(self):
+        volume_tmp_dir = os.path.join(volume_dir(), 'tmp')
+        try:
+            os.mkdir(volume_tmp_dir)
+        except FileExistsError:
+            pass
+        with temp_dir(dir=volume_tmp_dir, prefix='delete_recursive') as td:
+            try:
+                outer = Subvol(td / 'outer')
+                outer.create()
+                inner1 = Subvol(td / 'outer/inner1')
+                inner1.create()
+                inner2 = Subvol(td / 'outer/inner1/inner2')
+                inner2.create()
+                inner3 = Subvol(td / 'outer/inner3')
+                inner3.create()
+
+                with self.assertRaises(subprocess.CalledProcessError):
+                    outer.delete()
+
+                outer._delete_inner_subvols()
+                self.assertEqual([], outer.path().listdir())
+                outer.delete()
+                self.assertEqual([], td.listdir())
+            except BaseException:  # Clean up even on Ctrl-C
+                try:
+                    inner2.delete()
+                finally:
+                    try:
+                        inner1.delete()
+                    finally:
+                        try:
+                            inner3.delete()
+                        finally:
+                            outer.delete()
+                raise
 
     @with_temp_subvols
     def test_run_as_root_input(self, temp_subvols):
