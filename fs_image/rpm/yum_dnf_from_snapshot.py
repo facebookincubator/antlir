@@ -374,7 +374,7 @@ def _create_sockets_inside_netns(
 
 
 @contextmanager
-def launch_repo_servers_in_netns(
+def launch_repo_servers_for_netns(
     *, target_pid: int, snapshot_dir: Path, **kwargs,
 ):
     '''
@@ -570,7 +570,7 @@ def yum_dnf_from_snapshot(
         with open(netns_fifo, 'r') as netns_in:
             netns_pid = int(netns_in.read())
 
-        with launch_repo_servers_in_netns(
+        with launch_repo_servers_for_netns(
             target_pid=netns_pid,
             repo_server_bin=repo_server_bin,
             snapshot_dir=snapshot_dir,

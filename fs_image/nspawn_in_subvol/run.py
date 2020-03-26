@@ -104,6 +104,7 @@ user, which we should probably never do).
   - Can we get any mileage out of --system-call-filter?
 
 '''
+import functools
 import subprocess
 
 from contextlib import contextmanager
@@ -115,6 +116,7 @@ from fs_image.common import init_logging, nullcontext
 from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .booted import run_booted_nspawn
 from .common import _PopenWrapper
+from .inject_repo_servers import inject_repo_servers
 from .non_booted import run_non_booted_nspawn
 
 
@@ -153,7 +155,9 @@ def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
             boot=args.boot,
             boot_console=boot_console,
             opts=args.opts,
-            popen_wrappers=(),
+            popen_wrappers=[
+                functools.partial(inject_repo_servers, args.serve_rpm_snapshots)
+            ] if args.serve_rpm_snapshots else [],
         )
 
 

@@ -24,7 +24,6 @@ from typing import Iterable
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
 from .common import _nspawn_version, _PopenWrapper
-from .repo_server import _popen_and_inject_repo_servers
 
 
 def run_non_booted_nspawn(
@@ -109,21 +108,11 @@ def _popen_non_booted_nspawn(setup: _NspawnSetup) -> Iterable[subprocess.Popen]:
         stdout=setup.popen_args.stdout,
         stderr=setup.popen_args.stderr,
     )
-    with (
-        _popen_and_inject_repo_servers(
-            cmd,
-            opts.cmd,
-            opts.forward_fd,
-            cmd_popen,
-            [setup.subvol.path(p) for p in opts.serve_rpm_snapshots],
-            debug=opts.debug_only_opts.debug,
-        ) if opts.serve_rpm_snapshots
-        else maybe_popen_and_inject_fds(
-            cmd + ['--'] + opts.cmd,
-            opts,
-            cmd_popen,
-            set_listen_fds=True,  # We must pass FDs through `systemd-nspawn`
-        )
+    with maybe_popen_and_inject_fds(
+        cmd + ['--'] + opts.cmd,
+        opts,
+        cmd_popen,
+        set_listen_fds=True,  # We must pass FDs through `systemd-nspawn`
     ) as proc:
         # NB: While we could `return` here, the caller would then need to
         # remember not to use the this `proc` as a context (since it's
