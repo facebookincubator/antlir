@@ -37,8 +37,9 @@ python_unittest(
     resources = {":test-helper-binary": "tests/helper-binary"},
 )
 
-# The following targets the default `par_style` because we want to exercise
-# embedding resources in all supported binary formats.
+# This is meant to get full functional coverage for `Path.resource`,
+# exercising it across all supported `par_style`s.  We cannot do
+# `needed_coverage` here, but `test-fs-utils` checks part of the function.
 [
     python_unittest(
         name = "test-fs-utils-path-resource-" + style,
