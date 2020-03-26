@@ -277,14 +277,18 @@ class Subvol:
     def _delete_inner_subvols(self):
         '''
         This is currently a private call, separate from `delete` because
-        it's only used by `TempSubvolumes` for cleanup of temporary
-        subvolumes, which are NOT owned by `TempSubvolumes` or other context
-        managers.  This would require more attention before being used in
-        non-test scenarios.  For example, it's not great that:
-          - This could delete an inner subvolume that is already managed by
-            another `Subvol` object wihout updating its `_exists`.
-          - This doesn't have any handling for read-only subvols (perhaps
-            this is OK?)
+        it's only used by `TempSubvolumes` for cleanup of container-created
+        subvolumes, which are owned by neither `TempSubvolumes` nor `Subvol`.
+        Adding a "production-ready" variant of this would require more
+        attention to the API and usage. Likely TODOs:
+          - Future / fix me: We currently will fail to delete read-only
+            inner subvolumes.  Fixing this requires first walking the
+            subvols in the **opposite** order (parent to child), and marking
+            them read-write (and adding tests).  This is not done because we
+            currently have no use-case.
+          - If used outside of its current application, it could delete an
+            inner subvolume that is already managed by another `Subvol`
+            object wihout updating its `_exists`.
         '''
         # Delete from the innermost to the outermost
         for inner_path in sorted(self._gen_inner_subvol_paths(), reverse=True):
