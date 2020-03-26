@@ -504,11 +504,13 @@ class NspawnTestCase(unittest.TestCase):
                 '/bin/true',
             ], boot_console=subprocess.PIPE, check=True)
 
-    def _run_yum_or_dnf(self, progname, package,
-        expected_filename, expected_contents, expected_logline,
+    def _run_yum_or_dnf(
+        self, progname, package, expected_filename, expected_contents,
+        expected_logline, *, boot,
     ):
         snapshot_dir = '/__fs_image__/rpm-repo-snapshot/default'
         ret = self._nspawn_in('build-appliance', [
+            *(['--boot'] if boot else []),
             '--user=root',
             '--serve-rpm-snapshot', snapshot_dir,
             '--',
@@ -529,19 +531,23 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(b'Complete!', ret.stdout)
 
     def test_yum_with_repo_server(self):
-        self._run_yum_or_dnf(
-            'yum',
-            'rpm-test-carrot',
-            '/usr/share/rpm_test/carrot.txt',
-            'carrot 2 rc0',
-            b'---> Package rpm-test-carrot.x86_64 0:2-rc0 will be installed',
-        )
+        for boot in (True, False):
+            self._run_yum_or_dnf(
+                'yum',
+                'rpm-test-carrot',
+                '/usr/share/rpm_test/carrot.txt',
+                'carrot 2 rc0',
+                b'Package rpm-test-carrot.x86_64 0:2-rc0 will be installed',
+                boot=boot,
+            )
 
     def test_dnf_with_repo_server(self):
-        self._run_yum_or_dnf(
-            'dnf',
-            'rpm-test-mice',
-            '/usr/share/rpm_test/mice.txt',
-            'mice 0.1 a',
-            b'Installing       : rpm-test-mice-0.1-a.x86_64',
-        )
+        for boot in (True, False):
+            self._run_yum_or_dnf(
+                'dnf',
+                'rpm-test-mice',
+                '/usr/share/rpm_test/mice.txt',
+                'mice 0.1 a',
+                b'Installing       : rpm-test-mice-0.1-a.x86_64',
+                boot=boot,
+            )

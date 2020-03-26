@@ -155,8 +155,6 @@ class _NspawnOpts(NamedTuple):
     # The default is to let `systemd-nspawn` pick a random hostname.
     hostname: Optional[str] = None  # for `image.*_unittest`
     quiet: bool = False
-    # For `RpmActionItem` and foreign layers that install RPMs:
-    serve_rpm_snapshots: List[Path] = ()
     # For now, these have the form `K=V`. Future: make this a map?
     setenv: Iterable[AnyStr] = ()  # for `image.*_unittest`
     snapshot: bool = True  # For `RpmBuildItem`
@@ -181,11 +179,6 @@ def new_nspawn_opts(**kwargs):
     opts = _NspawnOpts(**kwargs)
     assert not (opts.quiet and opts.debug_only_opts.debug), opts
     assert not opts.debug_only_opts.snapshot_into or opts.snapshot, opts
-    # Neither `yum` nor `dnf` work without root.  Less importantly, running
-    # the `repo-server` under `--as-pid2` currently requires `root` to
-    # unmount and remove /outerproc/.
-    assert not opts.serve_rpm_snapshots or opts.user.pw_name == 'root', \
-        f'You must set --user=root to use --serve-rpm-snapshot: {opts}'
     return opts
 
 
@@ -244,16 +237,6 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
     )
     parser.add_argument(
         '--quiet', action='store_true', help='See `man systemd-nspawn`.',
-    )
-    parser.add_argument(
-        '--serve-rpm-snapshot', action='append', dest='serve_rpm_snapshots',
-        type=Path.from_argparse,
-        help='Container-relative path to an RPM repo snapshot directory, '
-            'normally located under `RPM_SNAPSHOT_BASE_DIR`. Your container '
-            'will be provided with `repo-server`s listening on the ports '
-            'specified in the `etc/{yum,dnf}/{yum,dnf}.conf` of the snapshot, '
-            'so you can simply run `{yum,dnf} -c PATH_TO_CONF` to use them. '
-            'This option may be repeated to serve multiple snapshots.',
     )
     assert defaults['setenv'] == ()  # The argparse default must be mutable
     parser.add_argument(
@@ -331,12 +314,16 @@ class _NspawnCLIArgs(NamedTuple):
     boot: bool
     append_boot_console: Optional[str]
     opts: _NspawnOpts
+    serve_rpm_snapshots: List[Path] = ()
 
 
 def _new_nspawn_cli_args(**kwargs):
     args = _NspawnCLIArgs(**kwargs)
-    # Fixme: Will be removed in a later diff, boot should also work.
-    assert not args.boot or not args.opts.serve_rpm_snapshots, args
+    # Neither `yum` nor `dnf` work without root.  Less importantly, running
+    # the `repo-server` under `--as-pid2` currently requires `root` to
+    # unmount and remove /outerproc/.
+    assert not args.serve_rpm_snapshots or args.opts.user.pw_name == 'root', \
+        f'You must set --user=root to use --serve-rpm-snapshot: {args}'
     return args
 
 
@@ -358,6 +345,16 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
         '--append-boot-console', default=None,
         help='Use with `--boot` to redirect output from the systemd console '
             'PTY into a file. By default it goes to stdout for easy debugging.',
+    )
+    parser.add_argument(
+        '--serve-rpm-snapshot', action='append', dest='serve_rpm_snapshots',
+        type=Path.from_argparse,
+        help='Container-relative path to an RPM repo snapshot directory, '
+            'normally located under `RPM_SNAPSHOT_BASE_DIR`. Your container '
+            'will be provided with `repo-server`s listening on the ports '
+            'specified in the `etc/{yum,dnf}/{yum,dnf}.conf` of the snapshot, '
+            'so you can simply run `{yum,dnf} -c PATH_TO_CONF` to use them. '
+            'This option may be repeated to serve multiple snapshots.',
     )
     _parser_add_nspawn_opts(parser)
     if allow_debug_only_opts:
