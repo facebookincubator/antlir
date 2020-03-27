@@ -15,19 +15,14 @@ number of limitations, but we find it useful for testing -- refer to the
 import re
 from collections import Counter
 from dataclasses import dataclass
-from typing import AnyStr, Callable, ClassVar, Iterable
+from typing import Callable, ClassVar, Iterable, Tuple
 
 _SELINUX_XATTR = b'security.selinux'
 
 
-# We should replace these types with the true types soon
-class FixmeType:
-    pass
-
-
 @dataclass(frozen=True)
 class SendStreamItem:
-    path: AnyStr
+    path: bytes
     # This is a constant attribute, so we set it up with init=False, since it
     # won't ever be set from the constructor.
     #
@@ -72,16 +67,16 @@ class SendStreamItems:
 
     @dataclass(frozen=True)
     class subvol(SendStreamItem):
-        uuid: FixmeType
-        transid: FixmeType
+        uuid: bytes
+        transid: int
         sets_subvol_name: ClassVar[bool] = True
 
     @dataclass(frozen=True)
     class snapshot(SendStreamItem):
-        uuid: FixmeType
-        transid: FixmeType
-        parent_uuid: FixmeType
-        parent_transid: FixmeType
+        uuid: bytes
+        transid: int
+        parent_uuid: bytes
+        parent_transid: int
         sets_subvol_name: ClassVar[bool] = True
 
     #
@@ -98,8 +93,8 @@ class SendStreamItems:
 
     @dataclass(frozen=True)
     class mknod(SendStreamItem):
-        mode: FixmeType
-        dev: FixmeType
+        mode: int
+        dev: int
 
     @dataclass(frozen=True)
     class mkfifo(SendStreamItem):
@@ -111,7 +106,7 @@ class SendStreamItems:
 
     @dataclass(frozen=True)
     class symlink(SendStreamItem):
-        dest: FixmeType
+        dest: bytes
 
     #
     # operations on the path -> inode mapping
@@ -119,7 +114,7 @@ class SendStreamItems:
 
     @dataclass(frozen=True)
     class rename(SendStreamItem):
-        dest: FixmeType
+        dest: bytes
 
     @dataclass(frozen=True)
     class link(SendStreamItem):
@@ -127,7 +122,7 @@ class SendStreamItems:
         # will create a hardlink from `dest` to `path`.  So the `dest` the
         # destination of the new link being created.  Awkward!  This
         # unfortunate naming was borrowed from `btrfs receive --dump`.
-        dest: FixmeType
+        dest: bytes
 
     @dataclass(frozen=True)
     class unlink(SendStreamItem):
@@ -143,51 +138,51 @@ class SendStreamItems:
 
     @dataclass(frozen=True)
     class write(SendStreamItem):
-        offset: FixmeType
-        data: FixmeType
+        offset: int
+        data: bytes
 
     @dataclass(frozen=True)
     class clone(SendStreamItem):
-        offset: FixmeType
-        len: FixmeType
-        from_uuid: FixmeType  # `btrfs receive --dump` does NOT display this :/
-        from_transid: FixmeType  # ... nor this.
-        from_path: FixmeType
-        clone_offset: FixmeType
+        offset: int
+        len: int
+        from_uuid: bytes  # `btrfs receive --dump` does NOT display this :/
+        from_transid: bytes  # ... nor this.
+        from_path: bytes
+        clone_offset: int
 
     @dataclass(frozen=True)
     class set_xattr(SendStreamItem):
-        name: FixmeType
-        data: FixmeType
+        name: bytes
+        data: bytes
 
     @dataclass(frozen=True)
     class remove_xattr(SendStreamItem):
-        name: FixmeType
+        name: bytes
 
     @dataclass(frozen=True)
     class truncate(SendStreamItem):
-        size: FixmeType
+        size: int
 
     @dataclass(frozen=True)
     class chmod(SendStreamItem):
-        mode: FixmeType
+        mode: int
 
     @dataclass(frozen=True)
     class chown(SendStreamItem):
-        gid: FixmeType
-        uid: FixmeType
+        gid: int
+        uid: int
 
     @dataclass(frozen=True)
     class utimes(SendStreamItem):
-        atime: FixmeType
-        mtime: FixmeType
-        ctime: FixmeType
+        atime: Tuple[int, int]
+        mtime: Tuple[int, int]
+        ctime: Tuple[int, int]
 
     # Just like `write` but with no data, used by `btrfs send --no-data`.
     @dataclass(frozen=True)
     class update_extent(SendStreamItem):
-        offset: FixmeType
-        len: FixmeType
+        offset: int
+        len: int
 
 
 def get_frequency_of_selinux_xattrs(items):

@@ -17,7 +17,8 @@ import os
 from collections import defaultdict, deque
 
 from typing import (
-    Any, Iterator, Mapping, NamedTuple, Optional, Sequence, Set, Tuple,
+    Any, Generator, Iterator, Mapping, NamedTuple, Optional, Sequence, Set,
+    Tuple,
 )
 
 from .freeze import freeze
@@ -89,6 +90,9 @@ def _norm_split_path(p: bytes) -> Sequence[bytes]:
     return [] if p == b'.' else p.split(b'/')
 
 
+# forward declaration so that is_root() type checks
+_ROOT_REVERSE_ENTRY: '_ReversePathEntry'
+
 class _ReversePathEntry(NamedTuple):
     '''
     Reading `.name` and following `.parent_int_id` until it is None gives
@@ -104,8 +108,11 @@ class _ReversePathEntry(NamedTuple):
     # instead of `InodeID` to prevent a circular dependency.
     parent_int_id: Optional[int]
 
+    def is_root(self) -> bool:
+        return self == _ROOT_REVERSE_ENTRY
 
-_ROOT_REVERSE_ENTRY = _ReversePathEntry(name=None, parent_int_id=None)
+
+_ROOT_REVERSE_ENTRY = _ReversePathEntry(name=b'', parent_int_id=None)
 
 
 class _InnerInodeIDMap(NamedTuple):
@@ -122,19 +129,24 @@ class _InnerInodeIDMap(NamedTuple):
             raise RuntimeError(f'Wrong map for InodeID #{inode_id.id}')
         return inode_id
 
-    def _rev_entry_to_path(self, rev_entry: _ReversePathEntry) -> bytes:
-        # Directories don't have hardlink, so they have just 1 reverese entry
-        parent, = self.id_to_reverse_entries[rev_entry.parent_int_id]
-        if parent != _ROOT_REVERSE_ENTRY:
+    def _rev_entry_to_path(
+        self, rev_entry: _ReversePathEntry
+    ) -> Iterator[bytes]:
+        parent_id = rev_entry.parent_int_id
+        assert parent_id is not None, 'Never called with _ROOT_REVERSE_ENTRY'
+        # Directories don't have hardlink, so they have just 1 reverse entry
+        parent, = self.id_to_reverse_entries[parent_id]
+        if not parent.is_root():
             yield from self._rev_entry_to_path(parent)
         yield rev_entry.name
 
     def gen_paths(self, inode_id: InodeID) -> Iterator[bytes]:
+        # pyre-fixme[29]: pyre thinks an empty tuple is a Callable?
         for rev_entry in self.id_to_reverse_entries.get(
             self._assert_mine(inode_id).id,
             (),  # we tolerate anonymous inodes
         ):
-            if rev_entry == _ROOT_REVERSE_ENTRY:
+            if rev_entry.is_root():
                 yield b'.'
             else:
                 yield b'/'.join(self._rev_entry_to_path(rev_entry))
@@ -202,13 +214,16 @@ class InodeIDMap(NamedTuple):
             id=next(self.inode_id_counter), inner_id_map=self.inner,
         )
 
-    def _gen_entries(self, parts: Sequence[bytes]) -> Iterator[_PathEntry]:
+    def _gen_entries(
+        self, parts: Sequence[bytes]
+    ) -> Iterator[Optional[_PathEntry]]:
         entry = self.root
         yield entry
         for name in parts:
-            if entry.name_to_child is None:
+            maybe_map = entry.name_to_child
+            if maybe_map is None:
                 raise RuntimeError(f"{name}'s parent in {parts} is a file")
-            entry = entry.name_to_child.get(name)
+            entry = maybe_map.get(name)
             yield entry
             if entry is None:
                 # The path is missing some ancestors -- our callers handle
@@ -217,7 +232,7 @@ class InodeIDMap(NamedTuple):
 
     def _get_parts_parent_and_entry(
         self, path: bytes,
-    ) -> Tuple[_PathEntry, _PathEntry]:
+    ) -> Tuple[Sequence[bytes], _PathEntry, _PathEntry]:
         'Contract: never call this on the root, aka empty `parts`'
         parts = _norm_split_path(path)
         if not parts:
@@ -282,24 +297,23 @@ class InodeIDMap(NamedTuple):
 
     def _reverse_entry_matches_path_parts(
         self, reverse_entry: _ReversePathEntry, parts: Sequence[bytes]
-    ):
+    ) -> bool:
         for part in reversed(parts):
-            if reverse_entry == _ROOT_REVERSE_ENTRY:
+            maybe_id = reverse_entry.parent_int_id
+            if reverse_entry.is_root() or maybe_id is None:
                 return False  # `parts` is longer than the path to the root
-            if reverse_entry is None or part != reverse_entry.name:
+            if part != reverse_entry.name:
                 return False  # Different paths
-            reverse_entry = self.inner.id_to_reverse_entries.get(
-                reverse_entry.parent_int_id
-            )
-            assert isinstance(reverse_entry, set) and len(reverse_entry) == 1
-            reverse_entry, = reverse_entry
+            entries = self.inner.id_to_reverse_entries.get(maybe_id)
+            assert isinstance(entries, set) and len(entries) == 1
+            reverse_entry, = entries
         # Since `parts` never has a component corresponding to the root
         # inode, if we got this far, it must be that all of `parts` had a
         # name match.
         #
         # If we're not at the root, then `parts` accidentally happened to be
         # a suffix of this `_ReversePathEntry`, but it's not a match.
-        return reverse_entry == _ROOT_REVERSE_ENTRY
+        return reverse_entry.is_root()
 
     def _matching_reverse_path_entry(self, reverse_entries, parts):
         '''
@@ -322,7 +336,10 @@ class InodeIDMap(NamedTuple):
         'Does not check if path has children, used by `rename_path`.'
         parts, parent, entry = self._get_parts_parent_and_entry(path)
 
-        del parent.name_to_child[parts[-1]]
+        maybe_map = parent.name_to_child
+        assert maybe_map is not None, 'parent must have name_to_child map'
+
+        del maybe_map[parts[-1]]
 
         entries = self.inner.id_to_reverse_entries[entry.id.id]
         entries.remove(self._matching_reverse_path_entry(entries, parts))
@@ -371,7 +388,11 @@ class InodeIDMap(NamedTuple):
             return None  # A file
         path, = paths
         entry = self._get_entry(path)  # Not None since we started from InodeID
-        return None if entry.name_to_child is None else {
-            os.path.normpath(os.path.join(path, name))
-                for name in entry.name_to_child
-        }
+        maybe_map = entry.name_to_child
+        if maybe_map is None:
+            return None
+        else:
+            return {
+                os.path.normpath(os.path.join(path, name))
+                    for name in maybe_map
+                }

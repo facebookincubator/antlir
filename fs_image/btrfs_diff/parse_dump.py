@@ -62,7 +62,7 @@ import os
 import re
 
 from collections import OrderedDict
-from typing import Any, BinaryIO, Dict, Iterable, Optional, Pattern
+from typing import Any, BinaryIO, Dict, Iterable, Optional, Pattern, Tuple
 
 from .send_stream import SendStreamItem, SendStreamItems
 
@@ -312,7 +312,7 @@ class SendStreamItemParsers:
         )
 
         @classmethod
-        def conv_atime(cls, t: bytes) -> float:
+        def conv_atime(cls, t: bytes) -> Tuple[int, int]:
             return (int(datetime.datetime.strptime(
                 t.decode(), '%Y-%m-%dT%H:%M:%S%z'
             ).timestamp()), 0)  # --dump discards nanoseconds

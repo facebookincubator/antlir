@@ -12,9 +12,12 @@ import io
 import struct
 import unittest
 
+from typing import Iterable
+
 from .demo_sendstreams import gold_demo_sendstreams
 from .demo_sendstreams_expected import get_filtered_and_expected_items
 
+from ..send_stream import SendStreamItem
 from ..parse_send_stream import (
     AttributeKind, check_magic, check_version, CommandKind, file_unpack,
     parse_send_stream, read_attribute, read_command,
@@ -24,7 +27,7 @@ from ..parse_send_stream import (
 unittest.util._MAX_LENGTH = 12345
 
 
-def _parse_stream_bytes(s: bytes) -> io.BytesIO:
+def _parse_stream_bytes(s: bytes) -> Iterable[SendStreamItem]:
     return parse_send_stream(io.BytesIO(s))
 
 

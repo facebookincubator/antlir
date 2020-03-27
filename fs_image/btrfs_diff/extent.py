@@ -7,7 +7,7 @@
 import enum
 import itertools
 
-from typing import List, NamedTuple, Optional, Tuple, Union
+from typing import Iterable, List, NamedTuple, Optional, Tuple, Union
 
 
 class Action(enum.Enum):
@@ -29,14 +29,19 @@ def _get_trimmed_leaves(
     assert offset >= 0 and length >= 0, f'offset {offset}, length {length}'
     assert offset <= extent.length, f'offset {offset}'
 
-    if isinstance(extent.content, Extent.Kind):
+    maybe_content = extent.content
+    if isinstance(maybe_content, Extent.Kind):
         trimmed_length = min(length, extent.length - offset)
         if trimmed_length > 0:
             return Action._YIELD, (offset, trimmed_length, extent)
 
+    # trimmed_length <= 0 should not happen in well-formed input
+    assert not isinstance(maybe_content, Extent.Kind), \
+        f'min({length}, {extent.length} - {offset}) <= 0'
+
     offset += extent.offset
     recurse_list = []
-    for e in extent.content:
+    for e in maybe_content:
         if e.length > offset:
             recurse_list.append((e, offset, min(length, e.length - offset)))
             length -= (e.length - offset)
@@ -110,9 +115,9 @@ class Extent(NamedTuple):
 
     '''
 
-    content: Union['Extent.Kind', Tuple['Extent']]
+    content: Union['Extent.Kind', Iterable['Extent']]
     offset: int
-    length: Optional[int]
+    length: int
 
     class Kind(enum.Enum):
         DATA = 1
@@ -132,7 +137,7 @@ class Extent(NamedTuple):
         # & `length` are such that certain subextents are inaccessible, we
         # will discard those subextents, and reduce `offset` accordingly.
 
-        content: Union['Extent.Kind', Tuple['Extent'], 'Extent'],
+        content: Union['Extent.Kind', Iterable['Extent'], 'Extent'],
         *,
         # Hide the first `offset` bytes of the constituent extents.
         offset: int = 0,
@@ -164,7 +169,7 @@ class Extent(NamedTuple):
         length = max(0, length)  # e.g. the `truncate` HOLE length may be < 0
 
         # If the caller needs to add a HOLE at the end, it has to be explicit.
-        assert None in (length, max_length) or max_length >= length, \
+        assert length is None or max_length is None or max_length >= length, \
             f'Computed max length {max_length} > specified {length}'
 
         if isinstance(content, tuple):
@@ -253,18 +258,24 @@ class Extent(NamedTuple):
         stack = [[0, [(self, offset, length)]]]
         while stack:
             idx, calls = stack[-1]
+            # pyre-fixme[6]: probably a bug when list compared to int
             assert idx <= len(calls)
+            # pyre-fixme[29]: Not Callable?
+            # pyre-fixme[6]: calls can be int!
             if idx == len(calls):
                 stack.pop()
                 continue
+            # pyre-fixme[6]: calls can be int!
             stack[-1][0] += 1
 
+            # pyre-fixme[16]: calls can be int!
             action, res = _get_trimmed_leaves(*calls[idx])
             if action is Action._YIELD:
                 yield res
                 continue
 
             assert action is Action._RECURSE
+            # pyre-fixme[6]: craziness
             stack.append([0, res])
 
     def _gen_leaf_reprs(self):

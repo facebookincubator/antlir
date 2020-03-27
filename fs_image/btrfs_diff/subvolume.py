@@ -31,13 +31,14 @@ import os
 
 from types import MappingProxyType
 from typing import (
-    Any, Coroutine, Iterator, Mapping, NamedTuple, Optional, Sequence,
-    Tuple, Union,
+    Any, Coroutine, Mapping, NamedTuple, Optional, Sequence,
+    Tuple, Union, ValuesView
 )
 
 from .coroutine_utils import while_not_exited
 from .extents_to_chunks import extents_to_chunks_with_clones
 from .freeze import freeze
+from .inode import Chunk, Inode
 from .inode_id import InodeID, InodeIDMap
 from .incomplete_inode import (
     IncompleteDevice, IncompleteDir, IncompleteFifo, IncompleteFile,
@@ -92,7 +93,7 @@ class Subvolume(NamedTuple):
     # where a subvolume is mounted within a volume, but this does not
     # require us to share inodes across subvolumes.
     id_map: InodeIDMap
-    id_to_inode: Mapping[InodeID, Union[IncompleteInode, 'Inode']]
+    id_to_inode: Mapping[Optional[InodeID], Union[IncompleteInode, Inode]]
 
     @classmethod
     def new(cls, *, id_map, **kwargs) -> 'Subvolume':
@@ -102,7 +103,9 @@ class Subvolume(NamedTuple):
         )
         return cls(id_map=id_map, **kwargs)
 
-    def inode_at_path(self, path: bytes) -> Optional[IncompleteInode]:
+    def inode_at_path(
+        self, path: bytes,
+    ) -> Optional[Union[IncompleteInode, Inode]]:
         id = self.id_map.get_id(path)
         # Using `[]` instead of `.get()` to assert that `id_to_inode`
         # remains a superset of `id_map`.  The converse is harder to check.
@@ -110,7 +113,7 @@ class Subvolume(NamedTuple):
 
     def _require_inode_at_path(
         self, item: SendStreamItem, path: bytes,
-    ) -> IncompleteInode:
+    ) -> Union[IncompleteInode, Inode]:
         ino = self.inode_at_path(path)
         if ino is None:
             raise RuntimeError(f'Cannot apply {item}, {path} does not exist')
@@ -130,6 +133,7 @@ class Subvolume(NamedTuple):
                 else:
                     self.id_map.add_file(ino_id, item.path)
                 assert ino_id not in self.id_to_inode
+                # pyre-fixme[16]: This is supposed to be frozen!!!
                 self.id_to_inode[ino_id] = inode_class(item=item)
                 return  # Done applying item
 
@@ -189,12 +193,14 @@ class Subvolume(NamedTuple):
             ino = self.inode_at_path(item.path)
             if ino is None:
                 raise RuntimeError(f'Cannot apply {item}, path does not exist')
+            # pyre-fixme[16]: Inode doesn't have apply_item() ...
             self._require_inode_at_path(item, item.path).apply_item(item=item)
 
     def apply_clone(
         self, item: SendStreamItems.clone, from_subvol: 'Subvolume',
     ):
         assert isinstance(item, SendStreamItems.clone)
+        # pyre-fixme[16]: Inode doesn't have apply_clone() ...
         return self._require_inode_at_path(item, item.path).apply_clone(
             item, from_subvol._require_inode_at_path(item, item.from_path),
         )
@@ -209,7 +215,7 @@ class Subvolume(NamedTuple):
         self,
         *,
         _memo,
-        id_to_chunks: Optional[Mapping[InodeID, Sequence['Chunk']]]=None,
+        id_to_chunks: Optional[Mapping[InodeID, Sequence[Chunk]]] = None,
     ):
         '''
         Returns a recursively immutable copy of `self`, replacing
@@ -229,18 +235,19 @@ class Subvolume(NamedTuple):
             id_map=freeze(self.id_map, _memo=_memo),
             id_to_inode=MappingProxyType({
                 freeze(id, _memo=_memo):
+                        # pyre-fixme[6]: id is Optional[InodeID] not InodeID
                         freeze(ino, _memo=_memo, chunks=id_to_chunks.get(id))
                     for id, ino in self.id_to_inode.items()
             }),
         )
 
-    def inodes(self) -> Iterator[Union['Inode', 'IncompleteInode']]:
+    def inodes(self) -> ValuesView[Union[Inode, IncompleteInode]]:
         return self.id_to_inode.values()
 
     def gather_bottom_up(self, top_path=b'.') -> Coroutine[
         Tuple[
             bytes,  # full path to current inode
-            Union['Inode', 'IncompleteInode'],  # the current inode
+            Union[Inode, IncompleteInode],  # the current inode
             # None for files. For directories, maps the names of the child
             # inodes to whatever result type they had sent us.
             Optional[Mapping[bytes, Any]],
@@ -291,6 +298,7 @@ class Subvolume(NamedTuple):
         See also: `rendered_tree.gather_bottom_up()`
         '''
         ino_id = self.id_map.get_id(top_path)
+        assert ino_id is not None, f'"{top_path}" does not exist!'
         child_paths = self.id_map.get_children(ino_id)
         # While I'd love the next code to be a single expression using a
         # dictionary comprehension, Python does not allow `yield` inside
@@ -303,6 +311,7 @@ class Subvolume(NamedTuple):
                 child_results[os.path.relpath(child_path, top_path)] = (
                     yield from self.gather_bottom_up(child_path)
                 )
+        # pyre-fixme[7]: what even?!
         return (  # noqa: B901
             yield (top_path, self.id_to_inode[ino_id], child_results)
         )

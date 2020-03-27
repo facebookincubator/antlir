@@ -103,6 +103,7 @@ class InodeIDTestCase(DeepCopyTestCase):
         for im, ns in unfrozen_and_frozen(id_map, mut_ns):
             self.assertEqual({b'a/d'}, im.get_children(ns.ino1))
             self.assertEqual({b'a/d'}, im.get_paths(ns.ino2))
+            self.assertIsNone(im.get_children(ns.ino2))
         id_map.add_file(mut_ns.ino2, b'a/c')
         id_map = yield from maybe_replace_map(id_map, 'added a/c name')
         for im, ns in unfrozen_and_frozen(id_map, mut_ns):

@@ -11,7 +11,7 @@ import struct
 import uuid
 
 from io import BytesIO
-from typing import NamedTuple, Iterable
+from typing import NamedTuple, Iterator, Tuple
 
 from .send_stream import SendStreamItem, SendStreamItems
 
@@ -128,7 +128,7 @@ class AttributeHeader(NamedTuple):
         return AttributeHeader(kind=AttributeKind(kind), length=length)
 
 
-def conv_uuid(s: bytes) -> str:
+def conv_uuid(s: bytes) -> bytes:
     return str(uuid.UUID(bytes=s)).encode()  # All our other strings are bytes
 
 
@@ -137,8 +137,11 @@ def conv_uint64(s: bytes) -> int:
     return i
 
 
-def conv_time(s: bytes) -> float:
-    return struct.unpack('<QI', s)
+def conv_time(s: bytes) -> Tuple[int, int]:
+    s, us = struct.unpack('<QI', s)
+    # pyre wants an explicit check even though struct.unpack will raise
+    assert isinstance(s, int) and isinstance(us, int), 'struct.unpack() failed'
+    return s, us
 
 
 def read_attribute(infile):
@@ -324,7 +327,7 @@ def read_command(infile):
     raise AssertionError(f'Fix me: unhandled {cmd_header}')  # pragma: no cover
 
 
-def parse_send_stream(infile) -> Iterable[SendStreamItem]:
+def parse_send_stream(infile) -> Iterator[SendStreamItem]:
     check_magic(infile)
     check_version(infile)
     while True:

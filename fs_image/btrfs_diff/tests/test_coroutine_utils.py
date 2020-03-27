@@ -6,6 +6,8 @@
 
 import unittest
 
+from typing import Any, List
+
 from ..coroutine_utils import GeneratorExitWithResult, while_not_exited
 
 
@@ -14,6 +16,7 @@ class CoroutineTestError(Exception):
 
 
 class SendToCoroutineTestCase(unittest.TestCase):
+    events: List[Any] = []
 
     def demo_coroutine(self, coroutine_steps: int):
         try:
