@@ -8,7 +8,7 @@ import copy
 import unittest
 
 from collections import Counter
-from typing import Any, Callable, Generator, List, Tuple
+from typing import Any, Callable, Generator, List, Optional, Tuple
 
 from ..coroutine_utils import while_not_exited
 
@@ -58,7 +58,8 @@ class DeepCopyTestCase(unittest.TestCase):
 
     def _check_deepcopy(
         self,
-        gen_fn: Callable[[], Generator[Tuple[str, Any], Any, List[str]]],
+        gen_fn: Callable[[],
+            Generator[Tuple[str, Any], Any, Optional[List[str]]]],
         replace_step=None, expected_name=None, *, _replace_by=None,
     ) -> List[str]:
         '''

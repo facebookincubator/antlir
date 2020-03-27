@@ -33,7 +33,8 @@ partly-modified copy, in the style of `NamedTuple._replace`.
 import itertools
 import stat
 
-from typing import Dict, Optional, Sequence
+from abc import ABC
+from typing import Dict, Optional, Sequence, Type
 
 from .extent import Extent
 from .freeze import freeze
@@ -41,17 +42,21 @@ from .inode import Chunk, Inode, InodeOwner, InodeUtimes
 from .parse_dump import SendStreamItem, SendStreamItems
 
 
-class IncompleteInode:
+class IncompleteInode(ABC):
     '''
     Base class for all inode types. Inheritance is appropriate because
     different inode types have different data, different construction logic,
     and freezing logic.
     '''
+
     file_type: int  # Upper bits of `st_mode` matching `S_IFMT`
     mode: Optional[int]  # Bottom 12 bits of `st_mode`
     owner: Optional[InodeOwner]
     utimes: Optional[InodeUtimes]
     xattrs: Dict[bytes, bytes]
+    # these are pure virtual for children to implement/assign
+    INITIAL_ITEM: Type
+    FILE_TYPE: int
     # If any of these are None, the filesystem was created badly.
     # Exception: symlinks don't have permissions.
 
@@ -106,7 +111,7 @@ class IncompleteInode:
             raise RuntimeError(f'{self} cannot apply {item}')
 
     def apply_clone(
-        self, item: SendStreamItem, from_ino: 'IncompleteInode'
+        self, item: SendStreamItems.clone, from_ino: 'IncompleteInode'
     ) -> None:
         raise RuntimeError(f'{self} cannot clone via {item} from {from_ino}')
 
@@ -203,6 +208,10 @@ class IncompleteDevice(IncompleteInode):
     INITIAL_ITEM = SendStreamItems.mknod
 
     def __init__(self, *, item: SendStreamItem):
+        if not isinstance(item, self.INITIAL_ITEM):
+            raise RuntimeError(
+                    f'unexpected {type(item)}, expected {self.INITIAL_ITEM}'
+                    )
         self.FILE_TYPE = stat.S_IFMT(item.mode)
         if self.FILE_TYPE not in (stat.S_IFBLK, stat.S_IFCHR):
             raise RuntimeError(f'unexpected device mode in {item}')
@@ -226,6 +235,10 @@ class IncompleteSymlink(IncompleteInode):
     INITIAL_ITEM = SendStreamItems.symlink
 
     def __init__(self, *, item: SendStreamItem):
+        if not isinstance(item, self.INITIAL_ITEM):
+            raise RuntimeError(
+                    f'unexpected {type(item)}, expected {self.INITIAL_ITEM}'
+                    )
         super().__init__(item=item)
         self.dest = item.dest
 

@@ -13,7 +13,8 @@ import unittest
 from typing import Iterable, Tuple
 
 from ..extent import Extent
-from ..inode_id import InodeIDMap
+from ..inode import Chunk
+from ..inode_id import InodeID, InodeIDMap
 from ..extents_to_chunks import extents_to_chunks_with_clones
 
 # `unittest`'s output shortening makes tests much harder to debug.
@@ -36,7 +37,7 @@ def _gen_ranges_from_figure(figure: str):
             offset += len(v)
 
 
-def _repr_ids_and_chunks(ids_and_chunks: Iterable[Tuple['InodeID', 'Chunk']]):
+def _repr_ids_and_chunks(ids_and_chunks: Iterable[Tuple[InodeID, Chunk]]):
     return {
         repr(id): [
             (

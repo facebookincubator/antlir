@@ -92,6 +92,11 @@ class IncompleteInodeTestCase(unittest.TestCase):
             self.assertEqual(file_type, ino.file_type)
 
     def test_devices(self):
+        with self.assertRaisesRegex(
+                RuntimeError, 'unexpected [^,]*, expected.*$'
+        ):
+            ino_chr = IncompleteDevice(item=SSI.mkfile(path=b'unused'))
+
         ino_chr = IncompleteDevice(
             item=SSI.mknod(path=b'chr', mode=0o20711, dev=0x123),
         )
@@ -114,6 +119,11 @@ class IncompleteInodeTestCase(unittest.TestCase):
             )
 
     def test_symlink(self):
+        with self.assertRaisesRegex(
+            RuntimeError, 'unexpected [^,]*, expected.*$'
+        ):
+            ino = IncompleteSymlink(item=SSI.mkfile(path=b'unused'))
+
         ino = IncompleteSymlink(item=SSI.symlink(path=b'l', dest=b'cat'))
 
         self.assertEqual(stat.S_IFLNK, ino.file_type)

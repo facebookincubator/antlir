@@ -6,7 +6,7 @@
 
 'Start with `help(while_not_exited)`'
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Any, Iterator
 
 
 class CoroutineContext:
@@ -16,6 +16,7 @@ class CoroutineContext:
     coroutine:  Only available inside the `with`
     result:  Only available after the `with`
     '''
+    result: Any = None  # see `test_throw_from_sender` for why this is set.
 
     def __init__(self, coroutine):
         self.coroutine = coroutine
@@ -90,9 +91,4 @@ def while_not_exited(coroutine) -> Iterator[CoroutineContext]:
     except StopIteration as ex:
         ctx.result = ex.value
     finally:
-        # I would have preferred to leave the result unset if the coroutine
-        # never returned a value.  Read `test_throw_from_sender` to
-        # understand the need for this ugly stopgap.
-        if not hasattr(ctx, 'result'):
-            ctx.result = None
         del ctx.coroutine  # Don't leak `.coroutine' outside the `with`

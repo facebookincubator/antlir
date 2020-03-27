@@ -25,6 +25,8 @@ from typing import Iterator, Mapping, NamedTuple, Optional, Union
 
 from .extents_to_chunks import extents_to_chunks_with_clones
 from .freeze import freeze
+from .incomplete_inode import IncompleteInode
+from .inode import Inode
 from .inode_id import InodeIDMap
 from .send_stream import SendStreamItem, SendStreamItems
 from .subvolume import Subvolume
@@ -43,7 +45,7 @@ class SubvolumeID(NamedTuple):
     # have any correspondence to the number of transactions encoded in the
     # send-stream -- a send-stream might encode the same filesystem changes
     # in fewer or more transactions than did the underlying VFS commands.
-    # Thereforeo, the only context in which it is meaningful to check
+    # Therefore, the only context in which it is meaningful to check
     # transaction IDs is when the parent was built up from the same exact
     # sequence of diffs on both the sending & the receiving side.  Achieving
     # this would involve re-applying each diffs at build-time, which besides
@@ -107,7 +109,7 @@ class SubvolumeSet(NamedTuple):
         kwargs.setdefault('name_uuid_prefix_counts', Counter())
         return cls(**kwargs)
 
-    def get_by_rendered_id(self, rendered_id: str) -> Subvolume:
+    def get_by_rendered_id(self, rendered_id: str) -> Optional[Subvolume]:
         for subvol in self.uuid_to_subvolume.values():
             if repr(subvol.id_map.inner.description) == rendered_id:
                 return subvol
@@ -136,7 +138,7 @@ class SubvolumeSet(NamedTuple):
             ),
         )
 
-    def inodes(self) -> Iterator[Union['Inode', 'IncompleteInode']]:
+    def inodes(self) -> Iterator[Union[Inode, IncompleteInode]]:
         return itertools.chain.from_iterable(
             sv.inodes() for sv in self.uuid_to_subvolume.values()
         )
@@ -191,7 +193,8 @@ class SubvolumeSetMutator(NamedTuple):
             name_uuid_prefix_counts=subvol_set.name_uuid_prefix_counts,
         )
         if isinstance(subvol_item, SendStreamItems.snapshot):
-            parent_subvol = subvol_set.uuid_to_subvolume[parent_id.uuid]
+            uuid = parent_id.uuid if parent_id is not None else ''
+            parent_subvol = subvol_set.uuid_to_subvolume[uuid]
             # `SubvolumeDescription` references a part `SubvolumeSet`, so it
             # is not correctly `deepcopy`able as part of a `Subvolume`.  And
             # we want to modify the `InodeIDMap`'s `description` in any
@@ -201,6 +204,7 @@ class SubvolumeSetMutator(NamedTuple):
             assert isinstance(
                 parent_subvol.id_map.inner.description, SubvolumeDescription
             )
+            # pyre-fixme[6]: unsafe(?) deepcopy across different types!!!
             subvol = copy.deepcopy(parent_subvol, memo={
                 id(parent_subvol.id_map.inner.description): description,
             })
@@ -212,13 +216,16 @@ class SubvolumeSetMutator(NamedTuple):
         dup_subvol = subvol_set.uuid_to_subvolume.get(my_id.uuid)
         if dup_subvol is not None:
             raise RuntimeError(f'{my_id} is already in use: {dup_subvol}')
+        # pyre-fixme[16]: This is supposed to be frozen!!!
         subvol_set.uuid_to_subvolume[my_id.uuid] = subvol
 
         # insertion can fail, so update the description disambiguator last.
+        # pyre-fixme[16]: This is supposed to be frozen!!!
         subvol_set.name_uuid_prefix_counts.update(
             description.name_uuid_prefixes()
         )
 
+        # pyre-fixme[6]: subvol is Union[Subvolume, SubvolumeDescription] eh?!
         return cls(subvolume=subvol, subvolume_set=subvol_set)
 
     def apply_item(self, item: SendStreamItem):

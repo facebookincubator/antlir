@@ -16,7 +16,7 @@ from collections import Counter
 from typing import Optional, Tuple, Union, Iterator
 
 from .incomplete_inode import IncompleteInode, IncompleteDir
-from .inode import InodeOwner
+from .inode import Inode, InodeOwner
 
 _SELINUX_XATTR = b'security.selinux'
 
@@ -24,7 +24,7 @@ _SELINUX_XATTR = b'security.selinux'
 class SELinuxXAttrStats:
     'Finds the most common (and therefore likely the default) SELinux context'
 
-    def __init__(self, inodes: Iterator[Union['Inode', IncompleteInode]]):
+    def __init__(self, inodes: Iterator[Union[Inode, IncompleteInode]]):
         self.counter = Counter(
             ino.xattrs[_SELINUX_XATTR]
                 for ino in inodes if _SELINUX_XATTR in ino.xattrs
@@ -37,7 +37,11 @@ class SELinuxXAttrStats:
 
 
 def erase_mode_and_owner(
-    ino: IncompleteInode, *, owner: 'InodeOwner', file_mode: int, dir_mode: int
+    ino: Union[IncompleteInode, Inode],
+    *,
+    owner: 'InodeOwner',
+    file_mode: int,
+    dir_mode: int,
 ):
     if ino.owner == owner:
         ino.owner = None
@@ -47,15 +51,20 @@ def erase_mode_and_owner(
 
 
 def erase_utimes_in_range(
-    ino: IncompleteInode, start: Tuple[int, int], end: Tuple[int, int],
+    ino: Union[IncompleteInode, Inode],
+    start: Tuple[int, int],
+    end: Tuple[int, int],
 ):
-    if ino.utimes is not None and all(start <= t <= end for t in (
-        ino.utimes.ctime, ino.utimes.mtime, ino.utimes.atime,
+    utimes = ino.utimes
+    if utimes is not None and all(start <= t <= end for t in (
+        utimes.ctime, utimes.mtime, utimes.atime,
     )):
         ino.utimes = None
 
 
-def erase_selinux_xattr(ino: IncompleteInode, data: Optional[bytes]):
+def erase_selinux_xattr(
+    ino: Union[IncompleteInode, Inode], data: Optional[bytes]
+):
     if ino.xattrs.get(_SELINUX_XATTR) == data and data is not None:
         # Getting coverage for this line would force us to have a hard
         # dependency on running this test on an SELinux-enabled filesystem.
