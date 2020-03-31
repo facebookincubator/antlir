@@ -8,8 +8,12 @@ load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 load(":target_tagger.bzl", "mangle_target", "maybe_wrap_executable_target")
 
-# This constant is duplicated in `yum_using_build_appliance`.
+# KEEP IN SYNC with its copy in `rpm/find_snapshot.py`
 RPM_SNAPSHOT_BASE_DIR = "__fs_image__/rpm-repo-snapshot"
+
+# KEEP IN SYNC with its copy in `rpm/find_snapshot.py`
+def snapshot_install_dir(snapshot):
+    return paths.join("/", RPM_SNAPSHOT_BASE_DIR, mangle_target(snapshot))
 
 def yum_or_dnf_wrapper(name):
     if name not in ("yum", "dnf"):
