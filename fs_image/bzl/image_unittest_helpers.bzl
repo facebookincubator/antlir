@@ -2,6 +2,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//fs_image/bzl/image_actions:install.bzl", "image_install_buck_runnable")
 load(":image_layer.bzl", "image_layer")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
+load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
 
 def _hidden_test_name(name):
     # This is the test binary that is supposed to run inside the image.  The
@@ -49,7 +50,17 @@ def _nspawn_wrapper_properties(
         extra_outer_kwarg_names,
         caller_fake_library,
         visibility,
-        hostname):
+        hostname,
+        serve_rpm_snapshots):
+    # Fail early, so the user doesn't have to wait for the test to build.
+    # Future: we could potentially relax this since some odd applications
+    # might want to just talk to the repo-server, and not install RPMs.
+    if serve_rpm_snapshots and run_as_user != "root":
+        fail(
+            '"{}" needs `run_as_user = "root"` to install RPMs'.format(name),
+            "serve_rpm_snapshots",
+        )
+
     # These args must be on the outer wrapper test, regardless of language.
     outer_kwarg_names = ["tags", "env"]
     outer_kwarg_names.extend(extra_outer_kwarg_names)
@@ -86,7 +97,7 @@ def _nspawn_wrapper_properties(
         out = "unused_name.py",
         bash = 'echo {} > "$OUT"'.format(shell.quote(("""\
 import os
-TEST_TYPE={quoted_test_type}
+TEST_TYPE={test_type_repr}
 def nspawn_in_subvol_args():
     return [
         '--user', {user_repr},
@@ -96,16 +107,23 @@ def nspawn_in_subvol_args():
         ],
         *[{maybe_boot}],
         *[{maybe_hostname}],
+        *[
+            '--serve-rpm-snapshot={{}}'.format(s)
+                for s in {serve_rpm_snapshots_repr}
+        ],
         '--', {binary_path_repr},
     ]
 """).format(
+            test_type_repr = repr(test_type),
             user_repr = repr(run_as_user),
-            pass_through_env_repr = outer_test_kwargs.get("env", []),
-            binary_path_repr = repr(binary_path),
+            pass_through_env_repr = repr(outer_test_kwargs.get("env", [])),
             maybe_boot = "'--boot'" if boot else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
-            # For test type names, shell-quoting is the same as Python-quoting
-            quoted_test_type = shell.quote(test_type),
+            serve_rpm_snapshots_repr = repr([
+                snapshot_install_dir(s)
+                for s in serve_rpm_snapshots
+            ]),
+            binary_path_repr = repr(binary_path),
         ))),
         visibility = visibility,
     )

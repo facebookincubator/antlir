@@ -29,6 +29,17 @@ image.python_unittest(
     boot = True,
 )
 
+# This doesn't have a C++ counterpart since the impl should be shared, and
+# duplicating tests across languages doesn't scale.
+image.python_unittest(
+    name = "test-image-unittest-repo-server",
+    srcs = ["test_image_unittest_repo_server.py"],
+    layer = "//tupperware/image/build_appliance:fb_host_build_appliance_testing",
+    serve_rpm_snapshots = ["//fs_image/rpm:repo-snapshot-for-tests"],
+    run_as_user = "root",
+    deps = ["//fs_image:fs_utils"],
+)
+
 image.python_unittest(
     name = "test-image-hostname-python",
     srcs = ["test_image_hostname.py"],
