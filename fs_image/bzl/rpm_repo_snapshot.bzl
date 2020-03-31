@@ -75,7 +75,7 @@ def rpm_repo_snapshot(
         # The defaults were picked at random from [16384, 32768) to avoid the
         # default ephemeral port range of 32768+, and to avoid lower port #s
         # which tend to be reserved for services.
-        repo_server_ports = (28889, 28890, 28891, 28892),
+        repo_server_ports = (28889, 28890),
         visibility = None):
     if not yum_dnf or not all([(p in ["yum", "dnf"]) for p in yum_dnf]):
         fail(
