@@ -81,7 +81,6 @@ class _ContainerPidExfiltrator:
         # received, it will continue to execute the final command.
         wrap = textwrap.dedent(f'''\
             grep ^PPid: {_OUTER_PROC}/self/status >&{self.exfil_w_dest_fd}
-            ls -l /proc/self/fd/{self.exfil_w_dest_fd} >&2
             umount -R {_OUTER_PROC}
             rmdir {_OUTER_PROC}
             exec {self.exfil_w_dest_fd}>&-  # See note about `nsenter` below

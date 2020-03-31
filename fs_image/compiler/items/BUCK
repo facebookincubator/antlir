@@ -61,7 +61,7 @@ python_unittest(
     resources = {
         target_location(
             TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
-        ): "host-test-build-appliance",
+        ): "tests/host-test-build-appliance",
         target_location(
             TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
         ): "test-with-one-local-rpm",

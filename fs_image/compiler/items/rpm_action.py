@@ -6,6 +6,7 @@
 
 import base64
 import enum
+import functools
 import pwd
 import shlex
 import sys
@@ -16,6 +17,7 @@ from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
+from fs_image.nspawn_in_subvol.inject_repo_servers import inject_repo_servers
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from subvol_utils import Subvol
@@ -292,15 +294,13 @@ def _yum_dnf_using_build_appliance(
         mkdir -p {work_dir}/var/cache/{prog_name} ; \
         mount --bind /var/cache/{prog_name} {work_dir}/var/cache/{prog_name} ;
     '''
+    snapshot_dir = RPM_SNAPSHOT_BASE_DIR / layer_opts.rpm_repo_snapshot
     opts = new_nspawn_opts(
         cmd=[
             'sh', '-uec',
             f'''
             {mount_cache}
-            {(
-                RPM_SNAPSHOT_BASE_DIR / layer_opts.rpm_repo_snapshot
-                    / 'bin' / prog_name
-            ).shell_quote()} \
+            {(snapshot_dir / 'bin' / prog_name).shell_quote()} \
                 {' '.join(
                     '--protected-path=' + shlex.quote(p)
                         for p in protected_paths
@@ -314,10 +314,7 @@ def _yum_dnf_using_build_appliance(
         bindmount_ro=bind_ros,
         bindmount_rw=[(install_root, work_dir)],
         user=pwd.getpwnam('root'),
-        # CAP_NET_ADMIN is not intended to administer the host's network
-        # stack, but to allow `yum_dnf_from_snapshot()` to bring loopback
-        # interface up under protection of "unshare --net".
-        cap_net_admin=True,
-        private_network=False,  # So that repo-server can access `Strorage`
     )
-    run_non_booted_nspawn(opts, PopenArgs())
+    run_non_booted_nspawn(opts, PopenArgs(), popen_wrappers=[
+        functools.partial(inject_repo_servers, [snapshot_dir])
+    ])

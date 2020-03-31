@@ -20,10 +20,7 @@ from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
 from .rpm_action_base import RpmActionItemTestBase
 
 
-class RpmActionItemTestImpl(RpmActionItemTestBase):
-
-    def _opts(self):
-        return DUMMY_LAYER_OPTS._replace(force_yum_dnf=self._YUM_DNF)
+class RpmActionItemTest(RpmActionItemTestBase, BaseItemTestCase):
 
     def test_phase_orders(self):
         self.assertEqual(PhaseOrder.RPM_INSTALL, RpmActionItem(
@@ -35,8 +32,23 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
     def test_rpm_action_item_build_appliance(self):
         self._check_rpm_action_item_build_appliance(self._subvol_from_resource(
-            'fs_image.compiler.items', 'host-test-build-appliance',
+            __package__, 'host-test-build-appliance',
         ).path())
+
+
+class PackageSpecificRpmActionItemTestImpl(RpmActionItemTestBase):
+    '''
+    Subclasses execute the tests declared here with a concrete value of
+    `self._YUM_DNF`. Tests not using this toggle go in `RpmActionItemTest`.
+    '''
+
+    def _opts(self):
+        return DUMMY_LAYER_OPTS._replace(
+            build_appliance=self._subvol_from_resource(
+                __package__, 'host-test-build-appliance',
+            ).path(),
+            force_yum_dnf=self._YUM_DNF,
+        )
 
     def test_rpm_action_item_auto_downgrade(self):
         parent_subvol = self._subvol_from_resource(
@@ -62,11 +74,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     source=src_rpm,
                     action=RpmAction.install,
                 )],
-                self._opts()._replace(
-                    build_appliance=self._subvol_from_resource(
-                        'fs_image.compiler.items', 'host-test-build-appliance',
-                    ).path(),
-                ),
+                self._opts(),
             )(subvol)
             subvol.run_as_root([
                 'rm', '-rf',
@@ -101,11 +109,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     source=local_rpm_path,
                     action=RpmAction.remove_if_exists,
                 )],
-                self._opts()._replace(
-                    build_appliance=self._subvol_from_resource(
-                        'fs_image.compiler.items', 'host-test-build-appliance',
-                    ).path(),
-                ),
+                self._opts(),
             )(subvol)
             subvol.run_as_root([
                 'rm', '-rf',
@@ -127,9 +131,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
     def test_rpm_action_conflict(self):
-        layer_opts = self._opts()._replace(
-            build_appliance='required but ignored'
-        )
         # Test both install-install, install-remove, and install-downgrade
         # conflicts.
         for rpm_actions in (
@@ -146,7 +147,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                         RpmActionItem(from_target='t', name=r, action=a)
                             for r, a in rpm_actions
                     ],
-                    layer_opts,
+                    self._opts(),
                 )
 
         with self.assertRaisesRegex(RuntimeError, 'RPM action conflict '):
@@ -167,15 +168,19 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                         action=RpmAction.remove_if_exists,
                     ),
                 ],
-                layer_opts,
+                self._opts(),
             )
 
 
-class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
+class YumRpmActionItemTestCase(
+    PackageSpecificRpmActionItemTestImpl, BaseItemTestCase
+):
     _YUM_DNF = YumDnf.yum
 
 
-class DefaultDnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
+class DefaultDnfRpmActionItemTestCase(
+    PackageSpecificRpmActionItemTestImpl, BaseItemTestCase
+):
     # "repo-snapshot-for-tests" defaults to "dnf".  This is set to `None`
     # to exercise the crucial "defaulted package manager" code path.
     _YUM_DNF = None
