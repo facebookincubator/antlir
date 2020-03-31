@@ -13,6 +13,7 @@ def image_python_unittest(
         visibility = None,
         par_style = None,
         hostname = None,
+        serve_rpm_snapshots = (),
         **python_unittest_kwargs):
     visibility = get_visibility(visibility, name)
 
@@ -29,6 +30,7 @@ def image_python_unittest(
         caller_fake_library = "//fs_image/bzl:image_python_unittest",
         visibility = visibility,
         hostname = hostname,
+        serve_rpm_snapshots = serve_rpm_snapshots,
     )
 
     # `par_style` only applies to the inner test that runs the actual user

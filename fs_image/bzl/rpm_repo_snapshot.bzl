@@ -1,7 +1,9 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load(":image.bzl", "image")
+load("//fs_image/bzl/image_actions:feature.bzl", "image_feature")
+load("//fs_image/bzl/image_actions:install.bzl", "image_install")
+load("//fs_image/bzl/image_actions:symlink.bzl", "image_symlink_dir")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 load(":target_tagger.bzl", "mangle_target", "maybe_wrap_executable_target")
@@ -17,6 +19,7 @@ def yum_or_dnf_wrapper(name):
         out = "ignored",
         bash = 'echo {} > "$OUT" && chmod u+rx "$OUT"'.format(shell.quote(
             """\
+#!/bin/sh
 set -ue -o pipefail -o noclobber
 my_path=\\$(readlink -f "$0")
 my_dir=\\$(dirname "$my_path")
@@ -182,10 +185,10 @@ mkdir "$OUT"/bin
 # Requires some other feature to make the directory `/<RPM_SNAPSHOT_BASE_DIR>`
 def install_rpm_repo_snapshot(snapshot, make_default = True):
     dest_dir = snapshot_install_dir(snapshot)
-    features = [image.install(snapshot, dest_dir)]
+    features = [image_install(snapshot, dest_dir)]
     if make_default:
-        features.append(image.symlink_dir(
+        features.append(image_symlink_dir(
             dest_dir,
             paths.join("/", RPM_SNAPSHOT_BASE_DIR, "default"),
         ))
-    return image.feature(features = features)
+    return image_feature(features = features)
