@@ -4,8 +4,6 @@ load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 python_library(
     name = "common",
     srcs = ["common.py"],
-    # `common` is a "common" module name, so `import common` would collide.
-    base_module = "fs_image",
 )
 
 python_library(

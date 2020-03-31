@@ -19,6 +19,7 @@ from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from fs_image.nspawn_in_subvol.inject_repo_servers import inject_repo_servers
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from fs_image.rpm.find_snapshot import RPM_SNAPSHOT_BASE_DIR
 from rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from subvol_utils import Subvol
 
@@ -255,10 +256,6 @@ class RpmActionItem(ImageItem):
                     layer_opts=layer_opts,
                 )
         return builder
-
-
-# This was copied from `bzl/rpm_repo_snapshot.bzl`
-RPM_SNAPSHOT_BASE_DIR = Path('__fs_image__/rpm-repo-snapshot')
 
 
 def _get_yum_or_dnf(build_appliance: Subvol, layer_opts: LayerOpts) -> str:

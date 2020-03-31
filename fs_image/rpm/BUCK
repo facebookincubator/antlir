@@ -30,6 +30,18 @@ python_unittest(
 )
 
 python_library(
+    name = "find_snapshot",
+    srcs = ["find_snapshot.py"],
+    deps = ["//fs_image:fs_utils"],
+)
+
+python_unittest(
+    name = "test-find-snapshot",
+    srcs = ["tests/test_find_snapshot.py"],
+    needed_coverage = [(100, ":find_snapshot")],
+)
+
+python_library(
     name = "open_url",
     srcs = ["open_url.py"],
     base_module = "rpm",

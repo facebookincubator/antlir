@@ -58,6 +58,8 @@ def tag_required_target_key(tagger, d, target_key, is_layer = False):
         )
     d[target_key] = tag_target(tagger, target = d[target_key], is_layer = is_layer)
 
+# KEEP IN SYNC with its copy in `common.py`.
+#
 # Makes a deterministic and unique "nonce" from a target path, which can
 # itself be used as part of a target name.  Its form is:
 #   <original target name prefix>...<original target name suffix>__<hash>

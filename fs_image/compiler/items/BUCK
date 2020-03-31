@@ -34,6 +34,7 @@ python_library(
     deps = [
         ":common",
         "//fs_image/nspawn_in_subvol:non_booted",
+        "//fs_image/rpm:find_snapshot",
         "//fs_image/rpm:rpm_metadata",
     ],
 )
