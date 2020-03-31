@@ -35,13 +35,22 @@ python_library(
 )
 
 python_library(
+    name = "launch_repo_servers",
+    srcs = ["launch_repo_servers.py"],
+    deps = [
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+    ],
+)
+
+python_library(
     name = "inject_repo_servers",
     srcs = ["inject_repo_servers.py"],
     deps = [
         ":args",
+        ":launch_repo_servers",
         "//fs_image:common",
         "//fs_image:fs_utils",
-        "//fs_image/rpm:yum-dnf-from-snapshot-library",
     ],
 )
 
@@ -108,6 +117,7 @@ python_unittest(
         ":common",
         ":non_booted",
         ":inject_repo_servers",
+        ":launch_repo_servers",
         ":run-library",
     ]],
     # Ensures we can read resources in @mode/opt. "xar" cannot work because
