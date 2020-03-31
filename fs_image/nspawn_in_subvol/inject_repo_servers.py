@@ -24,10 +24,10 @@ from typing import Any, Iterable, List, Optional, Tuple
 
 from fs_image.common import get_file_logger, pipe
 from fs_image.fs_utils import Path
-from rpm.yum_dnf_from_snapshot import launch_repo_servers_for_netns
 
 from .args import _NspawnOpts, PopenArgs
 from .common import _PopenCtxMgr
+from .launch_repo_servers import launch_repo_servers_for_netns
 
 
 log = get_file_logger(__file__)
