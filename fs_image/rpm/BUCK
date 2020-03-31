@@ -336,7 +336,6 @@ python_binary(
         ":common",
         ":yum_dnf_conf",
         "//fs_image:fs_utils",
-        "//fs_image/nspawn_in_subvol:launch_repo_servers",
     ],
 )
 
@@ -389,6 +388,7 @@ image_python_unittest(
         (100, ":yum-dnf-from-snapshot-library"),
     ],
     run_as_user = "root",  # We run `yum` / `dnf`
+    serve_rpm_snapshots = [":repo-snapshot-for-tests"],
     deps = [":yum-dnf-from-snapshot-library"],
 )
 

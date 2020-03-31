@@ -25,6 +25,8 @@ class RpmActionItemTestBase:
     def _subvol_from_resource(cls, module, name):
         return find_built_subvol(load_location(module, name))
 
+    # IMPORTANT: This ignores `self._YUM_DNF` and uses whatever package
+    # manager the BA specifies.
     def _check_rpm_action_item_build_appliance(self, ba_path: Path):
         for preserve_yum_dnf_cache in [True, False]:
             self._check_rpm_action_item(layer_opts=DUMMY_LAYER_OPTS._replace(
