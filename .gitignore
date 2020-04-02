@@ -4,4 +4,4 @@ buck-image-out
 .buckd/
 
 # vim stuff
-**.swp
+**/*.swp
