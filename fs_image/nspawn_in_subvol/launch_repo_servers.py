@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import socket
+import signal
 import subprocess
 import textwrap
 import time
@@ -121,8 +122,19 @@ def _launch_repo_server(
                 time.sleep(0.1)
             yield
         finally:
-            server_proc.kill()  # It's a read-only proxy, abort ASAP
-
+            # Although `repo-server` is a read-only proxy, give it the
+            # chance to do graceful cleanup.
+            log.info('Trying to gracefully terminate `repo-server`')
+            # `atexit` (used in an FB-specific `repo-server` plugin) only
+            # works with SIGINT.  We signal once, and need to wait for it to
+            # clean up the resources it must to free.  Signaling twice would
+            # interrupt cleanup (because this is Python, lol).
+            server_proc.send_signal(signal.SIGINT)  # `atexit` needs this
+            try:
+                server_proc.wait(60.0)
+            except subprocess.TimeoutExpired:  # pragma: no cover
+                log.info('Killing unresponsive `repo-server`')
+                server_proc.kill()
 
 @contextmanager
 def launch_repo_servers_for_netns(
