@@ -92,6 +92,16 @@ class _NspawnDebugOnlyNotForProdOpts(NamedTuple):
     forward_tls_env: bool = False
     logs_tmpfs: bool = True
     snapshot_into: Optional[Path] = None
+    # We might later remove this.  It was originally added to allow setting
+    # up loopbacks inside nested network namespaces, so it's technically
+    # required for container nesting.  It's in debug-only because using it
+    # in prod would require a compelling need.
+    cap_net_admin: bool = False
+    # We must never allow prod containers access to the host network,
+    # because this is a surefire to get nondeterministic tests or builds.
+    # However, for `buck run :foo-container` experimentats, network access
+    # can be handy.
+    private_network: bool = True
     # Currently controls logging for the CLI, and also for the `repo-server`
     # subprocess.  Future: We may also later enable `systemd-nspawn` verbose
     # logging.  Last I tried this, it caused assertion failures in `nspawn`,
@@ -133,6 +143,17 @@ def _parser_add_debug_only_not_for_prod_opts(parser: argparse.ArgumentParser):
             'non-existent path and prepare it to host an nspawn container. '
             'Defaults to empty, which makes the snapshot ephemeral.',
     )
+    parser.add_argument(
+        '--cap-net-admin', action='store_true',
+        help='Adds CAP_NET_ADMIN capability. Needed to run ip.',
+    )
+    parser.add_argument(
+        '--private-network', action='store_true',
+        default=defaults['private_network'],
+        help='Pass `--private-network` to `systemd-nspawn`. This defaults '
+            'to true to (a) encourage hermeticity, (b) because this stops '
+            'nspawn from writing to resolv.conf in the image.',
+    )
 
 
 class _NspawnOpts(NamedTuple):
@@ -159,8 +180,6 @@ class _NspawnOpts(NamedTuple):
     setenv: Iterable[AnyStr] = ()  # for `image.*_unittest`
     snapshot: bool = True  # For `RpmBuildItem`
     user: pwd.struct_passwd = _NOBODY_USER
-    cap_net_admin: bool = False  # Future: remove very soon
-    private_network: bool = True  # Future: move into DebugOnly very soon
     debug_only_opts: _NspawnDebugOnlyNotForProdOpts = _DEBUG_OPTS_FOR_PROD
 
 
@@ -270,17 +289,6 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
             'Defaults to `{defaults["user"]}` to give you a mostly read-only '
             'view of the OS.  This is honored when using the --boot option as '
             'well.',
-    )
-    parser.add_argument(
-        '--cap-net-admin', action='store_true',
-        help='Adds CAP_NET_ADMIN capability. Needed to run ip.',
-    )
-    parser.add_argument(
-        '--private-network', action='store_true',
-        default=defaults['private_network'],
-        help='Pass `--private-network` to `systemd-nspawn`. This defaults '
-            'to true to (a) encourage hermeticity, (b) because this stops '
-            'nspawn from writing to resolv.conf in the image.',
     )
     parser.add_argument(
         '--no-private-network', action='store_false', dest='private_network',

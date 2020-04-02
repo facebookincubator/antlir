@@ -123,7 +123,7 @@ def _extra_nspawn_args_and_env(opts: _NspawnOpts) -> Tuple[
     if opts.quiet:
         extra_nspawn_args.append('--quiet')
 
-    if opts.private_network:
+    if opts.debug_only_opts.private_network:
         extra_nspawn_args.append('--private-network')
 
     if opts.bindmount_rw:
@@ -170,7 +170,7 @@ def _extra_nspawn_args_and_env(opts: _NspawnOpts) -> Tuple[
     if os.path.exists('/dev/fuse'):  # pragma: no cover
         extra_nspawn_args.extend(['--bind-ro=/dev/fuse'])
 
-    if opts.cap_net_admin:
+    if opts.debug_only_opts.cap_net_admin:
         extra_nspawn_args.append('--capability=CAP_NET_ADMIN')
 
     if opts.hostname:
