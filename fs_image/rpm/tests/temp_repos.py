@@ -16,8 +16,7 @@ from configparser import ConfigParser
 from contextlib import contextmanager
 from typing import Dict, List, NamedTuple, Optional
 
-from ..common import Path, temp_dir
-from fs_image.common import load_location
+from fs_image.fs_utils import Path, temp_dir
 
 
 def rpmbuild_path() -> str:
@@ -35,7 +34,7 @@ class Rpm(NamedTuple):
     # dramatically bigger and likely makes the test slower.
     test_post_install: bool = False
 
-    def spec(self):
+    def spec(self, busybox_path: Path) -> str:
         format_kwargs = {
             **self._asdict(),
             'quoted_contents': shlex.quote(
@@ -43,9 +42,7 @@ class Rpm(NamedTuple):
                     if self.override_contents is None
                     else self.override_contents
             ),
-            'quoted_busybox_path': shlex.quote(
-                load_location('rpm', 'busybox-path')
-            )
+            'quoted_busybox_path': busybox_path.shell_quote(),
         }
 
         common_spec = textwrap.dedent('''\
@@ -176,8 +173,9 @@ SAMPLE_STEPS = [
 
 def build_rpm(package_dir: Path, arch: str, rpm: Rpm) -> Path:
     'Returns the filename of the built RPM.'
-    with temp_dir(dir=package_dir) as td, tempfile.NamedTemporaryFile() as tf:
-        tf.write(rpm.spec().encode())
+    with temp_dir(dir=package_dir) as td, tempfile.NamedTemporaryFile() as tf, \
+            Path.resource(__package__, 'busybox', exe=True) as busybox_path:
+        tf.write(rpm.spec(busybox_path).encode())
         tf.flush()
         subprocess.run(
             [
