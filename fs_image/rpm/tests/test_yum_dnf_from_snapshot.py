@@ -52,8 +52,6 @@ class YumFromSnapshotTestImpl:
                 tf.flush()
                 yum_dnf_from_snapshot(
                     yum_dnf=self._YUM_DNF,
-                    repo_server_bin=DEFAULT_SNAPSHOT_INSTALL_DIR
-                        / 'repo-server',
                     snapshot_dir=DEFAULT_SNAPSHOT_INSTALL_DIR,
                     install_root=Path(install_root),
                     protected_paths=protected_paths,
