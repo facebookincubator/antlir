@@ -273,7 +273,7 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
     )
     parser.add_argument(
         '--cap-net-admin', action='store_true',
-        help='Adds CAP_NET_ADMIN capability. Needed to run ifconfig.',
+        help='Adds CAP_NET_ADMIN capability. Needed to run ip.',
     )
     parser.add_argument(
         '--private-network', action='store_true',

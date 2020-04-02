@@ -300,7 +300,7 @@ class NspawnTestCase(unittest.TestCase):
     def test_cap_net_admin(self):
         self._nspawn_in('host', [
             '--user', 'root', '--no-private-network', '--cap-net-admin', '--',
-            'unshare', '--net', 'ifconfig', 'lo', 'up',
+            'unshare', '--net', 'ip', 'link', 'set', 'dev', 'lo', 'up',
         ])
 
     def test_hostname(self):
