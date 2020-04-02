@@ -18,6 +18,7 @@ from unittest import mock
 
 from artifacts_dir import find_repo_root
 from fs_image.common import pipe
+from fs_image.rpm.find_snapshot import DEFAULT_SNAPSHOT_INSTALL_DIR
 from tests.temp_subvolumes import with_temp_subvols
 
 from ..args import _parse_cli_args, PopenArgs
@@ -508,7 +509,7 @@ class NspawnTestCase(unittest.TestCase):
         self, progname, package, expected_filename, expected_contents,
         expected_logline, *, boot,
     ):
-        snapshot_dir = '/__fs_image__/rpm-repo-snapshot/default'
+        snapshot_dir = DEFAULT_SNAPSHOT_INSTALL_DIR
         ret = self._nspawn_in('build-appliance', [
             *(['--boot'] if boot else []),
             '--user=root',

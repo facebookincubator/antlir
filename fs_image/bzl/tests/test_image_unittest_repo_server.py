@@ -9,23 +9,14 @@ import unittest
 import subprocess
 
 from fs_image.fs_utils import Path, temp_dir
+from fs_image.rpm.find_snapshot import DEFAULT_SNAPSHOT_INSTALL_DIR
 
 
 class ImageUnittestTestRepoServer(unittest.TestCase):
 
     def test_install_rpm(self):
-        # NB: It's a little lame that we have to re-identify the snapshot
-        # path in 3 places:
-        #   - The construction of the image.
-        #   - `serve_repo_snapshots` in the unittest declaration.  Future:
-        #     This could be made to accept (a) a magic value for "all",
-        #     (b) a magic value for "default".
-        #   - Here, by a different means.  Future: this could be improved by
-        #     virtue of a Python variant of `snapshot_install_dir`, or by an
-        #     iterator over all snapshots.
-        snapshot_dir = Path('/__fs_image__/rpm-repo-snapshot/default/')
         # Check all available package managers.
-        package_mgr_bins = (snapshot_dir / 'bin').listdir()
+        package_mgr_bins = (DEFAULT_SNAPSHOT_INSTALL_DIR / 'bin').listdir()
         self.assertNotEqual([], package_mgr_bins)
         # We may lose this assertion later, but for now check explicitly
         # that both binaries are tested.
@@ -34,7 +25,7 @@ class ImageUnittestTestRepoServer(unittest.TestCase):
             with temp_dir() as td:
                 os.mkdir(td / 'meta')
                 subprocess.check_call([
-                    snapshot_dir / 'bin' / bin,
+                    DEFAULT_SNAPSHOT_INSTALL_DIR / 'bin' / bin,
                     f'--install-root={td}',
                     '--', 'install', '--assumeyes', 'rpm-test-carrot',
                 ])

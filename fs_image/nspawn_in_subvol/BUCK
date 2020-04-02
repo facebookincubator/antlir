@@ -129,7 +129,10 @@ python_unittest(
         "//tupperware/image/base:base": "tests/bootable-systemd-os",
         ":host-hello-xar": "tests/host-hello-xar",
     },
-    deps = [":run-library"],
+    deps = [
+        ":run-library",
+        "//fs_image/rpm:find_snapshot",
+    ],
 )
 
 python_binary(

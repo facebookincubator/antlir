@@ -12,6 +12,8 @@ import unittest
 
 from contextlib import contextmanager
 
+from fs_image.rpm.find_snapshot import DEFAULT_SNAPSHOT_INSTALL_DIR
+
 from ..common import init_logging, Path, yum_is_dnf
 from ..yum_dnf_from_snapshot import YumDnf, yum_dnf_from_snapshot
 
@@ -38,9 +40,6 @@ class YumFromSnapshotTestImpl:
                     os.makedirs(os.path.dirname(install_root / p))
                     with open(install_root / p, 'wb'):
                         pass
-            # This is the same hard coded path used by the `RpmActionItem` in
-            # the compiler.
-            snapshot_dir = Path("/__fs_image__/rpm-repo-snapshot/default")
             # Note: this can't use `_yum_using_build_appliance` because that
             # would lose coverage info on `yum_dnf_from_snapshot.py`.  On
             # the other hand, running this test against the host is fragile
@@ -53,8 +52,9 @@ class YumFromSnapshotTestImpl:
                 tf.flush()
                 yum_dnf_from_snapshot(
                     yum_dnf=self._YUM_DNF,
-                    repo_server_bin=Path(snapshot_dir) / 'repo-server',
-                    snapshot_dir=snapshot_dir,
+                    repo_server_bin=DEFAULT_SNAPSHOT_INSTALL_DIR
+                        / 'repo-server',
+                    snapshot_dir=DEFAULT_SNAPSHOT_INSTALL_DIR,
                     install_root=Path(install_root),
                     protected_paths=protected_paths,
                     versionlock_list=tf.name,
