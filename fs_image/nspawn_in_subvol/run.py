@@ -98,8 +98,8 @@ user, which we should probably never do).
 
 ## Future
 
-  - Should we drop CAP_NET_ADMIN, or any other capabilities?  Note that
-    NET_ADMIN might be needed to set up `--private-network` interfaces.
+  - Which capabilities can we drop?  Note that CAP_NET_ADMIN might be needed
+    to set up `--private-network` interfaces.
 
   - Can we get any mileage out of --system-call-filter?
 
