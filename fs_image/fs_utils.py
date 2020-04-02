@@ -18,7 +18,7 @@ import urllib.parse
 import tempfile
 
 from contextlib import contextmanager
-from typing import AnyStr, Iterable, List, Union
+from typing import AnyStr, Iterable, Iterator, List, Union
 
 from .common import byteme, check_popen_returncode, get_file_logger
 
@@ -144,7 +144,7 @@ class Path(bytes):
 
     @classmethod
     @contextmanager
-    def resource(cls, package, name, *, exe: bool) -> 'Path':
+    def resource(cls, package, name: str, *, exe: bool) -> Iterator['Path']:
         '''
         An improved `importlib.resources.path`. The main differences:
           - Returns an `fs_utils.Path` instead of a `pathlib` object.
@@ -169,7 +169,7 @@ class Path(bytes):
                 # for boolean equality.
                 if exe and not os.access(rsrc_in.name, os.X_OK):
                     raise RuntimeError(  # pragma: no cover
-                        '{package}.{name} is not executable'
+                        f'{package}.{name} is not executable'
                     )
                 yield Path(os.path.abspath(rsrc_in.name))
             else:  # pragma: no cover

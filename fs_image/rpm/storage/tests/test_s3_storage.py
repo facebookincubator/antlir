@@ -6,12 +6,12 @@
 
 import logging
 import os
-import tempfile
 import unittest.mock
 
 from functools import wraps
 
-from fs_image.common import load_location
+from fs_image.fs_utils import Path, temp_dir
+
 from .storage_base_test import Storage
 from .cli_object_storage_base_test import CLIObjectStorageBaseTestCase
 from ..s3_storage import S3Storage
@@ -20,22 +20,18 @@ from ..s3_storage import S3Storage
 def mock_s3_cli(fn):
     @wraps(fn)
     def mock(*args, **kwargs):
-        with tempfile.TemporaryDirectory() as td:
+        with temp_dir() as td, Path.resource(
+            __package__, 'mock-s3-cli', exe=True,
+        ) as mock_s3_cli_path:
             # We mock `_path_for_storage_id` such that the base dir
             # is always going to be the TempDir we created
             def _mock_path_for_storage_id(sid):
-                return os.path.join(td, sid)
+                return (td / sid).decode()
 
-            # Instead of calls to `aws s3`, we want to call
-            # `mock-s3-cli instead`
-            mock_s3_cli_path = load_location(
-                'rpm.storage.tests', 'mock-s3-cli'
-            )
+            # Instead of calls to `aws s3`, we want to call `mock-s3-cli
             with unittest.mock.patch.object(
                 S3Storage, '_base_cmd',
-                return_value=[
-                    mock_s3_cli_path
-                ],
+                return_value=[mock_s3_cli_path],
             ), unittest.mock.patch.object(
                 S3Storage, '_path_for_storage_id',
                 side_effect=_mock_path_for_storage_id,

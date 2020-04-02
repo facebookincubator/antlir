@@ -1,4 +1,3 @@
-load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -85,13 +84,11 @@ python_library(
     srcs = ["tests/temp_repos.py"],
     base_module = "rpm",
     resources = {
-        target_location(
-            third_party.library("busybox", "bin/busybox"),
-        ): "busybox-path",
+        third_party.library("busybox", "bin/busybox"): "tests/busybox",
         # NB: It would be great to also use `rpmbuild` from the third-party
         # repo, but doing this is fairly intractable, see D15511231.
     },
-    deps = [":common"],
+    deps = ["//fs_image:fs_utils"],
 )
 
 python_unittest(
