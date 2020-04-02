@@ -37,7 +37,10 @@ image.python_unittest(
     layer = "//tupperware/image/build_appliance:fb_host_build_appliance_testing",
     serve_rpm_snapshots = ["//fs_image/rpm:repo-snapshot-for-tests"],
     run_as_user = "root",
-    deps = ["//fs_image:fs_utils"],
+    deps = [
+        "//fs_image:fs_utils",
+        "//fs_image/rpm:find_snapshot",
+    ],
 )
 
 image.python_unittest(

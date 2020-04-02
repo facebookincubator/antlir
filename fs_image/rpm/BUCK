@@ -400,8 +400,17 @@ image_python_unittest(
         (100, ":yum-dnf-from-snapshot-library"),
     ],
     run_as_user = "root",  # We run `yum` / `dnf`
+    # NB: It's a little lame that we have to re-identify the snapshot path
+    # in 2 places:
+    #   - The construction of the image.
+    #   - `serve_repo_snapshots` in the unittest declaration.  Future: This
+    #     could be made to accept (a) a magic value for "all", (b) a magic
+    #     value for "default".
     serve_rpm_snapshots = [":repo-snapshot-for-tests"],
-    deps = [":yum-dnf-from-snapshot-library"],
+    deps = [
+        ":find_snapshot",
+        ":yum-dnf-from-snapshot-library",
+    ],
 )
 
 python_library(

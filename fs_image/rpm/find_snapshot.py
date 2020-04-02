@@ -9,9 +9,9 @@ import binascii
 from fs_image.fs_utils import Path
 
 
-# KEEP IN SYNC with its copy in `bzl/rpm_repo_snapshot.bzl`
+# KEEP IN SYNC with their copies in `bzl/rpm_repo_snapshot.bzl`
 RPM_SNAPSHOT_BASE_DIR = Path('/__fs_image__/rpm-repo-snapshot')
-
+DEFAULT_SNAPSHOT_INSTALL_DIR = RPM_SNAPSHOT_BASE_DIR / 'default'
 
 # KEEP IN SYNC with its copy in `bzl/target_tagger.bzl`.
 def mangle_target(normalized_target: str, min_abbrev: int = 15) -> str:
