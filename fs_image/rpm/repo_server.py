@@ -375,5 +375,10 @@ if __name__ == '__main__':  # pragma: no cover
         Storage.from_json(storage),
     ) as httpd:
         httpd.server_activate()
-        log.info(f'HTTP repo server is listening')
-        httpd.serve_forever()
+        log.info(f'HTTP `repo-server` is listening')
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:  # pragma: no cover
+            if args.debug:
+                raise
+            log.info(f'HTTP `repo-server` graceful shutdown on SIGINT')
