@@ -343,7 +343,6 @@ python_binary(
     srcs = ["yum_dnf_from_snapshot.py"],
     base_module = "rpm",
     main_module = "rpm.yum_dnf_from_snapshot",
-    par_style = "xar",  # Lets us embed the `repo-server` binary
     deps = [
         ":common",
         ":yum_dnf_conf",

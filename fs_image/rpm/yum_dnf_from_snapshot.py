@@ -308,7 +308,6 @@ def _prepare_versionlock_lists(
 def yum_dnf_from_snapshot(
     *,
     yum_dnf: YumDnf,
-    repo_server_bin: Path,
     snapshot_dir: Path,
     install_root: Path,
     protected_paths: List[str],
@@ -404,10 +403,6 @@ if __name__ == '__main__':  # pragma: no cover
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        '--repo-server', required=True, type=Path.from_argparse,
-        help='Path to repo-server binary',
-    )
-    parser.add_argument(
         '--snapshot-dir', required=True, type=Path.from_argparse,
         help='Multi-repo snapshot directory.',
     )
@@ -452,7 +447,6 @@ if __name__ == '__main__':  # pragma: no cover
 
     yum_dnf_from_snapshot(
         yum_dnf=args.yum_dnf,
-        repo_server_bin=args.repo_server,
         snapshot_dir=args.snapshot_dir,
         install_root=args.install_root,
         protected_paths=args.protected_path,

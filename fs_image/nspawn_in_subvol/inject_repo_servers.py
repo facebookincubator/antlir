@@ -152,6 +152,9 @@ def inject_repo_servers(
     @contextmanager
     def wrapped_popen(opts: _NspawnOpts, popen_args: PopenArgs) -> Any:
         with ExitStack() as stack:
+            repo_server_bin = stack.enter_context(Path.resource(
+                __package__, 'repo-server', exe=True,
+            ))
             # Rewrite `opts` with a wrapper script and some forwarded FDs
             opts, cpe = stack.enter_context(
                 _wrap_opts_with_container_pid_exfiltrator(opts)
@@ -166,7 +169,7 @@ def inject_repo_servers(
                 # affect the contents of the snapshot.  This seems okay.
                 stack.enter_context(launch_repo_servers_for_netns(
                     target_pid=container_pid,
-                    repo_server_bin=opts.layer.path(snap_dir / 'repo-server'),
+                    repo_server_bin=repo_server_bin,
                     snapshot_dir=opts.layer.path(snap_dir),
                     debug=opts.debug_only_opts.debug,
                 ))
