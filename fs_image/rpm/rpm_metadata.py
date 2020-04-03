@@ -8,7 +8,8 @@ import os
 import re
 import subprocess
 
-from .common import Path, get_file_logger
+from fs_image.common import get_file_logger
+from fs_image.fs_utils import Path
 from subvol_utils import Subvol
 from typing import NamedTuple
 

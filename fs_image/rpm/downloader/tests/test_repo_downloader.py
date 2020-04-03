@@ -27,7 +27,6 @@ from unittest import mock
 from fs_image.common import set_new_key
 from fs_image.fs_utils import temp_dir
 
-from rpm.tests import temp_repos
 
 from fs_image.rpm.downloader import repo_downloader
 from fs_image.rpm.downloader.common import open_url
@@ -37,17 +36,17 @@ from fs_image.rpm.downloader.repodata_downloader import (
     _download_repodata,
 )
 from fs_image.rpm.downloader.rpm_downloader import RPM_MAX_RETRY_S
-from rpm.common import RpmShard
-from rpm.db_connection import DBConnectionContext
-from rpm.repo_db import RepodataTable, RepoDBContext
-from rpm.repo_snapshot import (
+from fs_image.rpm.common import RpmShard
+from fs_image.rpm.db_connection import DBConnectionContext
+from fs_image.rpm.repo_db import RepodataTable, RepoDBContext
+from fs_image.rpm.repo_snapshot import (
     FileIntegrityError,
     HTTPError,
     MutableRpmError,
     RepoSnapshot,
 )
-from rpm.yum_dnf_conf import YumDnfConfRepo
-from rpm.tests.temp_repos import temp_repos_steps
+from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
+from fs_image.rpm.tests import temp_repos
 
 
 def raise_fake_http_error(_contents):
@@ -117,7 +116,7 @@ class DownloadReposTestCase(unittest.TestCase):
         }
         # Since we only read the repo, it is much faster to create it once
         # for all the tests (~4x speed-up as of writing).
-        cls.temp_repos_ctx = temp_repos_steps(
+        cls.temp_repos_ctx = temp_repos.temp_repos_steps(
             repo_change_steps=[
                 {"good_dog": _GOOD_DOG, "chaos_cat": _CHAOS_CAT, "bad_dog": _BAD_DOG},
                 {

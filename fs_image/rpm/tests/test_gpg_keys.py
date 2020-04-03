@@ -8,7 +8,7 @@ import os
 import shutil
 import unittest
 
-from ..common import temp_dir
+from fs_image.fs_utils import temp_dir
 from ..gpg_keys import snapshot_gpg_keys
 
 

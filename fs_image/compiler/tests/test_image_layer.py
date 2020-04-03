@@ -16,7 +16,7 @@ from pwd import getpwnam
 from btrfs_diff.tests.render_subvols import render_sendstream, pop_path
 from btrfs_diff.tests.demo_sendstreams_expected import render_demo_subvols
 from find_built_subvol import find_built_subvol
-from rpm.yum_dnf_conf import YumDnf
+from fs_image.rpm.yum_dnf_conf import YumDnf
 
 
 TARGET_ENV_VAR_PREFIX = 'test_image_layer_path_to_'

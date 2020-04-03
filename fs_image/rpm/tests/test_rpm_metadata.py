@@ -10,8 +10,8 @@ import re
 import shutil
 import unittest
 
+from fs_image.fs_utils import temp_dir
 from .temp_repos import temp_repos_steps, Repo, Rpm
-from ..common import temp_dir
 from ..rpm_metadata import compare_rpm_versions, RpmMetadata, _compare_values
 from find_built_subvol import find_built_subvol
 
@@ -23,7 +23,7 @@ class RpmMetadataTestCase(unittest.TestCase):
             r"(.*)RPMVERCMP\(([^, ]*) *, *([^, ]*) *, *([^\)]*)\).*")
 
         for line in importlib.resources.open_text(
-                'rpm', 'version-compare-tests').readlines():
+                'fs_image.rpm', 'version-compare-tests').readlines():
             m = STMT.match(line)
             if m:
                 yield m.group(2), m.group(3), int(m.group(4))

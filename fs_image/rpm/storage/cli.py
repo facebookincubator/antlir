@@ -9,11 +9,12 @@ import argparse
 
 from io import BytesIO
 
+from fs_image.common import init_logging
 from fs_image.fs_utils import Path
-
-from ..common import init_logging, read_chunks
+from fs_image.rpm.common import read_chunks
 
 from .storage import Storage
+
 
 _CHUNK_SIZE = 2 ** 20  # Not too important, anything large enough is fine.
 

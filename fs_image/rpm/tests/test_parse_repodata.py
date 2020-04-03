@@ -12,7 +12,7 @@ import unittest
 from io import BytesIO
 from typing import Iterator, Set, Tuple
 
-from ..common import Path
+from fs_image.fs_utils import Path
 from ..repo_objects import Repodata, RepoMetadata
 from ..parse_repodata import get_rpm_parser, pick_primary_repodata
 from ..tests.temp_repos import SAMPLE_STEPS, temp_repos_steps

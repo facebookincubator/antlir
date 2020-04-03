@@ -23,8 +23,8 @@ import textwrap
 from typing import Iterable, List, TextIO
 from urllib.parse import urlparse, urlunparse
 
-from rpm.yum_dnf_conf import YumDnf, YumDnfConfParser
 from fs_image.fs_utils import create_ro, Path, populate_temp_dir_and_rename
+from fs_image.rpm.yum_dnf_conf import YumDnf, YumDnfConfParser
 
 
 def populate_versionlock_conf(

@@ -6,26 +6,25 @@ load(":defs.bzl", "test_rpm_repo_snapshot")
 python_library(
     name = "pluggable",
     srcs = ["pluggable.py"],
-    base_module = "rpm",
 )
 
 python_library(
     name = "common",
     srcs = ["common.py"],
-    base_module = "rpm",
     deps = [
         ":yum_dnf_conf",
         "//fs_image:common",
-        "//fs_image:fs_utils",
     ],
 )
 
 python_unittest(
     name = "test-common",
     srcs = ["tests/test_common.py"],
-    base_module = "rpm",
     needed_coverage = [(100, ":common")],
-    deps = [":common"],
+    deps = [
+        ":common",
+        "//fs_image:fs_utils",
+    ],
 )
 
 python_library(
@@ -43,7 +42,6 @@ python_unittest(
 python_library(
     name = "open_url",
     srcs = ["open_url.py"],
-    base_module = "rpm",
     deps = [
         third_party.library(
             "requests",
@@ -55,34 +53,33 @@ python_library(
 python_unittest(
     name = "test-open-url",
     srcs = ["tests/test_open_url.py"],
-    base_module = "rpm",
     needed_coverage = [(100, ":open_url")],
     deps = [
-        ":common",
         ":open_url",
+        "//fs_image:fs_utils",
     ],
 )
 
 # NB: For Facebook-internal binaries, add `facebook:db_connection` to
-# your `deps`, but import this regular `rpm.db_connection` module.
+# your `deps`, but import this regular `fs_image.rpm.db_connection` module.
 python_library(
     name = "db_connection",
     srcs = ["db_connection.py"],
-    base_module = "rpm",
-    deps = [":pluggable"],
+    deps = [
+        ":pluggable",
+        ":repo_db",
+    ],
 )
 
 python_library(
     name = "repo_objects",
     srcs = ["repo_objects.py"],
-    base_module = "rpm",
     deps = [":common"],
 )
 
 python_library(
     name = "temp_repos",
     srcs = ["tests/temp_repos.py"],
-    base_module = "rpm",
     resources = {
         third_party.library("busybox", "bin/busybox"): "tests/busybox",
         # NB: It would be great to also use `rpmbuild` from the third-party
@@ -94,7 +91,6 @@ python_library(
 python_unittest(
     name = "test-repo-objects",
     srcs = ["tests/test_repo_objects.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":repo_objects"),
     ],
@@ -107,8 +103,8 @@ python_unittest(
 python_library(
     name = "repo_sizer",
     srcs = ["repo_sizer.py"],
-    base_module = "rpm",
     deps = [
+        ":common",
         ":repo_objects",
         "//fs_image:unionfind",
     ],
@@ -117,7 +113,6 @@ python_library(
 python_unittest(
     name = "test-repo-sizer",
     srcs = ["tests/test_repo_sizer.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":repo_sizer"),
     ],
@@ -127,14 +122,12 @@ python_unittest(
 python_library(
     name = "parse_repodata",
     srcs = ["parse_repodata.py"],
-    base_module = "rpm",
     deps = [":repo_objects"],
 )
 
 python_unittest(
     name = "test-parse-repodata",
     srcs = ["tests/test_parse_repodata.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":parse_repodata"),
     ],
@@ -147,10 +140,10 @@ python_unittest(
 python_library(
     name = "repo_snapshot",
     srcs = ["repo_snapshot.py"],
-    base_module = "rpm",
     deps = [
         ":common",
         ":repo_objects",
+        "//fs_image:fs_utils",
         "//fs_image/rpm/storage:storage",
         "//fs_image/rpm/storage/facebook:storage",
     ],
@@ -159,7 +152,6 @@ python_library(
 python_unittest(
     name = "test-repo-snapshot",
     srcs = ["tests/test_repo_snapshot.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":repo_snapshot"),
     ],
@@ -169,17 +161,15 @@ python_unittest(
 python_library(
     name = "repo_db",
     srcs = ["repo_db.py"],
-    base_module = "rpm",
     deps = [
-        ":common",
         ":repo_objects",
+        "//fs_image:common",
     ],
 )
 
 python_unittest(
     name = "test-repo-db",
     srcs = ["tests/test_repo_db.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":repo_db"),
     ],
@@ -192,12 +182,10 @@ python_unittest(
 python_library(
     name = "repo_server",
     srcs = ["repo_server.py"],
-    base_module = "rpm",
     deps = [
         ":common",
-        ":repo_objects",
         ":repo_snapshot",
-        ":yum_dnf_conf",
+        "//fs_image:fs_utils",
         "//fs_image/rpm/storage:storage",
         "//fs_image/rpm/storage/facebook:storage",
     ],
@@ -206,7 +194,6 @@ python_library(
 python_unittest(
     name = "test-repo-server",
     srcs = ["tests/test_repo_server.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":repo_server"),
     ],
@@ -222,7 +209,7 @@ python_unittest(
 
 python_binary(
     name = "repo-server",
-    main_module = "rpm.repo_server",
+    main_module = "fs_image.rpm.repo_server",
     # Some FB-internal storage implementations embed binaries in this PAR
     par_style = "xar",
     deps = [":repo_server"],
@@ -231,9 +218,9 @@ python_binary(
 python_library(
     name = "common_args",
     srcs = ["common_args.py"],
-    base_module = "rpm",
     deps = [
         ":common",
+        "//fs_image:fs_utils",
         "//fs_image/rpm:db_connection",
         "//fs_image/rpm/facebook:db_connection",
         "//fs_image/rpm/storage:storage",
@@ -244,17 +231,15 @@ python_library(
 python_library(
     name = "gpg_keys",
     srcs = ["gpg_keys.py"],
-    base_module = "rpm",
     deps = [
-        ":common",
         ":open_url",
+        "//fs_image:fs_utils",
     ],
 )
 
 python_unittest(
     name = "test-gpg-keys",
     srcs = ["tests/test_gpg_keys.py"],
-    base_module = "rpm",
     needed_coverage = [(100, ":gpg_keys")],
     deps = [":gpg_keys"],
 )
@@ -262,29 +247,30 @@ python_unittest(
 python_library(
     name = "snapshot_repo",
     srcs = ["snapshot_repo.py"],
-    base_module = "rpm",
     deps = [
         ":common",
         ":common_args",
         ":gpg_keys",
-        ":repo_db",
         ":repo_sizer",
+        ":repo_snapshot",
+        ":yum_dnf_conf",
         "//fs_image:fs_utils",
         "//fs_image/rpm/downloader:common",
         "//fs_image/rpm/downloader:repo_downloader",
+        "//fs_image/rpm/storage:storage",
+        "//fs_image/rpm/storage/facebook:storage",
     ],
 )
 
 python_binary(
     name = "snapshot-repo",
-    main_module = "rpm.snapshot_repo",
+    main_module = "fs_image.rpm.snapshot_repo",
     deps = [":snapshot_repo"],
 )
 
 python_unittest(
     name = "test-snapshot-repo",
     srcs = ["tests/test_snapshot_repo.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":common_args"),
         (100, ":snapshot_repo"),
@@ -298,13 +284,11 @@ python_unittest(
 python_library(
     name = "yum_dnf_conf",
     srcs = ["yum_dnf_conf.py"],
-    base_module = "rpm",
 )
 
 python_unittest(
     name = "test-yum-dnf-conf",
     srcs = ["tests/test_yum_dnf_conf.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":yum_dnf_conf"),
     ],
@@ -338,8 +322,7 @@ python_unittest(
 python_binary(
     name = "yum-dnf-from-snapshot",
     srcs = ["yum_dnf_from_snapshot.py"],
-    base_module = "rpm",
-    main_module = "rpm.yum_dnf_from_snapshot",
+    main_module = "fs_image.rpm.yum_dnf_from_snapshot",
     deps = [
         ":common",
         ":yum_dnf_conf",
@@ -350,8 +333,7 @@ python_binary(
 python_binary(
     name = "temp-snapshot",
     srcs = ["tests/temp_snapshot.py"],
-    base_module = "rpm",
-    main_module = "rpm.tests.temp_snapshot",
+    main_module = "fs_image.rpm.tests.temp_snapshot",
     deps = [
         ":db_connection",
         ":snapshot_repos",
@@ -388,7 +370,6 @@ test_rpm_repo_snapshot(
 image_python_unittest(
     name = "test-yum-dnf-from-snapshot",
     srcs = ["tests/test_yum_dnf_from_snapshot.py"],
-    base_module = "rpm",
     # This is necessary because our CI environment does not guarantee that
     # `/var/lib/dnf` is installed.
     layer = "//fs_image/compiler/test_images:fake-build-appliance-from-host",
@@ -412,7 +393,6 @@ image_python_unittest(
 python_library(
     name = "snapshot_repos",
     srcs = ["snapshot_repos.py"],
-    base_module = "rpm",
     deps = [
         ":common",
         ":common_args",
@@ -428,14 +408,13 @@ python_library(
 
 python_binary(
     name = "snapshot-repos",
-    main_module = "rpm.snapshot_repos",
+    main_module = "fs_image.rpm.snapshot_repos",
     deps = [":snapshot_repos"],
 )
 
 python_unittest(
     name = "test-snapshot-repos",
     srcs = ["tests/test_snapshot_repos.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":common_args"),
         (100, ":snapshot_repos"),
@@ -449,9 +428,9 @@ python_unittest(
 python_library(
     name = "rpm_metadata",
     srcs = ["rpm_metadata.py"],
-    base_module = "rpm",
     deps = [
-        ":common",
+        "//fs_image:common",
+        "//fs_image:fs_utils",
         "//fs_image:subvol_utils",
     ],
 )
@@ -459,7 +438,6 @@ python_library(
 python_unittest(
     name = "test-rpm-metadata",
     srcs = ["tests/test_rpm_metadata.py"],
-    base_module = "rpm",
     needed_coverage = [
         (100, ":rpm_metadata"),
     ],

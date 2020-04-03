@@ -11,10 +11,8 @@ import unittest.mock
 import tempfile
 from typing import FrozenSet
 
+from fs_image.fs_utils import temp_dir, Path
 from . import temp_repos
-
-from ..common import temp_dir, Path
-
 from .. import repo_db
 from ..repo_snapshot import RepoSnapshot
 from ..snapshot_repos import snapshot_repos_from_args

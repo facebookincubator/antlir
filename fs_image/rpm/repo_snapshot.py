@@ -23,7 +23,9 @@ import tempfile
 from contextlib import contextmanager
 from typing import Any, Callable, Iterable, Mapping, NamedTuple, Union
 
-from .common import get_file_logger, create_ro, Path, read_chunks
+from fs_image.common import get_file_logger
+from fs_image.fs_utils import create_ro, Path
+from .common import read_chunks
 from .repo_objects import Repodata, RepoMetadata, Rpm
 from .storage import Storage
 

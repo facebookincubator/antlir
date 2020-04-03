@@ -5,7 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 'Arguments shared between `snapshot-repo` and `snapshot-repos`.'
-from .common import Path, RpmShard
+from fs_image.fs_utils import Path
+from .common import RpmShard
 from .storage import Storage
 from .db_connection import DBConnectionContext
 

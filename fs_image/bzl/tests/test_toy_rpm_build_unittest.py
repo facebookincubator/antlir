@@ -8,7 +8,7 @@ import os
 import subprocess
 import unittest
 
-from rpm.rpm_metadata import RpmMetadata
+from fs_image.rpm.rpm_metadata import RpmMetadata
 
 
 class ToyRpmBuildUnittestTest(unittest.TestCase):

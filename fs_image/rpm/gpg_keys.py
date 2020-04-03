@@ -16,7 +16,7 @@ import os
 from typing import Iterable
 from urllib.parse import urlparse
 
-from .common import Path, create_ro
+from fs_image.fs_utils import Path, create_ro
 from .open_url import open_url
 
 

@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import json
 import os
 import tempfile
 import subprocess
@@ -12,10 +11,12 @@ import unittest
 
 from contextlib import contextmanager
 
+from fs_image.fs_utils import Path
+from fs_image.common import init_logging
 from fs_image.rpm.find_snapshot import DEFAULT_SNAPSHOT_INSTALL_DIR
-
-from ..common import init_logging, Path, yum_is_dnf
+from ..common import yum_is_dnf
 from ..yum_dnf_from_snapshot import YumDnf, yum_dnf_from_snapshot
+
 
 _INSTALL_ARGS = ['install', '--assumeyes', 'rpm-test-carrot', 'rpm-test-milk']
 

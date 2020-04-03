@@ -25,7 +25,7 @@ from typing import (
     Type,
 )
 
-from rpm.common import async_retryable
+from fs_image.rpm.common import async_retryable
 
 
 logger = logging.getLogger(__name__)

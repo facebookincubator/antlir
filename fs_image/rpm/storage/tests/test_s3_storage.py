@@ -28,7 +28,7 @@ def mock_s3_cli(fn):
             def _mock_path_for_storage_id(sid):
                 return (td / sid).decode()
 
-            # Instead of calls to `aws s3`, we want to call `mock-s3-cli
+            # Instead of calls to `aws s3`, we want to call `mock-s3-cli`
             with unittest.mock.patch.object(
                 S3Storage, '_base_cmd',
                 return_value=[mock_s3_cli_path],
