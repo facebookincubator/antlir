@@ -10,6 +10,7 @@ from types import MappingProxyType
 from typing import Tuple, Iterable, Iterator, List, Mapping, NamedTuple, Optional, Set
 
 from fs_image.common import get_file_logger, set_new_key, shuffled
+from fs_image.rpm.common import read_chunks, retryable
 from fs_image.rpm.downloader.common import (
     BUFFER_BYTES,
     DownloadConfig,
@@ -19,12 +20,11 @@ from fs_image.rpm.downloader.common import (
     maybe_write_id,
     verify_chunk_stream,
 )
-from rpm.common import read_chunks, retryable
-from rpm.parse_repodata import get_rpm_parser, pick_primary_repodata
-from rpm.repo_db import RepodataTable
-from rpm.repo_objects import RepoMetadata, Repodata, Rpm
-from rpm.repo_snapshot import ReportableError
-from rpm.yum_dnf_conf import YumDnfConfRepo
+from fs_image.rpm.parse_repodata import get_rpm_parser, pick_primary_repodata
+from fs_image.rpm.repo_db import RepodataTable
+from fs_image.rpm.repo_objects import RepoMetadata, Repodata, Rpm
+from fs_image.rpm.repo_snapshot import ReportableError
+from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 REPODATA_MAX_RETRY_S = [2 ** i for i in range(10)]  # 1024sec == 17m4s

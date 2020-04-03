@@ -22,7 +22,7 @@ import re
 from contextlib import AbstractContextManager
 from typing import Callable, ContextManager, IO
 
-from rpm.pluggable import Pluggable
+from fs_image.rpm.pluggable import Pluggable
 
 log = logging.getLogger(__name__)
 

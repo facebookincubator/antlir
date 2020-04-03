@@ -16,15 +16,8 @@ from functools import wraps
 from io import BytesIO
 from typing import Callable, Iterable, NamedTuple, Optional, TypeVar
 
-# Hide the fact that some of our dependencies aren't in `rpm` any more, the
-# `rpm` library still imports them from `rpm.common`.
-from fs_image.common import (  # noqa: F401
-    byteme, check_popen_returncode, get_file_logger, init_logging,
-)
-# Future: update dependencies to import this directly.
-from fs_image.fs_utils import (  # noqa: F401
-    create_ro, Path, populate_temp_dir_and_rename, temp_dir,
-)
+from fs_image.common import byteme, get_file_logger
+
 
 log = get_file_logger(__file__)
 _UINT64_STRUCT = struct.Struct('=Q')

@@ -11,8 +11,11 @@ from abc import abstractmethod
 from contextlib import contextmanager
 from typing import ContextManager, List, Mapping, NamedTuple
 
-from rpm.common import check_popen_returncode, get_file_logger
-from .storage import _CommitCallback, Storage, StorageInput, StorageOutput
+from fs_image.common import check_popen_returncode, get_file_logger
+# Module import ensures we get plugins
+from fs_image.rpm.storage import Storage, StorageInput, StorageOutput
+# Below not exported at the module level
+from fs_image.rpm.storage.storage import _CommitCallback
 
 log = get_file_logger(__file__)
 

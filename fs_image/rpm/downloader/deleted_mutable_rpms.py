@@ -37,7 +37,7 @@ deleted_mutable_rpms = {
 }
 
 try:
-    from rpm.facebook.deleted_mutable_rpms import (
+    from fs_image.rpm.facebook.deleted_mutable_rpms import (
         deleted_mutable_rpms as _fb_deleted_mutable_rpms,
     )
 
@@ -46,7 +46,7 @@ except ImportError:  # pragma: no cover
     pass
 
 
-from rpm.repo_objects import CANONICAL_HASH
+from fs_image.rpm.repo_objects import CANONICAL_HASH
 
 
 for _checksums in deleted_mutable_rpms.values():

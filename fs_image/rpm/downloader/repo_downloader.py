@@ -52,9 +52,8 @@ from fs_image.rpm.downloader.common import DownloadConfig, DownloadResult, timei
 from fs_image.rpm.downloader.repomd_downloader import gen_repomds_from_repos
 from fs_image.rpm.downloader.repodata_downloader import gen_repodatas_from_repomds
 from fs_image.rpm.downloader.rpm_downloader import gen_rpms_from_repodatas
-from rpm.repo_db import RepoDBContext
-from rpm.repo_snapshot import RepoSnapshot
-from rpm.yum_dnf_conf import YumDnfConfRepo
+from fs_image.rpm.repo_snapshot import RepoSnapshot
+from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
 log = get_file_logger(__file__)
 

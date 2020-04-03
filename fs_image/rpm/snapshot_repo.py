@@ -12,11 +12,11 @@ all repos from a given `yum.conf`.
 import argparse
 import sys
 
-from fs_image.fs_utils import Path
+from fs_image.fs_utils import Path, populate_temp_dir_and_rename
 from fs_image.rpm.downloader.common import DownloadConfig
 from fs_image.rpm.downloader.repo_downloader import download_repos
 
-from .common import get_file_logger, init_logging, populate_temp_dir_and_rename
+from fs_image.common import get_file_logger, init_logging
 from .common_args import add_standard_args
 from .repo_sizer import RepoSizer
 from .repo_snapshot import RepoSnapshot

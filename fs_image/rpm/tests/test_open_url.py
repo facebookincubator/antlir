@@ -8,7 +8,7 @@ import subprocess
 import sys
 import unittest
 
-from ..common import temp_dir
+from fs_image.fs_utils import temp_dir
 from ..open_url import open_url
 
 

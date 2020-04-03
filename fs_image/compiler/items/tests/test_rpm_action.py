@@ -8,8 +8,8 @@ import os
 import sys
 
 from fs_image.fs_utils import Path
-from rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
-from rpm.yum_dnf_conf import YumDnf
+from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
+from fs_image.rpm.yum_dnf_conf import YumDnf
 
 from tests.temp_subvolumes import TempSubvolumes
 

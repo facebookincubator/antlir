@@ -8,14 +8,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable, Iterator, Tuple
 
 from fs_image.common import get_file_logger
+from fs_image.rpm.common import retryable
 from fs_image.rpm.downloader.common import (
     DownloadConfig,
     DownloadResult,
     download_resource,
 )
-from rpm.common import retryable
-from rpm.repo_objects import RepoMetadata
-from rpm.yum_dnf_conf import YumDnfConfRepo
+from fs_image.rpm.repo_objects import RepoMetadata
+from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 REPOMD_MAX_RETRY_S = [2 ** i for i in range(8)]  # 256 sec ==  4m16s

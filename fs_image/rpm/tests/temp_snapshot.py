@@ -8,7 +8,8 @@
 import os
 import textwrap
 
-from ..common import Path, temp_dir, RpmShard, populate_temp_dir_and_rename
+from fs_image.fs_utils import Path, temp_dir, populate_temp_dir_and_rename
+from ..common import RpmShard
 from ..snapshot_repos import snapshot_repos
 from ..tests.temp_repos import Repo, Rpm, SAMPLE_STEPS, temp_repos_steps
 

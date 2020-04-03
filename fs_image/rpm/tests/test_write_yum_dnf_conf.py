@@ -8,8 +8,8 @@ import textwrap
 import unittest
 
 from fs_image.fs_utils import create_ro, temp_dir
-from rpm.yum_dnf_conf import YumDnf
 
+from ..yum_dnf_conf import YumDnf
 from .. import write_yum_dnf_conf as wydc
 
 _CONF_IN = '''\

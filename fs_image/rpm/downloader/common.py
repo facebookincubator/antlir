@@ -21,14 +21,14 @@ from typing import (
 )
 
 from fs_image.common import get_file_logger
-from rpm.common import RpmShard
-from rpm.db_connection import DBConnectionContext
-from rpm.open_url import open_url
-from rpm.repo_db import RepoDBContext, RepodataTable
-from rpm.repo_objects import Checksum, Repodata, RepoMetadata, Rpm
-from rpm.repo_snapshot import FileIntegrityError, HTTPError, MaybeStorageID
-from rpm.storage import Storage
-from rpm.yum_dnf_conf import YumDnfConfRepo
+from fs_image.rpm.common import RpmShard
+from fs_image.rpm.db_connection import DBConnectionContext
+from fs_image.rpm.open_url import open_url
+from fs_image.rpm.repo_db import RepoDBContext, RepodataTable
+from fs_image.rpm.repo_objects import Checksum, Repodata, RepoMetadata, Rpm
+from fs_image.rpm.repo_snapshot import FileIntegrityError, HTTPError, MaybeStorageID
+from fs_image.rpm.storage import Storage
+from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 # We'll download data in 512KB chunks. This needs to be reasonably large to
