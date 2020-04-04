@@ -494,6 +494,13 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(b'Reached target', console)
         self.assertIn(b'Stopped target', console)
 
+    def test_boot_error(self):
+        with self.assertRaises(subprocess.CalledProcessError):
+            self._nspawn_in(
+                'bootable-systemd-os',
+                ['--boot', '--', '/bin/false'],
+            )
+
     def test_boot_no_console_pipe(self):
         with self.assertRaisesRegex(
             RuntimeError, ' does not support `subprocess.PIPE` ',

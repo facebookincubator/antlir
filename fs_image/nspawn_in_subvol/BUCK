@@ -62,6 +62,7 @@ python_library(
         ":args",
         ":cmd",
         ":common",
+        "//fs_image:common",
         "//fs_image:send_fds_and_run",
     ],
 )
