@@ -68,11 +68,14 @@ import time
 from contextlib import contextmanager
 from typing import ContextManager, Iterable, Tuple
 
+from fs_image.common import get_file_logger
 from send_fds_and_run import popen_and_inject_fds_after_sudo
 
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
 from .common import _PopenWrapper
+
+log = get_file_logger(__file__)
 
 
 def run_booted_nspawn(
@@ -149,6 +152,39 @@ def _wrap_systemd_exec():
 
 
 @contextmanager
+def _systemd_reaper(setup, boot_proc, systemd_pid):
+    try:
+        yield
+    finally:
+        log.info('User command exited, waiting to shut down systemd')
+        # Signal until the `systemd` process exits, because the first signal
+        # may arrive before it signal handler setup, and may be ignored.
+        #
+        # Future: we may want a timeout after which we send SIGKILL.
+        delay = 0.005
+        while boot_proc.poll() is None:
+            # Terminate the container gracefully by sending a SIGRTMIN+4
+            # directly to the `systemd` pid.
+            #
+            # We signal `systemd` instead of signaling its grandparent
+            # `proc` since killing `sudo` or `systemd-nspawn` is unlikely to
+            # result in a graceful shutdown, and might even leak the
+            # `systemd` container.
+            #
+            # There's not too much for us to do about the race of "systemd
+            # dies, some other process reuses its PID, we kill that too".
+            # Let's just hope everyone uses 32-bit PIDs now.
+            try:
+                setup.subvol.run_as_root([
+                    'kill', '-s', str(signal.SIGRTMIN + 4), systemd_pid,
+                ])
+                time.sleep(delay)
+                delay = min(0.25, delay * 2)
+            except subprocess.CalledProcessError:
+                pass  # Skip the wait if the PID is already invalid.
+
+
+@contextmanager
 def _popen_boot_systemd(setup: _NspawnSetup) -> Iterable[Tuple[
     subprocess.Popen, int
 ]]:
@@ -219,33 +255,9 @@ def _popen_boot_systemd(setup: _NspawnSetup) -> Iterable[Tuple[
         # From here onward, if either `stderr` and `boot_console` is a pipe,
         # then failing to drain the read end can deadlock.  See file docblock.
 
-        yield boot_proc, systemd_pid
-
-        # Signal until the `systemd` process exits, because the first signal
-        # may arrive before it signal handler setup, and may be ignored.
-        #
-        # Future: we may want a timeout after which we send SIGKILL.
-        delay = 0.005
-        while boot_proc.poll() is None:
-            # Terminate the container gracefully by sending a SIGRTMIN+4
-            # directly to the `systemd` pid.
-            #
-            # We signal `systemd` instead of signaling its grandparent
-            # `proc` since killing `sudo` or `systemd-nspawn` is unlikely to
-            # result in a graceful shutdown, and might even leak the
-            # `systemd` container.
-            #
-            # There's not too much for us to do about the race of "systemd
-            # dies, some other process reuses its PID, we kill that too".
-            # Let's just hope everyone uses 32-bit PIDs now.
-            try:
-                setup.subvol.run_as_root([
-                    'kill', '-s', str(signal.SIGRTMIN + 4), systemd_pid,
-                ])
-                time.sleep(delay)
-                delay = min(0.25, delay * 2)
-            except subprocess.CalledProcessError:
-                pass  # Skip the wait if the PID is already invalid.
+        log.info('Began systemd startup, injecting user command')
+        with _systemd_reaper(setup, boot_proc, systemd_pid):
+            yield boot_proc, systemd_pid
 
 
 def _popen_nsenter_into_systemd(
