@@ -4,7 +4,7 @@
 ## test will then check that they become the right image compiler Items.
 ##
 
-load("//fs_image/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
+load("//fs_image/bzl:constants.bzl", "BUILD_APPLIANCE_TARGET", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "RPM_SNAPSHOT_BASE_DIR", "install_rpm_repo_snapshot")
@@ -53,8 +53,10 @@ buck_sh_binary(
 buck_genrule(
     name = "hello_world.tar",
     out = "hello_world.tar",
-    bash = '$(exe :hello_world_tar_generator.sh) "\$(basename $OUT)" ' +
-           "$(location :prebuilt_hello_world.tar) \$(dirname $OUT)",
+    bash = """
+    $(exe :hello_world_tar_generator.sh) "\\$(basename $OUT)" \
+    $(location :prebuilt_hello_world.tar) "\\$(dirname $OUT)"
+    """,
 )
 
 # The next set of layers are used to test our nspawn runtime.
@@ -592,7 +594,7 @@ image.layer(
 # The following rules will build a basic RPM in an rpmbuild_layer.
 image.rpmbuild_layer(
     name = "toy-rpm-build",
-    parent_layer = "//tupperware/image/base:rpmbuild-base",
+    parent_layer = BUILD_APPLIANCE_TARGET,
     specfile = "toy.spec",
     source = "toy_srcs",
 )
