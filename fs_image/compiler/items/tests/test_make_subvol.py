@@ -7,8 +7,10 @@
 import copy
 import sys
 
-from btrfs_diff.tests.render_subvols import render_sendstream
-from btrfs_diff.tests.demo_sendstreams_expected import render_demo_subvols
+from fs_image.btrfs_diff.tests.render_subvols import render_sendstream
+from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
+    render_demo_subvols
+)
 from fs_image.fs_utils import Path
 from tests.temp_subvolumes import TempSubvolumes
 

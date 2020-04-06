@@ -6,7 +6,7 @@
 
 import sys
 
-from btrfs_diff.tests.demo_sendstreams import gold_demo_sendstreams
+from fs_image.btrfs_diff.tests.demo_sendstreams import gold_demo_sendstreams
 
 # This could be made to run against `make_demo_sendstreams`, which would
 # (redundantly with `btrfs_diff` tests) build a send-stream from scratch
