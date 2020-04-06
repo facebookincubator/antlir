@@ -97,6 +97,14 @@ def rpm_repo_snapshot(
         wrap_prefix = "__rpm_repo_snapshot",
         visibility = [],
     )
+
+    # Future: remove this in favor of linking it with `inject_repo_servers.py`.
+    # See the comment in that file for more info.
+    _, repo_server_wrapper = maybe_wrap_executable_target(
+        target = "//fs_image/rpm:repo-server",
+        wrap_prefix = "__rpm_repo_snapshot",
+        visibility = [],
+    )
     quoted_repo_server_ports = shell.quote(
         " ".join([
             str(p)
@@ -126,6 +134,7 @@ chmod a-w "$OUT"/snapshot.sql3
 echo {quoted_storage_cfg} > "$OUT"/storage.json
 
 cp $(location {yum_dnf_from_snapshot_wrapper}) "$OUT"/yum-dnf-from-snapshot
+cp $(location {repo_server_wrapper}) "$OUT"/repo-server
 # It's possible but harder to parse these from a rewritten `yum|dnf.conf`.
 echo {quoted_repo_server_ports} > "$OUT"/repo_server_ports
 
@@ -150,6 +159,7 @@ mkdir "$OUT"/bin
             quoted_cli_storage_cfg = shell.quote(struct(**cli_storage).to_json()),
             quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
             yum_dnf_from_snapshot_wrapper = yum_dnf_from_snapshot_wrapper,
+            repo_server_wrapper = repo_server_wrapper,
             quoted_repo_server_ports = quoted_repo_server_ports,
             quoted_yum_dnf_default = shell.quote(yum_dnf[0]),
             quoted_install_dir = shell.quote(snapshot_install_dir(":" + name)),

@@ -46,7 +46,8 @@ python_library(
 python_library(
     name = "inject_repo_servers",
     srcs = ["inject_repo_servers.py"],
-    resources = {"//fs_image/rpm:repo-server": "repo-server"},
+    # Future: bring this back, a comment in the `.py` file explains how.
+    # resources = {"//fs_image/rpm:repo-server": "repo-server"},
     deps = [
         ":args",
         ":common",

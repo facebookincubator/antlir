@@ -154,9 +154,27 @@ def inject_repo_servers(
     @contextmanager
     def wrapped_popen(opts: _NspawnOpts, popen_args: PopenArgs):
         with ExitStack() as stack:
-            repo_server_bin = stack.enter_context(Path.resource(
-                __package__, 'repo-server', exe=True,
-            ))
+            # Future: bring this back, so we don't have to install it into
+            # the snapshot.  The reason this is commented out for now is
+            # that the FB-internal repo-server is a bit expensive to build,
+            # and so we prefer to release and package it with the BA to hide
+            # the cost.
+            #
+            # However, once `image.released_layer` is a thing, it would be
+            # pretty easy to release just the expensive-to-build part inside
+            # FB, and have the rest be built "live".
+            #
+            # On balance, a "live-built" `repo-server` is easiest to work
+            # with, since you can edit the code, and try it in @mode/dev
+            # without rebuilding anything.  The only downside is that
+            # changes to the `repo-server` <-> snapshot interface require a
+            # simultaneous commit of both, but we do this very rarely.
+            #
+            # For now, the snapshot must contain the repo-server (below).
+            #
+            # repo_server_bin = stack.enter_context(Path.resource(
+            #    __package__, 'repo-server', exe=True,
+            # ))
             # Rewrite `opts` with a wrapper script and some forwarded FDs
             opts, cpe = stack.enter_context(
                 _wrap_opts_with_container_pid_exfiltrator(opts)
@@ -171,7 +189,7 @@ def inject_repo_servers(
                 # affect the contents of the snapshot.  This seems okay.
                 stack.enter_context(launch_repo_servers_for_netns(
                     target_pid=container_pid,
-                    repo_server_bin=repo_server_bin,
+                    repo_server_bin=opts.layer.path(snap_dir / 'repo-server'),
                     snapshot_dir=opts.layer.path(snap_dir),
                     debug=opts.debug_only_opts.debug,
                 ))
