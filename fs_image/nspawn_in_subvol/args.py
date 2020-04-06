@@ -19,12 +19,14 @@ This file has two roles:
 import argparse
 import pwd
 
+from types import MappingProxyType
 from typing import (
-    Any, AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple, Type,
+    Any, AnyStr, Iterable, Mapping, NamedTuple, Optional, Tuple, Type,
     TypeVar,
 )
 
 from find_built_subvol import find_built_subvol, Subvol
+from fs_image.common import set_new_key
 from fs_image.fs_utils import Path
 
 _DEFAULT_SHELL = '/bin/bash'
@@ -309,7 +311,13 @@ def _extract_opts_from_dict(
             assert k not in dct
         else:
             extra_fields[k] = dct.pop(k)
-    return ctor(**extra_fields)
+    return ctor(**{
+        k: (
+            # Our options structs should be immutable, so fix up the most
+            # common mutable object -- list -- that we get from `argparse`.
+            tuple(v) if isinstance(v, list) else v
+        ) for k, v in extra_fields.items()
+    })
 
 
 # Only for internal use by `nspawn-{run,test}-in-subvol`.
@@ -322,7 +330,8 @@ class _NspawnCLIArgs(NamedTuple):
     boot: bool
     append_boot_console: Optional[str]
     opts: _NspawnOpts
-    serve_rpm_snapshots: List[Path] = ()
+    serve_rpm_snapshots: Iterable[Path] = ()
+    snapshot_to_versionlock: Mapping[Path, Path] = MappingProxyType({})
 
 
 def _new_nspawn_cli_args(**kwargs):
@@ -333,6 +342,17 @@ def _new_nspawn_cli_args(**kwargs):
     assert not args.serve_rpm_snapshots or args.opts.user.pw_name == 'root', \
         f'You must set --user=root to use --serve-rpm-snapshot: {args}'
     return args
+
+
+def _normalize_snapshot_to_versionlock(
+    snapshot_to_vl: Iterable[Tuple[Path, Path]], snapshots: Iterable[Path],
+) -> Mapping[Path, Path]:
+    snapshots = frozenset(snapshots)
+    s_to_vl = {}
+    for s, vl in snapshot_to_vl:
+        assert s in snapshots, (s, snapshots)
+        set_new_key(s_to_vl, s, vl)
+    return MappingProxyType(s_to_vl)
 
 
 def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
@@ -356,7 +376,7 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     )
     parser.add_argument(
         '--serve-rpm-snapshot', action='append', dest='serve_rpm_snapshots',
-        type=Path.from_argparse,
+        default=[], type=Path.from_argparse,
         help='Container-relative path to an RPM repo snapshot directory, '
             'normally located under `RPM_SNAPSHOT_BASE_DIR`. Your container '
             'will be provided with `repo-server`s listening on the ports '
@@ -364,11 +384,25 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
             'so you can simply run `{yum,dnf} -c PATH_TO_CONF` to use them. '
             'This option may be repeated to serve multiple snapshots.',
     )
+    parser.add_argument(
+        '--snapshot-to-versionlock', action='append', nargs=2,
+        metavar=('SNAPSHOT_PATH', 'VERSIONLOCK_PATH'),
+        default=[], type=Path.from_argparse,
+        help='Restrict available versions for some of the snapshots specified '
+            'via `--serve-rpm-snapshot`. Each version-lock file lists allowed '
+            'RPM versions, one per line, in the following TAB-separated '
+            'format: N\\tE\\tV\\tR\\tA. Snapshot is a container path, while '
+            'versionlock is a host path.',
+    )
     _parser_add_nspawn_opts(parser)
     if allow_debug_only_opts:
         _parser_add_debug_only_not_for_prod_opts(parser)
     args = Path.parse_args(parser, argv)
     assert args.boot or not args.append_boot_console, args
+    args.snapshot_to_versionlock = _normalize_snapshot_to_versionlock(
+        args.snapshot_to_versionlock,
+        args.serve_rpm_snapshots,
+    )
 
     return _extract_opts_from_dict(
         _new_nspawn_cli_args, _NspawnCLIArgs._fields, args.__dict__,

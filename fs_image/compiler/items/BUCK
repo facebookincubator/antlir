@@ -33,6 +33,7 @@ python_library(
     base_module = "fs_image.compiler.items",
     deps = [
         ":common",
+        "//fs_image/nspawn_in_subvol:inject_repo_servers",
         "//fs_image/nspawn_in_subvol:non_booted",
         "//fs_image/rpm:find_snapshot",
         "//fs_image/rpm:rpm_metadata",

@@ -313,5 +313,6 @@ def _yum_dnf_using_build_appliance(
         user=pwd.getpwnam('root'),
     )
     run_non_booted_nspawn(opts, PopenArgs(), popen_wrappers=[
+        # Future: add `inject_yum_dnf_versionlock` here.
         functools.partial(inject_repo_servers, [snapshot_dir])
     ])

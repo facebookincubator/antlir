@@ -117,6 +117,7 @@ from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .booted import run_booted_nspawn
 from .common import _PopenWrapper
 from .inject_repo_servers import inject_repo_servers
+from .inject_yum_dnf_versionlock import inject_yum_dnf_versionlock
 from .non_booted import run_non_booted_nspawn
 
 
@@ -156,7 +157,12 @@ def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
             boot_console=boot_console,
             opts=args.opts,
             popen_wrappers=[
-                functools.partial(inject_repo_servers, args.serve_rpm_snapshots)
+                functools.partial(
+                    inject_yum_dnf_versionlock, args.snapshot_to_versionlock,
+                ),
+                functools.partial(
+                    inject_repo_servers, args.serve_rpm_snapshots,
+                ),
             ] if args.serve_rpm_snapshots else [],
         )
 
