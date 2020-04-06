@@ -3,13 +3,11 @@ load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_u
 python_library(
     name = "coroutine_utils",
     srcs = ["coroutine_utils.py"],
-    base_module = "btrfs_diff",
 )
 
 python_unittest(
     name = "test-coroutine-utils",
     srcs = ["tests/test_coroutine_utils.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":coroutine_utils",
@@ -20,13 +18,11 @@ python_unittest(
 python_library(
     name = "extent",
     srcs = ["extent.py"],
-    base_module = "btrfs_diff",
 )
 
 python_unittest(
     name = "test-extent",
     srcs = ["tests/test_extent.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":extent",
@@ -37,13 +33,11 @@ python_unittest(
 python_library(
     name = "freeze",
     srcs = ["freeze.py"],
-    base_module = "btrfs_diff",
 )
 
 python_unittest(
     name = "test-freeze",
     srcs = ["tests/test_freeze.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":freeze",
@@ -54,20 +48,17 @@ python_unittest(
 python_library(
     name = "deepcopy_test",
     srcs = ["tests/deepcopy_test.py"],
-    base_module = "btrfs_diff",
 )
 
 python_library(
     name = "inode_id",
     srcs = ["inode_id.py"],
-    base_module = "btrfs_diff",
     deps = [":freeze"],
 )
 
 python_unittest(
     name = "test-inode-id",
     srcs = ["tests/test_inode_id.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":inode_id",
@@ -82,7 +73,6 @@ python_unittest(
 python_library(
     name = "inode",
     srcs = ["inode.py"],
-    base_module = "btrfs_diff",
     deps = [
         ":extent",
         ":inode_id",
@@ -92,7 +82,6 @@ python_library(
 python_unittest(
     name = "test-inode",
     srcs = ["tests/test_inode.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":inode",
@@ -106,7 +95,6 @@ python_unittest(
 python_library(
     name = "incomplete_inode",
     srcs = ["incomplete_inode.py"],
-    base_module = "btrfs_diff",
     deps = [
         ":extent",
         ":freeze",
@@ -119,7 +107,6 @@ python_library(
 python_unittest(
     name = "test-incomplete-inode",
     srcs = ["tests/test_incomplete_inode.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":incomplete_inode",
@@ -130,7 +117,6 @@ python_unittest(
 python_library(
     name = "extents_to_chunks",
     srcs = ["extents_to_chunks.py"],
-    base_module = "btrfs_diff",
     deps = [
         ":extent",
         ":inode",
@@ -141,7 +127,6 @@ python_library(
 python_unittest(
     name = "test-extents-to-chunks",
     srcs = ["tests/test_extents_to_chunks.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":extents_to_chunks",
@@ -156,7 +141,6 @@ python_library(
         "parse_send_stream.py",
         "send_stream.py",
     ],
-    base_module = "btrfs_diff",
 )
 
 # Read the docblock of `demo_sendtreams.py` to learn about the gold data.
@@ -174,7 +158,6 @@ python_library(
         "tests/demo_sendstreams.py",
         "tests/demo_sendstreams_expected.py",
     ],
-    base_module = "btrfs_diff",
     resources = {
         ":gold_demo_sendstreams.pickle": "tests/gold_demo_sendstreams.pickle",
     },
@@ -188,8 +171,7 @@ python_library(
 # Use this binary to update the gold data.
 python_binary(
     name = "make-demo-sendstreams",
-    base_module = "btrfs_diff",
-    main_module = "btrfs_diff.tests.demo_sendstreams",
+    main_module = "fs_image.btrfs_diff.tests.demo_sendstreams",
     par_style = "zip",  # :testlib_demo_sendstreams requires this
     deps = [":testlib_demo_sendstreams"],
 )
@@ -200,7 +182,6 @@ python_unittest(
         "tests/test_parse_dump.py",
         "tests/test_parse_send_stream.py",
     ],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":parse_send_stream",
@@ -218,7 +199,6 @@ python_library(
         "rendered_tree.py",
         "subvolume.py",
     ],
-    base_module = "btrfs_diff",
     deps = [
         ":coroutine_utils",
         ":extents_to_chunks",
@@ -232,13 +212,11 @@ python_library(
 python_library(
     name = "testlib_subvolume_utils",
     srcs = ["tests/subvolume_utils.py"],
-    base_module = "btrfs_diff",
 )
 
 python_unittest(
     name = "test-subvolume",
     srcs = ["tests/test_subvolume.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":subvolume",
@@ -253,7 +231,6 @@ python_unittest(
 python_library(
     name = "subvolume_set",
     srcs = ["subvolume_set.py"],
-    base_module = "btrfs_diff",
     deps = [
         ":extents_to_chunks",
         ":freeze",
@@ -266,7 +243,6 @@ python_library(
 python_unittest(
     name = "test-subvolume-set",
     srcs = ["tests/test_subvolume_set.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":subvolume_set",
@@ -281,7 +257,6 @@ python_unittest(
 python_library(
     name = "inode_utils",
     srcs = ["inode_utils.py"],
-    base_module = "btrfs_diff",
     deps = [
         ":incomplete_inode",
         ":inode",
@@ -291,7 +266,6 @@ python_library(
 python_library(
     name = "testlib_render_subvols",
     srcs = ["tests/render_subvols.py"],
-    base_module = "btrfs_diff",
     deps = [
         ":freeze",
         ":inode_utils",
@@ -304,7 +278,6 @@ python_library(
 python_unittest(
     name = "test-sendstream-to-subvolume-set-integration",
     srcs = ["tests/test_sendstream_to_subvolume_set_integration.py"],
-    base_module = "btrfs_diff",
     needed_coverage = [(
         100,
         ":inode_utils",

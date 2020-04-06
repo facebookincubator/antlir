@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import unittest
 
-from btrfs_diff.tests.render_subvols import render_sendstream
+from fs_image.btrfs_diff.tests.render_subvols import render_sendstream
 from find_built_subvol import find_built_subvol, volume_dir
 from subvol_utils import Subvol
 
