@@ -1,6 +1,6 @@
 # Implementation detail for `image_layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//fs_image/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
+load("//fs_image/bzl:constants.bzl", "BUILD_APPLIANCE_TARGET", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl/image_actions:feature.bzl", "normalize_features")
 load(":artifacts_require_repo.bzl", "built_artifacts_require_repo")
 load(":target_tagger.bzl", "mangle_target", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -69,10 +69,7 @@ def compile_image_features(
     ):
         build_opts_dict.pop("build_appliance")
     elif "build_appliance" not in build_opts_dict:
-        build_opts_dict["build_appliance"] = native.read_config(
-            "fs_image",
-            "build_appliance",
-        )
+        build_opts_dict["build_appliance"] = BUILD_APPLIANCE_TARGET
 
     build_opts = _build_opts(**(build_opts_dict))
 
