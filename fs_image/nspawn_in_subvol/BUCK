@@ -49,7 +49,19 @@ python_library(
     resources = {"//fs_image/rpm:repo-server": "repo-server"},
     deps = [
         ":args",
+        ":common",
         ":launch_repo_servers",
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+    ],
+)
+
+python_library(
+    name = "inject_yum_dnf_versionlock",
+    srcs = ["inject_yum_dnf_versionlock.py"],
+    deps = [
+        ":args",
+        ":common",
         "//fs_image:common",
         "//fs_image:fs_utils",
     ],
@@ -74,7 +86,6 @@ python_library(
         ":args",
         ":cmd",
         ":common",
-        ":inject_repo_servers",
     ],
 )
 
@@ -89,6 +100,8 @@ python_binary(
         ":args",
         ":booted",
         ":cmd",
+        ":inject_repo_servers",
+        ":inject_yum_dnf_versionlock",
         ":non_booted",
         "//fs_image:common",
     ],

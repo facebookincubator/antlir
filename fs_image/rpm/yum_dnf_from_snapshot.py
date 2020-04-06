@@ -8,6 +8,9 @@
 This tool wraps `yum` and its successor `dnf` to ensure more hermetic
 behavior.
 
+  - This code should only ever be executed in a no-network
+    `nspawn_in_subvol` container, never on a bare host.
+
   - (Set up by `nspawn_in_subvol/inject_repo_servers.py`): All RPM content
     is served by `repo_server.py` from an RPM repo snapshot captured by
     `snapshot_repos.py`, built via the `rpm_repo_snapshot()` Buck macro, and
@@ -26,14 +29,6 @@ behavior.
   - `yum` or `dnf` run inside a mount namespace, with many of the files and
     directories that they might access on the host `image.layer` replaced by
     bind-mounts (the `--protected-path` option).
-
-
-  - `versionlock.list` inside the installed repo snapshot gets a dynamically
-    generated file bind-mounted over it, via the `--versionlock-list` option.
-    This allows us to change version selections on a more frequent cadence
-    than we change repo snapshots.
-
-    Future: this is probably not the right long-term home for this code. TBD.
 
 In other words, this provides additional sandboxing around RPM installation
 in addition to the sandbox already provided by `nspawn_in_subvol`.
@@ -90,18 +85,17 @@ The current tool works well, with these caveats:
     snapshot host to the snapshot?
 '''
 import os
-import shlex
 import subprocess
 import tempfile
 import textwrap
 
 from contextlib import contextmanager
-from typing import Dict, Iterable, List, Mapping
+from typing import Iterable, List, Mapping
 
 from fs_image.common import (
-    check_popen_returncode, get_file_logger, init_logging, set_new_key,
+    check_popen_returncode, get_file_logger, init_logging,
 )
-from fs_image.fs_utils import create_ro, Path, temp_dir
+from fs_image.fs_utils import Path, temp_dir
 
 from .yum_dnf_conf import YumDnf
 from .common import yum_is_dnf
@@ -115,7 +109,8 @@ def _isolate_yum_dnf(
     'Isolate yum/dnf from the host filesystem.'
     # Yum is incorrigible -- it is impossible to give it a set of options
     # that will completely prevent it from accessing host configuration &
-    # caches.  So instead, we do this:
+    # caches.  So instead, we do this to avoid littering inside the
+    # surrounding `nspawn_in_subvol` container:
     #
     #  - `YumDnfConfIsolator` coerces the config to "isolated" or "default",
     #    as much as possible.
@@ -271,47 +266,12 @@ def _dummies_for_protected_paths(
                 f'Some RPM wrote {actual} to {protected_paths}'
 
 
-@contextmanager
-def _prepare_versionlock_lists(
-    snapshot_dir: Path, list_path: Path
-) -> Dict[str, str]:
-    '''
-    Returns a map of "in-snapshot path" -> "tempfile with its contents",
-    with the intention that the tempfile in the value will be a read-only
-    bind-mount over the path in the key.
-    '''
-    # `dnf` and `yum` expect different formats, so we parse our own.
-    with open(list_path) as rf:
-        envras = [l.split('\t') for l in rf]
-    templates = {b'yum': '{e}:{n}-{v}-{r}.{a}', b'dnf': '{n}-{e}:{v}-{r}.{a}'}
-    dest_to_src = {}
-    with temp_dir() as d:
-        # Only bind-mount lists for those binaries that exist in the snapshot.
-        for prog in (snapshot_dir / 'bin').listdir():
-            template = templates.get(prog)
-            # For now, `bin` has <= 2 binaries, but this can be relaxed later:
-            assert template, prog
-            src = d / (prog + b'-versionlock.list')
-            with create_ro(src, 'w') as wf:
-                for e, n, v, r, a in envras:
-                    wf.write(template.format(e=e, n=n, v=v, r=r, a=a))
-            set_new_key(
-                dest_to_src,
-                # This path convention must match how `write_yum_dnf_conf.py`
-                # and `rpm_repo_snapshot.bzl` set up their output.
-                snapshot_dir / f'etc/{prog}/plugins/versionlock.list',
-                src,
-            )
-        yield dest_to_src
-
-
 def yum_dnf_from_snapshot(
     *,
     yum_dnf: YumDnf,
     snapshot_dir: Path,
     install_root: Path,
     protected_paths: List[str],
-    versionlock_list: Path,
     yum_dnf_args: List[str],
     debug: bool = False,
 ):
@@ -347,9 +307,6 @@ def yum_dnf_from_snapshot(
             _dummies_for_protected_paths(
                 protected_paths,
             ) as protected_path_to_dummy, \
-            _prepare_versionlock_lists(
-                snapshot_dir, versionlock_list,
-            ) as versionlock_list_path_to_tempfile, \
             subprocess.Popen([
                 'sudo',
                 # We need `--mount` so as not to leak our `--protect-path`
@@ -370,10 +327,9 @@ def yum_dnf_from_snapshot(
                 # significant extra work, which has no clear value (i.e.
                 # we'd effectively need to use `systemd-nspawn` here).
                 'unshare', '--mount', '--uts', '--ipc',
-                *_isolate_yum_dnf(yum_dnf, install_root, dummy_dev, {
-                    **versionlock_list_path_to_tempfile,
-                    **protected_path_to_dummy,
-                }),
+                *_isolate_yum_dnf(
+                    yum_dnf, install_root, dummy_dev, protected_path_to_dummy,
+                ),
                 'yum-dnf-from-snapshot',  # argv[0]
                 prog_name,
                 # Config options get isolated by our `YumDnfConfIsolator`
@@ -425,11 +381,6 @@ if __name__ == '__main__':  # pragma: no cover
             '--install-root. The path must already exist. There are some '
             'internal defaults that cannot be un-protected. May be repeated.',
     )
-    parser.add_argument(
-        '--versionlock-list', default='/dev/null',
-        help='A file listing allowed RPM versions, one per line, in the '
-            'following TAB-separated format: N\\tE\\tV\\tR\\tA.',
-    )
     parser.add_argument('--debug', action='store_true', help='Log more')
     parser.add_argument('yum_dnf', type=YumDnf, help='yum or dnf')
     parser.add_argument(
@@ -450,7 +401,6 @@ if __name__ == '__main__':  # pragma: no cover
         snapshot_dir=args.snapshot_dir,
         install_root=args.install_root,
         protected_paths=args.protected_path,
-        versionlock_list=args.versionlock_list,
         yum_dnf_args=args.args,
         debug=args.debug,
     )

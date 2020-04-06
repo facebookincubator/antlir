@@ -109,7 +109,7 @@ def _popen_non_booted_nspawn(setup: _NspawnSetup) -> Iterable[subprocess.Popen]:
         stderr=setup.popen_args.stderr,
     )
     with maybe_popen_and_inject_fds(
-        cmd + ['--'] + opts.cmd,
+        (*cmd, '--', *opts.cmd),
         opts,
         cmd_popen,
         set_listen_fds=True,  # We must pass FDs through `systemd-nspawn`

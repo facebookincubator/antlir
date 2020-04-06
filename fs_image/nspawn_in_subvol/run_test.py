@@ -203,7 +203,7 @@ if __name__ == '__main__':  # pragma: no cover
         ret, _boot_ret = cli_setup._replace(
             opts=cli_setup.opts._replace(
                 cmd=new_cmd,
-                forward_fd=cli_setup.opts.forward_fd + fds_to_forward,
+                forward_fd=(*cli_setup.opts.forward_fd, *fds_to_forward),
             ),
         )._run_nspawn(
             PopenArgs(

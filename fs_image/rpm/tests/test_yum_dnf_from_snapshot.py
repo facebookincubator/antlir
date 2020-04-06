@@ -27,7 +27,7 @@ class YumFromSnapshotTestImpl:
 
     @contextmanager
     def _install(
-        self, *, protected_paths, version_lock=None, install_args=None
+        self, *, protected_paths, install_args=None
     ):
         if install_args is None:
             install_args = _INSTALL_ARGS
@@ -47,18 +47,13 @@ class YumFromSnapshotTestImpl:
             # since it depends on the system packages available on CI
             # containers.  For this reason, this entire test is an
             # `image.python_unittest` that runs in a build appliance.
-            with tempfile.NamedTemporaryFile(mode='w') as tf:
-                if version_lock:
-                    tf.write('\n'.join(version_lock) + '\n')
-                tf.flush()
-                yum_dnf_from_snapshot(
-                    yum_dnf=self._YUM_DNF,
-                    snapshot_dir=DEFAULT_SNAPSHOT_INSTALL_DIR,
-                    install_root=Path(install_root),
-                    protected_paths=protected_paths,
-                    versionlock_list=tf.name,
-                    yum_dnf_args=install_args,
-                )
+            yum_dnf_from_snapshot(
+                yum_dnf=self._YUM_DNF,
+                snapshot_dir=DEFAULT_SNAPSHOT_INSTALL_DIR,
+                install_root=Path(install_root),
+                protected_paths=protected_paths,
+                yum_dnf_args=install_args,
+            )
             yield install_root
         finally:
             assert install_root != b'/'
@@ -122,26 +117,6 @@ class YumFromSnapshotTestImpl:
                 **milk,
                 'carrot.txt': 'carrot 2 rc0\n',
             })
-
-        # Version-locking carrot causes a non-latest version to be installed
-        with self._install(
-            protected_paths=['meta/'],
-            version_lock=['0\trpm-test-carrot\t1\tlockme\tx86_64'],
-        ) as install_root:
-            self._check_installed_content(install_root, {
-                **milk,
-                'carrot.txt': 'carrot 1 lockme\n',
-            })
-
-        def _install_nonexistent():
-            return self._install(
-                protected_paths=['meta/'],
-                version_lock=['0\trpm-test-carrot\t3333\tnonesuch\tx86_64'],
-            )
-
-        with self.assertRaises(subprocess.CalledProcessError):
-            with _install_nonexistent():
-                pass
 
         # Fail when installing a package by its Provides: name, even when there
         # are more than one package in the list. Yum will only exit with an

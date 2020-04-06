@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import functools
 import os
 import subprocess
 import sys
@@ -14,6 +15,7 @@ import unittest
 
 from contextlib import contextmanager
 from pwd import struct_passwd
+from typing import Iterable
 from unittest import mock
 
 from artifacts_dir import find_repo_root
@@ -512,50 +514,117 @@ class NspawnTestCase(unittest.TestCase):
                 '/bin/true',
             ], boot_console=subprocess.PIPE, check=True)
 
-    def _run_yum_or_dnf(
-        self, progname, package, expected_filename, expected_contents,
-        expected_logline, *, boot,
-    ):
+    def _yum_or_dnf_install(self, prog, package, *, extra_args=()):
         snapshot_dir = DEFAULT_SNAPSHOT_INSTALL_DIR
-        ret = self._nspawn_in('build-appliance', [
-            *(['--boot'] if boot else []),
-            '--user=root',
-            '--serve-rpm-snapshot', snapshot_dir,
-            '--',
-            '/bin/sh', '-c',
-            textwrap.dedent(f'''\
-                set -ex
-                mkdir /target
-                {progname} \\
-                    --config={snapshot_dir}/etc/{progname}/{progname}.conf \\
-                    --installroot=/target -y install {package}
-                test -f /target{expected_filename}
-                contents=$(cat /target{expected_filename})
-                test "$contents" = "{expected_contents}"
-            '''),
-        ], stdout=subprocess.PIPE, check=True)
+        with tempfile.TemporaryFile(mode='w+b') as yum_dnf_stdout, \
+                tempfile.TemporaryFile(mode='w+') as rpm_contents:
+            # We don't pipe either stdout or stderr so that both are
+            # viewable when running the test interactively.  We use `tee` to
+            # obtain a copy of the program's stdout for tests.
+            ret = self._nspawn_in('build-appliance', [
+                '--user=root',
+                f'--serve-rpm-snapshot={snapshot_dir}',
+                f'--forward-fd={yum_dnf_stdout.fileno()}',  # becomes FD 3
+                f'--forward-fd={rpm_contents.fileno()}',  # becomes FD 4
+                *extra_args,
+                '--',
+                '/bin/sh', '-c',
+                textwrap.dedent(f'''\
+                    set -ex
+                    mkdir /target
+                    {prog} \\
+                        --config={snapshot_dir}/etc/{prog}/{prog}.conf \\
+                        --installroot=/target -y install {package} |
+                            tee /proc/self/fd/3
+                    # We install only 1 RPM, so a glob tells us the filename.
+                    # Use `head` instead of `cat` to fail nicer on exceeding 1.
+                    head /target/usr/share/rpm_test/*.txt >&4
+                '''),
+            ])
+            # Hack up the `CompletedProcess` for ease of testing.
+            yum_dnf_stdout.seek(0)
+            ret.stdout = yum_dnf_stdout.read()
+            rpm_contents.seek(0)
+            ret.rpm_contents = rpm_contents.read()
+            return ret
+
+    def _check_yum_dnf_ret(self, expected_contents, expected_logline, ret):
         self.assertEqual(0, ret.returncode)
+        self.assertEqual(expected_contents, ret.rpm_contents)
         self.assertIn(expected_logline, ret.stdout)
         self.assertIn(b'Complete!', ret.stdout)
 
+    def _check_yum_dnf_boot_or_not(
+        self, prog, package, *, extra_args=(), check_ret_fn=None,
+    ):
+        for boot_args in (['--boot'], []):
+            check_ret_fn(self._yum_or_dnf_install(
+                prog, package, extra_args=(*extra_args, *boot_args),
+            ))
+
     def test_yum_with_repo_server(self):
-        for boot in (True, False):
-            self._run_yum_or_dnf(
-                'yum',
-                'rpm-test-carrot',
-                '/usr/share/rpm_test/carrot.txt',
-                'carrot 2 rc0',
+        self._check_yum_dnf_boot_or_not(
+            'yum',
+            'rpm-test-carrot',
+            check_ret_fn=functools.partial(
+                self._check_yum_dnf_ret,
+                'carrot 2 rc0\n',
                 b'Package rpm-test-carrot.x86_64 0:2-rc0 will be installed',
-                boot=boot,
-            )
+            ),
+        )
 
     def test_dnf_with_repo_server(self):
-        for boot in (True, False):
-            self._run_yum_or_dnf(
-                'dnf',
-                'rpm-test-mice',
-                '/usr/share/rpm_test/mice.txt',
-                'mice 0.1 a',
+        self._check_yum_dnf_boot_or_not(
+            'dnf',
+            'rpm-test-mice',
+            check_ret_fn=functools.partial(
+                self._check_yum_dnf_ret,
+                'mice 0.1 a\n',
                 b'Installing       : rpm-test-mice-0.1-a.x86_64',
-                boot=boot,
+            ),
+        )
+
+    @contextmanager
+    def _write_versionlocks(self, lines: Iterable[str]):
+        with tempfile.NamedTemporaryFile(mode='w') as tf:
+            tf.write('\n'.join(lines) + '\n')
+            tf.flush()
+            yield tf.name
+
+    def test_version_lock(self):
+        # Version-locking carrot causes a non-latest version to be installed
+        # -- compare with `test_yum_with_repo_server`.
+        with self._write_versionlocks([
+            '0\trpm-test-carrot\t1\tlockme\tx86_64'
+        ]) as vl:
+            self._check_yum_dnf_boot_or_not(
+                'yum',
+                'rpm-test-carrot',
+                extra_args=(
+                    '--snapshot-to-versionlock',
+                    DEFAULT_SNAPSHOT_INSTALL_DIR,
+                    vl,
+                ),
+                check_ret_fn=functools.partial(
+                    self._check_yum_dnf_ret,
+                    'carrot 1 lockme\n',
+                    b'Package rpm-test-carrot.x86_64 0:1-lockme will be instal',
+                ),
+            )
+
+        def _not_reached(ret):
+            raise NotImplementedError
+
+        with self._write_versionlocks([
+            '0\trpm-test-carrot\t3333\tnonesuch\tx86_64'
+        ]) as vl, self.assertRaises(subprocess.CalledProcessError):
+            self._check_yum_dnf_boot_or_not(
+                'yum',
+                'rpm-test-carrot',
+                extra_args=(
+                    '--snapshot-to-versionlock',
+                    DEFAULT_SNAPSHOT_INSTALL_DIR,
+                    vl,
+                ),
+                check_ret_fn=_not_reached,
             )

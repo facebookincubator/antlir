@@ -5,13 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 
 '''
-No externally useful functions here.  Read the `run.py` docblock instead.
+Wrap `popen_{non,}_booted_nspawn` with `inject_repo_servers` to serve
+RPM repo snapshots inside the container.
 
-This file sets up the container with an RPM repo server to serve snapshots
-made by `fs_image/rpm/snapshot_repos.py` inside the container.
+For the `run_*` functions, add this to your `popen_wrappers`:
+  `functools.partial(inject_repo_servers, snapshot_paths)`
 
-Fixme: this is currently tightly coupled to non_booted.py, but that'll
-change on a later diff.
+The snapshots must already be in the container's image, and must have been
+built by the `rpm_repo_snapshot()` target, and installed via
+`install_rpm_repo_snapshot()`.
 '''
 import functools
 import os
@@ -150,7 +152,7 @@ def inject_repo_servers(
 
     @functools.wraps(popen)
     @contextmanager
-    def wrapped_popen(opts: _NspawnOpts, popen_args: PopenArgs) -> Any:
+    def wrapped_popen(opts: _NspawnOpts, popen_args: PopenArgs):
         with ExitStack() as stack:
             repo_server_bin = stack.enter_context(Path.resource(
                 __package__, 'repo-server', exe=True,
