@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
 from artifacts_dir import find_repo_root
-from compiler import procfs_serde
+from fs_image.compiler import procfs_serde
 from find_built_subvol import Subvol
 from fs_image.common import nullcontext
 from fs_image.fs_utils import Path

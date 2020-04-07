@@ -13,7 +13,7 @@ import tempfile
 
 from contextlib import ExitStack
 
-from compiler.requires_provides import require_directory
+from fs_image.compiler.requires_provides import require_directory
 from tests.temp_subvolumes import TempSubvolumes
 
 from ..common import image_source_item, _hash_path

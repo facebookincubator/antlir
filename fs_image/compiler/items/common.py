@@ -24,7 +24,7 @@ import tempfile
 
 from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
-from compiler import procfs_serde
+from fs_image.compiler import procfs_serde
 from fs_image.fs_utils import Path
 from fs_image.rpm.yum_dnf_conf import YumDnf
 from subvol_utils import Subvol

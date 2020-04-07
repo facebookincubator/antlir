@@ -6,7 +6,9 @@
 
 import sys
 
-from compiler.requires_provides import ProvidesDirectory, require_directory
+from fs_image.compiler.requires_provides import (
+    ProvidesDirectory, require_directory
+)
 from tests.temp_subvolumes import TempSubvolumes
 
 from ..make_dirs import MakeDirsItem

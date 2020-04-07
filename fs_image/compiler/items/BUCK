@@ -6,7 +6,6 @@ load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 python_library(
     name = "common",
     srcs = ["common.py"],
-    base_module = "fs_image.compiler.items",
     deps = [
         "//fs_image:fs_utils",
         "//fs_image:subvol_utils",
@@ -19,7 +18,6 @@ python_library(
 python_library(
     name = "common_testlib",
     srcs = ["tests/common.py"],
-    base_module = "fs_image.compiler.items",
     deps = [
         ":common",
         "//fs_image/btrfs_diff:testlib_render_subvols",
@@ -30,7 +28,6 @@ python_library(
 python_library(
     name = "rpm_action",
     srcs = ["rpm_action.py"],
-    base_module = "fs_image.compiler.items",
     deps = [
         ":common",
         "//fs_image/nspawn_in_subvol:inject_repo_servers",
@@ -43,7 +40,6 @@ python_library(
 python_library(
     name = "rpm_action_base_testlib",
     srcs = ["tests/rpm_action_base.py"],
-    base_module = "fs_image.compiler.items",
     resources = {
         TEST_IMAGE_PREFIX + "rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
     },
@@ -58,7 +54,6 @@ python_library(
 python_unittest(
     name = "test-rpm-action",
     srcs = ["tests/test_rpm_action.py"],
-    base_module = "fs_image.compiler.items",
     needed_coverage = [(100, ":rpm_action")],
     resources = {
         target_location(
@@ -78,7 +73,6 @@ python_unittest(
 python_library(
     name = "rpm_build",
     srcs = ["rpm_build.py"],
-    base_module = "fs_image.compiler.items",
     deps = [
         ":common",
         "//fs_image/nspawn_in_subvol:non_booted",
@@ -88,7 +82,6 @@ python_library(
 python_unittest(
     name = "test-rpm-build",
     srcs = ["tests/test_rpm_build.py"],
-    base_module = "fs_image.compiler.items",
     needed_coverage = [(100, ":rpm_build")],
     resources = {
         target_location(
@@ -107,7 +100,6 @@ python_unittest(
 python_library(
     name = "mount_utils",
     srcs = ["mount_utils.py"],
-    base_module = "fs_image.compiler.items",
     deps = ["//fs_image:subvol_utils"],
 )
 
@@ -128,7 +120,6 @@ python_library(
         "symlink.py",
         "tarball.py",
     ],
-    base_module = "fs_image.compiler.items",
     deps = [
         ":common",
         ":mount_utils",
@@ -150,7 +141,6 @@ python_unittest(
         "tests/test_symlink.py",
         "tests/test_tarball.py",
     ],
-    base_module = "fs_image.compiler.items",
     needed_coverage = [
         (100, ":common"),
         (100, ":items"),

@@ -266,8 +266,7 @@ image.feature(
 python_binary(
     name = "print-ok",
     srcs = ["print_ok.py"],
-    base_module = "fs_image",
-    main_module = "fs_image.print_ok",
+    main_module = "fs_image.compiler.test_images.print_ok",
 )
 
 buck_genrule(
@@ -622,8 +621,7 @@ image.layer(
 python_binary(
     name = "save-demo-sendstream",
     srcs = ["save_demo_sendstream.py"],
-    base_module = "",
-    main_module = "save_demo_sendstream",
+    main_module = "fs_image.compiler.test_images.save_demo_sendstream",
     par_style = "zip",  # testlib_demo_sendstreams needs this in @mode/opt
     deps = ["//fs_image/btrfs_diff:testlib_demo_sendstreams"],
 )

@@ -10,7 +10,7 @@ import subprocess
 import sys
 import tempfile
 
-from compiler.requires_provides import (
+from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesFile, require_directory
 )
 from find_built_subvol import find_built_subvol

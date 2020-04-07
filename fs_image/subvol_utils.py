@@ -19,7 +19,7 @@ from fs_image.common import (
 from fs_image.fs_utils import Path
 from unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
 
-from compiler.subvolume_on_disk import SubvolumeOnDisk
+from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
 
 log = get_file_logger(__file__)
 MiB = 2 ** 20
