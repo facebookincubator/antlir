@@ -9,7 +9,7 @@ import unittest
 
 from io import StringIO
 
-from fs_image.layer_mount_config import main
+from ..layer_mount_config import main
 
 
 class TestLayerMountConfig(unittest.TestCase):

@@ -18,14 +18,14 @@ import subprocess
 from contextlib import contextmanager
 from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
-from artifacts_dir import find_repo_root
+from fs_image.artifacts_dir import find_repo_root
 from fs_image.compiler import procfs_serde
-from find_built_subvol import Subvol
+from fs_image.find_built_subvol import Subvol
 from fs_image.common import nullcontext
 from fs_image.fs_utils import Path
 from fs_image.compiler.items.mount_utils import clone_mounts
-from send_fds_and_run import popen_and_inject_fds_after_sudo
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.send_fds_and_run import popen_and_inject_fds_after_sudo
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from .args import _NspawnOpts, PopenArgs
 

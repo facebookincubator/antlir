@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesDoNotAccess, ProvidesFile,
 )
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 from .common import ImageItem, is_path_protected, protected_path_set
 
 

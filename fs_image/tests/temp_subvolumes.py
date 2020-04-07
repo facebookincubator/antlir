@@ -13,8 +13,8 @@ import tempfile
 
 from typing import AnyStr
 
-from find_built_subvol import volume_dir
-from subvol_utils import byteme, Subvol
+from ..find_built_subvol import volume_dir
+from ..subvol_utils import byteme, Subvol
 
 
 def with_temp_subvols(method):

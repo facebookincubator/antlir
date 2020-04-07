@@ -15,10 +15,11 @@ from contextlib import contextmanager
 from typing import Iterator
 
 from fs_image.btrfs_diff.tests.render_subvols import render_sendstream
-from find_built_subvol import subvolumes_dir
-from package_image import package_image, Format
-from unshare import Namespace, nsenter_as_root, Unshare
-from tests.temp_subvolumes import TempSubvolumes
+
+from ..find_built_subvol import subvolumes_dir
+from ..package_image import package_image, Format
+from ..unshare import Namespace, nsenter_as_root, Unshare
+from .temp_subvolumes import TempSubvolumes
 
 
 def _render_sendstream_path(path):

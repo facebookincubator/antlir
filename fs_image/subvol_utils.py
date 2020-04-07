@@ -12,14 +12,15 @@ import time
 from contextlib import contextmanager
 from typing import AnyStr, BinaryIO, Iterator, Iterable, NamedTuple
 
-from btrfs_loopback import LoopbackVolume, run_stdout_to_err
-from fs_image.common import (
+from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
+
+from .btrfs_loopback import LoopbackVolume, run_stdout_to_err
+from .common import (
     byteme, check_popen_returncode, get_file_logger, open_fd, pipe,
 )
-from fs_image.fs_utils import Path
-from unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
+from .fs_utils import Path
+from .unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
 
-from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
 
 log = get_file_logger(__file__)
 MiB = 2 ** 20

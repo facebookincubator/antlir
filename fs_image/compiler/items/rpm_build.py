@@ -12,7 +12,7 @@ from typing import Iterable
 
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder
 

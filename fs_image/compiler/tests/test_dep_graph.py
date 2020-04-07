@@ -9,7 +9,7 @@ import unittest
 
 from dataclasses import dataclass
 
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from fs_image.compiler.items.common import ImageItem, PhaseOrder
 from fs_image.compiler.items.install_file import InstallFileItem

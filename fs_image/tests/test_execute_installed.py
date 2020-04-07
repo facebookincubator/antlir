@@ -15,10 +15,11 @@ import os
 import subprocess
 import unittest
 
-from find_built_subvol import find_built_subvol
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from fs_image.nspawn_in_subvol.common import _nspawn_version
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+
+from ..find_built_subvol import find_built_subvol
 
 
 class ExecuteInstalledTestCase(unittest.TestCase):

@@ -222,10 +222,10 @@ import subprocess
 
 from typing import Mapping, NamedTuple
 
-from find_built_subvol import find_built_subvol
-from fs_image.fs_utils import Path, create_ro
-from fs_image.common import init_logging, check_popen_returncode
-from subvol_utils import Subvol, SubvolOpts
+from .find_built_subvol import find_built_subvol
+from .fs_utils import Path, create_ro
+from .common import init_logging, check_popen_returncode
+from .subvol_utils import Subvol, SubvolOpts
 
 
 class _Opts(NamedTuple):

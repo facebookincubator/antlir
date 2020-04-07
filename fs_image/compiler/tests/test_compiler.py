@@ -14,17 +14,16 @@ import sys
 
 from contextlib import contextmanager
 
-import subvol_utils
-
-from find_built_subvol import subvolumes_dir
+from fs_image import subvol_utils
 from fs_image.compiler.items import rpm_action
+from fs_image.find_built_subvol import subvolumes_dir
 from fs_image.fs_utils import Path, temp_dir
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..compiler import build_image, parse_args, LayerOpts
 from .. import subvolume_on_disk as svod
-
 from . import sample_items as si
+
 
 _orig_btrfs_get_volume_props = svod._btrfs_get_volume_props
 # We need the actual subvolume directory for this mock because the

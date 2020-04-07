@@ -69,7 +69,7 @@ from contextlib import contextmanager
 from typing import ContextManager, Iterable, Tuple
 
 from fs_image.common import get_file_logger
-from send_fds_and_run import popen_and_inject_fds_after_sudo
+from fs_image.send_fds_and_run import popen_and_inject_fds_after_sudo
 
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup

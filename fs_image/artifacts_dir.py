@@ -11,7 +11,7 @@ import stat
 import subprocess
 import textwrap
 
-from fs_image.fs_utils import Path, populate_temp_file_and_rename
+from .fs_utils import Path, populate_temp_file_and_rename
 
 
 def _maybe_make_symlink_to_scratch(

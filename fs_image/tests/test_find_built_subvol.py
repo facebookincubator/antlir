@@ -7,7 +7,7 @@
 import os
 import unittest
 
-from find_built_subvol import find_built_subvol
+from fs_image.find_built_subvol import find_built_subvol
 
 
 class FindBuiltSubvolTestCase(unittest.TestCase):

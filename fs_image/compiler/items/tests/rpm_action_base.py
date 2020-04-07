@@ -8,11 +8,11 @@ import os
 import subprocess
 import sys
 
-from find_built_subvol import find_built_subvol
+from fs_image.find_built_subvol import find_built_subvol
 from fs_image.common import load_location
 from fs_image.fs_utils import Path
 
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..rpm_action import RpmAction, RpmActionItem
 

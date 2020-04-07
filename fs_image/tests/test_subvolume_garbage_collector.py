@@ -9,10 +9,10 @@ import contextlib
 import os
 import unittest
 import tempfile
-import subvolume_garbage_collector as sgc
 import subprocess
 
-from fs_image.fs_utils import temp_dir
+from .. import subvolume_garbage_collector as sgc
+from ..fs_utils import temp_dir
 
 
 class SubvolumeGarbageCollectorTestCase(unittest.TestCase):

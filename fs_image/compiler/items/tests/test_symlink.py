@@ -11,7 +11,7 @@ import tempfile
 from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesFile, require_directory, require_file
 )
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..install_file import InstallFileItem
 from ..symlink import SymlinkToDirItem, SymlinkToFileItem

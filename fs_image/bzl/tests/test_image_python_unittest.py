@@ -8,7 +8,7 @@ import getpass
 import os
 import unittest
 
-from coverage_test_helper import coverage_test_helper
+from .coverage_test_helper import coverage_test_helper
 
 
 class ImagePythonUnittestTest(unittest.TestCase):

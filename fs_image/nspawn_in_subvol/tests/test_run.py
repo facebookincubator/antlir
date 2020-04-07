@@ -18,10 +18,10 @@ from pwd import struct_passwd
 from typing import Iterable
 from unittest import mock
 
-from artifacts_dir import find_repo_root
+from fs_image.artifacts_dir import find_repo_root
 from fs_image.common import pipe
 from fs_image.rpm.find_snapshot import DEFAULT_SNAPSHOT_INSTALL_DIR
-from tests.temp_subvolumes import with_temp_subvols
+from fs_image.tests.temp_subvolumes import with_temp_subvols
 
 from ..args import _parse_cli_args, PopenArgs
 from ..common import _nspawn_version

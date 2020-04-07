@@ -12,7 +12,7 @@ from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols
 )
 from fs_image.fs_utils import Path
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
 from ..make_dirs import MakeDirsItem

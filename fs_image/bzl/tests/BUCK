@@ -7,7 +7,6 @@ load(":container_and_vm_test.bzl", "cpp_container_and_vm_test", "python_containe
 python_library(
     name = "coverage_test_helper",
     srcs = ["coverage_test_helper.py"],
-    base_module = "",
 )
 
 image.python_unittest(

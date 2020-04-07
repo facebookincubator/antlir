@@ -13,9 +13,9 @@ import tempfile
 from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesFile, require_directory
 )
-from find_built_subvol import find_built_subvol
+from fs_image.find_built_subvol import find_built_subvol
 from fs_image.fs_utils import temp_dir, Path
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import image_source_item
 from ..install_file import _InstallablePath, InstallFileItem

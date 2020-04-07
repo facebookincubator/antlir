@@ -9,9 +9,9 @@ import os
 import textwrap
 import unittest
 
-from fs_image.common import nullcontext
-from fs_image.fs_utils import temp_dir
-from fs_image import update_package_db as updb
+from .. import update_package_db as updb
+from ..common import nullcontext
+from ..fs_utils import temp_dir
 
 _GENERATED = updb._GENERATED
 

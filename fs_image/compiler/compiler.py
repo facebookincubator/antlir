@@ -26,7 +26,7 @@ from fs_image.compiler.items_for_features import gen_items_for_features
 from fs_image.compiler.items.common import LayerOpts
 from fs_image.compiler.items.phases_provide import PhasesProvideItem
 from fs_image.fs_utils import Path
-from subvol_utils import Subvol, get_subvolume_path
+from fs_image.subvol_utils import Subvol, get_subvolume_path
 
 from .dep_graph import DependencyGraph
 from .subvolume_on_disk import SubvolumeOnDisk

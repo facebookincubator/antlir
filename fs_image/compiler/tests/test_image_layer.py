@@ -17,7 +17,7 @@ from fs_image.btrfs_diff.tests.render_subvols import render_sendstream, pop_path
 from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols
 )
-from find_built_subvol import find_built_subvol
+from fs_image.find_built_subvol import find_built_subvol
 from fs_image.rpm.yum_dnf_conf import YumDnf
 
 

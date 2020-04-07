@@ -10,7 +10,7 @@ import os
 from dataclasses import dataclass
 from typing import Iterable
 
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 from .common import (
     coerce_path_field_normal_relative, ImageItem, is_path_protected,

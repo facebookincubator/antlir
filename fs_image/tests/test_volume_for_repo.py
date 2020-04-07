@@ -9,7 +9,8 @@ import unittest
 import shutil
 import subprocess
 import tempfile
-import volume_for_repo as vfr
+
+from .. import volume_for_repo as vfr
 
 
 class VolumeForRepoTestCase(unittest.TestCase):

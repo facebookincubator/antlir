@@ -27,7 +27,7 @@ from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 from fs_image.compiler import procfs_serde
 from fs_image.fs_utils import Path
 from fs_image.rpm.yum_dnf_conf import YumDnf
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 from .mount_utils import mountpoints_from_subvol_meta
 
