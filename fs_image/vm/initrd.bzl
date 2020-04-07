@@ -38,7 +38,6 @@ def initrd(name, modules = None):
         cd $OUT
 
         cp $(location //fs_image/vm:init.sh) init
-        cp $(location //fs_image/vm:seedroot) bin/seedroot
 
         {cp_modules}
 
