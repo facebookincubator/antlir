@@ -62,8 +62,8 @@ import time
 
 from typing import Tuple
 
-from subvol_utils import Subvol
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.subvol_utils import Subvol
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 
 def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:

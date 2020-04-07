@@ -13,7 +13,7 @@ from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesDoNotAccess, require_directory
 )
 from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..make_subvol import FilesystemRootItem, ParentLayerItem
 from ..mount import MountItem

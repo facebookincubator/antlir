@@ -7,12 +7,11 @@
 import os
 import sys
 
-from fs_image.fs_utils import Path
-
-from artifacts_dir import ensure_per_repo_artifacts_dir_exists
-from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
-from subvol_utils import Subvol
-from volume_for_repo import get_volume_for_current_repo
+from .artifacts_dir import ensure_per_repo_artifacts_dir_exists
+from .compiler.subvolume_on_disk import SubvolumeOnDisk
+from .fs_utils import Path
+from .subvol_utils import Subvol
+from .volume_for_repo import get_volume_for_current_repo
 
 
 # NB: Memoizing this function would be pretty reasonable.

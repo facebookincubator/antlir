@@ -7,7 +7,7 @@
 import os
 
 from dataclasses import dataclass
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesFile, require_directory, require_file

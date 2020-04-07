@@ -9,7 +9,7 @@ import subprocess
 import unittest
 
 from fs_image.btrfs_diff.tests.render_subvols import render_sendstream
-from tests.temp_subvolumes import with_temp_subvols
+from fs_image.tests.temp_subvolumes import with_temp_subvols
 
 from ..procfs_serde import serialize, deserialize_untyped, deserialize_int
 

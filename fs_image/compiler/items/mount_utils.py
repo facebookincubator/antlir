@@ -10,7 +10,7 @@ import os
 
 from typing import AnyStr, Iterator
 
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 META_MOUNTS_DIR = 'meta/private/mount'
 MOUNT_MARKER = 'MOUNT'

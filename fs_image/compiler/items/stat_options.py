@@ -10,7 +10,7 @@ we are creating inside the image.
 '''
 from typing import Union
 
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 # `mode` can be an integer fully specifying the bits, or a symbolic
 # string like `u+rx`.  In the latter case, the changes are applied on

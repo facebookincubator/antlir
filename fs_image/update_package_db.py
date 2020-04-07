@@ -37,8 +37,8 @@ import os
 
 from typing import Callable, List, Mapping, Tuple
 
-from fs_image.common import get_file_logger, init_logging
-from fs_image.fs_utils import (
+from .common import get_file_logger, init_logging
+from .fs_utils import (
     Path, populate_temp_dir_and_rename, populate_temp_file_and_rename,
 )
 

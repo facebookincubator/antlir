@@ -9,7 +9,7 @@ import json
 
 from typing import Iterable, Union
 
-from find_built_subvol import find_built_subvol
+from fs_image.find_built_subvol import find_built_subvol
 
 from fs_image.compiler.items.common import LayerOpts, image_source_item
 from fs_image.compiler.items.install_file import InstallFileItem

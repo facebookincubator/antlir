@@ -10,7 +10,7 @@ import sys
 from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesDoNotAccess
 )
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..phases_provide import PhasesProvideItem
 

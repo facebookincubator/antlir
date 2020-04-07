@@ -26,7 +26,7 @@ from typing import Dict, Mapping, Tuple
 
 from fs_image.common import get_file_logger, set_new_key
 from fs_image.fs_utils import create_ro, Path, temp_dir
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 from .args import _NspawnOpts, PopenArgs
 from .common import _PopenCtxMgr

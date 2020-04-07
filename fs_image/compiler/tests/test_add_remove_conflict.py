@@ -10,11 +10,9 @@ import tempfile
 import unittest
 
 from fs_image.btrfs_diff.tests.render_subvols import render_sendstream
-from find_built_subvol import find_built_subvol, volume_dir
-from subvol_utils import Subvol
+from fs_image.find_built_subvol import find_built_subvol, volume_dir
 
 from ..compiler import parse_args, build_image
-from ..subvolume_on_disk import SubvolumeOnDisk
 
 
 def _test_feature_target(feature_target):

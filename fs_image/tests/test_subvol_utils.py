@@ -14,11 +14,10 @@ from fs_image.btrfs_diff.tests.render_subvols import render_sendstream
 from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols
 )
-from find_built_subvol import subvolumes_dir, volume_dir
-from fs_image.fs_utils import Path, temp_dir
-from subvol_utils import Subvol, SubvolOpts, get_subvolume_path
-
 from .temp_subvolumes import with_temp_subvols
+from ..find_built_subvol import subvolumes_dir, volume_dir
+from ..fs_utils import Path, temp_dir
+from ..subvol_utils import Subvol, SubvolOpts, get_subvolume_path
 
 
 class SubvolTestCase(unittest.TestCase):
@@ -165,8 +164,8 @@ class SubvolTestCase(unittest.TestCase):
             )
             # Same 2-try run, but this time, exercise the free space check
             # instead of relying on parsing `btrfs receive` output.
-            with unittest.mock.patch(
-                'subvol_utils.Subvol._OUT_OF_SPACE_SUFFIX', b'cypa',
+            with unittest.mock.patch.object(
+                Subvol, '_OUT_OF_SPACE_SUFFIX', b'cypa',
             ):
                 self.assertEqual(2, sv.mark_readonly_and_send_to_new_loopback(
                     loop_path.name, waste_factor=waste_too_low,

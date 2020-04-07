@@ -11,7 +11,7 @@ from fs_image.fs_utils import Path
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from fs_image.rpm.yum_dnf_conf import YumDnf
 
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
 from ..rpm_action import RpmAction, RpmActionItem

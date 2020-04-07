@@ -6,7 +6,7 @@
 
 import unittest
 
-from fs_image.unionfind import UnionFind
+from ..unionfind import UnionFind
 
 
 class TestUnionFind(unittest.TestCase):

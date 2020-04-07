@@ -8,10 +8,10 @@ import os
 import sys
 import unittest
 
-from find_built_subvol import find_built_subvol
+from fs_image.find_built_subvol import find_built_subvol
 from fs_image.common import load_location
 
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
 from ..rpm_build import RpmBuildItem

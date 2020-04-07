@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 import click
-from artifacts_dir import find_repo_root
+from fs_image.artifacts_dir import find_repo_root
 from fs_image.vm.vm import Share, kernel_vm
 
 

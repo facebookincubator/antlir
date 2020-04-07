@@ -27,10 +27,10 @@ import os
 import resource
 import sys
 
-from fs_image.common import (
+from .common import (
     get_file_logger, init_logging, recv_fds_from_unix_sock,
 )
-from fs_image.fs_utils import Path
+from .fs_utils import Path
 
 log = get_file_logger(__file__)
 

@@ -21,7 +21,7 @@ from fs_image.nspawn_in_subvol.inject_repo_servers import inject_repo_servers
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.rpm.find_snapshot import RPM_SNAPSHOT_BASE_DIR
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder, protected_path_set
 

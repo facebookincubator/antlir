@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest.mock
 
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder, protected_path_set
 from ..install_file import InstallFileItem

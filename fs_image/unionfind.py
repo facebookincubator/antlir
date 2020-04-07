@@ -12,7 +12,6 @@ easily avoided by just placing the file in this directory.
 '''
 
 
-
 class UnionFind(object):
     ''' Special implementation of UnionFind (aka disjoint set) where nodes are
         stored as key value pairs in a dictionary and not in an actual tree

@@ -15,7 +15,7 @@ import unittest
 from typing import Iterable
 from unittest import mock
 
-from unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
+from ..unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
 
 # `user` omitted for reasons described in Unshare's docblock
 _NS_FILES = ['cgroup', 'ipc', 'mnt', 'net', 'pid', 'uts']

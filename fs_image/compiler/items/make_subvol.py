@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from fs_image.fs_utils import open_for_read_decompress
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 from .common import ensure_meta_dir_exists, ImageItem, LayerOpts, PhaseOrder
 from .mount_utils import clone_mounts

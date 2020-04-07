@@ -16,8 +16,8 @@ import os
 from dataclasses import dataclass
 from typing import Mapping, NamedTuple
 
-from subvol_utils import Subvol
-from find_built_subvol import find_built_subvol
+from fs_image.subvol_utils import Subvol
+from fs_image.find_built_subvol import find_built_subvol
 
 from fs_image.compiler import procfs_serde
 from fs_image.compiler.requires_provides import (

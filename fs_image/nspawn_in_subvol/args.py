@@ -25,7 +25,7 @@ from typing import (
     TypeVar,
 )
 
-from find_built_subvol import find_built_subvol, Subvol
+from fs_image.find_built_subvol import find_built_subvol, Subvol
 from fs_image.common import set_new_key
 from fs_image.fs_utils import Path
 

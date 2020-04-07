@@ -51,7 +51,7 @@ import sys
 
 from typing import Iterator
 
-from fs_image.fs_utils import Path
+from .fs_utils import Path
 
 log = logging.Logger(os.path.basename(__file__))  # __name__ is __main__
 

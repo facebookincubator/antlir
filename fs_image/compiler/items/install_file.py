@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Iterable, NamedTuple, Optional, Union
 
 from fs_image.fs_utils import Path
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 
 from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesFile, require_directory

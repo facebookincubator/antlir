@@ -10,7 +10,7 @@ import subprocess
 
 from fs_image.common import get_file_logger
 from fs_image.fs_utils import Path
-from subvol_utils import Subvol
+from fs_image.subvol_utils import Subvol
 from typing import NamedTuple
 
 log = get_file_logger(__file__)

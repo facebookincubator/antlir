@@ -46,11 +46,11 @@ import sys
 
 from contextlib import contextmanager
 
-from fs_image.common import (
+from .common import (
     FD_UNIX_SOCK_TIMEOUT, get_file_logger, init_logging,
     listen_temporary_unix_socket,
 )
-from fs_image.fs_utils import Path
+from .fs_utils import Path
 
 log = get_file_logger(__file__)
 

@@ -13,7 +13,7 @@ import unittest
 from fs_image.fs_utils import temp_dir
 from .temp_repos import temp_repos_steps, Repo, Rpm
 from ..rpm_metadata import compare_rpm_versions, RpmMetadata, _compare_values
-from find_built_subvol import find_built_subvol
+from fs_image.find_built_subvol import find_built_subvol
 
 
 class RpmMetadataTestCase(unittest.TestCase):

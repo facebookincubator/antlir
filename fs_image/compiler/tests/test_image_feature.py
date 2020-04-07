@@ -13,7 +13,7 @@ from fs_image.compiler.items.make_subvol import FilesystemRootItem
 from fs_image.compiler.items.phases_provide import PhasesProvideItem
 from fs_image.compiler.items.remove_path import RemovePathItem
 from fs_image.compiler.items.rpm_action import RpmActionItem
-from tests.temp_subvolumes import TempSubvolumes
+from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..dep_graph import DependencyGraph
 from ..items_for_features import gen_items_for_features
