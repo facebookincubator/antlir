@@ -14,7 +14,7 @@ from typing import Iterable, NamedTuple, Optional, Union
 from fs_image.fs_utils import Path
 from subvol_utils import Subvol
 
-from compiler.requires_provides import (
+from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesFile, require_directory
 )
 

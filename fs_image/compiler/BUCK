@@ -8,13 +8,11 @@ load(":defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_IMAGE_PREFIX", "imag
 python_library(
     name = "subvolume_on_disk",
     srcs = ["subvolume_on_disk.py"],
-    base_module = "compiler",
 )
 
 python_unittest(
     name = "test-subvolume-on-disk",
     srcs = ["tests/test_subvolume_on_disk.py"],
-    base_module = "compiler",
     needed_coverage = [(
         100,
         ":subvolume_on_disk",
@@ -25,13 +23,11 @@ python_unittest(
 python_library(
     name = "procfs_serde",
     srcs = ["procfs_serde.py"],
-    base_module = "compiler",
 )
 
 python_unittest(
     name = "test-procfs-serde",
     srcs = ["tests/test_procfs_serde.py"],
-    base_module = "compiler",
     needed_coverage = [(
         100,
         ":procfs_serde",
@@ -49,14 +45,12 @@ python_unittest(
 python_library(
     name = "requires_provides",
     srcs = ["requires_provides.py"],
-    base_module = "compiler",
     deps = ["//fs_image:fs_utils"],
 )
 
 python_unittest(
     name = "test-requires-provides",
     srcs = ["tests/test_requires_provides.py"],
-    base_module = "compiler",
     needed_coverage = [(
         100,
         ":requires_provides",
@@ -67,7 +61,6 @@ python_unittest(
 python_library(
     name = "dep_graph",
     srcs = ["dep_graph.py"],
-    base_module = "compiler",
     # NB: Don't use `all-items` here, just use the ones we need.
     deps = ["//fs_image/compiler/items:items"],
 )
@@ -75,7 +68,6 @@ python_library(
 python_unittest(
     name = "test-dep-graph",
     srcs = ["tests/test_dep_graph.py"],
-    base_module = "compiler",
     needed_coverage = [(
         100,
         ":dep_graph",
@@ -92,7 +84,6 @@ python_unittest(
 python_library(
     name = "items_for_features",
     srcs = ["items_for_features.py"],
-    base_module = "compiler",
     deps = [
         "//fs_image/compiler/items:all-items",
         "//fs_image/compiler/items/facebook:fb_items_for_features",
@@ -102,7 +93,6 @@ python_library(
 python_library(
     name = "sample_items",
     srcs = ["tests/sample_items.py"],
-    base_module = "compiler",
     deps = ["//fs_image/compiler/items:all-items"],
 )
 
@@ -148,7 +138,6 @@ image_feature_python_unittest(
 python_library(
     name = "compiler",
     srcs = ["compiler.py"],
-    base_module = "compiler",
     deps = [
         ":dep_graph",
         ":items_for_features",
@@ -191,7 +180,6 @@ IMAGE_LAYER_DEPS = [
 python_unittest(
     name = "test-image-layer",
     srcs = ["tests/test_image_layer.py"],
-    base_module = "compiler",
     # Python `deps` don't work as you'd expect in fbcode -- they have to be
     # other `python_*` rules.  `cpp_deps` is the kitchen sink?
     cpp_deps = [
@@ -223,7 +211,6 @@ python_unittest(
 python_unittest(
     name = "test-add-remove-conflict",
     srcs = ["tests/test_add_remove_conflict.py"],
-    base_module = "compiler",
     # Ensures we can read resources in @mode/opt. "xar" cannot work because
     # `root` cannot access the content of unprivileged XARs.
     par_style = "zip",

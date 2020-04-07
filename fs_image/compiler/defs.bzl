@@ -37,7 +37,6 @@ def image_feature_python_unittest(test_image_feature_transitive_deps, deps = Non
         for t in test_image_feature_transitive_deps
     ]
     return python_unittest(
-        base_module = "compiler",
         env = env,
         # The test reads `feature.json`, so we need actual files on disk.
         par_style = "zip",

@@ -7,7 +7,9 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from compiler.requires_provides import ProvidesDirectory, require_directory
+from fs_image.compiler.requires_provides import (
+    ProvidesDirectory, require_directory
+)
 from ..common import ImageItem, image_source_item
 from ..install_file import InstallFileItem
 from ..make_dirs import MakeDirsItem

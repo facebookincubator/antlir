@@ -303,7 +303,7 @@ python_binary(
 
 python_binary(
     name = "compiler",
-    main_module = "compiler.compiler",
+    main_module = "fs_image.compiler.compiler",
     # "fastzip" would break :volume_for_repo in @mode/opt.  "xar" fails
     # since `root` cannot access the content of an unprivileged XAR.
     par_style = "zip",
