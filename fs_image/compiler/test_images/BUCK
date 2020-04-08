@@ -603,29 +603,6 @@ image.layer(
     build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
-# The following rules will build a basic RPM in an rpmbuild_layer.
-image.rpmbuild_layer(
-    name = "toy-rpm-build",
-    specfile = "toy.spec",
-    source = "toy_srcs",
-)
-
-# This tests installing an RPM from image.rpmbuild_layer into another layer with
-# image.source
-image.layer(
-    name = "install_toy_rpm",
-    parent_layer = ":hello_world_base",
-    features = [
-        image.rpms_install([
-            image.source(
-                layer = ":toy-rpm-build",
-                path = "rpmbuild/RPMS/toy.rpm",
-            ),
-        ]),
-    ],
-    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
-)
-
 ##
 ## These few rules help test `image.sendstream_layer`.
 ##

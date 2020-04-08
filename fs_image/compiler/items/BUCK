@@ -98,32 +98,6 @@ python_unittest(
     ],
 )
 
-python_library(
-    name = "rpm_build",
-    srcs = ["rpm_build.py"],
-    deps = [
-        ":common",
-        "//fs_image/nspawn_in_subvol:non_booted",
-    ],
-)
-
-python_unittest(
-    name = "test-rpm-build",
-    srcs = ["tests/test_rpm_build.py"],
-    needed_coverage = [(100, ":rpm_build")],
-    resources = {
-        target_location(
-            TEST_IMAGE_PREFIX + "toy-rpm-build-rpmbuild-setup",
-        ): "toy-rpmbuild-setup",
-    },
-    deps = [
-        ":common_testlib",
-        "//fs_image:common",
-        "//fs_image:find_built_subvol",
-        "//fs_image:testlib_temp_subvolumes",
-    ],
-)
-
 # Split out since `nspawn_in_subvol` depends on it. Covered by `test-items`.
 python_library(
     name = "mount_utils",
@@ -197,6 +171,5 @@ python_library(
         ":foreign_layer",
         ":items",
         ":rpm_action",
-        ":rpm_build",
     ],
 )

@@ -14,7 +14,6 @@ load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_package.bzl", "image_package")
 load(":image_python_unittest.bzl", "image_python_unittest")
-load(":image_rpmbuild_layer.bzl", "image_rpmbuild_layer")
 load(":image_sendstream_layer.bzl", "image_sendstream_layer")
 load(":image_source.bzl", "image_source")
 
@@ -39,7 +38,6 @@ image = struct(
     kernel_opts = image_kernel_opts,
     package = image_package,
     python_unittest = image_python_unittest,
-    rpmbuild_layer = image_rpmbuild_layer,
     sendstream_layer = image_sendstream_layer,
     source = image_source,
 )

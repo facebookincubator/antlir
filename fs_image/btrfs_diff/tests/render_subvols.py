@@ -8,6 +8,7 @@
 If your test has a subvolume or a sendstream, these helpers here make it
 easy to make assertions against its content. Grep around for usage examples.
 '''
+import copy
 
 from io import BytesIO
 from typing import Tuple
@@ -32,6 +33,51 @@ def pop_path(render, path):
     for part in parts[:-1]:
         render = render[1][part]
     return render[1].pop(parts[-1])
+
+
+# Future: this isn't really the right place for it, but for now we just have
+# 2 places that need it, and it's annoying to create a whole new module just
+# for this helper.
+def check_common_rpm_render(test, rendered_subvol, yum_dnf: str):
+    r = copy.deepcopy(rendered_subvol)
+
+    # Ignore a bunch of yum / dnf / rpm spam
+
+    if yum_dnf == 'yum':
+        ino, = pop_path(r, f'var/log/yum.log')
+        test.assertRegex(ino, r'^\(File m600 d[0-9]+\)$')
+        for ignore_dir in ['var/cache/yum', 'var/lib/yum']:
+            ino, _ = pop_path(r, ignore_dir)
+            test.assertEqual('(Dir)', ino)
+    elif yum_dnf == 'dnf':
+        test.assertEqual(['(Dir)', {
+            'dnf': ['(Dir)', {'modules.d': ['(Dir)', {}]}],
+        }], pop_path(r, 'etc'))
+        for logname in [
+            'dnf.log', 'dnf.librepo.log', 'dnf.rpm.log', 'hawkey.log',
+        ]:
+            ino, = pop_path(r, f'var/log/{logname}')
+            test.assertRegex(ino, r'^\(File d[0-9]+\)$', logname)
+        for ignore_dir in ['var/cache/dnf', 'var/lib/dnf']:
+            ino, _ = pop_path(r, ignore_dir)
+            test.assertEqual('(Dir)', ino)
+    else:
+        raise AssertionError(yum_dnf)
+
+    ino, _ = pop_path(r, 'var/lib/rpm')
+    test.assertEqual('(Dir)', ino)
+
+    test.assertEqual(['(Dir)', {
+        'dev': ['(Dir)', {}],
+        'meta': ['(Dir)', {'private': ['(Dir)', {'opts': ['(Dir)', {
+            'artifacts_may_require_repo': ['(File d2)'],
+        }]}]}],
+        'var': ['(Dir)', {
+            'cache': ['(Dir)', {}],
+            'lib': ['(Dir)', {}],
+            'log': ['(Dir)', {}],
+        }],
+    }], r)
 
 
 def expected_rendering(expected_subvol):

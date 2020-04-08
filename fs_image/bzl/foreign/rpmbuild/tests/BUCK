@@ -1,0 +1,44 @@
+load("@fbcode_macros//build_defs:python_unittest.bzl", "python_unittest")
+load("//fs_image/bzl:defs.bzl", "target_location")
+load("//fs_image/bzl:image.bzl", "image")
+load("//fs_image/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_rpmbuild_layer")
+
+# Build a minimal RPM
+image_rpmbuild_layer(
+    name = "toy-rpm-build",
+    source = "toy_srcs",
+    specfile = "toy.spec",
+)
+
+# Tests that the internals of `image_rpmbuild_layer` are as we expect.
+image.python_unittest(
+    name = "test-toy-rpm-build",
+    srcs = ["test_toy_rpm_build.py"],
+    layer = ":toy-rpm-build",
+    deps = ["//fs_image/rpm:rpm_metadata"],
+)
+
+# Install an RPM from `image_rpmbuild_layer` via `image.source`
+image.layer(
+    name = "install-toy-rpm",
+    features = [
+        image.rpms_install([
+            image.source(
+                layer = ":toy-rpm-build",
+                path = "rpmbuild/RPMS/toy.rpm",
+            ),
+        ]),
+    ],
+)
+
+# Check the result of installing the RPM we built.
+python_unittest(
+    name = "test-install-toy-rpm",
+    srcs = ["test_install_toy_rpm.py"],
+    resources = {target_location(":install-toy-rpm"): "install-toy-rpm"},
+    deps = [
+        "//fs_image:common",
+        "//fs_image:find_built_subvol",
+        "//fs_image/btrfs_diff:testlib_render_subvols",
+    ],
+)
