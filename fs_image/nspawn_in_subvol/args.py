@@ -180,7 +180,7 @@ class _NspawnOpts(NamedTuple):
     quiet: bool = False
     # For now, these have the form `K=V`. Future: make this a map?
     setenv: Iterable[AnyStr] = ()  # for `image.*_unittest`
-    snapshot: bool = True  # For `RpmBuildItem`
+    snapshot: bool = True  # For `ForeignLayerItem`
     user: pwd.struct_passwd = _NOBODY_USER
     debug_only_opts: _NspawnDebugOnlyNotForProdOpts = _DEBUG_OPTS_FOR_PROD
 

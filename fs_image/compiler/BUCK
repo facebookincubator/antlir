@@ -62,7 +62,10 @@ python_library(
     name = "dep_graph",
     srcs = ["dep_graph.py"],
     # NB: Don't use `all-items` here, just use the ones we need.
-    deps = ["//fs_image/compiler/items:items"],
+    deps = [
+        "//fs_image/compiler/items:foreign_layer",
+        "//fs_image/compiler/items:items",
+    ],
 )
 
 python_unittest(
@@ -162,6 +165,7 @@ image_feature_python_unittest(
 
 IMAGE_LAYER_DEPS = [
     "validates-build-appliance",
+    "foreign-layer",
     "layer-with-non-default-snapshot-rpm",
     "installed-files",
     "child/layer",
@@ -200,7 +204,9 @@ python_unittest(
     par_style = "zip",  # "fastzip" would break :volume_for_repo in @mode/opt
     # As with `test-image-feature`, we cannot get `image_layer.py` coverage.
     deps = [
+        ":procfs_serde",
         ":sample_items",
+        "//fs_image:artifacts_dir",
         "//fs_image:find_built_subvol",
         "//fs_image/btrfs_diff:testlib_demo_sendstreams",
         "//fs_image/btrfs_diff:testlib_render_subvols",

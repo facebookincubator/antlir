@@ -141,6 +141,16 @@ class DependencyGraph:
             [FilesystemRootItem(from_target=layer_target)],
         )
         assert len(make_subvol_items) == 1, make_subvol_items
+        # If we have a foreign layer, it must be the only item, besides the
+        # mandatory `MAKE_SUBVOL` added above.
+        foreign = self.order_to_phase_items.get(PhaseOrder.FOREIGN_LAYER)
+        if foreign:
+            assert len(foreign) == 1, foreign
+            assert not self.items, self.items
+            assert set(self.order_to_phase_items.keys()) == {
+                PhaseOrder.FOREIGN_LAYER,
+                PhaseOrder.MAKE_SUBVOL,
+            }, self.order_to_phase_items
 
     # Like ImageItems, the generated phases have a build(s: Subvol) operation.
     def ordered_phases(self):

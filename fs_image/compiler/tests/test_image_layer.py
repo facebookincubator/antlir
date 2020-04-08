@@ -7,12 +7,14 @@
 import copy
 import json
 import os
+import sys
 import unittest
 
 from contextlib import contextmanager
 from grp import getgrnam
 from pwd import getpwnam
 
+from fs_image.artifacts_dir import find_repo_root
 from fs_image.btrfs_diff.tests.render_subvols import render_sendstream, pop_path
 from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols
@@ -20,6 +22,7 @@ from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
 from fs_image.find_built_subvol import find_built_subvol
 from fs_image.rpm.yum_dnf_conf import YumDnf
 
+from ..procfs_serde import deserialize_int
 
 TARGET_ENV_VAR_PREFIX = 'test_image_layer_path_to_'
 TARGET_TO_PATH = {
@@ -245,16 +248,11 @@ class ImageLayerTestCase(unittest.TestCase):
             }],
         }], r)
 
-    def test_build_appliance(self):
-        # The appliance this uses defaults to `dnf`.  This is not a dual
-        # test, unlike `test-rpm-action-item`, because force-overriding the
-        # package manager is not currently exposed to the `.bzl` layer.  So
-        # we only have the `dnf` build artifact to test here.
-        #
-        # If the extra coverage were thought important, we could either pass
-        # this flag to the compiler CLI via `image.opts`, or just add a copy
-        # of `repo-snapshot-for-tests` defaulting to `yum`.
-        with self.target_subvol('validates-build-appliance') as sv:
+    # This is reused by `test_foreign_layer` because we currently lack
+    # rendering for incremental sendstreams.
+    @contextmanager
+    def _check_build_appliance(self, rsrc_name):
+        with self.target_subvol(rsrc_name) as sv:
             r = render_sendstream(sv.mark_readonly_and_get_sendstream())
 
             ino, = pop_path(r, 'bin/sh')  # Busybox from `rpm-test-milk`
@@ -271,9 +269,57 @@ class ImageLayerTestCase(unittest.TestCase):
             ino, _ = pop_path(r, 'usr/lib/.build-id')
             self.assertEqual('(Dir)', ino)
             self.assertEqual(['(Dir)', {}], pop_path(r, 'bin'))
-            self.assertEqual(['(Dir)', {}], pop_path(r, 'usr/lib'))
+
+            yield sv, r
 
             self._check_rpm_common(r, YumDnf.dnf)
+
+    def test_build_appliance(self):
+        # The appliance this uses defaults to `dnf`.  This is not a dual
+        # test, unlike `test-rpm-action-item`, because force-overriding the
+        # package manager is not currently exposed to the `.bzl` layer.  So
+        # we only have the `dnf` build artifact to test here.
+        #
+        # If the extra coverage were thought important, we could either pass
+        # this flag to the compiler CLI via `image.opts`, or just add a copy
+        # of `repo-snapshot-for-tests` defaulting to `yum`.
+        with self._check_build_appliance('validates-build-appliance') as (_, r):
+            self.assertEqual(['(Dir)', {}], pop_path(r, 'usr/lib'))
+
+    def test_foreign_layer(self):
+        with self._check_build_appliance('foreign-layer') as (sv, r):
+            # The desired side effect of the run:
+            self.assertEqual(['(File)'], pop_path(r, 'I_AM_FOREIGN_LAYER'))
+
+            # Fixme: This `os-release` is an artifact of `nspawn_in_subvol`.
+            # We should probably not be leaking this into the layer, but
+            # it's unlikely to show up in real-world examples.
+            self.assertEqual(
+                ['(Dir)', {'os-release': ['(File)']}],
+                pop_path(r, 'usr/lib')
+            )
+
+            # Maybe fixme: `nspawn_in_subvol` could potentially clean this
+            # up but it seems unlikely to affect prod since it's only a
+            # thing in `@mode/dev`, which should never ship prod artifacts.
+            if deserialize_int(
+                sv, '/meta/private/opts/artifacts_may_require_repo',
+            ):
+                # Assume that the prefix of the repo (e.g. /home or /data)
+                # is not one of the normal FHS-type directories below.
+                d = os.path.abspath(find_repo_root(sys.argv[0]))
+                while d != '/':
+                    self.assertEqual(['(Dir)', {}], pop_path(r, d))
+                    d = os.path.dirname(d)
+
+            # Clean other, less sketchy side effects of `nspawn_in_subvol`:
+            # empty LFS directories. (`/logs` is not LFS, but an FB-ism)
+            for d in ('logs', 'proc', 'root', 'run', 'sys', 'tmp'):
+                self.assertEqual(['(Dir)', {}], pop_path(r, d))
+
+            # This nspawn-created symlink isn't great, but, again, it
+            # shouldn't affect production use-cases.
+            self.assertEqual(['(Symlink usr/lib)'], pop_path(r, 'lib'))
 
     def test_non_default_rpm_snapshot(self):
         with self.target_subvol('layer-with-non-default-snapshot-rpm') as sv:

@@ -144,21 +144,44 @@ def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
         # some unused refcount files on disk.
         if nlink:
             os.unlink(refcount_path)
-        wrapper_path = os.path.join(subvolumes_dir, subvol_wrapper)
-        wrapper_content = os.listdir(wrapper_path)
+
+        # Subvols are wrapped in a user-owned temporary directory, following
+        # the convention `{rule name}:{version}/{subvol}`.
+        wrapper_path = Path(subvolumes_dir) / subvol_wrapper
+
+        wrapper_content = set(wrapper_path.listdir())
+        # We may have run `systemd-nspawn` against the subvolume, e.g.
+        # as part of `image_foreign_layer`, which creates this lockfile.
+        maybe_lockfile = [f for f in wrapper_content if f.startswith(b'.#')]
+        if maybe_lockfile:
+            assert len(maybe_lockfile) == 1, maybe_lockfile
+            maybe_lockfile, = maybe_lockfile
+            wrapper_content.remove(maybe_lockfile)
+
         if len(wrapper_content) > 1:
-            raise RuntimeError(f'{wrapper_path} must contain only the subvol')
-        if len(wrapper_content) == 1:  # Empty wrappers are OK to GC, too.
+            raise RuntimeError(
+                f'{wrapper_path} must contain just 1 subvol: {wrapper_content}'
+            )
+        elif len(wrapper_content) == 1:
+            subvol, = wrapper_content
+            expected_lock_path = wrapper_path / f'.#{subvol}.lck'
+            assert (
+                # The output of `.listdir()` should match our `.exists()`
+                bool(maybe_lockfile) == os.path.exists(expected_lock_path) and (
+                    not maybe_lockfile
+                    or maybe_lockfile == expected_lock_path.basename()
+                )
+            ), (maybe_lockfile, expected_lock_path)
+            if maybe_lockfile:
+                os.unlink(expected_lock_path)
             subprocess.check_call([
-                'sudo', 'btrfs', 'subvolume', 'delete',
-                os.path.join(
-                    subvolumes_dir,
-                    # Subvols are wrapped in a user-owned temporary directory,
-                    # following the convention `{rule name}:{version}/{subvol}`.
-                    subvol_wrapper,
-                    wrapper_content[0],
-                ),
+                'sudo', 'btrfs', 'subvolume', 'delete', wrapper_path / subvol,
             ])
+        else:  # No subvolume in wrapper
+            # We don't expect to see a stray lockfile here because we delete
+            # the lockfile before the subvol.
+            assert not maybe_lockfile, maybe_lockfile
+
         os.rmdir(wrapper_path)
 
 

@@ -132,12 +132,24 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             os.makedirs(os.path.join(subs_dir, 'no:refs/subvol1'))
             os.makedirs(os.path.join(subs_dir, 'no:refs/subvol2'))
             with self.assertRaisesRegex(
-                RuntimeError, 'must contain only the subvol'
+                RuntimeError, 'must contain just 1 subvol'
             ):
                 sgc.subvolume_garbage_collector([
                     f'--refcounts-dir={refs_dir}',
                     f'--subvolumes-dir={subs_dir}',
                 ])
+
+    def test_gc_clean_nspawn_lockfile(self):
+        with temp_dir() as refs_dir, temp_dir() as subs_dir:
+            os.makedirs(subs_dir / 'no:refs/subvol')
+            (subs_dir / 'no:refs/.#subvol.lck').touch()
+            self.assertEqual([b'no:refs'], subs_dir.listdir())
+            sgc.subvolume_garbage_collector([
+                f'--refcounts-dir={refs_dir}',
+                f'--subvolumes-dir={subs_dir}',
+            ])
+            self.assertEqual([], subs_dir.listdir())
+            self.assertEqual([], refs_dir.listdir())
 
     @contextlib.contextmanager
     def _gc_test_case(self):

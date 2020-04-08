@@ -1,7 +1,7 @@
 load(":compile_image_features.bzl", "compile_image_features")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
-load(":target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger")
+load(":target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
 
 # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`) for all
 # other supported kwargs.
@@ -26,8 +26,9 @@ def image_sendstream_layer(
         _make_subvol_cmd = compile_image_features(
             current_target = image_utils.current_target(name),
             parent_layer = None,
-            features = [struct(
-                items = struct(
+            features = [target_tagger_to_feature(
+                target_tagger,
+                struct(
                     receive_sendstreams = [{
                         "source": image_source_as_target_tagged_dict(
                             target_tagger,
@@ -35,7 +36,6 @@ def image_sendstream_layer(
                         ),
                     }],
                 ),
-                deps = target_tagger.targets.keys(),
             )],
             build_opts = build_opts,
         ),
