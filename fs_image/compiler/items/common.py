@@ -98,9 +98,6 @@ class PhaseOrder(enum.Enum):
     # prevents install-remove conflicts between features.
     RPM_REMOVE = enum.auto()
     RPM_INSTALL = enum.auto()
-    # Building RPMs should be close to last as it expects all other actions to
-    # set up for the RPM build.
-    RPM_BUILD = enum.auto()
     # Phase order for Facebook-only items. In this future this should be
     # removed in favor of enforcing custom layers for those features.
     FACEBOOK = enum.auto()

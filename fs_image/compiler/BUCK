@@ -174,7 +174,6 @@ IMAGE_LAYER_DEPS = [
     "older_cheese_layer",
     "newer_cheese_layer",
     "hello_world_base",
-    "install_toy_rpm",
     "create_ops",
     "create_ops-from-dir",
     "create_ops-from-layer",

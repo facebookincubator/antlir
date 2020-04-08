@@ -15,12 +15,13 @@ from grp import getgrnam
 from pwd import getpwnam
 
 from fs_image.artifacts_dir import find_repo_root
-from fs_image.btrfs_diff.tests.render_subvols import render_sendstream, pop_path
 from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols
 )
+from fs_image.btrfs_diff.tests.render_subvols import (
+    check_common_rpm_render, render_sendstream, pop_path
+)
 from fs_image.find_built_subvol import find_built_subvol
-from fs_image.rpm.yum_dnf_conf import YumDnf
 
 from ..procfs_serde import deserialize_int
 
@@ -161,11 +162,6 @@ class ImageLayerTestCase(unittest.TestCase):
             self.assertFalse(os.path.isfile(
                 subvol.path('/usr/share/rpm_test/cheese2.txt')
             ))
-        with self.target_subvol('install_toy_rpm') as subvol:
-            self._check_hello(subvol.path())
-            self.assertTrue(os.path.isfile(
-                subvol.path('/usr/bin/toy_src_file')
-            ))
 
     def test_layer_from_demo_sendstreams(self):
         # `btrfs_diff.demo_sendstream` produces a subvolume send-stream with
@@ -200,53 +196,19 @@ class ImageLayerTestCase(unittest.TestCase):
                     render_sendstream(sv.mark_readonly_and_get_sendstream()),
                 )
 
-    def _check_rpm_common(self, rendered_subvol, yum_dnf: YumDnf):
+    def _check_rpm_common(self, rendered_subvol, yum_dnf: str):
         r = copy.deepcopy(rendered_subvol)
 
-        # Ignore a bunch of yum / dnf / rpm spam
-
-        if yum_dnf == YumDnf.yum:
-            ino, = pop_path(r, f'var/log/yum.log')
-            self.assertRegex(ino, r'^\(File m600 d[0-9]+\)$')
-            for ignore_dir in ['var/cache/yum', 'var/lib/yum']:
-                ino, _ = pop_path(r, ignore_dir)
-                self.assertEqual('(Dir)', ino)
-        elif yum_dnf == YumDnf.dnf:
-            self.assertEqual(['(Dir)', {
-                'dnf': ['(Dir)', {'modules.d': ['(Dir)', {}]}],
-            }], pop_path(r, 'etc'))
-            for logname in [
-                'dnf.log', 'dnf.librepo.log', 'dnf.rpm.log', 'hawkey.log',
-            ]:
-                ino, = pop_path(r, f'var/log/{logname}')
-                self.assertRegex(ino, r'^\(File d[0-9]+\)$', logname)
-            for ignore_dir in ['var/cache/dnf', 'var/lib/dnf']:
-                ino, _ = pop_path(r, ignore_dir)
-                self.assertEqual('(Dir)', ino)
+        if yum_dnf == 'dnf':
             self.assertEqual(['(Dir)', {}], pop_path(r, 'var/tmp'))
-        else:
-            raise AssertionError(yum_dnf)
-
-        ino, _ = pop_path(r, 'var/lib/rpm')
-        self.assertEqual('(Dir)', ino)
-
         self.assertEqual(['(Dir)', {
-            'dev': ['(Dir)', {}],
-            'meta': ['(Dir)', {'private': ['(Dir)', {'opts': ['(Dir)', {
-                'artifacts_may_require_repo': ['(File d2)'],
-            }]}]}],
-            'usr': ['(Dir)', {
-                'share': ['(Dir)', {
-                    # Whatever is here should be `pop_path`ed before
-                    # calling `_check_rpm_common`.
-                }],
+            'share': ['(Dir)', {
+                # Whatever is here should be `pop_path`ed before
+                # calling `_check_rpm_common`.
             }],
-            'var': ['(Dir)', {
-                'cache': ['(Dir)', {}],
-                'lib': ['(Dir)', {}],
-                'log': ['(Dir)', {}],
-            }],
-        }], r)
+        }], pop_path(r, 'usr'))
+
+        check_common_rpm_render(self, r, yum_dnf)
 
     # This is reused by `test_foreign_layer` because we currently lack
     # rendering for incremental sendstreams.
@@ -272,7 +234,7 @@ class ImageLayerTestCase(unittest.TestCase):
 
             yield sv, r
 
-            self._check_rpm_common(r, YumDnf.dnf)
+            self._check_rpm_common(r, 'dnf')
 
     def test_build_appliance(self):
         # The appliance this uses defaults to `dnf`.  This is not a dual
@@ -329,7 +291,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 'cake.txt': ['(File d17)'],
             }], pop_path(r, 'usr/share/rpm_test'))
 
-            self._check_rpm_common(r, YumDnf.yum)
+            self._check_rpm_common(r, 'yum')
 
     def test_installed_files(self):
         with self.target_subvol('installed-files') as sv:

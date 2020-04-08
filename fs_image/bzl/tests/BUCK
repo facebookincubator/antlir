@@ -85,14 +85,6 @@ python_unittest(
     env = {"kitteh": "meow"},
 )
 
-# Tests that the internals of rpmbuild_layer are as we expect.
-image.python_unittest(
-    name = "test-toy-rpm-build",
-    srcs = ["test_toy_rpm_build_unittest.py"],
-    layer = TEST_IMAGE_PREFIX + "toy-rpm-build",
-    deps = ["//fs_image/rpm:rpm_metadata"],
-)
-
 # systemd unit features
 export_file(name = "cheese-export.service")
 
