@@ -2,6 +2,7 @@ load("//fs_image/bzl/image_actions:install.bzl", "image_install")
 load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//fs_image/bzl/image_actions:tarball.bzl", "image_tarball")
 load(":compile_image_features.bzl", "compile_image_features")
+load(":constants.bzl", "BUILD_APPLIANCE_TARGET")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
@@ -10,11 +11,6 @@ load(":oss_shim.bzl", "buck_genrule")
 
 def image_rpmbuild_layer(
         name,
-        # The name of another `image_layer` target, on top of which the
-        # current layer will build the RPM.
-        # This should have any build dependencies installed, and preferably
-        # be built on top of //tupperware/image/base:rpmbuild-base.
-        parent_layer,
         # The name of a specfile target (i.e. a single file made accessible
         # with `export_file()`).
         specfile,
@@ -29,6 +25,11 @@ def image_rpmbuild_layer(
         # `buck run //path/to:<name>-rpmbuild-setup-container` to inspect the
         # setup layer and experiment with building.
         source,
+        # An `image.layer` target, on top of which the current layer will
+        # build the RPM.  This should have `rpm-build`, optionally macro
+        # packages like `redhat-rpm-config`, and any of the spec file's
+        # build dependencies installed.
+        parent_layer = BUILD_APPLIANCE_TARGET,
         **image_layer_kwargs):
     if "features" in image_layer_kwargs:
         fail("\"features\" are not supported in image_rpmbuild_layer")

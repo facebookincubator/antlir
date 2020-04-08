@@ -606,7 +606,6 @@ image.layer(
 # The following rules will build a basic RPM in an rpmbuild_layer.
 image.rpmbuild_layer(
     name = "toy-rpm-build",
-    parent_layer = BUILD_APPLIANCE_TARGET,
     specfile = "toy.spec",
     source = "toy_srcs",
 )
