@@ -27,7 +27,8 @@ from .subvolume_utils import expected_subvol_add_traversal_ids
 
 
 def pop_path(render, path):
-    parts = path.split('/')
+    assert not isinstance(path, bytes), path  # Renderings are `str`
+    parts = path.lstrip('/').split('/')
     for part in parts[:-1]:
         render = render[1][part]
     return render[1].pop(parts[-1])

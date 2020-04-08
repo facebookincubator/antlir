@@ -21,6 +21,7 @@ from fs_image.compiler.items.mount import MountItem
 from fs_image.compiler.items.remove_path import RemovePathItem
 from fs_image.compiler.items.rpm_action import RpmActionItem
 from fs_image.compiler.items.rpm_build import RpmBuildItem
+from fs_image.compiler.items.foreign_layer import ForeignLayerItem
 from fs_image.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from fs_image.compiler.items.tarball import TarballItem
 
@@ -80,6 +81,7 @@ def gen_items_for_features(
         'tarballs': image_sourcify(TarballItem),
         'receive_sendstreams': image_sourcify(ReceiveSendstreamItem),
         'rpm_build': RpmBuildItem,
+        'foreign_layer': ForeignLayerItem,
     }
 
     try:

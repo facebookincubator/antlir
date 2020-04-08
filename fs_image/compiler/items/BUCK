@@ -71,6 +71,34 @@ python_unittest(
 )
 
 python_library(
+    name = "foreign_layer",
+    srcs = ["foreign_layer.py"],
+    base_module = "fs_image.compiler.items",
+    deps = [
+        ":common",
+        "//fs_image/nspawn_in_subvol:non_booted",
+    ],
+)
+
+python_unittest(
+    name = "test-foreign-layer",
+    srcs = ["tests/test_foreign_layer.py"],
+    base_module = "fs_image.compiler.items",
+    needed_coverage = [(100, ":foreign_layer")],
+    resources = {
+        target_location(
+            TEST_IMAGE_PREFIX + "validates-build-appliance",
+        ): "tests/foreign-layer-base",
+    },
+    deps = [
+        ":common_testlib",
+        "//fs_image:common",
+        "//fs_image:find_built_subvol",
+        "//fs_image:testlib_temp_subvolumes",
+    ],
+)
+
+python_library(
     name = "rpm_build",
     srcs = ["rpm_build.py"],
     deps = [
@@ -166,6 +194,7 @@ python_unittest(
 python_library(
     name = "all-items",
     deps = [
+        ":foreign_layer",
         ":items",
         ":rpm_action",
         ":rpm_build",

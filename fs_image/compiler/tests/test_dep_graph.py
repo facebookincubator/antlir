@@ -12,10 +12,12 @@ from dataclasses import dataclass
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from fs_image.compiler.items.common import ImageItem, PhaseOrder
+from fs_image.compiler.items.foreign_layer import ForeignLayerItem
 from fs_image.compiler.items.install_file import InstallFileItem
 from fs_image.compiler.items.make_dirs import MakeDirsItem
 from fs_image.compiler.items.make_subvol import FilesystemRootItem
 from fs_image.compiler.items.phases_provide import PhasesProvideItem
+from fs_image.compiler.items.remove_path import RemovePathItem
 
 from ..dep_graph import (
     DependencyGraph, ItemProv, ItemReq, ItemReqsProvs, ValidatedReqsProvs,
@@ -181,6 +183,31 @@ class DependencyGraphTestCase(unittest.TestCase):
             }.items()
         })
         self.assertEqual(ns.items_without_predecessors, {path_to_item['/']})
+
+    def test_foreign_layer_assert(self):
+        foreign1 = ForeignLayerItem(from_target='t1', cmd=['x'], user='y')
+        foreign2 = ForeignLayerItem(from_target='t2', cmd=['a'], user='b')
+
+        # Good path: one FOREIGN_LAYER & default MAKE_SUBVOL
+        DependencyGraph([foreign1], 'layer_t')
+
+        # Too many foreign layers
+        with self.assertRaises(AssertionError):
+            DependencyGraph([foreign1, foreign2], 'layer_t')
+
+        # Cannot mix foreign layer & depedency-sortable item
+        with self.assertRaises(AssertionError):
+            DependencyGraph([
+                foreign1,
+                MakeDirsItem(from_target='', into_dir='a', path_to_make='b'),
+            ], 'layer_t')
+
+        # Cannot have other phase items
+        with self.assertRaises(AssertionError):
+            DependencyGraph([
+                foreign1,
+                RemovePathItem(from_target='', path='x', action='if_exists'),
+            ], 'layer_t')
 
 
 class DependencyOrderItemsTestCase(unittest.TestCase):

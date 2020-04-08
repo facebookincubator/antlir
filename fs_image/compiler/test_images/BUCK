@@ -6,6 +6,7 @@
 
 load("//fs_image/bzl:constants.bzl", "BUILD_APPLIANCE_TARGET", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
+load("//fs_image/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "RPM_SNAPSHOT_BASE_DIR", "install_rpm_repo_snapshot")
 load("//fs_image/bzl:wrap_runtime_deps.bzl", "maybe_wrap_runtime_deps_as_build_time_deps")
@@ -142,11 +143,23 @@ image.layer(
 # Verified by `test_build_appliance` in `test-image-layer`.
 image.layer(
     name = "validates-build-appliance",
-    # Compact syntax for RPM installation.
     features = [
         image.rpms_install(["rpm-test-milk"]),
     ],
     build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+)
+
+# Since `rpm-test-milk` provides `/bin/sh`, use it to exercise foreign layers.
+image_foreign_layer(
+    name = "foreign-layer",
+    cmd = [
+        "/bin/sh",
+        "-c",
+        "exec -a touch /bin/sh /I_AM_FOREIGN_LAYER",
+    ],
+    parent_layer = ":validates-build-appliance",
+    rule_type = "image_test_foreign_layer",
+    user = "root",
 )
 
 # The next two targets exercise:

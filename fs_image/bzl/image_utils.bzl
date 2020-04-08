@@ -74,7 +74,14 @@ def _wrap_bash_build_in_common_boilerplate(
       # Not using "chmod -R" since Buck cleanup is fragile and cannot handle
       # read-only directories.
       find "$OUT" '!' -type d -print0 | xargs -0 --no-run-if-empty chmod a-w
-    ) &> "$my_log"
+    ) &> >(
+      # We should not write directly to the file because it appears that
+      # `systemd-nspawn` with a non-root user will `chown` its stderr
+      # or stdout. This seems insane, and it prevents us from accessing
+      # our own logs here. So, proxy the log through a dummy `cat` to
+      # prevent that `chown` from being able to find the underlying file.
+      cat > "$my_log"
+    )
     """.format(
         bash = bash,
         min_free_bytes = volume_min_free_bytes,

@@ -88,8 +88,6 @@ load(":compile_image_features.bzl", "compile_image_features")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 
-# See the `_image_layer_impl` signature (in `image_layer_utils.bzl`) for all
-# other supported kwargs.
 def image_layer(
         name,
         # The name of another `image_layer` target, on top of which the
@@ -99,8 +97,10 @@ def image_layer(
         # `image.feature`.
         features = None,
         # A struct containing fields accepted by `_build_opts` from
-        # `image_layer_compiled.bzl`.
+        # `compile_image_features.bzl`.
         build_opts = None,
+        # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
+        # for all other supported kwargs.
         **image_layer_kwargs):
     image_layer_utils.image_layer_impl(
         _rule_type = "image_layer",
