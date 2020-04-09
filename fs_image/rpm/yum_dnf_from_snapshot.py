@@ -266,6 +266,32 @@ def _dummies_for_protected_paths(
                 f'Some RPM wrote {actual} to {protected_paths}'
 
 
+def _ensure_private_network():
+    '''
+    Normally, we run under `systemd-nspawn --private-network`.  We don't
+    want to run in environments with network access because in these cases
+    it's very possible that `yum` / `dnf` will end up doing something
+    non-deterministic by reaching out to the network.
+    '''
+    # From `/usr/include/uapi/linux/if_arp.h`
+    allowed_types = {
+        768,  # ARPHRD_TUNNEL
+        769,  # ARPHRD_TUNNEL6
+        772,  # ARPHRD_LOOPBACK
+    }
+    net = Path('/sys/class/net')
+    for iface in net.listdir():
+        with open(net / iface / 'type') as infile:
+            iface_type = int(infile.read())
+            # Not covered because we don't want to rely on the CI container
+            # having a network interface.
+            if iface_type not in allowed_types:  # pragma: no cover
+                raise RuntimeError(
+                    'Refusing to run without --private-network, found '
+                    f'unknown interface {iface} of type {iface_type}.'
+                )
+
+
 def yum_dnf_from_snapshot(
     *,
     yum_dnf: YumDnf,
@@ -275,6 +301,8 @@ def yum_dnf_from_snapshot(
     yum_dnf_args: List[str],
     debug: bool = False,
 ):
+    _ensure_private_network()
+
     prog_name = yum_dnf.value
     # The paths that have trailing slashes are directories, others are
     # files.  There's a separate code path for protecting some files above.
