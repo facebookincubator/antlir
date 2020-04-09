@@ -37,7 +37,7 @@ log = get_file_logger(__file__)
 # This is a temporary mountpoint for the host's `/proc` inside the
 # container.  It is unmounted and removed before the user command starts.
 # However, in the booted case, it may be visible to early boot-time units.
-_OUTER_PROC = '/__fs_image__/outerproc'
+_OUTER_PROC = '/outerproc_repo_server'  # Distinct from `/outerproc_boot`
 
 
 @dataclass

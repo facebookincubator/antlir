@@ -338,7 +338,7 @@ def _new_nspawn_cli_args(**kwargs):
     args = _NspawnCLIArgs(**kwargs)
     # Neither `yum` nor `dnf` work without root.  Less importantly, running
     # the `repo-server` under `--as-pid2` currently requires `root` to
-    # unmount and remove /outerproc/.
+    # unmount and remove our `_OUTER_PROC` mount.
     assert not args.serve_rpm_snapshots or args.opts.user.pw_name == 'root', \
         f'You must set --user=root to use --serve-rpm-snapshot: {args}'
     return args
