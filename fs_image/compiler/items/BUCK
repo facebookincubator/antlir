@@ -76,6 +76,7 @@ python_library(
     base_module = "fs_image.compiler.items",
     deps = [
         ":common",
+        "//fs_image/nspawn_in_subvol:inject_repo_servers",
         "//fs_image/nspawn_in_subvol:non_booted",
     ],
 )
@@ -87,22 +88,43 @@ python_unittest(
     needed_coverage = [(100, ":foreign_layer")],
     resources = {
         target_location(
-            TEST_IMAGE_PREFIX + "validates-build-appliance",
+            # We need something with the test RPM snapshot, with a working
+            # `sh`, `touch`, and `mkdir`, and `dnf`.  The former 3 could be
+            # provided through a busybox binary, but `dnf` pretty much
+            # presupposes a full OS, so use the test BA for now.
+            TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
         ): "tests/foreign-layer-base",
+        target_location(
+            # Must have a `busybox` binary as `/bin/sh`.
+            TEST_IMAGE_PREFIX + "validates-build-appliance",
+        ): "tests/foreign-layer-busybox-base",
     },
     deps = [
         ":common_testlib",
+        ":make_subvol",
         "//fs_image:common",
         "//fs_image:find_built_subvol",
         "//fs_image:testlib_temp_subvolumes",
     ],
 )
 
-# Split out since `nspawn_in_subvol` depends on it. Covered by `test-items`.
+# Covered by `test-items`. Future: separate test & coverage.
 python_library(
     name = "mount_utils",
     srcs = ["mount_utils.py"],
     deps = ["//fs_image:subvol_utils"],
+)
+
+# Covered by `test-items`. Future: separate test & coverage.
+python_library(
+    name = "make_subvol",
+    srcs = ["make_subvol.py"],
+    deps = [
+        ":common",
+        ":mount_utils",
+        "//fs_image:fs_utils",
+        "//fs_image:subvol_utils",
+    ],
 )
 
 # Future: Finish splitting this library, and tests, by item.  The only
@@ -114,7 +136,6 @@ python_library(
         "common.py",
         "install_file.py",
         "make_dirs.py",
-        "make_subvol.py",
         "mount.py",
         "phases_provide.py",
         "remove_path.py",
@@ -124,6 +145,7 @@ python_library(
     ],
     deps = [
         ":common",
+        ":make_subvol",
         ":mount_utils",
         "//fs_image/compiler:requires_provides",
         "//fs_image/compiler:subvolume_on_disk",
@@ -146,6 +168,7 @@ python_unittest(
     needed_coverage = [
         (100, ":common"),
         (100, ":items"),
+        (100, ":make_subvol"),
         (100, ":mount_utils"),
     ],
     # "fastzip" would break :volume_for_repo in @mode/opt.  "xar" fails

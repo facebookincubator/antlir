@@ -185,8 +185,12 @@ class DependencyGraphTestCase(unittest.TestCase):
         self.assertEqual(ns.items_without_predecessors, {path_to_item['/']})
 
     def test_foreign_layer_assert(self):
-        foreign1 = ForeignLayerItem(from_target='t1', cmd=['x'], user='y')
-        foreign2 = ForeignLayerItem(from_target='t2', cmd=['a'], user='b')
+        foreign1 = ForeignLayerItem(
+            from_target='t1', cmd=['x'], user='y', serve_rpm_snapshots=(),
+        )
+        foreign2 = ForeignLayerItem(
+            from_target='t2', cmd=['a'], user='b', serve_rpm_snapshots=(),
+        )
 
         # Good path: one FOREIGN_LAYER & default MAKE_SUBVOL
         DependencyGraph([foreign1], 'layer_t')
