@@ -77,6 +77,11 @@ from .common import _PopenWrapper
 
 log = get_file_logger(__file__)
 
+# This is a temporary mountpoint for the host's `/proc` inside the
+# container.  It is unmounted and removed before the user command starts.
+# However, it may be visible to early boot-time units.
+_OUTER_PROC = '/outerproc_boot'  # Distinct from `/outerproc_repo_server`
+
 
 def run_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
@@ -142,10 +147,10 @@ def _wrap_systemd_exec():
         # after setting up the necessary signal handlers to process the
         # SIGRTMIN+4 shutdown signal that we need to shut down the container
         # after invoking a command inside it.
-        textwrap.dedent('''\
-            grep ^PPid: /outerproc/self/status >&3
-            umount -R /outerproc
-            rmdir /outerproc
+        textwrap.dedent(f'''\
+            grep ^PPid: {_OUTER_PROC}/self/status >&3
+            umount -R {_OUTER_PROC}
+            rmdir {_OUTER_PROC}
             exec /usr/lib/systemd/systemd
         '''),
     ]
@@ -196,7 +201,7 @@ def _popen_boot_systemd(setup: _NspawnSetup) -> Iterable[Tuple[
     # sending that information out, the shell script `exec`s systemd.
     cmd.extend([
         '--console=read-only',  # `stdin` is attached to `cmd` via `nsenter`
-        '--bind-ro=/proc:/outerproc',
+        f'--bind-ro=/proc:{_OUTER_PROC}',
         '--',
         *_wrap_systemd_exec(),
     ])
