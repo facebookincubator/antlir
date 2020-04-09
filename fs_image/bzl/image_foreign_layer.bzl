@@ -135,6 +135,7 @@ but only in a few artifacts that were built inside of it.  The example of
 load(":compile_image_features.bzl", "compile_image_features")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
+load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
 load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 
 def image_foreign_layer(
@@ -150,6 +151,8 @@ def image_foreign_layer(
         # The name of another `image_layer` target, on top of which the
         # current layer will install its features.
         parent_layer = None,
+        # List of target paths, see `_build_opts` doc for `rpm_repo_snapshot`.
+        serve_rpm_snapshots = (),
         # A struct containing fields accepted by `_build_opts` from
         # `compile_image_features.bzl`.
         build_opts = None,
@@ -172,6 +175,10 @@ def image_foreign_layer(
                 target_tagger,
                 struct(foreign_layer = [{
                     "cmd": cmd,
+                    "serve_rpm_snapshots": [
+                        snapshot_install_dir(s)
+                        for s in serve_rpm_snapshots
+                    ],
                     "user": user,
                 }]),
             )],

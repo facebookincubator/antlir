@@ -5,68 +5,96 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import shlex
 import subprocess
 import sys
+import textwrap
 import unittest
 
+from contextlib import contextmanager
+from typing import AnyStr, Iterable
+
+from fs_image.fs_utils import Path
 from fs_image.common import load_location
 from fs_image.find_built_subvol import find_built_subvol
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
 from ..foreign_layer import ForeignLayerItem
+from ..make_subvol import ParentLayerItem
 
 from .common import DUMMY_LAYER_OPTS
 
 
 def _touch_cmd(path: str):
-    return ('/bin/sh', '-c', f'exec -a touch /bin/sh {shlex.quote(path)}')
+    return ('/bin/touch', path)
+
+
+def _item(cmd: Iterable[AnyStr]) -> ForeignLayerItem:
+    return ForeignLayerItem(
+        from_target='t', user='root', cmd=cmd, serve_rpm_snapshots=(),
+    )
+
+
+def _builder(cmd: Iterable[AnyStr]):
+    return ForeignLayerItem.get_phase_builder([_item(cmd)], DUMMY_LAYER_OPTS)
 
 
 class ForeignLayerItemTestCase(unittest.TestCase):
 
-    def test_foreign_layer_item(self):
-        parent_sv = find_built_subvol(
-            load_location(__package__, 'foreign-layer-base')
-        )
-        # Works because we expect this to be world-executable, not just for root
-        self.assertTrue(os.access(parent_sv.path('/bin/sh'), os.X_OK))
+    def test_phase_order(self):
+        self.assertEqual(_item([]).phase_order(), PhaseOrder.FOREIGN_LAYER)
+
+    def _check_protected_dir(self, subvol, protected_dir):
+        protected_dir = Path(protected_dir)
+        write_to_protected = _builder(_touch_cmd(protected_dir / 'ALIEN'))
+        with self.assertRaises(subprocess.CalledProcessError):
+            write_to_protected(subvol)
+        self.assertTrue(os.path.isdir(subvol.path(protected_dir)))
+        self.assertFalse(os.path.exists(subvol.path(protected_dir / 'ALIEN')))
+
+    @contextmanager
+    def _temp_resource_subvol(self, name: str):
+        parent_sv = find_built_subvol(load_location(__package__, name))
         with TempSubvolumes(sys.argv[0]) as temp_subvols:
-            foreign_sv = temp_subvols.snapshot(parent_sv, 'foreign_layer')
+            # Cannot use `.snapshot()` since that doesn't handle mounts.
+            child_sv = temp_subvols.caller_will_create(name)
+            ParentLayerItem.get_phase_builder([
+                ParentLayerItem(from_target='t', subvol=parent_sv),
+            ], DUMMY_LAYER_OPTS)(child_sv)
+            yield child_sv
 
-            item = ForeignLayerItem(
-                from_target='t', user='root', cmd=_touch_cmd('/HELLO_ALIEN'),
-            )
-            self.assertEqual(item.phase_order(), PhaseOrder.FOREIGN_LAYER)
-            ForeignLayerItem.get_phase_builder(
-                [item], DUMMY_LAYER_OPTS
-            )(foreign_sv)
+    def test_foreign_layer_basics(self):
+        with self._temp_resource_subvol('foreign-layer-base') as subvol:
+            _builder(_touch_cmd('/HELLO_ALIEN'))(subvol)
 
-            alien_path = foreign_sv.path('/HELLO_ALIEN')
+            alien_path = subvol.path('/HELLO_ALIEN')
             self.assertTrue(os.path.isfile(alien_path))
             alien_stat = os.stat(alien_path)
             self.assertEqual((0, 0), (alien_stat.st_uid, alien_stat.st_gid))
 
-            # Fail to write to `/meta`
-            build_writes_to_meta = ForeignLayerItem.get_phase_builder([
-                ForeignLayerItem(
-                    from_target='t', user='root', cmd=_touch_cmd('/meta/ALIEN'),
-                ),
-            ], DUMMY_LAYER_OPTS)
-            with self.assertRaises(subprocess.CalledProcessError):
-                build_writes_to_meta(foreign_sv)
-            self.assertTrue(os.path.isdir(foreign_sv.path('/meta')))
-            self.assertFalse(os.path.exists(foreign_sv.path('/meta/ALIEN')))
+            self._check_protected_dir(subvol, '/meta')
+            self._check_protected_dir(subvol, '/__fs_image__')
 
-            # `__fs_image__` is also protected
-            foreign_sv.run_as_root(['mkdir', foreign_sv.path('/__fs_image__')])
-            build_writes_to_fs_image = ForeignLayerItem.get_phase_builder([
-                ForeignLayerItem(
-                    from_target='t', user='root',
-                    cmd=_touch_cmd('/__fs_image__/ALIEN'),
-                ),
-            ], DUMMY_LAYER_OPTS)
-            with self.assertRaises(subprocess.CalledProcessError):
-                build_writes_to_fs_image(foreign_sv)
-            self.assertEqual([], foreign_sv.path('/__fs_image__').listdir())
+            ForeignLayerItem.get_phase_builder([ForeignLayerItem(
+                from_target='t',
+                user='root',
+                cmd=['/bin/sh', '-c', textwrap.dedent('''
+                    mkdir -p /rpm_test/meta
+                    /__fs_image__/rpm-repo-snapshot/default/bin/dnf \\
+                        --install-root=/rpm_test -- --assumeyes \\
+                            install rpm-test-carrot
+                ''')],
+                serve_rpm_snapshots=['/__fs_image__/rpm-repo-snapshot/default'],
+            )], DUMMY_LAYER_OPTS)(subvol)
+            # Not doing a rendered subvol test because RPM installation
+            # is covered in so many other places.
+            self.assertEqual(
+                [b'carrot.txt'],
+                subvol.path('/rpm_test/usr/share/rpm_test').listdir(),
+            )
+
+    # Checks that __fs_image__ proctection handles a non-existent dir
+    def test_foreign_layer_no_fs_image_dir(self):
+        with self._temp_resource_subvol('foreign-layer-busybox-base') as sv:
+            _builder(['/bin/sh', '-c', 'echo ohai'])(sv)
+            self.assertFalse(os.path.exists(sv.path('/__fs_image__')))
