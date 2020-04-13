@@ -58,14 +58,14 @@ class Rpm(NamedTuple):
 
         %description
         %install
-        mkdir -p "$RPM_BUILD_ROOT"/usr/share/rpm_test
-        echo {quoted_contents} > "$RPM_BUILD_ROOT"/usr/share/rpm_test/{name}.txt
+        mkdir -p "$RPM_BUILD_ROOT"/rpm_test
+        echo {quoted_contents} > "$RPM_BUILD_ROOT"/rpm_test/{name}.txt
         mkdir -p "$RPM_BUILD_ROOT"/bin
         ''').format(**format_kwargs)
 
         return common_spec + textwrap.dedent(('''\
             %files
-            /usr/share/rpm_test/{name}.txt
+            /rpm_test/{name}.txt
         ''') if not self.test_post_install else ('''\
             cp {quoted_busybox_path} "$RPM_BUILD_ROOT"/bin/sh
             %post
@@ -77,10 +77,10 @@ class Rpm(NamedTuple):
             # absence of post.txt
             '''\
             echo > /dev/null && echo 'stuff' > \
-              "$RPM_BUILD_ROOT"/usr/share/rpm_test/post.txt
+              "$RPM_BUILD_ROOT"/rpm_test/post.txt
             %files
             /bin/sh
-            /usr/share/rpm_test/{name}.txt
+            /rpm_test/{name}.txt
         ''')).format(**format_kwargs)
 
 

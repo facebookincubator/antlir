@@ -1,5 +1,5 @@
 Name:   rpm-test-cheese
-Version:  3
+Version:  1
 Release:  1
 Summary:  The "cheese" package.
 
@@ -16,9 +16,9 @@ BuildRequires:  coreutils
 %build
 
 %install
-mkdir -p %{buildroot}/usr/share/rpm_test/
-cat >%{buildroot}/usr/share/rpm_test/cheese3.txt <<EOF
-This is the third goat cheese text.
+mkdir -p %{buildroot}/rpm_test/
+cat >%{buildroot}/rpm_test/cheese1.txt <<EOF
+This is the first cow's milk cheese text.
 EOF
 
 %clean

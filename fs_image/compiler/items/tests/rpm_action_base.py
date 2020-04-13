@@ -153,14 +153,11 @@ class RpmActionItemTestBase:
                 subvol.path('bin'),
             ])
             self.assertEqual(['(Dir)', {
-                'usr': ['(Dir)', {
-                    'share': ['(Dir)', {
-                        'rpm_test': ['(Dir)', {
-                            'carrot.txt': ['(File d13)'],
-                            'cheese1.txt': ['(File d36)'],
-                            'milk.txt': ['(File d12)'],
-                            'post.txt': ['(File d6)'],
-                        }],
-                    }],
+                'rpm_test': ['(Dir)', {
+                    'carrot.txt': ['(File d13)'],
+                    'cheese1.txt': ['(File d42)'],
+                    'milk.txt': ['(File d12)'],
+                    'post.txt': ['(File d6)'],
                 }],
+                'usr': ['(Dir)', {}],
             }], render_subvol(subvol))
