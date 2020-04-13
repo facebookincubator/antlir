@@ -203,7 +203,17 @@ image.feature(
     ],
 )
 
-# These RPMs were generated with the "rpm-test-cheese.spec".
+# These RPMs were generated as follows:
+#
+#  for ((i=1; i<=3; ++i)); do
+#    /usr/bin/rpmbuild -bb rpm-test-cheese-$i-1.spec
+#    mv ~/rpmbuild/RPMS/noarch/rpm-test-cheese-$i-1.noarch.rpm \
+#      rpm-test-cheese-$i-1.rpm
+#  done
+#  # Optionally, clean up the mess:
+#  rm -rf ~/rpmbuild
+#
+# the "rpm-test-cheese.spec".
 # The values should be updated to match the number of the version.
 # You can build the RPMs with `rpmbuild` or update the spec section
 # in fs_image/rpm/tests/temp_repos.py to build with this spec.
@@ -537,7 +547,7 @@ image.layer(
             # This directory comes from `rpm-test-carrot`.  This tests
             # that our dependency engine sees RPM contents as a
             # "provides".
-            "/usr/share/rpm_test/hello_world.tar",
+            "/rpm_test/hello_world.tar",
         ),
         # NB: `host_dir_mount` is exercised above.
         image.host_file_mount("/dev/null", "/dev_null"),
@@ -573,7 +583,7 @@ image.package(name = "child/layer.sendstream")
 
 image.package(name = "child/layer.btrfs")
 
-# This will install /usr/share/rpm_test/cheese2.txt.
+# This will install /rpm_test/cheese2.txt.
 image.layer(
     name = "base_cheese_layer",
     parent_layer = ":hello_world_base",
@@ -583,7 +593,7 @@ image.layer(
     build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
-# This downgrades and installs /usr/share/rpm_test/cheese1.txt.
+# This downgrades and installs /rpm_test/cheese1.txt.
 image.layer(
     name = "older_cheese_layer",
     parent_layer = ":base_cheese_layer",
@@ -593,7 +603,7 @@ image.layer(
     build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
 )
 
-# This upgrades and installs /usr/share/rpm_test/cheese3.txt.
+# This upgrades and installs /rpm_test/cheese3.txt.
 image.layer(
     name = "newer_cheese_layer",
     parent_layer = ":base_cheese_layer",

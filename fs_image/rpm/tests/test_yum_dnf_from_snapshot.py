@@ -66,7 +66,7 @@ class YumFromSnapshotTestImpl:
 
         # Check that the RPMs installed their payload.
         for path, content in installed_content.items():
-            remove.append(install_root / 'usr/share/rpm_test' / path)
+            remove.append(install_root / 'rpm_test' / path)
             with open(remove[-1]) as f:
                 self.assertEqual(content, f.read())
 
@@ -96,9 +96,9 @@ class YumFromSnapshotTestImpl:
             subprocess.run(['sudo', 'rm', '-rf', path], check=True)
         subprocess.run([
             'sudo', 'rmdir',
-            'usr/share/rpm_test', 'usr/share', 'usr/lib', 'usr',
-            'var/lib', 'var/cache', 'var/log', 'var/tmp', 'var',
-            'bin', *([
+            'rpm_test', 'usr/lib', 'usr', 'var/lib', 'var/cache', 'var/log',
+            'var/tmp', 'var', 'bin',
+            *([
                 'etc/dnf/modules.d', 'etc/dnf', 'etc'
             ] if self._YUM_DNF == YumDnf.dnf else []),
         ], check=True, cwd=install_root)
@@ -155,12 +155,10 @@ class YumFromSnapshotTestImpl:
             with self._install(protected_paths=p):
                 pass
         with self.assertRaises(subprocess.CalledProcessError) as ctx:
-            with self._install(protected_paths=['usr/share/rpm_test/']):
+            with self._install(protected_paths=['rpm_test/']):
                 pass
         with self.assertRaises(subprocess.CalledProcessError) as ctx:
-            with self._install(protected_paths=[
-                'usr/share/rpm_test/milk.txt'
-            ]):
+            with self._install(protected_paths=['rpm_test/milk.txt']):
                 pass
         # It was none other than `yum install` that failed.
         self.assertEqual(_INSTALL_ARGS, ctx.exception.cmd[-len(_INSTALL_ARGS):])

@@ -32,5 +32,5 @@ class ImageUnittestTestRepoServer(unittest.TestCase):
                 # We don't need a full rendered subvol test, since the
                 # contents of the filesystem is checked by other tests.
                 # (e.g.  `test-yum-dnf-from-snapshot`, `test-image-layer`)
-                with open(td / 'usr/share/rpm_test/carrot.txt') as infile:
+                with open(td / 'rpm_test/carrot.txt') as infile:
                     self.assertEqual('carrot 2 rc0\n', infile.read())

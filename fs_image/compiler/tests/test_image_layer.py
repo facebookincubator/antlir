@@ -65,7 +65,7 @@ class ImageLayerTestCase(unittest.TestCase):
         self._check_hello(subvol_path)
         # :parent_layer
         for path in [
-            b'usr/share/rpm_test/hello_world.tar',
+            b'rpm_test/hello_world.tar',
             b'foo/bar/even_more_hello_world.tar',
         ]:
             self.assertTrue(
@@ -105,8 +105,8 @@ class ImageLayerTestCase(unittest.TestCase):
             # :feature_tar_and_rpms
             b'foo/borf/hello_world',
             b'foo/hello_world',
-            b'usr/share/rpm_test/mice.txt',
-            b'usr/share/rpm_test/cheese2.txt',
+            b'rpm_test/mice.txt',
+            b'rpm_test/cheese2.txt',
             # :child/layer
             b'foo/extracted_hello/hello_world',
             b'foo/more_extracted_hello/hello_world',
@@ -114,8 +114,8 @@ class ImageLayerTestCase(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(subvol_path, path)))
         for path in [
             # :feature_tar_and_rpms ensures these are absent
-            b'usr/share/rpm_test/carrot.txt',
-            b'usr/share/rpm_test/milk.txt',
+            b'rpm_test/carrot.txt',
+            b'rpm_test/milk.txt',
         ]:
             self.assertFalse(os.path.exists(os.path.join(subvol_path, path)))
 
@@ -135,32 +135,32 @@ class ImageLayerTestCase(unittest.TestCase):
             # Cannot check this in `_check_parent`, since that gets called
             # by `_check_child`, but the RPM gets removed in the child.
             self.assertTrue(os.path.isfile(
-                subvol.path('usr/share/rpm_test/carrot.txt')
+                subvol.path('rpm_test/carrot.txt')
             ))
         with self.target_subvol('child/layer') as subvol:
             self._check_child(subvol.path())
         with self.target_subvol('base_cheese_layer') as subvol:
             self._check_hello(subvol.path())
             self.assertTrue(os.path.isfile(
-                subvol.path('/usr/share/rpm_test/cheese2.txt')
+                subvol.path('/rpm_test/cheese2.txt')
             ))
         with self.target_subvol('older_cheese_layer') as subvol:
             self._check_hello(subvol.path())
             self.assertTrue(os.path.isfile(
-                subvol.path('/usr/share/rpm_test/cheese1.txt')
+                subvol.path('/rpm_test/cheese1.txt')
             ))
             # Make sure the original file is removed when the RPM is downgraded
             self.assertFalse(os.path.isfile(
-                subvol.path('/usr/share/rpm_test/cheese2.txt')
+                subvol.path('/rpm_test/cheese2.txt')
             ))
         with self.target_subvol('newer_cheese_layer') as subvol:
             self._check_hello(subvol.path())
             self.assertTrue(os.path.isfile(
-                subvol.path('/usr/share/rpm_test/cheese3.txt')
+                subvol.path('/rpm_test/cheese3.txt')
             ))
             # Make sure the original file is removed when the RPM is upgraded
             self.assertFalse(os.path.isfile(
-                subvol.path('/usr/share/rpm_test/cheese2.txt')
+                subvol.path('/rpm_test/cheese2.txt')
             ))
 
     def test_layer_from_demo_sendstreams(self):
@@ -201,12 +201,7 @@ class ImageLayerTestCase(unittest.TestCase):
 
         if yum_dnf == 'dnf':
             self.assertEqual(['(Dir)', {}], pop_path(r, 'var/tmp'))
-        self.assertEqual(['(Dir)', {
-            'share': ['(Dir)', {
-                # Whatever is here should be `pop_path`ed before
-                # calling `_check_rpm_common`.
-            }],
-        }], pop_path(r, 'usr'))
+            self.assertEqual(['(Dir)', {}], pop_path(r, 'usr'))
 
         check_common_rpm_render(self, r, yum_dnf)
 
@@ -226,7 +221,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 'milk.txt': ['(File d12)'],
                 # From the `rpm-test-milk` post-install script
                 'post.txt': ['(File d6)'],
-            }], pop_path(r, 'usr/share/rpm_test'))
+            }], pop_path(r, 'rpm_test'))
 
             ino, _ = pop_path(r, 'usr/lib/.build-id')
             self.assertEqual('(Dir)', ino)
@@ -289,7 +284,7 @@ class ImageLayerTestCase(unittest.TestCase):
 
             self.assertEqual(['(Dir)', {
                 'cake.txt': ['(File d17)'],
-            }], pop_path(r, 'usr/share/rpm_test'))
+            }], pop_path(r, 'rpm_test'))
 
             self._check_rpm_common(r, 'yum')
 

@@ -80,7 +80,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         layer = find_built_subvol(
             Path(__file__).dirname() / 'test-with-one-local-rpm'
         )
-        path_in_layer = b'usr/share/rpm_test/cheese2.txt'
+        path_in_layer = b'rpm_test/cheese2.txt'
         item = _install_file_item(
             from_target='t',
             source={'layer': layer, 'path': '/' + path_in_layer.decode()},

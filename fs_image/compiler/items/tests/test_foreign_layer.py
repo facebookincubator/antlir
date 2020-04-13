@@ -79,9 +79,9 @@ class ForeignLayerItemTestCase(unittest.TestCase):
                 from_target='t',
                 user='root',
                 cmd=['/bin/sh', '-c', textwrap.dedent('''
-                    mkdir -p /rpm_test/meta
+                    mkdir -p /install-root/meta
                     /__fs_image__/rpm-repo-snapshot/default/bin/dnf \\
-                        --install-root=/rpm_test -- --assumeyes \\
+                        --install-root=/install-root -- --assumeyes \\
                             install rpm-test-carrot
                 ''')],
                 serve_rpm_snapshots=['/__fs_image__/rpm-repo-snapshot/default'],
@@ -90,7 +90,7 @@ class ForeignLayerItemTestCase(unittest.TestCase):
             # is covered in so many other places.
             self.assertEqual(
                 [b'carrot.txt'],
-                subvol.path('/rpm_test/usr/share/rpm_test').listdir(),
+                subvol.path('/install-root/rpm_test').listdir(),
             )
 
     # Checks that __fs_image__ proctection handles a non-existent dir

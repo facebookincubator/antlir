@@ -538,7 +538,7 @@ class NspawnTestCase(unittest.TestCase):
                             tee /proc/self/fd/3
                     # We install only 1 RPM, so a glob tells us the filename.
                     # Use `head` instead of `cat` to fail nicer on exceeding 1.
-                    head /target/usr/share/rpm_test/*.txt >&4
+                    head /target/rpm_test/*.txt >&4
                 '''),
             ])
             # Hack up the `CompletedProcess` for ease of testing.

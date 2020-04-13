@@ -59,7 +59,7 @@ class PackageSpecificRpmActionItemTestImpl(RpmActionItemTestBase):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
             assert os.path.isfile(
-                parent_subvol.path('/usr/share/rpm_test/cheese2.txt')
+                parent_subvol.path('/rpm_test/cheese2.txt')
             )
             # make sure the RPM we are installing is older in order to
             # trigger the downgrade
@@ -84,12 +84,8 @@ class PackageSpecificRpmActionItemTestImpl(RpmActionItemTestBase):
                 subvol.path('var'),
             ])
             self.assertEqual(['(Dir)', {
-                'usr': ['(Dir)', {
-                    'share': ['(Dir)', {
-                        'rpm_test': ['(Dir)', {
-                            'cheese1.txt': ['(File d36)'],
-                        }],
-                    }],
+                'rpm_test': ['(Dir)', {
+                    'cheese1.txt': ['(File d42)'],
                 }],
             }], render_subvol(subvol))
 
@@ -100,7 +96,7 @@ class PackageSpecificRpmActionItemTestImpl(RpmActionItemTestBase):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
             assert os.path.isfile(
-                parent_subvol.path('/usr/share/rpm_test/cheese2.txt')
+                parent_subvol.path('/rpm_test/cheese2.txt')
             )
             subvol = temp_subvolumes.snapshot(parent_subvol, 'remove_cheese')
             RpmActionItem.get_phase_builder(
@@ -119,7 +115,7 @@ class PackageSpecificRpmActionItemTestImpl(RpmActionItemTestBase):
                 subvol.path('var'),
             ])
             self.assertEqual(['(Dir)', {
-                # No more `usr/share/rpm_test/cheese2.txt` here.
+                # No more `rpm_test/cheese2.txt` here.
             }], render_subvol(subvol))
 
     def test_rpm_action_item_remove_local(self):
