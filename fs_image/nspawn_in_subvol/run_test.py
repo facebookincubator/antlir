@@ -76,7 +76,7 @@ def rewrite_testpilot_python_cmd(
     '''
     # Our partial parser must not accept abbreviated long options like
     # `--ou`, since this parser does not know all the test main arguments.
-    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser = argparse.ArgumentParser(allow_abbrev=False, add_help=False)
 
     # Future: these options may be specific to `python_unittest`.
     parser.add_argument('--output', '-o')

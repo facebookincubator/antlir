@@ -50,13 +50,15 @@ class YumFromSnapshotTestImpl:
             yum_dnf_from_snapshot(
                 yum_dnf=self._YUM_DNF,
                 snapshot_dir=DEFAULT_SNAPSHOT_INSTALL_DIR,
-                install_root=Path(install_root),
                 protected_paths=protected_paths,
-                yum_dnf_args=install_args,
+                yum_dnf_args=[
+                    f'--installroot={install_root}',
+                    *install_args,
+                ]
             )
             yield install_root
         finally:
-            assert install_root != b'/'
+            assert os.path.realpath(install_root) != b'/'
             # Courtesy of `yum`, the `install_root` is now owned by root.
             subprocess.run(['sudo', 'rm', '-rf', install_root], check=True)
 
@@ -162,6 +164,31 @@ class YumFromSnapshotTestImpl:
                 pass
         # It was none other than `yum install` that failed.
         self.assertEqual(_INSTALL_ARGS, ctx.exception.cmd[-len(_INSTALL_ARGS):])
+
+    def test_verify_install_to_container_root(self):
+        # Hack alert: if we run both `{Dnf,Yum}FromSnapshotTestCase` in one
+        # test invocation, the package manager that runs will just say that
+        # the package is already install, and succeed.  That's OK.
+        yum_dnf_from_snapshot(
+            yum_dnf=self._YUM_DNF,
+            snapshot_dir=DEFAULT_SNAPSHOT_INSTALL_DIR,
+            protected_paths=[],
+            yum_dnf_args=[
+                # This is implicit: that also covers the "read the conf" code:
+                # '--installroot=/',
+                # `yum` fails without this since `/usr` is RO in the host BA.
+                '--setopt=usr_w_check=false',
+                'install-n', '--assumeyes', 'rpm-test-mice',
+            ],
+        )
+        # Since we're running on /, asserting the effect on the complete
+        # state of the filesystem would only be reasonable if we (a) took a
+        # snapshot of the container "before", (b) took a snapshot of the
+        # container "after", (c) rendered the incremental sendstream.  Since
+        # incremental rendering is not implemented, settle for this basic
+        # smoke-test for now.
+        with open('/rpm_test/mice.txt') as infile:
+            self.assertEqual('mice 0.1 a\n', infile.read())
 
 
 @unittest.skipIf(yum_is_dnf(), "yum == dnf")

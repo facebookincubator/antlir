@@ -30,7 +30,7 @@ my_dir=\\$(dirname "$my_path")
 base_dir=\\$(dirname "$my_dir")
 exec "$base_dir"/yum-dnf-from-snapshot \\
     --snapshot-dir "$base_dir" \\
-    {yum_or_dnf} "$@"
+    {yum_or_dnf} -- "$@"
 """.format(yum_or_dnf = shell.quote(name)),
         )),
     )

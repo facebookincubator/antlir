@@ -81,7 +81,7 @@ class ForeignLayerItemTestCase(unittest.TestCase):
                 cmd=['/bin/sh', '-c', textwrap.dedent('''
                     mkdir -p /install-root/meta
                     /__fs_image__/rpm-repo-snapshot/default/bin/dnf \\
-                        --install-root=/install-root -- --assumeyes \\
+                        --installroot=/install-root --assumeyes \\
                             install rpm-test-carrot
                 ''')],
                 serve_rpm_snapshots=['/__fs_image__/rpm-repo-snapshot/default'],
