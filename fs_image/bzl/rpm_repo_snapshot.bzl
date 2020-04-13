@@ -38,44 +38,57 @@ exec "$base_dir"/yum-dnf-from-snapshot \\
 def snapshot_install_dir(snapshot):
     return paths.join("/", RPM_SNAPSHOT_BASE_DIR, mangle_target(snapshot))
 
-# Takes a bare in-repo snapshot, enriches it with `storage.sql3` from
-# storage, and injects some auxiliary binaries & data.  This prepares the
-# snapshot for installation into a build appliance (or
-# `image_foreign_layer`) via `install_rpm_repo_snapshot`.
-#
-# The snapshot uses the first element of `yum_dnf` as the default package
-# manager.  The tuple is allowed to contain just one element because the
-# snapshotted repos might be compatible with (or tested with) only one but
-# not the other.
-#
-# Hack alert: If you pass `storage["kind"] == "filesystem"`, and its
-# `"base_dir"` is relative, it will magically be interpreted to be relative
-# to the snapshot dir, both by this code, and later by `yum-dnf-from-snapshot`
-# that runs in the build appliance.
 def rpm_repo_snapshot(
         name,
         src,
         storage,
-        # Tuple with `yum`, or `dnf`, or both.  ORDER MATTERS: the first
-        # package manager is the one that gets used by default.
         yum_dnf,
-        # We need to hardcode some localhost ports on which the RPM repo
-        # snapshots will be served, because the server URI is part of the cache
-        # key for `dnf`. Moreover, hardcoded ports make container setup easier.
-        #
-        # The main impact of this port list is that its **size** determines the
-        # maximum number of repo objects (e.g.  RPMs) that `yum` / `dnf` can
-        # concurrently fetch at installation time.
-        #
-        # We should not have any issues with port collisions, because nothing
-        # else should be running in the container when we install RPMs.  If some
-        # weird service did collide, they are easy enough to change.
-        #
-        # The defaults were picked at random from [16384, 32768) to avoid the
-        # default ephemeral port range of 32768+, and to avoid lower port #s
-        # which tend to be reserved for services.
         repo_server_ports = (28889, 28890),
         visibility = None):
+    '''
+    Takes a bare in-repo snapshot, enriches it with `storage.sql3` from
+    storage, and injects some auxiliary binaries & data.  This prepares the
+    snapshot for installation into a build appliance (or
+    `image_foreign_layer`) via `install_rpm_repo_snapshot`.
+
+      - `storage`: JSON config for an `fs_image.rpm.storage` class.
+
+        Hack alert: If you pass `storage["kind"] == "filesystem"`, and its
+        `"base_dir"` is relative, it will magically be interpreted to be
+        relative to the snapshot dir, both by this code, and later by
+        `yum-dnf-from-snapshot` that runs in the build appliance.
+
+      - `yum_dnf`: A tuple of 'yum', or 'dnf', or both.  ORDER MATTERS: the
+        first package manager is the one that gets used by default.
+
+        The snapshot uses the first element of `yum_dnf` as the default
+        package manager.  The tuple is allowed to contain just one element
+        because the snapshotted repos might be compatible with (or tested
+        with) only one but not the other.
+
+      - `repo_server_ports`: Hardcodes into the snapshot some localhost
+        ports, on which the RPM repo snapshots will be served.  Hardcoding
+        is required because the server URI is part of the cache key for
+        `dnf`.  Moreover, hardcoded ports make container setup easier.
+
+        The main impact of this port list is that its **size** determines
+        the maximum number of repo objects (e.g.  RPMs) that `yum` / `dnf`
+        can concurrently fetch at installation time.
+
+        The defaults were picked at random from [16384, 32768) to avoid the
+        default ephemeral port range of 32768+, and to avoid lower port #s
+        which tend to be reserved for services.
+
+        We should not have issues with port collisions, because nothing else
+        should be running in the container when we install RPMs.  If you do
+        have a collision (e.g. due to installing multiple snapshots), they
+        are easy enough to change.
+
+        Future: If collisions due to multi-snapshot installations are
+        commonplace, we could generate the ports via a deterministic hash of
+        the normalized target name (akin to `mangle_target`), so that they
+        wouldn't avoid collision by default.
+    '''
     if not yum_dnf or not all([(p in ["yum", "dnf"]) for p in yum_dnf]):
         fail(
             'Must list at least one of "yum" / "dnf", got {}'.format(yum_dnf),
@@ -188,8 +201,14 @@ mkdir "$OUT"/bin
         visibility = get_visibility(visibility, name),
     )
 
-# Requires some other feature to make the directory `/<RPM_SNAPSHOT_BASE_DIR>`
 def install_rpm_repo_snapshot(snapshot, make_default = True):
+    """
+    Returns an `image.feature`, which installs the `rpm_repo_snapshot`
+    target in `snapshot` in its canonical location.  If `make_default` is
+    set, also makes a `default` symlink.
+
+    Requires some other feature to create `/<RPM_SNAPSHOT_BASE_DIR>`.
+    """
     dest_dir = snapshot_install_dir(snapshot)
     features = [image_install(snapshot, dest_dir)]
     if make_default:
