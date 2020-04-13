@@ -35,9 +35,8 @@ in addition to the sandbox already provided by `nspawn_in_subvol`.
 
 Sample usage:
 
-    buck run TARGET_PATH:yum-dnf-from-snapshot -- \\
-        --snapshot-dir REPOS_PATH --install-root TARGET_DIR -- \\
-            dnf install --assumeyes some-package-name
+    buck run TARGET_PATH:yum-dnf-from-snapshot -- --snapshot-dir REPOS_PATH \\
+        dnf -- --installroot TARGET_DIR install --assumeyes some-package-name
 
 Note that we have TWO `--` arguments, with the first protecting the
 wrapper's arguments from `buck`, and the second protecting `yum` or `dnf`'s
@@ -61,10 +60,11 @@ upgrades can break this code.
 
 The current tool works well, with these caveats:
 
-  - `yum` & `dnf` leave various caches inside `--install-root`, which bloat
+  - `yum` & `dnf` leave various caches inside `--installroot`, which bloat
     the image.  `RpmActionItem` has a bind-mount to prevent this leakage,
     and we also provide `//fs_image/features:rpm_cleanup` which should be
-    included in all production layers.
+    included in all production layers. Future: once caches are part of the
+    snapshot, this issue can be fixed completely.
 
   - Base CentOS packages deposit a vanilla CentOS `yum` configuration into
     the install root via `/etc/yum.repos.d/`, bearing no relation to the
@@ -84,11 +84,13 @@ The current tool works well, with these caveats:
     for a snapshot-based install?  Fake it?  Add `/etc/*-release` from the
     snapshot host to the snapshot?
 '''
+import argparse
 import os
 import subprocess
 import tempfile
 import textwrap
 
+from configparser import ConfigParser
 from contextlib import contextmanager
 from typing import Iterable, List, Mapping
 
@@ -168,16 +170,13 @@ def _isolate_yum_dnf(
     mount {quoted_dummy_dev} "$install_root"/dev/ -o bind
     mount /dev/null "$install_root"/dev/null -o bind
 
-    # Ensure the log exists, so we can guarantee we don't write to the host.
-    touch /var/log/{prog_name}.log
-
     {quoted_protected_paths}
 
     # Also protect potentially non-hermetic files that are not required to
     # exist on the host.  We don't expect these to be written, only read, so
     # failing to protect the non-existent ones is OK.
     for bad_file in \
-            {conf_file} \
+            {default_conf_file} \
             ~/.rpmrc \
             /etc/rpmrc \
             ~/.rpmmacros \
@@ -204,7 +203,7 @@ def _isolate_yum_dnf(
     exec "$@"
     ''').format(
         prog_name=yum_dnf.value,
-        conf_file={
+        default_conf_file={
             YumDnf.yum: '/etc/yum.conf',
             YumDnf.dnf: '/etc/dnf/dnf.conf',
         }[yum_dnf],
@@ -246,9 +245,9 @@ def _dummies_for_protected_paths(
     protected_paths: Iterable[str],
 ) -> Mapping[Path, Path]:
     '''
-    Some locations (e.g. /meta/ and mountpoints) should be off-limits to
-    writes by RPMs.  We enforce that by bind-mounting an empty file or
-    directory on top of each one of them.
+    Some locations (some host yum/dnf directories, and install root /meta/
+    and mountpoints) should be off-limits to writes by RPMs.  We enforce
+    that by bind-mounting an empty file or directory on top of each one.
     '''
     with temp_dir() as td, tempfile.NamedTemporaryFile() as tf:
         # NB: There may be duplicates in protected_paths, so we normalize.
@@ -264,6 +263,18 @@ def _dummies_for_protected_paths(
         for expected, actual in (([], td.listdir()), (b'', tf.read())):
             assert expected == actual, \
                 f'Some RPM wrote {actual} to {protected_paths}'
+
+
+def _ensure_fs_image_container():
+    '''
+    Forbid running this outside of an `fs_image/nspawn_in_subvol` container.
+    Since we default to `--installroot=/`, there is some risk to allowing
+    execution in other settings.
+    '''
+    # Any `fs_image` container with snapshots must have `/__fs_image__`
+    assert os.path.isdir('/__fs_image__'), \
+        '`yum-dnf-from-snapshot` must run in an `nspawn_in_subvol` container'
+    # Future: are there other checks we can add?
 
 
 def _ensure_private_network():
@@ -292,44 +303,77 @@ def _ensure_private_network():
                 )
 
 
+def _install_root(conf_path: Path, yum_dnf_args: Iterable[str]) -> Path:
+    # Peek at the `yum` / `dnf` args, which take precedence over the config.
+    p = argparse.ArgumentParser(allow_abbrev=False, add_help=False)
+    p.add_argument('--installroot', type=Path.from_argparse)
+    args, _ = p.parse_known_args(yum_dnf_args)
+    if args.installroot:
+        return args.installroot
+    # For our wrapper to be transparent, the `installroot` semantics have to
+    # match that of `yum` / `dnf`, so the argument is optional, with a
+    # fallback to the config file, and then to `/`.
+    cp = ConfigParser()
+    with open(conf_path) as conf_in:
+        cp.read_file(conf_in)
+    return Path(cp['main'].get('installroot', '/'))
+
+
 def yum_dnf_from_snapshot(
     *,
     yum_dnf: YumDnf,
     snapshot_dir: Path,
-    install_root: Path,
     protected_paths: List[str],
     yum_dnf_args: List[str],
     debug: bool = False,
 ):
+    _ensure_fs_image_container()
     _ensure_private_network()
+
+    # This path convention must match how `write_yum_dnf_conf.py` and
+    # `rpm_repo_snapshot.bzl` set up their output.
+    conf_path = snapshot_dir / f'etc/{yum_dnf.value}/{yum_dnf.value}.conf'
+    install_root = _install_root(conf_path, yum_dnf_args)
 
     prog_name = yum_dnf.value
     # The paths that have trailing slashes are directories, others are
     # files.  There's a separate code path for protecting some files above.
     # The rationale is that those files are not guaranteed to exist.
     protected_paths.extend([
-        f'/var/log/{prog_name}.log',  # Created above if it doesn't exist
         # See the `_isolate_yum_dnf` docblock for how (and why) this list
         # was produced.  All are assumed to exist on the host -- otherwise,
         # we'd be in the awkard situation of leaving them unprotected, or
         # creating them on the host to protect them.
         '/etc/yum.repos.d/',  # dnf ALSO needs this isolated
         f'/etc/{prog_name}/',   # A duplicate for the `yum` case
-        f'/var/cache/{prog_name}/',
-        f'/var/lib/{prog_name}/',
         '/etc/pki/rpm-gpg/',
         '/etc/rpm/',
-        '/var/lib/rpm/',
         # Harcode `IMAGE/meta` because it should ALWAYS be off-limits --
         # even though the compiler will redundantly tell us to protect it.
         'meta/',
-    ] + ['/etc/yum/'] if not yum_is_dnf() else [])  # work with yum not being dnf
+    ] + (
+        # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is missing
+        [] if yum_is_dnf() else ['/etc/yum/']
+    ))
+    # Only isolate the host DBs and log if we are NOT installing to /.
+    if os.path.realpath(install_root) != b'/':
+        # Ensure the log exists, so we can guarantee we don't write to the host.
+        log_path = f'/var/log/{prog_name}.log'
+        subprocess.check_call(['sudo', 'touch', log_path])
+        protected_paths.extend([
+            log_path,
+            f'/var/lib/{prog_name}/',
+            '/var/lib/rpm/',
+            # Future: We should isolate the cache even when installing to /
+            # because the snapshot should have its own cache, and should not
+            # pollute the OS cache.  However, right now our cache handling
+            # is pretty broken, so this change is deferred.
+            f'/var/cache/{prog_name}/',
+        ])
 
-    # These user-specified arguments could really mess up hermeticity.
-    for bad_arg in ['--installroot', '--config', '--setopt', '--downloaddir']:
-        for arg in yum_dnf_args:
-            assert arg != '-c'
-            assert not arg.startswith(bad_arg), f'{arg} is prohibited'
+    for arg in yum_dnf_args:
+        assert arg != '-c' and not arg.startswith('--config'), \
+            f'If you change --config, you will no longer use the repo snapshot'
 
     with _dummy_dev() as dummy_dev, \
             _dummies_for_protected_paths(
@@ -362,11 +406,8 @@ def yum_dnf_from_snapshot(
                 prog_name,
                 # Config options get isolated by our `YumDnfConfIsolator`
                 # when `write-yum-dnf-conf` builds this file.
-                '--config',
-                # This path convention must match how `write_yum_dnf_conf.py`
-                # and `rpm_repo_snapshot.bzl` set up their output.
-                snapshot_dir / f'etc/{yum_dnf.value}/{yum_dnf.value}.conf',
-                '--installroot', install_root,
+                f'--config={conf_path}',
+                f'--installroot={install_root}',
                 # NB: We omit `--downloaddir` because the default behavior
                 # is to put any downloaded RPMs in `$installroot/$cachedir`,
                 # which is reasonable, and easy to clean up in a post-pass.
@@ -380,24 +421,15 @@ def yum_dnf_from_snapshot(
 
 # This argument-parsing logic is covered by RpmActionItem tests.
 if __name__ == '__main__':  # pragma: no cover
-    import argparse
-
-    parser = argparse.ArgumentParser(
+    main_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument(
+    main_parser.add_argument(
         '--snapshot-dir', required=True, type=Path.from_argparse,
         help='Multi-repo snapshot directory.',
     )
-    parser.add_argument(
-        '--install-root', required=True, type=Path.from_argparse,
-        help='All packages will be installed under this root. This is '
-            'identical to the underlying `--installroot` option, but it '
-            'is required here because most users of `yum-dnf-from-snapshot` '
-            'should not install to /.',
-    )
-    parser.add_argument(
+    main_parser.add_argument(
         '--protected-path', action='append', default=[],
         # Future: if desired, the trailing / convention could be relaxed,
         # see `_protected_path_set`.  If so, this program would just need to
@@ -406,12 +438,12 @@ if __name__ == '__main__':  # pragma: no cover
             'directory read-only bind-mounted on top. If the path has a '
             'trailing /, it is a directory, otherwise -- a file. If the path '
             'is absolute, it is a host path. Otherwise, it is relative to '
-            '--install-root. The path must already exist. There are some '
+            '`--installroot`. The path must already exist. There are some '
             'internal defaults that cannot be un-protected. May be repeated.',
     )
-    parser.add_argument('--debug', action='store_true', help='Log more')
-    parser.add_argument('yum_dnf', type=YumDnf, help='yum or dnf')
-    parser.add_argument(
+    main_parser.add_argument('--debug', action='store_true', help='Log more')
+    main_parser.add_argument('yum_dnf', type=YumDnf, help='yum or dnf')
+    main_parser.add_argument(
         'args', nargs='+',
         help='Pass these through to `yum` or `dnf`. You will want to use -- '
             'before any such argument to prevent `yum-dnf-from-snapshot` '
@@ -420,14 +452,13 @@ if __name__ == '__main__':  # pragma: no cover
             'host system) -- this tool implements protections, but it '
             'may not be foolproof.',
     )
-    args = parser.parse_args()
+    args = main_parser.parse_args()
 
     init_logging(debug=args.debug)
 
     yum_dnf_from_snapshot(
         yum_dnf=args.yum_dnf,
         snapshot_dir=args.snapshot_dir,
-        install_root=args.install_root,
         protected_paths=args.protected_path,
         yum_dnf_args=args.args,
         debug=args.debug,

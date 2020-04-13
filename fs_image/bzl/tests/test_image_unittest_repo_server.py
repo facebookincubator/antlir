@@ -26,8 +26,8 @@ class ImageUnittestTestRepoServer(unittest.TestCase):
                 os.mkdir(td / 'meta')
                 subprocess.check_call([
                     DEFAULT_SNAPSHOT_INSTALL_DIR / 'bin' / bin,
-                    f'--install-root={td}',
-                    '--', 'install', '--assumeyes', 'rpm-test-carrot',
+                    f'--installroot={td}',
+                    'install', '--assumeyes', 'rpm-test-carrot',
                 ])
                 # We don't need a full rendered subvol test, since the
                 # contents of the filesystem is checked by other tests.

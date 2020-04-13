@@ -295,16 +295,26 @@ def _yum_dnf_using_build_appliance(
     opts = new_nspawn_opts(
         cmd=[
             'sh', '-uec',
-            f'''
+            f'''\
             {mount_cache}
-            {(snapshot_dir / 'bin' / prog_name).shell_quote()} \
-                {' '.join(
+            {
+                (snapshot_dir / 'yum-dnf-from-snapshot').shell_quote()
+            } \
+            --snapshot-dir={snapshot_dir} \
+            {
+                shlex.quote(prog_name)
+            } {
+                ' '.join(
                     '--protected-path=' + shlex.quote(p)
                         for p in protected_paths
-                )} \
-                --install-root {work_dir} \
-                {'--debug' if layer_opts.debug else ''} \
-                -- {' '.join(shlex.quote(arg) for arg in yum_dnf_args)}
+                )
+            } {
+                '--debug' if layer_opts.debug else ''
+            } \
+            -- \
+            --installroot={work_dir} {
+                ' '.join(shlex.quote(arg) for arg in yum_dnf_args)
+            }
             ''',
         ],
         layer=build_appliance,
