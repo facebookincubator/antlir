@@ -66,21 +66,31 @@ class QemuGuestAgent(object):
             )
 
         r, w = await open_conn()
-        sync_id = random.randint(0, sys.maxsize)
-        req = {"execute": "guest-sync-delimited", "arguments": {"id": sync_id}}
-        w.write(b"\xFF")
-        w.write(json.dumps(req).encode("utf-8"))
-        # TODO: retries and timeouts can definitely be improved here, but that
-        # can wait until it becomes necessary, right now things seem to be
-        # generally working
-        await w.drain()
-        await r.readuntil(b"\xFF")
-        resp = json.loads(await r.readline())
-        if resp["return"] != sync_id:
-            raise QemuError(f"guest-sync-delimited ID does not match {sync_id}: {resp}")
-        yield r, w
-        w.close()
-        await w.wait_closed()
+        try:
+            sync_id = random.randint(0, sys.maxsize)
+            req = {
+                "execute": "guest-sync-delimited",
+                "arguments": {"id": sync_id}
+            }
+            w.write(b"\xFF")
+            w.write(json.dumps(req).encode("utf-8"))
+            # TODO: retries and timeouts can definitely be improved here, but
+            # that can wait until it becomes necessary, right now things seem to
+            # be generally working
+            await w.drain()
+            await r.readuntil(b"\xFF")
+            resp = json.loads(await r.readline())
+            if resp["return"] != sync_id:
+                raise QemuError(
+                    f"guest-sync-delimited ID does not match {sync_id}: {resp}"
+                )
+            yield r, w
+        except ConnectionResetError as err:
+            raise QemuError(f"Guest agent connection reset") from err
+        finally:
+            if not w.is_closing():
+                w.close()
+                await w.wait_closed()
 
     async def _call(
         self,
@@ -90,7 +100,10 @@ class QemuGuestAgent(object):
     ) -> Dict[str, Any]:
         writer.write(json.dumps(call).encode("utf-8"))
         await writer.drain()
-        res = json.loads(await reader.readline())
+        received = await reader.readline()
+        if reader.at_eof():
+            raise QemuError("Reached EOF")
+        res = json.loads(received)
         if "error" in res:
             raise QemuError(res["error"])
         return res["return"]

@@ -18,7 +18,7 @@ from itertools import chain
 from pathlib import Path
 from typing import AsyncContextManager, ContextManager, Iterable, Optional, Union
 
-from fs_image.vm.guest_agent import QemuGuestAgent
+from fs_image.vm.guest_agent import QemuError, QemuGuestAgent
 from fs_image.vm.share import Share, process_shares
 
 
@@ -125,6 +125,7 @@ async def kernel_vm(
         ]
     with kernel_resources() as kernel:
         args = [
+            "-no-reboot",
             "-display",
             "none",
             "-serial",
@@ -146,7 +147,18 @@ async def kernel_vm(
             "-initrd",
             str(kernel.initrd),
             "-append",
-            "console=ttyS0,115200 root=/dev/vda noapic cgroup_no_v1=all systemd.unified_cgroup_hierarchy=1 rootflags=subvol=volume rw rd.emergency=poweroff rd.debug",
+            (
+                "console=ttyS0,115200"
+                " root=/dev/vda"
+                " noapic"
+                " panic=-1"
+                " cgroup_no_v1=all"
+                " systemd.unified_cgroup_hierarchy=1"
+                " rootflags=subvol=volume"
+                " rw"
+                " rd.emergency=poweroff"
+                " rd.debug"
+            ),
             "-drive",
             f"file={image},if=virtio,format=raw,readonly=on",
             "-drive",
@@ -198,6 +210,8 @@ async def kernel_vm(
             for share in [s for s in shares if s.agent_mount]:
                 await ga.mount_share(tag=share.mount_tag, mountpoint=share.location)
             yield ga
+        except QemuError as err:
+            print(f"Qemu failed with error: {err}", flush=True, file=sys.stderr)
         finally:
             if interactive:
                 await proc.wait()

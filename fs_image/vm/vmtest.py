@@ -92,7 +92,7 @@ async def main(
     ncpus: int,
     args: Iterable[str],
 ) -> None:
-    returncode = 0
+    returncode = -1
     fbcode = find_repo_root(sys.argv[0])
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
