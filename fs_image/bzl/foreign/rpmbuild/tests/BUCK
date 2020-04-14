@@ -1,6 +1,6 @@
-load("@fbcode_macros//build_defs:python_unittest.bzl", "python_unittest")
 load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:image.bzl", "image")
+load("//fs_image/bzl:oss_shim.bzl", "python_unittest")
 load("//fs_image/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_rpmbuild_layer")
 
 # Build a minimal RPM
