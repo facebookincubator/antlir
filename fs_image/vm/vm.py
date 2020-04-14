@@ -189,7 +189,7 @@ async def kernel_vm(
                 str(kernel.qemu),
                 *args,
                 stdin=subprocess.PIPE,
-                stdout=sys.stderr,
+                stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
 
