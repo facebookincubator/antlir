@@ -33,8 +33,8 @@ def async_command(f):
 @click.option(
     "-q/-e",
     "--quiet/--echo",
-    default=True,
-    help="show all vm output (including boot messages)",
+    default=False,
+    help="hide all vm output (including boot messages)",
 )
 @click.option(
     "--timeout",
