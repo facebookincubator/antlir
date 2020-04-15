@@ -120,7 +120,10 @@ async def kernel_vm(
         # so that absolute symlinks in fbcode work when in @mode/dev
         shares += [
             Share(
-                host_path=fbcode, mount_tag="fbcode", location=fbcode, agent_mount=True
+                host_path=fbcode,
+                mount_tag="fbcode",
+                location=fbcode,
+                agent_mount=True,
             )
         ]
     with kernel_resources() as kernel:
@@ -183,6 +186,17 @@ async def kernel_vm(
                 + "see https://our.intern.facebook.com/intern/qa/5312/how-do-i-enable-kvm-on-my-devvm",
                 file=sys.stderr,
             )
+
+        # this modules directory is mounted by init.sh at boot, to avoid having
+        # to install kernels in the root fs and avoid expensive copying of
+        # ~400M worth of modules during boot
+        shares += [
+            Share(
+                host_path=kernel.modules,
+                mount_tag="modules",
+                agent_mount=False,
+            ),
+        ]
 
         args += __qemu_share_args(shares)
         if dry_run:

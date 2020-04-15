@@ -1,6 +1,6 @@
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "third_party")
 
-def initrd(name, modules = None):
+def initrd(name, uname, modules = None):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
     kernel in a virtual machine and setup the root disk as a btrfs seed device
@@ -17,9 +17,12 @@ def initrd(name, modules = None):
         "dmesg",
         "file",
         "insmod",
+        "ln",
         "ls",
+        "lsmod",
         "mdev",
         "mkdir",
+        "modprobe",
         "mount",
         "sh",
         "switch_root",
@@ -28,7 +31,19 @@ def initrd(name, modules = None):
     ]
     ln_bb = "\n".join(["ln -s busybox {}".format(cmd) for cmd in busybox_cmds])
 
-    cp_modules = "cp -R $(location {modules}) \"$OUT/modules\"".format(modules = modules) if modules else ""
+    cp_modules = "\n".join([
+        (
+            "[ -f $(location {modules})/{mod} ] && " +
+            "mkdir -p `dirname lib/modules/{uname}/kernel/{mod}` && " +
+            "cp $(location {modules})/{mod} lib/modules/{uname}/kernel/{mod}"
+        ).format(modules = modules, uname = uname, mod = mod)
+        for mod in (
+            "drivers/block/virtio_blk.ko",
+            "fs/9p/9p.ko",
+            "net/9p/9pnet.ko",
+            "net/9p/9pnet_virtio.ko",
+        )
+    ])
 
     buck_genrule(
         name = name + "-tree",
