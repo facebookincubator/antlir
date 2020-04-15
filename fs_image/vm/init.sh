@@ -13,9 +13,10 @@ mkdir /sys
 mount -t proc none /proc
 mount -t sysfs none /sys
 
-# newer kernels have VIRTIO_BLK=y, so only load this if we have it as a module
-if [ -f "/modules/kernel/drivers/block/virtio_blk.ko" ]; then
-  insmod "/modules/kernel/drivers/block/virtio_blk.ko"
+# newer kernels have VIRTIO_BLK=y, but load it for kernels that ship it as a
+# module which is then copied into the initrd
+if [ -f "/lib/modules/$(uname -r)/kernel/drivers/block/virtio_blk.ko" ]; then
+    insmod "/lib/modules/$(uname -r)/kernel/drivers/block/virtio_blk.ko"
 fi
 
 mdev -s
@@ -38,12 +39,20 @@ umount proc sys dev
 
 mount -o remount,rw "$NEWROOT"
 
-# Copy all the modules we have into the root disk. This allows us to have some
-# modules recompiled for older kernels that did not build with them (for
-# example 9p in older kernels) which are not installed in the root fs.
-if [ -d "/modules/kernel" ]; then
-  cp -R /modules "$NEWROOT/lib/modules/$(uname -r)"
-  chroot "$NEWROOT" /sbin/depmod
-fi
+# Mount (most) modules over 9p fs share, because they are not installed into
+# the root fs. There are some kernel modules that are built into the initrd (at
+# a minimum 9p and 9pnet_virtio) based on kernel version, but all modules are
+# available under this 9p mount
+mkdir -p "$NEWROOT/lib/modules/$(uname -r)/kernel"
+modprobe 9pnet
+modprobe 9pnet_virtio
+modprobe 9p
+mount -t 9p -o trans=virtio,version=9p2000.L,cache=loose,posixacl modules "$NEWROOT/lib/modules/$(uname -r)/kernel"
+
+# We cannot run depmod at build time, because we need to mount only the
+# `kernel/` directory of /lib/modules/$rel, because bpf tests require the
+# /lib/modules/$rel/build symlink, and buck fails when there are broken
+# symlinks in an output directory
+chroot "$NEWROOT" /sbin/depmod
 
 exec switch_root "$NEWROOT" /sbin/init
