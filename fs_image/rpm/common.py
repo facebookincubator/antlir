@@ -200,9 +200,19 @@ def read_chunks(input: BytesIO, chunk_size: int) -> Iterable[bytes]:
         yield chunk
 
 
+def has_yum():
+    """ Determine if our system might have yum with `which yum`"""
+    if not shutil.which('yum'):
+        return False
+    return True
+
+
 def yum_is_dnf():
     """ Determine if yum is really just dnf by looking at `which yum`"""
     yum_path = shutil.which('yum')
+
+    if not yum_path:
+        return False
 
     # If yum is not a symlink then it's not dnf
     if not os.path.islink(yum_path):
