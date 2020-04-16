@@ -100,7 +100,7 @@ from fs_image.common import (
 from fs_image.fs_utils import Path, temp_dir
 
 from .yum_dnf_conf import YumDnf
-from .common import yum_is_dnf
+from .common import has_yum, yum_is_dnf
 
 log = get_file_logger(__file__)
 
@@ -353,7 +353,7 @@ def yum_dnf_from_snapshot(
         'meta/',
     ] + (
         # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is missing
-        [] if yum_is_dnf() else ['/etc/yum/']
+        ['/etc/yum/'] if (has_yum() and not yum_is_dnf()) else []
     ))
     # Only isolate the host DBs and log if we are NOT installing to /.
     if os.path.realpath(install_root) != b'/':

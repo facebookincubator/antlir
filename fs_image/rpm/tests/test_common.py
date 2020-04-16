@@ -15,7 +15,7 @@ from unittest import mock
 
 from ..common import (
     Checksum, log as common_log, read_chunks, retryable, retry_fn,
-    async_retryable, async_retry_fn, RpmShard, yum_is_dnf
+    async_retryable, async_retry_fn, RpmShard, has_yum, yum_is_dnf
 )
 
 from fs_image.fs_utils import Path, temp_dir
@@ -246,14 +246,22 @@ class TestCommon(unittest.TestCase):
             list(read_chunks(BytesIO(b'firstsecond'), 5)),
         )
 
+    def test_has_yum(self):
+        with mock.patch('shutil.which') as mock_which:
+            mock_which.return_value = '/path/to/yum'
+            self.assertTrue(has_yum())
+            mock_which.return_value = None
+            self.assertFalse(has_yum())
+
     def test_yum_is_dnf(self):
         # Setup for yum not being the same as dnf, modeled after fb
         with temp_dir() as td:
             yum_path = Path(td / 'yum').touch()
 
             with mock.patch('shutil.which') as mock_which:
+                mock_which.return_value = None
+                self.assertFalse(yum_is_dnf())
                 mock_which.return_value = yum_path.decode()
-
                 self.assertFalse(yum_is_dnf())
 
         # Setup for yum being the same as dnf, modeled after fedora

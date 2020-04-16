@@ -14,7 +14,7 @@ from contextlib import contextmanager
 from fs_image.fs_utils import Path
 from fs_image.common import init_logging
 from fs_image.rpm.find_snapshot import DEFAULT_SNAPSHOT_INSTALL_DIR
-from ..common import yum_is_dnf
+from ..common import has_yum, yum_is_dnf
 from ..yum_dnf_from_snapshot import YumDnf, yum_dnf_from_snapshot
 
 
@@ -191,7 +191,7 @@ class YumFromSnapshotTestImpl:
             self.assertEqual('mice 0.1 a\n', infile.read())
 
 
-@unittest.skipIf(yum_is_dnf(), "yum == dnf")
+@unittest.skipIf(yum_is_dnf() or not has_yum(), "yum == dnf or yum missing")
 class YumFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
     _YUM_DNF = YumDnf.yum
 
