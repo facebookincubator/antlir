@@ -196,7 +196,7 @@ if __name__ == '__main__':  # pragma: no cover
         cli_setup.opts.cmd, next_fd=3 + len(cli_setup.opts.forward_fd),
     ) as (new_cmd, fds_to_forward):
         # This should only used only for `image.*_unittest` targets.
-        assert cli_setup.opts.cmd[0] == '/layer-test-binary'
+        assert cli_setup.opts.cmd[0] == '/layer-test-binary.par'
         # Always use the default `boot_console` -- for booted containers,
         # let the console go to stderr so that tests are easier to debug.
         assert cli_setup.boot_console is None

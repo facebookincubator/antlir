@@ -75,7 +75,7 @@ def _nspawn_wrapper_properties(
     test_layer = name + "--test-layer"
 
     # Make a test-specific image containing the test binary.
-    binary_path = "/layer-test-binary"
+    binary_path = "/layer-test-binary.par"
     inner_test_target = ":" + _hidden_test_name(name)
     image_layer(
         name = test_layer,
