@@ -51,21 +51,17 @@ class RpmActionItemTestBase:
                 ['(Dir)', {'meta': ['(Dir)', {}]}], render_subvol(subvol),
             )
 
-            # FIXME: A recent version of `dnf` made this break.  We need to
-            # validate our inputs ourselves to avoid being broken by the
-            # mess of `yum` and `dnf` CLI semantics.
-            #
             # Specifying RPM versions is prohibited
-            # with self.assertRaises(subprocess.CalledProcessError):
-            #    RpmActionItem.get_phase_builder(
-            #        [RpmActionItem(
-            #            from_target='m',
-            #            name='rpm-test-milk-2.71',
-            #            source=None,
-            #            action=RpmAction.install,
-            #        )],
-            #        layer_opts,
-            #    )(subvol)
+            with self.assertRaises(subprocess.CalledProcessError):
+                RpmActionItem.get_phase_builder(
+                    [RpmActionItem(
+                        from_target='m',
+                        name='rpm-test-milk-2.71',
+                        source=None,
+                        action=RpmAction.install,
+                    )],
+                    layer_opts,
+                )(subvol)
 
             # Cannot pass both `name` and `source`
             with self.assertRaisesRegex(
