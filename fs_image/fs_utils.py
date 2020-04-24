@@ -18,7 +18,7 @@ import urllib.parse
 import tempfile
 
 from contextlib import contextmanager
-from typing import AnyStr, Iterable, Iterator, List, Union
+from typing import AnyStr, Generator, Iterable, Iterator, List, Union
 
 from .common import byteme, check_popen_returncode, get_file_logger
 
@@ -238,7 +238,7 @@ class _PathJSONEncoder(json.JSONEncoder):
 
 
 @contextmanager
-def temp_dir(**kwargs) -> Iterable[Path]:
+def temp_dir(**kwargs) -> Generator[Path, None, None]:
     with tempfile.TemporaryDirectory(**kwargs) as td:
         yield Path(td)
 
