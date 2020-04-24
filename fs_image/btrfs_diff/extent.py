@@ -260,7 +260,6 @@ class Extent(NamedTuple):
             idx, calls = stack[-1]
             # pyre-fixme[6]: probably a bug when list compared to int
             assert idx <= len(calls)
-            # pyre-fixme[29]: Not Callable?
             # pyre-fixme[6]: calls can be int!
             if idx == len(calls):
                 stack.pop()
