@@ -82,6 +82,7 @@ class InodeID(NamedTuple):
 
 def _norm_split_path(p: bytes) -> Sequence[bytes]:
     # Check explicitly since the downstream errors are incomprehensible.
+    # pyre-fixme[25]: Assertion will always fail.
     if not isinstance(p, bytes):
         raise TypeError(f'Expected bytes, got {p}')
     p = os.path.normpath(p)
@@ -141,7 +142,6 @@ class _InnerInodeIDMap(NamedTuple):
         yield rev_entry.name
 
     def gen_paths(self, inode_id: InodeID) -> Iterator[bytes]:
-        # pyre-fixme[29]: pyre thinks an empty tuple is a Callable?
         for rev_entry in self.id_to_reverse_entries.get(
             self._assert_mine(inode_id).id,
             (),  # we tolerate anonymous inodes

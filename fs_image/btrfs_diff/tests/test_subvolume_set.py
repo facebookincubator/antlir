@@ -28,7 +28,6 @@ class SubvolumeSetTestCase(unittest.TestCase):
 
     def _check_repr(self, expected, subvol_set: SubvolumeSet):
         self.assertEqual(*[
-            # pyre-fixme[29]: comprehension nightmare
             {desc: emit_all_traversal_ids(sv) for desc, sv in ser.items()}
                 for ser in (
                     # Subvolumes are independent, they don't share inode IDs.
