@@ -1,5 +1,6 @@
 "This provides a more friendly UI to the image_* macros."
 
+load("//fs_image/bzl/image_actions:clone.bzl", "image_clone")
 load("//fs_image/bzl/image_actions:feature.bzl", "image_feature")
 load("//fs_image/bzl/image_actions:install.bzl", "image_install", "image_install_buck_runnable")
 load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
@@ -19,6 +20,7 @@ load(":image_source.bzl", "image_source")
 
 image = struct(
     cpp_unittest = image_cpp_unittest,
+    clone = image_clone,
     feature = image_feature,
     mkdir = image_mkdir,
     install = image_install,

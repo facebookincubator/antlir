@@ -2,6 +2,32 @@ load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
+python_library(
+    name = "clone",
+    srcs = ["clone.py"],
+    deps = [
+        ":common",
+        ":phases_provide",
+    ],
+)
+
+python_unittest(
+    name = "test-clone",
+    srcs = ["tests/test_clone.py"],
+    needed_coverage = [(100, ":clone")],
+    resources = {
+        target_location(TEST_IMAGE_PREFIX + "parent_layer"): "tests/src-layer",
+        target_location(TEST_IMAGE_PREFIX + "create_ops"): "tests/create_ops",
+    },
+    deps = [
+        ":clone",
+        ":common_testlib",
+        "//fs_image:common",
+        "//fs_image:find_built_subvol",
+        "//fs_image:testlib_temp_subvolumes",
+    ],
+)
+
 # Needs dedicated test coverage. For now, is covered by `test-items`.
 python_library(
     name = "common",
@@ -206,6 +232,7 @@ python_unittest(
 python_library(
     name = "all-items",
     deps = [
+        ":clone",
         ":foreign_layer",
         ":items",
         ":phases_provide",

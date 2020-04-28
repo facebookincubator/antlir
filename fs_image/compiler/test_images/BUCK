@@ -196,7 +196,7 @@ image.feature(
         image.install(":hello_world.tar", "/foo/hello_world.tar"),
         image.symlink_dir("/foo/bar", "/foo/fighter"),
         image.symlink_dir("/foo/bar", "/foo/face"),
-        image.symlink_dir("/foo/bar", "/foo/bar/baz/"),  # Rsync style
+        image.symlink_dir("/foo/bar", "/foo/bar/baz/"),  # / -> "bar" basename
         image.symlink_file("/foo/hello_world.tar", "/foo/symlink_to_hello_world.tar"),
         # /dev/null is whitelisted to be a dangling symlink
         image.symlink_file("/dev/null", "/foo/symlink_to_dev_null"),
@@ -392,6 +392,17 @@ image.layer(
 image.layer(
     name = "installed-files",
     features = [":feature_install_files"],
+)
+
+# Exercises `image.clone`, covering the 3 supported trailings / patterns.
+image.layer(
+    name = "cloned-files",
+    features = [
+        image.clone(":installed-files", "/foo/bar", "/"),
+        image.clone(":installed-files", "/foo/bar", "/bar3"),
+        image.mkdir("/", "bar2"),
+        image.clone(":installed-files", "/foo/bar/", "/bar2/"),
+    ],
 )
 
 # Omnibus feature for test-compiler and test-image-feature.  It currently

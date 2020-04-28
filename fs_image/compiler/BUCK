@@ -170,6 +170,7 @@ IMAGE_LAYER_DEPS = [
     "foreign-layer",
     "layer-with-non-default-snapshot-rpm",
     "installed-files",
+    "cloned-files",
     "child/layer",
     "parent_layer",
     "base_cheese_layer",

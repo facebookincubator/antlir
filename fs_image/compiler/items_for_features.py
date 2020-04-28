@@ -12,6 +12,7 @@ from typing import Iterable, Union
 from fs_image.find_built_subvol import find_built_subvol
 
 from fs_image.compiler.items.common import LayerOpts, image_source_item
+from fs_image.compiler.items.clone import CloneItem
 from fs_image.compiler.items.install_file import InstallFileItem
 from fs_image.compiler.items.make_dirs import MakeDirsItem
 from fs_image.compiler.items.make_subvol import (
@@ -69,6 +70,7 @@ def gen_items_for_features(
         )
 
     key_to_item_factory = {
+        'clone': image_sourcify(CloneItem),
         'install_files': image_sourcify(InstallFileItem),
         'make_dirs': MakeDirsItem,
         'mounts': lambda **kwargs: MountItem(**kwargs, layer_opts=layer_opts),

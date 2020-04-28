@@ -1,6 +1,15 @@
 load("//fs_image/bzl:defs.bzl", "fake_macro_library")
 
 fake_macro_library(
+    name = "clone",
+    srcs = ["clone.bzl"],
+    deps = [
+        "//fs_image/bzl:image_source",
+        "//fs_image/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
     name = "install",
     srcs = ["install.bzl"],
     deps = [

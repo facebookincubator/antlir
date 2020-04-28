@@ -23,7 +23,6 @@ from .stat_options import (
     build_stat_options, customize_stat_options, Mode, mode_to_str,
 )
 
-RAISE_KEY_ERROR = object()
 # Default permissions, must match the docs in `install.bzl`.
 _DIR_MODE = 'u+rwx,og+rx'
 _EXE_MODE = 'a+rx'

@@ -10,11 +10,12 @@ import unittest
 
 from contextlib import contextmanager
 
-from fs_image.btrfs_diff.tests.render_subvols import render_sendstream
+from fs_image.btrfs_diff.tests.render_subvols import render_sendstream, pop_path
 from fs_image.compiler.requires_provides import ProvidesDirectory, ProvidesFile
 
 from ..common import LayerOpts
 
+pop_path = pop_path  # Re-export for convenience
 DEFAULT_STAT_OPTS = ['--user=root', '--group=root', '--mode=0755']
 DUMMY_LAYER_OPTS = LayerOpts(
     layer_target='fake target',  # Only used by error messages
