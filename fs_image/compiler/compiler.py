@@ -135,7 +135,7 @@ def build_image(args):
         build_appliance=get_subvolume_path(
             args.build_appliance_json, args.subvolumes_dir,
         ) if args.build_appliance_json else None,
-        force_yum_dnf=None,  # This is currently only used in `test-items`
+        rpm_installer=None,  # This is currently only used in `test-items`
         rpm_repo_snapshot=args.rpm_repo_snapshot,
         preserve_yum_dnf_cache=args.preserve_yum_dnf_cache,
         artifacts_may_require_repo=args.artifacts_may_require_repo,

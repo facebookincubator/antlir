@@ -117,11 +117,11 @@ class LayerOpts(NamedTuple):
     artifacts_may_require_repo: bool
     build_appliance: str
     layer_target: str
+    # If set, overrides the BA's default package manager in `RpmActionItem`
+    rpm_installer: Optional[YumDnf]
     rpm_repo_snapshot: str
     target_to_path: Mapping[str, str]
     subvolumes_dir: str
-    # If set, overrides the snapshot-default package manager in `RpmActionItem`
-    force_yum_dnf: Optional[YumDnf]
     preserve_yum_dnf_cache: bool
     debug: bool = False
     allowed_host_mount_targets: FrozenSet[str] = frozenset()

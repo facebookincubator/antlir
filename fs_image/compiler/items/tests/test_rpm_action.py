@@ -47,7 +47,7 @@ class PackageSpecificRpmActionItemTestImpl(RpmActionItemTestBase):
             build_appliance=self._subvol_from_resource(
                 __package__, 'host-test-build-appliance',
             ).path(),
-            force_yum_dnf=self._YUM_DNF,
+            rpm_installer=self._YUM_DNF,
         )
 
     def test_rpm_action_item_auto_downgrade(self):
