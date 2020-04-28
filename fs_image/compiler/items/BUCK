@@ -7,6 +7,7 @@ python_library(
     name = "common",
     srcs = ["common.py"],
     deps = [
+        ":mount_utils",
         "//fs_image:fs_utils",
         "//fs_image:subvol_utils",
         "//fs_image/compiler:procfs_serde",
@@ -22,6 +23,23 @@ python_library(
         ":common",
         "//fs_image/btrfs_diff:testlib_render_subvols",
         "//fs_image/compiler:requires_provides",
+    ],
+)
+
+python_library(
+    name = "phases_provide",
+    srcs = ["phases_provide.py"],
+    deps = [":common"],
+)
+
+python_unittest(
+    name = "test-phases-provide",
+    srcs = ["tests/test_phases_provide.py"],
+    needed_coverage = [(100, ":phases_provide")],
+    deps = [
+        ":common_testlib",
+        ":phases_provide",
+        "//fs_image:testlib_temp_subvolumes",
     ],
 )
 
@@ -73,7 +91,6 @@ python_unittest(
 python_library(
     name = "foreign_layer",
     srcs = ["foreign_layer.py"],
-    base_module = "fs_image.compiler.items",
     deps = [
         ":common",
         "//fs_image/nspawn_in_subvol:inject_repo_servers",
@@ -84,7 +101,6 @@ python_library(
 python_unittest(
     name = "test-foreign-layer",
     srcs = ["tests/test_foreign_layer.py"],
-    base_module = "fs_image.compiler.items",
     needed_coverage = [(100, ":foreign_layer")],
     resources = {
         target_location(
@@ -137,7 +153,6 @@ python_library(
         "install_file.py",
         "make_dirs.py",
         "mount.py",
-        "phases_provide.py",
         "remove_path.py",
         "stat_options.py",
         "symlink.py",
@@ -160,7 +175,6 @@ python_unittest(
         "tests/test_make_dirs.py",
         "tests/test_make_subvol.py",
         "tests/test_mount.py",
-        "tests/test_phases_provide.py",
         "tests/test_remove_path.py",
         "tests/test_symlink.py",
         "tests/test_tarball.py",
@@ -181,6 +195,7 @@ python_unittest(
     deps = [
         ":common_testlib",
         ":items",
+        ":phases_provide",  # test_mount.py uses this
         "//fs_image:find_built_subvol",
         "//fs_image:testlib_temp_subvolumes",
         "//fs_image/btrfs_diff:testlib_demo_sendstreams",
@@ -193,6 +208,7 @@ python_library(
     deps = [
         ":foreign_layer",
         ":items",
+        ":phases_provide",
         ":rpm_action",
     ],
 )

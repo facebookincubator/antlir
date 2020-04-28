@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import subprocess
 import sys
 
 from fs_image.compiler.requires_provides import (
@@ -12,7 +13,7 @@ from fs_image.compiler.requires_provides import (
 )
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
-from ..phases_provide import PhasesProvideItem
+from ..phases_provide import gen_subvolume_subtree_provides, PhasesProvideItem
 
 from .common import (
     BaseItemTestCase, populate_temp_filesystem, temp_filesystem_provides,
@@ -30,6 +31,10 @@ class PhaseProvidesItemTestCase(BaseItemTestCase):
                 parent.path(),
             ])
             populate_temp_filesystem(parent.path().decode())
+
+            with self.assertRaises(subprocess.CalledProcessError):
+                list(gen_subvolume_subtree_provides(parent, 'no_such/path'))
+
             for create_meta in [False, True]:
                 # Check that we properly handle ignoring a /meta if it's present
                 if create_meta:
