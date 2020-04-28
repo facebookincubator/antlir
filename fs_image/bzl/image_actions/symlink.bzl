@@ -1,6 +1,6 @@
 """
 `image.symlink_dir("/a", "/b/c")` symlinks directory `/a` to `/b/c`,
-`image.symlink_file("/d", "/e/f")` symlinks file `/d` to `/e/f` --
+`image.symlink_file("/d", "/e/")` symlinks file `/d` to `/e/d` --
 
   - `link_target` is the image-absolute source file/dir of the symlink.
      This file must exist as we do not support dangling symlinks.
@@ -9,11 +9,15 @@
      enabling easier inspection if images via `buck-image-out`.  If this is
      a problem for you, we can add an `absolute` boolean kwarg.
 
-  - `link_name` is an image-absolute path.  We follow the `rsync`
-     convention -- if `dest` ends with a slash, the copy will be at
-     `dest/output` filename of source.  Otherwise, `dest` is a full
-     path, including a new filename for the target's output.  The
-     directory of `dest` must get created by another image feature.
+  - `link_name` is an image-absolute path. A trailing / is significant.
+
+    A `link_name` that does NOT end in / is a full path in the new image,
+    ending with a filename for the new symlink.
+
+    As with `image.clone`, a traling / means that `link_name` must be a
+    pre-existing directory in the image (e.g. created via `image.mkdir`),
+    and the actual link will be placed at `link_name/<basename of
+    link_target>`.
 """
 
 load("//fs_image/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")

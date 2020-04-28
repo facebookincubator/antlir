@@ -43,9 +43,10 @@ with short-circuiting.  E.g. FollowsSymlinks(Pred) would expand to:
     And(Not(IsSymlink(Path)), Pred(SymlinkTarget(Path)),
   )
 '''
+import dataclasses
 import os
+
 from enum import Enum, auto
-from dataclasses import dataclass
 
 
 def _normalize_path(path: str) -> str:
@@ -63,7 +64,7 @@ class _Predicate(Enum):
     IS_FILE = auto()
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class PathRequiresPredicate:
     path: str
     predicate: _Predicate
@@ -81,7 +82,7 @@ def require_file(path: str):
     return PathRequiresPredicate(path=path, predicate=_Predicate.IS_FILE)
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ProvidesPathObject:
     path: str
     # In the future, we might add permissions, etc here.
@@ -104,6 +105,9 @@ class ProvidesPathObject:
 
     def _matches_predicate(self, predicate):
         return False
+
+    def with_new_path(self, new_path):
+        return dataclasses.replace(self, path=_normalize_path(new_path))
 
 
 class ProvidesDirectory(ProvidesPathObject):

@@ -84,5 +84,9 @@ class RequiresProvidesTestCase(unittest.TestCase):
             ProvidesDoNotAccess(path='//a/b').matches(
                     {}, require_file('/a/b'))
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_with_new_path(self):
+        for new_path in ['b', 'b/', '/b', '/../a/../b/c/..']:
+            self.assertEqual(
+                ProvidesDirectory(path='unused').with_new_path(new_path),
+                ProvidesDirectory(path='b'),
+            )
