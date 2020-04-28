@@ -16,6 +16,7 @@ from typing import AnyStr, Iterable
 from fs_image.fs_utils import Path
 from fs_image.common import load_location
 from fs_image.find_built_subvol import find_built_subvol
+from fs_image.rpm.find_snapshot import snapshot_install_dir
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
@@ -75,16 +76,19 @@ class ForeignLayerItemTestCase(unittest.TestCase):
             self._check_protected_dir(subvol, '/meta')
             self._check_protected_dir(subvol, '/__fs_image__')
 
+            snapshot_dir = snapshot_install_dir(
+                '//fs_image/rpm:repo-snapshot-for-tests'
+            )
             ForeignLayerItem.get_phase_builder([ForeignLayerItem(
                 from_target='t',
                 user='root',
-                cmd=['/bin/sh', '-c', textwrap.dedent('''
+                cmd=['/bin/sh', '-c', textwrap.dedent(f'''
                     mkdir -p /install-root/meta
-                    /__fs_image__/rpm-repo-snapshot/default/bin/dnf \\
+                    {snapshot_dir}/bin/dnf \\
                         --installroot=/install-root --assumeyes \\
                             install rpm-test-carrot
                 ''')],
-                serve_rpm_snapshots=['/__fs_image__/rpm-repo-snapshot/default'],
+                serve_rpm_snapshots=[snapshot_dir],
             )], DUMMY_LAYER_OPTS)(subvol)
             # Not doing a rendered subvol test because RPM installation
             # is covered in so many other places.
