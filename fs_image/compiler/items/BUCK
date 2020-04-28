@@ -147,6 +147,7 @@ python_unittest(
         "//fs_image:common",
         "//fs_image:find_built_subvol",
         "//fs_image:testlib_temp_subvolumes",
+        "//fs_image/rpm:find_snapshot",
     ],
 )
 

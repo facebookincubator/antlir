@@ -25,6 +25,6 @@ class TestCommon(unittest.TestCase):
 
     def test_snapshot_install_dir(self):
         self.assertEqual(
-            b'/__fs_image__/rpm-repo-snapshot/chicken__a08636a6',
+            b'/__fs_image__/rpm/repo-snapshot/chicken__a08636a6',
             snapshot_install_dir('//well/fed:chicken'),
         )
