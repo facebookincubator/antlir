@@ -32,7 +32,7 @@ _orig_btrfs_get_volume_props = svod._btrfs_get_volume_props
 _SUBVOLS_DIR = subvolumes_dir()
 _FAKE_SUBVOL = 'FAKE_SUBVOL'
 _FIND_ARGS = [
-    'find', '-P', f'{_SUBVOLS_DIR}/{_FAKE_SUBVOL}'.encode(), '(',
+    'find', '-P', f'{_SUBVOLS_DIR}/{_FAKE_SUBVOL}', '(',
     '-path', f'{_SUBVOLS_DIR}/{_FAKE_SUBVOL}/meta'.encode(),
     ')', '-prune', '-o', '-printf', '%y %p\\0',
 ]

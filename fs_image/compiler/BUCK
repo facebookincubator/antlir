@@ -64,7 +64,8 @@ python_library(
     # NB: Don't use `all-items` here, just use the ones we need.
     deps = [
         "//fs_image/compiler/items:foreign_layer",
-        "//fs_image/compiler/items:items",
+        "//fs_image/compiler/items:make_subvol",
+        "//fs_image/compiler/items:phases_provide",
     ],
 )
 
@@ -81,6 +82,7 @@ python_unittest(
     deps = [
         ":dep_graph",
         "//fs_image:testlib_temp_subvolumes",
+        "//fs_image/compiler/items:items",
     ],
 )
 
