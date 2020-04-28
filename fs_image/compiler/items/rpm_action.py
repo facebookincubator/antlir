@@ -259,10 +259,11 @@ class RpmActionItem(ImageItem):
 
 
 def _get_yum_or_dnf(build_appliance: Subvol, layer_opts: LayerOpts) -> str:
-    if layer_opts.force_yum_dnf:
-        # Normally, the snapshot knows what package manager is preferred.
-        # For tests, we want the ability to override this.
-        return layer_opts.force_yum_dnf.value
+    if layer_opts.rpm_installer:
+        # Normally, the BA specifies what package manager is preferred.
+        # This, in turn, implies the snapshot since it also specifies a
+        # default snapshot for each package manager.
+        return layer_opts.rpm_installer.value
     # We build BAs so that this is world-readable:
     with open(build_appliance.path(
         RPM_SNAPSHOT_BASE_DIR / layer_opts.rpm_repo_snapshot
