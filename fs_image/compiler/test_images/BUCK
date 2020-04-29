@@ -698,3 +698,12 @@ image.layer_alias(
 )
 
 image.layer("empty")  # Just ensure this builds, not checking contents :)
+
+image.package(name = "create_ops.tar.gz")
+
+image.layer(
+    name = "create_ops-layer-via-tarball-package",
+    features = [
+        image.tarball(":create_ops.tar.gz", "/"),
+    ],
+)

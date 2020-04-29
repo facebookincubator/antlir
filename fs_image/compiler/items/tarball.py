@@ -73,6 +73,9 @@ class TarballItem(ImageItem):
                 # we start adding support for following directory symlinks.
                 '-C', subvol.path(self.into_dir),
                 '-x',
+                # preserving xattrs need to be specified on both sides (packing
+                # and unpacking)
+                '--xattrs',
                 # Block tar's weird handling of paths containing colons.
                 '--force-local',
                 # The uid:gid doing the extraction is root:root, so by default

@@ -25,12 +25,18 @@ def image_package(
         writable_subvolume = False,
         seed_device = False):
     visibility = get_visibility(visibility, name)
-    sendstream_zst = ".sendstream.zst"
-    if name.endswith(sendstream_zst):
-        local_layer_rule = name[:-len(sendstream_zst)]
-        format = sendstream_zst
-    else:
-        local_layer_rule, format = paths.split_extension(name)
+
+    local_layer_rule, format = paths.split_extension(name)
+    compound_format_specifiers = (
+        ".sendstream.zst",
+        ".tar.gz",
+    )
+    for compound_fmt in compound_format_specifiers:
+        if name.endswith(compound_fmt):
+            local_layer_rule = name[:-len(compound_fmt)]
+            format = compound_fmt
+            break
+
     if not format.startswith("."):
         fail(name)
     format = format[1:]

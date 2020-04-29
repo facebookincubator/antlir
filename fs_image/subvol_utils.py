@@ -539,15 +539,38 @@ class Subvol:
         return attempts
 
     @contextmanager
-    def write_to_tarball(self, outfile: BinaryIO, **kwargs) -> Iterator[None]:
+    def write_tarball_to_file(
+        self,
+        outfile: BinaryIO,
+        **kwargs
+    ) -> Iterator[None]:
+        # gnu tar has a nasty bug where even if you specify `--one-file-system`
+        # it still tries to perform various operations on other mount points.
+        # The problem with this is that some filesystem types don't support all
+        # of the various fs layer calls needed, like `flistxattr` or `savedir`
+        # in the case of the `gvfs` file system.
+        # Because layer mounts or host mounts are currently setup in the root
+        # namespace, when we try to archive this subvol, we might run into these
+        # kinds of mounts.  So to work around this, we start a new mount
+        # namespace, unmount everything that is under this subvol, and then
+        # run the tar command.
         with self.popen_as_root([
-            'tar',
-            'cz',
-            '--sparse',
-            '--xattrs',
-            '--to-stdout',
-            '-C', self.path(),
-            '.',
+            'unshare', '--mount',
+            'bash', '-c',
+            # Unmount everything that contains the subvol name, that's the dir
+            # *above* the `volume/` path.
+            '(mount |'
+            f' grep {self.path().dirname().basename()} |'
+            ' xargs umount '
+            ')1>&2; '  # Make sure any errors in the umounts go to stderr
+            'tar c '
+            '--sparse '
+            '--one-file-system '  # Keep this just in case
+            '--xattrs '
+            '--to-stdout '
+            '-C '
+            f'{self.path()} '
+            '.'
         ], stdout=outfile):
             yield
 

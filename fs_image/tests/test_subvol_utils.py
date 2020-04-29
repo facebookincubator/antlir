@@ -12,8 +12,10 @@ import unittest.mock
 
 from fs_image.btrfs_diff.tests.render_subvols import render_sendstream
 from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
-    render_demo_subvols
+    render_demo_subvols,
+    render_demo_as_corrupted_by_gnu_tar,
 )
+
 from .temp_subvolumes import with_temp_subvols
 from ..find_built_subvol import subvolumes_dir, volume_dir
 from ..fs_utils import Path, temp_dir
@@ -243,27 +245,21 @@ class SubvolTestCase(unittest.TestCase):
 
         unpacked_sv = temp_subvols.create('subvol')
         with tempfile.NamedTemporaryFile() as tar_file:
-            with demo_sv.write_to_tarball(tar_file):
+            with demo_sv.write_tarball_to_file(tar_file):
                 pass
 
             demo_sv.run_as_root([
                 'tar',
-                'xzf',
+                'xf',
                 tar_file.name,
                 '--xattrs',
                 '-C',
                 unpacked_sv.path(),
             ])
 
-        demo_render = render_demo_subvols(create_ops=demo_sv_name)
-        # Tar does not preserve the original's cloned extents of
-        # zeros
-        demo_render[1]['56KB_nuls'] = ['(File d57344)']
-        demo_render[1]['56KB_nuls_clone'] = ['(File d57344)']
-        # Tar des not preserve unix domain sockets, as these are usable only for
-        # the lifetime of the associated process and should therefore be safe to
-        # ignore.
-        demo_render[1].pop('unix_sock')
+        demo_render = render_demo_as_corrupted_by_gnu_tar(
+            create_ops=demo_sv_name
+        )
 
         self.assertEqual(
             demo_render,

@@ -224,7 +224,7 @@ from typing import Mapping, NamedTuple
 
 from .find_built_subvol import find_built_subvol
 from .fs_utils import Path, create_ro
-from .common import init_logging, check_popen_returncode
+from .common import check_popen_returncode, init_logging
 from .subvol_utils import Subvol, SubvolOpts
 
 
@@ -302,6 +302,20 @@ class BtrfsImage(Format, format_name='btrfs'):
             output_path,
             subvol_opts=opts.subvol_opts
         )
+
+
+class TarballGzipImage(Format, format_name='tar.gz'):
+    '''
+    Packages the subvolume as a gzip-compressed tarball, usage:
+      tar xzf image.tar.gz -C dest/
+    '''
+    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+        with create_ro(output_path, 'wb') as outfile, subprocess.Popen(
+            ['gzip', '--stdout'], stdin=subprocess.PIPE, stdout=outfile
+        ) as gz, subvol.write_tarball_to_file(gz.stdin):
+            pass
+
+        check_popen_returncode(gz)
 
 
 def parse_args(argv):
