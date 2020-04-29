@@ -14,8 +14,13 @@ import unittest
 from contextlib import contextmanager
 from typing import Iterator
 
-from fs_image.btrfs_diff.tests.render_subvols import render_sendstream
-
+from fs_image.btrfs_diff.tests.render_subvols import (
+    pop_path,
+    render_sendstream,
+)
+from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
+    render_demo_as_corrupted_by_gnu_tar,
+)
 from ..find_built_subvol import subvolumes_dir
 from ..package_image import package_image, Format
 from ..unshare import Namespace, nsenter_as_root, Unshare
@@ -169,6 +174,55 @@ class PackageImageTestCase(unittest.TestCase):
                 stdout=subprocess.PIPE
             )
             self.assertNotIn(b"SEEDING", proc.stdout)
+
+    def test_package_image_as_tarball(self):
+        with self._package_image(
+            self._sibling_path('create_ops.layer'), 'tar.gz',
+        ) as out_path:
+            # `write_tarball_to_file` provides full coverage for the tar
+            # functionality, so we just need to test the integration here.
+            self.assertLess(
+                10,  # There are more files than that in `create_ops`
+                len(subprocess.check_output(
+                    ['tar', 'tzf', out_path]).split(b'\n'),
+                ),
+            )
+
+    def test_image_layer_composed_with_tarball_package(self):
+        # check that an image layer composed out of a tar-packaged create_ops
+        # layer is equivalent to the original create_ops layer.
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+            demo_sv_name = 'demo_sv'
+            demo_sv = temp_subvolumes.caller_will_create(demo_sv_name)
+            with open(
+                self._sibling_path('create_ops.sendstream')
+            ) as f, demo_sv.receive(f):
+                pass
+
+            demo_render = render_demo_as_corrupted_by_gnu_tar(
+                create_ops=demo_sv_name
+            )
+
+            with self._package_image(
+                self._sibling_path(
+                    'create_ops-layer-via-tarball-package'),
+                    'sendstream',
+            ) as out_path:
+                rendered_tarball_image = _render_sendstream_path(out_path)
+                # This is metadata generated during the buck image build process
+                # and is not useful for purposes of comparing the subvolume
+                # contents.  However, it's useful to verify that the meta dir
+                # we popped is what we expect.
+                self.assertEqual(
+                    ['(Dir)', {'private': ['(Dir)', {'opts': [
+                        '(Dir)', {'artifacts_may_require_repo': ['(File d2)']}
+                    ]}]}],
+                    pop_path(rendered_tarball_image, 'meta'),
+                )
+                self.assertEqual(
+                    demo_render,
+                    rendered_tarball_image,
+                )
 
     def test_format_name_collision(self):
         with self.assertRaisesRegex(AssertionError, 'share format_name'):

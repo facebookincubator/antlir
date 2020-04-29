@@ -354,3 +354,16 @@ def render_demo_subvols(*, create_ops=None, mutate_ops=None):
             big_hole='',
         )
     raise AssertionError('Set at least one of {create,mutate}_ops')
+
+
+def render_demo_as_corrupted_by_gnu_tar(*, create_ops=None, mutate_ops=None):
+    demo_render = render_demo_subvols(create_ops=create_ops)
+    # Tar does not preserve the original's cloned extents of
+    # zeros
+    demo_render[1]['56KB_nuls'] = ['(File d57344)']
+    demo_render[1]['56KB_nuls_clone'] = ['(File d57344)']
+    # Tar des not preserve unix domain sockets, as these are usable only for
+    # the lifetime of the associated process and should therefore be safe to
+    # ignore.
+    demo_render[1].pop('unix_sock')
+    return demo_render

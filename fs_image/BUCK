@@ -348,12 +348,14 @@ python_unittest(
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
         TEST_IMAGE_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
         TEST_IMAGE_PREFIX + "create_ops": "tests/create_ops.layer",
+        TEST_IMAGE_PREFIX + "create_ops-layer-via-tarball-package": "tests/create_ops-layer-via-tarball-package",
     },
     deps = [
         ":find_built_subvol",
         ":package-image-library",
         ":testlib_temp_subvolumes",
         ":unshare",
+        "//fs_image/btrfs_diff:testlib_demo_sendstreams",
         "//fs_image/btrfs_diff:testlib_render_subvols",
     ],
 )
