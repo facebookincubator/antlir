@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import subprocess
 import tempfile
 import unittest
 
@@ -33,8 +34,14 @@ DUMMY_LAYER_OPTS = LayerOpts(
 
 
 def render_subvol(subvol: {'Subvol'}):
+    # Determine the original ro/rw state of the subvol so we can put it back
+    # the way it was after rendering.
+    was_readonly = subvol.run_as_root([
+        'btrfs', 'property', 'get', '-ts', subvol.path(), 'ro'
+    ], text=True, stdout=subprocess.PIPE).stdout.strip() == 'ro=true'
+
     rendered = render_sendstream(subvol.mark_readonly_and_get_sendstream())
-    subvol.set_readonly(False)  # YES, all our subvolumes are read-write.
+    subvol.set_readonly(was_readonly)
     return rendered
 
 
