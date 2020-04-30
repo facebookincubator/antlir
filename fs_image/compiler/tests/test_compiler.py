@@ -18,6 +18,7 @@ from fs_image import subvol_utils
 from fs_image.compiler.items import rpm_action
 from fs_image.find_built_subvol import subvolumes_dir
 from fs_image.fs_utils import Path, temp_dir
+from fs_image.rpm.yum_dnf_conf import YumDnf
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..compiler import build_image, parse_args, LayerOpts
@@ -150,6 +151,7 @@ class CompilerTestCase(unittest.TestCase):
         is_btrfs.return_value = True
         return build_image(parse_args([
             '--artifacts-may-require-repo',  # Must match LayerOpts below
+            '--rpm-installer=dnf',
             '--subvolumes-dir', _SUBVOLS_DIR,
             '--subvolume-rel-path', _FAKE_SUBVOL,
             '--build-appliance', self.ba_path,
@@ -222,8 +224,8 @@ class CompilerTestCase(unittest.TestCase):
             artifacts_may_require_repo=True,  # Must match CLI arg in `_compile`
             target_to_path=si.TARGET_TO_PATH,
             subvolumes_dir=_SUBVOLS_DIR,
-            rpm_installer=None,
-            rpm_repo_snapshot='default',
+            rpm_installer=YumDnf.dnf,
+            rpm_repo_snapshot=None,
             preserve_yum_dnf_cache=False,
         )
         phase_item_ids = set()

@@ -52,7 +52,7 @@ class ImageFeatureTestCase(unittest.TestCase):
                     if target_to_path is None else target_to_path,
                 subvolumes_dir=None,
                 rpm_installer=None,
-                rpm_repo_snapshot='default',
+                rpm_repo_snapshot=None,
                 preserve_yum_dnf_cache=False,
             ),
         ))

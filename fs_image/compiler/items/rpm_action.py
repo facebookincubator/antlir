@@ -8,6 +8,7 @@ import base64
 import enum
 import functools
 import pwd
+import os
 import shlex
 import sys
 import uuid
@@ -19,7 +20,6 @@ from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from fs_image.nspawn_in_subvol.inject_repo_servers import inject_repo_servers
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
-from fs_image.rpm.find_snapshot import RPM_SNAPSHOT_BASE_DIR
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from fs_image.subvol_utils import Subvol
 
@@ -258,22 +258,14 @@ class RpmActionItem(ImageItem):
         return builder
 
 
-def _get_yum_or_dnf(build_appliance: Subvol, layer_opts: LayerOpts) -> str:
-    if layer_opts.rpm_installer:
-        # Normally, the BA specifies what package manager is preferred.
-        # This, in turn, implies the snapshot since it also specifies a
-        # default snapshot for each package manager.
-        return layer_opts.rpm_installer.value
-    # We build BAs so that this is world-readable:
-    with open(build_appliance.path(
-        RPM_SNAPSHOT_BASE_DIR / layer_opts.rpm_repo_snapshot
-            / 'yum_dnf_default.name'
-    )) as rf:
-        prog_name = rf.read()
-    assert prog_name.endswith('\n')
-    prog_name = prog_name[:-1]
-    assert prog_name in ('yum', 'dnf'), repr(prog_name)
-    return prog_name
+def _default_snapshot(build_appliance: Subvol, prog_name: str) -> Path:
+    symlink_base = '/__fs_image__/rpm/default-snapshot-for-installer/'
+    return (
+        # The symlink is relative, but we need an absolute path.
+        Path(symlink_base) / os.readlink(
+            build_appliance.path(symlink_base + prog_name)
+        )
+    ).normpath()
 
 
 def _yum_dnf_using_build_appliance(
@@ -287,12 +279,15 @@ def _yum_dnf_using_build_appliance(
     work_dir = '/work' + base64.urlsafe_b64encode(
         uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
     ).decode().strip('=')
-    prog_name = _get_yum_or_dnf(build_appliance, layer_opts)
+    prog_name = layer_opts.rpm_installer.value
     mount_cache = '' if layer_opts.preserve_yum_dnf_cache else f'''
         mkdir -p {work_dir}/var/cache/{prog_name} ; \
         mount --bind /var/cache/{prog_name} {work_dir}/var/cache/{prog_name} ;
     '''
-    snapshot_dir = RPM_SNAPSHOT_BASE_DIR / layer_opts.rpm_repo_snapshot
+    snapshot_dir = (
+        layer_opts.rpm_repo_snapshot if layer_opts.rpm_repo_snapshot
+            else _default_snapshot(build_appliance, prog_name)
+    )
     opts = new_nspawn_opts(
         cmd=[
             'sh', '-uec',

@@ -2,7 +2,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
 
-def test_rpm_repo_snapshot(name, kind, yum_dnf):
+def test_rpm_repo_snapshot(name, kind, rpm_installers):
     bare_snapshot_dir = "__bare_snapshot_dir_for__" + name
     buck_genrule(
         name = bare_snapshot_dir,
@@ -26,5 +26,5 @@ def test_rpm_repo_snapshot(name, kind, yum_dnf):
             "key": "test",
             "kind": "filesystem",
         },
-        yum_dnf = yum_dnf,
+        rpm_installers = rpm_installers,
     )

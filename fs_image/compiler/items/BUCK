@@ -138,7 +138,7 @@ python_unittest(
         ): "tests/foreign-layer-base",
         target_location(
             # Must have a `busybox` binary as `/bin/sh`.
-            TEST_IMAGE_PREFIX + "validates-build-appliance",
+            TEST_IMAGE_PREFIX + "validates-dnf-build-appliance",
         ): "tests/foreign-layer-busybox-base",
     },
     deps = [

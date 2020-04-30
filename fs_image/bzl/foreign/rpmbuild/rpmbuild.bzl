@@ -4,7 +4,7 @@ given image layer, and outputs a new layer with the resulting RPM(s)
 available in a pre-determined location: `/rpmbuild/RPMS`.
 """
 
-load("//fs_image/bzl:constants.bzl", "BUILD_APPLIANCE_TARGET")
+load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//fs_image/bzl:image_layer.bzl", "image_layer")
 load("//fs_image/bzl:maybe_export_file.bzl", "maybe_export_file")
@@ -33,7 +33,7 @@ def image_rpmbuild_layer(
         # build the RPM.  This should have `rpm-build`, optionally macro
         # packages like `redhat-rpm-config`, and any of the spec file's
         # build dependencies installed.
-        parent_layer = BUILD_APPLIANCE_TARGET,
+        parent_layer = DEFAULT_BUILD_APPLIANCE,
         **image_layer_kwargs):
     # Future: We tar the source directory and untar it inside the subvolume
     # before building because the "install_*_trees" feature does not yet

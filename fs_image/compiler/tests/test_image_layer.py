@@ -196,19 +196,10 @@ class ImageLayerTestCase(unittest.TestCase):
                     render_sendstream(sv.mark_readonly_and_get_sendstream()),
                 )
 
-    def _check_rpm_common(self, rendered_subvol, yum_dnf: str):
-        r = copy.deepcopy(rendered_subvol)
-
-        if yum_dnf == 'dnf':
-            self.assertEqual(['(Dir)', {}], pop_path(r, 'var/tmp'))
-            self.assertEqual(['(Dir)', {}], pop_path(r, 'usr'))
-
-        check_common_rpm_render(self, r, yum_dnf)
-
     # This is reused by `test_foreign_layer` because we currently lack
     # rendering for incremental sendstreams.
     @contextmanager
-    def _check_build_appliance(self, rsrc_name):
+    def _check_build_appliance(self, rsrc_name, yum_dnf):
         with self.target_subvol(rsrc_name) as sv:
             r = render_sendstream(sv.mark_readonly_and_get_sendstream())
 
@@ -229,22 +220,25 @@ class ImageLayerTestCase(unittest.TestCase):
 
             yield sv, r
 
-            self._check_rpm_common(r, 'dnf')
+            self.assertEqual(['(Dir)', {}], pop_path(r, 'var/tmp'))
+            self.assertEqual(['(Dir)', {}], pop_path(r, 'usr'))
 
-    def test_build_appliance(self):
-        # The appliance this uses defaults to `dnf`.  This is not a dual
-        # test, unlike `test-rpm-action-item`, because force-overriding the
-        # package manager is not currently exposed to the `.bzl` layer.  So
-        # we only have the `dnf` build artifact to test here.
-        #
-        # If the extra coverage were thought important, we could either pass
-        # this flag to the compiler CLI via `image.opts`, or just add a copy
-        # of `repo-snapshot-for-tests` defaulting to `yum`.
-        with self._check_build_appliance('validates-build-appliance') as (_, r):
+            check_common_rpm_render(self, r, yum_dnf)
+
+    def test_dnf_build_appliance(self):
+        with self._check_build_appliance(
+            'validates-dnf-build-appliance', 'dnf',
+        ) as (_, r):
+            self.assertEqual(['(Dir)', {}], pop_path(r, 'usr/lib'))
+
+    def test_yum_build_appliance(self):
+        with self._check_build_appliance(
+            'validates-yum-build-appliance', 'yum',
+        ) as (_, r):
             self.assertEqual(['(Dir)', {}], pop_path(r, 'usr/lib'))
 
     def test_foreign_layer(self):
-        with self._check_build_appliance('foreign-layer') as (sv, r):
+        with self._check_build_appliance('foreign-layer', 'dnf') as (sv, r):
             # The desired side effect of the run:
             self.assertEqual(['(File)'], pop_path(r, 'I_AM_FOREIGN_LAYER'))
 
@@ -286,7 +280,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 'cake.txt': ['(File d17)'],
             }], pop_path(r, 'rpm_test'))
 
-            self._check_rpm_common(r, 'yum')
+            check_common_rpm_render(self, r, 'yum')
 
     def _check_installed_files_bar(self, r):
         # We don't know the exact sizes because these 2 may be wrapped

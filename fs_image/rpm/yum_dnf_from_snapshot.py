@@ -407,8 +407,9 @@ def yum_dnf_from_snapshot(
                 # Help us debug CI issues that don't reproduce locally.
                 '--verbose',
                 # Config options get isolated by our `YumDnfConfIsolator`
-                # when `write-yum-dnf-conf` builds this file.
-                f'--config={conf_path}',
+                # when `write-yum-dnf-conf` builds this file.  Note that
+                # `yum` doesn't work if the config path is relative.
+                f'--config={Path(os.path.abspath(conf_path))}',
                 f'--installroot={install_root}',
                 # NB: We omit `--downloaddir` because the default behavior
                 # is to put any downloaded RPMs in `$installroot/$cachedir`,

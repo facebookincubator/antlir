@@ -345,26 +345,20 @@ python_binary(
 test_rpm_repo_snapshot(
     name = "repo-snapshot-for-tests",
     kind = "sample-step-0",
-    # `test-yum-dnf-from-snapshot` exercises both package managers, and it
-    # doesn't use the `yum_dnf_default*` file that this writes.
+    # `test-yum-dnf-from-snapshot` exercises both package managers.
+    # `test-rpm-action-item` also tests both by explicitly setting
+    # `LayerOpts.rpm_installer`.
+    # `test-image-layer` checks `validates-{yum,dnf}-build-appliance`.
     #
-    # `test-rpm-action-item` tests this default.  But it also has special
-    # logic to **also** test all its build appliances with `yum`, overriding
-    # this `dnf` default here.
-    #
-    # All other RPM installations via one of the ~3 build appliances that
-    # install this snapshot will use this default.
-    yum_dnf = (
-        # If you change this order, fix MaybeDnfRpmActionItemTestCase
-        "dnf",
-        "yum",
-    ),
+    # All other RPM installations via one of the few build appliances that
+    # install this snapshot use `DEFAULT_RPM_INSTALLER` via `.buckconfig`.
+    rpm_installers = ("dnf", "yum"),
 )
 
 test_rpm_repo_snapshot(
     name = "non-default-repo-snapshot-for-tests",
     kind = "non-default",
-    yum_dnf = ("yum", "dnf"),  # Just because the other one defaults to "dnf"
+    rpm_installers = ("dnf", "yum"),
 )
 
 image_python_unittest(
@@ -382,7 +376,7 @@ image_python_unittest(
     #   - The construction of the image.
     #   - `serve_repo_snapshots` in the unittest declaration.  Future: This
     #     could be made to accept (a) a magic value for "all", (b) a magic
-    #     value for "default".
+    #     value for "default" (per installer? for both?).
     serve_rpm_snapshots = [":repo-snapshot-for-tests"],
     deps = [
         ":find_snapshot",
