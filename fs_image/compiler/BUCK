@@ -166,7 +166,8 @@ image_feature_python_unittest(
 )
 
 IMAGE_LAYER_DEPS = [
-    "validates-build-appliance",
+    "validates-dnf-build-appliance",
+    "validates-yum-build-appliance",
     "foreign-layer",
     "layer-with-non-default-snapshot-rpm",
     "installed-files",

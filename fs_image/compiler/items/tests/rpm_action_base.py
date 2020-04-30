@@ -11,10 +11,12 @@ import sys
 from fs_image.find_built_subvol import find_built_subvol
 from fs_image.common import load_location
 from fs_image.fs_utils import Path
+from fs_image.rpm.yum_dnf_conf import YumDnf
 
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..rpm_action import RpmAction, RpmActionItem
+
 
 from .common import DUMMY_LAYER_OPTS, render_subvol
 
@@ -25,13 +27,12 @@ class RpmActionItemTestBase:
     def _subvol_from_resource(cls, module, name):
         return find_built_subvol(load_location(module, name))
 
-    # IMPORTANT: This ignores `self._YUM_DNF` and uses whatever package
-    # manager the BA specifies.
     def _check_rpm_action_item_build_appliance(self, ba_path: Path):
         for preserve_yum_dnf_cache in [True, False]:
             self._check_rpm_action_item(layer_opts=DUMMY_LAYER_OPTS._replace(
                 build_appliance=ba_path,
                 preserve_yum_dnf_cache=preserve_yum_dnf_cache,
+                rpm_installer=self._YUM_DNF,
             ))
 
     def _check_rpm_action_item(self, layer_opts):
@@ -115,10 +116,7 @@ class RpmActionItemTestBase:
                 subvol.path('usr/lib/.build-id'),
                 subvol.path('bin/sh'),
             ])
-            # We cannot just know whether `dnf` is in use by looking at
-            # `self._YUM_DNF`, see `MaybeDnfRpmActionItemTestCase`.
-            is_dnf = os.path.exists(subvol.path('etc/dnf/modules.d'))
-            if is_dnf:
+            if self._YUM_DNF == YumDnf.dnf:
                 subvol.run_as_root([
                     'rmdir', subvol.path('etc/dnf/modules.d'),
                     subvol.path('etc/dnf'), subvol.path('etc'),
@@ -134,7 +132,7 @@ class RpmActionItemTestBase:
                     and not layer_opts.preserve_yum_dnf_cache
             ) else ['rm', '-rf']
             subvol.run_as_root(rm_cmd + [
-                subvol.path(f'var/cache/{"dnf" if is_dnf else "yum"}')
+                subvol.path(f'var/cache/{self._YUM_DNF.value}')
             ])
             subvol.run_as_root([
                 'rmdir',

@@ -13,12 +13,13 @@ from contextlib import contextmanager
 
 from fs_image.fs_utils import Path
 from fs_image.common import init_logging
-from fs_image.rpm.find_snapshot import DEFAULT_SNAPSHOT_INSTALL_DIR
+from fs_image.rpm.find_snapshot import snapshot_install_dir
 from ..common import has_yum, yum_is_dnf
 from ..yum_dnf_from_snapshot import YumDnf, yum_dnf_from_snapshot
 
 
 _INSTALL_ARGS = ['install', '--assumeyes', 'rpm-test-carrot', 'rpm-test-milk']
+_SNAPSHOT_DIR = snapshot_install_dir('//fs_image/rpm:repo-snapshot-for-tests')
 
 init_logging()
 
@@ -49,7 +50,7 @@ class YumFromSnapshotTestImpl:
             # `image.python_unittest` that runs in a build appliance.
             yum_dnf_from_snapshot(
                 yum_dnf=self._YUM_DNF,
-                snapshot_dir=DEFAULT_SNAPSHOT_INSTALL_DIR,
+                snapshot_dir=_SNAPSHOT_DIR,
                 protected_paths=protected_paths,
                 yum_dnf_args=[
                     f'--installroot={install_root}',
@@ -171,7 +172,7 @@ class YumFromSnapshotTestImpl:
         # the package is already install, and succeed.  That's OK.
         yum_dnf_from_snapshot(
             yum_dnf=self._YUM_DNF,
-            snapshot_dir=DEFAULT_SNAPSHOT_INSTALL_DIR,
+            snapshot_dir=_SNAPSHOT_DIR,
             protected_paths=[],
             yum_dnf_args=[
                 # This is implicit: that also covers the "read the conf" code:

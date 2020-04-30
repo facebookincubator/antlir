@@ -26,6 +26,7 @@ from fs_image.compiler.items_for_features import gen_items_for_features
 from fs_image.compiler.items.common import LayerOpts
 from fs_image.compiler.items.phases_provide import PhasesProvideItem
 from fs_image.fs_utils import Path
+from fs_image.rpm.yum_dnf_conf import YumDnf
 from fs_image.subvol_utils import Subvol, get_subvolume_path
 
 from .dep_graph import DependencyGraph
@@ -69,9 +70,15 @@ def parse_args(args) -> argparse.Namespace:
         help='Path to the JSON output of target referred by build_appliance',
     )
     parser.add_argument(
-        '--rpm-repo-snapshot', default='default',
-        help='Which subdirectory to use under /__fs_image__/rpm/repo-snapshot/ '
-            'in the build appliance image. Defaults to "default".',
+        '--rpm-installer', type=YumDnf,
+        help='Name of a supported RPM package manager (e.g. `yum` or `dnf`). '
+            'Required if your image installs RPMs.',
+    )
+    parser.add_argument(
+        '--rpm-repo-snapshot', type=Path.from_argparse,
+        help='Path to snapshot directory in the build appliance image. '
+            'The default is the BA symlink `/__fs_image__/rpm/'
+            'default-snapshot-for-installer/<--rpm-installer>`.',
     )
     parser.add_argument(
         '--preserve-yum-dnf-cache', action='store_true',
@@ -135,7 +142,7 @@ def build_image(args):
         build_appliance=get_subvolume_path(
             args.build_appliance_json, args.subvolumes_dir,
         ) if args.build_appliance_json else None,
-        rpm_installer=None,  # This is currently only used in `test-items`
+        rpm_installer=args.rpm_installer,
         rpm_repo_snapshot=args.rpm_repo_snapshot,
         preserve_yum_dnf_cache=args.preserve_yum_dnf_cache,
         artifacts_may_require_repo=args.artifacts_may_require_repo,

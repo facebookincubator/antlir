@@ -20,13 +20,15 @@ from unittest import mock
 
 from fs_image.artifacts_dir import find_repo_root
 from fs_image.common import pipe
-from fs_image.rpm.find_snapshot import DEFAULT_SNAPSHOT_INSTALL_DIR
+from fs_image.rpm.find_snapshot import snapshot_install_dir
 from fs_image.tests.temp_subvolumes import with_temp_subvols
 
 from ..args import _parse_cli_args, PopenArgs
 from ..common import _nspawn_version
 from ..cmd import _extra_nspawn_args_and_env
 from ..run import _set_up_run_cli
+
+_SNAPSHOT_DIR = snapshot_install_dir('//fs_image/rpm:repo-snapshot-for-tests')
 
 
 @contextmanager
@@ -515,7 +517,6 @@ class NspawnTestCase(unittest.TestCase):
             ], boot_console=subprocess.PIPE, check=True)
 
     def _yum_or_dnf_install(self, prog, package, *, extra_args=()):
-        snapshot_dir = DEFAULT_SNAPSHOT_INSTALL_DIR
         with tempfile.TemporaryFile(mode='w+b') as yum_dnf_stdout, \
                 tempfile.TemporaryFile(mode='w+') as rpm_contents:
             # We don't pipe either stdout or stderr so that both are
@@ -523,7 +524,7 @@ class NspawnTestCase(unittest.TestCase):
             # obtain a copy of the program's stdout for tests.
             ret = self._nspawn_in('build-appliance', [
                 '--user=root',
-                f'--serve-rpm-snapshot={snapshot_dir}',
+                f'--serve-rpm-snapshot={_SNAPSHOT_DIR}',
                 f'--forward-fd={yum_dnf_stdout.fileno()}',  # becomes FD 3
                 f'--forward-fd={rpm_contents.fileno()}',  # becomes FD 4
                 *extra_args,
@@ -533,7 +534,7 @@ class NspawnTestCase(unittest.TestCase):
                     set -ex
                     mkdir /target
                     {prog} \\
-                        --config={snapshot_dir}/etc/{prog}/{prog}.conf \\
+                        --config={_SNAPSHOT_DIR}/etc/{prog}/{prog}.conf \\
                         --installroot=/target -y install {package} |
                             tee /proc/self/fd/3
                     # We install only 1 RPM, so a glob tells us the filename.
@@ -600,11 +601,7 @@ class NspawnTestCase(unittest.TestCase):
             self._check_yum_dnf_boot_or_not(
                 'yum',
                 'rpm-test-carrot',
-                extra_args=(
-                    '--snapshot-to-versionlock',
-                    DEFAULT_SNAPSHOT_INSTALL_DIR,
-                    vl,
-                ),
+                extra_args=('--snapshot-to-versionlock', _SNAPSHOT_DIR, vl),
                 check_ret_fn=functools.partial(
                     self._check_yum_dnf_ret,
                     'carrot 1 lockme\n',
@@ -621,10 +618,6 @@ class NspawnTestCase(unittest.TestCase):
             self._check_yum_dnf_boot_or_not(
                 'yum',
                 'rpm-test-carrot',
-                extra_args=(
-                    '--snapshot-to-versionlock',
-                    DEFAULT_SNAPSHOT_INSTALL_DIR,
-                    vl,
-                ),
+                extra_args=('--snapshot-to-versionlock', _SNAPSHOT_DIR, vl),
                 check_ret_fn=_not_reached,
             )

@@ -117,9 +117,9 @@ class LayerOpts(NamedTuple):
     artifacts_may_require_repo: bool
     build_appliance: str
     layer_target: str
-    # If set, overrides the BA's default package manager in `RpmActionItem`
-    rpm_installer: Optional[YumDnf]
-    rpm_repo_snapshot: str
+    rpm_installer: YumDnf
+    # If set, overrides the package manager's default snapshot from the BA.
+    rpm_repo_snapshot: Optional[str]
     target_to_path: Mapping[str, str]
     subvolumes_dir: str
     preserve_yum_dnf_cache: bool

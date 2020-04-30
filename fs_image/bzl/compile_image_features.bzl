@@ -1,9 +1,10 @@
 # Implementation detail for `image_layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//fs_image/bzl:constants.bzl", "BUILD_APPLIANCE_TARGET", "DO_NOT_USE_BUILD_APPLIANCE")
+load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE", "DEFAULT_RPM_INSTALLER", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl/image_actions:feature.bzl", "normalize_features")
 load(":artifacts_require_repo.bzl", "built_artifacts_require_repo")
-load(":target_tagger.bzl", "mangle_target", "new_target_tagger", "tag_target", "target_tagger_to_feature")
+load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
+load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
 def _build_opts(
         # The name of the btrfs subvolume to create.
@@ -16,15 +17,23 @@ def _build_opts(
         #   build_appliance = //some/target:path
         # In current implementation build_appliance is required only if any
         # dependent `image_feature` specifies `rpms`.
-        build_appliance = None,
+        build_appliance = DEFAULT_BUILD_APPLIANCE,
+        # The build appliance currently does not set a default package
+        # manager -- in non-default settings, this has to be chosen per
+        # image, since a BA can support multiple package managers.  In the
+        # future, if specifying a non-default installer per image proves
+        # onerous when using non-default BAs, we could support a `default`
+        # symlink under `default-snapshot-for-installer`.
+        rpm_installer = DEFAULT_RPM_INSTALLER,
         # Syntactically, this is a Buck target path.  But, it is **not**
         # used to depend on a Buck target.  A target may not even exist in
         # the current repo at this path.  Rather, this target path is
         # normalized, mangled, and then used to select a non-default child
         # of `/__fs_image__/rpm/repo-snapshot/` in the build appliance.  So
         # this refers to a target that got incorporated into the build
-        # appliance, whenever that image was built.  `None` uses the
-        # default.
+        # appliance, whenever that image was built.  `None` uses the default
+        # determined by looking up `rpm_installer` in
+        # `/__fs_image__/rpm/repo-snapshot/default-snapshot-for-installer`.
         rpm_repo_snapshot = None,
         # By default `RpmActionItem` will not populate
         # `/var/cache/{dnf,yum}` in the built image.  We set this flag to
@@ -32,11 +41,25 @@ def _build_opts(
         # is beneficial to have the BA's cache populated because it speeds
         # up `RpmActionItem` in builds based on this BA.
         preserve_yum_dnf_cache = False):
+    if build_appliance == None:
+        fail(
+            "Must be a target path, or a value from `constants.bzl`",
+            "build_appliance",
+        )
+
+    # When building the BA itself, we need this constant to avoid a circular
+    # dependency.
+    #
+    # This feature is exposed a non-`None` magic constant so that callers
+    # cannot get confused whether `None` refers to "no BA" or "default BA".
+    if build_appliance == DO_NOT_USE_BUILD_APPLIANCE:
+        build_appliance = None
     return struct(
         build_appliance = build_appliance,
         preserve_yum_dnf_cache = preserve_yum_dnf_cache,
+        rpm_installer = rpm_installer,
         rpm_repo_snapshot = (
-            mangle_target(rpm_repo_snapshot) if rpm_repo_snapshot else None
+            snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else None
         ),
         subvol_name = subvol_name,
     )
@@ -59,19 +82,7 @@ def compile_image_features(
     if features == None:
         features = []
 
-    build_opts_dict = build_opts._asdict() if build_opts else {}
-
-    # DO_NOT_USE_BUILD_APPLIANCE serves the single purpose: to avoid circular
-    # dependency
-    if (
-        "build_appliance" in build_opts_dict and
-        build_opts_dict["build_appliance"] == DO_NOT_USE_BUILD_APPLIANCE
-    ):
-        build_opts_dict.pop("build_appliance")
-    elif "build_appliance" not in build_opts_dict:
-        build_opts_dict["build_appliance"] = BUILD_APPLIANCE_TARGET
-
-    build_opts = _build_opts(**(build_opts_dict))
+    build_opts = _build_opts(**(build_opts._asdict() if build_opts else {}))
 
     allowed_host_mount_targets = native.read_config(
         "fs_image",
@@ -110,6 +121,7 @@ def compile_image_features(
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \
           {maybe_quoted_build_appliance_args} \
+          {maybe_quoted_rpm_installer_args} \
           {maybe_quoted_rpm_repo_snapshot_args} \
           {maybe_preserve_yum_dnf_cache_args} \
           {maybe_allowed_host_mount_target_args} \
@@ -173,6 +185,11 @@ def compile_image_features(
             "--build-appliance-json $(location {})/layer.json".format(
                 build_opts.build_appliance,
             ) if build_opts.build_appliance else ""
+        ),
+        maybe_quoted_rpm_installer_args = (
+            "--rpm-installer {}".format(
+                shell.quote(build_opts.rpm_installer),
+            ) if build_opts.rpm_installer else ""
         ),
         maybe_quoted_rpm_repo_snapshot_args = (
             "--rpm-repo-snapshot {}".format(

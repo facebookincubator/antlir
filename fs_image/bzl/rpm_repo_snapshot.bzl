@@ -3,6 +3,8 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//fs_image/bzl/image_actions:feature.bzl", "image_feature")
 load("//fs_image/bzl/image_actions:install.bzl", "image_install")
+load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
+load("//fs_image/bzl/image_actions:remove.bzl", "image_remove")
 load("//fs_image/bzl/image_actions:symlink.bzl", "image_symlink_dir")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
@@ -35,14 +37,11 @@ exec "$base_dir"/yum-dnf-from-snapshot \\
         )),
     )
 
-def snapshot_install_dir(snapshot):
-    return paths.join("/", RPM_SNAPSHOT_BASE_DIR, mangle_target(snapshot))
-
 def rpm_repo_snapshot(
         name,
         src,
         storage,
-        yum_dnf,
+        rpm_installers,
         repo_server_ports = (28889, 28890),
         visibility = None):
     '''
@@ -58,13 +57,9 @@ def rpm_repo_snapshot(
         relative to the snapshot dir, both by this code, and later by
         `yum-dnf-from-snapshot` that runs in the build appliance.
 
-      - `yum_dnf`: A tuple of 'yum', or 'dnf', or both.  ORDER MATTERS: the
-        first package manager is the one that gets used by default.
-
-        The snapshot uses the first element of `yum_dnf` as the default
-        package manager.  The tuple is allowed to contain just one element
-        because the snapshotted repos might be compatible with (or tested
-        with) only one but not the other.
+      - `rpm_installers`: A tuple of 'yum', or 'dnf', or both.  The
+         snapshotted repos might be compatible with (or tested with) only
+         one package manager but not with the other.
 
       - `repo_server_ports`: Hardcodes into the snapshot some localhost
         ports, on which the RPM repo snapshots will be served.  Hardcoding
@@ -89,10 +84,13 @@ def rpm_repo_snapshot(
         the normalized target name (akin to `mangle_target`), so that they
         wouldn't avoid collision by default.
     '''
-    if not yum_dnf or not all([(p in ["yum", "dnf"]) for p in yum_dnf]):
+    if not rpm_installers or not all([
+        (p in ["yum", "dnf"])
+        for p in rpm_installers
+    ]):
         fail(
-            'Must list at least one of "yum" / "dnf", got {}'.format(yum_dnf),
-            "yum_dnf",
+            'Must contain >= 1 of "yum" / "dnf", got {}'.format(rpm_installers),
+            "rpm_installers",
         )
 
     # For tests, we want relative `base_dir` to point into the snapshot dir.
@@ -151,11 +149,6 @@ cp $(location {repo_server_wrapper}) "$OUT"/repo-server
 # It's possible but harder to parse these from a rewritten `yum|dnf.conf`.
 echo {quoted_repo_server_ports} > "$OUT"/repo_server_ports
 
-# `RpmActionItem` uses this to select the default package manager.  This has
-# a trailing newline to be bash-friendly.  It's part of the contract.  In
-# the future, we might also add an `"$OUT"/yum_dnf_default` binary.
-echo {quoted_yum_dnf_default} > "$OUT"/yum_dnf_default.name
-
 # Save rewritten `yum|dnf.conf` files that are ready to serve the snapshot.
 $(exe //fs_image/rpm:write-yum-dnf-conf) \\
     --output-dir "$OUT"/etc \\
@@ -174,22 +167,21 @@ mkdir "$OUT"/bin
             yum_dnf_from_snapshot_wrapper = yum_dnf_from_snapshot_wrapper,
             repo_server_wrapper = repo_server_wrapper,
             quoted_repo_server_ports = quoted_repo_server_ports,
-            quoted_yum_dnf_default = shell.quote(yum_dnf[0]),
             quoted_install_dir = shell.quote(snapshot_install_dir(":" + name)),
             quoted_write_conf_args = " ".join([
-                '--write-conf {k} "$OUT"/{k}.conf {p}'.format(
-                    k = shell.quote(kind),
+                '--write-conf {ri} "$OUT"/{ri}.conf {p}'.format(
+                    ri = shell.quote(rpm_installer),
                     p = quoted_repo_server_ports,
                 )
-                for kind in yum_dnf
+                for rpm_installer in rpm_installers
             ]),
             # Only install binaries this snapshot claims to support.
             maybe_add_bin_dnf = (
                 'cp $(location //fs_image/bzl:dnf) "$OUT"/bin/dnf'
-            ) if "dnf" in yum_dnf else "",
+            ) if "dnf" in rpm_installers else "",
             maybe_add_bin_yum = (
                 'cp $(location //fs_image/bzl:yum) "$OUT"/bin/yum'
-            ) if "yum" in yum_dnf else "",
+            ) if "yum" in rpm_installers else "",
         ),
         # This rule is not cacheable due to `maybe_wrap_executable_target`
         # above.  Technically, we could make it cacheable in @mode/opt, but
@@ -201,19 +193,36 @@ mkdir "$OUT"/bin
         visibility = get_visibility(visibility, name),
     )
 
-def install_rpm_repo_snapshot(snapshot, make_default = True):
+# Future: Once we have `ensure_dir_exists`, this can be implicit.
+def set_up_rpm_repo_snapshots():
+    return image_feature(features = [
+        image_mkdir("/", RPM_SNAPSHOT_BASE_DIR),
+        image_mkdir("/__fs_image__/rpm", "default-snapshot-for-installer"),
+    ])
+
+def install_rpm_repo_snapshot(snapshot):
     """
     Returns an `image.feature`, which installs the `rpm_repo_snapshot`
-    target in `snapshot` in its canonical location.  If `make_default` is
-    set, also makes a `default` symlink.
+    target in `snapshot` in its canonical location.
 
-    Requires some other feature to create `/<RPM_SNAPSHOT_BASE_DIR>`.
+    The layer must also include `set_up_rpm_repo_snapshots()`.
     """
     dest_dir = snapshot_install_dir(snapshot)
     features = [image_install(snapshot, dest_dir)]
-    if make_default:
-        features.append(image_symlink_dir(
-            dest_dir,
-            paths.join("/", RPM_SNAPSHOT_BASE_DIR, "default"),
-        ))
     return image_feature(features = features)
+
+def default_rpm_repo_snapshot_for(prog, snapshot):
+    """
+    Set the default snapshot for the given RPM installer.  The snapshot must
+    have been installed by `install_rpm_repo_snapshot()`.
+    """
+
+    # Keep in sync with `rpm_action.py` and `set_up_rpm_repo_snapshots()`
+    link_name = "__fs_image__/rpm/default-snapshot-for-installer/" + prog
+    return image_feature(features = [
+        # Silently replace the parent's default because there's not an
+        # obvious scenario in which this is an error, and so forcing the
+        # user to pass an explicit `replace_existing` flag seems unhelpful.
+        image_remove(link_name, must_exist = False),
+        image_symlink_dir(snapshot_install_dir(snapshot), link_name),
+    ])

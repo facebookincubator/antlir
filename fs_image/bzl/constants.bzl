@@ -1,6 +1,8 @@
 DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
 
-BUILD_APPLIANCE_TARGET = native.read_config(
+DEFAULT_BUILD_APPLIANCE = native.read_config(
     "fs_image",
-    "build_appliance",
+    "default_build_appliance",
 )
+
+DEFAULT_RPM_INSTALLER = native.read_config("fs_image", "default_rpm_installer")

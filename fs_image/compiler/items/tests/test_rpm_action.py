@@ -20,7 +20,8 @@ from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
 from .rpm_action_base import RpmActionItemTestBase
 
 
-class RpmActionItemTest(RpmActionItemTestBase, BaseItemTestCase):
+class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
+    'Tests not using self._YUM_DNF'
 
     def test_phase_orders(self):
         self.assertEqual(PhaseOrder.RPM_INSTALL, RpmActionItem(
@@ -30,17 +31,14 @@ class RpmActionItemTest(RpmActionItemTestBase, BaseItemTestCase):
             from_target='t', name='n', action=RpmAction.remove_if_exists,
         ).phase_order())
 
+
+class RpmActionItemTestImpl(RpmActionItemTestBase):
+    'Subclasses run these tests with concrete values of `self._YUM_DNF`.'
+
     def test_rpm_action_item_build_appliance(self):
         self._check_rpm_action_item_build_appliance(self._subvol_from_resource(
             __package__, 'host-test-build-appliance',
         ).path())
-
-
-class PackageSpecificRpmActionItemTestImpl(RpmActionItemTestBase):
-    '''
-    Subclasses execute the tests declared here with a concrete value of
-    `self._YUM_DNF`. Tests not using this toggle go in `RpmActionItemTest`.
-    '''
 
     def _opts(self):
         return DUMMY_LAYER_OPTS._replace(
@@ -168,15 +166,9 @@ class PackageSpecificRpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
 
-class YumRpmActionItemTestCase(
-    PackageSpecificRpmActionItemTestImpl, BaseItemTestCase
-):
+class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.yum
 
 
-class DefaultDnfRpmActionItemTestCase(
-    PackageSpecificRpmActionItemTestImpl, BaseItemTestCase
-):
-    # "repo-snapshot-for-tests" defaults to "dnf".  This is set to `None`
-    # to exercise the crucial "defaulted package manager" code path.
-    _YUM_DNF = None
+class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
+    _YUM_DNF = YumDnf.dnf
