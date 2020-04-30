@@ -29,7 +29,8 @@ def yum_or_dnf_wrapper(name):
 set -ue -o pipefail -o noclobber
 my_path=\\$(readlink -f "$0")
 my_dir=\\$(dirname "$my_path")
-base_dir=\\$(dirname "$my_dir")
+installer_dir=\\$(dirname "$my_dir")
+base_dir=\\$(dirname "$installer_dir")
 exec "$base_dir"/yum-dnf-from-snapshot \\
     --snapshot-dir "$base_dir" \\
     {yum_or_dnf} -- "$@"
@@ -85,6 +86,7 @@ def rpm_repo_snapshot(
         wouldn't avoid collision by default.
     '''
     if not rpm_installers or not all([
+        # CAREFUL: Below we assume that installer names need no shell-quoting.
         (p in ["yum", "dnf"])
         for p in rpm_installers
     ]):
@@ -122,66 +124,73 @@ def rpm_repo_snapshot(
             for p in sorted(collections.uniq(repo_server_ports))
         ]),
     )
+
+    # For each RPM installer supported by the snapshot, install:
+    #   - A rewritten config that is ready to serve the snapshot (assuming
+    #     that its repo-servers are started).  `yum-dnf-from-snapshot` knows
+    #     to search the location we set in `--install-dir`.
+    #   - A transparent wrapper that runs the RPM installer with extra
+    #     sandboxing, and using our rewritten config.  Each binary goes in
+    #     `bin` subdir, making it easy to add any one binary to `PATH`.
+    per_installer_cmds = []
+    for rpm_installer in rpm_installers:
+        per_installer_cmds.append('''
+mkdir -p "$OUT"/{prog}/bin
+cp $(location //fs_image/bzl:{prog}) "$OUT"/{prog}/bin/{prog}
+
+$(exe //fs_image/rpm:write-yum-dnf-conf) \\
+    --rpm-installer {prog} \\
+    --input-conf "$OUT"/snapshot/{prog}.conf \\
+    --output-dir "$OUT"/{prog}/etc \\
+    --install-dir {quoted_install_dir}/{prog}/etc \\
+    --repo-server-ports {quoted_repo_server_ports} \\
+
+'''.format(
+            prog = rpm_installer,
+            quoted_install_dir = shell.quote(snapshot_install_dir(":" + name)),
+            quoted_repo_server_ports = quoted_repo_server_ports,
+        ))
+
     buck_genrule(
         name = name,
         out = "ignored",
         bash = '''\
 set -ue -o pipefail -o noclobber
 
-# Rebuild RPM snapshots if this bzl (or its dependencies) change
+# Make sure FB CI considers RPM snapshots changed if this bzl (or its
+# dependencies) change.
 echo $(location //fs_image/bzl:rpm_repo_snapshot) > /dev/null
 
-# Copy the basic snapshot, e.g. `snapshot.storage_id`, `repos`, `yum|dnf.conf`
-cp --no-target-directory -r $(location {src}) "$OUT"
+mkdir "$OUT"
 
-$(exe //fs_image/rpm/storage:cli) --storage {quoted_cli_storage_cfg} \
-    get "\\$(cat "$OUT"/snapshot.storage_id)" > "$OUT"/snapshot.sql3
+# Copy the basic snapshot, e.g. `snapshot.storage_id`, `repos`, `yum|dnf.conf`
+cp --no-target-directory -r $(location {src}) "$OUT/snapshot"
+
+$(exe //fs_image/rpm/storage:cli) --storage {quoted_cli_storage_cfg} \\
+    get "\\$(cat "$OUT"/snapshot/snapshot.storage_id)" \\
+        > "$OUT"/snapshot/snapshot.sql3
 # Write-protect the SQLite DB because it's common to use the `sqlite3` to
 # inspect it, and it's otherwise very easy to accidentally mutate the build
 # artifact, which is a big no-no.
-chmod a-w "$OUT"/snapshot.sql3
-
-# Many programs access the storage config: `yum`, `dnf`, `nspawn-in-subvol`
-echo {quoted_storage_cfg} > "$OUT"/storage.json
+chmod a-w "$OUT"/snapshot/snapshot.sql3
 
 cp $(location {yum_dnf_from_snapshot_wrapper}) "$OUT"/yum-dnf-from-snapshot
+
 cp $(location {repo_server_wrapper}) "$OUT"/repo-server
 # It's possible but harder to parse these from a rewritten `yum|dnf.conf`.
-echo {quoted_repo_server_ports} > "$OUT"/repo_server_ports
+echo {quoted_repo_server_ports} > "$OUT"/ports-for-repo-server
+# Tells `repo-server`s how to connect to the snapshot storage.
+echo {quoted_storage_cfg} > "$OUT"/snapshot/storage.json
 
-# Save rewritten `yum|dnf.conf` files that are ready to serve the snapshot.
-$(exe //fs_image/rpm:write-yum-dnf-conf) \\
-    --output-dir "$OUT"/etc \\
-    --install-dir {quoted_install_dir}/etc \\
-    {quoted_write_conf_args}
-
-# The `bin` directory exists so that "porcelain" binaries can potentially be
-# added to `PATH`.  But we should avoid doing this in production code.
-mkdir "$OUT"/bin
-{maybe_add_bin_dnf}
-{maybe_add_bin_yum}
+{per_installer_cmds}
         '''.format(
             src = maybe_export_file(src),
             quoted_cli_storage_cfg = shell.quote(struct(**cli_storage).to_json()),
-            quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
             yum_dnf_from_snapshot_wrapper = yum_dnf_from_snapshot_wrapper,
             repo_server_wrapper = repo_server_wrapper,
             quoted_repo_server_ports = quoted_repo_server_ports,
-            quoted_install_dir = shell.quote(snapshot_install_dir(":" + name)),
-            quoted_write_conf_args = " ".join([
-                '--write-conf {ri} "$OUT"/{ri}.conf {p}'.format(
-                    ri = shell.quote(rpm_installer),
-                    p = quoted_repo_server_ports,
-                )
-                for rpm_installer in rpm_installers
-            ]),
-            # Only install binaries this snapshot claims to support.
-            maybe_add_bin_dnf = (
-                'cp $(location //fs_image/bzl:dnf) "$OUT"/bin/dnf'
-            ) if "dnf" in rpm_installers else "",
-            maybe_add_bin_yum = (
-                'cp $(location //fs_image/bzl:yum) "$OUT"/bin/yum'
-            ) if "yum" in rpm_installers else "",
+            quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
+            per_installer_cmds = "\n".join(per_installer_cmds),
         ),
         # This rule is not cacheable due to `maybe_wrap_executable_target`
         # above.  Technically, we could make it cacheable in @mode/opt, but

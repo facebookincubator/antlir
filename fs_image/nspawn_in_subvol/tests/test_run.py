@@ -534,7 +534,8 @@ class NspawnTestCase(unittest.TestCase):
                     set -ex
                     mkdir /target
                     {prog} \\
-                        --config={_SNAPSHOT_DIR}/etc/{prog}/{prog}.conf \\
+                        --config={
+                            _SNAPSHOT_DIR}/{prog}/etc/{prog}/{prog}.conf \\
                         --installroot=/target -y install {package} |
                             tee /proc/self/fd/3
                     # We install only 1 RPM, so a glob tells us the filename.
