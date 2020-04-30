@@ -73,7 +73,7 @@ from fs_image.send_fds_and_run import popen_and_inject_fds_after_sudo
 
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
-from .common import _PopenWrapper
+from .common import DEFAULT_PATH, _PopenWrapper
 
 log = get_file_logger(__file__)
 
@@ -277,7 +277,7 @@ def _popen_nsenter_into_systemd(
     default_env = {
         'HOME': opts.user.pw_dir,
         'LOGNAME': opts.user.pw_name,
-        'PATH': '/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin',
+        'PATH': ':'.join(DEFAULT_PATH),
         'USER': opts.user.pw_name,
         'TERM': os.environ.get('TERM')
     }
