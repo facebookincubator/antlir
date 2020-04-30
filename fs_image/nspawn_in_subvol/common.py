@@ -9,6 +9,21 @@ import subprocess
 
 from typing import Any, Callable
 
+# This determines which binaries we shadow.  Our runtimes are expected to
+# ensure that this is the PATH for the user command in the container.
+#
+# For now, the non-booted case implicitly uses the `systemd-nspawn` default
+# `PATH`, so if that changes our test will fail.  That test failure in time
+# will be an opportunity to decide whether to set our own, or follow.
+DEFAULT_PATH = [
+    '/usr/local/sbin',
+    '/usr/local/bin',
+    '/usr/sbin',
+    '/usr/bin',
+    '/sbin',
+    '/bin',
+]
+
 _PopenCtxMgr = Any  # Quacks like `popen_{non_,}booted_nspawn`
 # The intention of this wrapper API is to allow users of `run_*_nspawn` to
 # wrap the underlying `popen_*_nspawn` implementation uniformly, without

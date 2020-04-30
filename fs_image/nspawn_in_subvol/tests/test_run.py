@@ -24,7 +24,7 @@ from fs_image.rpm.find_snapshot import snapshot_install_dir
 from fs_image.tests.temp_subvolumes import with_temp_subvols
 
 from ..args import _parse_cli_args, PopenArgs
-from ..common import _nspawn_version
+from ..common import _nspawn_version, DEFAULT_PATH
 from ..cmd import _extra_nspawn_args_and_env
 from ..run import _set_up_run_cli
 
@@ -622,3 +622,21 @@ class NspawnTestCase(unittest.TestCase):
                 extra_args=('--snapshot-to-versionlock', _SNAPSHOT_DIR, vl),
                 check_ret_fn=_not_reached,
             )
+
+    # The default path determines which binaries get shadowed, so it's
+    # important that it be the same across the board.
+    def test_path_env(self):
+        for layer in ['host', 'build-appliance', 'bootable-systemd-os']:
+            for extra_args, expected_path in [
+                [[], ':'.join(DEFAULT_PATH)],
+                [['--user=root'], ':'.join(DEFAULT_PATH)],
+                [['--setenv=PATH=/foo:/bin'], '/foo:/bin'],
+            ]:
+                with self.subTest((layer, extra_args)):
+                    self.assertEqual(
+                        expected_path + '\n',
+                        self._nspawn_in(
+                            layer, [*extra_args, '--', 'printenv', 'PATH'],
+                            stdout=subprocess.PIPE,
+                        ).stdout.decode(),
+                    )
