@@ -146,7 +146,7 @@ def launch_repo_servers_for_netns(
 
     Yields a list of (host, port) pairs where the servers will listen.
     '''
-    with open(snapshot_dir / 'repo_server_ports') as infile:
+    with open(snapshot_dir / 'ports-for-repo-server') as infile:
         repo_server_ports = {int(v) for v in infile.read().split() if v}
     with ExitStack() as stack:
         # Start a repo-server instance per port.  Give each one a socket
@@ -158,7 +158,7 @@ def launch_repo_servers_for_netns(
         ):
             sock.bind(('127.0.0.1', port))
             stack.enter_context(_launch_repo_server(
-                sock=sock, snapshot_dir=snapshot_dir, **kwargs,
+                sock=sock, snapshot_dir=snapshot_dir / 'snapshot', **kwargs,
             ))
             log.info(f"Launched repo-server on {port} in {target_pid}'s netns")
         yield

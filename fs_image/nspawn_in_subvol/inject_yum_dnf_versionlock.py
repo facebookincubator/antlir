@@ -46,15 +46,15 @@ def _prepare_versionlock_lists(
     # `dnf` and `yum` expect different formats, so we parse our own.
     with open(list_path) as rf:
         envras = [l.split('\t') for l in rf]
-    templates = {b'yum': '{e}:{n}-{v}-{r}.{a}', b'dnf': '{n}-{e}:{v}-{r}.{a}'}
+    templates = {'yum': '{e}:{n}-{v}-{r}.{a}', 'dnf': '{n}-{e}:{v}-{r}.{a}'}
     dest_to_src_and_size = {}
     with temp_dir() as d:
         # Only bind-mount lists for those binaries that exist in the snapshot.
-        for prog in (subvol.path(snapshot_dir) / 'bin').listdir():
-            template = templates.get(prog)
-            # For now, `bin` has <= 2 binaries, but this can be relaxed later:
-            assert template, prog
-            src = d / (prog + b'-versionlock.list')
+        for prog in set(
+            f'{p}' for p in (subvol.path(snapshot_dir)).listdir()
+        ) & set(templates.keys()):
+            template = templates[prog]
+            src = d / (prog + '-versionlock.list')
             with create_ro(src, 'w') as wf:
                 for e, n, v, r, a in envras:
                     wf.write(template.format(e=e, n=n, v=v, r=r, a=a))
@@ -62,7 +62,7 @@ def _prepare_versionlock_lists(
                 dest_to_src_and_size,
                 # This path convention must match how `write_yum_dnf_conf.py`
                 # and `rpm_repo_snapshot.bzl` set up their output.
-                snapshot_dir / f'etc/{prog}/plugins/versionlock.list',
+                snapshot_dir / f'{prog}/etc/{prog}/plugins/versionlock.list',
                 (src, len(envras))
             )
         yield dest_to_src_and_size

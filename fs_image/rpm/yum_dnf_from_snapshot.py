@@ -330,12 +330,12 @@ def yum_dnf_from_snapshot(
     _ensure_fs_image_container()
     _ensure_private_network()
 
+    prog_name = yum_dnf.value
     # This path convention must match how `write_yum_dnf_conf.py` and
     # `rpm_repo_snapshot.bzl` set up their output.
-    conf_path = snapshot_dir / f'etc/{yum_dnf.value}/{yum_dnf.value}.conf'
+    conf_path = snapshot_dir / f'{prog_name}/etc/{prog_name}/{prog_name}.conf'
     install_root = _install_root(conf_path, yum_dnf_args)
 
-    prog_name = yum_dnf.value
     # The paths that have trailing slashes are directories, others are
     # files.  There's a separate code path for protecting some files above.
     # The rationale is that those files are not guaranteed to exist.

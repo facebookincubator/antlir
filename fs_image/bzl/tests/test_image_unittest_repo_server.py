@@ -15,20 +15,14 @@ from fs_image.rpm.find_snapshot import snapshot_install_dir
 class ImageUnittestTestRepoServer(unittest.TestCase):
 
     def test_install_rpm(self):
-        # Check all available package managers.
-        snapshot_bin = snapshot_install_dir(
+        snapshot_dir = snapshot_install_dir(
             '//fs_image/rpm:repo-snapshot-for-tests'
-        ) / 'bin'
-        package_mgr_bins = snapshot_bin.listdir()
-        self.assertNotEqual([], package_mgr_bins)
-        # We may lose this assertion later, but for now check explicitly
-        # that both binaries are tested.
-        self.assertEqual({b'dnf', b'yum'}, set(package_mgr_bins))
-        for prog in package_mgr_bins:
+        )
+        for prog in ('dnf', 'yum'):
             with temp_dir() as td:
                 os.mkdir(td / 'meta')
                 subprocess.check_call([
-                    snapshot_bin / prog,
+                    snapshot_dir / prog / 'bin' / prog,
                     f'--installroot={td}',
                     'install', '--assumeyes', 'rpm-test-carrot',
                 ])

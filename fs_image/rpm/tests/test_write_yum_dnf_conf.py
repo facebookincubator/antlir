@@ -85,9 +85,11 @@ class WriteYumDnfConfTestImpl:
             with create_ro(td / 'in', 'w') as outf:
                 outf.write(_CONF_IN)
             wydc.main([
+                f'--rpm-installer={self._YUM_DNF.value}',
+                f'--input-conf={td / "in"}',
                 f'--output-dir={td / "out"}',
                 f'--install-dir={install_dir}',
-                *('--write-conf', self._YUM_DNF.value, td / 'in', '1234 5678'),
+                '--repo-server-ports=1234 5678',
             ])
             with open(td / f'out/{prog_name}/{prog_name}.conf') as infile:
                 self.assertEqual(expected_out, infile.read())

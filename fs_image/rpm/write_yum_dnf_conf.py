@@ -97,33 +97,35 @@ def main(argv: List[str]):
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument('--rpm-installer', required=True, type=YumDnf)
+    parser.add_argument(
+        '--input-conf', required=True, type=Path.from_argparse,
+        help='The `yum` or `dnf` config file to rewrite',
+    )
     parser.add_argument(
         '--output-dir', required=True, type=Path.from_argparse,
-        help='Write the configs here -- this is for the snapshot being built.',
+        help='Write new configs here, part of the snapshot build artifact',
     )
     parser.add_argument(
         '--install-dir', required=True, type=Path.from_argparse,
-        help='In the container, `--output-dir` will be installed here.',
+        help='In the container, `--output-dir` will be available here',
     )
     parser.add_argument(
-        '--write-conf', action='append', nargs=3,
-        metavar=('yum|dnf', 'in_path', 'repo_server_ports'),
-        help='Rewrite `input_path` config to access `repo-server` proxies '
-            'serving the RPM repo snapshot on the specified `localhost` '
-            'ports. Saves the new config and its plugins under `--output-dir`.',
+        '--repo-server-ports', required=True,
+        help='The rewritten config will direct the RPM installer to talk to '
+            '`repo-server` proxies listenting on `localhost:<PORT>`s'
     )
     args = Path.parse_args(parser, argv)
 
-    with populate_temp_dir_and_rename(args.output_dir) as td:
-        for yum_dnf_str, in_path, ports in args.write_conf:
-            with open(in_path, 'r') as infile:
-                write_yum_dnf_conf(
-                    yum_dnf=YumDnf(yum_dnf_str),
-                    infile=infile,
-                    out_dir=td,
-                    install_dir=args.install_dir,
-                    ports=[int(p) for p in ports.split()],
-                )
+    with populate_temp_dir_and_rename(args.output_dir) as td, \
+            open(args.input_conf, 'r') as infile:
+        write_yum_dnf_conf(
+            yum_dnf=args.rpm_installer,
+            infile=infile,
+            out_dir=td,
+            install_dir=args.install_dir,
+            ports=[int(p) for p in args.repo_server_ports.split()],
+        )
 
 
 if __name__ == '__main__':  # pragma: no cover
