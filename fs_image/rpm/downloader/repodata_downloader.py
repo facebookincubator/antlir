@@ -125,7 +125,7 @@ def _download_repodatas(
     repodata_table = RepodataTable()
     primary_repodata = pick_primary_repodata(repomd.repodatas)
     log_size(f"`{repo.name}` repodata weighs", sum(rd.size for rd in repomd.repodatas))
-    rw_db_ctx = cfg.new_db_ctx(readonly=False)
+    rw_db_conn = cfg.new_db_conn(readonly=False)
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
             executor.submit(
@@ -151,7 +151,7 @@ def _download_repodatas(
                 # encounter fatal errors later on in the execution and don't
                 # finish the snapshot - see top-level docblock for reasoning
                 storage_id = maybe_write_id(
-                    res.repodata, res.storage_id, repodata_table, rw_db_ctx
+                    res.repodata, res.storage_id, repodata_table, rw_db_conn
                 )
             else:
                 storage_id = res.storage_id

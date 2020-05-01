@@ -10,6 +10,7 @@ import urllib.parse
 from contextlib import contextmanager
 from io import BytesIO
 from typing import (
+    ContextManager,
     Dict,
     FrozenSet,
     Iterable,
@@ -21,7 +22,7 @@ from typing import (
 )
 
 from fs_image.common import get_file_logger
-from fs_image.rpm.common import RpmShard
+from fs_image.rpm.common import DecorateContextEntry, RpmShard, retryable
 from fs_image.rpm.db_connection import DBConnectionContext
 from fs_image.rpm.open_url import open_url
 from fs_image.rpm.repo_db import RepoDBContext, RepodataTable
@@ -36,7 +37,32 @@ from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 # incremental decompression in `parse_repodata.py`, and its API has a
 # complexity bug that makes it slow for large INPUT_CHUNK/OUTPUT_CHUNK.
 BUFFER_BYTES = 2 ** 19
+DB_MAX_RETRY_S = [2 ** i for i in range(8)]  # 255 sec == 4m15s
 log = get_file_logger(__file__)
+
+
+def _is_retryable_mysql_err(e: Exception) -> bool:  # pragma: no cover
+    # Want to catch MySQLdb.OperationalError, which indicates a potentially
+    # transient error, but don't want to import MySQLdb here, as it isn't a
+    # dependency of this module otherwise. This approach is tested in
+    # rpm/facebook/tests/test_fb_rpm_downloader.py
+    return (
+        type(e).__module__ == "MySQLdb._exceptions"
+        and type(e).__qualname__ == "OperationalError"
+    )
+
+
+def retryable_db_ctx(
+    db_conn: DBConnectionContext
+) -> ContextManager[RepoDBContext]:
+    return DecorateContextEntry(
+        RepoDBContext(db_conn, db_conn.SQL_DIALECT),
+        retryable(
+            "DB connection error",
+            DB_MAX_RETRY_S,
+            is_exception_retryable=_is_retryable_mysql_err,
+        ),
+    )
 
 
 # Lightweight configuration used by various parts of the download
@@ -46,13 +72,12 @@ class DownloadConfig(NamedTuple):
     rpm_shard: RpmShard
     threads: int
 
-    def new_db_conn(self, *, readonly: bool):
+    def new_db_conn(self, *, readonly: bool) -> DBConnectionContext:
         assert "readonly" not in self.db_cfg, "readonly is picked by the caller"
         return DBConnectionContext.from_json({**self.db_cfg, "readonly": readonly})
 
-    def new_db_ctx(self, *, readonly: bool):
-        db_conn = self.new_db_conn(readonly=readonly)
-        return RepoDBContext(db_conn, db_conn.SQL_DIALECT)
+    def new_db_ctx(self, *, readonly: bool) -> ContextManager[RepoDBContext]:
+        return retryable_db_ctx(self.new_db_conn(readonly=readonly))
 
     def new_storage(self):
         return Storage.from_json(self.storage_cfg)
@@ -145,11 +170,11 @@ def maybe_write_id(
     repo_obj: Union[Repodata, Rpm],
     storage_id: str,
     table: RepodataTable,
-    db_ctx: RepoDBContext,
+    db_conn: DBConnectionContext,
 ):
     """Used to write a storage_id to repo_db after a download."""
     with timeit(f"Writing storage ID {storage_id}", threshold_s=10):
-        with db_ctx as repo_db_ctx:
+        with retryable_db_ctx(db_conn) as repo_db_ctx:
             db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
             repo_db_ctx.commit()
     _log_if_storage_ids_differ(repo_obj, storage_id, db_storage_id)
