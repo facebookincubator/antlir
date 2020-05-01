@@ -10,12 +10,22 @@ import time
 import os
 import unittest
 
+from contextlib import AbstractContextManager
 from io import BytesIO
 from unittest import mock
 
 from ..common import (
-    Checksum, log as common_log, read_chunks, retryable, retry_fn,
-    async_retryable, async_retry_fn, RpmShard, has_yum, yum_is_dnf
+    Checksum,
+    DecorateContextEntry,
+    log as common_log,
+    read_chunks,
+    retryable,
+    retry_fn,
+    async_retryable,
+    async_retry_fn,
+    RpmShard,
+    has_yum,
+    yum_is_dnf
 )
 
 from fs_image.fs_utils import Path, temp_dir
@@ -279,3 +289,42 @@ class TestCommon(unittest.TestCase):
                 mock_which.side_effect = lambda p: mock_paths[p].decode()
 
                 self.assertTrue(yum_is_dnf())
+
+    def test_decorate_context_entry(self):
+
+        class ExCustomErr(Exception):
+            pass
+
+        def catch_it(fn):
+            """Decorator that simply catches `ExCustomErr` and returns whether
+            an error was raised by `fn` or not.
+            """
+            def decorated(*args, **kwargs):
+                try:
+                    fn(*args, **kwargs)
+                    return 'entered'
+                except ExCustomErr:
+                    return 'caught'
+            return decorated
+
+        class ExCtxMgr(AbstractContextManager):
+            def __init__(self, will_raise: bool):
+                self.will_raise = will_raise
+
+            def __enter__(self):
+                if self.will_raise:
+                    raise ExCustomErr
+
+            def __exit__(self, *args, **kwargs):
+                pass
+
+        # Ensure our test context manager is working as expected
+        with self.assertRaises(ExCustomErr):
+            with ExCtxMgr(True):
+                pass
+
+        # Ensure our manager properly applies decorator on entry
+        with DecorateContextEntry(ExCtxMgr(True), catch_it) as res:
+            self.assertEqual(res, 'caught')
+        with DecorateContextEntry(ExCtxMgr(False), catch_it) as res:
+            self.assertEqual(res, 'entered')

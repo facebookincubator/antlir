@@ -11,6 +11,7 @@ from typing import FrozenSet, Iterable, Iterator, Set, Tuple
 
 from fs_image.common import get_file_logger, set_new_key, shuffled
 from fs_image.rpm.common import read_chunks, retryable
+from fs_image.rpm.db_connection import DBConnectionContext
 from fs_image.rpm.downloader.common import (
     BUFFER_BYTES,
     DownloadConfig,
@@ -18,10 +19,11 @@ from fs_image.rpm.downloader.common import (
     download_resource,
     log_size,
     maybe_write_id,
+    retryable_db_ctx,
     verify_chunk_stream,
 )
 from fs_image.rpm.downloader.deleted_mutable_rpms import deleted_mutable_rpms
-from fs_image.rpm.repo_db import RepoDBContext, RpmTable
+from fs_image.rpm.repo_db import RpmTable
 from fs_image.rpm.repo_objects import CANONICAL_HASH, Checksum, Rpm
 from fs_image.rpm.repo_snapshot import (
     HTTPError,
@@ -31,8 +33,8 @@ from fs_image.rpm.repo_snapshot import (
 )
 from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
+
 RPM_MAX_RETRY_S = [2 ** i for i in range(9)]  # 512 sec ==  8m32s
-DB_MAX_RETRY_S = [2 ** i for i in range(8)]  # 256 sec == 4m16s
 log = get_file_logger(__file__)
 
 
@@ -45,25 +47,14 @@ def _is_retryable_http_err(e: Exception) -> bool:
     return status // 100 == 5 or status == 408
 
 
-def _is_retryable_mysql_err(e: Exception) -> bool:  # pragma: no cover
-    # Want to catch MySQLdb.OperationalError, which indicates a potentially
-    # transient error, but don't want to import MySQLdb here, as it isn't a
-    # dependency of this module otherwise. This approach is tested in
-    # rpm/facebook/tests/test_fb_rpm_downloader.py
-    return (
-        type(e).__module__ == "MySQLdb._exceptions"
-        and type(e).__qualname__ == "OperationalError"
-    )
-
-
 def _detect_mutable_rpms(
     rpm: Rpm,
     rpm_table: RpmTable,
     storage_id: str,
     all_snapshot_universes: Set[str],
-    db_ctx: RepoDBContext,
+    db_conn: DBConnectionContext,
 ) -> MaybeStorageID:
-    with db_ctx as repo_db_ctx:
+    with retryable_db_ctx(db_conn) as repo_db_ctx:
         all_canonical_checksums = set(
             repo_db_ctx.get_rpm_canonical_checksums(
                 rpm_table, rpm, all_snapshot_universes
@@ -133,14 +124,13 @@ def _download_rpm(
     return rpm, storage_id
 
 
-@retryable(
-    "Exception while querying database for {rpm}",
-    DB_MAX_RETRY_S,
-    is_exception_retryable=_is_retryable_mysql_err,
-)
-def _get_rpm_storage_id_and_checksum(
-    rpm_table: RpmTable, rpm: Rpm, cfg: DownloadConfig
-) -> Tuple[str, Checksum]:
+def _handle_rpm(
+    rpm: Rpm,
+    repo_url: str,
+    rpm_table: RpmTable,
+    all_snapshot_universes: Set[str],
+    cfg: DownloadConfig,
+) -> Tuple[Rpm, MaybeStorageID]:
     with cfg.new_db_ctx(readonly=True) as ro_repo_db:
         # If we get no `storage_id` back, there are 3 possibilities:
         #  - `rpm.nevra()` was never seen before.
@@ -158,17 +148,9 @@ def _get_rpm_storage_id_and_checksum(
         #    actually get valuable information from the download --
         #    this lets us know whether the file is wrong or the
         #    repodata is wrong.
-        return ro_repo_db.get_rpm_storage_id_and_checksum(rpm_table, rpm)
-
-
-def _handle_rpm(
-    rpm: Rpm,
-    repo_url: str,
-    rpm_table: RpmTable,
-    all_snapshot_universes: Set[str],
-    cfg: DownloadConfig,
-) -> Tuple[Rpm, MaybeStorageID]:
-    storage_id, canonical_chk = _get_rpm_storage_id_and_checksum(rpm_table, rpm, cfg)
+        storage_id, canonical_chk = ro_repo_db.get_rpm_storage_id_and_checksum(
+            rpm_table, rpm
+        )
     # If the RPM is already stored with a matching checksum, just update its
     # `.canonical_checksum`.
     if storage_id:
@@ -196,8 +178,8 @@ def _download_rpms(
 ):
     log_size(f"`{repo.name}` has {len(rpms)} RPMs weighing", sum(r.size for r in rpms))
     storage_id_to_rpm = {}
-    rw_db_ctx = cfg.new_db_ctx(readonly=False)
-    ro_db_ctx = cfg.new_db_ctx(readonly=True)
+    rw_db_conn = cfg.new_db_conn(readonly=False)
+    ro_db_conn = cfg.new_db_conn(readonly=True)
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
             executor.submit(
@@ -214,11 +196,11 @@ def _download_rpms(
                 # whether we encounter fatal errors later on in the execution and
                 # don't finish the snapshot - see top-level docblock for reasoning
                 res_storage_id = maybe_write_id(
-                    rpm, res_storage_id, rpm_table, rw_db_ctx
+                    rpm, res_storage_id, rpm_table, rw_db_conn
                 )
                 # Detect if this RPM NEVRA occurs with different contents.
                 res_storage_id = _detect_mutable_rpms(
-                    rpm, rpm_table, res_storage_id, all_snapshot_universes, ro_db_ctx
+                    rpm, rpm_table, res_storage_id, all_snapshot_universes, ro_db_conn
                 )
             set_new_key(storage_id_to_rpm, res_storage_id, rpm)
 

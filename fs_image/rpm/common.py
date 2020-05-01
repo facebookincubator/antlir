@@ -11,10 +11,13 @@ import os
 import shutil
 import struct
 import time
+from contextlib import AbstractContextManager
 from functools import wraps
 
 from io import BytesIO
-from typing import Callable, Iterable, NamedTuple, Optional, TypeVar
+from typing import (
+    Callable, ContextManager, Generic, Iterable, NamedTuple, Optional, TypeVar
+)
 
 from fs_image.common import byteme, get_file_logger
 
@@ -22,6 +25,19 @@ from fs_image.common import byteme, get_file_logger
 log = get_file_logger(__file__)
 _UINT64_STRUCT = struct.Struct('=Q')
 T = TypeVar('T')
+
+
+class DecorateContextEntry(Generic[T], AbstractContextManager):
+    '''Lightweight helper class to decorate context manager __enter__'''
+    def __init__(self, ctx_mgr: ContextManager[T], decorator):
+        self._ctx_mgr = ctx_mgr
+        self._decorator = decorator
+
+    def __enter__(self):
+        return self._decorator(self._ctx_mgr.__enter__)()
+
+    def __exit__(self, *args, **kwargs):
+        return self._ctx_mgr.__exit__(*args, **kwargs)
 
 
 def retry_fn(
