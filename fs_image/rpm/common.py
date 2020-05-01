@@ -28,7 +28,7 @@ def retry_fn(
     retryable_fn: Callable[[], T],
     is_exception_retryable: Optional[Callable[[Exception], bool]] = None,
     *,
-    delays: Optional[Iterable[float]] = None,
+    delays: Iterable[float],
     what: str,
     log_exception: bool = True,
 ) -> T:
@@ -41,8 +41,6 @@ def retry_fn(
 
     Delays are in seconds.
     '''
-    if delays is None:
-        delays = []
     for i, delay in enumerate(delays):
         try:
             return retryable_fn()
@@ -91,15 +89,13 @@ async def async_retry_fn(
     retryable_fn: Callable[[], T],
     is_exception_retryable: Optional[Callable[[Exception], bool]] = None,
     *,
-    delays: Optional[Iterable[float]] = None,
+    delays: Iterable[float],
     what: str,
     log_exception: bool = True,
 ) -> T:
     ''' Similar to retry_fn except the function is executed asynchronously.
     See retry_fn docblock for details.
     '''
-    if delays is None:
-        delays = []
     for i, delay in enumerate(delays):
         try:
             return await retryable_fn()
