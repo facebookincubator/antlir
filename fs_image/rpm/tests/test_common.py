@@ -69,7 +69,7 @@ class TestCommon(unittest.TestCase):
                 raise RuntimeError(self.attempts)
 
         self.assertEqual(1, retry_fn(
-            Retriable().run, what='succeeds immediately'
+            Retriable().run, delays=[], what='succeeds immediately'
         ))
 
         # Check log messages, and ensure that delays add up as expected
@@ -153,7 +153,7 @@ class TestCommon(unittest.TestCase):
         loop = asyncio.get_event_loop()
 
         self.assertEqual(1, loop.run_until_complete(async_retry_fn(
-            Retriable().run, what='succeeds immediately'
+            Retriable().run, delays=[], what='succeeds immediately'
         )))
 
         # Check log messages, and ensure that delays add up as expected
