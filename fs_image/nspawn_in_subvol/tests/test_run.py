@@ -24,7 +24,7 @@ from fs_image.rpm.find_snapshot import snapshot_install_dir
 from fs_image.tests.temp_subvolumes import with_temp_subvols
 
 from ..args import _parse_cli_args, PopenArgs
-from ..common import _nspawn_version, DEFAULT_PATH
+from ..common import _nspawn_version, DEFAULT_PATH_ENV
 from ..cmd import _extra_nspawn_args_and_env
 from ..run import _set_up_run_cli
 
@@ -628,15 +628,15 @@ class NspawnTestCase(unittest.TestCase):
     def test_path_env(self):
         for layer in ['host', 'build-appliance', 'bootable-systemd-os']:
             for extra_args, expected_path in [
-                [[], ':'.join(DEFAULT_PATH)],
-                [['--user=root'], ':'.join(DEFAULT_PATH)],
-                [['--setenv=PATH=/foo:/bin'], '/foo:/bin'],
+                [[], DEFAULT_PATH_ENV],
+                [['--user=root'], DEFAULT_PATH_ENV],
+                [['--setenv=PATH=/foo:/bin'], b'/foo:/bin'],
             ]:
                 with self.subTest((layer, extra_args)):
                     self.assertEqual(
-                        expected_path + '\n',
+                        expected_path + b'\n',
                         self._nspawn_in(
                             layer, [*extra_args, '--', 'printenv', 'PATH'],
                             stdout=subprocess.PIPE,
-                        ).stdout.decode(),
+                        ).stdout,
                     )
