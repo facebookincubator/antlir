@@ -8,6 +8,9 @@ License:      MIT
 Source0:      toy_src_file
 BuildArch:    noarch
 
+# To test rpmbuild dependency installation
+BuildRequires:  tree
+
 %description
 A very simple specfile for testing RPM builds
 

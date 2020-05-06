@@ -6,6 +6,7 @@ load("//fs_image/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_rpmbuild_layer")
 # Build a minimal RPM
 image_rpmbuild_layer(
     name = "toy-rpm-build",
+    serve_rpm_snapshots = ["//fs_image/rpm/facebook:fb_centos7"],
     source = "toy_srcs",
     specfile = "toy.spec",
 )
