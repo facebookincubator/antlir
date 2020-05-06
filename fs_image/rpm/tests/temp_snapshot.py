@@ -25,6 +25,8 @@ def _make_test_yum_dnf_conf(
         logfile=/var/log/{yum_dnf}.log
         pkgpolicy=newest
         showdupesfromrepos=1
+        gpgcheck=1
+        localpkg_gpgcheck=1
     ''') + '\n\n'.join(
         textwrap.dedent(f'''\
             [{repo}]
@@ -38,13 +40,15 @@ def _make_test_yum_dnf_conf(
 
 
 def make_temp_snapshot(
-    repos, out_dir, gpg_key_path, gpg_key_whitelist_dir,
+    repos, out_dir, gpg_signing_key, gpg_key_path, gpg_key_whitelist_dir,
 ) -> Path:
     'Generates temporary RPM repo snapshots for tests to use as inputs.'
     snapshot_dir = out_dir / 'temp_snapshot_dir'
     os.mkdir(snapshot_dir)
 
-    with temp_repos_steps(repo_change_steps=[repos]) as repos_root:
+    with temp_repos_steps(
+        repo_change_steps=[repos], gpg_signing_key=gpg_signing_key
+    ) as repos_root:
         snapshot_repos(
             dest=snapshot_dir,
             # `SnapshotReposTestCase` covers multi-universe handling
@@ -63,7 +67,7 @@ def make_temp_snapshot(
                 'base_dir': out_dir / 'storage',
             },
             rpm_shard=RpmShard(shard=0, modulo=1),
-            gpg_key_whitelist_dir=no_gpg_keys_yet,
+            gpg_key_whitelist_dir=gpg_key_whitelist_dir,
             exclude=frozenset(),
             threads=4,
         )
@@ -82,7 +86,11 @@ if __name__ == '__main__':
     kind_to_steps = {
         'sample-step-0': SAMPLE_STEPS[0],  # Used by most tests
         # Used to test non-default repo snapshot selection
-        'non-default': {'cheese': Repo([Rpm('cake', 'non', 'default')])},
+        'non-default': {
+            'cheese': Repo([
+                Rpm('cake', 'non', 'default'), Rpm('cheese', '0', '0')
+            ])
+        },
     }
 
     parser = argparse.ArgumentParser(
@@ -91,6 +99,9 @@ if __name__ == '__main__':
     )
     parser.add_argument('--kind', choices=list(kind_to_steps))
     parser.add_argument(
+        '--gpg-keypair-dir', type=Path.from_argparse, required=True
+    )
+    parser.add_argument(
         'out_dir', help='Write the temporary snapshot to this directory.',
     )
     args = parser.parse_args()
@@ -98,12 +109,21 @@ if __name__ == '__main__':
     with temp_dir() as no_gpg_keys_yet, populate_temp_dir_and_rename(
         args.out_dir, overwrite=False,  # Buck always gives us a clean workspace
     ) as td:
-        # It's a non-negligible amount of work to enable Buck to package
-        # empty directories into XARs / PARs.  And, I do plan to add GPG
-        # checking to the test repos.  Therefore, let's add this key
-        # placeholder to make the gpg key directories non-empty.
-        gpg_key_path = no_gpg_keys_yet / 'placeholder'
-        open(gpg_key_path, 'a').close()
+        signing_key_path = args.gpg_keypair_dir / "private.key"
+        assert os.path.exists(signing_key_path), \
+                f"{args.gpg_keypair_dir} must contain private.key"
+
+        with open(signing_key_path) as key:
+            gpg_signing_key = key.read()
+
+        gpg_key_path = args.gpg_keypair_dir / "public.key"
+        assert os.path.exists(gpg_key_path), \
+                f"{args.gpg_keypair_dir} must contain public.key"
+
         make_temp_snapshot(
-            kind_to_steps[args.kind], td, gpg_key_path, no_gpg_keys_yet,
+            kind_to_steps[args.kind],
+            td,
+            gpg_signing_key,
+            gpg_key_path,
+            args.gpg_keypair_dir,
         )

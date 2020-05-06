@@ -89,13 +89,6 @@ class RpmActionItemTestBase:
                         'rpm-test-milk',
                         'rpm-test-carrot',
                     ]
-                ] + [
-                    RpmActionItem(
-                        from_target='t',
-                        source=Path(__file__).dirname() /
-                            "rpm-test-cheese-1-1.rpm",
-                        action=RpmAction.install,
-                    )
                 ],
                 layer_opts,
             )(subvol)
@@ -149,7 +142,6 @@ class RpmActionItemTestBase:
             self.assertEqual(['(Dir)', {
                 'rpm_test': ['(Dir)', {
                     'carrot.txt': ['(File d13)'],
-                    'cheese1.txt': ['(File d42)'],
                     'milk.txt': ['(File d12)'],
                     'post.txt': ['(File d6)'],
                 }],

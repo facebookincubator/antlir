@@ -7,6 +7,12 @@
 import os
 import sys
 
+from contextlib import contextmanager
+
+from fs_image.btrfs_diff.tests.render_subvols import (
+    check_common_rpm_render, pop_path
+)
+
 from fs_image.fs_utils import Path
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from fs_image.rpm.yum_dnf_conf import YumDnf
@@ -47,6 +53,32 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             ).path(),
             rpm_installer=self._YUM_DNF,
         )
+
+    @contextmanager
+    def _test_rpm_action_item_install_local_setup(self):
+        parent_subvol = self._subvol_from_resource(
+            'fs_image.compiler.items', 'test-with-no-rpm',
+        )
+        local_rpm_path = Path(__file__).dirname() / 'rpm-test-cheese-2-1.rpm'
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+            subvol = temp_subvolumes.snapshot(parent_subvol, 'add_cheese')
+
+            RpmActionItem.get_phase_builder(
+                [RpmActionItem(
+                    from_target='t',
+                    source=local_rpm_path,
+                    action=RpmAction.install,
+                )],
+                self._opts(),
+            )(subvol)
+
+            r = render_subvol(subvol)
+
+            self.assertEqual(['(Dir)', {
+                'cheese2.txt': ['(File d45)'],
+                }], pop_path(r, 'rpm_test'))
+
+            yield r
 
     def test_rpm_action_item_auto_downgrade(self):
         parent_subvol = self._subvol_from_resource(
@@ -169,6 +201,17 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.yum
 
+    def test_rpm_action_item_install_local_yum(self):
+        with self._test_rpm_action_item_install_local_setup() as r:
+            check_common_rpm_render(self, r, 'yum')
+
 
 class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.dnf
+
+    def test_rpm_action_item_install_local_dnf(self):
+        with self._test_rpm_action_item_install_local_setup() as r:
+            pop_path(r, 'var/cache/yum')
+            pop_path(r, 'var/lib/yum')
+            pop_path(r, 'var/log/yum.log')
+            check_common_rpm_render(self, r, 'dnf')

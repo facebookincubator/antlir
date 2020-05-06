@@ -10,8 +10,10 @@ def test_rpm_repo_snapshot(name, kind, rpm_installers):
         bash = """
         set -ue
         logfile=\\$(mktemp)
+        keypair_dir=$(location //fs_image/rpm:generate-gpg-test-keypair)
         # Only print the logs on error.
         $(exe //fs_image/rpm:temp-snapshot) --kind {quoted_kind} "$OUT" \
+            --gpg-keypair-dir "$keypair_dir" \
             &> "$logfile" || (cat "$logfile" 1>&2 ; exit 1)
         """.format(quoted_kind = shell.quote(kind)),
     )

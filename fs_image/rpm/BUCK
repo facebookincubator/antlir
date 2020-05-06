@@ -1,3 +1,5 @@
+load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule")
+load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -82,10 +84,17 @@ python_library(
     srcs = ["tests/temp_repos.py"],
     resources = {
         third_party.library("busybox", "bin/busybox"): "tests/busybox",
-        # NB: It would be great to also use `rpmbuild` from the third-party
-        # repo, but doing this is fairly intractable, see D15511231.
+        target_location("//tupperware/image/build_appliance:fb_build_appliance"): "tests/build-appliance",
+        target_location(":generate-gpg-test-keypair"): "tests/gpgkeys",
     },
-    deps = ["//fs_image:fs_utils"],
+    deps = [
+        "//fs_image:find_built_subvol",
+        "//fs_image:fs_utils",
+        third_party.library(
+            "python-gnupg",
+            platform = "python",
+        ),
+    ],
 )
 
 python_unittest(
@@ -328,6 +337,28 @@ python_binary(
         ":yum_dnf_conf",
         "//fs_image:fs_utils",
     ],
+)
+
+buck_genrule(
+    name = "generate-gpg-test-keypair",
+    out = "gpg_keypair",
+    bash = """
+set -ue -o pipefail
+mkdir "$OUT"
+export GNUPGHOME=\\$(mktemp -d)
+cat > "$GNUPGHOME/genkeyparams" <<EOF
+    Key-Type: 1
+    Key-Length: 2048
+    Name-Real: Test Key
+    Name-Email: key@example.com
+    Expire-Date: 0
+    %no-protection
+    %transient-key
+EOF
+gpg --batch --gen-key "$GNUPGHOME/genkeyparams"
+gpg --output "$OUT/private.key" --armor --export-secret-key key@example.com
+gpg --output "$OUT/public.key" --armor --export key@example.com
+    """,
 )
 
 python_binary(
