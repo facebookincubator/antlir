@@ -10,6 +10,7 @@ load("//fs_image/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot", "set_up_rpm_repo_snapshots")
 load("//fs_image/bzl:wrap_runtime_deps.bzl", "maybe_wrap_runtime_deps_as_build_time_deps")
+load("//fs_image/compiler/test_images:helper.bzl", "sign_rpm_test_file")
 
 # While the reproducible-builds.org instructions (see below) ensure that a
 # hash-stable artifact can be generated on the same system using the same
@@ -228,18 +229,54 @@ image.feature(
 #  # Optionally, clean up the mess:
 #  rm -rf ~/rpmbuild
 #
-# the "rpm-test-cheese.spec".
-# The values should be updated to match the number of the version.
 # You can build the RPMs with `rpmbuild` or update the spec section
 # in fs_image/rpm/tests/temp_repos.py to build with this spec.
-export_file(name = "rpm-test-cheese-1-1.rpm")
+#
+sign_rpm_test_file(
+    name = "rpm-test-cheese-1-1.rpm",
+    filename = "rpm-test-cheese-1-1.x86_64.rpm",
+)
 
-export_file(name = "rpm-test-cheese-2-1.rpm")
+sign_rpm_test_file(
+    name = "rpm-test-cheese-2-1.rpm",
+    filename = "rpm-test-cheese-2-1.x86_64.rpm",
+)
 
-export_file(name = "rpm-test-cheese-3-1.rpm")
+sign_rpm_test_file(
+    name = "rpm-test-cheese-3-1.rpm",
+    filename = "rpm-test-cheese-3-1.x86_64.rpm",
+)
 
+# See docblock for ":layer-with-only-one-locally-installed-rpm" for why
+# we need this.
+image.layer(
+    name = "layer-with-non-default-snapshot-no-rpms",
+    parent_layer = ":layer-with-non-default-snapshot-rpm",
+    features = [
+        image.rpms_remove_if_exists([
+            "rpm-test-cake",
+            "rpm-test-cheese",
+        ]),
+    ],
+    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+)
+
+# ":fake-build-appliance-from-host" does GPG checks on all RPMs installed.
+# For rpm-test-cheese-*.rpm, which are local RPM files and not signed, we need
+# to import the key for installation. When the RPM is not part of a repo, you
+# would do that with `rpm --import <gpg key>`. However it's a bit complicated
+# to do that from these test layers because they do not have the `rpm` RPM.
+#
+# To work around that we have another layer install rpm-test-cheese, which
+# is already a part of //fs_image/rpm:non-default-repo-snapshot-for-tests so it
+# is signed and has its gpgkey set up in the yum/dnf config. The key is imported
+# on installation. Then we sign the local files using those same keys (from
+# //fs_image/rpm:generate-gpg-test-keypair) and install the signed local files
+# into the layer.
+#
 image.layer(
     name = "layer-with-only-one-locally-installed-rpm",
+    parent_layer = ":layer-with-non-default-snapshot-no-rpms",
     features = [
         image.rpms_install([
             # A drive-by test that `image.source` syntax works in "rpms".  This
@@ -253,7 +290,12 @@ image.layer(
 # Checks installing from a non-default snapshot
 image.layer(
     name = "layer-with-non-default-snapshot-rpm",
-    features = [image.rpms_install(["rpm-test-cake"])],
+    # Installing rpm-test-cheese here so the gpg keys get imported for the
+    # local RPM install in ":layer-with-only-one-locally-installed-rpm".
+    features = [image.rpms_install([
+        "rpm-test-cake",
+        "rpm-test-cheese",
+    ])],
     build_opts = image.opts(
         build_appliance = ":fake-build-appliance-from-host",
         rpm_repo_snapshot = "//fs_image/rpm:non-default-repo-snapshot-for-tests",
@@ -586,8 +628,25 @@ image.layer(
 )
 
 image.layer(
-    name = "child/layer",  # Checks that `/` is allowed in layer names
+    name = "parent_layer_with_cheese",
     parent_layer = ":parent_layer",
+    features = [
+        # This is included only so the gpg keys get imported for the local RPM
+        # install in the child layer (via `feature_tar_and_rpms`).
+        image.rpms_install(["rpm-test-cheese"]),
+    ],
+    build_opts = image.opts(
+        build_appliance = ":fake-build-appliance-from-host",
+        rpm_repo_snapshot = "//fs_image/rpm:non-default-repo-snapshot-for-tests",
+    ),
+)
+
+image.layer(
+    name = "child/layer",  # Checks that `/` is allowed in layer names
+    # Using `parent_layer_with_cheese` because it installs an older
+    # `rpm-test-cheese` which sets up the GPG keys for the local RPM install
+    # done with `feature_tar_and_rpms`.
+    parent_layer = ":parent_layer_with_cheese",
     features = [
         ":feature_tar_and_rpms",
         image.mkdir("/foo", "borf"),  # for :feature_tar
@@ -612,7 +671,7 @@ image.package(name = "child/layer.btrfs")
 # This will install /rpm_test/cheese2.txt.
 image.layer(
     name = "base_cheese_layer",
-    parent_layer = ":hello_world_base",
+    parent_layer = ":layer-with-non-default-snapshot-no-rpms",
     features = [
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],

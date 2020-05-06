@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 'See `temp_repo_steps` and `SAMPLE_STEPS` for documentation.'
+import gnupg
 import os
 import shlex
 import shutil
@@ -16,13 +17,22 @@ from configparser import ConfigParser
 from contextlib import contextmanager
 from typing import Dict, List, NamedTuple, Optional
 
+from fs_image.common import load_location
+from fs_image.find_built_subvol import find_built_subvol
 from fs_image.fs_utils import Path, temp_dir
+from fs_image.subvol_utils import Subvol
+
+
+def _build_appliance() -> Subvol:
+    return find_built_subvol(load_location(__package__, 'build-appliance'))
 
 
 def rpmbuild_path() -> str:
-    # Using the system `rpmbuild` is non-hermetic and may break in many ways.
-    # Future: try using a build appliance here to mitigate this.
-    return '/usr/bin/rpmbuild'
+    return _build_appliance().path('/usr/bin/rpmbuild')
+
+
+def rpmsign_path() -> str:
+    return _build_appliance().path('/usr/bin/rpmsign')
 
 
 class Rpm(NamedTuple):
@@ -171,7 +181,26 @@ SAMPLE_STEPS = [
 ]
 
 
-def build_rpm(package_dir: Path, arch: str, rpm: Rpm) -> Path:
+def sign_rpm(rpm_path: Path, gpg_signing_key: str) -> None:
+    'Signs an RPM with the provided key data'
+    with tempfile.TemporaryDirectory() as td:
+        gpg = gnupg.GPG(gnupghome=td)
+        res = gpg.import_keys(gpg_signing_key)
+        assert res.count == 1, 'Only 1 private key can be imported for signing'
+        subprocess.check_call(
+            [
+                rpmsign_path(),
+                f'--define=_gpg_name {res.fingerprints[0]}',
+                '--addsign',
+                rpm_path
+            ],
+            env={'GNUPGHOME': td}
+        )
+
+
+def build_rpm(
+    package_dir: Path, arch: str, rpm: Rpm, gpg_signing_key: str
+) -> Path:
     'Returns the filename of the built RPM.'
     with temp_dir(dir=package_dir) as td, tempfile.NamedTemporaryFile() as tf, \
             Path.resource(__package__, 'busybox', exe=True) as busybox_path:
@@ -190,12 +219,13 @@ def build_rpm(package_dir: Path, arch: str, rpm: Rpm) -> Path:
         rpms_dir = td / 'home/rpmbuild/RPMS' / arch
         rpm_name, = rpms_dir.listdir()
         os.rename(rpms_dir / rpm_name, package_dir / rpm_name)
+        sign_rpm(package_dir / rpm_name, gpg_signing_key)
         return rpm_name
 
 
 def make_repo_steps(
     out_dir: Path, repo_change_steps: List[Dict[str, Repo]], arch: str,
-    avoid_symlinks: bool = False,
+    gpg_signing_key: str, avoid_symlinks: bool = False,
 ):
     # When an RPM occurs in two different repos, we want it to be
     # bit-identical (otherwise, the snapshot would see a `mutable_rpm`
@@ -214,7 +244,10 @@ def make_repo_steps(
         step_dir = out_dir / step
         os.makedirs(step_dir)
         yum_dnf_conf = ConfigParser()
-        yum_dnf_conf['main'] = {}
+        yum_dnf_conf['main'] = {
+            'gpgcheck': '1',
+            'localpkg_gpgcheck': '1'
+        }
         for repo_name, repo in repos.items():
             repo_dir = step_dir / repo_name
             yum_dnf_conf[repo_name] = {'baseurl': repo_dir.file_url()}
@@ -252,7 +285,7 @@ def make_repo_steps(
                 else:
                     rpm_to_path[rpm] = (
                         step / repo_name / package_dir.basename() /
-                        build_rpm(package_dir, arch, rpm)
+                        build_rpm(package_dir, arch, rpm, gpg_signing_key)
                     )
             # Now that all RPMs were built, we can generate the Yum metadata
             subprocess.run(['createrepo_c', repo_dir], check=True)
@@ -261,7 +294,9 @@ def make_repo_steps(
                 yum_dnf_conf.write(out_f)
 
 @contextmanager
-def temp_repos_steps(base_dir=None, arch: str = 'x86_64', *args, **kwargs):
+def temp_repos_steps(
+    base_dir=None, arch: str = 'x86_64', gpg_signing_key=None, *args, **kwargs
+):
     '''
     Given a history of changes to a set of RPM repos (as in `SAMPLE_STEPS`),
     generates a collection of RPM repos on disk by running:
@@ -274,9 +309,20 @@ def temp_repos_steps(base_dir=None, arch: str = 'x86_64', *args, **kwargs):
         repodata/{repomd.xml,other-repodata.{xml,sqlite}.bz2}
         reponame-pkgs/rpm-test-<name>-<version>-<release>.<arch>.rpm
     '''
+    if not gpg_signing_key:
+        keydir = load_location(__package__, 'gpgkeys')
+        with open(os.path.join(keydir, 'private.key')) as key:
+            gpg_signing_key = key.read()
+
     td = Path(tempfile.mkdtemp(dir=base_dir))
     try:
-        make_repo_steps(out_dir=td, arch=arch, *args, **kwargs)
+        make_repo_steps(
+            out_dir=td,
+            arch=arch,
+            gpg_signing_key=gpg_signing_key,
+            *args,
+            **kwargs
+        )
         yield td
     except BaseException:  # Clean up even on Ctrl-C
         shutil.rmtree(td)

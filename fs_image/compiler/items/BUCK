@@ -106,6 +106,9 @@ python_unittest(
         target_location(
             TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
         ): "test-with-one-local-rpm",
+        target_location(
+            TEST_IMAGE_PREFIX + "layer-with-non-default-snapshot-no-rpms",
+        ): "test-with-no-rpm",
         TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
     },
     deps = [

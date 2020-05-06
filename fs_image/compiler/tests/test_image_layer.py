@@ -140,12 +140,10 @@ class ImageLayerTestCase(unittest.TestCase):
         with self.target_subvol('child/layer') as subvol:
             self._check_child(subvol.path())
         with self.target_subvol('base_cheese_layer') as subvol:
-            self._check_hello(subvol.path())
             self.assertTrue(os.path.isfile(
                 subvol.path('/rpm_test/cheese2.txt')
             ))
         with self.target_subvol('older_cheese_layer') as subvol:
-            self._check_hello(subvol.path())
             self.assertTrue(os.path.isfile(
                 subvol.path('/rpm_test/cheese1.txt')
             ))
@@ -154,7 +152,6 @@ class ImageLayerTestCase(unittest.TestCase):
                 subvol.path('/rpm_test/cheese2.txt')
             ))
         with self.target_subvol('newer_cheese_layer') as subvol:
-            self._check_hello(subvol.path())
             self.assertTrue(os.path.isfile(
                 subvol.path('/rpm_test/cheese3.txt')
             ))
@@ -278,6 +275,7 @@ class ImageLayerTestCase(unittest.TestCase):
 
             self.assertEqual(['(Dir)', {
                 'cake.txt': ['(File d17)'],
+                'cheese.txt': ['(File d11)'],
             }], pop_path(r, 'rpm_test'))
 
             check_common_rpm_render(self, r, 'yum')
