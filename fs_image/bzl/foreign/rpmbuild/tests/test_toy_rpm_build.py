@@ -36,3 +36,7 @@ class ToyRpmBuildUnittestTest(unittest.TestCase):
         # Check files contained in rpm
         files = subprocess.check_output(['rpm', '-qlp', rpm_path], text=True)
         self.assertEqual(files, '/usr/bin/toy_src_file\n')
+
+    def test_build_dep(self):
+        output = subprocess.check_output(['rpm', '-qa', 'tree'], text=True)
+        self.assertIn('tree-', output)

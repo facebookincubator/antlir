@@ -11,6 +11,7 @@ load("//fs_image/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule")
 load("//fs_image/bzl/image_actions:install.bzl", "image_install")
 load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
+load("//fs_image/bzl/image_actions:rpms.bzl", "image_rpms_install")
 load("//fs_image/bzl/image_actions:tarball.bzl", "image_tarball")
 
 def image_rpmbuild_layer(
@@ -29,6 +30,8 @@ def image_rpmbuild_layer(
         # `buck run //path/to:<name>-rpmbuild-setup-container` to inspect the
         # setup layer and experiment with building.
         source,
+        # Which RPM snapshots to use when installing build dependencies.
+        serve_rpm_snapshots = (),
         # An `image.layer` target, on top of which the current layer will
         # build the RPM.  This should have `rpm-build`, optionally macro
         # packages like `redhat-rpm-config`, and any of the spec file's
@@ -49,12 +52,14 @@ def image_rpmbuild_layer(
         visibility = [],
     )
 
+    specfile_path = "/rpmbuild/SPECS/specfile.spec"
+
     setup_layer = name + "-rpmbuild-setup"
     image_layer(
         name = setup_layer,
         parent_layer = parent_layer,
         features = [
-            image_install(specfile, "/rpmbuild/SPECS/specfile.spec"),
+            image_install(specfile, specfile_path),
             image_mkdir("/", "rpmbuild"),
             image_mkdir("/rpmbuild", "BUILD"),
             image_mkdir("/rpmbuild", "BUILDROOT"),
@@ -62,15 +67,40 @@ def image_rpmbuild_layer(
             image_mkdir("/rpmbuild", "SOURCES"),
             image_mkdir("/rpmbuild", "SPECS"),
             image_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
+            # Needed to install RPM dependencies below
+            image_rpms_install(["yum-utils"]),
         ],
         visibility = [],
     )
 
     rpmbuild_dir = "/rpmbuild"
+
+    install_deps_layer = name + "-rpmbuild-install-deps"
+    image_foreign_layer(
+        name = install_deps_layer,
+        rule_type = "image_rpmbuild_install_deps_layer",
+        parent_layer = ":" + setup_layer,
+        # Auto-installing RPM dependencies requires `root`.
+        user = "root",
+        cmd = [
+            "yum-builddep",
+            # Define the build directory for this project
+            "--define=_topdir {}".format(rpmbuild_dir),
+            # Future: Try removing the `--config` argument when yum is fully
+            # transparent.
+            "--config",
+            "/__fs_image__/rpm/default-snapshot-for-installer/yum/yum/etc/yum/yum.conf",
+            "--assumeyes",
+            specfile_path,
+        ],
+        serve_rpm_snapshots = serve_rpm_snapshots,
+        **image_layer_kwargs
+    )
+
     image_foreign_layer(
         name = name,
         rule_type = "image_rpmbuild_layer",
-        parent_layer = ":" + setup_layer,
+        parent_layer = ":" + install_deps_layer,
         # While it's possible to want to support unprivileged builds, the
         # typical case will want to auto-install dependencies, which
         # requires `root`.
