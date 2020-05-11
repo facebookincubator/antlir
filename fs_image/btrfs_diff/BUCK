@@ -149,9 +149,6 @@ export_file(
     src = "tests/gold_demo_sendstreams.pickle",
 )
 
-# If you depend on this, you must set `par_style = "zip"`.  "fastzip" won't
-# work because it will prevent us from accessing the `resources` from this
-# target and from `:volume_for_repo` via filesystem APIs.
 python_library(
     name = "testlib_demo_sendstreams",
     srcs = [
@@ -164,6 +161,7 @@ python_library(
     deps = [
         ":testlib_render_subvols",
         ":testlib_subvolume_utils",
+        "//fs_image:fs_utils",
         "//fs_image:testlib_temp_subvolumes",
     ],
 )
@@ -172,7 +170,6 @@ python_library(
 python_binary(
     name = "make-demo-sendstreams",
     main_module = "fs_image.btrfs_diff.tests.demo_sendstreams",
-    par_style = "zip",  # :testlib_demo_sendstreams requires this
     deps = [":testlib_demo_sendstreams"],
 )
 
@@ -186,10 +183,9 @@ python_unittest(
         100,
         ":parse_send_stream",
     )],
-    par_style = "zip",  # required by :testlib_demo_sendstreams
     deps = [
         ":parse_send_stream",
-        ":testlib_demo_sendstreams",  # requires `par_style = "zip"`
+        ":testlib_demo_sendstreams",
     ],
 )
 
@@ -282,10 +278,9 @@ python_unittest(
         100,
         ":inode_utils",
     )],
-    par_style = "zip",  # required by :testlib_demo_sendstreams
     deps = [
         ":freeze",
         ":subvolume_set",
-        ":testlib_demo_sendstreams",  # requires `par_style = "zip"`
+        ":testlib_demo_sendstreams",
     ],
 )

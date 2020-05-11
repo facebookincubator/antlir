@@ -706,7 +706,6 @@ python_binary(
     name = "save-demo-sendstream",
     srcs = ["save_demo_sendstream.py"],
     main_module = "fs_image.compiler.test_images.save_demo_sendstream",
-    par_style = "zip",  # testlib_demo_sendstreams needs this in @mode/opt
     deps = ["//fs_image/btrfs_diff:testlib_demo_sendstreams"],
 )
 

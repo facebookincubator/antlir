@@ -62,6 +62,7 @@ import time
 
 from typing import Tuple
 
+from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
@@ -262,16 +263,9 @@ def _main():
 
 
 def gold_demo_sendstreams():
-    with open(
-        os.path.join(
-            # We are part of the library interface, but __file__ works because:
-            #   (a) we never use par_style = "fastzip", and
-            #   (b) the gold data is baked into the PAR for reading.
-            os.path.dirname(os.path.abspath(__file__)),
-            'gold_demo_sendstreams.pickle',
-        ),
-        'rb',
-    ) as f:
+    with Path.resource(
+        __package__, 'gold_demo_sendstreams.pickle', exe=False,
+    ) as pickle_path, open(pickle_path, 'rb') as f:
         return pickle.load(f)
 
 
