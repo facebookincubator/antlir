@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 
+from fs_image.fs_utils import Path
 
 # Exposed for tests
 IMAGE_FILE = 'image.btrfs'
@@ -38,21 +39,21 @@ def get_volume_for_current_repo(min_free_bytes, artifacts_dir):
         raise RuntimeError(f'{artifacts_dir} must exist')
 
     volume_dir = os.path.join(artifacts_dir, VOLUME_DIR)
-    subprocess.check_call([
-        # While Buck probably does not call this concurrently under normal
-        # circumstances, the worst-case outcome is that we lose or corrupt
-        # the whole buld cache, so add some locking to be on the safe side.
-        'flock',
-        os.path.join(artifacts_dir, '.lock.set_up_volume.sh.never.rm.or.mv'),
-        'sudo',
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            'set_up_volume.sh',
-        ),
-        str(int(min_free_bytes)),  # Accepts floats & ints
-        os.path.join(artifacts_dir, IMAGE_FILE),
-        volume_dir,
-    ])
+    with Path.resource(__package__, 'set_up_volume.sh', exe=True) as binary:
+        subprocess.check_call([
+            # While Buck probably does not call this concurrently under normal
+            # circumstances, the worst-case outcome is that we lose or corrupt
+            # the whole buld cache, so add some locking to be on the safe side.
+            'flock',
+            os.path.join(
+                artifacts_dir, '.lock.set_up_volume.sh.never.rm.or.mv',
+            ),
+            'sudo',
+            binary,
+            str(int(min_free_bytes)),  # Accepts floats & ints
+            os.path.join(artifacts_dir, IMAGE_FILE),
+            volume_dir,
+        ])
     # We prefer to have the volume owned by the repo user, instead of root:
     #  - The trusted repo user has to be able to access the built
     #    subvolumes, but nobody else should be able to (they might contain

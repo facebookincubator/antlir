@@ -108,7 +108,6 @@ python_unittest(
         100,
         ":subvol_utils",
     )],
-    par_style = "zip",  # "fastzip" won't work because of `set_up_volume.sh`
     resources = {
         TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello-layer",
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
@@ -126,6 +125,7 @@ python_library(
     srcs = ["volume_for_repo.py"],
     # `get_volume_for_current_repo()` needs this to be our sibling in the PAR.
     resources = {"set_up_volume.sh"},
+    deps = [":fs_utils"],
 )
 
 python_unittest(
@@ -135,7 +135,6 @@ python_unittest(
         100,
         ":volume_for_repo",
     )],
-    par_style = "zip",  # "fastzip" won't work because of `set_up_volume.sh`
     deps = [":volume_for_repo"],
 )
 
@@ -166,7 +165,6 @@ python_library(
 python_binary(
     name = "find-built-subvol",
     main_module = "fs_image.find_built_subvol",
-    par_style = "zip",
     deps = [":find_built_subvol"],
 )
 
@@ -216,7 +214,6 @@ python_unittest(
         100,
         ":subvolume_garbage_collector",
     )],
-    par_style = "zip",  # "fastzip" won't work because of `fake_sudo.sh`
     deps = [
         ":fake_sudo",
         ":subvolume_garbage_collector",
@@ -305,7 +302,6 @@ python_binary(
 python_binary(
     name = "volume-for-repo",
     main_module = "fs_image.volume_for_repo",
-    par_style = "zip",  # "fastzip" breaks @mode/opt for `set_up_volume.sh`
     deps = [":volume_for_repo"],
 )
 
