@@ -271,7 +271,7 @@ image.layer(
 # is already a part of //fs_image/rpm:non-default-repo-snapshot-for-tests so it
 # is signed and has its gpgkey set up in the yum/dnf config. The key is imported
 # on installation. Then we sign the local files using those same keys (from
-# //fs_image/rpm:generate-gpg-test-keypair) and install the signed local files
+# //fs_image/rpm:gpg-test-keypair) and install the signed local files
 # into the layer.
 #
 image.layer(
