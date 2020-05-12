@@ -85,7 +85,7 @@ python_library(
     resources = {
         third_party.library("busybox", "bin/busybox"): "tests/busybox",
         target_location("//tupperware/image/build_appliance:fb_build_appliance"): "tests/build-appliance",
-        target_location(":generate-gpg-test-keypair"): "tests/gpgkeys",
+        target_location(":gpg-test-keypair"): "tests/gpgkeys",
     },
     deps = [
         "//fs_image:find_built_subvol",
@@ -339,26 +339,23 @@ python_binary(
     ],
 )
 
-buck_genrule(
-    name = "generate-gpg-test-keypair",
-    out = "gpg_keypair",
-    bash = """
-set -ue -o pipefail
-mkdir "$OUT"
-export GNUPGHOME=\\$(mktemp -d)
-cat > "$GNUPGHOME/genkeyparams" <<EOF
-    Key-Type: 1
-    Key-Length: 2048
-    Name-Real: Test Key
-    Name-Email: key@example.com
-    Expire-Date: 0
-    %no-protection
-    %transient-key
-EOF
-gpg --batch --gen-key "$GNUPGHOME/genkeyparams"
-gpg --output "$OUT/private.key" --armor --export-secret-key key@example.com
-gpg --output "$OUT/public.key" --armor --export key@example.com
-    """,
+# The static test keys were generated with the following commands:
+#
+# export GNUPGHOME=$(mktemp -d)
+# cat > "$GNUPGHOME/genkeyparams" <<EOF
+#     Key-Type: 1
+#     Key-Length: 2048
+#     Name-Real: Test Key
+#     Name-Email: key@example.com
+#     Expire-Date: 0
+#     %no-protection
+# EOF
+# gpg --batch --gen-key --verbose --debug-all "$GNUPGHOME/genkeyparams"
+# gpg --output private.key --armor --export-secret-key key@example.com
+# gpg --output public.key --armor --export key@example.com
+export_file(
+    name = "gpg-test-keypair",
+    src = "tests/gpg_test_keypair/",
 )
 
 python_binary(
