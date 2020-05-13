@@ -1,7 +1,6 @@
-load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule")
 load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:image_python_unittest.bzl", "image_python_unittest")
-load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load(":defs.bzl", "test_rpm_repo_snapshot")
 
@@ -328,14 +327,55 @@ python_unittest(
     deps = [":write-yum-dnf-conf-library"],
 )
 
+export_file(name = "rename_shadowed.c")
+
+[buck_genrule(
+    name = "librename_shadowed{}.so".format(suffix),
+    out = "librename_shadowed.so",
+    bash = '''
+        cc -shared -o "$OUT" -Wall -Werror -O2 \\
+            {quoted_visibility} -ldl -fPIC $(location :rename_shadowed.c)
+    '''.format(quoted_visibility = (
+        "" if suffix == "_for_test" else "-fvisibility=hidden"
+    )),
+) for suffix in [
+    "",
+    "_for_test",
+]]
+
+python_library(
+    name = "testlib_librename_shadowed.so",
+    srcs = {
+        ":librename_shadowed_for_test.so": "tests/librename_shadowed.so",
+    },
+)
+
+python_unittest(
+    name = "test-rename-shadowed-internals",
+    srcs = ["tests/test_rename_shadowed_internals.py"],
+    deps = [
+        ":testlib_librename_shadowed.so",
+        "//fs_image:fs_utils",
+    ],
+)
+
+# This is a separate library because otherwise the `.so` will trigger a bug
+# in FB's Python coverage collector.
+python_library(
+    name = "inject_librename_shadowed.so",
+    srcs = {":librename_shadowed.so": "librename_shadowed.so"},
+)
+
 python_binary(
     name = "yum-dnf-from-snapshot",
     srcs = ["yum_dnf_from_snapshot.py"],
     main_module = "fs_image.rpm.yum_dnf_from_snapshot",
     deps = [
         ":common",
+        ":inject_librename_shadowed.so",
         ":yum_dnf_conf",
         "//fs_image:fs_utils",
+        "//fs_image/nspawn_in_subvol:common",
     ],
 )
 

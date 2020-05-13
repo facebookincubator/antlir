@@ -11,6 +11,8 @@ from typing import Any, Callable
 
 from fs_image.fs_utils import Path
 
+SHADOWED_PATHS_ROOT = Path('__fs_image__/shadowed')
+
 # This determines which binaries we shadow.  Our runtimes are expected to
 # ensure that this is the PATH for the user command in the container.
 #

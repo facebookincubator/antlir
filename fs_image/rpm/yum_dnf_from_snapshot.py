@@ -98,6 +98,7 @@ from fs_image.common import (
     check_popen_returncode, get_file_logger, init_logging,
 )
 from fs_image.fs_utils import Path, temp_dir
+from fs_image.nspawn_in_subvol.common import SHADOWED_PATHS_ROOT
 
 from .yum_dnf_conf import YumDnf
 from .common import has_yum, yum_is_dnf
@@ -106,7 +107,8 @@ log = get_file_logger(__file__)
 
 
 def _isolate_yum_dnf(
-    yum_dnf: YumDnf, install_root, dummy_dev, protected_path_to_dummy,
+    yum_dnf: YumDnf, install_root, dummy_dev, protected_path_to_dummy, *,
+    ld_preload: Path,
 ):
     'Isolate yum/dnf from the host filesystem.'
     # Yum is incorrigible -- it is impossible to give it a set of options
@@ -200,7 +202,8 @@ def _isolate_yum_dnf(
 
     # NB: The `trap` above means the `bash` process is not replaced by the
     # child, but that's not a problem.
-    exec "$@"
+    LD_PRELOAD={quoted_ld_preload} \\
+        FS_IMAGE_SHADOWED_PATHS_ROOT={quoted_shadowed_root} exec "$@"
     ''').format(
         prog_name=yum_dnf.value,
         default_conf_file={
@@ -218,8 +221,9 @@ def _isolate_yum_dnf(
                 ) + prot_path.shell_quote(),
             ) for prot_path, dummy in protected_path_to_dummy.items()
         ),
+        quoted_ld_preload=ld_preload.shell_quote(),
+        quoted_shadowed_root=SHADOWED_PATHS_ROOT.shell_quote(),
     )]
-
 
 @contextmanager
 def _dummy_dev() -> str:
@@ -356,7 +360,8 @@ def yum_dnf_from_snapshot(
         ['/etc/yum/'] if (has_yum() and not yum_is_dnf()) else []
     ))
     # Only isolate the host DBs and log if we are NOT installing to /.
-    if os.path.realpath(install_root) != b'/':
+    install_to_fs_root = os.path.realpath(install_root) == b'/'
+    if not install_to_fs_root:
         # Ensure the log exists, so we can guarantee we don't write to the host.
         log_path = f'/var/log/{prog_name}.log'
         subprocess.check_call(['sudo', 'touch', log_path])
@@ -379,6 +384,9 @@ def yum_dnf_from_snapshot(
             _dummies_for_protected_paths(
                 protected_paths,
             ) as protected_path_to_dummy, \
+            Path.resource(
+                __package__, 'librename_shadowed.so', exe=False,
+            ) as librename_shadowed, \
             subprocess.Popen([
                 'sudo',
                 # We need `--mount` so as not to leak our `--protect-path`
@@ -401,6 +409,7 @@ def yum_dnf_from_snapshot(
                 'unshare', '--mount', '--uts', '--ipc',
                 *_isolate_yum_dnf(
                     yum_dnf, install_root, dummy_dev, protected_path_to_dummy,
+                    ld_preload=librename_shadowed,
                 ),
                 'yum-dnf-from-snapshot',  # argv[0]
                 prog_name,
