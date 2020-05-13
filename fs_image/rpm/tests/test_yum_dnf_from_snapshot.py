@@ -10,12 +10,15 @@ import subprocess
 import unittest
 
 from contextlib import contextmanager
+from unittest import mock
 
-from fs_image.fs_utils import Path
+from fs_image.fs_utils import create_ro, Path, temp_dir
 from fs_image.common import init_logging
 from fs_image.rpm.find_snapshot import snapshot_install_dir
+from fs_image.rpm.yum_dnf_conf import YumDnf
+
 from ..common import has_yum, yum_is_dnf
-from ..yum_dnf_from_snapshot import YumDnf, yum_dnf_from_snapshot
+from .. import yum_dnf_from_snapshot
 
 
 _INSTALL_ARGS = ['install', '--assumeyes', 'rpm-test-carrot', 'rpm-test-milk']
@@ -48,7 +51,7 @@ class YumFromSnapshotTestImpl:
             # since it depends on the system packages available on CI
             # containers.  For this reason, this entire test is an
             # `image.python_unittest` that runs in a build appliance.
-            yum_dnf_from_snapshot(
+            yum_dnf_from_snapshot.yum_dnf_from_snapshot(
                 yum_dnf=self._YUM_DNF,
                 snapshot_dir=_SNAPSHOT_DIR,
                 protected_paths=protected_paths,
@@ -170,7 +173,7 @@ class YumFromSnapshotTestImpl:
         # Hack alert: if we run both `{Dnf,Yum}FromSnapshotTestCase` in one
         # test invocation, the package manager that runs will just say that
         # the package is already install, and succeed.  That's OK.
-        yum_dnf_from_snapshot(
+        yum_dnf_from_snapshot.yum_dnf_from_snapshot(
             yum_dnf=self._YUM_DNF,
             snapshot_dir=_SNAPSHOT_DIR,
             protected_paths=[],
@@ -190,6 +193,67 @@ class YumFromSnapshotTestImpl:
         # smoke-test for now.
         with open('/rpm_test/mice.txt') as infile:
             self.assertEqual('mice 0.1 a\n', infile.read())
+
+    @contextmanager
+    def _set_up_shadow(self, replacement, to_shadow):
+        # Create the mountpoint at the shadowed location, and the file
+        # that will shadow it.
+        with create_ro(to_shadow, 'w'):
+            pass
+        with create_ro(replacement, 'w') as outfile:
+            outfile.write('shadows carrot')
+
+        # Shadow the file that `yum` / `dnf` wants to write -- writing to
+        # this location will now fail since it's read-only.
+        subprocess.check_call([
+            'mount', '-o', 'bind,ro', replacement, to_shadow,
+        ])
+        try:
+            yield
+        finally:
+            # Required so that our temporary dirs can be cleaned up.
+            subprocess.check_call(['umount', to_shadow])
+
+    def test_update_shadowed(self):
+        with temp_dir() as root, mock.patch.object(
+            # Note that the shadowed root is under the install root, since
+            # the `rename` runs under chroot.
+            yum_dnf_from_snapshot, 'SHADOWED_PATHS_ROOT', Path('/shadow'),
+        ):
+            os.mkdir(root / 'meta')
+            os.mkdir(root / 'rpm_test')
+            os.makedirs(root / 'shadow/rpm_test')
+
+            to_shadow = root / 'rpm_test/carrot.txt'
+            replacement = root / 'rpm_test/shadows_carrot.txt'
+            shadowed_original = root / 'shadow/rpm_test/carrot.txt'
+
+            # Our shadowing setup is supposed to have moved the original here.
+            with create_ro(shadowed_original, 'w') as outfile:
+                outfile.write('yum/dnf overwrites this')
+
+            with self._set_up_shadow(replacement, to_shadow):
+                with open(to_shadow) as infile:
+                    self.assertEqual('shadows carrot', infile.read())
+                with open(shadowed_original) as infile:
+                    self.assertEqual('yum/dnf overwrites this', infile.read())
+
+                yum_dnf_from_snapshot.yum_dnf_from_snapshot(
+                    yum_dnf=self._YUM_DNF,
+                    snapshot_dir=_SNAPSHOT_DIR,
+                    protected_paths=[],
+                    yum_dnf_args=[
+                        f'--installroot={root}',
+                        'install', '--assumeyes', 'rpm-test-carrot',
+                    ],
+                )
+
+                # The shadow is still in place
+                with open(to_shadow) as infile:
+                    self.assertEqual('shadows carrot', infile.read())
+                # But we updated the shadowed file
+                with open(shadowed_original) as infile:
+                    self.assertEqual('carrot 2 rc0\n', infile.read())
 
 
 @unittest.skipIf(yum_is_dnf() or not has_yum(), "yum == dnf or yum missing")
