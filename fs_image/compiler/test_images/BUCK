@@ -10,6 +10,7 @@ load("//fs_image/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot", "set_up_rpm_repo_snapshots")
 load("//fs_image/bzl:wrap_runtime_deps.bzl", "maybe_wrap_runtime_deps_as_build_time_deps")
+load("//fs_image/bzl/foreign/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
 load("//fs_image/compiler/test_images:helper.bzl", "sign_rpm_test_file")
 
 # While the reproducible-builds.org instructions (see below) ensure that a
@@ -108,6 +109,13 @@ image.layer(
     ),
 )
 
+# This assumes that the host provides `cc`, since we cannot install packages
+# on top of the read-only host clone.
+image_build_librename_shadowed(
+    name = "build-librename-shadowed",
+    parent_layer = ":only-for-tests-read-only-host-clone",
+)
+
 # The next 2 layers exercise the build appliance logic for RPM installation
 # (and other items in the future?).  This powers two distinct test types:
 #  - a uni tests `test_rpm_action_item_build_appliance` in `test-items`
@@ -128,6 +136,11 @@ image.layer(
             "//fs_image/rpm:repo-snapshot-for-tests",
         ),
         install_rpm_repo_snapshot("//fs_image/rpm:non-default-repo-snapshot-for-tests"),
+        image.clone(
+            src_layer = ":build-librename-shadowed",
+            src_path = "/build/librename_shadowed.so",
+            dest_path = "/__fs_image__/librename_shadowed.so",
+        ),
 
         # These stub directories are needed to make
         # `yum-dnf-from-snapshot`'s host path protection feature happy.  The
