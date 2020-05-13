@@ -105,10 +105,17 @@ from .common import has_yum, yum_is_dnf
 
 log = get_file_logger(__file__)
 
+# We expect this to be provided as part of the layer that's executing `yum`
+# (most frequently, this is the build appliance).  The reason is that to be
+# perfectly correct, this `LD_PRELOAD` library has to be built with the same
+# toolchain as the `glibc` that we're interposing.
+#
+# It's not under `/__fs_image__/rpm/` because it's not actually RPM-specific.
+LIBRENAME_SHADOWED_PATH = Path('/__fs_image__/librename_shadowed.so')
+
 
 def _isolate_yum_dnf(
-    yum_dnf: YumDnf, install_root, dummy_dev, protected_path_to_dummy, *,
-    ld_preload: Path,
+    yum_dnf: YumDnf, install_root, dummy_dev, protected_path_to_dummy,
 ):
     'Isolate yum/dnf from the host filesystem.'
     # Yum is incorrigible -- it is impossible to give it a set of options
@@ -202,8 +209,7 @@ def _isolate_yum_dnf(
 
     # NB: The `trap` above means the `bash` process is not replaced by the
     # child, but that's not a problem.
-    LD_PRELOAD={quoted_ld_preload} \\
-        FS_IMAGE_SHADOWED_PATHS_ROOT={quoted_shadowed_root} exec "$@"
+    {maybe_set_env_vars} exec "$@"
     ''').format(
         prog_name=yum_dnf.value,
         default_conf_file={
@@ -221,8 +227,10 @@ def _isolate_yum_dnf(
                 ) + prot_path.shell_quote(),
             ) for prot_path, dummy in protected_path_to_dummy.items()
         ),
-        quoted_ld_preload=ld_preload.shell_quote(),
-        quoted_shadowed_root=SHADOWED_PATHS_ROOT.shell_quote(),
+        maybe_set_env_vars=' '.join([
+            f'LD_PRELOAD={LIBRENAME_SHADOWED_PATH.shell_quote()}',
+            f'FS_IMAGE_SHADOWED_PATHS_ROOT={SHADOWED_PATHS_ROOT.shell_quote()}',
+        ]) if os.path.exists(LIBRENAME_SHADOWED_PATH) else '',
     )]
 
 @contextmanager
@@ -384,9 +392,6 @@ def yum_dnf_from_snapshot(
             _dummies_for_protected_paths(
                 protected_paths,
             ) as protected_path_to_dummy, \
-            Path.resource(
-                __package__, 'librename_shadowed.so', exe=False,
-            ) as librename_shadowed, \
             subprocess.Popen([
                 'sudo',
                 # We need `--mount` so as not to leak our `--protect-path`
@@ -409,7 +414,6 @@ def yum_dnf_from_snapshot(
                 'unshare', '--mount', '--uts', '--ipc',
                 *_isolate_yum_dnf(
                     yum_dnf, install_root, dummy_dev, protected_path_to_dummy,
-                    ld_preload=librename_shadowed,
                 ),
                 'yum-dnf-from-snapshot',  # argv[0]
                 prog_name,
