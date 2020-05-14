@@ -48,9 +48,14 @@ class RepoObjectsTestCase(unittest.TestCase):
         ).best_checksum()))
 
     def test_repodata_and_metadata(self):
-        with tr.temp_repos_steps(repo_change_steps=[{
-            'whale': tr.Repo([tr.Rpm('x', '5', '6'), tr.Rpm('y', '3.4', 'b')]),
-        }]) as repos_dir, open(
+        with tr.temp_repos_steps(
+            gpg_signing_key=tr.get_test_signing_key(),
+            repo_change_steps=[{
+                'whale': tr.Repo(
+                    [tr.Rpm('x', '5', '6'), tr.Rpm('y', '3.4', 'b')]
+                ),
+            }]
+        ) as repos_dir, open(
             repos_dir / '0/whale/repodata/repomd.xml', 'rb',
         ) as infile:
             rmd = RepoMetadata.new(xml=infile.read())

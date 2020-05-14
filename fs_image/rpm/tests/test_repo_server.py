@@ -194,9 +194,10 @@ class RepoServerTestCase(unittest.TestCase):
         # We've got to populate RepoMetadata.xml with real XML because the
         # server re-parses that.  Note that the content of it isn't relevant
         # to the rest of the test, so it's fine to use a random repo.
-        with temp_repos.temp_repos_steps(repo_change_steps=[{
-            'nil': temp_repos.Repo([]),
-        }]) as repos_root, open(
+        with temp_repos.temp_repos_steps(
+            gpg_signing_key=temp_repos.get_test_signing_key(),
+            repo_change_steps=[{'nil': temp_repos.Repo([])}]
+        ) as repos_root, open(
             repos_root / '0/nil/repodata/repomd.xml', 'rb',
         ) as infile:
             repomd = RepoMetadata.new(xml=infile.read())

@@ -15,7 +15,11 @@ from typing import Iterator, Set, Tuple
 from fs_image.fs_utils import Path
 from ..repo_objects import Repodata, RepoMetadata
 from ..parse_repodata import get_rpm_parser, pick_primary_repodata
-from ..tests.temp_repos import SAMPLE_STEPS, temp_repos_steps
+from ..tests.temp_repos import (
+    get_test_signing_key,
+    SAMPLE_STEPS,
+    temp_repos_steps,
+)
 
 
 def _dir_paths(path: Path) -> Set[Path]:
@@ -55,7 +59,10 @@ class ParseRepodataTestCase(unittest.TestCase):
         # **might** improve the tests' power.  This is NOT needed for code
         # coverage, so if you have a perf concern about this test, it is
         # fine to reduce the scope.
-        cls.temp_repos_ctx = temp_repos_steps(repo_change_steps=SAMPLE_STEPS)
+        cls.temp_repos_ctx = temp_repos_steps(
+            gpg_signing_key=get_test_signing_key(),
+            repo_change_steps=SAMPLE_STEPS
+        )
         cls.repos_root = cls.temp_repos_ctx.__enter__()
 
     @classmethod
