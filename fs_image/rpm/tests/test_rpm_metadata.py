@@ -11,7 +11,7 @@ import shutil
 import unittest
 
 from fs_image.fs_utils import temp_dir
-from .temp_repos import temp_repos_steps, Repo, Rpm
+from .temp_repos import get_test_signing_key, temp_repos_steps, Repo, Rpm
 from ..rpm_metadata import compare_rpm_versions, RpmMetadata, _compare_values
 from fs_image.find_built_subvol import find_built_subvol
 
@@ -49,9 +49,12 @@ class RpmMetadataTestCase(unittest.TestCase):
             a = RpmMetadata.from_subvol(hello_subvol, 'rpm-test-mice')
 
     def test_rpm_metadata_from_file(self):
-        with temp_repos_steps(repo_change_steps=[{
-            'repo': Repo([Rpm('sheep', '0.3.5.beta', 'l33t.deadbeef.777')]),
-        }]) as repos_root, temp_dir() as td:
+        with temp_repos_steps(
+            gpg_signing_key=get_test_signing_key(),
+            repo_change_steps=[{
+                'repo': Repo([Rpm('sheep', '0.3.5.beta', 'l33t.deadbeef.777')]),
+            }],
+        ) as repos_root, temp_dir() as td:
             src_rpm_path = repos_root / ('0/repo/repo-pkgs/' +
                 'rpm-test-sheep-0.3.5.beta-l33t.deadbeef.777.x86_64.rpm')
             dst_rpm_path = td / 'arbitrary_unused_name.rpm'

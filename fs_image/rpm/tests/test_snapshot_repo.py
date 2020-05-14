@@ -21,9 +21,10 @@ from ..storage import Storage
 class SnapshotRepoTestCase(unittest.TestCase):
 
     def test_snapshot(self):
-        with temp_repos.temp_repos_steps(repo_change_steps=[{
-            'dog': temp_repos.SAMPLE_STEPS[0]['dog'],
-        }]) as repos_root, temp_dir() as td:
+        with temp_repos.temp_repos_steps(
+            gpg_signing_key=temp_repos.get_test_signing_key(),
+            repo_change_steps=[{'dog': temp_repos.SAMPLE_STEPS[0]['dog']}]
+        ) as repos_root, temp_dir() as td:
             with open(td / 'fake_gpg_key', 'w'):
                 pass
 

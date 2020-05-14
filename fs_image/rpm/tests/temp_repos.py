@@ -35,6 +35,12 @@ def rpmsign_path() -> str:
     return _build_appliance().path('/usr/bin/rpmsign')
 
 
+def get_test_signing_key() -> str:
+    with Path.resource(__package__, 'signing_key', exe=False) as keypath:
+        with open(keypath, 'r') as keyfile:
+            return keyfile.read()
+
+
 class Rpm(NamedTuple):
     name: str
     version: str
@@ -294,9 +300,7 @@ def make_repo_steps(
                 yum_dnf_conf.write(out_f)
 
 @contextmanager
-def temp_repos_steps(
-    base_dir=None, arch: str = 'x86_64', gpg_signing_key=None, *args, **kwargs
-):
+def temp_repos_steps(base_dir=None, arch: str = 'x86_64', *args, **kwargs):
     '''
     Given a history of changes to a set of RPM repos (as in `SAMPLE_STEPS`),
     generates a collection of RPM repos on disk by running:
@@ -309,17 +313,11 @@ def temp_repos_steps(
         repodata/{repomd.xml,other-repodata.{xml,sqlite}.bz2}
         reponame-pkgs/rpm-test-<name>-<version>-<release>.<arch>.rpm
     '''
-    if not gpg_signing_key:
-        keydir = load_location(__package__, 'gpgkeys')
-        with open(os.path.join(keydir, 'private.key')) as key:
-            gpg_signing_key = key.read()
-
     td = Path(tempfile.mkdtemp(dir=base_dir))
     try:
         make_repo_steps(
             out_dir=td,
             arch=arch,
-            gpg_signing_key=gpg_signing_key,
             *args,
             **kwargs
         )

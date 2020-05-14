@@ -56,22 +56,26 @@ class SnapshotReposTestCase(unittest.TestCase):
             snapshot_repos_from_args(args)
 
     def test_snapshot(self):
-        with temp_repos.temp_repos_steps(repo_change_steps=[
-            {  # All of the `snap0` repos are in the "mammal" universe
-                'bunny': temp_repos.SAMPLE_STEPS[0]['bunny'],
-                'cat': temp_repos.SAMPLE_STEPS[0]['cat'],
-                'dog': temp_repos.SAMPLE_STEPS[0]['dog'],
-                'kitteh': 'cat',
-                'gonna_skip_for_0': 'bunny',
-            },
-            # None of these are in the "mammal" universe, see `ru_json` below.
-            {
-                # 'bunny' stays unchanged, with the step 0 `repomd.xml`
-                'cat': temp_repos.SAMPLE_STEPS[1]['cat'],
-                'dog': temp_repos.SAMPLE_STEPS[1]['dog'],
-                # 'kitteh' stays unchanged, with the step 0 `repomd.xml`
-            },
-        ]) as repos_root, temp_dir() as td:
+        with temp_repos.temp_repos_steps(
+            gpg_signing_key=temp_repos.get_test_signing_key(),
+            repo_change_steps=[
+                {  # All of the `snap0` repos are in the "mammal" universe
+                    'bunny': temp_repos.SAMPLE_STEPS[0]['bunny'],
+                    'cat': temp_repos.SAMPLE_STEPS[0]['cat'],
+                    'dog': temp_repos.SAMPLE_STEPS[0]['dog'],
+                    'kitteh': 'cat',
+                    'gonna_skip_for_0': 'bunny',
+                },
+                # None of these are in the "mammal" universe, see `ru_json`
+                # below.
+                {
+                    # 'bunny' stays unchanged, with the step 0 `repomd.xml`
+                    'cat': temp_repos.SAMPLE_STEPS[1]['cat'],
+                    'dog': temp_repos.SAMPLE_STEPS[1]['dog'],
+                    # 'kitteh' stays unchanged, with the step 0 `repomd.xml`
+                },
+            ]
+        ) as repos_root, temp_dir() as td:
             storage_dict = {
                 'key': 'test',
                 'kind': 'filesystem',

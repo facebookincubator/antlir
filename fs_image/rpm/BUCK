@@ -84,7 +84,7 @@ python_library(
     resources = {
         third_party.library("busybox", "bin/busybox"): "tests/busybox",
         target_location("//tupperware/image/build_appliance:fb_build_appliance"): "tests/build-appliance",
-        target_location(":gpg-test-keypair"): "tests/gpgkeys",
+        ":gpg-test-signing-key": "tests/signing_key",
     },
     deps = [
         "//fs_image:find_built_subvol",
@@ -356,6 +356,11 @@ python_binary(
 export_file(
     name = "gpg-test-keypair",
     src = "tests/gpg_test_keypair/",
+)
+
+export_file(
+    name = "gpg-test-signing-key",
+    src = "tests/gpg_test_keypair/private.key",
 )
 
 python_binary(

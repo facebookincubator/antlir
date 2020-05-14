@@ -114,9 +114,11 @@ class DownloadReposTestCase(unittest.TestCase):
             "chaos_cat2": _CHAOS_CAT2,
             "friendly_ferret": _FRIENDLY_FERRET,
         }
+
         # Since we only read the repo, it is much faster to create it once
         # for all the tests (~4x speed-up as of writing).
         cls.temp_repos_ctx = temp_repos.temp_repos_steps(
+            gpg_signing_key=temp_repos.get_test_signing_key(),
             repo_change_steps=[
                 {"good_dog": _GOOD_DOG, "chaos_cat": _CHAOS_CAT, "bad_dog": _BAD_DOG},
                 {
