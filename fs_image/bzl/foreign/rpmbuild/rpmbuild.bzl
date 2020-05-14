@@ -97,8 +97,9 @@ def image_rpmbuild_layer(
         **image_layer_kwargs
     )
 
+    build_layer = name + "-rpmbuild-build"
     image_foreign_layer(
-        name = name,
+        name = build_layer,
         rule_type = "image_rpmbuild_layer",
         parent_layer = ":" + install_deps_layer,
         # While it's possible to want to support unprivileged builds, the
@@ -115,4 +116,19 @@ def image_rpmbuild_layer(
             "{}/SPECS/specfile.spec".format(rpmbuild_dir),
         ],
         **image_layer_kwargs
+    )
+
+    # This is The Worst™, but we need it to minimize dependency hops
+    # from the users of the rpmbuild_layer results to the inputs that
+    # are used for the RPM.
+    # Future: There is eventually going to be work to fix/remove the dependency
+    # limit for TD and this can be removed afterwards.
+    image_layer(
+        name = name,
+        parent_layer = ":" + build_layer,
+        features = [
+            image_mkdir("/", "please-ignore-fake-deps"),
+            image_install(specfile, "/please-ignore-fake-deps/specfile"),
+            image_install(":" + source_tarball, "/please-ignore-fake-deps/source.tgz"),
+        ],
     )
