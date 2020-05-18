@@ -94,9 +94,6 @@ def _nspawn_cmd(nspawn_subvol: Subvol):
         # Explicitly do not look for any settings for our ephemeral machine
         # on the host.
         '--settings=no',
-        # Test containers probably should not be accessing host devices, so
-        # take that away until proven necessary.
-        '--drop-capability=CAP_MKNOD',
         # The timezone should be set up explicitly, not by nspawn's fiat.
         '--timezone=off',  # requires v239+
         # Future: Uncomment.  This is good container hygiene.  It had to go
@@ -175,6 +172,11 @@ def _extra_nspawn_args_and_env(opts: _NspawnOpts) -> Tuple[
 
     if opts.hostname:
         extra_nspawn_args.append(f'--hostname={opts.hostname}')
+
+    # This is an internal option used only by TarballItem. The default is
+    # false, meaning that mknod is not allowed.
+    if not opts.allow_mknod:
+        extra_nspawn_args.append('--drop-capability=CAP_MKNOD')
 
     cmd_env = []
 

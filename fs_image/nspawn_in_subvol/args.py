@@ -183,6 +183,7 @@ class _NspawnOpts(NamedTuple):
     snapshot: bool = True  # For `ForeignLayerItem`
     user: pwd.struct_passwd = _NOBODY_USER
     debug_only_opts: _NspawnDebugOnlyNotForProdOpts = _DEBUG_OPTS_FOR_PROD
+    allow_mknod: bool = False
 
 
 def new_nspawn_opts(**kwargs):
@@ -297,6 +298,11 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         help='Do not pass `--private-network` to `systemd-nspawn`, letting '
             'container use the host network. You may also want to pass '
             '`--forward-tls-env`.',
+    )
+    parser.add_argument(
+        '--allow-mknod', action='store_true',
+        help='Do not pass `--drop-capability=CAP_MKNOD` to `systemd-nspawn`, '
+            'allowing the use of the mknod() system call',
     )
 
 

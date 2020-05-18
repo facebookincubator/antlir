@@ -74,10 +74,8 @@ Now you can refer to a stable version of a package, represented as an
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//fs_image/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//fs_image/bzl/image_actions:feature.bzl", "private_do_not_use_feature_json_genrule")
-load("//tupperware/image/buck:tw.bzl", "image")
 load(":image_layer.bzl", "image_layer")
 load(":target_tagger.bzl", "normalize_target")
 
@@ -216,9 +214,6 @@ def _fetched_package_layer(
         features = [":" + package_feature],
         mount_config = ":" + mount_config,
         visibility = visibility,
-        build_opts = image.opts(
-            build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
-        ),
     )
 
 # Deliberately not usable stand-alone, use `fetched_package_layers_from_db`
