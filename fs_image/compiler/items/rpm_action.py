@@ -4,14 +4,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import base64
 import enum
 import functools
 import pwd
 import os
 import shlex
-import sys
-import uuid
 
 from dataclasses import dataclass
 from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
@@ -23,7 +20,9 @@ from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from fs_image.subvol_utils import Subvol
 
-from .common import ImageItem, LayerOpts, PhaseOrder, protected_path_set
+from .common import (
+    ImageItem, LayerOpts, PhaseOrder, protected_path_set, generate_work_dir
+)
 
 
 class RpmAction(enum.Enum):
@@ -276,9 +275,7 @@ def _yum_dnf_using_build_appliance(
     yum_dnf_args: List[str],
     layer_opts: LayerOpts,
 ) -> None:
-    work_dir = '/work' + base64.urlsafe_b64encode(
-        uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
-    ).decode().strip('=')
+    work_dir = generate_work_dir()
     prog_name = layer_opts.rpm_installer.value
     mount_cache = '' if layer_opts.preserve_yum_dnf_cache else f'''
         mkdir -p {work_dir}/var/cache/{prog_name} ; \

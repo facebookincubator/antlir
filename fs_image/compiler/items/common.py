@@ -14,6 +14,7 @@ To understand how the methods `provides()` and `requires()` affect
 dependency resolution / installation order, start with the docblock at the
 top of `provides.py`.
 '''
+import base64
 import dataclasses
 import enum
 import hashlib
@@ -21,6 +22,7 @@ import inspect
 import os
 import subprocess
 import tempfile
+import uuid
 
 from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
@@ -397,3 +399,9 @@ def image_source_item(item_cls, exit_stack, layer_opts: LayerOpts):
     return lambda **kwargs: _make_image_source_item(
         item_cls, exit_stack, layer_opts, **kwargs,
     )
+
+
+def generate_work_dir():
+    return '/work' + base64.urlsafe_b64encode(
+        uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
+    ).decode().strip('=')

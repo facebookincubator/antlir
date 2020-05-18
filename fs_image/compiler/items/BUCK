@@ -194,6 +194,7 @@ python_library(
         ":mount_utils",
         "//fs_image/compiler:requires_provides",
         "//fs_image/compiler:subvolume_on_disk",
+        "//fs_image/nspawn_in_subvol:non_booted",
     ],
 )
 
@@ -221,6 +222,9 @@ python_unittest(
     resources = {
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
         TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
+        target_location(
+            TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
+        ): "tests/host-test-build-appliance",
     },
     deps = [
         ":common_testlib",
