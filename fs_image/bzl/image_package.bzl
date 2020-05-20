@@ -48,6 +48,8 @@ def image_package(
         name = name,
         out = "layer." + format,
         type = _IMAGE_PACKAGE,  # For queries
+        # This is very temporary to work around an FB-internal issue.
+        cacheable = False,
         bash = image_utils.wrap_bash_build_in_common_boilerplate(
             self_dependency = "//fs_image/bzl:image_package",
             # We don't need to hold any subvolume lock because we trust
