@@ -180,6 +180,7 @@ def get_filtered_and_expected_items(
         di.clone(
             path=p('56KB_nuls_clone'), offset=0, len=FILE_SZ,
             from_uuid=b'' if dump_mode else UUID_CREATE,
+            # pyre-fixme[6]: Expected `bytes` for 5th param but got `Union[bytes, int]`.
             from_transid=b'' if dump_mode else TRANSID_CREATE,
             from_path=p('56KB_nuls'), clone_offset=0,
         ),

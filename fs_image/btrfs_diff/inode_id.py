@@ -82,7 +82,6 @@ class InodeID(NamedTuple):
 
 def _norm_split_path(p: bytes) -> Sequence[bytes]:
     # Check explicitly since the downstream errors are incomprehensible.
-    # pyre-fixme[25]: Assertion will always fail.
     if not isinstance(p, bytes):
         raise TypeError(f'Expected bytes, got {p}')
     p = os.path.normpath(p)

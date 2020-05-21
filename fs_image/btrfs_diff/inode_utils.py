@@ -44,9 +44,11 @@ def erase_mode_and_owner(
     dir_mode: int,
 ):
     if ino.owner == owner:
+        # pyre-fixme[41]: Cannot reassign final attribute `owner`.
         ino.owner = None
     if ((ino.mode == dir_mode) if isinstance(ino, IncompleteDir)
             else (ino.mode == file_mode)):
+        # pyre-fixme[41]: Cannot reassign final attribute `mode`.
         ino.mode = None
 
 
@@ -59,6 +61,7 @@ def erase_utimes_in_range(
     if utimes is not None and all(start <= t <= end for t in (
         utimes.ctime, utimes.mtime, utimes.atime,
     )):
+        # pyre-fixme[41]: Cannot reassign final attribute `utimes`.
         ino.utimes = None
 
 
