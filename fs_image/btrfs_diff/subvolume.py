@@ -117,8 +117,6 @@ class Subvolume(NamedTuple):
         ino = self.inode_at_path(path)
         if ino is None:
             raise RuntimeError(f'Cannot apply {item}, {path} does not exist')
-        # pyre-fixme[7]: Expected `Union[IncompleteInode, Inode]` but got
-        #  `Union[None, IncompleteInode, Inode]`.
         return ino
 
     def _delete(self, path):
