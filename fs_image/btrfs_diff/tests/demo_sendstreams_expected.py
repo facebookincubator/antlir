@@ -13,6 +13,7 @@ Any time you run `demo_sendstreams` with `--update-gold`, you need to update
 the constants below.  The actual send-stream may need to change if the
 `btrfs send` implementation changes.
 '''
+import itertools
 import logging
 import os
 
@@ -36,7 +37,7 @@ TRANSID_MUTATE = 93996
 # Take a `oNUM-NUM-NUM` file from the send-stream, and use the middle number.
 TEMP_PATH_MIDDLES = {'create_ops': 93991, 'mutate_ops': 93995}
 # I have never seen this initial value change. First number in `oN-N-N`.
-TEMP_PATH_COUNTER = 256
+TEMP_PATH_COUNTER_START = 257
 
 # We have a 56KB file, and `btrfs send` emits 48KB writes.
 FILE_SZ1 = 48 * 1024
@@ -71,6 +72,10 @@ def get_filtered_and_expected_items(
         filtered_items, start_time=build_start_time, end_time=build_end_time,
     )
     filtered_items = list(filtered_items)
+
+    # In theory we never create more than ~10 temp paths but there's no
+    # harm in letting this just grow forever.
+    temp_path_counter = itertools.count(TEMP_PATH_COUNTER_START)
 
     di = SendStreamItems
 
@@ -110,9 +115,8 @@ def get_filtered_and_expected_items(
             yield utimes(os.path.dirname(bytes(renamed_item.dest)))
 
     def temp_path(prefix):
-        global TEMP_PATH_COUNTER
-        TEMP_PATH_COUNTER += 1
-        return p(f'o{TEMP_PATH_COUNTER}-{TEMP_PATH_MIDDLES[prefix]}-0')
+        return p(f'o{next(temp_path_counter)}-'
+                 f'{TEMP_PATH_MIDDLES[prefix]}-0')
 
     def write(path, *, offset: int, data: bytes):
         if dump_mode:
