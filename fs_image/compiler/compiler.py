@@ -27,7 +27,7 @@ from fs_image.compiler.items.common import LayerOpts
 from fs_image.compiler.items.phases_provide import PhasesProvideItem
 from fs_image.fs_utils import Path
 from fs_image.rpm.yum_dnf_conf import YumDnf
-from fs_image.subvol_utils import Subvol, get_subvolume_path
+from fs_image.subvol_utils import Subvol, get_subvolume
 
 from .dep_graph import DependencyGraph
 from .subvolume_on_disk import SubvolumeOnDisk
@@ -139,7 +139,7 @@ def build_image(args):
     subvol = Subvol(os.path.join(args.subvolumes_dir, args.subvolume_rel_path))
     layer_opts = LayerOpts(
         layer_target=args.child_layer_target,
-        build_appliance=get_subvolume_path(
+        build_appliance=get_subvolume(
             args.build_appliance_json, args.subvolumes_dir,
         ) if args.build_appliance_json else None,
         rpm_installer=args.rpm_installer,

@@ -65,9 +65,7 @@ class TarballItem(ImageItem):
             f'`image_layer` {layer_opts.layer_target} must set '
             '`build_appliance`'
         )
-        build_appliance = Subvol(
-            layer_opts.build_appliance, already_exists=True,
-        )
+        build_appliance = layer_opts.build_appliance
         work_dir = generate_work_dir()
         tar_cmd = ' '.join([
             'tar',

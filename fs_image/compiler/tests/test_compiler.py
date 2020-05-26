@@ -221,7 +221,7 @@ class CompilerTestCase(unittest.TestCase):
         )
         layer_opts = LayerOpts(
             layer_target='fake-target',
-            build_appliance=subvol_utils.get_subvolume_path(
+            build_appliance=subvol_utils.get_subvolume(
                 self.ba_path,
                 subvolumes_dir(),
             ),

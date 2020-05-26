@@ -19,7 +19,7 @@ from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
 from .temp_subvolumes import with_temp_subvols
 from ..find_built_subvol import subvolumes_dir, volume_dir
 from ..fs_utils import Path, temp_dir
-from ..subvol_utils import Subvol, SubvolOpts, get_subvolume_path
+from ..subvol_utils import Subvol, SubvolOpts, get_subvolume
 
 
 class SubvolTestCase(unittest.TestCase):
@@ -214,12 +214,12 @@ class SubvolTestCase(unittest.TestCase):
                     subvol_opts=SubvolOpts(readonly=False, seed_device=True)),
             )
 
-    def test_get_subvolume_path(self):
+    def test_get_subvolume(self):
         layer_json = os.path.join(
             os.path.dirname(__file__), 'hello-layer', 'layer.json',
         )
-        path = get_subvolume_path(layer_json, subvolumes_dir())
-        self.assertTrue(os.path.exists(os.path.join(path, 'hello_world')))
+        subvol = get_subvolume(layer_json, subvolumes_dir())
+        self.assertTrue(os.path.exists(subvol.path() / 'hello_world'))
 
     @with_temp_subvols
     def test_receive(self, temp_subvols):
