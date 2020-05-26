@@ -28,10 +28,13 @@ MiB = 2 ** 20
 
 # A simple helper returning path to subvolume referred by
 # "subvolume_rel_path" key in layer_json json file
-def get_subvolume_path(layer_json, subvolumes_dir):
+def get_subvolume(layer_json, subvolumes_dir):
     with open(layer_json) as infile:
-        return SubvolumeOnDisk.from_json_file(
-            infile, subvolumes_dir).subvolume_path()
+        return Subvol(
+            SubvolumeOnDisk.from_json_file(
+                infile, subvolumes_dir).subvolume_path(),
+            already_exists=True,
+        )
 
 
 # Exposed as a helper so that test_compiler.py can mock it.
@@ -111,7 +114,7 @@ class Subvol:
             raise AssertionError(f'No btrfs subvol at {self._path}')
 
     def path(
-        self, path_in_subvol: AnyStr=b'.', *, no_dereference_leaf=False,
+        self, path_in_subvol: AnyStr = b'.', *, no_dereference_leaf=False,
     ) -> Path:
         '''
         The only safe way to access paths inside the subvolume.  Do NOT
@@ -374,7 +377,7 @@ class Subvol:
 
     @contextmanager
     def _mark_readonly_and_send(
-        self, *, stdout, no_data: bool=False, parent: 'Subvol'=None,
+        self, *, stdout, no_data: bool = False, parent: 'Subvol' = None,
     ) -> Iterator[subprocess.Popen]:
         self.set_readonly(True)
 

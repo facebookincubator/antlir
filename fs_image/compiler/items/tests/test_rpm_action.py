@@ -44,13 +44,13 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
     def test_rpm_action_item_build_appliance(self):
         self._check_rpm_action_item_build_appliance(self._subvol_from_resource(
             __package__, 'host-test-build-appliance',
-        ).path())
+        ))
 
     def _opts(self):
         return DUMMY_LAYER_OPTS._replace(
             build_appliance=self._subvol_from_resource(
                 __package__, 'host-test-build-appliance',
-            ).path(),
+            ),
             rpm_installer=self._YUM_DNF,
         )
 

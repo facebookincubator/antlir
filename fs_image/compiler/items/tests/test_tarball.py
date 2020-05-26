@@ -144,7 +144,7 @@ class TarballItemTestCase(BaseItemTestCase):
                 with self.assertRaises(subprocess.CalledProcessError):
                     _tarball_item(t.name, '/d').build(
                         subvol, DUMMY_LAYER_OPTS._replace(
-                            build_appliance=TEST_BUILD_APPLIANCE.path(),
+                            build_appliance=TEST_BUILD_APPLIANCE,
                         ))
 
             # Adding new files & directories works. Overwriting a
@@ -181,7 +181,7 @@ class TarballItemTestCase(BaseItemTestCase):
                 with self.assertRaises(subprocess.CalledProcessError):
                     _tarball_item(tar_path, '/no_dir').build(
                         subvol, DUMMY_LAYER_OPTS._replace(
-                            build_appliance=TEST_BUILD_APPLIANCE.path(),
+                            build_appliance=TEST_BUILD_APPLIANCE,
                         ))
 
                 # Before unpacking the tarball
@@ -218,6 +218,6 @@ class TarballItemTestCase(BaseItemTestCase):
                 ):
                     self.assertEqual(before, render_subvol(sv))
                     item.build(sv, DUMMY_LAYER_OPTS._replace(
-                            build_appliance=TEST_BUILD_APPLIANCE.path(),
+                            build_appliance=TEST_BUILD_APPLIANCE,
                     ))
                     self.assertEqual(after, render_subvol(sv))

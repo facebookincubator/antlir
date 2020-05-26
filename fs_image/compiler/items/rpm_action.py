@@ -239,9 +239,7 @@ class RpmActionItem(ImageItem):
             ).items(), key=lambda cn: YUM_DNF_COMMAND_ORDER[cn[0]]):
                 rpms, bind_ros = _rpms_and_bind_ros(nors)
                 _yum_dnf_using_build_appliance(
-                    build_appliance=Subvol(
-                        layer_opts.build_appliance, already_exists=True,
-                    ),
+                    build_appliance=layer_opts.build_appliance,
                     bind_ros=bind_ros,
                     install_root=subvol.path(),
                     protected_paths=protected_path_set(subvol),

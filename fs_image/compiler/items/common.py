@@ -117,7 +117,7 @@ class PhaseOrder(enum.Enum):
 
 class LayerOpts(NamedTuple):
     artifacts_may_require_repo: bool
-    build_appliance: str
+    build_appliance: Optional[Subvol]
     layer_target: str
     rpm_installer: YumDnf
     # If set, overrides the package manager's default snapshot from the BA.
