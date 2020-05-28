@@ -142,7 +142,7 @@ python_unittest(
     par_style = "zip",
     resources = {
         TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone": "tests/host",
-        "//tupperware/image/build_appliance:fb_build_appliance_testing": "tests/build-appliance",
+        TEST_IMAGE_PREFIX + "build_appliance_testing": "tests/build-appliance",
         "//tupperware/image/base:base": "tests/bootable-systemd-os",
         ":host-hello-xar": "tests/host-hello-xar",
     },
