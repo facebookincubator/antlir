@@ -24,6 +24,10 @@ from .common import byteme, check_popen_returncode, get_file_logger
 
 log = get_file_logger(__file__)
 
+# We need this for lists that can contain a combination of `str` and `bytes`,
+# which is very common with `subprocess`. See https://fburl.com/wiki/dqrqyd8r.
+MehStr = Union[str, bytes]
+
 
 # `pathlib` refuses to operate on `bytes`, which is the only sane way on Linux.
 class Path(bytes):
