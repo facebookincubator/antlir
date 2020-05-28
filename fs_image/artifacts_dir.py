@@ -114,6 +114,8 @@ def ensure_clean_sh_exists(artifacts_dir: Path) -> None:
             buck clean
             sudo umount -l buck-image-out/volume
             rm buck-image-out/image.btrfs
+            rm -rf buck-image-out/eden-backing
+            rm -rf buck-image-out/tests
             rm buck-image-out/clean.sh
         '''))
     os.chmod(
