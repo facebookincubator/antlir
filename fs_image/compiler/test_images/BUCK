@@ -4,7 +4,7 @@
 ## test will then check that they become the right image compiler Items.
 ##
 
-load("//fs_image/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
+load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
@@ -792,4 +792,22 @@ image.layer(
     features = [
         image.tarball(":create_ops.tar.gz", "/"),
     ],
+)
+
+replace_defaults_by_test_snapshot = [
+    install_rpm_repo_snapshot("//fs_image/rpm:repo-snapshot-for-tests"),
+    default_rpm_repo_snapshot_for(
+        "yum",
+        "//fs_image/rpm:repo-snapshot-for-tests",
+    ),
+    default_rpm_repo_snapshot_for(
+        "dnf",
+        "//fs_image/rpm:repo-snapshot-for-tests",
+    ),
+]
+
+image.layer(
+    name = "build_appliance_testing",
+    parent_layer = DEFAULT_BUILD_APPLIANCE,
+    features = replace_defaults_by_test_snapshot,
 )
