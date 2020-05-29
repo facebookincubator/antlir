@@ -93,7 +93,7 @@ async def main(
     args: Iterable[str],
 ) -> None:
     returncode = -1
-    fbcode = find_repo_root(sys.argv[0])
+    fbcode = find_repo_root()
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
     with importlib.resources.path(

@@ -9,7 +9,9 @@ import os
 import shutil
 import stat
 import subprocess
+import sys
 import textwrap
+from typing import Optional
 
 from .fs_utils import Path, populate_temp_file_and_rename
 
@@ -54,17 +56,18 @@ def _maybe_make_symlink_to_scratch(
     return target_path
 
 
-def find_repo_root(path_in_repo: str) -> str:
+def find_repo_root(path_in_repo: Optional[str] = None) -> str:
     '''
-    The caller is responsible for providing a path known to be in the repo.
-    We cannot just use __file__, because that will never in the repo in
-    tests running under @mode/opt. For that reason, tests should just pass
-    sys.argv[0].
+    If the caller does not provide a path known to be in the repo, a reasonable
+    default of sys.argv[0] will be used. This is reasonable as binaries/tests
+    calling this library are also very likely to be in repo.
 
     This is intended to work:
      - under Buck's internal macro interpreter, and
      - using the system python from `facebookexperimental/buckit`.
     '''
+    if path_in_repo is None:
+        path_in_repo = sys.argv[0]
     repo_path = os.path.abspath(path_in_repo)
     while True:
         repo_path = os.path.dirname(repo_path)
@@ -77,7 +80,9 @@ def find_repo_root(path_in_repo: str) -> str:
     # Not reached
 
 
-def ensure_per_repo_artifacts_dir_exists(path_in_repo: str) -> str:
+def ensure_per_repo_artifacts_dir_exists(
+    path_in_repo: Optional[str] = None
+) -> str:
     "See `find_repo_root`'s docblock to understand `path_in_repo`"
     repo_path = find_repo_root(path_in_repo)
     artifacts_dir = os.path.join(repo_path, 'buck-image-out')
@@ -124,5 +129,4 @@ def ensure_clean_sh_exists(artifacts_dir: Path) -> None:
 
 
 if __name__ == '__main__':
-    import sys
-    print(ensure_per_repo_artifacts_dir_exists(sys.argv[0]))
+    print(ensure_per_repo_artifacts_dir_exists())

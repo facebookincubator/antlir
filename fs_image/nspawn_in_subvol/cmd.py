@@ -11,7 +11,6 @@ Converts structures from `args.py` into a `systemd-nspawn` command-line.
 '''
 import os
 import re
-import sys
 import uuid
 import subprocess
 
@@ -142,7 +141,7 @@ def _extra_nspawn_args_and_env(opts: _NspawnOpts) -> Tuple[
         extra_nspawn_args.extend(bind_args(
             # Buck seems to operate with `realpath` when it resolves
             # `$(location)` macros, so this is what we should mount.
-            os.path.realpath(find_repo_root(sys.argv[0]))
+            os.path.realpath(find_repo_root())
         ))
         # Future: we **may** also need to mount the scratch directory
         # pointed to by `buck-image-out`, since otherwise repo code trying
