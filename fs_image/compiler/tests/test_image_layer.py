@@ -7,7 +7,6 @@
 import copy
 import json
 import os
-import sys
 import unittest
 
 from contextlib import contextmanager
@@ -255,7 +254,7 @@ class ImageLayerTestCase(unittest.TestCase):
             ):
                 # Assume that the prefix of the repo (e.g. /home or /data)
                 # is not one of the normal FHS-type directories below.
-                d = os.path.abspath(find_repo_root(sys.argv[0]))
+                d = os.path.abspath(find_repo_root())
                 while d != '/':
                     self.assertEqual(['(Dir)', {}], pop_path(r, d))
                     d = os.path.dirname(d)

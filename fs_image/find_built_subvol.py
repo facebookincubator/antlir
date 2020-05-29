@@ -16,10 +16,6 @@ from .volume_for_repo import get_volume_for_current_repo
 
 # NB: Memoizing this function would be pretty reasonable.
 def volume_dir(path_in_repo=None):
-    if path_in_repo is None:
-        # This is the right default for unit tests and other things that get
-        # run directly from the repo's `buck-out`.
-        path_in_repo = sys.argv[0]
     lots_of_bytes = 1e8  # Our loopback is sparse, so just make it huge.
     return get_volume_for_current_repo(
         lots_of_bytes, ensure_per_repo_artifacts_dir_exists(path_in_repo),
@@ -28,6 +24,7 @@ def volume_dir(path_in_repo=None):
 
 def subvolumes_dir(path_in_repo=None):
     return os.path.join(volume_dir(path_in_repo), 'targets')
+
 
 _get_subvolumes_dir = subvolumes_dir
 

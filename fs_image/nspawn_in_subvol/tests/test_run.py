@@ -7,7 +7,6 @@
 import functools
 import os
 import subprocess
-import sys
 import tempfile
 import textwrap
 import threading
@@ -296,7 +295,7 @@ class NspawnTestCase(unittest.TestCase):
             '--bind-repo-ro', '--',
             'grep', 'supercalifragilisticexpialidocious',
             os.path.join(
-                os.path.realpath(find_repo_root(sys.argv[0])),
+                os.path.realpath(find_repo_root()),
                 'fs_image/nspawn_in_subvol/tests',
                 os.path.basename(__file__),
             ),
