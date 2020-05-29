@@ -70,13 +70,13 @@ def find_repo_root(path_in_repo: Optional[str] = None) -> str:
         path_in_repo = sys.argv[0]
     repo_path = os.path.abspath(path_in_repo)
     while True:
-        repo_path = os.path.dirname(repo_path)
         if os.path.realpath(repo_path) == '/':  # No infinite loop on //
             raise RuntimeError(
                 f'Could not find .buckconfig in any ancestor of {path_in_repo}'
             )
         if os.path.exists(os.path.join(repo_path, '.buckconfig')):
             return repo_path
+        repo_path = os.path.dirname(repo_path)
     # Not reached
 
 
