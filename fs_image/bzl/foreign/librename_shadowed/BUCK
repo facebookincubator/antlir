@@ -1,6 +1,12 @@
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 
-export_file(name = "rename_shadowed.c")
+export_file(
+    name = "rename_shadowed.c",
+    # This file has to be visible to anything that uses the foreign
+    # `image_build_librename_shadowed` layer.  Since we don't know
+    # what those uses could be, we have to just make it public.
+    visibility = ["PUBLIC"],
+)
 
 # Unlike the prod compilation in `librename_shadowed.bzl`, this test-only
 # compilation does not use the container's C compiler, but we hope the
