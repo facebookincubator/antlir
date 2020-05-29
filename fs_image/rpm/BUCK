@@ -357,6 +357,9 @@ python_binary(
 export_file(
     name = "gpg-test-keypair",
     src = "tests/gpg_test_keypair/",
+    # The only other use of this file is for the compiler test images.
+    # lets keep it limited to just that.
+    visibility = ["//fs_image/compiler/test_images/..."],
 )
 
 export_file(
