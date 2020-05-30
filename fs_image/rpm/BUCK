@@ -90,6 +90,8 @@ python_library(
     deps = [
         "//fs_image:find_built_subvol",
         "//fs_image:fs_utils",
+        "//fs_image/compiler/items:common",
+        "//fs_image/nspawn_in_subvol:non_booted",
         third_party.library(
             "python-gnupg",
             platform = "python",
