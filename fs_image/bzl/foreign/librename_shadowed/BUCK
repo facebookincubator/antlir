@@ -25,7 +25,7 @@ buck_genrule(
 
 python_library(
     name = "testlib_librename_shadowed.so",
-    srcs = {
+    resources = {
         ":librename_shadowed_for_test.so": "tests/librename_shadowed.so",
     },
 )
