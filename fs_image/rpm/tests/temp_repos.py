@@ -7,6 +7,7 @@
 'See `temp_repo_steps` and `SAMPLE_STEPS` for documentation.'
 import gnupg
 import os
+import pwd
 import shlex
 import shutil
 import subprocess
@@ -18,21 +19,17 @@ from contextlib import contextmanager
 from typing import Dict, List, NamedTuple, Optional
 
 from fs_image.common import load_location
+from fs_image.compiler.items.common import generate_work_dir
 from fs_image.find_built_subvol import find_built_subvol
 from fs_image.fs_utils import Path, temp_dir
+from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
+from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.subvol_utils import Subvol
 
 
 def _build_appliance() -> Subvol:
     return find_built_subvol(load_location(__package__, 'build-appliance'))
 
-
-def rpmbuild_path() -> str:
-    return _build_appliance().path('/usr/bin/rpmbuild')
-
-
-def rpmsign_path() -> str:
-    return _build_appliance().path('/usr/bin/rpmsign')
 
 
 def get_test_signing_key() -> str:
@@ -193,15 +190,32 @@ def sign_rpm(rpm_path: Path, gpg_signing_key: str) -> None:
         gpg = gnupg.GPG(gnupghome=td)
         res = gpg.import_keys(gpg_signing_key)
         assert res.count == 1, 'Only 1 private key can be imported for signing'
-        subprocess.check_call(
-            [
-                rpmsign_path(),
+
+        # Paths inside the container for passing artifacts to and fro
+        work_dir = Path(generate_work_dir())
+        package_dir = work_dir / 'package'
+        gpg_dir = work_dir / 'gpg'
+
+        opts = new_nspawn_opts(
+            cmd=[
+                '/usr/bin/rpmsign',
                 f'--define=_gpg_name {res.fingerprints[0]}',
                 '--addsign',
-                rpm_path
+                Path(
+                    package_dir / os.path.basename(rpm_path)
+                ).shell_quote(),
             ],
-            env={'GNUPGHOME': td}
+            layer=_build_appliance(),
+            bindmount_ro=[
+                (td, gpg_dir),
+            ],
+            bindmount_rw=[
+                (os.path.dirname(rpm_path), package_dir),
+            ],
+            user=pwd.getpwnam('root'),
+            setenv=[f'GNUPGHOME={gpg_dir.shell_quote()}'],
         )
+        run_non_booted_nspawn(opts, PopenArgs())
 
 
 def build_rpm(
@@ -212,14 +226,44 @@ def build_rpm(
             Path.resource(__package__, 'busybox', exe=True) as busybox_path:
         tf.write(rpm.spec(busybox_path).encode())
         tf.flush()
-        subprocess.run(
-            [
-                rpmbuild_path(), '-bb', '--target', arch,
-                '--buildroot', td / 'build', tf.name,
+
+        work_dir = Path(generate_work_dir())
+
+        format_kwargs = {
+            "quoted_arch": shlex.quote(arch),
+            "quoted_buildroot": Path(work_dir / 'build').shell_quote(),
+            "quoted_home": Path(work_dir / 'home').shell_quote(),
+            "quoted_spec_file": shlex.quote(tf.name),
+            "quoted_work_dir": work_dir.shell_quote(),
+            # We get the uid of the current user so that we can chown the
+            # work_dir *inside* the running container.  The nspawn'd build
+            # appliance container needs to run as root so that it can mkdir
+            # the `work_dir` which exists at /.  If we don't chown the
+            # resulting tree that `rpmbuild` creates the rename would would
+            # fail.
+            "current_uid": os.getuid(),
+        }
+
+        opts = new_nspawn_opts(
+            cmd=[
+                'sh', '-uec',
+                '''\
+                /usr/bin/rpmbuild \
+                -bb \
+                --target {quoted_arch} \
+                --buildroot {quoted_buildroot} \
+                {quoted_spec_file} \
+                && chown -R {current_uid} {quoted_work_dir} \
+                '''.format(**format_kwargs),
             ],
-            env={'HOME': td / 'home'},
-            check=True,
+            layer=_build_appliance(),
+            bindmount_ro=[(tf.name, tf.name)],
+            bindmount_rw=[(td, work_dir)],
+            user=pwd.getpwnam('root'),
+            setenv=['HOME={quoted_home}'.format(**format_kwargs)],
         )
+        run_non_booted_nspawn(opts, PopenArgs())
+
         # `rpmbuild` has a non-configurable output layout, so
         # we'll move the resulting rpm into our package dir.
         rpms_dir = td / 'home/rpmbuild/RPMS' / arch
