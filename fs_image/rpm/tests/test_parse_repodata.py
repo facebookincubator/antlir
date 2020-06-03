@@ -6,6 +6,7 @@
 
 import bz2
 import gzip
+import lzma
 import os
 import unittest
 
@@ -151,8 +152,14 @@ class ParseRepodataTestCase(unittest.TestCase):
             _, sql_rd = self._xml_and_sqlite_primaries(repomd)
             with open(repo_path / sql_rd.location, 'rb') as sf:
                 bz_data = sf.read()
-            # Some in-the-wild primary SQLite dbs are .gz, while all of ours
-            # are .bz2, so let's recompress.
+
+            with self.assertRaisesRegex(RuntimeError, '^Unused data after '):
+                _rpm_set(BytesIO(bz_data + b'oops'), sql_rd)
+            with self.assertRaisesRegex(RuntimeError, 'archive is incomplete'):
+                _rpm_set(BytesIO(bz_data[:-5]), sql_rd)
+
+            # Some in-the-wild primary SQLite dbs are .gz or .xz, while
+            # internally they are all are .bz2, so let's recompress.
             gzf = BytesIO()
             with gzip.GzipFile(fileobj=gzf, mode='wb') as gz_out:
                 gz_out.write(bz2.decompress(bz_data))
@@ -161,7 +168,13 @@ class ParseRepodataTestCase(unittest.TestCase):
                 _rpm_set(gzf, sql_rd._replace(location='X-primary.sqlite.gz')),
                 _rpm_set(BytesIO(bz_data), sql_rd),
             )
-            with self.assertRaisesRegex(RuntimeError, '^Unused data after '):
-                _rpm_set(BytesIO(bz_data + b'oops'), sql_rd)
-            with self.assertRaisesRegex(RuntimeError, 'archive is incomplete'):
-                _rpm_set(BytesIO(bz_data[:-5]), sql_rd)
+
+            # Now do .xz
+            xzf = BytesIO()
+            with lzma.LZMAFile(filename=xzf, mode='wb') as xz_out:
+                xz_out.write(bz2.decompress(bz_data))
+            xzf.seek(0)
+            self.assertEqual(
+                _rpm_set(xzf, sql_rd._replace(location='X-primary.sqlite.xz')),
+                _rpm_set(BytesIO(bz_data), sql_rd),
+            )

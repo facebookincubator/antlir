@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import bz2
+import lzma
 import re
 import sqlite3
 import tempfile
@@ -12,7 +13,7 @@ import zlib
 
 from collections import defaultdict
 from contextlib import AbstractContextManager
-from typing import Iterator, Union
+from typing import Iterator, List, Union
 from xml.etree import ElementTree
 
 from .repo_objects import Checksum, Repodata, Rpm
@@ -54,6 +55,11 @@ class SQLiteRpmParser(AbstractContextManager):
             )
         elif path.endswith('.bz2'):
             self._unpacker = bz2.BZ2Decompressor()
+            self._unpacker_needs_input_and_next_chunk = lambda: (
+                self._unpacker.needs_input, b'',
+            )
+        elif path.endswith('.xz'):
+            self._unpacker = lzma.LZMADecompressor()
             self._unpacker_needs_input_and_next_chunk = lambda: (
                 self._unpacker.needs_input, b'',
             )
@@ -240,7 +246,7 @@ class XMLRpmParser(AbstractContextManager):
                     self._package[self._TIME] = elt.attrib['build']
 
 
-def pick_primary_repodata(repodatas: Repodata) -> Repodata:
+def pick_primary_repodata(repodatas: List[Repodata]) -> Repodata:
     primaries = defaultdict(list)
     for rd in repodatas:
         if rd.is_primary_sqlite():
