@@ -1,3 +1,4 @@
+load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 load("//fs_image/bzl:systemd.bzl", "systemd")
@@ -107,7 +108,7 @@ EOF
 
 image.layer(
     name = "systemd_feature-layer",
-    parent_layer = "//tupperware/image/slimos:slimos-stable",
+    parent_layer = DEFAULT_BUILD_APPLIANCE,
     features = [
         # A target with a dest
         systemd.install_unit(
