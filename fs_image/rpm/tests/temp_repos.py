@@ -257,7 +257,7 @@ def build_rpm(
                 '''.format(**format_kwargs),
             ],
             layer=_build_appliance(),
-            bindmount_ro=[(tf.name, tf.name)],
+            bindmount_ro=[(tf.name, tf.name), (busybox_path, busybox_path)],
             bindmount_rw=[(td, work_dir)],
             user=pwd.getpwnam('root'),
             setenv=['HOME={quoted_home}'.format(**format_kwargs)],
