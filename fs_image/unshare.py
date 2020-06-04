@@ -150,6 +150,9 @@ class Unshare:
             # which would explicitly implement the right behavior (depending
             # on whether or not Namespace.MOUNT is specified) AFTER
             # `self._namespace_to_file` is already populated.
+            rc = self._keepalive_proc.poll()
+            assert not rc, f"keepalive process exited unexpectedly {rc}"
+            assert nspid_out, "failed to collect namespace pid"
             assert nspid_out[0] == b'NSpid:', nspid_out
             if Namespace.PID in self._namespaces:
                 assert nspid_out[-1] == b'1', nspid_out
@@ -212,7 +215,8 @@ class Unshare:
             self._namespace_to_file = None
 
         try:
-            os.close(self._root_fd)
+            if self._root_fd:
+                os.close(self._root_fd)
         # Same coverage story as above for the `f.close()`
         except BaseException:  # pragma: no cover
             log.exception(f'Closing root directory FD {self._root_fd}')
