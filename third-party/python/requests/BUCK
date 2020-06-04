@@ -1,8 +1,9 @@
-remote_file(
+http_file(
     name = "requests-download",
-    url = "https://files.pythonhosted.org/packages/51/bd/23c926cd341ea6b7dd0b2a00aba99ae0f828be89d72b2190f27c11d4b7fb/requests-2.22.0-py2.py3-none-any.whl",
-    sha1 = "e1fc28120002395fe1f2da9aacea4e15a449d9ee",
-    out = "requests-2.22.0-py2.py3-none-any.whl",
+    urls = [
+        "https://files.pythonhosted.org/packages/1a/70/1935c770cb3be6e3a8b78ced23d7e0f3b187f5cbfab4749523ed65d7c9b1/requests-2.23.0-py2.py3-none-any.whl",
+    ],
+    sha256 = "43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee",
 )
 
 prebuilt_python_library(

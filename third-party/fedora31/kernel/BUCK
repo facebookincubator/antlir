@@ -1,22 +1,25 @@
-remote_file(
+http_file(
     name = "5.3.7-301.fc31.x86_64-core.rpm",
-    url = "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/k/kernel-core-5.3.7-301.fc31.x86_64.rpm",
-    sha1 = "dae4263b23930c4f25a7eae28a1fda606abfd561",
-    out = "5.3.7-301.fc31.x86_64-core.rpm",
+    urls = [
+        "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/k/kernel-core-5.3.7-301.fc31.x86_64.rpm",
+    ],
+    sha256 = "f0509e333636e5c34726c8a2b8260bf88fe0a35b95cae6dda62191fee1be4c6a",
 )
 
-remote_file(
+http_file(
     name = "5.3.6-300.fc31.x86_64-headers.rpm",
-    url = "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/k/kernel-headers-5.3.6-300.fc31.x86_64.rpm",
-    sha1 = "7fe40f1592bb8ac3c47d3f97b447a7bf6f2e0a05",
-    out = "5.3.6-300.fc31.x86_64-headers.rpm",
+    urls = [
+        "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/k/kernel-headers-5.3.6-300.fc31.x86_64.rpm",
+    ],
+    sha256 = "d31acb5e7a91e55c0cea895d2c18da63d29b8e6452ed78b597c5e29c9f83f8fa",
 )
 
-remote_file(
+http_file(
     name = "5.3.7-301.fc31.x86_64-devel.rpm",
-    url = "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/k/kernel-devel-5.3.7-301.fc31.x86_64.rpm",
-    sha1 = "ff5bebf0be74228591bc046175815a3e5ce927f2",
-    out = "5.3.7-301.fc31.x86_64-devel.rpm",
+    urls = [
+        "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/k/kernel-devel-5.3.7-301.fc31.x86_64.rpm",
+    ],
+    sha256 = "733aa63b13d26af5bb0596cbeec342a6c9c199bb8348948613e84e976b5d0aa2",
 )
 
 genrule(

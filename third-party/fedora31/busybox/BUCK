@@ -1,8 +1,9 @@
-remote_file(
+http_file(
     name = "busybox-download",
-    url = "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/b/busybox-1.30.1-2.fc31.x86_64.rpm",
-    sha1 = "68e3cf78e6e0ced54b657bc5a56afd4ce901494a",
-    out = "busybox-1.30.1-2.fc31.x86_64.rpm",
+    urls = [
+        "http://mirrors.kernel.org/fedora/releases/31/Everything/x86_64/os/Packages/b/busybox-1.30.1-2.fc31.x86_64.rpm",
+    ],
+    sha256 = "6450a95ecf5948a92a701e604cc9c067442f2f66815488b79a0097f2d3e66717",
 )
 
 genrule(
