@@ -1,0 +1,13 @@
+http_file(
+    name = "python-gnupg-download",
+    urls = [
+        "https://files.pythonhosted.org/packages/cb/85/8a1588a04172e0853352ecfe214264c65a62ab35374d9ad9c569cf94c2a3/python_gnupg-0.4.6-py2.py3-none-any.whl",
+    ],
+    sha256 = "cba3566e8a8fb7bb417d6897a6e17bfc7f9371052e57eb0057783c07d762a679",
+)
+
+prebuilt_python_library(
+    name = "python-gnupg",
+    binary_src = ":python-gnupg-download",
+    visibility = ["PUBLIC"],
+)
