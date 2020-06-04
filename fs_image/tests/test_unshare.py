@@ -110,8 +110,9 @@ class UnshareTestCase(unittest.TestCase):
         unshare = Unshare([Namespace.MOUNT])  # This does not fail
         # Give bad arguments to the inner `sudo` to make the keepalive fail
         # quickly without outputting the inner PID.
+        # Early failure caught by "assert not keepalive_proc.poll()"
         with mock.patch('os.geteuid', side_effect='NOT-A-REAL-USER-ID'), \
-                self.assertRaises(IndexError):  # nspid_out[0] fails
+                self.assertRaises(AssertionError):
             with unshare:
                 raise AssertionError   # Guarantees __enter__ was what failed
         # The Unshare was left in a clean-ish state, which strongly suggests
