@@ -1,8 +1,9 @@
-remote_file(
+http_file(
     name = "click-download",
-    url = "https://files.pythonhosted.org/packages/fa/37/45185cb5abbc30d7257104c434fe0b07e5a195a6847506c074527aa599ec/Click-7.0-py2.py3-none-any.whl",
-    sha1 = "c5b8267a60ed6a4035eaa575485c2d11d3cf5688",
-    out = "Click-7.0-py2.py3-none-any.whl",
+    sha256 = "dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc",
+    urls = [
+        "https://files.pythonhosted.org/packages/d2/3d/fa76db83bf75c4f8d338c2fd15c8d33fdd7ad23a9b5e57eb6c5de26b430e/click-7.1.2-py2.py3-none-any.whl",
+    ],
 )
 
 prebuilt_python_library(
@@ -10,4 +11,3 @@ prebuilt_python_library(
     binary_src = ":click-download",
     visibility = ["PUBLIC"],
 )
-
