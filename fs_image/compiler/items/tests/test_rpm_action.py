@@ -22,8 +22,10 @@ from fs_image.tests.temp_subvolumes import TempSubvolumes
 from ..common import PhaseOrder
 from ..rpm_action import RpmAction, RpmActionItem
 
-from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
+from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
 from .rpm_action_base import RpmActionItemTestBase
+
+DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 
 
 class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
@@ -47,10 +49,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
         ))
 
     def _opts(self):
-        return DUMMY_LAYER_OPTS._replace(
-            build_appliance=self._subvol_from_resource(
-                __package__, 'host-test-build-appliance',
-            ),
+        return DUMMY_LAYER_OPTS_BA._replace(
             rpm_installer=self._YUM_DNF,
         )
 

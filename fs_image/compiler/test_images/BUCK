@@ -155,9 +155,6 @@ image.layer(
         image.mkdir("/var/lib", "dnf"),
         image.mkdir("/var/lib", "yum"),
     ],
-    build_opts = image.opts(
-        build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
-    ),
 )
 
 # Verified by `test_*_build_appliance` in `test-image-layer`.

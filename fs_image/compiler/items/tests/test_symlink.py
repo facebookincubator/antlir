@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import shlex
 import sys
 import tempfile
 
@@ -16,7 +15,11 @@ from fs_image.tests.temp_subvolumes import TempSubvolumes
 from ..install_file import InstallFileItem
 from ..symlink import SymlinkToDirItem, SymlinkToFileItem
 
-from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
+from .common import (
+    BaseItemTestCase, DUMMY_LAYER_OPTS, get_dummy_layer_opts_ba, render_subvol
+)
+
+DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 
 
 class SymlinkItemsTestCase(BaseItemTestCase):
@@ -36,7 +39,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             {require_directory('/'), require_file('/source_file')},
         )
 
-    def test_symlink_command(self):
+    def _test_symlink_command(self, layer_opts):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.create('tar-sv')
             subvol.run_as_root(['mkdir', subvol.path('dir')])
@@ -45,14 +48,14 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             with tempfile.NamedTemporaryFile() as tf:
                 InstallFileItem(
                     from_target='t', source=tf.name, dest='/file',
-                ).build(subvol, DUMMY_LAYER_OPTS)
+                ).build(subvol, layer_opts)
 
             SymlinkToDirItem(
                 from_target='t', source='/dir', dest='/dir_symlink'
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, layer_opts)
             SymlinkToFileItem(
                 from_target='t', source='file', dest='/file_symlink'
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, layer_opts)
 
             # Make a couple of absolute symlinks to test our behavior on
             # linking to paths that contain those.
@@ -67,7 +70,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 from_target='t',
                 source='/abs_link_to_file',
                 dest='/link_to_abs_link',
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, layer_opts)
             # This link traverses a directory that is an absolute link.  The
             # resulting relative symlink is not traversible from outside the
             # container.
@@ -75,7 +78,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 from_target='t',
                 source='my_dir_link/inner',
                 dest='/dir/inner_link',
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, layer_opts)
 
             self.assertEqual(['(Dir)', {
                 'dir': ['(Dir)', {
@@ -91,3 +94,9 @@ class SymlinkItemsTestCase(BaseItemTestCase):
 
                 'link_to_abs_link': ['(Symlink abs_link_to_file)'],
             }], render_subvol(subvol))
+
+    def test_symlink_command_non_ba(self):
+        self._test_symlink_command(DUMMY_LAYER_OPTS)
+
+    def test_symlink_command_ba(self):
+        self._test_symlink_command(DUMMY_LAYER_OPTS_BA)

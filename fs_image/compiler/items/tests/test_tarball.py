@@ -13,8 +13,6 @@ import tempfile
 
 from contextlib import ExitStack
 
-from fs_image.find_built_subvol import find_built_subvol
-from fs_image.common import load_location
 from fs_image.compiler.requires_provides import require_directory
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
@@ -22,13 +20,11 @@ from ..common import image_source_item, _hash_path
 from ..tarball import TarballItem
 
 from .common import (
-    BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol, temp_filesystem,
-    temp_filesystem_provides,
+    BaseItemTestCase, DUMMY_LAYER_OPTS, get_dummy_layer_opts_ba, render_subvol,
+    temp_filesystem, temp_filesystem_provides,
 )
 
-TEST_BUILD_APPLIANCE = find_built_subvol(load_location(
-    __package__, 'host-test-build-appliance',
-))
+DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 
 
 def _tarball_item(
@@ -143,9 +139,7 @@ class TarballItemTestCase(BaseItemTestCase):
                     tar_obj.addfile(tarfile.TarInfo('exists'))
                 with self.assertRaises(subprocess.CalledProcessError):
                     _tarball_item(t.name, '/d').build(
-                        subvol, DUMMY_LAYER_OPTS._replace(
-                            build_appliance=TEST_BUILD_APPLIANCE,
-                        ))
+                        subvol, DUMMY_LAYER_OPTS_BA)
 
             # Adding new files & directories works. Overwriting a
             # pre-existing directory leaves the owner+mode of the original
@@ -180,9 +174,7 @@ class TarballItemTestCase(BaseItemTestCase):
                 # Fail when the destination does not exist
                 with self.assertRaises(subprocess.CalledProcessError):
                     _tarball_item(tar_path, '/no_dir').build(
-                        subvol, DUMMY_LAYER_OPTS._replace(
-                            build_appliance=TEST_BUILD_APPLIANCE,
-                        ))
+                        subvol, DUMMY_LAYER_OPTS_BA)
 
                 # Before unpacking the tarball
                 orig_content = ['(Dir)', {'d': ['(Dir)', {
@@ -217,7 +209,5 @@ class TarballItemTestCase(BaseItemTestCase):
                     ),
                 ):
                     self.assertEqual(before, render_subvol(sv))
-                    item.build(sv, DUMMY_LAYER_OPTS._replace(
-                            build_appliance=TEST_BUILD_APPLIANCE,
-                    ))
+                    item.build(sv, DUMMY_LAYER_OPTS_BA)
                     self.assertEqual(after, render_subvol(sv))
