@@ -15,7 +15,7 @@ import sys
 from contextlib import contextmanager
 
 from fs_image import subvol_utils
-from fs_image.compiler.items import rpm_action, tarball
+from fs_image.compiler.items import rpm_action, tarball, symlink
 from fs_image.find_built_subvol import subvolumes_dir
 from fs_image.fs_utils import Path, temp_dir
 from fs_image.rpm.yum_dnf_conf import YumDnf
@@ -52,6 +52,7 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     fn = unittest.mock.patch.object(subvol_utils.Subvol, 'run_as_root')(fn)
     fn = unittest.mock.patch.object(rpm_action, 'run_non_booted_nspawn')(fn)
     fn = unittest.mock.patch.object(tarball, 'run_non_booted_nspawn')(fn)
+    fn = unittest.mock.patch.object(symlink, 'run_non_booted_nspawn')(fn)
     return fn
 
 
@@ -145,6 +146,7 @@ class CompilerTestCase(unittest.TestCase):
         run_as_root,
         _run_non_booted_nspawn,
         _run_non_booted_nspawn2,
+        _run_non_booted_nspawn3,
     ):
         lexists.side_effect = _os_path_lexists
         run_as_root.side_effect = _run_as_root
@@ -211,6 +213,7 @@ class CompilerTestCase(unittest.TestCase):
         run_as_root,
         _run_non_booted_nspawn,
         _run_non_booted_nspawn2,
+        _run_non_booted_nspawn3,
     ):
         'Get the commands that each of the *expected* sample items would run'
         lexists.side_effect = _os_path_lexists

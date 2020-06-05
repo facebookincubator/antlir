@@ -13,6 +13,8 @@ from contextlib import contextmanager
 
 from fs_image.btrfs_diff.tests.render_subvols import render_sendstream, pop_path
 from fs_image.compiler.requires_provides import ProvidesDirectory, ProvidesFile
+from fs_image.find_built_subvol import find_built_subvol
+from fs_image.common import load_location
 
 from ..common import LayerOpts
 
@@ -31,6 +33,14 @@ DUMMY_LAYER_OPTS = LayerOpts(
     preserve_yum_dnf_cache=False,
     allowed_host_mount_targets=[],
 )
+
+
+def get_dummy_layer_opts_ba():
+    return DUMMY_LAYER_OPTS._replace(
+        build_appliance=find_built_subvol(load_location(
+            __package__, 'host-test-build-appliance',
+        ))
+    )
 
 
 def render_subvol(subvol: {'Subvol'}):

@@ -5,8 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import pwd
 
 from dataclasses import dataclass
+from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
+from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.subvol_utils import Subvol
 
 from fs_image.compiler.requires_provides import (
@@ -15,7 +18,7 @@ from fs_image.compiler.requires_provides import (
 
 from .common import (
     coerce_path_field_normal_relative, ImageItem, LayerOpts,
-    make_path_normal_relative,
+    make_path_normal_relative, generate_work_dir,
 )
 
 
@@ -68,9 +71,27 @@ class SymlinkBase(ImageItem):
         rel_source = os.path.relpath(abs_source, dest.dirname())
         assert os.path.normpath(dest / rel_source).startswith(subvol.path()), \
             '{self}: A symlink to {rel_source} would point outside the image'
-        subvol.run_as_root(
-            ['ln', '--symbolic', '--no-dereference', rel_source, dest]
-        )
+        if layer_opts.build_appliance:
+            build_appliance = layer_opts.build_appliance
+            work_dir = generate_work_dir()
+            rel_dest = work_dir + '/' + self.dest
+            opts = new_nspawn_opts(
+                cmd=[
+                    'ln',
+                    '--symbolic',
+                    '--no-dereference',
+                    rel_source,
+                    rel_dest,
+                ],
+                layer=build_appliance,
+                bindmount_rw=[(subvol.path(), work_dir)],
+                user=pwd.getpwnam('root'),
+            )
+            run_non_booted_nspawn(opts, PopenArgs())
+        else:
+            subvol.run_as_root(
+                ['ln', '--symbolic', '--no-dereference', rel_source, dest]
+            )
 
 
 @dataclass(init=False, frozen=True)

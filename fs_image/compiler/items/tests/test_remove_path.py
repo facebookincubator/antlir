@@ -16,7 +16,11 @@ from ..make_dirs import MakeDirsItem
 from ..remove_path import RemovePathAction, RemovePathItem
 from ..symlink import SymlinkToDirItem
 
-from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
+from .common import (
+    BaseItemTestCase, DUMMY_LAYER_OPTS, get_dummy_layer_opts_ba, render_subvol
+)
+
+DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 
 
 class RemovePathItemTestCase(BaseItemTestCase):
@@ -40,14 +44,14 @@ class RemovePathItemTestCase(BaseItemTestCase):
             # Checks that `rm` won't follow symlinks
             SymlinkToDirItem(
                 from_target='t', source='/f', dest='/a/b/f_sym',
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, DUMMY_LAYER_OPTS_BA)
             for d in ['h', 'i']:
                 InstallFileItem(
                     from_target='t', source=empty_tf.name, dest=f'/f/{d}',
                 ).build(subvol, DUMMY_LAYER_OPTS)
             SymlinkToDirItem(
                 from_target='t', source='/f/i', dest='/f/i_sym',
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, DUMMY_LAYER_OPTS_BA)
             intact_subvol = ['(Dir)', {
                 'a': ['(Dir)', {
                     'b': ['(Dir)', {
