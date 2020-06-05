@@ -1,8 +1,9 @@
-remote_file(
+http_file(
     name = "certifi-download",
-    url = "https://files.pythonhosted.org/packages/18/b0/8146a4f8dd402f60744fa380bc73ca47303cccf8b9190fd16a827281eac2/certifi-2019.9.11-py2.py3-none-any.whl",
-    sha1 = "7df478a63c2ca0f994f5626c1bfb47ae9fd525e5",
-    out = "certifi-2019.9.11-py2.py3-none-any.whl",
+    sha256 = "1d987a998c75633c40847cc966fcf5904906c920a7f17ef374f5aa4282abd304",
+    urls = [
+        "https://files.pythonhosted.org/packages/57/2b/26e37a4b034800c960a00c4e1b3d9ca5d7014e983e6e729e33ea2f36426c/certifi-2020.4.5.1-py2.py3-none-any.whl",
+    ],
 )
 
 prebuilt_python_library(

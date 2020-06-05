@@ -1,8 +1,9 @@
-remote_file(
+http_file(
     name = "urllib3-download",
-    url = "https://files.pythonhosted.org/packages/b4/40/a9837291310ee1ccc242ceb6ebfd9eb21539649f193a7c8c86ba15b98539/urllib3-1.25.7-py2.py3-none-any.whl",
-    sha1 = "54cb39b7b05ba73a8a5580e822518afffe864ef5",
-    out = "urllib3-1.25.7-py2.py3-none-any.whl",
+    sha256 = "88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115",
+    urls = [
+        "https://files.pythonhosted.org/packages/e1/e5/df302e8017440f111c11cc41a6b432838672f5a70aa29227bf58149dc72f/urllib3-1.25.9-py2.py3-none-any.whl",
+    ],
 )
 
 prebuilt_python_library(
