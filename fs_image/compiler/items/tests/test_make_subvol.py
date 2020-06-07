@@ -20,10 +20,9 @@ from ..make_subvol import (
     FilesystemRootItem, ParentLayerItem, ReceiveSendstreamItem,
 )
 
-from .common import (
-    BaseItemTestCase, DUMMY_LAYER_OPTS, populate_temp_filesystem,
-    render_subvol, temp_filesystem_provides,
-)
+from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
+
+DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 
 
 class MakeSubvolItemsTestCase(BaseItemTestCase):
@@ -33,7 +32,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
         self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.caller_will_create('fs-root')
-            item.get_phase_builder([item], DUMMY_LAYER_OPTS)(subvol)
+            item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(subvol)
             self.assertEqual(
                 ['(Dir)', {'meta': ['(Dir)', {'private': ['(Dir)', {
                     'opts': ['(Dir)', {
@@ -50,16 +49,16 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
 
             MakeDirsItem(
                 from_target='t', into_dir='/', path_to_make='a/b',
-            ).build(parent, DUMMY_LAYER_OPTS)
+            ).build(parent, DUMMY_LAYER_OPTS_BA)
             parent_content = ['(Dir)', {'a': ['(Dir)', {'b': ['(Dir)', {}]}]}]
             self.assertEqual(parent_content, render_subvol(parent))
 
             # Take a snapshot and add one more directory.
             child = temp_subvolumes.caller_will_create('child')
-            item.get_phase_builder([item], DUMMY_LAYER_OPTS)(child)
+            item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(child)
             MakeDirsItem(
                 from_target='t', into_dir='a', path_to_make='c',
-            ).build(child, DUMMY_LAYER_OPTS)
+            ).build(child, DUMMY_LAYER_OPTS_BA)
 
             # The parent is unchanged.
             self.assertEqual(parent_content, render_subvol(parent))
@@ -80,7 +79,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             new_subvol_name = 'differs_from_create_ops'
             subvol = temp_subvolumes.caller_will_create(new_subvol_name)
-            item.get_phase_builder([item], DUMMY_LAYER_OPTS)(subvol)
+            item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(subvol)
             self.assertEqual(
                 render_demo_subvols(create_ops=new_subvol_name),
                 render_sendstream(subvol.mark_readonly_and_get_sendstream()),

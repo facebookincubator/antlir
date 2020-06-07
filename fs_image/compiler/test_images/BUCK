@@ -4,7 +4,7 @@
 ## test will then check that they become the right image compiler Items.
 ##
 
-load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE", "DO_NOT_USE_BUILD_APPLIANCE")
+load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
@@ -85,9 +85,6 @@ image.layer(
             "/mnt/gvfs",
         ]
     ],
-    build_opts = image.opts(
-        build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
-    ),
 )
 
 image.layer(
@@ -104,9 +101,6 @@ image.layer(
         ),
         image.host_dir_mount("/etc"),
     ],
-    build_opts = image.opts(
-        build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
-    ),
 )
 
 # This assumes that the host provides `cc`, since we cannot install packages
