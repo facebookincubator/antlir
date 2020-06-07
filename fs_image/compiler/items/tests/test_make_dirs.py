@@ -13,7 +13,11 @@ from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..make_dirs import MakeDirsItem
 
-from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
+from .common import (
+    BaseItemTestCase, DUMMY_LAYER_OPTS, get_dummy_layer_opts_ba, render_subvol
+)
+
+DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 
 
 class MakeDirsItemTestCase(BaseItemTestCase):
@@ -25,7 +29,7 @@ class MakeDirsItemTestCase(BaseItemTestCase):
             {require_directory('x')},
         )
 
-    def test_make_dirs_command(self):
+    def _test_make_dirs_command(self, layer_opts):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.create('tar-sv')
             subvol.run_as_root(['mkdir', subvol.path('d')])
@@ -33,7 +37,7 @@ class MakeDirsItemTestCase(BaseItemTestCase):
             MakeDirsItem(
                 from_target='t', path_to_make='/a/b/', into_dir='/d',
                 user_group='77:88', mode='u+rx',
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, layer_opts)
             self.assertEqual(['(Dir)', {
                 'd': ['(Dir)', {
                     'a': ['(Dir m500 o77:88)', {
@@ -49,11 +53,11 @@ class MakeDirsItemTestCase(BaseItemTestCase):
             MakeDirsItem(
                 from_target='t', path_to_make='a', into_dir='/no_dir',
                 user_group='4:0'
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, layer_opts)
             MakeDirsItem(
                 from_target='t', path_to_make='a/new', into_dir='/d',
                 user_group='5:0'
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, layer_opts)
             self.assertEqual(['(Dir)', {
                 'd': ['(Dir)', {
                     # permissions overwritten for this whole tree
@@ -65,3 +69,9 @@ class MakeDirsItemTestCase(BaseItemTestCase):
                     'a': ['(Dir o4:0)', {}],
                 }],
             }], render_subvol(subvol))
+
+    def test_make_dirs_command_non_ba(self):
+        self._test_make_dirs_command(DUMMY_LAYER_OPTS)
+
+    def test_make_dirs_command_ba(self):
+        self._test_make_dirs_command(DUMMY_LAYER_OPTS_BA)

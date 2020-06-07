@@ -16,9 +16,7 @@ from ..make_dirs import MakeDirsItem
 from ..remove_path import RemovePathAction, RemovePathItem
 from ..symlink import SymlinkToDirItem
 
-from .common import (
-    BaseItemTestCase, DUMMY_LAYER_OPTS, get_dummy_layer_opts_ba, render_subvol
-)
+from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
 
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 
@@ -33,14 +31,14 @@ class RemovePathItemTestCase(BaseItemTestCase):
 
             MakeDirsItem(
                 from_target='t', path_to_make='/a/b/c', into_dir='/',
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, DUMMY_LAYER_OPTS_BA)
             for d in ['d', 'e']:
                 InstallFileItem(
                     from_target='t', source=empty_tf.name, dest=f'/a/b/c/{d}',
-                ).build(subvol, DUMMY_LAYER_OPTS)
+                ).build(subvol, DUMMY_LAYER_OPTS_BA)
             MakeDirsItem(
                 from_target='t', path_to_make='/f/g', into_dir='/',
-            ).build(subvol, DUMMY_LAYER_OPTS)
+            ).build(subvol, DUMMY_LAYER_OPTS_BA)
             # Checks that `rm` won't follow symlinks
             SymlinkToDirItem(
                 from_target='t', source='/f', dest='/a/b/f_sym',
@@ -48,7 +46,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
             for d in ['h', 'i']:
                 InstallFileItem(
                     from_target='t', source=empty_tf.name, dest=f'/f/{d}',
-                ).build(subvol, DUMMY_LAYER_OPTS)
+                ).build(subvol, DUMMY_LAYER_OPTS_BA)
             SymlinkToDirItem(
                 from_target='t', source='/f/i', dest='/f/i_sym',
             ).build(subvol, DUMMY_LAYER_OPTS_BA)
@@ -85,7 +83,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
                         from_target='t',
                         action=RemovePathAction.if_exists,
                         path=prot_path,
-                    )], DUMMY_LAYER_OPTS)(subvol)
+                    )], DUMMY_LAYER_OPTS_BA)(subvol)
 
             # Check handling of non-existent paths without removing anything
             remove = RemovePathItem(
@@ -94,7 +92,8 @@ class RemovePathItemTestCase(BaseItemTestCase):
                 path='/does/not/exist',
             )
             self.assertEqual(PhaseOrder.REMOVE_PATHS, remove.phase_order())
-            RemovePathItem.get_phase_builder([remove], DUMMY_LAYER_OPTS)(subvol)
+            RemovePathItem.get_phase_builder(
+                [remove], DUMMY_LAYER_OPTS_BA)(subvol)
             with self.assertRaisesRegex(AssertionError, 'does not exist'):
                 RemovePathItem.get_phase_builder([
                     RemovePathItem(
@@ -102,7 +101,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
                         action=RemovePathAction.assert_exists,
                         path='/does/not/exist',
                     ),
-                ], DUMMY_LAYER_OPTS)(subvol)
+                ], DUMMY_LAYER_OPTS_BA)(subvol)
             self.assertEqual(intact_subvol, render_subvol(subvol))
 
             # Now remove most of the subvolume.
@@ -145,7 +144,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
                     action=RemovePathAction.assert_exists,
                     path='/a/b/c/e',
                 ),
-            ], DUMMY_LAYER_OPTS)(subvol)
+            ], DUMMY_LAYER_OPTS_BA)(subvol)
             self.assertEqual(['(Dir)', {
                 'a': ['(Dir)', {}],
                 'f': ['(Dir)', {'i': ['(File m444)']}],
