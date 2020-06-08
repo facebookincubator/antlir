@@ -1,4 +1,4 @@
-load("//fs_image/bzl:defs.bzl", "target_location")
+load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
 load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
@@ -16,8 +16,8 @@ python_unittest(
     srcs = ["tests/test_clone.py"],
     needed_coverage = [(100, ":clone")],
     resources = {
-        target_location(TEST_IMAGE_PREFIX + "parent_layer"): "tests/src-layer",
-        target_location(TEST_IMAGE_PREFIX + "create_ops"): "tests/create_ops",
+        layer_resource(TEST_IMAGE_PREFIX + "parent_layer"): "tests/src-layer",
+        layer_resource(TEST_IMAGE_PREFIX + "create_ops"): "tests/create_ops",
     },
     deps = [
         ":clone",
@@ -100,13 +100,13 @@ python_unittest(
     srcs = ["tests/test_rpm_action.py"],
     needed_coverage = [(100, ":rpm_action")],
     resources = {
-        target_location(
+        layer_resource(
             TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
         ): "tests/host-test-build-appliance",
-        target_location(
+        layer_resource(
             TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
         ): "test-with-one-local-rpm",
-        target_location(
+        layer_resource(
             TEST_IMAGE_PREFIX + "layer-with-non-default-snapshot-no-rpms",
         ): "test-with-no-rpm",
         TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
@@ -132,14 +132,14 @@ python_unittest(
     srcs = ["tests/test_foreign_layer.py"],
     needed_coverage = [(100, ":foreign_layer")],
     resources = {
-        target_location(
+        layer_resource(
             # We need something with the test RPM snapshot, with a working
             # `sh`, `touch`, and `mkdir`, and `dnf`.  The former 3 could be
             # provided through a busybox binary, but `dnf` pretty much
             # presupposes a full OS, so use the test BA for now.
             TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
         ): "tests/foreign-layer-base",
-        target_location(
+        layer_resource(
             # Must have a `busybox` binary as `/bin/sh`.
             TEST_IMAGE_PREFIX + "validates-dnf-build-appliance",
         ): "tests/foreign-layer-busybox-base",
@@ -222,7 +222,7 @@ python_unittest(
     resources = {
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
         TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
-        target_location(
+        layer_resource(
             TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
         ): "tests/host-test-build-appliance",
     },
