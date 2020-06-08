@@ -1,4 +1,4 @@
-load("//fs_image/bzl:defs.bzl", "target_location")
+load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "python_unittest")
 load("//fs_image/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_rpmbuild_layer")
@@ -36,7 +36,7 @@ image.layer(
 python_unittest(
     name = "test-install-toy-rpm",
     srcs = ["test_install_toy_rpm.py"],
-    resources = {target_location(":install-toy-rpm"): "install-toy-rpm"},
+    resources = {layer_resource(":install-toy-rpm"): "install-toy-rpm"},
     deps = [
         "//fs_image:common",
         "//fs_image:find_built_subvol",

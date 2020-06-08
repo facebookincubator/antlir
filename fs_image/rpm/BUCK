@@ -1,6 +1,6 @@
 load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
-load("//fs_image/bzl:defs.bzl", "target_location")
 load("//fs_image/bzl:image_python_unittest.bzl", "image_python_unittest")
+load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load(":defs.bzl", "test_rpm_repo_snapshot")
@@ -84,7 +84,7 @@ python_library(
     srcs = ["tests/temp_repos.py"],
     resources = {
         third_party.library("busybox", "bin/busybox"): "tests/busybox",
-        target_location(DEFAULT_BUILD_APPLIANCE): "tests/build-appliance",
+        layer_resource(DEFAULT_BUILD_APPLIANCE): "tests/build-appliance",
         ":gpg-test-signing-key": "tests/signing_key",
     },
     deps = [

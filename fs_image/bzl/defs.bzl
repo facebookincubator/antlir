@@ -1,5 +1,4 @@
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
-load(":target_helpers.bzl", "wrap_target")
 
 def fake_macro_library(name, srcs, deps = None, visibility = None):
     """
@@ -37,24 +36,3 @@ def fake_macro_library(name, srcs, deps = None, visibility = None):
         type = "fake_macro_library",
         visibility = get_visibility(visibility, name),
     )
-
-def target_location(target):
-    """
-    This rule generates a file that contains a string that is the location of
-    the artifact produced by the requested target.  This rule's contents can
-    then be used by the `fs_image.common.load_location` python helper in
-    combination with a `resource` to read the location of the target.
-    """
-    exists, wrapped_target = wrap_target(target, "wrapped_target_location")
-
-    if not exists:
-        buck_genrule(
-            name = wrapped_target,
-            out = "location",
-            bash = 'echo "$(location {})" > "$OUT"'.format(target),
-            cacheable = False,
-            type = "wrapped_target_location",
-            visibility = [],
-        )
-
-    return ":" + wrapped_target
