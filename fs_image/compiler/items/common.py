@@ -264,9 +264,9 @@ def ensure_meta_dir_exists(subvol: Subvol, layer_opts: LayerOpts):
     subvol.run_as_root([
         'mkdir', '--mode=0755', '--parents', subvol.path(META_DIR),
     ])
-    # One might ask: why are we serializing this into the image instead
-    # of just putting a condition on `built_artifacts_require_repo`
-    # into our Buck macros? Two reasons:
+    # One might ask: why are we serializing this into the image instead of
+    # just putting a condition on `ARTIFACTS_REQUIRE_REPO` into our Buck
+    # macros?  Two reasons:
     #   - In the case of build appliance images, it is possible for a
     #     @mode/dev (in-place) build to use **either** a @mode/dev, or a
     #     @mode/opt (standalone) build appliance. The only way to know

@@ -26,6 +26,12 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "target_helpers",
+    srcs = ["target_helpers.bzl"],
+    deps = [":crc32"],
+)
+
+fake_macro_library(
     name = "image_source",
     srcs = ["image_source.bzl"],
     deps = [":maybe_export_file"],
@@ -54,7 +60,11 @@ fake_macro_library(
 fake_macro_library(
     name = "target_tagger",
     srcs = ["target_tagger.bzl"],
-    deps = [":image_source"],
+    deps = [
+        ":image_source",
+        ":target_helpers",
+        ":wrap_runtime_deps",
+    ],
 )
 
 fake_macro_library(
@@ -62,14 +72,18 @@ fake_macro_library(
     srcs = ["rpm_repo_snapshot.bzl"],
     deps = [
         ":maybe_export_file",
-        ":target_tagger",
+        ":target_helpers",
+        ":wrap_runtime_deps",
     ],
 )
 
 fake_macro_library(
     name = "wrap_runtime_deps",
     srcs = ["wrap_runtime_deps.bzl"],
-    deps = [":artifacts_require_repo"],
+    deps = [
+        ":artifacts_require_repo",
+        ":target_helpers",
+    ],
 )
 
 fake_macro_library(
@@ -99,7 +113,7 @@ fake_macro_library(
     srcs = ["fetched_package_layer.bzl"],
     deps = [
         ":image_layer",
-        ":target_tagger",
+        ":target_helpers",
         "//fs_image/bzl/image_actions:feature",
     ],
 )

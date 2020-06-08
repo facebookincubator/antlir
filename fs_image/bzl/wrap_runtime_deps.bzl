@@ -1,10 +1,9 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load(":artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
-load(":artifacts_require_repo.bzl", "built_artifacts_require_repo")
+load(":target_helpers.bzl", "wrap_target")
 
-_ARTIFACTS_REQUIRE_REPO = built_artifacts_require_repo()
-
-def maybe_wrap_runtime_deps_as_build_time_deps(
+def _maybe_wrap_runtime_deps_as_build_time_deps(
         name,
         target,
         visibility,
@@ -140,7 +139,7 @@ def maybe_wrap_runtime_deps_as_build_time_deps(
     this target. Output a dummy target (in place of the wrapper) in this case
     to appease it.
     """
-    if not _ARTIFACTS_REQUIRE_REPO:
+    if not ARTIFACTS_REQUIRE_REPO:
         buck_genrule(
             name = name,
             out = "dummyfile",
@@ -177,3 +176,27 @@ mv "$TMP/out" "$OUT"
         visibility = get_visibility(visibility, name),
     )
     return True, ":" + name
+
+def maybe_wrap_executable_target(target, wrap_prefix, **kwargs):
+    """
+    Docs on `_maybe_wrap_runtime_deps_as_build_time_deps'.  This variant
+    automatically names the wrapped target, and reuses an existing one.
+    """
+    exists, wrapped_target = wrap_target(target, wrap_prefix)
+
+    # Reuse a pre-existing wrapper for the same target (CRC32 collisions
+    # shouldn't be *that* likely in TARGETS, but we need a better hash).
+    if exists:
+        # With self-contained artifacts, we create a dummy wrapper target to
+        # satisfy the CI target determinator, but we must not use it.
+        if not ARTIFACTS_REQUIRE_REPO:
+            return False, target  # Don't create another dummy wrapper
+        return True, ":" + wrapped_target
+
+    # The `wrap_runtime_deps_as_build_time_deps` docblock explains this:
+    was_wrapped, maybe_target = _maybe_wrap_runtime_deps_as_build_time_deps(
+        name = wrapped_target,
+        target = target,
+        **kwargs
+    )
+    return was_wrapped, maybe_target

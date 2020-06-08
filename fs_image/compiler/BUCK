@@ -1,7 +1,7 @@
 # NB: There is no binary here because the image compiler does not get built
 # by Buck, it is executed in-place using the system Python.
 
-load("//fs_image/bzl:artifacts_require_repo.bzl", "built_artifacts_require_repo")
+load("//fs_image/bzl:artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
 load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load(":defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_IMAGE_PREFIX", "image_feature_python_unittest")
 
@@ -120,7 +120,7 @@ TEST_IMAGE_FEATURE_TRANSITIVE_DEPS = [
 ] + ([
     "install_buck_runnable_wrap_source__dir-print-ok__2f3b9d05",
     "install_buck_runnable_wrap_source__print-ok__80cbde81",
-] if built_artifacts_require_repo() else [])
+] if ARTIFACTS_REQUIRE_REPO else [])
 
 image_feature_python_unittest(
     name = "test-image-feature",

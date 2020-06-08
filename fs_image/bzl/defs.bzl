@@ -1,5 +1,5 @@
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
-load(":target_tagger.bzl", "wrap_target")
+load(":target_helpers.bzl", "wrap_target")
 
 def fake_macro_library(name, srcs, deps = None, visibility = None):
     """
