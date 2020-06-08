@@ -9,7 +9,7 @@ load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "python_binary")
 load("//fs_image/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot", "set_up_rpm_repo_snapshots")
-load("//fs_image/bzl:wrap_runtime_deps.bzl", "maybe_wrap_runtime_deps_as_build_time_deps")
+load("//fs_image/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//fs_image/bzl/foreign/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
 load("//fs_image/compiler/test_images:helper.bzl", "sign_rpm_test_file")
 
@@ -365,10 +365,10 @@ buck_genrule(
         # A @mode/dev PAR will break if we copy it into another directory,
         # since it relies on the linktree being its sibling.  Using this
         # wrapper prevents that.
-        maybe_wrapped_ok = maybe_wrap_runtime_deps_as_build_time_deps(
-            name = "wrap-print-ok",
+        maybe_wrapped_ok = maybe_wrap_executable_target(
             target = ":print-ok",
-            visibility = None,
+            visibility = [],
+            wrap_prefix = "test-wrap-",
         )[1],
     ),
     cacheable = False,  # The wrapper makes our output non-cacheable.

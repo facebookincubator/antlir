@@ -38,7 +38,8 @@ Read that target's docblock for more info, but in essence, that will:
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
-load("//fs_image/bzl:target_tagger.bzl", "new_target_tagger", "normalize_target", "tag_target", "target_tagger_to_feature")
+load("//fs_image/bzl:target_helpers.bzl", "normalize_target")
+load("//fs_image/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
 # ## Why are `image.feature`s forbidden as dependencies?
 #
@@ -86,7 +87,7 @@ DO_NOT_DEPEND_ON_FEATURES_SUFFIX = (
     "SO_DO_NOT_DO_THIS_EVER_PLEASE_KTHXBAI"
 )
 
-# Use mutual recursion so that buildifier doesn't complain about recursion. 
+# Use mutual recursion so that buildifier doesn't complain about recursion.
 # Allows for easier handling of aribtary depth feature nesting.
 def _assign_target_to_features_trololo(*args):
     return _assign_target_to_features(*args)

@@ -8,7 +8,8 @@ load("//fs_image/bzl/image_actions:remove.bzl", "image_remove")
 load("//fs_image/bzl/image_actions:symlink.bzl", "image_symlink_dir")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
-load(":target_tagger.bzl", "mangle_target", "maybe_wrap_executable_target")
+load(":target_helpers.bzl", "mangle_target")
+load(":wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 
 # KEEP IN SYNC with its copy in `rpm/find_snapshot.py`
 RPM_SNAPSHOT_BASE_DIR = "__fs_image__/rpm/repo-snapshot"

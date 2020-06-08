@@ -2,7 +2,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE", "DEFAULT_RPM_INSTALLER", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//fs_image/bzl/image_actions:feature.bzl", "normalize_features")
-load(":artifacts_require_repo.bzl", "built_artifacts_require_repo")
+load(":artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
 load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
@@ -179,7 +179,7 @@ def compile_image_features(
             # when the repo is mounted, and one could potentially extend the
             # compiler to further modulate this flag upon checking whether
             # any executables were in fact installed.
-            built_artifacts_require_repo() else ""
+            ARTIFACTS_REQUIRE_REPO else ""
         ),
         maybe_quoted_build_appliance_args = (
             "--build-appliance-json $(location {})/layer.json".format(

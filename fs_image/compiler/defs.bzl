@@ -1,4 +1,4 @@
-load("//fs_image/bzl:artifacts_require_repo.bzl", "built_artifacts_require_repo")
+load("//fs_image/bzl:artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
 load("//fs_image/bzl:oss_shim.bzl", "python_unittest")
 
 TEST_IMAGE_PREFIX = "//fs_image/compiler/test_images:"
@@ -27,7 +27,7 @@ def image_feature_python_unittest(test_image_feature_transitive_deps, deps = Non
         for t in test_image_feature_transitive_deps
     })
     env["test_image_feature_built_artifacts_require_repo"] = \
-        str(int(built_artifacts_require_repo()))
+        str(int(ARTIFACTS_REQUIRE_REPO))
 
     deps = (deps or []) + [":sample_items"]
 

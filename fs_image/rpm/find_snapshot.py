@@ -12,7 +12,7 @@ from fs_image.fs_utils import Path
 RPM_SNAPSHOT_BASE_DIR = Path('/__fs_image__/rpm/repo-snapshot')
 
 
-# KEEP IN SYNC with its copy in `bzl/target_tagger.bzl`.
+# KEEP IN SYNC with its copy in `bzl/wrap_target.bzl`.
 def mangle_target(normalized_target: str, min_abbrev: int = 15) -> str:
     'The docs are on the other copy of this function in `target_tagger.bzl`.'
     _, name = normalized_target.split(":")

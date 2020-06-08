@@ -77,7 +77,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//fs_image/bzl/image_actions:feature.bzl", "private_do_not_use_feature_json_genrule")
 load(":image_layer.bzl", "image_layer")
-load(":target_tagger.bzl", "normalize_target")
+load(":target_helpers.bzl", "normalize_target")
 
 _PackageFetcherInfo = provider(fields = [
     # This executable target prints a feature JSON responsible for
