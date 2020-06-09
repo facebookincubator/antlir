@@ -6,7 +6,6 @@
 
 'Utilities to make Python systems programming more palatable.'
 import array
-import importlib.resources
 import logging
 import os
 import random
@@ -35,14 +34,6 @@ def init_logging(*, debug: bool=False):
         format='%(levelname)s %(name)s %(asctime)s %(message)s',
         level=logging.DEBUG if debug else logging.INFO,
     )
-
-
-def load_location(package: AnyStr, name: AnyStr) -> str:
-    '''Load and prepare a target location bundled into a python target
-    as a resource. See the docblock of fs_image/bzl/defs.bzl:target_location
-    for more details on what a target location is all about.'''
-
-    return importlib.resources.read_text(package, name).strip()
 
 
 # contextlib.nullcontext is 3.7+ but we are on 3.6 for now. This has to be a

@@ -18,18 +18,17 @@ from configparser import ConfigParser
 from contextlib import contextmanager
 from typing import Dict, List, NamedTuple, Optional
 
-from fs_image.common import load_location
 from fs_image.compiler.items.common import generate_work_dir
-from fs_image.find_built_subvol import find_built_subvol
 from fs_image.fs_utils import Path, temp_dir
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.subvol_utils import Subvol
+from fs_image.tests.layer_resource import layer_resource_subvol
 
-
+# Somehow if this is a module var, `importlib` thinks the `name` part is
+# `None`.  This is probably due to a bug in `importlib` that breaks nesting.
 def _build_appliance() -> Subvol:
-    return find_built_subvol(load_location(__package__, 'build-appliance'))
-
+    return layer_resource_subvol(__package__, 'build-appliance')
 
 
 def get_test_signing_key() -> str:

@@ -88,8 +88,8 @@ python_library(
         ":gpg-test-signing-key": "tests/signing_key",
     },
     deps = [
-        "//fs_image:find_built_subvol",
         "//fs_image:fs_utils",
+        "//fs_image:testlib_layer_resource",
         "//fs_image/compiler/items:common",
         "//fs_image/nspawn_in_subvol:non_booted",
         third_party.library(

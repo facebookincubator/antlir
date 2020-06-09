@@ -8,8 +8,6 @@ import os
 import subprocess
 import sys
 
-from fs_image.find_built_subvol import find_built_subvol
-from fs_image.common import load_location
 from fs_image.fs_utils import Path
 from fs_image.rpm.yum_dnf_conf import YumDnf
 
@@ -22,10 +20,6 @@ from .common import DUMMY_LAYER_OPTS, render_subvol
 
 
 class RpmActionItemTestBase:
-
-    @classmethod
-    def _subvol_from_resource(cls, module, name):
-        return find_built_subvol(load_location(module, name))
 
     def _check_rpm_action_item_build_appliance(self, ba_path: Path):
         for preserve_yum_dnf_cache in [True, False]:

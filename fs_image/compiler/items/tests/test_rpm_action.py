@@ -12,11 +12,11 @@ from contextlib import contextmanager
 from fs_image.btrfs_diff.tests.render_subvols import (
     check_common_rpm_render, pop_path
 )
-
 from fs_image.fs_utils import Path
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from fs_image.rpm.yum_dnf_conf import YumDnf
 
+from fs_image.tests.layer_resource import layer_resource_subvol
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
@@ -44,7 +44,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
     'Subclasses run these tests with concrete values of `self._YUM_DNF`.'
 
     def test_rpm_action_item_build_appliance(self):
-        self._check_rpm_action_item_build_appliance(self._subvol_from_resource(
+        self._check_rpm_action_item_build_appliance(layer_resource_subvol(
             __package__, 'host-test-build-appliance',
         ))
 
@@ -55,9 +55,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
     @contextmanager
     def _test_rpm_action_item_install_local_setup(self):
-        parent_subvol = self._subvol_from_resource(
-            'fs_image.compiler.items', 'test-with-no-rpm',
-        )
+        parent_subvol = layer_resource_subvol(__package__, 'test-with-no-rpm')
         local_rpm_path = Path(__file__).dirname() / 'rpm-test-cheese-2-1.rpm'
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.snapshot(parent_subvol, 'add_cheese')
@@ -80,8 +78,8 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             yield r
 
     def test_rpm_action_item_auto_downgrade(self):
-        parent_subvol = self._subvol_from_resource(
-            'fs_image.compiler.items', 'test-with-one-local-rpm',
+        parent_subvol = layer_resource_subvol(
+            __package__, 'test-with-one-local-rpm',
         )
         src_rpm = Path(__file__).dirname() / "rpm-test-cheese-1-1.rpm"
 
@@ -119,8 +117,8 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             }], render_subvol(subvol))
 
     def _check_cheese_removal(self, local_rpm_path: Path):
-        parent_subvol = self._subvol_from_resource(
-            'fs_image.compiler.items', 'test-with-one-local-rpm',
+        parent_subvol = layer_resource_subvol(
+            __package__, 'test-with-one-local-rpm',
         )
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
