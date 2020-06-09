@@ -7,11 +7,10 @@
 import subprocess
 import sys
 
-from fs_image.common import load_location
 from fs_image.compiler.requires_provides import (
     ProvidesDirectory, ProvidesDoNotAccess, ProvidesFile, require_directory,
 )
-from fs_image.find_built_subvol import find_built_subvol
+from fs_image.tests.layer_resource import layer_resource_subvol
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import image_source_item
@@ -19,20 +18,16 @@ from ..clone import CloneItem
 
 from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, pop_path, render_subvol
 
+_SRC_SUBVOL = layer_resource_subvol(__package__, 'src-layer')
+
 
 class InstallFileItemTestCase(BaseItemTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.src_layer = find_built_subvol(
-            load_location(__package__, 'src-layer')
-        )
 
     def _clone_item(
         self, src, dest, *, omit_outer_dir=False, pre_existing_dest=False,
         subvol=None,
     ):
-        subvol = subvol or self.src_layer
+        subvol = subvol or _SRC_SUBVOL
         # The dummy object works here because `subvolumes_dir` of `None`
         # runs `artifacts_dir` internally, while our "prod" path uses the
         # already-computed value.
@@ -191,7 +186,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
     # In terms of new coverage, this covers cloning reflinked & sparse
     # extents, as well as non-default ownership / permissions, and xattrs.
     def test_clone_demo_sendstream(self):
-        src_subvol = find_built_subvol(load_location(__package__, 'create_ops'))
+        src_subvol = layer_resource_subvol(__package__, 'create_ops')
         ci = self._clone_item(
             '/', '/', omit_outer_dir=True, pre_existing_dest=True,
             subvol=src_subvol,

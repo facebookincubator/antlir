@@ -9,15 +9,14 @@ import unittest
 from fs_image.btrfs_diff.tests.render_subvols import (
     check_common_rpm_render, render_sendstream, pop_path,
 )
-from fs_image.common import load_location
-from fs_image.find_built_subvol import find_built_subvol
+from fs_image.tests.layer_resource import layer_resource_subvol
 
 
 class InstallToyRpmTestCase(unittest.TestCase):
 
     def test_contents(self):
         self.maxDiff = None
-        sv = find_built_subvol(load_location(__package__, 'install-toy-rpm'))
+        sv = layer_resource_subvol(__package__, 'install-toy-rpm')
         r = render_sendstream(sv.mark_readonly_and_get_sendstream())
 
         self.assertEqual([

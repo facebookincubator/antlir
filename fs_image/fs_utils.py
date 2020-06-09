@@ -7,7 +7,7 @@
 'Utilities to make Python systems programming more palatable.'
 import argparse
 import errno
-import importlib
+import importlib.resources
 import json
 import os
 import shlex

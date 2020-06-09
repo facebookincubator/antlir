@@ -24,6 +24,7 @@ python_unittest(
         ":common_testlib",
         "//fs_image:common",
         "//fs_image:find_built_subvol",
+        "//fs_image:testlib_layer_resource",
         "//fs_image:testlib_temp_subvolumes",
     ],
 )
@@ -47,6 +48,7 @@ python_library(
     srcs = ["tests/common.py"],
     deps = [
         ":common",
+        "//fs_image:testlib_layer_resource",
         "//fs_image/btrfs_diff:testlib_render_subvols",
         "//fs_image/compiler:requires_provides",
     ],
@@ -105,15 +107,16 @@ python_unittest(
         ): "tests/host-test-build-appliance",
         layer_resource(
             TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
-        ): "test-with-one-local-rpm",
+        ): "tests/test-with-one-local-rpm",
         layer_resource(
             TEST_IMAGE_PREFIX + "layer-with-non-default-snapshot-no-rpms",
-        ): "test-with-no-rpm",
+        ): "tests/test-with-no-rpm",
         TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
     },
     deps = [
         ":rpm_action_base_testlib",
         "//fs_image:find_built_subvol",
+        "//fs_image:testlib_layer_resource",
     ],
 )
 
@@ -149,6 +152,7 @@ python_unittest(
         ":make_subvol",
         "//fs_image:common",
         "//fs_image:find_built_subvol",
+        "//fs_image:testlib_layer_resource",
         "//fs_image:testlib_temp_subvolumes",
         "//fs_image/rpm:find_snapshot",
     ],

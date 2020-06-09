@@ -13,8 +13,7 @@ from contextlib import contextmanager
 
 from fs_image.btrfs_diff.tests.render_subvols import render_sendstream, pop_path
 from fs_image.compiler.requires_provides import ProvidesDirectory, ProvidesFile
-from fs_image.find_built_subvol import find_built_subvol
-from fs_image.common import load_location
+from fs_image.tests.layer_resource import layer_resource_subvol
 
 from ..common import LayerOpts
 
@@ -35,11 +34,13 @@ DUMMY_LAYER_OPTS = LayerOpts(
 )
 
 
+# This has to be a function because using `importlib` while loading a module
+# results in incorrect behavior (I did not debug the specifics).
 def get_dummy_layer_opts_ba():
     return DUMMY_LAYER_OPTS._replace(
-        build_appliance=find_built_subvol(load_location(
+        build_appliance=layer_resource_subvol(
             __package__, 'host-test-build-appliance',
-        ))
+        )
     )
 
 

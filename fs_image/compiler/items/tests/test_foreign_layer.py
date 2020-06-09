@@ -14,9 +14,8 @@ from contextlib import contextmanager
 from typing import AnyStr, Iterable
 
 from fs_image.fs_utils import Path
-from fs_image.common import load_location
-from fs_image.find_built_subvol import find_built_subvol
 from fs_image.rpm.find_snapshot import snapshot_install_dir
+from fs_image.tests.layer_resource import layer_resource_subvol
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
@@ -55,7 +54,7 @@ class ForeignLayerItemTestCase(unittest.TestCase):
 
     @contextmanager
     def _temp_resource_subvol(self, name: str):
-        parent_sv = find_built_subvol(load_location(__package__, name))
+        parent_sv = layer_resource_subvol(__package__, name)
         with TempSubvolumes(sys.argv[0]) as temp_subvols:
             # Cannot use `.snapshot()` since that doesn't handle mounts.
             child_sv = temp_subvols.caller_will_create(name)

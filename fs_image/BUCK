@@ -55,6 +55,12 @@ python_unittest(
 ]
 
 python_library(
+    name = "testlib_layer_resource",
+    srcs = ["tests/layer_resource.py"],
+    deps = [":find_built_subvol"],
+)
+
+python_library(
     name = "testlib_temp_subvolumes",
     srcs = [
         "tests/temp_subvolumes.py",

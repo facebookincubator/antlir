@@ -38,8 +38,7 @@ python_unittest(
     srcs = ["test_install_toy_rpm.py"],
     resources = {layer_resource(":install-toy-rpm"): "install-toy-rpm"},
     deps = [
-        "//fs_image:common",
-        "//fs_image:find_built_subvol",
+        "//fs_image:testlib_layer_resource",
         "//fs_image/btrfs_diff:testlib_render_subvols",
     ],
 )

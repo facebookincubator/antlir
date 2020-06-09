@@ -26,7 +26,7 @@ def layer_resource(target):
         buck_genrule(
             name = wrapped_target,
             out = "location",
-            bash = 'echo "$(location {})" > "$OUT"'.format(target),
+            bash = 'echo -n "$(location {})" > "$OUT"'.format(target),
             cacheable = False,
             type = "wrapped_layer_resource",
             visibility = [],
