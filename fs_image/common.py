@@ -29,6 +29,8 @@ def get_file_logger(py_path: AnyStr):
     return logging.getLogger(os.path.basename(py_path))
 
 
+# NB: Many callsites in fs_image rely on the assumption that this function will
+# result in logging to the default stream of StreamHandler, which is stderr.
 def init_logging(*, debug: bool=False):
     logging.basicConfig(
         format='%(levelname)s %(name)s %(asctime)s %(message)s',
