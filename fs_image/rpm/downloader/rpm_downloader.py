@@ -20,6 +20,7 @@ from fs_image.rpm.downloader.common import (
     log_size,
     maybe_write_id,
     retryable_db_ctx,
+    timeit,
     verify_chunk_stream,
 )
 from fs_image.rpm.downloader.deleted_mutable_rpms import deleted_mutable_rpms
@@ -35,6 +36,10 @@ from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 RPM_MAX_RETRY_S = [2 ** i for i in range(9)]  # 512 sec ==  8m32s
+# This is a conservative minimum bandwidth we expect to see while downloading
+# RPMs. We'll further divide this by the number of threads we have, and log if
+# we see downloads slower than that.
+MIN_TOTAL_BW = ((400 * 10 ** 6) / 8)  # 400Mb/s == 50 MB/s
 log = get_file_logger(__file__)
 
 
@@ -130,6 +135,7 @@ def _handle_rpm(
     rpm_table: RpmTable,
     all_snapshot_universes: Set[str],
     cfg: DownloadConfig,
+    min_thread_bw: float,
 ) -> Tuple[Rpm, MaybeStorageID]:
     with cfg.new_db_ctx(readonly=True) as ro_repo_db:
         # If we get no `storage_id` back, there are 3 possibilities:
@@ -148,11 +154,13 @@ def _handle_rpm(
         #    actually get valuable information from the download --
         #    this lets us know whether the file is wrong or the
         #    repodata is wrong.
-        storage_id, canonical_chk = ro_repo_db.get_rpm_storage_id_and_checksum(
-            rpm_table, rpm
-        )
+        with timeit(f"Querying RPM {rpm}", threshold_s=10):
+            storage_id, canonical_chk = ro_repo_db.get_rpm_storage_id_and_checksum(
+                rpm_table, rpm
+            )
     # If the RPM is already stored with a matching checksum, just update its
-    # `.canonical_checksum`.
+    # `.canonical_checksum`. Note that `rpm` was parsed from repodata, and thus
+    # it's guaranteed to not yet have a `canonical_checksum`.
     if storage_id:
         rpm = rpm._replace(canonical_checksum=canonical_chk)
         # This is a very common case and thus noisy log, so we write to debug
@@ -160,12 +168,18 @@ def _handle_rpm(
         return rpm, storage_id
     # We have to download the RPM.
     try:
-        return _download_rpm(rpm, repo_url, rpm_table, cfg)
+        with timeit(
+            f"Downloading RPM {rpm}",
+            # Use a baseline of 5s so we don't agressively log for small RPMs
+            # where TCP handshake has an outsized impact.
+            threshold_s=max(5, rpm.size / min_thread_bw)
+        ):
+            return _download_rpm(rpm, repo_url, rpm_table, cfg)
     # RPM checksum validation errors, HTTP errors, etc
     except ReportableError as ex:
-        # This "fake" storage_id is stored in `storage_id_to_rpm`, so the error
-        # is propagated to sqlite db through the snapshot. It isn't written to
-        # repo_db however as that happens in the *_impl function
+        # This "fake" storage_id is stored in `storage_id_to_rpm`, so the
+        # error is propagated to sqlite db through the snapshot. It isn't
+        # written to repo_db however as that happens in the *_impl function
         return rpm, ex
 
 
@@ -180,10 +194,17 @@ def _download_rpms(
     storage_id_to_rpm = {}
     rw_db_conn = cfg.new_db_conn(readonly=False)
     ro_db_conn = cfg.new_db_conn(readonly=True)
+    min_thread_bw = MIN_TOTAL_BW / cfg.threads
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
             executor.submit(
-                _handle_rpm, rpm, repo.base_url, rpm_table, all_snapshot_universes, cfg
+                _handle_rpm,
+                rpm,
+                repo.base_url,
+                rpm_table,
+                all_snapshot_universes,
+                cfg,
+                min_thread_bw,
             )
             # Download in random order to reduce collisions from racing writers.
             for rpm in shuffled(rpms)
@@ -192,16 +213,21 @@ def _download_rpms(
         for future in as_completed(futures):
             rpm, res_storage_id = future.result()
             if not isinstance(res_storage_id, ReportableError):
-                # If it's valid, we store this storage_id to repo_db regardless of
-                # whether we encounter fatal errors later on in the execution and
-                # don't finish the snapshot - see top-level docblock for reasoning
+                # If it's valid, we store this storage_id in repo_db regardless of
+                # whether we encounter fatal errors later on that fail the snapshot;
+                # see docblock in `repo_downloader.py` for reasoning
                 res_storage_id = maybe_write_id(
                     rpm, res_storage_id, rpm_table, rw_db_conn
                 )
                 # Detect if this RPM NEVRA occurs with different contents.
-                res_storage_id = _detect_mutable_rpms(
-                    rpm, rpm_table, res_storage_id, all_snapshot_universes, ro_db_conn
-                )
+                with timeit(f"Detecting mutable RPMs for {rpm}", threshold_s=10):
+                    res_storage_id = _detect_mutable_rpms(
+                        rpm,
+                        rpm_table,
+                        res_storage_id,
+                        all_snapshot_universes,
+                        ro_db_conn
+                    )
             set_new_key(storage_id_to_rpm, res_storage_id, rpm)
 
     assert len(storage_id_to_rpm) == sum(cfg.rpm_shard.in_shard(r) for r in rpms)
@@ -214,7 +240,12 @@ def gen_rpms_from_repodatas(
     all_snapshot_universes: FrozenSet[str],
 ) -> Iterator[DownloadResult]:
     for res in repodata_results:
-        storage_id_to_rpm = _download_rpms(
-            res.repo, RpmTable(res.repo_universe), res.rpms, all_snapshot_universes, cfg
-        )
+        with timeit(f"Downloading RPMs for repo {res.repo}"):
+            storage_id_to_rpm = _download_rpms(
+                res.repo,
+                RpmTable(res.repo_universe),
+                res.rpms,
+                all_snapshot_universes,
+                cfg,
+            )
         yield res._replace(storage_id_to_rpm=MappingProxyType(storage_id_to_rpm))

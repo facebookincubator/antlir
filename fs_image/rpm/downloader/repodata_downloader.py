@@ -148,8 +148,8 @@ def _download_repodatas(
                 assert not isinstance(res.storage_id, ReportableError)
                 # This repodata was newly downloaded and stored in storage, so
                 # we store its storage_id to repo_db regardless of whether we
-                # encounter fatal errors later on in the execution and don't
-                # finish the snapshot - see top-level docblock for reasoning
+                # encounter fatal errors later on that fail the snapshot; see
+                # docblock in `repo_downloader.py` for reasoning
                 storage_id = maybe_write_id(
                     res.repodata, res.storage_id, repodata_table, rw_db_conn
                 )
