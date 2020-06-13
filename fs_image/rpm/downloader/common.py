@@ -129,7 +129,7 @@ def _log_if_storage_ids_differ(obj, storage_id, db_storage_id):
         log.warning(f"Another writer already committed {obj} at {db_storage_id}")
 
 
-def log_size(what_str: str, total_bytes: int):
+def log_size(what_str: str, total_bytes: float):
     log.info(f"{what_str} {total_bytes/10**9:,.4f} GB")
 
 
