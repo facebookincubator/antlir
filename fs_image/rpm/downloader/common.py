@@ -129,14 +129,20 @@ def log_size(what_str: str, total_bytes: int):
 
 
 @contextmanager
-def timeit(operation_msg: str, threshold_s: int):
+def timeit(operation_msg: str, threshold_s: Optional[int] = None):
     start_t = time.time()
     try:
         yield
     finally:
         duration = time.time() - start_t
-        if duration > threshold_s:
-            log.info(f"Operation exceeded threshold, {duration} > {threshold_s} secs")
+        if threshold_s is None:
+            log.info(f"{operation_msg} took {duration}s")
+        elif duration > threshold_s:
+            log.info(
+                f"{operation_msg} exceeded threshold, {duration}s > {threshold_s}s"
+            )
+        else:
+            log.debug(f"{operation_msg} took {duration}s")
 
 
 @contextmanager
@@ -145,10 +151,7 @@ def download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
         repo_url += "/"  # `urljoin` needs a trailing / to work right
     assert not relative_url.startswith("/")
     try:
-        full_url = urllib.parse.urljoin(repo_url, relative_url)
-        with timeit(f"Downloading resource {full_url}", threshold_s=60 * 10), open_url(
-            full_url
-        ) as input:
+        with open_url(urllib.parse.urljoin(repo_url, relative_url)) as input:
             yield input
     except requests.exceptions.HTTPError as ex:
         # E.g. we can see 404 errors if packages were deleted
@@ -173,7 +176,7 @@ def maybe_write_id(
     db_conn: DBConnectionContext,
 ):
     """Used to write a storage_id to repo_db after a download."""
-    with timeit(f"Writing storage ID {storage_id}", threshold_s=10):
+    with timeit(f"Writing {repo_obj} to storage ID {storage_id}", threshold_s=10):
         with retryable_db_ctx(db_conn) as repo_db_ctx:
             db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
             repo_db_ctx.commit()

@@ -37,7 +37,6 @@ def _download_repomds(
     repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]], cfg: DownloadConfig
 ) -> Iterator[DownloadResult]:
     """Downloads all repo metadatas concurrently"""
-    log.info("Downloading repomds for all repos")
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
             executor.submit(_download_repomd, repo, repo_universe)
@@ -53,6 +52,7 @@ def gen_repomds_from_repos(
 ) -> Iterator[DownloadResult]:
     # Concurrently download repomds and aggregate results
     repomd_results = list(_download_repomds(repos_and_universes, cfg))
+    log.info("Downloading repomds for all repos")
     # Perform the repomd download at least twice in a row, and ensure that the
     # checksums from the two downloads match up. This gives us added protection
     # against the scenario where a repo object wasn't atomically moved between

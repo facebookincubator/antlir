@@ -48,7 +48,7 @@ as opposed to a sheared mix of the repo at various points in time) if:
 from typing import Iterable, Iterator, Tuple
 
 from fs_image.common import get_file_logger
-from fs_image.rpm.downloader.common import DownloadConfig, DownloadResult, timeit
+from fs_image.rpm.downloader.common import DownloadConfig, DownloadResult
 from fs_image.rpm.downloader.repomd_downloader import gen_repomds_from_repos
 from fs_image.rpm.downloader.repodata_downloader import gen_repodatas_from_repomds
 from fs_image.rpm.downloader.rpm_downloader import gen_rpms_from_repodatas
@@ -100,9 +100,7 @@ def download_repos(
     )
 
     # All downloads have completed - we now want to atomically persist repomds.
-    with timeit("Storing all repomds", threshold_s=60 * 10), cfg.new_db_ctx(
-        readonly=False
-    ) as rw_repo_db:
+    with cfg.new_db_ctx(readonly=False) as rw_repo_db:
         # Even though a valid snapshot of a single repo is intrinsically valid,
         # we only want to operate on coherent collections of repos (as they
         # existed at roughly the same point in time). For this reason, we'd
@@ -112,8 +110,7 @@ def download_repos(
         # commits a full snasphot, given that the repodata & RPM objects will
         # now be referenced).
         for res in rpm_results:
-            with timeit(f"Storing repomd for repo {res.repo.name}", threshold_s=60):
-                rw_repo_db.store_repomd(res.repo_universe, res.repo.name, res.repomd)
+            rw_repo_db.store_repomd(res.repo_universe, res.repo.name, res.repomd)
         try:
             rw_repo_db.commit()
         except Exception:  # pragma: no cover
