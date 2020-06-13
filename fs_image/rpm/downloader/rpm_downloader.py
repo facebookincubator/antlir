@@ -7,7 +7,7 @@
 import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from types import MappingProxyType
-from typing import FrozenSet, Iterable, Iterator, Set, Tuple
+from typing import Dict, FrozenSet, Iterable, Iterator, Set, Tuple
 
 from fs_image.common import get_file_logger, shuffled
 from fs_image.rpm.common import read_chunks, retryable
@@ -136,7 +136,12 @@ def _handle_rpm(
     all_snapshot_universes: Set[str],
     cfg: DownloadConfig,
     min_thread_bw: float,
-) -> Tuple[Rpm, MaybeStorageID]:
+) -> Tuple[Rpm, MaybeStorageID, float]:
+    """Fetches the specified RPM from the repo DB and downloads it if needed.
+
+    Returns a 3-tuple of the hydrated RPM, storage ID or exception if one was
+    caught, and bytes downloaded, if a download occurred (used for reporting).
+    """
     # Read-after-write consitency is not needed here as this is the first read
     # in the execution model. It's possible another concurrent snapshot is
     # running that could race with this read, but that's not critical as this
@@ -170,7 +175,7 @@ def _handle_rpm(
         rpm = rpm._replace(canonical_checksum=canonical_chk)
         # This is a very common case and thus noisy log, so we write to debug
         log.debug(f"Already stored under {storage_id}: {rpm}")
-        return rpm, storage_id
+        return rpm, storage_id, 0
     # We have to download the RPM.
     try:
         with timeit(
@@ -179,13 +184,14 @@ def _handle_rpm(
             # where TCP handshake has an outsized impact.
             threshold_s=max(5, rpm.size / min_thread_bw)
         ):
-            return _download_rpm(rpm, repo_url, rpm_table, cfg)
+            rpm, storage_id = _download_rpm(rpm, repo_url, rpm_table, cfg)
+            return rpm, storage_id, rpm.size
     # RPM checksum validation errors, HTTP errors, etc
     except ReportableError as ex:
         # This "fake" storage_id is stored in `storage_id_to_rpm`, so the
         # error is propagated to sqlite db through the snapshot. It isn't
         # written to repo_db however as that happens in the *_impl function
-        return rpm, ex
+        return rpm, ex, 0
 
 
 def _download_rpms(
@@ -194,13 +200,14 @@ def _download_rpms(
     rpms: Iterable[Rpm],
     all_snapshot_universes: Set[str],
     cfg: DownloadConfig,
-):
+) -> Tuple[Dict[MaybeStorageID, Rpm], float]:
     log_size(f"`{repo.name}` has {len(rpms)} RPMs weighing", sum(r.size for r in rpms))
     storage_id_to_rpm = {}
     duplicate_rpms = 0
     rw_db_conn = cfg.new_db_conn(readonly=False)
     ro_db_conn = cfg.new_db_conn(readonly=True)
     min_thread_bw = MIN_TOTAL_BW / cfg.threads
+    total_bytes_downloaded = 0
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
             executor.submit(
@@ -217,7 +224,8 @@ def _download_rpms(
             if cfg.rpm_shard.in_shard(rpm)
         ]
         for future in as_completed(futures):
-            rpm, res_storage_id = future.result()
+            rpm, res_storage_id, bytes_dl = future.result()
+            total_bytes_downloaded += bytes_dl
             if not isinstance(res_storage_id, ReportableError):
                 # If it's valid, we store this storage_id in repo_db regardless of
                 # whether we encounter fatal errors later on that fail the snapshot;
@@ -253,7 +261,7 @@ def _download_rpms(
        len(storage_id_to_rpm)
        == (sum(cfg.rpm_shard.in_shard(r) for r in rpms) - duplicate_rpms)
     )
-    return storage_id_to_rpm
+    return storage_id_to_rpm, total_bytes_downloaded
 
 
 def gen_rpms_from_repodatas(
@@ -263,11 +271,12 @@ def gen_rpms_from_repodatas(
 ) -> Iterator[DownloadResult]:
     for res in repodata_results:
         with timeit(f"Downloading RPMs for repo {res.repo}"):
-            storage_id_to_rpm = _download_rpms(
+            storage_id_to_rpm, total_dl = _download_rpms(
                 res.repo,
                 RpmTable(res.repo_universe),
                 res.rpms,
                 all_snapshot_universes,
                 cfg,
             )
+            log_size(f"Repo {res.repo} downloaded ", total_dl)
         yield res._replace(storage_id_to_rpm=MappingProxyType(storage_id_to_rpm))
