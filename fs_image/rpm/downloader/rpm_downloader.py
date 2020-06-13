@@ -137,7 +137,12 @@ def _handle_rpm(
     cfg: DownloadConfig,
     min_thread_bw: float,
 ) -> Tuple[Rpm, MaybeStorageID]:
-    with cfg.new_db_ctx(readonly=True) as ro_repo_db:
+    # Read-after-write consitency is not needed here as this is the first read
+    # in the execution model. It's possible another concurrent snapshot is
+    # running that could race with this read, but that's not critical as this
+    # section should be idempotent, and at worst we'll duplicate some work by
+    # re-downloading the RPM.
+    with cfg.new_db_ctx(readonly=True, force_master=False) as ro_repo_db:
         # If we get no `storage_id` back, there are 3 possibilities:
         #  - `rpm.nevra()` was never seen before.
         #  - `rpm.nevra()` was seen before, but it was hashed with

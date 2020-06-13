@@ -8,9 +8,13 @@ import sqlite3
 import urllib.parse
 
 from contextlib import AbstractContextManager
+from typing import Optional
 
+from fs_image.common import get_file_logger
 from .pluggable import Pluggable
 from .repo_db import SQLDialect
+
+log = get_file_logger(__file__)
 
 
 class DBConnectionContext(AbstractContextManager, Pluggable):
@@ -26,7 +30,16 @@ class DBConnectionContext(AbstractContextManager, Pluggable):
 class SQLiteConnectionContext(DBConnectionContext, plugin_kind='sqlite'):
     SQL_DIALECT = SQLDialect.SQLITE3
 
-    def __init__(self, db_path: str, readonly: bool = False):
+    def __init__(
+        self,
+        db_path: str,
+        readonly: bool = False,
+        force_master: Optional[bool] = None,
+    ):
+        if force_master is not None:  # pragma: no cover
+            log.warning(
+                "`force_master` is not supported for SQLite - ignoring"
+            )
         self.readonly = readonly
         self.db_path = db_path
         self._conn = None
