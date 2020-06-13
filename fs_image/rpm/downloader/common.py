@@ -72,12 +72,17 @@ class DownloadConfig(NamedTuple):
     rpm_shard: RpmShard
     threads: int
 
-    def new_db_conn(self, *, readonly: bool) -> DBConnectionContext:
+    def new_db_conn(
+        self, *, readonly: bool, force_master: bool = True
+    ) -> DBConnectionContext:
         assert "readonly" not in self.db_cfg, "readonly is picked by the caller"
-        return DBConnectionContext.from_json({**self.db_cfg, "readonly": readonly})
+        assert "force_master" not in self.db_cfg, "force_master is picked by the caller"
+        return DBConnectionContext.from_json(
+            {**self.db_cfg, "readonly": readonly, "force_master": force_master}
+        )
 
-    def new_db_ctx(self, *, readonly: bool) -> ContextManager[RepoDBContext]:
-        return retryable_db_ctx(self.new_db_conn(readonly=readonly))
+    def new_db_ctx(self, **kwargs) -> ContextManager[RepoDBContext]:
+        return retryable_db_ctx(self.new_db_conn(**kwargs))
 
     def new_storage(self):
         return Storage.from_json(self.storage_cfg)
