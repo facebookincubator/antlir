@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from types import MappingProxyType
 from typing import FrozenSet, Iterable, Iterator, Set, Tuple
 
-from fs_image.common import get_file_logger, set_new_key, shuffled
+from fs_image.common import get_file_logger, shuffled
 from fs_image.rpm.common import read_chunks, retryable
 from fs_image.rpm.db_connection import DBConnectionContext
 from fs_image.rpm.downloader.common import (
@@ -192,6 +192,7 @@ def _download_rpms(
 ):
     log_size(f"`{repo.name}` has {len(rpms)} RPMs weighing", sum(r.size for r in rpms))
     storage_id_to_rpm = {}
+    duplicate_rpms = 0
     rw_db_conn = cfg.new_db_conn(readonly=False)
     ro_db_conn = cfg.new_db_conn(readonly=True)
     min_thread_bw = MIN_TOTAL_BW / cfg.threads
@@ -228,9 +229,25 @@ def _download_rpms(
                         all_snapshot_universes,
                         ro_db_conn
                     )
-            set_new_key(storage_id_to_rpm, res_storage_id, rpm)
+            existing_rpm = storage_id_to_rpm.get(res_storage_id)
+            if existing_rpm and existing_rpm != rpm:  # pragma: no cover
+                duplicate_rpms += 1
+                message = (
+                    f'Same ID {res_storage_id} with differing RPMs: '
+                    f'{existing_rpm} != {rpm}'
+                )
+                # We don't care if locations diverge because we only need a single
+                # location for a NEVRA to be able to fetch the RPM.
+                if existing_rpm._replace(location=None) == rpm._replace(location=None):
+                    log.warning(message)
+                else:
+                    raise RuntimeError(message)
+            storage_id_to_rpm[res_storage_id] = rpm
 
-    assert len(storage_id_to_rpm) == sum(cfg.rpm_shard.in_shard(r) for r in rpms)
+    assert (
+       len(storage_id_to_rpm)
+       == (sum(cfg.rpm_shard.in_shard(r) for r in rpms) - duplicate_rpms)
+    )
     return storage_id_to_rpm
 
 
