@@ -78,7 +78,13 @@ def _normalize_resources(resources):
     else:
         return resources
 
-
+def _normalize_coverage(coverages):
+    """ Exclude any coverage requirements that have `facebook` in the path as
+    these are internal.
+    """
+    return [(percent, dep) for percent, dep in coverages 
+            if "facebook" not in dep] if coverages else None
+ 
 def _normalize_visibility(vis, name = None):
     """ OSS Buck has a slightly different handling of visibility.
     The default is to be not visible.
@@ -173,6 +179,7 @@ def _python_library(
 def _python_unittest(
         cpp_deps = "ignored",
         deps = None,
+        needed_coverage = None,
         par_style = None,
         tags = None,
         resources = None,
@@ -180,6 +187,7 @@ def _python_unittest(
     python_test(
         deps = _normalize_deps(deps),
         labels = tags if tags else [],
+        needed_coverage = _normalize_coverage(needed_coverage),
         package_style = _normalize_pkg_style(par_style),
         resources = _normalize_resources(resources),
         **kwargs
