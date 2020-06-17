@@ -5,11 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 
 import requests
+import sys
 import time
+import traceback
 import urllib.parse
 from contextlib import contextmanager
+from enum import Enum, auto
 from io import BytesIO
 from typing import (
+    Callable,
     ContextManager,
     Dict,
     FrozenSet,
@@ -39,6 +43,17 @@ from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 BUFFER_BYTES = 2 ** 19
 DB_MAX_RETRY_S = [2 ** i for i in range(8)]  # 255 sec == 4m15s
 log = get_file_logger(__file__)
+
+
+class LogOp(Enum):
+    RPM_DOWNLOAD = auto()
+    DETECT_MUTABLE_RPMS = auto()
+    REPO_DB_WRITE = auto()
+    RPM_QUERY = auto()
+    REPO_DOWNLOAD = auto()
+
+    def __str__(self):
+        return str(self.name)
 
 
 def _is_retryable_mysql_err(e: Exception) -> bool:  # pragma: no cover
@@ -134,20 +149,19 @@ def log_size(what_str: str, total_bytes: float):
 
 
 @contextmanager
-def timeit(operation_msg: str, threshold_s: Optional[int] = None):
+def timeit(callback: Callable):
+    """`callback` should be a function that accepts kwargs `duration_s` and `error`,
+    which will be called when the context manager exits.
+    """
     start_t = time.time()
     try:
         yield
     finally:
         duration = time.time() - start_t
-        if threshold_s is None:
-            log.info(f"{operation_msg} took {duration}s")
-        elif duration > threshold_s:
-            log.info(
-                f"{operation_msg} exceeded threshold, {duration}s > {threshold_s}s"
-            )
-        else:
-            log.debug(f"{operation_msg} took {duration}s")
+        callback(
+            duration_s=duration,
+            error=traceback.format_exc() if any(sys.exc_info()) else None,
+        )
 
 
 @contextmanager
@@ -181,9 +195,8 @@ def maybe_write_id(
     db_conn: DBConnectionContext,
 ):
     """Used to write a storage_id to repo_db after a download."""
-    with timeit(f"Writing {repo_obj} to storage ID {storage_id}", threshold_s=10):
-        with retryable_db_ctx(db_conn) as repo_db_ctx:
-            db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
-            repo_db_ctx.commit()
+    with retryable_db_ctx(db_conn) as repo_db_ctx:
+        db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)
+        repo_db_ctx.commit()
     _log_if_storage_ids_differ(repo_obj, storage_id, db_storage_id)
     return db_storage_id

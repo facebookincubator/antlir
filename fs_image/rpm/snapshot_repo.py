@@ -14,6 +14,7 @@ import sys
 
 from fs_image.fs_utils import Path, populate_temp_dir_and_rename
 from fs_image.rpm.downloader.common import DownloadConfig
+from fs_image.rpm.downloader.logger import init_sample_logging
 from fs_image.rpm.downloader.repo_downloader import download_repos
 
 from fs_image.common import get_file_logger, init_logging
@@ -89,4 +90,5 @@ def snapshot_repo(argv):
 
 
 if __name__ == '__main__':  # pragma: no cover
+    init_sample_logging()
     snapshot_repo(sys.argv[1:])

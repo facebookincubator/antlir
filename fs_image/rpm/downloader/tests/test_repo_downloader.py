@@ -30,6 +30,7 @@ from fs_image.fs_utils import temp_dir
 
 from fs_image.rpm.downloader import repo_downloader
 from fs_image.rpm.downloader.common import open_url
+from fs_image.rpm.downloader.logger import init_sample_logging
 from fs_image.rpm.downloader.repomd_downloader import REPOMD_MAX_RETRY_S
 from fs_image.rpm.downloader.repodata_downloader import (
     RepodataParseError,
@@ -107,6 +108,7 @@ _EMPTY_EEL = temp_repos.Repo([])
 class DownloadReposTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        init_sample_logging(is_test=True)
         cls.multi_repo_dict = {
             "good_dog": _GOOD_DOG,
             "good_dog2": _GOOD_DOG2,

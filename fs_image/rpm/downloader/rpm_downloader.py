@@ -5,7 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import hashlib
+import sys
+import time
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import partial
 from types import MappingProxyType
 from typing import Dict, FrozenSet, Iterable, Iterator, Set, Tuple
 
@@ -16,6 +20,7 @@ from fs_image.rpm.downloader.common import (
     BUFFER_BYTES,
     DownloadConfig,
     DownloadResult,
+    LogOp,
     download_resource,
     log_size,
     maybe_write_id,
@@ -24,6 +29,7 @@ from fs_image.rpm.downloader.common import (
     verify_chunk_stream,
 )
 from fs_image.rpm.downloader.deleted_mutable_rpms import deleted_mutable_rpms
+from fs_image.rpm.downloader.logger import log_sample
 from fs_image.rpm.repo_db import RpmTable
 from fs_image.rpm.repo_objects import CANONICAL_HASH, Checksum, Rpm
 from fs_image.rpm.repo_snapshot import (
@@ -36,10 +42,6 @@ from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 RPM_MAX_RETRY_S = [2 ** i for i in range(9)]  # 512 sec ==  8m32s
-# This is a conservative minimum bandwidth we expect to see while downloading
-# RPMs. We'll further divide this by the number of threads we have, and log if
-# we see downloads slower than that.
-MIN_TOTAL_BW = ((400 * 10 ** 6) / 8)  # 400Mb/s == 50 MB/s
 log = get_file_logger(__file__)
 
 
@@ -131,11 +133,11 @@ def _download_rpm(
 
 def _handle_rpm(
     rpm: Rpm,
+    universe: str,
     repo_url: str,
     rpm_table: RpmTable,
     all_snapshot_universes: Set[str],
     cfg: DownloadConfig,
-    min_thread_bw: float,
 ) -> Tuple[Rpm, MaybeStorageID, float]:
     """Fetches the specified RPM from the repo DB and downloads it if needed.
 
@@ -164,7 +166,7 @@ def _handle_rpm(
         #    actually get valuable information from the download --
         #    this lets us know whether the file is wrong or the
         #    repodata is wrong.
-        with timeit(f"Querying RPM {rpm}", threshold_s=10):
+        with timeit(partial(log_sample, LogOp.RPM_QUERY, rpm=rpm, universe=universe)):
             storage_id, canonical_chk = ro_repo_db.get_rpm_storage_id_and_checksum(
                 rpm_table, rpm
             )
@@ -179,10 +181,7 @@ def _handle_rpm(
     # We have to download the RPM.
     try:
         with timeit(
-            f"Downloading RPM {rpm}",
-            # Use a baseline of 5s so we don't agressively log for small RPMs
-            # where TCP handshake has an outsized impact.
-            threshold_s=max(5, rpm.size / min_thread_bw)
+            partial(log_sample, LogOp.RPM_DOWNLOAD, rpm=rpm, universe=universe)
         ):
             rpm, storage_id = _download_rpm(rpm, repo_url, rpm_table, cfg)
             return rpm, storage_id, rpm.size
@@ -196,28 +195,27 @@ def _handle_rpm(
 
 def _download_rpms(
     repo: YumDnfConfRepo,
+    universe: str,
     rpm_table: RpmTable,
     rpms: Iterable[Rpm],
     all_snapshot_universes: Set[str],
     cfg: DownloadConfig,
 ) -> Tuple[Dict[MaybeStorageID, Rpm], float]:
-    log_size(f"`{repo.name}` has {len(rpms)} RPMs weighing", sum(r.size for r in rpms))
     storage_id_to_rpm = {}
     duplicate_rpms = 0
     rw_db_conn = cfg.new_db_conn(readonly=False)
     ro_db_conn = cfg.new_db_conn(readonly=True)
-    min_thread_bw = MIN_TOTAL_BW / cfg.threads
     total_bytes_downloaded = 0
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
             executor.submit(
                 _handle_rpm,
                 rpm,
+                universe,
                 repo.base_url,
                 rpm_table,
                 all_snapshot_universes,
                 cfg,
-                min_thread_bw,
             )
             # Download in random order to reduce collisions from racing writers.
             for rpm in shuffled(rpms)
@@ -230,11 +228,21 @@ def _download_rpms(
                 # If it's valid, we store this storage_id in repo_db regardless of
                 # whether we encounter fatal errors later on that fail the snapshot;
                 # see docblock in `repo_downloader.py` for reasoning
-                res_storage_id = maybe_write_id(
-                    rpm, res_storage_id, rpm_table, rw_db_conn
-                )
+                with timeit(
+                    partial(log_sample, LogOp.REPO_DB_WRITE, rpm=rpm, universe=universe)
+                ):
+                    res_storage_id = maybe_write_id(
+                        rpm, res_storage_id, rpm_table, rw_db_conn
+                    )
                 # Detect if this RPM NEVRA occurs with different contents.
-                with timeit(f"Detecting mutable RPMs for {rpm}", threshold_s=10):
+                with timeit(
+                    partial(
+                        log_sample,
+                        LogOp.DETECT_MUTABLE_RPMS,
+                        rpm=rpm,
+                        universe=universe
+                    )
+                ):
                     res_storage_id = _detect_mutable_rpms(
                         rpm,
                         rpm_table,
@@ -270,13 +278,29 @@ def gen_rpms_from_repodatas(
     all_snapshot_universes: FrozenSet[str],
 ) -> Iterator[DownloadResult]:
     for res in repodata_results:
-        with timeit(f"Downloading RPMs for repo {res.repo}"):
+        repo_weight_bytes = sum(r.size for r in res.rpms)
+        num_rpms = len(res.rpms)
+        log_size(f"`{res.repo.name}` has {num_rpms} RPMs weighing", repo_weight_bytes)
+        start_t = time.time()
+        total_dl = 0
+        try:
             storage_id_to_rpm, total_dl = _download_rpms(
                 res.repo,
+                res.repo_universe,
                 RpmTable(res.repo_universe),
                 res.rpms,
                 all_snapshot_universes,
                 cfg,
             )
-            log_size(f"Repo {res.repo} downloaded ", total_dl)
-        yield res._replace(storage_id_to_rpm=MappingProxyType(storage_id_to_rpm))
+            yield res._replace(storage_id_to_rpm=MappingProxyType(storage_id_to_rpm))
+        finally:
+            log_sample(
+                LogOp.REPO_DOWNLOAD,
+                duration_s=time.time() - start_t,
+                universe=res.repo_universe,
+                repo_name=res.repo.name,
+                repo_num_rpms=num_rpms,
+                repo_downloaded_gb=total_dl / 10**9,
+                repo_weight_gb=repo_weight_bytes / 10 ** 9,
+                error=traceback.format_exc() if any(sys.exc_info()) else None,
+            )
