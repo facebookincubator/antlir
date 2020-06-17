@@ -10,6 +10,7 @@ import sqlite3
 import unittest
 
 from fs_image.fs_utils import Path, temp_dir
+from fs_image.rpm.downloader.logger import init_sample_logging
 
 from . import temp_repos
 
@@ -19,6 +20,9 @@ from ..storage import Storage
 
 
 class SnapshotRepoTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        init_sample_logging(is_test=True)
 
     def test_snapshot(self):
         with temp_repos.temp_repos_steps(

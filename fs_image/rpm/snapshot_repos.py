@@ -39,6 +39,7 @@ from typing import Callable, Dict, FrozenSet, Iterable, List
 from fs_image.common import get_file_logger, init_logging
 from fs_image.fs_utils import create_ro, Path, populate_temp_dir_and_rename
 from fs_image.rpm.downloader.common import DownloadConfig
+from fs_image.rpm.downloader.logger import init_sample_logging
 from fs_image.rpm.downloader.repo_downloader import download_repos
 
 from .common import RpmShard
@@ -228,4 +229,5 @@ def snapshot_repos_from_args(argv: List[str]):
 
 
 if __name__ == '__main__':  # pragma: no cover
+    init_sample_logging()
     snapshot_repos_from_args(sys.argv[1:])

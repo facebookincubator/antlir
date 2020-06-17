@@ -9,6 +9,7 @@ import os
 import textwrap
 
 from fs_image.fs_utils import Path, temp_dir, populate_temp_dir_and_rename
+from fs_image.rpm.downloader.logger import init_sample_logging
 from ..common import RpmShard
 from ..snapshot_repos import snapshot_repos
 from ..tests.temp_repos import Repo, Rpm, SAMPLE_STEPS, temp_repos_steps
@@ -82,6 +83,7 @@ def make_temp_snapshot(
 
 if __name__ == '__main__':
     import argparse
+    init_sample_logging(is_test=True)
 
     kind_to_steps = {
         'sample-step-0': SAMPLE_STEPS[0],  # Used by most tests

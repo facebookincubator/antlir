@@ -267,6 +267,7 @@ python_library(
         ":yum_dnf_conf",
         "//fs_image:fs_utils",
         "//fs_image/rpm/downloader:common",
+        "//fs_image/rpm/downloader:logger",
         "//fs_image/rpm/downloader:repo_downloader",
         "//fs_image/rpm/storage:storage",
         "//fs_image/rpm/storage/facebook:storage",
@@ -377,6 +378,7 @@ python_binary(
         ":db_connection",
         ":snapshot_repos",
         ":temp_repos",
+        "//fs_image/rpm/downloader:logger",
         "//fs_image/rpm/storage:storage",
     ],
 )
@@ -435,6 +437,7 @@ python_library(
         ":yum_dnf_conf",
         "//fs_image:fs_utils",
         "//fs_image/rpm/downloader:common",
+        "//fs_image/rpm/downloader:logger",
         "//fs_image/rpm/downloader:repo_downloader",
     ],
 )

@@ -43,6 +43,7 @@ python_library(
     deps = [
         ":common",
         ":deleted_mutable_rpms",
+        ":logger",
     ],
 )
 
@@ -56,6 +57,14 @@ python_library(
     ],
 )
 
+python_library(
+    name = "logger",
+    srcs = ["logger.py"],
+    deps = [
+        "//fs_image/rpm/downloader/facebook:logger",
+    ],
+)
+
 python_unittest(
     name = "test-repo-downloader",
     srcs = ["tests/test_repo_downloader.py"],
@@ -64,6 +73,8 @@ python_unittest(
         (100, ":repodata_downloader"),
         (100, ":repomd_downloader"),
         (100, ":rpm_downloader"),
+        (100, ":logger"),
+        (100, "//fs_image/rpm/downloader/facebook:logger"),
     ],
     deps = [
         ":repo_downloader",
