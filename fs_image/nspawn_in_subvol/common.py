@@ -5,9 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 
 'No externally useful functions here.  Read the `run.py` docblock instead.'
+import functools
 import subprocess
 
-from typing import Any, Callable
+from typing import Any, Callable, Iterable, NamedTuple
 
 from fs_image.fs_utils import Path
 
@@ -30,13 +31,23 @@ DEFAULT_SEARCH_PATHS = (Path(p) for p in (
 DEFAULT_PATH_ENV = b':'.join(DEFAULT_SEARCH_PATHS)
 
 _PopenCtxMgr = Any  # Quacks like `popen_{non_,}booted_nspawn`
-# The intention of this wrapper API is to allow users of `run_*_nspawn` to
-# wrap the underlying `popen_*_nspawn` implementation uniformly, without
-# having to distinguish between the booted and non-booted cases.
-_PopenWrapper = Callable[[_PopenCtxMgr], _PopenCtxMgr]
 
 
-def _nspawn_version():
+class NspawnWrapper(NamedTuple):
+    popen: Callable[[_PopenCtxMgr], _PopenCtxMgr] = None
+
+
+def apply_wrappers_to_popen(
+    wrappers: Iterable[NspawnWrapper], popen: _PopenCtxMgr,
+) -> _PopenCtxMgr:
+    return functools.reduce(
+        (lambda x, f: f(x)),
+        (w.popen for w in wrappers if w.popen is not None),
+        popen,
+    )
+
+
+def nspawn_version():
     '''
     We now care about the version of nspawn we are running.  The output of
     systemd-nspawn --version looks like:

@@ -73,7 +73,7 @@ from fs_image.send_fds_and_run import popen_and_inject_fds_after_sudo
 
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
-from .common import DEFAULT_PATH_ENV, _PopenWrapper
+from . import common
 
 log = get_file_logger(__file__)
 
@@ -85,7 +85,7 @@ _OUTER_PROC = '/outerproc_boot'  # Distinct from `/outerproc_repo_server`
 
 def run_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
-    *, popen_wrappers: Iterable[_PopenWrapper] = (),  # Doc on `_PopenWrapper`
+    *, wrappers: Iterable[common.NspawnWrapper] = (),  # Doc on `NspawnWrapper`
 ) -> Tuple[
     subprocess.CompletedProcess, subprocess.CompletedProcess,
 ]:
@@ -96,9 +96,9 @@ def run_booted_nspawn(
     The second one is for the `systemd` process representing the container
     boot process itself.
     '''
-    with functools.reduce(
-        (lambda x, f: f(x)), popen_wrappers, popen_booted_nspawn
-    )(opts, popen_args) as (nsp, bp):
+    with common.apply_wrappers_to_popen(wrappers, popen_booted_nspawn)(
+        opts, popen_args
+    ) as (nsp, bp):
         ns_stdout, ns_stderr = nsp.communicate()
         # We don't make any provisions for pipes to the boot process,
         # see the file docblock.
@@ -277,7 +277,7 @@ def _popen_nsenter_into_systemd(
     default_env = {
         'HOME': opts.user.pw_dir,
         'LOGNAME': opts.user.pw_name,
-        'PATH': DEFAULT_PATH_ENV,
+        'PATH': common.DEFAULT_PATH_ENV,
         'USER': opts.user.pw_name,
         'TERM': os.environ.get('TERM')
     }

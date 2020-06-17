@@ -23,16 +23,16 @@ from typing import Iterable
 
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
-from .common import _nspawn_version, _PopenWrapper
+from . import common
 
 
 def run_non_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
-    *, popen_wrappers: Iterable[_PopenWrapper] = (),  # Doc on `_PopenWrapper`
+    *, wrappers: Iterable[common.NspawnWrapper] = (),  # Doc on `NspawnWrapper`
 ) -> subprocess.CompletedProcess:
-    with functools.reduce(
-        (lambda x, f: f(x)), popen_wrappers, popen_non_booted_nspawn
-    )(opts, popen_args) as proc:
+    with common.apply_wrappers_to_popen(wrappers, popen_non_booted_nspawn)(
+        opts, popen_args
+    ) as proc:
         cmd_stdout, cmd_stderr = proc.communicate()
     return subprocess.CompletedProcess(
         args=proc.args,
@@ -56,7 +56,7 @@ def _popen_non_booted_nspawn(setup: _NspawnSetup) -> Iterable[subprocess.Popen]:
     opts = setup.opts
     # Lets get the version locally right up front.  If this fails we'd like to
     # know early rather than later.
-    version = _nspawn_version()
+    version = common.nspawn_version()
 
     cmd = [
         *setup.nspawn_cmd,
