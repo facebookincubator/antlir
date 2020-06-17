@@ -9,8 +9,8 @@ Wrap `popen_{non,}_booted_nspawn` with `inject_yum_dnf_versionlock` to
 populate the `versionlock.list` files inside the specified repo snapshots
 inside the container.
 
-For the `run_*` functions, add this to your `popen_wrappers`:
-  `functools.partial(inject_yum_dnf_versionlock, snapshot_to_versionlock)`
+For the `run_*` functions, add this to `wrappers`:
+  `nspawn_wrapper_to_inject_yum_dnf_versionlock(snapshot_to_versionlock)`
 
 To provide `versionlock.list` files in the container, this parses our own
 "version lock" format documented in `args.py` (or `--help` on the CLI),
@@ -29,7 +29,7 @@ from fs_image.fs_utils import create_ro, Path, temp_dir
 from fs_image.subvol_utils import Subvol
 
 from .args import _NspawnOpts, PopenArgs
-from .common import _PopenCtxMgr
+from .common import _PopenCtxMgr, NspawnWrapper
 
 log = get_file_logger(__file__)
 
@@ -98,3 +98,13 @@ def inject_yum_dnf_versionlock(
             ))
 
     return wrapped_popen
+
+
+def nspawn_wrapper_to_inject_yum_dnf_versionlock(
+    snapshot_to_versionlock: Mapping[Path, Path],
+) -> NspawnWrapper:
+    return NspawnWrapper(
+        popen=functools.partial(
+            inject_yum_dnf_versionlock, snapshot_to_versionlock,
+        ) if snapshot_to_versionlock else None,
+    )

@@ -16,7 +16,7 @@ import subprocess
 import unittest
 
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
-from fs_image.nspawn_in_subvol.common import _nspawn_version
+from fs_image.nspawn_in_subvol.common import nspawn_version
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 
 from ..find_built_subvol import find_built_subvol
@@ -51,7 +51,7 @@ class ExecuteInstalledTestCase(unittest.TestCase):
                 ],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
-            if _nspawn_version() >= 244:
+            if nspawn_version() >= 244:
                 self.assertEqual((b'ok\n', b''), (ret.stdout, ret.stderr))
             else:
                 # versions < 244 did not properly respect --quiet

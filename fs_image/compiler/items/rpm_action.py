@@ -15,7 +15,9 @@ from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
-from fs_image.nspawn_in_subvol.inject_repo_servers import inject_repo_servers
+from fs_image.nspawn_in_subvol.inject_repo_servers import (
+    nspawn_wrapper_to_inject_repo_servers,
+)
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from fs_image.subvol_utils import Subvol
@@ -310,7 +312,7 @@ def _yum_dnf_using_build_appliance(
         bindmount_rw=[(install_root, work_dir)],
         user=pwd.getpwnam('root'),
     )
-    run_non_booted_nspawn(opts, PopenArgs(), popen_wrappers=[
+    run_non_booted_nspawn(opts, PopenArgs(), wrappers=[
         # Future: add `inject_yum_dnf_versionlock` here.
-        functools.partial(inject_repo_servers, [snapshot_dir])
+        nspawn_wrapper_to_inject_repo_servers([snapshot_dir]),
     ])

@@ -20,6 +20,12 @@ python_library(
     deps = ["//fs_image:fs_utils"],
 )
 
+python_unittest(
+    name = "test-common",
+    srcs = ["tests/test_common.py"],
+    needed_coverage = [(100, ":common")],
+)
+
 python_library(
     name = "cmd",
     srcs = ["cmd.py"],

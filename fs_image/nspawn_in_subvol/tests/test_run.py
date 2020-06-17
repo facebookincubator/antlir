@@ -23,7 +23,7 @@ from fs_image.rpm.find_snapshot import snapshot_install_dir
 from fs_image.tests.temp_subvolumes import with_temp_subvols
 
 from ..args import _parse_cli_args, PopenArgs
-from ..common import _nspawn_version, DEFAULT_PATH_ENV
+from ..common import nspawn_version, DEFAULT_PATH_ENV
 from ..cmd import _extra_nspawn_args_and_env
 from ..run import _set_up_run_cli
 
@@ -61,7 +61,7 @@ class NspawnTestCase(unittest.TestCase):
         # extra newline for versions < 242 is due to T40936918 mentioned in
         # `run.py`.  It would disappear if we passed `--quiet` to nspawn,
         # but we want to retain the extra debug logging.
-        self.nspawn_version = _nspawn_version()
+        self.nspawn_version = nspawn_version()
         self.maybe_extra_ending = b'\n' if self.nspawn_version < 242 else b''
 
     def _nspawn_in_boot_ret(self, rsrc_name, argv, **kwargs):
@@ -189,19 +189,6 @@ class NspawnTestCase(unittest.TestCase):
             _nspawn_args, cmd_env = _extra_nspawn_args_and_env(args.opts)
             self.assertIn('THRIFT_TLS_TEST=test_val', cmd_env)
 
-    def test_nspawn_version(self):
-        with mock.patch('subprocess.check_output') as version:
-            version.return_value = (
-                'systemd 602214076 (v602214076-2.fb1)\n+AVOGADROS SYSTEMD\n')
-            self.assertEqual(602214076, _nspawn_version())
-
-        # Check that the real nspawn on the machine running this test is
-        # actually a sane version.  We need at least 239 to do anything useful
-        # and 1000 seems like a reasonable upper bound, but mostly I'm just
-        # guessing here.
-        self.assertTrue(_nspawn_version() > 239)
-        self.assertTrue(_nspawn_version() < 1000)
-
     def test_exit_code(self):
         self.assertEqual(37, self._nspawn_in(
             'host', ['--', 'sh', '-c', 'exit 37'], check=False,
@@ -225,7 +212,7 @@ class NspawnTestCase(unittest.TestCase):
         )
         self.assertEqual(b'ohai\n', ret.stdout)
         target_stderr = b'abracadabra\n'
-        if _nspawn_version() >= 244:
+        if nspawn_version() >= 244:
             self.assertEqual(target_stderr, ret.stderr)
         else:
             # versions < 244 did not properly respect --quiet
@@ -376,7 +363,7 @@ class NspawnTestCase(unittest.TestCase):
         ], stderr=subprocess.PIPE, check=False)
         self.assertNotEqual(0, ret.returncode)
         target_stderr = b"mknod: '/foo': Operation not permitted\n"
-        if _nspawn_version() >= 244:
+        if nspawn_version() >= 244:
             self.assertEqual(target_stderr, ret.stderr)
         else:
             # versions < 244 did not properly respect --quiet
@@ -406,7 +393,7 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(ret.stdout.strip(),
                 [b'running', b'degraded'], msg=ret.stderr.strip())
         # versions < 244 did not properly respect --quiet
-        if _nspawn_version() >= 244:
+        if nspawn_version() >= 244:
             self.assertEqual(b'', ret.stderr)
 
     def test_boot_cmd_failure(self):
@@ -418,7 +405,7 @@ class NspawnTestCase(unittest.TestCase):
         self.assertEqual(1, ret.returncode)
         self.assertEqual(b'', ret.stdout)
         # versions < 244 did not properly respect --quiet
-        if _nspawn_version() >= 244:
+        if nspawn_version() >= 244:
             self.assertEqual(b'', ret.stderr)
 
     def test_boot_forward_fd(self):

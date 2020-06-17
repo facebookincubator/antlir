@@ -8,8 +8,8 @@
 Wrap `popen_{non,}_booted_nspawn` with `inject_repo_servers` to serve
 RPM repo snapshots inside the container.
 
-For the `run_*` functions, add this to your `popen_wrappers`:
-  `functools.partial(inject_repo_servers, snapshot_paths)`
+For the `run_*` functions, add this to `wrappers`:
+  `nspawn_wrapper_to_inject_repo_servers(snapshot_paths)`
 
 The snapshots must already be in the container's image, and must have been
 built by the `rpm_repo_snapshot()` target, and installed via
@@ -28,7 +28,7 @@ from fs_image.common import get_file_logger, pipe
 from fs_image.fs_utils import Path
 
 from .args import _NspawnOpts, PopenArgs
-from .common import _PopenCtxMgr
+from .common import _PopenCtxMgr, NspawnWrapper
 from .launch_repo_servers import launch_repo_servers_for_netns
 
 
@@ -197,3 +197,13 @@ def inject_repo_servers(
             yield popen_res
 
     return wrapped_popen
+
+
+def nspawn_wrapper_to_inject_repo_servers(
+    serve_rpm_snapshots: Iterable[Path],
+) -> NspawnWrapper:
+    serve_rpm_snapshots = tuple(serve_rpm_snapshots)
+    return NspawnWrapper(
+        popen=functools.partial(inject_repo_servers, serve_rpm_snapshots)
+            if serve_rpm_snapshots else None,
+    )

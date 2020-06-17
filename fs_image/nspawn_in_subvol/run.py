@@ -115,9 +115,11 @@ from fs_image.common import init_logging, nullcontext
 
 from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .booted import run_booted_nspawn
-from .common import _PopenWrapper
-from .inject_repo_servers import inject_repo_servers
-from .inject_yum_dnf_versionlock import inject_yum_dnf_versionlock
+from .common import NspawnWrapper
+from .inject_repo_servers import nspawn_wrapper_to_inject_repo_servers
+from .inject_yum_dnf_versionlock import (
+    nspawn_wrapper_to_inject_yum_dnf_versionlock,
+)
 from .non_booted import run_non_booted_nspawn
 
 
@@ -125,7 +127,7 @@ class _CliSetup(NamedTuple):
     boot: bool
     boot_console: BytesIO
     opts: _NspawnOpts
-    popen_wrappers: Iterable[_PopenWrapper]
+    nspawn_wrappers: Iterable[NspawnWrapper]
 
     def _run_nspawn(self, popen_args: PopenArgs) -> Tuple[
         subprocess.CompletedProcess, Optional[subprocess.CompletedProcess],
@@ -138,7 +140,7 @@ class _CliSetup(NamedTuple):
         )(
             self.opts,
             popen_args._replace(boot_console=self.boot_console),
-            popen_wrappers=self.popen_wrappers,
+            wrappers=self.nspawn_wrappers,
         )
         return res if self.boot else (res, None)
 
@@ -156,13 +158,11 @@ def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
             boot=args.boot,
             boot_console=boot_console,
             opts=args.opts,
-            popen_wrappers=[
-                functools.partial(
-                    inject_yum_dnf_versionlock, args.snapshot_to_versionlock,
+            nspawn_wrappers=[
+                nspawn_wrapper_to_inject_yum_dnf_versionlock(
+                    args.snapshot_to_versionlock,
                 ),
-                functools.partial(
-                    inject_repo_servers, args.serve_rpm_snapshots,
-                ),
+                nspawn_wrapper_to_inject_repo_servers(args.serve_rpm_snapshots),
             ] if args.serve_rpm_snapshots else [],
         )
 
