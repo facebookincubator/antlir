@@ -128,6 +128,13 @@ class LayerOpts(NamedTuple):
     debug: bool = False
     allowed_host_mount_targets: FrozenSet[str] = frozenset()
 
+    def requires_build_appliance(self) -> Subvol:
+        assert (self.build_appliance is not None), (
+            f'`image_layer` {self.layer_target} must set '
+            '`build_appliance`'
+        )
+        return self.build_appliance
+
 
 @dataclasses.dataclass(init=False, frozen=True)
 class ImageItem:

@@ -61,11 +61,7 @@ class TarballItem(ImageItem):
         yield require_directory(self.into_dir)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
-        assert (layer_opts.build_appliance is not None), (
-            f'`image_layer` {layer_opts.layer_target} must set '
-            '`build_appliance`'
-        )
-        build_appliance = layer_opts.build_appliance
+        build_appliance = layer_opts.requires_build_appliance()
         work_dir = generate_work_dir()
         tar_cmd = ' '.join([
             'tar',
