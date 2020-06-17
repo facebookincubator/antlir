@@ -221,10 +221,7 @@ class RpmActionItem(ImageItem):
     ):
         # Do as much validation as possible outside of the builder to give
         # fast feedback to the user.
-        assert (layer_opts.build_appliance is not None), (
-            f'`image_layer` {layer_opts.layer_target} must set '
-            '`build_appliance`'
-        )
+        build_appliance = layer_opts.requires_build_appliance()
 
         # This Mapping[RpmAction, Union[str, _LocalRpm]] powers builder() below.
         action_to_names_or_rpms = _get_action_to_names_or_rpms(items)
@@ -239,7 +236,7 @@ class RpmActionItem(ImageItem):
             ).items(), key=lambda cn: YUM_DNF_COMMAND_ORDER[cn[0]]):
                 rpms, bind_ros = _rpms_and_bind_ros(nors)
                 _yum_dnf_using_build_appliance(
-                    build_appliance=layer_opts.build_appliance,
+                    build_appliance=build_appliance,
                     bind_ros=bind_ros,
                     install_root=subvol.path(),
                     protected_paths=protected_path_set(subvol),
