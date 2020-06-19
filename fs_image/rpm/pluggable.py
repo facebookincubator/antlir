@@ -8,7 +8,7 @@
 import inspect
 import json
 
-from typing import Dict, Mapping
+from typing import Any, Dict, Mapping
 
 
 class Pluggable:
@@ -39,7 +39,7 @@ class Pluggable:
             d[plugin_kind] = cls
 
     @classmethod
-    def from_json(cls, json_cfg: Dict[str, str]) -> 'Pluggable':
+    def from_json(cls, json_cfg: Dict[str, Any]) -> 'Pluggable':
         'Uniform parsing for Storage configs e.g. on the command-line.'
         json_cfg['kind']  # KeyError if not set, or if not a dict
         return cls.make(**json_cfg)

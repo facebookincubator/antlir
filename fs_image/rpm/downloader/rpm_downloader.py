@@ -13,7 +13,7 @@ from functools import partial
 from types import MappingProxyType
 from typing import Dict, FrozenSet, Iterable, Iterator, Set, Tuple
 
-from fs_image.common import get_file_logger, shuffled
+from fs_image.common import get_file_logger, not_none, shuffled
 from fs_image.rpm.common import read_chunks, retryable
 from fs_image.rpm.db_connection import DBConnectionContext
 from fs_image.rpm.downloader.common import (
@@ -58,7 +58,7 @@ def _detect_mutable_rpms(
     rpm: Rpm,
     rpm_table: RpmTable,
     storage_id: str,
-    all_snapshot_universes: Set[str],
+    all_snapshot_universes: FrozenSet[str],
     db_conn: DBConnectionContext,
 ) -> MaybeStorageID:
     with retryable_db_ctx(db_conn) as repo_db_ctx:
@@ -198,7 +198,7 @@ def _download_rpms(
     universe: str,
     rpm_table: RpmTable,
     rpms: Iterable[Rpm],
-    all_snapshot_universes: Set[str],
+    all_snapshot_universes: FrozenSet[str],
     cfg: DownloadConfig,
 ) -> Tuple[Dict[MaybeStorageID, Rpm], float]:
     storage_id_to_rpm = {}
@@ -278,8 +278,9 @@ def gen_rpms_from_repodatas(
     all_snapshot_universes: FrozenSet[str],
 ) -> Iterator[DownloadResult]:
     for res in repodata_results:
-        repo_weight_bytes = sum(r.size for r in res.rpms)
-        num_rpms = len(res.rpms)
+        res_rpms = not_none(res.rpms, 'rpms')
+        repo_weight_bytes = sum(r.size for r in res_rpms)
+        num_rpms = len(res_rpms)
         log_size(f"`{res.repo.name}` has {num_rpms} RPMs weighing", repo_weight_bytes)
         start_t = time.time()
         total_dl = 0
@@ -288,7 +289,7 @@ def gen_rpms_from_repodatas(
                 res.repo,
                 res.repo_universe,
                 RpmTable(res.repo_universe),
-                res.rpms,
+                res_rpms,
                 all_snapshot_universes,
                 cfg,
             )

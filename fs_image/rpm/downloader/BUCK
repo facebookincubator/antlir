@@ -10,6 +10,7 @@ python_library(
         "//fs_image/rpm:open_url",
         "//fs_image/rpm:repo_db",
         "//fs_image/rpm:repo_objects",
+        "//fs_image/rpm:repo_sizer",
         "//fs_image/rpm:repo_snapshot",
         "//fs_image/rpm:yum_dnf_conf",
         "//fs_image/rpm/storage:storage",

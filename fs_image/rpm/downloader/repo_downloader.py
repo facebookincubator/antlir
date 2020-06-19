@@ -47,11 +47,12 @@ as opposed to a sheared mix of the repo at various points in time) if:
 """
 from typing import Iterable, Iterator, Tuple
 
-from fs_image.common import get_file_logger
+from fs_image.common import get_file_logger, not_none
 from fs_image.rpm.downloader.common import DownloadConfig, DownloadResult
 from fs_image.rpm.downloader.repomd_downloader import gen_repomds_from_repos
 from fs_image.rpm.downloader.repodata_downloader import gen_repodatas_from_repomds
 from fs_image.rpm.downloader.rpm_downloader import gen_rpms_from_repodatas
+from fs_image.rpm.repo_sizer import RepoObjectVisitor
 from fs_image.rpm.repo_snapshot import RepoSnapshot
 from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
@@ -59,7 +60,8 @@ log = get_file_logger(__file__)
 
 
 def visit_results(
-    results: Iterable[DownloadResult], visitors: Iterable["RepoObjectVisitor"]
+    results: Iterable[DownloadResult],
+    visitors: Iterable[RepoObjectVisitor],
 ):
     for res in results:
         for visitor in visitors:
@@ -72,10 +74,12 @@ def visit_results(
             # downloading allows us to pass in an `Rpm` structure with
             # `.canonical_checksum` set, to better detect identical RPMs from
             # different repos.
+            res_rpms = not_none(res.rpms, 'rpms')
+            res_sid_to_rpm = not_none(res.storage_id_to_rpm, 'storage_id_to_rpm')
             for rpm in {
-                **{r.location: r for r in res.rpms},
+                **{r.location: r for r in res_rpms},
                 # Post-download Rpm objects override the pre-download ones
-                **{r.location: r for r in res.storage_id_to_rpm.values()},
+                **{r.location: r for r in res_sid_to_rpm.values()},
             }.values():
                 visitor.visit_rpm(rpm)
 
@@ -84,7 +88,7 @@ def download_repos(
     repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]],
     *,
     cfg: DownloadConfig,
-    visitors: Iterable["RepoObjectVisitor"] = (),
+    visitors: Iterable[RepoObjectVisitor] = (),
 ) -> Iterator[Tuple[YumDnfConfRepo, RepoSnapshot]]:
     all_snapshot_universes = frozenset(u for _, u in repos_and_universes)
     with cfg.new_db_ctx(readonly=False) as rw_repo_db:
@@ -117,7 +121,7 @@ def download_repos(
             # This is bad, but we hope this commit was atomic and thus none of
             # the repomds got inserted, in which case our snapshot's failed but
             # we at least don't have a semi-complete snapshot in the db.
-            log.exception(f"Exception when trying to commit repomd")
+            log.exception("Exception when trying to commit repomd")
             raise
 
     # Visit after having persisted all of our work
@@ -127,8 +131,12 @@ def download_repos(
             res.repo,
             RepoSnapshot(
                 repomd=res.repomd,
-                storage_id_to_repodata=res.storage_id_to_repodata,
-                storage_id_to_rpm=res.storage_id_to_rpm,
+                storage_id_to_repodata=not_none(
+                    res.storage_id_to_repodata, 'storage_id_to_repodata'
+                ),
+                storage_id_to_rpm=not_none(
+                    res.storage_id_to_rpm, 'storage_id_to_rpm'
+                ),
             ),
         )
         for res in rpm_results
