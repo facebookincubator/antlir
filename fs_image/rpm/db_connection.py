@@ -24,7 +24,9 @@ class DBConnectionContext(AbstractContextManager, Pluggable):
     when there might be a lull in database accesses.  This lets your context
     to reconnect as needed, or to reuse the same connection.
     '''
-    pass
+    @property
+    def SQL_DIALECT(self) -> SQLDialect:
+        raise NotImplementedError
 
 
 class SQLiteConnectionContext(DBConnectionContext, plugin_kind='sqlite'):

@@ -29,7 +29,7 @@ from fs_image.common import get_file_logger
 from fs_image.rpm.common import DecorateContextEntry, RpmShard, retryable
 from fs_image.rpm.db_connection import DBConnectionContext
 from fs_image.rpm.open_url import open_url
-from fs_image.rpm.repo_db import RepoDBContext, RepodataTable
+from fs_image.rpm.repo_db import RepoDBContext, StorageTable
 from fs_image.rpm.repo_objects import Checksum, Repodata, RepoMetadata, Rpm
 from fs_image.rpm.repo_snapshot import FileIntegrityError, HTTPError, MaybeStorageID
 from fs_image.rpm.storage import Storage
@@ -67,9 +67,7 @@ def _is_retryable_mysql_err(e: Exception) -> bool:  # pragma: no cover
     )
 
 
-def retryable_db_ctx(
-    db_conn: DBConnectionContext
-) -> ContextManager[RepoDBContext]:
+def retryable_db_ctx(db_conn: DBConnectionContext) -> ContextManager[RepoDBContext]:
     return DecorateContextEntry(
         RepoDBContext(db_conn, db_conn.SQL_DIALECT),
         retryable(
@@ -92,9 +90,12 @@ class DownloadConfig(NamedTuple):
     ) -> DBConnectionContext:
         assert "readonly" not in self.db_cfg, "readonly is picked by the caller"
         assert "force_master" not in self.db_cfg, "force_master is picked by the caller"
-        return DBConnectionContext.from_json(
+        # pyre-fixme [9]: Technically could be any `Pluggable`, but we use it as
+        # a DBConnectionContext
+        conn_ctx: DBConnectionContext = DBConnectionContext.from_json(
             {**self.db_cfg, "readonly": readonly, "force_master": force_master}
         )
+        return conn_ctx
 
     def new_db_ctx(self, **kwargs) -> ContextManager[RepoDBContext]:
         return retryable_db_ctx(self.new_db_conn(**kwargs))
@@ -191,7 +192,7 @@ def download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
 def maybe_write_id(
     repo_obj: Union[Repodata, Rpm],
     storage_id: str,
-    table: RepodataTable,
+    table: StorageTable,
     db_conn: DBConnectionContext,
 ):
     """Used to write a storage_id to repo_db after a download."""

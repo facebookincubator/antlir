@@ -103,7 +103,7 @@ import enum
 import re
 
 from contextlib import AbstractContextManager, contextmanager
-from typing import ContextManager, Iterator, Optional, Set, Tuple, Union
+from typing import ContextManager, FrozenSet, Iterator, Optional, Tuple, Union
 
 from fs_image.common import byteme
 
@@ -371,7 +371,7 @@ class RepoDBContext(AbstractContextManager):
         # to allow the caller to decide whether to return one persistent
         # connection, or to make a new one evert RepoDBContext.__enter__,
         conn_ctx: ContextManager[Union[
-            'sqlite3.Connection', 'MySQLdb.Connection',
+            'sqlite3.Connection', 'MySQLdb.Connection',  # noqa: F821
         ]],
         dialect: SQLDialect,
     ):
@@ -531,7 +531,7 @@ class RepoDBContext(AbstractContextManager):
         return (storage_ids.pop(), canonical_checksums.pop())
 
     def get_rpm_canonical_checksums(
-        self, table: RpmTable, rpm: Rpm, all_snapshot_universes: Set[str],
+        self, table: RpmTable, rpm: Rpm, all_snapshot_universes: FrozenSet[str],
     ) -> Iterator[Checksum]:
         '''
         Only the NEVRA part of `rpm` is used for the lookup.  We check for

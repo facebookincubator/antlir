@@ -21,7 +21,7 @@ All objects are expected to have:
 import hashlib
 import time
 
-from typing import Iterable, Iterator, NamedTuple
+from typing import Iterator, List, NamedTuple
 from xml.dom import minidom
 
 from .common import Checksum
@@ -123,7 +123,7 @@ def _parse_repomd(xml: bytes) -> Iterator[Repodata]:
 class RepoMetadata(NamedTuple):
     xml: bytes
     fetch_timestamp: int
-    repodatas: Iterable[Repodata]
+    repodatas: List[Repodata]
     checksum: Checksum
     size: int  # Extracted from `xml` for the sake of RepoSizer
     # For ease of SQL queries, this is max(repodata.build_timestamp). This

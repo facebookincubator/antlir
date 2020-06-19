@@ -13,7 +13,7 @@ import socket
 import subprocess
 import tempfile
 
-from typing import AnyStr, Iterable, Iterator, List, Tuple, TypeVar
+from typing import AnyStr, Iterable, Iterator, List, Optional, Tuple, TypeVar
 from contextlib import AbstractContextManager, contextmanager
 
 T = TypeVar('T')
@@ -157,3 +157,15 @@ def open_fd(path: AnyStr, flags) -> int:
         yield fd
     finally:
         os.close(fd)
+
+
+def not_none(
+    var: Optional[T],
+    var_name: str,
+    detail: Optional[str] = None,
+) -> T:
+    """Used for type-refinement with `Optional`s."""
+    if var is not None:
+        return var
+    detail_str = '' if detail is None else f': {detail}'
+    raise AssertionError(f"`{var_name}` must not be None{detail_str}")

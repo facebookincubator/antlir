@@ -13,7 +13,7 @@ import zlib
 
 from collections import defaultdict
 from contextlib import AbstractContextManager
-from typing import Iterator, List, Union
+from typing import Iterable, Iterator, Union
 from xml.etree import ElementTree
 
 from .repo_objects import Checksum, Repodata, Rpm
@@ -246,7 +246,7 @@ class XMLRpmParser(AbstractContextManager):
                     self._package[self._TIME] = elt.attrib['build']
 
 
-def pick_primary_repodata(repodatas: List[Repodata]) -> Repodata:
+def pick_primary_repodata(repodatas: Iterable[Repodata]) -> Repodata:
     primaries = defaultdict(list)
     for rd in repodatas:
         if rd.is_primary_sqlite():

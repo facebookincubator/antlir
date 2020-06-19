@@ -7,7 +7,16 @@
 from contextlib import ExitStack
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from types import MappingProxyType
-from typing import Tuple, Iterable, Iterator, List, Mapping, NamedTuple, Optional, Set
+from typing import (
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Tuple,
+)
 
 from fs_image.common import get_file_logger, set_new_key, shuffled
 from fs_image.rpm.common import read_chunks, retryable
@@ -105,6 +114,7 @@ def _download_repodata(
             if outfile:
                 outfile.write(chunk)
             if rpm_parser:
+                assert rpms is not None
                 try:
                     rpms.extend(rpm_parser.feed(chunk))
                 except Exception as ex:
@@ -119,7 +129,7 @@ def _download_repodata(
 
 def _download_repodatas(
     repo: YumDnfConfRepo, repomd: RepoMetadata, cfg: DownloadConfig
-) -> Tuple[Set[Rpm], Mapping[str, Repodata]]:
+) -> Tuple[FrozenSet[Rpm], Mapping[str, Repodata]]:
     rpms = None  # We'll extract these from the primary repodata
     storage_id_to_repodata = {}  # Newly stored **and** pre-existing
     repodata_table = RepodataTable()
@@ -169,6 +179,7 @@ def _download_repodatas(
     assert len(storage_id_to_repodata) == len(repomd.repodatas)
     if not rpms:
         log.warning(f"Repo {repo} has no RPMs")
+        rpms = frozenset()
     return rpms, storage_id_to_repodata
 
 

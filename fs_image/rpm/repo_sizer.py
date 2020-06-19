@@ -9,11 +9,7 @@ Repos in `yum.conf` can (and do) share Repodata and Rpm objects, so the best
 estimate of their total space usage requires counting each object only once.
 
 `RepoDownloader` feeds the requisite information to this visitor. This
-implements the `RepoObjectVisitor` interface, featuring these methods:
-    def visit_repomd(self, repomd: RepoMetadata) -> None:
-    def visit_repodata(self, repodata: Repodata) -> None:
-    def visit_rpm(self, rpm: Rpm) -> None:
-In the future, it can be officially declared, if useful.
+implements the `RepoObjectVisitor` interface, described below.
 '''
 from collections import defaultdict
 from typing import Any, Dict, NamedTuple, Union
@@ -22,6 +18,15 @@ from fs_image.unionfind import UnionFind
 
 from .common import Checksum
 from .repo_objects import Repodata, RepoMetadata, Rpm
+
+# Type of object provided to the repo downloader as a visitor, which must
+# implement the following methods:
+#   def visit_repomd(self, repomd: RepoMetadata) -> None:
+#   def visit_repodata(self, repodata: Repodata) -> None:
+#   def visit_rpm(self, rpm: Rpm) -> None:
+#
+# Future: Define a concrete interface for this.
+RepoObjectVisitor = Any
 
 
 class Synonyms(NamedTuple):
