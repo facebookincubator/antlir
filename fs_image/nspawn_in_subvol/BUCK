@@ -88,6 +88,24 @@ python_library(
 )
 
 python_library(
+    name = "rpm_plugins",
+    srcs = ["rpm_plugins.py"],
+    deps = [
+        ":inject_repo_servers",
+        ":inject_yum_dnf_versionlock",
+        ":plugins",
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-rpm-plugins",
+    srcs = ["tests/test_rpm_plugins.py"],
+    needed_coverage = [(100, ":rpm_plugins")],
+)
+
+python_library(
     name = "booted",
     srcs = ["booted.py"],
     deps = [
@@ -122,10 +140,9 @@ python_binary(
         ":args",
         ":booted",
         ":cmd",
-        ":inject_repo_servers",
-        ":inject_yum_dnf_versionlock",
         ":non_booted",
         ":plugins",
+        ":rpm_plugins",
         "//fs_image:common",
     ],
 )
@@ -154,7 +171,6 @@ python_unittest(
         ":cmd",
         ":common",
         ":non_booted",
-        ":inject_repo_servers",
         ":launch_repo_servers",
         ":run-library",
     ]],
