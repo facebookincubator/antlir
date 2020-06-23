@@ -311,6 +311,7 @@ def _yum_dnf_using_build_appliance(
         user=pwd.getpwnam('root'),
     )
     run_non_booted_nspawn(opts, PopenArgs(), plugins=nspawn_rpm_plugins(
+        subvol=build_appliance,
         serve_rpm_snapshots=[snapshot_dir],
         # Future: add `snapshots_and_versionlocks` here.
     ))

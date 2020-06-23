@@ -23,12 +23,17 @@ class RpmPluginsTestCase(unittest.TestCase):
         mock.Mock(side_effect=lambda x: ('test_rs', x)),
     )
     def test_nspawn_rpm_plugins(self):
+        mock_subvol = mock.Mock(spec=['canonicalize_path'])
+        mock_subvol.canonicalize_path = mock.Mock(
+            side_effect=lambda x: '_' + x,
+        )
         self.assertEqual(
             (
-                ('test_vl', {'a': 'vla', 'c': 'vlc'}),
-                ('test_rs', {'a', 'b', 'c'}),
+                ('test_vl', {'_a': 'vla', '_c': 'vlc'}),
+                ('test_rs', {'_a', '_b', '_c'}),
             ),
             rpm_plugins.nspawn_rpm_plugins(
+                subvol=mock_subvol,
                 serve_rpm_snapshots=('a', 'b', 'c'),
                 snapshots_and_versionlocks=[('a', 'vla'), ('c', 'vlc')],
             )

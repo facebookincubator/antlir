@@ -34,6 +34,7 @@ from typing import Iterable, Tuple
 
 from fs_image.common import set_new_key
 from fs_image.fs_utils import Path
+from fs_image.subvol_utils import Subvol
 
 from .inject_repo_servers import nspawn_plugin_to_inject_repo_servers
 from .inject_yum_dnf_versionlock import (
@@ -43,15 +44,21 @@ from .plugins import NspawnPlugin
 
 
 def nspawn_rpm_plugins(
+    subvol: Subvol,
     *,
     serve_rpm_snapshots: Iterable[Path],
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = None,
 ) -> Iterable[NspawnPlugin]:
-    serve_rpm_snapshots = frozenset(serve_rpm_snapshots)
+    serve_rpm_snapshots = frozenset(
+        # Canonicalize here and below to ensure that it doesn't matter if
+        # snapshots are specified by symlink or by real location.
+        subvol.canonicalize_path(p) for p in serve_rpm_snapshots
+    )
 
     # Sanity-check the snapshot -> versionlock map
     s_to_vl = {}
     for s, vl in snapshots_and_versionlocks or ():
+        s = subvol.canonicalize_path(s)
         assert s in serve_rpm_snapshots, (s, serve_rpm_snapshots)
         # Future: we should probably allow duplicates if the canonicalized
         # source and destination are both the same.
