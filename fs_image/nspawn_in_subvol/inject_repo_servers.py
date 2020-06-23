@@ -26,8 +26,8 @@ from fs_image.common import get_file_logger, pipe
 from fs_image.fs_utils import Path
 
 from .args import _NspawnOpts, PopenArgs
-from .common import _OuterPopenCtxMgr, NspawnPlugin
 from .launch_repo_servers import launch_repo_servers_for_netns
+from .plugins import _OuterPopenCtxMgr, NspawnPlugin
 
 
 log = get_file_logger(__file__)

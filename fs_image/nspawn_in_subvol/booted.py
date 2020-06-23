@@ -73,7 +73,8 @@ from fs_image.send_fds_and_run import popen_and_inject_fds_after_sudo
 
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
-from . import common
+from .common import DEFAULT_PATH_ENV
+from .plugins import NspawnPlugin, apply_plugins_to_popen
 
 log = get_file_logger(__file__)
 
@@ -85,7 +86,7 @@ _OUTER_PROC = '/outerproc_boot'  # Distinct from `/outerproc_repo_server`
 
 def run_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
-    *, plugins: Iterable[common.NspawnPlugin] = (),
+    *, plugins: Iterable[NspawnPlugin] = (),
 ) -> Tuple[subprocess.CompletedProcess, subprocess.CompletedProcess]:
     '''
     The first `CompletedProcess` reflects for the user command `opts.cmd`
@@ -115,12 +116,12 @@ def run_booted_nspawn(
 @contextmanager
 def popen_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
-    *, plugins: Iterable[common.NspawnPlugin] = (),
+    *, plugins: Iterable[NspawnPlugin] = (),
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
     # IMPORTANT: This should always remain a thin wrapper on top of the
     # "outer" popen.  The point of this wrapper is to give the user a
     # uniform interface for passing `plugins` to `run` or to `popen`.
-    with common.apply_plugins_to_popen(plugins, _outer_popen_booted_nspawn)(
+    with apply_plugins_to_popen(plugins, _outer_popen_booted_nspawn)(
         opts, popen_args
     ) as res:
         yield res
@@ -287,7 +288,7 @@ def _popen_nsenter_into_systemd(
     default_env = {
         'HOME': opts.user.pw_dir,
         'LOGNAME': opts.user.pw_name,
-        'PATH': common.DEFAULT_PATH_ENV,
+        'PATH': DEFAULT_PATH_ENV,
         'USER': opts.user.pw_name,
         'TERM': os.environ.get('TERM')
     }
