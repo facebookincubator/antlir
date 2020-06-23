@@ -5,12 +5,10 @@
 # LICENSE file in the root directory of this source tree.
 
 '''
-Wrap `popen_{non,}_booted_nspawn` with `inject_yum_dnf_versionlock` to
-populate the `versionlock.list` files inside the specified repo snapshots
-inside the container.
-
-For the `run_*` functions, add this to `wrappers`:
-  `nspawn_wrapper_to_inject_yum_dnf_versionlock(snapshot_to_versionlock)`
+Populate the `versionlock.list` files inside the specified repo snapshots
+inside the container by adding this to `plugins` kwarg of the `run_*` or
+`popen_*` functions:
+  `nspawn_plugin_to_inject_yum_dnf_versionlock(snapshot_to_versionlock)`
 
 To provide `versionlock.list` files in the container, this parses our own
 "version lock" format documented in `args.py` (or `--help` on the CLI),
@@ -29,7 +27,7 @@ from fs_image.fs_utils import create_ro, Path, temp_dir
 from fs_image.subvol_utils import Subvol
 
 from .args import _NspawnOpts, PopenArgs
-from .common import _PopenCtxMgr, NspawnWrapper
+from .common import _OuterPopenCtxMgr, NspawnPlugin
 
 log = get_file_logger(__file__)
 
@@ -68,10 +66,10 @@ def _prepare_versionlock_lists(
         yield dest_to_src_and_size
 
 
-def inject_yum_dnf_versionlock(
-    snapshot_to_versionlock: Mapping[Path, Path], popen: _PopenCtxMgr,
-) -> _PopenCtxMgr:
-    'Wraps `popen_booted_nspawn` or `popen_non_booted_nspawn`.'
+def _inject_yum_dnf_versionlock(
+    snapshot_to_versionlock: Mapping[Path, Path], popen: _OuterPopenCtxMgr,
+) -> _OuterPopenCtxMgr:
+    'Wraps `_outer_popen_{,non_}booted_nspawn`.'
 
     @functools.wraps(popen)
     @contextmanager
@@ -100,11 +98,11 @@ def inject_yum_dnf_versionlock(
     return wrapped_popen
 
 
-def nspawn_wrapper_to_inject_yum_dnf_versionlock(
+def nspawn_plugin_to_inject_yum_dnf_versionlock(
     snapshot_to_versionlock: Mapping[Path, Path],
-) -> NspawnWrapper:
-    return NspawnWrapper(
+) -> NspawnPlugin:
+    return NspawnPlugin(
         popen=functools.partial(
-            inject_yum_dnf_versionlock, snapshot_to_versionlock,
+            _inject_yum_dnf_versionlock, snapshot_to_versionlock,
         ) if snapshot_to_versionlock else None,
     )

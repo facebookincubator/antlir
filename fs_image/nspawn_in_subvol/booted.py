@@ -85,10 +85,8 @@ _OUTER_PROC = '/outerproc_boot'  # Distinct from `/outerproc_repo_server`
 
 def run_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
-    *, wrappers: Iterable[common.NspawnWrapper] = (),  # Doc on `NspawnWrapper`
-) -> Tuple[
-    subprocess.CompletedProcess, subprocess.CompletedProcess,
-]:
+    *, plugins: Iterable[common.NspawnPlugin] = (),
+) -> Tuple[subprocess.CompletedProcess, subprocess.CompletedProcess]:
     '''
     The first `CompletedProcess` reflects for the user command `opts.cmd`
     that we tried to run in the booted container.
@@ -96,9 +94,7 @@ def run_booted_nspawn(
     The second one is for the `systemd` process representing the container
     boot process itself.
     '''
-    with common.apply_wrappers_to_popen(wrappers, popen_booted_nspawn)(
-        opts, popen_args
-    ) as (nsp, bp):
+    with popen_booted_nspawn(opts, popen_args, plugins=plugins) as (nsp, bp):
         ns_stdout, ns_stderr = nsp.communicate()
         # We don't make any provisions for pipes to the boot process,
         # see the file docblock.
@@ -117,9 +113,23 @@ def run_booted_nspawn(
 
 
 @contextmanager
-def popen_booted_nspawn(opts: _NspawnOpts, popen_args: PopenArgs) -> Tuple[
-    subprocess.Popen, subprocess.Popen,
-]:
+def popen_booted_nspawn(
+    opts: _NspawnOpts, popen_args: PopenArgs,
+    *, plugins: Iterable[common.NspawnPlugin] = (),
+) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
+    # IMPORTANT: This should always remain a thin wrapper on top of the
+    # "outer" popen.  The point of this wrapper is to give the user a
+    # uniform interface for passing `plugins` to `run` or to `popen`.
+    with common.apply_plugins_to_popen(plugins, _outer_popen_booted_nspawn)(
+        opts, popen_args
+    ) as res:
+        yield res
+
+
+@contextmanager
+def _outer_popen_booted_nspawn(
+    opts: _NspawnOpts, popen_args: PopenArgs,
+) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
     with _nspawn_setup(opts, popen_args) as setup, \
             _popen_boot_systemd(setup) as (boot_proc, systemd_pid), \
             _popen_nsenter_into_systemd(

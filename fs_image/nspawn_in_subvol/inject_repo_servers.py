@@ -5,11 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 
 '''
-Wrap `popen_{non,}_booted_nspawn` with `inject_repo_servers` to serve
-RPM repo snapshots inside the container.
-
-For the `run_*` functions, add this to `wrappers`:
-  `nspawn_wrapper_to_inject_repo_servers(snapshot_paths)`
+Serve RPM repo snapshots inside the container by adding this to `plugins`
+kwarg of the `run_*` or `popen_*` functions:
+  `nspawn_plugin_to_inject_repo_servers(snapshot_paths)`
 
 The snapshots must already be in the container's image, and must have been
 built by the `rpm_repo_snapshot()` target, and installed via
@@ -28,7 +26,7 @@ from fs_image.common import get_file_logger, pipe
 from fs_image.fs_utils import Path
 
 from .args import _NspawnOpts, PopenArgs
-from .common import _PopenCtxMgr, NspawnWrapper
+from .common import _OuterPopenCtxMgr, NspawnPlugin
 from .launch_repo_servers import launch_repo_servers_for_netns
 
 
@@ -145,10 +143,10 @@ def _wrap_opts_with_container_pid_exfiltrator(opts: _NspawnOpts) -> Tuple[
         ), cpe
 
 
-def inject_repo_servers(
-    serve_rpm_snapshots: Iterable[Path], popen: _PopenCtxMgr,
-) -> _PopenCtxMgr:
-    'Wraps `popen_booted_nspawn` or `popen_non_booted_nspawn`.'
+def _inject_repo_servers(
+    serve_rpm_snapshots: Iterable[Path], popen: _OuterPopenCtxMgr,
+) -> _OuterPopenCtxMgr:
+    'Wraps `_outer_popen_{,non_}booted_nspawn`.'
 
     @functools.wraps(popen)
     @contextmanager
@@ -175,7 +173,7 @@ def inject_repo_servers(
             # repo_server_bin = stack.enter_context(Path.resource(
             #    __package__, 'repo-server', exe=True,
             # ))
-            # Rewrite `opts` with a wrapper script and some forwarded FDs
+            # Rewrite `opts` with a plugin script and some forwarded FDs
             opts, cpe = stack.enter_context(
                 _wrap_opts_with_container_pid_exfiltrator(opts)
             )
@@ -199,11 +197,11 @@ def inject_repo_servers(
     return wrapped_popen
 
 
-def nspawn_wrapper_to_inject_repo_servers(
+def nspawn_plugin_to_inject_repo_servers(
     serve_rpm_snapshots: Iterable[Path],
-) -> NspawnWrapper:
+) -> NspawnPlugin:
     serve_rpm_snapshots = tuple(serve_rpm_snapshots)
-    return NspawnWrapper(
-        popen=functools.partial(inject_repo_servers, serve_rpm_snapshots)
+    return NspawnPlugin(
+        popen=functools.partial(_inject_repo_servers, serve_rpm_snapshots)
             if serve_rpm_snapshots else None,
     )

@@ -15,7 +15,7 @@ from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.nspawn_in_subvol.inject_repo_servers import (
-    nspawn_wrapper_to_inject_repo_servers,
+    nspawn_plugin_to_inject_repo_servers,
 )
 from fs_image.subvol_utils import Subvol
 
@@ -80,7 +80,7 @@ class ForeignLayerItem(ImageItem):
                     user=pwd.getpwnam(item.user),
                 ),
                 PopenArgs(),
-                wrappers=[nspawn_wrapper_to_inject_repo_servers(
+                plugins=[nspawn_plugin_to_inject_repo_servers(
                     item.serve_rpm_snapshots,
                 )],
             )
