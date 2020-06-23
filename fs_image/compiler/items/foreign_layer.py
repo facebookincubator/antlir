@@ -79,6 +79,7 @@ class ForeignLayerItem(ImageItem):
                 ),
                 PopenArgs(),
                 plugins=nspawn_rpm_plugins(
+                    subvol=subvol,
                     serve_rpm_snapshots=item.serve_rpm_snapshots,
                 ),
             )
