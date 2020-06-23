@@ -164,6 +164,29 @@ class Subvol:
             raise AssertionError(f'{path_in_subvol} is outside the subvol')
         return Path(result_path)
 
+    def canonicalize_path(self, path: AnyStr) -> Path:
+        '''
+        IMPORTANT: At present, this will silently fail to resolve symlinks
+        in the image that are not traversible by the repo user.  This means
+        it's really only appropriate for paths that are known to be
+        world-readable, e.g.  repo snapshot stuff in `__fs_image__`.
+
+        The analog of `os.path.realpath()` taking an in-subvolume path
+        (subvol-absolute or relative to subvol root) and returning a
+        subvolume-absolute path.
+
+        Due to a limitation of `path()` this will currently fail on any
+        components that are absolute symlinks, but there's no strong
+        incentive to do the more complex correct implementation (yet).
+        '''
+        assert self._exists, f'{self.path()} does not exist'
+        root = os.path.realpath(self.path())
+        rel = os.path.realpath(self.path(path))
+        if rel == root:
+            return Path('/')
+        assert rel.startswith(root + b'/'), (rel, root)
+        return Path('/') / os.path.relpath(rel, root)
+
     # This differs from the regular `subprocess.Popen` interface in these ways:
     #   - stdout maps to stderr by default (to protect the caller's stdout),
     #   - `check` is supported, and default to `True`,

@@ -90,6 +90,24 @@ class SubvolTestCase(unittest.TestCase):
 
         self.assertTrue(not sv.path('.').endswith(b'/.'))
 
+    def test_canonicalize_path(self):
+        with temp_dir() as td:
+            with unittest.mock.patch(
+                'fs_image.subvol_utils._path_is_btrfs_subvol',
+                unittest.mock.Mock(side_effect=[True]),
+            ):
+                sv = Subvol(td, already_exists=True)
+            os.mkdir(td / 'real')
+            (td / 'real/file').touch()
+            os.symlink('real/file', td / 'indirect1')
+            os.mkdir(td / 'indirect2')
+            os.symlink('../indirect1', td / 'indirect2/link')
+            self.assertEqual(
+                b'/real/file',
+                sv.canonicalize_path('indirect2/link'),
+            )
+            self.assertEqual(b'/', sv.canonicalize_path('./.'))
+
     def test_delete_inner_subvols(self):
         volume_tmp_dir = os.path.join(volume_dir(), 'tmp')
         try:
