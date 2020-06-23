@@ -68,7 +68,7 @@ class SymlinkBase(ImageItem):
         # Make all symlinks relative because this makes it easy to inspect
         # the subvolums from outside the container.  We can add an
         # `absolute` option if needed.
-        rel_source = os.path.relpath(abs_source, dest.dirname())
+        rel_source = abs_source.relpath(dest.dirname())
         assert os.path.normpath(dest / rel_source).startswith(subvol.path()), \
             '{self}: A symlink to {rel_source} would point outside the image'
         if layer_opts.build_appliance:

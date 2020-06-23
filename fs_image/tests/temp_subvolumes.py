@@ -9,12 +9,13 @@ import functools
 import logging
 import os
 import sys
-import tempfile
 
 from typing import AnyStr
 
+from fs_image.fs_utils import Path, temp_dir
+
 from ..find_built_subvol import volume_dir
-from ..subvol_utils import byteme, Subvol
+from ..subvol_utils import Subvol
 
 
 def with_temp_subvols(method):
@@ -68,37 +69,31 @@ class TempSubvolumes(contextlib.AbstractContextManager):
             pass
         # Our exit is written with exception-safety in mind, so this
         # `_temp_dir_ctx` **should** get `__exit__`ed when this class does.
-        self._temp_dir_ctx = tempfile.TemporaryDirectory(  # noqa: P201
+        self._temp_dir_ctx = temp_dir(  # noqa: P201
             dir=volume_tmp_dir,
             prefix=self.__class__.__name__ + '_',
         )
 
     def __enter__(self):
-        self._temp_dir = self._temp_dir_ctx.__enter__().encode()
+        self._temp_dir = self._temp_dir_ctx.__enter__()
         return self
 
-    def _prep_rel_path(self, rel_path: AnyStr):
+    def _prep_rel_path(self, rel_path: AnyStr) -> Path:
         '''
         Ensures subvolumes live under our temporary directory, which
         improves safety, since its permissions ought to be u+rwx to avoid
         exposing setuid binaries inside the built subvolumes.
         '''
-        rel_path = os.path.relpath(
-            os.path.realpath(
-                os.path.join(self._temp_dir, byteme(rel_path)),
-            ),
-            start=os.path.realpath(self._temp_dir),
+        rel_path = (self._temp_dir / rel_path).realpath().relpath(
+            self._temp_dir.realpath()
         )
-        if (
-            rel_path == b'..' or rel_path.startswith(b'../') or
-            os.path.isabs(rel_path)
-        ):
+        if rel_path.has_leading_dot_dot():
             raise AssertionError(
                 f'{rel_path} must be a subdirectory of {self._temp_dir}'
             )
-        abs_path = os.path.join(self._temp_dir, rel_path)
+        abs_path = self._temp_dir / rel_path
         try:
-            os.makedirs(os.path.dirname(abs_path))
+            os.makedirs(abs_path.dirname())
         except FileExistsError:
             pass
         return abs_path

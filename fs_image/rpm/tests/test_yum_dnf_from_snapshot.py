@@ -62,7 +62,7 @@ class YumFromSnapshotTestImpl:
             )
             yield install_root
         finally:
-            assert os.path.realpath(install_root) != b'/'
+            assert install_root.realpath() != b'/'
             # Courtesy of `yum`, the `install_root` is now owned by root.
             subprocess.run(['sudo', 'rm', '-rf', install_root], check=True)
 

@@ -14,7 +14,7 @@ from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 
 from .common import coerce_path_field_normal_relative, ImageItem, LayerOpts
-from .phases_provide import gen_subvolume_subtree_provides, has_leading_dot_dot
+from .phases_provide import gen_subvolume_subtree_provides
 
 
 @dataclass(init=False, frozen=True)
@@ -35,8 +35,8 @@ class CloneItem(ImageItem):
         coerce_path_field_normal_relative(kwargs, 'dest')
 
     def provides(self):
-        img_rel_src = os.path.relpath(self.source, self.source_layer.path())
-        assert not has_leading_dot_dot(img_rel_src), (
+        img_rel_src = self.source.relpath(self.source_layer.path())
+        assert not img_rel_src.has_leading_dot_dot(), (
             self.source, self.source_layer.path()
         )
         for p in gen_subvolume_subtree_provides(self.source_layer, img_rel_src):
@@ -45,7 +45,7 @@ class CloneItem(ImageItem):
             rel_to_src = p.path.lstrip('/')
             if not self.omit_outer_dir and self.pre_existing_dest:
                 rel_to_src = os.path.join(
-                    os.path.basename(img_rel_src.decode()), rel_to_src,
+                    img_rel_src.basename().decode(), rel_to_src,
                 )
             yield p.with_new_path(os.path.join(self.dest, rel_to_src))
 

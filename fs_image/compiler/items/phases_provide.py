@@ -24,11 +24,6 @@ from fs_image.subvol_utils import Subvol
 from .common import ImageItem, is_path_protected, protected_path_set
 
 
-def has_leading_dot_dot(p: Path) -> bool:
-    p = Path(p)  # Accept any string type to ease future migrations.
-    return p == b'..' or p.startswith(b'../')
-
-
 def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
     'Yields "Provides" instances for a path `subtree` in `subvol`.'
     # "Provides" classes use image-absolute paths that are `str` (for now).
@@ -38,7 +33,7 @@ def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
     protected_paths = protected_path_set(subvol)
     for prot_path in protected_paths:
         rel_to_subtree = os.path.relpath(os.path.join('/', prot_path), subtree)
-        if not has_leading_dot_dot(rel_to_subtree):
+        if not Path(rel_to_subtree).has_leading_dot_dot():
             yield ProvidesDoNotAccess(path=rel_to_subtree)
 
     subtree_full_path = subvol.path(subtree).decode()
@@ -66,7 +61,9 @@ def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
         filetype, abspath = type_and_path.decode().split(' ', 1)
         relpath = os.path.relpath(abspath, subtree_full_path)
 
-        assert not has_leading_dot_dot(relpath), (abspath, subtree_full_path)
+        assert not Path(relpath).has_leading_dot_dot(), (
+            abspath, subtree_full_path
+        )
         # We already "provided" this path above, and it should have been
         # filtered out by `find`.
         assert not is_path_protected(relpath, protected_paths), relpath

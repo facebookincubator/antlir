@@ -87,7 +87,10 @@ class Path(bytes):
         return Path(os.path.join(byteme(left), self))
 
     def file_url(self) -> str:
-        return 'file://' + urllib.parse.quote(os.path.abspath(self))
+        return 'file://' + urllib.parse.quote(self.abspath())
+
+    def abspath(self) -> 'Path':
+        return Path(os.path.abspath(self))
 
     def basename(self) -> 'Path':
         return Path(os.path.basename(self))
@@ -109,6 +112,14 @@ class Path(bytes):
 
     def normpath(self) -> 'Path':
         return Path(os.path.normpath(self))
+
+    def realpath(self) -> 'Path':
+        return Path(os.path.realpath(self))
+
+    # `start` does NOT default to the current directory because code relying
+    # on $PWD tends to be fragile, and we don't want to make it implicit.
+    def relpath(self, start: AnyStr) -> 'Path':
+        return Path(os.path.relpath(self, byteme(start)))
 
     # Returns `str` because shell scripts are normally strings, not bytes.
     def shell_quote(self) -> str:
@@ -175,7 +186,7 @@ class Path(bytes):
                     raise RuntimeError(  # pragma: no cover
                         f'{package}.{name} is not executable'
                     )
-                yield Path(os.path.abspath(rsrc_in.name))
+                yield Path(rsrc_in.name).abspath()
             else:  # pragma: no cover
                 # The resource has no path, so we have to materialize it.
                 #
@@ -202,6 +213,11 @@ class Path(bytes):
                         # and `root` execute this path, but nobody else.
                         os.chmod(td / name, 0o755)
                     yield td / name
+
+    # Future: Consider if we actually want something like
+    # `relative_outside_base`, which is `.normpath().has_leading_dot_dot()`.
+    def has_leading_dot_dot(self) -> bool:
+        return self == b'..' or self.startswith(b'../')
 
     def touch(self) -> 'Path':
         with open(self, 'a'):

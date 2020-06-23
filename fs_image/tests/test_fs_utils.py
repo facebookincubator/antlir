@@ -16,7 +16,7 @@ import unittest
 
 from io import StringIO
 
-from ..common import check_popen_returncode
+from ..common import byteme, check_popen_returncode
 from ..fs_utils import (
     create_ro, open_for_read_decompress, Path, populate_temp_dir_and_rename,
     temp_dir, populate_temp_file_and_rename,
@@ -28,6 +28,11 @@ _BAD_UTF = b'\xc3('
 class TestFsUtils(unittest.TestCase):
 
     def test_path_basics(self):
+        self.assertEqual(
+            byteme(os.getcwd()) + b'/foo/bar',
+            Path('foo/bar').abspath()
+        )
+        self.assertEqual(b'/a/c', Path('/a/b/../c').realpath())
         self.assertEqual(b'foo/bar', Path('foo') / 'bar')
         self.assertEqual(b'/foo/bar', b'/foo' / Path.or_none('bar'))
         self.assertEqual(b'/baz', b'/be/bop' / Path(b'/baz'))
@@ -35,6 +40,9 @@ class TestFsUtils(unittest.TestCase):
         self.assertEqual(b'bom', Path('/bim/bom').basename())
         self.assertEqual(b'/bim', Path('/bim/bom').dirname())
         self.assertEqual(b'ta/da', Path('./ta//gr/../da/').normpath())
+        self.assertEqual(b'/a/c', Path('/a/b/../c').realpath())
+        self.assertEqual(b'../c/d/e', Path('/a/b/c/d/e').relpath('/a/b/x'))
+        self.assertEqual(b'../../../y/z', Path('/y/z').relpath('/a/b/x'))
         self.assertEqual(Path('foo'), Path('foo'))
         self.assertIsNone(Path.or_none(None))
         with self.assertRaises(TypeError):
@@ -146,6 +154,15 @@ class TestFsUtils(unittest.TestCase):
         self.assertEqual(
             _BAD_UTF.decode(errors='surrogateescape'), str(Path(_BAD_UTF)),
         )
+
+    def test_path_has_leading_dot_dot(self):
+        self.assertTrue(Path('..').has_leading_dot_dot())
+        self.assertTrue(Path('../a/b/c').has_leading_dot_dot())
+        self.assertFalse(Path('..a/b/c').has_leading_dot_dot())
+        self.assertFalse(Path('a/../b/c').has_leading_dot_dot())
+        # This shows that we don't normalize, thus this function does not
+        # check whether the relative path refers outside of its base.
+        self.assertFalse(Path('a/../../b/c').has_leading_dot_dot())
 
     def test_path_touch(self):
         with temp_dir() as td:
