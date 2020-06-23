@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 'See `temp_repo_steps` and `SAMPLE_STEPS` for documentation.'
-import gnupg
 import os
 import pwd
 import shlex
@@ -21,7 +20,9 @@ from typing import Dict, List, NamedTuple, Optional
 from fs_image.compiler.items.common import generate_work_dir
 from fs_image.fs_utils import Path, temp_dir
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
-from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from fs_image.nspawn_in_subvol.non_booted import (
+    popen_non_booted_nspawn, run_non_booted_nspawn,
+)
 from fs_image.subvol_utils import Subvol
 from fs_image.tests.layer_resource import layer_resource_subvol
 
@@ -185,36 +186,27 @@ SAMPLE_STEPS = [
 
 def sign_rpm(rpm_path: Path, gpg_signing_key: str) -> None:
     'Signs an RPM with the provided key data'
-    with tempfile.TemporaryDirectory() as td:
-        gpg = gnupg.GPG(gnupghome=td)
-        res = gpg.import_keys(gpg_signing_key)
-        assert res.count == 1, 'Only 1 private key can be imported for signing'
-
-        # Paths inside the container for passing artifacts to and fro
-        work_dir = Path(generate_work_dir())
-        package_dir = work_dir / 'package'
-        gpg_dir = work_dir / 'gpg'
-
-        opts = new_nspawn_opts(
-            cmd=[
-                '/usr/bin/rpmsign',
-                f'--define=_gpg_name {res.fingerprints[0]}',
-                '--addsign',
-                Path(
-                    package_dir / os.path.basename(rpm_path)
-                ).shell_quote(),
-            ],
-            layer=_build_appliance(),
-            bindmount_ro=[
-                (td, gpg_dir),
-            ],
-            bindmount_rw=[
-                (os.path.dirname(rpm_path), package_dir),
-            ],
-            user=pwd.getpwnam('root'),
-            setenv=[f'GNUPGHOME={gpg_dir.shell_quote()}'],
-        )
-        run_non_booted_nspawn(opts, PopenArgs())
+    package_dir = Path(generate_work_dir())  # Bind-mount `rpm_path` here
+    opts = new_nspawn_opts(
+        cmd=[
+            # IMPORTANT: Stay gpg-2.0 compatible through 2024 for CentOS7.
+            '/bin/sh', '-uexc', f'''
+export GNUPGHOME=$(mktemp -d)
+gpg --import
+fingerprint=$(gpg --fingerprint --with-colons | grep '^fpr:' | cut -f 10 -d:)
+[ "$(echo "$fingerprint" | wc -w)" -eq 1 ]  # assertion
+rpmsign --define="_gpg_name $fingerprint" --addsign \
+    {Path(package_dir / os.path.basename(rpm_path)).shell_quote()}
+'''
+        ],
+        layer=_build_appliance(),
+        bindmount_rw=[(os.path.dirname(rpm_path), package_dir)],
+        user=pwd.getpwnam('root'),
+    )
+    with popen_non_booted_nspawn(
+        opts, PopenArgs(stdin=subprocess.PIPE),
+    ) as p:
+        p.stdin.write(gpg_signing_key.encode())
 
 
 def build_rpm(

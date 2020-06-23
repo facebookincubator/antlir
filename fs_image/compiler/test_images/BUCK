@@ -110,47 +110,6 @@ image_build_librename_shadowed(
     parent_layer = ":only-for-tests-read-only-host-clone",
 )
 
-# The next 2 layers exercise the build appliance logic for RPM installation
-# (and other items in the future?).  This powers two distinct test types:
-#  - a uni tests `test_rpm_action_item_build_appliance` in `test-items`
-#  - a full-layer integration test `test_build_appliance` in `test-image-layer`
-
-image.layer(
-    name = "fake-build-appliance-from-host",
-    parent_layer = ":only-for-tests-read-only-host-clone",
-    features = [
-        set_up_rpm_repo_snapshots(),
-        install_rpm_repo_snapshot("//fs_image/rpm:repo-snapshot-for-tests"),
-        default_rpm_repo_snapshot_for(
-            "yum",
-            "//fs_image/rpm:repo-snapshot-for-tests",
-        ),
-        default_rpm_repo_snapshot_for(
-            "dnf",
-            "//fs_image/rpm:repo-snapshot-for-tests",
-        ),
-        install_rpm_repo_snapshot("//fs_image/rpm:non-default-repo-snapshot-for-tests"),
-        image.clone(
-            src_layer = ":build-librename-shadowed",
-            src_path = "/build/librename_shadowed.so",
-            dest_path = "/__fs_image__/librename_shadowed.so",
-        ),
-
-        # These stub directories are needed to make
-        # `yum-dnf-from-snapshot`'s host path protection feature happy.  The
-        # alternative is to make all of these ONLY be protected if they
-        # exist, but that has safety downsides, and involves more code.
-        image.mkdir("/var", "tmp"),
-        image.mkdir("/var", "log"),
-        image.mkdir("/var", "cache"),
-        image.mkdir("/var/cache", "dnf"),
-        image.mkdir("/var/cache", "yum"),
-        image.mkdir("/var", "lib/rpm"),
-        image.mkdir("/var/lib", "dnf"),
-        image.mkdir("/var/lib", "yum"),
-    ],
-)
-
 # Verified by `test_*_build_appliance` in `test-image-layer`.
 [
     image.layer(
@@ -160,7 +119,7 @@ image.layer(
         ],
         build_opts = image.opts(
             rpm_installer = rpm_installer,
-            build_appliance = ":fake-build-appliance-from-host",
+            build_appliance = ":build_appliance_testing",
         ),
     )
     for rpm_installer in [
@@ -262,10 +221,10 @@ image.layer(
             "rpm-test-cheese",
         ]),
     ],
-    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
 )
 
-# ":fake-build-appliance-from-host" does GPG checks on all RPMs installed.
+# Our repo snapshotting code forces GPG checks on all RPMs installed.
 # For rpm-test-cheese-*.rpm, which are local RPM files and not signed, we need
 # to import the key for installation. When the RPM is not part of a repo, you
 # would do that with `rpm --import <gpg key>`. However it's a bit complicated
@@ -288,7 +247,7 @@ image.layer(
             image.source(":rpm-test-cheese-2-1.rpm"),
         ]),
     ],
-    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
 )
 
 # Checks installing from a non-default snapshot
@@ -301,7 +260,7 @@ image.layer(
         "rpm-test-cheese",
     ])],
     build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
+        build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//fs_image/rpm:non-default-repo-snapshot-for-tests",
     ),
 )
@@ -589,7 +548,7 @@ image.layer(
             "//",  # Double-slash tests path normalization
         ),
     ],
-    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
     # This tells our hypothetical runtime that in order to mount this layer,
     # it must invoke the "chicken" mount source (which might just download
     # and unpack a serialized versions of this layer).
@@ -626,7 +585,7 @@ image.layer(
         image.layer_mount(":hello_world_base", "/mounted_hello"),
         image.rpms_install(["rpm-test-carrot"]),  # Compact syntax for RPM installation.
     ],
-    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
 )
@@ -640,7 +599,7 @@ image.layer(
         image.rpms_install(["rpm-test-cheese"]),
     ],
     build_opts = image.opts(
-        build_appliance = ":fake-build-appliance-from-host",
+        build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//fs_image/rpm:non-default-repo-snapshot-for-tests",
     ),
 )
@@ -665,7 +624,7 @@ image.layer(
         image.tarball(":hello_world.tar", "/foo/extracted_hello"),
         image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
     ],
-    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
 )
 
 image.package(name = "child/layer.sendstream")
@@ -679,7 +638,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],
-    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
 )
 
 # This downgrades and installs /rpm_test/cheese1.txt.
@@ -689,7 +648,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-1-1.rpm"]),
     ],
-    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
 )
 
 # This upgrades and installs /rpm_test/cheese3.txt.
@@ -699,7 +658,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-3-1.rpm"]),
     ],
-    build_opts = image.opts(build_appliance = ":fake-build-appliance-from-host"),
+    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
 )
 
 ##
@@ -795,6 +754,7 @@ replace_defaults_by_test_snapshot = [
         "dnf",
         "//fs_image/rpm:repo-snapshot-for-tests",
     ),
+    install_rpm_repo_snapshot("//fs_image/rpm:non-default-repo-snapshot-for-tests"),
 ]
 
 image.layer(

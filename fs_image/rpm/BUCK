@@ -92,10 +92,6 @@ python_library(
         "//fs_image:testlib_layer_resource",
         "//fs_image/compiler/items:common",
         "//fs_image/nspawn_in_subvol:non_booted",
-        third_party.library(
-            "python-gnupg",
-            platform = "python",
-        ),
     ],
 )
 
@@ -407,7 +403,7 @@ image_python_unittest(
     srcs = ["tests/test_yum_dnf_from_snapshot.py"],
     # This is necessary because our CI environment does not guarantee that
     # `/var/lib/dnf` is installed.
-    layer = "//fs_image/compiler/test_images:fake-build-appliance-from-host",
+    layer = "//fs_image/compiler/test_images:build_appliance_testing",
     needed_coverage = [
         (100, ":yum-dnf-from-snapshot-library"),
     ],

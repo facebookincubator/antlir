@@ -132,9 +132,7 @@ class CompilerTestCase(unittest.TestCase):
         self.maxDiff = 12345
 
         self.ba_path = os.path.join(
-            os.path.dirname(__file__),
-            'host-test-build-appliance',
-            'layer.json',
+            os.path.dirname(__file__), 'test-build-appliance', 'layer.json',
         )
 
     @_subvol_mock_lexists_is_btrfs_and_run_as_root

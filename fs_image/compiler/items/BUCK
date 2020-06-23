@@ -103,8 +103,8 @@ python_unittest(
     needed_coverage = [(100, ":rpm_action")],
     resources = {
         layer_resource(
-            TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
-        ): "tests/host-test-build-appliance",
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
         layer_resource(
             TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
         ): "tests/test-with-one-local-rpm",
@@ -140,7 +140,7 @@ python_unittest(
             # `sh`, `touch`, and `mkdir`, and `dnf`.  The former 3 could be
             # provided through a busybox binary, but `dnf` pretty much
             # presupposes a full OS, so use the test BA for now.
-            TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "tests/foreign-layer-base",
         layer_resource(
             # Must have a `busybox` binary as `/bin/sh`.
@@ -227,8 +227,8 @@ python_unittest(
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
         TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
         layer_resource(
-            TEST_IMAGE_PREFIX + "fake-build-appliance-from-host",
-        ): "tests/host-test-build-appliance",
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
     },
     deps = [
         ":common_testlib",

@@ -286,12 +286,23 @@ class ImageLayerTestCase(unittest.TestCase):
         ino, = pop_path(r, 'installed/print-ok-too')
         self.assertRegex(ino, r'^\(File m555 d[0-9]+\)$')
 
+        hello_ino, = pop_path(r, 'hello_world.tar')
+        # Depending on the build host OS, our tarball may or may not get
+        # automatically sparsified.
+        for hello_suffix in ['d10240)', 'd4096h6144)']:
+            if hello_ino.endswith(hello_suffix):
+                break
+        else:
+            raise AssertionError(f'Bad hello_world.tar: {hello_ino}')
+        self.assertEqual(f'(File m444 {hello_suffix}', hello_ino)
+
         uid = getpwnam('nobody').pw_uid
         gid = getgrnam('nobody').gr_gid
         self.assertEqual(['(Dir)', {
             'baz': ['(Dir)', {}],
-            'hello_world.tar': ['(File m444 d10240)'],
-            'hello_world_again.tar': [f'(File m444 o{uid}:{gid} d10240)'],
+            'hello_world_again.tar': [
+                f'(File m444 o{uid}:{gid} {hello_suffix}',
+            ],
             'installed': ['(Dir)', {
                 'yittal-kitteh': ['(File m444 d5)'],
                 'script-dir': ['(Dir)', {

@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from fs_image.btrfs_diff.tests.render_subvols import render_sendstream, pop_path
 from fs_image.compiler.requires_provides import ProvidesDirectory, ProvidesFile
 from fs_image.tests.layer_resource import layer_resource_subvol
+from fs_image.subvol_utils import Subvol
 
 from ..common import LayerOpts
 
@@ -39,12 +40,12 @@ DUMMY_LAYER_OPTS = LayerOpts(
 def get_dummy_layer_opts_ba():
     return DUMMY_LAYER_OPTS._replace(
         build_appliance=layer_resource_subvol(
-            __package__, 'host-test-build-appliance',
+            __package__, 'test-build-appliance',
         )
     )
 
 
-def render_subvol(subvol: {'Subvol'}):
+def render_subvol(subvol: Subvol):
     # Determine the original ro/rw state of the subvol so we can put it back
     # the way it was after rendering.
     was_readonly = subvol.run_as_root([

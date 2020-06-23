@@ -45,7 +45,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
     def test_rpm_action_item_build_appliance(self):
         self._check_rpm_action_item_build_appliance(layer_resource_subvol(
-            __package__, 'host-test-build-appliance',
+            __package__, 'test-build-appliance',
         ))
 
     def _opts(self):
