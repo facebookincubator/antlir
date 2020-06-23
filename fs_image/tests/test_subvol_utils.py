@@ -86,7 +86,7 @@ class SubvolTestCase(unittest.TestCase):
 
         self.assertEqual(sv.path('a/b'), sv.path('/a/b/'))
 
-        self.assertEqual(b'a/b', os.path.relpath(sv.path('a/b'), sv.path()))
+        self.assertEqual(b'a/b', sv.path('a/b').relpath(sv.path()))
 
         self.assertTrue(not sv.path('.').endswith(b'/.'))
 

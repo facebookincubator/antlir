@@ -17,9 +17,7 @@ from typing import (
 from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
 
 from .btrfs_loopback import LoopbackVolume, run_stdout_to_err
-from .common import (
-    byteme, check_popen_returncode, get_file_logger, open_fd, pipe,
-)
+from .common import check_popen_returncode, get_file_logger, open_fd, pipe
 from .fs_utils import Path
 from .unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
 
@@ -40,15 +38,14 @@ def get_subvolume(layer_json, subvolumes_dir):
 
 
 # Exposed as a helper so that test_compiler.py can mock it.
-def _path_is_btrfs_subvol(path):
+def _path_is_btrfs_subvol(path: Path) -> bool:
     'Ensure that there is a btrfs subvolume at this path. As per @kdave at '
     'https://stackoverflow.com/a/32865333'
     # You'd think I could just `os.statvfs`, but no, not until Py3.7
     # https://bugs.python.org/issue32143
     fs_type = subprocess.run(
-        ['stat', '-f', '--format=%T', path],
-        stdout=subprocess.PIPE,
-    ).stdout.decode().strip()
+        ['stat', '-f', '--format=%T', path], stdout=subprocess.PIPE, text=True,
+    ).stdout.strip()
     ino = os.stat(path).st_ino
     return fs_type == 'btrfs' and ino == 256
 
@@ -125,7 +122,7 @@ class Subvol:
         already_exists=True, you must call create() or snapshot() to
         actually make the subvolume.
         '''
-        self._path = os.path.abspath(byteme(path))
+        self._path = Path(path).abspath()
         self._exists = already_exists
         if self._exists and not _path_is_btrfs_subvol(self._path):
             raise AssertionError(f'No btrfs subvol at {self._path}')
@@ -159,25 +156,17 @@ class Subvol:
         '''
         # The `btrfs` CLI is not very flexible, so it will try to name a
         # subvol '.' if we do not normalize `/subvol/.`.
-        result_path = os.path.normpath(os.path.join(
-            self._path,
+        result_path = (
             # Without the lstrip, we would lose the subvolume prefix if the
             # supplied path is absolute.
-            byteme(path_in_subvol).lstrip(b'/'),
-        ))
+            self._path / (Path(path_in_subvol).lstrip(b'/'))
+        ).normpath()
         # Paranoia: Make sure that, despite any symlinks in the path, the
         # resulting path is not outside of the subvolume root.
-        #
-        # NB: This will prevent us from even accessing symlinks created
-        # inside the subvolume.  To fix this, we should add an OPTION not to
-        # follow the LAST component of the path.
-        root_relative = os.path.relpath((
-            os.path.join(
-                os.path.realpath(os.path.dirname(result_path)),
-                os.path.basename(result_path),
-            ) if no_dereference_leaf else os.path.realpath(result_path)
-        ), os.path.realpath(self._path))
-        if root_relative.startswith(b'../') or root_relative == b'..':
+        if (
+            (result_path.dirname().realpath() / result_path.basename())
+                if no_dereference_leaf else result_path.realpath()
+        ).relpath(self._path.realpath()).has_leading_dot_dot():
             raise AssertionError(f'{path_in_subvol} is outside the subvol')
         return Path(result_path)
 
@@ -197,12 +186,12 @@ class Subvol:
         incentive to do the more complex correct implementation (yet).
         '''
         assert self._exists, f'{self.path()} does not exist'
-        root = os.path.realpath(self.path())
-        rel = os.path.realpath(self.path(path))
+        root = self.path().realpath()
+        rel = self.path(path).realpath()
         if rel == root:
             return Path('/')
         assert rel.startswith(root + b'/'), (rel, root)
-        return Path('/') / os.path.relpath(rel, root)
+        return Path('/') / rel.relpath(root)
 
     # This differs from the regular `subprocess.Popen` interface in these ways:
     #   - stdout maps to stderr by default (to protect the caller's stdout),

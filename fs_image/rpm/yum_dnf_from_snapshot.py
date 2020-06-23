@@ -368,7 +368,7 @@ def yum_dnf_from_snapshot(
         ['/etc/yum/'] if (has_yum() and not yum_is_dnf()) else []
     ))
     # Only isolate the host DBs and log if we are NOT installing to /.
-    install_to_fs_root = os.path.realpath(install_root) == b'/'
+    install_to_fs_root = install_root.realpath() == b'/'
     if not install_to_fs_root:
         # Ensure the log exists, so we can guarantee we don't write to the host.
         log_path = f'/var/log/{prog_name}.log'
@@ -422,7 +422,7 @@ def yum_dnf_from_snapshot(
                 # Config options get isolated by our `YumDnfConfIsolator`
                 # when `write-yum-dnf-conf` builds this file.  Note that
                 # `yum` doesn't work if the config path is relative.
-                f'--config={Path(os.path.abspath(conf_path))}',
+                f'--config={conf_path.abspath()}',
                 f'--installroot={install_root}',
                 # NB: We omit `--downloaddir` because the default behavior
                 # is to put any downloaded RPMs in `$installroot/$cachedir`,
