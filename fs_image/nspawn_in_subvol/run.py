@@ -117,7 +117,7 @@ from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .booted import run_booted_nspawn
 from .non_booted import run_non_booted_nspawn
 from .plugins import NspawnPlugin
-from .plugins.rpm import nspawn_rpm_plugins
+from .plugins.rpm import rpm_nspawn_plugins
 
 
 class _CliSetup(NamedTuple):
@@ -155,8 +155,8 @@ def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
             boot=args.boot,
             boot_console=boot_console,
             opts=args.opts,
-            plugins=nspawn_rpm_plugins(
-                subvol=args.opts.layer,
+            plugins=rpm_nspawn_plugins(
+                opts=args.opts,
                 serve_rpm_snapshots=args.serve_rpm_snapshots,
                 snapshots_and_versionlocks=args.snapshot_to_versionlock,
             ),

@@ -14,7 +14,7 @@ from typing import Iterable
 from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
-from fs_image.nspawn_in_subvol.plugins.rpm import nspawn_rpm_plugins
+from fs_image.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from fs_image.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder
@@ -63,23 +63,24 @@ class ForeignLayerItem(ImageItem):
             except FileNotFoundError:
                 maybe_protect_fs_image = ()
 
-            run_non_booted_nspawn(  # NB: stdout redirects to stderr by default
-                new_nspawn_opts(
-                    layer=subvol,
-                    snapshot=False,
-                    cmd=item.cmd,
-                    bindmount_ro=(
-                        # The command cannot change `/meta` & `/__fs_image__`
-                        (subvol.path('/meta'), '/meta'),
-                        *maybe_protect_fs_image,
-                    ),
-                    # Future: support the case where the in-container user DB
-                    # diverges from the out-of-container user DB.  And user NS.
-                    user=pwd.getpwnam(item.user),
+            opts = new_nspawn_opts(
+                layer=subvol,
+                snapshot=False,
+                cmd=item.cmd,
+                bindmount_ro=(
+                    # The command cannot change `/meta` & `/__fs_image__`
+                    (subvol.path('/meta'), '/meta'),
+                    *maybe_protect_fs_image,
                 ),
+                # Future: support the case where the in-container user DB
+                # diverges from the out-of-container user DB.  And user NS.
+                user=pwd.getpwnam(item.user),
+            )
+            run_non_booted_nspawn(  # NB: stdout redirects to stderr by default
+                opts,
                 PopenArgs(),
-                plugins=nspawn_rpm_plugins(
-                    subvol=subvol,
+                plugins=rpm_nspawn_plugins(
+                    opts=opts,
                     serve_rpm_snapshots=item.serve_rpm_snapshots,
                 ),
             )
