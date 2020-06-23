@@ -8,7 +8,7 @@
 import functools
 import subprocess
 
-from typing import Any, Callable, Iterable, NamedTuple
+from typing import Any, Callable, Iterable, NamedTuple, Optional
 
 from fs_image.fs_utils import Path
 
@@ -30,19 +30,19 @@ DEFAULT_SEARCH_PATHS = (Path(p) for p in (
 ))
 DEFAULT_PATH_ENV = b':'.join(DEFAULT_SEARCH_PATHS)
 
-_PopenCtxMgr = Any  # Quacks like `popen_{non_,}booted_nspawn`
+_OuterPopenCtxMgr = Any  # Quacks like `_outer_popen_{non_,}booted_nspawn`
 
 
-class NspawnWrapper(NamedTuple):
-    popen: Callable[[_PopenCtxMgr], _PopenCtxMgr] = None
+class NspawnPlugin(NamedTuple):
+    popen: Optional[Callable[[_OuterPopenCtxMgr], _OuterPopenCtxMgr]] = None
 
 
-def apply_wrappers_to_popen(
-    wrappers: Iterable[NspawnWrapper], popen: _PopenCtxMgr,
-) -> _PopenCtxMgr:
+def apply_plugins_to_popen(
+    plugins: Iterable[NspawnPlugin], popen: _OuterPopenCtxMgr,
+) -> _OuterPopenCtxMgr:
     return functools.reduce(
         (lambda x, f: f(x)),
-        (w.popen for w in wrappers if w.popen is not None),
+        (w.popen for w in plugins if w.popen is not None),
         popen,
     )
 

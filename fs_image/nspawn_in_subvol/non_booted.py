@@ -6,7 +6,7 @@
 
 '''
 Read the `run.py` docblock first.  Then, review the docs for
-`new_nspawn_opts` and `PopenArgs`, and invoke `popen_non_booted_nspawn`.
+`new_nspawn_opts` and `PopenArgs`, and use `{run,popen}_non_booted_nspawn`.
 
 This file uses `systemd-nspawn --as-pid2` to run nspawn's internal "stub
 init" as PID 1 of the container, and have that start `opts.cmd` as PID 2.
@@ -28,11 +28,9 @@ from . import common
 
 def run_non_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
-    *, wrappers: Iterable[common.NspawnWrapper] = (),  # Doc on `NspawnWrapper`
+    *, plugins: Iterable[common.NspawnPlugin] = (),
 ) -> subprocess.CompletedProcess:
-    with common.apply_wrappers_to_popen(wrappers, popen_non_booted_nspawn)(
-        opts, popen_args
-    ) as proc:
+    with popen_non_booted_nspawn(opts, popen_args, plugins=plugins) as proc:
         cmd_stdout, cmd_stderr = proc.communicate()
     return subprocess.CompletedProcess(
         args=proc.args,
@@ -45,14 +43,30 @@ def run_non_booted_nspawn(
 @contextmanager
 def popen_non_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
+    *, plugins: Iterable[common.NspawnPlugin] = (),
+) -> Iterable[subprocess.Popen]:
+    # IMPORTANT: This should always remain a thin wrapper on top of the
+    # "outer" popen.  The point of this wrapper is to give the user a
+    # uniform interface for passing `plugins` to `run` or to `popen`.
+    with common.apply_plugins_to_popen(plugins, _outer_popen_non_booted_nspawn)(
+        opts, popen_args
+    ) as res:
+        yield res
+
+
+@contextmanager
+def _outer_popen_non_booted_nspawn(
+    opts: _NspawnOpts, popen_args: PopenArgs,
 ) -> Iterable[subprocess.Popen]:
     with _nspawn_setup(opts, popen_args) as setup, \
-            _popen_non_booted_nspawn(setup) as proc:
+            _inner_popen_non_booted_nspawn(setup) as proc:
         yield proc
 
 
 @contextmanager
-def _popen_non_booted_nspawn(setup: _NspawnSetup) -> Iterable[subprocess.Popen]:
+def _inner_popen_non_booted_nspawn(
+    setup: _NspawnSetup,
+) -> Iterable[subprocess.Popen]:
     opts = setup.opts
     # Lets get the version locally right up front.  If this fails we'd like to
     # know early rather than later.
