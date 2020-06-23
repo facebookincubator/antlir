@@ -115,19 +115,16 @@ from fs_image.common import init_logging, nullcontext
 
 from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .booted import run_booted_nspawn
-from .inject_repo_servers import nspawn_plugin_to_inject_repo_servers
-from .inject_yum_dnf_versionlock import (
-    nspawn_plugin_to_inject_yum_dnf_versionlock,
-)
 from .non_booted import run_non_booted_nspawn
 from .plugins import NspawnPlugin
+from .rpm_plugins import nspawn_rpm_plugins
 
 
 class _CliSetup(NamedTuple):
     boot: bool
     boot_console: BytesIO
     opts: _NspawnOpts
-    nspawn_plugins: Iterable[NspawnPlugin]
+    plugins: Iterable[NspawnPlugin]
 
     def _run_nspawn(self, popen_args: PopenArgs) -> Tuple[
         subprocess.CompletedProcess, Optional[subprocess.CompletedProcess],
@@ -140,7 +137,7 @@ class _CliSetup(NamedTuple):
         )(
             self.opts,
             popen_args._replace(boot_console=self.boot_console),
-            plugins=self.nspawn_plugins,
+            plugins=self.plugins,
         )
         return res if self.boot else (res, None)
 
@@ -158,12 +155,10 @@ def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
             boot=args.boot,
             boot_console=boot_console,
             opts=args.opts,
-            nspawn_plugins=[
-                nspawn_plugin_to_inject_yum_dnf_versionlock(
-                    args.snapshot_to_versionlock,
-                ),
-                nspawn_plugin_to_inject_repo_servers(args.serve_rpm_snapshots),
-            ] if args.serve_rpm_snapshots else [],
+            plugins=nspawn_rpm_plugins(
+                serve_rpm_snapshots=args.serve_rpm_snapshots,
+                snapshots_and_versionlocks=args.snapshot_to_versionlock,
+            ),
         )
 
 

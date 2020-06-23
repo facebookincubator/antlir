@@ -26,7 +26,6 @@ from typing import (
 )
 
 from fs_image.find_built_subvol import find_built_subvol, Subvol
-from fs_image.common import set_new_key
 from fs_image.fs_utils import Path
 
 _DEFAULT_SHELL = '/bin/bash'
@@ -350,17 +349,6 @@ def _new_nspawn_cli_args(**kwargs):
     return args
 
 
-def _normalize_snapshot_to_versionlock(
-    snapshot_to_vl: Iterable[Tuple[Path, Path]], snapshots: Iterable[Path],
-) -> Mapping[Path, Path]:
-    snapshots = frozenset(snapshots)
-    s_to_vl = {}
-    for s, vl in snapshot_to_vl:
-        assert s in snapshots, (s, snapshots)
-        set_new_key(s_to_vl, s, vl)
-    return MappingProxyType(s_to_vl)
-
-
 def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     'Keep in sync with `_NspawnCLIArgs`'
     parser = argparse.ArgumentParser(
@@ -405,10 +393,6 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
         _parser_add_debug_only_not_for_prod_opts(parser)
     args = Path.parse_args(parser, argv)
     assert args.boot or not args.append_boot_console, args
-    args.snapshot_to_versionlock = _normalize_snapshot_to_versionlock(
-        args.snapshot_to_versionlock,
-        args.serve_rpm_snapshots,
-    )
 
     return _extract_opts_from_dict(
         _new_nspawn_cli_args, _NspawnCLIArgs._fields, args.__dict__,
