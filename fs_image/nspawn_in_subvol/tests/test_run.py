@@ -362,12 +362,12 @@ class NspawnTestCase(unittest.TestCase):
             '--user', 'root', '--quiet', '--', 'mknod', '/foo', 'c', '1', '3',
         ], stderr=subprocess.PIPE, check=False)
         self.assertNotEqual(0, ret.returncode)
-        target_stderr = b"mknod: '/foo': Operation not permitted\n"
+        stderr_regex = b"mknod: (|')/foo(|'): Operation not permitted\n"
         if nspawn_version() >= 244:
-            self.assertEqual(target_stderr, ret.stderr)
+            self.assertRegex(ret.stderr, b'^' + stderr_regex + b'$')
         else:
             # versions < 244 did not properly respect --quiet
-            self.assertIn(target_stderr, ret.stderr)
+            self.assertRegex(ret.stderr, stderr_regex)
 
     def test_boot_cmd_is_system_running(self):
         ret = self._nspawn_in('bootable-systemd-os', [

@@ -10,7 +10,9 @@ import subprocess
 import time
 
 from contextlib import contextmanager
-from typing import AnyStr, BinaryIO, Iterator, Iterable, NamedTuple
+from typing import (
+    AnyStr, BinaryIO, Iterator, Iterable, Optional, NamedTuple, TypeVar,
+)
 
 from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
 
@@ -61,6 +63,21 @@ class SubvolOpts(NamedTuple):
 
 
 _default_subvol_opts = SubvolOpts()
+T = TypeVar
+
+
+# This is IMPORTANT.  It does not just allow us to slightly reduce the waste
+# factor, but also avoids having to handling `btrfs send` getting SIGPIPE in
+# certain out-of-disk contexts.
+def _drain_pipe_return_byte_count(f: BinaryIO) -> int:
+    # This would be better with the `splice` syscall, but that's too much work.
+    chunk_size = 2 ** 19  # limit RAM usage
+    total = 0
+    while True:
+        num_read = len(f.read(chunk_size))
+        if not num_read:
+            return total
+        total += num_read
 
 
 class Subvol:
@@ -544,13 +561,18 @@ class Subvol:
         while True:
             attempts += 1
             fs_bytes *= waste_factor
-            if self._send_to_loopback_if_fits(
-                    output_path,
-                    int(fs_bytes),
-                    subvol_opts,
-            ):
+            leftover_bytes = self._send_to_loopback_if_fits(
+                output_path,
+                int(fs_bytes),
+                subvol_opts,
+            )
+            if leftover_bytes is None:
                 break
-            log.warning(f'{self._path} did not fit in {fs_bytes} bytes')
+            fs_bytes += leftover_bytes
+            log.warning(
+                f'{self._path} did not fit in {fs_bytes} bytes, '
+                f'{leftover_bytes} sendstream bytes were left over'
+            )
         if subvol_opts.seed_device:
             self.set_seed_device(output_path)
         # Future: It would not be unreasonable to run some sanity checks on
@@ -658,7 +680,10 @@ class Subvol:
         # filesystems mounted inside them.
         start_time = time.time()
         du_out = subprocess.check_output([
-            'sudo', 'du', '--block-size=1', '--summarize', self._path,
+            'sudo', 'du', '--block-size=1', '--summarize',
+            # Hack alert: `--one-file-system` works around the fact that we
+            # may have host mounts inside the image, which we mustn't count.
+            '--one-file-system', self._path,
         ]).split(b'\t', 1)
         assert du_out[1] == self._path + b'\n'
         size = int(du_out[0])
@@ -676,10 +701,11 @@ class Subvol:
         output_path,
         fs_size_bytes,
         subvol_opts: SubvolOpts
-    ) -> bool:
+    ) -> Optional[int]:
         '''
         Creates a loopback of the specified size, and sends the current
-        subvolume to it.  Returns True if the subvolume fits in that space.
+        subvolume to it.  Returns None if the subvolume fits in that space,
+        or the number of leftover sendstream bytes otherwise.
         '''
         open(output_path, 'wb').close()
         with pipe() as (r_send, w_send), \
@@ -693,7 +719,9 @@ class Subvol:
                 ), stdin=r_send, stderr=subprocess.PIPE)
                 if recv_ret.returncode != 0:
                     if recv_ret.stderr.endswith(self._OUT_OF_SPACE_SUFFIX):
-                        return False
+                        log.info('Will retry receive, did not fit')
+                        return _drain_pipe_return_byte_count(r_send)
+                    log.info('Receive failed: {}')
                     # It's pretty lame to rely on `btrfs receive` continuing
                     # to be unlocalized, and emitting that particular error
                     # message, so we fall back to checking available bytes.
@@ -703,7 +731,8 @@ class Subvol:
                     ), stdout=subprocess.PIPE)
                     # If the `findmnt` fails, don't mask the original error.
                     if size_ret.returncode == 0 and int(size_ret.stdout) == 0:
-                        return False
+                        log.info('Will retry receive, volume AVAIL=0')
+                        return _drain_pipe_return_byte_count(r_send)
                     # Covering this is hard, so the test plan is "inspection".
                     log.error(  # pragma: no cover
                         'Unhandled receive stderr:\n\n' +
@@ -718,7 +747,7 @@ class Subvol:
                         'ro', 'false',
                     )).check_returncode()
             loop_vol.minimize_size()
-            return True
+            return None
 
     @contextmanager
     def receive(self, from_file):
