@@ -77,7 +77,7 @@ python_library(
     deps = [
         ":common",
         "//fs_image/nspawn_in_subvol:non_booted",
-        "//fs_image/nspawn_in_subvol:rpm_plugins",
+        "//fs_image/nspawn_in_subvol/plugins:rpm",
         "//fs_image/rpm:find_snapshot",
         "//fs_image/rpm:rpm_metadata",
     ],
@@ -126,7 +126,7 @@ python_library(
     deps = [
         ":common",
         "//fs_image/nspawn_in_subvol:non_booted",
-        "//fs_image/nspawn_in_subvol:rpm_plugins",
+        "//fs_image/nspawn_in_subvol/plugins:rpm",
     ],
 )
 

@@ -6,7 +6,7 @@
 
 import unittest
 
-from ..plugins import apply_plugins_to_popen, NspawnPlugin
+from .. import apply_plugins_to_popen, NspawnPlugin
 
 
 class PluginsTestCase(unittest.TestCase):
