@@ -36,11 +36,9 @@ from fs_image.common import set_new_key
 from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 
-from .inject_repo_servers import nspawn_plugin_to_inject_repo_servers
-from .inject_yum_dnf_versionlock import (
-    nspawn_plugin_to_inject_yum_dnf_versionlock,
-)
-from .plugins import NspawnPlugin
+from . import NspawnPlugin
+from .repo_servers import repo_servers_nspawn_plugin
+from .yum_dnf_versionlock import yum_dnf_versionlock_nspawn_plugin
 
 
 def nspawn_rpm_plugins(
@@ -66,6 +64,6 @@ def nspawn_rpm_plugins(
     snapshot_to_versionlock = MappingProxyType(s_to_vl)
 
     return (
-        nspawn_plugin_to_inject_yum_dnf_versionlock(snapshot_to_versionlock),
-        nspawn_plugin_to_inject_repo_servers(serve_rpm_snapshots),
+        yum_dnf_versionlock_nspawn_plugin(snapshot_to_versionlock),
+        repo_servers_nspawn_plugin(serve_rpm_snapshots),
     ) if serve_rpm_snapshots else ()

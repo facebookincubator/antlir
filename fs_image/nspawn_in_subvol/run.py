@@ -117,7 +117,7 @@ from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .booted import run_booted_nspawn
 from .non_booted import run_non_booted_nspawn
 from .plugins import NspawnPlugin
-from .rpm_plugins import nspawn_rpm_plugins
+from .plugins.rpm import nspawn_rpm_plugins
 
 
 class _CliSetup(NamedTuple):

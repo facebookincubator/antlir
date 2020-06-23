@@ -8,18 +8,18 @@ import unittest
 
 from unittest import mock
 
-from .. import rpm_plugins
+from .. import rpm as rpm_plugins
 
 
 class RpmPluginsTestCase(unittest.TestCase):
 
     # This fully mocked because `test-run` does the integration testing.
     @mock.patch.object(
-        rpm_plugins, 'nspawn_plugin_to_inject_yum_dnf_versionlock',
+        rpm_plugins, 'yum_dnf_versionlock_nspawn_plugin',
         mock.Mock(side_effect=lambda x: ('test_vl', x)),
     )
     @mock.patch.object(
-        rpm_plugins, 'nspawn_plugin_to_inject_repo_servers',
+        rpm_plugins, 'repo_servers_nspawn_plugin',
         mock.Mock(side_effect=lambda x: ('test_rs', x)),
     )
     def test_nspawn_rpm_plugins(self):

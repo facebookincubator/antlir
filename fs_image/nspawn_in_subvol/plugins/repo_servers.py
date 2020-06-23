@@ -7,7 +7,7 @@
 '''
 Serve RPM repo snapshots inside the container by adding this to `plugins`
 kwarg of the `run_*` or `popen_*` functions:
-  `nspawn_plugin_to_inject_repo_servers(snapshot_paths)`
+  `repo_servers_nspawn_plugin(snapshot_paths)`
 
 The snapshots must already be in the container's image, and must have been
 built by the `rpm_repo_snapshot()` target, and installed via
@@ -24,10 +24,10 @@ from typing import Any, Iterable, List, Optional, Tuple
 
 from fs_image.common import get_file_logger, pipe
 from fs_image.fs_utils import Path
+from fs_image.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
 
-from .args import _NspawnOpts, PopenArgs
+from . import _OuterPopenCtxMgr, NspawnPlugin
 from .launch_repo_servers import launch_repo_servers_for_netns
-from .plugins import _OuterPopenCtxMgr, NspawnPlugin
 
 
 log = get_file_logger(__file__)
@@ -197,7 +197,7 @@ def _inject_repo_servers(
     return wrapped_popen
 
 
-def nspawn_plugin_to_inject_repo_servers(
+def repo_servers_nspawn_plugin(
     serve_rpm_snapshots: Iterable[Path],
 ) -> NspawnPlugin:
     serve_rpm_snapshots = tuple(serve_rpm_snapshots)

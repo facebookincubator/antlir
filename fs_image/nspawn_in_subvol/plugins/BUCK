@@ -1,0 +1,68 @@
+load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
+
+python_library(
+    name = "plugins",
+    srcs = ["__init__.py"],
+    deps = ["//fs_image:fs_utils"],
+)
+
+python_unittest(
+    name = "test-plugins",
+    srcs = ["tests/test_plugins.py"],
+    needed_coverage = [(100, ":plugins")],
+)
+
+# Gets test coverage via `nspawn_in_subvol:test-run`
+python_library(
+    name = "launch_repo_servers",
+    srcs = ["launch_repo_servers.py"],
+    deps = [
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+    ],
+)
+
+# Gets test coverage via `nspawn_in_subvol:test-run`
+python_library(
+    name = "repo_servers",
+    srcs = ["repo_servers.py"],
+    # Future: bring this back, a comment in the `.py` file explains how.
+    # resources = {"//fs_image/rpm:repo-server": "repo-server"},
+    deps = [
+        ":launch_repo_servers",
+        ":plugins",
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+        "//fs_image/nspawn_in_subvol:args",
+    ],
+)
+
+# Gets test coverage via `nspawn_in_subvol:test-run`
+python_library(
+    name = "yum_dnf_versionlock",
+    srcs = ["yum_dnf_versionlock.py"],
+    deps = [
+        ":plugins",
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+        "//fs_image/nspawn_in_subvol:args",
+    ],
+)
+
+python_library(
+    name = "rpm",
+    srcs = ["rpm.py"],
+    deps = [
+        ":plugins",
+        ":repo_servers",
+        ":yum_dnf_versionlock",
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-rpm",
+    srcs = ["tests/test_rpm.py"],
+    needed_coverage = [(100, ":rpm")],
+)

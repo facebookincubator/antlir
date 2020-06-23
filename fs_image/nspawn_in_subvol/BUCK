@@ -27,18 +27,6 @@ python_unittest(
 )
 
 python_library(
-    name = "plugins",
-    srcs = ["plugins.py"],
-    deps = ["//fs_image:fs_utils"],
-)
-
-python_unittest(
-    name = "test-plugins",
-    srcs = ["tests/test_plugins.py"],
-    needed_coverage = [(100, ":plugins")],
-)
-
-python_library(
     name = "cmd",
     srcs = ["cmd.py"],
     deps = [
@@ -54,67 +42,15 @@ python_library(
 )
 
 python_library(
-    name = "launch_repo_servers",
-    srcs = ["launch_repo_servers.py"],
-    deps = [
-        "//fs_image:common",
-        "//fs_image:fs_utils",
-    ],
-)
-
-python_library(
-    name = "inject_repo_servers",
-    srcs = ["inject_repo_servers.py"],
-    # Future: bring this back, a comment in the `.py` file explains how.
-    # resources = {"//fs_image/rpm:repo-server": "repo-server"},
-    deps = [
-        ":args",
-        ":launch_repo_servers",
-        ":plugins",
-        "//fs_image:common",
-        "//fs_image:fs_utils",
-    ],
-)
-
-python_library(
-    name = "inject_yum_dnf_versionlock",
-    srcs = ["inject_yum_dnf_versionlock.py"],
-    deps = [
-        ":args",
-        ":plugins",
-        "//fs_image:common",
-        "//fs_image:fs_utils",
-    ],
-)
-
-python_library(
-    name = "rpm_plugins",
-    srcs = ["rpm_plugins.py"],
-    deps = [
-        ":inject_repo_servers",
-        ":inject_yum_dnf_versionlock",
-        ":plugins",
-        "//fs_image:common",
-        "//fs_image:fs_utils",
-    ],
-)
-
-python_unittest(
-    name = "test-rpm-plugins",
-    srcs = ["tests/test_rpm_plugins.py"],
-    needed_coverage = [(100, ":rpm_plugins")],
-)
-
-python_library(
     name = "booted",
     srcs = ["booted.py"],
     deps = [
         ":args",
         ":cmd",
         ":common",
-        ":plugins",
         "//fs_image:common",
         "//fs_image:send_fds_and_run",
+        "//fs_image/nspawn_in_subvol/plugins:plugins",
     ],
 )
 
@@ -125,7 +61,7 @@ python_library(
         ":args",
         ":cmd",
         ":common",
-        ":plugins",
+        "//fs_image/nspawn_in_subvol/plugins:plugins",
     ],
 )
 
@@ -141,9 +77,9 @@ python_binary(
         ":booted",
         ":cmd",
         ":non_booted",
-        ":plugins",
-        ":rpm_plugins",
         "//fs_image:common",
+        "//fs_image/nspawn_in_subvol/plugins:plugins",
+        "//fs_image/nspawn_in_subvol/plugins:rpm",
     ],
 )
 
@@ -171,8 +107,10 @@ python_unittest(
         ":cmd",
         ":common",
         ":non_booted",
-        ":launch_repo_servers",
         ":run-library",
+        "//fs_image/nspawn_in_subvol/plugins:launch_repo_servers",
+        "//fs_image/nspawn_in_subvol/plugins:repo_servers",
+        "//fs_image/nspawn_in_subvol/plugins:yum_dnf_versionlock",
     ]],
     # Ensures we can read resources in @mode/opt. "xar" cannot work because
     # `root` cannot access the content of unprivileged XARs.

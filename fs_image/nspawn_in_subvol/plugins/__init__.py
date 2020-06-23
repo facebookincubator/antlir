@@ -4,11 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
-These go in the `plugins` field passed to `run_*` and `popen_` functions.
-See `inject_*.py` for concrete examples.
-'''
-
 import functools
 
 from typing import Any, Callable, Iterable, NamedTuple, Optional
@@ -17,6 +12,10 @@ _OuterPopenCtxMgr = Any  # Quacks like `_outer_popen_{non_,}booted_nspawn`
 
 
 class NspawnPlugin(NamedTuple):
+    '''
+    These go in the `plugins` field passed to `run_*` and `popen_` functions.
+    See other `*.py` files in this directory for concrete examples.
+    '''
     popen: Optional[Callable[[_OuterPopenCtxMgr], _OuterPopenCtxMgr]] = None
 
 

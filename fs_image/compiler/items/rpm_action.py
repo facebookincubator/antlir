@@ -16,7 +16,7 @@ from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
-from fs_image.nspawn_in_subvol.rpm_plugins import nspawn_rpm_plugins
+from fs_image.nspawn_in_subvol.plugins.rpm import nspawn_rpm_plugins
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from fs_image.subvol_utils import Subvol
 

@@ -11,7 +11,7 @@ behavior.
   - This code should only ever be executed in a no-network
     `nspawn_in_subvol` container, never on a bare host.
 
-  - (Set up by `nspawn_in_subvol/inject_repo_servers.py`): All RPM content
+  - (Set up by `nspawn_in_subvol/plugins/repo_servers.py`): All RPM content
     is served by `repo_server.py` from an RPM repo snapshot captured by
     `snapshot_repos.py`, built via the `rpm_repo_snapshot()` Buck macro, and
     installed into some `image.layer` via the image feature named
@@ -402,7 +402,7 @@ def yum_dnf_from_snapshot(
                 #
                 # We omit `--net` because `yum-dnf-from-snapshot` should
                 # only be running in a private-network `nspawn_in_subvol` at
-                # this point, and `inject_repo_server.py` servers listen on
+                # this point, and `repo_servers.py` servers listen on
                 # sockets that are outside of this `unshare` (the latter
                 # could be changed but requires laboriously punching through
                 # some abstraction boundaries).

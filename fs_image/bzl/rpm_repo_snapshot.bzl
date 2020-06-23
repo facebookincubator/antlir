@@ -113,7 +113,7 @@ def rpm_repo_snapshot(
         visibility = [],
     )
 
-    # Future: remove this in favor of linking it with `inject_repo_servers.py`.
+    # Future: remove this in favor of linking it with `repo_servers.py`.
     # See the comment in that file for more info.
     _, repo_server_wrapper = maybe_wrap_executable_target(
         target = "//fs_image/rpm:repo-server",
