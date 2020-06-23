@@ -27,7 +27,7 @@ from fs_image.fs_utils import create_ro, Path, temp_dir
 from fs_image.subvol_utils import Subvol
 
 from .args import _NspawnOpts, PopenArgs
-from .common import _OuterPopenCtxMgr, NspawnPlugin
+from .plugins import _OuterPopenCtxMgr, NspawnPlugin
 
 log = get_file_logger(__file__)
 

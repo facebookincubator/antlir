@@ -8,7 +8,7 @@ import unittest
 
 from unittest import mock
 
-from ..common import apply_plugins_to_popen, nspawn_version, NspawnPlugin
+from ..common import nspawn_version
 
 
 class CommonTestCase(unittest.TestCase):
@@ -25,15 +25,3 @@ class CommonTestCase(unittest.TestCase):
         # guessing here.
         self.assertTrue(nspawn_version() > 239)
         self.assertTrue(nspawn_version() < 1000)
-
-    def test_apply_plugins_to_popen(self):
-        self.assertEqual(
-            'outer-inner-unwrapped',
-            apply_plugins_to_popen(
-                [
-                    NspawnPlugin(popen=lambda x: 'inner-' + x),
-                    NspawnPlugin(popen=lambda x: 'outer-' + x),
-                ],
-                'unwrapped',
-            ),
-        )

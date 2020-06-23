@@ -23,12 +23,13 @@ from typing import Iterable
 
 from .args import _NspawnOpts, PopenArgs
 from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
-from . import common
+from .common import nspawn_version
+from .plugins import NspawnPlugin, apply_plugins_to_popen
 
 
 def run_non_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
-    *, plugins: Iterable[common.NspawnPlugin] = (),
+    *, plugins: Iterable[NspawnPlugin] = (),
 ) -> subprocess.CompletedProcess:
     with popen_non_booted_nspawn(opts, popen_args, plugins=plugins) as proc:
         cmd_stdout, cmd_stderr = proc.communicate()
@@ -43,12 +44,12 @@ def run_non_booted_nspawn(
 @contextmanager
 def popen_non_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
-    *, plugins: Iterable[common.NspawnPlugin] = (),
+    *, plugins: Iterable[NspawnPlugin] = (),
 ) -> Iterable[subprocess.Popen]:
     # IMPORTANT: This should always remain a thin wrapper on top of the
     # "outer" popen.  The point of this wrapper is to give the user a
     # uniform interface for passing `plugins` to `run` or to `popen`.
-    with common.apply_plugins_to_popen(plugins, _outer_popen_non_booted_nspawn)(
+    with apply_plugins_to_popen(plugins, _outer_popen_non_booted_nspawn)(
         opts, popen_args
     ) as res:
         yield res
@@ -70,7 +71,7 @@ def _inner_popen_non_booted_nspawn(
     opts = setup.opts
     # Lets get the version locally right up front.  If this fails we'd like to
     # know early rather than later.
-    version = common.nspawn_version()
+    version = nspawn_version()
 
     cmd = [
         *setup.nspawn_cmd,

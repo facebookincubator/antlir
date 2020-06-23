@@ -5,10 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 'No externally useful functions here.  Read the `run.py` docblock instead.'
-import functools
 import subprocess
-
-from typing import Any, Callable, Iterable, NamedTuple, Optional
 
 from fs_image.fs_utils import Path
 
@@ -30,24 +27,8 @@ DEFAULT_SEARCH_PATHS = (Path(p) for p in (
 ))
 DEFAULT_PATH_ENV = b':'.join(DEFAULT_SEARCH_PATHS)
 
-_OuterPopenCtxMgr = Any  # Quacks like `_outer_popen_{non_,}booted_nspawn`
 
-
-class NspawnPlugin(NamedTuple):
-    popen: Optional[Callable[[_OuterPopenCtxMgr], _OuterPopenCtxMgr]] = None
-
-
-def apply_plugins_to_popen(
-    plugins: Iterable[NspawnPlugin], popen: _OuterPopenCtxMgr,
-) -> _OuterPopenCtxMgr:
-    return functools.reduce(
-        (lambda x, f: f(x)),
-        (w.popen for w in plugins if w.popen is not None),
-        popen,
-    )
-
-
-def nspawn_version():
+def nspawn_version() -> int:
     '''
     We now care about the version of nspawn we are running.  The output of
     systemd-nspawn --version looks like:

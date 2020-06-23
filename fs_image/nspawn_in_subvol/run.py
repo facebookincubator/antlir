@@ -115,12 +115,12 @@ from fs_image.common import init_logging, nullcontext
 
 from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .booted import run_booted_nspawn
-from .common import NspawnPlugin
 from .inject_repo_servers import nspawn_plugin_to_inject_repo_servers
 from .inject_yum_dnf_versionlock import (
     nspawn_plugin_to_inject_yum_dnf_versionlock,
 )
 from .non_booted import run_non_booted_nspawn
+from .plugins import NspawnPlugin
 
 
 class _CliSetup(NamedTuple):
