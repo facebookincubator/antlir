@@ -142,7 +142,7 @@ class SnapshotReposTestCase(unittest.TestCase):
             orig_headers = {}
             for snap, conf_type in zip(['snap0', 'snap1'], ['yum', 'dnf']):
                 updated_path = td / snap / f'{conf_type}.conf'
-                orig_path = Path(updated_path + b'.orig')
+                orig_path = Path(updated_path + b'.original')
                 updated_headers[snap] = _read_conf_headers(updated_path)
                 orig_headers[snap] = _read_conf_headers(orig_path)
 
