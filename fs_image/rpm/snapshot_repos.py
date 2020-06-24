@@ -68,7 +68,7 @@ def _write_confs_get_repos(
     ]:
         if content is not None:
             # Save the original, unmodified config in case of an error
-            with create_ro(dest / (out_name + '.orig'), 'w') as out:
+            with create_ro(dest / (out_name + '.original'), 'w') as out:
                 out.write(content)
             # Remove the excluded repos
             cp = ConfigParser()
