@@ -38,8 +38,8 @@ from fs_image.subvol_utils import Subvol
 from fs_image.nspawn_in_subvol.args import _NspawnOpts
 
 from . import NspawnPlugin
-from .repo_servers import repo_servers_nspawn_plugin
-from .yum_dnf_versionlock import yum_dnf_versionlock_nspawn_plugin
+from .repo_servers import RepoServers
+from .yum_dnf_versionlock import YumDnfVersionlock
 
 
 def rpm_nspawn_plugins(
@@ -65,6 +65,9 @@ def rpm_nspawn_plugins(
     snapshot_to_versionlock = MappingProxyType(s_to_vl)
 
     return (
-        yum_dnf_versionlock_nspawn_plugin(snapshot_to_versionlock),
-        repo_servers_nspawn_plugin(serve_rpm_snapshots),
+        *(
+            [YumDnfVersionlock(snapshot_to_versionlock)]
+                if snapshot_to_versionlock else []
+        ),
+        RepoServers(serve_rpm_snapshots),
     ) if serve_rpm_snapshots else ()

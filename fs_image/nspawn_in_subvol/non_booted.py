@@ -22,9 +22,10 @@ from contextlib import contextmanager
 from typing import Iterable
 
 from .args import _NspawnOpts, PopenArgs
-from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
+from .cmd import maybe_popen_and_inject_fds, _NspawnSetup
 from .common import nspawn_version
-from .plugins import NspawnPlugin, apply_plugins_to_popen
+from .plugins import NspawnPlugin
+from .plugin_hooks import _popen_plugin_driver
 
 
 def run_non_booted_nspawn(
@@ -41,31 +42,20 @@ def run_non_booted_nspawn(
     )
 
 
-@contextmanager
 def popen_non_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
     *, plugins: Iterable[NspawnPlugin] = (),
 ) -> Iterable[subprocess.Popen]:
-    # IMPORTANT: This should always remain a thin wrapper on top of the
-    # "outer" popen.  The point of this wrapper is to give the user a
-    # uniform interface for passing `plugins` to `run` or to `popen`.
-    with apply_plugins_to_popen(plugins, _outer_popen_non_booted_nspawn)(
-        opts, popen_args
-    ) as res:
-        yield res
+    return _popen_plugin_driver(
+        opts=opts,
+        popen_args=popen_args,
+        post_setup_popen=_post_setup_popen_booted_nspawn,
+        plugins=plugins,
+    )
 
 
 @contextmanager
-def _outer_popen_non_booted_nspawn(
-    opts: _NspawnOpts, popen_args: PopenArgs,
-) -> Iterable[subprocess.Popen]:
-    with _nspawn_setup(opts, popen_args) as setup, \
-            _inner_popen_non_booted_nspawn(setup) as proc:
-        yield proc
-
-
-@contextmanager
-def _inner_popen_non_booted_nspawn(
+def _post_setup_popen_booted_nspawn(
     setup: _NspawnSetup,
 ) -> Iterable[subprocess.Popen]:
     opts = setup.opts

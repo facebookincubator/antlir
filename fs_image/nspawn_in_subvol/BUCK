@@ -5,6 +5,7 @@ load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_u
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
+# Gets test coverage via `:test-run`
 python_library(
     name = "args",
     srcs = ["args.py"],
@@ -26,6 +27,7 @@ python_unittest(
     needed_coverage = [(100, ":common")],
 )
 
+# Gets test coverage via `:test-run`
 python_library(
     name = "cmd",
     srcs = ["cmd.py"],
@@ -41,6 +43,18 @@ python_library(
     ],
 )
 
+# Gets test coverage via `:test-run`
+python_library(
+    name = "plugin_hooks",
+    srcs = ["plugin_hooks.py"],
+    deps = [
+        ":args",
+        ":cmd",
+        "//fs_image/nspawn_in_subvol/plugins:plugins",
+    ],
+)
+
+# Gets test coverage via `:test-run`
 python_library(
     name = "booted",
     srcs = ["booted.py"],
@@ -48,12 +62,13 @@ python_library(
         ":args",
         ":cmd",
         ":common",
+        ":plugin_hooks",
         "//fs_image:common",
         "//fs_image:send_fds_and_run",
-        "//fs_image/nspawn_in_subvol/plugins:plugins",
     ],
 )
 
+# Gets test coverage via `:test-run`
 python_library(
     name = "non_booted",
     srcs = ["non_booted.py"],
@@ -61,7 +76,7 @@ python_library(
         ":args",
         ":cmd",
         ":common",
-        "//fs_image/nspawn_in_subvol/plugins:plugins",
+        ":plugin_hooks",
     ],
 )
 
@@ -107,6 +122,7 @@ python_unittest(
         ":cmd",
         ":common",
         ":non_booted",
+        ":plugin_hooks",
         ":run-library",
         "//fs_image/nspawn_in_subvol/plugins:launch_repo_servers",
         "//fs_image/nspawn_in_subvol/plugins:repo_servers",

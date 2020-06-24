@@ -17,11 +17,11 @@ class RpmPluginsTestCase(unittest.TestCase):
 
     # This fully mocked because `test-run` does the integration testing.
     @mock.patch.object(
-        rpm_plugins, 'yum_dnf_versionlock_nspawn_plugin',
+        rpm_plugins, 'YumDnfVersionlock',
         mock.Mock(side_effect=lambda x: ('test_vl', x)),
     )
     @mock.patch.object(
-        rpm_plugins, 'repo_servers_nspawn_plugin',
+        rpm_plugins, 'RepoServers',
         mock.Mock(side_effect=lambda x: ('test_rs', x)),
     )
     def test_rpm_nspawn_plugins(self):

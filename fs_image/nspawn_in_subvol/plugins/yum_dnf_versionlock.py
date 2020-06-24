@@ -7,8 +7,9 @@
 '''
 Populate the `versionlock.list` files inside the specified repo snapshots
 inside the container by adding this to `plugins` kwarg of the `run_*` or
-`popen_*` functions:
-  `yum_dnf_versionlock_nspawn_plugin(snapshot_to_versionlock)`
+`popen_*` functions: `YumDnfVersionlock(snapshot_to_versionlock)`
+
+In practice, you will want `rpm_nspawn_plugins` instead.
 
 To provide `versionlock.list` files in the container, this parses our own
 "version lock" format documented in `args.py` (or `--help` on the CLI),
@@ -17,8 +18,6 @@ bind-mounts them into the snapshots that already exist in the container's
 image.  This allows us to change version selections on a more frequent
 cadence than we change repo snapshots.
 '''
-import functools
-
 from contextlib import contextmanager, ExitStack
 from typing import Dict, Mapping, Tuple
 
@@ -26,8 +25,11 @@ from fs_image.common import get_file_logger, set_new_key
 from fs_image.fs_utils import create_ro, Path, temp_dir
 from fs_image.subvol_utils import Subvol
 from fs_image.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
+from fs_image.nspawn_in_subvol.plugin_hooks import (
+    _NspawnSetup, _NspawnSetupCtxMgr,
+)
 
-from . import _OuterPopenCtxMgr, NspawnPlugin
+from . import NspawnPlugin
 
 log = get_file_logger(__file__)
 
@@ -48,9 +50,9 @@ def _prepare_versionlock_lists(
     dest_to_src_and_size = {}
     with temp_dir() as d:
         # Only bind-mount lists for those binaries that exist in the snapshot.
-        for prog in set(
+        for prog in {
             f'{p}' for p in (subvol.path(snapshot_dir)).listdir()
-        ) & set(templates.keys()):
+        } & set(templates.keys()):
             template = templates[prog]
             src = d / (prog + '-versionlock.list')
             with create_ro(src, 'w') as wf:
@@ -66,17 +68,21 @@ def _prepare_versionlock_lists(
         yield dest_to_src_and_size
 
 
-def _inject_yum_dnf_versionlock(
-    snapshot_to_versionlock: Mapping[Path, Path], popen: _OuterPopenCtxMgr,
-) -> _OuterPopenCtxMgr:
-    'Wraps `_outer_popen_{,non_}booted_nspawn`.'
+class YumDnfVersionlock(NspawnPlugin):
 
-    @functools.wraps(popen)
+    def __init__(self, snapshot_to_versionlock: Mapping[Path, Path]):
+        self._snapshot_to_versionlock = snapshot_to_versionlock
+
     @contextmanager
-    def wrapped_popen(opts: _NspawnOpts, popen_args: PopenArgs):
+    def wrap_setup(
+        self,
+        setup_ctx: _NspawnSetupCtxMgr,
+        opts: _NspawnOpts,
+        popen_args: PopenArgs,
+    ) -> _NspawnSetup:
         with ExitStack() as stack:
             dest_to_src = {}
-            for snapshot, versionlock in snapshot_to_versionlock.items():
+            for snapshot, versionlock in self._snapshot_to_versionlock.items():
                 for dest, (src, vl_size) in stack.enter_context(
                     _prepare_versionlock_lists(
                         # Same note as in `repo_servers.py` regarding the
@@ -86,7 +92,7 @@ def _inject_yum_dnf_versionlock(
                 ).items():
                     log.info(f'Locking {vl_size} RPM versions via {dest}')
                     set_new_key(dest_to_src, dest, src)
-            yield stack.enter_context(popen(
+            yield stack.enter_context(setup_ctx(
                 opts._replace(
                     bindmount_ro=(*opts.bindmount_ro, *(
                         (s, d) for d, s in dest_to_src.items()
@@ -94,15 +100,3 @@ def _inject_yum_dnf_versionlock(
                 ),
                 popen_args,
             ))
-
-    return wrapped_popen
-
-
-def yum_dnf_versionlock_nspawn_plugin(
-    snapshot_to_versionlock: Mapping[Path, Path],
-) -> NspawnPlugin:
-    return NspawnPlugin(
-        popen=functools.partial(
-            _inject_yum_dnf_versionlock, snapshot_to_versionlock,
-        ) if snapshot_to_versionlock else None,
-    )
