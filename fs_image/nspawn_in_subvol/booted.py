@@ -6,7 +6,7 @@
 
 '''
 Read the `run.py` docblock first.  Then, review the docs for
-`new_nspawn_opts` and `PopenArgs`, and invoke `run_booted_nspawn`.
+`new_nspawn_opts` and `PopenArgs`, and invoke `{run,popen}_booted_nspawn`.
 
 This file uses `systemd-nspawn` to boot up `systemd` as the container's PID
 1, and later uses `nsenter` to execute `opts.cmd` in that container.
@@ -72,9 +72,10 @@ from fs_image.common import get_file_logger
 from fs_image.send_fds_and_run import popen_and_inject_fds_after_sudo
 
 from .args import _NspawnOpts, PopenArgs
-from .cmd import maybe_popen_and_inject_fds, _NspawnSetup, _nspawn_setup
+from .cmd import maybe_popen_and_inject_fds, _NspawnSetup
 from .common import DEFAULT_PATH_ENV
-from .plugins import NspawnPlugin, apply_plugins_to_popen
+from .plugins import NspawnPlugin
+from .plugin_hooks import _popen_plugin_driver
 
 log = get_file_logger(__file__)
 
@@ -113,26 +114,23 @@ def run_booted_nspawn(
     )
 
 
-@contextmanager
 def popen_booted_nspawn(
     opts: _NspawnOpts, popen_args: PopenArgs,
     *, plugins: Iterable[NspawnPlugin] = (),
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
-    # IMPORTANT: This should always remain a thin wrapper on top of the
-    # "outer" popen.  The point of this wrapper is to give the user a
-    # uniform interface for passing `plugins` to `run` or to `popen`.
-    with apply_plugins_to_popen(plugins, _outer_popen_booted_nspawn)(
-        opts, popen_args
-    ) as res:
-        yield res
+    return _popen_plugin_driver(
+        opts=opts,
+        popen_args=popen_args,
+        post_setup_popen=_post_setup_popen_booted_nspawn,
+        plugins=plugins,
+    )
 
 
 @contextmanager
-def _outer_popen_booted_nspawn(
-    opts: _NspawnOpts, popen_args: PopenArgs,
-) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
-    with _nspawn_setup(opts, popen_args) as setup, \
-            _popen_boot_systemd(setup) as (boot_proc, systemd_pid), \
+def _post_setup_popen_booted_nspawn(setup: _NspawnSetup) -> Iterable[
+    Tuple[subprocess.Popen, subprocess.Popen]
+]:
+    with _popen_boot_systemd(setup) as (boot_proc, systemd_pid), \
             _popen_nsenter_into_systemd(
                 setup, boot_proc, systemd_pid=systemd_pid,
             ) as nsenter_proc:

@@ -6,27 +6,29 @@
 
 '''
 Serve RPM repo snapshots inside the container by adding this to `plugins`
-kwarg of the `run_*` or `popen_*` functions:
-  `repo_servers_nspawn_plugin(snapshot_paths)`
+kwarg of the `run_*` or `popen_*` functions: `RepoServers(snapshot_paths)`
+
+In practice, you will want `rpm_nspawn_plugins` instead.
 
 The snapshots must already be in the container's image, and must have been
 built by the `rpm_repo_snapshot()` target, and installed via
 `install_rpm_repo_snapshot()`.
 '''
-import functools
-import os
 import textwrap
 
 from contextlib import contextmanager, ExitStack
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Any, Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 from fs_image.common import get_file_logger, pipe
 from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
+from fs_image.nspawn_in_subvol.plugin_hooks import (
+    _NspawnSetup, _NspawnSetupCtxMgr, _PopenResult, _PostSetupPopenCtxMgr
+)
 
-from . import _OuterPopenCtxMgr, NspawnPlugin
+from . import NspawnPlugin
 from .launch_repo_servers import launch_repo_servers_for_netns
 
 
@@ -143,65 +145,69 @@ def _wrap_opts_with_container_pid_exfiltrator(opts: _NspawnOpts) -> Tuple[
         ), cpe
 
 
-def _inject_repo_servers(
-    serve_rpm_snapshots: Iterable[Path], popen: _OuterPopenCtxMgr,
-) -> _OuterPopenCtxMgr:
-    'Wraps `_outer_popen_{,non_}booted_nspawn`.'
+class RepoServers(NspawnPlugin):
 
-    @functools.wraps(popen)
+    def __init__(self, serve_rpm_snapshots: Iterable[Path]):
+        self._serve_rpm_snapshots = serve_rpm_snapshots
+
     @contextmanager
-    def wrapped_popen(opts: _NspawnOpts, popen_args: PopenArgs):
+    def wrap_setup(
+        self,
+        setup_ctx: _NspawnSetupCtxMgr,
+        opts: _NspawnOpts,
+        popen_args: PopenArgs,
+    ) -> _NspawnSetup:
+        # Future: bring this back, so we don't have to install it into
+        # the snapshot.  The reason this is commented out for now is
+        # that the FB-internal repo-server is a bit expensive to build,
+        # and so we prefer to release and package it with the BA to hide
+        # the cost.
+        #
+        # However, once `image.released_layer` is a thing, it would be
+        # pretty easy to release just the expensive-to-build part inside
+        # FB, and have the rest be built "live".
+        #
+        # On balance, a "live-built" `repo-server` is easiest to work
+        # with, since you can edit the code, and try it in @mode/dev
+        # without rebuilding anything.  The only downside is that
+        # changes to the `repo-server` <-> snapshot interface require a
+        # simultaneous commit of both, but we do this very rarely.
+        #
+        # For now, the snapshot must contain the repo-server (below).
+        #
+        # repo_server_bin = stack.enter_context(Path.resource(
+        #    __package__, 'repo-server', exe=True,
+        # ))
+        # Rewrite `opts` with a plugin script and some forwarded FDs
+        with _wrap_opts_with_container_pid_exfiltrator(opts) as (opts, cpe), \
+                setup_ctx(opts, popen_args) as setup:
+            self._container_pid_exfiltrator = cpe
+            yield setup
+
+    @contextmanager
+    def wrap_post_setup_popen(
+        self,
+        post_setup_popen_ctx: _PostSetupPopenCtxMgr,
+        setup: _NspawnSetup,
+    ) -> _PopenResult:
+        # NB: `opts.layer` is not the container's ephemeral subvol, but its
+        # read-only predecessor.  This effectively means that in the
+        # "normal" case of `opts.layer` being a build artifact, the
+        # container cannot affect the contents of the snapshot.  If this
+        # were found to be bad, we could use `setup.subvol` instead.
+        snap_subvol = setup.opts.layer
+
         with ExitStack() as stack:
-            # Future: bring this back, so we don't have to install it into
-            # the snapshot.  The reason this is commented out for now is
-            # that the FB-internal repo-server is a bit expensive to build,
-            # and so we prefer to release and package it with the BA to hide
-            # the cost.
-            #
-            # However, once `image.released_layer` is a thing, it would be
-            # pretty easy to release just the expensive-to-build part inside
-            # FB, and have the rest be built "live".
-            #
-            # On balance, a "live-built" `repo-server` is easiest to work
-            # with, since you can edit the code, and try it in @mode/dev
-            # without rebuilding anything.  The only downside is that
-            # changes to the `repo-server` <-> snapshot interface require a
-            # simultaneous commit of both, but we do this very rarely.
-            #
-            # For now, the snapshot must contain the repo-server (below).
-            #
-            # repo_server_bin = stack.enter_context(Path.resource(
-            #    __package__, 'repo-server', exe=True,
-            # ))
-            # Rewrite `opts` with a plugin script and some forwarded FDs
-            opts, cpe = stack.enter_context(
-                _wrap_opts_with_container_pid_exfiltrator(opts)
+            popen_res = stack.enter_context(post_setup_popen_ctx(setup))
+            container_pid = stack.enter_context(
+                self._container_pid_exfiltrator.exfiltrate_container_pid()
             )
-            popen_res = stack.enter_context(popen(opts, popen_args))
-            container_pid = stack.enter_context(cpe.exfiltrate_container_pid())
-            for snap_dir in serve_rpm_snapshots:
-                # NB: When `opts.snapshot` is set, `opts.layer` is not the
-                # container's actual subvol, but its read-only predecessor.
-                # This effectively means that in the "normal" case of
-                # `opts.layer` being a build artifact, the container cannot
-                # affect the contents of the snapshot.  This seems okay.
+            for snap_dir in self._serve_rpm_snapshots:
                 stack.enter_context(launch_repo_servers_for_netns(
                     target_pid=container_pid,
-                    repo_server_bin=opts.layer.path(snap_dir / 'repo-server'),
-                    snapshot_dir=opts.layer.path(snap_dir),
-                    debug=opts.debug_only_opts.debug,
+                    repo_server_bin=snap_subvol.path(snap_dir / 'repo-server'),
+                    snapshot_dir=snap_subvol.path(snap_dir),
+                    debug=setup.opts.debug_only_opts.debug,
                 ))
-            cpe.send_ready()
+            self._container_pid_exfiltrator.send_ready()
             yield popen_res
-
-    return wrapped_popen
-
-
-def repo_servers_nspawn_plugin(
-    serve_rpm_snapshots: Iterable[Path],
-) -> NspawnPlugin:
-    serve_rpm_snapshots = tuple(serve_rpm_snapshots)
-    return NspawnPlugin(
-        popen=functools.partial(_inject_repo_servers, serve_rpm_snapshots)
-            if serve_rpm_snapshots else None,
-    )
