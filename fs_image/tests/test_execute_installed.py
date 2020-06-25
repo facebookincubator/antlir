@@ -21,16 +21,15 @@ from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 
 from ..find_built_subvol import find_built_subvol
 
+from .layer_resource import layer_resource_subvol
+
 
 class ExecuteInstalledTestCase(unittest.TestCase):
 
     def _nspawn_in(self, rsrc_name, cmd, **kwargs):
         return run_non_booted_nspawn(new_nspawn_opts(
             cmd=cmd,
-            # __file__ works in @mode/opt since the resource is inside the XAR
-            layer=find_built_subvol(
-                os.path.join(os.path.dirname(__file__), rsrc_name)
-            ),
+            layer=layer_resource_subvol(__package__, rsrc_name),
             quiet=True,  # Easier to assert the output.
         ), PopenArgs(**kwargs))
 
