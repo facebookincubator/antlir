@@ -3,6 +3,7 @@
 
 load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
 load("//fs_image/bzl:image.bzl", "image")
+load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 # Gets test coverage via `:test-run`
@@ -43,7 +44,7 @@ python_library(
     ],
 )
 
-# Gets test coverage via `:test-run`
+# Gets test coverage via `plugins:test-yum-dnf-versionlock`
 python_library(
     name = "plugin_hooks",
     srcs = ["plugin_hooks.py"],
@@ -111,6 +112,15 @@ image.layer(
     features = [image.install("tests/hello.xar", "/hello.xar")],
 )
 
+python_library(
+    name = "testlib_base",
+    srcs = ["tests/base.py"],
+    deps = [
+        ":run-library",
+        "//fs_image:testlib_layer_resource",
+    ],
+)
+
 python_unittest(
     name = "test-run",
     srcs = ["tests/test_run.py"],
@@ -122,25 +132,19 @@ python_unittest(
         ":cmd",
         ":common",
         ":non_booted",
-        ":plugin_hooks",
         ":run-library",
-        "//fs_image/nspawn_in_subvol/plugins:launch_repo_servers",
-        "//fs_image/nspawn_in_subvol/plugins:repo_servers",
-        "//fs_image/nspawn_in_subvol/plugins:yum_dnf_versionlock",
     ]],
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
     resources = {
-        TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone": "tests/host",
-        TEST_IMAGE_PREFIX + "build_appliance_testing": "tests/build-appliance",
-        "//tupperware/image/base:base": "tests/bootable-systemd-os",
-        ":host-hello-xar": "tests/host-hello-xar",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
+        ): "tests/host",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/build-appliance",
+        layer_resource("//tupperware/image/base:base"): "tests/bootable-systemd-os",
+        layer_resource(":host-hello-xar"): "tests/host-hello-xar",
     },
-    deps = [
-        ":run-library",
-        "//fs_image/rpm:find_snapshot",
-    ],
+    deps = [":testlib_base"],
 )
 
 python_binary(

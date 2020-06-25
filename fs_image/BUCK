@@ -1,3 +1,4 @@
+load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
 load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
@@ -365,13 +366,15 @@ python_unittest(
 python_unittest(
     name = "test-execute-installed",
     srcs = ["tests/test_execute_installed.py"],
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
     resources = {
-        TEST_IMAGE_PREFIX + "installed-executables": "tests/exe-layer",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "installed-executables",
+        ): "tests/exe-layer",
     },
-    deps = ["//fs_image/nspawn_in_subvol:non_booted"],
+    deps = [
+        "//fs_image:testlib_layer_resource",
+        "//fs_image/nspawn_in_subvol:non_booted",
+    ],
 )
 
 python_library(

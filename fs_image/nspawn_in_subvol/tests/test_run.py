@@ -4,30 +4,24 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import functools
 import os
 import subprocess
 import tempfile
-import textwrap
 import threading
-import unittest
 
 from contextlib import contextmanager
 from pwd import struct_passwd
-from typing import Iterable
 from unittest import mock
 
 from fs_image.artifacts_dir import find_repo_root
 from fs_image.common import pipe
-from fs_image.rpm.find_snapshot import snapshot_install_dir
 from fs_image.tests.temp_subvolumes import with_temp_subvols
 
-from ..args import _parse_cli_args, PopenArgs
-from ..common import nspawn_version, DEFAULT_PATH_ENV
+from ..args import _parse_cli_args
+from ..common import DEFAULT_PATH_ENV
 from ..cmd import _extra_nspawn_args_and_env
-from ..run import _set_up_run_cli
 
-_SNAPSHOT_DIR = snapshot_install_dir('//fs_image/rpm:repo-snapshot-for-tests')
+from .base import NspawnTestBase
 
 
 @contextmanager
@@ -54,35 +48,7 @@ def _mocks_for_extra_nspawn_args(*, artifacts_may_require_repo):
         yield
 
 
-class NspawnTestCase(unittest.TestCase):
-    def setUp(self):
-        # Setup expected stdout line endings depending on the version of
-        # systemd-nspawn.  Version 242 'fixed' stdout line endings.  The
-        # extra newline for versions < 242 is due to T40936918 mentioned in
-        # `run.py`.  It would disappear if we passed `--quiet` to nspawn,
-        # but we want to retain the extra debug logging.
-        self.nspawn_version = nspawn_version()
-        self.maybe_extra_ending = b'\n' if self.nspawn_version < 242 else b''
-
-    def _nspawn_in_boot_ret(self, rsrc_name, argv, **kwargs):
-        # It'd be nice to replace this `__file__` with `Path.resource`, but
-        # the challenge is that `rsrc_name` is a directory, which does
-        # not work in the current model. Possible fixes are:
-        #   - Make `Path.resource` handle directories transparently. This
-        #     is clean, but for large directories is grossly inefficient.
-        #   - Add some nasty hackery to resolve the `layer.json` that we
-        #     actually need from this directory, as a resource.
-        layer_path = os.path.join(os.path.dirname(__file__), rsrc_name)
-        with _set_up_run_cli(['--layer', layer_path, *argv]) as cli_setup:
-            if 'boot_console' in kwargs:
-                cli_setup = cli_setup._replace(
-                    boot_console=kwargs.pop('boot_console')
-                )
-            return cli_setup._run_nspawn(PopenArgs(**kwargs))
-
-    def _nspawn_in(self, rsrc_name, argv, **kwargs):
-        ret, _boot_ret = self._nspawn_in_boot_ret(rsrc_name, argv, **kwargs)
-        return ret
+class NspawnTestCase(NspawnTestBase):
 
     def _wrapper_args_to_nspawn_args(
         self, argv, *, artifacts_may_require_repo=False,
@@ -127,19 +93,19 @@ class NspawnTestCase(unittest.TestCase):
 
     @mock.patch('fs_image.nspawn_in_subvol.cmd.find_repo_root')
     def test_extra_nspawn_args_bind_repo_opts(self, root_mock):
-            root_mock.return_value = '/repo/root'
-            # opts.bind_repo_ro
-            self.assertIn('/repo/root:/repo/root',
-                self._wrapper_args_to_nspawn_args(
-                    ['--layer', 'test', '--bind-repo-ro']
-                )
+        root_mock.return_value = '/repo/root'
+        # opts.bind_repo_ro
+        self.assertIn('/repo/root:/repo/root',
+            self._wrapper_args_to_nspawn_args(
+                ['--layer', 'test', '--bind-repo-ro']
             )
-            # artifacts_may_require_repo
-            self.assertIn('/repo/root:/repo/root',
-                self._wrapper_args_to_nspawn_args(
-                    ['--layer', 'test'], artifacts_may_require_repo=True,
-                )
+        )
+        # artifacts_may_require_repo
+        self.assertIn('/repo/root:/repo/root',
+            self._wrapper_args_to_nspawn_args(
+                ['--layer', 'test'], artifacts_may_require_repo=True,
             )
+        )
 
     def test_extra_nspawn_args_log_tmpfs_opts(self):
         base_argv = ['--layer', 'test', '--user=is_mocked']
@@ -191,13 +157,17 @@ class NspawnTestCase(unittest.TestCase):
 
     def test_exit_code(self):
         self.assertEqual(37, self._nspawn_in(
-            'host', ['--', 'sh', '-c', 'exit 37'], check=False,
+            (__package__, 'host'),
+            ['--', 'sh', '-c', 'exit 37'],
+            check=False,
         ).returncode)
 
     def test_redirects(self):
         cmd = ['--', 'sh', '-c', 'echo ohai && echo abracadabra >&2']
         ret = self._nspawn_in(
-            'host', cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            (__package__, 'host'),
+            cmd,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         self.assertEqual(b'ohai\n' + self.maybe_extra_ending, ret.stdout)
 
@@ -207,12 +177,13 @@ class NspawnTestCase(unittest.TestCase):
 
         # The same test with `--quiet` is much simpler.
         ret = self._nspawn_in(
-            'host', ['--quiet'] + cmd,
+            (__package__, 'host'),
+            ['--quiet'] + cmd,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
         self.assertEqual(b'ohai\n', ret.stdout)
         target_stderr = b'abracadabra\n'
-        if nspawn_version() >= 244:
+        if self.nspawn_version >= 244:
             self.assertEqual(target_stderr, ret.stderr)
         else:
             # versions < 244 did not properly respect --quiet
@@ -224,7 +195,7 @@ class NspawnTestCase(unittest.TestCase):
         # manager when it first boots the container. Furthermore, this will
         # not cause the firstboot + presets behavior that is triggered when the
         # machine-id file does not exist.
-        self._nspawn_in('bootable-systemd-os', [
+        self._nspawn_in((__package__, 'bootable-systemd-os'), [
             '--', 'sh', '-uexc',
             # Ensure the machine-id file exists and is empty.
             'test -e /etc/machine-id -a ! -s /etc/machine-id',
@@ -232,7 +203,7 @@ class NspawnTestCase(unittest.TestCase):
 
     def test_logs_directory(self):
         # The log directory is on by default.
-        ret = self._nspawn_in('host', [
+        ret = self._nspawn_in((__package__, 'host'), [
             '--', 'sh', '-c',
             'touch /logs/foo && stat --format="%U %G %a" /logs && whoami',
         ], stdout=subprocess.PIPE)
@@ -242,7 +213,7 @@ class NspawnTestCase(unittest.TestCase):
             ret.stdout
         )
         # And the option prevents it from being created.
-        self.assertEqual(0, self._nspawn_in('host', [
+        self.assertEqual(0, self._nspawn_in((__package__, 'host'), [
             '--no-logs-tmpfs', '--', 'test', '!', '-e', '/logs',
         ]).returncode)
 
@@ -250,7 +221,7 @@ class NspawnTestCase(unittest.TestCase):
         with tempfile.TemporaryFile() as tf:
             tf.write(b'hello')
             tf.seek(0)
-            ret = self._nspawn_in('host', [
+            ret = self._nspawn_in((__package__, 'host'), [
                 '--forward-fd', str(tf.fileno()), '--', 'sh', '-c',
                 'cat <&3 && echo goodbye >&3',
             ], stdout=subprocess.PIPE)
@@ -267,7 +238,7 @@ class NspawnTestCase(unittest.TestCase):
         # Arguably, the cleanup should be robust to this, but since this is
         # the unique place we have to do it, keep it simple.
         dest_subvol._exists = True
-        self._nspawn_in('host', [
+        self._nspawn_in((__package__, 'host'), [
             f'--snapshot-into={dest_subvol.path()}', '--',
             # Also tests that we are a non-root user in the container.
             'sh', '-c', 'echo ohaibai "$USER" > /home/nobody/poke',
@@ -278,7 +249,7 @@ class NspawnTestCase(unittest.TestCase):
         self.assertTrue(os.path.exists(dest_subvol.path('/bin/bash')))
 
     def test_bind_repo(self):
-        self._nspawn_in('host', [
+        self._nspawn_in((__package__, 'host'), [
             '--bind-repo-ro', '--',
             'grep', 'supercalifragilisticexpialidocious',
             os.path.join(
@@ -289,13 +260,13 @@ class NspawnTestCase(unittest.TestCase):
         ])
 
     def test_cap_net_admin(self):
-        self._nspawn_in('host', [
+        self._nspawn_in((__package__, 'host'), [
             '--user', 'root', '--no-private-network', '--cap-net-admin', '--',
             'unshare', '--net', 'ip', 'link', 'set', 'dev', 'lo', 'up',
         ])
 
     def test_hostname(self):
-        ret = self._nspawn_in('host', [
+        ret = self._nspawn_in((__package__, 'host'), [
             '--hostname=test-host.com',
             '--',
             '/bin/hostname',
@@ -306,7 +277,7 @@ class NspawnTestCase(unittest.TestCase):
         'THRIFT_TLS_KITTEH': 'meow', 'UNENCRYPTED_KITTEH': 'woof',
     })
     def test_tls_environment(self):
-        ret = self._nspawn_in('host', [
+        ret = self._nspawn_in((__package__, 'host'), [
             '--forward-tls-env', '--',
             'printenv', 'THRIFT_TLS_KITTEH', 'UNENCRYPTED_KITTEH',
         ], stdout=subprocess.PIPE, check=False)
@@ -316,7 +287,7 @@ class NspawnTestCase(unittest.TestCase):
     def test_bindmount_rw(self):
         with tempfile.TemporaryDirectory() as tmpdir, \
                 tempfile.TemporaryDirectory() as tmpdir2:
-            self._nspawn_in('host', [
+            self._nspawn_in((__package__, 'host'), [
                 '--user',
                 'root',
                 '--bindmount-rw',
@@ -334,7 +305,7 @@ class NspawnTestCase(unittest.TestCase):
     def test_bindmount_ro(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with self.assertRaises(subprocess.CalledProcessError):
-                ret = self._nspawn_in('host', [
+                ret = self._nspawn_in((__package__, 'host'), [
                     '--user',
                     'root',
                     '--bindmount-ro',
@@ -351,26 +322,26 @@ class NspawnTestCase(unittest.TestCase):
 
     def test_xar(self):
         'Make sure that XAR binaries work in vanilla `buck run` containers'
-        ret = self._nspawn_in('host-hello-xar', [
+        ret = self._nspawn_in((__package__, 'host-hello-xar'), [
             '--', '/hello.xar',
         ], stdout=subprocess.PIPE, check=True)
         self.assertEqual(b'hello world\n' + self.maybe_extra_ending, ret.stdout)
 
     def test_mknod(self):
         'CAP_MKNOD is dropped by our runtime.'
-        ret = self._nspawn_in('host', [
+        ret = self._nspawn_in((__package__, 'host'), [
             '--user', 'root', '--quiet', '--', 'mknod', '/foo', 'c', '1', '3',
         ], stderr=subprocess.PIPE, check=False)
         self.assertNotEqual(0, ret.returncode)
         stderr_regex = b"mknod: (|')/foo(|'): Operation not permitted\n"
-        if nspawn_version() >= 244:
+        if self.nspawn_version >= 244:
             self.assertRegex(ret.stderr, b'^' + stderr_regex + b'$')
         else:
             # versions < 244 did not properly respect --quiet
             self.assertRegex(ret.stderr, stderr_regex)
 
     def test_boot_cmd_is_system_running(self):
-        ret = self._nspawn_in('bootable-systemd-os', [
+        ret = self._nspawn_in((__package__, 'bootable-systemd-os'), [
             '--boot',
             # This needs to be root because we don't yet create a proper
             # login session for non-privileged users when we execute commands.
@@ -393,11 +364,11 @@ class NspawnTestCase(unittest.TestCase):
         self.assertIn(ret.stdout.strip(),
                 [b'running', b'degraded'], msg=ret.stderr.strip())
         # versions < 244 did not properly respect --quiet
-        if nspawn_version() >= 244:
+        if self.nspawn_version >= 244:
             self.assertEqual(b'', ret.stderr)
 
     def test_boot_cmd_failure(self):
-        ret = self._nspawn_in('bootable-systemd-os', [
+        ret = self._nspawn_in((__package__, 'bootable-systemd-os'), [
             '--boot',
             '--',
             '/usr/bin/false',
@@ -405,14 +376,14 @@ class NspawnTestCase(unittest.TestCase):
         self.assertEqual(1, ret.returncode)
         self.assertEqual(b'', ret.stdout)
         # versions < 244 did not properly respect --quiet
-        if nspawn_version() >= 244:
+        if self.nspawn_version >= 244:
             self.assertEqual(b'', ret.stderr)
 
     def test_boot_forward_fd(self):
         with tempfile.TemporaryFile() as tf:
             tf.write(b'hello')
             tf.seek(0)
-            ret = self._nspawn_in('bootable-systemd-os', [
+            ret = self._nspawn_in((__package__, 'bootable-systemd-os'), [
                 '--boot',
                 '--forward-fd', str(tf.fileno()),
                 '--',
@@ -425,7 +396,7 @@ class NspawnTestCase(unittest.TestCase):
             self.assertEqual(b'hellogoodbye\n', tf.read())
 
     def test_boot_unprivileged_user(self):
-        ret = self._nspawn_in('bootable-systemd-os', [
+        ret = self._nspawn_in((__package__, 'bootable-systemd-os'), [
             '--boot',
             '--',
             '/bin/whoami',
@@ -435,7 +406,7 @@ class NspawnTestCase(unittest.TestCase):
         self.assertEqual(b'', ret.stderr)
 
     def test_boot_env_clean(self):
-        ret = self._nspawn_in('bootable-systemd-os', [
+        ret = self._nspawn_in((__package__, 'bootable-systemd-os'), [
             '--boot',
             '--',
             '/bin/env',
@@ -466,11 +437,11 @@ class NspawnTestCase(unittest.TestCase):
             reader_thread = threading.Thread(target=read_console)
             reader_thread.start()
 
-            ret, ret_boot = self._nspawn_in_boot_ret('bootable-systemd-os', [
-                '--boot',
-                '--',
-                '/bin/true',
-            ], boot_console=w, check=True)
+            ret, ret_boot = self._nspawn_in_boot_ret(
+                (__package__, 'bootable-systemd-os'),
+                ['--boot', '--', '/bin/true'],
+                boot_console=w, check=True,
+            )
         reader_thread.join()
 
         self.assertEqual(0, ret.returncode)
@@ -487,7 +458,7 @@ class NspawnTestCase(unittest.TestCase):
     def test_boot_error(self):
         with self.assertRaises(subprocess.CalledProcessError):
             self._nspawn_in(
-                'bootable-systemd-os',
+                (__package__, 'bootable-systemd-os'),
                 ['--boot', '--', '/bin/false'],
             )
 
@@ -496,117 +467,10 @@ class NspawnTestCase(unittest.TestCase):
             RuntimeError, ' does not support `subprocess.PIPE` ',
         ):
             # This is identical to `test_boot_proc_results` except for the pipe
-            self._nspawn_in('bootable-systemd-os', [
-                '--boot',
-                '--',
-                '/bin/true',
-            ], boot_console=subprocess.PIPE, check=True)
-
-    def _yum_or_dnf_install(self, prog, package, *, extra_args=()):
-        with tempfile.TemporaryFile(mode='w+b') as yum_dnf_stdout, \
-                tempfile.TemporaryFile(mode='w+') as rpm_contents:
-            # We don't pipe either stdout or stderr so that both are
-            # viewable when running the test interactively.  We use `tee` to
-            # obtain a copy of the program's stdout for tests.
-            ret = self._nspawn_in('build-appliance', [
-                '--user=root',
-                f'--serve-rpm-snapshot={_SNAPSHOT_DIR}',
-                f'--forward-fd={yum_dnf_stdout.fileno()}',  # becomes FD 3
-                f'--forward-fd={rpm_contents.fileno()}',  # becomes FD 4
-                *extra_args,
-                '--',
-                '/bin/sh', '-c',
-                textwrap.dedent(f'''\
-                    set -ex
-                    mkdir /target
-                    {prog} \\
-                        --config={
-                            _SNAPSHOT_DIR}/{prog}/etc/{prog}/{prog}.conf \\
-                        --installroot=/target -y install {package} |
-                            tee /proc/self/fd/3
-                    # We install only 1 RPM, so a glob tells us the filename.
-                    # Use `head` instead of `cat` to fail nicer on exceeding 1.
-                    head /target/rpm_test/*.txt >&4
-                '''),
-            ])
-            # Hack up the `CompletedProcess` for ease of testing.
-            yum_dnf_stdout.seek(0)
-            ret.stdout = yum_dnf_stdout.read()
-            rpm_contents.seek(0)
-            ret.rpm_contents = rpm_contents.read()
-            return ret
-
-    def _check_yum_dnf_ret(self, expected_contents, expected_logline, ret):
-        self.assertEqual(0, ret.returncode)
-        self.assertEqual(expected_contents, ret.rpm_contents)
-        self.assertIn(expected_logline, ret.stdout)
-        self.assertIn(b'Complete!', ret.stdout)
-
-    def _check_yum_dnf_boot_or_not(
-        self, prog, package, *, extra_args=(), check_ret_fn=None,
-    ):
-        for boot_args in (['--boot'], []):
-            check_ret_fn(self._yum_or_dnf_install(
-                prog, package, extra_args=(*extra_args, *boot_args),
-            ))
-
-    def test_yum_with_repo_server(self):
-        self._check_yum_dnf_boot_or_not(
-            'yum',
-            'rpm-test-carrot',
-            check_ret_fn=functools.partial(
-                self._check_yum_dnf_ret,
-                'carrot 2 rc0\n',
-                b'Package rpm-test-carrot.x86_64 0:2-rc0 will be installed',
-            ),
-        )
-
-    def test_dnf_with_repo_server(self):
-        self._check_yum_dnf_boot_or_not(
-            'dnf',
-            'rpm-test-mice',
-            check_ret_fn=functools.partial(
-                self._check_yum_dnf_ret,
-                'mice 0.1 a\n',
-                b'Installing       : rpm-test-mice-0.1-a.x86_64',
-            ),
-        )
-
-    @contextmanager
-    def _write_versionlocks(self, lines: Iterable[str]):
-        with tempfile.NamedTemporaryFile(mode='w') as tf:
-            tf.write('\n'.join(lines) + '\n')
-            tf.flush()
-            yield tf.name
-
-    def test_version_lock(self):
-        # Version-locking carrot causes a non-latest version to be installed
-        # -- compare with `test_yum_with_repo_server`.
-        with self._write_versionlocks([
-            '0\trpm-test-carrot\t1\tlockme\tx86_64'
-        ]) as vl:
-            self._check_yum_dnf_boot_or_not(
-                'yum',
-                'rpm-test-carrot',
-                extra_args=('--snapshot-to-versionlock', _SNAPSHOT_DIR, vl),
-                check_ret_fn=functools.partial(
-                    self._check_yum_dnf_ret,
-                    'carrot 1 lockme\n',
-                    b'Package rpm-test-carrot.x86_64 0:1-lockme will be instal',
-                ),
-            )
-
-        def _not_reached(ret):
-            raise NotImplementedError
-
-        with self._write_versionlocks([
-            '0\trpm-test-carrot\t3333\tnonesuch\tx86_64'
-        ]) as vl, self.assertRaises(subprocess.CalledProcessError):
-            self._check_yum_dnf_boot_or_not(
-                'yum',
-                'rpm-test-carrot',
-                extra_args=('--snapshot-to-versionlock', _SNAPSHOT_DIR, vl),
-                check_ret_fn=_not_reached,
+            self._nspawn_in(
+                (__package__, 'bootable-systemd-os'),
+                ['--boot', '--', '/bin/true'],
+                boot_console=subprocess.PIPE, check=True,
             )
 
     # The default path determines which binaries get shadowed, so it's
@@ -622,7 +486,8 @@ class NspawnTestCase(unittest.TestCase):
                     self.assertEqual(
                         expected_path + b'\n',
                         self._nspawn_in(
-                            layer, [*extra_args, '--', 'printenv', 'PATH'],
+                            (__package__, layer),
+                            [*extra_args, '--', 'printenv', 'PATH'],
                             stdout=subprocess.PIPE,
                         ).stdout,
                     )

@@ -1,4 +1,6 @@
+load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
 load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 # No test coverage because it has no logic.
 python_library(
@@ -7,7 +9,19 @@ python_library(
     deps = ["//fs_image:fs_utils"],
 )
 
-# Gets test coverage via `nspawn_in_subvol:test-run`
+python_library(
+    name = "testlib_rpm_base",
+    srcs = ["tests/rpm_base.py"],
+    resources = {
+        layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance",
+    },
+    deps = [
+        "//fs_image/nspawn_in_subvol:testlib_base",
+        "//fs_image/rpm:find_snapshot",
+    ],
+)
+
+# Gets test coverage via `:test-repo-servers`
 python_library(
     name = "launch_repo_servers",
     srcs = ["launch_repo_servers.py"],
@@ -17,7 +31,6 @@ python_library(
     ],
 )
 
-# Gets test coverage via `nspawn_in_subvol:test-run`
 python_library(
     name = "repo_servers",
     srcs = ["repo_servers.py"],
@@ -32,7 +45,16 @@ python_library(
     ],
 )
 
-# Gets test coverage via `nspawn_in_subvol:test-run`
+python_unittest(
+    name = "test-repo-servers",
+    srcs = ["tests/test_repo_servers.py"],
+    needed_coverage = [
+        (100, ":launch_repo_servers"),
+        (100, ":repo_servers"),
+    ],
+    deps = [":testlib_rpm_base"],
+)
+
 python_library(
     name = "yum_dnf_versionlock",
     srcs = ["yum_dnf_versionlock.py"],
@@ -42,6 +64,16 @@ python_library(
         "//fs_image/nspawn_in_subvol:args",
         "//fs_image/nspawn_in_subvol:plugin_hooks",
     ],
+)
+
+python_unittest(
+    name = "test-yum-dnf-versionlock",
+    srcs = ["tests/test_yum_dnf_versionlock.py"],
+    needed_coverage = [
+        (100, ":yum_dnf_versionlock"),
+        (100, "//fs_image/nspawn_in_subvol:plugin_hooks"),
+    ],
+    deps = [":testlib_rpm_base"],
 )
 
 python_library(
