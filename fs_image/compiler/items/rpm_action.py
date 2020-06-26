@@ -14,7 +14,9 @@ from dataclasses import dataclass
 from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
 from fs_image.fs_utils import Path
-from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
+from fs_image.nspawn_in_subvol.args import (
+    new_nspawn_opts, NspawnPluginArgs, PopenArgs,
+)
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
@@ -312,6 +314,6 @@ def _yum_dnf_using_build_appliance(
     )
     run_non_booted_nspawn(opts, PopenArgs(), plugins=rpm_nspawn_plugins(
         opts=opts,
-        serve_rpm_snapshots=[snapshot_dir],
-        # Future: add `snapshots_and_versionlocks` here.
+        # Future: add `snapshots_and_versionlocks` here:
+        plugin_args=NspawnPluginArgs(serve_rpm_snapshots=[snapshot_dir]),
     ))

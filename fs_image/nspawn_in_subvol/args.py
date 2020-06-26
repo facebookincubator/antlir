@@ -325,6 +325,57 @@ def _extract_opts_from_dict(
     })
 
 
+# The fact that this structure is monolithic, and lies in the public API is
+# a bit of tech debt.  It exists because the various plugin options interact
+# in non-trivial ways, and we need coordination to dispatch them correctly.
+# Doing so as straight-up code is much easier (and less error-prone) than
+# devising a flexible declarative composition scheme at this stage.
+# However, at a later point we'll need to somehow separate "rpm-related"
+# plugins from "other package manager" plugins, while still keeping the
+# generic plugins (`shadow_paths`) properly integrated.
+#
+# NB: Inconsistently, we also do a tiny bit of arg validation in
+# `_new_nspawn_cli_args`.  Where does this belong?
+class NspawnPluginArgs(NamedTuple):
+    '''
+    Unlike other tuples in this file, this has a trivial constructor.  The
+    reason is that the validation logic is all plugin-specific anyway (and
+    currently lives in `plugins/rpm.py` and in the plugins).  So this is
+    just the minimal integration we need for the plugins to be part of the
+    CLI.  At a later point, we could make plugins self-register instead, so
+    the main argument-handling code would not refer to their internals.
+
+    Keep in sync with ``_parser_add_plugin_args`. That documents the options.
+    '''
+    serve_rpm_snapshots: Iterable[Path] = ()
+    snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
+
+
+def _parser_add_plugin_args(parser: argparse.ArgumentParser):
+    'Keep in sync with `NspawnPluginArgs`'
+    parser.add_argument(
+        '--serve-rpm-snapshot', action='append', dest='serve_rpm_snapshots',
+        default=[], type=Path.from_argparse,
+        help='Container-relative path to an RPM repo snapshot directory, '
+            'normally located under `RPM_SNAPSHOT_BASE_DIR`. Your container '
+            'will be provided with `repo-server`s listening on the ports '
+            'specified in the `etc/{yum,dnf}/{yum,dnf}.conf` of the snapshot, '
+            'so you can simply run `{yum,dnf} -c PATH_TO_CONF` to use them. '
+            'This option may be repeated to serve multiple snapshots.',
+    )
+    parser.add_argument(
+        '--snapshot-to-versionlock', action='append',
+        dest='snapshots_and_versionlocks',
+        nargs=2, metavar=('SNAPSHOT_PATH', 'VERSIONLOCK_PATH'),
+        default=[], type=Path.from_argparse,
+        help='Restrict available versions for some of the snapshots specified '
+            'via `--serve-rpm-snapshot`. Each version-lock file lists allowed '
+            'RPM versions, one per line, in the following TAB-separated '
+            'format: N\\tE\\tV\\tR\\tA. Snapshot is a container path, while '
+            'versionlock is a host path.',
+    )
+
+
 # Only for internal use by `nspawn-{run,test}-in-subvol`.
 class _NspawnCLIArgs(NamedTuple):
     '''
@@ -335,17 +386,23 @@ class _NspawnCLIArgs(NamedTuple):
     boot: bool
     append_boot_console: Optional[str]
     opts: _NspawnOpts
-    serve_rpm_snapshots: Iterable[Path] = ()
-    snapshot_to_versionlock: Mapping[Path, Path] = MappingProxyType({})
+    plugin_args: NspawnPluginArgs
 
 
-def _new_nspawn_cli_args(**kwargs):
+# Normally, you should call this via `_parse_cli_args`.  You're testing the
+# CLI, so check the parsing also!
+def _new_nspawn_cli_args(**kwargs) -> _NspawnCLIArgs:
     args = _NspawnCLIArgs(**kwargs)
+    # Please don't add more plugin validation here, let's find a more
+    # well-factored approach.
+    #
     # Neither `yum` nor `dnf` work without root.  Less importantly, running
     # the `repo-server` under `--as-pid2` currently requires `root` to
     # unmount and remove our `_OUTER_PROC` mount.
-    assert not args.serve_rpm_snapshots or args.opts.user.pw_name == 'root', \
-        f'You must set --user=root to use --serve-rpm-snapshot: {args}'
+    assert (
+        not args.plugin_args.serve_rpm_snapshots
+        or args.opts.user.pw_name == 'root'
+    ), f'You must set --user=root to use --serve-rpm-snapshot: {args}'
     return args
 
 
@@ -368,27 +425,8 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
         help='Use with `--boot` to redirect output from the systemd console '
             'PTY into a file. By default it goes to stdout for easy debugging.',
     )
-    parser.add_argument(
-        '--serve-rpm-snapshot', action='append', dest='serve_rpm_snapshots',
-        default=[], type=Path.from_argparse,
-        help='Container-relative path to an RPM repo snapshot directory, '
-            'normally located under `RPM_SNAPSHOT_BASE_DIR`. Your container '
-            'will be provided with `repo-server`s listening on the ports '
-            'specified in the `etc/{yum,dnf}/{yum,dnf}.conf` of the snapshot, '
-            'so you can simply run `{yum,dnf} -c PATH_TO_CONF` to use them. '
-            'This option may be repeated to serve multiple snapshots.',
-    )
-    parser.add_argument(
-        '--snapshot-to-versionlock', action='append', nargs=2,
-        metavar=('SNAPSHOT_PATH', 'VERSIONLOCK_PATH'),
-        default=[], type=Path.from_argparse,
-        help='Restrict available versions for some of the snapshots specified '
-            'via `--serve-rpm-snapshot`. Each version-lock file lists allowed '
-            'RPM versions, one per line, in the following TAB-separated '
-            'format: N\\tE\\tV\\tR\\tA. Snapshot is a container path, while '
-            'versionlock is a host path.',
-    )
     _parser_add_nspawn_opts(parser)
+    _parser_add_plugin_args(parser)
     if allow_debug_only_opts:
         _parser_add_debug_only_not_for_prod_opts(parser)
     args = Path.parse_args(parser, argv)
@@ -404,5 +442,8 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
                     if allow_debug_only_opts else (),
                 args.__dict__,
             ),
+        ),
+        plugin_args=_extract_opts_from_dict(
+            NspawnPluginArgs, NspawnPluginArgs._fields, args.__dict__,
         ),
     )

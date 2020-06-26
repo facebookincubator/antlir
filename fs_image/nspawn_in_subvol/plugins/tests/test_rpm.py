@@ -8,7 +8,7 @@ import unittest
 
 from unittest import mock
 
-from fs_image.nspawn_in_subvol.args import new_nspawn_opts
+from fs_image.nspawn_in_subvol.args import new_nspawn_opts, NspawnPluginArgs
 
 from .. import rpm as rpm_plugins
 
@@ -36,7 +36,9 @@ class RpmPluginsTestCase(unittest.TestCase):
             ),
             rpm_plugins.rpm_nspawn_plugins(
                 opts=new_nspawn_opts(cmd=[], layer=mock_subvol),
-                serve_rpm_snapshots=('a', 'b', 'c'),
-                snapshots_and_versionlocks=[('a', 'vla'), ('c', 'vlc')],
+                plugin_args=NspawnPluginArgs(
+                    serve_rpm_snapshots=('a', 'b', 'c'),
+                    snapshots_and_versionlocks=[('a', 'vla'), ('c', 'vlc')],
+                ),
             )
         )

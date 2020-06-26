@@ -12,7 +12,9 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from fs_image.fs_utils import Path
-from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
+from fs_image.nspawn_in_subvol.args import (
+    new_nspawn_opts, NspawnPluginArgs, PopenArgs,
+)
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from fs_image.subvol_utils import Subvol
@@ -81,7 +83,9 @@ class ForeignLayerItem(ImageItem):
                 PopenArgs(),
                 plugins=rpm_nspawn_plugins(
                     opts=opts,
-                    serve_rpm_snapshots=item.serve_rpm_snapshots,
+                    plugin_args=NspawnPluginArgs(
+                        serve_rpm_snapshots=item.serve_rpm_snapshots,
+                    ),
                 ),
             )
 

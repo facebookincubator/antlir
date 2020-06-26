@@ -25,7 +25,6 @@ import sys
 from contextlib import contextmanager
 from typing import Dict, Iterable, List, Tuple
 
-from .args import _parse_cli_args
 from .cmd import PopenArgs
 from .run import _set_up_run_cli
 

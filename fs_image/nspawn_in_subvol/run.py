@@ -157,8 +157,7 @@ def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
             opts=args.opts,
             plugins=rpm_nspawn_plugins(
                 opts=args.opts,
-                serve_rpm_snapshots=args.serve_rpm_snapshots,
-                snapshots_and_versionlocks=args.snapshot_to_versionlock,
+                plugin_args=args.plugin_args,
             ),
         )
 

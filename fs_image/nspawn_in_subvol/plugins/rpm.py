@@ -35,7 +35,7 @@ from typing import Iterable, Tuple
 from fs_image.common import set_new_key
 from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
-from fs_image.nspawn_in_subvol.args import _NspawnOpts
+from fs_image.nspawn_in_subvol.args import _NspawnOpts, NspawnPluginArgs
 
 from . import NspawnPlugin
 from .repo_servers import RepoServers
@@ -43,20 +43,18 @@ from .yum_dnf_versionlock import YumDnfVersionlock
 
 
 def rpm_nspawn_plugins(
-    *,
-    opts: _NspawnOpts,
-    serve_rpm_snapshots: Iterable[Path],
-    snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = None,
+    *, opts: _NspawnOpts, plugin_args: NspawnPluginArgs
 ) -> Iterable[NspawnPlugin]:
     serve_rpm_snapshots = frozenset(
         # Canonicalize here and below to ensure that it doesn't matter if
         # snapshots are specified by symlink or by real location.
-        opts.layer.canonicalize_path(p) for p in serve_rpm_snapshots
+        opts.layer.canonicalize_path(p)
+            for p in plugin_args.serve_rpm_snapshots
     )
 
     # Sanity-check the snapshot -> versionlock map
     s_to_vl = {}
-    for s, vl in snapshots_and_versionlocks or ():
+    for s, vl in plugin_args.snapshots_and_versionlocks or ():
         s = opts.layer.canonicalize_path(s)
         assert s in serve_rpm_snapshots, (s, serve_rpm_snapshots)
         # Future: we should probably allow duplicates if the canonicalized
