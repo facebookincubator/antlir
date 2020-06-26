@@ -115,7 +115,13 @@ image.layer(
     features = [
         # We'll set up shadowing both via links and directly, and both work.
         image.mkdir("/", "real"),
-        image.install("tests/shadow_me", "real/shadow_me"),
+        image.install(
+            "tests/shadow_me",
+            "real/shadow_me",
+            # The user "nobody" will update this via the shadow root.
+            user = "nobody",
+            mode = "u+rw,og+r",
+        ),
         image.install("tests/i_will_shadow", "real_i_will_shadow"),
         image.install("tests/i_will_shadow", "other_file"),
         image.mkdir("/", "link"),

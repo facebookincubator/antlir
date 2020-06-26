@@ -369,7 +369,12 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
         nargs=2, metavar=('DEST_TO_SHADOW', 'SRC'), type=Path.from_argparse,
         help='Read-only bind-mount container path `SRC` over container-'
             'absolute path `DEST`. If `DEST` is a filename, search container '
-            '`PATH` for all copies of `DEST`, and shadow those.',
+            '`PATH` for all copies of `DEST`, and shadow those. The original '
+            'of any shadowed path is copied under '
+            '`/__fs_image__/shadowed/REAL/PATH/TO/DEST`. These originals can '
+            'be read or mutated, and `yum-dnf-from-snapshot` implements a '
+            ' trick to allow RPM installers to upgrade packages containing '
+            'shadowed files.',
     )
     parser.add_argument(
         '--snapshot-to-versionlock', action='append',

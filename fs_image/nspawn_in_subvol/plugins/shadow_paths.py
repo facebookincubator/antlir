@@ -162,6 +162,80 @@ def _resolve_to_canonical_shadow_paths(
     return container_dest_to_real_src
 
 
+@contextmanager
+def _copy_to_shadowed_root(subvol: Subvol, container_paths: Iterable[Path]):
+    originals_and_backups = [
+        (subvol.path(p), subvol.path(SHADOWED_PATHS_ROOT / p.lstrip(b'/')))
+        for p in container_paths
+    ]
+    # This is redundant with our other "no ambiguity" and "no aliasing"
+    # checks, so it should never be hit.
+    assert 1 == len({
+        len(originals_and_backups),
+        *(len(set(x)) for x in zip(*originals_and_backups)),
+    }), originals_and_backups
+    try:
+        # We don't use `--reflink=always` because in some debug-only
+        # scenarios (see the description of the diff introducing this), it
+        # makes sense to allow shadowing paths that come from mounts -- and
+        # are thus both read-only, and possibly on a different FS.
+        #
+        # Falling back to `cp` incurs some I/O, but it should make no
+        # difference in practice -- it's a debug-only fall-back.  In
+        # principle, we could fall back to a bind mount instead, but the
+        # implementation would be noticeably harder (especially the
+        # `librename_shadowed.so` bits).
+        #
+        # Future: The directories we make under don't have the original
+        # permissions.  I'm punting on fixing this, since our general thesis
+        # is that build-time code is trusted.
+        subvol.run_as_root([
+            'sh', '-uec', '\n'.join(
+                textwrap.dedent(f'''\
+                b={backup.shell_quote()}
+                b_dir=$(dirname "$b")
+                mkdir -p "$b_dir"
+                cp --reflink=auto --preserve=all {orig.shell_quote()} "$b"
+                ''') for orig, backup in originals_and_backups
+            )
+        ])
+        yield
+    finally:
+        # As per the note above, the `cp` below will fail if we were
+        # shadowing a mount -- all our mounts are currently read-only.  This
+        # means that we can also get away with `--reflink=always`, we only
+        # need `auto` above to support debug-only experiments.
+        #
+        # If you found a really good reason to improve support for this
+        # situation, which only makes sense when you definitely never need
+        # to update the shadowed file, there's low hanging-fruit.
+        # Simply add `|| diff -q "$orig" "$backup"` -- there's no sense in
+        # failing if the file hasn't changed.
+        #
+        # It IS possible to deal with failures to capture changes, too, but
+        # I find this far-fetched, and so won't write out the solution here.
+        #
+        # Future: we could skip the "move back" part if we knew that the
+        # intended use of the snapshot is ephemeral -- either because the
+        # user explicitly told us via a flag, or because:
+        #    opts.snapshot and not opts.debug_only_opts.snapshot_into
+        # However, I think the savings in practice are too minimal to
+        # bother with the extra complexity & requisite testing.
+        subvol.run_as_root([
+            'sh', '-uec', '\n'.join(
+                textwrap.dedent(f'''\
+                o={orig.shell_quote()}
+                cp --reflink=always --preserve=all {backup.shell_quote()} "$o"
+                rm {backup.shell_quote()}
+                ''') for orig, backup in originals_and_backups
+            ) + '\n' + textwrap.dedent(f'''
+                find {
+                    subvol.path(SHADOWED_PATHS_ROOT).shell_quote()
+                } -type d | sort -r | xargs rmdir
+            ''')
+        ])
+
+
 class ShadowPaths(NspawnPlugin):
     '''
     `shadow_paths` has the form of {"/destination/to/shadow": "/with/what"},
@@ -200,5 +274,7 @@ class ShadowPaths(NspawnPlugin):
                 ),
             ),
             popen_args,
-        ) as setup:
+        ) as setup, _copy_to_shadowed_root(
+            setup.subvol, container_dest_to_real_src.keys(),
+        ):
             yield setup
