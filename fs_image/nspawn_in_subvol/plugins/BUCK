@@ -1,3 +1,4 @@
+load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
 load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -82,6 +83,7 @@ python_library(
     deps = [
         ":plugins",
         ":repo_servers",
+        ":shadow_paths",
         ":yum_dnf_versionlock",
         "//fs_image:common",
         "//fs_image:fs_utils",
@@ -92,4 +94,51 @@ python_unittest(
     name = "test-rpm",
     srcs = ["tests/test_rpm.py"],
     needed_coverage = [(100, ":rpm")],
+)
+
+python_library(
+    name = "shadow_paths",
+    srcs = ["shadow_paths.py"],
+    deps = [
+        "//fs_image:common",
+        "//fs_image:fs_utils",
+        "//fs_image:subvol_utils",
+        "//fs_image/nspawn_in_subvol:args",
+        "//fs_image/nspawn_in_subvol:common",
+        "//fs_image/nspawn_in_subvol:plugin_hooks",
+    ],
+)
+
+image.layer(
+    name = "shadow-paths-test-layer",
+    parent_layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
+    features = [
+        # We'll set up shadowing both via links and directly, and both work.
+        image.mkdir("/", "real"),
+        image.install("tests/shadow_me", "real/shadow_me"),
+        image.install("tests/i_will_shadow", "real_i_will_shadow"),
+        image.install("tests/i_will_shadow", "other_file"),
+        image.mkdir("/", "link"),
+        image.symlink_file("real/shadow_me", "link/shadow_me"),
+        image.symlink_file("real_i_will_shadow", "link/i_will_shadow"),
+        image.mkdir(
+            "/",
+            "out",
+            user = "nobody",
+        ),  # Tests write here
+        image.mkdir("/", "other_dir"),
+    ],
+)
+
+python_unittest(
+    name = "test-shadow-paths",
+    srcs = ["tests/test_shadow_paths.py"],
+    needed_coverage = [(100, ":shadow_paths")],
+    resources = {
+        layer_resource(":shadow-paths-test-layer"): "tests/shadows",
+    },
+    deps = [
+        "//fs_image:testlib_temp_subvolumes",
+        "//fs_image/nspawn_in_subvol:testlib_base",
+    ],
 )

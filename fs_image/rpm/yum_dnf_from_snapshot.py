@@ -98,7 +98,7 @@ from fs_image.common import (
     check_popen_returncode, get_file_logger, init_logging,
 )
 from fs_image.fs_utils import Path, temp_dir
-from fs_image.nspawn_in_subvol.common import SHADOWED_PATHS_ROOT
+from fs_image.nspawn_in_subvol.plugins.shadow_paths import SHADOWED_PATHS_ROOT
 
 from .yum_dnf_conf import YumDnf
 from .common import has_yum, yum_is_dnf

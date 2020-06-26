@@ -348,6 +348,7 @@ class NspawnPluginArgs(NamedTuple):
     Keep in sync with ``_parser_add_plugin_args`. That documents the options.
     '''
     serve_rpm_snapshots: Iterable[Path] = ()
+    shadow_paths: Iterable[Path] = ()
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
 
 
@@ -362,6 +363,13 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
             'specified in the `etc/{yum,dnf}/{yum,dnf}.conf` of the snapshot, '
             'so you can simply run `{yum,dnf} -c PATH_TO_CONF` to use them. '
             'This option may be repeated to serve multiple snapshots.',
+    )
+    parser.add_argument(
+        '--shadow-path', action='append', dest='shadow_paths',
+        nargs=2, metavar=('DEST_TO_SHADOW', 'SRC'), type=Path.from_argparse,
+        help='Read-only bind-mount container path `SRC` over container-'
+            'absolute path `DEST`. If `DEST` is a filename, search container '
+            '`PATH` for all copies of `DEST`, and shadow those.',
     )
     parser.add_argument(
         '--snapshot-to-versionlock', action='append',

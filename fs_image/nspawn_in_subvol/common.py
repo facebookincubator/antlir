@@ -9,10 +9,9 @@ import subprocess
 
 from fs_image.fs_utils import Path
 
-SHADOWED_PATHS_ROOT = Path('__fs_image__/shadowed')
-
-# This determines which binaries we shadow.  Our runtimes are expected to
-# ensure that this is the PATH for the user command in the container.
+# Our container runtimes are required to make this the `PATH` for the user
+# command in the container.  This also determines which container binaries
+# get shadowed by `--shadow-path`.
 #
 # For now, the non-booted case implicitly uses the `systemd-nspawn` default
 # `PATH`, so if that changes our test will fail.  That test failure in time

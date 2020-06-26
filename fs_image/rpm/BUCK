@@ -335,7 +335,7 @@ python_binary(
         ":common",
         ":yum_dnf_conf",
         "//fs_image:fs_utils",
-        "//fs_image/nspawn_in_subvol:common",
+        "//fs_image/nspawn_in_subvol/plugins:shadow_paths",
     ],
 )
 
