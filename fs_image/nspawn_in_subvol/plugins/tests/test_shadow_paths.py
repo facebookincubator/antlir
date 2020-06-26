@@ -4,11 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import subprocess
 
 from fs_image.nspawn_in_subvol.tests.base import NspawnTestBase
 from fs_image.tests.layer_resource import layer_resource_subvol
 from fs_image.tests.temp_subvolumes import with_temp_subvols
+
+from ..shadow_paths import SHADOWED_PATHS_ROOT
 
 _SRC_SUBVOL_PAIR = (__package__, 'shadows')
 _SRC_SUBVOL = layer_resource_subvol(*_SRC_SUBVOL_PAIR)
@@ -125,3 +128,32 @@ class ShadowPathTestCase(NspawnTestBase):
                     '--',
                     'bad_command_never_runs',
                 ])
+
+    @with_temp_subvols
+    def test_copy_and_move_back(self, temp_subvols):
+        dest_subvol = temp_subvols.caller_will_create('shadow_copy_move')
+        # Fixme: formalize this pattern from `test_non_ephemeral_snapshot`
+        dest_subvol._exists = True
+        self._assert_original_shadow_me()
+        self.assertEqual(
+            b'i will shadow\n',
+            self._nspawn_in(_SRC_SUBVOL_PAIR, [
+                f'--snapshot-into={dest_subvol.path()}',
+                *('--shadow-path', '/real/shadow_me', '/real_i_will_shadow'),
+                '--',
+                'sh', '-uexc', f'''\
+                echo UPDATED >> {(
+                    SHADOWED_PATHS_ROOT / 'real/shadow_me'
+                ).shell_quote()}
+                cat /real/shadow_me  # the file is still shadowed
+                ''',
+            ], stdout=subprocess.PIPE).stdout,
+        )
+        self._assert_original_shadow_me()
+        # The shadowed file got updated
+        self.assertEqual(
+            'shadow me\nUPDATED\n',
+            dest_subvol.path('/real/shadow_me').read_text(),
+        )
+        # The shadow root got cleaned up
+        self.assertFalse(os.path.exists(dest_subvol.path(SHADOWED_PATHS_ROOT)))
