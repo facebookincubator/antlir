@@ -23,6 +23,7 @@ from .unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
 
 
 log = get_file_logger(__file__)
+KiB = 2 ** 10
 MiB = 2 ** 20
 
 
@@ -719,8 +720,17 @@ class Subvol:
                         '--output', 'AVAIL', loop_vol.dir(),
                     ), stdout=subprocess.PIPE)
                     # If the `findmnt` fails, don't mask the original error.
-                    if size_ret.returncode == 0 and int(size_ret.stdout) == 0:
-                        log.info('Will retry receive, volume AVAIL=0')
+                    # If `btrfs receive` fails with "No space left on device",
+                    # a few KBs (up to 32 in my experiments) of free space may
+                    # remain on destination file-system.
+                    if (
+                            size_ret.returncode == 0 and
+                            int(size_ret.stdout) <= 32 * KiB
+                    ):
+                        log.info(
+                            'Will retry receive, volume '
+                            f'AVAIL={int(size_ret.stdout)}'
+                        )
                         return _drain_pipe_return_byte_count(r_send)
                     # Covering this is hard, so the test plan is "inspection".
                     log.error(  # pragma: no cover
