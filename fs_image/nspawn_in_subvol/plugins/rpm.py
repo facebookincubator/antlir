@@ -39,6 +39,7 @@ from fs_image.nspawn_in_subvol.args import _NspawnOpts, NspawnPluginArgs
 
 from . import NspawnPlugin
 from .repo_servers import RepoServers
+from .shadow_paths import ShadowPaths
 from .yum_dnf_versionlock import YumDnfVersionlock
 
 
@@ -63,9 +64,21 @@ def rpm_nspawn_plugins(
     snapshot_to_versionlock = MappingProxyType(s_to_vl)
 
     return (
+        # This handles `ShadowPaths` even though it's not RPM-specific
+        # because the two integrate -- a stacked diff will add a default
+        # behavior to shadow the OS `yum` / `dnf` binaries with wrappers
+        # that talk to our repo servers in `nspawn_in_subvol` containers.
         *(
-            [YumDnfVersionlock(snapshot_to_versionlock)]
-                if snapshot_to_versionlock else []
+            [ShadowPaths(plugin_args.shadow_paths)]
+                if plugin_args.shadow_paths else []
         ),
-        RepoServers(serve_rpm_snapshots),
-    ) if serve_rpm_snapshots else ()
+        *(
+            [
+                *(
+                    [YumDnfVersionlock(snapshot_to_versionlock)]
+                        if snapshot_to_versionlock else []
+                ),
+                RepoServers(serve_rpm_snapshots),
+            ] if serve_rpm_snapshots else ()
+        ),
+    )

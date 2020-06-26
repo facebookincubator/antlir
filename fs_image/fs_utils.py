@@ -60,7 +60,7 @@ class Path(bytes):
         return super().__new__(cls, byteme(arg), *args, **kwargs)
 
     def __eq__(self, obj) -> bool:
-        if not isinstance(obj, bytes):
+        if not isinstance(obj, (bytes, type(None))):
             # NB: The verbose error can be expensive, but this error must
             # never occur in correct code, so optimize for debuggability.
             raise TypeError(
