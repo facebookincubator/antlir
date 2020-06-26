@@ -56,7 +56,7 @@ def _round_to_loop_block_size(num_bytes: int, log_level: int) -> int:
 
 
 def _create_or_resize_image_file(
-    path: bytes, at_least_bytes: int, log_level: int=logging.INFO,
+    path: bytes, at_least_bytes: int, log_level: int = logging.INFO,
 ):
     '''
     Be sure to call `btrfs filesystem resize` and `losetup --set-capacity`
@@ -91,7 +91,7 @@ def _format_image_file(path: bytes, size_bytes: int) -> int:
     #    latter issue is a kernel bug).
     # We don't check for this error case since there's nothing we can do to
     # remediate it.
-    run_stdout_to_err(['mkfs.btrfs', path], check=True)
+    run_stdout_to_err(['mkfs.btrfs', '-m', 'single', path], check=True)
     return size_bytes
 
 
@@ -101,7 +101,8 @@ def _mount_image_file(
     log.info(f'Mounting btrfs {file_path} at {mount_path}')
     # Explicitly set filesystem type to detect shenanigans.
     run_stdout_to_err(nsenter_as_root(
-        unshare, 'mount', '-t', 'btrfs', '-o', 'loop,discard,nobarrier',
+        unshare, 'mount', '-t', 'btrfs',
+        '-o', 'loop,discard,nobarrier,compress=zstd',
         file_path, mount_path,
     ), check=True)
     loop_dev = subprocess.check_output(nsenter_as_user(

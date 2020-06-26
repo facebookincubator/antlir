@@ -168,14 +168,15 @@ class SubvolTestCase(unittest.TestCase):
     def test_mark_readonly_and_send_to_new_loopback(self, temp_subvols):
         sv = temp_subvols.create('subvol')
         sv.run_as_root([
-            'dd', 'if=/dev/zero', b'of=' + sv.path('d'), 'bs=1M', 'count=200',
+            'dd', 'if=/dev/urandom', b'of=' + sv.path('d'), 'bs=1M',
+            'count=600',
         ])
         sv.run_as_root(['mkdir', sv.path('0')])
         sv.run_as_root(['tee', sv.path('0/0')], input=b'0123456789')
         with tempfile.NamedTemporaryFile() as loop_path:
             # The default waste factor succeeds in 1 try, but a too-low
             # factor results in 2 tries.
-            waste_too_low = 1.0001
+            waste_too_low = 1.0002
             self.assertEqual(2, sv.mark_readonly_and_send_to_new_loopback(
                 loop_path.name, waste_factor=waste_too_low,
             ))
