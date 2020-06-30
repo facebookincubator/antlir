@@ -551,12 +551,30 @@ class Subvol:
         while True:
             attempts += 1
             fs_bytes *= waste_factor
-            leftover_bytes = self._send_to_loopback_if_fits(
+            leftover_bytes, image_size = self._send_to_loopback_if_fits(
                 output_path,
                 int(fs_bytes),
                 subvol_opts,
             )
-            if leftover_bytes is None:
+            if leftover_bytes == 0:
+                # The following simple trick saves about 20% of image size. The
+                # reason is that btrfs auto-allocates more metadata blocks for
+                # larger filesystems, but `resize` does not release them. For
+                # many practical use-cases the compression ratio is close to 2,
+                # hence initial `fs_bytes` estimate is too high.
+                leftover_bytes, new_size = self._send_to_loopback_if_fits(
+                    output_path,
+                    image_size,
+                    subvol_opts,
+                )
+                assert leftover_bytes == 0, (
+                    f'Cannot fit {self._path} in {image_size} bytes, '
+                    f'{leftover_bytes} sendstream bytes were left over'
+                )
+                assert new_size <= image_size, (
+                    'The second pass of btrfs send-receive produced worse'
+                    f'results that the first: {new_size} vs. {image_size}'
+                )
                 break
             fs_bytes += leftover_bytes
             log.warning(
@@ -691,11 +709,12 @@ class Subvol:
         output_path,
         fs_size_bytes,
         subvol_opts: SubvolOpts
-    ) -> Optional[int]:
+    ) -> (int, int):
         '''
         Creates a loopback of the specified size, and sends the current
-        subvolume to it.  Returns None if the subvolume fits in that space,
-        or the number of leftover sendstream bytes otherwise.
+        subvolume to it. Returns a tuple of two values. The first is the number
+        of bytes which didn't fit in that space. It is zero if the subvolume
+        fits. The second value is the image size in the end of operation.
         '''
         open(output_path, 'wb').close()
         with pipe() as (r_send, w_send), \
@@ -710,7 +729,10 @@ class Subvol:
                 if recv_ret.returncode != 0:
                     if recv_ret.stderr.endswith(self._OUT_OF_SPACE_SUFFIX):
                         log.info('Will retry receive, did not fit')
-                        return _drain_pipe_return_byte_count(r_send)
+                        return (
+                            _drain_pipe_return_byte_count(r_send),
+                            loop_vol.get_size()
+                        )
                     log.info('Receive failed: {}')
                     # It's pretty lame to rely on `btrfs receive` continuing
                     # to be unlocalized, and emitting that particular error
@@ -731,7 +753,10 @@ class Subvol:
                             'Will retry receive, volume '
                             f'AVAIL={int(size_ret.stdout)}'
                         )
-                        return _drain_pipe_return_byte_count(r_send)
+                        return (
+                            _drain_pipe_return_byte_count(r_send),
+                            loop_vol.get_size()
+                        )
                     # Covering this is hard, so the test plan is "inspection".
                     log.error(  # pragma: no cover
                         'Unhandled receive stderr:\n\n' +
@@ -745,8 +770,7 @@ class Subvol:
                         ns, 'btrfs', 'property', 'set', '-ts', subvol_path,
                         'ro', 'false',
                     )).check_returncode()
-            loop_vol.minimize_size()
-            return None
+            return (0, loop_vol.minimize_size())
 
     @contextmanager
     def receive(self, from_file):

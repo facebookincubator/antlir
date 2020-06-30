@@ -154,7 +154,7 @@ def _minimize_image_size(
             f'Nothing to do: the minimum resize limit {min_size} is no less '
             f'than the current filesystem size of {cur_size} bytes.'
         )
-        return
+        return cur_size
     log.info(f'Shrinking {image_path} to the btrfs minimum, {min_size} bytes')
     run_stdout_to_err(nsenter_as_root(
         unshare, 'btrfs', 'filesystem', 'resize', str(min_size),
@@ -237,4 +237,7 @@ class LoopbackVolume:
             mount_path=self._mount_dir,
             loop_dev=self._loop_dev,
         )
+        return self._size_bytes
+
+    def get_size(self) -> int:
         return self._size_bytes
