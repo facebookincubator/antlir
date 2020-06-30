@@ -91,6 +91,13 @@ def _format_image_file(path: bytes, size_bytes: int) -> int:
     #    latter issue is a kernel bug).
     # We don't check for this error case since there's nothing we can do to
     # remediate it.
+    # The default profile for btrfs filesystem is the DUP. The man page says:
+    # > The mkfs utility will let the user create a filesystem with profiles
+    # > that write the logical blocks to 2 physical locations.
+    # Switching to the SINGLE profile (below) saves a lot of space (30-40% as
+    # reported by `btrfs inspect-internal min-dev-size`), and loses some
+    # redundancy on rotational hard drives. Long history of using `-m single`
+    # never showed any issues with such lesser redundancy.
     run_stdout_to_err(['mkfs.btrfs', '-m', 'single', path], check=True)
     return size_bytes
 
