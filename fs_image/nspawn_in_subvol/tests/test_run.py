@@ -421,7 +421,7 @@ class NspawnTestCase(NspawnTestBase):
         self.assertIn(b'PATH', ret.stdout)
         self.assertIn(b'LOGNAME', ret.stdout)
         self.assertIn(b'USER', ret.stdout)
-        self.assertIn(b'TERM', ret.stdout)
+        self.assertIn(b'TERM=linux-clown', ret.stdout)
 
     def test_boot_proc_results(self):
         console_singleton = []
