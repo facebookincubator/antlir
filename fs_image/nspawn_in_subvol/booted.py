@@ -288,8 +288,10 @@ def _popen_nsenter_into_systemd(
         'LOGNAME': opts.user.pw_name,
         'PATH': DEFAULT_PATH_ENV,
         'USER': opts.user.pw_name,
-        'TERM': os.environ.get('TERM')
     }
+    term_env = os.environ.get('TERM')
+    if term_env is not None:
+        default_env['TERM'] = term_env
 
     # Set the user properly for the nsenter'd command to run.
     # Future: consider properly logging in as the user with su
