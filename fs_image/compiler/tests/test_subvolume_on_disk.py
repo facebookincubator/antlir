@@ -43,10 +43,10 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
         }
         self.addCleanup(self.patch_btrfs_get_volume_props.stop)
 
-        self.patch_getfqdn = unittest.mock.patch('socket.getfqdn')
-        self.mock_getfqdn = self.patch_getfqdn.start()
-        self.mock_getfqdn.side_effect = lambda: _MY_HOST
-        self.addCleanup(self.patch_getfqdn.stop)
+        self.patch_gethostname = unittest.mock.patch('socket.gethostname')
+        self.mock_gethostname = self.patch_gethostname.start()
+        self.mock_gethostname.side_effect = lambda: _MY_HOST
+        self.addCleanup(self.patch_gethostname.stop)
 
     def _check(self, actual_subvol, expected_path, expected_subvol):
         self.assertEqual(expected_path, actual_subvol.subvolume_path())
