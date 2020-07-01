@@ -100,7 +100,7 @@ class SubvolumeOnDisk(namedtuple('SubvolumeOnDisk', [
         self = cls(**{
             _BTRFS_UUID: volume_props['UUID'],
             _BTRFS_PARENT_UUID: volume_props['Parent UUID'],
-            _HOSTNAME: socket.getfqdn(),
+            _HOSTNAME: socket.gethostname(),
             _SUBVOLUMES_BASE_DIR: subvolumes_dir,
             _SUBVOLUME_REL_PATH: subvol_rel_path,
         })
@@ -142,7 +142,7 @@ class SubvolumeOnDisk(namedtuple('SubvolumeOnDisk', [
                 f'instead of {[inner_dir]}'
             )
         # Check that the subvolume matches the description.
-        cur_host = socket.getfqdn()
+        cur_host = socket.gethostname()
         if cur_host != self.hostname:
             raise RuntimeError(
                 f'Subvolume {self} did not come from current host {cur_host}'
