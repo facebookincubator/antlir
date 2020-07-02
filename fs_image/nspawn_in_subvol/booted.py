@@ -160,7 +160,7 @@ def _wrap_systemd_exec():
             grep ^PPid: {_OUTER_PROC}/self/status >&3
             umount -R {_OUTER_PROC}
             rmdir {_OUTER_PROC}
-            exec /usr/lib/systemd/systemd
+            exec /usr/lib/systemd/systemd --log-target=console
         '''),
     ]
 
