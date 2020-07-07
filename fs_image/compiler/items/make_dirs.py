@@ -71,4 +71,5 @@ class MakeDirsItem(ImageItem):
         outer_dir = self.path_to_make.split('/', 1)[0]
         build_stat_options(
             self, subvol, subvol.path(os.path.join(self.into_dir, outer_dir)),
+            build_appliance=layer_opts.build_appliance,
         )
