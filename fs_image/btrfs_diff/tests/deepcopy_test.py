@@ -6,7 +6,6 @@
 
 import copy
 import unittest
-
 from collections import Counter
 from typing import Any, Callable, Generator, List, Optional, Tuple
 
@@ -14,7 +13,7 @@ from ..coroutine_utils import while_not_exited
 
 
 class DeepCopyTestCase(unittest.TestCase):
-    '''
+    """
     If you have a test that builds up some complex object (e.g. `InodeIDMap`,
     `Subvolume`) by following a script, you can use this utility to make
     your test also check that your object is correctly `deepcopy`able.
@@ -39,15 +38,15 @@ class DeepCopyTestCase(unittest.TestCase):
     subtle object aliasing issues in a simple unit-test.  Therefore, this
     test is not a substitute for systematically reasoning about whether each
     part of your object is correctly `deepcopy`able.
-    '''
+    """
 
     def check_deepcopy_at_each_step(
-        self, gen_fn: Callable[[], Generator[Tuple[str, Any], Any, None]],
+        self, gen_fn: Callable[[], Generator[Tuple[str, Any], Any, None]]
     ) -> None:
-        '''
+        """
         `gen_fn` makes a generator that yields `(step_name, obj)`, and gets
         sent `obj` or ``deepcopy(obj)`.
-        '''
+        """
         steps = self._check_deepcopy(gen_fn)
         for deepcopy_step, expected_name in enumerate(steps):
             with self.subTest(deepcopy_step=expected_name):
@@ -58,14 +57,18 @@ class DeepCopyTestCase(unittest.TestCase):
 
     def _check_deepcopy(
         self,
-        gen_fn: Callable[[],
-            Generator[Tuple[str, Any], Any, Optional[List[str]]]],
-        replace_step=None, expected_name=None, *, _replace_by=None,
+        gen_fn: Callable[
+            [], Generator[Tuple[str, Any], Any, Optional[List[str]]]
+        ],
+        replace_step=None,
+        expected_name=None,
+        *,
+        _replace_by=None,
     ) -> List[str]:
-        '''
+        """
         Steps through `deepcopy_original`, optionally replacing the ID map
         by deepcopy at a specific step of the test.
-        '''
+        """
         obj = None
         steps = []
         deepcopy_original = None
@@ -91,11 +94,14 @@ class DeepCopyTestCase(unittest.TestCase):
         if replace_step is not None and _replace_by is None:
             self.assertIsNotNone(deepcopy_original)
             with self.subTest(deepcopy_original=True):
-                self.assertEqual(steps, self._check_deepcopy(
-                    gen_fn,
-                    replace_step,
-                    expected_name,
-                    _replace_by=deepcopy_original,
-                ))
+                self.assertEqual(
+                    steps,
+                    self._check_deepcopy(
+                        gen_fn,
+                        replace_step,
+                        expected_name,
+                        _replace_by=deepcopy_original,
+                    ),
+                )
 
         return steps

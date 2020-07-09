@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''\
+"""\
 Serialize a btrfs subvolume built by an `image_layer` target into a
 portable format (either a file, or a directory with a few files).
 
@@ -214,17 +214,16 @@ base images. Specific advantages to this include:
  - more rigorous testing than is feasible in at-code-review-time CI/CD system
  - the ability to pre-warm caches, thus ensuring nearly instant availability
    of the base images.
-'''
+"""
 import argparse
 import os
 import stat
 import subprocess
-
 from typing import Mapping, NamedTuple
 
+from .common import check_popen_returncode, init_logging
 from .find_built_subvol import find_built_subvol
 from .fs_utils import Path, create_ro
-from .common import check_popen_returncode, init_logging
 from .subvol_utils import Subvol, SubvolOpts
 
 
@@ -233,85 +232,95 @@ class _Opts(NamedTuple):
 
 
 class Format:
-    'A base class that registers its subclasses in NAME_TO_CLASS.'
+    "A base class that registers its subclasses in NAME_TO_CLASS."
 
-    NAME_TO_CLASS: Mapping[str, 'Format'] = {}
+    NAME_TO_CLASS: Mapping[str, "Format"] = {}
 
     def __init_subclass__(cls, format_name: str, **kwargs):
         super().__init_subclass__(**kwargs)
         prev_cls = cls.NAME_TO_CLASS.get(format_name)
         if prev_cls:
-            raise AssertionError(f'{cls} and {prev_cls} share format_name')
+            raise AssertionError(f"{cls} and {prev_cls} share format_name")
         cls.NAME_TO_CLASS[format_name] = cls
 
     @classmethod
-    def make(cls, format_name) -> 'Format':
+    def make(cls, format_name) -> "Format":
         return cls.NAME_TO_CLASS[format_name]()
 
 
-class Sendstream(Format, format_name='sendstream'):
-    '''
+class Sendstream(Format, format_name="sendstream"):
+    """
     Packages the subvolume as a stand-alone (non-incremental) send-stream.
     See the script-level docs for details on supporting incremental ones.
-    '''
+    """
 
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
-        with create_ro(output_path, 'wb') as outfile, \
-                subvol.mark_readonly_and_write_sendstream_to_file(outfile):
+        with create_ro(
+            output_path, "wb"
+        ) as outfile, subvol.mark_readonly_and_write_sendstream_to_file(
+            outfile
+        ):
             pass
 
 
-class SendstreamZst(Format, format_name='sendstream.zst'):
-    '''
+class SendstreamZst(Format, format_name="sendstream.zst"):
+    """
     Packages the subvolume as a stand-alone (non-incremental) zstd-compressed
     send-stream. See the script-level docs for details on supporting incremental
     ones.
     Future: add general compression support instead of adding `TarballGz`,
     `TarballZst`, `SendstreamGz`, etc.
-    '''
+    """
 
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
-        with create_ro(output_path, 'wb') as outfile, subprocess.Popen(
-            ['zstd', '--stdout'], stdin=subprocess.PIPE, stdout=outfile
+        with create_ro(output_path, "wb") as outfile, subprocess.Popen(
+            ["zstd", "--stdout"], stdin=subprocess.PIPE, stdout=outfile
         ) as zst, subvol.mark_readonly_and_write_sendstream_to_file(zst.stdin):
             pass
         check_popen_returncode(zst)
 
 
-class SquashfsImage(Format, format_name='squashfs'):
-    '''
+class SquashfsImage(Format, format_name="squashfs"):
+    """
     Packages the subvolume as a squashfs-formatted disk image, usage:
       mount -t squashfs image.squashfs dest/ -o loop
-    '''
+    """
 
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
-        create_ro(output_path, 'wb').close()  # Ensure non-root ownership
-        subvol.run_as_root([
-            'mksquashfs', subvol.path(), output_path, '-comp', 'zstd',
-            '-noappend',
-        ])
-
-
-class BtrfsImage(Format, format_name='btrfs'):
-    '''
-    Packages the subvolume as a btrfs-formatted disk image, usage:
-      mount -t btrfs image.btrfs dest/ -o loop
-    '''
-    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
-        subvol.mark_readonly_and_send_to_new_loopback(
-            output_path,
-            subvol_opts=opts.subvol_opts
+        create_ro(output_path, "wb").close()  # Ensure non-root ownership
+        subvol.run_as_root(
+            [
+                "mksquashfs",
+                subvol.path(),
+                output_path,
+                "-comp",
+                "zstd",
+                "-noappend",
+            ]
         )
 
 
-class TarballGzipImage(Format, format_name='tar.gz'):
-    '''
+class BtrfsImage(Format, format_name="btrfs"):
+    """
+    Packages the subvolume as a btrfs-formatted disk image, usage:
+      mount -t btrfs image.btrfs dest/ -o loop
+    """
+
+    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+        subvol.mark_readonly_and_send_to_new_loopback(
+            output_path, subvol_opts=opts.subvol_opts
+        )
+
+
+class TarballGzipImage(Format, format_name="tar.gz"):
+    """
     Packages the subvolume as a gzip-compressed tarball, usage:
       tar xzf image.tar.gz -C dest/
-    '''
+    """
+
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
-        with create_ro(output_path, 'wb') as outfile, subprocess.Popen(
-            ['gzip', '--stdout'], stdin=subprocess.PIPE, stdout=outfile
+        with create_ro(output_path, "wb") as outfile, subprocess.Popen(
+            ["gzip", "--stdout"], stdin=subprocess.PIPE, stdout=outfile
         ) as gz, subvol.write_tarball_to_file(gz.stdin):
             pass
 
@@ -324,40 +333,47 @@ def parse_args(argv):
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        '--subvolumes-dir', required=True,
-        help='A directory on a btrfs volume, where all the subvolume wrapper '
-            'directories reside.',
+        "--subvolumes-dir",
+        required=True,
+        help="A directory on a btrfs volume, where all the subvolume wrapper "
+        "directories reside.",
     )
     parser.add_argument(
-        '--layer-path', required=True,
-        help='A directory output from the `image_layer` we need to package',
+        "--layer-path",
+        required=True,
+        help="A directory output from the `image_layer` we need to package",
     )
     parser.add_argument(
-        '--format', choices=Format.NAME_TO_CLASS.keys(), required=True,
-        help=f'''
+        "--format",
+        choices=Format.NAME_TO_CLASS.keys(),
+        required=True,
+        help=f"""
         Brief format descriptions -- see the code docblocks for more detail:
             {'; '.join(
                 '"' + k + '" -- ' + v.__doc__
                     for k, v in Format.NAME_TO_CLASS.items()
             )}
-        ''',
+        """,
     )
     parser.add_argument(
-        '--output-path', required=True,
-        help='Write the image package file(s) to this path -- must not exist',
-    )
-
-    parser.add_argument(
-        '--writable-subvolume', action='store_true',
-        default=False,
-        help=f'By default, the subvolume inside a loopback is marked read-only.'
-        ' Pass this flag to mark it writable.',
+        "--output-path",
+        required=True,
+        help="Write the image package file(s) to this path -- must not exist",
     )
 
     parser.add_argument(
-        '--seed-device', action='store_true',
+        "--writable-subvolume",
+        action="store_true",
         default=False,
-        help=f'Pass this flag to make the resulting image a btrfs seed device',
+        help=f"By default, the subvolume inside a loopback is marked read-only."
+        " Pass this flag to mark it writable.",
+    )
+
+    parser.add_argument(
+        "--seed-device",
+        action="store_true",
+        default=False,
+        help=f"Pass this flag to make the resulting image a btrfs seed device",
     )
     # Future: To add support for incremental send-streams, we'd want to
     # use this (see `--ancestor-jsons` in `image_package.bzl`)
@@ -414,18 +430,19 @@ def package_image(argv):
             subvol_opts=SubvolOpts(
                 readonly=not args.writable_subvolume,
                 seed_device=args.seed_device,
-            ),
+            )
         ),
     )
     # Paranoia: images are read-only after being built
     os.chmod(
         args.output_path,
         stat.S_IMODE(os.stat(args.output_path).st_mode)
-            & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH),
+        & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH),
     )
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     import sys
+
     init_logging()
     package_image(sys.argv[1:])

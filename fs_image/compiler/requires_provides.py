@@ -45,7 +45,6 @@ with short-circuiting.  E.g. FollowsSymlinks(Pred) would expand to:
 '''
 import dataclasses
 import os
-
 from enum import Enum, auto
 
 
@@ -55,7 +54,7 @@ def _normalize_path(path: str) -> str:
     return os.path.normpath(
         # The `lstrip` is needed because `normpath does not
         # normalize away leading slashes: //b/c
-        os.path.join('/', path.lstrip('/'))
+        os.path.join("/", path.lstrip("/"))
     )
 
 
@@ -70,8 +69,8 @@ class PathRequiresPredicate:
     predicate: _Predicate
 
     def __init__(self, *, path: str, predicate: _Predicate) -> None:
-        object.__setattr__(self, 'path', _normalize_path(path))
-        object.__setattr__(self, 'predicate', predicate)
+        object.__setattr__(self, "path", _normalize_path(path))
+        object.__setattr__(self, "predicate", predicate)
 
 
 def require_directory(path: str):
@@ -88,19 +87,17 @@ class ProvidesPathObject:
     # In the future, we might add permissions, etc here.
 
     def __init__(self, *, path: str) -> None:
-        object.__setattr__(self, 'path', _normalize_path(path))
+        object.__setattr__(self, "path", _normalize_path(path))
 
     def matches(
-            self,
-            path_to_reqs_provs,
-            path_predicate: PathRequiresPredicate,
+        self, path_to_reqs_provs, path_predicate: PathRequiresPredicate
     ) -> bool:
-        assert path_predicate.path == self.path, (
-            'Tried to match {} against {}'.format(path_predicate, self)
-        )
-        assert self._matches_predicate(path_predicate.predicate), (
-            'predicate {} not implemented by {}'.format(path_predicate, self)
-        )
+        assert (
+            path_predicate.path == self.path
+        ), "Tried to match {} against {}".format(path_predicate, self)
+        assert self._matches_predicate(
+            path_predicate.predicate
+        ), "predicate {} not implemented by {}".format(path_predicate, self)
         return True
 
     def _matches_predicate(self, predicate):
@@ -116,7 +113,8 @@ class ProvidesDirectory(ProvidesPathObject):
 
 
 class ProvidesFile(ProvidesPathObject):
-    'Does not have to be a regular file, just any leaf in the FS tree'
+    "Does not have to be a regular file, just any leaf in the FS tree"
+
     def _matches_predicate(self, predicate):
         return predicate == _Predicate.IS_FILE
 

@@ -7,51 +7,53 @@
 import os
 import stat
 import uuid
-
 from contextlib import contextmanager
 from typing import AnyStr, ContextManager
 
 from fs_image.fs_utils import Path
 
-from .storage import _CommitCallback, Storage, StorageInput, StorageOutput
+from .storage import Storage, StorageInput, StorageOutput, _CommitCallback
 
 
-class FilesystemStorage(Storage, plugin_kind='filesystem'):
-    '''
+class FilesystemStorage(Storage, plugin_kind="filesystem"):
+    """
     Stores blobs on the local filesystem. This is great if you initially
     just want to commit RPMs to a local SVN (or similar) repo.
 
     Once you end up having too many RPMs for filesystem storage, you can
     write a similar plugin for your favorite "key -> large binary object"
     distributed store, and migrate there.
-    '''
+    """
 
     def __init__(self, *, key: str, base_dir: AnyStr):
         self.key = key
         self.base_dir = Path(base_dir).abspath()
 
     def _path_for_storage_id(self, sid: str) -> str:
-        '''
+        """
         A hierarchy 4 levels deep with a maximum of 4096 subdirs per dir.
         You'd need about 300 trillion blobs before the leaf subdirs have an
         average of 4096 subdirs each.
-        '''
+        """
         return self.base_dir / sid[:3] / sid[3:6] / sid[6:9] / sid[9:]
 
     @contextmanager
     def writer(self) -> ContextManager[StorageOutput]:
-        sid = str(uuid.uuid4()).replace('-', '')
+        sid = str(uuid.uuid4()).replace("-", "")
         sid_path = self._path_for_storage_id(sid)
         try:
             os.makedirs(sid_path.dirname())
         except FileExistsError:  # pragma: no cover
             pass
 
-        with os.fdopen(os.open(
-            sid_path,
-            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC,
-            mode=stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH,
-        ), 'wb') as outfile:
+        with os.fdopen(
+            os.open(
+                sid_path,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC,
+                mode=stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH,
+            ),
+            "wb",
+        ) as outfile:
 
             @contextmanager
             def get_id_and_release_resources():
@@ -69,12 +71,12 @@ class FilesystemStorage(Storage, plugin_kind='filesystem'):
 
     @contextmanager
     def reader(self, sid: str) -> ContextManager[StorageInput]:
-        with open(self._path_for_storage_id(self.strip_key(sid)), 'rb') as inp:
+        with open(self._path_for_storage_id(self.strip_key(sid)), "rb") as inp:
             yield StorageInput(input=inp)
 
     def remove(self, sid: str) -> None:
         sid_path = self._path_for_storage_id(self.strip_key(sid))
-        assert sid_path.startswith(self.base_dir + b'/')
+        assert sid_path.startswith(self.base_dir + b"/")
         os.remove(sid_path)
         # Remove any empty directories up to `self.filesystem_path`.
         dir_path = sid_path.dirname()

@@ -14,7 +14,6 @@ from ..run import _set_up_run_cli
 
 
 class NspawnTestBase(unittest.TestCase):
-
     def setUp(self):
         # Setup expected stdout line endings depending on the version of
         # systemd-nspawn.  Version 242 'fixed' stdout line endings.  The
@@ -22,15 +21,15 @@ class NspawnTestBase(unittest.TestCase):
         # `run.py`.  It would disappear if we passed `--quiet` to nspawn,
         # but we want to retain the extra debug logging.
         self.nspawn_version = nspawn_version()
-        self.maybe_extra_ending = b'\n' if self.nspawn_version < 242 else b''
+        self.maybe_extra_ending = b"\n" if self.nspawn_version < 242 else b""
 
     def _nspawn_in_boot_ret(self, rsrc_pair, argv, **kwargs):
-        with _set_up_run_cli([
-            '--layer', layer_resource(*rsrc_pair), *argv,
-        ]) as cli_setup:
-            if 'boot_console' in kwargs:
+        with _set_up_run_cli(
+            ["--layer", layer_resource(*rsrc_pair), *argv]
+        ) as cli_setup:
+            if "boot_console" in kwargs:
                 cli_setup = cli_setup._replace(
-                    boot_console=kwargs.pop('boot_console')
+                    boot_console=kwargs.pop("boot_console")
                 )
             return cli_setup._run_nspawn(PopenArgs(**kwargs))
 

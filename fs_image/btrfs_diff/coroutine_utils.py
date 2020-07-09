@@ -4,18 +4,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'Start with `help(while_not_exited)`'
+"Start with `help(while_not_exited)`"
 from contextlib import contextmanager
 from typing import Any, Iterator
 
 
 class CoroutineContext:
-    '''
+    """
     `while_not_exited` returns this context. You can access two members:
 
     coroutine:  Only available inside the `with`
     result:  Only available after the `with`
-    '''
+    """
+
     result: Any = None  # see `test_throw_from_sender` for why this is set.
 
     def __init__(self, coroutine):
@@ -35,7 +36,7 @@ class CoroutineContext:
 
 
 class GeneratorExitWithResult(Exception):
-    '''
+    """
     If your coroutine needs to handle `GeneratorExit` and produce a result,
     it cannot just `return result`, since Python appears **NOT** to insert
     `result` into the subsequent `StopIteration`.  So, instead, you can
@@ -43,13 +44,14 @@ class GeneratorExitWithResult(Exception):
 
     Keep in mind that if the sender calls `.close` before the initial send,
     your coroutine will automatically return None.
-    '''
+    """
+
     pass
 
 
 @contextmanager
 def while_not_exited(coroutine) -> Iterator[CoroutineContext]:
-    '''
+    """
     A helper for sending a sequence of values to a co-routine, and capturing
     its final return value.  Please review the test to review the exact data
     flow -- it is not very intuitive.
@@ -76,7 +78,7 @@ def while_not_exited(coroutine) -> Iterator[CoroutineContext]:
     `ctx.result` will be set to the its return value, or `None` if the
     coroutine did not return a value.  If your coroutine needs to return
     values after `.close()` events, look at `GeneratorExitWithResult`.
-    '''
+    """
     ctx = CoroutineContext(coroutine)
     try:
         yield ctx
@@ -87,7 +89,7 @@ def while_not_exited(coroutine) -> Iterator[CoroutineContext]:
         # `GeneratorExitWithResult`.
         coroutine.close()
     except GeneratorExitWithResult as ex:
-        ctx.result, = ex.args
+        (ctx.result,) = ex.args
     except StopIteration as ex:
         ctx.result = ex.value
     finally:

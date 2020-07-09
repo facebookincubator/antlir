@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'Utilities to make Python systems programming more palatable.'
+"Utilities to make Python systems programming more palatable."
 import array
 import logging
 import os
@@ -12,16 +12,16 @@ import random
 import socket
 import subprocess
 import tempfile
-
-from typing import AnyStr, Iterable, Iterator, List, Optional, Tuple, TypeVar
 from contextlib import AbstractContextManager, contextmanager
+from typing import AnyStr, Iterable, Iterator, List, Optional, Tuple, TypeVar
 
-T = TypeVar('T')
+
+T = TypeVar("T")
 
 
 # Bite me, Python3.
 def byteme(s: AnyStr) -> bytes:
-    'Byte literals are tiring, just promote strings as needed.'
+    "Byte literals are tiring, just promote strings as needed."
     return s.encode() if isinstance(s, str) else s
 
 
@@ -31,9 +31,9 @@ def get_file_logger(py_path: AnyStr):
 
 # NB: Many callsites in fs_image rely on the assumption that this function will
 # result in logging to the default stream of StreamHandler, which is stderr.
-def init_logging(*, debug: bool=False):
+def init_logging(*, debug: bool = False):
     logging.basicConfig(
-        format='%(levelname)s %(name)s %(asctime)s %(message)s',
+        format="%(levelname)s %(name)s %(asctime)s %(message)s",
         level=logging.DEBUG if debug else logging.INFO,
     )
 
@@ -41,7 +41,6 @@ def init_logging(*, debug: bool=False):
 # contextlib.nullcontext is 3.7+ but we are on 3.6 for now. This has to be a
 # class since it should be multi-use.
 class nullcontext(AbstractContextManager):
-
     def __init__(self, val=None):
         self._val = val
 
@@ -63,14 +62,14 @@ def check_popen_returncode(proc: subprocess.Popen):
         #   subprocess.CalledProcessError: Command '['a']' returned non-zero
         #   exit status 5.
         raise subprocess.CalledProcessError(
-            returncode=proc.returncode, cmd=proc.args,
+            returncode=proc.returncode, cmd=proc.args
         )
 
 
 def set_new_key(d, k, v):
-    '`d[k] = v` that raises if it would it would overwrite an existing value'
+    "`d[k] = v` that raises if it would it would overwrite an existing value"
     if k in d:
-        raise KeyError(f'{k} was already set')
+        raise KeyError(f"{k} was already set")
     d[k] = v
 
 
@@ -84,23 +83,25 @@ def shuffled(it: Iterable[T]) -> List[T]:
 def listen_temporary_unix_socket() -> Iterator[Tuple[str, socket.socket]]:
     # Hardcoding /tmp is ugly, but Buck sets $TMP to fairly long paths,
     # which can cause `AF_UNIX path too long`.
-    with tempfile.TemporaryDirectory(dir='/tmp') as td, \
-            socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as lsock:
-        sock_path = os.path.join(td, 'sock')
+    with tempfile.TemporaryDirectory(dir="/tmp") as td, socket.socket(
+        socket.AF_UNIX, socket.SOCK_STREAM
+    ) as lsock:
+        sock_path = os.path.join(td, "sock")
         lsock.bind(sock_path)
         lsock.listen()
         yield sock_path, lsock
 
 
 def recv_fds(sock, msglen, maxfds, inheritable=False):
-    '''
+    """
     Receives via a Unix domain socket a message of at most `msglen` bytes,
     with at most `maxfds` file descriptors in the ancillary data.  The file
     descriptors will be marked O_CLOEXEC unless inheritable is set to False.
-    '''
-    fds = array.array('i')
+    """
+    fds = array.array("i")
     msg, ancdata, msg_flags, _addr = sock.recvmsg(
-        msglen, maxfds * socket.CMSG_SPACE(fds.itemsize),
+        msglen,
+        maxfds * socket.CMSG_SPACE(fds.itemsize),
         0 if inheritable else socket.MSG_CMSG_CLOEXEC,
     )
     assert not (msg_flags & socket.MSG_TRUNC), msg_flags
@@ -131,20 +132,20 @@ def recv_fds_from_unix_sock(sock_path, max_fds):
 
 
 def run_stdout_to_err(
-    args: Iterable[AnyStr], *, stdout: None=None, **kwargs
+    args: Iterable[AnyStr], *, stdout: None = None, **kwargs
 ) -> subprocess.CompletedProcess:
-    '''
+    """
     Use this instead of `subprocess.{run,call,check_call}()` to prevent
     subprocesses from accidentally polluting stdout.
-    '''
-    assert stdout is None, 'run_stdout_to_err does not take a stdout kwarg'
+    """
+    assert stdout is None, "run_stdout_to_err does not take a stdout kwarg"
     return subprocess.run(args, **kwargs, stdout=2)  # Redirect to stderr
 
 
 @contextmanager
 def pipe():
     r_fd, w_fd = os.pipe2(os.O_CLOEXEC)
-    with os.fdopen(r_fd, 'rb') as r, os.fdopen(w_fd, 'wb') as w:
+    with os.fdopen(r_fd, "rb") as r, os.fdopen(w_fd, "wb") as w:
         yield r, w
 
 
@@ -160,12 +161,10 @@ def open_fd(path: AnyStr, flags) -> int:
 
 
 def not_none(
-    var: Optional[T],
-    var_name: str,
-    detail: Optional[str] = None,
+    var: Optional[T], var_name: str, detail: Optional[str] = None
 ) -> T:
     """Used for type-refinement with `Optional`s."""
     if var is not None:
         return var
-    detail_str = '' if detail is None else f': {detail}'
+    detail_str = "" if detail is None else f": {detail}"
     raise AssertionError(f"`{var_name}` must not be None{detail_str}")

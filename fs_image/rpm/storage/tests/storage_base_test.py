@@ -5,15 +5,14 @@
 # LICENSE file in the root directory of this source tree.
 
 import unittest
-
-from unittest.mock import patch, MagicMock
 from typing import List, Tuple
+from unittest.mock import MagicMock, patch
 
 from .. import Storage  # Module import to ensure we get plugins
 
 
 class StorageBaseTestCase(unittest.TestCase):
-    'A tiny test suite that can be used to check any Storage implementation.'
+    "A tiny test suite that can be used to check any Storage implementation."
 
     def _check_write_and_read(self, storage: Storage, writes: List[bytes]):
         with storage.writer() as output:
@@ -21,7 +20,7 @@ class StorageBaseTestCase(unittest.TestCase):
                 output.write(piece)
             sid = output.commit()
         with storage.reader(sid) as input:
-            written = b''.join(writes)
+            written = b"".join(writes)
             partial_read = input.read(3)
             if written:
                 self.assertGreater(len(partial_read), 0)
@@ -31,7 +30,8 @@ class StorageBaseTestCase(unittest.TestCase):
 
     def check_storage_impl(
         self,
-        storage: Storage, *,
+        storage: Storage,
+        *,
         no_empty_blobs=False,
         skip_empty_writes=False,
         # To make testing more meaningful, it's useful to make sure that
@@ -45,28 +45,28 @@ class StorageBaseTestCase(unittest.TestCase):
         # Make sure nothing bad happens if an exception flies before a
         # commit.  Since we don't have an ID, we can't really test that the
         # partial write got discarded.
-        with self.assertRaisesRegex(RuntimeError, '^humbug$'):
+        with self.assertRaisesRegex(RuntimeError, "^humbug$"):
             with storage.writer() as output:
-                output.write(b'bah')
-                raise RuntimeError('humbug')
+                output.write(b"bah")
+                raise RuntimeError("humbug")
 
-        with self.assertRaisesRegex(AssertionError, '^Cannot commit twice$'):
+        with self.assertRaisesRegex(AssertionError, "^Cannot commit twice$"):
             with storage.writer() as output:
-                output.write(b'foo')
+                output.write(b"foo")
                 output.commit(remove_on_exception=True)  # Leave no litter
                 output.commit()
 
         # Check that the `remove_on_exception` kwarg triggers `remove`.
         mock_remove = MagicMock()
-        with patch.object(storage, 'remove', mock_remove):
-            with self.assertRaisesRegex(RuntimeError, '^remove_on_exception$'):
+        with patch.object(storage, "remove", mock_remove):
+            with self.assertRaisesRegex(RuntimeError, "^remove_on_exception$"):
                 with storage.writer() as output:
-                    output.write(b'foo')
+                    output.write(b"foo")
                     id_to_remove = output.commit(remove_on_exception=True)
                     # Contract: committed blobs are available to read
                     with storage.reader(id_to_remove) as reader:
-                        self.assertEqual(b'foo', reader.read())
-                    raise RuntimeError('remove_on_exception')
+                        self.assertEqual(b"foo", reader.read())
+                    raise RuntimeError("remove_on_exception")
 
         # Check that `remove` would have been called, and then call it.
         mock_remove.assert_called_once_with(id_to_remove)
@@ -84,28 +84,26 @@ class StorageBaseTestCase(unittest.TestCase):
                 writes,
                 self._check_write_and_read(
                     storage,
-                    writes if i is None else [*writes[:i], b'', *writes[i:]],
+                    writes if i is None else [*writes[:i], b"", *writes[i:]],
                 ),
-            ) for writes in [
+            )
+            for writes in [
                 # Some large writes
-                [b'abcd' * mul, b'efgh' * mul],
-                [b'abc' * mul, b'defg' * mul],
-                [b'abc' * mul, b'def' * mul, b'g' * mul],
-                [b'abcd' * mul],
-                [b'abc' * mul, b'd' * mul],
+                [b"abcd" * mul, b"efgh" * mul],
+                [b"abc" * mul, b"defg" * mul],
+                [b"abc" * mul, b"def" * mul, b"g" * mul],
+                [b"abcd" * mul],
+                [b"abc" * mul, b"d" * mul],
                 # Some tiny writes without a multiplier
-                [b'a', b'b', b'c', b'd'],
-                [b'ab'],
-                [b'a', b'b'],
+                [b"a", b"b", b"c", b"d"],
+                [b"ab"],
+                [b"a", b"b"],
                 # While clowny, some blob storage systems refuse empty blobs.
-                *([] if no_empty_blobs else [
-                    [b''],
-                    [],
-                ]),
+                *([] if no_empty_blobs else [[b""], []]),
             ]
-                # Test the given writes, optionally insert a blank at each pos
-                for i in [
-                    None,
-                    *([] if skip_empty_writes else range(len(writes) + 1)),
-                ]
+            # Test the given writes, optionally insert a blank at each pos
+            for i in [
+                None,
+                *([] if skip_empty_writes else range(len(writes) + 1)),
+            ]
         ]

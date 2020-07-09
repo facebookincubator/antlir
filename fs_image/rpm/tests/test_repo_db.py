@@ -7,21 +7,21 @@
 import re
 import tempfile
 import unittest
-
 from contextlib import contextmanager
 from unittest import mock
 
 from ..common import Checksum
+from ..db_connection import DBConnectionContext
 from ..repo_db import RepodataTable, RepoDBContext, RpmTable, SQLDialect
 from ..repo_objects import Repodata, RepoMetadata, Rpm
-from ..db_connection import DBConnectionContext
+
 
 _FAKE_RPM = Rpm(
-    name='fake',
+    name="fake",
     epoch=0,
-    version='a',
-    release='3b',
-    arch='aarch64',
+    version="a",
+    release="3b",
+    arch="aarch64",
     build_timestamp=37,
     checksum=None,  # populated separately by each test
     canonical_checksum=None,  # populated separately by each test
@@ -44,55 +44,67 @@ class RepoDBTestCase(unittest.TestCase):
         self.maxDiff = 12345
 
     def _check_schema(self, conn):
-        for (a_name, a_sql), (e_name, e_sql) in zip(_get_schema(conn), [
-            ('rpm', (
-                'CREATE TABLE `rpm` ('
-                ' `name` TEXT NOT NULL,'
-                ' `epoch` INTEGER NOT NULL,'
-                ' `version` TEXT NOT NULL,'
-                ' `release` TEXT NOT NULL,'
-                ' `arch` TEXT NOT NULL,'
-                ' `universe` TEXT NOT NULL,'
-                ' `checksum` TEXT NOT NULL,'
-                ' `canonical_checksum` TEXT NOT NULL,'
-                ' `size` INTEGER NOT NULL,'
-                ' `build_timestamp` INTEGER NOT NULL,'
-                ' `storage_id` TEXT NOT NULL,'
-                ' PRIMARY KEY (`name`, `epoch`, `version`, `release`, `arch`, '
-                    '`universe`, `checksum`)'
-                ' )'
-            )),
-            ('repodata', (
-                'CREATE TABLE `repodata` ('
-                ' `checksum` TEXT NOT NULL,'
-                ' `size` INTEGER NOT NULL,'
-                ' `build_timestamp` INTEGER NOT NULL,'
-                ' `storage_id` TEXT NOT NULL,'
-                ' PRIMARY KEY (`checksum`)'
-                ' )'
-            )),
-            ('repo_metadata', (
-                'CREATE TABLE `repo_metadata` ('
-                ' `universe` TEXT NOT NULL,'
-                ' `repo` TEXT NOT NULL,'
-                ' `fetch_timestamp` INTEGER NOT NULL,'
-                ' `build_timestamp` INTEGER NOT NULL,'
-                ' `checksum` TEXT NOT NULL,'
-                ' `xml` BLOB NOT NULL,'
-                ' PRIMARY KEY (`universe`, `repo`, `fetch_timestamp`, '
-                    '`checksum`),'
-                ' UNIQUE (`universe`, `repo`, `checksum`)'
-                ' )'
-            )),
-        ]):
+        for (a_name, a_sql), (e_name, e_sql) in zip(
+            _get_schema(conn),
+            [
+                (
+                    "rpm",
+                    (
+                        "CREATE TABLE `rpm` ("
+                        " `name` TEXT NOT NULL,"
+                        " `epoch` INTEGER NOT NULL,"
+                        " `version` TEXT NOT NULL,"
+                        " `release` TEXT NOT NULL,"
+                        " `arch` TEXT NOT NULL,"
+                        " `universe` TEXT NOT NULL,"
+                        " `checksum` TEXT NOT NULL,"
+                        " `canonical_checksum` TEXT NOT NULL,"
+                        " `size` INTEGER NOT NULL,"
+                        " `build_timestamp` INTEGER NOT NULL,"
+                        " `storage_id` TEXT NOT NULL,"
+                        " PRIMARY KEY (`name`, `epoch`, `version`, `release`, `arch`, "
+                        "`universe`, `checksum`)"
+                        " )"
+                    ),
+                ),
+                (
+                    "repodata",
+                    (
+                        "CREATE TABLE `repodata` ("
+                        " `checksum` TEXT NOT NULL,"
+                        " `size` INTEGER NOT NULL,"
+                        " `build_timestamp` INTEGER NOT NULL,"
+                        " `storage_id` TEXT NOT NULL,"
+                        " PRIMARY KEY (`checksum`)"
+                        " )"
+                    ),
+                ),
+                (
+                    "repo_metadata",
+                    (
+                        "CREATE TABLE `repo_metadata` ("
+                        " `universe` TEXT NOT NULL,"
+                        " `repo` TEXT NOT NULL,"
+                        " `fetch_timestamp` INTEGER NOT NULL,"
+                        " `build_timestamp` INTEGER NOT NULL,"
+                        " `checksum` TEXT NOT NULL,"
+                        " `xml` BLOB NOT NULL,"
+                        " PRIMARY KEY (`universe`, `repo`, `fetch_timestamp`, "
+                        "`checksum`),"
+                        " UNIQUE (`universe`, `repo`, `checksum`)"
+                        " )"
+                    ),
+                ),
+            ],
+        ):
             self.assertEqual(e_name, a_name)
-            self.assertEqual(e_sql, re.sub(r'\s+', ' ', a_sql))
+            self.assertEqual(e_sql, re.sub(r"\s+", " ", a_sql))
 
     @contextmanager
     def _make_conn_ctx(self):
         with tempfile.NamedTemporaryFile() as tf:
             yield DBConnectionContext.make(
-                kind='sqlite', db_path=tf.name, readonly=False
+                kind="sqlite", db_path=tf.name, readonly=False
             )
 
     @contextmanager
@@ -118,7 +130,7 @@ class RepoDBTestCase(unittest.TestCase):
                     self._check_schema(conn)
 
     def _fake_repomd(self, fetch_timestamp):
-        repomd_xml = b'''
+        repomd_xml = b"""
         <repomd>
           <data type="primary_db">
             <checksum type="fakealgo">fakesum</checksum>
@@ -127,8 +139,8 @@ class RepoDBTestCase(unittest.TestCase):
             <size>555555</size>
           </data>
         </repomd>
-        '''
-        with mock.patch('time.time') as mock_time:
+        """
+        with mock.patch("time.time") as mock_time:
             mock_time.return_value = fetch_timestamp
             repomd = RepoMetadata.new(xml=repomd_xml)
         return repomd
@@ -160,7 +172,7 @@ class RepoDBTestCase(unittest.TestCase):
                     self.assertEqual(
                         db_repomd.fetch_timestamp,
                         db_ctx.store_repomd(
-                            'fakevers', 'fake_repo', insert_repomd
+                            "fakevers", "fake_repo", insert_repomd
                         ),
                     )
                     if do_commit:
@@ -169,27 +181,27 @@ class RepoDBTestCase(unittest.TestCase):
     def _check_maybe_store_and_get_storage_id(self, table, obj):
         with self._make_db_ctx() as db_ctx:
             self.assertIs(None, db_ctx.get_storage_id(table, obj))
-            self.assertEqual(
-                'fake1', db_ctx.maybe_store(table, obj, 'fake1')
-            )
-            self.assertEqual('fake1', db_ctx.get_storage_id(table, obj))
+            self.assertEqual("fake1", db_ctx.maybe_store(table, obj, "fake1"))
+            self.assertEqual("fake1", db_ctx.get_storage_id(table, obj))
             # This was already stored, so return the old storage ID.
-            self.assertEqual(
-                'fake1', db_ctx.maybe_store(table, obj, 'fake2')
-            )
+            self.assertEqual("fake1", db_ctx.maybe_store(table, obj, "fake2"))
             # It is also possible to have an near-identical repodata index
             # with an earlier `build_timestamp`.
             if isinstance(obj, Repodata):
-                self.assertEqual('fake1', db_ctx.get_storage_id(
-                    table, obj._replace(build_timestamp=obj.build_timestamp + 1),
-                ))
+                self.assertEqual(
+                    "fake1",
+                    db_ctx.get_storage_id(
+                        table,
+                        obj._replace(build_timestamp=obj.build_timestamp + 1),
+                    ),
+                )
 
     def test_repodata_maybe_store_and_get_storage_id(self):
         self._check_maybe_store_and_get_storage_id(
             RepodataTable(),
             Repodata(
-                location='repodata/fake.sqlite.gz',
-                checksum=Checksum('fake', 'fake'),
+                location="repodata/fake.sqlite.gz",
+                checksum=Checksum("fake", "fake"),
                 size=1337,
                 build_timestamp=37,
             ),
@@ -198,26 +210,24 @@ class RepoDBTestCase(unittest.TestCase):
     def test_rpm_maybe_store_and_get_storage_id(self):
         # NB: For RPMs, only `maybe_store` is used as part of the public API.
         self._check_maybe_store_and_get_storage_id(
-            RpmTable('fake.verse'),
+            RpmTable("fake.verse"),
             _FAKE_RPM._replace(
-                checksum=Checksum('fake', 'fake'),
-                canonical_checksum=Checksum('fake', 'fake'),
+                checksum=Checksum("fake", "fake"),
+                canonical_checksum=Checksum("fake", "fake"),
             ),
         )
 
     def test_get_rpm_storage_id_and_checksum(self):
-        table = RpmTable('fakeverse')
+        table = RpmTable("fakeverse")
         # We'll have two entries for the same exact RPM, but the different
         # repos that contain it will have computed different checksums.
         rpm1 = _FAKE_RPM._replace(
-            checksum=Checksum('fa', 'ke1'),
+            checksum=Checksum("fa", "ke1"),
             # At this point, we are trying to look this up:
             canonical_checksum=None,
         )
-        rpm2 = rpm1._replace(
-            checksum=Checksum('fa', 'ke2'),
-        )
-        canonical = Checksum('can', 'onical')
+        rpm2 = rpm1._replace(checksum=Checksum("fa", "ke2"))
+        canonical = Checksum("can", "onical")
         # It is also OK to have the checksum be the same as the canonical one.
         rpm_canon = rpm1._replace(checksum=canonical)
         with self._make_db_ctx() as db_ctx:
@@ -229,61 +239,78 @@ class RepoDBTestCase(unittest.TestCase):
             # We'll insert the RPM with its different checksums.
             insertion_order = [rpm_canon, rpm1, rpm2]
             for idx, inserted_rpm in enumerate(insertion_order):
-                self.assertEqual('fake_sid', db_ctx.maybe_store(
-                    table,
-                    inserted_rpm._replace(canonical_checksum=canonical),
-                    'fake_sid',
-                ))
+                self.assertEqual(
+                    "fake_sid",
+                    db_ctx.maybe_store(
+                        table,
+                        inserted_rpm._replace(canonical_checksum=canonical),
+                        "fake_sid",
+                    ),
+                )
                 # Looking up by any inserted RPM checksum gets the same result.
-                for rpm in insertion_order[:idx + 1]:
+                for rpm in insertion_order[: idx + 1]:
                     self.assertEqual(
-                        ('fake_sid', canonical),
+                        ("fake_sid", canonical),
                         db_ctx.get_rpm_storage_id_and_checksum(table, rpm),
                     )
 
     def test_get_rpm_canonical_checksums(self):
-        table = RpmTable('fakeverse')
-        canonical1 = Checksum('can', 'onical1')
-        canonical2 = Checksum('can', 'onical2')
+        table = RpmTable("fakeverse")
+        canonical1 = Checksum("can", "onical1")
+        canonical2 = Checksum("can", "onical2")
         with self._make_db_ctx() as db_ctx:
             # These two entries into the `rpm` table refer to the same RPM
             # (same canonical checksum), but this illustrates that the
             # contents of such an RPM will currently be stored twice.
             self.assertEqual(
-                'sid_same1',
-                db_ctx.maybe_store(table, _FAKE_RPM._replace(
-                    checksum=Checksum('fa', 'ke1'),
-                    canonical_checksum=canonical1,
-                ), 'sid_same1'),
+                "sid_same1",
+                db_ctx.maybe_store(
+                    table,
+                    _FAKE_RPM._replace(
+                        checksum=Checksum("fa", "ke1"),
+                        canonical_checksum=canonical1,
+                    ),
+                    "sid_same1",
+                ),
             )
             self.assertEqual(
-                'sid_same2',
-                db_ctx.maybe_store(table, _FAKE_RPM._replace(
-                    checksum=Checksum('fa', 'ke2'),
-                    canonical_checksum=canonical1,
-                ), 'sid_same2'),
+                "sid_same2",
+                db_ctx.maybe_store(
+                    table,
+                    _FAKE_RPM._replace(
+                        checksum=Checksum("fa", "ke2"),
+                        canonical_checksum=canonical1,
+                    ),
+                    "sid_same2",
+                ),
             )
 
             # This here is an actual bug in the RPM repos: same RPM filename,
             # but different contents. Uh-oh.
             self.assertEqual(
-                'sid_diff',
-                db_ctx.maybe_store(table, _FAKE_RPM._replace(
-                    checksum=Checksum('fa', 'ke3'),
-                    canonical_checksum=canonical2,
-                ), 'sid_diff'),
+                "sid_diff",
+                db_ctx.maybe_store(
+                    table,
+                    _FAKE_RPM._replace(
+                        checksum=Checksum("fa", "ke3"),
+                        canonical_checksum=canonical2,
+                    ),
+                    "sid_diff",
+                ),
             )
 
             # Whew, we can detect this mutable RPM file in our repos.
             self.assertEqual(
                 {canonical1, canonical2},
-                set(db_ctx.get_rpm_canonical_checksums(
-                    table, _FAKE_RPM, {'fakeverse'},
-                )),
+                set(
+                    db_ctx.get_rpm_canonical_checksums(
+                        table, _FAKE_RPM, {"fakeverse"}
+                    )
+                ),
             )
 
     def test_universe_charset(self):
         # Until convinced otherwise, we hate underscores since they look
         # like spaces and needlessly exacerbate our RSI.
-        with self.assertRaisesRegex(RuntimeError, 'fake_verse must match'):
-            RpmTable('fake_verse')
+        with self.assertRaisesRegex(RuntimeError, "fake_verse must match"):
+            RpmTable("fake_verse")

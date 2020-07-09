@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 A `SubvolumeSet` maps path subtrees to `Subvolume`s. Therefore, it only
 knows how to apply the initial `SendStreamItems` types that set the
 subvolume for the rest of the stream.
@@ -13,12 +13,12 @@ Note that at present, `Subvolume`s are **not** mounted into a shared
 directory tree the way they would be in a real btrfs filesystem.  This is
 not done here simply because we don't have a need to model it, but you can
 easily imagine a path-aware `Volume` abstraction on top of this.
-'''
+"""
 import copy
 import itertools
-
 from collections import Counter
 from types import MappingProxyType
+
 # Future: `deepfrozen` would let us lose the `new` methods on NamedTuples,
 # and avoid `deepcopy`.
 from typing import Iterator, Mapping, NamedTuple, Optional, Union
@@ -28,9 +28,9 @@ from .freeze import freeze
 from .incomplete_inode import IncompleteInode
 from .inode import Inode
 from .inode_id import InodeIDMap
+from .rendered_tree import RenderedTree
 from .send_stream import SendStreamItem, SendStreamItems
 from .subvolume import Subvolume
-from .rendered_tree import RenderedTree
 
 
 class SubvolumeID(NamedTuple):
@@ -54,7 +54,7 @@ class SubvolumeID(NamedTuple):
 
 
 class SubvolumeDescription(NamedTuple):
-    '''
+    """
     This is a "cheat" to make debugging & testing easier, but it is NOT part
     of the core data model.  If you are caught using it in real business
     logic, you will be asked to wear a red nose and/or a cone of shame.
@@ -72,7 +72,8 @@ class SubvolumeDescription(NamedTuple):
     we never do that.  When we make snapshots in `SubvolumeSetMutator`, we
     have to work around this problem, since a naive implementation would
     `deepcopy` this object via `Subvolume.id_map.description`.
-    '''
+    """
+
     name: bytes
     id: SubvolumeID
     parent_id: Optional[SubvolumeID]
@@ -80,20 +81,20 @@ class SubvolumeDescription(NamedTuple):
     name_uuid_prefix_counts: Mapping[str, int]
 
     def name_uuid_prefixes(self):
-        name = self.name.decode(errors='surrogateescape')
+        name = self.name.decode(errors="surrogateescape")
         for i in range(len(self.id.uuid) + 1):
-            yield (name + '@' + self.id.uuid[:i]) if i else name
+            yield (name + "@" + self.id.uuid[:i]) if i else name
 
     def __repr__(self):
         for prefix in self.name_uuid_prefixes():
             if self.name_uuid_prefix_counts.get(prefix, 0) < 2:
                 return prefix
         # Happens when one uuid is a prefix of another, i.e. in tests.
-        return f'{prefix}-ERROR'
+        return f"{prefix}-ERROR"
 
 
 class SubvolumeSet(NamedTuple):
-    'IMPORTANT: Keep this `deepcopy`able for the sake of tests.'
+    "IMPORTANT: Keep this `deepcopy`able for the sake of tests."
     uuid_to_subvolume: Mapping[str, Subvolume]
     # `SubvolumeDescription` wants to represent itself as `name@abc`, where
     # `abc` is the shortest prefix of its UUID that uniquely identifies it
@@ -104,9 +105,9 @@ class SubvolumeSet(NamedTuple):
     name_uuid_prefix_counts: Mapping[str, int]
 
     @classmethod
-    def new(cls, **kwargs) -> 'SubvolumeSet':
-        kwargs.setdefault('uuid_to_subvolume', {})
-        kwargs.setdefault('name_uuid_prefix_counts', Counter())
+    def new(cls, **kwargs) -> "SubvolumeSet":
+        kwargs.setdefault("uuid_to_subvolume", {})
+        kwargs.setdefault("name_uuid_prefix_counts", Counter())
         return cls(**kwargs)
 
     def get_by_rendered_id(self, rendered_id: str) -> Optional[Subvolume]:
@@ -115,26 +116,32 @@ class SubvolumeSet(NamedTuple):
                 return subvol
         return None
 
-    def freeze(self, *, _memo) -> 'SubvolumeSet':
-        '''
+    def freeze(self, *, _memo) -> "SubvolumeSet":
+        """
         Return a recursively immutable copy of `self`, replacing all
         `IncompleteInode`s by `Inode`s, and checking that all inode metadata
         are populated.  Correctly resolving cloned extents has to happen at
         the level of the `SubvolumeSet`.
-        '''
-        id_to_chunks = dict(extents_to_chunks_with_clones(
-            list(itertools.chain.from_iterable(
-                subvol._inode_ids_and_extents()
-                    for subvol in self.uuid_to_subvolume.values()
-            ))
-        ))
+        """
+        id_to_chunks = dict(
+            extents_to_chunks_with_clones(
+                list(
+                    itertools.chain.from_iterable(
+                        subvol._inode_ids_and_extents()
+                        for subvol in self.uuid_to_subvolume.values()
+                    )
+                )
+            )
+        )
         return type(self)(
-            uuid_to_subvolume=MappingProxyType({
-                uuid: freeze(subvol, _memo=_memo, id_to_chunks=id_to_chunks)
+            uuid_to_subvolume=MappingProxyType(
+                {
+                    uuid: freeze(subvol, _memo=_memo, id_to_chunks=id_to_chunks)
                     for uuid, subvol in self.uuid_to_subvolume.items()
-            }),
+                }
+            ),
             name_uuid_prefix_counts=freeze(
-                self.name_uuid_prefix_counts, _memo=_memo,
+                self.name_uuid_prefix_counts, _memo=_memo
             ),
         )
 
@@ -144,22 +151,22 @@ class SubvolumeSet(NamedTuple):
         )
 
     def map(self, fn) -> Mapping[str, RenderedTree]:
-        '''
+        """
         Applies `fn` to each subvolume. Returns results indexed by a string
         containing the subvolume name and the minimal unambiguous prefix of
         its UUID (in the style of `git` or `hg`).
 
         NB: If you map over an un-frozen SubvolumeSet, you will get
         `IncompleteInode`s, which are not aware of cloned extents.
-        '''
+        """
         return {
             repr(subvol.id_map.inner.description): fn(subvol)
-                for subvol in self.uuid_to_subvolume.values()
+            for subvol in self.uuid_to_subvolume.values()
         }
 
 
 class SubvolumeSetMutator(NamedTuple):
-    '''
+    """
     A send-stream always starts with a command defining the subvolume,
     to which the remaining stream commands will be applied.  Since
     `SubvolumeSet` is only responsible for managing `Subvolume`s, this
@@ -168,32 +175,39 @@ class SubvolumeSetMutator(NamedTuple):
     The reason we don't just return `Subvolume` to the caller after
     the first item is that we need some logic as the `SubvolumeSet` and
     `Subvolume` layers to resolve `clone` commands.
-    '''
+    """
+
     subvolume: Subvolume
     subvolume_set: SubvolumeSet
 
     @classmethod
     def new(
-        cls, subvol_set: SubvolumeSet, subvol_item: SendStreamItem,
-    ) -> 'SubvolumeSetMutator':
-        if not isinstance(subvol_item, (
-            SendStreamItems.subvol, SendStreamItems.snapshot,
-        )):
-            raise RuntimeError(f'{subvol_item} must specify subvolume')
+        cls, subvol_set: SubvolumeSet, subvol_item: SendStreamItem
+    ) -> "SubvolumeSetMutator":
+        if not isinstance(
+            subvol_item, (SendStreamItems.subvol, SendStreamItems.snapshot)
+        ):
+            raise RuntimeError(f"{subvol_item} must specify subvolume")
 
         my_id = SubvolumeID(
             uuid=subvol_item.uuid.decode(), transid=subvol_item.transid
         )
-        parent_id = SubvolumeID(
-            uuid=subvol_item.parent_uuid.decode(),
-            transid=subvol_item.parent_transid,
-        ) if isinstance(subvol_item, SendStreamItems.snapshot) else None
+        parent_id = (
+            SubvolumeID(
+                uuid=subvol_item.parent_uuid.decode(),
+                transid=subvol_item.parent_transid,
+            )
+            if isinstance(subvol_item, SendStreamItems.snapshot)
+            else None
+        )
         description = SubvolumeDescription(
-            name=subvol_item.path, id=my_id, parent_id=parent_id,
+            name=subvol_item.path,
+            id=my_id,
+            parent_id=parent_id,
             name_uuid_prefix_counts=subvol_set.name_uuid_prefix_counts,
         )
         if isinstance(subvol_item, SendStreamItems.snapshot):
-            uuid = parent_id.uuid if parent_id is not None else ''
+            uuid = parent_id.uuid if parent_id is not None else ""
             parent_subvol = subvol_set.uuid_to_subvolume[uuid]
             # `SubvolumeDescription` references a part `SubvolumeSet`, so it
             # is not correctly `deepcopy`able as part of a `Subvolume`.  And
@@ -211,12 +225,12 @@ class SubvolumeSetMutator(NamedTuple):
             )
         else:
             subvol = Subvolume.new(
-                id_map=InodeIDMap.new(description=description),
+                id_map=InodeIDMap.new(description=description)
             )
 
         dup_subvol = subvol_set.uuid_to_subvolume.get(my_id.uuid)
         if dup_subvol is not None:
-            raise RuntimeError(f'{my_id} is already in use: {dup_subvol}')
+            raise RuntimeError(f"{my_id} is already in use: {dup_subvol}")
         # pyre-fixme[16]: This is supposed to be frozen!!!
         subvol_set.uuid_to_subvolume[my_id.uuid] = subvol
 
@@ -235,6 +249,6 @@ class SubvolumeSetMutator(NamedTuple):
                 item.from_uuid.decode()
             )
             if not from_subvol:
-                raise RuntimeError(f'Unknown from_uuid for {item}')
+                raise RuntimeError(f"Unknown from_uuid for {item}")
             return self.subvolume.apply_clone(item, from_subvol)
         return self.subvolume.apply_item(item)

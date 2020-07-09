@@ -5,18 +5,17 @@
 # LICENSE file in the root directory of this source tree.
 
 import unittest
-
 from unittest import mock
 
 from ..common import nspawn_version
 
 
 class CommonTestCase(unittest.TestCase):
-
     def test_nspawn_version(self):
-        with mock.patch('subprocess.check_output') as version:
+        with mock.patch("subprocess.check_output") as version:
             version.return_value = (
-                'systemd 602214076 (v602214076-2.fb1)\n+AVOGADROS SYSTEMD\n')
+                "systemd 602214076 (v602214076-2.fb1)\n+AVOGADROS SYSTEMD\n"
+            )
             self.assertEqual(602214076, nspawn_version())
 
         # Check that the real nspawn on the machine running this test is

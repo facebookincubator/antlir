@@ -8,10 +8,15 @@ import os
 import platform
 import subprocess
 import time
-
 from contextlib import contextmanager
 from typing import (
-    AnyStr, BinaryIO, Iterator, Iterable, Optional, NamedTuple, TypeVar,
+    AnyStr,
+    BinaryIO,
+    Iterable,
+    Iterator,
+    NamedTuple,
+    Optional,
+    TypeVar,
 )
 
 from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
@@ -19,7 +24,7 @@ from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
 from .btrfs_loopback import LoopbackVolume, run_stdout_to_err
 from .common import check_popen_returncode, get_file_logger, open_fd, pipe
 from .fs_utils import Path
-from .unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
+from .unshare import Namespace, Unshare, nsenter_as_root, nsenter_as_user
 
 
 log = get_file_logger(__file__)
@@ -33,22 +38,23 @@ def get_subvolume(layer_json, subvolumes_dir):
     with open(layer_json) as infile:
         return Subvol(
             SubvolumeOnDisk.from_json_file(
-                infile, subvolumes_dir).subvolume_path(),
+                infile, subvolumes_dir
+            ).subvolume_path(),
             already_exists=True,
         )
 
 
 # Exposed as a helper so that test_compiler.py can mock it.
 def _path_is_btrfs_subvol(path: Path) -> bool:
-    'Ensure that there is a btrfs subvolume at this path. As per @kdave at '
-    'https://stackoverflow.com/a/32865333'
+    "Ensure that there is a btrfs subvolume at this path. As per @kdave at "
+    "https://stackoverflow.com/a/32865333"
     # You'd think I could just `os.statvfs`, but no, not until Py3.7
     # https://bugs.python.org/issue32143
     fs_type = subprocess.run(
-        ['stat', '-f', '--format=%T', path], stdout=subprocess.PIPE, text=True,
+        ["stat", "-f", "--format=%T", path], stdout=subprocess.PIPE, text=True
     ).stdout.strip()
     ino = os.stat(path).st_ino
-    return fs_type == 'btrfs' and ino == 256
+    return fs_type == "btrfs" and ino == 256
 
 
 class SubvolOpts(NamedTuple):
@@ -79,7 +85,7 @@ def _drain_pipe_return_byte_count(f: BinaryIO) -> int:
 
 
 class Subvol:
-    '''
+    """
     ## What is this for?
 
     This class is to be a privilege / abstraction boundary that allows
@@ -115,23 +121,23 @@ class Subvol:
 
     - Call `subvol.path('image/relative/path')` to refer to paths inside the
       subvolume e.g. in arguments to the `subvol.run_*` functions.
-    '''
+    """
 
     def __init__(self, path: AnyStr, already_exists=False):
-        '''
+        """
         `Subvol` can represent not-yet-created subvolumes.  Unless
         already_exists=True, you must call create() or snapshot() to
         actually make the subvolume.
-        '''
+        """
         self._path = Path(path).abspath()
         self._exists = already_exists
         if self._exists and not _path_is_btrfs_subvol(self._path):
-            raise AssertionError(f'No btrfs subvol at {self._path}')
+            raise AssertionError(f"No btrfs subvol at {self._path}")
 
     def path(
-        self, path_in_subvol: AnyStr = b'.', *, no_dereference_leaf=False,
+        self, path_in_subvol: AnyStr = b".", *, no_dereference_leaf=False
     ) -> Path:
-        '''
+        """
         The only safe way to access paths inside the subvolume.  Do NOT
         `os.path.join(subvol.path('a/path'), 'more/path')`, since that skips
         crucial safety checks.  Instead: `subvol.path(os.path.join(...))`.
@@ -154,25 +160,31 @@ class Subvol:
 
         Future: consider using a file descriptor to refer to the subvolume
         root directory to better mitigate races due to renames in its path.
-        '''
+        """
         # The `btrfs` CLI is not very flexible, so it will try to name a
         # subvol '.' if we do not normalize `/subvol/.`.
         result_path = (
             # Without the lstrip, we would lose the subvolume prefix if the
             # supplied path is absolute.
-            self._path / (Path(path_in_subvol).lstrip(b'/'))
+            self._path
+            / (Path(path_in_subvol).lstrip(b"/"))
         ).normpath()
         # Paranoia: Make sure that, despite any symlinks in the path, the
         # resulting path is not outside of the subvolume root.
         if (
-            (result_path.dirname().realpath() / result_path.basename())
-                if no_dereference_leaf else result_path.realpath()
-        ).relpath(self._path.realpath()).has_leading_dot_dot():
-            raise AssertionError(f'{path_in_subvol} is outside the subvol')
+            (
+                (result_path.dirname().realpath() / result_path.basename())
+                if no_dereference_leaf
+                else result_path.realpath()
+            )
+            .relpath(self._path.realpath())
+            .has_leading_dot_dot()
+        ):
+            raise AssertionError(f"{path_in_subvol} is outside the subvol")
         return Path(result_path)
 
     def canonicalize_path(self, path: AnyStr) -> Path:
-        '''
+        """
         IMPORTANT: At present, this will silently fail to resolve symlinks
         in the image that are not traversible by the repo user.  This means
         it's really only appropriate for paths that are known to be
@@ -185,14 +197,14 @@ class Subvol:
         Due to a limitation of `path()` this will currently fail on any
         components that are absolute symlinks, but there's no strong
         incentive to do the more complex correct implementation (yet).
-        '''
-        assert self._exists, f'{self.path()} does not exist'
+        """
+        assert self._exists, f"{self.path()} does not exist"
         root = self.path().realpath()
         rel = self.path(path).realpath()
         if rel == root:
-            return Path('/')
-        assert rel.startswith(root + b'/'), (rel, root)
-        return Path('/') / rel.relpath(root)
+            return Path("/")
+        assert rel.startswith(root + b"/"), (rel, root)
+        return Path("/") / rel.relpath(root)
 
     # This differs from the regular `subprocess.Popen` interface in these ways:
     #   - stdout maps to stderr by default (to protect the caller's stdout),
@@ -203,17 +215,17 @@ class Subvol:
     # new subvolumes, and not just touch existing ones.
     @contextmanager
     def popen_as_root(
-        self, args, *, _subvol_exists=True, stdout=None, check=True, **kwargs,
+        self, args, *, _subvol_exists=True, stdout=None, check=True, **kwargs
     ):
-        if 'cwd' in kwargs:
+        if "cwd" in kwargs:
             raise AssertionError(
-                'cwd= is not permitted as an argument to run_as_root, '
-                'because that makes it too easy to accidentally traverse '
-                'a symlink from inside the container and touch the host '
-                'filesystem. Best practice: wrap your path with '
-                'Subvol.path() as close as possible to its site of use.'
+                "cwd= is not permitted as an argument to run_as_root, "
+                "because that makes it too easy to accidentally traverse "
+                "a symlink from inside the container and touch the host "
+                "filesystem. Best practice: wrap your path with "
+                "Subvol.path() as close as possible to its site of use."
             )
-        if 'pass_fds' in kwargs:
+        if "pass_fds" in kwargs:
             # Future: if you add support for this, see the note on how to
             # improve `receive`, too.
             #
@@ -221,13 +233,13 @@ class Subvol:
             # (likely misguided) attempt to improve security.  `sudo -C` can
             # help here, but it's disabled by default.
             raise NotImplementedError(  # pragma: no cover
-                'But there is a straightforward fix -- you would need to '
-                'move the usage of our FD-passing wrapper from '
-                'nspawn_in_subvol.py to this function.'
+                "But there is a straightforward fix -- you would need to "
+                "move the usage of our FD-passing wrapper from "
+                "nspawn_in_subvol.py to this function."
             )
         if _subvol_exists != self._exists:
             raise AssertionError(
-                f'{self.path()} exists is {self._exists}, not {_subvol_exists}'
+                f"{self.path()} exists is {self._exists}, not {_subvol_exists}"
             )
         # Ban our subcommands from writing to stdout, since many of our
         # tools (e.g. make-demo-sendstream, compiler) write structured
@@ -245,17 +257,24 @@ class Subvol:
             # `buck-out`, breaking `buck clean`, and (ii) `systemd-nspawn`
             # bugging out with "Failed to create inaccessible file node"
             # when we use `--bind-repo-ro`.
-            ['sudo', 'TMP=', '--', *args], stdout=stdout, **kwargs,
+            ["sudo", "TMP=", "--", *args],
+            stdout=stdout,
+            **kwargs,
         ) as pr:
             yield pr
         if check:
             check_popen_returncode(pr)
 
     def run_as_root(
-        self, args, timeout=None, input=None, _subvol_exists=True,
-        check=True, **kwargs,
+        self,
+        args,
+        timeout=None,
+        input=None,
+        _subvol_exists=True,
+        check=True,
+        **kwargs,
     ):
-        '''
+        """
         Run a command against an image.  IMPORTANT: You MUST wrap all image
         paths with `Subvol.path`, see that function's docblock.
 
@@ -263,13 +282,13 @@ class Subvol:
             - `check` defaults to True instead of False,
             - `stdout` is redirected to stderr by default,
             - `cwd` is prohibited.
-        '''
+        """
         # IMPORTANT: Any logic that CAN go in popen_as_root, MUST go there.
         if input:
-            assert 'stdin' not in kwargs
-            kwargs['stdin'] = subprocess.PIPE
+            assert "stdin" not in kwargs
+            kwargs["stdin"] = subprocess.PIPE
         with self.popen_as_root(
-            args, _subvol_exists=_subvol_exists, check=check, **kwargs,
+            args, _subvol_exists=_subvol_exists, check=check, **kwargs
         ) as proc:
             stdout, stderr = proc.communicate(timeout=timeout, input=input)
         return subprocess.CompletedProcess(
@@ -286,30 +305,29 @@ class Subvol:
     # `btrfsutil` helper, or use `guestfs`.
 
     def create(self):
-        self.run_as_root([
-            'btrfs', 'subvolume', 'create', self.path(),
-        ], _subvol_exists=False)
+        self.run_as_root(
+            ["btrfs", "subvolume", "create", self.path()], _subvol_exists=False
+        )
         self._exists = True
 
-    def snapshot(self, source: 'Subvol'):
+    def snapshot(self, source: "Subvol"):
         # Since `snapshot` has awkward semantics around the `dest`,
         # `_subvol_exists` won't be enough and we ought to ensure that the
         # path physically does not exist.  This needs to run as root, since
         # `os.path.exists` may not have the right permissions.
+        self.run_as_root(["test", "!", "-e", self.path()], _subvol_exists=False)
         self.run_as_root(
-            ['test', '!', '-e', self.path()], _subvol_exists=False
+            ["btrfs", "subvolume", "snapshot", source.path(), self.path()],
+            _subvol_exists=False,
         )
-        self.run_as_root([
-            'btrfs', 'subvolume', 'snapshot', source.path(), self.path()
-        ], _subvol_exists=False)
         self._exists = True
 
     def delete(self):
-        self.run_as_root(['btrfs', 'subvolume', 'delete', self.path()])
+        self.run_as_root(["btrfs", "subvolume", "delete", self.path()])
         self._exists = False
 
     def _delete_inner_subvols(self):
-        '''
+        """
         This is currently a private call, separate from `delete` because
         it's only used by `TempSubvolumes` for cleanup of container-created
         subvolumes, which are owned by neither `TempSubvolumes` nor `Subvol`.
@@ -323,14 +341,14 @@ class Subvol:
           - If used outside of its current application, it could delete an
             inner subvolume that is already managed by another `Subvol`
             object wihout updating its `_exists`.
-        '''
+        """
         # Delete from the innermost to the outermost
         for inner_path in sorted(self._gen_inner_subvol_paths(), reverse=True):
             assert _path_is_btrfs_subvol(inner_path), inner_path
-            self.run_as_root(['btrfs', 'subvolume', 'delete', inner_path])
+            self.run_as_root(["btrfs", "subvolume", "delete", inner_path])
 
     def _gen_inner_subvol_paths(self) -> Iterable[Path]:
-        '''
+        """
         Implementation detail for `_delete_inner_subvols`, do not use
         otherwise without strengthening the API contract & tests.
 
@@ -344,52 +362,66 @@ class Subvol:
             subvolume at construction time -- this is important since `btrfs
             subvol list -o` returns bad results for non-subvolume paths.
             Moreover, our `btrfs subvol show` reconfirms it.
-        '''
+        """
         # `btrfs subvol {show,list}` both use the subvolume's path relative
         # to the volume root.
         my_rel, _ = self.run_as_root(
-            ['btrfs', 'subvolume', 'show', self.path()], stdout=subprocess.PIPE,
-        ).stdout.split(b'\n', 1)
+            ["btrfs", "subvolume", "show", self.path()], stdout=subprocess.PIPE
+        ).stdout.split(b"\n", 1)
 
         my_path = self.path()
         # NB: The below will fire if `Subvol` is the root subvol, since its
         # relative path is `/`.  However, that's not a case we need to
         # support in any foreseeable future, and it would also require
         # special-casing in the prefix search logic.
-        assert not my_rel.startswith(b'/'), my_rel
-        assert my_path.endswith(b'/' + my_rel), (my_path, my_rel)
-        vol_dir = my_path[:-len(my_rel)]
+        assert not my_rel.startswith(b"/"), my_rel
+        assert my_path.endswith(b"/" + my_rel), (my_path, my_rel)
+        vol_dir = my_path[: -len(my_rel)]
 
         # We need a trailing slash to chop off this path prefix below.
-        my_prefix = my_rel + (b'' if my_rel.endswith(b'/') else b'/')
+        my_prefix = my_rel + (b"" if my_rel.endswith(b"/") else b"/")
 
         # NB: The `-o` option does not work correctly, don't even bother.
         for inner_line in self.run_as_root(
-            ['btrfs', 'subvolume', 'list', vol_dir],
-            stdout=subprocess.PIPE,
-        ).stdout.split(b'\n'):
+            ["btrfs", "subvolume", "list", vol_dir], stdout=subprocess.PIPE
+        ).stdout.split(b"\n"):
             if not inner_line:  # Handle the trailing newline
                 continue
 
             l = {}  # Used to check that the labels are as expected
             (
-                l['ID'], _, l['gen'], _, l['top'], l['level'], _, l['path'], p,
-            ) = inner_line.split(b' ', 8)
+                l["ID"],
+                _,
+                l["gen"],
+                _,
+                l["top"],
+                l["level"],
+                _,
+                l["path"],
+                p,
+            ) = inner_line.split(b" ", 8)
             for k, v in l.items():
                 assert k.encode() == v, (k, v)
 
             if not p.startswith(my_prefix):  # Skip non-inner subvolumes
                 continue
 
-            inner_subvol = p[len(my_prefix):]
+            inner_subvol = p[len(my_prefix) :]
             assert inner_subvol == os.path.normpath(inner_subvol), inner_subvol
             yield self.path(inner_subvol)
 
     def set_readonly(self, readonly: bool):
-        self.run_as_root([
-            'btrfs', 'property', 'set', '-ts', self.path(), 'ro',
-            'true' if readonly else 'false',
-        ])
+        self.run_as_root(
+            [
+                "btrfs",
+                "property",
+                "set",
+                "-ts",
+                self.path(),
+                "ro",
+                "true" if readonly else "false",
+            ]
+        )
 
     def set_seed_device(self, output_path: str):
         # Clearing the seeding flag on a device may be dangerous. If a
@@ -398,16 +430,14 @@ class Subvol:
         # not fix that.
         # Due to this danger and the limited usefulness we don't support
         # clearing the seed flag.
-        self.run_as_root([
-            'btrfstune', '-S', '1', output_path
-        ])
+        self.run_as_root(["btrfstune", "-S", "1", output_path])
 
     def sync(self):
-        self.run_as_root(['btrfs', 'filesystem', 'sync', self.path()])
+        self.run_as_root(["btrfs", "filesystem", "sync", self.path()])
 
     @contextmanager
     def _mark_readonly_and_send(
-        self, *, stdout, no_data: bool = False, parent: 'Subvol' = None,
+        self, *, stdout, no_data: bool = False, parent: "Subvol" = None
     ) -> Iterator[subprocess.Popen]:
         self.set_readonly(True)
 
@@ -424,29 +454,38 @@ class Subvol:
         # such an `fsync`.  We do this on a read-only filesystem to improve
         # consistency. Coverage: manually tested this on a 4.11 machine:
         #   platform.uname().release.startswith('4.11.')
-        if platform.uname().release.startswith('4.6.'):  # pragma: no cover
-            self.run_as_root([
-                # Symlinks can point outside of the subvol, don't follow them
-                'getfattr', '--no-dereference', '--recursive', self.path()
-            ])
+        if platform.uname().release.startswith("4.6."):  # pragma: no cover
+            self.run_as_root(
+                [
+                    # Symlinks can point outside of the subvol, don't follow them
+                    "getfattr",
+                    "--no-dereference",
+                    "--recursive",
+                    self.path(),
+                ]
+            )
 
-        with self.popen_as_root([
-            'btrfs', 'send',
-            *(['--no-data'] if no_data else []),
-            *(['-p', parent.path()] if parent else []),
-            self.path(),
-        ], stdout=stdout) as proc:
+        with self.popen_as_root(
+            [
+                "btrfs",
+                "send",
+                *(["--no-data"] if no_data else []),
+                *(["-p", parent.path()] if parent else []),
+                self.path(),
+            ],
+            stdout=stdout,
+        ) as proc:
             yield proc
 
     def mark_readonly_and_get_sendstream(self, **kwargs) -> bytes:
         with self._mark_readonly_and_send(
-            stdout=subprocess.PIPE, **kwargs,
+            stdout=subprocess.PIPE, **kwargs
         ) as proc:
             return proc.stdout.read()
 
     @contextmanager
     def mark_readonly_and_write_sendstream_to_file(
-        self, outfile: BinaryIO, **kwargs,
+        self, outfile: BinaryIO, **kwargs
     ) -> Iterator[None]:
         with self._mark_readonly_and_send(stdout=outfile, **kwargs):
             yield
@@ -457,7 +496,7 @@ class Subvol:
         subvol_opts: SubvolOpts = _default_subvol_opts,
         waste_factor=1.15,
     ) -> int:
-        '''
+        """
         Overwrites `ouput_path` with a new btrfs image, and send this
         subvolume to this new volume.  The image is populated as a loopback
         mount, which will be unmounted before this function returns.
@@ -541,7 +580,7 @@ class Subvol:
             a lot of grow cycles prior to our shrink, the resulting
             filesystem may end up being more out-of-tune than if we had
             started with a large enough size from the beginning.
-        '''
+        """
         # In my experiments, btrfs needs at least 81 MB of overhead in all
         # circumstances, and this initial overhead is not multiplicative.
         # To be specific, I tried single-file subvolumes with files of size
@@ -552,9 +591,7 @@ class Subvol:
             attempts += 1
             fs_bytes *= waste_factor
             leftover_bytes, image_size = self._send_to_loopback_if_fits(
-                output_path,
-                int(fs_bytes),
-                subvol_opts,
+                output_path, int(fs_bytes), subvol_opts
             )
             if leftover_bytes == 0:
                 # The following simple trick saves about 20% of image size. The
@@ -563,23 +600,21 @@ class Subvol:
                 # many practical use-cases the compression ratio is close to 2,
                 # hence initial `fs_bytes` estimate is too high.
                 leftover_bytes, new_size = self._send_to_loopback_if_fits(
-                    output_path,
-                    image_size,
-                    subvol_opts,
+                    output_path, image_size, subvol_opts
                 )
                 assert leftover_bytes == 0, (
-                    f'Cannot fit {self._path} in {image_size} bytes, '
-                    f'{leftover_bytes} sendstream bytes were left over'
+                    f"Cannot fit {self._path} in {image_size} bytes, "
+                    f"{leftover_bytes} sendstream bytes were left over"
                 )
                 assert new_size <= image_size, (
-                    'The second pass of btrfs send-receive produced worse'
-                    f'results that the first: {new_size} vs. {image_size}'
+                    "The second pass of btrfs send-receive produced worse"
+                    f"results that the first: {new_size} vs. {image_size}"
                 )
                 break
             fs_bytes += leftover_bytes
             log.warning(
-                f'{self._path} did not fit in {fs_bytes} bytes, '
-                f'{leftover_bytes} sendstream bytes were left over'
+                f"{self._path} did not fit in {fs_bytes} bytes, "
+                f"{leftover_bytes} sendstream bytes were left over"
             )
         if subvol_opts.seed_device:
             self.set_seed_device(output_path)
@@ -596,9 +631,7 @@ class Subvol:
 
     @contextmanager
     def write_tarball_to_file(
-        self,
-        outfile: BinaryIO,
-        **kwargs
+        self, outfile: BinaryIO, **kwargs
     ) -> Iterator[None]:
         # gnu tar has a nasty bug where even if you specify `--one-file-system`
         # it still tries to perform various operations on other mount points.
@@ -610,28 +643,33 @@ class Subvol:
         # kinds of mounts.  So to work around this, we start a new mount
         # namespace, unmount everything that is under this subvol, and then
         # run the tar command.
-        with self.popen_as_root([
-            'unshare', '--mount',
-            'bash', '-c',
-            # Unmount everything that contains the subvol name, that's the dir
-            # *above* the `volume/` path.
-            '(mount |'
-            f' grep {self.path().dirname().basename()} |'
-            ' xargs umount '
-            ')1>&2; '  # Make sure any errors in the umounts go to stderr
-            'tar c '
-            '--sparse '
-            '--one-file-system '  # Keep this just in case
-            '--xattrs '
-            '--to-stdout '
-            '-C '
-            f'{self.path()} '
-            '.'
-        ], stdout=outfile):
+        with self.popen_as_root(
+            [
+                "unshare",
+                "--mount",
+                "bash",
+                "-c",
+                # Unmount everything that contains the subvol name, that's the dir
+                # *above* the `volume/` path.
+                "(mount |"
+                f" grep {self.path().dirname().basename()} |"
+                " xargs umount "
+                ")1>&2; "  # Make sure any errors in the umounts go to stderr
+                "tar c "
+                "--sparse "
+                "--one-file-system "  # Keep this just in case
+                "--xattrs "
+                "--to-stdout "
+                "-C "
+                f"{self.path()} "
+                ".",
+            ],
+            stdout=outfile,
+        ):
             yield
 
     def _estimate_content_bytes(self):
-        '''
+        """
         Returns a (usually) tight lower-bound guess of the filesystem size
         necessary to contain this subvolume.  The caller is responsible for
         appropriately padding this size when creating the destination FS.
@@ -683,93 +721,117 @@ class Subvol:
             WARNING: qgroup data inconsistent, rescan recommended
             WARNING: rescan is running, qgroup data may be incorrect
             # Moreover, I would have the build fail on any unknown output.
-        '''
+        """
         # Not adding `-x` since buck-built subvolumes should not have other
         # filesystems mounted inside them.
         start_time = time.time()
-        du_out = subprocess.check_output([
-            'sudo', 'du', '--block-size=1', '--summarize',
-            # Hack alert: `--one-file-system` works around the fact that we
-            # may have host mounts inside the image, which we mustn't count.
-            '--one-file-system', self._path,
-        ]).split(b'\t', 1)
-        assert du_out[1] == self._path + b'\n'
+        du_out = subprocess.check_output(
+            [
+                "sudo",
+                "du",
+                "--block-size=1",
+                "--summarize",
+                # Hack alert: `--one-file-system` works around the fact that we
+                # may have host mounts inside the image, which we mustn't count.
+                "--one-file-system",
+                self._path,
+            ]
+        ).split(b"\t", 1)
+        assert du_out[1] == self._path + b"\n"
         size = int(du_out[0])
         log.info(
-            f'`du` estimated size of {self._path} as {size} in '
-            f'{time.time() - start_time} seconds'
+            f"`du` estimated size of {self._path} as {size} in "
+            f"{time.time() - start_time} seconds"
         )
         return size
 
     # Mocking this allows tests to exercise the fallback "out of space" path.
-    _OUT_OF_SPACE_SUFFIX = b': No space left on device\n'
+    _OUT_OF_SPACE_SUFFIX = b": No space left on device\n"
 
     def _send_to_loopback_if_fits(
-        self,
-        output_path,
-        fs_size_bytes,
-        subvol_opts: SubvolOpts
+        self, output_path, fs_size_bytes, subvol_opts: SubvolOpts
     ) -> (int, int):
-        '''
+        """
         Creates a loopback of the specified size, and sends the current
         subvolume to it. Returns a tuple of two values. The first is the number
         of bytes which didn't fit in that space. It is zero if the subvolume
         fits. The second value is the image size in the end of operation.
-        '''
-        open(output_path, 'wb').close()
-        with pipe() as (r_send, w_send), \
-                Unshare([Namespace.MOUNT, Namespace.PID]) as ns, \
-                LoopbackVolume(ns, output_path, fs_size_bytes) as loop_vol, \
-                self.mark_readonly_and_write_sendstream_to_file(w_send):
+        """
+        open(output_path, "wb").close()
+        with pipe() as (r_send, w_send), Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as ns, LoopbackVolume(
+            ns, output_path, fs_size_bytes
+        ) as loop_vol, self.mark_readonly_and_write_sendstream_to_file(
+            w_send
+        ):
             w_send.close()  # This end is now fully owned by `btrfs send`.
             with r_send:
-                recv_ret = run_stdout_to_err(nsenter_as_root(
-                    ns, 'btrfs', 'receive', loop_vol.dir(),
-                ), stdin=r_send, stderr=subprocess.PIPE)
+                recv_ret = run_stdout_to_err(
+                    nsenter_as_root(ns, "btrfs", "receive", loop_vol.dir()),
+                    stdin=r_send,
+                    stderr=subprocess.PIPE,
+                )
                 if recv_ret.returncode != 0:
                     if recv_ret.stderr.endswith(self._OUT_OF_SPACE_SUFFIX):
-                        log.info('Will retry receive, did not fit')
+                        log.info("Will retry receive, did not fit")
                         return (
                             _drain_pipe_return_byte_count(r_send),
-                            loop_vol.get_size()
+                            loop_vol.get_size(),
                         )
-                    log.info('Receive failed: {}')
+                    log.info("Receive failed: {}")
                     # It's pretty lame to rely on `btrfs receive` continuing
                     # to be unlocalized, and emitting that particular error
                     # message, so we fall back to checking available bytes.
-                    size_ret = subprocess.run(nsenter_as_user(
-                        ns, 'findmnt', '--noheadings', '--bytes',
-                        '--output', 'AVAIL', loop_vol.dir(),
-                    ), stdout=subprocess.PIPE)
+                    size_ret = subprocess.run(
+                        nsenter_as_user(
+                            ns,
+                            "findmnt",
+                            "--noheadings",
+                            "--bytes",
+                            "--output",
+                            "AVAIL",
+                            loop_vol.dir(),
+                        ),
+                        stdout=subprocess.PIPE,
+                    )
                     # If the `findmnt` fails, don't mask the original error.
                     # If `btrfs receive` fails with "No space left on device",
                     # a few KBs (up to 32 in my experiments) of free space may
                     # remain on destination file-system.
                     if (
-                            size_ret.returncode == 0 and
-                            int(size_ret.stdout) <= 32 * KiB
+                        size_ret.returncode == 0
+                        and int(size_ret.stdout) <= 32 * KiB
                     ):
                         log.info(
-                            'Will retry receive, volume '
-                            f'AVAIL={int(size_ret.stdout)}'
+                            "Will retry receive, volume "
+                            f"AVAIL={int(size_ret.stdout)}"
                         )
                         return (
                             _drain_pipe_return_byte_count(r_send),
-                            loop_vol.get_size()
+                            loop_vol.get_size(),
                         )
                     # Covering this is hard, so the test plan is "inspection".
                     log.error(  # pragma: no cover
-                        'Unhandled receive stderr:\n\n' +
-                        recv_ret.stderr.decode(errors='surrogateescape'),
+                        "Unhandled receive stderr:\n\n"
+                        + recv_ret.stderr.decode(errors="surrogateescape")
                     )
                 recv_ret.check_returncode()
                 if not subvol_opts.readonly:
                     sub_name = os.path.basename(self.path())
                     subvol_path = os.path.join(loop_vol.dir(), sub_name)
-                    run_stdout_to_err(nsenter_as_root(
-                        ns, 'btrfs', 'property', 'set', '-ts', subvol_path,
-                        'ro', 'false',
-                    )).check_returncode()
+                    run_stdout_to_err(
+                        nsenter_as_root(
+                            ns,
+                            "btrfs",
+                            "property",
+                            "set",
+                            "-ts",
+                            subvol_path,
+                            "ro",
+                            "false",
+                        )
+                    ).check_returncode()
             return (0, loop_vol.minimize_size())
 
     @contextmanager
@@ -777,16 +839,24 @@ class Subvol:
         # At present, we always have an empty wrapper dir to receive into.
         # If this changes, we could make a tempdir inside `parent_fd`.
         with open_fd(
-            os.path.dirname(self.path()), os.O_RDONLY | os.O_DIRECTORY,
+            os.path.dirname(self.path()), os.O_RDONLY | os.O_DIRECTORY
         ) as parent_fd:
             wrapper_dir_contents = os.listdir(parent_fd)
             assert wrapper_dir_contents == [], wrapper_dir_contents
             try:
-                with self.popen_as_root([
-                    'btrfs', 'receive',
-                    # Future: If we get `pass_fds` support, use `/proc/self/fd'
-                    Path('/proc') / str(os.getpid()) / 'fd' / str(parent_fd),
-                ], _subvol_exists=False, stdin=from_file):
+                with self.popen_as_root(
+                    [
+                        "btrfs",
+                        "receive",
+                        # Future: If we get `pass_fds` support, use `/proc/self/fd'
+                        Path("/proc")
+                        / str(os.getpid())
+                        / "fd"
+                        / str(parent_fd),
+                    ],
+                    _subvol_exists=False,
+                    stdin=from_file,
+                ):
                     yield
             finally:
                 received_names = os.listdir(parent_fd)

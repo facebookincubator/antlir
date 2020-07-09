@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 This tool wraps `yum` and its successor `dnf` to ensure more hermetic
 behavior.
 
@@ -83,25 +83,27 @@ The current tool works well, with these caveats:
     'persistdir' subdirectory.  How should we determine the correct release
     for a snapshot-based install?  Fake it?  Add `/etc/*-release` from the
     snapshot host to the snapshot?
-'''
+"""
 import argparse
 import os
 import subprocess
 import tempfile
 import textwrap
-
 from configparser import ConfigParser
 from contextlib import contextmanager
 from typing import Iterable, List, Mapping
 
 from fs_image.common import (
-    check_popen_returncode, get_file_logger, init_logging,
+    check_popen_returncode,
+    get_file_logger,
+    init_logging,
 )
 from fs_image.fs_utils import Path, temp_dir
 from fs_image.nspawn_in_subvol.plugins.shadow_paths import SHADOWED_PATHS_ROOT
 
-from .yum_dnf_conf import YumDnf
 from .common import has_yum, yum_is_dnf
+from .yum_dnf_conf import YumDnf
+
 
 log = get_file_logger(__file__)
 
@@ -111,13 +113,13 @@ log = get_file_logger(__file__)
 # toolchain as the `glibc` that we're interposing.
 #
 # It's not under `/__fs_image__/rpm/` because it's not actually RPM-specific.
-LIBRENAME_SHADOWED_PATH = Path('/__fs_image__/librename_shadowed.so')
+LIBRENAME_SHADOWED_PATH = Path("/__fs_image__/librename_shadowed.so")
 
 
 def _isolate_yum_dnf(
-    yum_dnf: YumDnf, install_root, dummy_dev, protected_path_to_dummy,
+    yum_dnf: YumDnf, install_root, dummy_dev, protected_path_to_dummy
 ):
-    'Isolate yum/dnf from the host filesystem.'
+    "Isolate yum/dnf from the host filesystem."
     # Yum is incorrigible -- it is impossible to give it a set of options
     # that will completely prevent it from accessing host configuration &
     # caches.  So instead, we do this to avoid littering inside the
@@ -164,7 +166,13 @@ def _isolate_yum_dnf(
     #     /usr/lib/rpm/macros /usr/lib/rpm/redhat/macros
     #   on the premise that unlike the local customizations, these may be
     #   required for `rpm` to function.
-    return ['bash', '-o', 'pipefail', '-uexc', textwrap.dedent('''\
+    return [
+        "bash",
+        "-o",
+        "pipefail",
+        "-uexc",
+        textwrap.dedent(
+            """\
     # The image needs to have a valid `/dev` so that e.g.  RPM post-install
     # scripts can work correctly (true bug: a script writing a regular file
     # at `/dev/null`).  Unfortunately, the way we are invoking `yum`/`dnf`
@@ -210,115 +218,128 @@ def _isolate_yum_dnf(
     # NB: The `trap` above means the `bash` process is not replaced by the
     # child, but that's not a problem.
     {maybe_set_env_vars} exec "$@"
-    ''').format(
-        prog_name=yum_dnf.value,
-        default_conf_file={
-            YumDnf.yum: '/etc/yum.conf',
-            YumDnf.dnf: '/etc/dnf/dnf.conf',
-        }[yum_dnf],
-        quoted_dummy_dev=dummy_dev,
-        quoted_install_root=install_root.shell_quote(),
-        quoted_protected_paths='\n'.join(
-            'mount {} {} -o bind,ro'.format(
-                dummy.shell_quote(),
-                (
-                    # Convention: relative for image, or absolute for host.
-                    '' if prot_path.startswith(b'/') else '"$install_root"/'
-                ) + prot_path.shell_quote(),
-            ) for prot_path, dummy in protected_path_to_dummy.items()
+    """
+        ).format(
+            prog_name=yum_dnf.value,
+            default_conf_file={
+                YumDnf.yum: "/etc/yum.conf",
+                YumDnf.dnf: "/etc/dnf/dnf.conf",
+            }[yum_dnf],
+            quoted_dummy_dev=dummy_dev,
+            quoted_install_root=install_root.shell_quote(),
+            quoted_protected_paths="\n".join(
+                "mount {} {} -o bind,ro".format(
+                    dummy.shell_quote(),
+                    (
+                        # Convention: relative for image, or absolute for host.
+                        ""
+                        if prot_path.startswith(b"/")
+                        else '"$install_root"/'
+                    )
+                    + prot_path.shell_quote(),
+                )
+                for prot_path, dummy in protected_path_to_dummy.items()
+            ),
+            maybe_set_env_vars=" ".join(
+                [
+                    f"LD_PRELOAD={LIBRENAME_SHADOWED_PATH.shell_quote()}",
+                    f"FS_IMAGE_SHADOWED_PATHS_ROOT={SHADOWED_PATHS_ROOT.shell_quote()}",
+                ]
+            )
+            if os.path.exists(LIBRENAME_SHADOWED_PATH)
+            else "",
         ),
-        maybe_set_env_vars=' '.join([
-            f'LD_PRELOAD={LIBRENAME_SHADOWED_PATH.shell_quote()}',
-            f'FS_IMAGE_SHADOWED_PATHS_ROOT={SHADOWED_PATHS_ROOT.shell_quote()}',
-        ]) if os.path.exists(LIBRENAME_SHADOWED_PATH) else '',
-    )]
+    ]
+
 
 @contextmanager
 def _dummy_dev() -> str:
-    'A whitelist of devices is safer than the entire host /dev'
+    "A whitelist of devices is safer than the entire host /dev"
     dummy_dev = tempfile.mkdtemp()
     try:
-        subprocess.check_call(['sudo', 'chown', 'root:root', dummy_dev])
-        subprocess.check_call(['sudo', 'chmod', '0755', dummy_dev])
-        subprocess.check_call([
-            'sudo', 'touch', os.path.join(dummy_dev, 'null'),
-        ])
+        subprocess.check_call(["sudo", "chown", "root:root", dummy_dev])
+        subprocess.check_call(["sudo", "chmod", "0755", dummy_dev])
+        subprocess.check_call(
+            ["sudo", "touch", os.path.join(dummy_dev, "null")]
+        )
         yield dummy_dev
     finally:
         # We cannot use `TemporaryDirectory` for cleanup since the directory
         # and contents are owned by root.  Remove recursively since RPMs
         # like `filesystem` can touch this dummy directory.  We will discard
         # their writes, which do not, anyhow, belong in a container image.
-        subprocess.run(['sudo', 'rm', '-r', dummy_dev])
+        subprocess.run(["sudo", "rm", "-r", dummy_dev])
 
 
 @contextmanager
 def _dummies_for_protected_paths(
     protected_paths: Iterable[str],
 ) -> Mapping[Path, Path]:
-    '''
+    """
     Some locations (some host yum/dnf directories, and install root /meta/
     and mountpoints) should be off-limits to writes by RPMs.  We enforce
     that by bind-mounting an empty file or directory on top of each one.
-    '''
+    """
     with temp_dir() as td, tempfile.NamedTemporaryFile() as tf:
         # NB: There may be duplicates in protected_paths, so we normalize.
         # If the duplicates include both a file and a directory, this picks
         # one arbitrarily, and if the type on disk is different, we will
         # fail at mount time.  This doesn't seem worth an explicit check.
         yield {
-            Path(p).normpath(): (td if p.endswith('/') else Path(tf.name))
-                for p in protected_paths
+            Path(p).normpath(): (td if p.endswith("/") else Path(tf.name))
+            for p in protected_paths
         }
         # NB: The bind mount is read-only, so this is just paranoia.  If it
         # were left RW, we'd need to check its owner / permissions too.
-        for expected, actual in (([], td.listdir()), (b'', tf.read())):
-            assert expected == actual, \
-                f'Some RPM wrote {actual} to {protected_paths}'
+        for expected, actual in (([], td.listdir()), (b"", tf.read())):
+            assert (
+                expected == actual
+            ), f"Some RPM wrote {actual} to {protected_paths}"
 
 
 def _ensure_fs_image_container():
-    '''
+    """
     Forbid running this outside of an `fs_image/nspawn_in_subvol` container.
     Since we default to `--installroot=/`, there is some risk to allowing
     execution in other settings.
-    '''
+    """
     # Any `fs_image` container with snapshots must have `/__fs_image__`
-    assert os.path.isdir('/__fs_image__'), \
-        '`yum-dnf-from-snapshot` must run in an `nspawn_in_subvol` container'
+    assert os.path.isdir(
+        "/__fs_image__"
+    ), "`yum-dnf-from-snapshot` must run in an `nspawn_in_subvol` container"
     # Future: are there other checks we can add?
 
 
 def _ensure_private_network():
-    '''
+    """
     Normally, we run under `systemd-nspawn --private-network`.  We don't
     want to run in environments with network access because in these cases
     it's very possible that `yum` / `dnf` will end up doing something
     non-deterministic by reaching out to the network.
-    '''
+    """
     # From `/usr/include/uapi/linux/if_arp.h`
     allowed_types = {
         768,  # ARPHRD_TUNNEL
         769,  # ARPHRD_TUNNEL6
         772,  # ARPHRD_LOOPBACK
     }
-    net = Path('/sys/class/net')
+    net = Path("/sys/class/net")
     for iface in net.listdir():
-        with open(net / iface / 'type') as infile:
+        with open(net / iface / "type") as infile:
             iface_type = int(infile.read())
             # Not covered because we don't want to rely on the CI container
             # having a network interface.
             if iface_type not in allowed_types:  # pragma: no cover
                 raise RuntimeError(
-                    'Refusing to run without --private-network, found '
-                    f'unknown interface {iface} of type {iface_type}.'
+                    "Refusing to run without --private-network, found "
+                    f"unknown interface {iface} of type {iface_type}."
                 )
 
 
 def _install_root(conf_path: Path, yum_dnf_args: Iterable[str]) -> Path:
     # Peek at the `yum` / `dnf` args, which take precedence over the config.
     p = argparse.ArgumentParser(allow_abbrev=False, add_help=False)
-    p.add_argument('--installroot', type=Path.from_argparse)
+    p.add_argument("--installroot", type=Path.from_argparse)
     args, _ = p.parse_known_args(yum_dnf_args)
     if args.installroot:
         return args.installroot
@@ -328,7 +349,7 @@ def _install_root(conf_path: Path, yum_dnf_args: Iterable[str]) -> Path:
     cp = ConfigParser()
     with open(conf_path) as conf_in:
         cp.read_file(conf_in)
-    return Path(cp['main'].get('installroot', '/'))
+    return Path(cp["main"].get("installroot", "/"))
 
 
 def yum_dnf_from_snapshot(
@@ -345,90 +366,101 @@ def yum_dnf_from_snapshot(
     prog_name = yum_dnf.value
     # This path convention must match how `write_yum_dnf_conf.py` and
     # `rpm_repo_snapshot.bzl` set up their output.
-    conf_path = snapshot_dir / f'{prog_name}/etc/{prog_name}/{prog_name}.conf'
+    conf_path = snapshot_dir / f"{prog_name}/etc/{prog_name}/{prog_name}.conf"
     install_root = _install_root(conf_path, yum_dnf_args)
 
     # The paths that have trailing slashes are directories, others are
     # files.  There's a separate code path for protecting some files above.
     # The rationale is that those files are not guaranteed to exist.
-    protected_paths.extend([
-        # See the `_isolate_yum_dnf` docblock for how (and why) this list
-        # was produced.  All are assumed to exist on the host -- otherwise,
-        # we'd be in the awkard situation of leaving them unprotected, or
-        # creating them on the host to protect them.
-        '/etc/yum.repos.d/',  # dnf ALSO needs this isolated
-        f'/etc/{prog_name}/',   # A duplicate for the `yum` case
-        '/etc/pki/rpm-gpg/',
-        '/etc/rpm/',
-        # Harcode `IMAGE/meta` because it should ALWAYS be off-limits --
-        # even though the compiler will redundantly tell us to protect it.
-        'meta/',
-    ] + (
-        # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is missing
-        ['/etc/yum/'] if (has_yum() and not yum_is_dnf()) else []
-    ))
+    protected_paths.extend(
+        [
+            # See the `_isolate_yum_dnf` docblock for how (and why) this list
+            # was produced.  All are assumed to exist on the host -- otherwise,
+            # we'd be in the awkard situation of leaving them unprotected, or
+            # creating them on the host to protect them.
+            "/etc/yum.repos.d/",  # dnf ALSO needs this isolated
+            f"/etc/{prog_name}/",  # A duplicate for the `yum` case
+            "/etc/pki/rpm-gpg/",
+            "/etc/rpm/",
+            # Harcode `IMAGE/meta` because it should ALWAYS be off-limits --
+            # even though the compiler will redundantly tell us to protect it.
+            "meta/",
+        ]
+        + (
+            # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is missing
+            ["/etc/yum/"]
+            if (has_yum() and not yum_is_dnf())
+            else []
+        )
+    )
     # Only isolate the host DBs and log if we are NOT installing to /.
-    install_to_fs_root = install_root.realpath() == b'/'
+    install_to_fs_root = install_root.realpath() == b"/"
     if not install_to_fs_root:
         # Ensure the log exists, so we can guarantee we don't write to the host.
-        log_path = f'/var/log/{prog_name}.log'
-        subprocess.check_call(['sudo', 'touch', log_path])
-        protected_paths.extend([
-            log_path,
-            f'/var/lib/{prog_name}/',
-            '/var/lib/rpm/',
-            # Future: We should isolate the cache even when installing to /
-            # because the snapshot should have its own cache, and should not
-            # pollute the OS cache.  However, right now our cache handling
-            # is pretty broken, so this change is deferred.
-            f'/var/cache/{prog_name}/',
-        ])
+        log_path = f"/var/log/{prog_name}.log"
+        subprocess.check_call(["sudo", "touch", log_path])
+        protected_paths.extend(
+            [
+                log_path,
+                f"/var/lib/{prog_name}/",
+                "/var/lib/rpm/",
+                # Future: We should isolate the cache even when installing to /
+                # because the snapshot should have its own cache, and should not
+                # pollute the OS cache.  However, right now our cache handling
+                # is pretty broken, so this change is deferred.
+                f"/var/cache/{prog_name}/",
+            ]
+        )
 
     for arg in yum_dnf_args:
-        assert arg != '-c' and not arg.startswith('--config'), \
-            f'If you change --config, you will no longer use the repo snapshot'
+        assert arg != "-c" and not arg.startswith(
+            "--config"
+        ), f"If you change --config, you will no longer use the repo snapshot"
 
-    with _dummy_dev() as dummy_dev, \
-            _dummies_for_protected_paths(
-                protected_paths,
-            ) as protected_path_to_dummy, \
-            subprocess.Popen([
-                'sudo',
-                # We need `--mount` so as not to leak our `--protect-path`
-                # bind mounts outside of the package manager invocation.
-                #
-                # Note that `--mount` implies `mount --make-rprivate /` for
-                # all recent `util-linux` releases (since 2.27 circa 2015).
-                #
-                # We omit `--net` because `yum-dnf-from-snapshot` should
-                # only be running in a private-network `nspawn_in_subvol` at
-                # this point, and `repo_servers.py` servers listen on
-                # sockets that are outside of this `unshare` (the latter
-                # could be changed but requires laboriously punching through
-                # some abstraction boundaries).
-                #
-                # `--uts` and `--ipc` are set just because they're free to
-                # namespace.  We couldn't do `--pid` or `--cgroup` without
-                # significant extra work, which has no clear value (i.e.
-                # we'd effectively need to use `systemd-nspawn` here).
-                'unshare', '--mount', '--uts', '--ipc',
-                *_isolate_yum_dnf(
-                    yum_dnf, install_root, dummy_dev, protected_path_to_dummy,
-                ),
-                'yum-dnf-from-snapshot',  # argv[0]
-                prog_name,
-                # Help us debug CI issues that don't reproduce locally.
-                '--verbose',
-                # Config options get isolated by our `YumDnfConfIsolator`
-                # when `write-yum-dnf-conf` builds this file.  Note that
-                # `yum` doesn't work if the config path is relative.
-                f'--config={conf_path.abspath()}',
-                f'--installroot={install_root}',
-                # NB: We omit `--downloaddir` because the default behavior
-                # is to put any downloaded RPMs in `$installroot/$cachedir`,
-                # which is reasonable, and easy to clean up in a post-pass.
-                *yum_dnf_args,
-            ]) as yum_dnf_proc:
+    with _dummy_dev() as dummy_dev, _dummies_for_protected_paths(
+        protected_paths
+    ) as protected_path_to_dummy, subprocess.Popen(
+        [
+            "sudo",
+            # We need `--mount` so as not to leak our `--protect-path`
+            # bind mounts outside of the package manager invocation.
+            #
+            # Note that `--mount` implies `mount --make-rprivate /` for
+            # all recent `util-linux` releases (since 2.27 circa 2015).
+            #
+            # We omit `--net` because `yum-dnf-from-snapshot` should
+            # only be running in a private-network `nspawn_in_subvol` at
+            # this point, and `repo_servers.py` servers listen on
+            # sockets that are outside of this `unshare` (the latter
+            # could be changed but requires laboriously punching through
+            # some abstraction boundaries).
+            #
+            # `--uts` and `--ipc` are set just because they're free to
+            # namespace.  We couldn't do `--pid` or `--cgroup` without
+            # significant extra work, which has no clear value (i.e.
+            # we'd effectively need to use `systemd-nspawn` here).
+            "unshare",
+            "--mount",
+            "--uts",
+            "--ipc",
+            *_isolate_yum_dnf(
+                yum_dnf, install_root, dummy_dev, protected_path_to_dummy
+            ),
+            "yum-dnf-from-snapshot",  # argv[0]
+            prog_name,
+            # Help us debug CI issues that don't reproduce locally.
+            "--verbose",
+            # Config options get isolated by our `YumDnfConfIsolator`
+            # when `write-yum-dnf-conf` builds this file.  Note that
+            # `yum` doesn't work if the config path is relative.
+            f"--config={conf_path.abspath()}",
+            f"--installroot={install_root}",
+            # NB: We omit `--downloaddir` because the default behavior
+            # is to put any downloaded RPMs in `$installroot/$cachedir`,
+            # which is reasonable, and easy to clean up in a post-pass.
+            *yum_dnf_args,
+        ]
+    ) as yum_dnf_proc:
 
         # Wait **before** we tear down all the `yum` / `dnf` isolation.
         yum_dnf_proc.wait()
@@ -436,37 +468,42 @@ def yum_dnf_from_snapshot(
 
 
 # This argument-parsing logic is covered by RpmActionItem tests.
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     main_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     main_parser.add_argument(
-        '--snapshot-dir', required=True, type=Path.from_argparse,
-        help='Multi-repo snapshot directory.',
+        "--snapshot-dir",
+        required=True,
+        type=Path.from_argparse,
+        help="Multi-repo snapshot directory.",
     )
     main_parser.add_argument(
-        '--protected-path', action='append', default=[],
+        "--protected-path",
+        action="append",
+        default=[],
         # Future: if desired, the trailing / convention could be relaxed,
         # see `_protected_path_set`.  If so, this program would just need to
         # run `os.path.isdir` against each of the paths.
-        help='When `yum` or `dnf` runs, this path will have an empty file or '
-            'directory read-only bind-mounted on top. If the path has a '
-            'trailing /, it is a directory, otherwise -- a file. If the path '
-            'is absolute, it is a host path. Otherwise, it is relative to '
-            '`--installroot`. The path must already exist. There are some '
-            'internal defaults that cannot be un-protected. May be repeated.',
+        help="When `yum` or `dnf` runs, this path will have an empty file or "
+        "directory read-only bind-mounted on top. If the path has a "
+        "trailing /, it is a directory, otherwise -- a file. If the path "
+        "is absolute, it is a host path. Otherwise, it is relative to "
+        "`--installroot`. The path must already exist. There are some "
+        "internal defaults that cannot be un-protected. May be repeated.",
     )
-    main_parser.add_argument('--debug', action='store_true', help='Log more')
-    main_parser.add_argument('yum_dnf', type=YumDnf, help='yum or dnf')
+    main_parser.add_argument("--debug", action="store_true", help="Log more")
+    main_parser.add_argument("yum_dnf", type=YumDnf, help="yum or dnf")
     main_parser.add_argument(
-        'args', nargs='+',
-        help='Pass these through to `yum` or `dnf`. You will want to use -- '
-            'before any such argument to prevent `yum-dnf-from-snapshot` '
-            'from parsing them. Avoid arguments that might break hermeticity '
-            '(e.g. affecting the host system, or making us depend on the '
-            'host system) -- this tool implements protections, but it '
-            'may not be foolproof.',
+        "args",
+        nargs="+",
+        help="Pass these through to `yum` or `dnf`. You will want to use -- "
+        "before any such argument to prevent `yum-dnf-from-snapshot` "
+        "from parsing them. Avoid arguments that might break hermeticity "
+        "(e.g. affecting the host system, or making us depend on the "
+        "host system) -- this tool implements protections, but it "
+        "may not be foolproof.",
     )
     args = main_parser.parse_args()
 

@@ -70,12 +70,11 @@ def async_command(f):
 )
 @click.option("--gtest_list_tests", is_flag=True)  # C++ gtest
 @click.option("--list-tests")  # Python pyunit with the new TestPilot adapter
-@click.option("--interactive", is_flag=True, help="Connect VM console in foreground")
 @click.option(
-    "--ncpus",
-    type=int,
-    default=1,
-    help="How many vCPUs the VM will have.",
+    "--interactive", is_flag=True, help="Connect VM console in foreground"
+)
+@click.option(
+    "--ncpus", type=int, default=1, help="How many vCPUs the VM will have."
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @async_command
@@ -186,7 +185,10 @@ async def main(
                 if test_pilot_env:
                     test_env["TEST_PILOT"] = test_pilot_env
                 returncode, _, _ = await vm.run(
-                    cmd=[str(exe)] + list(args), timeout=timeout, env=test_env, cwd=fbcode,
+                    cmd=[str(exe)] + list(args),
+                    timeout=timeout,
+                    env=test_env,
+                    cwd=fbcode,
                 )
 
                 for path in file_arguments:

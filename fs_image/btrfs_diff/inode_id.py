@@ -4,20 +4,25 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 Our inodes' primary purpose is testing. However, writing tests against
 arbtirarily selected integer inode IDs is unnecessarily hard.  For this
 reason, InodeIDs are tightly integrated with a path mapping, which is used
 to represent the Inode instead of the underlying integer ID, whenever
 possible.
-'''
+"""
 import itertools
 import os
-
 from collections import defaultdict, deque
-
 from typing import (
-    Any, Generator, Iterator, Mapping, NamedTuple, Optional, Sequence, Set,
+    Any,
+    Generator,
+    Iterator,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Set,
     Tuple,
 )
 
@@ -30,7 +35,7 @@ def tail(n: int, iterable):
 
 
 class InodeID(NamedTuple):
-    '''
+    """
     IMPORTANT: To support `Subvolume` snapshots, this must be correctly
     `deepcopy`able in a copy operation that directly includes its
     `.inner_id_map`.  I mean "directly" in the sense that we must also copy
@@ -38,7 +43,8 @@ class InodeID(NamedTuple):
     `Subvolume`.  In contrast, `deepcopy`ing `InodeID`s without copying the
     whole map would result in decoupling between those objects, which is
     incorrect.
-    '''
+    """
+
     id: int
     # While this field creates some aliasing issues with `deepcopy` (see
     # the doblock), it is still worthwhile to have it:
@@ -47,17 +53,17 @@ class InodeID(NamedTuple):
     #  - We check `inner_id_map` identity at runtime (below) to ensure at
     #    runtime that `InodeID`s are used only with their maps.
     #  - An identifiable repr is nice for ease of testing/debugging.
-    inner_id_map: '_InnerInodeIDMap'
+    inner_id_map: "_InnerInodeIDMap"
 
     def __repr__(self):
         paths = list(self.inner_id_map.gen_paths(self))
-        desc = ''
+        desc = ""
         if self.inner_id_map.description:
-            desc = f'{self.inner_id_map.description}@'
+            desc = f"{self.inner_id_map.description}@"
         if not paths:
-            return f'{desc}ANON_INODE#{self.id}'
-        return desc + ','.join(
-            p.decode(errors='surrogateescape') for p in sorted(paths)
+            return f"{desc}ANON_INODE#{self.id}"
+        return desc + ",".join(
+            p.decode(errors="surrogateescape") for p in sorted(paths)
         )
 
     # `_InnerInodeIDMap` is a tuple, which gives it "plain old data"
@@ -83,21 +89,23 @@ class InodeID(NamedTuple):
 def _norm_split_path(p: bytes) -> Sequence[bytes]:
     # Check explicitly since the downstream errors are incomprehensible.
     if not isinstance(p, bytes):
-        raise TypeError(f'Expected bytes, got {p}')
+        raise TypeError(f"Expected bytes, got {p}")
     p = os.path.normpath(p)
     if os.path.isabs(p):
-        raise ValueError(f'Need relative path, got {p}')
-    return [] if p == b'.' else p.split(b'/')
+        raise ValueError(f"Need relative path, got {p}")
+    return [] if p == b"." else p.split(b"/")
 
 
 # forward declaration so that is_root() type checks
-_ROOT_REVERSE_ENTRY: '_ReversePathEntry'
+_ROOT_REVERSE_ENTRY: "_ReversePathEntry"
+
 
 class _ReversePathEntry(NamedTuple):
-    '''
+    """
     Reading `.name` and following `.parent_int_id` until it is None gives
     you a right-to-left reading of the path from the root.
-    '''
+    """
+
     name: bytes  # The path component
     # Pointer to the previous path component.
     #
@@ -112,11 +120,11 @@ class _ReversePathEntry(NamedTuple):
         return self == _ROOT_REVERSE_ENTRY
 
 
-_ROOT_REVERSE_ENTRY = _ReversePathEntry(name=b'', parent_int_id=None)
+_ROOT_REVERSE_ENTRY = _ReversePathEntry(name=b"", parent_int_id=None)
 
 
 class _InnerInodeIDMap(NamedTuple):
-    'Explained where `InodeIDMap.inner` is declared.'
+    "Explained where `InodeIDMap.inner` is declared."
     description: Any  # repr()able, to be used for repr()ing InodeIDs
     # The key is not an `InodeID` to avoid a circular dependency.  The
     # values correspond to different hardlinks to the same file inode.
@@ -126,39 +134,39 @@ class _InnerInodeIDMap(NamedTuple):
     def _assert_mine(self, inode_id: InodeID) -> InodeID:
         if inode_id.inner_id_map is not self:
             # Avoid InodeID.__repr__ since that would recurse infinitely.
-            raise RuntimeError(f'Wrong map for InodeID #{inode_id.id}')
+            raise RuntimeError(f"Wrong map for InodeID #{inode_id.id}")
         return inode_id
 
     def _rev_entry_to_path(
         self, rev_entry: _ReversePathEntry
     ) -> Iterator[bytes]:
         parent_id = rev_entry.parent_int_id
-        assert parent_id is not None, 'Never called with _ROOT_REVERSE_ENTRY'
-        # Directories don't have hardlink, so they have just 1 reverse entry
-        parent, = self.id_to_reverse_entries[parent_id]
+        assert parent_id is not None, "Never called with _ROOT_REVERSE_ENTRY"
+        (  # Directories don't have hardlink, so they have just 1 reverse entry
+            parent,
+        ) = self.id_to_reverse_entries[parent_id]
         if not parent.is_root():
             yield from self._rev_entry_to_path(parent)
         yield rev_entry.name
 
     def gen_paths(self, inode_id: InodeID) -> Iterator[bytes]:
         for rev_entry in self.id_to_reverse_entries.get(
-            self._assert_mine(inode_id).id,
-            (),  # we tolerate anonymous inodes
+            self._assert_mine(inode_id).id, ()  # we tolerate anonymous inodes
         ):
             if rev_entry.is_root():
-                yield b'.'
+                yield b"."
             else:
-                yield b'/'.join(self._rev_entry_to_path(rev_entry))
+                yield b"/".join(self._rev_entry_to_path(rev_entry))
 
 
 class _PathEntry(NamedTuple):
     id: InodeID
     # `None` -> the entry is a file, a mapping -> it's a directory.
-    name_to_child: Optional[Mapping[bytes, '_PathEntry']]
+    name_to_child: Optional[Mapping[bytes, "_PathEntry"]]
 
 
 class InodeIDMap(NamedTuple):
-    '''
+    """
     Path -> Inode mapping, represents the directory structure of a filesystem.
 
     All paths should be relative. Use b'.' to refer to the root of this map.
@@ -171,7 +179,8 @@ class InodeIDMap(NamedTuple):
     particular, because `description` has type `Any`, it can bring
     `deepcopy` issues -- see the notes on the `deepcopy`ability
     of `SubvolumeDescription` in `volume.py` to understand the risks.
-    '''
+    """
+
     inode_id_counter: Iterator[int]
     # `_PathEntry.id`s contain references to `self.inner`.
     root: _PathEntry
@@ -182,10 +191,9 @@ class InodeIDMap(NamedTuple):
     inner: _InnerInodeIDMap
 
     @classmethod
-    def new(cls, *, description: Any=''):
+    def new(cls, *, description: Any = ""):
         inner = _InnerInodeIDMap(
-            description=description,
-            id_to_reverse_entries=defaultdict(set),
+            description=description, id_to_reverse_entries=defaultdict(set)
         )
         counter = itertools.count()
         self = cls(
@@ -202,16 +210,14 @@ class InodeIDMap(NamedTuple):
         return self
 
     def freeze(self, *, _memo):
-        'Returns a recursively immutable copy of `self`.'
+        "Returns a recursively immutable copy of `self`."
         return self._make(
             freeze(i, _memo=_memo)  # can't add IDs once frozen
-                for i in self._replace(inode_id_counter=None)
+            for i in self._replace(inode_id_counter=None)
         )
 
     def next(self) -> InodeID:
-        return InodeID(
-            id=next(self.inode_id_counter), inner_id_map=self.inner,
-        )
+        return InodeID(id=next(self.inode_id_counter), inner_id_map=self.inner)
 
     def _gen_entries(
         self, parts: Sequence[bytes]
@@ -230,15 +236,15 @@ class InodeIDMap(NamedTuple):
                 break
 
     def _get_parts_parent_and_entry(
-        self, path: bytes,
+        self, path: bytes
     ) -> Tuple[Sequence[bytes], _PathEntry, _PathEntry]:
-        'Contract: never call this on the root, aka empty `parts`'
+        "Contract: never call this on the root, aka empty `parts`"
         parts = _norm_split_path(path)
         if not parts:
-            raise RuntimeError(f'Cannot remove the root path')
+            raise RuntimeError(f"Cannot remove the root path")
         parent, entry = tail(2, self._gen_entries(parts))
         if entry is None:
-            raise RuntimeError(f'Cannot remove non-existent {path}')
+            raise RuntimeError(f"Cannot remove non-existent {path}")
         return parts, parent, entry
 
     # We must differentiate between files and directories because hardlinks
@@ -262,36 +268,35 @@ class InodeIDMap(NamedTuple):
             prev_entry = self._get_entry(prev_path)
             if (entry.name_to_child, prev_entry.name_to_child) != (None, None):
                 raise RuntimeError(
-                    f'Tried to add non-file hardlink for {entry.id}'
+                    f"Tried to add non-file hardlink for {entry.id}"
                 )
             break  # It's enough to check 1 entry
 
         parts = _norm_split_path(path)
-        parent, = tail(1, self._gen_entries(parts[:-1]))
+        (parent,) = tail(1, self._gen_entries(parts[:-1]))
         if parent is None:
-            raise RuntimeError(f'Missing ancestor for {path}')
+            raise RuntimeError(f"Missing ancestor for {path}")
         if parent.name_to_child is None:
             raise RuntimeError(f"The parent of {path} is a file")
 
         old = parent.name_to_child.get(parts[-1])
         if old is not None:
             raise RuntimeError(
-                f'Adding #{entry.id.id} to {path} which has #{old.id.id}'
+                f"Adding #{entry.id.id} to {path} which has #{old.id.id}"
             )
 
         reverse_parent = self.inner.id_to_reverse_entries.get(parent.id.id)
         assert isinstance(reverse_parent, set) and len(reverse_parent) == 1
 
         parent.name_to_child[parts[-1]] = entry
-        self.inner.id_to_reverse_entries[entry.id.id].add(_ReversePathEntry(
-            name=parts[-1],
-            parent_int_id=parent.id.id,
-        ))
+        self.inner.id_to_reverse_entries[entry.id.id].add(
+            _ReversePathEntry(name=parts[-1], parent_int_id=parent.id.id)
+        )
 
     def remove_path(self, path: bytes) -> InodeID:
         _parts, parent, entry = self._get_parts_parent_and_entry(path)
         if entry.name_to_child:
-            raise RuntimeError(f'Cannot remove {path} since it has children')
+            raise RuntimeError(f"Cannot remove {path} since it has children")
         return self._remove_path_unsafe(path).id
 
     def _reverse_entry_matches_path_parts(
@@ -305,7 +310,7 @@ class InodeIDMap(NamedTuple):
                 return False  # Different paths
             entries = self.inner.id_to_reverse_entries.get(maybe_id)
             assert isinstance(entries, set) and len(entries) == 1
-            reverse_entry, = entries
+            (reverse_entry,) = entries
         # Since `parts` never has a component corresponding to the root
         # inode, if we got this far, it must be that all of `parts` had a
         # name match.
@@ -315,28 +320,28 @@ class InodeIDMap(NamedTuple):
         return reverse_entry.is_root()
 
     def _matching_reverse_path_entry(self, reverse_entries, parts):
-        '''
+        """
         File hardlinks means an inode will have many `reverse_path_entries`,
         so we'll check each one to find the one that matches `parts`.
         Invariant: `reverse_entries` corresponds to an existing `_PathEntry`
         whose path is in `parts`.
-        '''
+        """
         if not reverse_entries:  # pragma: no cover
-            raise AssertionError(f'{parts} entry has no _ReversePathEntry')
+            raise AssertionError(f"{parts} entry has no _ReversePathEntry")
         # See if any of the `ReverseParentEntries` match `parts`.
         for reverse_entry in reverse_entries:
             if self._reverse_entry_matches_path_parts(reverse_entry, parts):
                 return reverse_entry
         raise AssertionError(  # pragma: no cover
-            f'No _ReversePathEntry matched {parts}'
+            f"No _ReversePathEntry matched {parts}"
         )
 
     def _remove_path_unsafe(self, path: bytes) -> _PathEntry:
-        'Does not check if path has children, used by `rename_path`.'
+        "Does not check if path has children, used by `rename_path`."
         parts, parent, entry = self._get_parts_parent_and_entry(path)
 
         maybe_map = parent.name_to_child
-        assert maybe_map is not None, 'parent must have name_to_child map'
+        assert maybe_map is not None, "parent must have name_to_child map"
 
         del maybe_map[parts[-1]]
 
@@ -348,13 +353,13 @@ class InodeIDMap(NamedTuple):
         return entry
 
     def rename_path(self, src: bytes, dest: bytes):
-        '''
+        """
         It may be tempting to `add_*(remove_*(src), dest)`. However,
         that idiom:
          - would break on nonempty directories,
          - is not exception-safe, since the add can fail after the remove
            succeeded.
-        '''
+        """
         entry = self._remove_path_unsafe(src)
         try:
             self._add_path(entry, dest)
@@ -363,14 +368,14 @@ class InodeIDMap(NamedTuple):
             raise
 
     def _get_entry(self, path: bytes) -> _PathEntry:
-        entry, = tail(1, self._gen_entries(_norm_split_path(path)))
+        (entry,) = tail(1, self._gen_entries(_norm_split_path(path)))
         return entry
 
     def get_id(self, path: bytes) -> Optional[InodeID]:
-        '''
+        """
         Returns None if the path does not exist, raises if the path
         contains a file as a non-final component.
-        '''
+        """
         entry = self._get_entry(path)
         return None if entry is None else entry.id
 
@@ -378,20 +383,19 @@ class InodeIDMap(NamedTuple):
         return set(self.inner.gen_paths(inode_id))
 
     def get_children(self, inode_id: InodeID) -> Optional[Set[bytes]]:
-        '''
+        """
         Returns None if the is a file, raises if the path contains a file as
         a non-final component.
-        '''
+        """
         paths = list(self.inner.gen_paths(inode_id))
         if len(paths) > 1:  # Directories have 1 path, 0 paths is an error
             return None  # A file
-        path, = paths
+        (path,) = paths
         entry = self._get_entry(path)  # Not None since we started from InodeID
         maybe_map = entry.name_to_child
         if maybe_map is None:
             return None
         else:
             return {
-                os.path.normpath(os.path.join(path, name))
-                    for name in maybe_map
-                }
+                os.path.normpath(os.path.join(path, name)) for name in maybe_map
+            }

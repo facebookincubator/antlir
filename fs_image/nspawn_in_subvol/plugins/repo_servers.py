@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 Serve RPM repo snapshots inside the container by adding this to `plugins`
 kwarg of the `run_*` or `popen_*` functions: `RepoServers(snapshot_paths)`
 
@@ -13,19 +13,21 @@ In practice, you will want `rpm_nspawn_plugins` instead.
 The snapshots must already be in the container's image, and must have been
 built by the `rpm_repo_snapshot()` target, and installed via
 `install_rpm_repo_snapshot()`.
-'''
+"""
 import textwrap
-
-from contextlib import contextmanager, ExitStack
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Iterable, List, Optional, Tuple
 
 from fs_image.common import get_file_logger, pipe
 from fs_image.fs_utils import Path
-from fs_image.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
+from fs_image.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
 from fs_image.nspawn_in_subvol.plugin_hooks import (
-    _NspawnSetup, _NspawnSetupCtxMgr, _PopenResult, _PostSetupPopenCtxMgr
+    _NspawnSetup,
+    _NspawnSetupCtxMgr,
+    _PopenResult,
+    _PostSetupPopenCtxMgr,
 )
 
 from . import NspawnPlugin
@@ -37,7 +39,7 @@ log = get_file_logger(__file__)
 # This is a temporary mountpoint for the host's `/proc` inside the
 # container.  It is unmounted and removed before the user command starts.
 # However, in the booted case, it may be visible to early boot-time units.
-_OUTER_PROC = '/outerproc_repo_server'  # Distinct from `/outerproc_boot`
+_OUTER_PROC = "/outerproc_repo_server"  # Distinct from `/outerproc_boot`
 
 
 @dataclass
@@ -56,8 +58,8 @@ class _ContainerPidExfiltrator:
     @classmethod
     @contextmanager
     def new(
-        cls, exfil_w_dest_fd: int, ready_r_dest_fd: int,
-    ) -> '_ContainerPidExfiltrator':
+        cls, exfil_w_dest_fd: int, ready_r_dest_fd: int
+    ) -> "_ContainerPidExfiltrator":
         # The first pipe's write end is forwarded into the container, and
         # will be used to exfiltrated data about its PID namespace, before
         # we start the user command.
@@ -81,7 +83,8 @@ class _ContainerPidExfiltrator:
         # After sending this information, it will block on the "ready" FD to
         # wait for this script to complete setup.  Once the "ready" signal is
         # received, it will continue to execute the final command.
-        wrap = textwrap.dedent(f'''\
+        wrap = textwrap.dedent(
+            f"""\
             grep ^PPid: {_OUTER_PROC}/self/status >&{self.exfil_w_dest_fd}
             umount -R {_OUTER_PROC}
             rmdir {_OUTER_PROC}
@@ -93,13 +96,14 @@ class _ContainerPidExfiltrator:
             fi
             exec {self.ready_r_dest_fd}<&-
             exec "$@"
-        ''')
-        return ['/bin/bash', '-eu', '-o', 'pipefail', '-c', wrap, '--', *cmd]
+        """
+        )
+        return ["/bin/bash", "-eu", "-o", "pipefail", "-c", wrap, "--", *cmd]
 
     @contextmanager
     def exfiltrate_container_pid(self) -> int:
-        'Yields the outer PID of a process inside the container.'
-        assert self._ready_sent is None, 'exfiltrate_container_pid called twice'
+        "Yields the outer PID of a process inside the container."
+        assert self._ready_sent is None, "exfiltrate_container_pid called twice"
         self._ready_sent = False
 
         self.exfil_w.close()
@@ -110,23 +114,24 @@ class _ContainerPidExfiltrator:
             # booted case, we cannot wait for `exfil_w` to get closed, the
             # `nsenter` process also inherits it, and will hold it open for
             # as long as the user command runs, causing us to deadlock here.
-            yield int(self.exfil_r.readline().decode().split(':')[1].strip())
+            yield int(self.exfil_r.readline().decode().split(":")[1].strip())
         finally:
             if not self._ready_sent:
                 self.send_ready()  # pragma: no cover
 
     def send_ready(self):
-        assert self._ready_sent is False, \
-            'Can only send ready once, after calling `exfiltrate_container_pid`'
-        self.ready_w.write(b'ready\n')
+        assert (
+            self._ready_sent is False
+        ), "Can only send ready once, after calling `exfiltrate_container_pid`"
+        self.ready_w.write(b"ready\n")
         self.ready_w.close()
         self._ready_sent = True
 
 
 @contextmanager
-def _wrap_opts_with_container_pid_exfiltrator(opts: _NspawnOpts) -> Tuple[
-    _NspawnOpts, _ContainerPidExfiltrator,
-]:
+def _wrap_opts_with_container_pid_exfiltrator(
+    opts: _NspawnOpts,
+) -> Tuple[_NspawnOpts, _ContainerPidExfiltrator]:
     with _ContainerPidExfiltrator.new(
         # Below, we append FDs to `forward_fd`.  In the container, these
         # will map sequentially to `3 + len(opts.forward_fd)` and up.
@@ -140,13 +145,12 @@ def _wrap_opts_with_container_pid_exfiltrator(opts: _NspawnOpts) -> Tuple[
                 cpe.exfil_w.fileno(),
                 cpe.ready_r.fileno(),
             ),
-            bindmount_ro=(*opts.bindmount_ro, ('/proc', _OUTER_PROC)),
+            bindmount_ro=(*opts.bindmount_ro, ("/proc", _OUTER_PROC)),
             cmd=cpe.wrap_user_cmd(opts.cmd),
         ), cpe
 
 
 class RepoServers(NspawnPlugin):
-
     def __init__(self, serve_rpm_snapshots: Iterable[Path]):
         self._serve_rpm_snapshots = serve_rpm_snapshots
 
@@ -179,16 +183,16 @@ class RepoServers(NspawnPlugin):
         #    __package__, 'repo-server', exe=True,
         # ))
         # Rewrite `opts` with a plugin script and some forwarded FDs
-        with _wrap_opts_with_container_pid_exfiltrator(opts) as (opts, cpe), \
-                setup_ctx(opts, popen_args) as setup:
+        with _wrap_opts_with_container_pid_exfiltrator(opts) as (
+            opts,
+            cpe,
+        ), setup_ctx(opts, popen_args) as setup:
             self._container_pid_exfiltrator = cpe
             yield setup
 
     @contextmanager
     def wrap_post_setup_popen(
-        self,
-        post_setup_popen_ctx: _PostSetupPopenCtxMgr,
-        setup: _NspawnSetup,
+        self, post_setup_popen_ctx: _PostSetupPopenCtxMgr, setup: _NspawnSetup
     ) -> _PopenResult:
         # NB: `opts.layer` is not the container's ephemeral subvol, but its
         # read-only predecessor.  This effectively means that in the
@@ -203,11 +207,15 @@ class RepoServers(NspawnPlugin):
                 self._container_pid_exfiltrator.exfiltrate_container_pid()
             )
             for snap_dir in self._serve_rpm_snapshots:
-                stack.enter_context(launch_repo_servers_for_netns(
-                    target_pid=container_pid,
-                    repo_server_bin=snap_subvol.path(snap_dir / 'repo-server'),
-                    snapshot_dir=snap_subvol.path(snap_dir),
-                    debug=setup.opts.debug_only_opts.debug,
-                ))
+                stack.enter_context(
+                    launch_repo_servers_for_netns(
+                        target_pid=container_pid,
+                        repo_server_bin=snap_subvol.path(
+                            snap_dir / "repo-server"
+                        ),
+                        snapshot_dir=snap_subvol.path(snap_dir),
+                        debug=setup.opts.debug_only_opts.debug,
+                    )
+                )
             self._container_pid_exfiltrator.send_ready()
             yield popen_res

@@ -7,26 +7,30 @@
 import itertools
 import os
 import stat
-
 from dataclasses import dataclass
 from typing import Iterable, NamedTuple, Optional, Union
 
+from fs_image.compiler.requires_provides import (
+    ProvidesDirectory,
+    ProvidesFile,
+    require_directory,
+)
 from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 
-from fs_image.compiler.requires_provides import (
-    ProvidesDirectory, ProvidesFile, require_directory
+from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
+from .stat_options import (
+    Mode,
+    build_stat_options,
+    customize_stat_options,
+    mode_to_str,
 )
 
-from .common import coerce_path_field_normal_relative, ImageItem, LayerOpts
-from .stat_options import (
-    build_stat_options, customize_stat_options, Mode, mode_to_str,
-)
 
 # Default permissions, must match the docs in `install.bzl`.
-_DIR_MODE = 'u+rwx,og+rx'
-_EXE_MODE = 'a+rx'
-_DATA_MODE = 'a+r'
+_DIR_MODE = "u+rwx,og+rx"
+_EXE_MODE = "a+rx"
+_DATA_MODE = "a+r"
 
 
 class _InstallablePath(NamedTuple):
@@ -36,10 +40,14 @@ class _InstallablePath(NamedTuple):
 
 
 def _recurse_into_source(
-    source_dir: Path, dest_dir: str, *,
-    dir_mode: Mode, exe_mode: Mode, data_mode: Mode,
+    source_dir: Path,
+    dest_dir: str,
+    *,
+    dir_mode: Mode,
+    exe_mode: Mode,
+    data_mode: Mode,
 ) -> Iterable[_InstallablePath]:
-    'Yields paths in top-down order, making recursive copying easy.'
+    "Yields paths in top-down order, making recursive copying easy."
     yield _InstallablePath(
         source=source_dir,
         provides=ProvidesDirectory(path=dest_dir.decode()),
@@ -51,8 +59,11 @@ def _recurse_into_source(
             dest = dest_dir / e.name
             if e.is_dir(follow_symlinks=False):
                 yield from _recurse_into_source(
-                    source, dest,
-                    dir_mode=dir_mode, exe_mode=exe_mode, data_mode=data_mode,
+                    source,
+                    dest,
+                    dir_mode=dir_mode,
+                    exe_mode=exe_mode,
+                    data_mode=data_mode,
                 )
             elif e.is_file(follow_symlinks=False):
                 yield _InstallablePath(
@@ -62,7 +73,7 @@ def _recurse_into_source(
                     mode=exe_mode if os.access(source, os.X_OK) else data_mode,
                 )
             else:
-                raise RuntimeError(f'{source}: neither a file nor a directory')
+                raise RuntimeError(f"{source}: neither a file nor a directory")
 
 
 @dataclass(init=False, frozen=True)
@@ -98,31 +109,35 @@ class InstallFileItem(ImageItem):
     @classmethod
     def customize_fields(cls, kwargs):
         super().customize_fields(kwargs)
-        coerce_path_field_normal_relative(kwargs, 'dest')
+        coerce_path_field_normal_relative(kwargs, "dest")
         customize_stat_options(kwargs, default_mode=None)  # Defaulted later
 
-        source = kwargs['source']
-        dest = kwargs['dest']
+        source = kwargs["source"]
+        dest = kwargs["dest"]
 
         # The 3 separate `*_mode` arguments must be set instead of `mode` for
         # directory sources.
-        popped_args = ['mode', 'exe_mode', 'data_mode', 'dir_mode']
+        popped_args = ["mode", "exe_mode", "data_mode", "dir_mode"]
         mode, dir_mode, exe_mode, data_mode = (
             kwargs.pop(a, None) for a in popped_args
         )
 
         st_source = os.stat(source, follow_symlinks=False)
         if stat.S_ISDIR(st_source.st_mode):
-            assert mode is None, f'Cannot use `mode` for directory sources.'
-            kwargs['paths'] = tuple(_recurse_into_source(
-                Path(source), Path(dest),
-                dir_mode=dir_mode or _DIR_MODE,
-                exe_mode=exe_mode or _EXE_MODE,
-                data_mode=data_mode or _DATA_MODE,
-            ))
+            assert mode is None, f"Cannot use `mode` for directory sources."
+            kwargs["paths"] = tuple(
+                _recurse_into_source(
+                    Path(source),
+                    Path(dest),
+                    dir_mode=dir_mode or _DIR_MODE,
+                    exe_mode=exe_mode or _EXE_MODE,
+                    data_mode=data_mode or _DATA_MODE,
+                )
+            )
         elif stat.S_ISREG(st_source.st_mode):
-            assert {dir_mode, exe_mode, data_mode} == {None}, \
-                'Cannot use `{dir,exe,data}_mode` for file sources.'
+            assert {dir_mode, exe_mode, data_mode} == {
+                None
+            }, "Cannot use `{dir,exe,data}_mode` for file sources."
             if mode is None:
                 # This tests whether the build repo user can execute the
                 # file.  This is a very natural test for build artifacts,
@@ -130,14 +145,14 @@ class InstallFileItem(ImageItem):
                 # the ambient umask is pathological, which is why
                 # `compiler.py` checks the umask.
                 mode = _EXE_MODE if os.access(source, os.X_OK) else _DATA_MODE
-            kwargs['paths'] = (_InstallablePath(
-                source=source,
-                provides=ProvidesFile(path=dest),
-                mode=mode,
-            ),)
+            kwargs["paths"] = (
+                _InstallablePath(
+                    source=source, provides=ProvidesFile(path=dest), mode=mode
+                ),
+            )
         else:
             raise RuntimeError(
-                f'{source} must be a regular file or directory, got {st_source}'
+                f"{source} must be a regular file or directory, got {st_source}"
             )
 
     def provides(self):
@@ -158,18 +173,31 @@ class InstallFileItem(ImageItem):
         #
         # Don't bother preserving metadata since we explicitly set mode &
         # ownership ...  and our build setup lets timestamp float (for now).
-        subvol.run_as_root([
-            'cp', '--recursive', '--no-clobber', '--no-dereference',
-            '--reflink=auto', '--sparse=always', '--no-preserve=all',
-            self.source, dest,
-        ])
+        subvol.run_as_root(
+            [
+                "cp",
+                "--recursive",
+                "--no-clobber",
+                "--no-dereference",
+                "--reflink=auto",
+                "--sparse=always",
+                "--no-preserve=all",
+                self.source,
+                dest,
+            ]
+        )
         build_stat_options(self, subvol, dest, do_not_set_mode=True)
         # Group by mode to make as few shell calls as possible.
-        for mode_str, modes_and_paths in itertools.groupby(sorted(
-            (mode_to_str(i.mode), i.provides.path) for i in self.paths
-        ), lambda x: x[0]):
+        for mode_str, modes_and_paths in itertools.groupby(
+            sorted((mode_to_str(i.mode), i.provides.path) for i in self.paths),
+            lambda x: x[0],
+        ):
             # `chmod` follows symlinks, and there's no option to stop it.
             # However, `customize_fields` should have failed on symlinks.
-            subvol.run_as_root(['chmod', mode_str, *(
-                subvol.path(p) for _, p in modes_and_paths
-            )])
+            subvol.run_as_root(
+                [
+                    "chmod",
+                    mode_str,
+                    *(subvol.path(p) for _, p in modes_and_paths),
+                ]
+            )

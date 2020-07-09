@@ -7,7 +7,7 @@
 # The following docblock describes the CLI of the binary that can be built
 # from this library.  To create such a binary, you will need to call `main`
 # -- refer to its docblock for usage.
-'''
+"""
 This CLI helps maintain package databases used by the Buck macro functions
 `fetched_package_layers_from_{bzl,json_dir}_db` to expose externally
 fetched packages as `image.layer` targets.  Read the documentation in
@@ -27,24 +27,26 @@ to passing `--replace package tag '{}'` for each item in the DB.
 Other kinds of updates to the DB can be made via `--replace` and `--create`.
 Pay careful attention to the description of their `OPTIONS` parameter.
 
-'''
+"""
 import argparse
 import ast
 import copy
 import hashlib
 import json
 import os
-
 from typing import Callable, List, Mapping, Tuple
 
 from .common import get_file_logger, init_logging
 from .fs_utils import (
-    Path, populate_temp_dir_and_rename, populate_temp_file_and_rename,
+    Path,
+    populate_temp_dir_and_rename,
+    populate_temp_file_and_rename,
 )
 
-_GENERATED = '@' + 'generated'
-_JSON = '.json'
-_BZL_DB_PREFIX = 'package_db = '
+
+_GENERATED = "@" + "generated"
+_JSON = ".json"
+_BZL_DB_PREFIX = "package_db = "
 _INDENT_SPACES = 4
 
 log = get_file_logger(__file__)
@@ -91,7 +93,7 @@ ExplicitUpdates = Mapping[Package, Mapping[Tag, DbUpdateOptions]]
 
 
 def _with_generated_header_impl(s, token, how_to_generate):
-    return f'# {_GENERATED} {token}\n# Update via `{how_to_generate}`\n' + s
+    return f"# {_GENERATED} {token}\n# Update via `{how_to_generate}`\n" + s
 
 
 def _with_generated_header(contents, how_to_generate):
@@ -100,35 +102,48 @@ def _with_generated_header(contents, how_to_generate):
     # This is not a security measure.  It is only intended to discourage
     # people from manually resolving merge conflicts, which is error-prone
     # and can break trunk if a bad merge is accidentally committed.
-    hex_hash = hashlib.md5(_with_generated_header_impl(
-        contents,
-        # This is the same magic value that lint uses, yay.
-        '<<SignedSource::*O*zOeWoEQle#+L!plEphiEmie@IsG>>',
-        how_to_generate,
-    ).encode()).hexdigest()
+    hex_hash = hashlib.md5(
+        _with_generated_header_impl(
+            contents,
+            # This is the same magic value that lint uses, yay.
+            "<<SignedSource::*O*zOeWoEQle#+L!plEphiEmie@IsG>>",
+            how_to_generate,
+        ).encode()
+    ).hexdigest()
     return _with_generated_header_impl(
-        contents, f'SignedSource<<{hex_hash}>>', how_to_generate,
+        contents, f"SignedSource<<{hex_hash}>>", how_to_generate
     )
 
 
 # TARGETS auto-formatting requires double-quotes and trailing commas, so we
 # need our own serializer :/ -- `repr` or JSON won't do.
 def _buildifier_repr(x, depth=0, *, is_inline=False):
-    indent = ' ' * _INDENT_SPACES * depth
-    first_indent = '' if is_inline else indent
+    indent = " " * _INDENT_SPACES * depth
+    first_indent = "" if is_inline else indent
     if isinstance(x, str):
         return first_indent + (
-            '"' +
-            x.encode('unicode_escape').decode('ascii').replace('"', '\\"') +
             '"'
+            + x.encode("unicode_escape").decode("ascii").replace('"', '\\"')
+            + '"'
         )
     elif isinstance(x, bool):
         return first_indent + str(x)
     elif isinstance(x, dict):
-        return first_indent + '{\n' + ',\n'.join((
-            _buildifier_repr(k, depth + 1) + ': ' +
-            _buildifier_repr(v, depth + 1, is_inline=True).lstrip(' ')
-        ) for k, v in sorted(x.items())) + (',\n' if x else '') + indent + '}'
+        return (
+            first_indent
+            + "{\n"
+            + ",\n".join(
+                (
+                    _buildifier_repr(k, depth + 1)
+                    + ": "
+                    + _buildifier_repr(v, depth + 1, is_inline=True).lstrip(" ")
+                )
+                for k, v in sorted(x.items())
+            )
+            + (",\n" if x else "")
+            + indent
+            + "}"
+        )
 
 
 def _write_bzl_db(db: PackageTagDb, path: Path, how_to_generate: str):
@@ -137,10 +152,11 @@ def _write_bzl_db(db: PackageTagDb, path: Path, how_to_generate: str):
     # `--out-db`.  This is fine since the DB paths should look different
     # anyhow (`dirname` vs `filename.bzl`).
     with populate_temp_file_and_rename(path, overwrite=True) as outfile:
-        outfile.write(_with_generated_header(
-            _BZL_DB_PREFIX + _buildifier_repr(db) + '\n',
-            how_to_generate,
-        ))
+        outfile.write(
+            _with_generated_header(
+                _BZL_DB_PREFIX + _buildifier_repr(db) + "\n", how_to_generate
+            )
+        )
 
 
 def _write_json_dir_db(db: PackageTagDb, path: Path, how_to_generate: str):
@@ -148,17 +164,16 @@ def _write_json_dir_db(db: PackageTagDb, path: Path, how_to_generate: str):
         for package, tag_to_info in db.items():
             os.mkdir(td / package)
             for tag, info in tag_to_info.items():
-                with open(td / package / (tag + _JSON), 'w') as outf:
-                    outf.write(_with_generated_header(
-                        json.dumps(info, sort_keys=True, indent=4) + '\n',
-                        how_to_generate,
-                    ))
+                with open(td / package / (tag + _JSON), "w") as outf:
+                    outf.write(
+                        _with_generated_header(
+                            json.dumps(info, sort_keys=True, indent=4) + "\n",
+                            how_to_generate,
+                        )
+                    )
 
 
-_FORMAT_NAME_TO_WRITER = {
-    'bzl': _write_bzl_db,
-    'json-dir': _write_json_dir_db,
-}
+_FORMAT_NAME_TO_WRITER = {"bzl": _write_bzl_db, "json-dir": _write_json_dir_db}
 
 
 def _read_generated_header(infile):
@@ -174,7 +189,7 @@ def _read_bzl_db(path: Path) -> PackageTagDb:
         _read_generated_header(infile)
         db_str = infile.read()
     assert db_str.startswith(_BZL_DB_PREFIX)
-    return ast.literal_eval(db_str[len(_BZL_DB_PREFIX):])
+    return ast.literal_eval(db_str[len(_BZL_DB_PREFIX) :])
 
 
 def _read_json_dir_db(path: Path) -> PackageTagDb:
@@ -186,21 +201,20 @@ def _read_json_dir_db(path: Path) -> PackageTagDb:
             assert tag_json.endswith(_JSON), (path, package, tag_json)
             with open(path / package / tag_json) as infile:
                 _read_generated_header(infile)
-                tag_to_info[tag_json[:-len(_JSON)]] = json.load(infile)
+                tag_to_info[tag_json[: -len(_JSON)]] = json.load(infile)
     return db
 
 
-def _read_db_and_get_writer(path: Path) -> Tuple[
-    PackageTagDb,
-    Callable[[PackageTagDb, str], None],
-]:
+def _read_db_and_get_writer(
+    path: Path,
+) -> Tuple[PackageTagDb, Callable[[PackageTagDb, str], None]]:
     # We don't need very fancy autodetection at present, and I don't
     # anticipate adding more DB formats soon.
     if os.path.isfile(path):
         return _read_bzl_db(path), _write_bzl_db
     elif os.path.isdir(path):
         return _read_json_dir_db(path), _write_json_dir_db
-    raise RuntimeError(f'Bad path {path}')  # pragma: no cover
+    raise RuntimeError(f"Bad path {path}")  # pragma: no cover
 
 
 def _get_updated_db(
@@ -214,19 +228,22 @@ def _get_updated_db(
 
     # The `updates` map tells us the packages, for which we have to fetch
     # new DB entries.
-    updates = {
-        package: {tag: {} for tag in tag_to_info}
+    updates = (
+        {
+            package: {tag: {} for tag in tag_to_info}
             for package, tag_to_info in existing_db.items()
-    } if update_existing else {}
+        }
+        if update_existing
+        else {}
+    )
     # Merge any `ExplictUpdates` into `updates.  "replace" precedes "create"
     # to make us fail if a `--replace` conflicts with a `--create`.
     for explicit_updates in [replace_items, create_items]:
         for package, in_tag_to_update_opts in explicit_updates.items():
             out_tag_to_update_opts = updates.setdefault(package, {})
             for tag, update_opts in in_tag_to_update_opts.items():
-                seen_before = (
-                    tag in out_tag_to_update_opts or
-                    tag in existing_db.get(package, {})
+                seen_before = tag in out_tag_to_update_opts or tag in existing_db.get(
+                    package, {}
                 )
                 if explicit_updates is create_items:
                     assert not seen_before, (package, tag)
@@ -235,7 +252,7 @@ def _get_updated_db(
                     # erroneously `replace` a conflicting `create`.
                     assert seen_before, (package, tag)
                 else:  # pragma: no cover
-                    raise AssertionError('Not reached')
+                    raise AssertionError("Not reached")
                 out_tag_to_update_opts[tag] = update_opts
 
     # If we are not updating the existing DB (i.e. explicit updates only),
@@ -246,17 +263,16 @@ def _get_updated_db(
     for package, tag_to_update_opts in updates.items():
         new_tag_to_info = new_db.setdefault(package, {})
         for tag, update_opts in tag_to_update_opts.items():
-            log.info(f'Querying {package}:{tag} with options {update_opts}')
+            log.info(f"Querying {package}:{tag} with options {update_opts}")
             info = get_db_info_fn(package, tag, update_opts)
             new_tag_to_info[tag] = info
-            log.info(f'New info for {package}:{tag} -> {info}')
+            log.info(f"New info for {package}:{tag} -> {info}")
 
     return new_db
 
 
 def _parse_updates(
-    description: str,
-    items: List[Tuple[Package, Tag, str]],
+    description: str, items: List[Tuple[Package, Tag, str]]
 ) -> ExplicitUpdates:
     updates = {}
     for package, tag, opts_str in items:
@@ -267,7 +283,7 @@ def _parse_updates(
             # `_get_updated_db` detects conflicts between types.
             raise RuntimeError(
                 f'Conflicting "{description}" updates for {package} / {tag}: '
-                f'{opts} ({id(opts)}) is not {stored_opts} ({id(stored_opts)}.'
+                f"{opts} ({id(opts)}) is not {stored_opts} ({id(stored_opts)}."
             )
     return updates
 
@@ -278,50 +294,59 @@ def _parse_args(argv, *, overview_doc, options_doc):
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        '--db', type=Path.from_argparse, required=True,
-        help='Path to the database to update',
+        "--db",
+        type=Path.from_argparse,
+        required=True,
+        help="Path to the database to update",
     )
     parser.add_argument(
-        '--out-db', type=Path.from_argparse,
-        help='Path for the updated database (defaults to `--db`)',
+        "--out-db",
+        type=Path.from_argparse,
+        help="Path for the updated database (defaults to `--db`)",
     )
     parser.add_argument(
-        '--out-format',
+        "--out-format",
         choices=set(_FORMAT_NAME_TO_WRITER.keys()),
-        help='Which database format to write? (defaults to the auto-detected '
-            'input format)',
+        help="Which database format to write? (defaults to the auto-detected "
+        "input format)",
     )
     parser.add_argument(
-        '--no-update-existing', action='store_false', dest='update_existing',
-        help='Only update package / tag pairs set via --create or --replace',
+        "--no-update-existing",
+        action="store_false",
+        dest="update_existing",
+        help="Only update package / tag pairs set via --create or --replace",
     )
     for action, doc in [
         (
-            'create',
-            'Ensures this PACKAGE/TAG pair will be updated in the DB, '
-            f'even if `--no-update-existing` was passed. {options_doc} '
-            'Asserts that the PACKAGE/TAG pair was NOT already in the DB. ',
+            "create",
+            "Ensures this PACKAGE/TAG pair will be updated in the DB, "
+            f"even if `--no-update-existing` was passed. {options_doc} "
+            "Asserts that the PACKAGE/TAG pair was NOT already in the DB. ",
         ),
         (
-            'replace',
-            'Just like `--create`, but asserts that the PACKAGE/TAG pair '
-            'already exists in the DB.',
+            "replace",
+            "Just like `--create`, but asserts that the PACKAGE/TAG pair "
+            "already exists in the DB.",
         ),
     ]:
         parser.add_argument(
-            '--' + action, action='append', default=[], nargs=3,
-            metavar=('PACKAGE', 'TAG', 'OPTIONS'), help=doc,
+            "--" + action,
+            action="append",
+            default=[],
+            nargs=3,
+            metavar=("PACKAGE", "TAG", "OPTIONS"),
+            help=doc,
         )
     parser.add_argument(  # Pass this to `init_logging`
-        '--debug', action='store_true', help='Enable verbose logging',
+        "--debug", action="store_true", help="Enable verbose logging"
     )
     return Path.parse_args(parser, argv)
 
 
 def main(
-    argv, get_db_info_factory, *, how_to_generate, overview_doc, options_doc,
+    argv, get_db_info_factory, *, how_to_generate, overview_doc, options_doc
 ):
-    '''
+    """
     Implements the "update DB" CLI using your custom logic for obtaiing
     `DbInfo` objects for package:tag pairs.
 
@@ -343,22 +368,23 @@ def main(
     In reality, you would want your `GetDbInfoFn` to do some schema
     validation, and to check that the "how to fetch" info does actually
     refer to a valid package in your package store.
-    '''
-    args = _parse_args(
-        argv, overview_doc=overview_doc, options_doc=options_doc,
-    )
+    """
+    args = _parse_args(argv, overview_doc=overview_doc, options_doc=options_doc)
     init_logging(debug=args.debug)
     db, write_db_in_same_format = _read_db_and_get_writer(args.db)
-    write_db = _FORMAT_NAME_TO_WRITER[args.out_format] if args.out_format \
+    write_db = (
+        _FORMAT_NAME_TO_WRITER[args.out_format]
+        if args.out_format
         else write_db_in_same_format
+    )
     with get_db_info_factory as get_db_info_fn:
         write_db(
             _get_updated_db(
                 existing_db=db,
                 update_existing=args.update_existing,
-                create_items=_parse_updates('create', args.create),
-                replace_items=_parse_updates('replace', args.replace),
-                get_db_info_fn=get_db_info_fn
+                create_items=_parse_updates("create", args.create),
+                replace_items=_parse_updates("replace", args.replace),
+                get_db_info_fn=get_db_info_fn,
             ),
             args.out_db or args.db,
             how_to_generate,

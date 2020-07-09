@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 Read the `run.py` docblock first.  Then, review the docs for
 `new_nspawn_opts` and `PopenArgs`, and invoke `{run,popen}_booted_nspawn`.
 
@@ -57,66 +57,73 @@ notable exceptions:
 SECURITY NOTE: Just as with `systemd-nspawn`'s `--console=pipe`, this can
 pass FDs pointed at your terminal into the container, allowing the guest to
 synthesize keystrokes on the host.
-'''
+"""
 import functools
 import os
 import signal
 import subprocess
 import textwrap
 import time
-
 from contextlib import contextmanager
 from typing import ContextManager, Iterable, Tuple
 
 from fs_image.common import get_file_logger
 from fs_image.send_fds_and_run import popen_and_inject_fds_after_sudo
 
-from .args import _NspawnOpts, PopenArgs
-from .cmd import maybe_popen_and_inject_fds, _NspawnSetup
+from .args import PopenArgs, _NspawnOpts
+from .cmd import _NspawnSetup, maybe_popen_and_inject_fds
 from .common import DEFAULT_PATH_ENV
-from .plugins import NspawnPlugin
 from .plugin_hooks import _popen_plugin_driver
+from .plugins import NspawnPlugin
+
 
 log = get_file_logger(__file__)
 
 # This is a temporary mountpoint for the host's `/proc` inside the
 # container.  It is unmounted and removed before the user command starts.
 # However, it may be visible to early boot-time units.
-_OUTER_PROC = '/outerproc_boot'  # Distinct from `/outerproc_repo_server`
+_OUTER_PROC = "/outerproc_boot"  # Distinct from `/outerproc_repo_server`
 
 
 def run_booted_nspawn(
-    opts: _NspawnOpts, popen_args: PopenArgs,
-    *, plugins: Iterable[NspawnPlugin] = (),
+    opts: _NspawnOpts,
+    popen_args: PopenArgs,
+    *,
+    plugins: Iterable[NspawnPlugin] = (),
 ) -> Tuple[subprocess.CompletedProcess, subprocess.CompletedProcess]:
-    '''
+    """
     The first `CompletedProcess` reflects for the user command `opts.cmd`
     that we tried to run in the booted container.
 
     The second one is for the `systemd` process representing the container
     boot process itself.
-    '''
+    """
     with popen_booted_nspawn(opts, popen_args, plugins=plugins) as (nsp, bp):
         ns_stdout, ns_stderr = nsp.communicate()
         # We don't make any provisions for pipes to the boot process,
         # see the file docblock.
-    return subprocess.CompletedProcess(
-        args=nsp.args,
-        returncode=nsp.returncode,
-        stdout=ns_stdout,
-        stderr=ns_stderr,
-    ), subprocess.CompletedProcess(
-        args=bp.args,
-        returncode=bp.returncode,
-        # These cannot be `subprocess.PIPE` per the file docblock.
-        stdout=None,
-        stderr=None,
+    return (
+        subprocess.CompletedProcess(
+            args=nsp.args,
+            returncode=nsp.returncode,
+            stdout=ns_stdout,
+            stderr=ns_stderr,
+        ),
+        subprocess.CompletedProcess(
+            args=bp.args,
+            returncode=bp.returncode,
+            # These cannot be `subprocess.PIPE` per the file docblock.
+            stdout=None,
+            stderr=None,
+        ),
     )
 
 
 def popen_booted_nspawn(
-    opts: _NspawnOpts, popen_args: PopenArgs,
-    *, plugins: Iterable[NspawnPlugin] = (),
+    opts: _NspawnOpts,
+    popen_args: PopenArgs,
+    *,
+    plugins: Iterable[NspawnPlugin] = (),
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
     return _popen_plugin_driver(
         opts=opts,
@@ -127,19 +134,25 @@ def popen_booted_nspawn(
 
 
 @contextmanager
-def _post_setup_popen_booted_nspawn(setup: _NspawnSetup) -> Iterable[
-    Tuple[subprocess.Popen, subprocess.Popen]
-]:
-    with _popen_boot_systemd(setup) as (boot_proc, systemd_pid), \
-            _popen_nsenter_into_systemd(
-                setup, boot_proc, systemd_pid=systemd_pid,
-            ) as nsenter_proc:
+def _post_setup_popen_booted_nspawn(
+    setup: _NspawnSetup,
+) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
+    with _popen_boot_systemd(setup) as (
+        boot_proc,
+        systemd_pid,
+    ), _popen_nsenter_into_systemd(
+        setup, boot_proc, systemd_pid=systemd_pid
+    ) as nsenter_proc:
         yield nsenter_proc, boot_proc
 
 
 def _wrap_systemd_exec():
     return [
-        '/bin/bash', '-eu', '-o', 'pipefail', '-c',
+        "/bin/bash",
+        "-eu",
+        "-o",
+        "pipefail",
+        "-c",
         # This script will be invoked with a writable FD forwarded into the
         # namespace this is being executed in as fd #3.
         #
@@ -156,12 +169,14 @@ def _wrap_systemd_exec():
         # after setting up the necessary signal handlers to process the
         # SIGRTMIN+4 shutdown signal that we need to shut down the container
         # after invoking a command inside it.
-        textwrap.dedent(f'''\
+        textwrap.dedent(
+            f"""\
             grep ^PPid: {_OUTER_PROC}/self/status >&3
             umount -R {_OUTER_PROC}
             rmdir {_OUTER_PROC}
             exec /usr/lib/systemd/systemd --log-target=console
-        '''),
+        """
+        ),
     ]
 
 
@@ -170,7 +185,7 @@ def _systemd_reaper(setup, boot_proc, systemd_pid):
     try:
         yield
     finally:
-        log.info('User command exited, waiting to shut down systemd')
+        log.info("User command exited, waiting to shut down systemd")
         # Signal until the `systemd` process exits, because the first signal
         # may arrive before it signal handler setup, and may be ignored.
         #
@@ -189,9 +204,9 @@ def _systemd_reaper(setup, boot_proc, systemd_pid):
             # dies, some other process reuses its PID, we kill that too".
             # Let's just hope everyone uses 32-bit PIDs now.
             try:
-                setup.subvol.run_as_root([
-                    'kill', '-s', str(signal.SIGRTMIN + 4), systemd_pid,
-                ])
+                setup.subvol.run_as_root(
+                    ["kill", "-s", str(signal.SIGRTMIN + 4), systemd_pid]
+                )
                 time.sleep(delay)
                 delay = min(0.25, delay * 2)
             except subprocess.CalledProcessError:
@@ -199,27 +214,29 @@ def _systemd_reaper(setup, boot_proc, systemd_pid):
 
 
 @contextmanager
-def _popen_boot_systemd(setup: _NspawnSetup) -> Iterable[Tuple[
-    subprocess.Popen, int
-]]:
+def _popen_boot_systemd(
+    setup: _NspawnSetup,
+) -> Iterable[Tuple[subprocess.Popen, int]]:
     # We need `root` to boot `systemd`. The user for `opts.cmd` is set later.
-    cmd = [*setup.nspawn_cmd, '--user=root']
+    cmd = [*setup.nspawn_cmd, "--user=root"]
     # Instead of using the `--boot` argument to `systemd-nspawn` we are
     # going to ask systemd-nspawn to invoke a simple shell script so
     # that we can exfiltrate the process id of the process. After
     # sending that information out, the shell script `exec`s systemd.
-    cmd.extend([
-        '--console=read-only',  # `stdin` is attached to `cmd` via `nsenter`
-        f'--bind-ro=/proc:{_OUTER_PROC}',
-        '--',
-        *_wrap_systemd_exec(),
-    ])
+    cmd.extend(
+        [
+            "--console=read-only",  # `stdin` is attached to `cmd` via `nsenter`
+            f"--bind-ro=/proc:{_OUTER_PROC}",
+            "--",
+            *_wrap_systemd_exec(),
+        ]
+    )
 
     if setup.popen_args.boot_console == subprocess.PIPE:
         raise RuntimeError(
-            '`popen_booted_nspawn` does not support `subprocess.PIPE` for '
-            'the boot console. Please see the `booted.py` docblock for how to '
-            'mitigate this.'
+            "`popen_booted_nspawn` does not support `subprocess.PIPE` for "
+            "the boot console. Please see the `booted.py` docblock for how to "
+            "mitigate this."
         )
 
     # Create a pipe that we can forward into the namespace that our
@@ -263,13 +280,13 @@ def _popen_boot_systemd(setup: _NspawnSetup) -> Iterable[Tuple[
         # We can't deadlock a piped `boot_console` -- `_wrap_systemd_exec`
         # does not write to stdout.  Writes to stderr should be minimal,
         # too, not enough to fill up a 64KiB default pipe buffer.
-        with os.fdopen(exfil_r, 'r') as f:
-            systemd_pid = f.read().split(':')[1].strip()
+        with os.fdopen(exfil_r, "r") as f:
+            systemd_pid = f.read().split(":")[1].strip()
 
         # From here onward, if either `stderr` and `boot_console` is a pipe,
         # then failing to drain the read end can deadlock.  See file docblock.
 
-        log.info('Began systemd startup, injecting user command')
+        log.info("Began systemd startup, injecting user command")
         with _systemd_reaper(setup, boot_proc, systemd_pid):
             yield boot_proc, systemd_pid
 
@@ -284,30 +301,32 @@ def _popen_nsenter_into_systemd(
     # what the default env looks for a shell launched inside
     # of systemd-nspawn.
     default_env = {
-        'HOME': opts.user.pw_dir,
-        'LOGNAME': opts.user.pw_name,
-        'PATH': DEFAULT_PATH_ENV,
-        'USER': opts.user.pw_name,
+        "HOME": opts.user.pw_dir,
+        "LOGNAME": opts.user.pw_name,
+        "PATH": DEFAULT_PATH_ENV,
+        "USER": opts.user.pw_name,
     }
-    term_env = os.environ.get('TERM')
+    term_env = os.environ.get("TERM")
     if term_env is not None:
-        default_env['TERM'] = term_env
+        default_env["TERM"] = term_env
 
     # Set the user properly for the nsenter'd command to run.
     # Future: consider properly logging in as the user with su
     # or something better so that a real user session is created
     # within the booted container.
     nsenter_cmd = [
-        'nsenter',
-        f'--target={systemd_pid}', '--all',
-        f'--setuid={opts.user.pw_uid}',
-        f'--setgid={opts.user.pw_gid}',
+        "nsenter",
+        f"--target={systemd_pid}",
+        "--all",
+        f"--setuid={opts.user.pw_uid}",
+        f"--setgid={opts.user.pw_gid}",
         # Clear and set the new env
-        'env', '-',
+        "env",
+        "-",
         *setup.cmd_env,
         # At present, these defaults override any user-provided values.
         # This can be relaxed if there's a good reason.
-        *(f'{k}={v}' for k, v in default_env.items()),
+        *(f"{k}={v}" for k, v in default_env.items()),
         *opts.cmd,
     ]
 

@@ -6,14 +6,13 @@
 
 import os
 import subprocess
-
 from dataclasses import dataclass
 
 from fs_image.compiler.requires_provides import require_directory
 from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 
-from .common import coerce_path_field_normal_relative, ImageItem, LayerOpts
+from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
 from .phases_provide import gen_subvolume_subtree_provides
 
 
@@ -31,21 +30,22 @@ class CloneItem(ImageItem):
     def customize_fields(cls, kwargs):
         super().customize_fields(kwargs)
         # This is already checked in `clone.bzl`
-        assert not kwargs['omit_outer_dir'] or kwargs['pre_existing_dest']
-        coerce_path_field_normal_relative(kwargs, 'dest')
+        assert not kwargs["omit_outer_dir"] or kwargs["pre_existing_dest"]
+        coerce_path_field_normal_relative(kwargs, "dest")
 
     def provides(self):
         img_rel_src = self.source.relpath(self.source_layer.path())
         assert not img_rel_src.has_leading_dot_dot(), (
-            self.source, self.source_layer.path()
+            self.source,
+            self.source_layer.path(),
         )
         for p in gen_subvolume_subtree_provides(self.source_layer, img_rel_src):
-            if self.omit_outer_dir and p.path == '/':
+            if self.omit_outer_dir and p.path == "/":
                 continue
-            rel_to_src = p.path.lstrip('/')
+            rel_to_src = p.path.lstrip("/")
             if not self.omit_outer_dir and self.pre_existing_dest:
                 rel_to_src = os.path.join(
-                    img_rel_src.basename().decode(), rel_to_src,
+                    img_rel_src.basename().decode(), rel_to_src
                 )
             yield p.with_new_path(os.path.join(self.dest, rel_to_src))
 
@@ -62,10 +62,22 @@ class CloneItem(ImageItem):
             # Like `ls`, but NUL-separated.  Needs `root` since the repo
             # user may not be able to access the source subvol.
             sources = [
-                self.source / p for p in subvol.run_as_root([
-                    'find', self.source, '-mindepth', '1', '-maxdepth', '1',
-                    '-printf', '%f\\0',
-                ], stdout=subprocess.PIPE).stdout.strip(b'\0').split(b'\0')
+                self.source / p
+                for p in subvol.run_as_root(
+                    [
+                        "find",
+                        self.source,
+                        "-mindepth",
+                        "1",
+                        "-maxdepth",
+                        "1",
+                        "-printf",
+                        "%f\\0",
+                    ],
+                    stdout=subprocess.PIPE,
+                )
+                .stdout.strip(b"\0")
+                .split(b"\0")
             ]
         else:
             sources = [self.source]
@@ -83,8 +95,16 @@ class CloneItem(ImageItem):
         #     together ought to preserve the original sparseness layout,
         #   - `--preserve=all` keeps as much original metadata as possible,
         #     including hardlinks.
-        subvol.run_as_root([
-            'cp', '--recursive', '--no-clobber', '--no-dereference',
-            '--reflink=always', '--sparse=auto', '--preserve=all',
-            *sources, subvol.path(self.dest),
-        ])
+        subvol.run_as_root(
+            [
+                "cp",
+                "--recursive",
+                "--no-clobber",
+                "--no-dereference",
+                "--reflink=always",
+                "--sparse=auto",
+                "--preserve=all",
+                *sources,
+                subvol.path(self.dest),
+            ]
+        )

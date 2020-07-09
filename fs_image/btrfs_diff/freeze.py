@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 This is an analog of `copy.deepcopy`, with the caveat that `freeze` returns
 a recursively immutable copy of its argument.  This is achieved by replacing
 mutable containers by immutable ones (including all the built-ins, plus
@@ -19,7 +19,7 @@ impossible to construct a recursively immutable structure that references
 itself.
 
 Future: Once `deepfrozen` is landed, this sort of thing should get nicer.
-'''
+"""
 from enum import Enum
 from types import MappingProxyType
 
@@ -35,7 +35,7 @@ def freeze(obj, *, _memo=None, **kwargs):
     if id(obj) in _memo:  # Already frozen?
         return _memo[id(obj)]
 
-    if hasattr(obj, 'freeze'):
+    if hasattr(obj, "freeze"):
         frozen = obj.freeze(_memo=_memo, **kwargs)
     else:
         # At the moment, I don't have a need for passing extra data into
@@ -45,17 +45,21 @@ def freeze(obj, *, _memo=None, **kwargs):
         # This is a lame-o way of identifying `NamedTuple`s. Using
         # `deepfrozen` would avoid this kludge.
         if (
-            isinstance(obj, tuple) and hasattr(obj, '_replace') and
-            hasattr(obj, '_fields') and hasattr(obj, '_make')
+            isinstance(obj, tuple)
+            and hasattr(obj, "_replace")
+            and hasattr(obj, "_fields")
+            and hasattr(obj, "_make")
         ):
             frozen = obj._make(freeze(i, _memo=_memo) for i in obj)
         elif isinstance(obj, (list, tuple)):
             frozen = tuple(freeze(i, _memo=_memo) for i in obj)
         elif isinstance(obj, dict):
-            frozen = MappingProxyType({
-                freeze(k, _memo=_memo): freeze(v, _memo=_memo)
+            frozen = MappingProxyType(
+                {
+                    freeze(k, _memo=_memo): freeze(v, _memo=_memo)
                     for k, v in obj.items()
-            })
+                }
+            )
         elif isinstance(obj, (set, frozenset)):
             frozen = frozenset(freeze(i, _memo=_memo) for i in obj)
         else:

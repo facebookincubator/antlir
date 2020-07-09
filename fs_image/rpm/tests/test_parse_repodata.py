@@ -9,16 +9,16 @@ import gzip
 import lzma
 import os
 import unittest
-
 from io import BytesIO
 from typing import Iterator, Set, Tuple
 
 from fs_image.fs_utils import Path
-from ..repo_objects import Repodata, RepoMetadata
+
 from ..parse_repodata import get_rpm_parser, pick_primary_repodata
+from ..repo_objects import Repodata, RepoMetadata
 from ..tests.temp_repos import (
-    get_test_signing_key,
     SAMPLE_STEPS,
+    get_test_signing_key,
     temp_repos_steps,
 )
 
@@ -30,9 +30,9 @@ def _dir_paths(path: Path) -> Set[Path]:
 def find_test_repos(repos_root: Path) -> Iterator[Tuple[Path, RepoMetadata]]:
     for step_path in _dir_paths(repos_root):
         for p in _dir_paths(step_path):
-            if p.basename() in [b'yum.conf', b'dnf.conf']:
+            if p.basename() in [b"yum.conf", b"dnf.conf"]:
                 continue
-            with open(p / 'repodata/repomd.xml', 'rb') as f:
+            with open(p / "repodata/repomd.xml", "rb") as f:
                 yield p, RepoMetadata.new(xml=f.read())
 
 
@@ -49,7 +49,6 @@ def _rpm_set(infile: BytesIO, rd: Repodata):
 
 
 class ParseRepodataTestCase(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         # Since we only read the repo, it is much faster to create
@@ -62,7 +61,7 @@ class ParseRepodataTestCase(unittest.TestCase):
         # fine to reduce the scope.
         cls.temp_repos_ctx = temp_repos_steps(
             gpg_signing_key=get_test_signing_key(),
-            repo_change_steps=SAMPLE_STEPS
+            repo_change_steps=SAMPLE_STEPS,
         )
         cls.repos_root = cls.temp_repos_ctx.__enter__()
 
@@ -70,12 +69,13 @@ class ParseRepodataTestCase(unittest.TestCase):
     def tearDownClass(cls):
         cls.temp_repos_ctx.__exit__(None, None, None)
 
-    def _xml_and_sqlite_primaries(self, repomd: RepoMetadata) \
-            -> Tuple[Repodata, Repodata]:
+    def _xml_and_sqlite_primaries(
+        self, repomd: RepoMetadata
+    ) -> Tuple[Repodata, Repodata]:
         primaries = [
             (rd.is_primary_sqlite(), rd.is_primary_xml(), rd)
-                for rd in repomd.repodatas
-                    if rd.is_primary_sqlite() or rd.is_primary_xml()
+            for rd in repomd.repodatas
+            if rd.is_primary_sqlite() or rd.is_primary_xml()
         ]
         primaries.sort()
         # All our test repos have both SQLite and XML generated.
@@ -86,15 +86,19 @@ class ParseRepodataTestCase(unittest.TestCase):
         return (rd for _, _, rd in primaries)
 
     def test_parsers_have_same_output(self):
-        unseen_steps = [{
-            repo_name: True
+        unseen_steps = [
+            {
+                repo_name: True
                 for repo_name, content in step.items()
-                    if content is not None  # Means "delete repo"
-        } for step in SAMPLE_STEPS]
+                if content is not None  # Means "delete repo"
+            }
+            for step in SAMPLE_STEPS
+        ]
         for repo_path, repomd in find_test_repos(self.repos_root):
             xml_rd, sql_rd = self._xml_and_sqlite_primaries(repomd)
-            with open(repo_path / xml_rd.location, 'rb') as xf, \
-                    open(repo_path / sql_rd.location, 'rb') as sf:
+            with open(repo_path / xml_rd.location, "rb") as xf, open(
+                repo_path / sql_rd.location, "rb"
+            ) as sf:
                 sql_rpms = _rpm_set(sf, sql_rd)
                 self.assertEqual(_rpm_set(xf, xml_rd), sql_rpms)
 
@@ -119,8 +123,8 @@ class ParseRepodataTestCase(unittest.TestCase):
                         assert search_step >= 0
                 self.assertEqual(
                     {
-                        f'rpm-test-{r.name}-{r.version}-{r.release}.x86_64.rpm'
-                            for r in repo.rpms
+                        f"rpm-test-{r.name}-{r.version}-{r.release}.x86_64.rpm"
+                        for r in repo.rpms
                     },
                     {os.path.basename(r.location) for r in sql_rpms},
                     (repo, repo_name, repo_path),
@@ -132,49 +136,52 @@ class ParseRepodataTestCase(unittest.TestCase):
         for _, repomd in find_test_repos(self.repos_root):
             xml_rd, sql_rd = self._xml_and_sqlite_primaries(repomd)
             self.assertIs(sql_rd, pick_primary_repodata(repomd.repodatas))
-            self.assertIs(xml_rd, pick_primary_repodata(
-                [rd for rd in repomd.repodatas if rd is not sql_rd]
-            ))
-            with self.assertRaisesRegex(RuntimeError, '^More than one primar'):
-                self.assertIs(xml_rd, pick_primary_repodata(
-                    [sql_rd, *repomd.repodatas]
-                ))
+            self.assertIs(
+                xml_rd,
+                pick_primary_repodata(
+                    [rd for rd in repomd.repodatas if rd is not sql_rd]
+                ),
+            )
+            with self.assertRaisesRegex(RuntimeError, "^More than one primar"):
+                self.assertIs(
+                    xml_rd, pick_primary_repodata([sql_rd, *repomd.repodatas])
+                )
             non_primary_rds = [
                 rd for rd in repomd.repodatas if rd not in [sql_rd, xml_rd]
             ]
-            with self.assertRaisesRegex(RuntimeError, ' no known primary '):
+            with self.assertRaisesRegex(RuntimeError, " no known primary "):
                 self.assertIs(xml_rd, pick_primary_repodata(non_primary_rds))
-            with self.assertRaisesRegex(NotImplementedError, 'Not reached'):
+            with self.assertRaisesRegex(NotImplementedError, "Not reached"):
                 get_rpm_parser(non_primary_rds[0])
 
     def test_sqlite_edge_cases(self):
         for repo_path, repomd in find_test_repos(self.repos_root):
             _, sql_rd = self._xml_and_sqlite_primaries(repomd)
-            with open(repo_path / sql_rd.location, 'rb') as sf:
+            with open(repo_path / sql_rd.location, "rb") as sf:
                 bz_data = sf.read()
 
-            with self.assertRaisesRegex(RuntimeError, '^Unused data after '):
-                _rpm_set(BytesIO(bz_data + b'oops'), sql_rd)
-            with self.assertRaisesRegex(RuntimeError, 'archive is incomplete'):
+            with self.assertRaisesRegex(RuntimeError, "^Unused data after "):
+                _rpm_set(BytesIO(bz_data + b"oops"), sql_rd)
+            with self.assertRaisesRegex(RuntimeError, "archive is incomplete"):
                 _rpm_set(BytesIO(bz_data[:-5]), sql_rd)
 
             # Some in-the-wild primary SQLite dbs are .gz or .xz, while
             # internally they are all are .bz2, so let's recompress.
             gzf = BytesIO()
-            with gzip.GzipFile(fileobj=gzf, mode='wb') as gz_out:
+            with gzip.GzipFile(fileobj=gzf, mode="wb") as gz_out:
                 gz_out.write(bz2.decompress(bz_data))
             gzf.seek(0)
             self.assertEqual(
-                _rpm_set(gzf, sql_rd._replace(location='X-primary.sqlite.gz')),
+                _rpm_set(gzf, sql_rd._replace(location="X-primary.sqlite.gz")),
                 _rpm_set(BytesIO(bz_data), sql_rd),
             )
 
             # Now do .xz
             xzf = BytesIO()
-            with lzma.LZMAFile(filename=xzf, mode='wb') as xz_out:
+            with lzma.LZMAFile(filename=xzf, mode="wb") as xz_out:
                 xz_out.write(bz2.decompress(bz_data))
             xzf.seek(0)
             self.assertEqual(
-                _rpm_set(xzf, sql_rd._replace(location='X-primary.sqlite.xz')),
+                _rpm_set(xzf, sql_rd._replace(location="X-primary.sqlite.xz")),
                 _rpm_set(BytesIO(bz_data), sql_rd),
             )

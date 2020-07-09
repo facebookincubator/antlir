@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 Read the `run.py` docblock first.  Then, review the docs for
 `new_nspawn_opts` and `PopenArgs`, and use `{run,popen}_non_booted_nspawn`.
 
@@ -14,23 +14,24 @@ init" as PID 1 of the container, and have that start `opts.cmd` as PID 2.
 Security note: We use `--console=pipe`, which means that FDs that point at
 your terminal may make it inside the container, allowing the guest to
 synthesize keystrokes on the host.
-'''
+"""
 import functools
 import subprocess
-
 from contextlib import contextmanager
 from typing import Iterable
 
-from .args import _NspawnOpts, PopenArgs
-from .cmd import maybe_popen_and_inject_fds, _NspawnSetup
+from .args import PopenArgs, _NspawnOpts
+from .cmd import _NspawnSetup, maybe_popen_and_inject_fds
 from .common import nspawn_version
-from .plugins import NspawnPlugin
 from .plugin_hooks import _popen_plugin_driver
+from .plugins import NspawnPlugin
 
 
 def run_non_booted_nspawn(
-    opts: _NspawnOpts, popen_args: PopenArgs,
-    *, plugins: Iterable[NspawnPlugin] = (),
+    opts: _NspawnOpts,
+    popen_args: PopenArgs,
+    *,
+    plugins: Iterable[NspawnPlugin] = (),
 ) -> subprocess.CompletedProcess:
     with popen_non_booted_nspawn(opts, popen_args, plugins=plugins) as proc:
         cmd_stdout, cmd_stderr = proc.communicate()
@@ -43,8 +44,10 @@ def run_non_booted_nspawn(
 
 
 def popen_non_booted_nspawn(
-    opts: _NspawnOpts, popen_args: PopenArgs,
-    *, plugins: Iterable[NspawnPlugin] = (),
+    opts: _NspawnOpts,
+    popen_args: PopenArgs,
+    *,
+    plugins: Iterable[NspawnPlugin] = (),
 ) -> Iterable[subprocess.Popen]:
     return _popen_plugin_driver(
         opts=opts,
@@ -70,11 +73,11 @@ def _post_setup_popen_booted_nspawn(
         # The command in `opts.cmd` is not (currently) meant to be an "init"
         # process.  And a PID 1 of a PID namespace must be a functioning
         # "init" at least insofar as signal handling is concerned.
-        '--as-pid2',
-        f'--user={opts.user.pw_name}',
+        "--as-pid2",
+        f"--user={opts.user.pw_name}",
     ]
     # This is last to let the user have final say over the environment.
-    cmd.extend(['--setenv=' + se for se in setup.cmd_env])
+    cmd.extend(["--setenv=" + se for se in setup.cmd_env])
     if version >= 242:
         # This essentially reverts to pre-242 behavior, where the container
         # has direct access to the caller's FDs 0/1/2, which may be the
@@ -101,7 +104,7 @@ def _post_setup_popen_booted_nspawn(
         #        is `splice`d to write to the original PTY.
         #     In fact, the mitigation really belongs in `systemd-nspawn`, we
         #     may yet propose it to upstream.
-        cmd.append('--console=pipe')
+        cmd.append("--console=pipe")
 
     assert setup.popen_args.boot_console is None, setup  # Should be unset
     cmd_popen = functools.partial(
@@ -114,7 +117,7 @@ def _post_setup_popen_booted_nspawn(
         stderr=setup.popen_args.stderr,
     )
     with maybe_popen_and_inject_fds(
-        (*cmd, '--', *opts.cmd),
+        (*cmd, "--", *opts.cmd),
         opts,
         cmd_popen,
         set_listen_fds=True,  # We must pass FDs through `systemd-nspawn`

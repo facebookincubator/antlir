@@ -10,7 +10,6 @@ import re
 import sqlite3
 import tempfile
 import zlib
-
 from collections import defaultdict
 from contextlib import AbstractContextManager
 from typing import Iterable, Iterator, Union
@@ -20,7 +19,7 @@ from .repo_objects import Checksum, Repodata, Rpm
 
 
 class SQLiteRpmParser(AbstractContextManager):
-    '''
+    """
     Extracts RPM location, checksum, and size from -primary.sqlite.{gz,bz2}.
 
     We always prefer SQLite over XMLRpmParser, but some weird repos (ahem,
@@ -42,26 +41,28 @@ class SQLiteRpmParser(AbstractContextManager):
     implementation out of ~5 iterations.  That said, even vanilla `libxml`
     needs about ~1 second to parse this file (piped through `xmllint`), so
     XML is simply not competitive.
-    '''
+    """
 
     def __init__(self, path: str):
         self._path = path
         # Sadly, we must support both formats. Luckily, the APIs are similar.
-        if path.endswith('.gz'):
+        if path.endswith(".gz"):
             self._unpacker = zlib.decompressobj(wbits=zlib.MAX_WBITS + 16)
             self._unpacker_needs_input_and_next_chunk = lambda: (
                 not self._unpacker.unconsumed_tail,
                 self._unpacker.unconsumed_tail,
             )
-        elif path.endswith('.bz2'):
+        elif path.endswith(".bz2"):
             self._unpacker = bz2.BZ2Decompressor()
             self._unpacker_needs_input_and_next_chunk = lambda: (
-                self._unpacker.needs_input, b'',
+                self._unpacker.needs_input,
+                b"",
             )
-        elif path.endswith('.xz'):
+        elif path.endswith(".xz"):
             self._unpacker = lzma.LZMADecompressor()
             self._unpacker_needs_input_and_next_chunk = lambda: (
-                self._unpacker.needs_input, b'',
+                self._unpacker.needs_input,
+                b"",
             )
         else:  # pragma: no cover -- testing this is not useful
             raise NotImplementedError(path)
@@ -76,11 +77,11 @@ class SQLiteRpmParser(AbstractContextManager):
         retval = self._tmp_db_ctx.__exit__(exc_type, exc_val, exc_tb)
         if exc_type is None and not self._unpacker.eof:
             raise RuntimeError(
-                'Either the caller failed to consume feed(), or this archive '
-                f'is incomplete: {self._path}'
+                "Either the caller failed to consume feed(), or this archive "
+                f"is incomplete: {self._path}"
             )
         if self._unpacker.unused_data:
-            raise RuntimeError(f'Unused data after end of {self._path}')
+            raise RuntimeError(f"Unused data after end of {self._path}")
         return retval
 
     def feed(self, chunk: bytes) -> Iterator[Rpm]:
@@ -89,7 +90,7 @@ class SQLiteRpmParser(AbstractContextManager):
                 # Don't use arbitrary amounts of RAM for decompression.
                 # Bigger is better, within reason.  See the note on `zlib`
                 # incremental complexity in `XMLRpmParser.feed`.
-                self._unpacker.decompress(chunk, max_length=2 ** 23),
+                self._unpacker.decompress(chunk, max_length=2 ** 23)
             )
             needs_input, chunk = self._unpacker_needs_input_and_next_chunk()
             if needs_input or self._unpacker.eof:
@@ -98,7 +99,7 @@ class SQLiteRpmParser(AbstractContextManager):
             self._tmp_db.flush()
             with sqlite3.connect(self._tmp_db.name) as tmp_db:
                 select_res = tmp_db.execute(
-                    'SELECT '
+                    "SELECT "
                     '  "location_href", "checksum_type", "pkgId", '
                     '  "size_package", "time_build", "name", "epoch", '
                     '  "version", "release", "arch", "rpm_sourcerpm" '
@@ -106,9 +107,17 @@ class SQLiteRpmParser(AbstractContextManager):
                 ).fetchall()
             tmp_db.close()
             for (
-                location, chk_type, chk_val, size,
-                build_time, name, epoch, version, release,
-                arch, source_rpm,
+                location,
+                chk_type,
+                chk_val,
+                size,
+                build_time,
+                name,
+                epoch,
+                version,
+                release,
+                arch,
+                source_rpm,
             ) in select_res:
                 yield Rpm(
                     epoch=int(epoch),
@@ -127,7 +136,7 @@ class SQLiteRpmParser(AbstractContextManager):
 
 
 class XMLRpmParser(AbstractContextManager):
-    '''
+    """
     Extracts RPM location, checksum, and size from -primary.xml.gz.  See the
     docblock of `SQLiteRpmParser` to learn why this parser is dispreferred,
     and why it exists anyway. Learnings from past iterations:
@@ -135,7 +144,7 @@ class XMLRpmParser(AbstractContextManager):
      - `Element.clear()` after every package helps a lot.
      - Feeding small (e.g. 16KB) chunks to XMLPullParser is a lot more
        performant than feeding multi-megabyte chunks.
-    '''
+    """
 
     _KNOWN_TAGS = (
         # ENVRA
@@ -151,26 +160,26 @@ class XMLRpmParser(AbstractContextManager):
         _TIME,
     ) = (
         # Be careful: these are pasted into a regex unescaped.
-        'name',
-        'version',
-        'arch',
-        'checksum',
-        'location',
-        'package',
-        'size',
+        "name",
+        "version",
+        "arch",
+        "checksum",
+        "location",
+        "package",
+        "size",
         # NB: This is not in the `common` XML namespace, but in `rpm`, but
         # the way our regex tag matching works, we don't care.
-        'sourcerpm',
-        'time',
+        "sourcerpm",
+        "time",
     )
     assert len(_KNOWN_TAGS) == len(set(_KNOWN_TAGS))
 
     def __init__(self):
         self.decompressor = zlib.decompressobj(wbits=zlib.MAX_WBITS + 16)
-        self.xml_parser = ElementTree.XMLPullParser(['end'])
+        self.xml_parser = ElementTree.XMLPullParser(["end"])
         # ElementTree mangles the tags thus: '{xml_namespace}tag_name'
         self.tag_re = re.compile(
-            '({[^}]+}|)(' + '|'.join(self._KNOWN_TAGS) + ')$'
+            "({[^}]+}|)(" + "|".join(self._KNOWN_TAGS) + ")$"
         )
         # Package state must persist across `feed()` calls, since a
         # package element may straddle a chunk boundary.
@@ -195,9 +204,9 @@ class XMLRpmParser(AbstractContextManager):
             # theoretical complexity due to all the extra copying.  I could
             # add an extra layer of input chunking to mitigate this, but in
             # practice it seems ok to just limit the incoming chunk size.
-            self.xml_parser.feed(self.decompressor.decompress(
-                chunk, max_length=2 ** 14,
-            ))
+            self.xml_parser.feed(
+                self.decompressor.decompress(chunk, max_length=2 ** 14)
+            )
             chunk = self.decompressor.unconsumed_tail
             for _, elt in self.xml_parser.read_events():
                 m = self.tag_re.match(elt.tag)
@@ -208,17 +217,17 @@ class XMLRpmParser(AbstractContextManager):
                     self._package[self._NAME] = elt.text
                 elif m.group(2) == self._VERSION:
                     self._package[self._VERSION] = tuple(
-                        elt.attrib[x] for x in ('epoch', 'ver', 'rel')
+                        elt.attrib[x] for x in ("epoch", "ver", "rel")
                     )
                 elif m.group(2) == self._ARCH:
                     self._package[self._ARCH] = elt.text
                 elif m.group(2) == self._CHECKSUM:
-                    assert elt.attrib['pkgid'] == 'YES'
+                    assert elt.attrib["pkgid"] == "YES"
                     self._package[self._CHECKSUM] = Checksum(
-                        algorithm=elt.attrib['type'], hexdigest=elt.text,
+                        algorithm=elt.attrib["type"], hexdigest=elt.text
                     )
                 elif m.group(2) == self._LOCATION:
-                    self._package[self._LOCATION] = elt.attrib['href']
+                    self._package[self._LOCATION] = elt.attrib["href"]
                 elif m.group(2) == self._PACKAGE:
                     epoch, version, release = self._package[self._VERSION]
                     yield Rpm(
@@ -239,28 +248,28 @@ class XMLRpmParser(AbstractContextManager):
                     self._package = {}  # Detect missing fields
                     elt.clear()  # Uses less RAM, speeds up the run 50%
                 elif m.group(2) == self._SIZE:
-                    self._package[self._SIZE] = elt.attrib['package']
+                    self._package[self._SIZE] = elt.attrib["package"]
                 elif m.group(2) == self._SOURCE_RPM:
                     self._package[self._SOURCE_RPM] = elt.text
                 elif m.group(2) == self._TIME:
-                    self._package[self._TIME] = elt.attrib['build']
+                    self._package[self._TIME] = elt.attrib["build"]
 
 
 def pick_primary_repodata(repodatas: Iterable[Repodata]) -> Repodata:
     primaries = defaultdict(list)
     for rd in repodatas:
         if rd.is_primary_sqlite():
-            primaries['sqlite'].append(rd)
+            primaries["sqlite"].append(rd)
         elif rd.is_primary_xml():
-            primaries['xml'].append(rd)
+            primaries["xml"].append(rd)
 
-    primaries = primaries.get('sqlite', primaries.get('xml'))  # Prefer SQLite
+    primaries = primaries.get("sqlite", primaries.get("xml"))  # Prefer SQLite
 
     if not primaries:
-        raise RuntimeError(f'{repodatas} has no known primary file.')
+        raise RuntimeError(f"{repodatas} has no known primary file.")
 
     if len(primaries) > 1:
-        raise RuntimeError(f'More than one primary of one type: {primaries}')
+        raise RuntimeError(f"More than one primary of one type: {primaries}")
 
     return primaries[0]
 
@@ -270,4 +279,4 @@ def get_rpm_parser(repodata: Repodata) -> Union[SQLiteRpmParser, XMLRpmParser]:
         return SQLiteRpmParser(repodata.location)
     elif repodata.is_primary_xml():
         return XMLRpmParser()
-    raise NotImplementedError(f'Not reached: {repodata}')
+    raise NotImplementedError(f"Not reached: {repodata}")

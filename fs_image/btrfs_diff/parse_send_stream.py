@@ -4,25 +4,25 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'Parses the btrfs send-stream binary format. Only version 1 is supported.'
+"Parses the btrfs send-stream binary format. Only version 1 is supported."
 import enum
 import os
 import struct
 import uuid
-
 from io import BytesIO
-from typing import NamedTuple, Iterator, Tuple
+from typing import Iterator, NamedTuple, Tuple
 
 from .send_stream import SendStreamItem, SendStreamItems
 
-BTRFS_SEND_STREAM_MAGIC = b'btrfs-stream\0'
+
+BTRFS_SEND_STREAM_MAGIC = b"btrfs-stream\0"
 
 
 def file_unpack(fmt, infile):
     size = struct.calcsize(fmt)
     b = infile.read(size)
     if len(b) != size:
-        raise RuntimeError(f'Not enough bytes {b} for format {fmt}')
+        raise RuntimeError(f"Not enough bytes {b} for format {fmt}")
     return struct.unpack(fmt, b)
 
 
@@ -33,9 +33,9 @@ def check_magic(infile) -> None:
 
 
 def check_version(infile) -> None:
-    version, = file_unpack('<I', infile)
+    (version,) = file_unpack("<I", infile)
     if version != 1:
-        raise RuntimeError(f'Got version {version}, but we require version 1')
+        raise RuntimeError(f"Got version {version}, but we require version 1")
 
 
 class CommandKind(enum.Enum):
@@ -77,8 +77,8 @@ class CommandHeader(NamedTuple):
     crc: int  # including the header, with this field set to 0
 
     @staticmethod
-    def from_file(infile) -> 'CommandHeader':
-        length, kind, crc = file_unpack('<IHI', infile)
+    def from_file(infile) -> "CommandHeader":
+        length, kind, crc = file_unpack("<IHI", infile)
         return CommandHeader(kind=CommandKind(kind), length=length, crc=crc)
 
 
@@ -123,8 +123,8 @@ class AttributeHeader(NamedTuple):
     length: int  # excluding the header
 
     @staticmethod
-    def from_file(infile) -> 'AttributeHeader':
-        kind, length = file_unpack('<HH', infile)
+    def from_file(infile) -> "AttributeHeader":
+        kind, length = file_unpack("<HH", infile)
         return AttributeHeader(kind=AttributeKind(kind), length=length)
 
 
@@ -133,14 +133,14 @@ def conv_uuid(s: bytes) -> bytes:
 
 
 def conv_uint64(s: bytes) -> int:
-    i, = struct.unpack('<Q', s)
+    (i,) = struct.unpack("<Q", s)
     return i
 
 
 def conv_time(s: bytes) -> Tuple[int, int]:
-    s, us = struct.unpack('<QI', s)
+    s, us = struct.unpack("<QI", s)
     # pyre wants an explicit check even though struct.unpack will raise
-    assert isinstance(s, int) and isinstance(us, int), 'struct.unpack() failed'
+    assert isinstance(s, int) and isinstance(us, int), "struct.unpack() failed"
     return s, us
 
 
@@ -148,7 +148,7 @@ def read_attribute(infile):
     attr_header = AttributeHeader.from_file(infile)
     attr_data = infile.read(attr_header.length)
     if len(attr_data) != attr_header.length:
-        raise RuntimeError(f'{attr_header} got {len(attr_data)} bytes')
+        raise RuntimeError(f"{attr_header} got {len(attr_data)} bytes")
 
     if attr_header.kind == AttributeKind.UUID:
         return attr_header.kind, conv_uuid(attr_data)
@@ -198,7 +198,7 @@ def read_attribute(infile):
     elif attr_header.kind == AttributeKind.CLONE_LEN:
         return attr_header.kind, conv_uint64(attr_data)
 
-    raise RuntimeError(f'Fix me: unhandled {attr_header}')  # pragma: no cover
+    raise RuntimeError(f"Fix me: unhandled {attr_header}")  # pragma: no cover
 
 
 def read_command(infile):
@@ -206,7 +206,7 @@ def read_command(infile):
 
     s = infile.read(cmd_header.length)
     if len(s) != cmd_header.length:
-        raise RuntimeError(f'{cmd_header} got {len(s)} bytes')
+        raise RuntimeError(f"{cmd_header} got {len(s)} bytes")
     # Future: pull in the `crc32c` module and check the CRC.
 
     attr_bytes = BytesIO(s)
@@ -214,7 +214,7 @@ def read_command(infile):
     while attr_bytes.tell() != len(s):
         kind, attr = read_attribute(attr_bytes)
         if kind in kind_to_attr:
-            raise RuntimeError(f'{kind} occurred twice in {cmd_header}')
+            raise RuntimeError(f"{kind} occurred twice in {cmd_header}")
         kind_to_attr[kind] = attr
 
     if cmd_header.kind == CommandKind.SUBVOL:
@@ -324,7 +324,7 @@ def read_command(infile):
             len=kind_to_attr[AttributeKind.SIZE],
         )
 
-    raise AssertionError(f'Fix me: unhandled {cmd_header}')  # pragma: no cover
+    raise AssertionError(f"Fix me: unhandled {cmd_header}")  # pragma: no cover
 
 
 def parse_send_stream(infile) -> Iterator[SendStreamItem]:

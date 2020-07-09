@@ -7,13 +7,14 @@
 import functools
 import os
 import pwd
-
 from dataclasses import dataclass
 from typing import Iterable
 
 from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import (
-    new_nspawn_opts, NspawnPluginArgs, PopenArgs,
+    NspawnPluginArgs,
+    PopenArgs,
+    new_nspawn_opts,
 )
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
@@ -36,14 +37,14 @@ class ForeignLayerItem(ImageItem):
 
     # This type-checking isn't strictly required, but it helps to fail fast.
     def customize_fields(kwargs):  # noqa: B902
-        cmd = kwargs.pop('cmd')
+        cmd = kwargs.pop("cmd")
         assert all(isinstance(c, (str, bytes)) for c in cmd), cmd
-        kwargs['cmd'] = tuple(cmd)
+        kwargs["cmd"] = tuple(cmd)
 
-        assert isinstance(kwargs['user'], str), kwargs['user']
+        assert isinstance(kwargs["user"], str), kwargs["user"]
 
-        kwargs['serve_rpm_snapshots'] = tuple(
-            Path(s) for s in kwargs.pop('serve_rpm_snapshots')
+        kwargs["serve_rpm_snapshots"] = tuple(
+            Path(s) for s in kwargs.pop("serve_rpm_snapshots")
         )
 
     def phase_order(self):
@@ -51,17 +52,17 @@ class ForeignLayerItem(ImageItem):
 
     @classmethod
     def get_phase_builder(
-        cls, items: Iterable['ForeignLayerItem'], layer_opts: LayerOpts,
+        cls, items: Iterable["ForeignLayerItem"], layer_opts: LayerOpts
     ):
-        item, = items
+        (item,) = items
         assert isinstance(item, ForeignLayerItem), item
 
         def builder(subvol: Subvol):
-            fs_image_path = subvol.path('__fs_image__')
+            fs_image_path = subvol.path("__fs_image__")
             # Use `.stat()`, not `.exists()`, to fail if `/` is not readable.
             try:
                 os.stat(fs_image_path)
-                maybe_protect_fs_image = ((fs_image_path, '/__fs_image__'),)
+                maybe_protect_fs_image = ((fs_image_path, "/__fs_image__"),)
             except FileNotFoundError:
                 maybe_protect_fs_image = ()
 
@@ -71,7 +72,7 @@ class ForeignLayerItem(ImageItem):
                 cmd=item.cmd,
                 bindmount_ro=(
                     # The command cannot change `/meta` & `/__fs_image__`
-                    (subvol.path('/meta'), '/meta'),
+                    (subvol.path("/meta"), "/meta"),
                     *maybe_protect_fs_image,
                 ),
                 # Future: support the case where the in-container user DB
@@ -84,7 +85,7 @@ class ForeignLayerItem(ImageItem):
                 plugins=rpm_nspawn_plugins(
                     opts=opts,
                     plugin_args=NspawnPluginArgs(
-                        serve_rpm_snapshots=item.serve_rpm_snapshots,
+                        serve_rpm_snapshots=item.serve_rpm_snapshots
                     ),
                 ),
             )

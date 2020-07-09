@@ -4,8 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from contextlib import ExitStack
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import ExitStack
 from types import MappingProxyType
 from typing import (
     FrozenSet,
@@ -31,7 +31,7 @@ from fs_image.rpm.downloader.common import (
 )
 from fs_image.rpm.parse_repodata import get_rpm_parser, pick_primary_repodata
 from fs_image.rpm.repo_db import RepodataTable
-from fs_image.rpm.repo_objects import RepoMetadata, Repodata, Rpm
+from fs_image.rpm.repo_objects import Repodata, RepoMetadata, Rpm
 from fs_image.rpm.repo_snapshot import ReportableError
 from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
@@ -57,7 +57,9 @@ class DownloadRepodataReturnType(NamedTuple):
 
 
 # May raise `ReportableError`, which will abort the snapshot
-@retryable("Download failed: repodata at {repodata.location}", REPODATA_MAX_RETRY_S)
+@retryable(
+    "Download failed: repodata at {repodata.location}", REPODATA_MAX_RETRY_S
+)
 def _download_repodata(
     repodata: Repodata,
     *,
@@ -99,7 +101,9 @@ def _download_repodata(
             outfile = None
         else:
             # Nothing stored, must download - can fail due to repo updates
-            infile = cm.enter_context(download_resource(repo_url, repodata.location))
+            infile = cm.enter_context(
+                download_resource(repo_url, repodata.location)
+            )
             # Want to persist the downloaded repodata into storage so that
             # future runs don't need to redownload it
             outfile = cm.enter_context(storage.writer())
@@ -121,7 +125,9 @@ def _download_repodata(
                     raise RepodataParseError((repodata.location, ex))
         # Must commit the output context to get a storage_id.
         if outfile:
-            return DownloadRepodataReturnType(repodata, True, outfile.commit(), rpms)
+            return DownloadRepodataReturnType(
+                repodata, True, outfile.commit(), rpms
+            )
     # The primary repodata was already stored, and we just parsed it for RPMs.
     assert storage_id is not None
     return DownloadRepodataReturnType(repodata, False, storage_id, rpms)
@@ -134,7 +140,10 @@ def _download_repodatas(
     storage_id_to_repodata = {}  # Newly stored **and** pre-existing
     repodata_table = RepodataTable()
     primary_repodata = pick_primary_repodata(repomd.repodatas)
-    log_size(f"`{repo.name}` repodata weighs", sum(rd.size for rd in repomd.repodatas))
+    log_size(
+        f"`{repo.name}` repodata weighs",
+        sum(rd.size for rd in repomd.repodatas),
+    )
     rw_db_conn = cfg.new_db_conn(readonly=False)
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
         futures = [
@@ -202,7 +211,9 @@ def gen_repodatas_from_repomds(
         # objects taking up too much space, we can easily add a periodic job to
         # scan the db and remove any unused references. We are also able to
         # avoid implementing a lot of complex cleanup logic this way.
-        rpm_set, storage_id_to_repodata = _download_repodatas(res.repo, res.repomd, cfg)
+        rpm_set, storage_id_to_repodata = _download_repodatas(
+            res.repo, res.repomd, cfg
+        )
         yield res._replace(
             storage_id_to_repodata=MappingProxyType(storage_id_to_repodata),
             rpms=rpm_set,

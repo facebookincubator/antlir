@@ -6,30 +6,32 @@
 
 import sqlite3
 import urllib.parse
-
 from contextlib import AbstractContextManager
 from typing import Optional
 
 from fs_image.common import get_file_logger
+
 from .pluggable import Pluggable
 from .repo_db import SQLDialect
+
 
 log = get_file_logger(__file__)
 
 
 class DBConnectionContext(AbstractContextManager, Pluggable):
-    '''
+    """
     RepoDBContext gets its database connections from DBConnectionContext.
     This context is entered for a burst of database operations, and exited
     when there might be a lull in database accesses.  This lets your context
     to reconnect as needed, or to reuse the same connection.
-    '''
+    """
+
     @property
     def SQL_DIALECT(self) -> SQLDialect:
         raise NotImplementedError
 
 
-class SQLiteConnectionContext(DBConnectionContext, plugin_kind='sqlite'):
+class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
     SQL_DIALECT = SQLDialect.SQLITE3
 
     def __init__(
@@ -39,9 +41,7 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind='sqlite'):
         force_master: Optional[bool] = None,
     ):
         if force_master is not None:  # pragma: no cover
-            log.warning(
-                "`force_master` is not supported for SQLite - ignoring"
-            )
+            log.warning("`force_master` is not supported for SQLite - ignoring")
         self.readonly = readonly
         self.db_path = db_path
         self._conn = None
@@ -49,7 +49,7 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind='sqlite'):
     def __enter__(self):
         if self.readonly:
             self._conn = sqlite3.connect(
-                f'file:{urllib.parse.quote(self.db_path)}?mode=ro', uri=True
+                f"file:{urllib.parse.quote(self.db_path)}?mode=ro", uri=True
             )
         else:
             self._conn = sqlite3.connect(self.db_path)

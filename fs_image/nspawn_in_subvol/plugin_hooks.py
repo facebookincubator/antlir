@@ -4,17 +4,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'The core logic of how plugins integrate with `popen_{non,}_booted_nspawn`'
+"The core logic of how plugins integrate with `popen_{non,}_booted_nspawn`"
 
 import functools
 import subprocess
-
 from contextlib import contextmanager
 from typing import Callable, ContextManager, Iterable, Tuple, Union
 
-from .args import _NspawnOpts, PopenArgs
-from .cmd import _NspawnSetup, _nspawn_setup
+from .args import PopenArgs, _NspawnOpts
+from .cmd import _nspawn_setup, _NspawnSetup
 from .plugins import NspawnPlugin
+
 
 _PopenResult = Union[
     subprocess.Popen,  # non-booted
@@ -46,7 +46,7 @@ def _popen_plugin_driver(
             setup = functools.partial(p.wrap_setup, setup)
         if p.wrap_post_setup_popen is not None:
             post_setup_popen = functools.partial(
-                p.wrap_post_setup_popen, post_setup_popen,
+                p.wrap_post_setup_popen, post_setup_popen
             )
     with setup(opts, popen_args) as setup:
         with post_setup_popen(setup) as popen_res:

@@ -6,24 +6,24 @@
 
 import os
 import pwd
-
 from dataclasses import dataclass
 
-from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
-from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from fs_image.compiler.requires_provides import (
+    ProvidesDirectory,
+    require_directory,
+)
 from fs_image.fs_utils import Path
+from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.subvol_utils import Subvol
 
-from fs_image.compiler.requires_provides import (
-    ProvidesDirectory, require_directory
-)
-
 from .common import (
-    coerce_path_field_normal_relative, ImageItem, LayerOpts, generate_work_dir,
+    ImageItem,
+    LayerOpts,
+    coerce_path_field_normal_relative,
+    generate_work_dir,
 )
-from .stat_options import (
-    build_stat_options, customize_stat_options, Mode,
-)
+from .stat_options import Mode, build_stat_options, customize_stat_options
 
 
 @dataclass(init=False, frozen=True)
@@ -38,8 +38,8 @@ class MakeDirsItem(ImageItem):
     @classmethod
     def customize_fields(cls, kwargs):
         super().customize_fields(kwargs)
-        coerce_path_field_normal_relative(kwargs, 'into_dir')
-        coerce_path_field_normal_relative(kwargs, 'path_to_make')
+        coerce_path_field_normal_relative(kwargs, "into_dir")
+        coerce_path_field_normal_relative(kwargs, "path_to_make")
         # Unlike files, leave directories as writable by the owner by
         # default, since it's reasonable for files to be added at runtime.
         customize_stat_options(kwargs, default_mode=0o755)
@@ -58,18 +58,21 @@ class MakeDirsItem(ImageItem):
             work_dir = generate_work_dir()
             full_path = Path(work_dir) / self.into_dir / self.path_to_make
             opts = new_nspawn_opts(
-                cmd=['mkdir', '-p', full_path],
+                cmd=["mkdir", "-p", full_path],
                 layer=layer_opts.build_appliance,
                 bindmount_rw=[(subvol.path(), work_dir)],
-                user=pwd.getpwnam('root'),
+                user=pwd.getpwnam("root"),
             )
             run_non_booted_nspawn(opts, PopenArgs())
         else:
             inner_dir = subvol.path(
-                os.path.join(self.into_dir, self.path_to_make))
-            subvol.run_as_root(['mkdir', '-p', inner_dir])
-        outer_dir = self.path_to_make.split('/', 1)[0]
+                os.path.join(self.into_dir, self.path_to_make)
+            )
+            subvol.run_as_root(["mkdir", "-p", inner_dir])
+        outer_dir = self.path_to_make.split("/", 1)[0]
         build_stat_options(
-            self, subvol, subvol.path(os.path.join(self.into_dir, outer_dir)),
+            self,
+            subvol,
+            subvol.path(os.path.join(self.into_dir, outer_dir)),
             build_appliance=layer_opts.build_appliance,
         )

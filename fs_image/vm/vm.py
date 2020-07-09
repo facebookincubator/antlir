@@ -16,7 +16,13 @@ from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import AsyncContextManager, ContextManager, Iterable, Optional, Union
+from typing import (
+    AsyncContextManager,
+    ContextManager,
+    Iterable,
+    Optional,
+    Union,
+)
 
 from fs_image.vm.guest_agent import QemuError, QemuGuestAgent
 from fs_image.vm.share import Share, process_shares
@@ -192,15 +198,15 @@ async def kernel_vm(
         # ~400M worth of modules during boot
         shares += [
             Share(
-                host_path=kernel.modules,
-                mount_tag="modules",
-                agent_mount=False,
-            ),
+                host_path=kernel.modules, mount_tag="modules", agent_mount=False
+            )
         ]
 
         args += __qemu_share_args(shares)
         if dry_run:
-            print(str(kernel.qemu) + " " + " ".join(shlex.quote(a) for a in args))
+            print(
+                str(kernel.qemu) + " " + " ".join(shlex.quote(a) for a in args)
+            )
             sys.exit(0)
 
         if interactive:
@@ -222,7 +228,9 @@ async def kernel_vm(
         ga = QemuGuestAgent(sockfile, connect_timeout=up_timeout)
         try:
             for share in [s for s in shares if s.agent_mount]:
-                await ga.mount_share(tag=share.mount_tag, mountpoint=share.location)
+                await ga.mount_share(
+                    tag=share.mount_tag, mountpoint=share.location
+                )
             yield ga
         except QemuError as err:
             print(f"Qemu failed with error: {err}", flush=True, file=sys.stderr)

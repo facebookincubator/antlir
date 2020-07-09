@@ -6,16 +6,18 @@
 
 import subprocess
 import uuid
-
 from abc import abstractmethod
 from contextlib import contextmanager
 from typing import ContextManager, List, Mapping, NamedTuple
 
 from fs_image.common import check_popen_returncode, get_file_logger
+
 # Module import ensures we get plugins
 from fs_image.rpm.storage import Storage, StorageInput, StorageOutput
+
 # Below not exported at the module level
 from fs_image.rpm.storage.storage import _CommitCallback
+
 
 log = get_file_logger(__file__)
 
@@ -30,20 +32,21 @@ class _StorageRemover(NamedTuple):
                 self.storage._remove_cmd(
                     path=self.storage._path_for_storage_id(
                         self.storage.strip_key(sid)
-                    ),
+                    )
                 ),
                 env=self.storage._configured_env(),
-                stdout=2
+                stdout=2,
             )
         )
 
 
 class CLIObjectStorage(Storage):
-    '''
+    """
     This abstract base class exists because most blob-store CLIs will
     behave very similarly, and can reuse the plumbing that turns them
     into `Storage` objects. Look at `S3Storage` for a concrete example.
-    '''
+    """
+
     @abstractmethod
     def _path_for_storage_id(self, sid: str) -> str:
         ...  # pragma: no cover
@@ -71,18 +74,23 @@ class CLIObjectStorage(Storage):
     # Separate function so the unit-test can mock it.
     @classmethod
     def _make_storage_id(cls) -> str:
-        return str(uuid.uuid4()).replace('-', '')
+        return str(uuid.uuid4()).replace("-", "")
 
     @contextmanager
     def writer(self) -> ContextManager[StorageOutput]:
         sid = self._make_storage_id()
         path = self._path_for_storage_id(sid)
-        log_prefix = f'{self.__class__.__name__}'
-        log.debug(f'{log_prefix} - Writing to {path}')
-        with subprocess.Popen(self._write_cmd(
-            # The underlying CLI is expected to read the blob from stdin
-            path=path,
-        ), env=self._configured_env(), stdin=subprocess.PIPE, stdout=2) as proc:
+        log_prefix = f"{self.__class__.__name__}"
+        log.debug(f"{log_prefix} - Writing to {path}")
+        with subprocess.Popen(
+            self._write_cmd(
+                # The underlying CLI is expected to read the blob from stdin
+                path=path
+            ),
+            env=self._configured_env(),
+            stdin=subprocess.PIPE,
+            stdout=2,
+        ) as proc:
 
             @contextmanager
             def get_id_and_release_resources():
@@ -90,11 +98,11 @@ class CLIObjectStorage(Storage):
                 # `sid` is available to read after the `yield`.
                 try:
                     proc.stdin.close()
-                    log.debug(f'{log_prefix} - Wait for {path} PUT')
+                    log.debug(f"{log_prefix} - Wait for {path} PUT")
                     proc.wait()
                     log.debug(
-                        f'{log_prefix} - Exit code {proc.returncode}'
-                        f' from {path} PUT'
+                        f"{log_prefix} - Exit code {proc.returncode}"
+                        f" from {path} PUT"
                     )
                     check_popen_returncode(proc)
                 # Clean up even on KeyboardInterrupt -- we cannot assume
@@ -108,16 +116,21 @@ class CLIObjectStorage(Storage):
                         # the return code.  Future: Following the idea in
                         # remove(), we could plop this cleanup on the
                         # innermost remover.
-                        subprocess.run(['setsid'] + self._remove_cmd(
-                            path=self._path_for_storage_id(sid),
-                        ), env=self._configured_env(), stdout=2)
+                        subprocess.run(
+                            ["setsid"]
+                            + self._remove_cmd(
+                                path=self._path_for_storage_id(sid)
+                            ),
+                            env=self._configured_env(),
+                            stdout=2,
+                        )
                     # To cover this, I'd need `setsid` or `cli` not to
                     # exist, neither is a useful test.  The validity of the
                     # f-string is ensured by `flake8`.
                     except Exception:  # pragma: no cover
                         # Log & ignore: we'll re-raise the original exception
                         log.exception(
-                            f'{log_prefix} - While cleaning up partial {sid}'
+                            f"{log_prefix} - While cleaning up partial {sid}"
                         )
                     raise
                 yield sid
@@ -131,14 +144,18 @@ class CLIObjectStorage(Storage):
         # to start, which is terrible for small reads (most system
         # RPMs are small).
         path = self._path_for_storage_id(self.strip_key(sid))
-        log_prefix = f'{self.__class__.__name__}'
-        with subprocess.Popen(self._read_cmd(
-            path=path,
-        ), env=self._configured_env(), stdout=subprocess.PIPE) as proc:
-            log.debug(f'{log_prefix} - Started {path} GET proc')
+        log_prefix = f"{self.__class__.__name__}"
+        with subprocess.Popen(
+            self._read_cmd(path=path),
+            env=self._configured_env(),
+            stdout=subprocess.PIPE,
+        ) as proc:
+            log.debug(f"{log_prefix} - Started {path} GET proc")
             yield StorageInput(input=proc.stdout)
-            log.debug(f'{log_prefix} - Waiting for {path} GET')
-        log.debug(f'{log_prefix} - Exit code {proc.returncode} from  {path} GET')
+            log.debug(f"{log_prefix} - Waiting for {path} GET")
+        log.debug(
+            f"{log_prefix} - Exit code {proc.returncode} from  {path} GET"
+        )
         # No `finally`: this doesn't need to run if the context block raises.
         check_popen_returncode(proc)
 

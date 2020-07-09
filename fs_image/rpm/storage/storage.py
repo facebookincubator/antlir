@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 RPM files can be quite big, so we do not necessarily want to commit them
 directly to a version control system (most do not cope well with
 frequently-changing large binary blobs).
@@ -15,27 +15,28 @@ distributed large blob storage, in a transparent way.
 
 Then, the only thing we then need to version is an index of "repo file" to
 "storage ID", which is quite VCS-friendly when emitted as e.g. sorted JSON.
-'''
+"""
 import logging
 import re
-
 from contextlib import AbstractContextManager
-from typing import Callable, ContextManager, IO
+from typing import IO, Callable, ContextManager
 
 from fs_image.rpm.pluggable import Pluggable
+
 
 log = logging.getLogger(__name__)
 
 
 class StorageOutput:
-    '''
+    """
     Constructed by Storage.writer(). Call .write() to add data to the blob
     being stored.
-    '''
+    """
+
     _commit_callback: Callable[[bool], str]
     _output: IO
 
-    def __init__(self, *, output: IO, commit_callback: '_CommitCallback'):
+    def __init__(self, *, output: IO, commit_callback: "_CommitCallback"):
         self._output = output
         self._commit_callback = commit_callback
 
@@ -43,7 +44,7 @@ class StorageOutput:
         self._output.write(data)
 
     def commit(self, *, remove_on_exception=False) -> str:
-        '''
+        """
         Prevents further writes to the blob, and returns its ID.  Frees any
         resources associated with ongoing writes to this blob.
 
@@ -55,17 +56,18 @@ class StorageOutput:
         you to write multiple blobs in an all-or-nothing fashion -- if any
         failure occurs, all written blobs are automatically deleted.  While
         not truly transactional, this is still very useful.
-        '''
+        """
         self._output = None  # Prevent future write attempts.
         # NB: _CommitCallback raises on double-commits.
         return self._commit_callback(remove_on_exception=remove_on_exception)
 
 
 class StorageInput:
-    '''
+    """
     Constructed by Storage.reader(). Use .read() to get data from a
     previously stored blob.
-    '''
+    """
+
     _input: IO
 
     def __init__(self, *, input: IO):
@@ -76,7 +78,7 @@ class StorageInput:
 
 
 class Storage(Pluggable):
-    '''
+    """
     Base class for all storage implementations. See `FilesystemStorage` for
     a simple implementation. Usage:
 
@@ -102,23 +104,24 @@ class Storage(Pluggable):
 
         # NB: removed IDs may remain readable for some time if cleanup is lazy
         storage.remove(sid)
-    '''
-    _KEY_REGEX = re.compile('[-_a-zA-Z0-9]+$')
+    """
+
+    _KEY_REGEX = re.compile("[-_a-zA-Z0-9]+$")
 
     def _add_key(self, sid: str) -> str:
-        '_CommitCallback uses this to mark an ID before returning to the user'
+        "_CommitCallback uses this to mark an ID before returning to the user"
         assert self._KEY_REGEX.match(self.key)
-        return f'{self.key}:{sid}'
+        return f"{self.key}:{sid}"
 
     def strip_key(self, sid: str) -> str:
-        'Implementations use this to accept user-provided IDs (e.g. reader)'
-        key, sid = sid.split(':', 1)
-        assert key == self.key, f'Wrong storage: {key} != {self.key}'
+        "Implementations use this to accept user-provided IDs (e.g. reader)"
+        key, sid = sid.split(":", 1)
+        assert key == self.key, f"Wrong storage: {key} != {self.key}"
         return sid
 
 
 class _CommitCallback(AbstractContextManager):
-    '''
+    """
     Ensures the same commit semantics for every storage implementation.
     They only need to provide a `get_id_and_release_resources` context
     manager, which supplies the blob ID at commit time.  Its form is:
@@ -132,10 +135,10 @@ class _CommitCallback(AbstractContextManager):
                 # errors do not prevent us from learning the ID, which may be
                 # needed to later remove the already-written blob.
                 release_resources_that_were_held_for_the_blob_write()
-    '''
+    """
 
     def __init__(
-        self, storage: Storage, get_id_and_release_resources: ContextManager,
+        self, storage: Storage, get_id_and_release_resources: ContextManager
     ):
         self.storage = storage
         self.get_id_and_release_resources = get_id_and_release_resources
@@ -145,7 +148,7 @@ class _CommitCallback(AbstractContextManager):
 
     def __call__(self, *, remove_on_exception: bool):
         if self.get_id_and_release_resources is None:
-            raise AssertionError('Cannot commit twice')
+            raise AssertionError("Cannot commit twice")
 
         # These assignments must come first, so that `__exit__` can safely
         # use `commit`, even if `get_id_and_release_resources` raises.
@@ -189,8 +192,8 @@ class _CommitCallback(AbstractContextManager):
                 # `get_id_and_release_resources` returned one, and then
                 # raised during its clean-up.
                 log.exception(
-                    f'Error retrieving ID from {self.storage} while trying '
-                    'to automatically clean up an uncommitted blob.'
+                    f"Error retrieving ID from {self.storage} while trying "
+                    "to automatically clean up an uncommitted blob."
                 )
 
         if exc_type:
