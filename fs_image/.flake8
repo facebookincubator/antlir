@@ -1,24 +1,13 @@
 [flake8]
 max-line-length = 80
-# E123 / E126 / E127 / E131 force illegible formatting on multi-line
-# comprehensions. E128 forbids clean formatting for method chaining:
-#     some_var = (A()
-#         .foo()
-#         .bar())
-# E124 fires on this perfectly reasonable formatting:
-#     cat_final_repr = ('(Dir)', {
-#         'dog': '(File m744)',
-#         'dir_to_del': ('(Dir)', {'fifo_to_del': '(FIFO)'}),
-#     })
+# W503 goes against PEP 8 recommended style and contradicts W504
+# E203 is contradictory with Black
 # E741 bans variable names like `l` and `O`. They are not ambiguous
 #      in any sane programming font, so this is spurious.
 # E266 (no doubled # in comments) removes a useful emphasis mechanism.
-# W503 is silly because leading with operators is often more legible.
-# W504 is insane because it contradicts W504, and prevents line-splitting
-#      expressions chaining multiple operators.
 # B305 is not useful in a pure-Py3 codebase
 # E402 is super-noisy with `filterwarnings`, and also bans imports inside
 #      blocks of `if __name__ == '__main__':`, which are a good idea.
-ignore = E123,E124,E126,E127,E128,E131,E266,E741,W503,W504,B305,E402
+ignore = W503,E203,E266,E741,B305,E402
 # Future: Re-enable T4 after I land my `deepfrozen` work
 select = B,C,E,F,P,W,B9
