@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 Produces a repo-atomic snapshot of every repo in the specified `yum.conf`
 (details on the atomicity guarantee in the `repo_downloader.py` docblock).
 
@@ -26,18 +26,17 @@ possible for some of the repodata or RPMs backing these `repomd.xml`s to get
 deleted.  This can be mitigated e.g. by doing uncontrolled snapshots (what
 we have today) across many shards, and once most of the snapshots are
 up-to-date to do the 0:1 snapshot with the above `repomd.xml` checks.
-'''
+"""
 import argparse
 import json
 import os
 import sys
-
 from configparser import ConfigParser
 from io import StringIO
 from typing import Callable, Dict, FrozenSet, Iterable, List
 
 from fs_image.common import get_file_logger, init_logging
-from fs_image.fs_utils import create_ro, Path, populate_temp_dir_and_rename
+from fs_image.fs_utils import Path, create_ro, populate_temp_dir_and_rename
 from fs_image.rpm.downloader.common import DownloadConfig
 from fs_image.rpm.downloader.logger import init_sample_logging
 from fs_image.rpm.downloader.repo_downloader import download_repos
@@ -51,6 +50,7 @@ from .repo_snapshot import RepoSnapshot
 from .storage import Storage
 from .yum_dnf_conf import YumDnf, YumDnfConfParser, YumDnfConfRepo
 
+
 log = get_file_logger(__file__)
 
 
@@ -61,27 +61,32 @@ def _write_confs_get_repos(
     *,
     exclude_repos: FrozenSet[str],
 ) -> Iterable[YumDnfConfRepo]:
-    assert not (exclude_repos & {'main', 'DEFAULT'}), exclude_repos
+    assert not (exclude_repos & {"main", "DEFAULT"}), exclude_repos
     yum_dnf_repos = []
     for out_name, content in [
-        ('yum.conf', yum_conf_content), ('dnf.conf', dnf_conf_content),
+        ("yum.conf", yum_conf_content),
+        ("dnf.conf", dnf_conf_content),
     ]:
         if content is not None:
             # Save the original, unmodified config in case of an error
-            with create_ro(dest / (out_name + '.original'), 'w') as out:
+            with create_ro(dest / (out_name + ".original"), "w") as out:
                 out.write(content)
             # Remove the excluded repos
             cp = ConfigParser()
             cp.read_string(content)
             for excluded in exclude_repos:
                 cp.remove_section(excluded)
-            with create_ro(dest / out_name, 'w+') as out:
+            with create_ro(dest / out_name, "w+") as out:
                 cp.write(out)
                 out.seek(0)
                 new_content = out.read()
-            yum_dnf_repos.append(set(
-                YumDnfConfParser(YumDnf.dnf, StringIO(new_content)).gen_repos()
-            ))
+            yum_dnf_repos.append(
+                set(
+                    YumDnfConfParser(
+                        YumDnf.dnf, StringIO(new_content)
+                    ).gen_repos()
+                )
+            )
     yum_repos, dnf_repos = yum_dnf_repos
     diff_repos = yum_repos.symmetric_difference(dnf_repos)
     if diff_repos:  # pragma: no cover
@@ -96,13 +101,14 @@ def _write_confs_get_repos(
         # any queries from the compiler.  We really don't need this extra
         # complexity today.
         raise RuntimeError(
-            f'`--yum-conf` and `--dnf-conf` had different repos {diff_repos}'
+            f"`--yum-conf` and `--dnf-conf` had different repos {diff_repos}"
         )
     return dnf_repos
 
 
 def snapshot_repos(
-    dest: Path, *,
+    dest: Path,
+    *,
     repo_to_universe: Callable[[YumDnfConfRepo], str],
     yum_conf_content: str,
     dnf_conf_content: str,
@@ -118,13 +124,13 @@ def snapshot_repos(
     repos = _write_confs_get_repos(
         dest, yum_conf_content, dnf_conf_content, exclude_repos=exclude
     )
-    os.mkdir(dest / 'repos')
+    os.mkdir(dest / "repos")
     repos_and_universes = [
         # Evaluated eagerly for `all_snapshot_universes`.  Bonus: this also
         # fails fast if some repos cannot be resolved.
         (repo, validate_universe_name(repo_to_universe(repo)))
-            for repo in repos
-            if repo.name not in exclude
+        for repo in repos
+        if repo.name not in exclude
     ]
     with RepoSnapshot.add_sqlite_to_storage(
         Storage.from_json(storage_cfg), dest
@@ -144,7 +150,7 @@ def snapshot_repos(
             # perform it upon successful snapshot. It's also a quick operation
             # and thus doesn't benefit from the added complexity of threading
             with populate_temp_dir_and_rename(
-                dest / 'repos' / repo.name, overwrite=True
+                dest / "repos" / repo.name, overwrite=True
             ) as td:
                 snapshot_gpg_keys(
                     key_urls=repo.gpg_key_urls,
@@ -152,10 +158,12 @@ def snapshot_repos(
                     snapshot_dir=td,
                 )
 
-    log.info(all_repos_sizer.get_report(
-        f'According to their repodata, these {len(repos)} repos weigh'
-    ))
-    log.info(shard_sizer.get_report(f'This {rpm_shard} snapshot weighs'))
+    log.info(
+        all_repos_sizer.get_report(
+            f"According to their repodata, these {len(repos)} repos weigh"
+        )
+    )
+    log.info(shard_sizer.get_report(f"This {rpm_shard} snapshot weighs"))
 
 
 def snapshot_repos_from_args(argv: List[str]):
@@ -165,34 +173,39 @@ def snapshot_repos_from_args(argv: List[str]):
     )
     add_standard_args(parser)
     parser.add_argument(
-        '--dnf-conf', type=Path.from_argparse,
-        help='Snapshot this `dnf.conf`, and all the repos that it lists. '
-            'Can be set together with `--yum-conf`, in which case repos from '
-            'both configs must be identical. At least one of these `--*-conf` '
-            'options is required.',
+        "--dnf-conf",
+        type=Path.from_argparse,
+        help="Snapshot this `dnf.conf`, and all the repos that it lists. "
+        "Can be set together with `--yum-conf`, in which case repos from "
+        "both configs must be identical. At least one of these `--*-conf` "
+        "options is required.",
     )
     parser.add_argument(
-        '--yum-conf', type=Path.from_argparse,
-        help='Snapshot this `yum.conf`; see help for `--dnf-conf`',
+        "--yum-conf",
+        type=Path.from_argparse,
+        help="Snapshot this `yum.conf`; see help for `--dnf-conf`",
     )
     parser.add_argument(
-        '--exclude', action='append', default=[],
-        help='Repos to be excluded in the snapshot.',
+        "--exclude",
+        action="append",
+        default=[],
+        help="Repos to be excluded in the snapshot.",
     )
 
     universe_warning = (
-        'Described in the `repo_db.py` docblock. In production, it is '
-        'important for the universe name to match existing conventions -- '
-        'DO NOT JUST MAKE ONE UP.'
+        "Described in the `repo_db.py` docblock. In production, it is "
+        "important for the universe name to match existing conventions -- "
+        "DO NOT JUST MAKE ONE UP."
     )
     universe_group = parser.add_mutually_exclusive_group(required=True)
     universe_group.add_argument(
-        '--repo-to-universe-json', type=Path.from_argparse,
-        help='JSON dict of repo name to universe name. ' + universe_warning,
+        "--repo-to-universe-json",
+        type=Path.from_argparse,
+        help="JSON dict of repo name to universe name. " + universe_warning,
     )
     universe_group.add_argument(
-        '--one-universe-for-all-repos',
-        help='Snapshot all repos under this universe name. ' + universe_warning,
+        "--one-universe-for-all-repos",
+        help="Snapshot all repos under this universe name. " + universe_warning,
     )
 
     args = Path.parse_args(parser, argv)
@@ -200,14 +213,17 @@ def snapshot_repos_from_args(argv: List[str]):
     init_logging(debug=args.debug)
 
     if args.one_universe_for_all_repos:
+
         def repo_to_universe(_repo):
             return args.one_universe_for_all_repos
+
     elif args.repo_to_universe_json:
         with open(args.repo_to_universe_json) as ru_json:
             repo_to_universe_json = json.load(ru_json)
 
         def repo_to_universe(repo):
             return repo_to_universe_json[repo.name]
+
     else:  # pragma: no cover
         raise AssertionError(args)
 
@@ -216,9 +232,11 @@ def snapshot_repos_from_args(argv: List[str]):
             dest=td,
             repo_to_universe=repo_to_universe,
             yum_conf_content=args.yum_conf.read_text()
-                if args.yum_conf else None,
+            if args.yum_conf
+            else None,
             dnf_conf_content=args.dnf_conf.read_text()
-                if args.dnf_conf else None,
+            if args.dnf_conf
+            else None,
             db_cfg=args.db,
             storage_cfg=args.storage,
             rpm_shard=args.rpm_shard,
@@ -228,6 +246,6 @@ def snapshot_repos_from_args(argv: List[str]):
         )
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     init_sample_logging()
     snapshot_repos_from_args(sys.argv[1:])

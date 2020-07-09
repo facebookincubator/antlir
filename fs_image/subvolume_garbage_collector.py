@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''\
+"""\
 Garbage collection deletes subvolumes that are no longer referenced by
 "subvolume JSON" build artifacts tracked by Buck.
 
@@ -37,7 +37,7 @@ KEY ASSUMPTIONS:
 
  - Subvolumes live in wrapper directories, with this directory layout:
    <subvol_name>:<some unique id>/<subvol name>
-'''
+"""
 import argparse
 import contextlib
 import fcntl
@@ -48,17 +48,17 @@ import re
 import stat
 import subprocess
 import sys
-
 from typing import Iterator
 
 from .fs_utils import Path
+
 
 log = logging.Logger(os.path.basename(__file__))  # __name__ is __main__
 
 
 @contextlib.contextmanager
 def nonblocking_flock(path) -> Iterator[bool]:
-    'Yields True if we got the lock, False otherwise.'
+    "Yields True if we got the lock, False otherwise."
     # We don't set CLOEXEC on this FD because we want e.g. `sudo btrfs` to
     # inherit it and hold the lock while it does its thing.  It seems OK to
     # trust that `btrfs` will not be doing shenanigans like daemonizing a
@@ -78,29 +78,29 @@ def list_subvolume_wrappers(subvolumes_dir):
     # Ignore directories that don't match the <subvol name>:<id> pattern.
     subvolumes = [
         os.path.relpath(p, subvolumes_dir)
-            for p in glob.glob(f'{subvolumes_dir}/*:*/')
+        for p in glob.glob(f"{subvolumes_dir}/*:*/")
     ]
     # If glob works correctly, this list should always be empty.
-    bad_subvolumes = [s for s in subvolumes if '/' in s]
-    assert not bad_subvolumes, f'{bad_subvolumes} globbing {subvolumes_dir}'
+    bad_subvolumes = [s for s in subvolumes if "/" in s]
+    assert not bad_subvolumes, f"{bad_subvolumes} globbing {subvolumes_dir}"
     return subvolumes
 
 
 def list_refcounts(refcounts_dir):
     # The the first part of the name may contain 0 or more colons.
-    reg = re.compile('^(.+):([^:]+).json$')
-    for p in glob.glob(f'{refcounts_dir}/*:*.json'):
+    reg = re.compile("^(.+):([^:]+).json$")
+    for p in glob.glob(f"{refcounts_dir}/*:*.json"):
         m = reg.match(os.path.basename(p))
         # Only fails if glob does not work.
-        assert m is not None, f'Bad refcount item {p} in {refcounts_dir}'
+        assert m is not None, f"Bad refcount item {p} in {refcounts_dir}"
         st = os.stat(p)
         if not stat.S_ISREG(st.st_mode):
-            raise RuntimeError(f'Refcount {p} is not a regular file')
+            raise RuntimeError(f"Refcount {p} is not a regular file")
         # It is tempting to check that the subvolume name & version match
         # `SubvolumeOnDisk.from_json_file`, but we cannot do that because
         # our GC pass might be running concurrently with another build, and
         # the refcount file might be empty or half-written.
-        yield (f'{m.group(1)}:{m.group(2)}', st.st_nlink)
+        yield (f"{m.group(1)}:{m.group(2)}", st.st_nlink)
 
 
 def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
@@ -120,11 +120,11 @@ def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
         if nlink >= 2:
             if nlink > 2:
                 # Not sure how this might happen, but it seems non-fatal...
-                log.error(f'{nlink} > 2 links to subvolume {subvol_wrapper}')
+                log.error(f"{nlink} > 2 links to subvolume {subvol_wrapper}")
             continue
-        refcount_path = os.path.join(refcounts_dir, f'{subvol_wrapper}.json')
+        refcount_path = os.path.join(refcounts_dir, f"{subvol_wrapper}.json")
         log.warning(
-            f'Deleting {subvol_wrapper} since its refcount has {nlink} links'
+            f"Deleting {subvol_wrapper} since its refcount has {nlink} links"
         )
         # Start by unlinking the refcount to dramatically decrease the
         # chance of leaving an orphaned refcount file on disk.  The most
@@ -152,31 +152,32 @@ def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
         wrapper_content = set(wrapper_path.listdir())
         # We may have run `systemd-nspawn` against the subvolume, e.g.
         # as part of `image_foreign_layer`, which creates this lockfile.
-        maybe_lockfile = [f for f in wrapper_content if f.startswith(b'.#')]
+        maybe_lockfile = [f for f in wrapper_content if f.startswith(b".#")]
         if maybe_lockfile:
             assert len(maybe_lockfile) == 1, maybe_lockfile
-            maybe_lockfile, = maybe_lockfile
+            (maybe_lockfile,) = maybe_lockfile
             wrapper_content.remove(maybe_lockfile)
 
         if len(wrapper_content) > 1:
             raise RuntimeError(
-                f'{wrapper_path} must contain just 1 subvol: {wrapper_content}'
+                f"{wrapper_path} must contain just 1 subvol: {wrapper_content}"
             )
         elif len(wrapper_content) == 1:
-            subvol, = wrapper_content
-            expected_lock_path = wrapper_path / f'.#{subvol}.lck'
+            (subvol,) = wrapper_content
+            expected_lock_path = wrapper_path / f".#{subvol}.lck"
             assert (
                 # The output of `.listdir()` should match our `.exists()`
-                bool(maybe_lockfile) == os.path.exists(expected_lock_path) and (
+                bool(maybe_lockfile) == os.path.exists(expected_lock_path)
+                and (
                     not maybe_lockfile
                     or maybe_lockfile == expected_lock_path.basename()
                 )
             ), (maybe_lockfile, expected_lock_path)
             if maybe_lockfile:
                 os.unlink(expected_lock_path)
-            subprocess.check_call([
-                'sudo', 'btrfs', 'subvolume', 'delete', wrapper_path / subvol,
-            ])
+            subprocess.check_call(
+                ["sudo", "btrfs", "subvolume", "delete", wrapper_path / subvol]
+            )
         else:  # No subvolume in wrapper
             # We don't expect to see a stray lockfile here because we delete
             # the lockfile before the subvol.
@@ -191,27 +192,29 @@ def parse_args(argv):
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        '--refcounts-dir', required=True,
-        help='We will create a hardlink to `--new-subvolume-json` in this '
-            'directory. For that reason, this needs to be on same device, '
-            'and thus cannot be under `--subvolumes-dir`',
+        "--refcounts-dir",
+        required=True,
+        help="We will create a hardlink to `--new-subvolume-json` in this "
+        "directory. For that reason, this needs to be on same device, "
+        "and thus cannot be under `--subvolumes-dir`",
     )
     parser.add_argument(
-        '--subvolumes-dir', required=True,
-        help='A directory on a btrfs volume, where all the subvolume wrapper '
-            'directories reside.',
+        "--subvolumes-dir",
+        required=True,
+        help="A directory on a btrfs volume, where all the subvolume wrapper "
+        "directories reside.",
     )
     parser.add_argument(
-        '--new-subvolume-wrapper-dir',
-        help='Subvolumes live inside wrapper directories, following the '
-            'convention <name>:<version>/<name>. This parameter should '
-            'consist just of the <name>:<version> part.',
+        "--new-subvolume-wrapper-dir",
+        help="Subvolumes live inside wrapper directories, following the "
+        "convention <name>:<version>/<name>. This parameter should "
+        "consist just of the <name>:<version> part.",
     )
     parser.add_argument(
-        '--new-subvolume-json',
-        help='We will delete any file at this path, then create an empty one, '
-            'and hard-link into `--refcounts-dir` for refcounting purposes. '
-            'The image compiler will then write data into this file.',
+        "--new-subvolume-json",
+        help="We will delete any file at this path, then create an empty one, "
+        "and hard-link into `--refcounts-dir` for refcounting purposes. "
+        "The image compiler will then write data into this file.",
     )
     return Path.parse_args(parser, argv)
 
@@ -223,30 +226,30 @@ def has_new_subvolume(args):
     )
     if None not in new_subvolume_args:
         if (
-            ':' not in args.new_subvolume_wrapper_dir or
-            '/' in args.new_subvolume_wrapper_dir
+            ":" not in args.new_subvolume_wrapper_dir
+            or "/" in args.new_subvolume_wrapper_dir
         ):
             raise RuntimeError(
-                '--new-subvolume-wrapper-dir must contain : but not /, got '
-                f'{args.new_subvolume_wrapper_dir}'
+                "--new-subvolume-wrapper-dir must contain : but not /, got "
+                f"{args.new_subvolume_wrapper_dir}"
             )
         wrapper_path = os.path.join(
-            args.subvolumes_dir, args.new_subvolume_wrapper_dir,
+            args.subvolumes_dir, args.new_subvolume_wrapper_dir
         )
         if os.path.exists(wrapper_path):
             raise RuntimeError(
-                f'--new-subvolume-wrapper-dir exists {wrapper_path}'
+                f"--new-subvolume-wrapper-dir exists {wrapper_path}"
             )
         return True
     if new_subvolume_args != (None,) * 2:
         raise RuntimeError(
-            'Either pass both --new-subvolume-* arguments, or pass none.'
+            "Either pass both --new-subvolume-* arguments, or pass none."
         )
     return False
 
 
 def subvolume_garbage_collector(argv):
-    '''
+    """
     IMPORTANT:
 
      - Multiple copies of this function can run concurrently, subject to the
@@ -271,7 +274,7 @@ def subvolume_garbage_collector(argv):
 
        Failure before (c), or in the middle of (c) will abort the build, so
        the lack of a refcount link won't cause issues later.
-    '''
+    """
     args = parse_args(argv)
 
     # Delete unused subvolumes.
@@ -296,7 +299,7 @@ def subvolume_garbage_collector(argv):
             # That other build probably won't clean up the prior version of
             # the subvolume we are creating, but we don't rely on that to
             # make space anyhow, so let's continue.
-            log.warning('A concurrent build is garbage-collecting subvolumes.')
+            log.warning("A concurrent build is garbage-collecting subvolumes.")
 
     # .json outputs and refcounts are written as an unprivileged user. We
     # only need root for subvolume manipulation (above).
@@ -323,13 +326,13 @@ def subvolume_garbage_collector(argv):
     #     reading refcounts.
     if has_new_subvolume(args):
         new_subvolume_refcount = os.path.join(
-            args.refcounts_dir, f'{args.new_subvolume_wrapper_dir}.json',
+            args.refcounts_dir, f"{args.new_subvolume_wrapper_dir}.json"
         )
         # This should never happen since the name & version are supposed to
         # be unique for this one subvolume (KEY ASSUMPTIONS).
         if os.path.exists(new_subvolume_refcount):
             raise RuntimeError(
-                f'Refcount already exists: {new_subvolume_refcount}'
+                f"Refcount already exists: {new_subvolume_refcount}"
             )
 
         # Our refcounting relies on the hard-link counts of the output
@@ -342,11 +345,13 @@ def subvolume_garbage_collector(argv):
                 os.unlink(p)
             except FileNotFoundError:
                 pass
-        os.close(os.open(
-            args.new_subvolume_json,
-            flags=os.O_CREAT | os.O_CLOEXEC | os.O_NOCTTY,
-            mode=0o600,
-        ))
+        os.close(
+            os.open(
+                args.new_subvolume_json,
+                flags=os.O_CREAT | os.O_CLOEXEC | os.O_NOCTTY,
+                mode=0o600,
+            )
+        )
 
         # Throws if the Buck output is not on the same device as the
         # refcount dir.  That case has to fail, that's how hardlinks work.
@@ -361,5 +366,5 @@ def subvolume_garbage_collector(argv):
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     subvolume_garbage_collector(sys.argv[1:])  # pragma: no cover

@@ -4,14 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 To start, read the docblock of `provides.py`. The code in this file verifies
 that a set of Items can be correctly installed (all requirements are
 satisfied, etc).  It then computes an installation order such that every
 Item is installed only after all of the Items that match its Requires have
 already been installed.  This is known as dependency order or topological
 sort.
-'''
+"""
 from collections import namedtuple
 from typing import Iterator
 
@@ -30,22 +30,23 @@ from fs_image.compiler.items.phases_provide import PhasesProvideItem
 # To avoid re-evaluating ImageItem.{provides,requires}(), we'll just store
 # everything in these data structures:
 
-ItemProv = namedtuple('ItemProv', ['provides', 'item'])
+ItemProv = namedtuple("ItemProv", ["provides", "item"])
 # NB: since the item is part of the tuple, we'll store identical
 # requirements that come from multiple items multiple times.  This is OK.
-ItemReq = namedtuple('ItemReq', ['requires', 'item'])
-ItemReqsProvs = namedtuple('ItemReqsProvs', ['item_provs', 'item_reqs'])
+ItemReq = namedtuple("ItemReq", ["requires", "item"])
+ItemReqsProvs = namedtuple("ItemReqsProvs", ["item_provs", "item_reqs"])
 
 
 class ValidatedReqsProvs:
-    '''
+    """
     Given a set of Items (see the docblocks of `item.py` and `provides.py`),
     computes {'path': {ItemReqProv{}, ...}} so that we can build the
     DependencyGraph for these Items.  In the process validates that:
      - No one item provides or requires the same path twice,
      - Each path is provided by at most one item (could be relaxed later),
      - Every Requires is matched by a Provides at that path.
-    '''
+    """
+
     def __init__(self, items):
         self.path_to_reqs_provs = {}
 
@@ -53,12 +54,16 @@ class ValidatedReqsProvs:
             path_to_req_or_prov = {}  # Checks req/prov are sane within an item
             for req in item.requires():
                 self._add_to_map(
-                    path_to_req_or_prov, req, item,
+                    path_to_req_or_prov,
+                    req,
+                    item,
                     add_to_map_fn=self._add_to_req_map,
                 )
             for prov in item.provides():
                 self._add_to_map(
-                    path_to_req_or_prov, prov, item,
+                    path_to_req_or_prov,
+                    prov,
+                    item,
                     add_to_map_fn=self._add_to_prov_map,
                 )
 
@@ -67,13 +72,14 @@ class ValidatedReqsProvs:
             for item_req in reqs_provs.item_reqs:
                 for item_prov in reqs_provs.item_provs:
                     if item_prov.provides.matches(
-                            self.path_to_reqs_provs, item_req.requires
+                        self.path_to_reqs_provs, item_req.requires
                     ):
                         break
                 else:
                     raise RuntimeError(
-                        'At {}: nothing in {} matches the requirement {}'
-                        .format(path, reqs_provs.item_provs, item_req)
+                        "At {}: nothing in {} matches the requirement {}".format(
+                            path, reqs_provs.item_provs, item_req
+                        )
                     )
 
     @staticmethod
@@ -85,8 +91,8 @@ class ValidatedReqsProvs:
         # I see no reason to allow provides-provides collisions.
         if len(reqs_provs.item_provs):
             raise RuntimeError(
-                f'Both {reqs_provs.item_provs} and {prov} from {item} provide '
-                'the same path'
+                f"Both {reqs_provs.item_provs} and {prov} from {item} provide "
+                "the same path"
             )
         reqs_provs.item_provs.add(ItemProv(provides=prov, item=item))
 
@@ -99,7 +105,7 @@ class ValidatedReqsProvs:
         # provides.  Failing to enforce this invariant would make it easy to
         # bloat dependency graphs unnecessarily.
         other = path_to_req_or_prov.get(req_or_prov.path)
-        assert other is None, 'Same path in {}, {}'.format(req_or_prov, other)
+        assert other is None, "Same path in {}, {}".format(req_or_prov, other)
         path_to_req_or_prov[req_or_prov.path] = req_or_prov
 
         add_to_map_fn(
@@ -108,20 +114,20 @@ class ValidatedReqsProvs:
                 ItemReqsProvs(item_provs=set(), item_reqs=set()),
             ),
             req_or_prov,
-            item
+            item,
         )
 
 
 class DependencyGraph:
-    '''
+    """
     Given an iterable of ImageItems, validates their requires / provides
     structures, and populates indexes describing dependencies between items.
     The indexes make it easy to topologically sort the items.
-    '''
+    """
 
     # Consumes a mix of dependency-ordered and `PhaseOrder`ed `ImageItem`s.
     def __init__(
-        self, iter_items: {'Iterator of ImageItems'}, layer_target: str,
+        self, iter_items: {"Iterator of ImageItems"}, layer_target: str
     ):
         # Without deduping, dependency diamonds would cause a lot of
         # redundant work below.  `_prep_item_predecessors` mutates this.
@@ -133,7 +139,7 @@ class DependencyGraph:
                 self.items.add(item)
             else:
                 self.order_to_phase_items.setdefault(
-                    item.phase_order(), [],
+                    item.phase_order(), []
                 ).append(item)
         # If there is no MAKE_SUBVOL item, create an empty subvolume.
         make_subvol_items = self.order_to_phase_items.setdefault(
@@ -155,8 +161,7 @@ class DependencyGraph:
     # Like ImageItems, the generated phases have a build(s: Subvol) operation.
     def ordered_phases(self):
         for _, items in sorted(
-            self.order_to_phase_items.items(),
-            key=lambda kv: kv[0].value,
+            self.order_to_phase_items.items(), key=lambda kv: kv[0].value
         ):
             # We assume that all items in one phase share a builder factory
             all_builder_makers = {i.get_phase_builder for i in items}
@@ -198,13 +203,14 @@ class DependencyGraph:
                         item_req.item, set()
                     ).add(item_prov.item)
 
-        ns.items_without_predecessors = \
+        ns.items_without_predecessors = (
             self.items - ns.item_to_predecessors.keys()
+        )
 
         return ns
 
     def gen_dependency_order_items(
-        self, phases_provide: PhasesProvideItem,
+        self, phases_provide: PhasesProvideItem
     ) -> Iterator[ImageItem]:
         ns = self._prep_item_predecessors(phases_provide)
         yield_idx = 0
@@ -216,7 +222,7 @@ class DependencyGraph:
             # layer after the phases had run (before we build items).
             if item is phases_provide:
                 # This item deliberately lacks `build()`, so don't yield it.
-                assert yield_idx == 0, f'{item}: PhasesProvideItem must be 1st'
+                assert yield_idx == 0, f"{item}: PhasesProvideItem must be 1st"
             else:
                 yield item
             yield_idx += 1
@@ -236,5 +242,6 @@ class DependencyGraph:
 
         # Initially, every item was indexed here. If there's anything left,
         # we must have a cycle. Future: print a cycle to simplify debugging.
-        assert not ns.predecessor_to_items, \
-            'Cycle in {}'.format(ns.predecessor_to_items)
+        assert not ns.predecessor_to_items, "Cycle in {}".format(
+            ns.predecessor_to_items
+        )

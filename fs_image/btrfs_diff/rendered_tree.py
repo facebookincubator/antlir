@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 A `RenderedTree` is a JSON-friendly plain-old-data view of the `Subvolume`.
 
 This a recursive structure of the form `[inode, {'name': [...]}]`. Arbitrary
@@ -69,15 +69,22 @@ wraps only objects that occur more than once. For example, (ii) becomes:
 
  (ii) if 'a' and 'b' are the same inode:
       `['(Dir)': {'a': [['(File)', 0]], 'a': [['(File)', 0]]]`
-'''
+"""
 import os
-
-from typing import (
-    Any, Coroutine, Hashable, Mapping, NamedTuple, Optional, Tuple, Union,
-)
 from itertools import count
+from typing import (
+    Any,
+    Coroutine,
+    Hashable,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+)
 
 from .coroutine_utils import while_not_exited
+
 
 # This is intended to be:
 # RenderedTree = Union[Tuple[Any], Tuple[Any, Mapping[bytes, 'RenderedTree']]]
@@ -91,7 +98,7 @@ def gather_bottom_up(
     # Private, and NOT like the public `top_path` arg of `gather_bottom_up`.
     # Not `bytes` since we `surrogateescape` everything at render time to
     # let us produce JSON-friendly `utf-8`.
-    _path: str='.',
+    _path: str = ".",
 ) -> Coroutine[
     Tuple[
         bytes,  # full path to current inode
@@ -103,19 +110,19 @@ def gather_bottom_up(
     Any,  # send -- whatever result type we are aggregating.
     Any,  # return -- the final result, whatever you sent for `top_path`
 ]:
-    '''
+    """
     A deterministic bottom-up traversal over the inodes in the output of
     `Subvolume.render`.  This matches the traversal order of
     `Subvolume.gather_bottom_up`.  See that docblock for a discussion of the
     merits of traversal coroutines.
-    '''
+    """
     if not isinstance(ser, list):
-        raise RuntimeError(f'Unknown type in rendered subvolume: {ser}')
+        raise RuntimeError(f"Unknown type in rendered subvolume: {ser}")
     elif len(ser) == 1:
         # pyre-fixme[7]: Generator vs Coroutine?!
         return (yield _path, ser[0], None)
     elif len(ser) != 2:
-        raise RuntimeError(f'Rendered inode list length != 1, 2: {ser}')
+        raise RuntimeError(f"Rendered inode list length != 1, 2: {ser}")
 
     ino, children = ser
     # Normally, we'd just get a 1-element list, but this is OK too.
@@ -126,21 +133,21 @@ def gather_bottom_up(
         # Traverse children in the same order as `gather_bottom_up`,
         # ensuring that in tests actual & expected traversal IDs agree.
         for name, child_ser in sorted(children.items()):
-            child_results[name] = (yield from gather_bottom_up(
+            child_results[name] = yield from gather_bottom_up(
                 child_ser,
                 # normpath to remove the leading ./
                 _path=os.path.normpath(os.path.join(_path, name)),
-            ))
+            )
     # pyre-fixme[7]: Generator vs Coroutine?!
     return (yield (_path, ino, child_results))  # noqa: B901
 
 
 def map_bottom_up(ser: RenderedTree, fn) -> RenderedTree:
-    '''
+    """
     Like `gather_bottom_up`, but applies `fn` to all the inodes and produces
     a new a `RenderedTree` with the results.  The only downside is that
     inodes cannot see their children.
-    '''
+    """
     with while_not_exited(gather_bottom_up(ser)) as ctx:
         result = None
         while True:
@@ -151,7 +158,7 @@ def map_bottom_up(ser: RenderedTree, fn) -> RenderedTree:
 
 
 class TraversalIDWrapper(NamedTuple):
-    '''
+    """
     Do not construct this directly -- instead call `TraversalID.wrap`.
     If you see this in your output, call `emit_*_traversal_ids`.
 
@@ -159,17 +166,19 @@ class TraversalIDWrapper(NamedTuple):
     produce the inode representations, wrapped with `TraversalIDWrapper`.
     Then, `emit_*_traveral_ids` replaces the wrappers with JSON-friendly
     annotations that identify any repeated objects.
-    '''
-    id: 'TraversalID'
+    """
+
+    id: "TraversalID"
     wrapped: Any
 
 
 class TraversalID:
-    '''
+    """
     `TraversalIDMaker` exists to highlight which objects are the same.
     Using a refcounting `TraveralID` instead of a bare `int` enables us to
     show IDs only when the object is actually repeated.
-    '''
+    """
+
     id: int
     refcount: int
 
@@ -196,14 +205,14 @@ class TraversalID:
     def __repr__(self):
         # This is verbose because we shouldn't use `TraversalID`s directly,
         # but should rather always emit them to finish the rendering.
-        return f'TraversalID({self.id}/{self.refcount})'
+        return f"TraversalID({self.id}/{self.refcount})"
 
     def wrap(self, wrapped: Any):
         return TraversalIDWrapper(id=self, wrapped=wrapped)
 
 
 class TraversalIDMaker:
-    '''
+    """
     If we traverse a filesystem in a deterministic order, and increment a
     counter every time we encounter a previously-unseen object (e.g.  a new
     inode or a new data extent), we will end up with **deterministic** IDs
@@ -211,14 +220,14 @@ class TraversalIDMaker:
     IDs emitted in different parts of the traversal will be the same iff the
     traversal is visiting the same object twice (e.g.  hardlinks or cloned
     extents).
-    '''
+    """
 
     def __init__(self):
         self.counter = count()
         self.nonce_to_id = {}
 
     def next_with_nonce(self, nonce: Hashable) -> TraversalID:
-        '''
+        """
         Call this for each object you encounter in your traversal.
 
         The nonce is any key that captures your desired meaning of object
@@ -226,7 +235,7 @@ class TraversalIDMaker:
         value-is-identity objects like `InodeID`, it is better to encode the
         value in the key, e.g.  `(ino_id.id, id(ino_id.inner_id_map))` makes
         more sense than `id(ino_id)`.
-        '''
+        """
         if nonce not in self.nonce_to_id:
             self.nonce_to_id[nonce] = TraversalID(next(self.counter))
         trav_id = self.nonce_to_id[nonce]
@@ -234,23 +243,23 @@ class TraversalIDMaker:
         return trav_id
 
     def next_unique(self) -> TraversalID:
-        'Use this to make test data where most objects are unique.'
+        "Use this to make test data where most objects are unique."
         return self.next_with_nonce(object())
 
 
 def emit_all_traversal_ids(ser: RenderedTree) -> RenderedTree:
-    'Every inode becomes [ino, integer traversal ID].'
-    return map_bottom_up(ser, lambda wrapped_ino: [
-        wrapped_ino.wrapped, wrapped_ino.id.id,
-    ])
+    "Every inode becomes [ino, integer traversal ID]."
+    return map_bottom_up(
+        ser, lambda wrapped_ino: [wrapped_ino.wrapped, wrapped_ino.id.id]
+    )
 
 
 def emit_non_unique_traversal_ids(ser: RenderedTree):
-    '''
+    """
     Inodes that occur more than once become `[ino, integer ID]`, with
     new, sequential, deterministic IDs just for the non-unique inodes.
     Unique inodes are emitted as `ino`.
-    '''
+    """
     id_maker = TraversalIDMaker()
 
     def maybe_emit_id(wrapped_ino):
@@ -258,7 +267,7 @@ def emit_non_unique_traversal_ids(ser: RenderedTree):
             return wrapped_ino.wrapped
         return [
             wrapped_ino.wrapped,
-            id_maker.next_with_nonce(wrapped_ino.id.id).id
+            id_maker.next_with_nonce(wrapped_ino.id.id).id,
         ]
 
     return map_bottom_up(ser, maybe_emit_id)

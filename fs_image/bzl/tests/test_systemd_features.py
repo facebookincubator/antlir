@@ -10,6 +10,7 @@ import unittest
 
 from fs_image.fs_utils import Path
 
+
 PROV_ROOT = Path("/usr/lib/systemd/system")
 ADMIN_ROOT = Path("/etc/systemd/system")
 
@@ -30,7 +31,6 @@ def _twant(target):
 
 
 class TestSystemdFeatures(unittest.TestCase):
-
     def test_units_installed(self):
         for unit, *_ in unit_test_specs:
             unit_file = PROV_ROOT / unit
@@ -39,8 +39,9 @@ class TestSystemdFeatures(unittest.TestCase):
 
     def test_units_enabled(self):
         # Get a list of the available .wants dirs for all targets to validate
-        available_targets = [Path(avail) for avail in
-                             glob.glob(PROV_ROOT / "*.wants")]
+        available_targets = [
+            Path(avail) for avail in glob.glob(PROV_ROOT / "*.wants")
+        ]
 
         # spec[1] is the target name, skip if None
         for unit, target, *_ in unit_test_specs:
@@ -49,18 +50,23 @@ class TestSystemdFeatures(unittest.TestCase):
                 enabled_in_target = PROV_ROOT / _twant(target) / unit
 
                 self.assertTrue(
-                    os.path.islink(enabled_in_target), enabled_in_target)
+                    os.path.islink(enabled_in_target), enabled_in_target
+                )
                 self.assertTrue(
-                    os.path.isfile(enabled_in_target), enabled_in_target)
+                    os.path.isfile(enabled_in_target), enabled_in_target
+                )
 
             # make sure it's *not* enabled where it shouldn't be
-            for avail_target in [avail for avail in available_targets
-                                 if target
-                                 and avail.basename() != _twant(target)]:
+            for avail_target in [
+                avail
+                for avail in available_targets
+                if target and avail.basename() != _twant(target)
+            ]:
                 unit_in_target_wants = avail_target / unit
 
                 self.assertFalse(
-                    os.path.exists(avail_target / unit), unit_in_target_wants)
+                    os.path.exists(avail_target / unit), unit_in_target_wants
+                )
 
     def test_units_masked(self):
         for unit, _, masked in unit_test_specs:
@@ -68,4 +74,4 @@ class TestSystemdFeatures(unittest.TestCase):
                 masked_unit = ADMIN_ROOT / unit
 
                 # Yes, systemd (at least in v243) is OK with a relative link
-                self.assertEqual(os.readlink(masked_unit), b'../../../dev/null')
+                self.assertEqual(os.readlink(masked_unit), b"../../../dev/null")

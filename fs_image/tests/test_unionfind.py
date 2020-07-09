@@ -14,7 +14,7 @@ class TestUnionFind(unittest.TestCase):
         self.union_find = UnionFind()
 
     def test_find(self):
-        '''Tests implementation details and find with path compression'''
+        """Tests implementation details and find with path compression"""
         self.union_find.add(1)
         self.assertEqual(self.union_find._parent(1), 1)
 
@@ -27,7 +27,7 @@ class TestUnionFind(unittest.TestCase):
         self.assertEqual(self.union_find._parent(3), 1)
 
     def test_flatten(self):
-        '''Tests implementation of flatten(), which should do find on all keys'''
+        """Tests implementation of flatten(), which should do find on all keys"""
         self.union_find.add(1)
         self.union_find.union(3, 2)
         self.union_find.union(7, 5)
@@ -106,7 +106,7 @@ class TestUnionFind(unittest.TestCase):
         self.assertEqual(count, 3)
 
     def test_persistence(self):
-        '''Makes sure that once two nodes are joined, they do not split'''
+        """Makes sure that once two nodes are joined, they do not split"""
         union_find = UnionFind()
         union_find.add(1)
         union_find.union(1, 2)
@@ -118,5 +118,5 @@ class TestUnionFind(unittest.TestCase):
         self.assertEqual(union_find.find(2), 2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

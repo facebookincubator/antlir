@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 One of the trickier parts of creating a mock btrfs filesystem is tracking
 the structures of the write forks, respecting `truncate`, `write`, and
 `clone` operations.  We achieve this as follows:
@@ -114,20 +114,19 @@ the structures of the write forks, respecting `truncate`, `write`, and
     by separate `clone` operations.  This is easy to fix once it comes up in
     real applications.  Tested in `test_cannot_merge_adjacent_clones()`.
 
-'''
+"""
 # Future: frozentypes instead of NamedTuples can permit some cleanups below.
 import functools
-
 from collections import defaultdict
 from typing import Dict, Iterable, NamedTuple, Sequence, Tuple
 
 from .extent import Extent
-from .inode import Clone, Chunk, ChunkClone
+from .inode import Chunk, ChunkClone, Clone
 from .inode_id import InodeID
 
 
 class _CloneExtentRef(NamedTuple):
-    '''
+    """
     Connects a part of a HOLE/DATA leaf Extent to a location in an Inode.
 
     Although the Extent is shared between many inodes and/or disjoint
@@ -145,7 +144,8 @@ class _CloneExtentRef(NamedTuple):
 
     Future: With `frozentype`, __new__ could assert that `offset` and
     `clone.length` are sane with respect to `extent`.
-    '''
+    """
+
     clone: Clone  # `clone.length` trims `extent`
     extent: Extent
     offset: int  # Trims `extent`
@@ -171,14 +171,14 @@ class _CloneExtentRef(NamedTuple):
 
     def __repr__(self):  # pragma: no cover
         return (
-            f'{self.clone.inode_id}:{self.clone.offset}'
-            f'+{self.clone.length}:{id(self.extent)}'  # Extent is too noisy
+            f"{self.clone.inode_id}:{self.clone.offset}"
+            f"+{self.clone.length}:{id(self.extent)}"  # Extent is too noisy
         )
 
 
 # If these change, we have to update `_clone_op_compare_key`
-assert Clone._fields.index('inode_id') == 0
-assert _CloneExtentRef._fields.index('clone') == 0
+assert Clone._fields.index("inode_id") == 0
+assert _CloneExtentRef._fields.index("clone") == 0
 
 
 # Our _CloneOp ordering obeys the following invariants:
@@ -197,17 +197,20 @@ assert _CloneExtentRef._fields.index('clone') == 0
 #  - making `Inode`s comparable (a bit ugly, comparing Extents is pricy,
 #    comparing InodeIDs would require some comparator boilerplate)
 # Luckily, being explicit is not *that* painful.
-def _clone_op_compare_key(c: '_CloneOp'):
+def _clone_op_compare_key(c: "_CloneOp"):
     return (
         # The preceding asserts make these [1:] hacks tolerable.
-        c.pos, c.action, c.ref[1:], c.ref.clone[1:],
+        c.pos,
+        c.action,
+        c.ref[1:],
+        c.ref.clone[1:],
         c.ref.clone.inode_id.id,
     )
 
 
 def _clone_op_compare(fn):
     @functools.wraps(fn)
-    def cmp(self: '_CloneOp', other: '_CloneOp'):
+    def cmp(self: "_CloneOp", other: "_CloneOp"):
         assert isinstance(other, _CloneOp)
         # We only compare ops within one extent. The tests assume this to
         # justify focusing on single-extent examples, so check it.
@@ -217,12 +220,13 @@ def _clone_op_compare(fn):
         # comparing a _CloneOp with itself.
         assert tuple.__ne__(self, other)
         return fn(_clone_op_compare_key(self), _clone_op_compare_key(other))
+
     return cmp
 
 
 class _CloneOp(NamedTuple):
-    PUSH = 'push'
-    POP = 'pop'
+    PUSH = "push"
+    POP = "pop"
     assert POP < PUSH  # We want to sort all POPs before any PUSHes
 
     pos: int
@@ -241,7 +245,7 @@ class _CloneOp(NamedTuple):
 def _leaf_extent_id_to_clone_ops(
     ids_and_extents: Iterable[Tuple[InodeID, Extent]]
 ):
-    '''
+    """
     To collect the parts of a Chunk that are cloned, we will run a variation
     on the standard interval-overlap algorithm.  We first sort the starts &
     ends of each interval, and then do a sequential scan that uses starts to
@@ -250,7 +254,7 @@ def _leaf_extent_id_to_clone_ops(
 
     This function simply prepares the set of interval starts & ends for each
     InodeID, the computation is in `_leaf_ref_to_chunk_clones_from_clone_ops`.
-    '''
+    """
     leaf_extent_id_to_clone_ops = defaultdict(list)
     for ino_id, extent in ids_and_extents:
         file_offset = 0
@@ -258,17 +262,17 @@ def _leaf_extent_id_to_clone_ops(
             extent.gen_trimmed_leaves()
         ):
             ref = _CloneExtentRef(
-                clone=Clone(
-                    inode_id=ino_id, offset=file_offset, length=length,
-                ),
+                clone=Clone(inode_id=ino_id, offset=file_offset, length=length),
                 extent=leaf_extent,
                 offset=offset,
                 leaf_idx=leaf_idx,
             )
-            leaf_extent_id_to_clone_ops[id(leaf_extent)].extend([
-                _CloneOp(pos=offset, action=_CloneOp.PUSH, ref=ref),
-                _CloneOp(pos=offset + length, action=_CloneOp.POP, ref=ref),
-            ])
+            leaf_extent_id_to_clone_ops[id(leaf_extent)].extend(
+                [
+                    _CloneOp(pos=offset, action=_CloneOp.PUSH, ref=ref),
+                    _CloneOp(pos=offset + length, action=_CloneOp.POP, ref=ref),
+                ]
+            )
             file_offset += length
     return leaf_extent_id_to_clone_ops
 
@@ -276,7 +280,7 @@ def _leaf_extent_id_to_clone_ops(
 def _leaf_ref_to_chunk_clones_from_clone_ops(
     extent_id: int, clone_ops: Iterable[_CloneOp]
 ):
-    'As per `_leaf_extent_id_to_clone_ops`, this computes interval overlaps'
+    "As per `_leaf_extent_id_to_clone_ops`, this computes interval overlaps"
     active_ops: Dict[_CloneExtentRef, _CloneOp] = {}  # Tracks open intervals
     leaf_ref_to_chunk_clones = defaultdict(list)
     for op in sorted(clone_ops):
@@ -297,28 +301,30 @@ def _leaf_ref_to_chunk_clones_from_clone_ops(
                 bigger_offset = max(clone_op.ref.offset, op.ref.offset)
 
                 # Record that `clone_op` clones part of `op`'s inode.
-                leaf_ref_to_chunk_clones[op.ref].append(ChunkClone(
-                    offset=bigger_offset,
-                    clone=Clone(
-                        inode_id=clone_op.ref.clone.inode_id,
-                        offset=clone_op.ref.clone.offset + (
-                            bigger_offset - clone_op.ref.offset
+                leaf_ref_to_chunk_clones[op.ref].append(
+                    ChunkClone(
+                        offset=bigger_offset,
+                        clone=Clone(
+                            inode_id=clone_op.ref.clone.inode_id,
+                            offset=clone_op.ref.clone.offset
+                            + (bigger_offset - clone_op.ref.offset),
+                            length=op.pos - bigger_offset,
                         ),
-                        length=op.pos - bigger_offset,
-                    ),
-                ))
+                    )
+                )
 
                 # Record that `op` clones part of `clone_op`'s inode.
-                leaf_ref_to_chunk_clones[clone_op.ref].append(ChunkClone(
-                    offset=bigger_offset,
-                    clone=Clone(
-                        inode_id=op.ref.clone.inode_id,
-                        offset=op.ref.clone.offset + (
-                            bigger_offset - op.ref.offset
+                leaf_ref_to_chunk_clones[clone_op.ref].append(
+                    ChunkClone(
+                        offset=bigger_offset,
+                        clone=Clone(
+                            inode_id=op.ref.clone.inode_id,
+                            offset=op.ref.clone.offset
+                            + (bigger_offset - op.ref.offset),
+                            length=op.pos - bigger_offset,  # Same length
                         ),
-                        length=op.pos - bigger_offset,  # Same length
-                    ),
-                ))
+                    )
+                )
         # Sorting guarantees all POPs for `pos` are handled before PUSHes
         elif op.action == _CloneOp.PUSH:
             assert op.ref not in active_ops
@@ -329,7 +335,7 @@ def _leaf_ref_to_chunk_clones_from_clone_ops(
 
 
 def _id_to_leaf_idx_to_chunk_clones(
-    ids_and_extents: Iterable[Tuple[InodeID, Extent]],
+    ids_and_extents: Iterable[Tuple[InodeID, Extent]]
 ):
     'Aggregates newly created ChunkClones per InodeID, and per "trimmed leaf"'
     id_to_leaf_idx_to_chunk_clones = defaultdict(dict)
@@ -354,14 +360,14 @@ def _id_to_leaf_idx_to_chunk_clones(
 
 
 def extents_to_chunks_with_clones(
-    ids_and_extents: Sequence[Tuple[InodeID, Extent]],
+    ids_and_extents: Sequence[Tuple[InodeID, Extent]]
 ) -> Iterable[Tuple[InodeID, Sequence[Chunk]]]:
-    '''
+    """
     Converts the nested, history-preserving `Extent` structures into flat
     sequences of `Chunk`s, while being careful to annotate cloned parts as
     described in this file's docblock.  The `InodeID`s are needed to ensure
     that the `Chunk`s' `Clone` objects refer to the appropriate files.
-    '''
+    """
     id_to_leaf_idx_to_chunk_clones = _id_to_leaf_idx_to_chunk_clones(
         ids_and_extents
     )
@@ -397,8 +403,9 @@ def extents_to_chunks_with_clones(
                     # Subtract `offset` because `ChunkClone.offset` is
                     # Extent-relative, but in the actual file layout, the
                     # leaf Extent is trimmed further.
-                    offset=clone_offset + prev_length - offset
-                ) for clone_offset, clone in chunk_clones
+                    offset=clone_offset + prev_length - offset,
+                )
+                for clone_offset, clone in chunk_clones
             )
         # Future: `deepfrozen` was made for this:
         yield ino_id, tuple(
@@ -406,5 +413,6 @@ def extents_to_chunks_with_clones(
                 kind=c.kind,
                 length=c.length,
                 chunk_clones=frozenset(c.chunk_clones),
-            ) for c in new_chunks
+            )
+            for c in new_chunks
         )

@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 Given a `--socket-fd`, serves over HTTP a `--snapshot-dir` that was
 previously produced by `snapshot-repos`.
 
@@ -25,16 +25,15 @@ Here is how to run a test invocation of this server:
   os.execlp(sys.argv[1], *sys.argv[1:], "--socket-fd", str(s.fileno()))
   ' buck-out/gen/fs_image/rpm/repo-server.par --snapshot-dir YOUR_SNAPSHOT/
 
-'''
+"""
 import json
 import os
 import socket
 import sqlite3
 import time
 import urllib.parse
-
-from socketserver import BaseServer
 from http.server import BaseHTTPRequestHandler, HTTPStatus
+from socketserver import BaseServer
 from typing import Mapping, Tuple
 
 from fs_image.common import get_file_logger, init_logging, set_new_key
@@ -43,6 +42,7 @@ from fs_image.fs_utils import Path
 from .common import Checksum
 from .repo_snapshot import FileIntegrityError, ReportableError
 from .storage import Storage
+
 
 log = get_file_logger(__file__)
 
@@ -54,73 +54,84 @@ _CHUNK_SIZE = 2 ** 21
 # startup time for the FB production repo snapshot.
 def add_snapshot_db_objs(db):
     location_to_obj = {}
-    for repo, build_timestamp, metadata_xml in db.execute('''
+    for repo, build_timestamp, metadata_xml in db.execute(
+        """
     SELECT "repo", "build_timestamp", "metadata_xml" FROM "repomd"
-    ''').fetchall():
+    """
+    ).fetchall():
         set_new_key(
             location_to_obj,
-            os.path.join(repo, 'repodata/repomd.xml'),
+            os.path.join(repo, "repodata/repomd.xml"),
             {
-                'size': len(metadata_xml),
-                'build_timestamp': build_timestamp,
-                'content_bytes': metadata_xml.encode(),
-            }
+                "size": len(metadata_xml),
+                "build_timestamp": build_timestamp,
+                "content_bytes": metadata_xml.encode(),
+            },
         )
-    for table in ['repodata', 'rpm']:
+    for table in ["repodata", "rpm"]:
         for (
-            repo, path, build_timestamp, checksum, error, error_json, size,
+            repo,
+            path,
+            build_timestamp,
+            checksum,
+            error,
+            error_json,
+            size,
             storage_id,
-        ) in db.execute(f'''
+        ) in db.execute(
+            f"""
         SELECT
             "repo", "path", "build_timestamp", "checksum", "error",
             "error_json", "size", "storage_id"
         FROM "{table}"
-        ''').fetchall():
+        """
+        ).fetchall():
             obj = {
-                'checksum': checksum,
-                'size': size,
-                'build_timestamp': build_timestamp,
+                "checksum": checksum,
+                "size": size,
+                "build_timestamp": build_timestamp,
             }
             # `storage_id` is populated in the DB table for `mutable_rpm`
             # errors, but we don't want to serve up those files.
             if storage_id and not error and not error_json:
-                obj['storage_id'] = storage_id
+                obj["storage_id"] = storage_id
             elif error and error_json:
-                obj['error'] = {'error': error, **json.loads(error_json)}
+                obj["error"] = {"error": error, **json.loads(error_json)}
             else:  # pragma: no cover
-                raise AssertionError(f'{storage_id} {error} {error_json}')
+                raise AssertionError(f"{storage_id} {error} {error_json}")
             set_new_key(location_to_obj, os.path.join(repo, path), obj)
     return location_to_obj
 
 
 def read_snapshot_dir(path: Path):
-    db_path = path / 'snapshot.sql3'
-    assert os.path.exists(db_path), f'no {db_path}, use rpm_repo_snapshot()'
+    db_path = path / "snapshot.sql3"
+    assert os.path.exists(db_path), f"no {db_path}, use rpm_repo_snapshot()"
     with sqlite3.connect(db_path) as db:
         location_to_obj = add_snapshot_db_objs(db)
     db.close()
-    for repo in (path / 'repos').listdir():
+    for repo in (path / "repos").listdir():
         # Make JSON metadata for the repo's GPG keys.
-        key_dir = path / 'repos' / repo / 'gpg_keys'
+        key_dir = path / "repos" / repo / "gpg_keys"
         for key_filename in key_dir.listdir():
-            with open(key_dir / key_filename, 'rb') as infile:
+            with open(key_dir / key_filename, "rb") as infile:
                 key_content = infile.read()
             location_to_obj[(repo / key_filename).decode()] = {
-                'size': len(key_content),
+                "size": len(key_content),
                 # We don't have a good timestamp for these, so set it to
                 # "now".  Caching efficiency losses should be negligible :)
-                'build_timestamp': int(time.time()),
-                'content_bytes': key_content,  # Instead of `storage_id`
+                "build_timestamp": int(time.time()),
+                "content_bytes": key_content,  # Instead of `storage_id`
             }
     return location_to_obj
 
 
 class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
-    server_version = 'RPMRepoSnapshot'
-    protocol_version = 'HTTP/1.0'
+    server_version = "RPMRepoSnapshot"
+    protocol_version = "HTTP/1.0"
 
     def __init__(
-        self, *args,
+        self,
+        *args,
         # BEWARE: Mutated if we discover checksum errors to prevent client
         # retries from succeeding.
         location_to_obj: Mapping[str, dict],
@@ -132,45 +143,48 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         super().__init__(*args, **kwargs)
 
     def _memoize_error(self, obj, error: ReportableError):
-        '''
+        """
         Any size or checksum errors we see are likely to be permanent, so we
         MUTATE `obj` with the error, hiding the old `storage_id` inside.
-        '''
+        """
         error_dict = {
             **error.to_dict(),
             # Since `storage_id` is hidden, `send_head` will show the error.
-            'storage_id': obj.pop('storage_id'),
+            "storage_id": obj.pop("storage_id"),
         }
-        set_new_key(obj, 'error', error_dict)
+        set_new_key(obj, "error", error_dict)
 
     def do_GET(self) -> None:
         location, obj = self.send_head()
         if not obj:
             return  # Object not found, we already sent an error.
-        if 'content_bytes' in obj:
-            self.wfile.write(obj['content_bytes'])
+        if "content_bytes" in obj:
+            self.wfile.write(obj["content_bytes"])
             return
 
         # This binary blob must be fetched from `self.storage`. We don't
         # trust our storage, so we have to verify the checksum before
         # sending the entire blob back to the client.
-        bytes_left = obj['size']
-        checksum = Checksum.from_string(obj['checksum'])
-        with self.storage.reader(obj['storage_id']) as input:
-            log.debug(f'Got storage for {location}')
+        bytes_left = obj["size"]
+        checksum = Checksum.from_string(obj["checksum"])
+        with self.storage.reader(obj["storage_id"]) as input:
+            log.debug(f"Got storage for {location}")
             hash = checksum.hasher()
             while True:
                 chunk = input.read(_CHUNK_SIZE)
-                log.debug(f'{len(chunk)}-byte chunk for {location}')
+                log.debug(f"{len(chunk)}-byte chunk for {location}")
                 bytes_left -= len(chunk)
                 if not chunk:
                     if bytes_left != 0:  # The client will see an error.
-                        self._memoize_error(obj, FileIntegrityError(
-                            location=location,
-                            failed_check='size',
-                            expected=obj['size'],
-                            actual=obj['size'] - bytes_left,
-                        ))
+                        self._memoize_error(
+                            obj,
+                            FileIntegrityError(
+                                location=location,
+                                failed_check="size",
+                                expected=obj["size"],
+                                actual=obj["size"] - bytes_left,
+                            ),
+                        )
                     break
 
                 #
@@ -188,52 +202,60 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
                     bytes_left -= len(input.read())
 
                 if bytes_left < 0:
-                    self._memoize_error(obj, FileIntegrityError(
-                        location=location,
-                        failed_check='size',
-                        expected=obj['size'],
-                        actual=obj['size'] - bytes_left,
-                    ))
+                    self._memoize_error(
+                        obj,
+                        FileIntegrityError(
+                            location=location,
+                            failed_check="size",
+                            expected=obj["size"],
+                            actual=obj["size"] - bytes_left,
+                        ),
+                    )
                     break  # Incomplete content, client will see an error.
 
                 hash.update(chunk)
                 if bytes_left == 0 and hash.hexdigest() != checksum.hexdigest:
-                    self._memoize_error(obj, FileIntegrityError(
-                        location=location,
-                        failed_check=checksum.algorithm,
-                        expected=checksum.hexdigest,
-                        actual=hash.hexdigest(),
-                    ))
+                    self._memoize_error(
+                        obj,
+                        FileIntegrityError(
+                            location=location,
+                            failed_check=checksum.algorithm,
+                            expected=checksum.hexdigest,
+                            actual=hash.hexdigest(),
+                        ),
+                    )
                     break  # Incomplete content, client will see an error.
 
                 # If this is the last chunk, the stream was error-free.
                 self.wfile.write(chunk)
 
-        log.debug(f'Normal exit for GET {location}')
+        log.debug(f"Normal exit for GET {location}")
 
     def do_HEAD(self):
         self.send_head()
 
     def send_head(self) -> Tuple[str, dict]:
-        'Returns (location, obj) from the repo snapshot.'
+        "Returns (location, obj) from the repo snapshot."
         # Ignore query parameters & fragment, remove leading / if present.
         # Promoting to unicode since because historically our repo paths
         # have been strings, and though ideally we'd update
         # `RepoSnapshot.to_sqlite` and use `unquote_to_bytes`.
         location = urllib.parse.unquote(
-            urllib.parse.urlparse(self.path).path.lstrip('/'),
-            'utf-8', 'surrogateescape',  # paper over invalid unicode :D
+            urllib.parse.urlparse(self.path).path.lstrip("/"),
+            "utf-8",
+            "surrogateescape",  # paper over invalid unicode :D
         )
-        log.debug(f'HEAD {location}')
+        log.debug(f"HEAD {location}")
         obj = self.location_to_obj.get(location)
         if obj is None:
-            self.send_error(HTTPStatus.NOT_FOUND, 'File not found')
+            self.send_error(HTTPStatus.NOT_FOUND, "File not found")
             return None, None
         if (
-            ('storage_id' not in obj and 'content_bytes' not in obj) or
+            ("storage_id" not in obj and "content_bytes" not in obj)
+            or
             # `error` is not currently populated simultaneously with
             # `storage_id`, but better safe than sorry.
-            ('error' in obj)
+            ("error" in obj)
         ):
             self.send_error(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -245,11 +267,11 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             # in our in-memory representation -- do check the error type!
             return None, None
         self.send_response(HTTPStatus.OK)
-        self.send_header('Content-type', self.type_for_path(location))
-        self.send_header('Content-Length', str(obj['size']))
-        self.send_header('Last-Modified', self.date_time_string(
-            obj['build_timestamp'],
-        ))
+        self.send_header("Content-type", self.type_for_path(location))
+        self.send_header("Content-Length", str(obj["size"]))
+        self.send_header(
+            "Last-Modified", self.date_time_string(obj["build_timestamp"])
+        )
         # Future: if useful, could send_header('ETag', obj['checksum'])
         self.end_headers()
         return location, obj
@@ -257,34 +279,34 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
     # There is also the more expensive & comprehensive `mimetypes` module,
     # but we don't need too many extensions.
     _EXTENSION_TO_MIME_TYPE = {
-        'xml': 'text/xml',
-        'gz': 'application/x-gzip',
-        'bz2': 'application/x-bzip2',
-        'rpm': 'application/x-rpm',
+        "xml": "text/xml",
+        "gz": "application/x-gzip",
+        "bz2": "application/x-bzip2",
+        "rpm": "application/x-rpm",
         # We could consider having drpm and srpm here, but they donf't seem
         # to have mime-types defined...
     }
 
     def type_for_path(self, path: str) -> str:
-        parts = path.rsplit('.', 1)
+        parts = path.rsplit(".", 1)
         mimetype = self._EXTENSION_TO_MIME_TYPE.get(parts[-1].lower())
         if len(parts) < 2 or mimetype is None:
-            return 'application/octet-stream'
+            return "application/octet-stream"
         return mimetype
 
 
 class HTTPSocketServer(BaseServer):
-    '''
+    """
     A lightweight clone of the built-in HTTPServer & TCPServer to work
     around the fact that they do not accept pre-existing sockets.
-    '''
+    """
 
     def __init__(self, sock: socket.socket, RequestHandlerClass):
-        '''
+        """
         We just listen on `sock`. It may or may not be bound to any host or
         port **yet** -- and in fact, the binding will be done by another
         process on our behalf.
-        '''
+        """
         # No server address since nothing actually needs to know it.
         super().__init__(None, RequestHandlerClass)
         self.socket = sock
@@ -292,7 +314,7 @@ class HTTPSocketServer(BaseServer):
     # This is only here as part of the BaseServer API, never to be run.
     def server_bind(self):  # pragma: no cover
         raise AssertionError(
-            'self.socket must be bound externally before self.server_activate'
+            "self.socket must be bound externally before self.server_activate"
         )
 
     def server_activate(self):
@@ -323,23 +345,20 @@ class HTTPSocketServer(BaseServer):
 
 
 def repo_server(sock, location_to_obj: Mapping[str, dict], storage: Storage):
-    '''
+    """
     BEWARE: `location_to_obj` is mutated if we discover checksum errors to
     prevent client retries from succeeding.
-    '''
+    """
     return HTTPSocketServer(
         sock,
         lambda *args, **kwargs: RepoSnapshotHTTPRequestHandler(
-            *args,
-            location_to_obj=location_to_obj,
-            storage=storage,
-            **kwargs,
-        )
+            *args, location_to_obj=location_to_obj, storage=storage, **kwargs
+        ),
     )
 
 
 # Tested manually, as described in the file-level docblock.
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -347,24 +366,28 @@ if __name__ == '__main__':  # pragma: no cover
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        '--snapshot-dir', required=True, type=Path.from_argparse,
-        help='Multi-repo snapshot directory, with per-repo subdirectories, '
-            'each containing repomd.xml, repodata.json, and rpm.json',
+        "--snapshot-dir",
+        required=True,
+        type=Path.from_argparse,
+        help="Multi-repo snapshot directory, with per-repo subdirectories, "
+        "each containing repomd.xml, repodata.json, and rpm.json",
     )
     parser.add_argument(
-        '--socket-fd', required=True, type=int,
-        help='Listen on this socket. We assume that another process creates '
-            'and binds the socket for us.',
+        "--socket-fd",
+        required=True,
+        type=int,
+        help="Listen on this socket. We assume that another process creates "
+        "and binds the socket for us.",
     )
-    parser.add_argument('--debug', action='store_true', help='Log more')
+    parser.add_argument("--debug", action="store_true", help="Log more")
     args = parser.parse_args()
 
-    with open(args.snapshot_dir / 'storage.json') as f:
+    with open(args.snapshot_dir / "storage.json") as f:
         storage = json.load(f)
     # We want relative `base_dir` to point into the snapshot dir.
-    if storage['kind'] == 'filesystem':
-        storage['base_dir'] = (
-            args.snapshot_dir / storage['base_dir']
+    if storage["kind"] == "filesystem":
+        storage["base_dir"] = (
+            args.snapshot_dir / storage["base_dir"]
         ).normpath()
 
     init_logging(debug=args.debug)
@@ -375,10 +398,10 @@ if __name__ == '__main__':  # pragma: no cover
         Storage.from_json(storage),
     ) as httpd:
         httpd.server_activate()
-        log.info(f'HTTP `repo-server` is listening')
+        log.info(f"HTTP `repo-server` is listening")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:  # pragma: no cover
             if args.debug:
                 raise
-            log.info(f'HTTP `repo-server` graceful shutdown on SIGINT')
+            log.info(f"HTTP `repo-server` graceful shutdown on SIGINT")

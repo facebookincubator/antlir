@@ -114,7 +114,10 @@ def _download_rpm(
         # trigger our "different hashes" detector for a sane RPM.
         canonical_hash = hashlib.new(CANONICAL_HASH)
         for chunk in verify_chunk_stream(
-            read_chunks(input_, BUFFER_BYTES), [rpm.checksum], rpm.size, rpm.location
+            read_chunks(input_, BUFFER_BYTES),
+            [rpm.checksum],
+            rpm.size,
+            rpm.location,
         ):  # May raise a ReportableError
             canonical_hash.update(chunk)
             output.write(chunk)
@@ -166,10 +169,13 @@ def _handle_rpm(
         #    actually get valuable information from the download --
         #    this lets us know whether the file is wrong or the
         #    repodata is wrong.
-        with timeit(partial(log_sample, LogOp.RPM_QUERY, rpm=rpm, universe=universe)):
-            storage_id, canonical_chk = ro_repo_db.get_rpm_storage_id_and_checksum(
-                rpm_table, rpm
-            )
+        with timeit(
+            partial(log_sample, LogOp.RPM_QUERY, rpm=rpm, universe=universe)
+        ):
+            (
+                storage_id,
+                canonical_chk,
+            ) = ro_repo_db.get_rpm_storage_id_and_checksum(rpm_table, rpm)
     # If the RPM is already stored with a matching checksum, just update its
     # `.canonical_checksum`. Note that `rpm` was parsed from repodata, and thus
     # it's guaranteed to not yet have a `canonical_checksum`.
@@ -229,7 +235,12 @@ def _download_rpms(
                 # whether we encounter fatal errors later on that fail the snapshot;
                 # see docblock in `repo_downloader.py` for reasoning
                 with timeit(
-                    partial(log_sample, LogOp.REPO_DB_WRITE, rpm=rpm, universe=universe)
+                    partial(
+                        log_sample,
+                        LogOp.REPO_DB_WRITE,
+                        rpm=rpm,
+                        universe=universe,
+                    )
                 ):
                     res_storage_id = maybe_write_id(
                         rpm, res_storage_id, rpm_table, rw_db_conn
@@ -240,7 +251,7 @@ def _download_rpms(
                         log_sample,
                         LogOp.DETECT_MUTABLE_RPMS,
                         rpm=rpm,
-                        universe=universe
+                        universe=universe,
                     )
                 ):
                     res_storage_id = _detect_mutable_rpms(
@@ -248,26 +259,27 @@ def _download_rpms(
                         rpm_table,
                         res_storage_id,
                         all_snapshot_universes,
-                        ro_db_conn
+                        ro_db_conn,
                     )
             existing_rpm = storage_id_to_rpm.get(res_storage_id)
             if existing_rpm and existing_rpm != rpm:  # pragma: no cover
                 duplicate_rpms += 1
                 message = (
-                    f'Same ID {res_storage_id} with differing RPMs: '
-                    f'{existing_rpm} != {rpm}'
+                    f"Same ID {res_storage_id} with differing RPMs: "
+                    f"{existing_rpm} != {rpm}"
                 )
                 # We don't care if locations diverge because we only need a single
                 # location for a NEVRA to be able to fetch the RPM.
-                if existing_rpm._replace(location=None) == rpm._replace(location=None):
+                if existing_rpm._replace(location=None) == rpm._replace(
+                    location=None
+                ):
                     log.warning(message)
                 else:
                     raise RuntimeError(message)
             storage_id_to_rpm[res_storage_id] = rpm
 
-    assert (
-       len(storage_id_to_rpm)
-       == (sum(cfg.rpm_shard.in_shard(r) for r in rpms) - duplicate_rpms)
+    assert len(storage_id_to_rpm) == (
+        sum(cfg.rpm_shard.in_shard(r) for r in rpms) - duplicate_rpms
     )
     return storage_id_to_rpm, total_bytes_downloaded
 
@@ -278,10 +290,12 @@ def gen_rpms_from_repodatas(
     all_snapshot_universes: FrozenSet[str],
 ) -> Iterator[DownloadResult]:
     for res in repodata_results:
-        res_rpms = not_none(res.rpms, 'rpms')
+        res_rpms = not_none(res.rpms, "rpms")
         repo_weight_bytes = sum(r.size for r in res_rpms)
         num_rpms = len(res_rpms)
-        log_size(f"`{res.repo.name}` has {num_rpms} RPMs weighing", repo_weight_bytes)
+        log_size(
+            f"`{res.repo.name}` has {num_rpms} RPMs weighing", repo_weight_bytes
+        )
         start_t = time.time()
         total_dl = 0
         try:
@@ -293,7 +307,9 @@ def gen_rpms_from_repodatas(
                 all_snapshot_universes,
                 cfg,
             )
-            yield res._replace(storage_id_to_rpm=MappingProxyType(storage_id_to_rpm))
+            yield res._replace(
+                storage_id_to_rpm=MappingProxyType(storage_id_to_rpm)
+            )
         finally:
             log_sample(
                 LogOp.REPO_DOWNLOAD,
@@ -301,7 +317,7 @@ def gen_rpms_from_repodatas(
                 universe=res.repo_universe,
                 repo_name=res.repo.name,
                 repo_num_rpms=num_rpms,
-                repo_downloaded_gb=total_dl / 10**9,
+                repo_downloaded_gb=total_dl / 10 ** 9,
                 repo_weight_gb=repo_weight_bytes / 10 ** 9,
                 error=traceback.format_exc() if any(sys.exc_info()) else None,
             )

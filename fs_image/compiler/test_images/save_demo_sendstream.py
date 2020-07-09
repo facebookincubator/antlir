@@ -8,6 +8,7 @@ import sys
 
 from fs_image.btrfs_diff.tests.demo_sendstreams import gold_demo_sendstreams
 
+
 # This could be made to run against `make_demo_sendstreams`, which would
 # (redundantly with `btrfs_diff` tests) build a send-stream from scratch
 # instead of using a committed one.  However, this would be fidgety since
@@ -15,5 +16,5 @@ from fs_image.btrfs_diff.tests.demo_sendstreams import gold_demo_sendstreams
 # to pass it in from a unit-test PAR (which gets run in-tree).  On the other
 # hand, the coverage benefit of doing the work is not that great, since we
 # will receive & send this stream with live btrfs, anyway.
-with open(sys.argv[1], 'wb') as outfile:
-    outfile.write(gold_demo_sendstreams()[sys.argv[2]]['sendstream'])
+with open(sys.argv[1], "wb") as outfile:
+    outfile.write(gold_demo_sendstreams()[sys.argv[2]]["sendstream"])

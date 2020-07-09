@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 The RPM-related plugins need to be composed in a specific way with one
 another, and with the plugin that handles shadowing proxied binaries.
 
@@ -27,15 +27,15 @@ plugins. Specifically:
     `Iterable[NspawnPlugins]`.  To make this more specific, this would
     likely involve giving a true class interface to the plugins, and using
     that to encode the desired dataflow.
-'''
+"""
 
 from types import MappingProxyType
 from typing import Iterable, Tuple
 
 from fs_image.common import set_new_key
 from fs_image.fs_utils import Path
+from fs_image.nspawn_in_subvol.args import NspawnPluginArgs, _NspawnOpts
 from fs_image.subvol_utils import Subvol
-from fs_image.nspawn_in_subvol.args import _NspawnOpts, NspawnPluginArgs
 
 from . import NspawnPlugin
 from .repo_servers import RepoServers
@@ -50,7 +50,7 @@ def rpm_nspawn_plugins(
         # Canonicalize here and below to ensure that it doesn't matter if
         # snapshots are specified by symlink or by real location.
         opts.layer.canonicalize_path(p)
-            for p in plugin_args.serve_rpm_snapshots
+        for p in plugin_args.serve_rpm_snapshots
     )
 
     # Sanity-check the snapshot -> versionlock map
@@ -70,15 +70,19 @@ def rpm_nspawn_plugins(
         # that talk to our repo servers in `nspawn_in_subvol` containers.
         *(
             [ShadowPaths(plugin_args.shadow_paths)]
-                if plugin_args.shadow_paths else []
+            if plugin_args.shadow_paths
+            else []
         ),
         *(
             [
                 *(
                     [YumDnfVersionlock(snapshot_to_versionlock)]
-                        if snapshot_to_versionlock else []
+                    if snapshot_to_versionlock
+                    else []
                 ),
                 RepoServers(serve_rpm_snapshots),
-            ] if serve_rpm_snapshots else ()
+            ]
+            if serve_rpm_snapshots
+            else ()
         ),
     )

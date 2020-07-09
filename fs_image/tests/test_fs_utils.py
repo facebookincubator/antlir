@@ -4,8 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import ast
 import argparse
+import ast
 import errno
 import json
 import os
@@ -13,55 +13,57 @@ import subprocess
 import sys
 import tempfile
 import unittest
-
 from io import StringIO
 
 from ..common import byteme, check_popen_returncode
 from ..fs_utils import (
-    create_ro, open_for_read_decompress, Path, populate_temp_dir_and_rename,
-    temp_dir, populate_temp_file_and_rename,
+    Path,
+    create_ro,
+    open_for_read_decompress,
+    populate_temp_dir_and_rename,
+    populate_temp_file_and_rename,
+    temp_dir,
 )
 
-_BAD_UTF = b'\xc3('
+
+_BAD_UTF = b"\xc3("
 
 
 class TestFsUtils(unittest.TestCase):
-
     def test_path_basics(self):
         self.assertEqual(
-            byteme(os.getcwd()) + b'/foo/bar',
-            Path('foo/bar').abspath()
+            byteme(os.getcwd()) + b"/foo/bar", Path("foo/bar").abspath()
         )
-        self.assertEqual(b'/a/c', Path('/a/b/../c').realpath())
-        self.assertEqual(b'foo/bar', Path('foo') / 'bar')
-        self.assertEqual(b'/foo/bar', b'/foo' / Path.or_none('bar'))
-        self.assertEqual(b'/baz', b'/be/bop' / Path(b'/baz'))
-        self.assertEqual('file:///a%2Cb', Path('/a,b').file_url())
-        self.assertEqual(b'bom', Path('/bim/bom').basename())
-        self.assertEqual(b'/bim', Path('/bim/bom').dirname())
-        self.assertEqual(b'ta/da', Path('./ta//gr/../da/').normpath())
-        self.assertEqual(b'/a/c', Path('/a/b/../c').realpath())
-        self.assertEqual(b'../c/d/e', Path('/a/b/c/d/e').relpath('/a/b/x'))
-        self.assertEqual(b'../../../y/z', Path('/y/z').relpath('/a/b/x'))
-        self.assertEqual(Path('foo'), Path('foo'))
+        self.assertEqual(b"/a/c", Path("/a/b/../c").realpath())
+        self.assertEqual(b"foo/bar", Path("foo") / "bar")
+        self.assertEqual(b"/foo/bar", b"/foo" / Path.or_none("bar"))
+        self.assertEqual(b"/baz", b"/be/bop" / Path(b"/baz"))
+        self.assertEqual("file:///a%2Cb", Path("/a,b").file_url())
+        self.assertEqual(b"bom", Path("/bim/bom").basename())
+        self.assertEqual(b"/bim", Path("/bim/bom").dirname())
+        self.assertEqual(b"ta/da", Path("./ta//gr/../da/").normpath())
+        self.assertEqual(b"/a/c", Path("/a/b/../c").realpath())
+        self.assertEqual(b"../c/d/e", Path("/a/b/c/d/e").relpath("/a/b/x"))
+        self.assertEqual(b"../../../y/z", Path("/y/z").relpath("/a/b/x"))
+        self.assertEqual(Path("foo"), Path("foo"))
         self.assertIsNone(Path.or_none(None))
         with self.assertRaises(TypeError):
-            Path('foo') == 'foo'
+            Path("foo") == "foo"
         with self.assertRaises(TypeError):
-            Path('foo') != 'foo'
+            Path("foo") != "foo"
         with self.assertRaises(TypeError):
-            Path('foo') > 'foo'
+            Path("foo") > "foo"
         with self.assertRaises(TypeError):
-            Path('foo') >= 'foo'
+            Path("foo") >= "foo"
         with self.assertRaises(TypeError):
-            Path('foo') < 'foo'
+            Path("foo") < "foo"
         with self.assertRaises(TypeError):
-            Path('foo') <= 'foo'
+            Path("foo") <= "foo"
 
     def test_path_is_hashable(self):
         # Path must be hashable to be added to a set
         ts = set()
-        ts.add(Path('foo'))
+        ts.add(Path("foo"))
 
     def test_bad_utf_is_bad(self):
         with self.assertRaises(UnicodeDecodeError):
@@ -70,46 +72,59 @@ class TestFsUtils(unittest.TestCase):
     def test_path_decode(self):
         with tempfile.TemporaryDirectory() as td:
             bad_utf_path = Path(td) / _BAD_UTF
-            self.assertTrue(bad_utf_path.endswith(b'/' + _BAD_UTF))
-            with open(bad_utf_path, 'w'):
+            self.assertTrue(bad_utf_path.endswith(b"/" + _BAD_UTF))
+            with open(bad_utf_path, "w"):
                 pass
-            res = subprocess.run([
-                sys.executable, '-c', f'import os;print(os.listdir({repr(td)}))'
-            ], stdout=subprocess.PIPE)
+            res = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    f"import os;print(os.listdir({repr(td)}))",
+                ],
+                stdout=subprocess.PIPE,
+            )
             # Path's handling of invalid UTF-8 matches the default for
             # Python3 when it gets such data from the filesystem.
             self.assertEqual(
                 # Both evaluate to surrogate-escaped ['\udcc3('] plus a newline.
-                repr([bad_utf_path.basename().decode()]) + '\n',
+                repr([bad_utf_path.basename().decode()]) + "\n",
                 res.stdout.decode(),
             )
 
     def test_path_format(self):
-        first = Path('a/b')
+        first = Path("a/b")
         second = Path(_BAD_UTF)
-        formatted = '^a/b       >' + _BAD_UTF.decode(errors='surrogateescape')
-        self.assertEqual(formatted, f'^{first:10}>{second}')
+        formatted = "^a/b       >" + _BAD_UTF.decode(errors="surrogateescape")
+        self.assertEqual(formatted, f"^{first:10}>{second}")
 
     def test_path_from_argparse(self):
-        res = subprocess.run([
-            sys.executable, '-c', 'import sys;print(repr(sys.argv[1]))',
-            _BAD_UTF,
-        ], stdout=subprocess.PIPE)
+        res = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys;print(repr(sys.argv[1]))",
+                _BAD_UTF,
+            ],
+            stdout=subprocess.PIPE,
+        )
         # Demangle non-UTF bytes in the same way that `sys.argv` mangles them.
-        self.assertEqual(_BAD_UTF, Path.from_argparse(
-            ast.literal_eval(res.stdout.rstrip(b'\n').decode())
-        ))
+        self.assertEqual(
+            _BAD_UTF,
+            Path.from_argparse(
+                ast.literal_eval(res.stdout.rstrip(b"\n").decode())
+            ),
+        )
 
     def test_path_json(self):
         # We can serialize `Path` to JSON, including invalid UTF-8.
         # Unfortunately, `json` doesn't allow us to custom-serialize keys.
-        obj_in = {'a': Path('b'), 'c': Path(_BAD_UTF), 'builtin': 3}
+        obj_in = {"a": Path("b"), "c": Path(_BAD_UTF), "builtin": 3}
         # Deserializing to `Path` requires the consumer to know the type
         # schema.
         obj_out = {
-            'a': 'b',
-            'c': _BAD_UTF.decode(errors='surrogateescape'),
-            'builtin': 3,
+            "a": "b",
+            "c": _BAD_UTF.decode(errors="surrogateescape"),
+            "builtin": 3,
         }
         self.assertEqual(obj_out, json.loads(Path.json_dumps(obj_in)))
         f = StringIO()
@@ -117,56 +132,56 @@ class TestFsUtils(unittest.TestCase):
         f.seek(0)
         self.assertEqual(obj_out, json.load(f))
         with self.assertRaises(TypeError):
-            Path.json_dumps({'not serializable': object()})
+            Path.json_dumps({"not serializable": object()})
 
     def test_path_listdir(self):
         with temp_dir() as td:
-            (td / 'a').touch()
-            a, = td.listdir()
+            (td / "a").touch()
+            (a,) = td.listdir()
             self.assertIsInstance(a, Path)
-            self.assertEqual(b'a', a)
+            self.assertEqual(b"a", a)
 
     def test_path_parse_args(self):
         p = argparse.ArgumentParser()
-        p.add_argument('--path', action='append', type=Path.from_argparse)
+        p.add_argument("--path", action="append", type=Path.from_argparse)
         # Check that `Path` is now allowed, and that we can round-trip bad UTF.
-        argv = ['--path', Path('a'), '--path', Path(_BAD_UTF)]
+        argv = ["--path", Path("a"), "--path", Path(_BAD_UTF)]
         with self.assertRaises(TypeError):
             p.parse_args(argv)
         args = Path.parse_args(p, argv)
-        self.assertEqual([Path('a'), Path(_BAD_UTF)], args.path)
+        self.assertEqual([Path("a"), Path(_BAD_UTF)], args.path)
 
     def test_path_read_text(self):
         with temp_dir() as td:
-            tmp_path = Path(td / 'foo.txt')
-            with open(tmp_path, 'w+') as f:
-                f.write('hello\n')
-            self.assertEqual('hello\n', tmp_path.read_text())
+            tmp_path = Path(td / "foo.txt")
+            with open(tmp_path, "w+") as f:
+                f.write("hello\n")
+            self.assertEqual("hello\n", tmp_path.read_text())
 
     def test_path_shell_quote(self):
         self.assertEqual(
-            Path(r'''/a\ b/c d/e'"f/( \t/''').shell_quote(),
+            Path(r"""/a\ b/c d/e'"f/( \t/""").shell_quote(),
             r"""'/a\ b/c d/e'"'"'"f/( \t/'""",
         )
 
     def test_path_str(self):
-        self.assertEqual('a/b', str(Path('a/b')))
+        self.assertEqual("a/b", str(Path("a/b")))
         self.assertEqual(
-            _BAD_UTF.decode(errors='surrogateescape'), str(Path(_BAD_UTF)),
+            _BAD_UTF.decode(errors="surrogateescape"), str(Path(_BAD_UTF))
         )
 
     def test_path_has_leading_dot_dot(self):
-        self.assertTrue(Path('..').has_leading_dot_dot())
-        self.assertTrue(Path('../a/b/c').has_leading_dot_dot())
-        self.assertFalse(Path('..a/b/c').has_leading_dot_dot())
-        self.assertFalse(Path('a/../b/c').has_leading_dot_dot())
+        self.assertTrue(Path("..").has_leading_dot_dot())
+        self.assertTrue(Path("../a/b/c").has_leading_dot_dot())
+        self.assertFalse(Path("..a/b/c").has_leading_dot_dot())
+        self.assertFalse(Path("a/../b/c").has_leading_dot_dot())
         # This shows that we don't normalize, thus this function does not
         # check whether the relative path refers outside of its base.
-        self.assertFalse(Path('a/../../b/c').has_leading_dot_dot())
+        self.assertFalse(Path("a/../../b/c").has_leading_dot_dot())
 
     def test_path_touch(self):
         with temp_dir() as td:
-            tmp_path = td / 'touchme'
+            tmp_path = td / "touchme"
             tmp_path.touch()
 
             self.assertTrue(os.path.exists(tmp_path))
@@ -176,12 +191,12 @@ class TestFsUtils(unittest.TestCase):
         # involved (so we get to test edge effects), but not so big that the
         # test takes more than 1-2 seconds.
         n_bytes = 12 << 20  # 12MiB
-        my_line = b'kitteh' * 700 + b'\n'  # ~ 4KiB
-        for compress, ext in [('gzip', 'gz'), ('zstd', 'zst')]:
-            filename = 'kitteh.' + ext
-            with temp_dir() as td, open(td / filename, 'wb') as outf:
+        my_line = b"kitteh" * 700 + b"\n"  # ~ 4KiB
+        for compress, ext in [("gzip", "gz"), ("zstd", "zst")]:
+            filename = "kitteh." + ext
+            with temp_dir() as td, open(td / filename, "wb") as outf:
                 with subprocess.Popen(
-                    [compress, '-'], stdin=subprocess.PIPE, stdout=outf,
+                    [compress, "-"], stdin=subprocess.PIPE, stdout=outf
                 ) as proc:
                     for _ in range(n_bytes // len(my_line)):
                         proc.stdin.write(my_line)
@@ -193,43 +208,44 @@ class TestFsUtils(unittest.TestCase):
 
         # Test uncompressed
         with temp_dir() as td:
-            with open(td / 'kitteh', 'wb') as outfile:
-                outfile.write(my_line + b'meow')
-            with open_for_read_decompress(td / 'kitteh') as infile:
-                self.assertEqual(my_line + b'meow', infile.read())
+            with open(td / "kitteh", "wb") as outfile:
+                outfile.write(my_line + b"meow")
+            with open_for_read_decompress(td / "kitteh") as infile:
+                self.assertEqual(my_line + b"meow", infile.read())
 
         # Test decompression error
         with temp_dir() as td:
-            with open(td / 'kitteh.gz', 'wb') as outfile:
+            with open(td / "kitteh.gz", "wb") as outfile:
                 outfile.write(my_line)
-            with self.assertRaises(subprocess.CalledProcessError), \
-                    open_for_read_decompress(td / 'kitteh.gz') as infile:
+            with self.assertRaises(
+                subprocess.CalledProcessError
+            ), open_for_read_decompress(td / "kitteh.gz") as infile:
                 infile.read()
 
     def test_create_ro(self):
         with temp_dir() as td:
-            with create_ro(td / 'hello_ro', 'w') as out_f:
-                out_f.write('world_ro')
-            with open(td / 'hello_rw', 'w') as out_f:
-                out_f.write('world_rw')
+            with create_ro(td / "hello_ro", "w") as out_f:
+                out_f.write("world_ro")
+            with open(td / "hello_rw", "w") as out_f:
+                out_f.write("world_rw")
 
             # `_create_ro` refuses to overwrite both RO and RW files.
             with self.assertRaises(FileExistsError):
-                create_ro(td / 'hello_ro', 'w')
+                create_ro(td / "hello_ro", "w")
             with self.assertRaises(FileExistsError):
-                create_ro(td / 'hello_rw', 'w')
+                create_ro(td / "hello_rw", "w")
 
             # Regular `open` can accidentelly clobber the RW, but not the RW.
             if os.geteuid() != 0:  # Root can clobber anything :/
                 with self.assertRaises(PermissionError):
-                    open(td / 'hello_ro', 'a')
-            with open(td / 'hello_rw', 'a') as out_f:
-                out_f.write(' -- appended')
+                    open(td / "hello_ro", "a")
+            with open(td / "hello_rw", "a") as out_f:
+                out_f.write(" -- appended")
 
-            with open(td / 'hello_ro') as in_f:
-                self.assertEqual('world_ro', in_f.read())
-            with open(td / 'hello_rw') as in_f:
-                self.assertEqual('world_rw -- appended', in_f.read())
+            with open(td / "hello_ro") as in_f:
+                self.assertEqual("world_ro", in_f.read())
+            with open(td / "hello_rw") as in_f:
+                self.assertEqual("world_rw -- appended", in_f.read())
 
     def _check_has_one_file(self, dir_path, filename, contents):
         self.assertEqual([filename.encode()], os.listdir(dir_path))
@@ -239,14 +255,14 @@ class TestFsUtils(unittest.TestCase):
     def test_populate_temp_dir_and_rename(self):
         with temp_dir() as td:
             # Create and populate "foo"
-            foo_path = td / 'foo'
+            foo_path = td / "foo"
             with populate_temp_dir_and_rename(foo_path) as td2:
-                self.assertTrue(td2.startswith(td + b'/'))
+                self.assertTrue(td2.startswith(td + b"/"))
                 self.assertEqual(td2, td / td2.basename())
-                self.assertNotEqual(td2.basename(), Path('foo'))
-                with create_ro(td2 / 'hello', 'w') as out_f:
-                    out_f.write('world')
-            self._check_has_one_file(foo_path, 'hello', 'world')
+                self.assertNotEqual(td2.basename(), Path("foo"))
+                with create_ro(td2 / "hello", "w") as out_f:
+                    out_f.write("world")
+            self._check_has_one_file(foo_path, "hello", "world")
 
             # Fail to overwrite
             with self.assertRaises(OSError) as ctx:
@@ -254,66 +270,66 @@ class TestFsUtils(unittest.TestCase):
                     pass  # Try to overwrite with empty.
             # Different kernels return different error codes :/
             self.assertIn(ctx.exception.errno, [errno.ENOTEMPTY, errno.EEXIST])
-            self._check_has_one_file(foo_path, 'hello', 'world')  # No change
+            self._check_has_one_file(foo_path, "hello", "world")  # No change
 
             # Force-overwrite
             with populate_temp_dir_and_rename(foo_path, overwrite=True) as td2:
-                with create_ro(td2 / 'farewell', 'w') as out_f:
-                    out_f.write('arms')
-            self._check_has_one_file(foo_path, 'farewell', 'arms')
+                with create_ro(td2 / "farewell", "w") as out_f:
+                    out_f.write("arms")
+            self._check_has_one_file(foo_path, "farewell", "arms")
 
     def test_populate_temp_file_and_rename_success(self):
         with temp_dir() as td:
-            path = td / 'dog'
+            path = td / "dog"
             with populate_temp_file_and_rename(path) as outfile:
-                outfile.write('woof')
+                outfile.write("woof")
                 tmp_path = outfile.name
             # Temp file should be deleted
             self.assertFalse(os.path.exists(tmp_path))
             # Ensure that file exists and contains correct content
             self.assertTrue(os.path.exists(path))
-            self.assertEqual(path.read_text(), 'woof')
+            self.assertEqual(path.read_text(), "woof")
 
     def test_populate_temp_file_fail_to_overwrite(self):
         with temp_dir() as td:
-            path = td / 'dog'
-            with open(path, 'w') as outfile:
-                outfile.write('woof')
+            path = td / "dog"
+            with open(path, "w") as outfile:
+                outfile.write("woof")
             # Fail to write due to existing file
             with self.assertRaises(FileExistsError):
                 with populate_temp_file_and_rename(path) as outfile:
-                    outfile.write('meow')
+                    outfile.write("meow")
                     tmp_path = outfile.name
             # Temp file should be deleted
             self.assertFalse(os.path.exists(tmp_path))
             # Original file is untouched
-            self.assertEqual(path.read_text(), 'woof')
+            self.assertEqual(path.read_text(), "woof")
 
     def test_populate_temp_file_force_overwrite(self):
         with temp_dir() as td:
-            path = td / 'dog'
-            with open(path, 'w') as outfile:
-                outfile.write('woof')
+            path = td / "dog"
+            with open(path, "w") as outfile:
+                outfile.write("woof")
             # Succeeds in overwriting contents in "dog"
             with populate_temp_file_and_rename(path, overwrite=True) as outfile:
-                outfile.write('meow')
+                outfile.write("meow")
                 tmp_path = outfile.name
             # Temp file should no longer exist (as it has been renamed)
             self.assertFalse(os.path.exists(tmp_path))
             # Original file is modified
-            self.assertEqual(path.read_text(), 'meow')
+            self.assertEqual(path.read_text(), "meow")
 
     def test_populate_temp_file_and_rename_error(self):
         with temp_dir() as td:
-            path = td / 'dog'
-            with open(path, 'w') as outfile:
-                outfile.write('woof')
-            with self.assertRaisesRegex(RuntimeError, '^woops$'):
+            path = td / "dog"
+            with open(path, "w") as outfile:
+                outfile.write("woof")
+            with self.assertRaisesRegex(RuntimeError, "^woops$"):
                 with populate_temp_file_and_rename(path) as outfile:
-                    outfile.write('meow')
+                    outfile.write("meow")
                     tmp_path = outfile.name
-                    raise RuntimeError('woops')
+                    raise RuntimeError("woops")
             # Temp file should be deleted
             self.assertFalse(os.path.exists(tmp_path))
             # the original file is untouched
-            self.assertEqual(path.read_text(), 'woof')
+            self.assertEqual(path.read_text(), "woof")

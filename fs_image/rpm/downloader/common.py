@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import requests
 import sys
 import time
 import traceback
@@ -25,13 +24,18 @@ from typing import (
     Union,
 )
 
+import requests
 from fs_image.common import get_file_logger
 from fs_image.rpm.common import DecorateContextEntry, RpmShard, retryable
 from fs_image.rpm.db_connection import DBConnectionContext
 from fs_image.rpm.open_url import open_url
 from fs_image.rpm.repo_db import RepoDBContext, StorageTable
 from fs_image.rpm.repo_objects import Checksum, Repodata, RepoMetadata, Rpm
-from fs_image.rpm.repo_snapshot import FileIntegrityError, HTTPError, MaybeStorageID
+from fs_image.rpm.repo_snapshot import (
+    FileIntegrityError,
+    HTTPError,
+    MaybeStorageID,
+)
 from fs_image.rpm.storage import Storage
 from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
@@ -67,7 +71,9 @@ def _is_retryable_mysql_err(e: Exception) -> bool:  # pragma: no cover
     )
 
 
-def retryable_db_ctx(db_conn: DBConnectionContext) -> ContextManager[RepoDBContext]:
+def retryable_db_ctx(
+    db_conn: DBConnectionContext,
+) -> ContextManager[RepoDBContext]:
     return DecorateContextEntry(
         RepoDBContext(db_conn, db_conn.SQL_DIALECT),
         retryable(
@@ -89,7 +95,9 @@ class DownloadConfig(NamedTuple):
         self, *, readonly: bool, force_master: bool = True
     ) -> DBConnectionContext:
         assert "readonly" not in self.db_cfg, "readonly is picked by the caller"
-        assert "force_master" not in self.db_cfg, "force_master is picked by the caller"
+        assert (
+            "force_master" not in self.db_cfg
+        ), "force_master is picked by the caller"
         # pyre-fixme [9]: Technically could be any `Pluggable`, but we use it as
         # a DBConnectionContext
         conn_ctx: DBConnectionContext = DBConnectionContext.from_json(
@@ -117,7 +125,10 @@ class DownloadResult(NamedTuple):
 
 
 def verify_chunk_stream(
-    chunks: Iterable[bytes], checksums: Iterable[Checksum], size: int, location: str
+    chunks: Iterable[bytes],
+    checksums: Iterable[Checksum],
+    size: int,
+    location: str,
 ):
     actual_size = 0
     hashers = [ck.hasher() for ck in checksums]
@@ -128,7 +139,10 @@ def verify_chunk_stream(
         yield chunk
     if actual_size != size:
         raise FileIntegrityError(
-            location=location, failed_check="size", expected=size, actual=actual_size
+            location=location,
+            failed_check="size",
+            expected=size,
+            actual=actual_size,
         )
     for hash, ck in zip(hashers, checksums):
         if hash.hexdigest() != ck.hexdigest:
@@ -142,7 +156,9 @@ def verify_chunk_stream(
 
 def _log_if_storage_ids_differ(obj, storage_id, db_storage_id):
     if db_storage_id != storage_id:
-        log.warning(f"Another writer already committed {obj} at {db_storage_id}")
+        log.warning(
+            f"Another writer already committed {obj} at {db_storage_id}"
+        )
 
 
 def log_size(what_str: str, total_bytes: float):
@@ -181,7 +197,9 @@ def download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
         # in practice, we could retry automatically before
         # waiting for the next snapshot, but the complexity is
         # not worth it for now.
-        raise HTTPError(location=relative_url, http_status=ex.response.status_code)
+        raise HTTPError(
+            location=relative_url, http_status=ex.response.status_code
+        )
 
 
 # Note that we use this function serially from the master thread after

@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 This is the interface for reading and writing from the database that stores
 the union of **all** the RPM repos that we ever snapshotted.  Each unique
 RPM file and RPM repo database blob is stored just once, as a single row.
@@ -98,10 +98,9 @@ A database adds value in two key ways:
         done
         wait
         snapshot_repos 0 mod 1  # produce a complete snapshot
-'''
+"""
 import enum
 import re
-
 from contextlib import AbstractContextManager, contextmanager
 from typing import ContextManager, FrozenSet, Iterator, Optional, Tuple, Union
 
@@ -109,34 +108,36 @@ from fs_image.common import byteme
 
 from .repo_objects import Checksum, Repodata, RepoMetadata, Rpm
 
+
 # Deliberately excludes `-` since that is used by RPM filename parsing.
 # Keeping `-` out of universe names allows `U-N-E:V-R.A` as a possible
 # format, though we don't currently rely on that -- and probably should not,
 # since it's 2020 and `json.dumps` / `repr` are cheap enough.
-_VALID_UNIVERSE_REGEX = re.compile('^[a-zA-Z0-9.]*$')
+_VALID_UNIVERSE_REGEX = re.compile("^[a-zA-Z0-9.]*$")
 
 
 def validate_universe_name(u):
     if not _VALID_UNIVERSE_REGEX.match(u):
         raise RuntimeError(
-            f'Universe {u} must match {_VALID_UNIVERSE_REGEX.pattern}'
+            f"Universe {u} must match {_VALID_UNIVERSE_REGEX.pattern}"
         )
     return u
 
 
 class StorageTable:
-    '''
+    """
     A base class for correct `SELECT` / `INSERT` queries against all colums.
     Its child classes represent tables in our repo DB.
-    '''
+    """
+
     def _column_funcs(self):
-        'Ensures that column_{names,values} have the same order.'
+        "Ensures that column_{names,values} have the same order."
         # NB: We do not store `obj.location` in the DB, because the same
         # object can occur in different repos at different locations.
         return [
-            ('checksum', lambda obj: str(obj.checksum)),
-            ('build_timestamp', lambda obj: obj.build_timestamp),
-            ('size', lambda obj: obj.size),
+            ("checksum", lambda obj: str(obj.checksum)),
+            ("build_timestamp", lambda obj: obj.build_timestamp),
+            ("size", lambda obj: obj.size),
         ]
 
     def column_names(self):
@@ -147,7 +148,7 @@ class StorageTable:
 
 
 class RpmTable(StorageTable):
-    '''
+    """
     Records all instances of RPM files that ever existed in our repos.
 
     The same RPM may occur in different repos, at different locations, so
@@ -165,10 +166,17 @@ class RpmTable(StorageTable):
     somebody changed the RPM content without changing the version. Since
     this is a snapshotting tool, we can only hope to detect, but not to
     prevent this. Thus, we do not have a `UNIQUE` constraint for this.
-    '''
-    NAME = 'rpm'
+    """
+
+    NAME = "rpm"
     KEY_COLUMNS = (
-        'name', 'epoch', 'version', 'release', 'arch', 'universe', 'checksum',
+        "name",
+        "epoch",
+        "version",
+        "release",
+        "arch",
+        "universe",
+        "checksum",
     )
 
     def __init__(self, universe: str):
@@ -176,16 +184,13 @@ class RpmTable(StorageTable):
 
     def _column_funcs(self):
         return [
-            ('name', lambda obj: obj.name),
-            ('epoch', lambda obj: obj.epoch),
-            ('version', lambda obj: obj.version),
-            ('release', lambda obj: obj.release),
-            ('arch', lambda obj: obj.arch),
-            ('universe', lambda obj: self._universe),
-            (
-                'canonical_checksum',
-                lambda obj: str(obj.canonical_checksum),
-            ),
+            ("name", lambda obj: obj.name),
+            ("epoch", lambda obj: obj.epoch),
+            ("version", lambda obj: obj.version),
+            ("release", lambda obj: obj.release),
+            ("arch", lambda obj: obj.arch),
+            ("universe", lambda obj: self._universe),
+            ("canonical_checksum", lambda obj: str(obj.canonical_checksum)),
             *super()._column_funcs(),
         ]
 
@@ -202,7 +207,7 @@ class RpmTable(StorageTable):
 
 
 class RepodataTable(StorageTable):
-    '''
+    """
     Records all "repodata" blobs that ever existed in this repo (the SQLite
     or XML RPM primary indexes that are referenced from `repomd.xml`).
 
@@ -210,21 +215,22 @@ class RepodataTable(StorageTable):
     this table.  However, in practice, one repo can be an alias of another,
     sharing the same repodata files.  By not referring to the repo name, we
     will only store such files once.
-    '''
-    NAME = 'repodata'
-    KEY_COLUMNS = ('checksum',)
+    """
+
+    NAME = "repodata"
+    KEY_COLUMNS = ("checksum",)
 
     def key(self, obj):  # Update KEY_COLUMNS, _TABLE_KEYS if changing this
         return (str(obj.checksum),)
 
 
 class SQLDialect(enum.Enum):
-    SQLITE3 = 'sqlite3'
-    MYSQL = 'mysql'
+    SQLITE3 = "sqlite3"
+    MYSQL = "mysql"
 
 
 class RepoDBContext(AbstractContextManager):
-    '''
+    """
     A class to perform read & write queries against our DB of all historical
     RPM repo snapshots (as described in the top-level docblock).
 
@@ -244,72 +250,72 @@ class RepoDBContext(AbstractContextManager):
       - These queries work in both SQLite (testing) and MySQL (production).
         The rationale is that automatically bringing up a test MySQL
         deployment is more work than supporting SQLite.
-    '''
+    """
 
-    _DIALECT_TO_PLACEHOLDER = {SQLDialect.SQLITE3: '?', SQLDialect.MYSQL: '%s'}
+    _DIALECT_TO_PLACEHOLDER = {SQLDialect.SQLITE3: "?", SQLDialect.MYSQL: "%s"}
     _DIALECT_TO_COLUMN_TYPE = {
         SQLDialect.SQLITE3: {
-            'checksum': 'TEXT',
-            'canonical_checksum': 'TEXT',
-            'fetch_timestamp': 'INTEGER',
-            'build_timestamp': 'INTEGER',
-            'universe': 'TEXT',
-            'name': 'TEXT',
-            'epoch': 'INTEGER',
-            'version': 'TEXT',
-            'release': 'TEXT',
-            'arch': 'TEXT',
-            'repo': 'TEXT',
-            'size': 'INTEGER',
-            'storage_id': 'TEXT',
-            'xml': 'BLOB',
+            "checksum": "TEXT",
+            "canonical_checksum": "TEXT",
+            "fetch_timestamp": "INTEGER",
+            "build_timestamp": "INTEGER",
+            "universe": "TEXT",
+            "name": "TEXT",
+            "epoch": "INTEGER",
+            "version": "TEXT",
+            "release": "TEXT",
+            "arch": "TEXT",
+            "repo": "TEXT",
+            "size": "INTEGER",
+            "storage_id": "TEXT",
+            "xml": "BLOB",
         },
         SQLDialect.MYSQL: {
-            'checksum': 'VARCHAR(255)',  # Room for algo prefix + hex digest
-            'canonical_checksum': 'VARCHAR(255)',
-            'fetch_timestamp': 'BIGINT',  # THE EPOCHALYPSE IS NEAR
-            'build_timestamp': 'BIGINT',
-            'universe': 'VARCHAR(255)',  # Larger than is reasonable
-            'name': 'VARCHAR(255)',  # Linux max filename
-            'epoch': 'BIGINT',  # I've not seen an epoch above 99, but ...
-            'version': 'VARCHAR(255)',  # Linux max filename
-            'release': 'VARCHAR(255)',  # Linux max filename
-            'arch': 'VARCHAR(255)',  # Linux max filename
-            'repo': 'VARCHAR(255)',  # Linux max filename
-            'size': 'BIGINT',
-            'storage_id': 'VARCHAR(255)',  # Larger than is reasonable
-            'xml': 'BLOB',  # 64KB ought to be enough
+            "checksum": "VARCHAR(255)",  # Room for algo prefix + hex digest
+            "canonical_checksum": "VARCHAR(255)",
+            "fetch_timestamp": "BIGINT",  # THE EPOCHALYPSE IS NEAR
+            "build_timestamp": "BIGINT",
+            "universe": "VARCHAR(255)",  # Larger than is reasonable
+            "name": "VARCHAR(255)",  # Linux max filename
+            "epoch": "BIGINT",  # I've not seen an epoch above 99, but ...
+            "version": "VARCHAR(255)",  # Linux max filename
+            "release": "VARCHAR(255)",  # Linux max filename
+            "arch": "VARCHAR(255)",  # Linux max filename
+            "repo": "VARCHAR(255)",  # Linux max filename
+            "size": "BIGINT",
+            "storage_id": "VARCHAR(255)",  # Larger than is reasonable
+            "xml": "BLOB",  # 64KB ought to be enough
         },
     }
     _TABLE_COLUMNS = {
         RpmTable.NAME: {
-            'name': 'NOT NULL',
-            'epoch': 'NOT NULL',
-            'version': 'NOT NULL',
-            'release': 'NOT NULL',
-            'arch': 'NOT NULL',
-            'universe': 'NOT NULL',  # See "universe" in the file docblock
-            'checksum': 'NOT NULL',  # As specified by the primary repodata
-            'canonical_checksum': 'NOT NULL',  # As computed by us
-            'size': 'NOT NULL',
-            'build_timestamp': 'NOT NULL',
-            'storage_id': 'NOT NULL',
+            "name": "NOT NULL",
+            "epoch": "NOT NULL",
+            "version": "NOT NULL",
+            "release": "NOT NULL",
+            "arch": "NOT NULL",
+            "universe": "NOT NULL",  # See "universe" in the file docblock
+            "checksum": "NOT NULL",  # As specified by the primary repodata
+            "canonical_checksum": "NOT NULL",  # As computed by us
+            "size": "NOT NULL",
+            "build_timestamp": "NOT NULL",
+            "storage_id": "NOT NULL",
         },
         RepodataTable.NAME: {
-            'checksum': 'NOT NULL',
-            'size': 'NOT NULL',
-            'build_timestamp': 'NOT NULL',
-            'storage_id': 'NOT NULL',
+            "checksum": "NOT NULL",
+            "size": "NOT NULL",
+            "build_timestamp": "NOT NULL",
+            "storage_id": "NOT NULL",
         },
-        'repo_metadata': {
-            'universe': 'NOT NULL',  # See "universe" in the file docblock
-            'repo': 'NOT NULL',
+        "repo_metadata": {
+            "universe": "NOT NULL",  # See "universe" in the file docblock
+            "repo": "NOT NULL",
             # The fetch time lets us reconstruct what all repos looked like
             # at a certain point in time. The build times may be much older.
-            'fetch_timestamp': 'NOT NULL',
-            'build_timestamp': 'NOT NULL',
-            'checksum': 'NOT NULL',
-            'xml': 'NOT NULL',
+            "fetch_timestamp": "NOT NULL",
+            "build_timestamp": "NOT NULL",
+            "checksum": "NOT NULL",
+            "xml": "NOT NULL",
         },
     }
     _TABLE_KEYS = {
@@ -337,12 +343,12 @@ class RepoDBContext(AbstractContextManager):
         # occurs with different NEVRAs.  This should be rare, so we accept
         # the inefficiency to keep the code simpler.
         RpmTable.NAME: [
-            'PRIMARY KEY (`name`, `epoch`, `version`, `release`, `arch`, '
-                '`universe`, `checksum`)'
+            "PRIMARY KEY (`name`, `epoch`, `version`, `release`, `arch`, "
+            "`universe`, `checksum`)"
         ],
         # These don't need to be namespaced by `universe` because they are
         # only ever looked up by checksum.
-        RepodataTable.NAME: ['PRIMARY KEY (`checksum`)'],
+        RepodataTable.NAME: ["PRIMARY KEY (`checksum`)"],
         # Unlike RepoTable, the top-level metadata is keyed on the repo
         # name, not just on checksum.  We need this to be able to
         # reconstruct the full repo state starting from a `{dnf,yum}.conf`.
@@ -353,14 +359,14 @@ class RepoDBContext(AbstractContextManager):
         #
         # Keying on `universe` allows different `{yum,dnf}.conf` instances
         # to use the same name to refer to different repos.
-        'repo_metadata': [
+        "repo_metadata": [
             # Includes `checksum` because it's technically possible for the
             # same `repomd.xml` to be fetched twice in the same second with
             # different results -- `test-snapshot-repos` hits this case.
-            'PRIMARY KEY (`universe`, `repo`, `fetch_timestamp`, `checksum`)',
+            "PRIMARY KEY (`universe`, `repo`, `fetch_timestamp`, `checksum`)",
             # Don't store redundant copies, so if a repomd.xml stays
             # constant over a number of fetches, we only store the oldest.
-            'UNIQUE (`universe`, `repo`, `checksum`)',
+            "UNIQUE (`universe`, `repo`, `checksum`)",
         ],
     }
 
@@ -370,9 +376,9 @@ class RepoDBContext(AbstractContextManager):
         # connection object, and optionally closes it on exit.  The goal is
         # to allow the caller to decide whether to return one persistent
         # connection, or to make a new one evert RepoDBContext.__enter__,
-        conn_ctx: ContextManager[Union[
-            'sqlite3.Connection', 'MySQLdb.Connection',  # noqa: F821
-        ]],
+        conn_ctx: ContextManager[
+            Union["sqlite3.Connection", "MySQLdb.Connection"]  # noqa: F821
+        ],
         dialect: SQLDialect,
     ):
         self._conn_ctx = conn_ctx
@@ -380,7 +386,7 @@ class RepoDBContext(AbstractContextManager):
         self._dialect = dialect
 
     def __enter__(self):
-        assert self._conn is None, 'RepoDBContext is not reentrant'
+        assert self._conn is None, "RepoDBContext is not reentrant"
         self._conn = self._conn_ctx.__enter__()
         return self
 
@@ -403,7 +409,7 @@ class RepoDBContext(AbstractContextManager):
         return f"{'' if self._dialect == SQLDialect.MYSQL else 'OR'} IGNORE"
 
     def _identifiers(self, identifiers):
-        return ', '.join(f'`{i}`' for i in identifiers)
+        return ", ".join(f"`{i}`" for i in identifiers)
 
     def ensure_tables_exist(self, _ensure_line_is_covered=lambda: None):
         # Future: it would be better if this function checked that the table
@@ -416,35 +422,39 @@ class RepoDBContext(AbstractContextManager):
             for table, cols in self._TABLE_COLUMNS.items():
                 # On MySQL, `IF NOT EXISTS` raises a warning, so `try` instead.
                 try:
-                    cursor.execute(f'''
+                    cursor.execute(
+                        f"""
                         CREATE TABLE `{table}` (
                             {', '.join([
                                 f'`{c}` {col_types[c]} {d}'
                                     for c, d in cols.items()
                             ] + [k for k in self._TABLE_KEYS[table]])}
                         );
-                    ''')
+                    """
+                    )
                 except Exception as ex:
                     # The intent is to catch the 'aready exists' variants of
                     # {sqlite3,_mysql_exceptions}.OperationalError.  But, I
                     # don't want to import MySQLdb here, since it is an
                     # optional dependency for this specific module.
                     if (
-                        type(ex).__qualname__ != 'OperationalError' or
-                        type(ex).__module__ not in [
-                            'sqlite3',
+                        type(ex).__qualname__ != "OperationalError"
+                        or type(ex).__module__
+                        not in [
+                            "sqlite3",
                             # MySQLdb versions vary the module path.
-                            '_mysql_exceptions', 'MySQLdb._exceptions',
-                        ] or
-                        'already exists' not in str(ex.args)
+                            "_mysql_exceptions",
+                            "MySQLdb._exceptions",
+                        ]
+                        or "already exists" not in str(ex.args)
                     ):
                         raise  # pragma: no cover
                     _ensure_line_is_covered()
 
     def store_repomd(
-        self, universe: str, repo: str, repomd: RepoMetadata,
+        self, universe: str, repo: str, repomd: RepoMetadata
     ) -> int:
-        'Returns the inserted `fetch_timestamp`, ours or from a racing writer'
+        "Returns the inserted `fetch_timestamp`, ours or from a racing writer"
         validate_universe_name(universe)
         with self._cursor() as cursor:
             fts = repomd.fetch_timestamp
@@ -458,30 +468,37 @@ class RepoDBContext(AbstractContextManager):
             #     for repodata in repomd.repodatas:
             #         assert repodata.checksum() in DB
             p = self._placeholder()
-            cursor.execute(f'''
+            cursor.execute(
+                f"""
                 INSERT {self._or_ignore()} INTO `repo_metadata` (
                     `universe`, `repo`, `fetch_timestamp`,
                     `build_timestamp`, `checksum`, `xml`
                 ) VALUES ({p}, {p}, {p}, {p}, {p}, {p});
-            ''', (universe, repo, fts, bts, checksum, repomd_xml))
+            """,
+                (universe, repo, fts, bts, checksum, repomd_xml),
+            )
             if cursor.rowcount:
                 return fts  # Our timestamp was the one that got inserted.
 
             # We lost the race, so ensure the prior data agrees with ours.
             # We don't need to check `build_timestamp`, it comes from `xml`.
-            cursor.execute(f'''
+            cursor.execute(
+                f"""
                 SELECT `fetch_timestamp`, `xml` FROM `repo_metadata`
                 WHERE (`universe` = {p} AND `repo` = {p} AND `checksum` = {p});
-            ''', (universe, repo, checksum))
-            (db_fts, db_repomd_xml), = cursor.fetchall()
+            """,
+                (universe, repo, checksum),
+            )
+            ((db_fts, db_repomd_xml),) = cursor.fetchall()
             # Allow a generous 1 minute of clock skew
-            assert fts + 60 >= db_fts, f'{fts} + 60 < {db_fts}'
-            assert repomd_xml == db_repomd_xml, f'{repomd_xml} {db_repomd_xml}'
+            assert fts + 60 >= db_fts, f"{fts} + 60 < {db_fts}"
+            assert repomd_xml == db_repomd_xml, f"{repomd_xml} {db_repomd_xml}"
             return db_fts
 
-    def get_rpm_storage_id_and_checksum(self, tbl: RpmTable, rpm: Rpm) \
-            -> Tuple[str, Checksum]:
-        'Returns a storage_id, and its canonical checksum from the DB.'
+    def get_rpm_storage_id_and_checksum(
+        self, tbl: RpmTable, rpm: Rpm
+    ) -> Tuple[str, Checksum]:
+        "Returns a storage_id, and its canonical checksum from the DB."
         assert rpm.canonical_checksum is None
         with self._cursor() as cursor:
             p = self._placeholder()
@@ -489,7 +506,8 @@ class RepoDBContext(AbstractContextManager):
             # primary key starts with NEVRA, it only has to iterate over all
             # the known checksums for a given NEVRA, which would at worst be
             # a handful.
-            cursor.execute(f'''
+            cursor.execute(
+                f"""
                 SELECT {self._identifiers(tbl.column_names())}, `storage_id`
                 FROM `{tbl.NAME}`
                 WHERE (
@@ -498,10 +516,18 @@ class RepoDBContext(AbstractContextManager):
                         `checksum` = {p} OR `canonical_checksum` = {p}
                     )
                 )
-            ''', (
-                rpm.name, rpm.epoch, rpm.version, rpm.release, rpm.arch,
-                tbl._universe, str(rpm.checksum), str(rpm.checksum),
-            ))
+            """,
+                (
+                    rpm.name,
+                    rpm.epoch,
+                    rpm.version,
+                    rpm.release,
+                    rpm.arch,
+                    tbl._universe,
+                    str(rpm.checksum),
+                    str(rpm.checksum),
+                ),
+            )
             results = cursor.fetchall()
         if not results:
             return None, None
@@ -517,23 +543,23 @@ class RepoDBContext(AbstractContextManager):
         for db_values in results:
             storage_ids.add(db_values[-1])
             for col_name, db_val, val in zip(
-                tbl.column_names(), db_values[:-1], tbl.column_values(rpm),
+                tbl.column_names(), db_values[:-1], tbl.column_values(rpm)
             ):
-                if col_name == 'checksum':
+                if col_name == "checksum":
                     other_checksums.add(Checksum.from_string(db_val))
-                elif col_name == 'canonical_checksum':
+                elif col_name == "canonical_checksum":
                     canonical_checksums.add(Checksum.from_string(db_val))
                 else:
-                    assert db_val == val, f'{col_name} {db_val} {val}'
+                    assert db_val == val, f"{col_name} {db_val} {val}"
         assert len(storage_ids) == 1, storage_ids
         assert len(canonical_checksums) == 1, canonical_checksums
         assert rpm.checksum in (other_checksums | canonical_checksums)
         return (storage_ids.pop(), canonical_checksums.pop())
 
     def get_rpm_canonical_checksums(
-        self, table: RpmTable, rpm: Rpm, all_snapshot_universes: FrozenSet[str],
+        self, table: RpmTable, rpm: Rpm, all_snapshot_universes: FrozenSet[str]
     ) -> Iterator[Checksum]:
-        '''
+        """
         Only the NEVRA part of `rpm` is used for the lookup.  We check for
         this NEVRA in all the universes involved in this snapshot, since any
         mutable RPM errors within the snapshot are bad, whether in the same
@@ -541,32 +567,40 @@ class RepoDBContext(AbstractContextManager):
         mutable RPMs in completely unrelated universes does not make sense
         -- one design principle of universes that unrelated ones can
         legitimately use the same NEVRA to refer to different contents.
-        '''
+        """
         p = self._placeholder()
         assert table._universe in all_snapshot_universes
-        all_snapshot_universe_ps = ', '.join([p] * len(all_snapshot_universes))
+        all_snapshot_universe_ps = ", ".join([p] * len(all_snapshot_universes))
         with self._cursor() as cursor:
             # Like in `get_rpm_storage_id_and_checksums`, the primary
             # key helps make this query efficient.
-            cursor.execute(f'''
+            cursor.execute(
+                f"""
                 SELECT `canonical_checksum` FROM `{table.NAME}`
                 WHERE (
                     `name` = {p} AND `epoch` = {p} AND `version` = {p} AND
                     `release` = {p} AND `arch` = {p} AND
                     `universe` IN ({all_snapshot_universe_ps})
                 )
-            ''', (
-                rpm.name, rpm.epoch, rpm.version, rpm.release, rpm.arch,
-                *all_snapshot_universes,
-            ))
+            """,
+                (
+                    rpm.name,
+                    rpm.epoch,
+                    rpm.version,
+                    rpm.release,
+                    rpm.arch,
+                    *all_snapshot_universes,
+                ),
+            )
             for (canonical_checksum,) in cursor.fetchall():
                 yield Checksum.from_string(canonical_checksum)
 
     def get_storage_id(
-        self, table: StorageTable, obj: Union['Rpm', Repodata],
+        self, table: StorageTable, obj: Union["Rpm", Repodata]
     ) -> Optional[str]:
         with self._cursor() as cursor:
-            cursor.execute(f'''
+            cursor.execute(
+                f"""
                 SELECT {self._identifiers(table.column_names())}, `storage_id`
                 FROM `{table.NAME}`
                 WHERE ({
@@ -575,30 +609,32 @@ class RepoDBContext(AbstractContextManager):
                             for c in table.KEY_COLUMNS
                     )
                 })
-            ''', table.key(obj))
+            """,
+                table.key(obj),
+            )
             results = cursor.fetchall()
             if not results:
                 return None
-            db_values, = results
+            (db_values,) = results
             # Check that the DB columns we got back agree with `obj`.
             for col_name, db_val, val in zip(
-                table.column_names(), db_values[:-1], table.column_values(obj),
+                table.column_names(), db_values[:-1], table.column_values(obj)
             ):
                 # This `if` is explained in the `Repodata.build_timestamp`
                 # doc.  In essence, we could have seen the same repodata
                 # from a `repomd.xml` that was built either earlier or later
                 # than the one already in the DB.
                 if not (
-                    col_name == 'build_timestamp' and type(obj) is Repodata
+                    col_name == "build_timestamp" and type(obj) is Repodata
                 ):
                     assert db_val == val, (db_val, val, obj)
             return db_values[-1]  # We put `storage_id` last
 
     def maybe_store(self, table: StorageTable, obj, storage_id: str) -> str:
-        '''
+        """
         Records `obj` with `storage_id` in the DB, or if `obj` had already
         been stored, returns its pre-existing storage ID.
-        '''
+        """
         # If this were None, `INSERT OR IGNORE` would quietly return a row
         # count of 0, ultimately causing this function to return None.
         assert storage_id is not None
@@ -607,13 +643,16 @@ class RepoDBContext(AbstractContextManager):
         # this would make the transaction slow, and thus isn't worth it.
         with self._cursor() as cursor:
             col_names = table.column_names()
-            cursor.execute(f'''
+            cursor.execute(
+                f"""
                 INSERT {self._or_ignore()} INTO `{table.NAME}`
                 ({self._identifiers(col_names)}, `storage_id`)
                 VALUES ({
                     ', '.join([self._placeholder()] * (len(col_names) + 1))
                 })
-            ''', (*table.column_values(obj), storage_id))
+            """,
+                (*table.column_values(obj), storage_id),
+            )
             if cursor.rowcount:
                 return storage_id  # We won the race to insert our storage_id
             # Our storage_id will not be used, find the already-stored one.

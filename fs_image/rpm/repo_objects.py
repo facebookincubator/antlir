@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 The classes in this file are models of repo objects (metadata, data, blobs)
 They have a shared interface, which lets us handle them somewhat uniformly.
 In particular, the commonality of interface helps with:
@@ -17,21 +17,21 @@ All objects are expected to have:
     .best_checksum()
     .size
     .build_timestamp
-'''
+"""
 import hashlib
 import time
-
 from typing import Iterator, List, NamedTuple
 from xml.dom import minidom
 
 from .common import Checksum
+
 
 # Used as the common hash for all RPMs (and also repomd.xml). THIS CANNOT BE
 # CHANGED WITHOUT MIGRATING THE DATABASE.  `sha384` is a good balance of
 # x86_64 speed, security (including okish resistance to Grover's algorithm,
 # and to length extension attacks), and availability (`sha384sum` or `shasum
 # -a 384` is available on all modern Unices).
-CANONICAL_HASH = 'sha384'
+CANONICAL_HASH = "sha384"
 
 
 class Rpm(NamedTuple):
@@ -58,7 +58,7 @@ class Rpm(NamedTuple):
 
     def nevra(self) -> str:
         r = self
-        return f'{r.name}-{r.epoch}:{r.version}-{r.release}.{r.arch}'
+        return f"{r.name}-{r.epoch}:{r.version}-{r.release}.{r.arch}"
 
     def best_checksum(self) -> Checksum:
         return self.canonical_checksum or self.checksum  # never None
@@ -76,12 +76,14 @@ class Repodata(NamedTuple):
     build_timestamp: int  # <timestamp> from repomd.xml
 
     def is_primary_sqlite(self) -> bool:
-        return self.location.endswith('-primary.sqlite.bz2') or \
-            self.location.endswith('-primary.sqlite.gz') or \
-                self.location.endswith('-primary.sqlite.xz')
+        return (
+            self.location.endswith("-primary.sqlite.bz2")
+            or self.location.endswith("-primary.sqlite.gz")
+            or self.location.endswith("-primary.sqlite.xz")
+        )
 
     def is_primary_xml(self) -> bool:
-        return self.location.endswith('-primary.xml.gz')
+        return self.location.endswith("-primary.xml.gz")
 
     def best_checksum(self) -> Checksum:
         return self.checksum
@@ -89,27 +91,24 @@ class Repodata(NamedTuple):
 
 def _parse_repomd(xml: bytes) -> Iterator[Repodata]:
     with minidom.parseString(xml) as repomd:
-        for data in repomd.getElementsByTagName('data'):
-            location_node, = data.getElementsByTagName('location')
-            (attr_name, location_href), = location_node.attributes.items()
-            assert attr_name == 'href'
-
-            checksum_node, = data.getElementsByTagName('checksum')
-            checksum_text_node, = checksum_node.childNodes
-            (attr_name, checksum_type), = checksum_node.attributes.items()
-            assert attr_name == 'type'
-
-            size_node, = data.getElementsByTagName('size')
-            size_text_node, = size_node.childNodes
+        for data in repomd.getElementsByTagName("data"):
+            (location_node,) = data.getElementsByTagName("location")
+            ((attr_name, location_href),) = location_node.attributes.items()
+            assert attr_name == "href"
+            (checksum_node,) = data.getElementsByTagName("checksum")
+            (checksum_text_node,) = checksum_node.childNodes
+            ((attr_name, checksum_type),) = checksum_node.attributes.items()
+            assert attr_name == "type"
+            (size_node,) = data.getElementsByTagName("size")
+            (size_text_node,) = size_node.childNodes
             assert len(size_node.attributes) == 0
-
-            timestamp_node, = data.getElementsByTagName('timestamp')
-            timestamp_text_node, = timestamp_node.childNodes
+            (timestamp_node,) = data.getElementsByTagName("timestamp")
+            (timestamp_text_node,) = timestamp_node.childNodes
             assert len(timestamp_node.attributes) == 0
 
             yield Repodata(
                 checksum=Checksum(
-                    algorithm=checksum_node.getAttribute('type'),
+                    algorithm=checksum_node.getAttribute("type"),
                     hexdigest=checksum_text_node.wholeText,
                 ),
                 location=location_href,
@@ -133,7 +132,7 @@ class RepoMetadata(NamedTuple):
 
     # NamedTuple.__new__ cannot be overridden
     @classmethod
-    def new(cls, *, xml: bytes) -> 'RepoMetadata':
+    def new(cls, *, xml: bytes) -> "RepoMetadata":
         repodatas = frozenset(_parse_repomd(xml))
         return cls.__new__(
             cls,

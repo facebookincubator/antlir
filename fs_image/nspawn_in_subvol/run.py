@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 When developing images, it is very handy to be able to run code inside an
 image.  This target lets you do just that, for example, here is a shell:
 
@@ -103,17 +103,16 @@ user, which we should probably never do).
 
   - Can we get any mileage out of --system-call-filter?
 
-'''
+"""
 import functools
 import subprocess
-
 from contextlib import contextmanager
-from typing import Iterable, NamedTuple, Optional, Tuple
 from io import BytesIO
+from typing import Iterable, NamedTuple, Optional, Tuple
 
 from fs_image.common import init_logging, nullcontext
 
-from .args import _NspawnOpts, _parse_cli_args, PopenArgs
+from .args import PopenArgs, _NspawnOpts, _parse_cli_args
 from .booted import run_booted_nspawn
 from .non_booted import run_non_booted_nspawn
 from .plugins import NspawnPlugin
@@ -126,15 +125,16 @@ class _CliSetup(NamedTuple):
     opts: _NspawnOpts
     plugins: Iterable[NspawnPlugin]
 
-    def _run_nspawn(self, popen_args: PopenArgs) -> Tuple[
-        subprocess.CompletedProcess, Optional[subprocess.CompletedProcess],
+    def _run_nspawn(
+        self, popen_args: PopenArgs
+    ) -> Tuple[
+        subprocess.CompletedProcess, Optional[subprocess.CompletedProcess]
     ]:
         # Enforce a single source of truth for `PopenArgs.boot_console`.
-        assert popen_args.boot_console is None, \
-            'To set `boot_console`, use `_CliSetup._replace(boot_console=)`.'
-        res = (
-            run_booted_nspawn if self.boot else run_non_booted_nspawn
-        )(
+        assert (
+            popen_args.boot_console is None
+        ), "To set `boot_console`, use `_CliSetup._replace(boot_console=)`."
+        res = (run_booted_nspawn if self.boot else run_non_booted_nspawn)(
             self.opts,
             popen_args._replace(boot_console=self.boot_console),
             plugins=self.plugins,
@@ -147,24 +147,25 @@ def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
     args = _parse_cli_args(argv, allow_debug_only_opts=True)
     init_logging(debug=args.opts.debug_only_opts.debug)
     with (
-        open(args.append_boot_console, 'ab')
-            # By default, we send `systemd` console to `stderr`.
-            if args.boot and args.append_boot_console else nullcontext()
+        open(args.append_boot_console, "ab")
+        # By default, we send `systemd` console to `stderr`.
+        if args.boot and args.append_boot_console
+        else nullcontext()
     ) as boot_console:
         yield _CliSetup(
             boot=args.boot,
             boot_console=boot_console,
             opts=args.opts,
             plugins=rpm_nspawn_plugins(
-                opts=args.opts,
-                plugin_args=args.plugin_args,
+                opts=args.opts, plugin_args=args.plugin_args
             ),
         )
 
 
 # The manual test is in the first paragraph of the top docblock.
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     import sys
+
     with _set_up_run_cli(sys.argv[1:]) as cli_setup:
         ret, _boot_ret = cli_setup._run_nspawn(
             PopenArgs(
@@ -173,6 +174,6 @@ if __name__ == '__main__':  # pragma: no cover
                 # to `stderr` to protect stdout from subprocess spam.  Undo
                 # that, since we want this CLI to be usable in pipelines.
                 stdout=1,
-            ),
+            )
         )
     sys.exit(ret.returncode)

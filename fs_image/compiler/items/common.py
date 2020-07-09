@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 The classes produced by ImageItem are the various types of items that can be
 installed into an image.  The compiler will verify that the specified items
 have all of their requirements satisfied, and will then apply them in
@@ -13,7 +13,7 @@ dependency order.
 To understand how the methods `provides()` and `requires()` affect
 dependency resolution / installation order, start with the docblock at the
 top of `provides.py`.
-'''
+"""
 import base64
 import dataclasses
 import enum
@@ -23,7 +23,6 @@ import os
 import subprocess
 import tempfile
 import uuid
-
 from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
 from fs_image.compiler import procfs_serde
@@ -33,6 +32,7 @@ from fs_image.subvol_utils import Subvol
 
 from .mount_utils import mountpoints_from_subvol_meta
 
+
 # This path is off-limits to regular image operations, it exists only to
 # record image metadata and configuration.  This is at the root, instead of
 # in `etc` because that means that `FilesystemRoot` does not have to provide
@@ -41,12 +41,12 @@ from .mount_utils import mountpoints_from_subvol_meta
 #
 # NB: The trailing slash is significant, making this a protected directory,
 # not a protected file.
-META_DIR = 'meta/'
+META_DIR = "meta/"
 
 
 @enum.unique
 class PhaseOrder(enum.Enum):
-    '''
+    """
     With respect to ordering, there are two types of operations that the
     image compiler performs against images.
 
@@ -85,7 +85,8 @@ class PhaseOrder(enum.Enum):
     used mount namespaces and read-only bind mounts to enforce protected
     paths (as is done today in `yum-dnf-from-snapshot`), then it would not
     be necessary for the compiler to know about them.
-    '''
+    """
+
     # This phase creates the subvolume, so it must precede all others.
     # There can only ever be one item in this phase.
     MAKE_SUBVOL = enum.auto()
@@ -129,16 +130,15 @@ class LayerOpts(NamedTuple):
     allowed_host_mount_targets: FrozenSet[str] = frozenset()
 
     def requires_build_appliance(self) -> Subvol:
-        assert (self.build_appliance is not None), (
-            f'`image_layer` {self.layer_target} must set '
-            '`build_appliance`'
+        assert self.build_appliance is not None, (
+            f"`image_layer` {self.layer_target} must set " "`build_appliance`"
         )
         return self.build_appliance
 
 
 @dataclasses.dataclass(init=False, frozen=True)
 class ImageItem:
-    'Base class for the types of items that can be installed into images.'
+    "Base class for the types of items that can be installed into images."
 
     from_target: str
 
@@ -170,56 +170,59 @@ class ImageItem:
         # detect that case.
         dataclasses._init_fn(
             fields=[
-                f for f in dataclasses.fields(self)
-                if f._field_type in (
-                    dataclasses._FIELD,
-                    dataclasses._FIELD_INITVAR)],
+                f
+                for f in dataclasses.fields(self)
+                if f._field_type
+                in (dataclasses._FIELD, dataclasses._FIELD_INITVAR)
+            ],
             frozen=True,
             has_post_init=False,
-            self_name='self',
-            **({'globals': {}}
-                if 'globals' in inspect.getfullargspec(
-                    dataclasses._init_fn).args
-                else {})
+            self_name="self",
+            **(
+                {"globals": {}}
+                if "globals"
+                in inspect.getfullargspec(dataclasses._init_fn).args
+                else {}
+            ),
         )(self, **kwargs)
 
 
 META_ARTIFACTS_REQUIRE_REPO = os.path.join(
-    META_DIR, 'private/opts/artifacts_may_require_repo',
+    META_DIR, "private/opts/artifacts_may_require_repo"
 )
 
 
 def _validate_artifacts_require_repo(
-    dependency: Subvol, layer_opts: LayerOpts, message: str,
+    dependency: Subvol, layer_opts: LayerOpts, message: str
 ):
     dep_arr = procfs_serde.deserialize_int(
-        dependency, META_ARTIFACTS_REQUIRE_REPO,
+        dependency, META_ARTIFACTS_REQUIRE_REPO
     )
     # The check is <= because we should permit building @mode/dev layers
     # that depend on published @mode/opt images.  The CLI arg is bool.
     assert dep_arr <= int(layer_opts.artifacts_may_require_repo), (
-        f'is trying to build a self-contained layer (layer_opts.'
-        f'artifacts_may_require_repo) with a dependency {dependency.path()} '
-        f'({message}) that was marked as requiring the repo to run ({dep_arr})'
+        f"is trying to build a self-contained layer (layer_opts."
+        f"artifacts_may_require_repo) with a dependency {dependency.path()} "
+        f"({message}) that was marked as requiring the repo to run ({dep_arr})"
     )
 
 
 def make_path_normal_relative(orig_d: str) -> str:
-    '''
+    """
     In image-building, we want relative paths that do not start with `..`,
     so that the effects of ImageItems are confined to their destination
     paths. For convenience, we accept absolute paths, too.
-    '''
+    """
     # lstrip so we treat absolute paths as image-relative
-    d = os.path.normpath(orig_d).lstrip('/')
-    if d == '..' or d.startswith('../'):
-        raise AssertionError(f'path {orig_d} cannot start with ../')
+    d = os.path.normpath(orig_d).lstrip("/")
+    if d == ".." or d.startswith("../"):
+        raise AssertionError(f"path {orig_d} cannot start with ../")
     # This is a directory reserved for image build metadata, so we prevent
     # regular items from writing to it. `d` is never absolute here.
     # NB: This check is redundant with `ProvidesDoNotAccess(path=META_DIR)`,
     # this is just here as a fail-fast backup.
-    if (d + '/').startswith(META_DIR):
-        raise AssertionError(f'path {orig_d} cannot start with {META_DIR}')
+    if (d + "/").startswith(META_DIR):
+        raise AssertionError(f"path {orig_d} cannot start with {META_DIR}")
     return d
 
 
@@ -230,7 +233,7 @@ def coerce_path_field_normal_relative(kwargs, field: str):
 
 
 def protected_path_set(subvol: Optional[Subvol]) -> Set[str]:
-    '''
+    """
     Identifies the protected paths in a subvolume.  Pass `subvol=None` if
     the subvolume doesn't yet exist (for FilesystemRoot).
 
@@ -242,15 +245,15 @@ def protected_path_set(subvol: Optional[Subvol]) -> Set[str]:
     actually manipulating these paths can inspect what's on disk, and act
     appropriately.  If the convention proves burdensome, this is an easy
     change -- mostly affecting this file, and `yum_dnf_from_snapshot.py`.
-    '''
+    """
     paths = {META_DIR}
     if subvol is not None:
         # NB: The returned paths here already follow the trailing / rule.
         for mountpoint in mountpoints_from_subvol_meta(subvol):
-            paths.add(mountpoint.lstrip('/'))
+            paths.add(mountpoint.lstrip("/"))
     # Never absolute: yum-dnf-from-snapshot interprets absolute paths as
     # host paths.
-    assert not any(p.startswith('/') for p in paths), paths
+    assert not any(p.startswith("/") for p in paths), paths
     return paths
 
 
@@ -260,17 +263,17 @@ def is_path_protected(path: str, protected_paths: Set[str]) -> bool:
         # Handle both protected files and directories.  This test is written
         # to return True even if `prot_path` is `/path/to/file` while `path`
         # is `/path/to/file/oops`.
-        if (path + '/').startswith(
-            prot_path + ('' if prot_path.endswith('/') else '/')
+        if (path + "/").startswith(
+            prot_path + ("" if prot_path.endswith("/") else "/")
         ):
             return True
     return False
 
 
 def ensure_meta_dir_exists(subvol: Subvol, layer_opts: LayerOpts):
-    subvol.run_as_root([
-        'mkdir', '--mode=0755', '--parents', subvol.path(META_DIR),
-    ])
+    subvol.run_as_root(
+        ["mkdir", "--mode=0755", "--parents", subvol.path(META_DIR)]
+    )
     # One might ask: why are we serializing this into the image instead of
     # just putting a condition on `ARTIFACTS_REQUIRE_REPO` into our Buck
     # macros?  Two reasons:
@@ -283,10 +286,10 @@ def ensure_meta_dir_exists(subvol: Subvol, layer_opts: LayerOpts):
     #     `--bind-repo-ro` flags in a bunch of places in our codebase.  The
     #     in-image marker enables `nspawn_in_subvol` to decide.
     if os.path.exists(subvol.path(META_ARTIFACTS_REQUIRE_REPO)):
-        _validate_artifacts_require_repo(subvol, layer_opts, 'parent layer')
+        _validate_artifacts_require_repo(subvol, layer_opts, "parent layer")
         # I looked into adding an `allow_overwrite` flag to `serialize`, but
         # it was too much hassle to do it right.
-        subvol.run_as_root(['rm', subvol.path(META_ARTIFACTS_REQUIRE_REPO)])
+        subvol.run_as_root(["rm", subvol.path(META_ARTIFACTS_REQUIRE_REPO)])
     procfs_serde.serialize(
         layer_opts.artifacts_may_require_repo,
         subvol,
@@ -295,16 +298,16 @@ def ensure_meta_dir_exists(subvol: Subvol, layer_opts: LayerOpts):
 
 
 def _hash_path(path: str, algorithm: str) -> str:
-    'Returns the hex digest'
+    "Returns the hex digest"
     algo = hashlib.new(algorithm)
-    with open(path, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b''):
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
             algo.update(chunk)
     return algo.hexdigest()
 
 
 def _generate_file(
-    temp_dir: str, generator: bytes, generator_args: List[str],
+    temp_dir: str, generator: bytes, generator_args: List[str]
 ) -> str:
     # API design notes:
     #
@@ -327,45 +330,52 @@ def _generate_file(
     # Future: it would be best to sandbox the generator to limit its
     # filesystem writes.  At the moment, we trust rule authors not to abuse
     # this feature and write stuff outside the given directory.
-    output_filename = subprocess.check_output([
-        generator, *generator_args, temp_dir,
-    ]).decode()
-    assert output_filename.endswith('\n'), (generator, output_filename)
+    output_filename = subprocess.check_output(
+        [generator, *generator_args, temp_dir]
+    ).decode()
+    assert output_filename.endswith("\n"), (generator, output_filename)
     output_filename = os.path.normpath(output_filename[:-1])
-    assert (
-        not output_filename.startswith('/')
-        and not output_filename.startswith('../')
-    ), output_filename
+    assert not output_filename.startswith(
+        "/"
+    ) and not output_filename.startswith("../"), output_filename
     return os.path.join(temp_dir, output_filename)
 
 
 def _image_source_path(
-    layer_opts: LayerOpts, *,
-    source: AnyStr = None, layer: Subvol = None, path: AnyStr = None,
+    layer_opts: LayerOpts,
+    *,
+    source: AnyStr = None,
+    layer: Subvol = None,
+    path: AnyStr = None,
 ) -> Path:
     assert (source is None) ^ (layer is None), (source, layer, path)
     source = Path.or_none(source)
     # Absolute `path` is still relative to `source` or `layer`
-    path = Path((path and path.lstrip('/')) or '.')
+    path = Path((path and path.lstrip("/")) or ".")
 
     if source:
         return (source / path).normpath()
 
     if os.path.exists(layer.path(META_ARTIFACTS_REQUIRE_REPO)):
-        _validate_artifacts_require_repo(layer, layer_opts, 'image.source')
+        _validate_artifacts_require_repo(layer, layer_opts, "image.source")
     return Path(layer.path(path))
 
 
 def _make_image_source_item(
-    item_cls, exit_stack, layer_opts: LayerOpts, *,
-    source: Optional[Mapping[str, str]], **kwargs,
+    item_cls,
+    exit_stack,
+    layer_opts: LayerOpts,
+    *,
+    source: Optional[Mapping[str, str]],
+    **kwargs,
 ):
     if source is None:
         return item_cls(**kwargs, source=None)
 
     assert 1 == (
-        bool(source.get('generator')) + bool(source.get('source')) +
-        bool(source.get('layer'))
+        bool(source.get("generator"))
+        + bool(source.get("source"))
+        + bool(source.get("layer"))
     ), source
 
     # `generator` dynamically creates a temporary source file for the item
@@ -379,24 +389,24 @@ def _make_image_source_item(
     # share the same source file for all generates with the same command --
     # you'd add a global map of (generator, args) -> output, perhaps using
     # weakref hooks to refcount output files and GC them.
-    generator = source.pop('generator', None)
-    generator_args = source.pop('generator_args', None)
+    generator = source.pop("generator", None)
+    generator_args = source.pop("generator_args", None)
     generator_args = list(generator_args) if generator_args is not None else []
     if generator or generator_args:
-        source['source'] = _generate_file(
+        source["source"] = _generate_file(
             exit_stack.enter_context(tempfile.TemporaryDirectory()),
             generator,
             generator_args,
         )
 
-    algo_and_hash = source.pop('content_hash', None)
+    algo_and_hash = source.pop("content_hash", None)
     source_path = _image_source_path(layer_opts, **source)
     if algo_and_hash:
-        algorithm, expected_hash = algo_and_hash.split(':')
+        algorithm, expected_hash = algo_and_hash.split(":")
         actual_hash = _hash_path(source_path, algorithm)
         if actual_hash != expected_hash:
             raise AssertionError(
-                f'{item_cls} {kwargs} failed hash validation, got {actual_hash}'
+                f"{item_cls} {kwargs} failed hash validation, got {actual_hash}"
             )
 
     return item_cls(**kwargs, source=source_path)
@@ -404,11 +414,11 @@ def _make_image_source_item(
 
 def image_source_item(item_cls, exit_stack, layer_opts: LayerOpts):
     return lambda **kwargs: _make_image_source_item(
-        item_cls, exit_stack, layer_opts, **kwargs,
+        item_cls, exit_stack, layer_opts, **kwargs
     )
 
 
 def generate_work_dir():
-    return '/work' + base64.urlsafe_b64encode(
+    return "/work" + base64.urlsafe_b64encode(
         uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
-    ).decode().strip('=')
+    ).decode().strip("=")

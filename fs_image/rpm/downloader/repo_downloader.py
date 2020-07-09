@@ -49,19 +49,21 @@ from typing import Iterable, Iterator, Tuple
 
 from fs_image.common import get_file_logger, not_none
 from fs_image.rpm.downloader.common import DownloadConfig, DownloadResult
+from fs_image.rpm.downloader.repodata_downloader import (
+    gen_repodatas_from_repomds,
+)
 from fs_image.rpm.downloader.repomd_downloader import gen_repomds_from_repos
-from fs_image.rpm.downloader.repodata_downloader import gen_repodatas_from_repomds
 from fs_image.rpm.downloader.rpm_downloader import gen_rpms_from_repodatas
 from fs_image.rpm.repo_sizer import RepoObjectVisitor
 from fs_image.rpm.repo_snapshot import RepoSnapshot
 from fs_image.rpm.yum_dnf_conf import YumDnfConfRepo
 
+
 log = get_file_logger(__file__)
 
 
 def visit_results(
-    results: Iterable[DownloadResult],
-    visitors: Iterable[RepoObjectVisitor],
+    results: Iterable[DownloadResult], visitors: Iterable[RepoObjectVisitor]
 ):
     for res in results:
         for visitor in visitors:
@@ -74,8 +76,10 @@ def visit_results(
             # downloading allows us to pass in an `Rpm` structure with
             # `.canonical_checksum` set, to better detect identical RPMs from
             # different repos.
-            res_rpms = not_none(res.rpms, 'rpms')
-            res_sid_to_rpm = not_none(res.storage_id_to_rpm, 'storage_id_to_rpm')
+            res_rpms = not_none(res.rpms, "rpms")
+            res_sid_to_rpm = not_none(
+                res.storage_id_to_rpm, "storage_id_to_rpm"
+            )
             for rpm in {
                 **{r.location: r for r in res_rpms},
                 # Post-download Rpm objects override the pre-download ones
@@ -114,7 +118,9 @@ def download_repos(
         # commits a full snasphot, given that the repodata & RPM objects will
         # now be referenced).
         for res in rpm_results:
-            rw_repo_db.store_repomd(res.repo_universe, res.repo.name, res.repomd)
+            rw_repo_db.store_repomd(
+                res.repo_universe, res.repo.name, res.repomd
+            )
         try:
             rw_repo_db.commit()
         except Exception:  # pragma: no cover
@@ -132,10 +138,10 @@ def download_repos(
             RepoSnapshot(
                 repomd=res.repomd,
                 storage_id_to_repodata=not_none(
-                    res.storage_id_to_repodata, 'storage_id_to_repodata'
+                    res.storage_id_to_repodata, "storage_id_to_repodata"
                 ),
                 storage_id_to_rpm=not_none(
-                    res.storage_id_to_rpm, 'storage_id_to_rpm'
+                    res.storage_id_to_rpm, "storage_id_to_rpm"
                 ),
             ),
         )

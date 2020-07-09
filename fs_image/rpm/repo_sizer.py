@@ -4,13 +4,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 Repos in `yum.conf` can (and do) share Repodata and Rpm objects, so the best
 estimate of their total space usage requires counting each object only once.
 
 `RepoDownloader` feeds the requisite information to this visitor. This
 implements the `RepoObjectVisitor` interface, described below.
-'''
+"""
 from collections import defaultdict
 from typing import Any, Dict, NamedTuple, Union
 
@@ -18,6 +18,7 @@ from fs_image.unionfind import UnionFind
 
 from .common import Checksum
 from .repo_objects import Repodata, RepoMetadata, Rpm
+
 
 # Type of object provided to the repo downloader as a visitor, which must
 # implement the following methods:
@@ -53,8 +54,9 @@ class _ObjectCounter:
         map, the size is the same.
         """
         size = self._synonyms.checksum_size.setdefault(chk, obj_size)
-        assert size == obj_size, \
-            f'{chk} has prior size {size}, while the new size is {obj_size}'
+        assert (
+            size == obj_size
+        ), f"{chk} has prior size {size}, while the new size is {obj_size}"
 
     def add_repo_obj(self, obj: Union[Rpm, Repodata, RepoMetadata]) -> None:
         self._set_size(obj.checksum, obj.size)
@@ -74,7 +76,7 @@ class _ObjectCounter:
             rep_sizes[rep] = rep_size
         return sum(rep_sizes.values())
 
-    def __iadd__(self, other: '_ObjectCounter') -> '_ObjectCounter':
+    def __iadd__(self, other: "_ObjectCounter") -> "_ObjectCounter":
         for chk, rep in other._synonyms.checksums.items():
             self._set_size(chk, other._synonyms.checksum_size[chk])
             self._set_size(rep, other._synonyms.checksum_size[rep])
@@ -87,7 +89,7 @@ class RepoSizer:
         # Count each type of objects separately
         self._type_to_counter = defaultdict(_ObjectCounter)
 
-    def __iadd__(self, other: 'RepoSizer') -> 'RepoSizer':
+    def __iadd__(self, other: "RepoSizer") -> "RepoSizer":
         for typ, ctr in other._type_to_counter.items():
             self._type_to_counter[typ] += ctr
         return self
@@ -102,12 +104,11 @@ class RepoSizer:
 
     def _get_classname_to_size(self) -> Dict[str, int]:
         return {
-            t.__name__: c.total_size()
-                for t, c in self._type_to_counter.items()
+            t.__name__: c.total_size() for t, c in self._type_to_counter.items()
         }
 
     def get_report(self, msg: str) -> str:
         classname_to_size = self._get_classname_to_size()
-        return f'''{msg} {sum(classname_to_size.values()):,} bytes, by type: {
+        return f"""{msg} {sum(classname_to_size.values()):,} bytes, by type: {
             '; '.join(f'{n}: {s:,}' for n, s in classname_to_size.items())
-        }'''
+        }"""

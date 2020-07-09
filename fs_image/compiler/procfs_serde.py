@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 ## Why use a `proc`-like format for container metadata?
 
 On Linux `/proc` is a rich database of kernel data, most of it easily
@@ -91,67 +91,78 @@ Invariants:
     guaranteed, e.g. all scalars will be stringified.
 
 Convention: in Python identifiers, the . of the extension maps to __.
-'''
+"""
 import os
 import shlex
-
 from typing import Any, List
 
 
 def _make_script(dest: bytes, cmds: List[str]):
     return [
         # Write with `noclobber` to ensure that we fail if the file exists.
-        'bash', '-ue', '-o', 'noclobber', '-c',
-        ' ; '.join([
-            # Set umask to 0022 because bash's redirect mode is 0666, and we
-            # want file permissiosn to be 0644.
-            'umask 0022',
-            'dest=' + dest.shell_quote(),
-            'dest_dir=$(dirname "$dest")',
-            # This won't make any directories outside the subvolume, since
-            # `run_as_root` asserts that the subvolume exists.  The presumed
-            # use-case is to make `/meta/private/whatever/parent` inside a
-            # subvolume, without the client code having to worry about it.
-            # This auto-creation is OK since all metadata at present is
-            # supposed to be 0755 root:root.
-            'mkdir -p --mode=0755 "$dest_dir"',
-        ] + cmds),
+        "bash",
+        "-ue",
+        "-o",
+        "noclobber",
+        "-c",
+        " ; ".join(
+            [
+                # Set umask to 0022 because bash's redirect mode is 0666, and we
+                # want file permissiosn to be 0644.
+                "umask 0022",
+                "dest=" + dest.shell_quote(),
+                'dest_dir=$(dirname "$dest")',
+                # This won't make any directories outside the subvolume, since
+                # `run_as_root` asserts that the subvolume exists.  The presumed
+                # use-case is to make `/meta/private/whatever/parent` inside a
+                # subvolume, without the client code having to worry about it.
+                # This auto-creation is OK since all metadata at present is
+                # supposed to be 0755 root:root.
+                'mkdir -p --mode=0755 "$dest_dir"',
+            ]
+            + cmds
+        ),
     ]
 
 
 def serialize(data: Any, subvol, path_with_ext: str):
-    '''
+    """
     Writes `data` to `path_with_ext` inside `subvol`.  The extension
     part of `path_with_ext` determines the serialization mechanism.
 
     Fails if the output file or directory exists.  Creates files with mode
     0644, directories with mode 0755.  Both get root:root ownership.
-    '''
+    """
     if data is None:
         return  # Write nothing, `None` corresponds to the "no such file".
 
     _, ext = os.path.splitext(path_with_ext)
     assert isinstance(ext, str)
-    trailing_newline = b'\n'
-    if ext in ('.image_path', '.host_path'):
+    trailing_newline = b"\n"
+    if ext in (".image_path", ".host_path"):
         if not isinstance(data, (str, bytes)):
             raise AssertionError(
-                f'{path_with_ext} needs str/bytes, got {data} / {type(data)}'
+                f"{path_with_ext} needs str/bytes, got {data} / {type(data)}"
             )
-    elif ext == '.bin':
-        trailing_newline = b''
+    elif ext == ".bin":
+        trailing_newline = b""
         if not isinstance(data, bytes):
             raise AssertionError(
-                f'{path_with_ext} needs bytes, got {data} / {type(data)}'
+                f"{path_with_ext} needs bytes, got {data} / {type(data)}"
             )
-    elif ext != '':
-        raise AssertionError(f'Unsupported extension {path_with_ext}')
+    elif ext != "":
+        raise AssertionError(f"Unsupported extension {path_with_ext}")
 
     if isinstance(data, dict):
-        subvol.run_as_root(_make_script(subvol.path(path_with_ext), [
-            # Lacks -p since we want to fail if the dir exists
-            'mkdir --mode=0755 "$dest"',
-        ]))
+        subvol.run_as_root(
+            _make_script(
+                subvol.path(path_with_ext),
+                [
+                    # Lacks -p since we want to fail if the dir exists
+                    'mkdir --mode=0755 "$dest"'
+                ],
+            )
+        )
         for k, v in data.items():
             serialize(v, subvol, os.path.join(path_with_ext, k))
         return
@@ -163,9 +174,9 @@ def serialize(data: Any, subvol, path_with_ext: str):
     elif isinstance(data, bytes):
         out_bytes = data
     elif isinstance(data, list):
-        raise AssertionError('add list support if you need it')
+        raise AssertionError("add list support if you need it")
     else:
-        raise AssertionError(f'unhandled type {type(data)} {data}')
+        raise AssertionError(f"unhandled type {type(data)} {data}")
 
     subvol.run_as_root(
         _make_script(subvol.path(path_with_ext), ['cat > "$dest"']),
@@ -179,31 +190,31 @@ def deserialize_untyped(subvol, path_with_ext: str) -> Any:
     if os.path.isdir(subvol.path(path_with_ext)):
         return {
             k: deserialize_untyped(subvol, os.path.join(path_with_ext, k))
-                for k in os.listdir(subvol.path(path_with_ext).decode())
+            for k in os.listdir(subvol.path(path_with_ext).decode())
         }
     elif os.path.isfile(subvol.path(path_with_ext)):
-        with open(subvol.path(path_with_ext), 'rb') as f:
+        with open(subvol.path(path_with_ext), "rb") as f:
             s = f.read()
 
         _, ext = os.path.splitext(path_with_ext)
-        if ext == '.bin':
+        if ext == ".bin":
             return s
 
         # All other extensions had a trailing newline appended.
-        if not s.endswith(b'\n'):
+        if not s.endswith(b"\n"):
             raise AssertionError(
-                f'{path_with_ext} must have had a trailing newline, got {s}'
+                f"{path_with_ext} must have had a trailing newline, got {s}"
             )
         s = s[:-1]
 
-        if ext == '.image_path' or ext == '.host_path':
+        if ext == ".image_path" or ext == ".host_path":
             return s
-        elif ext == '':
+        elif ext == "":
             return s.decode()
         else:
-            raise AssertionError(f'Unsupported extension (path_with_ext)')
+            raise AssertionError(f"Unsupported extension (path_with_ext)")
     else:
-        raise AssertionError(f'{path_with_ext} is neither a file nor a dir')
+        raise AssertionError(f"{path_with_ext} is neither a file nor a dir")
 
 
 def deserialize_int(*args, **kwargs) -> int:

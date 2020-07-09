@@ -6,28 +6,30 @@
 
 import enum
 import itertools
-
 from typing import Iterable, List, NamedTuple, Optional, Tuple, Union
 
 
 class Action(enum.Enum):
-    _RECURSE = 'recurse'
-    _YIELD = 'yield'
+    _RECURSE = "recurse"
+    _YIELD = "yield"
 
 
 def _get_trimmed_leaves(
-    extent: 'Extent', offset: int = 0, length: Optional[int] = None,
-) -> Tuple[Action, Union[
-    Tuple[int, int, 'Extent'],  # _YIELD case
-    List[Tuple['Extent', int, int]],  # _RECURSE case
-]]:
+    extent: "Extent", offset: int = 0, length: Optional[int] = None
+) -> Tuple[
+    Action,
+    Union[
+        Tuple[int, int, "Extent"],  # _YIELD case
+        List[Tuple["Extent", int, int]],  # _RECURSE case
+    ],
+]:
     max_length = extent.length - offset
     if length is None:
         length = max_length
     # These don't print `extent` since that would recurse into this func
-    assert length <= max_length, f'len {length}, offset {offset}'
-    assert offset >= 0 and length >= 0, f'offset {offset}, length {length}'
-    assert offset <= extent.length, f'offset {offset}'
+    assert length <= max_length, f"len {length}, offset {offset}"
+    assert offset >= 0 and length >= 0, f"offset {offset}, length {length}"
+    assert offset <= extent.length, f"offset {offset}"
 
     maybe_content = extent.content
     if isinstance(maybe_content, Extent.Kind):
@@ -36,15 +38,16 @@ def _get_trimmed_leaves(
             return Action._YIELD, (offset, trimmed_length, extent)
 
     # trimmed_length <= 0 should not happen in well-formed input
-    assert not isinstance(maybe_content, Extent.Kind), \
-        f'min({length}, {extent.length} - {offset}) <= 0'
+    assert not isinstance(
+        maybe_content, Extent.Kind
+    ), f"min({length}, {extent.length} - {offset}) <= 0"
 
     offset += extent.offset
     recurse_list = []
     for e in maybe_content:
         if e.length > offset:
             recurse_list.append((e, offset, min(length, e.length - offset)))
-            length -= (e.length - offset)
+            length -= e.length - offset
             if length <= 0:
                 break
         offset -= min(offset, e.length)
@@ -53,7 +56,7 @@ def _get_trimmed_leaves(
 
 # Future: use `deepfrozentype` for true immutability.
 class Extent(NamedTuple):
-    '''
+    """
     An Extent represents a contiguous sequence of bytes, which were either:
      - written (`write`)
      - cloned from another extent (btrfs clone `ioctl`)
@@ -113,9 +116,9 @@ class Extent(NamedTuple):
     flatten to trimmed leaves more eagerly.  However, none of this extra
     complexity seems worthwhile for now.
 
-    '''
+    """
 
-    content: Union['Extent.Kind', Iterable['Extent']]
+    content: Union["Extent.Kind", Iterable["Extent"]]
     offset: int
     length: int
 
@@ -126,7 +129,7 @@ class Extent(NamedTuple):
         # The default `__repr__` was not `eval`able :/
         def __repr__(self):
             # Assume every reasonable user will have `Extent` in their scope
-            return f'Extent.Kind.{self.name}'
+            return f"Extent.Kind.{self.name}"
 
     # NB: we do not want this to be `__new__`, since it is allowed **NOT**
     # to return a new object, but instead to extract one from `content`.
@@ -136,8 +139,7 @@ class Extent(NamedTuple):
         # the object, so do not try to read them back.  Example: if `offset`
         # & `length` are such that certain subextents are inaccessible, we
         # will discard those subextents, and reduce `offset` accordingly.
-
-        content: Union['Extent.Kind', Iterable['Extent'], 'Extent'],
+        content: Union["Extent.Kind", Iterable["Extent"], "Extent"],
         *,
         # Hide the first `offset` bytes of the constituent extents.
         offset: int = 0,
@@ -151,31 +153,36 @@ class Extent(NamedTuple):
         assert isinstance(content, Extent.Kind) or (
             isinstance(content, tuple)
             and all(isinstance(e, Extent) for e in content)
-        ), f'Invalid extent content: {content}'
+        ), f"Invalid extent content: {content}"
         # If you hit this, you should create a HOLE followed by DATA.
-        assert isinstance(content, tuple) or offset == 0, \
-            'Nonzero offsets only make sense for extents-of-extents'
-        assert offset >= 0, f'offset {offset} < 0'
+        assert (
+            isinstance(content, tuple) or offset == 0
+        ), "Nonzero offsets only make sense for extents-of-extents"
+        assert offset >= 0, f"offset {offset} < 0"
 
         # Computed length can be negative -- e.g. this happens if a
         # `write()` affects bytes past the end of the current extent.
         # This is OK, and we want to treat this extent as empty.
-        max_length = max(0, sum(e.length for e in content) - offset) \
-            if isinstance(content, tuple) else None
+        max_length = (
+            max(0, sum(e.length for e in content) - offset)
+            if isinstance(content, tuple)
+            else None
+        )
 
         if length is None:
-            assert max_length is not None, f'{content} must specify length'
+            assert max_length is not None, f"{content} must specify length"
             length = max_length
         length = max(0, length)  # e.g. the `truncate` HOLE length may be < 0
 
         # If the caller needs to add a HOLE at the end, it has to be explicit.
-        assert length is None or max_length is None or max_length >= length, \
-            f'Computed max length {max_length} > specified {length}'
+        assert (
+            length is None or max_length is None or max_length >= length
+        ), f"Computed max length {max_length} > specified {length}"
 
         if isinstance(content, tuple):
 
             def optimize_content():
-                'Drop hidden and 0-length extents'
+                "Drop hidden and 0-length extents"
                 nonlocal offset  # Will be reduced if we skip initial extents
                 new_content_len = 0
                 for e in content:
@@ -193,8 +200,10 @@ class Extent(NamedTuple):
 
         # Elide nesting when we end up with the identity transform on 1 extent
         if (
-            isinstance(content, tuple) and len(content) == 1
-            and offset == 0 and length == content[0].length
+            isinstance(content, tuple)
+            and len(content) == 1
+            and offset == 0
+            and length == content[0].length
         ):
             return content[0]
 
@@ -205,40 +214,45 @@ class Extent(NamedTuple):
         return Extent.__new(())
 
     def truncate(self, length: int):
-        return Extent.__new((
-            self,
-            Extent.__new(Extent.Kind.HOLE, length=length - self.length),
-        ), length=length)
+        return Extent.__new(
+            (self, Extent.__new(Extent.Kind.HOLE, length=length - self.length)),
+            length=length,
+        )
 
-    def __put(self, offset: int, what: 'Extent'):
-        'Overwrites with `what` a portion of `self` starting at `offset`.'
+    def __put(self, offset: int, what: "Extent"):
+        "Overwrites with `what` a portion of `self` starting at `offset`."
         # E.g., should `extent.Extent.empty().write(offset=5, length=0)`
         # create a hole, or remain empty?
-        assert what.length > 0, 'Future: not sure how to hangle length = 0'
-        return Extent.__new((
-            Extent.__new(self, length=min(self.length, offset)),
-            Extent.__new(Extent.Kind.HOLE, length=offset - self.length),
-            what,
-            Extent.__new(self, offset=(offset + what.length)),
-        ))
+        assert what.length > 0, "Future: not sure how to hangle length = 0"
+        return Extent.__new(
+            (
+                Extent.__new(self, length=min(self.length, offset)),
+                Extent.__new(Extent.Kind.HOLE, length=offset - self.length),
+                what,
+                Extent.__new(self, offset=(offset + what.length)),
+            )
+        )
 
     def write(self, *, offset: int, length: int):
-        return self.__put(
-            offset, Extent.__new(Extent.Kind.DATA, length=length)
-        )
+        return self.__put(offset, Extent.__new(Extent.Kind.DATA, length=length))
 
     def clone(
         self,
         *,
-        to_offset: int, from_extent: 'Extent', from_offset: int, length: int,
+        to_offset: int,
+        from_extent: "Extent",
+        from_offset: int,
+        length: int,
     ):
         return self.__put(
             to_offset,
             Extent.__new(from_extent, offset=from_offset, length=length),
         )
 
-    def gen_trimmed_leaves(self, *, offset: int=0, length: Optional[int]=None):
-        '''
+    def gen_trimmed_leaves(
+        self, *, offset: int = 0, length: Optional[int] = None
+    ):
+        """
         Yields the sequence of
            (offset, length, leaf subextent with Extent.Kind content),
         which you would witness on a filesystem, if the operations in `self`
@@ -247,7 +261,7 @@ class Extent(NamedTuple):
         Caveat: `offset` and `length` are instructions for how to trim the
         subextent, using the semantics described in `__new()`'s argument
         list.  In contrast, `subextent.offset` is, by definition, always 0.
-        '''
+        """
         # This loop exists just to replace lexical recursion with manual
         # recusion using an explicit stack.  We have to do this to handle
         # files larger than about 100MB, which would otherwise exceed
@@ -280,19 +294,19 @@ class Extent(NamedTuple):
     def _gen_leaf_reprs(self):
         for _, length, leaf in self.gen_trimmed_leaves():
             if leaf.content == Extent.Kind.HOLE:
-                yield 'h', length
+                yield "h", length
             elif leaf.content == Extent.Kind.DATA:
-                yield 'd', length
+                yield "d", length
             else:
                 raise AssertionError(leaf.content)  # pragma: no cover
 
     def __repr__(self):
-        return ''.join(
+        return "".join(
             # merge adjacent leaves of the same type
-            f'{k}{sum(l for _, l in leaves)}'
-                for k, leaves in itertools.groupby(
-                    self._gen_leaf_reprs(), lambda kl: kl[0],
-                )
+            f"{k}{sum(l for _, l in leaves)}"
+            for k, leaves in itertools.groupby(
+                self._gen_leaf_reprs(), lambda kl: kl[0]
+            )
         )
 
     def __copy__(self):

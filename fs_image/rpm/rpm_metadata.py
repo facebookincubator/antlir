@@ -7,11 +7,12 @@
 import os
 import re
 import subprocess
+from typing import NamedTuple
 
 from fs_image.common import get_file_logger
 from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
-from typing import NamedTuple
+
 
 log = get_file_logger(__file__)
 
@@ -36,16 +37,13 @@ class RpmMetadata(NamedTuple):
 
     @classmethod
     def from_file(cls, package_path: Path) -> "RpmMetadata":
-        if not package_path.endswith(b'.rpm'):
+        if not package_path.endswith(b".rpm"):
             raise ValueError(f"RPM file {package_path} needs to end with .rpm")
 
         return cls._repo_query(cls, None, None, package_path)
 
     def _repo_query(
-        self,
-        db_path: Path,
-        package_name: str,
-        package_path: Path,
+        self, db_path: Path, package_name: str, package_path: Path
     ) -> "RpmMetadata":
         query_args = [
             "rpm",
@@ -64,10 +62,11 @@ class RpmMetadata(NamedTuple):
             )
 
         try:
-            result = subprocess.check_output(
-                query_args,
-                stderr=subprocess.PIPE,
-            ).decode().strip("'\"")
+            result = (
+                subprocess.check_output(query_args, stderr=subprocess.PIPE)
+                .decode()
+                .strip("'\"")
+            )
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Error querying RPM: {e.stdout}, {e.stderr}")
 
@@ -148,8 +147,8 @@ def _compare_values(left: str, right: str) -> int:
             continue
 
         # Look at tilde first, it takes precedent over everything else
-        if left.startswith(b'~'):
-            if not right.startswith(b'~'):
+        if left.startswith(b"~"):
+            if not right.startswith(b"~"):
                 return -1  # left < right
 
             # Strip the tilde and start again
@@ -157,17 +156,17 @@ def _compare_values(left: str, right: str) -> int:
             continue
 
         # Tilde always means the version is less
-        if right.startswith(b'~'):
+        if right.startswith(b"~"):
             return 1  # left > right
 
         # Now look at the caret, which is like the tilde but pointier.
-        if left.startswith(b'^'):
+        if left.startswith(b"^"):
             # left has a caret but right has ended
             if not right:
                 return 1  # left > right
 
             # left has a caret but right continues on
-            elif not right.startswith(b'^'):
+            elif not right.startswith(b"^"):
                 return -1  # left < right
 
             # strip the ^ and start again
@@ -176,7 +175,7 @@ def _compare_values(left: str, right: str) -> int:
 
         # Caret means the version is less... Unless the other version
         # has ended, then do the exact opposite.
-        if right.startswith(b'^'):
+        if right.startswith(b"^"):
             return -1 if not left else 1
 
         # We've run out of characters to compare.
@@ -204,8 +203,8 @@ def _compare_values(left: str, right: str) -> int:
         right_head, right = match_right.group(1), match_right.group(2)
 
         if isnum:
-            left_head = left_head.lstrip(b'0')
-            right_head = right_head.lstrip(b'0')
+            left_head = left_head.lstrip(b"0")
+            right_head = right_head.lstrip(b"0")
 
             # Length of contiguous numbers matters
             left_head_len = len(left_head)

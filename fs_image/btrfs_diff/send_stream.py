@@ -4,20 +4,21 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 The items below are an in-memory representation of a btrfs send-stream.
 
 We have code to parse these both from the binary send-stream, and from the
 output of `btrfs receive --dump`.  The latter parse is imperfect and has a
 number of limitations, but we find it useful for testing -- refer to the
 `parse_dump.py` docblock.
-'''
+"""
 import re
 from collections import Counter
 from dataclasses import dataclass
 from typing import Callable, ClassVar, Iterable, Tuple
 
-_SELINUX_XATTR = b'security.selinux'
+
+_SELINUX_XATTR = b"security.selinux"
 
 
 @dataclass(frozen=True)
@@ -45,11 +46,11 @@ class SendStreamItem:
         # out that it actually looks better if the "<action>" is a single word,
         # so let's override the __str__ method here to match the namedtuple
         # format.
-        return re.sub(r'^((\w+|<\w+>)\.)*', '', repr(self))
+        return re.sub(r"^((\w+|<\w+>)\.)*", "", repr(self))
 
 
 class SendStreamItems:
-    '''
+    """
     This class only exists to group its inner classes.
 
     This items should exactly match the content of `read_and_process_cmd` in
@@ -59,7 +60,7 @@ class SendStreamItems:
       https://github.com/kdave/btrfs-progs/blob/master/send-dump.c
     The one exception is that `from` in `clone` became `from_path` since
     `from` is reserved in Python.
-    '''
+    """
 
     #
     # operations making new subvolumes
@@ -196,41 +197,39 @@ def get_frequency_of_selinux_xattrs(items):
 
 
 class ItemFilters:
-    '''
+    """
     A namespace of filters for taking a just-parsed Iterable[SendStreamItems],
     and making it useful for filesystem testing.
-    '''
+    """
 
     @staticmethod
     def selinux_xattr(
         items: Iterable[SendStreamItem],
         discard_fn: Callable[[bytes, bytes], bool],
     ) -> Iterable[SendStreamItem]:
-        '''
+        """
         SELinux always sets a security context on filesystem objects, but most
         images will not ship data with non-default contexts, so it is easiest to
         just filter out these `set_xattr`s
-        '''
+        """
         for item in items:
             if isinstance(item, SendStreamItems.set_xattr):
-                if (
-                    item.name == _SELINUX_XATTR and
-                    discard_fn(item.path, item.data)
+                if item.name == _SELINUX_XATTR and discard_fn(
+                    item.path, item.data
                 ):
                     continue
             yield item
 
     @staticmethod
     def normalize_utimes(
-        items: Iterable[SendStreamItem],
-        start_time: float,
-        end_time: float,
+        items: Iterable[SendStreamItem], start_time: float, end_time: float
     ) -> Iterable[SendStreamItem]:
-        '''
+        """
         Build-time timestamps will vary, since the build takes some time.
         We can make them predictable by replacing any timestamp within the
         build time-range by `start_time`.
-        '''
+        """
+
         def normalize_time(t):
             return start_time if start_time <= t <= end_time else t
 

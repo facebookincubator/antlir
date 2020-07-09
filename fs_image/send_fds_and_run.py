@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 `sudo -C` is forbidden by default, making it harder to pass file descriptors
 to programs executed under `sudo`.
 
@@ -36,39 +36,47 @@ effect on other systemd-related utilities, since they check `LISTEN_PID`.
 
 Usage as a library involves calling `popen_and_inject_fds_after_sudo` to
 wrap your post-`sudo` command.  See that function's docblock.
-'''
+"""
 import argparse
 import array
 import os
 import socket
 import subprocess
 import sys
-
 from contextlib import contextmanager
 
 from .common import (
-    FD_UNIX_SOCK_TIMEOUT, get_file_logger, init_logging,
+    FD_UNIX_SOCK_TIMEOUT,
+    get_file_logger,
+    init_logging,
     listen_temporary_unix_socket,
 )
 from .fs_utils import Path
+
 
 log = get_file_logger(__file__)
 
 
 # NB: This was copy-pasta'd from yum_dnf_from_snapshot.py
 def send_fds(sock, fds):
-    msg = b'unused'
-    num_sent = sock.sendmsg([msg], [(
-        socket.SOL_SOCKET, socket.SCM_RIGHTS,
-        array.array('i', fds).tobytes(),
-        # Future: is `flags=socket.MSG_NOSIGNAL` a good idea?
-    )])
+    msg = b"unused"
+    num_sent = sock.sendmsg(
+        [msg],
+        [
+            (
+                socket.SOL_SOCKET,
+                socket.SCM_RIGHTS,
+                array.array("i", fds).tobytes(),
+                # Future: is `flags=socket.MSG_NOSIGNAL` a good idea?
+            )
+        ],
+    )
     assert len(msg) == num_sent, (msg, num_sent)
 
 
 @contextmanager
 def popen_and_inject_fds_after_sudo(cmd, fds, popen, *, set_listen_fds):
-    '''
+    """
     This is a context manager intended to let you imitate the as-CLI
     behavior documented in the module docblock.  See that docblock to
     understand the process-spawning chain.
@@ -83,24 +91,30 @@ def popen_and_inject_fds_after_sudo(cmd, fds, popen, *, set_listen_fds):
         like `subprocess.Popen`.  The only difference is that normally this
         callback will prepend its arguments with a `['sudo', '--some',
         '--args', '--']` invocation.
-    '''
-    with listen_temporary_unix_socket() as (lsock_path, lsock), popen([
-        # The wrapper is Python.  In @mode/dev this can end up writing
-        # bytecode as `root` into `buck-out`, which would break Buck's
-        # garbage-collection.  The magic environment variable fixes that.
-        # This doesn't affect @mode/opt since that is precompiled anyway.
-        'env', 'PYTHONDONTWRITEBYTECODE=1',
-        # The wrapper is part of this library's `resources`, so this will
-        # work in @mode/opt with ZIP-PAR or XAR packaging.
-        os.path.join(os.path.dirname(__file__), 'recv-fds-and-run'),
-        # Although the permissions of lsock_path restrict it to the repo
-        # user, the wrapper runs as `root`, so it can connect.
-        '--unix-sock', lsock_path,
-        '--num-fds', str(len(fds)),
-        *([] if set_listen_fds else ['--no-set-listen-fds']),
-        '--', *cmd,
-    ]) as proc:
-        log.info(f'Sending FDS {fds} to {cmd} via wrapper')
+    """
+    with listen_temporary_unix_socket() as (lsock_path, lsock), popen(
+        [
+            # The wrapper is Python.  In @mode/dev this can end up writing
+            # bytecode as `root` into `buck-out`, which would break Buck's
+            # garbage-collection.  The magic environment variable fixes that.
+            # This doesn't affect @mode/opt since that is precompiled anyway.
+            "env",
+            "PYTHONDONTWRITEBYTECODE=1",
+            # The wrapper is part of this library's `resources`, so this will
+            # work in @mode/opt with ZIP-PAR or XAR packaging.
+            os.path.join(os.path.dirname(__file__), "recv-fds-and-run"),
+            # Although the permissions of lsock_path restrict it to the repo
+            # user, the wrapper runs as `root`, so it can connect.
+            "--unix-sock",
+            lsock_path,
+            "--num-fds",
+            str(len(fds)),
+            *([] if set_listen_fds else ["--no-set-listen-fds"]),
+            "--",
+            *cmd,
+        ]
+    ) as proc:
+        log.info(f"Sending FDS {fds} to {cmd} via wrapper")
         lsock.settimeout(FD_UNIX_SOCK_TIMEOUT)
         with lsock.accept()[0] as csock:
             csock.settimeout(FD_UNIX_SOCK_TIMEOUT)
@@ -114,35 +128,43 @@ def parse_opts(argv):
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        '--fd', type=int, action='append', default=[],
-        help='FDs will be provided to the wrapped process with sequential '
-            'numbers starting from 3, in the order they were listed on '
-            'the command-line. Repeat to pass multiple FDs.',
+        "--fd",
+        type=int,
+        action="append",
+        default=[],
+        help="FDs will be provided to the wrapped process with sequential "
+        "numbers starting from 3, in the order they were listed on "
+        "the command-line. Repeat to pass multiple FDs.",
     )
     parser.add_argument(
-        '--sudo', action='store_true',
-        help='Wrap `recv-fds-and-run` with `sudo`, effectively emulating the '
-            'behavior of `sudo -C`. See `--sudo-arg` if you need to '
-            'pass arguments to `sudo`. Without this option, this CLI is a '
-            'very elaborate way of remapping the listed FDs and closing all '
-            'others.',
+        "--sudo",
+        action="store_true",
+        help="Wrap `recv-fds-and-run` with `sudo`, effectively emulating the "
+        "behavior of `sudo -C`. See `--sudo-arg` if you need to "
+        "pass arguments to `sudo`. Without this option, this CLI is a "
+        "very elaborate way of remapping the listed FDs and closing all "
+        "others.",
     )
     parser.add_argument(
-        '--sudo-arg', action='append', default=[],
-        help='Pass this argument to `sudo` on the command-line.'
+        "--sudo-arg",
+        action="append",
+        default=[],
+        help="Pass this argument to `sudo` on the command-line.",
     )
     parser.add_argument(
-        '--no-set-listen-fds', action='store_false', dest='set_listen_fds',
-        help='Do not set LISTEN_FDS and LISTEN_PID on the wrapped process. By '
-            'default we set these just in case this wraps `systemd-nspawn` -- '
-            'that tells it to forward our FDS to the container. If the extra '
-            'environment variables are a problem for you, pass this option.',
+        "--no-set-listen-fds",
+        action="store_false",
+        dest="set_listen_fds",
+        help="Do not set LISTEN_FDS and LISTEN_PID on the wrapped process. By "
+        "default we set these just in case this wraps `systemd-nspawn` -- "
+        "that tells it to forward our FDS to the container. If the extra "
+        "environment variables are a problem for you, pass this option.",
     )
     parser.add_argument(
-        'cmd', nargs='+', help='The command to wrap and supply with FDs.',
+        "cmd", nargs="+", help="The command to wrap and supply with FDs."
     )
     opts = Path.parse_args(parser, argv)
-    assert not opts.sudo_arg or opts.sudo, '--sudo-arg requires --sudo'
+    assert not opts.sudo_arg or opts.sudo, "--sudo-arg requires --sudo"
     return opts
 
 
@@ -150,10 +172,13 @@ def send_fds_and_popen(opts, **popen_kwargs):
     return popen_and_inject_fds_after_sudo(
         opts.cmd,
         opts.fd,
-        lambda wrapped_cmd: subprocess.Popen([
-            *(['sudo', *opts.sudo_arg, '--'] if opts.sudo else []),
-            *wrapped_cmd,
-        ], **popen_kwargs),
+        lambda wrapped_cmd: subprocess.Popen(
+            [
+                *(["sudo", *opts.sudo_arg, "--"] if opts.sudo else []),
+                *wrapped_cmd,
+            ],
+            **popen_kwargs,
+        ),
         set_listen_fds=opts.set_listen_fds,
     )
 
@@ -162,7 +187,7 @@ def send_fds_and_popen(opts, **popen_kwargs):
 # Here is a manual smoke test that should print nothing and exit with code 1.
 #     buck run //fs_image:send-fds-and-run -- --no-set-listen-fds -- \
 #         printenv LISTEN_FDS LISTEN_PID ; echo $?
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     init_logging()
     opts = parse_opts(sys.argv[1:])
     with send_fds_and_popen(opts) as proc:

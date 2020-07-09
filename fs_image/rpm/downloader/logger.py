@@ -8,6 +8,7 @@
 try:
     from .facebook.logger import log_sample, init_sample_logging  # noqa: F401
 except ImportError:  # pragma: no cover
+
     def log_sample(*args, **kwargs):
         pass
 

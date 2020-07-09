@@ -24,17 +24,22 @@ log = get_file_logger(__file__)
 
 
 # This should realistically only fail on HTTP errors
-@retryable("Download failed: {repo.name} from {repo.base_url}", REPOMD_MAX_RETRY_S)
+@retryable(
+    "Download failed: {repo.name} from {repo.base_url}", REPOMD_MAX_RETRY_S
+)
 def _download_repomd(
     repo: YumDnfConfRepo, repo_universe: str
 ) -> Tuple[YumDnfConfRepo, str, RepoMetadata]:
-    with download_resource(repo.base_url, "repodata/repomd.xml") as repomd_stream:
+    with download_resource(
+        repo.base_url, "repodata/repomd.xml"
+    ) as repomd_stream:
         repomd = RepoMetadata.new(xml=repomd_stream.read())
     return repo, repo_universe, repomd
 
 
 def _download_repomds(
-    repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]], cfg: DownloadConfig
+    repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]],
+    cfg: DownloadConfig,
 ) -> Iterator[DownloadResult]:
     """Downloads all repo metadatas concurrently"""
     with ThreadPoolExecutor(max_workers=cfg.threads) as executor:
@@ -44,11 +49,14 @@ def _download_repomds(
         ]
         for future in as_completed(futures):
             repo, repo_universe, repomd = future.result()
-            yield DownloadResult(repo=repo, repo_universe=repo_universe, repomd=repomd)
+            yield DownloadResult(
+                repo=repo, repo_universe=repo_universe, repomd=repomd
+            )
 
 
 def gen_repomds_from_repos(
-    repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]], cfg: DownloadConfig
+    repos_and_universes: Iterable[Tuple[YumDnfConfRepo, str]],
+    cfg: DownloadConfig,
 ) -> Iterator[DownloadResult]:
     # Concurrently download repomds and aggregate results
     repomd_results = list(_download_repomds(repos_and_universes, cfg))

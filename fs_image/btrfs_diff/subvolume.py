@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 Much of the data in our mock VFS layer lies at the level of inodes
 (see `incomplete_inode.py`, `inode.py`, etc).  `Subvolume` in the
 next level up -- it maps paths to inodes.
@@ -26,26 +26,38 @@ mutate its state.
   specified by the standard.
 
 - Maximum path lengths are not checked.
-'''
+"""
 import os
-
 from types import MappingProxyType
 from typing import (
-    Any, Coroutine, Mapping, NamedTuple, Optional, Sequence,
-    Tuple, Union, ValuesView
+    Any,
+    Coroutine,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    ValuesView,
 )
 
 from .coroutine_utils import while_not_exited
 from .extents_to_chunks import extents_to_chunks_with_clones
 from .freeze import freeze
+from .incomplete_inode import (
+    IncompleteDevice,
+    IncompleteDir,
+    IncompleteFifo,
+    IncompleteFile,
+    IncompleteInode,
+    IncompleteSocket,
+    IncompleteSymlink,
+)
 from .inode import Chunk, Inode
 from .inode_id import InodeID, InodeIDMap
-from .incomplete_inode import (
-    IncompleteDevice, IncompleteDir, IncompleteFifo, IncompleteFile,
-    IncompleteInode, IncompleteSocket, IncompleteSymlink,
-)
-from .send_stream import SendStreamItem, SendStreamItems
 from .rendered_tree import RenderedTree, TraversalIDMaker
+from .send_stream import SendStreamItem, SendStreamItems
+
 
 _DUMP_ITEM_TO_INCOMPLETE_INODE = {
     SendStreamItems.mkdir: IncompleteDir,
@@ -60,7 +72,7 @@ _DUMP_ITEM_TO_INCOMPLETE_INODE = {
 # Future: `deepfrozen` would let us lose the `new` methods on NamedTuples,
 # and avoid `deepcopy`.
 class Subvolume(NamedTuple):
-    '''
+    """
     Models a btrfs subvolume, knows how to apply SendStreamItem mutations
     to itself.
 
@@ -83,7 +95,8 @@ class Subvolume(NamedTuple):
       - `IncompleteInode` descendants are correctly deepcopy-able despite
         the fact that `Extent` relies on object identity for clone-tracking.
         This is explained in the submodule docblock.
-    '''
+    """
+
     # Inodes & inode maps are per-subvolume because btrfs treats subvolumes
     # as independent entities -- we cannot `rename` or hard-link data across
     # subvolumes, both fail with `EXDEV (Invalid cross-device link)`.
@@ -96,15 +109,15 @@ class Subvolume(NamedTuple):
     id_to_inode: Mapping[Optional[InodeID], Union[IncompleteInode, Inode]]
 
     @classmethod
-    def new(cls, *, id_map, **kwargs) -> 'Subvolume':
-        kwargs.setdefault('id_to_inode', {})
-        kwargs['id_to_inode'][id_map.get_id(b'.')] = IncompleteDir(
-            item=SendStreamItems.mkdir(path=b'.'),
+    def new(cls, *, id_map, **kwargs) -> "Subvolume":
+        kwargs.setdefault("id_to_inode", {})
+        kwargs["id_to_inode"][id_map.get_id(b".")] = IncompleteDir(
+            item=SendStreamItems.mkdir(path=b".")
         )
         return cls(id_map=id_map, **kwargs)
 
     def inode_at_path(
-        self, path: bytes,
+        self, path: bytes
     ) -> Optional[Union[IncompleteInode, Inode]]:
         id = self.id_map.get_id(path)
         # Using `[]` instead of `.get()` to assert that `id_to_inode`
@@ -112,11 +125,11 @@ class Subvolume(NamedTuple):
         return None if id is None else self.id_to_inode[id]
 
     def _require_inode_at_path(
-        self, item: SendStreamItem, path: bytes,
+        self, item: SendStreamItem, path: bytes
     ) -> Union[IncompleteInode, Inode]:
         ino = self.inode_at_path(path)
         if ino is None:
-            raise RuntimeError(f'Cannot apply {item}, {path} does not exist')
+            raise RuntimeError(f"Cannot apply {item}, {path} does not exist")
         return ino
 
     def _delete(self, path):
@@ -138,12 +151,12 @@ class Subvolume(NamedTuple):
                 return  # Done applying item
 
         if isinstance(item, SendStreamItems.rename):
-            if item.dest.startswith(item.path + b'/'):
-                raise RuntimeError(f'{item} makes path its own subdirectory')
+            if item.dest.startswith(item.path + b"/"):
+                raise RuntimeError(f"{item} makes path its own subdirectory")
 
             old_id = self.id_map.get_id(item.path)
             if old_id is None:
-                raise RuntimeError(f'source of {item} does not exist')
+                raise RuntimeError(f"source of {item} does not exist")
             new_id = self.id_map.get_id(item.dest)
 
             # Per `rename (2)`, renaming same-inode links has NO effect o_O
@@ -161,12 +174,12 @@ class Subvolume(NamedTuple):
                 # _delete() below will ensure that the destination is empty
                 if not isinstance(new_ino, IncompleteDir):
                     raise RuntimeError(
-                        f'{item} cannot overwrite {new_ino}, since a '
-                        'directory may only overwrite an empty directory'
+                        f"{item} cannot overwrite {new_ino}, since a "
+                        "directory may only overwrite an empty directory"
                     )
             elif isinstance(self.id_to_inode[new_id], IncompleteDir):
                 raise RuntimeError(
-                    f'{item} cannot overwrite a directory with a non-directory'
+                    f"{item} cannot overwrite a directory with a non-directory"
                 )
             self._delete(item.dest)
             self.id_map.rename_path(item.path, item.dest)
@@ -174,41 +187,41 @@ class Subvolume(NamedTuple):
             # symbolic link, they get treated just as regular files.
         elif isinstance(item, SendStreamItems.unlink):
             if isinstance(self.inode_at_path(item.path), IncompleteDir):
-                raise RuntimeError(f'Cannot {item} a directory')
+                raise RuntimeError(f"Cannot {item} a directory")
             self._delete(item.path)
         elif isinstance(item, SendStreamItems.rmdir):
             if not isinstance(self.inode_at_path(item.path), IncompleteDir):
-                raise RuntimeError(f'Can only {item} a directory')
+                raise RuntimeError(f"Can only {item} a directory")
             self._delete(item.path)
         elif isinstance(item, SendStreamItems.link):
             if self.id_map.get_id(item.path) is not None:
-                raise RuntimeError(f'Destination of {item} already exists')
+                raise RuntimeError(f"Destination of {item} already exists")
             old_id = self.id_map.get_id(item.dest)
             if old_id is None:
-                raise RuntimeError(f'{item} source does not exist')
+                raise RuntimeError(f"{item} source does not exist")
             if isinstance(self.id_to_inode[old_id], IncompleteDir):
-                raise RuntimeError(f'Cannot {item} a directory')
+                raise RuntimeError(f"Cannot {item} a directory")
             self.id_map.add_file(old_id, item.path)
         else:  # Any other operation must be handled at inode scope.
             ino = self.inode_at_path(item.path)
             if ino is None:
-                raise RuntimeError(f'Cannot apply {item}, path does not exist')
+                raise RuntimeError(f"Cannot apply {item}, path does not exist")
             # pyre-fixme[16]: Inode doesn't have apply_item() ...
             self._require_inode_at_path(item, item.path).apply_item(item=item)
 
     def apply_clone(
-        self, item: SendStreamItems.clone, from_subvol: 'Subvolume',
+        self, item: SendStreamItems.clone, from_subvol: "Subvolume"
     ):
         assert isinstance(item, SendStreamItems.clone)
         # pyre-fixme[16]: Inode doesn't have apply_clone() ...
         return self._require_inode_at_path(item, item.path).apply_clone(
-            item, from_subvol._require_inode_at_path(item, item.from_path),
+            item, from_subvol._require_inode_at_path(item, item.from_path)
         )
 
     # Exposed as a method for the benefit of `SubvolumeSet`.
     def _inode_ids_and_extents(self):
         for id, ino in self.id_to_inode.items():
-            if hasattr(ino, 'extent'):
+            if hasattr(ino, "extent"):
                 yield (id, ino.extent)
 
     def freeze(
@@ -217,7 +230,7 @@ class Subvolume(NamedTuple):
         _memo,
         id_to_chunks: Optional[Mapping[InodeID, Sequence[Chunk]]] = None,
     ):
-        '''
+        """
         Returns a recursively immutable copy of `self`, replacing
         `IncompleteInode`s by `Inode`s, using the provided `id_to_chunks` to
         populate them with `Chunk`s instead of `Extent`s.
@@ -226,25 +239,31 @@ class Subvolume(NamedTuple):
 
         IMPORTANT: Our lookups assume that the `id_to_chunks` has the
         pre-`freeze` variants of the `InodeID`s.
-        '''
+        """
         if id_to_chunks is None:
-            id_to_chunks = dict(extents_to_chunks_with_clones(
-                list(self._inode_ids_and_extents()),
-            ))
+            id_to_chunks = dict(
+                extents_to_chunks_with_clones(
+                    list(self._inode_ids_and_extents())
+                )
+            )
         return type(self)(
             id_map=freeze(self.id_map, _memo=_memo),
-            id_to_inode=MappingProxyType({
-                freeze(id, _memo=_memo):
-                        # pyre-fixme[6]: id is Optional[InodeID] not InodeID
-                        freeze(ino, _memo=_memo, chunks=id_to_chunks.get(id))
+            id_to_inode=MappingProxyType(
+                {
+                    freeze(id, _memo=_memo):
+                    # pyre-fixme[6]: id is Optional[InodeID] not InodeID
+                    freeze(ino, _memo=_memo, chunks=id_to_chunks.get(id))
                     for id, ino in self.id_to_inode.items()
-            }),
+                }
+            ),
         )
 
     def inodes(self) -> ValuesView[Union[Inode, IncompleteInode]]:
         return self.id_to_inode.values()
 
-    def gather_bottom_up(self, top_path=b'.') -> Coroutine[
+    def gather_bottom_up(
+        self, top_path=b"."
+    ) -> Coroutine[
         Tuple[
             bytes,  # full path to current inode
             Union[Inode, IncompleteInode],  # the current inode
@@ -255,7 +274,7 @@ class Subvolume(NamedTuple):
         Any,  # send -- whatever result type we are aggregating.
         Any,  # return -- the final result, whatever you sent for `top_path`
     ]:
-        '''
+        """
         A deterministic bottom-up traversal for aggregating results from the
         leaves of a filesystem up to a root.  Used by `render()`, but also
         good for content hashing, disk usage statistics, search, etc.
@@ -296,7 +315,7 @@ class Subvolume(NamedTuple):
             # the same as `result` in this case.
 
         See also: `rendered_tree.gather_bottom_up()`
-        '''
+        """
         ino_id = self.id_map.get_id(top_path)
         assert ino_id is not None, f'"{top_path}" does not exist!'
         child_paths = self.id_map.get_children(ino_id)
@@ -308,20 +327,20 @@ class Subvolume(NamedTuple):
         else:
             child_results = {}
             for child_path in sorted(child_paths):
-                child_results[os.path.relpath(child_path, top_path)] = (
-                    yield from self.gather_bottom_up(child_path)
-                )
+                child_results[
+                    os.path.relpath(child_path, top_path)
+                ] = yield from self.gather_bottom_up(child_path)
         # pyre-fixme[7]: what even?!
         return (  # noqa: B901
             yield (top_path, self.id_to_inode[ino_id], child_results)
         )
 
-    def map_bottom_up(self, fn, top_path=b'.') -> RenderedTree:
-        '''
+    def map_bottom_up(self, fn, top_path=b".") -> RenderedTree:
+        """
         Applies `fn` to each inode from `top_path` down, in the
         deterministic order of `gather_bottom_up`.  Returns the results
         assembled into `RenderedTree`.
-        '''
+        """
         with while_not_exited(self.gather_bottom_up(top_path)) as ctx:
             result = None
             while True:
@@ -329,19 +348,28 @@ class Subvolume(NamedTuple):
                 ret = fn(ino)
                 # Observe that this emits `[ret, {}]` for empty dirs to
                 # structurally distinguish them from files.
-                result = [ret] if child_results is None else [ret, {
-                    child_name.decode(errors='surrogateescape'): child_result
-                        for child_name, child_result in child_results.items()
-                }]
+                result = (
+                    [ret]
+                    if child_results is None
+                    else [
+                        ret,
+                        {
+                            child_name.decode(
+                                errors="surrogateescape"
+                            ): child_result
+                            for child_name, child_result in child_results.items()
+                        },
+                    ]
+                )
         return ctx.result
 
-    def render(self, top_path=b'.') -> RenderedTree:
-        '''
+    def render(self, top_path=b".") -> RenderedTree:
+        """
         Produces a JSON-friendly plain-old-data view of the Subvolume.
         Before this is actually JSON-ready, you will need to call one of the
         `emit_*_traversal_ids` functions.  Read the docblock of
         `rendered_tree.py` for more details.
-        '''
+        """
         id_maker = TraversalIDMaker()
         return self.map_bottom_up(
             lambda ino: id_maker.next_with_nonce(id(ino)).wrap(repr(ino)),

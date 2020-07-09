@@ -5,12 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import enum
-import os
 import logging
+import os
 import subprocess
 import sys
-
 from typing import AnyStr, Iterable, List
+
 
 # This module is never __main__, so the module name should be sane
 log = logging.getLogger(__name__)
@@ -29,14 +29,14 @@ class Namespace(enum.Enum):
     #
     # CGROUP = '--cgroup'
     # IPC = '--ipc'
-    MOUNT = '--mount'
+    MOUNT = "--mount"
     # NETWORK = '--net'
-    PID = '--pid'
+    PID = "--pid"
     # UTS = '--uts'
 
 
 class Unshare:
-    '''
+    """
     This context manager lets a non-root process run commands inside a set
     of Linux namespaces, either as root, or as the original user.
 
@@ -83,14 +83,14 @@ class Unshare:
     setting to the original effective UID/GID after `nsenter` definitely
     does not restore the SAME authentication context that the parent has --
     it's just an approximation (e.g. supplementary groups are dropped).
-    '''
+    """
 
     _NS_TO_PROC_FILENAME = {
         # Namespace.CGROUP: 'cgroup',
         # Namespace.IPC: 'ipc',
-        Namespace.MOUNT: 'mnt',
+        Namespace.MOUNT: "mnt",
         # Namespace.NETWORK: 'net',
-        Namespace.PID: 'pid',
+        Namespace.PID: "pid",
         # Namespace.UTS: 'uts',
     }
     assert set(Namespace) == set(_NS_TO_PROC_FILENAME.keys())
@@ -104,8 +104,8 @@ class Unshare:
         self._namespace_to_file = None
         self._root_fd = None
 
-    def __enter__(self) -> 'Unshare':
-        assert not self._keepalive_proc, 'Unshare is not reentrant'
+    def __enter__(self) -> "Unshare":
+        assert not self._keepalive_proc, "Unshare is not reentrant"
         # This `cat` keeps alive our mount + PID namespaces. It exits when
         # its input pipe closes, which is much cleaner than having to `sudo
         # kill $PID_OF_SUDO` and hoping for the best.  This FD-based
@@ -115,25 +115,36 @@ class Unshare:
         #
         # NBL Since python 3.4, the pipe has O_CLOEXEC, so ownership of the
         # Unshare is truly confined to the creating process.
-        self._keepalive_proc = subprocess.Popen([
-            # NB: `--mount-proc` is NOT passed, even if `Namespace.PID` is
-            # specified.  We use this to populate `self._namespace_to_file`
-            # below, but if `--mount-proc` is necessary, this could be
-            # fixed.  Note also that `--pid` with `--mount-proc` without an
-            # explicit `--mount` should probably always imply `--propagation
-            # unchaged`, or any mount commands wrapped by `nsenter_*`
-            # methods would NOT be visible to the current process.
-            'sudo', 'unshare', *(ns.value for ns in self._namespaces),
-            # Without the additional `sudo` to the parent's euid, the parent
-            # would not be able to open the keepalive's namespaces below.
-            #
-            # This extra `sudo` also means that we don't need to pass
-            # `--fork` to `unshare` for the keepalive `cat` to end up in a
-            # new PID namespace.
-            'sudo', '-u', f'#{os.geteuid()}', '-g', f'#{os.getegid()}',
-            'bash', '-euc',
-            'exec 3< /proc/self/status ; grep ^NSpid <&3 ; exec cat 1>&2',
-        ], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        self._keepalive_proc = subprocess.Popen(
+            [
+                # NB: `--mount-proc` is NOT passed, even if `Namespace.PID` is
+                # specified.  We use this to populate `self._namespace_to_file`
+                # below, but if `--mount-proc` is necessary, this could be
+                # fixed.  Note also that `--pid` with `--mount-proc` without an
+                # explicit `--mount` should probably always imply `--propagation
+                # unchaged`, or any mount commands wrapped by `nsenter_*`
+                # methods would NOT be visible to the current process.
+                "sudo",
+                "unshare",
+                *(ns.value for ns in self._namespaces),
+                # Without the additional `sudo` to the parent's euid, the parent
+                # would not be able to open the keepalive's namespaces below.
+                #
+                # This extra `sudo` also means that we don't need to pass
+                # `--fork` to `unshare` for the keepalive `cat` to end up in a
+                # new PID namespace.
+                "sudo",
+                "-u",
+                f"#{os.geteuid()}",
+                "-g",
+                f"#{os.getegid()}",
+                "bash",
+                "-euc",
+                "exec 3< /proc/self/status ; grep ^NSpid <&3 ; exec cat 1>&2",
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
         try:
             # `sudo` keeps stdout open, so we have to read just 1 line.
             nspid_out = self._keepalive_proc.stdout.readline().split()
@@ -153,9 +164,9 @@ class Unshare:
             rc = self._keepalive_proc.poll()
             assert not rc, f"keepalive process exited unexpectedly {rc}"
             assert nspid_out, "failed to collect namespace pid"
-            assert nspid_out[0] == b'NSpid:', nspid_out
+            assert nspid_out[0] == b"NSpid:", nspid_out
             if Namespace.PID in self._namespaces:
-                assert nspid_out[-1] == b'1', nspid_out
+                assert nspid_out[-1] == b"1", nspid_out
                 ns_pid = int(nspid_out[-2])
             else:
                 ns_pid = int(nspid_out[-1])
@@ -168,12 +179,11 @@ class Unshare:
             # The only thing that works is to re-use the root FD that
             # belongs to the `unshare`d `cat` -- and we must `open` it, so
             # as not to depend on the `cat` staying alive.
-            self._root_fd = os.open(f'/proc/{ns_pid}/root', 0)
+            self._root_fd = os.open(f"/proc/{ns_pid}/root", 0)
             self._namespace_to_file = {}
             for ns in self._namespaces:
                 self._namespace_to_file[ns] = open(
-                    f'/proc/{ns_pid}/ns/{self._NS_TO_PROC_FILENAME[ns]}',
-                    'rb'
+                    f"/proc/{ns_pid}/ns/{self._NS_TO_PROC_FILENAME[ns]}", "rb"
                 )
             # At this point, the current process has FDs for all the
             # unshared namespaces, so the `nsenter_*` methods need not rely
@@ -211,7 +221,7 @@ class Unshare:
                 #     File "<stdin>", line 2, in <module>
                 #     ZeroDivisionError: division by zero
                 except BaseException:  # pragma: no cover
-                    log.exception(f'Closing namespace file {f.name}')
+                    log.exception(f"Closing namespace file {f.name}")
             self._namespace_to_file = None
 
         try:
@@ -219,23 +229,25 @@ class Unshare:
                 os.close(self._root_fd)
         # Same coverage story as above for the `f.close()`
         except BaseException:  # pragma: no cover
-            log.exception(f'Closing root directory FD {self._root_fd}')
+            log.exception(f"Closing root directory FD {self._root_fd}")
         self._root_fd = None
 
         if self._keepalive_proc:
             try:
                 self._keepalive_proc.stdin.close()  # "Normally" won't fail
                 if self._keepalive_proc.wait() != 0:  # prag
-                    log.warning('Unshare keepalive exited with {}'.format(
-                        self._keepalive_proc.returncode
-                    ))
+                    log.warning(
+                        "Unshare keepalive exited with {}".format(
+                            self._keepalive_proc.returncode
+                        )
+                    )
             finally:
                 self._keepalive_proc = None
             # By this point, the namespaces should be getting torn down.
 
     def _nsenter_args(self) -> List[str]:
         if self._namespace_to_file is None:
-            raise RuntimeError('Must nsenter from inside an Unshare context')
+            raise RuntimeError("Must nsenter from inside an Unshare context")
         # The namespace FDs are O_CLOEXEC, so they are only accessible
         # through the current process.
         cur_pid = os.getpid()
@@ -249,34 +261,40 @@ class Unshare:
             # the advantage of presenting the target process with a
             # predictable working directory (compare: `unshare -m` changes
             # the working directory to `/`, while `unshare -p` does not).
-            f'--root=/proc/{cur_pid}/fd/{self._root_fd}', '--wd=.',
+            f"--root=/proc/{cur_pid}/fd/{self._root_fd}",
+            "--wd=.",
             *(
-                f'{ns.value}=/proc/{cur_pid}/fd/{f.fileno()}'
-                    for ns, f in self._namespace_to_file.items()
+                f"{ns.value}=/proc/{cur_pid}/fd/{f.fileno()}"
+                for ns, f in self._namespace_to_file.items()
             ),
         ]
 
     def nsenter_as_root(self, *cmd: List[AnyStr]) -> List[AnyStr]:
-        return ['sudo', 'nsenter', *self._nsenter_args(), *cmd]
+        return ["sudo", "nsenter", *self._nsenter_args(), *cmd]
 
     def nsenter_as_user(self, *cmd: List[AnyStr]) -> List[AnyStr]:
         return [
-            'sudo', 'nsenter', *self._nsenter_args(),
+            "sudo",
+            "nsenter",
+            *self._nsenter_args(),
             # Pretend we did not `sudo` (see the note in the class docstring)
-            '--setuid', str(os.geteuid()), '--setgid', str(os.getegid()),
+            "--setuid",
+            str(os.geteuid()),
+            "--setgid",
+            str(os.getegid()),
             *cmd,
         ]
 
 
 def nsenter_as_root(unshare, *cmd: List[AnyStr]) -> List[AnyStr]:
-    'Unshare.nsenter_as_root that also handles unshare=None'
+    "Unshare.nsenter_as_root that also handles unshare=None"
     if unshare is None:
-        return ('sudo', *cmd)
+        return ("sudo", *cmd)
     return unshare.nsenter_as_root(*cmd)
 
 
 def nsenter_as_user(unshare, *cmd: List[AnyStr]) -> List[AnyStr]:
-    'Unshare.nsenter_as_user that also handles unshare=None'
+    "Unshare.nsenter_as_user that also handles unshare=None"
     if unshare is None:
         return cmd
     return unshare.nsenter_as_user(*cmd)

@@ -8,18 +8,19 @@ import io
 import textwrap
 import unittest
 
-from ..yum_dnf_conf import YumDnf, YumDnfConfRepo, YumDnfConfParser
+from ..yum_dnf_conf import YumDnf, YumDnfConfParser, YumDnfConfRepo
 
 
 # This is the base class for two test classes at the bottom of the file.
 class YumDnfConfTestCaseImpl:
-
     def setUp(self):
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
-        conf_str = io.StringIO(textwrap.dedent('''\
+        conf_str = io.StringIO(
+            textwrap.dedent(
+                """\
         # Unfortunately, comments are discarded by ConfigParser, but I don't
         # want to depend on `ConfigObj` or `iniparse` for this.
         [main]
@@ -35,50 +36,65 @@ class YumDnfConfTestCaseImpl:
         gpgkey=https://example.com/zupa
         \thttps://example.com/super/safe
         enabled=1
-        '''))
+        """
+            )
+        )
         self.conf = YumDnfConfParser(self._YUM_DNF, conf_str)
 
     def test_gen_repos(self):
-        self.assertEqual([
-            YumDnfConfRepo('potato', 'file:///pot.at/to', ()),
-            YumDnfConfRepo(
-                name='oleander',
-                base_url='http://example.com/oleander',
-                gpg_key_urls=(
-                    'https://example.com/zupa',
-                    'https://example.com/super/safe',
+        self.assertEqual(
+            [
+                YumDnfConfRepo("potato", "file:///pot.at/to", ()),
+                YumDnfConfRepo(
+                    name="oleander",
+                    base_url="http://example.com/oleander",
+                    gpg_key_urls=(
+                        "https://example.com/zupa",
+                        "https://example.com/super/safe",
+                    ),
                 ),
-            ),
-        ], list(self.conf.gen_repos()))
+            ],
+            list(self.conf.gen_repos()),
+        )
 
     def test_isolate_repos(self):
-        isolated_repos = [YumDnfConfRepo(
-            name='potato',
-            base_url='https://example.com/potato',
-            gpg_key_urls=('file:///much/secure/so/hack_proof', 'https://cat'),
-        )]
-        with self.assertRaisesRegex(AssertionError, 'Failed to isolate '):
+        isolated_repos = [
+            YumDnfConfRepo(
+                name="potato",
+                base_url="https://example.com/potato",
+                gpg_key_urls=(
+                    "file:///much/secure/so/hack_proof",
+                    "https://cat",
+                ),
+            )
+        ]
+        with self.assertRaisesRegex(AssertionError, "Failed to isolate "):
             self.conf.isolate().isolate_repos(isolated_repos)
-        isolated_repos.append(YumDnfConfRepo(
-            name='oleander',
-            base_url='https://zupa.example.com/sup',
-            gpg_key_urls=(),
-        ))
+        isolated_repos.append(
+            YumDnfConfRepo(
+                name="oleander",
+                base_url="https://zupa.example.com/sup",
+                gpg_key_urls=(),
+            )
+        )
 
         out = io.StringIO()
         self.conf.isolate().isolate_repos(isolated_repos).isolate_main(
-            config_path='/config_path',
-            versionlock_dir='/versionlock_dir',
+            config_path="/config_path", versionlock_dir="/versionlock_dir"
         ).write(out)
 
-        extra_directives = ''
+        extra_directives = ""
         if self._YUM_DNF == YumDnf.yum:
-            extra_directives = textwrap.dedent('''\
+            extra_directives = textwrap.dedent(
+                """\
                 skip_missing_names_on_install = 0
                 skip_missing_names_on_update = 0
-            ''')
+            """
+            )
 
-        self.assertEqual(textwrap.dedent('''\
+        self.assertEqual(
+            textwrap.dedent(
+                """\
         [main]
         debuglevel = 2
         gpgcheck = 1
@@ -109,15 +125,18 @@ class YumDnfConfTestCaseImpl:
         gpgkey =\x20
         enabled = 1
 
-        ''').format(
-            prog_name={
-                # This is deliberately verbose, replacing `self._YUM_DNF.value`
-                # The idea is to assert that the enum values matter.
-                YumDnf.yum: 'yum',
-                YumDnf.dnf: 'dnf',
-            }[self._YUM_DNF],
-            extra_directives=extra_directives,
-        ), out.getvalue())
+        """
+            ).format(
+                prog_name={
+                    # This is deliberately verbose, replacing `self._YUM_DNF.value`
+                    # The idea is to assert that the enum values matter.
+                    YumDnf.yum: "yum",
+                    YumDnf.dnf: "dnf",
+                }[self._YUM_DNF],
+                extra_directives=extra_directives,
+            ),
+            out.getvalue(),
+        )
 
 
 class YumConfTestCase(YumDnfConfTestCaseImpl, unittest.TestCase):

@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-'''
+"""
 Usage:
 
     python3 -m btrfs_diff.examples.sendstream_has_loop_device < sendstream ||
@@ -14,7 +14,7 @@ Reads a send-stream from stdin, prints to stdout the major & minor of the
 first loop or loop-control device found, and returns 0.
 
 Returns 2 if no loops exist, 1 on usage or data errors.
-'''
+"""
 import os
 import sys
 
@@ -56,5 +56,5 @@ def main(argv):
     return 2  # Python would return 1 on raised parse exceptions :)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main(sys.argv))

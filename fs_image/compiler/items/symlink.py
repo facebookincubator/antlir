@@ -6,34 +6,40 @@
 
 import os
 import pwd
-
 from dataclasses import dataclass
-from fs_image.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
+
+from fs_image.compiler.requires_provides import (
+    ProvidesDirectory,
+    ProvidesFile,
+    require_directory,
+    require_file,
+)
+from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.subvol_utils import Subvol
 
-from fs_image.compiler.requires_provides import (
-    ProvidesDirectory, ProvidesFile, require_directory, require_file
-)
-
 from .common import (
-    coerce_path_field_normal_relative, ImageItem, LayerOpts,
-    make_path_normal_relative, generate_work_dir,
+    ImageItem,
+    LayerOpts,
+    coerce_path_field_normal_relative,
+    generate_work_dir,
+    make_path_normal_relative,
 )
 
 
 def _make_rsync_style_dest_path(dest: str, source: str) -> str:
-    '''
+    """
     rsync convention for a destination: "ends/in/slash/" means "write
     into this directory", "does/not/end/with/slash" means "write with
     the specified filename".
-    '''
+    """
 
     # Normalize after applying the rsync convention, since this would
     # remove any trailing / in 'dest'.
     return make_path_normal_relative(
-        os.path.join(dest,
-            os.path.basename(source)) if dest.endswith('/') else dest
+        os.path.join(dest, os.path.basename(source))
+        if dest.endswith("/")
+        else dest
     )
 
 
@@ -45,10 +51,10 @@ class SymlinkBase(ImageItem):
     @classmethod
     def customize_fields(cls, kwargs):
         super().customize_fields(kwargs)
-        coerce_path_field_normal_relative(kwargs, 'source')
+        coerce_path_field_normal_relative(kwargs, "source")
 
-        kwargs['dest'] = _make_rsync_style_dest_path(
-            kwargs['dest'], kwargs['source']
+        kwargs["dest"] = _make_rsync_style_dest_path(
+            kwargs["dest"], kwargs["source"]
         )
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
@@ -69,28 +75,29 @@ class SymlinkBase(ImageItem):
         # the subvolums from outside the container.  We can add an
         # `absolute` option if needed.
         rel_source = abs_source.relpath(dest.dirname())
-        assert os.path.normpath(dest / rel_source).startswith(subvol.path()), \
-            '{self}: A symlink to {rel_source} would point outside the image'
+        assert os.path.normpath(dest / rel_source).startswith(
+            subvol.path()
+        ), "{self}: A symlink to {rel_source} would point outside the image"
         if layer_opts.build_appliance:
             build_appliance = layer_opts.build_appliance
             work_dir = generate_work_dir()
-            rel_dest = work_dir + '/' + self.dest
+            rel_dest = work_dir + "/" + self.dest
             opts = new_nspawn_opts(
                 cmd=[
-                    'ln',
-                    '--symbolic',
-                    '--no-dereference',
+                    "ln",
+                    "--symbolic",
+                    "--no-dereference",
                     rel_source,
                     rel_dest,
                 ],
                 layer=build_appliance,
                 bindmount_rw=[(subvol.path(), work_dir)],
-                user=pwd.getpwnam('root'),
+                user=pwd.getpwnam("root"),
             )
             run_non_booted_nspawn(opts, PopenArgs())
         else:
             subvol.run_as_root(
-                ['ln', '--symbolic', '--no-dereference', rel_source, dest]
+                ["ln", "--symbolic", "--no-dereference", rel_source, dest]
             )
 
 
@@ -107,9 +114,7 @@ class SymlinkToDirItem(SymlinkBase, ImageItem):
 # We should allow symlinks to certain files that will be in the image
 # at runtime but may not be at build time.
 def _whitelisted_symlink_source(source: str) -> bool:
-    return source in [
-        'dev/null',
-    ]
+    return source in ["dev/null"]
 
 
 @dataclass(init=False, frozen=True)

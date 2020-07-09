@@ -36,7 +36,9 @@ class QemuError(Exception):
 
 
 DEFAULT_EXEC_TIMEOUT = timedelta(seconds=60)
-RETRYABLE_CONNECTION_ERRS: Tuple[Type[Exception], ...] = (ConnectionRefusedError,)
+RETRYABLE_CONNECTION_ERRS: Tuple[Type[Exception], ...] = (
+    ConnectionRefusedError,
+)
 STREAM_LIMIT = 2 ** 20  # 1 MB
 
 
@@ -48,7 +50,7 @@ class QemuGuestAgent(object):
 
     @asynccontextmanager
     async def _connect(
-        self
+        self,
     ) -> AsyncContextManager[Tuple[asyncio.StreamReader, asyncio.StreamWriter]]:
         @async_retryable(
             format_msg="Guest_agent failed to open connection",
@@ -70,7 +72,7 @@ class QemuGuestAgent(object):
             sync_id = random.randint(0, sys.maxsize)
             req = {
                 "execute": "guest-sync-delimited",
-                "arguments": {"id": sync_id}
+                "arguments": {"id": sync_id},
             }
             w.write(b"\xFF")
             w.write(json.dumps(req).encode("utf-8"))
@@ -150,7 +152,9 @@ class QemuGuestAgent(object):
                 "--service-type=exec",
                 f"--property=RuntimeMaxSec={str(timeout)}",
             ]
-            systemd_run_args += [f"--setenv={key}={val}" for key, val in env.items()]
+            systemd_run_args += [
+                f"--setenv={key}={val}" for key, val in env.items()
+            ]
             if cwd is not None:
                 systemd_run_args += [f"--working-directory={str(cwd)}"]
             pid = await self._call(
@@ -170,13 +174,24 @@ class QemuGuestAgent(object):
             stderr_printed = 0
             while True:
                 status = await self._call(
-                    {"execute": "guest-exec-status", "arguments": {"pid": pid}}, r, w
+                    {"execute": "guest-exec-status", "arguments": {"pid": pid}},
+                    r,
+                    w,
                 )
-                stdout = base64.b64decode(status.get("out-data", b"")).decode("utf-8")
-                stderr = base64.b64decode(status.get("err-data", b"")).decode("utf-8")
+                stdout = base64.b64decode(status.get("out-data", b"")).decode(
+                    "utf-8"
+                )
+                stderr = base64.b64decode(status.get("err-data", b"")).decode(
+                    "utf-8"
+                )
                 if pipe_output:
                     print(stdout[stdout_printed:], end="", flush=True)
-                    print(stderr[stderr_printed:], end="", flush=True, file=sys.stderr)
+                    print(
+                        stderr[stderr_printed:],
+                        end="",
+                        flush=True,
+                        file=sys.stderr,
+                    )
                 stdout_printed = len(stdout)
                 stderr_printed = len(stderr)
 
@@ -187,12 +202,20 @@ class QemuGuestAgent(object):
     async def cat_file(self, path: os.PathLike) -> bytes:
         async with self._connect() as (r, w):
             handle = await self._call(
-                {"execute": "guest-file-open", "arguments": {"path": str(path)}}, r, w
+                {
+                    "execute": "guest-file-open",
+                    "arguments": {"path": str(path)},
+                },
+                r,
+                w,
             )
             contents = b""
             while True:
                 read = await self._call(
-                    {"execute": "guest-file-read", "arguments": {"handle": handle}},
+                    {
+                        "execute": "guest-file-read",
+                        "arguments": {"handle": handle},
+                    },
                     r,
                     w,
                 )
