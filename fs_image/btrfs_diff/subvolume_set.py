@@ -204,10 +204,11 @@ class SubvolumeSetMutator(NamedTuple):
             assert isinstance(
                 parent_subvol.id_map.inner.description, SubvolumeDescription
             )
-            # pyre-fixme[6]: unsafe(?) deepcopy across different types!!!
-            subvol = copy.deepcopy(parent_subvol, memo={
-                id(parent_subvol.id_map.inner.description): description,
-            })
+            subvol = copy.deepcopy(
+                # pyre-fixme[6]: unsafe(?) deepcopy across different types!!!
+                parent_subvol,
+                memo={id(parent_subvol.id_map.inner.description): description},
+            )
         else:
             subvol = Subvolume.new(
                 id_map=InodeIDMap.new(description=description),

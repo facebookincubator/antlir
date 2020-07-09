@@ -4,6 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+"""
+IMPORTANT: The order of imports in this file is critical, and they must not be
+re-ordered by a formatter.
+
+isort:skip_file
+"""
+# fmt: off
+
 from .storage import Storage, StorageInput, StorageOutput
 from .cli_object_storage import CLIObjectStorage
 

@@ -451,8 +451,13 @@ class DownloadReposTestCase(unittest.TestCase):
             for v in visitors
         }
         self.assertEqual(1, len(visitor_rpm_sets), visitor_rpm_sets)
-        # pyre-fixme [10]: Fix for comprehensions is in next release of Pyre
-        visitor_rpms = [r for v in visitors for r in v.rpms if r.canonical_checksum]
+        visitor_rpms = [
+            r
+            for v in visitors
+            # pyre-fixme [10]: Fix for comprehensions is in next release of Pyre
+            for r in v.rpms
+            if r.canonical_checksum
+        ]
         self.assertEqual(len(visitor_rpms), len(set(visitor_rpms)), visitor_rpms)
 
         # Snapshot & visitors' repodatas agree
