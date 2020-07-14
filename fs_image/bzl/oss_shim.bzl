@@ -14,10 +14,13 @@ def _check_args(rule, args, kwargs, allowed_kwargs):
                 rule,
             ))
 
-def _setify(l):
-    return {k: 1 for k in l}
+def _make_rule_kwargs_dict(lst):
+    # `fs_image_internal_rule` is forwarded to oss_shim_impl.bzl and is used to
+    # mark rules as internal to our fs_image implementation. See further
+    # comments in that file to understand reasoning.
+    return {k: 1 for k in lst + ["fs_image_internal_rule"]}
 
-_CPP_UNITTEST_KWARGS = _setify(
+_CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
     ["name", "deps", "env", "srcs", "tags", "use_default_test_main", "visibility", "external_deps"],
 )
 
@@ -25,7 +28,7 @@ def cpp_unittest(*args, **kwargs):
     _check_args("cpp_unittest", args, kwargs, _CPP_UNITTEST_KWARGS)
     shim.cpp_unittest(**kwargs)
 
-_PYTHON_BINARY_KWARGS = _setify(
+_PYTHON_BINARY_KWARGS = _make_rule_kwargs_dict(
     [
         "name",
         "base_module",
@@ -43,7 +46,7 @@ def python_binary(*args, **kwargs):
     _check_args("python_binary", args, kwargs, _PYTHON_BINARY_KWARGS)
     shim.python_binary(**kwargs)
 
-_PYTHON_LIBRARY_KWARGS = _setify(
+_PYTHON_LIBRARY_KWARGS = _make_rule_kwargs_dict(
     [
         "name",
         "base_module",
@@ -59,7 +62,7 @@ def python_library(*args, **kwargs):
     _check_args("python_library", args, kwargs, _PYTHON_LIBRARY_KWARGS)
     shim.python_library(**kwargs)
 
-_PYTHON_UNITTEST_KWARGS = _setify(
+_PYTHON_UNITTEST_KWARGS = _make_rule_kwargs_dict(
     [
         "base_module",
         "check_types",
@@ -89,6 +92,7 @@ buck_sh_binary = shim.buck_sh_binary
 buck_sh_test = shim.buck_sh_test
 config = shim.config
 default_vm_layer = shim.default_vm_layer
+export_file = shim.export_file
 get_visibility = shim.get_visibility
 kernel_artifact = shim.kernel_artifact
 target_utils = shim.target_utils

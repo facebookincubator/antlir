@@ -231,9 +231,9 @@ def _download_rpms(
             rpm, res_storage_id, bytes_dl = future.result()
             total_bytes_downloaded += bytes_dl
             if not isinstance(res_storage_id, ReportableError):
-                # If it's valid, we store this storage_id in repo_db regardless of
-                # whether we encounter fatal errors later on that fail the snapshot;
-                # see docblock in `repo_downloader.py` for reasoning
+                # If it's valid, we store this storage_id in repo_db regardless
+                # of whether we encounter fatal errors later on that fail the
+                # snapshot; see docblock in `repo_downloader.py` for reasoning
                 with timeit(
                     partial(
                         log_sample,
@@ -268,8 +268,8 @@ def _download_rpms(
                     f"Same ID {res_storage_id} with differing RPMs: "
                     f"{existing_rpm} != {rpm}"
                 )
-                # We don't care if locations diverge because we only need a single
-                # location for a NEVRA to be able to fetch the RPM.
+                # We don't care if locations diverge because we only need a
+                # single location for a NEVRA to be able to fetch the RPM.
                 if existing_rpm._replace(location=None) == rpm._replace(
                     location=None
                 ):

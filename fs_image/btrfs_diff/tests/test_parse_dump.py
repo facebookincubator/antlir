@@ -37,12 +37,10 @@ class ParseBtrfsDumpTestCase(unittest.TestCase):
             unquote_btrfs_progs_path(
                 # Special escapes
                 br"\a\b\e\f\n\r\t\v\ \\"
-                +
                 # Octal escapes
-                "".join(f"\\{ord(c):o}" for c in "XYZ").encode("ascii")
-                +
+                + "".join(f"\\{ord(c):o}" for c in "XYZ").encode("ascii")
                 # Unrecognized escapes will be left alone
-                br"\F\0\O\P"
+                + br"\F\0\O\P"
             ),
         )
 
@@ -171,7 +169,8 @@ class ParseBtrfsDumpTestCase(unittest.TestCase):
                     SendStreamItems.set_xattr(
                         path=b"file", name=b"MY_ATTR", data=data
                     ),
-                    # The `--dump` line does NOT show the \0, the parser infers it.
+                    # The `--dump` line does NOT show the \0, the parser infers
+                    # it.
                 ],
                 _parse_lines_to_list(make_lines(len_v=len(data))),
             )

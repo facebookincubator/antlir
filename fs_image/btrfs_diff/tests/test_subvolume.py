@@ -278,10 +278,16 @@ class SubvolumeTestCase(DeepCopyTestCase):
                 {
                     "wolf": ["(Char m444 4321)"],
                     "tamaskan": [
-                        "(File m700 d3h7(tiger@dolly:0+5@2)d10(tiger@dolly:5+5@0))"
+                        (
+                            "(File m700 d3h7(tiger@dolly:0+5@2)d10"
+                            "(tiger@dolly:5+5@0))"
+                        )
                     ],
                     "dolly": [
-                        "(File h5(tiger@tamaskan:5+5@0)d5(tiger@tamaskan:10+5@0))"
+                        (
+                            "(File h5(tiger@tamaskan:5+5@0)d5"
+                            "(tiger@tamaskan:10+5@0))"
+                        )
                     ],
                 },
             ],

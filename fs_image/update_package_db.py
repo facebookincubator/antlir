@@ -242,8 +242,8 @@ def _get_updated_db(
         for package, in_tag_to_update_opts in explicit_updates.items():
             out_tag_to_update_opts = updates.setdefault(package, {})
             for tag, update_opts in in_tag_to_update_opts.items():
-                seen_before = tag in out_tag_to_update_opts or tag in existing_db.get(
-                    package, {}
+                seen_before = (tag in out_tag_to_update_opts) or (
+                    tag in existing_db.get(package, {})
                 )
                 if explicit_updates is create_items:
                     assert not seen_before, (package, tag)

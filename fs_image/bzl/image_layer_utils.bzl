@@ -12,6 +12,7 @@ def _add_run_in_subvol_target(name, kind, extra_args = None):
         ),
         exe = "//fs_image/nspawn_in_subvol:run",
         visibility = [],
+        fs_image_internal_rule = True,
     )
 
 def _image_layer_impl(

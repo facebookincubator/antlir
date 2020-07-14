@@ -6,7 +6,6 @@
 
 "There is not a whole lot to test, but this does get us basic coverage."
 import hashlib
-import os
 import unittest
 
 from ..common import Checksum

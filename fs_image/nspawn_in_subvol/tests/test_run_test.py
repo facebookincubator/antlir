@@ -95,7 +95,7 @@ class NspawnTestInSubvolTestCase(unittest.TestCase):
                         "-c",
                         " ".join(
                             [
-                                f"GTEST_OUTPUT=xml:>(cat >&37)",
+                                "GTEST_OUTPUT=xml:>(cat >&37)",
                                 "exec",
                                 *cmd[:-1],
                                 """'--e"f'""",  # Yes, it's shell-quoted

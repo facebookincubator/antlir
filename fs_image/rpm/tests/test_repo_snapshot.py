@@ -7,7 +7,6 @@
 import json
 import os
 import sqlite3
-import tempfile
 import unittest
 import unittest.mock
 
@@ -147,6 +146,9 @@ class RepoSnapshotTestCase(unittest.TestCase):
                     "size": rpm_base.size,
                     "source_rpm": rpm_base.source_rpm,
                 }
+                file_integrity_err_msg = error_file_integrity.to_dict()[
+                    "message"
+                ]
                 self.assertEqual(
                     sorted(
                         json.dumps(row, sort_keys=True)
@@ -164,13 +166,12 @@ class RepoSnapshotTestCase(unittest.TestCase):
                                 "error": "file_integrity",
                                 "error_json": json.dumps(
                                     {
-                                        "message": error_file_integrity.to_dict()[
-                                            "message"
-                                        ],
+                                        "message": file_integrity_err_msg,
                                         "location": rpm_file_integrity.location,
                                         "failed_check": "size",
-                                        # These are stringified because they might have
-                                        # been checksums...  seems OK for now.
+                                        # These are stringified because they
+                                        # might have been checksums...  seems OK
+                                        # for now.
                                         "expected": "42",
                                         "actual": "7",
                                     },

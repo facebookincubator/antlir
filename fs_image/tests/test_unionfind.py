@@ -27,7 +27,8 @@ class TestUnionFind(unittest.TestCase):
         self.assertEqual(self.union_find._parent(3), 1)
 
     def test_flatten(self):
-        """Tests implementation of flatten(), which should do find on all keys"""
+        """Tests implementation of flatten(), which should do find on all keys
+        """
         self.union_find.add(1)
         self.union_find.union(3, 2)
         self.union_find.union(7, 5)
@@ -89,7 +90,7 @@ class TestUnionFind(unittest.TestCase):
             count += 1
         self.assertEqual(count, 3)
 
-        keys = [x for x in union_find]
+        keys = list(union_find)
         self.assertEqual(keys[0], 1)
 
     def test_iteritems(self):

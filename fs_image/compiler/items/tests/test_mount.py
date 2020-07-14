@@ -61,6 +61,31 @@ class MountItemTestCase(BaseItemTestCase):
                 ),
             )
 
+            mount = [
+                "(Dir)",
+                {
+                    "lala": [
+                        "(Dir)",
+                        {
+                            "MOUNT": [
+                                "(Dir)",
+                                {
+                                    "is_directory": ["(File d2)"],
+                                    "build_source": [
+                                        "(Dir)",
+                                        {
+                                            "type": ["(File d5)"],
+                                            "source": [
+                                                f'(File d{len("/dev/null")+1})'
+                                            ],
+                                        },
+                                    ],
+                                },
+                            ]
+                        },
+                    ]
+                },
+            ]
             self.assertEqual(
                 [
                     "(Dir)",
@@ -72,37 +97,10 @@ class MountItemTestCase(BaseItemTestCase):
                                 "private": [
                                     "(Dir)",
                                     {
-                                        # No `opts/artifacts_may_require_repo` here because we
-                                        # directly created the subvol instead of using an Item.
-                                        "mount": [
-                                            "(Dir)",
-                                            {
-                                                "lala": [
-                                                    "(Dir)",
-                                                    {
-                                                        "MOUNT": [
-                                                            "(Dir)",
-                                                            {
-                                                                "is_directory": [
-                                                                    "(File d2)"
-                                                                ],
-                                                                "build_source": [
-                                                                    "(Dir)",
-                                                                    {
-                                                                        "type": [
-                                                                            "(File d5)"
-                                                                        ],
-                                                                        "source": [
-                                                                            f'(File d{len("/dev/null") + 1})'
-                                                                        ],
-                                                                    },
-                                                                ],
-                                                            },
-                                                        ]
-                                                    },
-                                                ]
-                                            },
-                                        ]
+                                        # No `opts/artifacts_may_require_repo`
+                                        # here because we directly created the
+                                        # subvol instead of using an Item.
+                                        "mount": mount
                                     },
                                 ]
                             },
@@ -179,6 +177,41 @@ class MountItemTestCase(BaseItemTestCase):
             )
 
     def _check_subvol_mounts_meow(self, subvol):
+        mount = [
+            "(Dir)",
+            {
+                "meow": [
+                    "(Dir)",
+                    {
+                        "MOUNT": [
+                            "(Dir)",
+                            {
+                                "is_directory": ["(File d2)"],
+                                "build_source": [
+                                    "(Dir)",
+                                    {
+                                        "type": ["(File d6)"],
+                                        "source": [
+                                            f'(File d{len("//fake:path") + 1})'
+                                        ],
+                                    },
+                                ],
+                                "runtime_source": [
+                                    "(Dir)",
+                                    {
+                                        "so": ["(File d3)"],
+                                        "arbitrary": [
+                                            "(Dir)",
+                                            {"j": ["(File d4)"]},
+                                        ],
+                                    },
+                                ],
+                            },
+                        ]
+                    },
+                ]
+            },
+        ]
         self.assertEqual(
             [
                 "(Dir)",
@@ -198,51 +231,7 @@ class MountItemTestCase(BaseItemTestCase):
                                             ]
                                         },
                                     ],
-                                    "mount": [
-                                        "(Dir)",
-                                        {
-                                            "meow": [
-                                                "(Dir)",
-                                                {
-                                                    "MOUNT": [
-                                                        "(Dir)",
-                                                        {
-                                                            "is_directory": [
-                                                                "(File d2)"
-                                                            ],
-                                                            "build_source": [
-                                                                "(Dir)",
-                                                                {
-                                                                    "type": [
-                                                                        "(File d6)"
-                                                                    ],
-                                                                    "source": [
-                                                                        f'(File d{len("//fake:path") + 1})'
-                                                                    ],
-                                                                },
-                                                            ],
-                                                            "runtime_source": [
-                                                                "(Dir)",
-                                                                {
-                                                                    "so": [
-                                                                        "(File d3)"
-                                                                    ],
-                                                                    "arbitrary": [
-                                                                        "(Dir)",
-                                                                        {
-                                                                            "j": [
-                                                                                "(File d4)"
-                                                                            ]
-                                                                        },
-                                                                    ],
-                                                                },
-                                                            ],
-                                                        },
-                                                    ]
-                                                },
-                                            ]
-                                        },
-                                    ],
+                                    "mount": mount,
                                 },
                             ]
                         },

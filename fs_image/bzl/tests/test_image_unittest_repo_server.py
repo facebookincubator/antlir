@@ -8,7 +8,7 @@ import os
 import subprocess
 import unittest
 
-from fs_image.fs_utils import Path, temp_dir
+from fs_image.fs_utils import temp_dir
 from fs_image.rpm.find_snapshot import snapshot_install_dir
 
 

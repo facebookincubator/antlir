@@ -18,7 +18,6 @@ This file has two roles:
 """
 import argparse
 import pwd
-from types import MappingProxyType
 from typing import (
     Any,
     AnyStr,

@@ -43,9 +43,10 @@ def get_volume_for_current_repo(min_free_bytes, artifacts_dir):
     with Path.resource(__package__, "set_up_volume.sh", exe=True) as binary:
         subprocess.check_call(
             [
-                # While Buck probably does not call this concurrently under normal
-                # circumstances, the worst-case outcome is that we lose or corrupt
-                # the whole buld cache, so add some locking to be on the safe side.
+                # While Buck probably does not call this concurrently under
+                # normal circumstances, the worst-case outcome is that we lose
+                # or corrupt the whole buld cache, so add some locking to be on
+                # the safe side.
                 "flock",
                 os.path.join(
                     artifacts_dir, ".lock.set_up_volume.sh.never.rm.or.mv"

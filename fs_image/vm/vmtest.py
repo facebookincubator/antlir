@@ -167,13 +167,14 @@ async def main(
                 file_arguments = list(sync_file)
 
                 for arg in args:
-                    # for any args that look like files make sure that the directory exists
-                    # so that the test binary can write to files that it expects to exist
-                    # (that would normally be created by TestPilot)
+                    # for any args that look like files make sure that the
+                    # directory exists so that the test binary can write to
+                    # files that it expects to exist (that would normally be
+                    # created by TestPilot)
                     dirname = os.path.dirname(arg)
-                    # TestPilot will already create the directories on the host, so as
-                    # another sanity check only create the directories in the VM that
-                    # already exist on the host
+                    # TestPilot will already create the directories on the host,
+                    # so as another sanity check only create the directories in
+                    # the VM that already exist on the host
                     if dirname and os.path.exists(dirname):
                         await vm.exec_sync(("mkdir", "-p", dirname))
                         file_arguments.append(arg)
@@ -192,8 +193,9 @@ async def main(
                 )
 
                 for path in file_arguments:
-                    # copy any files that were written in the guest back to the host so
-                    # that TestPilot can read from where it expects outputs to end up
+                    # copy any files that were written in the guest back to the
+                    # host so that TestPilot can read from where it expects
+                    # outputs to end up
                     outfile_contents = await vm.cat_file(str(path))
                     with open(path, "wb") as out:
                         out.write(outfile_contents)

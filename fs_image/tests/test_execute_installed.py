@@ -11,7 +11,6 @@ Note that the implementation of executables in @mode/dev is quite
 dramatically different from that in @mode/opt, so remember to run both while
 developing to avoid later surprises from CI.
 """
-import os
 import subprocess
 import unittest
 
@@ -19,7 +18,6 @@ from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from fs_image.nspawn_in_subvol.common import nspawn_version
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 
-from ..find_built_subvol import find_built_subvol
 from .layer_resource import layer_resource_subvol
 
 

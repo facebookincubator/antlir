@@ -93,7 +93,6 @@ Invariants:
 Convention: in Python identifiers, the . of the extension maps to __.
 """
 import os
-import shlex
 from typing import Any, List
 
 
@@ -212,7 +211,7 @@ def deserialize_untyped(subvol, path_with_ext: str) -> Any:
         elif ext == "":
             return s.decode()
         else:
-            raise AssertionError(f"Unsupported extension (path_with_ext)")
+            raise AssertionError(f"Unsupported extension {path_with_ext}")
     else:
         raise AssertionError(f"{path_with_ext} is neither a file nor a dir")
 

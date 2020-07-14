@@ -44,7 +44,7 @@ def check_common_rpm_render(test, rendered_subvol, yum_dnf: str):
     # Ignore a bunch of yum / dnf / rpm spam
 
     if yum_dnf == "yum":
-        (ino,) = pop_path(r, f"var/log/yum.log")
+        (ino,) = pop_path(r, "var/log/yum.log")
         test.assertRegex(ino, r"^\(File m600 d[0-9]+\)$")
         for ignore_dir in ["var/cache/yum", "var/lib/yum"]:
             ino, _ = pop_path(r, ignore_dir)

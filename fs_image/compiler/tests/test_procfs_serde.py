@@ -14,7 +14,7 @@ from fs_image.tests.temp_subvolumes import with_temp_subvols
 from ..procfs_serde import deserialize_int, deserialize_untyped, serialize
 
 
-def _render_subvol(subvol: {"Subvol"}):
+def _render_subvol(subvol):
     rendered = render_sendstream(subvol.mark_readonly_and_get_sendstream())
     subvol.set_readonly(False)  # YES, all our subvolumes are read-write.
     return rendered
@@ -121,8 +121,8 @@ class TestProcfsSerDe(unittest.TestCase):
                 "foobar": [
                     "(Dir)",
                     {
-                        "x": [f"(File d2)"],
-                        "y": [f"(File d2)"],
+                        "x": ["(File d2)"],
+                        "y": ["(File d2)"],
                         "z": ["(Dir)", {"a": ["(File d15)"]}],  # Nested dict
                     },
                 ]

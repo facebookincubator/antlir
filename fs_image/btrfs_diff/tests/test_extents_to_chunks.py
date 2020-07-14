@@ -539,172 +539,174 @@ class ExtentsToChunksTestCase(unittest.TestCase):
             )
         )
 
+        expected_dict = {
+            "b": [
+                (
+                    "HOLE/6",
+                    {  # merged: `b_trunc` (5) + `a_hole` (1) = 6
+                        "a:2+1@5",  # `a_hole` original location in `a`
+                        "c:11+1@5",  # `a_hole` from `c.clone(10, a)`
+                        "c:30+1@5",  # `a_hole` from `c.clone(25, b)`
+                        "a:15+1@5",  # `a_hole` from `a.clone(4,c.clone(10,a))`
+                        "a:34+1@5",  # `a_hole` from `a.clone(4,c.clone(25,b))`
+                        "c:25+5@0",  # `b_trunc` from `c.clone(25, b)`
+                        "a:29+5@0",  # `b_trunc` from `a.clone(4,c.clone(25,b))`
+                    },
+                ),
+                (
+                    "DATA/11",
+                    {  # merged: `a_wr` (3) + `b_wr` (8) = 11
+                        "a:3+1@0",  # `a_wr` original location in `a`
+                        "c:12+1@0",  # `a_wr` from `c.clone(10, a)`
+                        "a:16+1@0",  # `a_wr` from `a.clone(4, c.clone(10, a))`
+                        "c:31+3@0",  # `a_wr` from `c.clone(25, b)`
+                        "a:35+3@0",  # `a_wr` from `a.clone(4, c.clone(25, b))`
+                        "c:34+8@3",  # `b_wr` from `c.clone(25, b)`
+                        "a:38+8@3",  # `b_wr` from `a.clone(4, c.clone(25, b))`
+                    },
+                ),
+            ],
+            "c": [
+                ("DATA/10", {"a:4+10@0"}),  # `c_wr`, via `a.clone(4, c)`
+                (
+                    "HOLE/2",
+                    {  # `a_hole`
+                        # `b` instance & its copy in `c`, and the next one in
+                        # `a`
+                        "b:5+1@1",
+                        "c:30+1@1",
+                        "a:34+1@1",
+                        "a:1+2@0",  # original instance in `a`
+                        "a:14+2@0",  # copy of this `c` instance into `a`
+                    },
+                ),
+                (
+                    "DATA/13",
+                    {  # merged `a_wr` (1) + `c_wr` (12) = 13
+                        # `a_wr`: `b` instance, copy in `c`, and it copy in `a`
+                        "b:6+1@0",
+                        "c:31+1@0",
+                        "a:35+1@0",
+                        "a:3+1@0",  # `a_wr`: original instance in `a`
+                        "a:16+1@0",  # `a_wr`: copy of this `c` instance in `a`
+                        "a:17+12@1",  # `c_wr` copy in `a`
+                    },
+                ),
+                # These two are just the copy of `b` inside `c`, so this is
+                # a copy-paste, replacing references into `c`'s copy of `b`
+                # with references into the original `b`.
+                (
+                    "HOLE/6",
+                    {
+                        # `a` clones are unchanged
+                        "a:2+1@5",
+                        "a:15+1@5",
+                        "a:34+1@5",
+                        "a:29+5@0",
+                        # `c` but unchanged, is outside of this copy of `b` in
+                        # `c`
+                        "c:11+1@5",
+                        # In `Inode: b`, these linked to us. We return the
+                        # favor.
+                        "b:0+5@0",
+                        "b:5+1@5",
+                    },
+                ),
+                (
+                    "DATA/11",
+                    {
+                        # unchanged
+                        "a:3+1@0",
+                        "a:16+1@0",
+                        "a:35+3@0",
+                        "a:38+8@3",
+                        "c:12+1@0",
+                        # links to this `c` chunk replaced by `b` counterparts
+                        "b:6+3@0",
+                        "b:9+8@3",
+                    },
+                ),
+            ],
+            "a": [
+                (
+                    "HOLE/3",
+                    {  # `a_hole`
+                        "b:5+1@2",  # `a_hole` copy from `b`
+                        # These are copied with minor changes from b/17, HOLE/6
+                        "c:10+2@1",  # `a_hole` from `c.clone(10, a)`
+                        "c:30+1@2",  # `a_hole` from `c.clone(25, b)`
+                        "a:14+2@1",  # `a_hole` from `a.clone(4,c.clone(10,a))`
+                        "a:34+1@2",  # `a_hole` from `a.clone(4,c.clone(25,b))`
+                    },
+                ),
+                (
+                    "DATA/11",
+                    {  # merged: `a_wr` + `c_wr` from `c` copy
+                        "c:0+10@1",  # original `c_wr`
+                        "b:6+1@0",  # `a_wr` copy from `b`
+                        # These are copied with trivial changes from b/17,
+                        # DATA/11
+                        "c:12+1@0",  # `a_wr` from `c.clone(10, a)`
+                        "a:16+1@0",  # `a_wr` from `a.clone(4, c.clone(10, a))`
+                        "c:31+1@0",  # `a_wr` from `c.clone(25, b)`
+                        "a:35+1@0",  # `a_wr` from `a.clone(4, c.clone(25, b))`
+                    },
+                ),
+                # The rest are copy-pasted from `c`, with the appropriate
+                # references to the current chunk of `a` replaced by the
+                # corresponding link to `c` (subtract 4 from offset).
+                (
+                    "HOLE/2",
+                    {  # `a_hole`
+                        "b:5+1@1",
+                        "c:30+1@1",
+                        "a:34+1@1",
+                        "a:1+2@0",  # copy-pasta
+                        "c:10+2@0",  # `c` counterpart
+                    },
+                ),
+                (
+                    "DATA/13",
+                    {  # merged `a_wr` (1) + `c_wr` (12) = 13
+                        "b:6+1@0",
+                        "c:31+1@0",
+                        "a:35+1@0",
+                        "a:3+1@0",  # copy-pasta
+                        "c:12+1@0",
+                        "c:13+12@1",  # `c` counterparts
+                    },
+                ),
+                (
+                    "HOLE/6",
+                    {
+                        "a:2+1@5",
+                        "a:15+1@5",
+                        "c:11+1@5",
+                        "b:0+5@0",
+                        "b:5+1@5",
+                        "c:30+1@5",
+                        "c:25+5@0",  # `c` counterparts (via `b` copy)
+                    },
+                ),
+                (
+                    "DATA/11",
+                    {
+                        "a:3+1@0",
+                        "a:16+1@0",
+                        "c:12+1@0",
+                        "b:6+3@0",
+                        "b:9+8@3",
+                        "c:31+3@0",
+                        "c:34+8@3",  # `c` counterparts (via `b` copy)
+                    },
+                ),
+            ],
+            "e": [],
+        }
         # I iteratively built this up from the "trimmed leaves" data above,
         # and checked against the real output, one file at a time.  So, this
         # is not just "blind gold data", but a real worked example.
-        self.assertEqual(
-            {
-                "b": [
-                    (
-                        "HOLE/6",
-                        {  # merged: `b_trunc` (5) + `a_hole` (1) = 6
-                            "a:2+1@5",  # `a_hole` original location in `a`
-                            "c:11+1@5",  # `a_hole` from `c.clone(10, a)`
-                            "c:30+1@5",  # `a_hole` from `c.clone(25, b)`
-                            "a:15+1@5",  # `a_hole` from `a.clone(4, c.clone(10, a))`
-                            "a:34+1@5",  # `a_hole` from `a.clone(4, c.clone(25, b))`
-                            "c:25+5@0",  # `b_trunc` from `c.clone(25, b)`
-                            "a:29+5@0",  # `b_trunc` from `a.clone(4, c.clone(25, b))`
-                        },
-                    ),
-                    (
-                        "DATA/11",
-                        {  # merged: `a_wr` (3) + `b_wr` (8) = 11
-                            "a:3+1@0",  # `a_wr` original location in `a`
-                            "c:12+1@0",  # `a_wr` from `c.clone(10, a)`
-                            "a:16+1@0",  # `a_wr` from `a.clone(4, c.clone(10, a))`
-                            "c:31+3@0",  # `a_wr` from `c.clone(25, b)`
-                            "a:35+3@0",  # `a_wr` from `a.clone(4, c.clone(25, b))`
-                            "c:34+8@3",  # `b_wr` from `c.clone(25, b)`
-                            "a:38+8@3",  # `b_wr` from `a.clone(4, c.clone(25, b))`
-                        },
-                    ),
-                ],
-                "c": [
-                    ("DATA/10", {"a:4+10@0"}),  # `c_wr`, via `a.clone(4, c)`
-                    (
-                        "HOLE/2",
-                        {  # `a_hole`
-                            # `b` instance & its copy in `c`, and the next one in `a`
-                            "b:5+1@1",
-                            "c:30+1@1",
-                            "a:34+1@1",
-                            "a:1+2@0",  # original instance in `a`
-                            "a:14+2@0",  # copy of this `c` instance into `a`
-                        },
-                    ),
-                    (
-                        "DATA/13",
-                        {  # merged `a_wr` (1) + `c_wr` (12) = 13
-                            # `a_wr`: `b` instance, copy in `c`, and it copy in `a`
-                            "b:6+1@0",
-                            "c:31+1@0",
-                            "a:35+1@0",
-                            "a:3+1@0",  # `a_wr`: original instance in `a`
-                            "a:16+1@0",  # `a_wr`: copy of this `c` instance into `a`
-                            "a:17+12@1",  # `c_wr` copy in `a`
-                        },
-                    ),
-                    # These two are just the copy of `b` inside `c`, so this is
-                    # a copy-paste, replacing references into `c`'s copy of `b`
-                    # with references into the original `b`.
-                    (
-                        "HOLE/6",
-                        {
-                            # `a` clones are unchanged
-                            "a:2+1@5",
-                            "a:15+1@5",
-                            "a:34+1@5",
-                            "a:29+5@0",
-                            # `c` but unchanged, is outside of this copy of `b` in `c`
-                            "c:11+1@5",
-                            # In `Inode: b`, these linked to us. We return the favor.
-                            "b:0+5@0",
-                            "b:5+1@5",
-                        },
-                    ),
-                    (
-                        "DATA/11",
-                        {
-                            # unchanged
-                            "a:3+1@0",
-                            "a:16+1@0",
-                            "a:35+3@0",
-                            "a:38+8@3",
-                            "c:12+1@0",
-                            # links to this `c` chunk replaced by `b` counterparts
-                            "b:6+3@0",
-                            "b:9+8@3",
-                        },
-                    ),
-                ],
-                "a": [
-                    (
-                        "HOLE/3",
-                        {  # `a_hole`
-                            "b:5+1@2",  # `a_hole` copy from `b`
-                            # These are copied with minor changes from b/17, HOLE/6
-                            "c:10+2@1",  # `a_hole` from `c.clone(10, a)`
-                            "c:30+1@2",  # `a_hole` from `c.clone(25, b)`
-                            "a:14+2@1",  # `a_hole` from `a.clone(4, c.clone(10, a))`
-                            "a:34+1@2",  # `a_hole` from `a.clone(4, c.clone(25, b))`
-                        },
-                    ),
-                    (
-                        "DATA/11",
-                        {  # merged: `a_wr` + `c_wr` from `c` copy
-                            "c:0+10@1",  # original `c_wr`
-                            "b:6+1@0",  # `a_wr` copy from `b`
-                            # These are copied with trivial changes from b/17, DATA/11
-                            "c:12+1@0",  # `a_wr` from `c.clone(10, a)`
-                            "a:16+1@0",  # `a_wr` from `a.clone(4, c.clone(10, a))`
-                            "c:31+1@0",  # `a_wr` from `c.clone(25, b)`
-                            "a:35+1@0",  # `a_wr` from `a.clone(4, c.clone(25, b))`
-                        },
-                    ),
-                    # The rest are copy-pasted from `c`, with the appropriate
-                    # references to the current chunk of `a` replaced by the
-                    # corresponding link to `c` (subtract 4 from offset).
-                    (
-                        "HOLE/2",
-                        {  # `a_hole`
-                            "b:5+1@1",
-                            "c:30+1@1",
-                            "a:34+1@1",
-                            "a:1+2@0",  # copy-pasta
-                            "c:10+2@0",  # `c` counterpart
-                        },
-                    ),
-                    (
-                        "DATA/13",
-                        {  # merged `a_wr` (1) + `c_wr` (12) = 13
-                            "b:6+1@0",
-                            "c:31+1@0",
-                            "a:35+1@0",
-                            "a:3+1@0",  # copy-pasta
-                            "c:12+1@0",
-                            "c:13+12@1",  # `c` counterparts
-                        },
-                    ),
-                    (
-                        "HOLE/6",
-                        {
-                            "a:2+1@5",
-                            "a:15+1@5",
-                            "c:11+1@5",
-                            "b:0+5@0",
-                            "b:5+1@5",
-                            "c:30+1@5",
-                            "c:25+5@0",  # `c` counterparts (via `b` copy)
-                        },
-                    ),
-                    (
-                        "DATA/11",
-                        {
-                            "a:3+1@0",
-                            "a:16+1@0",
-                            "c:12+1@0",
-                            "b:6+3@0",
-                            "b:9+8@3",
-                            "c:31+3@0",
-                            "c:34+8@3",  # `c` counterparts (via `b` copy)
-                        },
-                    ),
-                ],
-                "e": [],
-            },
-            _repr_ids_and_chunks(ids_and_chunks),
-        )
+        self.assertEqual(expected_dict, _repr_ids_and_chunks(ids_and_chunks))
 
 
 if __name__ == "__main__":

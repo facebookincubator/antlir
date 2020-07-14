@@ -107,7 +107,8 @@ async def kernel_vm(
         # https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
         dir=os.getenv("DISK_TEMP"),
     )
-    # TODO: should this size be configurable (or is it possible to dynamically grow)?
+    # TODO: should this size be configurable (or is it possible to dynamically
+    # grow)?
     rwdevice.truncate(1 * 1024 * 1024 * 1024)
 
     shares = process_shares(shares)
@@ -189,7 +190,8 @@ async def kernel_vm(
         else:
             print(
                 "KVM not available - falling back to slower, emulated CPU: "
-                + "see https://our.intern.facebook.com/intern/qa/5312/how-do-i-enable-kvm-on-my-devvm",
+                + "see https://our.intern.facebook.com/intern/qa/5312/"
+                + "how-do-i-enable-kvm-on-my-devvm",
                 file=sys.stderr,
             )
 
@@ -212,7 +214,8 @@ async def kernel_vm(
         if interactive:
             proc = await asyncio.create_subprocess_exec(str(kernel.qemu), *args)
         elif verbose:
-            # don't connect stdin if we are simply in verbose mode and not interactive
+            # don't connect stdin if we are simply in verbose mode and not
+            # interactive
             proc = await asyncio.create_subprocess_exec(
                 str(kernel.qemu), *args, stdin=subprocess.PIPE
             )
@@ -246,7 +249,10 @@ def __qemu_share_args(shares: Iterable[Share]) -> Iterable[str]:
     return chain.from_iterable(
         (
             "-virtfs",
-            f"local,path={share.host_path},security_model=none,readonly,mount_tag={share.mount_tag}",
+            (
+                f"local,path={share.host_path},security_model=none,"
+                f"readonly,mount_tag={share.mount_tag}"
+            ),
         )
         for share in shares
     )

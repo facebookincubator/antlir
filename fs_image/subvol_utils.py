@@ -9,15 +9,7 @@ import platform
 import subprocess
 import time
 from contextlib import contextmanager
-from typing import (
-    AnyStr,
-    BinaryIO,
-    Iterable,
-    Iterator,
-    NamedTuple,
-    Optional,
-    TypeVar,
-)
+from typing import AnyStr, BinaryIO, Iterable, Iterator, NamedTuple, TypeVar
 
 from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
 
@@ -457,7 +449,8 @@ class Subvol:
         if platform.uname().release.startswith("4.6."):  # pragma: no cover
             self.run_as_root(
                 [
-                    # Symlinks can point outside of the subvol, don't follow them
+                    # Symlinks can point outside of the subvol, don't follow
+                    # them
                     "getfattr",
                     "--no-dereference",
                     "--recursive",
@@ -649,8 +642,8 @@ class Subvol:
                 "--mount",
                 "bash",
                 "-c",
-                # Unmount everything that contains the subvol name, that's the dir
-                # *above* the `volume/` path.
+                # Unmount everything that contains the subvol name, that's the
+                # dir *above* the `volume/` path.
                 "(mount |"
                 f" grep {self.path().dirname().basename()} |"
                 " xargs umount "
@@ -848,7 +841,8 @@ class Subvol:
                     [
                         "btrfs",
                         "receive",
-                        # Future: If we get `pass_fds` support, use `/proc/self/fd'
+                        # Future: If we get `pass_fds` support, use
+                        # `/proc/self/fd'
                         Path("/proc")
                         / str(os.getpid())
                         / "fd"

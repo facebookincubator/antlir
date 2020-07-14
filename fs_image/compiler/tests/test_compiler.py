@@ -173,7 +173,8 @@ class CompilerTestCase(unittest.TestCase):
             build_image(
                 parse_args(
                     [
-                        "--artifacts-may-require-repo",  # Must match LayerOpts below
+                        # Must match LayerOpts below
+                        "--artifacts-may-require-repo",
                         "--rpm-installer=dnf",
                         "--subvolumes-dir",
                         _SUBVOLS_DIR,

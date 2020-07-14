@@ -30,6 +30,7 @@ def layer_resource(target):
             cacheable = False,
             type = "wrapped_layer_resource",
             visibility = [],
+            fs_image_internal_rule = True,
         )
 
     return ":" + wrapped_target

@@ -207,6 +207,7 @@ def _fetched_package_layer(
             quoted_package = shell.quote(package),
             print_how_to_fetch_json = print_how_to_fetch_json,
         ),
+        fs_image_internal_rule = True,
     )
 
     image_layer(

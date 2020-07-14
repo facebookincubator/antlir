@@ -196,7 +196,8 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 [
                     "(Dir)",
                     {
-                        # Witness that they have the same (rendered) inode # of "0"
+                        # Witness that they have the same (rendered) inode # of
+                        # "0"
                         "a": [["(File)", 0]],
                         "b": [["(File)", 0]],
                     },

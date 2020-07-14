@@ -108,11 +108,11 @@ def rewrite_testpilot_python_cmd(
                     "exec",  # Try to save a wrapper
                     shlex.quote(cmd[0]),
                     # We cannot just pass `/proc/self/fd/{next_fd}` as the path,
-                    # even though that's technically a functional path.  The catch
-                    # is that the permissions to `open` this path will be those of
-                    # the original file -- owned by the `buck test` user.  But we
-                    # want the container user to be able to open it.  So this `cat`
-                    # here straddles a privilege boundary.
+                    # even though that's technically a functional path.  The
+                    # catch is that the permissions to `open` this path will be
+                    # those of the original file -- owned by the `buck test`
+                    # user.  But we want the container user to be able to open
+                    # it.  So this `cat` here straddles a privilege boundary.
                     output_opt,
                     f">(cat >&{next_fd})",
                     *(shlex.quote(arg) for arg in unparsed_args),
@@ -150,11 +150,11 @@ def rewrite_tpx_gtest_cmd(
             " ".join(
                 [
                     # We cannot just pass `/proc/self/fd/{next_fd}` as the path,
-                    # even though that's technically a functional path.  The catch
-                    # is that the permissions to `open` this path will be those of
-                    # the original file -- owned by the `buck test` user.  But we
-                    # want the container user to be able to open it.  So this `cat`
-                    # here straddles a privilege boundary.
+                    # even though that's technically a functional path.  The
+                    # catch is that the permissions to `open` this path will be
+                    # those of the original file -- owned by the `buck test`
+                    # user.  But we want the container user to be able to open
+                    # it.  So this `cat` here straddles a privilege boundary.
                     f"GTEST_OUTPUT={shlex.quote(prefix)}>(cat >&{next_fd})",
                     "exec",  # Try to save a wrapper
                     *(shlex.quote(c) for c in cmd),

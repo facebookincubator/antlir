@@ -121,9 +121,9 @@ def _resolve_to_canonical_shadow_paths(
                 "sh",
                 "-c",
                 "\n".join(
-                    # If both the candidate destination, and the source exist, output
-                    # them together with the the input dest so we can match it in
-                    # `shadow_paths`.
+                    # If both the candidate destination, and the source exist,
+                    # output them together with the the input dest so we can
+                    # match it in `shadow_paths`.
                     textwrap.dedent(
                         f"""\
             dst=$(readlink -f {c.host_dest.shell_quote()}) &&
@@ -133,8 +133,8 @@ def _resolve_to_canonical_shadow_paths(
             """
                     )
                     for c in candidates
-                    # The trailing `true` means that we ignore errors from `test -e`
-                    # but not e.g. if `/bin/sh` does no texist.
+                    # The trailing `true` means that we ignore errors from `test
+                    # -e` but not e.g. if `/bin/sh` does no texist.
                 )
                 + "\ntrue",
             ],

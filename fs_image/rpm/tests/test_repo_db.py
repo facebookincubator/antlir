@@ -62,8 +62,8 @@ class RepoDBTestCase(unittest.TestCase):
                         " `size` INTEGER NOT NULL,"
                         " `build_timestamp` INTEGER NOT NULL,"
                         " `storage_id` TEXT NOT NULL,"
-                        " PRIMARY KEY (`name`, `epoch`, `version`, `release`, `arch`, "
-                        "`universe`, `checksum`)"
+                        " PRIMARY KEY (`name`, `epoch`, `version`, `release`, "
+                        "`arch`, `universe`, `checksum`)"
                         " )"
                     ),
                 ),

@@ -128,8 +128,9 @@ class YumDnfConfTestCaseImpl:
         """
             ).format(
                 prog_name={
-                    # This is deliberately verbose, replacing `self._YUM_DNF.value`
-                    # The idea is to assert that the enum values matter.
+                    # This is deliberately verbose, replacing
+                    # `self._YUM_DNF.value` The idea is to assert that the enum
+                    # values matter.
                     YumDnf.yum: "yum",
                     YumDnf.dnf: "dnf",
                 }[self._YUM_DNF],

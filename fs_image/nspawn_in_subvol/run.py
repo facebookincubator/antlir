@@ -104,7 +104,6 @@ user, which we should probably never do).
   - Can we get any mileage out of --system-call-filter?
 
 """
-import functools
 import subprocess
 from contextlib import contextmanager
 from io import BytesIO

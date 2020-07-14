@@ -77,9 +77,8 @@ class ValidatedReqsProvs:
                         break
                 else:
                     raise RuntimeError(
-                        "At {}: nothing in {} matches the requirement {}".format(
-                            path, reqs_provs.item_provs, item_req
-                        )
+                        f"At {path}: nothing in {reqs_provs.item_provs} "
+                        f"matches the requirement {item_req}"
                     )
 
     @staticmethod
@@ -126,9 +125,7 @@ class DependencyGraph:
     """
 
     # Consumes a mix of dependency-ordered and `PhaseOrder`ed `ImageItem`s.
-    def __init__(
-        self, iter_items: {"Iterator of ImageItems"}, layer_target: str
-    ):
+    def __init__(self, iter_items: Iterator[ImageItem], layer_target: str):
         # Without deduping, dependency diamonds would cause a lot of
         # redundant work below.  `_prep_item_predecessors` mutates this.
         self.items = set()
