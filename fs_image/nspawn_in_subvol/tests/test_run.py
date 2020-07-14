@@ -364,7 +364,7 @@ class NspawnTestCase(NspawnTestBase):
         self.assertEqual(b"meow\n" + self.maybe_extra_ending, ret.stdout)
 
     def test_bindmount_rw(self):
-        with tempfile.TemporaryDirectory() as tmpdir, tempfile.TemporaryDirectory() as tmpdir2:
+        with tempfile.TemporaryDirectory() as tmpdir, tempfile.TemporaryDirectory() as tmpdir2:  # noqa: E501
             self._nspawn_in(
                 (__package__, "host"),
                 [
@@ -439,8 +439,8 @@ class NspawnTestCase(NspawnTestBase):
             [
                 "--boot",
                 # This needs to be root because we don't yet create a proper
-                # login session for non-privileged users when we execute commands.
-                # Systemctl will try and connect to the user session
+                # login session for non-privileged users when we execute
+                # commands. Systemctl will try and connect to the user session
                 # when it's run as non-root.
                 "--user=root",
                 "--",

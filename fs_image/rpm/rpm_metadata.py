@@ -100,7 +100,7 @@ def compare_rpm_versions(a: RpmMetadata, b: RpmMetadata) -> int:
     # This is not a rule, but it makes sense that our libs don't want to
     # compare versions of different RPMs
     if a.name != b.name:
-        raise ValueError(f"Cannot compare RPM versions when names do not match")
+        raise ValueError("Cannot compare RPM versions when names do not match")
 
     # First compare the epoch, if set.  If the epoch's are not the same, then
     # the higher one wins no matter what the rest of the EVR is.

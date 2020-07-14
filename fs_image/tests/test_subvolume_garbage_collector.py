@@ -130,7 +130,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 )
 
     def test_gc_fails_when_wrapper_has_more_than_one(self):
-        with tempfile.TemporaryDirectory() as refs_dir, tempfile.TemporaryDirectory() as subs_dir:
+        with tempfile.TemporaryDirectory() as refs_dir, tempfile.TemporaryDirectory() as subs_dir:  # noqa: E501
             os.makedirs(os.path.join(subs_dir, "no:refs/subvol1"))
             os.makedirs(os.path.join(subs_dir, "no:refs/subvol2"))
             with self.assertRaisesRegex(
@@ -157,7 +157,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
     @contextlib.contextmanager
     def _gc_test_case(self):
         # NB: I'm too lazy to test that `refs_dir` is created if missing.
-        with tempfile.TemporaryDirectory() as refs_dir, tempfile.TemporaryDirectory() as subs_dir:
+        with tempfile.TemporaryDirectory() as refs_dir, tempfile.TemporaryDirectory() as subs_dir:  # noqa: E501
 
             # Track subvolumes + refcounts that will get garbage-collected
             # separately from those that won't.

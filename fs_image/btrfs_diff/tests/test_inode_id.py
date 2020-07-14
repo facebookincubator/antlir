@@ -273,19 +273,19 @@ class InodeIDTestCase(DeepCopyTestCase):
         self.assertEqual(set(), id_map.get_paths(mut_ns.ino_id))
 
         # Test some more errors
-        with self.assertRaisesRegex(RuntimeError, f"foo''s parent.*is a file"):
+        with self.assertRaisesRegex(RuntimeError, "foo''s parent.*is a file"):
             id_map.get_id(b"x1/y/z/foo/bar")
-        with self.assertRaisesRegex(RuntimeError, f"Cannot remove the root"):
+        with self.assertRaisesRegex(RuntimeError, "Cannot remove the root"):
             id_map.remove_path(b".")
-        with self.assertRaisesRegex(RuntimeError, f"Cannot remove non-exist"):
+        with self.assertRaisesRegex(RuntimeError, "Cannot remove non-exist"):
             id_map.remove_path(b"potato")
-        with self.assertRaisesRegex(RuntimeError, f"Cannot remove non-exist"):
+        with self.assertRaisesRegex(RuntimeError, "Cannot remove non-exist"):
             id_map.remove_path(b"potato")
-        with self.assertRaisesRegex(RuntimeError, f"non-file hardlink"):
+        with self.assertRaisesRegex(RuntimeError, "non-file hardlink"):
             id_map.add_dir(id_map.get_id(b"x1/y/z"), "x1/y/z2")
-        with self.assertRaisesRegex(RuntimeError, f"non-file hardlink"):
+        with self.assertRaisesRegex(RuntimeError, "non-file hardlink"):
             id_map.add_file(id_map.get_id(b"x1/y/v"), "x1/y/v2")
-        with self.assertRaisesRegex(RuntimeError, f"parent .* is a file"):
+        with self.assertRaisesRegex(RuntimeError, "parent .* is a file"):
             id_map.add_file(id_map.next(), b"x1/y/z/foo")
 
         # Even though we changed `id_map` a lot, `saved_frozen` is still

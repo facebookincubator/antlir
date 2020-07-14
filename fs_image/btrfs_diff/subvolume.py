@@ -357,7 +357,7 @@ class Subvolume(NamedTuple):
                             child_name.decode(
                                 errors="surrogateescape"
                             ): child_result
-                            for child_name, child_result in child_results.items()
+                            for child_name, child_result in child_results.items()  # noqa: E501
                         },
                     ]
                 )

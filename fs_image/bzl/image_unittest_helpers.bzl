@@ -126,6 +126,7 @@ def nspawn_in_subvol_args():
             binary_path_repr = repr(binary_path),
         ))),
         visibility = visibility,
+        fs_image_internal_rule = True,
     )
 
     # To execute the wrapped test, the caller must make this library's
@@ -151,6 +152,7 @@ def nspawn_in_subvol_args():
         deps = ["//fs_image/nspawn_in_subvol:run-test-library"],
         resources = {":" + test_layer: "nspawn-in-test-subvol-layer"},
         srcs = {":" + test_spec_py: "__image_python_unittest_spec__.py"},
+        fs_image_internal_rule = True,
     )
 
     return struct(

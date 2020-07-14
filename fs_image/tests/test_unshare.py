@@ -146,7 +146,7 @@ class UnshareTestCase(unittest.TestCase):
     def test_mount_namespace(self):
         try:
             sleep_pid = None
-            with tempfile.TemporaryDirectory() as mnt_src, tempfile.TemporaryDirectory() as mnt_dest1, tempfile.TemporaryDirectory() as mnt_dest2:
+            with tempfile.TemporaryDirectory() as mnt_src, tempfile.TemporaryDirectory() as mnt_dest1, tempfile.TemporaryDirectory() as mnt_dest2:  # noqa: E501
                 with open(os.path.join(mnt_src, "cypa"), "w") as outfile:
                     outfile.write("kvoh")
 

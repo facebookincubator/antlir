@@ -15,7 +15,6 @@ from fs_image.compiler.requires_provides import (
 from ..common import ImageItem, image_source_item
 from ..install_file import InstallFileItem
 from ..make_dirs import MakeDirsItem
-from ..make_subvol import FilesystemRootItem, ParentLayerItem
 from .common import DUMMY_LAYER_OPTS, BaseItemTestCase
 
 

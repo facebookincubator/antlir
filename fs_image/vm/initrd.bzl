@@ -64,6 +64,7 @@ def initrd(name, uname, modules = None):
             cp_modules = cp_modules,
             busybox = third_party.library("busybox", "bin/busybox"),
         ),
+        fs_image_internal_rule = True,
     )
     buck_genrule(
         name = name,

@@ -243,7 +243,10 @@ def _isolate_yum_dnf(
             maybe_set_env_vars=" ".join(
                 [
                     f"LD_PRELOAD={LIBRENAME_SHADOWED_PATH.shell_quote()}",
-                    f"FS_IMAGE_SHADOWED_PATHS_ROOT={SHADOWED_PATHS_ROOT.shell_quote()}",
+                    (
+                        "FS_IMAGE_SHADOWED_PATHS_ROOT="
+                        f"{SHADOWED_PATHS_ROOT.shell_quote()}"
+                    ),
                 ]
             )
             if os.path.exists(LIBRENAME_SHADOWED_PATH)
@@ -387,7 +390,8 @@ def yum_dnf_from_snapshot(
             "meta/",
         ]
         + (
-            # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is missing
+            # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is
+            # missing
             ["/etc/yum/"]
             if (has_yum() and not yum_is_dnf())
             else []
@@ -415,7 +419,7 @@ def yum_dnf_from_snapshot(
     for arg in yum_dnf_args:
         assert arg != "-c" and not arg.startswith(
             "--config"
-        ), f"If you change --config, you will no longer use the repo snapshot"
+        ), "If you change --config, you will no longer use the repo snapshot"
 
     with _dummy_dev() as dummy_dev, _dummies_for_protected_paths(
         protected_paths

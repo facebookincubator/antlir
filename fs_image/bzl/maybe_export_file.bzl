@@ -24,6 +24,7 @@ probably better if they just type `export_file("their/file")` instead.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load(":oss_shim.bzl", "export_file")
 
 def maybe_export_file(source):
     if source == None or not types.is_string(source) or ":" in source:
@@ -39,5 +40,6 @@ def maybe_export_file(source):
         name = buck_target_name,
         src = source,
         visibility = ["//visibility:private"],
+        fs_image_internal_rule = True,
     )
     return ":" + buck_target_name

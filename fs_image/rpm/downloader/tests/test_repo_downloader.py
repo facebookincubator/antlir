@@ -70,7 +70,8 @@ FILELISTS_REPODATA_REGEX = r"repodata/[0-9a-f]*-filelists\.xml\.gz$"
 
 _GOOD_DOG = temp_repos.Repo(
     [
-        # Copy-pasta'd from `temp_repos.py` to avoid unnecessary cross-dependencies.
+        # Copy-pasta'd from `temp_repos.py` to avoid unnecessary
+        # cross-dependencies.
         temp_repos.Rpm("milk", "1.41", "42"),
         temp_repos.Rpm("mice", "0.1", "a"),
         temp_repos.Rpm("carrot", "2", "rc0"),
@@ -646,7 +647,7 @@ class DownloadReposTestCase(unittest.TestCase):
             RepoDBContext, "store_repomd"
         ) as mock_store, mock.patch(
             SUT + "repodata_downloader._download_repodata"
-        ) as mock_rd, tempfile.NamedTemporaryFile() as tmp_db, temp_dir() as storage_dir:
+        ) as mock_rd, tempfile.NamedTemporaryFile() as tmp_db, temp_dir() as storage_dir:  # noqa: E501
             db_cfg = {
                 "kind": "sqlite",
                 "db_path": tmp_db.name,
@@ -755,7 +756,7 @@ class DownloadReposTestCase(unittest.TestCase):
                 )
 
     def test_download_multiple_repos(self):
-        with tempfile.NamedTemporaryFile() as tmp_db, tempfile.TemporaryDirectory() as storage_dir:
+        with tempfile.NamedTemporaryFile() as tmp_db, tempfile.TemporaryDirectory() as storage_dir:  # noqa: E501
             repos = [
                 YumDnfConfRepo(
                     name=repo,
@@ -827,7 +828,7 @@ class DownloadReposTestCase(unittest.TestCase):
             postfix = "repodata/repomd.xml"
             if postfix in url:
                 i += 1
-                return original_open_url(re.sub(rf"/(\d)/", rf"/{i % 2}/", url))
+                return original_open_url(re.sub(r"/(\d)/", rf"/{i % 2}/", url))
             return original_open_url(url)
 
         with mock.patch(SUT + "common.open_url") as mock_fn:

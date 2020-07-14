@@ -365,7 +365,7 @@ def parse_args(argv):
         "--writable-subvolume",
         action="store_true",
         default=False,
-        help=f"By default, the subvolume inside a loopback is marked read-only."
+        help="By default, the subvolume inside a loopback is marked read-only."
         " Pass this flag to mark it writable.",
     )
 
@@ -373,7 +373,7 @@ def parse_args(argv):
         "--seed-device",
         action="store_true",
         default=False,
-        help=f"Pass this flag to make the resulting image a btrfs seed device",
+        help="Pass this flag to make the resulting image a btrfs seed device",
     )
     # Future: To add support for incremental send-streams, we'd want to
     # use this (see `--ancestor-jsons` in `image_package.bzl`)

@@ -77,7 +77,9 @@ class ParseSendStreamTestCase(unittest.TestCase):
                     struct.pack(
                         "<HH",
                         AttributeKind.PATH.value,
-                        3,  # length excluding this header -- error: we write no data!
+                        # length excluding this header -- error: we write no
+                        # data!
+                        3,
                     )
                 )
             )

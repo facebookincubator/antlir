@@ -63,6 +63,7 @@ def image_python_unittest(
         ),
         par_style = par_style,
         visibility = visibility,
+        fs_image_internal_rule = True,
         **wrapper_props.inner_test_kwargs
     )
 

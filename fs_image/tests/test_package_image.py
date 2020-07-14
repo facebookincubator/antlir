@@ -101,7 +101,7 @@ class PackageImageTestCase(unittest.TestCase):
             self._sibling_path("create_ops.layer"), "btrfs"
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, tempfile.TemporaryDirectory() as mount_dir, tempfile.NamedTemporaryFile() as temp_sendstream:
+        ) as unshare, tempfile.TemporaryDirectory() as mount_dir, tempfile.NamedTemporaryFile() as temp_sendstream:  # noqa: E501
             # Future: use a LoopbackMount object here once that's checked in.
             subprocess.check_call(
                 nsenter_as_root(

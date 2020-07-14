@@ -30,12 +30,10 @@ plugins. Specifically:
 """
 
 from types import MappingProxyType
-from typing import Iterable, Tuple
+from typing import Iterable
 
 from fs_image.common import set_new_key
-from fs_image.fs_utils import Path
 from fs_image.nspawn_in_subvol.args import NspawnPluginArgs, _NspawnOpts
-from fs_image.subvol_utils import Subvol
 
 from . import NspawnPlugin
 from .repo_servers import RepoServers

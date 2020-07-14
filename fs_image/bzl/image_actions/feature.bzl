@@ -135,6 +135,7 @@ def private_do_not_use_feature_json_genrule(name, deps, output_feature_cmd, visi
             output_feature_cmd = output_feature_cmd,
         ),
         visibility = visibility,
+        fs_image_internal_rule = True,
     )
 
 def image_feature(name = None, features = None, visibility = None):

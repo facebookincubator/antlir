@@ -428,7 +428,7 @@ class RepoDBContext(AbstractContextManager):
                             {', '.join([
                                 f'`{c}` {col_types[c]} {d}'
                                     for c, d in cols.items()
-                            ] + [k for k in self._TABLE_KEYS[table]])}
+                            ] + list(self._TABLE_KEYS[table]))}
                         );
                     """
                     )

@@ -48,9 +48,9 @@ class RemovePathItem(ImageItem):
                 action: idx
                 for idx, action in enumerate(
                     [
-                        # We sort in reverse order, so by putting "if" first we allow
-                        # conflicts between "if_exists" and "assert_exists" items to be
-                        # resolved naturally.
+                        # We sort in reverse order, so by putting "if" first we
+                        # allow conflicts between "if_exists" and
+                        # "assert_exists" items to be resolved naturally.
                         RemovePathAction.if_exists,
                         RemovePathAction.assert_exists,
                     ]

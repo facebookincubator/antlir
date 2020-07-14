@@ -252,10 +252,9 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             return None, None
         if (
             ("storage_id" not in obj and "content_bytes" not in obj)
-            or
             # `error` is not currently populated simultaneously with
             # `storage_id`, but better safe than sorry.
-            ("error" in obj)
+            or ("error" in obj)
         ):
             self.send_error(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -398,10 +397,10 @@ if __name__ == "__main__":  # pragma: no cover
         Storage.from_json(storage),
     ) as httpd:
         httpd.server_activate()
-        log.info(f"HTTP `repo-server` is listening")
+        log.info("HTTP `repo-server` is listening")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:  # pragma: no cover
             if args.debug:
                 raise
-            log.info(f"HTTP `repo-server` graceful shutdown on SIGINT")
+            log.info("HTTP `repo-server` graceful shutdown on SIGINT")

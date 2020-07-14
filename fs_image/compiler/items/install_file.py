@@ -124,7 +124,7 @@ class InstallFileItem(ImageItem):
 
         st_source = os.stat(source, follow_symlinks=False)
         if stat.S_ISDIR(st_source.st_mode):
-            assert mode is None, f"Cannot use `mode` for directory sources."
+            assert mode is None, "Cannot use `mode` for directory sources."
             kwargs["paths"] = tuple(
                 _recurse_into_source(
                     Path(source),

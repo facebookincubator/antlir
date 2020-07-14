@@ -94,11 +94,11 @@ class Rpm(NamedTuple):
             cp {quoted_busybox_path} "$RPM_BUILD_ROOT"/bin/sh
             %post
             """
-                    # yum-dnf-from-snapshot prepares /dev in a subtle way to protect
-                    # host system from side-effects of rpm post-install scripts.
-                    # The command below lets us test that /dev/null is prepared
-                    # properly: if "echo > /dev/null" fails, tests will catch the
-                    # absence of post.txt
+                    # yum-dnf-from-snapshot prepares /dev in a subtle way to
+                    # protect host system from side-effects of rpm post-install
+                    # scripts. The command below lets us test that /dev/null is
+                    # prepared properly: if "echo > /dev/null" fails, tests will
+                    # catch the absence of post.txt
                     """\
             echo > /dev/null && echo 'stuff' > \
               "$RPM_BUILD_ROOT"/rpm_test/post.txt

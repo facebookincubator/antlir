@@ -88,7 +88,7 @@ class QemuGuestAgent(object):
                 )
             yield r, w
         except ConnectionResetError as err:
-            raise QemuError(f"Guest agent connection reset") from err
+            raise QemuError("Guest agent connection reset") from err
         finally:
             if not w.is_closing():
                 w.close()
@@ -137,7 +137,9 @@ class QemuGuestAgent(object):
         pipe_output: bool = True,
         cwd: Optional[os.PathLike] = None,
     ) -> Tuple[int, str, str]:
-        """run a command inside the vm and optionally pipe stdout/stderr to the parent"""
+        """run a command inside the vm and optionally pipe stdout/stderr to the
+        parent
+        """
         async with self._connect() as (r, w):
             cmd = list(cmd)
             path = cmd[0]

@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import enum
-import functools
 import os
 import pwd
 import shlex
@@ -66,10 +65,10 @@ YUM_DNF_COMMAND_ORDER = {
         [
             # There's only one remove command, for now.
             YumDnfCommand.remove_name_if_exists,
-            # This ordering of the install commands seems the least bad; TBD.  The
-            # main concern is about us failing to do what the user asked because
-            # `yum` / `dnf` overrode them due to the dependencies of packages
-            # installed by the later commands.
+            # This ordering of the install commands seems the least bad; TBD.
+            # The main concern is about us failing to do what the user asked
+            # because `yum` / `dnf` overrode them due to the dependencies of
+            # packages installed by the later commands.
             YumDnfCommand.local_downgrade,
             YumDnfCommand.local_install,
             YumDnfCommand.install_name,

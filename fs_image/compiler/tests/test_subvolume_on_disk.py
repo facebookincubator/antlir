@@ -134,11 +134,11 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                 )
 
             # Parsing the `good` dict does not throw, and gets the right result
-            good_subvol = subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
+            good_sv = subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
                 good, subvols
             )
             self._check(
-                good_subvol,
+                good_sv,
                 good_path,
                 subvolume_on_disk.SubvolumeOnDisk(
                     **{

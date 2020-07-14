@@ -16,7 +16,6 @@ import os
 from collections import defaultdict, deque
 from typing import (
     Any,
-    Generator,
     Iterator,
     Mapping,
     NamedTuple,
@@ -241,7 +240,7 @@ class InodeIDMap(NamedTuple):
         "Contract: never call this on the root, aka empty `parts`"
         parts = _norm_split_path(path)
         if not parts:
-            raise RuntimeError(f"Cannot remove the root path")
+            raise RuntimeError("Cannot remove the root path")
         parent, entry = tail(2, self._gen_entries(parts))
         if entry is None:
             raise RuntimeError(f"Cannot remove non-existent {path}")

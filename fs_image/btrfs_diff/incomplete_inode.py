@@ -186,7 +186,7 @@ class IncompleteFile(IncompleteInode):
                     for kind, chunks in itertools.groupby(
                         (
                             (extent.content, length)
-                            for _, length, extent in self.extent.gen_trimmed_leaves()
+                            for _, length, extent in self.extent.gen_trimmed_leaves()  # noqa: E501
                         ),
                         lambda c: c[0],
                     )
