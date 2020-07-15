@@ -21,6 +21,7 @@ from fs_image.compiler.requires_provides import (
     require_directory,
 )
 from fs_image.find_built_subvol import find_built_subvol
+from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
@@ -45,7 +46,7 @@ class _BuildSource(NamedTuple):
             # If we allowed mounting a layer that has other mounts inside,
             # it would force us to support nested mounts.  We don't want to
             # do this (yet).
-            if os.path.exists(subvol.path(META_MOUNTS_DIR)):
+            if subvol.path(META_MOUNTS_DIR).exists():
                 raise AssertionError(
                     f"Refusing to mount {subvol.path()} since that would "
                     "require the tooling to support nested mounts."
@@ -126,14 +127,17 @@ class MountItem(ImageItem):
         yield require_directory(os.path.dirname(self.mountpoint))
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
-        mount_dir = os.path.join(META_MOUNTS_DIR, self.mountpoint, MOUNT_MARKER)
+        mount_dir = META_MOUNTS_DIR / self.mountpoint / MOUNT_MARKER
         for name, data in (
             # NB: Not exporting self.mountpoint since it's implicit in the path.
             ("is_directory", self.is_directory),
             ("build_source", self.build_source._asdict()),
             ("runtime_source", json.loads(self.runtime_source)),
         ):
-            procfs_serde.serialize(data, subvol, os.path.join(mount_dir, name))
+            procfs_serde.serialize(
+                data, subvol, Path(mount_dir / name).decode()
+            )
+
         source_path = self.build_source.to_path(
             target_to_path=layer_opts.target_to_path,
             subvolumes_dir=layer_opts.subvolumes_dir,

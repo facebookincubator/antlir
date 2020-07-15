@@ -91,6 +91,16 @@ class TestFsUtils(unittest.TestCase):
                 res.stdout.decode(),
             )
 
+    def test_path_exists(self):
+        does_not_exist = Path("non/existat")
+        self.assertFalse(does_not_exist.exists())
+
+        with tempfile.TemporaryDirectory() as td:
+            i_exist = Path(td) / "cogito_ergo_sum"
+            i_exist.touch()
+
+            self.assertTrue(i_exist.exists())
+
     def test_path_format(self):
         first = Path("a/b")
         second = Path(_BAD_UTF)

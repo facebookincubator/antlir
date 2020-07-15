@@ -41,7 +41,7 @@ from .mount_utils import mountpoints_from_subvol_meta
 #
 # NB: The trailing slash is significant, making this a protected directory,
 # not a protected file.
-META_DIR = "meta/"
+META_DIR = Path("meta/")
 
 
 @enum.unique
@@ -187,8 +187,8 @@ class ImageItem:
         )(self, **kwargs)
 
 
-META_ARTIFACTS_REQUIRE_REPO = os.path.join(
-    META_DIR, "private/opts/artifacts_may_require_repo"
+META_ARTIFACTS_REQUIRE_REPO = (
+    META_DIR / "private/opts/artifacts_may_require_repo"
 )
 
 
@@ -196,7 +196,7 @@ def _validate_artifacts_require_repo(
     dependency: Subvol, layer_opts: LayerOpts, message: str
 ):
     dep_arr = procfs_serde.deserialize_int(
-        dependency, META_ARTIFACTS_REQUIRE_REPO
+        dependency, META_ARTIFACTS_REQUIRE_REPO.decode()
     )
     # The check is <= because we should permit building @mode/dev layers
     # that depend on published @mode/opt images.  The CLI arg is bool.
@@ -221,7 +221,7 @@ def make_path_normal_relative(orig_d: str) -> str:
     # regular items from writing to it. `d` is never absolute here.
     # NB: This check is redundant with `ProvidesDoNotAccess(path=META_DIR)`,
     # this is just here as a fail-fast backup.
-    if (d + "/").startswith(META_DIR):
+    if (d + "/").startswith(META_DIR.decode()):
         raise AssertionError(f"path {orig_d} cannot start with {META_DIR}")
     return d
 
@@ -250,11 +250,14 @@ def protected_path_set(subvol: Optional[Subvol]) -> Set[str]:
     if subvol is not None:
         # NB: The returned paths here already follow the trailing / rule.
         for mountpoint in mountpoints_from_subvol_meta(subvol):
-            paths.add(mountpoint.lstrip("/"))
+            paths.add(mountpoint)
     # Never absolute: yum-dnf-from-snapshot interprets absolute paths as
     # host paths.
-    assert not any(p.startswith("/") for p in paths), paths
-    return paths
+    assert not any(p.startswith(b"/") for p in paths), paths
+    # Return these as strings for use in yum-dnf-from-snapshot and
+    # the logic in phases_provide.py.  Those callsites don't yet
+    # understand the Path type.
+    return {path.decode() for path in paths}
 
 
 def is_path_protected(path: str, protected_paths: Set[str]) -> bool:
@@ -285,7 +288,7 @@ def ensure_meta_dir_exists(subvol: Subvol, layer_opts: LayerOpts):
     #   - By marking the images, we avoid having to conditionally add
     #     `--bind-repo-ro` flags in a bunch of places in our codebase.  The
     #     in-image marker enables `nspawn_in_subvol` to decide.
-    if os.path.exists(subvol.path(META_ARTIFACTS_REQUIRE_REPO)):
+    if subvol.path(META_ARTIFACTS_REQUIRE_REPO).exists():
         _validate_artifacts_require_repo(subvol, layer_opts, "parent layer")
         # I looked into adding an `allow_overwrite` flag to `serialize`, but
         # it was too much hassle to do it right.
@@ -293,7 +296,7 @@ def ensure_meta_dir_exists(subvol: Subvol, layer_opts: LayerOpts):
     procfs_serde.serialize(
         layer_opts.artifacts_may_require_repo,
         subvol,
-        META_ARTIFACTS_REQUIRE_REPO,
+        META_ARTIFACTS_REQUIRE_REPO.decode(),
     )
 
 
