@@ -198,6 +198,7 @@ python_library(
         ":mount_utils",
         "//fs_image/compiler:requires_provides",
         "//fs_image/compiler:subvolume_on_disk",
+        "//fs_image/nspawn_in_subvol:ba_runner",
         "//fs_image/nspawn_in_subvol:non_booted",
     ],
 )

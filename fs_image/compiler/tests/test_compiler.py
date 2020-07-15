@@ -14,15 +14,10 @@ import unittest.mock
 from contextlib import contextmanager
 
 from fs_image import subvol_utils
-from fs_image.compiler.items import (
-    make_dirs,
-    rpm_action,
-    stat_options,
-    symlink,
-    tarball,
-)
+from fs_image.compiler.items import make_dirs, rpm_action, symlink, tarball
 from fs_image.find_built_subvol import subvolumes_dir
 from fs_image.fs_utils import Path, temp_dir
+from fs_image.nspawn_in_subvol import ba_runner
 from fs_image.rpm.yum_dnf_conf import YumDnf
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
@@ -67,7 +62,7 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     fn = unittest.mock.patch.object(tarball, "run_non_booted_nspawn")(fn)
     fn = unittest.mock.patch.object(symlink, "run_non_booted_nspawn")(fn)
     fn = unittest.mock.patch.object(make_dirs, "run_non_booted_nspawn")(fn)
-    fn = unittest.mock.patch.object(stat_options, "run_non_booted_nspawn")(fn)
+    fn = unittest.mock.patch.object(ba_runner, "run_non_booted_nspawn")(fn)
     return fn
 
 

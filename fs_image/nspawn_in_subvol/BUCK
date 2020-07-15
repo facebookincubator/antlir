@@ -1,9 +1,9 @@
 # Future: we should eventually add per-library unit test coverage, as
 # appropriate, while also retaining integration test coverage.
 
-load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
+load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 # Gets test coverage via `:test-run`
@@ -79,6 +79,11 @@ python_library(
         ":common",
         ":plugin_hooks",
     ],
+)
+
+python_library(
+    name = "ba_runner",
+    srcs = ["ba_runner.py"],
 )
 
 python_binary(
