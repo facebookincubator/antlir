@@ -13,7 +13,7 @@ function FBInternalWithOssFallback(elements, fallback) {
 
 module.exports = {
   title: FBInternalWithOssFallback('FS_Image @FB', 'FS_Image'),
-  tagline: 'Awesome OS Builds',
+  tagline: 'A filesystem image builder',
   url: FBInternalWithOssFallback(
     'https://www.internalfb.com/intern/staticdocs/fs_image',
     'https://www.github.com/facebookincubator/fs_image',
@@ -51,12 +51,12 @@ module.exports = {
           title: 'Learn',
           items: [
             {
-              label: 'Style Guide',
+              label: 'Documentation',
               to: 'docs/',
             },
             {
-              label: 'Second Doc',
-              to: 'docs/doc2',
+              label: 'GitHub',
+              to: 'https://github.com/facebookincubator/fs_image',
             },
           ],
         },
@@ -76,15 +76,6 @@ module.exports = {
               label: 'Discord',
               href: 'https://discordapp.com/invite/docusaurus',
             }, */
-          ],
-        },
-        {
-          title: 'More',
-          items: [
-            {
-              label: 'GitHub',
-              href: 'https://github.com/facebookincubator/fs_image',
-            },
           ],
         },
         {
