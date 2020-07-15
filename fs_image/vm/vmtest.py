@@ -95,58 +95,32 @@ async def main(
     fbcode = find_repo_root()
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
-    with importlib.resources.path(
-        "fs_image.vm", "image"
-    ) as image, importlib.resources.path(
-        "fs_image.vm", "inner_test"
-    ) as exe_path:
-        # for @mode/dev, this is a symlink, and must be resolved to the full
-        # path before using it to properly handle shared libs
-        exe = Path(exe_path).resolve()
-
+    with importlib.resources.path(__package__, "image") as image:
         if gtest_list_tests or list_tests:
             assert not (gtest_list_tests and list_tests), sys.argv
             # Start the test binary directly to list out test cases instead of
             # starting an entire VM.  This is faster, but it's also a potential
             # security hazard since the test code may expect that it always runs
             # sandboxed, and may run untrusted code as part of listing tests.
-            proc = await asyncio.create_subprocess_exec(
-                str(exe),
-                *(
-                    ["--gtest_list_tests"]
-                    if gtest_list_tests
-                    # NB: Unlike for the VM, we don't explicitly have to pass
-                    # the magic `TEST_PILOT` environment var to allow triggering
-                    # the new TestPilotAdapter.  The environment is inherited.
-                    else ["--list-tests", list_tests]
-                ),
-            )
-            await proc.wait()
-            sys.exit(proc.returncode)
-
-        if interactive:
-            print("Test binary is at:\n{}\n".format(exe))
-
-        exe_share = []
-        # When using in-place binaries (@mode/dev), the resource at exe_path
-        # is actually a symlink to it's original location in buck-out/ (based
-        # on its target name). This binary will _only_ run from that path,
-        # since it relies on other symlinks relative to itself.
-        # When using @mode/opt, the inner test binary is entirely contained in
-        # this outer test (p|x)ar, and we mount the parent directory of the
-        # inner test binary so that it is available at the same path inside the
-        # VM (we may not even have it available).
-        # TODO(T63152535) This should be improved to use fs_image features at
-        # build time like maybe_wrap_executable_target, instead of doing this
-        # runtime hackery
-        if not fbcode or fbcode not in exe.parents:
-            exe_share = [
-                Share(
-                    host_path=exe.parent,
-                    location=str(exe.parent),
-                    mount_tag="inner_test",
+            # TODO(vmagro): the long-term goal should be to make vm boots as
+            # fast as possible to avoid unintuitive tricks like this
+            with importlib.resources.path(
+                "fs_image.vm", "test_discovery_binary"
+            ) as inner_test_on_host:
+                proc = await asyncio.create_subprocess_exec(
+                    str(inner_test_on_host),
+                    *(
+                        ["--gtest_list_tests"]
+                        if gtest_list_tests
+                        # NB: Unlike for the VM, we don't explicitly have to
+                        # pass the magic `TEST_PILOT` environment var to allow
+                        # triggering the new TestPilotAdapter. The environment
+                        # is inherited.
+                        else ["--list-tests", list_tests]
+                    ),
                 )
-            ]
+                await proc.wait()
+            sys.exit(proc.returncode)
 
         async with kernel_vm(
             image=image,
@@ -154,14 +128,10 @@ async def main(
             verbose=not quiet,
             interactive=interactive,
             up_timeout=up_timeout,
-            shares=exe_share,
             ncpus=ncpus,
         ) as vm:
             if not interactive:
                 # Automatically execute test only under non-interactive mode.
-
-                # Tests expect to run in a machine named 'vmtest'
-                await vm.exec_sync(("hostname", "vmtest"))
 
                 # Sync the file which tpx needs from the vm to the host.
                 file_arguments = list(sync_file)
@@ -172,9 +142,9 @@ async def main(
                     # files that it expects to exist (that would normally be
                     # created by TestPilot)
                     dirname = os.path.dirname(arg)
-                    # TestPilot will already create the directories on the host,
-                    # so as another sanity check only create the directories in
-                    # the VM that already exist on the host
+                    # TestPilot will already create the directories on the
+                    # host, so as another sanity check only create the
+                    # directories in the VM that already exist on the host
                     if dirname and os.path.exists(dirname):
                         await vm.exec_sync(("mkdir", "-p", dirname))
                         file_arguments.append(arg)
@@ -186,7 +156,7 @@ async def main(
                 if test_pilot_env:
                     test_env["TEST_PILOT"] = test_pilot_env
                 returncode, _, _ = await vm.run(
-                    cmd=[str(exe)] + list(args),
+                    cmd=["/test"] + list(args),
                     timeout=timeout,
                     env=test_env,
                     cwd=fbcode,

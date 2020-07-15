@@ -152,7 +152,7 @@ image.python_unittest(
 
 image.layer(
     name = "layer-with-unique-path",
-    parent_layer = "//tupperware/image/kernels:base",
+    parent_layer = "//tupperware/image/vmtest:base",
     features = [
         image.mkdir("/", "unique"),
         image.mkdir("/unique", "test"),

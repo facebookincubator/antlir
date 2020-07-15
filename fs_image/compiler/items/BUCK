@@ -230,6 +230,12 @@ python_unittest(
         layer_resource(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "tests/test-build-appliance",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "parent_layer",
+        ): "tests/test-layer-with-mounts",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "hello_world_base",
+        ): "tests/test-layer-without-mounts",
     },
     deps = [
         ":common_testlib",

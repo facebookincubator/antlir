@@ -251,7 +251,7 @@ def __qemu_share_args(shares: Iterable[Share]) -> Iterable[str]:
             "-virtfs",
             (
                 f"local,path={share.host_path},security_model=none,"
-                f"readonly,mount_tag={share.mount_tag}"
+                f"readonly,multidevs=remap,mount_tag={share.mount_tag}"
             ),
         )
         for share in shares
