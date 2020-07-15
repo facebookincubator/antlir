@@ -13,7 +13,7 @@ NB: Surprisingly, we don't need any special cleanup for the `mount` operations
 import json
 import os
 from dataclasses import dataclass
-from typing import Mapping, NamedTuple
+from typing import Iterator, Mapping, NamedTuple, Optional, Tuple
 
 from fs_image.compiler import procfs_serde
 from fs_image.compiler.requires_provides import (
@@ -28,7 +28,7 @@ from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
 from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER, ro_rbind_mount
 
 
-class _BuildSource(NamedTuple):
+class BuildSource(NamedTuple):
     type: str
     # This is overloaded to mean different things depending on `type`.
     source: str
@@ -60,10 +60,23 @@ class _BuildSource(NamedTuple):
             )
 
 
+@dataclass(frozen=True)
+class RuntimeSource:
+    type: str
+
+
+@dataclass(frozen=True)
+class Mount:
+    mountpoint: str
+    build_source: BuildSource
+    is_directory: bool
+    runtime_source: Optional[RuntimeSource] = None
+
+
 @dataclass(init=False, frozen=True)
 class MountItem(ImageItem):
     mountpoint: str
-    build_source: _BuildSource
+    build_source: BuildSource
     runtime_source: str
     is_directory: bool
 
@@ -90,7 +103,7 @@ class MountItem(ImageItem):
 
         kwargs["is_directory"] = cfg.pop("is_directory")
 
-        kwargs["build_source"] = _BuildSource(**cfg.pop("build_source"))
+        kwargs["build_source"] = BuildSource(**cfg.pop("build_source"))
         if kwargs["build_source"].type == "host" and not (
             kwargs["from_target"] in layer_opts.allowed_host_mount_targets
             or kwargs["from_target"].startswith("//fs_image/compiler/test")
@@ -155,3 +168,50 @@ class MountItem(ImageItem):
             # mountpoint will be shadowed anyway, so let it be whatever.
             subvol.run_as_root(["touch", subvol.path(self.mountpoint)])
         ro_rbind_mount(source_path, subvol, self.mountpoint)
+
+
+# Not covering, since this would require META_MOUNTS_DIR to be unreadable.
+def _raise(ex):  # pragma: no cover
+    raise ex
+
+
+def mounts_from_subvol_meta(subvol: Subvol) -> Iterator[Tuple[Path]]:
+    """
+    Returns a list of constructed `MountItem`s built from the meta/ of the
+    provided subvol.
+    """
+    mounts_path = subvol.path(META_MOUNTS_DIR)
+    if not mounts_path.exists():
+        return
+
+    for path, _next_dirs, _files in os.walk(
+        # We are not `chroot`ed, so following links could access outside the
+        # image; `followlinks=False` is the default -- explicit for safety.
+        mounts_path,
+        onerror=_raise,
+        followlinks=False,
+    ):
+        relpath = Path(path).relpath(mounts_path)
+        if relpath.basename() == MOUNT_MARKER:
+            mountpoint = relpath.dirname()
+            assert not mountpoint.endswith(b"/"), mountpoint
+
+            # Deserialize the mount madness
+            cfg = procfs_serde.deserialize_untyped(
+                subvol, Path(META_MOUNTS_DIR / relpath).decode()
+            )
+
+            # Convert config info proper types and create a Mount
+            mount = Mount(
+                mountpoint=mountpoint.decode(),
+                build_source=BuildSource(**cfg.pop("build_source")),
+                is_directory={"0": False, "1": True}[cfg.pop("is_directory")],
+                runtime_source=(
+                    RuntimeSource(**cfg.pop("runtime_source"))
+                    if "runtime_source" in cfg
+                    else None
+                ),
+            )
+
+            assert not cfg, cfg
+            yield mount

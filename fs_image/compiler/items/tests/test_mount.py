@@ -15,10 +15,17 @@ from fs_image.compiler.requires_provides import (
     require_directory,
 )
 from fs_image.compiler.subvolume_on_disk import SubvolumeOnDisk
+from fs_image.tests.layer_resource import layer_resource_subvol
 from fs_image.tests.temp_subvolumes import TempSubvolumes
 
 from ..make_subvol import FilesystemRootItem, ParentLayerItem
-from ..mount import MountItem
+from ..mount import (
+    BuildSource,
+    Mount,
+    MountItem,
+    RuntimeSource,
+    mounts_from_subvol_meta,
+)
 from ..phases_provide import PhasesProvideItem
 from .common import DUMMY_LAYER_OPTS, BaseItemTestCase, render_subvol
 
@@ -433,3 +440,46 @@ class MountItemTestCase(BaseItemTestCase):
                             subvolumes_dir=mounter_subvolumes_dir,
                         ),
                     )
+
+    def test_parse_mount_meta(self):
+        test_subvol = layer_resource_subvol(
+            __package__, "test-layer-with-mounts"
+        )
+
+        self.assertEqual(
+            sorted(
+                [
+                    Mount(
+                        build_source=BuildSource(
+                            type="layer",
+                            source="//fs_image/compiler/test_images:"
+                            + "hello_world_base",
+                        ),
+                        is_directory=True,
+                        mountpoint="mounted_hello",
+                        runtime_source=RuntimeSource(type="chicken"),
+                    ),
+                    Mount(
+                        build_source=BuildSource(
+                            type="host", source="/dev/null"
+                        ),
+                        is_directory=False,
+                        mountpoint="dev_null",
+                        runtime_source=None,
+                    ),
+                ],
+                key=lambda m: m.mountpoint,
+            ),
+            sorted(
+                mounts_from_subvol_meta(test_subvol), key=lambda m: m.mountpoint
+            ),
+        )
+
+        # Test a layer that has no mounts
+        test_subvol_no_mounts = layer_resource_subvol(
+            __package__, "test-layer-without-mounts"
+        )
+
+        self.assertEqual(
+            [], list(mounts_from_subvol_meta(test_subvol_no_mounts))
+        )
