@@ -9,11 +9,12 @@ import json
 import os
 from typing import AnyStr, Iterator
 
+from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 
 
-META_MOUNTS_DIR = "meta/private/mount"
-MOUNT_MARKER = "MOUNT"
+META_MOUNTS_DIR = Path("meta/private/mount")
+MOUNT_MARKER = Path("MOUNT")
 
 
 # Not covering, since this would require META_MOUNTS_DIR to be unreadable.
@@ -21,14 +22,14 @@ def _raise(ex):  # pragma: no cover
     raise ex
 
 
-def mountpoints_from_subvol_meta(subvol: Subvol) -> Iterator[str]:
+def mountpoints_from_subvol_meta(subvol: Subvol) -> Iterator[Path]:
     """
     Returns image-relative paths to mountpoints.  Directories get a trailing
     /, while files do not.  See the `_protected_path_set` docblock if this
     convention proves onerous.
     """
     mounts_path = subvol.path(META_MOUNTS_DIR)
-    if not os.path.exists(mounts_path):
+    if not mounts_path.exists():
         return
     for path, _next_dirs, _files in os.walk(
         # We are not `chroot`ed, so following links could access outside the
@@ -37,16 +38,17 @@ def mountpoints_from_subvol_meta(subvol: Subvol) -> Iterator[str]:
         onerror=_raise,
         followlinks=False,
     ):
-        relpath = os.path.relpath(path, subvol.path(META_MOUNTS_DIR)).decode()
-        if os.path.basename(relpath) == MOUNT_MARKER:
-            mountpoint = os.path.dirname(relpath)
-            assert not mountpoint.endswith("/"), mountpoint
+        relpath = Path(path).relpath(mounts_path)
+        if relpath.basename() == MOUNT_MARKER:
+            mountpoint = relpath.dirname()
+            assert not mountpoint.endswith(b"/"), mountpoint
+            assert not mountpoint.startswith(b"/"), mountpoint
             # It would be more technically correct to use `subvol.path()`
             # here (since that prevents us from following links outside the
             # image), but this is much more legible and probably safe.
-            with open(os.path.join(path, b"is_directory")) as f:
+            with open(Path(path) / "is_directory") as f:
                 is_directory = json.load(f)
-            yield mountpoint + ("/" if is_directory else "")
+            yield mountpoint + (b"/" if is_directory else b"")
 
 
 def ro_rbind_mount(src: AnyStr, subvol: Subvol, dest_in_subvol: AnyStr):
