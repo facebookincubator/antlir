@@ -3,19 +3,19 @@ id: python
 title: Python
 ---
 
-## The codebase has legacy files, please send diffs to fix them
+### The codebase has legacy files, please send diffs to fix them
 
 But, also, please do not mix no-op refactors with business logic changes. Plan
 ahead, or use `hg split`.
 
-## Stay lint clean
+### Stay lint clean
 
 If a linter rule is causing you problems, let's talk about fixing the lint rule
 instead.
 
-# Testing
+## Testing
 
-## All code should enforce 100% test coverage
+### All code should enforce 100% test coverage
 
 This is Python. If code wasn't executed, it's definitely wrong (incompatible
 types, bad kwargs, etc). Once we fully adopt Pyre, it'll help catch some shallow
@@ -53,7 +53,7 @@ cover` on a line or block level:
     - **not great:** the untested error message makes it hard to debug a real
       failure -- e.g. you forgot the `f` in front of an f-string.
 
-## Avoid `unittest.mock` when possible
+### Avoid `unittest.mock` when possible
 
 -   To unit-test `fs_image` code, design testable interfaces from day 1.
 -   Also design code to permit bottom-up easy integration tests -- these are
@@ -73,9 +73,9 @@ cover` on a line or block level:
     defining `_run_my_subprog = subprocess.check_output` in your module, and
     mocking `_run_my_subprog`.
 
-# `TARGETS`, resources & imports
+## `TARGETS`, resources & imports
 
-## Avoid `base_module`, prefer absolute imports (with exceptions)
+### Avoid `base_module`, prefer absolute imports (with exceptions)
 
 -   Please work to eliminate `base_module` from `TARGETS` files. This is
     deprecated throughout Facebook, and generally complicates code
@@ -85,7 +85,7 @@ cover` on a line or block level:
     -   Access sibling libraries: `from . import sibling_module`
     -   Access parent from tests: `from .. import module_being_tested`.
 
-## Use `Path.resource`, avoid `__file__`, `target_location`, `importlib.resources.path`
+### Use `Path.resource`, avoid `__file__`, `target_location`, `importlib.resources.path`
 
 Your `python_unittest` or `python_binary` has `resources`. You want to access
 the files from the running code. In `@mode/dev`, most of the above will kind of
@@ -95,7 +95,7 @@ path towards fixing this disaster is as follows:
 -   Step 1: Standardize on `with Path.resource(__package__, 'path')`
 -   Step 2: Make that context manager work correctly in all settings.
 
-### Rationale
+#### Rationale
 
 Our Python code runs in \~3 settings:
 
@@ -114,7 +114,7 @@ Our Python code runs in \~3 settings:
 For these reasons, we are standardizing on `Path.resource` to the exclusion of
 everything else.
 
-### Why are `target_location` / `load_location` deprecated?
+#### Why are `target_location` / `load_location` deprecated?
 
 `target_location` cannot work properly with distributed Buck caches. If your
 binary is built on Sandcastle trunk, it will have embedded inside an absolute
@@ -123,7 +123,7 @@ rate, in similar Sandcastle containers). Therefore, this binary will fail to run
 anywhere else, including devboxes. We haven't seen much of this because it only
 affects `@mode/opt` runs not on Sandcastle, and our usage is low.
 
-## Import ordering
+### Import ordering
 
 We recommend sectioned imports, separated by a single blank line. First come
 standard modules, then "other" fs\_image modules, last come sibling submodules
@@ -145,9 +145,9 @@ from .sibling_submodule import _impl_detail
 from ..module_being_tested import func_to_test
 ```
 
-# General
+## General
 
-## Recommended `__main__` boilerplate
+### Recommended `__main__` boilerplate
 
 A main function of any complexity should be a separate function and covered by
 unit tests. Any main (simple or not) should be covered by *some* (not
@@ -168,7 +168,7 @@ In a "simple" main that has ample integration test coverage, you can parse 3-4
 args inline, and glue together a few functions inline. **If in doubt, use a
 separate main function and write unit-tests.**
 
-## Logging
+### Logging
 
 It's the responsibility of any `__main__` to call `init_logging` (see the
 section on `__main__`).
@@ -182,7 +182,7 @@ log = get_file_logger(__file__)
 log.info(f'foo {var}')
 ```
 
-## Formatting: PEP-8, 80 chars
+### Formatting: PEP-8, 80 chars
 
 -   If you need to churn formatting, do it on a separate diff. Don't mix
     re-formatting with logic changes. Super-small reformats may be begrudgingly
@@ -196,9 +196,9 @@ log.info(f'foo {var}')
     can use `black -S -l 80` to retain ambient style. In new modules, you can
     use `"` if it makes you happy.
 
-## Use `Path` from `fs_image.fs_utils`, avoid `pathlib`
+### Use `Path` from `fs_image.fs_utils`, avoid `pathlib`
 
-### Why `Path`?
+#### Why `Path`?
 
 -   Linux paths are not `str`, they are `bytes`.
 -   Path raises when compared to `str`, preventing bugs like `'a' == b'a'`.
@@ -208,13 +208,13 @@ log.info(f'foo {var}')
     the hierarchy, your code fails at runtime, in `Path`, there is only one
     class.
 
-### How to `Path`ify code
+#### How to `Path`ify code
 
 -   Take and return just `Path` in new interfacecs
 -   Take `AnyStr` in old interfaces, and immediately coerce to `Path` to
     simplify manipulations (Postel's law).
 
-### `.decode()` on `Path` is a code smell
+#### `.decode()` on `Path` is a code smell
 
 We need this to interface with foreign modules (e.g. `gnupg`), but in most other
 circumstances, we have primitives for avoiding explicit `.decode()` calls and
@@ -231,7 +231,7 @@ Specifically, be aware that:
 -   Use `Path.json_dumps` instead of `json.dumps` to transparently serialize
     `Path`.
 
-## Use context managers instead of functions when appropriate
+### Use context managers instead of functions when appropriate
 
 If not already familiar, learn about the virtues of
 [RAII](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization). In
@@ -264,11 +264,11 @@ with the extra conceptual complexity it entails, so please don't blindly
 start a reasoned discussion about the large benefits that broader
 `async`ification would bring.
 
-## Prefer long-form args (`--absolute-names`) over short (`-P`)
+### Prefer long-form args (`--absolute-names`) over short (`-P`)
 
 Seriously, there's not even one `P` in `--absolute-names`.
 
-## Use the `--foo=bar` form for long-form args when possible
+### Use the `--foo=bar` form for long-form args when possible
 
 The only known exceptions are:
 
@@ -308,7 +308,7 @@ Why use one arg with `=` instead of two separate args?
         + 'its value',
     ```
 
-## Respect private identifiers
+### Respect private identifiers
 
 Conventionally, private Python identifiers start with `_`, and should not be
 used outside the module, or its test. A module can span multiple files (like
@@ -320,7 +320,7 @@ code that runs on `buck build`, `buck test`, or automation. This feature set is
 really just for interactive debugging by humans via the CLI. Don't use it in
 other code!
 
-## Limit positional args to 2, use keyword-only args (`pos, *, kw1, kw2`)
+### Limit positional args to 2, use keyword-only args (`pos, *, kw1, kw2`)
 
 Callsites using many positional arguments are harder to read & understand -- it
 is rare that an action takes more than 2 obviously ordered objects. In rare

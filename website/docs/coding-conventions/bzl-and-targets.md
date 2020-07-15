@@ -90,8 +90,8 @@ binary_path=( $(exe //fs_image:artifacts-dir) )
 artifacts_dir=\\$( "${binary_path[@]}" )
 ```
 
-Understanding what follows starts with carefully reading the [genrule
-docs](https://buck.build/rule/genrule.html).
+Understanding what follows starts with carefully reading the
+[genrule docs](https://buck.build/rule/genrule.html).
 
 You have to use `exe` instead of `location` because the latter will rebuild your
 genrule if the **runtime dependencies** of the executable target change, while
@@ -117,9 +117,8 @@ Use ``fs_image_internal_rule`` for any internal rules
 
 If you're using any macros to generate internal "wrapper" rules (i.e. any rule
 that doesn't use the ``name`` of the underlying target), you should set the
-``fs_image_internal_rule`` kwarg to true in the definition. This will ensure
-that that rule is not included in the target-determinator distance calculation,
-which is crucial in ensuring the proper builds/tests are run on diffs.
+``fs_image_internal_rule`` kwarg to true in the definition.
 
-For more info on this process, see
-`this wiki <https://www.internalfb.com/intern/wiki/FS_Image/Hiding_Internal_Edges_in_TARGETS/>`__.
+This is good practice as it enables further post-processing when determining
+dependencies. We use this internally in fb for example to compute the
+"human-visible" dependency cost to a target, after omitting internal targets.
