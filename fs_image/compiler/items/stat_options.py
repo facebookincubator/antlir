@@ -9,15 +9,10 @@ Helpers for setting `stat (2)` options on files, directories, etc, which
 we are creating inside the image.
 """
 import os
-import pwd
 from typing import Union
 
-from fs_image.fs_utils import Path
-from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from fs_image.nspawn_in_subvol.ba_runner import BuildAppliance
 from fs_image.subvol_utils import Subvol
-
-from .common import generate_work_dir
 
 
 # `mode` can be an integer fully specifying the bits, or a symbolic
@@ -62,14 +57,8 @@ def build_stat_options(
     # `full_target_path` if it's a symlink.  As far as I know, this should
     # never occur, so just let the exception fly.
     if build_appliance:
-        work_dir = generate_work_dir()
-        opts = new_nspawn_opts(
-            cmd=["test", "!", "-L", Path(work_dir) / rel_path],
-            layer=build_appliance,
-            bindmount_rw=[(subvol.path(), work_dir)],
-            user=pwd.getpwnam("root"),
-        )
-        run_non_booted_nspawn(opts, PopenArgs())
+        ba = BuildAppliance(subvol, build_appliance)
+        ba.run(["test", "!", "-L", ba.path(rel_path)])
     else:
         subvol.run_as_root(["test", "!", "-L", full_target_path])
     if do_not_set_mode:
@@ -79,42 +68,25 @@ def build_stat_options(
         # creating a directory that already has something inside it.  On the
         # plus side, it helps with nested directory creation.
         if build_appliance:
-            work_dir = generate_work_dir()
-            opts = new_nspawn_opts(
-                cmd=[
-                    "chmod",
-                    "-R",
-                    mode_to_str(item.mode),
-                    Path(work_dir) / rel_path,
-                ],
-                layer=build_appliance,
-                bindmount_rw=[(subvol.path(), work_dir)],
-                user=pwd.getpwnam("root"),
-            )
-            run_non_booted_nspawn(opts, PopenArgs())
+            ba.run(["chmod", "-R", mode_to_str(item.mode), ba.path(rel_path)])
         else:
             subvol.run_as_root(
                 ["chmod", "-R", mode_to_str(item.mode), full_target_path]
             )
     if build_appliance:
-        work_dir = generate_work_dir()
-        opts = new_nspawn_opts(
-            cmd=[
+        ba.run(
+            [
                 "chown",
                 "--no-dereference",
                 "-R",
                 item.user_group,
-                Path(work_dir) / rel_path,
+                ba.path(rel_path),
             ],
-            layer=build_appliance,
-            bindmount_rw=[(subvol.path(), work_dir)],
             bindmount_ro=[
                 ("/etc/passwd", "/etc/passwd"),
                 ("/etc/group", "/etc/group"),
             ],
-            user=pwd.getpwnam("root"),
         )
-        run_non_booted_nspawn(opts, PopenArgs())
     else:
         subvol.run_as_root(
             [
