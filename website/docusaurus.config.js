@@ -113,8 +113,10 @@ module.exports = {
         docs: {
           homePageId: 'introduction',
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl:
+          editUrl: FBInternalWithOssFallback(
+            'https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/docs/website',
             'https://github.com/facebookincubator/fs_image/edit/master/website/',
+          ),
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
