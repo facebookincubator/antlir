@@ -165,7 +165,12 @@ class SubvolTestCase(unittest.TestCase):
             self.assertEqual(sendstream, outfile.read())
 
     @with_temp_subvols
-    def test_mark_readonly_and_send_to_new_loopback(self, temp_subvols):
+    def _test_mark_readonly_and_send_to_new_loopback(
+        self, temp_subvols, multi_pass_size_minimization
+    ):
+        subvol_opts = SubvolOpts(
+            multi_pass_size_minimization=multi_pass_size_minimization
+        )
         sv = temp_subvols.create("subvol")
         sv.run_as_root(
             [
@@ -185,11 +190,16 @@ class SubvolTestCase(unittest.TestCase):
             self.assertEqual(
                 2,
                 sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name, waste_factor=waste_too_low
+                    loop_path.name,
+                    subvol_opts=subvol_opts,
+                    waste_factor=waste_too_low,
                 ),
             )
             self.assertEqual(
-                1, sv.mark_readonly_and_send_to_new_loopback(loop_path.name)
+                1,
+                sv.mark_readonly_and_send_to_new_loopback(
+                    loop_path.name, subvol_opts=subvol_opts
+                ),
             )
             # Same 2-try run, but this time, exercise the free space check
             # instead of relying on parsing `btrfs receive` output.
@@ -199,9 +209,21 @@ class SubvolTestCase(unittest.TestCase):
                 self.assertEqual(
                     2,
                     sv.mark_readonly_and_send_to_new_loopback(
-                        loop_path.name, waste_factor=waste_too_low
+                        loop_path.name,
+                        subvol_opts=subvol_opts,
+                        waste_factor=waste_too_low,
                     ),
                 )
+
+    def test_mark_readonly_and_send_to_new_loopback(self):
+        self._test_mark_readonly_and_send_to_new_loopback(
+            multi_pass_size_minimization=False
+        )
+
+    def test_mark_readonly_and_send_to_new_loopback_with_multi_pass(self):
+        self._test_mark_readonly_and_send_to_new_loopback(
+            multi_pass_size_minimization=True
+        )
 
     @with_temp_subvols
     def test_mark_readonly_and_send_to_new_loopback_writable(

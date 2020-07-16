@@ -375,6 +375,14 @@ def parse_args(argv):
         default=False,
         help="Pass this flag to make the resulting image a btrfs seed device",
     )
+
+    parser.add_argument(
+        "--multi-pass-size-minimization",
+        action="store_true",
+        default=False,
+        help="By default, we do not apply time-costly efforts to minimize the"
+        " size of loopback image",
+    )
     # Future: To add support for incremental send-streams, we'd want to
     # use this (see `--ancestor-jsons` in `image_package.bzl`)
     #
@@ -430,6 +438,7 @@ def package_image(argv):
             subvol_opts=SubvolOpts(
                 readonly=not args.writable_subvolume,
                 seed_device=args.seed_device,
+                multi_pass_size_minimization=args.multi_pass_size_minimization,
             )
         ),
     )

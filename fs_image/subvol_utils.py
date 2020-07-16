@@ -56,6 +56,8 @@ class SubvolOpts(NamedTuple):
     # Make the resulting subvolume a seed device, where another disk can be
     # provided for writes
     seed_device: bool = False
+    # Apply time-costly optimization to minimize the size of loopback image
+    multi_pass_size_minimization: bool = False
 
 
 _default_subvol_opts = SubvolOpts()
@@ -587,6 +589,8 @@ class Subvol:
                 output_path, int(fs_bytes), subvol_opts
             )
             if leftover_bytes == 0:
+                if not subvol_opts.multi_pass_size_minimization:
+                    break
                 # The following simple trick saves about 20% of image size. The
                 # reason is that btrfs auto-allocates more metadata blocks for
                 # larger filesystems, but `resize` does not release them. For
