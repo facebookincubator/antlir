@@ -591,12 +591,12 @@ class Subvol:
             if leftover_bytes == 0:
                 if not subvol_opts.multi_pass_size_minimization:
                     break
-                # The following simple trick saves about 20% of image size. The
+                # The following simple trick saves about 30% of image size. The
                 # reason is that btrfs auto-allocates more metadata blocks for
                 # larger filesystems, but `resize` does not release them. For
                 # many practical use-cases the compression ratio is close to 2,
                 # hence initial `fs_bytes` estimate is too high.
-                leftover_bytes, new_size = self._send_to_loopback_if_fits(
+                leftover_bytes, new_size = self._send_to_loopback_second_pass(
                     output_path, image_size, subvol_opts
                 )
                 assert leftover_bytes == 0, (
@@ -830,6 +830,35 @@ class Subvol:
                         )
                     ).check_returncode()
             return (0, loop_vol.minimize_size())
+
+    def _send_to_loopback_second_pass(
+        self, output_path, initial_size_bytes, subvol_opts: SubvolOpts
+    ) -> (int, int):
+        size_bytes_to_try = 512 * os.stat(output_path).st_blocks
+        attempts = 0
+        last_effort = False
+        while True:
+            attempts += 1
+            size_bytes_to_try *= 1.1
+            if size_bytes_to_try >= initial_size_bytes:
+                # If we got here we could just use the output of the first pass.
+                # This is a possible future disk vs time optimization.
+                size_bytes_to_try = initial_size_bytes
+                last_effort = True
+            leftover_bytes, new_size = self._send_to_loopback_if_fits(
+                output_path, int(size_bytes_to_try), subvol_opts
+            )
+            if leftover_bytes != 0:
+                log.warning(
+                    f"{self._path} did not fit in {size_bytes_to_try} bytes, "
+                    f"{leftover_bytes} sendstream bytes were left over, "
+                    f"attempts {attempts}"
+                )
+            if leftover_bytes == 0 or last_effort:
+                return (leftover_bytes, new_size)
+            assert (
+                attempts <= 10
+            ), f"{attempts} attempts were not enough for {self._path}"
 
     @contextmanager
     def receive(self, from_file):

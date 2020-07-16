@@ -112,7 +112,7 @@ def _mount_image_file(
             "-t",
             "btrfs",
             "-o",
-            "loop,discard,nobarrier,compress=zstd",
+            "loop,discard,nobarrier,compress=zstd:19",
             file_path,
             mount_path,
         ),
