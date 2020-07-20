@@ -124,11 +124,19 @@ def ensure_clean_sh_exists(artifacts_dir: Path) -> None:
             #!/bin/bash
             set -ue -o pipefail
             buck clean
-            sudo umount -l buck-image-out/volume
-            rm buck-image-out/image.btrfs
-            rm -rf buck-image-out/eden
-            rm buck-image-out/clean.sh
-        """
+            sudo umount -l buck-image-out/volume || true
+            rm -f buck-image-out/image.btrfs
+            # Just try to remove empty checkout dirs if they exist
+            # Leave any checkouts as they may still be mounted by Eden
+            REPOS="buck-image-out/eden/repos"
+            mkdir -p "$REPOS"
+            find "$REPOS" -maxdepth 2 -depth -type d -print0 | xargs -0 rmdir 2>/dev/null || true
+            if [ -d "$REPOS" ]; then
+                echo "Eden checkouts remain in $REPOS and were not cleaned up"
+            else
+                rm -rf buck-image-out/eden
+            fi
+        """  # noqa: E501
             )
         )
     os.chmod(
