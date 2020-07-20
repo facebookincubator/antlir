@@ -74,7 +74,7 @@ Now you can refer to a stable version of a package, represented as an
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "export_file", "get_visibility")
 load("//fs_image/bzl/image_actions:feature.bzl", "private_do_not_use_feature_json_genrule")
 load(":image_layer.bzl", "image_layer")
 load(":target_helpers.bzl", "normalize_target")
@@ -135,7 +135,7 @@ def fetched_package_layers_from_json_dir_db(
         if not p.startswith(package_db_prefix) or not p.endswith(suffix):
             fail("Bug: {} was not {}*/*{}".format(p, package_db_prefix, suffix))
         package, tag = p[len(package_db_prefix):-len(suffix)].split("/")
-        export_file(name = p)
+        export_file(name = p, fs_image_internal_rule = True)
         print_how_to_fetch_json = _print_how_to_fetch_json(":" + p)
         _fetched_package_layer(
             name = package + "/" + tag + layer_suffix,
@@ -215,6 +215,7 @@ def _fetched_package_layer(
         features = [":" + package_feature],
         mount_config = ":" + mount_config,
         visibility = visibility,
+        fs_image_internal_rule = True,
     )
 
 # Deliberately not usable stand-alone, use `fetched_package_layers_from_db`
@@ -246,4 +247,5 @@ def _fetched_package_with_nondeterministic_fs_metadata(
             print_how_to_fetch_json = print_how_to_fetch_json,
         ),
         visibility = get_visibility(visibility, name),
+        fs_image_internal_rule = True,
     )
