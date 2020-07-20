@@ -8,6 +8,7 @@ max-line-length = 80
 # B305 is not useful in a pure-Py3 codebase
 # E402 is super-noisy with `filterwarnings`, and also bans imports inside
 #      blocks of `if __name__ == '__main__':`, which are a good idea.
-ignore = W503,E203,E266,E741,B305,E402
+# B950 because we already enforce E501
+ignore = W503,E203,E266,E741,B305,E402,B950
 # Future: Re-enable T4 after I land my `deepfrozen` work
 select = B,C,E,F,P,W,B9
