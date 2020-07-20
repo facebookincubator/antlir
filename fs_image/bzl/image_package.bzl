@@ -24,7 +24,9 @@ def image_package(
         layer = None,
         visibility = None,
         writable_subvolume = False,
-        seed_device = False):
+        seed_device = False,
+        # See comments in `oss_shim.bzl`
+        fs_image_internal_rule = False):
     visibility = get_visibility(visibility, name)
 
     local_layer_rule, format = paths.split_extension(name)
@@ -95,4 +97,5 @@ def image_package(
             target_name = name,
         ),
         visibility = visibility,
+        fs_image_internal_rule = fs_image_internal_rule,
     )

@@ -53,7 +53,8 @@ def _image_layer_impl(
         # Set this to emit a `-boot` target, running which will boot
         # `systemd` inside the image.
         enable_boot_target = False,
-        visibility = None):
+        visibility = None,
+        fs_image_internal_rule = False):
     visibility = get_visibility(visibility, _layer_name)
     if mount_config == None:
         mount_config = {}
