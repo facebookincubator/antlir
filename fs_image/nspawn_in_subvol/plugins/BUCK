@@ -111,7 +111,7 @@ python_library(
 
 image.layer(
     name = "shadow-paths-test-layer",
-    parent_layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
+    parent_layer = TEST_IMAGE_PREFIX + "test-layer",
     features = [
         # We'll set up shadowing both via links and directly, and both work.
         image.mkdir("/", "real"),

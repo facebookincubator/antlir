@@ -176,7 +176,7 @@ _TEST_TYPE_TO_REWRITE_CMD = {
 #
 #   buck run //fs_image/nspawn_in_subvol:run-test -- --layer "$(
 #     buck build --show-output \
-#       //fs_image/compiler/test_images:only-for-tests-read-only-host-clone |
+#       //fs_image/compiler/test_images:test-layer |
 #         cut -f 2- -d ' '
 #   )" -- /layer-test-binary -ba r --baz=3 --output $(mktemp) --ou ; echo $?
 #

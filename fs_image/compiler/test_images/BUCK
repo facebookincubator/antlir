@@ -62,44 +62,25 @@ buck_genrule(
     """,
 )
 
-# The next set of layers are used to test our nspawn runtime.
-#
-# They start by making a read-only clone of part of the host filesystem.
-# This is kind of like `systemd-nspawn --volatile`.  A more heremtic
-# solution would be to commit e.g.  a pre-determined Alpine Linux mini image
-# into `fs_image`, but for our simple tests, this is fine.
-
+# This layer is currently just a rename of the default build appliance for the
+# purpose of testing the nspawn runtime.  We use the build appliance
+# because we know that it has the necessary tools and doesn't require us
+# to build a special 'just for test' image from scratch.
+# For completeness sake, especially for bootstrapping these tests we really
+# should have a carefully constructed (probably by hand) unit test image layer
+# that does not impose a circular dependency.  But for now, this works.
 image.layer(
-    name = "only-for-tests-read-only-host-clone-base",
-    features = [
-        image.mkdir("/", "mnt"),
-        image.mkdir("/", "var"),
-    ] + [
-        image.host_dir_mount(source)
-        for source in [
-            "/bin",
-            "/lib",
-            "/sbin",
-            "/usr",
-            # Future: move these 2 (and the `make_dirs`) into an FB-only feature.
-            "/mnt/gvfs",
-        ]
-    ],
-)
-
-image.layer(
-    name = "only-for-tests-read-only-host-clone",
-    parent_layer = ":only-for-tests-read-only-host-clone-base",
+    name = "test-layer",
+    parent_layer = DEFAULT_BUILD_APPLIANCE,
     features = [
         # `test_non_ephemeral_snapshot` needs a place to write as `nobody`.
         image.mkdir(
-            "/",
-            "home/nobody",
+            "/home",
+            "nobody",
             mode = "u+rwx,og+rx",
             user = "nobody",
             group = "nobody",
         ),
-        image.host_dir_mount("/etc"),
     ],
 )
 
@@ -107,7 +88,7 @@ image.layer(
 # on top of the read-only host clone.
 image_build_librename_shadowed(
     name = "build-librename-shadowed",
-    parent_layer = ":only-for-tests-read-only-host-clone",
+    parent_layer = ":test-layer",
 )
 
 # Verified by `test_*_build_appliance` in `test-image-layer`.
@@ -405,7 +386,7 @@ image.feature(
 
 image.layer(
     name = "installed-executables",
-    parent_layer = ":only-for-tests-read-only-host-clone",
+    parent_layer = ":test-layer",
     features = [":feature_install_files"],
 )
 
