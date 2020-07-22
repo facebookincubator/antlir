@@ -10,7 +10,7 @@ image.  This target lets you do just that, for example, here is a shell:
 
     buck run //fs_image/nspawn_in_subvol:run -- --layer "$(
         buck build --show-output \\
-            //fs_image/compiler/tests:only-for-tests-read-only-host-clone |
+            //fs_image/compiler/test_images:test-layer |
                 cut -f 2- -d ' ')"
 
 The above is a handful to remember, so each layer gets a corresponding

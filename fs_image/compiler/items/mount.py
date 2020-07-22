@@ -180,6 +180,9 @@ def mounts_from_subvol_meta(subvol: Subvol) -> Iterator[Tuple[Path]]:
     Returns a list of constructed `MountItem`s built from the meta/ of the
     provided subvol.
     """
+    if not subvol:
+        return
+
     mounts_path = subvol.path(META_MOUNTS_DIR)
     if not mounts_path.exists():
         return

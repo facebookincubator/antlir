@@ -176,7 +176,7 @@ class NspawnTestCase(NspawnTestBase):
         self.assertEqual(
             37,
             self._nspawn_in(
-                (__package__, "host"),
+                (__package__, "test-layer"),
                 ["--", "sh", "-c", "exit 37"],
                 check=False,
             ).returncode,
@@ -185,7 +185,7 @@ class NspawnTestCase(NspawnTestBase):
     def test_redirects(self):
         cmd = ["--", "sh", "-c", "echo ohai && echo abracadabra >&2"]
         ret = self._nspawn_in(
-            (__package__, "host"),
+            (__package__, "test-layer"),
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -198,7 +198,7 @@ class NspawnTestCase(NspawnTestBase):
 
         # The same test with `--quiet` is much simpler.
         ret = self._nspawn_in(
-            (__package__, "host"),
+            (__package__, "test-layer"),
             ["--quiet"] + cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -231,7 +231,7 @@ class NspawnTestCase(NspawnTestBase):
     def test_logs_directory(self):
         # The log directory is on by default.
         ret = self._nspawn_in(
-            (__package__, "host"),
+            (__package__, "test-layer"),
             [
                 "--",
                 "sh",
@@ -248,7 +248,7 @@ class NspawnTestCase(NspawnTestBase):
         self.assertEqual(
             0,
             self._nspawn_in(
-                (__package__, "host"),
+                (__package__, "test-layer"),
                 ["--no-logs-tmpfs", "--", "test", "!", "-e", "/logs"],
             ).returncode,
         )
@@ -258,7 +258,7 @@ class NspawnTestCase(NspawnTestBase):
             tf.write(b"hello")
             tf.seek(0)
             ret = self._nspawn_in(
-                (__package__, "host"),
+                (__package__, "test-layer"),
                 [
                     "--forward-fd",
                     str(tf.fileno()),
@@ -283,7 +283,7 @@ class NspawnTestCase(NspawnTestBase):
         # the unique place we have to do it, keep it simple.
         dest_subvol._exists = True
         self._nspawn_in(
-            (__package__, "host"),
+            (__package__, "test-layer"),
             [
                 f"--snapshot-into={dest_subvol.path()}",
                 "--",
@@ -300,7 +300,7 @@ class NspawnTestCase(NspawnTestBase):
 
     def test_bind_repo(self):
         self._nspawn_in(
-            (__package__, "host"),
+            (__package__, "test-layer"),
             [
                 "--bind-repo-ro",
                 "--",
@@ -316,7 +316,7 @@ class NspawnTestCase(NspawnTestBase):
 
     def test_cap_net_admin(self):
         self._nspawn_in(
-            (__package__, "host"),
+            (__package__, "test-layer"),
             [
                 "--user",
                 "root",
@@ -336,7 +336,7 @@ class NspawnTestCase(NspawnTestBase):
 
     def test_hostname(self):
         ret = self._nspawn_in(
-            (__package__, "host"),
+            (__package__, "test-layer"),
             ["--hostname=test-host.com", "--", "/bin/hostname"],
             stdout=subprocess.PIPE,
             check=True,
@@ -349,7 +349,7 @@ class NspawnTestCase(NspawnTestBase):
     )
     def test_tls_environment(self):
         ret = self._nspawn_in(
-            (__package__, "host"),
+            (__package__, "test-layer"),
             [
                 "--forward-tls-env",
                 "--",
@@ -366,7 +366,7 @@ class NspawnTestCase(NspawnTestBase):
     def test_bindmount_rw(self):
         with tempfile.TemporaryDirectory() as tmpdir, tempfile.TemporaryDirectory() as tmpdir2:  # noqa: E501
             self._nspawn_in(
-                (__package__, "host"),
+                (__package__, "test-layer"),
                 [
                     "--user",
                     "root",
@@ -389,7 +389,7 @@ class NspawnTestCase(NspawnTestBase):
         with tempfile.TemporaryDirectory() as tmpdir:
             with self.assertRaises(subprocess.CalledProcessError):
                 ret = self._nspawn_in(
-                    (__package__, "host"),
+                    (__package__, "test-layer"),
                     [
                         "--user",
                         "root",
@@ -420,7 +420,7 @@ class NspawnTestCase(NspawnTestBase):
     def test_mknod(self):
         "CAP_MKNOD is dropped by our runtime."
         ret = self._nspawn_in(
-            (__package__, "host"),
+            (__package__, "test-layer"),
             ["--user", "root", "--quiet", "--", "mknod", "/foo", "c", "1", "3"],
             stderr=subprocess.PIPE,
             check=False,
@@ -592,7 +592,7 @@ class NspawnTestCase(NspawnTestBase):
     # The default path determines which binaries get shadowed, so it's
     # important that it be the same across the board.
     def test_path_env(self):
-        for layer in ["host", "build-appliance", "bootable-systemd-os"]:
+        for layer in ["test-layer", "bootable-systemd-os"]:
             for extra_args, expected_path in [
                 [[], DEFAULT_PATH_ENV],
                 [["--user=root"], DEFAULT_PATH_ENV],

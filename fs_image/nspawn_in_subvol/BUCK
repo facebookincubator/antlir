@@ -113,7 +113,7 @@ python_binary(
 # NB: Internally, you can use `buck run //tools/xar:make_xar` instead.
 image.layer(
     name = "host-hello-xar",
-    parent_layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
+    parent_layer = TEST_IMAGE_PREFIX + "test-layer",
     features = [image.install("tests/hello.xar", "/hello.xar")],
 )
 
@@ -146,11 +146,8 @@ python_unittest(
     ]],
     resources = {
         layer_resource(
-            TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
-        ): "tests/host",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/build-appliance",
+            TEST_IMAGE_PREFIX + "test-layer",
+        ): "tests/test-layer",
         layer_resource("//tupperware/image/base:base"): "tests/bootable-systemd-os",
         layer_resource(":host-hello-xar"): "tests/host-hello-xar",
     },

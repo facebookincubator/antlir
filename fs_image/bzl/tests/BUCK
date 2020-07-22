@@ -13,7 +13,7 @@ python_library(
 image.python_unittest(
     name = "test-image-python-unittest",
     srcs = ["test_image_python_unittest.py"],
-    layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
+    layer = TEST_IMAGE_PREFIX + "test-layer",
     needed_coverage = [(100, ":coverage_test_helper")],
     deps = [":coverage_test_helper"],
     env = {"kitteh": "meow"},
@@ -46,7 +46,7 @@ image.python_unittest(
 image.python_unittest(
     name = "test-image-hostname-python",
     srcs = ["test_image_hostname.py"],
-    layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
+    layer = TEST_IMAGE_PREFIX + "test-layer",
     hostname = "test-hostname.com",
 )
 
@@ -58,7 +58,7 @@ image.python_unittest(
 image.cpp_unittest(
     name = "test-image-cpp-unittest",
     srcs = ["ImageCppUnittestTest.cpp"],
-    layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
+    layer = TEST_IMAGE_PREFIX + "test-layer",
     env = {"kitteh": "meow"},
 )
 
@@ -73,7 +73,7 @@ image.cpp_unittest(
 image.cpp_unittest(
     name = "test-image-hostname-cpp",
     srcs = ["ImageHostnameTest.cpp"],
-    layer = TEST_IMAGE_PREFIX + "only-for-tests-read-only-host-clone",
+    layer = TEST_IMAGE_PREFIX + "test-layer",
     env = {},
     hostname = "test-hostname.com",
 )

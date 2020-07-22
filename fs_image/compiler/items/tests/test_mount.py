@@ -483,3 +483,6 @@ class MountItemTestCase(BaseItemTestCase):
         self.assertEqual(
             [], list(mounts_from_subvol_meta(test_subvol_no_mounts))
         )
+
+        # Test when no layer is passed
+        self.assertEqual([], list(mounts_from_subvol_meta(None)))
