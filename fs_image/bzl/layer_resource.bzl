@@ -1,6 +1,10 @@
 load(":oss_shim.bzl", "buck_genrule")
 load(":target_helpers.bzl", "wrap_target")
 
+# This needs to be kept in sync with
+# `fs_image.tests.layer_resource.LAYER_SLASH_ENCODE`
+LAYER_SLASH_ENCODE = "%2F"
+
 def layer_resource(target):
     """
     Wrap an `image.layer()` target with this function before including it
