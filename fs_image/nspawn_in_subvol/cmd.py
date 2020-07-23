@@ -19,7 +19,7 @@ from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 from fs_image.artifacts_dir import find_repo_root
 from fs_image.common import nullcontext
 from fs_image.compiler import procfs_serde
-from fs_image.compiler.items.mount_utils import clone_mounts
+from fs_image.compiler.items.mount import mounts_from_subvol_meta
 from fs_image.find_built_subvol import Subvol
 from fs_image.fs_utils import Path
 from fs_image.send_fds_and_run import popen_and_inject_fds_after_sudo
@@ -121,6 +121,27 @@ def _extra_nspawn_args_and_env(
     # and non-booted case.
     extra_nspawn_args = []
 
+    # Note: that nspawn_in_subvol only handles `BuildSource` mount
+    # configurations.
+    for mount in mounts_from_subvol_meta(opts.layer):
+        if mount.build_source.type == "host":
+            extra_nspawn_args.extend(
+                bind_args(
+                    mount.build_source.source,
+                    "/" + mount.mountpoint,
+                    readonly=True,
+                )
+            )
+        elif mount.build_source.type == "layer":
+            target = mount.build_source.source
+            extra_nspawn_args.extend(
+                bind_args(
+                    opts.layer_dep_to_location[target].path(),
+                    "/" + mount.mountpoint,
+                    readonly=True,
+                )
+            )
+
     if opts.quiet:
         extra_nspawn_args.append("--quiet")
 
@@ -216,7 +237,6 @@ def _snapshot_subvol(
     if snapshot_into:
         nspawn_subvol = Subvol(snapshot_into)
         nspawn_subvol.snapshot(src_subvol)
-        clone_mounts(src_subvol, nspawn_subvol)
         yield nspawn_subvol
     else:
         with TempSubvolumes() as tmp_subvols:
@@ -227,7 +247,6 @@ def _snapshot_subvol(
                 os.path.dirname(tmp_name)
             ) or os.path.basename(tmp_name)
             nspawn_subvol = tmp_subvols.snapshot(src_subvol, tmp_name)
-            clone_mounts(src_subvol, nspawn_subvol)
             yield nspawn_subvol
 
 

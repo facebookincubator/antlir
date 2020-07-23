@@ -34,6 +34,13 @@ from fs_image.find_built_subvol import Subvol, find_built_subvol
 from fs_image.fs_utils import Path
 
 
+# This is pretty awful, but buck doesn't give us shell quouted
+# paths in the output of macros.  So when we need to load the
+# mapping of target -> locations output by the `query_targets_and_outputs`
+# we can't rely something that could be in the path.  I choose `|` here
+# because it's unlikley that this would be in a path, since it's means
+# pipe.
+_QUERY_TARGETS_AND_OUTPUTS_SEP = "|"
 _DEFAULT_SHELL = "/bin/bash"
 _NOBODY_USER = pwd.getpwnam("nobody")
 T = TypeVar("T")
@@ -198,6 +205,7 @@ class _NspawnOpts(NamedTuple):
     user: pwd.struct_passwd = _NOBODY_USER
     debug_only_opts: _NspawnDebugOnlyNotForProdOpts = _DEBUG_OPTS_FOR_PROD
     allow_mknod: bool = False
+    layer_dep_to_location: Mapping[AnyStr, Subvol] = {}
 
 
 def new_nspawn_opts(**kwargs):
@@ -218,6 +226,19 @@ def new_nspawn_opts(**kwargs):
     return opts
 
 
+def _target_to_subvol_pair(arg: str) -> Mapping[AnyStr, Subvol]:
+    """ Convert an argument that is a combination of TARGET:LOCATION pairs
+    delimited by _QUERY_TARGETS_AND_OUTPUTS_SEP into a (target, subvol) pair.
+    """
+    targs_locs = arg.split(_QUERY_TARGETS_AND_OUTPUTS_SEP)
+    return dict(
+        zip(
+            targs_locs[::2],
+            map(lambda x: find_built_subvol(x), targs_locs[1::2]),
+        )
+    )
+
+
 def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
     "Keep in sync with `_NspawnOpts`"
     defaults = _NspawnOpts._field_defaults
@@ -227,6 +248,14 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         type=find_built_subvol,
         help="An `image.layer` output path (`buck targets --show-output`)",
     )
+    parser.add_argument(
+        "--layer-dep-to-location",
+        default={},
+        type=_target_to_subvol_pair,
+        help="Pair of a dependency layer target and the on-disk location of "
+        "the layer on disk",
+    )
+
     parser.add_argument(
         "--bind-repo-ro",
         action="store_true",

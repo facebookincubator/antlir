@@ -21,6 +21,7 @@ from fs_image.btrfs_diff.tests.render_subvols import (
     pop_path,
     render_sendstream,
 )
+from fs_image.compiler.items.mount import mounts_from_subvol_meta
 from fs_image.find_built_subvol import find_built_subvol
 from fs_image.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
 
@@ -68,7 +69,8 @@ class ImageLayerTestCase(unittest.TestCase):
         with open(os.path.join(subvol_path, b"hello_world")) as hello:
             self.assertEqual("", hello.read())
 
-    def _check_parent(self, subvol_path):
+    def _check_parent(self, subvol):
+        subvol_path = subvol.path()
         self._check_hello(subvol_path)
         # :parent_layer
         for path in [
@@ -78,15 +80,17 @@ class ImageLayerTestCase(unittest.TestCase):
             self.assertTrue(
                 os.path.isfile(os.path.join(subvol_path, path)), path
             )
+
         # :feature_dirs not tested by :parent_layer
         self.assertTrue(
             os.path.isdir(os.path.join(subvol_path, b"foo/bar/baz"))
         )
-        # :hello_world_base was mounted here
+
+        # :hello_world_base has a mount entry in the meta.  Note that this
+        # *does not* validate that the mount itself exists.
         self.assertTrue(
-            os.path.exists(
-                os.path.join(subvol_path, b"mounted_hello/hello_world")
-            )
+            "mounted_hello"
+            in (m.mountpoint for m in mounts_from_subvol_meta(subvol))
         )
 
         # :feature_symlinks
@@ -109,8 +113,9 @@ class ImageLayerTestCase(unittest.TestCase):
                 source, os.readlink(os.path.join(subvol_path, dest))
             )
 
-    def _check_child(self, subvol_path):
-        self._check_parent(subvol_path)
+    def _check_child(self, subvol):
+        subvol_path = subvol.path()
+        self._check_parent(subvol)
         for path in [
             # :feature_tar_and_rpms
             b"foo/borf/hello_world",
@@ -140,12 +145,12 @@ class ImageLayerTestCase(unittest.TestCase):
         with self.target_subvol(
             "parent_layer", mount_config={"runtime_source": {"type": "turkey"}}
         ) as subvol:
-            self._check_parent(subvol.path())
+            self._check_parent(subvol)
             # Cannot check this in `_check_parent`, since that gets called
             # by `_check_child`, but the RPM gets removed in the child.
             self.assertTrue(os.path.isfile(subvol.path("rpm_test/carrot.txt")))
         with self.target_subvol("child/layer") as subvol:
-            self._check_child(subvol.path())
+            self._check_child(subvol)
         with self.target_subvol("base_cheese_layer") as subvol:
             self.assertTrue(
                 os.path.isfile(subvol.path("/rpm_test/cheese2.txt"))

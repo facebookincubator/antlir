@@ -1,6 +1,8 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//fs_image/bzl/image_actions:install.bzl", "image_install_buck_runnable")
+load(":constants.bzl", "QUERY_TARGETS_AND_OUTPUTS_SEP")
 load(":image_layer.bzl", "image_layer")
+load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
 load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
 
@@ -96,7 +98,8 @@ def _nspawn_wrapper_properties(
     buck_genrule(
         name = test_spec_py,
         out = "unused_name.py",
-        bash = 'echo {} > "$OUT"'.format(shell.quote(("""\
+        bash = """
+cat > "$TMP/out" << EOF
 import os
 TEST_TYPE={test_type_repr}
 def nspawn_in_subvol_args():
@@ -112,12 +115,21 @@ def nspawn_in_subvol_args():
             '--serve-rpm-snapshot={{}}'.format(s)
                 for s in {serve_rpm_snapshots_repr}
         ],
+        '--layer-dep-to-location', "{layer_deps_query_macro}",
         '--', {binary_path_repr},
     ]
-""").format(
+EOF
+mv $TMP/out "$OUT"
+        """.format(
             test_type_repr = repr(test_type),
             user_repr = repr(run_as_user),
             pass_through_env_repr = repr(outer_test_kwargs.get("env", [])),
+            layer_deps_query_macro = """$(query_targets_and_outputs {sep} '
+                    attrfilter(type, image_layer, deps("{layer}"))
+                ')""".format(
+                layer = image_utils.current_target(test_layer),
+                sep = QUERY_TARGETS_AND_OUTPUTS_SEP,
+            ),
             maybe_boot = "'--boot'" if boot else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
             serve_rpm_snapshots_repr = repr([
@@ -125,7 +137,7 @@ def nspawn_in_subvol_args():
                 for s in serve_rpm_snapshots
             ]),
             binary_path_repr = repr(binary_path),
-        ))),
+        ),
         visibility = visibility,
         fs_image_internal_rule = True,
     )

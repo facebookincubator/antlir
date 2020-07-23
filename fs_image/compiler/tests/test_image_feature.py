@@ -129,13 +129,15 @@ class ImageFeatureTestCase(unittest.TestCase):
             for k, v in si.ID_TO_ITEM.items()
             if v not in phase_items
         }
-        # The 2 mounts are not ordered in any way with respect to the
+        # The 3 mounts are not ordered in any way with respect to the
         # `foo/bar` tree, so any of these 3 can be the first.
-        mount_idxs = sorted([id_to_idx["host_etc"], id_to_idx["meownt"]])
-        if mount_idxs == [0, 1]:
+        mount_idxs = sorted(
+            [id_to_idx["dev_null"], id_to_idx["host_etc"], id_to_idx["meownt"]]
+        )
+        if mount_idxs == [0, 1, 2]:
+            self.assertEqual(3, id_to_idx["foo/bar"])
+        elif 0 in mount_idxs and 1 in mount_idxs:
             self.assertEqual(2, id_to_idx["foo/bar"])
-        elif 0 in mount_idxs:
-            self.assertEqual(1, id_to_idx["foo/bar"])
         else:
             self.assertEqual(0, id_to_idx["foo/bar"])
         self.assertLess(

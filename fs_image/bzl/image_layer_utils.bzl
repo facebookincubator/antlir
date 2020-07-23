@@ -1,16 +1,40 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load(":constants.bzl", "QUERY_TARGETS_AND_OUTPUTS_SEP")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config", "get_visibility")
 
 def _add_run_in_subvol_target(name, kind, extra_args = None):
-    buck_command_alias(
+    buck_genrule(
         name = name + "-" + kind,
-        args = ["--layer", "$(location {})".format(":" + name)] + (
-            extra_args if extra_args else []
+        out = "run",
+        bash = """
+cat > "$TMP/out" << EOF
+#!/bin/sh
+set -ue -o pipefail -o noclobber
+exec $(exe //fs_image/nspawn_in_subvol:run) \
+--layer $(location {layer_quoted}) \
+{maybe_extra_args} \
+--layer-dep-to-location "{layer_deps_query_macro}" \\$@
+EOF
+chmod a+x "$TMP/out"
+mv "$TMP/out" "$OUT"
+        """.format(
+            # Build a str delimited by `QUERY_TARGETS_AND_OUTPUTS_SEP` of
+            # all the deps that are image_layers and their on disk location.
+            layer_deps_query_macro = """$(query_targets_and_outputs {sep} '
+                    attrfilter(type, image_layer, deps("{layer}"))
+                ')""".format(
+                layer = image_utils.current_target(name),
+                sep = QUERY_TARGETS_AND_OUTPUTS_SEP,
+            ),
+            layer_quoted = shell.quote(":" + name),
+            maybe_extra_args = " ".join(extra_args) if extra_args else "",
         ),
-        exe = "//fs_image/nspawn_in_subvol:run",
+        # This genrule is unique to the host on which it is generated
+        cacheable = False,
+        executable = True,
         visibility = [],
         fs_image_internal_rule = True,
     )
