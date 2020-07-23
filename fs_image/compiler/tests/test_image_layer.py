@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import importlib.resources
 import json
 import os
 import unittest
@@ -21,15 +22,22 @@ from fs_image.btrfs_diff.tests.render_subvols import (
     render_sendstream,
 )
 from fs_image.find_built_subvol import find_built_subvol
+from fs_image.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
 
 from ..procfs_serde import deserialize_int
 
 
-TARGET_ENV_VAR_PREFIX = "test_image_layer_path_to_"
+TARGET_RESOURCE_PREFIX = "test_image_layer_path_to_"
 TARGET_TO_PATH = {
-    target[len(TARGET_ENV_VAR_PREFIX) :]: path
-    for target, path in os.environ.items()
-    if target.startswith(TARGET_ENV_VAR_PREFIX)
+    target[len(TARGET_RESOURCE_PREFIX) :]: path
+    for target, path in [
+        (
+            target.replace(LAYER_SLASH_ENCODE, "/"),
+            str(layer_resource(__package__, target)),
+        )
+        for target in importlib.resources.contents(__package__)
+        if target.startswith(TARGET_RESOURCE_PREFIX)
+    ]
 }
 
 
