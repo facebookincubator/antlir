@@ -25,7 +25,7 @@ from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
-from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER, ro_rbind_mount
+from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER
 
 
 class BuildSource(NamedTuple):
@@ -63,6 +63,9 @@ class BuildSource(NamedTuple):
 @dataclass(frozen=True)
 class RuntimeSource:
     type: str
+    # Note: these are specific to the FB runtime
+    package: Optional[str] = None
+    uuid: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -167,7 +170,6 @@ class MountItem(ImageItem):
             # `touch` lacks a `--mode` argument, but the mode of this
             # mountpoint will be shadowed anyway, so let it be whatever.
             subvol.run_as_root(["touch", subvol.path(self.mountpoint)])
-        ro_rbind_mount(source_path, subvol, self.mountpoint)
 
 
 # Not covering, since this would require META_MOUNTS_DIR to be unreadable.
@@ -175,7 +177,7 @@ def _raise(ex):  # pragma: no cover
     raise ex
 
 
-def mounts_from_subvol_meta(subvol: Subvol) -> Iterator[Tuple[Path]]:
+def mounts_from_subvol_meta(subvol: Optional[Subvol]) -> Iterator[Tuple[Path]]:
     """
     Returns a list of constructed `MountItem`s built from the meta/ of the
     provided subvol.

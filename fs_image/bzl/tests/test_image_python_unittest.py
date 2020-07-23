@@ -6,6 +6,7 @@
 
 import getpass
 import os
+import subprocess
 import unittest
 
 from .coverage_test_helper import coverage_test_helper
@@ -60,3 +61,8 @@ class ImagePythonUnittestTest(unittest.TestCase):
         # variable is set, and it is NOT explicitly passed into containers,
         # so it ought to be absent.  See also `test-unsanitized-env`.
         self.assertNotIn("BUCK_BUILD_ID", os.environ)
+
+    def test_layer_mount(self):
+        # Verify that `/meownt` exists and is a mount point
+        self.assertTrue(os.path.exists("/meownt"))
+        subprocess.check_output(["/usr/bin/mountpoint", "-q", "/meownt"])

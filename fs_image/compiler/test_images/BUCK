@@ -283,7 +283,16 @@ image.feature(
     name = "feature_mount",
     features = [
         image.host_dir_mount("/etc", "/host_etc"),
+        image.host_file_mount("/dev/null", "/dev_null"),
         image.layer_mount(":hello_world_base", "/meownt"),
+    ],
+)
+
+image.layer(
+    name = "test-layer-with-mounts",
+    parent_layer = ":test-layer",
+    features = [
+        ":feature_mount",
     ],
 )
 
@@ -561,8 +570,7 @@ image.layer(
             # "provides".
             "/rpm_test/hello_world.tar",
         ),
-        # NB: `host_dir_mount` is exercised above.
-        image.host_file_mount("/dev/null", "/dev_null"),
+        # NB: `host_{dir,file}_mount` is exercised in test-layer-with-mounts
         image.layer_mount(":hello_world_base", "/mounted_hello"),
         image.rpms_install(["rpm-test-carrot"]),  # Compact syntax for RPM installation.
     ],

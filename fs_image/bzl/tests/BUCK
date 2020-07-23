@@ -13,7 +13,7 @@ python_library(
 image.python_unittest(
     name = "test-image-python-unittest",
     srcs = ["test_image_python_unittest.py"],
-    layer = TEST_IMAGE_PREFIX + "test-layer",
+    layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
     needed_coverage = [(100, ":coverage_test_helper")],
     deps = [":coverage_test_helper"],
     env = {"kitteh": "meow"},
@@ -22,7 +22,7 @@ image.python_unittest(
 image.python_unittest(
     name = "test-boot-image-python-unittest",
     srcs = ["test_image_python_unittest.py"],
-    layer = "//tupperware/image/slimos:slimos-stable",
+    layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
     needed_coverage = [(100, ":coverage_test_helper")],
     deps = [":coverage_test_helper"],
     env = {"kitteh": "meow"},
@@ -65,7 +65,7 @@ image.cpp_unittest(
 image.cpp_unittest(
     name = "test-boot-image-cpp-unittest",
     srcs = ["ImageCppUnittestTest.cpp"],
-    layer = "//tupperware/image/slimos:slimos-stable",
+    layer = TEST_IMAGE_PREFIX + "test-layer",
     env = {"kitteh": "meow"},
     boot = True,
 )

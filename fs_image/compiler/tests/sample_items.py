@@ -172,6 +172,16 @@ ID_TO_ITEM = {
             "build_source": {"type": "host", "source": "/etc"},
         },
     ),
+    "dev_null": MountItem(
+        layer_opts=DUMMY_LAYER_OPTS,
+        from_target=T_MOUNT,
+        mountpoint="dev_null",
+        target=None,
+        mount_config={
+            "is_directory": False,
+            "build_source": {"type": "host", "source": "/dev/null"},
+        },
+    ),
     # From `feature_install_files`:
     "foo/bar/hello_world.tar": InstallFileItem(
         from_target=T_INSTALL_FILES,

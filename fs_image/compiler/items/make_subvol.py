@@ -15,7 +15,6 @@ from fs_image.fs_utils import open_for_read_decompress
 from fs_image.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder, ensure_meta_dir_exists
-from .mount_utils import clone_mounts
 
 
 @dataclass(init=False, frozen=True)
@@ -35,7 +34,6 @@ class ParentLayerItem(ImageItem):
         def builder(subvol: Subvol):
             subvol.snapshot(parent.subvol)
             # This assumes that the parent has everything mounted already.
-            clone_mounts(parent.subvol, subvol)
             ensure_meta_dir_exists(subvol, layer_opts)
 
         return builder

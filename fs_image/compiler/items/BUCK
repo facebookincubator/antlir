@@ -165,6 +165,16 @@ python_library(
     deps = ["//fs_image:subvol_utils"],
 )
 
+python_library(
+    name = "mount",
+    srcs = ["mount.py"],
+    deps = [
+        ":common",
+        ":mount_utils",
+        "//fs_image/compiler:requires_provides",
+    ],
+)
+
 # Covered by `test-items`. Future: separate test & coverage.
 python_library(
     name = "make_subvol",
@@ -186,7 +196,6 @@ python_library(
         "common.py",
         "install_file.py",
         "make_dirs.py",
-        "mount.py",
         "remove_path.py",
         "stat_options.py",
         "symlink.py",
@@ -195,6 +204,7 @@ python_library(
     deps = [
         ":common",
         ":make_subvol",
+        ":mount",
         ":mount_utils",
         "//fs_image/compiler:requires_provides",
         "//fs_image/compiler:subvolume_on_disk",
@@ -220,6 +230,7 @@ python_unittest(
         (100, ":items"),
         (100, ":make_subvol"),
         (100, ":mount_utils"),
+        (100, ":mount"),
     ],
     # "fastzip" would break :volume_for_repo in @mode/opt.  "xar" fails
     # since `root` cannot access the content of an unprivileged XAR.
@@ -231,7 +242,7 @@ python_unittest(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "tests/test-build-appliance",
         layer_resource(
-            TEST_IMAGE_PREFIX + "parent_layer",
+            TEST_IMAGE_PREFIX + "test-layer-with-mounts",
         ): "tests/test-layer-with-mounts",
         layer_resource(
             TEST_IMAGE_PREFIX + "hello_world_base",

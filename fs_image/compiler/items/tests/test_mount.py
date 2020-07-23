@@ -293,45 +293,15 @@ class MountItemTestCase(BaseItemTestCase):
                 {require_directory("can")},
             )
 
-            # Make a subvolume that we will mount inside `mounter`
+            # Make a subvolume that would be mounted inside `mounter`
             mountee = temp_subvolumes.create("moun:tee/volume")
-            mountee.run_as_root(["tee", mountee.path("kitteh")], input=b"cheez")
-
-            # These sub-mounts inside `mountee` act as canaries to make sure
-            # that (a) `mounter` receives the sub-mounts as a consequence of
-            # mounting `mountee` recursively, (b) that unmounting one in
-            # `mounter` does not affect the original in `mountee` -- i.e.
-            # that rslave propagation is set up correctly, (c) that
-            # unmounting in `mountee` immediately affects `mounter`.
-            #
-            # In practice, our build artifacts should NEVER be mutated after
-            # construction (and the only un-mount is implicitly, and
-            # seemingly safely, performed by `btrfs subvolume delete`).
-            # However, ensuring that we have correct `rslave` propagation is
-            # a worthwhile safeguard for host mounts, where an errant
-            # `umount` by a user inside their repo could otherwise break
-            # their host.
-            for submount in ("submount1", "submount2"):
-                mountee.run_as_root(["mkdir", mountee.path(submount)])
-                mountee.run_as_root(
-                    [
-                        "mount",
-                        "-o",
-                        "bind,ro",
-                        source_dir,
-                        mountee.path(submount),
-                    ]
-                )
-                self.assertTrue(
-                    os.path.exists(mountee.path(submount + "/mountconfig.json"))
-                )
 
             # Make the JSON file normally in "buck-out" that refers to `mountee`
             mountee_subvolumes_dir = self._write_layer_json_into(
                 mountee, source_dir
             )
 
-            # Mount <mountee> at <mounter>/meow
+            # Create a Mount <mountee> at <mounter>/meow
             mounter = temp_subvolumes.caller_will_create("mount:er/volume")
             root_item = FilesystemRootItem(from_target="t")
             root_item.get_phase_builder([root_item], DUMMY_LAYER_OPTS)(mounter)
@@ -345,6 +315,10 @@ class MountItemTestCase(BaseItemTestCase):
                 mount_meow.build_source.to_path(
                     target_to_path={}, subvolumes_dir=mountee_subvolumes_dir
                 )
+
+            # Build will insert the proper metadata into the subvolume and
+            # make sure the mountpoint exists, but it will not actually
+            # do the mount itself.
             mount_meow.build(
                 mounter,
                 DUMMY_LAYER_OPTS._replace(
@@ -353,47 +327,8 @@ class MountItemTestCase(BaseItemTestCase):
                 ),
             )
 
-            # This checks the subvolume **contents**, but not the mounts.
-            # Ensure the build created a mountpoint, and populated metadata.
+            # This checks the subvolume's metadata contents for the mount
             self._check_subvol_mounts_meow(mounter)
-
-            # `mountee` was also mounted at `/meow`
-            with open(mounter.path("meow/kitteh")) as f:
-                self.assertEqual("cheez", f.read())
-
-            def check_mountee_mounter_submounts(submount_presence):
-                for submount, (in_mountee, in_mounter) in submount_presence:
-                    self.assertEqual(
-                        in_mountee,
-                        os.path.exists(
-                            mountee.path(submount + "/mountconfig.json")
-                        ),
-                        f"{submount}, {in_mountee}",
-                    )
-                    self.assertEqual(
-                        in_mounter,
-                        os.path.exists(
-                            mounter.path(
-                                "meow/" + submount + "/mountconfig.json"
-                            )
-                        ),
-                        f"{submount}, {in_mounter}",
-                    )
-
-            # Both sub-mounts are accessible in both places now.
-            check_mountee_mounter_submounts(
-                [("submount1", (True, True)), ("submount2", (True, True))]
-            )
-            # Unmounting `submount1` from `mountee` also affects `mounter`.
-            mountee.run_as_root(["umount", mountee.path("submount1")])
-            check_mountee_mounter_submounts(
-                [("submount1", (False, False)), ("submount2", (True, True))]
-            )
-            # Unmounting `submount2` from `mounter` doesn't affect `mountee`.
-            mounter.run_as_root(["umount", mounter.path("meow/submount2")])
-            check_mountee_mounter_submounts(
-                [("submount1", (False, False)), ("submount2", (True, False))]
-            )
 
             # Check that we read back the `mounter` metadata, mark `/meow`
             # inaccessible, and do not emit a `ProvidesFile` for `kitteh`.
@@ -446,33 +381,40 @@ class MountItemTestCase(BaseItemTestCase):
             __package__, "test-layer-with-mounts"
         )
 
-        self.assertEqual(
-            sorted(
-                [
-                    Mount(
-                        build_source=BuildSource(
-                            type="layer",
-                            source="//fs_image/compiler/test_images:"
-                            + "hello_world_base",
-                        ),
-                        is_directory=True,
-                        mountpoint="mounted_hello",
-                        runtime_source=RuntimeSource(type="chicken"),
-                    ),
-                    Mount(
-                        build_source=BuildSource(
-                            type="host", source="/dev/null"
-                        ),
-                        is_directory=False,
-                        mountpoint="dev_null",
-                        runtime_source=None,
-                    ),
-                ],
-                key=lambda m: m.mountpoint,
+        expected_mounts = [
+            Mount(
+                build_source=BuildSource(
+                    type="layer",
+                    source="//fs_image/compiler/test_images:"
+                    + "hello_world_base",
+                ),
+                is_directory=True,
+                mountpoint="meownt",
+                runtime_source=RuntimeSource(
+                    type="chicken", package=None, uuid=None
+                ),
             ),
-            sorted(
-                mounts_from_subvol_meta(test_subvol), key=lambda m: m.mountpoint
+            Mount(
+                build_source=BuildSource(type="host", source="/dev/null"),
+                is_directory=False,
+                mountpoint="dev_null",
+                runtime_source=None,
             ),
+            Mount(
+                build_source=BuildSource(type="host", source="/etc"),
+                is_directory=True,
+                mountpoint="host_etc",
+                runtime_source=None,
+            ),
+        ]
+
+        # Our test layer uses the build appliance as it's root, it might contain
+        # more mounts than we are explicitly adding in our test cases.  Lets
+        # just confirm that the mounts we expect are there.
+        self.assertTrue(
+            set(expected_mounts).issubset(
+                set(mounts_from_subvol_meta(test_subvol))
+            )
         )
 
         # Test a layer that has no mounts

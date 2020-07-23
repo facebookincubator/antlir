@@ -40,7 +40,7 @@ python_library(
         "//fs_image:send_fds_and_run",
         "//fs_image:testlib_temp_subvolumes",
         "//fs_image/compiler:procfs_serde",
-        "//fs_image/compiler/items:mount_utils",
+        "//fs_image/compiler/items:mount",
     ],
 )
 
@@ -148,6 +148,12 @@ python_unittest(
         layer_resource(
             TEST_IMAGE_PREFIX + "test-layer",
         ): "tests/test-layer",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "test-layer-with-mounts",
+        ): "tests/test-layer-with-mounts",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "hello_world_base",
+        ): "tests/test-hello-world-base",
         layer_resource("//tupperware/image/base:base"): "tests/bootable-systemd-os",
         layer_resource(":host-hello-xar"): "tests/host-hello-xar",
     },

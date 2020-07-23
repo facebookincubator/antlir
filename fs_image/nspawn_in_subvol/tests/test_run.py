@@ -14,10 +14,12 @@ from unittest import mock
 
 from fs_image.artifacts_dir import find_repo_root
 from fs_image.common import pipe
+from fs_image.find_built_subvol import find_built_subvol
+from fs_image.tests.layer_resource import layer_resource
 from fs_image.tests.temp_subvolumes import with_temp_subvols
 
-from ..args import _parse_cli_args
-from ..cmd import _extra_nspawn_args_and_env
+from ..args import _QUERY_TARGETS_AND_OUTPUTS_SEP, _parse_cli_args
+from ..cmd import _colon_quote_path, _extra_nspawn_args_and_env
 from ..common import DEFAULT_PATH_ENV
 from .base import NspawnTestBase
 
@@ -607,3 +609,88 @@ class NspawnTestCase(NspawnTestBase):
                             stdout=subprocess.PIPE,
                         ).stdout,
                     )
+
+    def test_mount_args(self):
+        argv = [
+            "--layer",
+            layer_resource(__package__, "test-layer-with-mounts"),
+            "--layer-dep-to-location",
+            "{target}{sep}{location}".format(
+                location=layer_resource(__package__, "test-hello-world-base"),
+                sep=_QUERY_TARGETS_AND_OUTPUTS_SEP,
+                target="//fs_image/compiler/test_images:hello_world_base",
+            ),
+        ]
+
+        args = _parse_cli_args(argv, allow_debug_only_opts=False)
+        args, _env = _extra_nspawn_args_and_env(args.opts)
+
+        # Verify that host mounts are properly setup as
+        # --bind-ro args to nspawn
+        self._assertIsSubseq(["--bind-ro", "/dev/null:/dev_null"], args)
+        self._assertIsSubseq(["--bind-ro", "/etc:/host_etc"], args)
+
+        # Verify that layer mounts are properly setup as
+        # --bind-ro args to nspawn
+        self._assertIsSubseq(
+            [
+                "--bind-ro",
+                "{subvol}:{mount}".format(
+                    subvol=_colon_quote_path(
+                        find_built_subvol(
+                            layer_resource(__package__, "test-hello-world-base")
+                        ).path()
+                    ),
+                    mount="/meownt",
+                ),
+            ],
+            args,
+        )
+
+    def test_mounted_mounts(self):
+        expected_mounts = [b"/dev_null", b"/host_etc", b"/meownt"]
+
+        with tempfile.TemporaryFile() as tf:
+            self._nspawn_in(
+                (__package__, "test-layer-with-mounts"),
+                [
+                    "--layer-dep-to-location",
+                    "{target}{sep}{location}".format(
+                        location=layer_resource(
+                            __package__, "test-hello-world-base"
+                        ),
+                        sep=_QUERY_TARGETS_AND_OUTPUTS_SEP,
+                        target=(
+                            "//fs_image/compiler/test_images:"
+                            "hello_world_base"
+                        ),
+                    ),
+                    "--forward-fd",
+                    str(tf.fileno()),
+                    "--",
+                    "/usr/bin/sh",
+                    "-c",
+                    "/usr/bin/mount >&3",
+                ],
+                check=True,
+            )
+            tf.seek(0)
+
+            # Split the mount lines
+            splits = [line.split() for line in tf.readlines()]
+
+            # Verify that we have the mounts that we expect.  Note:
+            # We don't validate that the 'source' of the mount
+            # is correct here for 2 reasons:
+            #  - The fact that the source is set properly in the meta
+            #    is tested elsewhere in the mount tests.
+            #  - We validate that the `--bind-ro` option passed to
+            #   `systemd-nspawn is properly constructed for a mount.
+            #  - We don't always get the 'source' of the mount in the
+            #    output of the `mount` command.  When the source exists
+            #    on a btrfs volume we can use the `subvol=` option, but
+            #    we can't always ensure in the case of a host mount that
+            #    the host is actually running on btrfs.
+            self.assertTrue(
+                set(expected_mounts).issubset([split[2] for split in splits])
+            )
