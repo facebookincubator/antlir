@@ -391,3 +391,9 @@ python_unittest(
     ],
     deps = [":unionfind"],
 )
+
+python_library(
+    name = "test_utils",
+    srcs = ["test_utils.py"],
+    deps = [],
+)

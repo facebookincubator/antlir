@@ -27,15 +27,14 @@ from fs_image.common import set_new_key
 from fs_image.fs_utils import temp_dir
 from fs_image.rpm.common import RpmShard
 from fs_image.rpm.db_connection import DBConnectionContext
-from fs_image.rpm.downloader import repo_downloader
-from fs_image.rpm.downloader.common import open_url
-from fs_image.rpm.downloader.logger import init_sample_logging
-from fs_image.rpm.downloader.repodata_downloader import (
-    RepodataParseError,
-    _download_repodata,
+from fs_image.rpm.downloader import (
+    common as downloader_common,
+    repo_downloader,
+    repodata_downloader,
+    rpm_downloader,
 )
+from fs_image.rpm.downloader.logger import init_sample_logging
 from fs_image.rpm.downloader.repomd_downloader import REPOMD_MAX_RETRY_S
-from fs_image.rpm.downloader.rpm_downloader import RPM_MAX_RETRY_S
 from fs_image.rpm.repo_db import RepodataTable, RepoDBContext
 from fs_image.rpm.repo_snapshot import (
     FileIntegrityError,
@@ -60,7 +59,6 @@ def _location_basename(rpm):
     return rpm._replace(location=os.path.basename(rpm.location))
 
 
-SUT = "fs_image.rpm.downloader."
 # We default to spreading the downloads across 4 threads in tests
 _THREADS = 4
 MICE_01_RPM_REGEX = r".*/rpm-test-mice-0\.1-a\.x86_64\.rpm$"
@@ -229,7 +227,7 @@ class DownloadReposTestCase(unittest.TestCase):
 
     @contextmanager
     def _break_open_url(self, url_regex, corrupt_file_fn):
-        original_open_url = open_url
+        original_open_url = downloader_common.open_url
 
         def my_open_url(url):
             if re.match(url_regex, url):
@@ -237,7 +235,7 @@ class DownloadReposTestCase(unittest.TestCase):
                     return BytesIO(corrupt_file_fn(f.read()))
             return original_open_url(url)
 
-        with mock.patch(SUT + "common.open_url") as mock_fn:
+        with mock.patch.object(downloader_common, "open_url") as mock_fn:
             mock_fn.side_effect = my_open_url
             yield mock_fn
 
@@ -349,7 +347,8 @@ class DownloadReposTestCase(unittest.TestCase):
             self.assertEqual(mice_location, error_dict["location"])
             self.assertEqual(500, error_dict["http_status"])
             self.assertEqual(
-                len(RPM_MAX_RETRY_S), len(mock_sleep.call_args_list)
+                len(rpm_downloader.RPM_MAX_RETRY_S),
+                len(mock_sleep.call_args_list),
             )
 
     @mock.patch("time.sleep", mock.Mock())
@@ -360,7 +359,7 @@ class DownloadReposTestCase(unittest.TestCase):
             with self._break_open_url(
                 r".*/good_dog/repodata/[0-9a-f]*-primary\.sqlite\.bz2$",
                 lambda s: s[3:],  # change contents
-            ), self.assertRaises(RepodataParseError):
+            ), self.assertRaises(repodata_downloader.RepodataParseError):
                 downloader()
 
         # Since RepodataParseError is not a ReportableError (but HTTPError is),
@@ -638,11 +637,11 @@ class DownloadReposTestCase(unittest.TestCase):
 
     # Test case of having dangling repodata refs without a repomd
     def test_dangling_repodatas(self):
-        orig_rd = _download_repodata
+        orig_rd = repodata_downloader._download_repodata
         with mock.patch.object(
             RepoDBContext, "store_repomd"
-        ) as mock_store, mock.patch(
-            SUT + "repodata_downloader._download_repodata"
+        ) as mock_store, mock.patch.object(
+            repodata_downloader, "_download_repodata"
         ) as mock_rd, tempfile.NamedTemporaryFile() as tmp_db, temp_dir() as storage_dir:  # noqa: E501
             db_cfg = {
                 "kind": "sqlite",
@@ -733,8 +732,9 @@ class DownloadReposTestCase(unittest.TestCase):
 
             # But using the "deleted_mutable_rpms" facility, we can forget
             # about the error.
-            with mock.patch(
-                SUT + "rpm_downloader.deleted_mutable_rpms",
+            with mock.patch.object(
+                rpm_downloader,
+                "deleted_mutable_rpms",
                 new={
                     os.path.basename(bad_rpm.location): {
                         bad_rpm.canonical_checksum
@@ -816,7 +816,7 @@ class DownloadReposTestCase(unittest.TestCase):
             self.assertEqual(unique_fake_rpms, len(unique_storage_ids))
 
     def test_download_changing_repomds(self):
-        original_open_url = open_url
+        original_open_url = downloader_common.open_url
         i = 0
 
         def my_open_url(url):
@@ -827,7 +827,7 @@ class DownloadReposTestCase(unittest.TestCase):
                 return original_open_url(re.sub(r"/(\d)/", rf"/{i % 2}/", url))
             return original_open_url(url)
 
-        with mock.patch(SUT + "common.open_url") as mock_fn:
+        with mock.patch.object(downloader_common, "open_url") as mock_fn:
             mock_fn.side_effect = my_open_url
             with self._make_downloader("0/good_dog") as downloader:
                 with self.assertRaisesRegex(
