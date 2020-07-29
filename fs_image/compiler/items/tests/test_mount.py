@@ -98,7 +98,8 @@ class MountItemTestCase(BaseItemTestCase):
                     "(Dir)",
                     {
                         "lala": ["(File)"],  # An empty mountpoint for /dev/null
-                        "meta": [
+                        # TODO(jtru): Remove when meta migration has propagated
+                        ".meta": [
                             "(Dir)",
                             {
                                 "private": [
@@ -123,7 +124,7 @@ class MountItemTestCase(BaseItemTestCase):
             ):
                 with open(
                     subvol.path(
-                        os.path.join("meta/private/mount/lala/MOUNT", filename)
+                        os.path.join(".meta/private/mount/lala/MOUNT", filename)
                     )
                 ) as f:
                     self.assertEqual(contents, f.read())
@@ -224,7 +225,9 @@ class MountItemTestCase(BaseItemTestCase):
                 "(Dir)",
                 {
                     "meow": ["(Dir)", {}],
-                    "meta": [
+                    # TODO(jtru): Remove when meta migration has propagated
+                    "meta": ["(Dir)", {}],
+                    ".meta": [
                         "(Dir)",
                         {
                             "private": [
@@ -256,7 +259,7 @@ class MountItemTestCase(BaseItemTestCase):
         ):
             with open(
                 subvol.path(
-                    os.path.join("meta/private/mount/meow/MOUNT", filename)
+                    os.path.join(".meta/private/mount/meow/MOUNT", filename)
                 )
             ) as f:
                 self.assertEqual(contents, f.read())
@@ -336,7 +339,9 @@ class MountItemTestCase(BaseItemTestCase):
                 PhasesProvideItem(from_target="t", subvol=mounter),
                 {
                     ProvidesDirectory(path="/"),
-                    ProvidesDoNotAccess(path="/meta"),
+                    # TODO(jtru): Remove when meta migration has propagated
+                    ProvidesDirectory(path="/meta"),
+                    ProvidesDoNotAccess(path="/.meta"),
                     ProvidesDoNotAccess(path="/meow"),
                 },
                 set(),

@@ -43,7 +43,7 @@ targets as mount sources because:
 Adding a mount has two side effects on the `image.layer`:
   - The mount will be materialized in the `buck-image-out` cache of the local
     repo, so your filesystem acts as WYSIWIG.
-  - The mount will be recorded in `/meta/private/mount`.  PLEASE, do not rely
+  - The mount will be recorded in `/.meta/private/mount`.  PLEASE, do not rely
     on this serializaation format for now, it will change.  That's why it's
     "private".
 

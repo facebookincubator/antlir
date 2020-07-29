@@ -35,12 +35,12 @@ class RpmActionItemTestBase:
             RpmActionItem.get_phase_builder([], layer_opts)(subvol)
             self.assertEqual(["(Dir)", {}], render_subvol(subvol))
 
-            # `yum-dnf-from-snapshot` needs a `/meta` directory to work
-            subvol.run_as_root(["mkdir", subvol.path("meta")])
+            # `yum-dnf-from-snapshot` needs a `/.meta` directory to work
+            subvol.run_as_root(["mkdir", subvol.path(".meta")])
             self.assertEqual(
                 # No `opts/artifacts_may_require_repo` here because we directly
                 # created the subvol instead of using an Item.
-                ["(Dir)", {"meta": ["(Dir)", {}]}],
+                ["(Dir)", {".meta": ["(Dir)", {}]}],
                 render_subvol(subvol),
             )
 
@@ -145,7 +145,7 @@ class RpmActionItemTestBase:
                 [
                     "rmdir",
                     subvol.path("dev"),  # made by yum_dnf_from_snapshot.py
-                    subvol.path("meta"),
+                    subvol.path(".meta"),
                     subvol.path("var/cache"),
                     subvol.path("var/lib"),
                     subvol.path("var/log"),

@@ -33,8 +33,8 @@ class YumFromSnapshotTestImpl:
             install_args = _INSTALL_ARGS
         install_root = Path(tempfile.mkdtemp())
         try:
-            # IMAGE_ROOT/meta/ is always required since it's always protected
-            for p in set(protected_paths) | {"meta/"}:
+            # IMAGE_ROOT/.meta/ is always required since it's always protected
+            for p in set(protected_paths) | {".meta/"}:
                 if p.endswith("/"):
                     os.makedirs(install_root / p)
                 else:
@@ -117,7 +117,7 @@ class YumFromSnapshotTestImpl:
             check=True,
             cwd=install_root,
         )
-        required_dirs = {b"dev", b"meta"}
+        required_dirs = {b"dev", b".meta"}
         self.assertEqual(required_dirs, set(install_root.listdir()))
         for d in required_dirs:
             self.assertEqual([], (install_root / d).listdir())
@@ -127,7 +127,7 @@ class YumFromSnapshotTestImpl:
             "milk.txt": "milk 2.71 8\n",
             "post.txt": "stuff\n",  # From `milk-2.71` post-install
         }
-        with self._install(protected_paths=["meta/"]) as install_root:
+        with self._install(protected_paths=[".meta/"]) as install_root:
             self._check_installed_content(
                 install_root, {**milk, "carrot.txt": "carrot 2 rc0\n"}
             )
@@ -163,8 +163,8 @@ class YumFromSnapshotTestImpl:
             raise NotImplementedError(self._YUM_DNF)
 
     def test_fail_to_write_to_protected_path(self):
-        # Nothing fails with no specified protection, or with /meta:
-        for p in [[], ["meta/"]]:
+        # Nothing fails with no specified protection, or with /.meta:
+        for p in [[], [".meta/"]]:
             with self._install(protected_paths=p):
                 pass
         with self.assertRaises(subprocess.CalledProcessError) as ctx:
@@ -233,7 +233,7 @@ class YumFromSnapshotTestImpl:
             "SHADOWED_PATHS_ROOT",
             Path("/shadow"),
         ):
-            os.mkdir(root / "meta")
+            os.mkdir(root / ".meta")
             os.mkdir(root / "rpm_test")
             os.makedirs(root / "shadow/rpm_test")
 

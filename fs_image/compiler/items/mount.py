@@ -25,7 +25,7 @@ from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
-from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER
+from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER, OLD_META_MOUNTS_DIR
 
 
 class BuildSource(NamedTuple):
@@ -46,7 +46,11 @@ class BuildSource(NamedTuple):
             # If we allowed mounting a layer that has other mounts inside,
             # it would force us to support nested mounts.  We don't want to
             # do this (yet).
-            if subvol.path(META_MOUNTS_DIR).exists():
+            if (
+                subvol.path(META_MOUNTS_DIR).exists()
+                # TODO(jtru): Remove when meta migration has propagated
+                or subvol.path(OLD_META_MOUNTS_DIR).exists()
+            ):
                 raise AssertionError(
                     f"Refusing to mount {subvol.path()} since that would "
                     "require the tooling to support nested mounts."
@@ -179,15 +183,20 @@ def _raise(ex):  # pragma: no cover
 
 def mounts_from_subvol_meta(subvol: Optional[Subvol]) -> Iterator[Tuple[Path]]:
     """
-    Returns a list of constructed `MountItem`s built from the meta/ of the
+    Returns a list of constructed `MountItem`s built from the .meta/ of the
     provided subvol.
     """
     if not subvol:
         return
 
-    mounts_path = subvol.path(META_MOUNTS_DIR)
+    # TODO(jtru): Remove when meta migration has propagated
+    mount_dir = META_MOUNTS_DIR
+    mounts_path = subvol.path(mount_dir)
     if not mounts_path.exists():
-        return
+        mount_dir = OLD_META_MOUNTS_DIR
+        mounts_path = subvol.path(mount_dir)
+        if not mounts_path.exists():
+            return
 
     for path, _next_dirs, _files in os.walk(
         # We are not `chroot`ed, so following links could access outside the
@@ -203,7 +212,7 @@ def mounts_from_subvol_meta(subvol: Optional[Subvol]) -> Iterator[Tuple[Path]]:
 
             # Deserialize the mount madness
             cfg = procfs_serde.deserialize_untyped(
-                subvol, Path(META_MOUNTS_DIR / relpath).decode()
+                subvol, Path(mount_dir / relpath).decode()
             )
 
             # Convert config info proper types and create a Mount

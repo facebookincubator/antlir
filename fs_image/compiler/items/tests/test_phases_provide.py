@@ -41,15 +41,16 @@ class PhaseProvidesItemTestCase(BaseItemTestCase):
                 list(gen_subvolume_subtree_provides(parent, "no_such/path"))
 
             for create_meta in [False, True]:
-                # Check that we properly handle ignoring a /meta if it's present
+                # Check that we properly handle ignoring a /.meta if it's
+                # present
                 if create_meta:
-                    parent.run_as_root(["mkdir", parent.path("meta")])
+                    parent.run_as_root(["mkdir", parent.path(".meta")])
                 self._check_item(
                     PhasesProvideItem(from_target="t", subvol=parent),
                     temp_filesystem_provides()
                     | {
                         ProvidesDirectory(path="/"),
-                        ProvidesDoNotAccess(path="/meta"),
+                        ProvidesDoNotAccess(path="/.meta"),
                     },
                     set(),
                 )

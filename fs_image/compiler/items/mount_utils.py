@@ -13,7 +13,9 @@ from fs_image.fs_utils import Path
 from fs_image.subvol_utils import Subvol
 
 
-META_MOUNTS_DIR = Path("meta/private/mount")
+# TODO(jtru): Remove when meta migration has propagated
+OLD_META_MOUNTS_DIR = Path("meta/private/mount")
+META_MOUNTS_DIR = Path(".meta/private/mount")
 MOUNT_MARKER = Path("MOUNT")
 
 
@@ -28,9 +30,13 @@ def mountpoints_from_subvol_meta(subvol: Subvol) -> Iterator[Path]:
     /, while files do not.  See the `_protected_path_set` docblock if this
     convention proves onerous.
     """
+    # TODO(jtru): Remove when meta migration has propagated
     mounts_path = subvol.path(META_MOUNTS_DIR)
     if not mounts_path.exists():
-        return
+        mounts_path = subvol.path(OLD_META_MOUNTS_DIR)
+        if not mounts_path.exists():
+            return
+
     for path, _next_dirs, _files in os.walk(
         # We are not `chroot`ed, so following links could access outside the
         # image; `followlinks=False` is the default -- explicit for safety.

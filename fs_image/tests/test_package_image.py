@@ -258,8 +258,10 @@ class PackageImageTestCase(unittest.TestCase):
                             ]
                         },
                     ],
-                    pop_path(rendered_tarball_image, "meta"),
+                    pop_path(rendered_tarball_image, ".meta"),
                 )
+                # TODO(jtru): Remove when meta migration has propagated
+                rendered_tarball_image[1].pop("meta")
                 self.assertEqual(demo_render, rendered_tarball_image)
 
     def test_format_name_collision(self):
