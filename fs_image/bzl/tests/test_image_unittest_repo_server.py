@@ -19,7 +19,7 @@ class ImageUnittestTestRepoServer(unittest.TestCase):
         )
         for prog in ("dnf", "yum"):
             with temp_dir() as td:
-                os.mkdir(td / "meta")
+                os.mkdir(td / ".meta")
                 subprocess.check_call(
                     [
                         snapshot_dir / prog / "bin" / prog,

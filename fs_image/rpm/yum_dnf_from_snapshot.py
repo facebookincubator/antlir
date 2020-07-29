@@ -279,7 +279,7 @@ def _dummies_for_protected_paths(
     protected_paths: Iterable[str],
 ) -> Mapping[Path, Path]:
     """
-    Some locations (some host yum/dnf directories, and install root /meta/
+    Some locations (some host yum/dnf directories, and install root /.meta/
     and mountpoints) should be off-limits to writes by RPMs.  We enforce
     that by bind-mounting an empty file or directory on top of each one.
     """
@@ -385,9 +385,9 @@ def yum_dnf_from_snapshot(
             f"/etc/{prog_name}/",  # A duplicate for the `yum` case
             "/etc/pki/rpm-gpg/",
             "/etc/rpm/",
-            # Harcode `IMAGE/meta` because it should ALWAYS be off-limits --
+            # Hardcode `IMAGE/.meta` because it should ALWAYS be off-limits --
             # even though the compiler will redundantly tell us to protect it.
-            "meta/",
+            ".meta/",
         ]
         + (
             # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is

@@ -107,7 +107,7 @@ def _nspawn_cmd(nspawn_subvol: Subvol):
 # This is a separate helper so that tests can mock it easily
 def _artifacts_may_require_repo(src_subvol: Subvol):
     return procfs_serde.deserialize_int(
-        src_subvol, "meta/private/opts/artifacts_may_require_repo"
+        src_subvol, ".meta/private/opts/artifacts_may_require_repo"
     )
 
 

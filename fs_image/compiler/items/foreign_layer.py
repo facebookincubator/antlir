@@ -65,13 +65,21 @@ class ForeignLayerItem(ImageItem):
             except FileNotFoundError:
                 maybe_protect_fs_image = ()
 
+            # TODO(jtru): Remove when meta migration has propagated
+            try:
+                meta_sv = subvol.path("/.meta")
+                os.stat(meta_sv)
+                protect_meta = (meta_sv, "/.meta")
+            except FileNotFoundError:  # pragma: no cover
+                protect_meta = (subvol.path("/meta"), "/meta")
+
             opts = new_nspawn_opts(
                 layer=subvol,
                 snapshot=False,
                 cmd=item.cmd,
                 bindmount_ro=(
-                    # The command cannot change `/meta` & `/__fs_image__`
-                    (subvol.path("/meta"), "/meta"),
+                    # The command cannot change `/.meta` & `/__fs_image__`
+                    protect_meta,
                     *maybe_protect_fs_image,
                 ),
                 # Future: support the case where the in-container user DB

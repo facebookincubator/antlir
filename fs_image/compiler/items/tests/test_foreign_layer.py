@@ -70,7 +70,7 @@ class ForeignLayerItemTestCase(unittest.TestCase):
             alien_stat = os.stat(alien_path)
             self.assertEqual((0, 0), (alien_stat.st_uid, alien_stat.st_gid))
 
-            self._check_protected_dir(subvol, "/meta")
+            self._check_protected_dir(subvol, "/.meta")
             self._check_protected_dir(subvol, "/__fs_image__")
 
             snapshot_dir = snapshot_install_dir(
@@ -86,7 +86,7 @@ class ForeignLayerItemTestCase(unittest.TestCase):
                             "-c",
                             textwrap.dedent(
                                 f"""
-                    mkdir -p /install-root/meta
+                    mkdir -p /install-root/.meta
                     {snapshot_dir}/dnf/bin/dnf \\
                         --installroot=/install-root --assumeyes \\
                             install rpm-test-carrot

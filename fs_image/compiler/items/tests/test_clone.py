@@ -180,10 +180,10 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 {
                     ProvidesFile(path="a"),
                     ProvidesFile(path="b"),
-                    # This looks like a bug (there's no /meta on disk here) but
+                    # This looks like a bug (there's no /.meta on disk here) but
                     # it's really just an artifact of how this path is
                     # protected.  Read: This Is Fine (TM).
-                    ProvidesDoNotAccess(path="/meta"),
+                    ProvidesDoNotAccess(path="/.meta"),
                 },
                 {require_directory("/")},
             )

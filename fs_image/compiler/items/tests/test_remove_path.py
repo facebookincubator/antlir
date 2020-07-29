@@ -85,7 +85,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
             self.assertEqual(intact_subvol, render_subvol(subvol))
 
             # We refuse to touch protected paths, even with "if_exists".  If
-            # the paths started with 'meta', they would trip the check in
+            # the paths started with '.meta', they would trip the check in
             # `_make_path_normal_relative`, so we mock-protect 'xyz'.
             for prot_path in ["xyz", "xyz/potato/carrot"]:
                 with unittest.mock.patch(

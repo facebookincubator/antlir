@@ -68,10 +68,10 @@ class InstallFileItemTestCase(BaseItemTestCase):
         # NB: We don't need to get coverage for this check on ALL the items
         # because the presence of the ProvidesDoNotAccess items it the real
         # safeguard -- e.g. that's what prevents TarballItem from writing
-        # to /meta/ or other protected paths.
-        with self.assertRaisesRegex(AssertionError, "cannot start with meta/"):
+        # to /.meta/ or other protected paths.
+        with self.assertRaisesRegex(AssertionError, "cannot start with .meta/"):
             _install_file_item(
-                from_target="t", source={"source": "a/b/c"}, dest="/meta/foo"
+                from_target="t", source={"source": "a/b/c"}, dest="/.meta/foo"
             )
 
     def test_install_file_from_layer(self):

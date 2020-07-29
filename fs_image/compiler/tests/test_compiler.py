@@ -38,7 +38,7 @@ _FIND_ARGS = [
     f"{_SUBVOLS_DIR}/{_FAKE_SUBVOL}",
     "(",
     "-path",
-    f"{_SUBVOLS_DIR}/{_FAKE_SUBVOL}/meta".encode(),
+    f"{_SUBVOLS_DIR}/{_FAKE_SUBVOL}/.meta".encode(),
     ")",
     "-prune",
     "-o",

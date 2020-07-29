@@ -113,7 +113,7 @@ def _make_script(dest: bytes, cmds: List[str]):
                 'dest_dir=$(dirname "$dest")',
                 # This won't make any directories outside the subvolume, since
                 # `run_as_root` asserts that the subvolume exists.  The presumed
-                # use-case is to make `/meta/private/whatever/parent` inside a
+                # use-case is to make `/.meta/private/whatever/parent` inside a
                 # subvolume, without the client code having to worry about it.
                 # This auto-creation is OK since all metadata at present is
                 # supposed to be 0755 root:root.

@@ -88,10 +88,10 @@ class ValidateReqsProvsTestCase(unittest.TestCase):
             subvol = temp_subvolumes.create("subvol")
             provides_root = PhasesProvideItem(from_target="t", subvol=subvol)
             expected = {
-                "/meta": ItemReqsProvs(
+                "/.meta": ItemReqsProvs(
                     item_provs={
                         ItemProv(
-                            ProvidesDoNotAccess(path="/meta"), provides_root
+                            ProvidesDoNotAccess(path="/.meta"), provides_root
                         )
                     },
                     item_reqs=set(),

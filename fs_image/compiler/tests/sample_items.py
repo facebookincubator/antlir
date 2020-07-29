@@ -68,7 +68,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     layer_target="fake target",  # Only used by error messages
     build_appliance=None,
     # For a handful of tests, this must be a boolean value so the layer
-    # emits it it into /meta, but the value is not important.
+    # emits it it into /.meta, but the value is not important.
     artifacts_may_require_repo=True,
     target_to_path=None,
     subvolumes_dir=None,
