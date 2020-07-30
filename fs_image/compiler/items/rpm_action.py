@@ -143,7 +143,7 @@ def _action_to_command(
             # This can happen if the RPM DB does not exist in the
             # subvolume or the package is not installed.
             old = None
-        if old is not None and compare_rpm_versions(nor.metadata, old) <= 0:
+        if old is not None and compare_rpm_versions(nor.metadata, old) < 0:
             return YumDnfCommand.local_downgrade, nor
         else:
             return YumDnfCommand.local_install, nor
