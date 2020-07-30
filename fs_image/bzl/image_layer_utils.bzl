@@ -3,7 +3,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":constants.bzl", "QUERY_TARGETS_AND_OUTPUTS_SEP")
 load(":image_utils.bzl", "image_utils")
-load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config", "get_visibility")
+load(":oss_shim.bzl", "buck_genrule", "config", "get_visibility")
 
 def _add_run_in_subvol_target(name, kind, extra_args = None):
     buck_genrule(
@@ -177,6 +177,7 @@ def _image_layer_impl(
         cacheable = False,
         type = _rule_type,  # For queries
         visibility = visibility,
+        fs_image_internal_rule = fs_image_internal_rule,
     )
     _add_run_in_subvol_target(_layer_name, "container")
     if enable_boot_target:
