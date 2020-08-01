@@ -19,6 +19,10 @@ from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 from fs_image.artifacts_dir import find_repo_root
 from fs_image.common import nullcontext
 from fs_image.compiler import procfs_serde
+from fs_image.compiler.items.common import (
+    META_ARTIFACTS_REQUIRE_REPO,
+    OLD_META_ARTIFACTS_REQUIRE_REPO,
+)
 from fs_image.compiler.items.mount import mounts_from_subvol_meta
 from fs_image.find_built_subvol import Subvol
 from fs_image.fs_utils import Path
@@ -106,9 +110,15 @@ def _nspawn_cmd(nspawn_subvol: Subvol):
 
 # This is a separate helper so that tests can mock it easily
 def _artifacts_may_require_repo(src_subvol: Subvol):
-    return procfs_serde.deserialize_int(
-        src_subvol, ".meta/private/opts/artifacts_may_require_repo"
-    )
+    # TODO(jtru): Remove when meta migration has propagated
+    try:
+        return procfs_serde.deserialize_int(
+            src_subvol, META_ARTIFACTS_REQUIRE_REPO.decode()
+        )
+    except AssertionError:  # pragma: no cover
+        return procfs_serde.deserialize_int(
+            src_subvol, OLD_META_ARTIFACTS_REQUIRE_REPO.decode()
+        )
 
 
 def _extra_nspawn_args_and_env(
