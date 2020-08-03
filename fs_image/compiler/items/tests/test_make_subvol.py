@@ -38,8 +38,6 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                 [
                     "(Dir)",
                     {
-                        # TODO(jtru): Remove when meta migration has propagated
-                        "meta": ["(Dir)", {}],
                         ".meta": [
                             "(Dir)",
                             {
@@ -57,7 +55,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                                     },
                                 ]
                             },
-                        ],
+                        ]
                     },
                 ],
                 render_subvol(subvol),
@@ -86,8 +84,6 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             self.assertEqual(parent_content, render_subvol(parent))
             child_content = copy.deepcopy(parent_content)
             child_content[1]["a"][1]["c"] = ["(Dir)", {}]
-            # TODO(jtru): Remove when meta migration has propagated
-            child_content[1]["meta"] = ["(Dir)", {}]
             # Since the parent lacked a /.meta, the child added it.
             child_content[1][".meta"] = [
                 "(Dir)",

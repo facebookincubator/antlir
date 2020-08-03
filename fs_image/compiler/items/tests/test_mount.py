@@ -98,7 +98,6 @@ class MountItemTestCase(BaseItemTestCase):
                     "(Dir)",
                     {
                         "lala": ["(File)"],  # An empty mountpoint for /dev/null
-                        # TODO(jtru): Remove when meta migration has propagated
                         ".meta": [
                             "(Dir)",
                             {
@@ -225,8 +224,6 @@ class MountItemTestCase(BaseItemTestCase):
                 "(Dir)",
                 {
                     "meow": ["(Dir)", {}],
-                    # TODO(jtru): Remove when meta migration has propagated
-                    "meta": ["(Dir)", {}],
                     ".meta": [
                         "(Dir)",
                         {
@@ -339,8 +336,6 @@ class MountItemTestCase(BaseItemTestCase):
                 PhasesProvideItem(from_target="t", subvol=mounter),
                 {
                     ProvidesDirectory(path="/"),
-                    # TODO(jtru): Remove when meta migration has propagated
-                    ProvidesDirectory(path="/meta"),
                     ProvidesDoNotAccess(path="/.meta"),
                     ProvidesDoNotAccess(path="/meow"),
                 },
