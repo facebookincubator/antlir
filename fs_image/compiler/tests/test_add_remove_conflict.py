@@ -41,8 +41,6 @@ class AddRemoveConflictTestCase(unittest.TestCase):
 
     def test_check_layers(self):
         meta = {
-            # TODO(jtru): Remove when meta migration has propagated
-            "meta": ["(Dir)", {}],
             ".meta": [
                 "(Dir)",
                 {
@@ -56,7 +54,7 @@ class AddRemoveConflictTestCase(unittest.TestCase):
                         },
                     ]
                 },
-            ],
+            ]
         }
         # The parent has a couple of directories.
         self.assertEqual(

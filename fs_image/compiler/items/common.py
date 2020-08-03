@@ -41,8 +41,6 @@ from .mount_utils import mountpoints_from_subvol_meta
 #
 # NB: The trailing slash is significant, making this a protected directory,
 # not a protected file.
-# TODO(jtru): Remove when meta migration has propagated
-OLD_META_DIR = Path("meta/")
 META_DIR = Path(".meta/")
 
 
@@ -189,10 +187,6 @@ class ImageItem:
         )(self, **kwargs)
 
 
-# TODO(jtru): Remove when meta migration has propagated
-OLD_META_ARTIFACTS_REQUIRE_REPO = (
-    OLD_META_DIR / "private/opts/artifacts_may_require_repo"
-)
 META_ARTIFACTS_REQUIRE_REPO = (
     META_DIR / "private/opts/artifacts_may_require_repo"
 )
@@ -201,15 +195,9 @@ META_ARTIFACTS_REQUIRE_REPO = (
 def _validate_artifacts_require_repo(
     dependency: Subvol, layer_opts: LayerOpts, message: str
 ):
-    # TODO(jtru): Remove when meta migration has propagated
-    try:
-        dep_arr = procfs_serde.deserialize_int(
-            dependency, META_ARTIFACTS_REQUIRE_REPO.decode()
-        )
-    except AssertionError:  # pragma: no cover
-        dep_arr = procfs_serde.deserialize_int(
-            dependency, OLD_META_ARTIFACTS_REQUIRE_REPO.decode()
-        )
+    dep_arr = procfs_serde.deserialize_int(
+        dependency, META_ARTIFACTS_REQUIRE_REPO.decode()
+    )
     # The check is <= because we should permit building @mode/dev layers
     # that depend on published @mode/opt images.  The CLI arg is bool.
     assert dep_arr <= int(layer_opts.artifacts_may_require_repo), (
@@ -235,9 +223,6 @@ def make_path_normal_relative(orig_d: str) -> str:
     # this is just here as a fail-fast backup.
     if (d + "/").startswith(META_DIR.decode()):
         raise AssertionError(f"path {orig_d} cannot start with {META_DIR}")
-    # TODO(jtru): Remove when meta migration has propagated
-    elif (d + "/").startswith(OLD_META_DIR.decode()):  # pragma: no cover
-        raise AssertionError(f"path {orig_d} cannot start with {OLD_META_DIR}")
     return d
 
 
@@ -292,11 +277,6 @@ def ensure_meta_dir_exists(subvol: Subvol, layer_opts: LayerOpts):
     subvol.run_as_root(
         ["mkdir", "--mode=0755", "--parents", subvol.path(META_DIR)]
     )
-    # TODO(jtru): Remove when meta migration has propagated
-    subvol.run_as_root(
-        ["mkdir", "--mode=0755", "--parents", subvol.path(OLD_META_DIR)]
-    )
-
     # One might ask: why are we serializing this into the image instead of
     # just putting a condition on `ARTIFACTS_REQUIRE_REPO` into our Buck
     # macros?  Two reasons:
@@ -379,10 +359,7 @@ def _image_source_path(
     if source:
         return (source / path).normpath()
 
-    # TODO(jtru): Remove when meta migration has propagated
-    if os.path.exists(
-        layer.path(META_ARTIFACTS_REQUIRE_REPO)
-    ) or os.path.exists(layer.path(OLD_META_ARTIFACTS_REQUIRE_REPO)):
+    if os.path.exists(layer.path(META_ARTIFACTS_REQUIRE_REPO)):
         _validate_artifacts_require_repo(layer, layer_opts, "image.source")
     return Path(layer.path(path))
 

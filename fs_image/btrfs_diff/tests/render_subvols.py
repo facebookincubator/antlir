@@ -76,8 +76,6 @@ def check_common_rpm_render(test, rendered_subvol, yum_dnf: str):
             "(Dir)",
             {
                 "dev": ["(Dir)", {}],
-                # TODO(jtru): Remove when meta migration has propagated
-                "meta": ["(Dir)", {}],
                 ".meta": [
                     "(Dir)",
                     {

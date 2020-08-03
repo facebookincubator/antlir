@@ -115,8 +115,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     "-rf",
                     subvol.path("dev"),
                     subvol.path("etc"),
-                    # TODO(jtru): Remove when meta migration has propagated
-                    subvol.path("meta"),
                     subvol.path(".meta"),
                     subvol.path("var"),
                 ]
@@ -153,8 +151,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     "-rf",
                     subvol.path("dev"),
                     subvol.path("etc"),
-                    # TODO(jtru): Remove when meta migration has propagated
-                    subvol.path("meta"),
                     subvol.path(".meta"),
                     subvol.path("var"),
                 ]

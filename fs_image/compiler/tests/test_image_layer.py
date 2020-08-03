@@ -361,8 +361,6 @@ class ImageLayerTestCase(unittest.TestCase):
                     "(Dir)",
                     {
                         "foo": ["(Dir)", {}],
-                        # TODO(jtru): Remove when meta migration has propagated
-                        "meta": ["(Dir)", {}],
                         ".meta": [
                             "(Dir)",
                             {
@@ -395,8 +393,6 @@ class ImageLayerTestCase(unittest.TestCase):
                 [
                     "(Dir)",
                     {
-                        # TODO(jtru): Remove when meta migration has propagated
-                        "meta": ["(Dir)", {}],
                         ".meta": [
                             "(Dir)",
                             {
@@ -414,7 +410,7 @@ class ImageLayerTestCase(unittest.TestCase):
                                     },
                                 ]
                             },
-                        ],
+                        ]
                     },
                 ],
                 r,
