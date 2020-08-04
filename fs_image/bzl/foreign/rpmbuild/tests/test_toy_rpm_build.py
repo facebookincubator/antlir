@@ -14,11 +14,11 @@ from fs_image.rpm.rpm_metadata import RpmMetadata
 class ToyRpmBuildUnittestTest(unittest.TestCase):
     def test_built_files(self):
         # This test doesn't need to be a "rendered subvol" test, because we
-        # only really care about the files that `image_rpmbuild_layer`
+        # only really care about the files that `image_rpmbuild` build layer
         # outputs into `/rpmbuild/RPMS/`, everything else is not part of the
         # contract, and is disposable.
 
-        # Files added as part of the rpmbuild_layer
+        # Files added as part of the rpmbuild build layer
         self.assertTrue(os.path.exists("/rpmbuild/SOURCES/toy_src_file"))
         self.assertTrue(os.path.exists("/rpmbuild/SPECS/specfile.spec"))
 
