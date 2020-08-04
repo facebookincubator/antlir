@@ -12,10 +12,12 @@ and loopbacks.
 """
 import logging
 import os
+import platform
+import re
 import subprocess
 import sys
 import tempfile
-from typing import Optional
+from typing import Optional, Tuple
 
 from .common import byteme, get_file_logger, run_stdout_to_err
 from .unshare import Unshare, nsenter_as_root, nsenter_as_user
@@ -34,6 +36,15 @@ MIN_CREATE_BYTES = 109 * MiB
 # When a filesystem's `min-dev-size` is small, `btrfs resize` below this
 # limit will fail to shrink with `Invalid argument`.
 MIN_SHRINK_BYTES = 256 * MiB
+
+
+def _kernel_version() -> Tuple[int, int]:
+    m = re.match(r"(\d+)\.(\d+)\.\d+.*", platform.release())
+    if not m or len(m.groups()) != 2:
+        raise ValueError(
+            f"Invalid kernel version format '{platform.release()}'"
+        )
+    return int(m.group(1)), int(m.group(2))
 
 
 def _round_to_loop_block_size(num_bytes: int, log_level: int) -> int:
@@ -104,6 +115,10 @@ def _mount_image_file(
     unshare: Optional[Unshare], file_path: bytes, mount_path: bytes
 ) -> bytes:
     log.info(f"Mounting btrfs {file_path} at {mount_path}")
+    compress = "zstd:19"
+    # kernel versions pre-5.1 did not support compression level tuning
+    if _kernel_version() < (5, 1):
+        compress = "zstd"
     # Explicitly set filesystem type to detect shenanigans.
     run_stdout_to_err(
         nsenter_as_root(
@@ -112,7 +127,7 @@ def _mount_image_file(
             "-t",
             "btrfs",
             "-o",
-            "loop,discard,nobarrier,compress=zstd:19",
+            f"loop,discard,nobarrier,compress={compress}",
             file_path,
             mount_path,
         ),
