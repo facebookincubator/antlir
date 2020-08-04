@@ -14,7 +14,17 @@ load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//fs_image/bzl/image_actions:rpms.bzl", "image_rpms_install")
 load("//fs_image/bzl/image_actions:tarball.bzl", "image_tarball")
 
-def image_rpmbuild_layer(
+RPMBUILD_LAYER_SUFFIX = "rpmbuild-build"
+
+# Builds RPM(s) based on the provided specfile and sources, copies them to an
+# output directory, and signs them.
+# The end result will be a directory containing all the signed RPM(s).
+#
+# If you need to access the intermediate image layers to debug a build issue,
+# you can use the "//<project>:<name>-<RPMBUILD_LAYER_SUFFIX>" image_layer
+# target.  This layer is where the `rpmbuild` command is run to produce the
+# unsigned RPM(s).
+def image_rpmbuild(
         name,
         # The name of a specfile target (i.e. a single file made accessible
         # with `export_file()`).
@@ -27,9 +37,15 @@ def image_rpmbuild_layer(
         # test TARGETS for "toy-rpm" to see how the sources target is set up
         # so that there is no "toy_srcs" top directory.
         # It can be helpful to do
-        # `buck run //path/to:<name>-rpmbuild-setup-container` to inspect the
-        # setup layer and experiment with building.
+        # `buck run //<project>:<name>-rpmbuild-setup-container` to inspect the
+        # setup layer and experiment with building, but do not depend on it for
+        # production targets.
         source,
+        # A binary target that takes an RPM file path as an argument and signs
+        # the RPM in place.  Used to sign the RPM(s) built.
+        # Signers should not modify anything except the signatures on the RPMs.
+        # This is verified after each call to sign an RPM.
+        signer,
         # Which RPM snapshots to use when installing build dependencies.
         serve_rpm_snapshots = (),
         # An `image.layer` target, on top of which the current layer will
@@ -100,7 +116,7 @@ def image_rpmbuild_layer(
     build_layer = name + "-rpmbuild-build"
     image_foreign_layer(
         name = build_layer,
-        rule_type = "image_rpmbuild_layer",
+        rule_type = "image_rpmbuild_build_layer",
         parent_layer = ":" + install_deps_layer,
         # While it's possible to want to support unprivileged builds, the
         # typical case will want to auto-install dependencies, which
@@ -119,16 +135,53 @@ def image_rpmbuild_layer(
     )
 
     # This is The Worst™, but we need it to minimize dependency hops
-    # from the users of the rpmbuild_layer results to the inputs that
+    # from the users of the rpmbuild layer results to the inputs that
     # are used for the RPM.
     # Future: There is eventually going to be work to fix/remove the dependency
     # limit for TD and this can be removed afterwards.
     image_layer(
-        name = name,
+        name = name + "-rpmbuild-td-layer",
         parent_layer = ":" + build_layer,
         features = [
             image_mkdir("/", "please-ignore-fake-deps"),
             image_install(specfile, "/please-ignore-fake-deps/specfile"),
             image_install(":" + source_tarball, "/please-ignore-fake-deps/source.tgz"),
         ],
+    )
+
+    buck_genrule(
+        name = name,
+        out = "signed_rpms",
+        bash = '''
+            set -ue -o pipefail
+            mkdir "$OUT"
+
+            # copy the RPMs out of the rpmbuild_layer
+            binary_path=( $(exe //fs_image:find-built-subvol) )
+            layer_loc="$(location {rpmbuild_layer})"
+            sv_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
+            find "$sv_path/rpmbuild/RPMS/" -name '*.rpm' -print0 | xargs -0 cp --no-clobber --target-directory "$OUT"
+
+            # call the signer binary to sign the RPMs
+            signer_binary_path=( $(exe {signer_target}) )
+            for rpm in $OUT/*.rpm; do
+                "${{signer_binary_path[@]}}" "$rpm"
+
+                rpm_basename=\\$( basename "$rpm")
+                orig_rpm="$sv_path/rpmbuild/RPMS/$rpm_basename"
+
+                # verify that the contents match
+                # Future: we can probably use --queryformat to print the content
+                # hashes and avoid comparing contents directly if we dig around
+                # and find a checksum stronger than MD5.
+                diff <(rpm2cpio "$orig_rpm") <(rpm2cpio "$rpm")
+
+                # diff the rest of the metadata, ignoring the signature line
+                # --nosignature passed to `rpm` silences warning about unrecognized keys
+                diff -I "^Signature" <(rpm --scripts --nosignature -qilp "$orig_rpm") <(rpm --scripts --nosignature -qilp "$rpm")
+            done
+        '''.format(
+            rpmbuild_layer = ":" + build_layer,
+            signer_target = signer,
+        ),
     )
