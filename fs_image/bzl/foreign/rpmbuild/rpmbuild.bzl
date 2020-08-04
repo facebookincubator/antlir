@@ -4,6 +4,7 @@ given image layer, and outputs a new layer with the resulting RPM(s)
 available in a pre-determined location: `/rpmbuild/RPMS`.
 """
 
+load("//fs_image/bzl:crc32.bzl", "hex_crc32")
 load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//fs_image/bzl:image_layer.bzl", "image_layer")
@@ -11,6 +12,7 @@ load("//fs_image/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule")
 load("//fs_image/bzl/image_actions:install.bzl", "image_install")
 load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
+load("//fs_image/bzl/image_actions:remove.bzl", "image_remove")
 load("//fs_image/bzl/image_actions:rpms.bzl", "image_rpms_install")
 load("//fs_image/bzl/image_actions:tarball.bzl", "image_tarball")
 
@@ -184,4 +186,54 @@ def image_rpmbuild(
             rpmbuild_layer = ":" + build_layer,
             signer_target = signer,
         ),
+    )
+
+# You typically don't need this if you're installing an RPM signed with a key
+# that is already imported in a RPM repo in your image.  However, if you're
+# signing with a custom key pair that has not been used/installed before (as in
+# the case of the tests) you can use this to import the public key for
+# verification into the destination layer before you install the RPM(s) signed
+# with the custom key.
+def image_import_rpm_public_key_layer(
+        name,
+        # A list of `image.source` (see `image_source.bzl`) and/or targets
+        # exporting a public key file.
+        pubkeys,
+        # An `image.layer`to import the key into.  This should have the `rpm`
+        # RPM installed.
+        parent_layer,
+        **image_layer_kwargs):
+    gpg_key_dir = "/fs_image-rpm-gpg-keys"
+    install_keys = []
+    for src in pubkeys:
+        dest = gpg_key_dir + "/RPM-GPG-KEY-" + hex_crc32(str(src))
+        install_keys.append(image_install(src, dest))
+
+    if not install_keys:
+        fail("cannot import an empty set of keys")
+
+    copy_layer = name + "-key-copy"
+    image_layer(
+        name = copy_layer,
+        parent_layer = parent_layer,
+        features = [image_mkdir("/", gpg_key_dir[1:])] + install_keys,
+    )
+
+    import_layer = name + "-key-import"
+    image_foreign_layer(
+        name = import_layer,
+        rule_type = "image_import_rpm_public_key_layer",
+        parent_layer = ":" + copy_layer,
+        # Need to be root to modify the RPM DB.
+        user = "root",
+        cmd = ["/bin/bash", "-c", "rpm --import {}/*".format(gpg_key_dir)],
+        **image_layer_kwargs
+    )
+
+    # Remove the directory of keys so as not to leave artifacts in the layers.
+    # Since the key is imported in the RPM DB the file isn't needed.
+    image_layer(
+        name = name,
+        parent_layer = ":" + import_layer,
+        features = [image_remove(gpg_key_dir)],
     )
