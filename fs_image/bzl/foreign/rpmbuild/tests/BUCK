@@ -1,7 +1,7 @@
 load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "buck_sh_binary")
-load("//fs_image/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_rpmbuild")
+load("//fs_image/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
 
 # An example of an RPM signer that can sign an RPM with a test key.
 #
@@ -40,12 +40,25 @@ image.python_unittest(
     deps = ["//fs_image/rpm:rpm_metadata"],
 )
 
-# Install a signed RPM via `image.source`.  Installing an unsigned RPM fails.
-image.layer(
-    name = "install-signed-toy-rpm",
+# Because `toy.rpm` was signed with a test key that isn't pre-installed in the
+# parent_layer, we need to import it before we install the RPM (below).
+image_import_rpm_public_key_layer(
+    name = "install-rpm-pubkey",
     # We use the default BA here so that we have users and utilities set up
     # for the unit test below.
     parent_layer = DEFAULT_BUILD_APPLIANCE,
+    pubkeys = [
+        image.source(
+            "//fs_image/rpm:gpg-test-keypair",
+            path = "public.key",
+        ),
+    ],
+)
+
+# Install a signed RPM via `image.source`.  Installing an unsigned RPM fails.
+image.layer(
+    name = "install-signed-toy-rpm",
+    parent_layer = ":install-rpm-pubkey",
     features = [
         image.rpms_install([
             image.source(
@@ -54,6 +67,11 @@ image.layer(
             ),
         ]),
     ],
+    # The test BA has yum/dnf conf with gpgcheck=1 and localpkg_gpgcheck=1 so
+    # installing an unsigned RPM will fail.
+    build_opts = image.opts(
+        build_appliance = "//fs_image/compiler/test_images:build_appliance_testing",
+    ),
 )
 
 # Check the result of installing the RPM we built.
