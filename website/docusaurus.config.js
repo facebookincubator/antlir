@@ -12,19 +12,19 @@ function FBInternalWithOssFallback(elements, fallback) {
 }
 
 module.exports = {
-  title: FBInternalWithOssFallback('FS_Image @FB', 'FS_Image'),
+  title: FBInternalWithOssFallback('Antlir @FB', 'Antlir'),
   tagline: 'A filesystem image builder',
   url: FBInternalWithOssFallback(
-    'https://www.internalfb.com/intern/staticdocs/fs_image',
-    'https://www.github.com/facebookincubator/fs_image',
+    'https://www.internalfb.com/intern/staticdocs/antlir',
+    'https://www.github.com/facebookincubator/antlir',
   ),
   baseUrl: '/',
   favicon: 'img/favicon.ico',
   organizationName: 'facebookincubator', // Usually your GitHub org/user name.
-  projectName: 'fs_image', // Usually your repo name.
+  projectName: 'antlir', // Usually your repo name.
   themeConfig: {
     navbar: {
-      title: FBInternalWithOssFallback('FS_Image @FB', 'FS_Image'),
+      title: FBInternalWithOssFallback('Antlir @FB', 'Antlir'),
       logo: {
         alt: 'My Facebook Project Logo',
         src: 'img/logo.svg',
@@ -38,7 +38,7 @@ module.exports = {
         },
         // Please keep GitHub link to the right for consistency.
         {
-          href: 'https://github.com/facebookincubator/fs_image',
+          href: 'https://github.com/facebookincubator/antlir',
           label: 'GitHub',
           position: 'right',
         },
@@ -56,7 +56,7 @@ module.exports = {
             },
             {
               label: 'GitHub',
-              to: 'https://github.com/facebookincubator/fs_image',
+              to: 'https://github.com/facebookincubator/antlir',
             },
           ],
         },
@@ -65,7 +65,7 @@ module.exports = {
           items: [
             {
               label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/fs_image',
+              href: 'https://stackoverflow.com/questions/tagged/antlir',
             },
             /* TODO
             {
@@ -115,7 +115,7 @@ module.exports = {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: FBInternalWithOssFallback(
             'https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/docs/website',
-            'https://github.com/facebookincubator/fs_image/edit/master/website/',
+            'https://github.com/facebookincubator/antlir/edit/master/website/',
           ),
         },
         theme: {

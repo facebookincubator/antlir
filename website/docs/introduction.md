@@ -1,6 +1,6 @@
 ---
 id: introduction
-title: Welcome to FS_Image
+title: Welcome to Antlir
 ---
 
 Howdy!
