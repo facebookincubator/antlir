@@ -162,6 +162,11 @@ class YumDnfConfIsolator:
         main_sec["timeout"] = "60"
         main_sec.pop("proxy", None)  # We talk only to a local reposerver.
 
+        # This forces that any incoming repo or RPM installation MUST be signed
+        # with a key that is trusted (imported) in the destination RPM DB.
+        main_sec["gpgcheck"] = "1"
+        main_sec["localpkg_gpgcheck"] = "1"
+
         # NB: `sslcacert`, `sslclientcert`, and `sslclientkey` are left
         # as-is, though these read from the host filesystem.
 

@@ -104,6 +104,7 @@ class YumDnfConfTestCaseImpl:
         logfile = /var/log/{prog_name}.log
         config_file_path = /config_path
         timeout = 60
+        localpkg_gpgcheck = 1
         plugins = 1
         pluginpath = /versionlock_dir
         pluginconfpath = /versionlock_dir

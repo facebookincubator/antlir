@@ -43,6 +43,7 @@ reposdir = /dev/null
 logfile = /var/log/{prog_name}.log
 config_file_path = /INSTALL/DIR/{prog_name}/{prog_name}.conf
 timeout = 60
+localpkg_gpgcheck = 1
 plugins = 1
 pluginpath = /INSTALL/DIR/{prog_name}/plugins
 pluginconfpath = /INSTALL/DIR/{prog_name}/plugins
