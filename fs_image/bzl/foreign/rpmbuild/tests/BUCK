@@ -31,6 +31,7 @@ buck_sh_binary(
         ":rpm_sign_test_functions.sh",
         "//fs_image/rpm:gpg-test-signing-key",
     ],
+    visibility = ["//fs_image/bzl/foreign/rpmbuild/tests/..."],
 )
 
 image_rpmbuild(
