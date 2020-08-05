@@ -58,8 +58,7 @@ image_import_rpm_public_key_layer(
     parent_layer = DEFAULT_BUILD_APPLIANCE,
     pubkeys = [
         image.source(
-            "//fs_image/rpm:gpg-test-keypair",
-            path = "public.key",
+            "//fs_image/rpm:gpg-test-public-key",
         ),
     ],
 )

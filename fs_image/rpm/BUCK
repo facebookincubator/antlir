@@ -356,17 +356,20 @@ python_binary(
 export_file(
     name = "gpg-test-keypair",
     src = "tests/gpg_test_keypair/",
-    # The only other uses of this file are the rpmbuild tests and the compiler
-    # test images. Let's keep it limited to just that.
-    visibility = [
-        "//fs_image/bzl/foreign/rpmbuild/...",
-        "//fs_image/compiler/test_images/...",
-    ],
+    # The only other uses of this file are the compiler test images.
+    # Let's keep it limited to just that.
+    visibility = ["//fs_image/compiler/test_images/..."],
 )
 
 export_file(
     name = "gpg-test-signing-key",
     src = "tests/gpg_test_keypair/private.key",
+    visibility = ["//fs_image/bzl/foreign/rpmbuild/..."],
+)
+
+export_file(
+    name = "gpg-test-public-key",
+    src = "tests/gpg_test_keypair/public.key",
 )
 
 python_binary(
