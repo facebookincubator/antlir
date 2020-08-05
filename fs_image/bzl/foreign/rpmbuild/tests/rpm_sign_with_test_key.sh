@@ -6,13 +6,10 @@
 
 set -o pipefail
 
-# Since we're using a test key, create a temporary directory to house the gpg
-# configuration and trust data so as not to pollute the user's host data.
-GNUPGHOME=$(mktemp -d)
-export GNUPGHOME
+# $BUCK_PROJECT_ROOT is a mirror of the source and artifact trees containing the
+# `resources` specified in the target for this buck_sh_binary.  Since it's
+# determined at runtime it cannot be shellcheck-ed.
+# shellcheck source=/dev/null
+source "$BUCK_PROJECT_ROOT/fs_image/bzl/foreign/rpmbuild/tests/rpm_sign_test_functions.sh"
 
-trap 'rm -rf "$GNUPGHOME"' EXIT
-
-signing_key="$BUCK_PROJECT_ROOT/fs_image/rpm/tests/gpg_test_keypair/private.key"
-gpg -q --import "$signing_key"
-rpmsign --addsign --define='_gpg_name Test Key' --define='_gpg_digest_algo sha256' "$1"
+sign_with_test_key "$1"

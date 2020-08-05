@@ -359,7 +359,7 @@ export_file(
     # The only other uses of this file are the rpmbuild tests and the compiler
     # test images. Let's keep it limited to just that.
     visibility = [
-        "//fs_image/bzl/foreign/rpmbuild/tests/...",
+        "//fs_image/bzl/foreign/rpmbuild/...",
         "//fs_image/compiler/test_images/...",
     ],
 )
