@@ -16,7 +16,7 @@ Avoid whitespace when possible, since IncompleteInode uses space separators.
 """
 import stat
 from datetime import datetime
-from typing import Mapping, NamedTuple, Optional, Sequence, Set, Tuple
+from typing import MutableMapping, NamedTuple, Optional, Sequence, Set, Tuple
 
 from .extent import Extent
 from .inode_id import InodeID
@@ -112,7 +112,7 @@ class Inode(NamedTuple):
     mode: Optional[int]  # Bottom 12 bits of `st_mode`
     owner: Optional[InodeOwner]
     utimes: Optional[InodeUtimes]
-    xattrs: Mapping[bytes, bytes]
+    xattrs: MutableMapping[bytes, bytes]
 
     # The subsequent fields are specific to particular file_types.  `_new`
     # will assert that they are not None iff they are relevant.

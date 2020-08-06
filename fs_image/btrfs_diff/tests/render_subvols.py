@@ -15,7 +15,6 @@ from typing import Tuple
 from ..freeze import freeze as btrfs_diff_freeze
 from ..inode import InodeOwner
 from ..inode_utils import (
-    SELinuxXAttrStats,
     erase_mode_and_owner,
     erase_selinux_xattr,
     erase_utimes_in_range,
@@ -141,13 +140,12 @@ def prepare_subvol_set_for_render(
 
     # Render the demo subvolumes after stripping all the predictable
     # metadata to make our "expected" view of the filesystem shorter.
-    selinux_stats = SELinuxXAttrStats(subvols.inodes())
     for ino in subvols.inodes():
         erase_mode_and_owner(
             ino, owner=InodeOwner(uid=0, gid=0), file_mode=0o644, dir_mode=0o755
         )
         erase_utimes_in_range(ino, start=build_start_time, end=build_end_time)
-        erase_selinux_xattr(ino, selinux_stats.most_common())
+        erase_selinux_xattr(ino)
 
 
 # Often, we just want to render 1 sendstream
