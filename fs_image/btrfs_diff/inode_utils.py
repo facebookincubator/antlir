@@ -12,30 +12,13 @@ Similar to `get_frequency_of_selinux_xattrs` and `ItemFilters` from
 `send_stream.py`, but for already-constructed filesystems.
 """
 
-from collections import Counter
-from typing import Iterator, Optional, Tuple, Union
+from typing import Tuple, Union
 
 from .incomplete_inode import IncompleteDir, IncompleteInode
 from .inode import Inode, InodeOwner
 
 
 _SELINUX_XATTR = b"security.selinux"
-
-
-class SELinuxXAttrStats:
-    "Finds the most common (and therefore likely the default) SELinux context"
-
-    def __init__(self, inodes: Iterator[Union[Inode, IncompleteInode]]):
-        self.counter = Counter(
-            ino.xattrs[_SELINUX_XATTR]
-            for ino in inodes
-            if _SELINUX_XATTR in ino.xattrs
-        )
-
-    def most_common(self) -> Optional[bytes]:
-        return max(self.counter.items(), key=lambda p: p[1], default=(None, 0))[
-            0
-        ]
 
 
 def erase_mode_and_owner(
@@ -70,11 +53,8 @@ def erase_utimes_in_range(
         ino.utimes = None
 
 
-def erase_selinux_xattr(
-    ino: Union[IncompleteInode, Inode], data: Optional[bytes]
-):
-    if ino.xattrs.get(_SELINUX_XATTR) == data and data is not None:
-        # Getting coverage for this line would force us to have a hard
-        # dependency on running this test on an SELinux-enabled filesystem.
-        # Mocking that seems like useless effort, so let's waive coverage.
-        del ino.xattrs[_SELINUX_XATTR]  # pragma: no cover
+def erase_selinux_xattr(ino: Union[IncompleteInode, Inode]):
+    # Getting coverage for this line would force us to have a hard
+    # dependency on running this test on an SELinux-enabled filesystem.
+    # Mocking that seems like useless effort, so let's waive coverage.
+    ino.xattrs.pop(_SELINUX_XATTR, None)  # pragma: no cover
