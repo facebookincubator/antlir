@@ -68,6 +68,7 @@ def image_rpmbuild(
                 --numeric-owner -C $(location {source}) -czf "$OUT" .
         '''.format(source = maybe_export_file(source)),
         visibility = [],
+        fs_image_internal_rule = True,
     )
 
     specfile_path = "/rpmbuild/SPECS/specfile.spec"
@@ -89,6 +90,7 @@ def image_rpmbuild(
             image_rpms_install(["yum-utils"]),
         ],
         visibility = [],
+        fs_image_internal_rule = True,
     )
 
     rpmbuild_dir = "/rpmbuild"
@@ -112,6 +114,7 @@ def image_rpmbuild(
             specfile_path,
         ],
         serve_rpm_snapshots = serve_rpm_snapshots,
+        fs_image_internal_rule = True,
         **image_layer_kwargs
     )
 
@@ -134,21 +137,6 @@ def image_rpmbuild(
             "{}/SPECS/specfile.spec".format(rpmbuild_dir),
         ],
         **image_layer_kwargs
-    )
-
-    # This is The Worst™, but we need it to minimize dependency hops
-    # from the users of the rpmbuild layer results to the inputs that
-    # are used for the RPM.
-    # Future: There is eventually going to be work to fix/remove the dependency
-    # limit for TD and this can be removed afterwards.
-    image_layer(
-        name = name + "-rpmbuild-td-layer",
-        parent_layer = ":" + build_layer,
-        features = [
-            image_mkdir("/", "please-ignore-fake-deps"),
-            image_install(specfile, "/please-ignore-fake-deps/specfile"),
-            image_install(":" + source_tarball, "/please-ignore-fake-deps/source.tgz"),
-        ],
     )
 
     buck_genrule(
@@ -217,6 +205,7 @@ def image_import_rpm_public_key_layer(
         name = copy_layer,
         parent_layer = parent_layer,
         features = [image_mkdir("/", gpg_key_dir[1:])] + install_keys,
+        fs_image_internal_rule = True,
     )
 
     import_layer = name + "-key-import"
@@ -227,6 +216,7 @@ def image_import_rpm_public_key_layer(
         # Need to be root to modify the RPM DB.
         user = "root",
         cmd = ["/bin/bash", "-c", "rpm --import {}/*".format(gpg_key_dir)],
+        fs_image_internal_rule = True,
         **image_layer_kwargs
     )
 
