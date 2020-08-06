@@ -211,6 +211,30 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 self._opts(),
             )
 
+    def test_rpm_action_reinstall_same_exact_version(self):
+        # installing the same exact version as an already installed package is
+        # an explicit no-op
+        parent_subvol = layer_resource_subvol(
+            __package__, "test-with-one-local-rpm"
+        )
+        local_rpm_path = Path(__file__).dirname() / "rpm-test-cheese-2-1.rpm"
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+            # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
+            assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
+            subvol = temp_subvolumes.snapshot(parent_subvol, "remove_cheese")
+            RpmActionItem.get_phase_builder(
+                [
+                    RpmActionItem(
+                        from_target="t",
+                        source=local_rpm_path,
+                        action=RpmAction.install,
+                    )
+                ],
+                self._opts(),
+            )(subvol)
+            # cheese2 file is still there
+            assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
+
 
 class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.yum
