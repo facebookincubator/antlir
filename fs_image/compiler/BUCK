@@ -178,6 +178,7 @@ IMAGE_LAYER_DEPS = [
     "base_cheese_layer",
     "older_cheese_layer",
     "newer_cheese_layer",
+    "reinstall_cheese_layer",
     "hello_world_base",
     "create_ops",
     "create_ops-from-dir",

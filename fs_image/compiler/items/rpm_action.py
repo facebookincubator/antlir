@@ -54,6 +54,9 @@ class YumDnfCommand(enum.Enum):
     local_downgrade = "downgrade"
     # The way `yum` works, this is a no-op if the package is missing.
     remove_name_if_exists = "remove-n"
+    # Yum will refuse to re-install a package that is already installed, so
+    # allow some actions that do nothing
+    noop = "noop"
 
 
 # When several of the commands land in the same phase, we need to order them
@@ -72,6 +75,7 @@ YUM_DNF_COMMAND_ORDER = {
             YumDnfCommand.local_downgrade,
             YumDnfCommand.local_install,
             YumDnfCommand.install_name,
+            YumDnfCommand.noop,
         ]
     )
 }
@@ -145,6 +149,8 @@ def _action_to_command(
             old = None
         if old is not None and compare_rpm_versions(nor.metadata, old) < 0:
             return YumDnfCommand.local_downgrade, nor
+        if old is not None and compare_rpm_versions(nor.metadata, old) == 0:
+            return YumDnfCommand.noop, nor
         else:
             return YumDnfCommand.local_install, nor
     elif action == RpmAction.remove_if_exists:
@@ -176,6 +182,8 @@ def _convert_actions_to_commands(
     for action, names_or_rpms in action_to_names_or_rpms.items():
         for nor in names_or_rpms:
             cmd, new_nor = _action_to_command(subvol, action, nor)
+            if cmd == YumDnfCommand.noop:
+                continue
             if cmd is None:  # pragma: no cover
                 raise AssertionError(f"Unsupported {action}, {nor}")
             cmd_to_names_or_rpms.setdefault(cmd, set()).add(new_nor)

@@ -650,6 +650,16 @@ image.layer(
     build_opts = image.opts(build_appliance = ":build_appliance_testing"),
 )
 
+# This re-installs the same version of /rpm_test/cheese2.txt.
+image.layer(
+    name = "reinstall_cheese_layer",
+    parent_layer = ":base_cheese_layer",
+    features = [
+        image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
+    ],
+    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+)
+
 ##
 ## These few rules help test `image.sendstream_layer`.
 ##
