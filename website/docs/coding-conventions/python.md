@@ -85,7 +85,7 @@ cover` on a line or block level:
     -   Access sibling libraries: `from . import sibling_module`
     -   Access parent from tests: `from .. import module_being_tested`.
 
-### Use `Path.resource`, avoid `__file__`, `target_location`, `importlib.resources.path`
+### Use `Path.resource` and `layer_resource_subvol`; avoid `__file__`, `importlib.resources.path`
 
 Your `python_unittest` or `python_binary` has `resources`. You want to access
 the files from the running code. In `@mode/dev`, most of the above will kind of
@@ -216,9 +216,9 @@ log.info(f'foo {var}')
 
 #### `.decode()` on `Path` is a code smell
 
-We need this to interface with foreign modules (e.g. `gnupg`), but in most other
-circumstances, we have primitives for avoiding explicit `.decode()` calls and
-the associated waste of time fighting with `str` vs `bytes` issues.
+We need this to interface with foreign modules (e.g. `requests`), but in most
+other circumstances, we have primitives for avoiding explicit `.decode()` calls
+and the associated waste of time fighting with `str` vs `bytes` issues.
 Specifically, be aware that:
 
 -   `Path` supports `__format__` letting it be spliced into f-strings and
