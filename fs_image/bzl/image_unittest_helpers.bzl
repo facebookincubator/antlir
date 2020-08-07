@@ -140,6 +140,7 @@ mv $TMP/out "$OUT"
         ),
         visibility = visibility,
         fs_image_internal_rule = True,
+        cacheable = False,
     )
 
     # To execute the wrapped test, the caller must make this library's
