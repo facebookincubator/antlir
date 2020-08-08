@@ -32,7 +32,7 @@ def _mask_units(
             ),
         )
 
-    return image.feature(features = symlink_actions)
+    return symlink_actions
 
 def _unmask_units(
         # list of systemd units to unmask (e.g. sshd.service). This should be in
@@ -49,7 +49,7 @@ def _unmask_units(
             ),
         )
 
-    return image.feature(features = remove_actions)
+    return remove_actions
 
 # Generate an image feature that enables a unit in the specified systemd target.
 def _enable_unit(

@@ -1,7 +1,6 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//fs_image/bzl/image_actions:feature.bzl", "image_feature")
 load("//fs_image/bzl/image_actions:install.bzl", "image_install")
 load("//fs_image/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//fs_image/bzl/image_actions:remove.bzl", "image_remove")
@@ -206,10 +205,10 @@ echo {quoted_storage_cfg} > "$OUT"/snapshot/storage.json
 
 # Future: Once we have `ensure_dir_exists`, this can be implicit.
 def set_up_rpm_repo_snapshots():
-    return image_feature(features = [
+    return [
         image_mkdir("/", RPM_SNAPSHOT_BASE_DIR),
         image_mkdir("/__fs_image__/rpm", "default-snapshot-for-installer"),
-    ])
+    ]
 
 def install_rpm_repo_snapshot(snapshot):
     """
@@ -218,9 +217,7 @@ def install_rpm_repo_snapshot(snapshot):
 
     The layer must also include `set_up_rpm_repo_snapshots()`.
     """
-    dest_dir = snapshot_install_dir(snapshot)
-    features = [image_install(snapshot, dest_dir)]
-    return image_feature(features = features)
+    return [image_install(snapshot, snapshot_install_dir(snapshot))]
 
 def default_rpm_repo_snapshot_for(prog, snapshot):
     """
@@ -230,10 +227,10 @@ def default_rpm_repo_snapshot_for(prog, snapshot):
 
     # Keep in sync with `rpm_action.py` and `set_up_rpm_repo_snapshots()`
     link_name = "__fs_image__/rpm/default-snapshot-for-installer/" + prog
-    return image_feature(features = [
+    return [
         # Silently replace the parent's default because there's not an
         # obvious scenario in which this is an error, and so forcing the
         # user to pass an explicit `replace_existing` flag seems unhelpful.
         image_remove(link_name, must_exist = False),
         image_symlink_dir(snapshot_install_dir(snapshot), link_name),
-    ])
+    ]
