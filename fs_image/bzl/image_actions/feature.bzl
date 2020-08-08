@@ -26,6 +26,13 @@ Importantly, the specifications of an `image.feature` are not ordered. They are
 not commands or instructions.  Rather, they are a declaration of what should be
 true. You can think of a feature as a thunk or callback.
 
+Note that you do **not** need `image.feature` to compose features within
+a single project. Instead, avoid creating a Buck target and do this:
+
+    feature_group1 = [f1, f2]
+    feature_group2 = [f3, feature_group3, f4]
+    image.layer(name = 'l', features = [feature_group2, f5])
+
 In order to convert the declaration into action, one makes an `image.layer`.
 Read that target's docblock for more info, but in essence, that will:
  - specify the initial state of the filesystem (aka the parent layer)
@@ -87,17 +94,29 @@ DO_NOT_DEPEND_ON_FEATURES_SUFFIX = (
     "SO_DO_NOT_DO_THIS_EVER_PLEASE_KTHXBAI"
 )
 
-# Use mutual recursion so that buildifier doesn't complain about recursion.
-# Allows for easier handling of aribtary depth feature nesting.
-def _assign_target_to_features_trololo(*args):
-    return _assign_target_to_features(*args)
+def _flatten_nested_lists(lst):
+    flat_lst = []
 
-def _assign_target_to_features(features, target):
-    for feature in features:
-        feature["target"] = target
-        _assign_target_to_features_trololo(feature.get("features", []), target)
+    # Manual recursion because Starlark doesn't allow real recursion
+    stack = lst[:]
+    max_int = 2147483647
+    for step_counter in range(max_int):  # while True:
+        if not stack:
+            break
+        if step_counter == max_int - 1:
+            fail("Hit manual recursion limit")
+        v = stack.pop()
+        if types.is_list(v):
+            for x in v:
+                stack.append(x)
+        else:
+            flat_lst.append(v)
+    return flat_lst
 
 def normalize_features(porcelain_targets_or_structs, human_readable_target):
+    porcelain_targets_or_structs = _flatten_nested_lists(
+        porcelain_targets_or_structs,
+    )
     targets = []
     inline_features = []
     direct_deps = []
@@ -106,8 +125,9 @@ def normalize_features(porcelain_targets_or_structs, human_readable_target):
             targets.append(f + DO_NOT_DEPEND_ON_FEATURES_SUFFIX)
         else:
             direct_deps.extend(f.deps)
-            inline_features.append(f.items._asdict())
-            _assign_target_to_features(inline_features, human_readable_target)
+            feature_dict = f.items._asdict()
+            feature_dict["target"] = human_readable_target
+            inline_features.append(feature_dict)
 
     return struct(
         targets = targets,
@@ -138,25 +158,18 @@ def private_do_not_use_feature_json_genrule(name, deps, output_feature_cmd, visi
         fs_image_internal_rule = True,
     )
 
-def image_feature(name = None, features = None, visibility = None):
-    """This is the main image.feature() interface.
+def image_feature(name, features, visibility = None):
+    """
+    Turns a group of image actions into a Buck target, so it can be
+    referenced from outside the current project via `//path/to:name`.
 
-    It doesn't define any actions itself (there are more specific rules for the
-    actions), but image.feature() serves three purposes:
+    Do NOT use this for composition within one project, just use a list.
 
-    1) To group multiple features, using the features = [...] argument.
+    See the file docblock for more details on image action composition.
 
-    2) To give the features a name, so they can be referred to using a
-       ":buck_target" notation.
-
-    3) To specify a custom visibility for a set of features.
-
-    For features that execute actions that are used to build the container
-    (install RPMs, remove files/directories, create symlinks or directories,
-    copy executable or data files, declare mounts), see the more specific
-    features meant for a specific purpose.
-
-    To understand the concept, read "Composing images using image_feature" in the file docblock.
+    See other `.bzl` files in this directory for actions that actually build
+    the container (install RPMs, remove files/directories, create symlinks
+    or directories, copy executable or data files, declare mounts).
     """
 
     # (1) Normalizes & annotates Buck target names so that they can be
@@ -167,11 +180,8 @@ def image_feature(name = None, features = None, visibility = None):
 
     # Omit the ugly suffix here since this is meant only for humans to read while debugging.
     # For inline targets, `image_layer.bzl` sets this to the layer target path.
-    human_readable_target = normalize_target(":" + name) if name else None
-    normalized_features = normalize_features(
-        features or [],
-        human_readable_target,
-    )
+    human_readable_target = normalize_target(":" + name)
+    normalized_features = normalize_features(features, human_readable_target)
 
     feature = target_tagger_to_feature(
         target_tagger,
@@ -188,13 +198,8 @@ def image_feature(name = None, features = None, visibility = None):
         ],
     )
 
-    # Anonymous features do not emit a target, but can be used inline as
-    # part of an `image.layer`.
-    if not name:
-        return feature
-
-        # Serialize the arguments and defer our computation until build-time.
-
+    # Serialize the arguments and defer our computation until build-time.
+    #
     # This allows us to automatically infer what is provided by RPMs & TARs,
     # and makes the implementation easier.
     #
@@ -210,8 +215,3 @@ def image_feature(name = None, features = None, visibility = None):
         ),
         visibility = get_visibility(visibility, name),
     )
-
-    # NB: it would be easy to return the path to the new feature target
-    # here, enabling the use of named features inside `features` lists of
-    # layers, but this seems like an unreadable pattern, so instead:
-    return None

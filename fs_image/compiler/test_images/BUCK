@@ -557,12 +557,12 @@ image.layer(
     features = [
         ":feature_dirs",
         ":feature_symlinks",
-        image.feature(
-            features = [
-                # Test an inline feature nested in another feature.
+        # Test nested lists of features (in lieu of concatenation).
+        [
+            [
                 image.install(":hello_world.tar", "/foo/bar/even_more_hello_world.tar"),
             ],
-        ),
+        ],
         image.install(
             ":hello_world.tar",
             # This directory comes from `rpm-test-carrot`.  This tests
