@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import getpass
 import os
 import subprocess
 import sys
@@ -72,4 +73,17 @@ def get_volume_for_current_repo(min_free_bytes, artifacts_dir):
 
 
 if __name__ == "__main__":  # pragma: no cover
+    # this is the first entry point for a CI build, where we should fail with
+    # an understandable message if sudo is unavailable
+    try:
+        subprocess.run(["sudo", "--non-interactive", "true"], check=True)
+    except subprocess.CalledProcessError:
+        print(
+            "image builds require sudo. "
+            f"Ensure that {getpass.getuser()} is allowed to use sudo.",
+            file=sys.stderr,
+        )
+        print("https://fburl.com/vmtest-root", file=sys.stderr)
+        sys.exit(1)
+
     print(get_volume_for_current_repo(float(sys.argv[2]), sys.argv[1]))
