@@ -19,6 +19,11 @@ module.exports = {
       'coding-conventions/pyre',
       'coding-conventions/python',
     ],
+    TODOs: [
+      'todo/overview',
+      'todo/btrfs_diff',
+      'todo/compiler',
+    ],
     Tutorials: [
       ...FBInternalOnly([
         'tutorials/fb/contributing-docs',
