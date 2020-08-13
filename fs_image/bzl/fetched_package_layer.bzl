@@ -74,6 +74,7 @@ Now you can refer to a stable version of a package, represented as an
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//fs_image/bzl:constants.bzl", "DEFAULT_VERSION_SET")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "export_file", "get_visibility")
 load("//fs_image/bzl/image_actions:feature.bzl", "private_do_not_use_feature_json_genrule")
 load(":image_layer.bzl", "image_layer")
@@ -193,6 +194,8 @@ def _fetched_package_layer(
             print_how_to_fetch_json = print_how_to_fetch_json,
         ),
         visibility = visibility,
+        # We don't touch the layer's `build_opts`, so it'll use the default.
+        version_set = DEFAULT_VERSION_SET,
     )
 
     mount_config = name + "-fetched-package-mount-config"

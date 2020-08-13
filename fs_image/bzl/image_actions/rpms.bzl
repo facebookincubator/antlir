@@ -30,7 +30,7 @@ def _rpm_name_or_source(name_source):
 # names at this point, since we'd need the repo snapshot to decide
 # whether the names are valid, and whether they contain a
 # version or release number.  That'll happen later in the build.
-def _build_rpm_feature(rpmlist, action):
+def _build_rpm_feature(rpmlist, action, needs_version_set):
     target_tagger = new_target_tagger()
     res_rpms = []
     for path in rpmlist:
@@ -43,6 +43,11 @@ def _build_rpm_feature(rpmlist, action):
             )
         else:
             dct["source"] = None  # Ensure this key is populated
+            if needs_version_set:
+                # This gets converted to a version set target path in
+                # `normalize_features`.
+                dct["version_set"] = dct["name"]
+
         res_rpms.append(dct)
     return target_tagger_to_feature(
         target_tagger = target_tagger,
@@ -52,7 +57,11 @@ def _build_rpm_feature(rpmlist, action):
     )
 
 def image_rpms_install(rpmlist):
-    return _build_rpm_feature(rpmlist, "install")
+    return _build_rpm_feature(rpmlist, "install", needs_version_set = True)
 
 def image_rpms_remove_if_exists(rpmlist):
-    return _build_rpm_feature(rpmlist, "remove_if_exists")
+    return _build_rpm_feature(
+        rpmlist,
+        "remove_if_exists",
+        needs_version_set = False,
+    )

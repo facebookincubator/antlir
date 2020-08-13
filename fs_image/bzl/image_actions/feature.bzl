@@ -30,7 +30,7 @@ Note that you do **not** need `image.feature` to compose features within
 a single project. Instead, avoid creating a Buck target and do this:
 
     feature_group1 = [f1, f2]
-    feature_group2 = [f3, feature_group3, f4]
+    feature_group2 = [f3, feature_group1, f4]
     image.layer(name = 'l', features = [feature_group2, f5])
 
 In order to convert the declaration into action, one makes an `image.layer`.
@@ -44,6 +44,7 @@ Read that target's docblock for more info, but in essence, that will:
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//fs_image/bzl:constants.bzl", "VERSION_SET_TO_PATH")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//fs_image/bzl:target_helpers.bzl", "normalize_target")
 load("//fs_image/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -86,13 +87,20 @@ load("//fs_image/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "tar
 #
 # Maintainers of this code: please change this string at will, **without**
 # searching the codebase for people who might be referring to it.  They have
-# seen this blob, and they have agreed to have their code broken without
+# seen this note, and they have agreed to have their code broken without
 # warning.  Do not incentivize hacky engineering practices by "being nice."
 # (Caveat: don't change it daily to avoid forcing excessive rebuilds.)
-DO_NOT_DEPEND_ON_FEATURES_SUFFIX = (
-    "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN_" +
-    "SO_DO_NOT_DO_THIS_EVER_PLEASE_KTHXBAI"
-)
+def PRIVATE_DO_NOT_USE_feature_target_name(name, version_set):
+    name += "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
+    if version_set not in VERSION_SET_TO_PATH:
+        fail("Must be in {}".format(list(VERSION_SET_TO_PATH)), "version_set")
+
+    # When a feature is declared, it doesn't know the version set of the
+    # layer that will use it, so we normally declare all possible variants.
+    # This is only None when there are no version sets in use.
+    if version_set != None:
+        name += "__rpm_verset__" + version_set
+    return name
 
 def _flatten_nested_lists(lst):
     flat_lst = []
@@ -113,7 +121,49 @@ def _flatten_nested_lists(lst):
             flat_lst.append(v)
     return flat_lst
 
-def normalize_features(porcelain_targets_or_structs, human_readable_target):
+def _normalize_feature_and_get_deps(feature, version_set):
+    "Returns a ready-to-serialize feature dictionary and its direct deps."
+    target_tagger = new_target_tagger()
+    feature_dict = feature.items._asdict()
+
+    # For RPM actions, we must mutate the inner dicts of `feature_dict`
+    # below.  As it turns out, `feature_dict` retains the same `dict`
+    # instance that was created in `rpm_install`, which may well be reused
+    # across multiple layers that use the same feature object in the same
+    # project. To avoid aliasing bugs, copy all these dicts.
+    aliased_rpms = feature_dict.get("rpms", [])
+    if aliased_rpms:
+        # IMPORTANT: This is NOT a deep copy, but we don't need it since we
+        # only mutate the `version_set` key.
+        feature_dict["rpms"] = [r.copy() for r in aliased_rpms]
+
+    # This is only None when there are no version sets in use.
+    if version_set != None:
+        vs_path = VERSION_SET_TO_PATH[version_set]
+
+        # Resolve RPM names to version set targets.  We cannot avoid this
+        # coupling with `rpm.bzl` because the same `image.rpms_install` may
+        # be normalized against multiple version set names.
+        for rpm_item in feature_dict.get("rpms", []):
+            vs_name = rpm_item.get("version_set")
+            if vs_name:
+                rpm_item["version_set"] = tag_target(
+                    target_tagger,
+                    vs_path + "/rpm:" + vs_name,
+                )
+    else:
+        for rpm_item in feature_dict.get("rpms", []):
+            rpm_item.pop("version_set", None)
+
+    direct_deps = []
+    direct_deps.extend(feature.deps)
+    direct_deps.extend(target_tagger.targets.keys())
+    return feature_dict, direct_deps
+
+def normalize_features(
+        porcelain_targets_or_structs,
+        human_readable_target,
+        version_set):
     porcelain_targets_or_structs = _flatten_nested_lists(
         porcelain_targets_or_structs,
     )
@@ -122,10 +172,15 @@ def normalize_features(porcelain_targets_or_structs, human_readable_target):
     direct_deps = []
     for f in porcelain_targets_or_structs:
         if types.is_string(f):
-            targets.append(f + DO_NOT_DEPEND_ON_FEATURES_SUFFIX)
+            targets.append(
+                PRIVATE_DO_NOT_USE_feature_target_name(f, version_set),
+            )
         else:
-            direct_deps.extend(f.deps)
-            feature_dict = f.items._asdict()
+            feature_dict, more_deps = _normalize_feature_and_get_deps(
+                feature = f,
+                version_set = version_set,
+            )
+            direct_deps.extend(more_deps)
             feature_dict["target"] = human_readable_target
             inline_features.append(feature_dict)
 
@@ -135,10 +190,15 @@ def normalize_features(porcelain_targets_or_structs, human_readable_target):
         direct_deps = direct_deps,
     )
 
-def private_do_not_use_feature_json_genrule(name, deps, output_feature_cmd, visibility):
+def private_do_not_use_feature_json_genrule(
+        name,
+        deps,
+        output_feature_cmd,
+        visibility,
+        version_set):
+    name = PRIVATE_DO_NOT_USE_feature_target_name(name, version_set)
     buck_genrule(
-        # The constant declaration explains the reason for the name change.
-        name = name + DO_NOT_DEPEND_ON_FEATURES_SUFFIX,
+        name = name,
         out = "feature.json",
         type = "image_feature",  # For queries
         # Future: It'd be nice to refactor `image_utils.bzl` and to use the
@@ -158,7 +218,11 @@ def private_do_not_use_feature_json_genrule(name, deps, output_feature_cmd, visi
         fs_image_internal_rule = True,
     )
 
-def image_feature(name, features, visibility = None):
+def image_feature(
+        name,
+        features,
+        visibility = None,
+        _test_only_version_sets = VERSION_SET_TO_PATH):
     """
     Turns a group of image actions into a Buck target, so it can be
     referenced from outside the current project via `//path/to:name`.
@@ -171,7 +235,15 @@ def image_feature(name, features, visibility = None):
     the container (install RPMs, remove files/directories, create symlinks
     or directories, copy executable or data files, declare mounts).
     """
+    for version_set in _test_only_version_sets:
+        _image_feature_impl(
+            name = name,
+            features = features,
+            visibility = get_visibility(visibility, name),
+            version_set = version_set,
+        )
 
+def _image_feature_impl(name, features, visibility, version_set):
     # (1) Normalizes & annotates Buck target names so that they can be
     #     automatically enumerated from our JSON output.
     # (2) Builds a list of targets so that this converter can tell Buck
@@ -181,7 +253,11 @@ def image_feature(name, features, visibility = None):
     # Omit the ugly suffix here since this is meant only for humans to read while debugging.
     # For inline targets, `image_layer.bzl` sets this to the layer target path.
     human_readable_target = normalize_target(":" + name)
-    normalized_features = normalize_features(features, human_readable_target)
+    normalized_features = normalize_features(
+        features,
+        human_readable_target,
+        version_set,
+    )
 
     feature = target_tagger_to_feature(
         target_tagger,
@@ -213,5 +289,6 @@ def image_feature(name, features, visibility = None):
         output_feature_cmd = 'echo {out} > "$OUT"'.format(
             out = shell.quote(feature.items.to_json()),
         ),
-        visibility = get_visibility(visibility, name),
+        visibility = visibility,
+        version_set = version_set,
     )
