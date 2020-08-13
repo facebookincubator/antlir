@@ -1,7 +1,9 @@
 load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
+load("//fs_image/bzl:shape.bzl", "shape")
 load("//fs_image/bzl:systemd.bzl", "systemd")
+load("//fs_image/bzl/tests:shape_test.bzl", "run_shape_selftests")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load(":container_and_vm_test.bzl", "cpp_container_and_vm_test", "python_container_and_vm_test")
 
@@ -174,3 +176,79 @@ python_container_and_vm_test(
     needed_coverage = [(100, ":coverage_test_helper")],
     deps = [":coverage_test_helper"],
 )
+
+example = shape.shape(
+    answer = int,
+    field = shape.field(bool),
+    say_hi = shape.field(
+        str,
+        optional = True,
+    ),
+    nested = shape.shape(inner = bool),
+    tp = shape.tuple(
+        bool,
+        int,
+        shape.shape(nested = bool),
+        optional = True,
+    ),
+    lst = shape.list(
+        shape.shape(id = int),
+        optional = True,
+    ),
+    dct = shape.dict(str, str),
+)
+
+instance = shape.new(
+    example,
+    field = True,
+    answer = 42,
+    nested = shape.new(
+        example.nested,
+        inner = True,
+    ),
+    tp = (
+        True,
+        42,
+        shape.new(
+            example.tp.item_types[2],
+            nested = True,
+        ),
+    ),
+    lst = [
+        shape.new(
+            example.lst.item_type,
+            id = 0,
+        ),
+        shape.new(
+            example.lst.item_type,
+            id = 1,
+        ),
+    ],
+    dct = {"hello": "world"},
+)
+
+shape.loader(
+    name = "example_loader",
+    shape = example,
+    classname = "example",
+)
+
+python_unittest(
+    name = "test-shape",
+    srcs = [
+        "test_shape.py",
+        shape.python_file(
+            name = "shape",
+            shape = instance,
+        ),
+    ],
+    resources = {
+        shape.json_file(
+            name = "example",
+            shape = instance,
+        ): "example.json",
+    },
+    deps = [":example_loader"],
+)
+
+run_shape_selftests()
