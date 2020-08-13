@@ -57,8 +57,7 @@ assert T_HELLO_WORLD_TAR in TARGET_TO_PATH, "You must use `buck test`"
 
 def mangle(feature_target):
     return feature_target + (
-        "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN_"
-        "SO_DO_NOT_DO_THIS_EVER_PLEASE_KTHXBAI"
+        "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
     )
 
 

@@ -1,6 +1,6 @@
 # Implementation detail for `image_layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE", "DEFAULT_RPM_INSTALLER", "DO_NOT_USE_BUILD_APPLIANCE")
+load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE", "DEFAULT_RPM_INSTALLER", "DEFAULT_VERSION_SET", "DO_NOT_USE_BUILD_APPLIANCE", "VERSION_SET_TO_PATH")
 load("//fs_image/bzl/image_actions:feature.bzl", "normalize_features")
 load(":artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
 load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
@@ -18,6 +18,11 @@ def _build_opts(
         # In current implementation build_appliance is required only if any
         # dependent `image_feature` specifies `rpms`.
         build_appliance = DEFAULT_BUILD_APPLIANCE,
+        # A "version set" name, see `bzl/constants.bzl`.
+        # Currently used for RPM version locking.
+        #
+        # Future: refer to the OSS "version selection" doc once ready.
+        version_set = DEFAULT_VERSION_SET,
         # The build appliance currently does not set a default package
         # manager -- in non-default settings, this has to be chosen per
         # image, since a BA can support multiple package managers.  In the
@@ -54,9 +59,13 @@ def _build_opts(
     # cannot get confused whether `None` refers to "no BA" or "default BA".
     if build_appliance == DO_NOT_USE_BUILD_APPLIANCE:
         build_appliance = None
+
+    if version_set not in VERSION_SET_TO_PATH:
+        fail("Must be in {}".format(list(VERSION_SET_TO_PATH)), "version_set")
     return struct(
         build_appliance = build_appliance,
         preserve_yum_dnf_cache = preserve_yum_dnf_cache,
+        version_set = version_set,
         rpm_installer = rpm_installer,
         rpm_repo_snapshot = (
             snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else None
@@ -104,6 +113,7 @@ def compile_image_features(
             )] if parent_layer else []
         ),
         current_target,
+        version_set = build_opts.version_set,
     )
 
     return '''

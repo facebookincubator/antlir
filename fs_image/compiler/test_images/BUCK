@@ -101,6 +101,7 @@ image_build_librename_shadowed(
         build_opts = image.opts(
             rpm_installer = rpm_installer,
             build_appliance = ":build_appliance_testing",
+            version_set = None,
         ),
     )
     for rpm_installer in [
@@ -243,6 +244,7 @@ image.layer(
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//fs_image/rpm:non-default-repo-snapshot-for-tests",
+        version_set = None,
     ),
 )
 
@@ -277,6 +279,9 @@ image.feature(
             "foo",
         ),
     ],
+    # `rpm-test-*` RPMs may not be mentioned by all of the allowed version
+    # sets, so just emit this feature for one.
+    _test_only_version_sets = [None],
 )
 
 image.feature(
@@ -443,6 +448,9 @@ image.feature(
         ":feature_tar_and_rpms",
         ":feature_symlinks",
     ],
+    # We can only build for "no version set" because our child
+    # `feature_tar_and_rpms` provides no other version sets.
+    _test_only_version_sets = [None],
 )
 
 ##
@@ -574,7 +582,10 @@ image.layer(
         image.layer_mount(":hello_world_base", "/mounted_hello"),
         image.rpms_install(["rpm-test-carrot"]),  # Compact syntax for RPM installation.
     ],
-    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    build_opts = image.opts(
+        build_appliance = ":build_appliance_testing",
+        version_set = None,
+    ),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
 )
@@ -590,6 +601,7 @@ image.layer(
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//fs_image/rpm:non-default-repo-snapshot-for-tests",
+        version_set = None,
     ),
 )
 
@@ -613,7 +625,10 @@ image.layer(
         image.tarball(":hello_world.tar", "/foo/extracted_hello"),
         image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
     ],
-    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    build_opts = image.opts(
+        build_appliance = ":build_appliance_testing",
+        version_set = None,
+    ),
 )
 
 image.package(name = "child/layer.sendstream")

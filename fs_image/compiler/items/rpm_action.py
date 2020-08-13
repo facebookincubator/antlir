@@ -216,6 +216,8 @@ class RpmActionItem(ImageItem):
     action: RpmAction
     name: Optional[str] = None
     source: Optional[str] = None
+    # NB: Unused at present, will be used in a future diff.
+    version_set: Optional[Path] = None
 
     @classmethod
     def customize_fields(cls, kwargs):
