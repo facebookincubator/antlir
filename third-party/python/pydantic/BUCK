@@ -1,0 +1,13 @@
+http_file(
+    name = "pydantic-download",
+    sha256 = "b5b3489cb303d0f41ad4a7390cf606a5f2c7a94dcba20c051cd1c653694cb14d",
+    urls = [
+        "https://files.pythonhosted.org/packages/25/69/4be0f2caa2ae3424cd34c0f934b460a02f01aa6897b1d58fc056664b15b7/pydantic-1.6.1-py36.py37.py38-none-any.whl",
+    ],
+)
+
+prebuilt_python_library(
+    name = "pydantic",
+    binary_src = ":pydantic-download",
+    visibility = ["PUBLIC"],
+)

@@ -150,6 +150,11 @@ fake_macro_library(
     deps = [":image_unittest_helpers"],
 )
 
+fake_macro_library(
+    name = "shape",
+    srcs = ["shape.bzl"],
+)
+
 yum_or_dnf_wrapper(name = "dnf")
 
 yum_or_dnf_wrapper(name = "yum")
