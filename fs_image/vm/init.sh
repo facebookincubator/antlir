@@ -47,7 +47,7 @@ mkdir -p "$NEWROOT/lib/modules/$(uname -r)/kernel"
 modprobe 9pnet
 modprobe 9pnet_virtio
 modprobe 9p
-mount -t 9p -o trans=virtio,version=9p2000.L,cache=loose,posixacl modules "$NEWROOT/lib/modules/$(uname -r)/kernel"
+mount -t 9p -o trans=virtio,version=9p2000.L,cache=loose,posixacl kernel-modules "$NEWROOT/lib/modules/$(uname -r)/kernel"
 
 # We cannot run depmod at build time, because we need to mount only the
 # `kernel/` directory of /lib/modules/$rel, because bpf tests require the

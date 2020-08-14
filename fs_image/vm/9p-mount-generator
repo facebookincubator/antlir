@@ -1,0 +1,44 @@
+#!/bin/bash
+# Generate mount units for all exported 9pfs shares.
+# This mounts all the filesystems at boot time in the location indicated by the
+# mount tag, rather than mounting them with (explicit) static systemd units or
+# runtime agent support for host-dependent paths.
+# In the future, this could be generalized to simply copy pre-generated unit
+# files from a well-known 9p mount tag, but for now the only case where the
+# host needs to do change systemd units at runtime is for host-dependent 9pfs
+# mountpoints.
+set -e
+normal_dir="$1"
+# allow passing EXPORTS_DIR as a pre-mounted path for unit tests
+exportsdir="$EXPORTS_DIR"
+
+if [ -z "$exportsdir" ]; then
+    exportsdir="$(mktemp -d)"
+    mount -t 9p -oversion=9p2000.L,posixacl,cache=loose exports "$exportsdir"
+    trap 'umount $exportsdir && rm -rf $exportsdir' EXIT
+fi
+
+while read -r line; do
+    tag="$(echo "$line" | awk '{ print $1; }')"
+    mountpoint="$(echo "$line" | awk '{ print $2; }')"
+    unit="$(systemd-escape --path "$mountpoint").mount"
+    cat > "$normal_dir/$unit" <<EOF
+[Unit]
+Requires=systemd-modules-load.service
+After=systemd-modules-load.service
+Before=local-fs.target
+RequiredBy=local-fs.target
+
+[Mount]
+What=$tag
+Where=$mountpoint
+Type=9p
+Options=version=9p2000.L,posixacl,cache=loose,ro
+EOF
+
+    # this is functionally equivalent to 'systemctl enable $unit', but does not
+    # require an [Install] section or invoking systemd, so it can easily be
+    # unit tested as an unprivileged user
+    mkdir -p "$normal_dir/local-fs.target.requires/"
+    ln -s "$normal_dir/$unit" "$normal_dir/local-fs.target.requires/$unit"
+done <"$exportsdir/exports"

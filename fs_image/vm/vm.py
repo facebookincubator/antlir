@@ -16,16 +16,10 @@ from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import (
-    AsyncContextManager,
-    ContextManager,
-    Iterable,
-    Optional,
-    Union,
-)
+from typing import AsyncContextManager, ContextManager, Iterable, Optional
 
 from fs_image.vm.guest_agent import QemuError, QemuGuestAgent
-from fs_image.vm.share import Share, process_shares
+from fs_image.vm.share import Share
 
 
 logger = logging.getLogger("vm")
@@ -77,7 +71,7 @@ async def kernel_vm(
     fbcode: Optional[Path] = None,
     verbose: bool = False,
     interactive: bool = False,
-    shares: Optional[Iterable[Union[Share, Path]]] = None,
+    shares: Optional[Iterable[Share]] = None,
     dry_run: Optional[bool] = False,
     up_timeout: Optional[int] = 2 * 60,
     ncpus: Optional[int] = 1,
@@ -111,7 +105,7 @@ async def kernel_vm(
     # grow)?
     rwdevice.truncate(1 * 1024 * 1024 * 1024)
 
-    shares = process_shares(shares)
+    shares = shares or []
     # Mount directories that are specific to the Facebook
     try:
         from fs_image.facebook.vm.share_fbcode_runtime import (
@@ -125,14 +119,8 @@ async def kernel_vm(
     if fbcode is not None:
         # also share fbcode at the same mount point from the host
         # so that absolute symlinks in fbcode work when in @mode/dev
-        shares += [
-            Share(
-                host_path=fbcode,
-                mount_tag="fbcode",
-                location=fbcode,
-                agent_mount=True,
-            )
-        ]
+        shares += [Share(fbcode)]
+
     with kernel_resources() as kernel:
         args = [
             "-no-reboot",
@@ -201,10 +189,11 @@ async def kernel_vm(
         # to install kernels in the root fs and avoid expensive copying of
         # ~400M worth of modules during boot
         shares += [
-            Share(
-                host_path=kernel.modules, mount_tag="modules", agent_mount=False
-            )
+            Share(kernel.modules, mount_tag="kernel-modules", generator=False)
         ]
+
+        exportdir, export_share = Share.export_spec(shares)
+        shares += [export_share]
 
         args += __qemu_share_args(shares)
         if dry_run:
@@ -230,12 +219,8 @@ async def kernel_vm(
                 stderr=subprocess.STDOUT,
             )
 
-        ga = QemuGuestAgent(sockfile, connect_timeout=up_timeout)
         try:
-            for share in [s for s in shares if s.agent_mount]:
-                await ga.mount_share(
-                    tag=share.mount_tag, mountpoint=share.location
-                )
+            ga = QemuGuestAgent(sockfile, connect_timeout=up_timeout)
             yield ga
         except QemuError as err:
             print(f"Qemu failed with error: {err}", flush=True, file=sys.stderr)
@@ -245,6 +230,8 @@ async def kernel_vm(
             if proc.returncode is None:
                 proc.terminate()
                 await proc.wait()
+            # TODO: this will be removed in D22879966 with ExitStack
+            exportdir.cleanup()
 
 
 def __qemu_share_args(shares: Iterable[Share]) -> Iterable[str]:
@@ -252,9 +239,9 @@ def __qemu_share_args(shares: Iterable[Share]) -> Iterable[str]:
         (
             "-virtfs",
             (
-                f"local,path={share.host_path},security_model=none,"
+                f"local,id=fs{i},path={share.path},security_model=none,"
                 f"readonly,multidevs=remap,mount_tag={share.mount_tag}"
             ),
         )
-        for share in shares
+        for i, share in enumerate(shares)
     )

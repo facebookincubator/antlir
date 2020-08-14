@@ -1,32 +1,47 @@
 #!/usr/bin/env python3
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Iterable, Optional, Union
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+import os
+import tempfile
+from dataclasses import dataclass, field
+from typing import Iterable, Tuple
+
+
+__next_tag_index = 0
+
+
+def _next_tag() -> str:
+    global __next_tag_index
+    tag = f"fs{__next_tag_index}"
+    __next_tag_index += 1
+    return tag
 
 
 # Representation of a filesystem device mounted and exposed to the guest (qemu)
 # using a virtio-9p-device.
 @dataclass(frozen=True)
 class Share(object):
-    host_path: Path
-    mount_tag: str
-    location: Optional[str] = None
-    agent_mount: bool = True
+    path: os.PathLike
+    mount_tag: str = field(default_factory=_next_tag)
+    generator: bool = True
 
-
-# Utility method to convert an Iterable with a mix of `Path` and `Share`
-# objects to contain solely `Share` objects.
-def process_shares(
-    shares: Optional[Iterable[Union[Share, Path]]] = None
-) -> Iterable[Share]:
-    if shares:
-        shares = [
-            Share(host_path=share, mount_tag=share.name, location=None)
-            if isinstance(share, Path)
-            else share
-            for share in shares
-        ]
-    else:
-        shares = []
-
-    return shares
+    @staticmethod
+    def export_spec(
+        shares: Iterable["Share"],
+    ) -> Tuple[tempfile.TemporaryDirectory, "Share"]:
+        """share a meta-directory that contains all the mount tags and paths to
+        mount them, which is then read early in boot by a systemd generator
+        this cannot be performed with just the export tags, because encoding the
+        full path would frequently make them too long to be valid 9p tags"""
+        exportdir = tempfile.TemporaryDirectory()  # noqa: P201,
+        # this is released by the calling function, and will be cleaned up in
+        # D22879966 with ExitStack
+        with open(os.path.join(exportdir.name, "exports"), "w") as f:
+            for share in shares:
+                if not share.generator:
+                    continue
+                f.write(f"{share.mount_tag} {str(share.path)}\n")
+        return exportdir, Share(exportdir.name, mount_tag="exports")
