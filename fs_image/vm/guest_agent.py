@@ -115,20 +115,6 @@ class QemuGuestAgent(object):
     ) -> Tuple[int, str, str]:
         return await self.run(*args, pipe_output=pipe_output, **kwargs)
 
-    async def mount_share(self, tag: str, mountpoint: os.PathLike) -> None:
-        await self.exec_sync(("mkdir", "-p", str(mountpoint)))
-        await self.exec_sync(
-            (
-                "mount",
-                "-t",
-                "9p",
-                "-o",
-                "trans=virtio,version=9p2000.L,cache=loose,posixacl",
-                tag,
-                str(mountpoint),
-            )
-        )
-
     async def run(
         self,
         cmd: Iterable[str],

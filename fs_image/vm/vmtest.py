@@ -9,12 +9,11 @@ import importlib.resources
 import os.path
 import sys
 from functools import wraps
-from pathlib import Path
 from typing import Iterable, List, Optional
 
 import click
 from fs_image.artifacts_dir import find_repo_root
-from fs_image.vm.vm import Share, kernel_vm
+from fs_image.vm.vm import kernel_vm
 
 
 MINUTE = 60

@@ -1,4 +1,4 @@
-load("//fs_image/bzl:oss_shim.bzl", "python_library", "third_party")
+load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 
 python_library(
     name = "vm",
@@ -21,6 +21,20 @@ python_library(
 python_library(
     name = "share",
     srcs = ["share.py"],
+)
+
+export_file(
+    name = "9p-mount-generator",
+    src = "9p-mount-generator",
+)
+
+python_unittest(
+    name = "test-share-generator",
+    srcs = ["test_share_generator.py"],
+    resources = {
+        ":9p-mount-generator": "9p-mount-generator",
+    },
+    deps = [":share"],
 )
 
 export_file(
