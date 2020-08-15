@@ -23,6 +23,7 @@ from fs_image.btrfs_diff.tests.render_subvols import (
 )
 from fs_image.compiler.items.mount import mounts_from_subvol_meta
 from fs_image.find_built_subvol import find_built_subvol
+from fs_image.nspawn_in_subvol.cmd import _load_config
 from fs_image.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
 
 from ..procfs_serde import deserialize_int
@@ -283,6 +284,16 @@ class ImageLayerTestCase(unittest.TestCase):
                 while d != "/":
                     self.assertEqual(["(Dir)", {}], pop_path(r, d))
                     d = os.path.dirname(d)
+
+                # Along with the repo root, we might have some runtime host
+                # mounts injected in the environment by config.  Let's verify
+                # them as well.
+                repo_config = _load_config()
+                for mount in repo_config.repo_artifacts_host_mounts:
+                    d = os.path.abspath(mount)
+                    while d != "/":
+                        self.assertEqual(["(Dir)", {}], pop_path(r, d))
+                        d = os.path.dirname(d)
 
             # Clean other, less sketchy side effects of `nspawn_in_subvol`:
             # empty LFS directories. (`/logs` is not LFS, but an FB-ism)

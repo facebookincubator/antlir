@@ -42,16 +42,9 @@ class BuildSource(NamedTuple):
                 raise AssertionError(
                     f"MountItem could not resolve {self.source}"
                 )
-            subvol = find_built_subvol(out_path, subvolumes_dir=subvolumes_dir)
-            # If we allowed mounting a layer that has other mounts inside,
-            # it would force us to support nested mounts.  We don't want to
-            # do this (yet).
-            if subvol.path(META_MOUNTS_DIR).exists():
-                raise AssertionError(
-                    f"Refusing to mount {subvol.path()} since that would "
-                    "require the tooling to support nested mounts."
-                )
-            return subvol.path()
+            return find_built_subvol(
+                out_path, subvolumes_dir=subvolumes_dir
+            ).path()
         elif self.type == "host":
             return self.source
         else:  # pragma: no cover

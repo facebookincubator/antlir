@@ -255,7 +255,6 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         help="Pair of a dependency layer target and the on-disk location of "
         "the layer on disk",
     )
-
     parser.add_argument(
         "--bind-repo-ro",
         action="store_true",

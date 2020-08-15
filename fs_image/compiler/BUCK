@@ -216,6 +216,8 @@ python_unittest(
         "//fs_image:testlib_layer_resource",
         "//fs_image/btrfs_diff:testlib_demo_sendstreams",
         "//fs_image/btrfs_diff:testlib_render_subvols",
+        # For repo_config to validate the foreign layer
+        "//fs_image/nspawn_in_subvol:cmd",
     ],
 )
 
