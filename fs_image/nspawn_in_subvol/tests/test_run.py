@@ -21,54 +21,14 @@ from fs_image.tests.temp_subvolumes import with_temp_subvols
 from ..args import _QUERY_TARGETS_AND_OUTPUTS_SEP, _parse_cli_args
 from ..cmd import _colon_quote_path, _extra_nspawn_args_and_env
 from ..common import DEFAULT_PATH_ENV
-from .base import NspawnTestBase
-
-
-@contextmanager
-def _mocks_for_parse_cli_args():
-    with mock.patch(
-        "fs_image.nspawn_in_subvol.args.pwd.getpwnam"
-    ) as getpwnam_mock, mock.patch(
-        "fs_image.nspawn_in_subvol.args.find_built_subvol"
-    ) as find_built_subvol_mock:
-        getpwnam_mock.side_effect = [
-            struct_passwd(
-                [
-                    "pw_name",
-                    "pw_passwd",
-                    123,
-                    123,
-                    "pw_gecos",
-                    "/test/home",
-                    "/test/sh",
-                ]
-            )
-        ]
-        find_built_subvol_mock.side_effect = [None]
-        yield
-
-
-@contextmanager
-def _mocks_for_extra_nspawn_args(*, artifacts_may_require_repo):
-    with mock.patch(
-        "fs_image.nspawn_in_subvol.cmd._artifacts_may_require_repo"
-    ) as amrr_mock:
-        amrr_mock.side_effect = [artifacts_may_require_repo]
-        yield
+from .base import (
+    NspawnTestBase,
+    _mocks_for_extra_nspawn_args,
+    _mocks_for_parse_cli_args,
+)
 
 
 class NspawnTestCase(NspawnTestBase):
-    def _wrapper_args_to_nspawn_args(
-        self, argv, *, artifacts_may_require_repo=False
-    ):
-        with _mocks_for_parse_cli_args():
-            args = _parse_cli_args(argv, allow_debug_only_opts=True)
-        with _mocks_for_extra_nspawn_args(
-            artifacts_may_require_repo=artifacts_may_require_repo
-        ):
-            args, _env = _extra_nspawn_args_and_env(args.opts)
-            return args
-
     def _assertIsSubseq(self, subseq, seq, msg=None):
         subseqs = [
             seq[i : i + len(subseq)] for i in range(len(seq) - len(subseq) + 1)

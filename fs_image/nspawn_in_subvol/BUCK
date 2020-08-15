@@ -1,10 +1,23 @@
 # Future: we should eventually add per-library unit test coverage, as
 # appropriate, while also retaining integration test coverage.
 
+load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//fs_image/bzl:image.bzl", "image")
 load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
-load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+load(":defs.bzl", "get_repo_config")
+
+# Generate config for required host mounts based on how the repository is configured.
+buck_genrule(
+    name = "repo_config",
+    out = "out",
+    bash = "echo {} > $OUT".format(
+        shell.quote(get_repo_config().to_json()),
+    ),
+    fs_image_internal_rule = True,
+    visibility = [],
+)
 
 # Gets test coverage via `:test-run`
 python_library(
@@ -32,6 +45,9 @@ python_unittest(
 python_library(
     name = "cmd",
     srcs = ["cmd.py"],
+    resources = {
+        ":repo_config": "repo_config",
+    },
     deps = [
         ":args",
         "//fs_image:artifacts_dir",
@@ -129,7 +145,9 @@ python_library(
 
 python_unittest(
     name = "test-run",
-    srcs = ["tests/test_run.py"],
+    srcs = [
+        "tests/test_run.py",
+    ],
     env = {
         # Needed to cover the `TERM` branch in `booted.py` because FB's test
         # runner otherwise strips out `TERM`.

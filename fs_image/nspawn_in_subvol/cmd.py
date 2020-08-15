@@ -9,11 +9,14 @@ No externally useful functions here.  Read the `run.py` docblock instead.
 
 Converts structures from `args.py` into a `systemd-nspawn` command-line.
 """
+import importlib.resources
+import json
 import os
 import re
 import subprocess
 import uuid
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
 from fs_image.artifacts_dir import find_repo_root
@@ -112,6 +115,20 @@ def _artifacts_may_require_repo(src_subvol: Subvol):
     )
 
 
+@dataclass
+class RepoConfig:
+    repo_artifacts_host_mounts: Iterable[Path] = ()
+
+
+def _load_config() -> RepoConfig:
+    """ Load a repository config structure from a resource and
+    return an instance of a `RepoConfig`.
+    """
+    return RepoConfig(
+        **json.loads(importlib.resources.read_text(__package__, "repo_config"))
+    )
+
+
 def _extra_nspawn_args_and_env(
     opts: _NspawnOpts,
 ) -> Tuple[
@@ -121,6 +138,9 @@ def _extra_nspawn_args_and_env(
     # NB: This does not set `--user` since this differs between the booted
     # and non-booted case.
     extra_nspawn_args = []
+
+    # load configs for this repository
+    repo_config = _load_config()
 
     # Note: that nspawn_in_subvol only handles `BuildSource` mount
     # configurations.
@@ -172,6 +192,12 @@ def _extra_nspawn_args_and_env(
                 os.path.realpath(find_repo_root())
             )
         )
+
+        # insert additional host mounts that are always required when
+        # using repository artifacts.
+        for mount in repo_config.repo_artifacts_host_mounts:
+            extra_nspawn_args.extend(bind_args(mount))
+
         # Future: we **may** also need to mount the scratch directory
         # pointed to by `buck-image-out`, since otherwise repo code trying
         # to access other built layers won't work.  Not adding it now since

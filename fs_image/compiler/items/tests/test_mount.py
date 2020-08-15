@@ -351,31 +351,6 @@ class MountItemTestCase(BaseItemTestCase):
             # The child has the same mount, and the same metadata
             self._check_subvol_mounts_meow(mounter_child)
 
-            # Check that we refuse to create nested mounts.
-            nested_mounter = temp_subvolumes.create("nested_mounter")
-            nested_item = MountItem(
-                layer_opts=DUMMY_LAYER_OPTS,
-                from_target="t",
-                mountpoint="/whatever",
-                target=None,
-                mount_config={
-                    "is_directory": True,
-                    "build_source": {"type": "layer", "source": "//:fake"},
-                },
-            )
-            with tempfile.TemporaryDirectory() as d:
-                mounter_subvolumes_dir = self._write_layer_json_into(mounter, d)
-                with self.assertRaisesRegex(
-                    AssertionError, "Refusing .* nested mount"
-                ):
-                    nested_item.build(
-                        nested_mounter,
-                        DUMMY_LAYER_OPTS._replace(
-                            target_to_path={"//:fake": d},
-                            subvolumes_dir=mounter_subvolumes_dir,
-                        ),
-                    )
-
     def test_parse_mount_meta(self):
         test_subvol = layer_resource_subvol(
             __package__, "test-layer-with-mounts"
