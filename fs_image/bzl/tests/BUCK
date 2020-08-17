@@ -1,6 +1,6 @@
 load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
-load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "python_unittest")
 load("//fs_image/bzl:shape.bzl", "shape")
 load("//fs_image/bzl:systemd.bzl", "systemd")
 load("//fs_image/bzl/tests:shape_test.bzl", "run_shape_selftests")

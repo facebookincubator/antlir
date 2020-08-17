@@ -124,7 +124,7 @@ def _isinstance(x, t):
     return type(x) == t
 
 def _validate_shape(shape, data):
-    if hasattr(data, "_asdict"):
+    if hasattr(data, "_asdict"):  # Tests if this is a `struct`
         data = dict(**data._asdict())
     if not types.is_dict(data):
         return "expected dict, got '{}'".format(data)

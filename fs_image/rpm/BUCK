@@ -1,7 +1,7 @@
 load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
-load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest", "third_party")
+load("//fs_image/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load(":defs.bzl", "test_rpm_repo_snapshot")
 

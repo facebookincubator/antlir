@@ -1,6 +1,6 @@
 load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image.bzl", "image")
-load("//fs_image/bzl:oss_shim.bzl", "buck_sh_binary")
+load("//fs_image/bzl:oss_shim.bzl", "buck_sh_binary", "export_file")
 load("//fs_image/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
 
 export_file(name = "rpm_sign_test_functions.sh")
