@@ -1,5 +1,5 @@
 load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
-load("//fs_image/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
+load("//fs_image/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 python_library(
@@ -131,7 +131,7 @@ python_library(
     name = "volume_for_repo",
     srcs = ["volume_for_repo.py"],
     # `get_volume_for_current_repo()` needs this to be our sibling in the PAR.
-    resources = {"set_up_volume.sh"},
+    resources = {"set_up_volume.sh": "set_up_volume.sh"},
     deps = [":fs_utils"],
 )
 

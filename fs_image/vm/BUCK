@@ -1,4 +1,4 @@
-load("//fs_image/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
+load("//fs_image/bzl:oss_shim.bzl", "export_file", "python_library", "python_unittest", "third_party")
 
 python_library(
     name = "vm",

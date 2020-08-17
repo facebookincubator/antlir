@@ -1,4 +1,4 @@
-load("//fs_image/bzl:oss_shim.bzl", "buck_genrule")
+load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "export_file")
 
 # Create a signed copy of the test RPM file passed in. It is signed with
 # the key from //fs_image/rpm:gpg-test-keypair.

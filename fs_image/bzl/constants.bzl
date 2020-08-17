@@ -11,18 +11,18 @@ DEFAULT_BUILD_APPLIANCE = native.read_config(
 # elements in this list, because we do not know the version set that the
 # including `image.layer` will use.  This would be fixable if Buck supported
 # providers like Bazel does.
-_STR_VERSION_SET_TO_PATH = native.read_config("fs_image", "version_set_to_path")
-_LIST_VERSION_SET_TO_PATH = (
-    _STR_VERSION_SET_TO_PATH.split(":") if _STR_VERSION_SET_TO_PATH else []
-)
-VERSION_SET_TO_PATH = dict(
-    zip(_LIST_VERSION_SET_TO_PATH[::2], _LIST_VERSION_SET_TO_PATH[1::2]),
-)
-if 2 * len(VERSION_SET_TO_PATH) != len(_LIST_VERSION_SET_TO_PATH):
-    fail("fs_image.version_set_to_path must be a dict: k1:v1:k2:v2")
+def _version_set_to_path():
+    s = native.read_config("fs_image", "version_set_to_path")
+    lst = s.split(":") if s else []
+    vs_to_path = dict(zip(lst[::2], lst[1::2]))
+    if 2 * len(vs_to_path) != len(lst):
+        fail("fs_image.version_set_to_path must be a dict: k1:v1:k2:v2")
 
-# A layer can turn off version locking via `version_set = None`.
-VERSION_SET_TO_PATH[None] = None
+    # A layer can turn off version locking via `version_set = None`.
+    vs_to_path[None] = None
+    return vs_to_path
+
+VERSION_SET_TO_PATH = _version_set_to_path()
 
 DEFAULT_VERSION_SET = native.read_config(
     "fs_image",

@@ -68,7 +68,7 @@ def _image_source_impl(
         # digest>`, which is asserted to be the hash of the content of the
         # source file.
         content_hash = None):
-    if bool(source) + bool(layer) + bool(generator) != 1:
+    if int(bool(source)) + int(bool(layer)) + int(bool(generator)) != 1:
         fail("Exactly one of `source`, `layer` must be set")
     if generator_args and not generator:
         fail("`generator_args` require `generator`")
