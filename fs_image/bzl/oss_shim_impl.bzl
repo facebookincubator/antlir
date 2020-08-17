@@ -235,6 +235,16 @@ def _get_project_root_from_gen_dir():
     # `_get_buck_out_path`, but it seems like an unnecessary complication.
     return "../.."
 
+# Use = in the filename to avoid clashing with RPM names.
+def rpm_vset(name, src = "empty=rpm=vset"):
+    export_file(
+        name = name,
+        src = src,
+        mode = "reference",
+        # `image.layer`s all over the repo will depend on these
+        visibility = ["PUBLIC"],
+   )
+
 shim = struct(
     buck_command_alias = command_alias,
     buck_filegroup = filegroup,
@@ -256,6 +266,7 @@ shim = struct(
     python_binary = _python_binary,
     python_library = _python_library,
     python_unittest = _python_unittest,
+    rpm_vset = rpm_vset,
     target_utils = struct(
         parse_target = _parse_target,
         to_label = _to_label,
