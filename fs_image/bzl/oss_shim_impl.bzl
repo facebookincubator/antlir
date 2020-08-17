@@ -243,7 +243,7 @@ def rpm_vset(name, src = "empty=rpm=vset"):
         mode = "reference",
         # `image.layer`s all over the repo will depend on these
         visibility = ["PUBLIC"],
-   )
+     )
 
 shim = struct(
     buck_command_alias = command_alias,
