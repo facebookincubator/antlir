@@ -97,3 +97,4 @@ get_visibility = shim.get_visibility
 kernel_artifact = shim.kernel_artifact
 target_utils = shim.target_utils
 third_party = shim.third_party
+rpm_vset = shim.rpm_vset
