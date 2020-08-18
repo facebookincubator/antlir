@@ -21,8 +21,8 @@ fake_macro_library(
 )
 
 fake_macro_library(
-    name = "crc32",
-    srcs = ["crc32.bzl"],
+    name = "sha256",
+    srcs = ["sha256.bzl"],
 )
 
 fake_macro_library(
@@ -33,7 +33,7 @@ fake_macro_library(
 fake_macro_library(
     name = "target_helpers",
     srcs = ["target_helpers.bzl"],
-    deps = [":crc32"],
+    deps = [":sha256"],
 )
 
 fake_macro_library(

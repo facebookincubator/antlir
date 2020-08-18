@@ -1,4 +1,4 @@
-load(":crc32.bzl", "hex_crc32")
+load(":sha256.bzl", "sha256_b64")
 load(":oss_shim.bzl", "target_utils")
 
 def normalize_target(target):
@@ -41,7 +41,9 @@ def mangle_target(target, min_abbrev = 15):
         name if len(name) < (2 * min_abbrev + 3) else (
             name[:min_abbrev] + "..." + name[-min_abbrev:]
         )
-    ) + "__" + hex_crc32(target)
+        # A 120-bit secure hash requires close to 2^60 targets to exist in one
+        # project to trigger a birthday collision.  We don't need all 43 bytes.
+    ) + "__" + sha256_b64(target)[:20]
 
 def wrap_target(target, wrap_prefix):
     # The wrapper target is plumbing, so it will start with the provided

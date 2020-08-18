@@ -4,7 +4,7 @@ given image layer, and outputs a new layer with the resulting RPM(s)
 available in a pre-determined location: `/rpmbuild/RPMS`.
 """
 
-load("//fs_image/bzl:crc32.bzl", "hex_crc32")
+load("//fs_image/bzl:sha256.bzl", "sha256_b64")
 load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//fs_image/bzl:image_layer.bzl", "image_layer")
@@ -194,7 +194,7 @@ def image_import_rpm_public_key_layer(
     gpg_key_dir = "/fs_image-rpm-gpg-keys"
     install_keys = []
     for src in pubkeys:
-        dest = gpg_key_dir + "/RPM-GPG-KEY-" + hex_crc32(str(src))
+        dest = gpg_key_dir + "/RPM-GPG-KEY-" + sha256_b64(str(src))
         install_keys.append(image_install(src, dest))
 
     if not install_keys:
