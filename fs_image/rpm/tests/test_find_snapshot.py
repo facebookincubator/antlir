@@ -12,16 +12,16 @@ from ..find_snapshot import mangle_target, snapshot_install_dir
 class TestCommon(unittest.TestCase):
     def test_mangle_target(self):
         self.assertEqual(
-            "non-default-rep...pshot-for-tests__3012b15a",
+            "non-default-rep...pshot-for-tests__wjmfCHgdrlJYlL3aaefz",
             mangle_target("//fs_image/rpm:non-default-repo-snapshot-for-tests"),
         )
         self.assertEqual(
-            "repo-snapshot-for-tests__bd44ee8c",
+            "repo-snapshot-for-tests__sOCQyiTXqSmDfq-5n9Fi",
             mangle_target("//fs_image/rpm:repo-snapshot-for-tests"),
         )
 
     def test_snapshot_install_dir(self):
         self.assertEqual(
-            b"/__fs_image__/rpm/repo-snapshot/chicken__a08636a6",
+            b"/__fs_image__/rpm/repo-snapshot/chicken__DPPfV4lnzLJ-mvxxFHHM",
             snapshot_install_dir("//well/fed:chicken"),
         )

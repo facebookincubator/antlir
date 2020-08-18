@@ -184,8 +184,8 @@ def maybe_wrap_executable_target(target, wrap_prefix, **kwargs):
     """
     exists, wrapped_target = wrap_target(target, wrap_prefix)
 
-    # Reuse a pre-existing wrapper for the same target (CRC32 collisions
-    # shouldn't be *that* likely in TARGETS, but we need a better hash).
+    # Reuse a pre-existing wrapper for the same target -- with our 120-bit
+    # secure hashes, collisions are practically impossible.
     if exists:
         # With self-contained artifacts, we create a dummy wrapper target to
         # satisfy the CI target determinator, but we must not use it.
