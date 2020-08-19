@@ -136,7 +136,7 @@ def _normalize_feature_and_get_deps(feature, version_set):
     if aliased_rpms:
         # IMPORTANT: This is NOT a deep copy, but we don't need it since we
         # only mutate the `version_set` key.
-        feature_dict["rpms"] = [r.copy() for r in aliased_rpms]
+        feature_dict["rpms"] = [dict(**r) for r in aliased_rpms]
 
     # This is only None when there are no version sets in use.
     if version_set != None:
