@@ -92,7 +92,8 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "python_library", "third_party")
+load(":oss_shim.bzl", "buck_genrule", "python_library", "third_party")
+load(":structs.bzl", "structs")
 
 _NO_DEFAULT = object()
 
@@ -124,8 +125,8 @@ def _isinstance(x, t):
     return type(x) == t
 
 def _validate_shape(shape, data):
-    if hasattr(data, "_asdict"):  # Tests if this is a `struct`
-        data = dict(**data._asdict())
+    if structs.is_struct(data):
+        data = structs.to_dict(data)
     if not types.is_dict(data):
         return "expected dict, got '{}'".format(data)
     for key, field_spec in shape.fields.items():

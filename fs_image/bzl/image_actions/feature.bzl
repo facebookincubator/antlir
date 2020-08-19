@@ -46,6 +46,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//fs_image/bzl:constants.bzl", "VERSION_SET_TO_PATH")
 load("//fs_image/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
+load("//fs_image/bzl:structs.bzl", "structs")
 load("//fs_image/bzl:target_helpers.bzl", "normalize_target")
 load("//fs_image/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
@@ -124,7 +125,7 @@ def _flatten_nested_lists(lst):
 def _normalize_feature_and_get_deps(feature, version_set):
     "Returns a ready-to-serialize feature dictionary and its direct deps."
     target_tagger = new_target_tagger()
-    feature_dict = feature.items._asdict()
+    feature_dict = structs.to_dict(feature.items)
 
     # For RPM actions, we must mutate the inner dicts of `feature_dict`
     # below.  As it turns out, `feature_dict` retains the same `dict`
