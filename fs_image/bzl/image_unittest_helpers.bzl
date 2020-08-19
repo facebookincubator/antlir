@@ -67,11 +67,8 @@ def _nspawn_wrapper_properties(
     outer_kwarg_names = ["tags", "env"]
     outer_kwarg_names.extend(extra_outer_kwarg_names)
 
-    real_inner_test_kwargs = inner_test_kwargs.copy()
-    outer_test_kwargs = {}
-    for kwarg in outer_kwarg_names:
-        if kwarg in real_inner_test_kwargs:
-            outer_test_kwargs[kwarg] = real_inner_test_kwargs.pop(kwarg)
+    outer_test_kwargs = {k: v for k, v in inner_test_kwargs.items() if k in outer_kwarg_names}
+    inner_test_kwargs = {k: v for k, v in inner_test_kwargs.items() if k not in outer_test_kwargs}
 
     # This target name gets a suffix to keep it discoverable via tab-completion
     test_layer = name + "--test-layer"
@@ -170,7 +167,7 @@ mv $TMP/out "$OUT"
     )
 
     return struct(
-        inner_test_kwargs = real_inner_test_kwargs,
+        inner_test_kwargs = inner_test_kwargs,
         outer_test_kwargs = outer_test_kwargs,
         impl_python_library = ":" + wrapper_impl_library,
         # Users of `image.*_unittest` only see the outer "porcelain" target,

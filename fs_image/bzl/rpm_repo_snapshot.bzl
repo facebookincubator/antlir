@@ -97,7 +97,7 @@ def rpm_repo_snapshot(
         )
 
     # For tests, we want relative `base_dir` to point into the snapshot dir.
-    cli_storage = storage.copy()
+    cli_storage = dict(**storage)
     if cli_storage["kind"] == "filesystem" and \
        not cli_storage["base_dir"].startswith("/"):
         cli_storage["base_dir"] = "$(location {})/{}".format(
