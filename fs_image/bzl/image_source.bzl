@@ -1,5 +1,6 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":maybe_export_file.bzl", "maybe_export_file")
+load(":structs.bzl", "structs")
 
 # Note to users: all callsites accepting `image.source` objects also accept
 # plain strings, which are interpreted as `image.source(<the string>)`.
@@ -108,4 +109,4 @@ def image_source(source = None, **kwargs):
         return _image_source_impl(source = source, **kwargs)
     if kwargs:
         fail("Got struct source {} with other args".format(source))
-    return _image_source_impl(**source._asdict())
+    return _image_source_impl(**structs.to_dict(source))

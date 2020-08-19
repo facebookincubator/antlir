@@ -4,6 +4,7 @@ load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE", "DEFAULT_RPM_INS
 load("//fs_image/bzl/image_actions:feature.bzl", "normalize_features")
 load(":artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
 load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
+load(":structs.bzl", "structs")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
 def _build_opts(
@@ -91,7 +92,7 @@ def compile_image_features(
     if features == None:
         features = []
 
-    build_opts = _build_opts(**(build_opts._asdict() if build_opts else {}))
+    build_opts = _build_opts(**(structs.to_dict(build_opts) if build_opts else {}))
 
     allowed_host_mount_targets = native.read_config(
         "fs_image",
