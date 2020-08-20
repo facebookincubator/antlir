@@ -27,6 +27,11 @@ init_logging()
 
 
 class YumFromSnapshotTestImpl:
+    def _yum_dnf_from_snapshot(self, **kwargs):
+        yum_dnf_from_snapshot.yum_dnf_from_snapshot(
+            yum_dnf=self._YUM_DNF, snapshot_dir=_SNAPSHOT_DIR, **kwargs
+        )
+
     @contextmanager
     def _install(self, *, protected_paths, install_args=None):
         if install_args is None:
@@ -47,9 +52,7 @@ class YumFromSnapshotTestImpl:
             # since it depends on the system packages available on CI
             # containers.  For this reason, this entire test is an
             # `image.python_unittest` that runs in a build appliance.
-            yum_dnf_from_snapshot.yum_dnf_from_snapshot(
-                yum_dnf=self._YUM_DNF,
-                snapshot_dir=_SNAPSHOT_DIR,
+            self._yum_dnf_from_snapshot(
                 protected_paths=protected_paths,
                 yum_dnf_args=[f"--installroot={install_root}", *install_args],
             )
@@ -182,9 +185,7 @@ class YumFromSnapshotTestImpl:
         # Hack alert: if we run both `{Dnf,Yum}FromSnapshotTestCase` in one
         # test invocation, the package manager that runs will just say that
         # the package is already install, and succeed.  That's OK.
-        yum_dnf_from_snapshot.yum_dnf_from_snapshot(
-            yum_dnf=self._YUM_DNF,
-            snapshot_dir=_SNAPSHOT_DIR,
+        self._yum_dnf_from_snapshot(
             protected_paths=[],
             yum_dnf_args=[
                 # This is implicit: that also covers the "read the conf" code:
@@ -251,9 +252,7 @@ class YumFromSnapshotTestImpl:
                 with open(shadowed_original) as infile:
                     self.assertEqual("yum/dnf overwrites this", infile.read())
 
-                yum_dnf_from_snapshot.yum_dnf_from_snapshot(
-                    yum_dnf=self._YUM_DNF,
-                    snapshot_dir=_SNAPSHOT_DIR,
+                self._yum_dnf_from_snapshot(
                     protected_paths=[],
                     yum_dnf_args=[
                         f"--installroot={root}",

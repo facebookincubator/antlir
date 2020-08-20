@@ -148,3 +148,28 @@ python_unittest(
         "//fs_image/nspawn_in_subvol:testlib_base",
     ],
 )
+
+image.layer(
+    name = "shadow-build-appliance",
+    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
+    features = [
+        # We'll set up shadowing both via links and directly, and both work.
+        image.mkdir("/", "rpm_test/"),
+        image.install("tests/shadow_me", "rpm_test/carrot.txt"),
+        image.install("tests/i_will_shadow", "i_will_shadow"),
+    ],
+)
+
+# This test isn't here for line coverage, but to cover the integration
+# between `yum-dnf-from-snapshot` wrappers and `--shadow-path`.
+python_unittest(
+    name = "test-rpm-installer-shadow-paths",
+    srcs = ["tests/test_rpm_installer_shadow_paths.py"],
+    resources = {
+        layer_resource(":shadow-build-appliance"): "tests/shadow-build-appliance",
+    },
+    deps = [
+        ":testlib_rpm_base",
+        "//fs_image:testlib_temp_subvolumes",
+    ],
+)

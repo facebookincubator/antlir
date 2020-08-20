@@ -13,7 +13,7 @@ from typing import Iterable
 from .rpm_base import RpmNspawnTestBase
 
 
-class YumDnfVersionlockTestCase(RpmNspawnTestBase):
+class TestImpl:
     @contextmanager
     def _write_versionlocks(self, lines: Iterable[str]):
         with tempfile.NamedTemporaryFile(mode="w") as tf:
@@ -28,7 +28,7 @@ class YumDnfVersionlockTestCase(RpmNspawnTestBase):
             ["0\trpm-test-carrot\t1\tlockme\tx86_64"]
         ) as vl:
             self._check_yum_dnf_boot_or_not(
-                "yum",
+                self._PROG,
                 "rpm-test-carrot",
                 extra_args=(
                     "--snapshot-to-versionlock",
@@ -38,7 +38,7 @@ class YumDnfVersionlockTestCase(RpmNspawnTestBase):
                 check_ret_fn=functools.partial(
                     self._check_yum_dnf_ret,
                     "carrot 1 lockme\n",
-                    b"Package rpm-test-carrot.x86_64 0:1-lockme will be instal",
+                    br"Installing\s+: rpm-test-carrot-1-lockme.x86_64",
                 ),
             )
 
@@ -49,7 +49,7 @@ class YumDnfVersionlockTestCase(RpmNspawnTestBase):
             ["0\trpm-test-carrot\t3333\tnonesuch\tx86_64"]
         ) as vl, self.assertRaises(subprocess.CalledProcessError):
             self._check_yum_dnf_boot_or_not(
-                "yum",
+                self._PROG,
                 "rpm-test-carrot",
                 extra_args=(
                     "--snapshot-to-versionlock",
@@ -58,3 +58,11 @@ class YumDnfVersionlockTestCase(RpmNspawnTestBase):
                 ),
                 check_ret_fn=_not_reached,
             )
+
+
+class DnfVersionlockTestCase(TestImpl, RpmNspawnTestBase):
+    _PROG = "dnf"
+
+
+class YumVersionlockTestCase(TestImpl, RpmNspawnTestBase):
+    _PROG = "yum"

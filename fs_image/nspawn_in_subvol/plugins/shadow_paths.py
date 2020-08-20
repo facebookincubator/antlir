@@ -84,6 +84,7 @@ def _resolve_to_canonical_shadow_paths(
     search_dirs: List[Path],
 ) -> Mapping[Path, Path]:
     "Converts `ShadowPaths` inputs to symlink-free host absolute paths."
+    assert search_dirs, search_dirs
     # Generate candidate absolute paths for resolving filenames by
     # walking our container `PATH`.
     #

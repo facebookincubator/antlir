@@ -17,7 +17,7 @@ from fs_image.fs_utils import Path
 # For now, the non-booted case implicitly uses the `systemd-nspawn` default
 # `PATH`, so if that changes our test will fail.  That test failure in time
 # will be an opportunity to decide whether to set our own, or follow.
-DEFAULT_SEARCH_PATHS = (
+DEFAULT_SEARCH_PATHS = tuple(
     Path(p)
     for p in (
         "/usr/local/sbin",
