@@ -86,12 +86,13 @@ The current tool works well, with these caveats:
 """
 import argparse
 import os
+import shutil
 import subprocess
 import tempfile
 import textwrap
 from configparser import ConfigParser
 from contextlib import contextmanager
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Optional
 
 from fs_image.common import (
     check_popen_returncode,
@@ -113,6 +114,12 @@ log = get_file_logger(__file__)
 # toolchain as the `glibc` that we're interposing.
 #
 # It's not under `/__fs_image__/rpm/` because it's not actually RPM-specific.
+#
+# Note that this won't work out of the box to allow updating shadowed paths
+# that are under `--installroot` -- to fix it, we would need to make a
+# "remapped" shadow root be available inside the install root, so that it
+# can be seen by the `chroot`ed `rename` function call.  This is obviously
+# not worth the trouble in the absence of a VERY compelling need.
 LIBRENAME_SHADOWED_PATH = Path("/__fs_image__/librename_shadowed.so")
 
 
@@ -355,6 +362,32 @@ def _install_root(conf_path: Path, yum_dnf_args: Iterable[str]) -> Path:
     return Path(cp["main"].get("installroot", "/"))
 
 
+def _resolve_rpm_installer_binary(
+    yum_dnf: YumDnf, yum_dnf_binary: Optional[Path]
+) -> Path:
+    """
+    Returns an absolute path to the "original" RPM installer binary.  It
+    will typically be in `/usr/` or in the corresponding "shadow root" path.
+    """
+    if yum_dnf_binary is None:
+        yum_dnf_binary = Path(shutil.which(yum_dnf.value))
+    assert yum_dnf_binary.startswith(b"/"), yum_dnf_binary
+    # We must canonicalize here because the shadowing code does so (to avoid
+    # duplicate shadows due to aliasing etc).
+    yum_dnf_binary = Path(yum_dnf_binary).realpath()
+    # If it becomes a problem to invoke the RPM installer out of the shadow
+    # root (i.e. if it cares about its prefix), we can fix this by making
+    # `yum_dnf_from_snapshot.py` unmount the shadow bind mount in its
+    # private mount NS.  Caveat: we'd also need a "protective" RO bind mount
+    # on top, because otherwise an `unlink` in the mount NS would remove the
+    # bind mount in the parent NS.
+    shadowed_binary = SHADOWED_PATHS_ROOT / yum_dnf_binary.lstrip(b"/")
+    # This is covered by `test_rpm_installer_shadow_paths.py`.
+    if os.path.exists(shadowed_binary):  # pragma: no cover
+        return shadowed_binary
+    return yum_dnf_binary
+
+
 def yum_dnf_from_snapshot(
     *,
     yum_dnf: YumDnf,
@@ -362,7 +395,9 @@ def yum_dnf_from_snapshot(
     protected_paths: List[str],
     yum_dnf_args: List[str],
     debug: bool = False,
+    yum_dnf_binary: Optional[Path] = None,
 ):
+    yum_dnf_binary = _resolve_rpm_installer_binary(yum_dnf, yum_dnf_binary)
     _ensure_fs_image_container()
     _ensure_private_network()
 
@@ -451,9 +486,7 @@ def yum_dnf_from_snapshot(
                 yum_dnf, install_root, dummy_dev, protected_path_to_dummy
             ),
             "yum-dnf-from-snapshot",  # argv[0]
-            prog_name,
-            # Help us debug CI issues that don't reproduce locally.
-            "--verbose",
+            yum_dnf_binary,
             # Config options get isolated by our `YumDnfConfIsolator`
             # when `write-yum-dnf-conf` builds this file.  Note that
             # `yum` doesn't work if the config path is relative.
@@ -482,6 +515,19 @@ if __name__ == "__main__":  # pragma: no cover
         required=True,
         type=Path.from_argparse,
         help="Multi-repo snapshot directory.",
+    )
+    # When a wrapper from an RPM repo snapshot is shadowing an OS rpm
+    # installer, it needs this argument to invoke the exact binary that it
+    # is shadowing.
+    #
+    # Caveat: the basename of this path may differ from the `yum_dnf`
+    # argument below because on Fedora, `yum` is a symlink to `dnf`.
+    main_parser.add_argument(
+        "--yum-dnf-binary",
+        type=Path.from_argparse,
+        help="Optional absolute path, defaults to resolving the `yum_dnf` "
+        "argument via `PATH`. This is the non-shadowed path to the "
+        "actual RPM installer binary that we are wrapping.",
     )
     main_parser.add_argument(
         "--protected-path",
@@ -515,6 +561,7 @@ if __name__ == "__main__":  # pragma: no cover
 
     yum_dnf_from_snapshot(
         yum_dnf=args.yum_dnf,
+        yum_dnf_binary=args.yum_dnf_binary,
         snapshot_dir=args.snapshot_dir,
         protected_paths=args.protected_path,
         yum_dnf_args=args.args,

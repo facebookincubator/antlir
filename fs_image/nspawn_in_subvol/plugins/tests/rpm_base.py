@@ -17,7 +17,34 @@ class RpmNspawnTestBase(NspawnTestBase):
         "//fs_image/rpm:repo-snapshot-for-tests"
     )
 
-    def _yum_or_dnf_install(self, prog, package, *, extra_args=()):
+    def _yum_or_dnf_install(
+        self,
+        prog,
+        package,
+        *,
+        extra_args=(),
+        # This helper powers two flavors of tests:
+        #
+        #  - `with_shadowing_wrapper=False`: Directly using the OS RPM
+        #    installer with `--config` and `--installroot` -- this may not
+        #    be a scenario we end up supporting long-term.
+        #
+        #  - `with_shadowing_wrapper=True`: The OS RPM installer is shadowed
+        #    with its wrapper from the `fs_image`-generated RPM repo
+        #    snapshot.  This approximates the "RPM installation just works
+        #    by default" flow.  Here, we install to `/` instead of
+        #    `/target`, because RPM installers currently don't support
+        #    updating shadowed files when using `--installroot`, and we want
+        #    to test this behavior.
+        with_shadowing_wrapper=False,
+        build_appliance_pair=(__package__, "build-appliance"),
+    ):
+        # fmt: off
+        maybe_quoted_prog_args = ("" if with_shadowing_wrapper else " ".join([
+            f"--config={self._SNAPSHOT_DIR}/{prog}/etc/{prog}/{prog}.conf",
+            "--installroot=/target",
+        ]))
+        # fmt: on
         with tempfile.TemporaryFile(
             mode="w+b"
         ) as yum_dnf_stdout, tempfile.TemporaryFile(mode="w+") as rpm_contents:
@@ -25,7 +52,7 @@ class RpmNspawnTestBase(NspawnTestBase):
             # viewable when running the test interactively.  We use `tee` to
             # obtain a copy of the program's stdout for tests.
             ret = self._nspawn_in(
-                (__package__, "build-appliance"),
+                build_appliance_pair,
                 [
                     "--user=root",
                     f"--serve-rpm-snapshot={self._SNAPSHOT_DIR}",
@@ -38,15 +65,13 @@ class RpmNspawnTestBase(NspawnTestBase):
                     textwrap.dedent(
                         f"""\
                     set -ex
-                    mkdir /target
-                    {prog} \\
-                        --config={self._SNAPSHOT_DIR
-                            }/{prog}/etc/{prog}/{prog}.conf \\
-                        --installroot=/target -y install {package} |
-                            tee /proc/self/fd/3
+                    install_root={'/' if with_shadowing_wrapper else '/target'}
+                    mkdir -p "$install_root"
+                    {prog} {maybe_quoted_prog_args} -y install {package} |
+                        tee /proc/self/fd/3
                     # We install only 1 RPM, so a glob tells us the filename.
                     # Use `head` instead of `cat` to fail nicer on exceeding 1.
-                    head /target/rpm_test/*.txt >&4
+                    head "$install_root"/rpm_test/*.txt >&4
                 """
                     ),
                 ],
@@ -58,18 +83,21 @@ class RpmNspawnTestBase(NspawnTestBase):
             ret.rpm_contents = rpm_contents.read()
             return ret
 
-    def _check_yum_dnf_ret(self, expected_contents, expected_logline, ret):
+    def _check_yum_dnf_ret(self, expected_contents, regex_logline, ret):
         self.assertEqual(0, ret.returncode)
         self.assertEqual(expected_contents, ret.rpm_contents)
-        self.assertIn(expected_logline, ret.stdout)
+        self.assertRegex(ret.stdout, regex_logline)
         self.assertIn(b"Complete!", ret.stdout)
 
     def _check_yum_dnf_boot_or_not(
-        self, prog, package, *, extra_args=(), check_ret_fn=None
+        self, prog, package, *, extra_args=(), check_ret_fn=None, **kwargs
     ):
         for boot_args in (["--boot"], []):
             check_ret_fn(
                 self._yum_or_dnf_install(
-                    prog, package, extra_args=(*extra_args, *boot_args)
+                    prog,
+                    package,
+                    extra_args=(*extra_args, *boot_args),
+                    **kwargs,
                 )
             )

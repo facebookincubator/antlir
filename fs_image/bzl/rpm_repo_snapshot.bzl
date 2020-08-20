@@ -17,9 +17,10 @@ RPM_SNAPSHOT_BASE_DIR = "__fs_image__/rpm/repo-snapshot"
 def snapshot_install_dir(snapshot):
     return paths.join("/", RPM_SNAPSHOT_BASE_DIR, mangle_target(snapshot))
 
-def yum_or_dnf_wrapper(name):
-    if name not in ("yum", "dnf"):
-        fail("Must be `yum` or `dnf`", "yum_or_dnf")
+def _yum_or_dnf_wrapper(yum_or_dnf, snapshot_name):
+    if yum_or_dnf not in ("yum", "dnf"):
+        fail("{} must be `yum` or `dnf`".format(yum_or_dnf))
+    name = "{}-for-snapshot--{}".format(yum_or_dnf, snapshot_name)
     buck_genrule(
         name = name,
         out = "ignored",
@@ -28,16 +29,25 @@ def yum_or_dnf_wrapper(name):
 #!/bin/sh
 set -ue -o pipefail -o noclobber
 my_path=\\$(readlink -f "$0")
-my_dir=\\$(dirname "$my_path")
-installer_dir=\\$(dirname "$my_dir")
-base_dir=\\$(dirname "$installer_dir")
-exec "$base_dir"/yum-dnf-from-snapshot \\
-    --snapshot-dir "$base_dir" \\
-    {yum_or_dnf} -- "$@"
-""".format(yum_or_dnf = shell.quote(name)),
+# If executed straight out of the snapshot, let `yum-dnf-from-snapshot`
+# figure out what binary it is wrapping.
+if [[ "$my_path" == /__fs_image__/* ]] ; then
+    yum_dnf_binary_args=()
+else
+    yum_dnf_binary_args=(--yum-dnf-binary "$my_path")
+fi
+exec -a "$0" {quoted_snap_dir}/yum-dnf-from-snapshot \\
+    --snapshot-dir {quoted_snap_dir} \\
+    "${{yum_dnf_binary_args[@]}}" \\
+    -- {yum_or_dnf} -- "$@"
+""".format(
+                quoted_snap_dir = shell.quote(snapshot_install_dir(":" + snapshot_name)),
+                yum_or_dnf = shell.quote(yum_or_dnf),
+            ),
         )),
         visibility = ["PUBLIC"],
     )
+    return ":" + name
 
 def rpm_repo_snapshot(
         name,
@@ -137,7 +147,7 @@ def rpm_repo_snapshot(
     for rpm_installer in rpm_installers:
         per_installer_cmds.append('''
 mkdir -p "$OUT"/{prog}/bin
-cp $(location //fs_image/bzl:{prog}) "$OUT"/{prog}/bin/{prog}
+cp $(location {yum_or_dnf_wrapper}) "$OUT"/{prog}/bin/{prog}
 
 $(exe //fs_image/rpm:write-yum-dnf-conf) \\
     --rpm-installer {prog} \\
@@ -148,6 +158,7 @@ $(exe //fs_image/rpm:write-yum-dnf-conf) \\
 
 '''.format(
             prog = rpm_installer,
+            yum_or_dnf_wrapper = _yum_or_dnf_wrapper(rpm_installer, name),
             quoted_install_dir = shell.quote(snapshot_install_dir(":" + name)),
             quoted_repo_server_ports = quoted_repo_server_ports,
         ))

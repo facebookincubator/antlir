@@ -1,6 +1,5 @@
 load(":defs.bzl", "fake_macro_library")
 load(":oss_shim.bzl", "get_visibility")
-load(":rpm_repo_snapshot.bzl", "yum_or_dnf_wrapper")
 
 # IMPORTANT: If you add new `.bzl` files or dependencies in `fs_image/`,
 # make sure their dependency structure is reflected below.  Just run `grep
@@ -154,7 +153,3 @@ fake_macro_library(
     name = "shape",
     srcs = ["shape.bzl"],
 )
-
-yum_or_dnf_wrapper(name = "dnf")
-
-yum_or_dnf_wrapper(name = "yum")
