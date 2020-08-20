@@ -175,7 +175,7 @@ def _wrap_systemd_exec():
             umount -R {_OUTER_PROC}
             rmdir {_OUTER_PROC}
             exec /usr/lib/systemd/systemd --log-target=console
-        """
+            """
         ),
     ]
 
@@ -315,6 +315,22 @@ def _popen_nsenter_into_systemd(
     # or something better so that a real user session is created
     # within the booted container.
     nsenter_cmd = [
+        "/bin/bash",
+        "-uec",
+        # We have to enter into `systemd`'s cgroup, otherwise this `nsenter`'s
+        # cgroup will be unmanageable via `systemd`' view of `/sys/fs/cgroup`,
+        # and it will be unable to move it into a user session. The specific
+        # failure mode is described by `SlowSudoTestCase`.
+        #
+        # Note that this runs on the host, so it's OK to assume that cgroup2
+        # is mounted at the usual location.
+        f"""
+        echo $$ > "$(
+            sed 's|^0::|/sys/fs/cgroup/|' < /proc/{systemd_pid}/cgroup
+        )"/cgroup.procs
+        exec "$@"
+        """,
+        "bash",  # $0 for `bash` above
         "nsenter",
         f"--target={systemd_pid}",
         "--all",

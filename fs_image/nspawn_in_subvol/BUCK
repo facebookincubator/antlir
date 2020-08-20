@@ -179,6 +179,17 @@ python_unittest(
     deps = [":testlib_base"],
 )
 
+python_unittest(
+    name = "test-slow-sudo",
+    srcs = ["tests/test_slow_sudo.py"],
+    resources = {
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/build-appliance",
+    },
+    deps = [":testlib_base"],
+)
+
 python_binary(
     name = "run-test",
     srcs = ["run_test.py"],
