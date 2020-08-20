@@ -13,7 +13,7 @@ from fs_image.compiler.requires_provides import (
     ProvidesFile,
     require_directory,
 )
-from fs_image.fs_utils import open_for_read_decompress
+from fs_image.fs_utils import generate_work_dir, open_for_read_decompress
 from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.subvol_utils import Subvol
@@ -22,7 +22,6 @@ from .common import (
     ImageItem,
     LayerOpts,
     coerce_path_field_normal_relative,
-    generate_work_dir,
     make_path_normal_relative,
 )
 

@@ -12,17 +12,12 @@ from fs_image.compiler.requires_provides import (
     ProvidesDirectory,
     require_directory,
 )
-from fs_image.fs_utils import Path
+from fs_image.fs_utils import Path, generate_work_dir
 from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.subvol_utils import Subvol
 
-from .common import (
-    ImageItem,
-    LayerOpts,
-    coerce_path_field_normal_relative,
-    generate_work_dir,
-)
+from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
 from .stat_options import Mode, build_stat_options, customize_stat_options
 
 
