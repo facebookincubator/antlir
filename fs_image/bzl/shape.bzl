@@ -255,7 +255,6 @@ def _validate_optional(spec, data):
 def _dict_field(key_type, val_type, **field_kwargs):
     if not _is_type(key_type):
         fail("dicts can only have primitives as keys", attr = "key_type")
-    val_type_name = val_type.class_name if _is_shape(val_type) else val_type.__name__
     return _field(
         python_type = "typing.Mapping[{}, {}]".format(key_type.__name__, val_type.__name__),
         starlark_type = (key_type, val_type),
@@ -385,7 +384,7 @@ def _python_file(name, shape, classname = None):
     python_src = _loader_src(shape._shape_type, classname or name)
     json_str = shape._data.to_json()
     json_str = json_str.replace('"', '\\"')
-    python_src += "\ndata = shape(**json.loads(\"{}\"))".format(json_str)
+    python_src += "\ndata = {}(**json.loads(\"{}\"))".format(name, json_str)
 
     # make it easier for direct inclusion in `srcs`
     name = "{}={}.py".format(name, name)

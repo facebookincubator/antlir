@@ -11,7 +11,7 @@ from typing import Optional, Union
 from pydantic import ValidationError
 
 from .example_loader import example as shape
-from .shape import data
+from .pyfile_shape import data
 
 
 class TestShape(unittest.TestCase):
@@ -24,6 +24,7 @@ class TestShape(unittest.TestCase):
             self.assertEqual(True, e.nested.inner)
             self.assertEqual(True, e.tp[2].nested)
             self.assertEqual({"hello": "world"}, e.dct)
+            self.assertEqual(11, e.dct_w_shape["apollo"].number)
 
         e = shape.read_resource(__package__, "example.json")
         expected(e)
@@ -35,6 +36,7 @@ class TestShape(unittest.TestCase):
             nested={"inner": True},
             tp=(True, 42, {"nested": True}),
             dct={"hello": "world"},
+            dct_w_shape={"apollo": {"number": 11}},
         )
         expected(e)
 
@@ -55,6 +57,7 @@ class TestShape(unittest.TestCase):
                 nested={"inner": True},
                 tp=(True, 42, {"nested": 42}),
                 dct={"hello": "world"},
+                dct_w_shape={"apollo": {"number": 11}},
             )
 
     def test_list_invalid_element_type(self):
@@ -67,6 +70,7 @@ class TestShape(unittest.TestCase):
                 tp=(True, 42, {"nested": 42}),
                 lst=[{"id": 0}, {"oops": 1}],
                 dct={"hello": "world"},
+                dct_w_shape={"apollo": {"number": 11}},
             )
 
     def test_typehints(self):
