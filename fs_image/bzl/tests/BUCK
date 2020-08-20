@@ -196,6 +196,10 @@ example = shape.shape(
         optional = True,
     ),
     dct = shape.dict(str, str),
+    dct_w_shape = shape.dict(
+        str,
+        shape.shape(number = int),
+    ),
 )
 
 instance = shape.new(
@@ -225,6 +229,12 @@ instance = shape.new(
         ),
     ],
     dct = {"hello": "world"},
+    dct_w_shape = {
+        "apollo": shape.new(
+            example.dct_w_shape.val_type,
+            number = 11,
+        ),
+    },
 )
 
 shape.loader(
@@ -238,7 +248,7 @@ python_unittest(
     srcs = [
         "test_shape.py",
         shape.python_file(
-            name = "shape",
+            name = "pyfile_shape",
             shape = instance,
         ),
     ],
