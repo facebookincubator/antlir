@@ -16,8 +16,7 @@ from configparser import ConfigParser
 from contextlib import contextmanager
 from typing import Dict, List, NamedTuple, Optional
 
-from fs_image.compiler.items.common import generate_work_dir
-from fs_image.fs_utils import Path, temp_dir
+from fs_image.fs_utils import Path, generate_work_dir, temp_dir
 from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from fs_image.nspawn_in_subvol.non_booted import (
     popen_non_booted_nspawn,

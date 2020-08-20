@@ -6,6 +6,7 @@
 
 "Utilities to make Python systems programming more palatable."
 import argparse
+import base64
 import errno
 import importlib.resources
 import json
@@ -16,6 +17,7 @@ import stat
 import subprocess
 import tempfile
 import urllib.parse
+import uuid
 from contextlib import contextmanager
 from typing import AnyStr, Generator, Iterable, Iterator, List, Union
 
@@ -269,6 +271,12 @@ class _PathJSONEncoder(json.JSONEncoder):
 def temp_dir(**kwargs) -> Generator[Path, None, None]:
     with tempfile.TemporaryDirectory(**kwargs) as td:
         yield Path(td)
+
+
+def generate_work_dir():
+    return "/work" + base64.urlsafe_b64encode(
+        uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
+    ).decode().strip("=")
 
 
 @contextmanager

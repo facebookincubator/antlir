@@ -11,8 +11,7 @@ import os
 import pwd
 from typing import AnyStr, List
 
-from fs_image.compiler.items.common import generate_work_dir
-from fs_image.fs_utils import Path
+from fs_image.fs_utils import Path, generate_work_dir
 from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from fs_image.subvol_utils import Subvol

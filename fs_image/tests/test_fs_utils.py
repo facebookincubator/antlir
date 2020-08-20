@@ -19,6 +19,7 @@ from ..common import byteme, check_popen_returncode
 from ..fs_utils import (
     Path,
     create_ro,
+    generate_work_dir,
     open_for_read_decompress,
     populate_temp_dir_and_rename,
     populate_temp_file_and_rename,
@@ -343,3 +344,13 @@ class TestFsUtils(unittest.TestCase):
             self.assertFalse(os.path.exists(tmp_path))
             # the original file is untouched
             self.assertEqual(path.read_text(), "woof")
+
+    def test_generate_work_dir(self):
+        work_dir = generate_work_dir()
+
+        # make sure we stripped the = padding out
+        self.assertNotIn("=", work_dir)
+
+        # A b64 encoded uuid is 22 chars. That plus the
+        # '/work' prefix is 27 chars,
+        self.assertTrue(len(work_dir) == 27)

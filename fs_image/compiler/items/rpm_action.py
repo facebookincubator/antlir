@@ -11,7 +11,7 @@ import shlex
 from dataclasses import dataclass
 from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
-from fs_image.fs_utils import Path
+from fs_image.fs_utils import Path, generate_work_dir
 from fs_image.nspawn_in_subvol.args import (
     NspawnPluginArgs,
     PopenArgs,
@@ -22,13 +22,7 @@ from fs_image.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from fs_image.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from fs_image.subvol_utils import Subvol
 
-from .common import (
-    ImageItem,
-    LayerOpts,
-    PhaseOrder,
-    generate_work_dir,
-    protected_path_set,
-)
+from .common import ImageItem, LayerOpts, PhaseOrder, protected_path_set
 
 
 class RpmAction(enum.Enum):
