@@ -9,6 +9,7 @@ No externally useful functions here.  Read the `run.py` docblock instead.
 
 Converts structures from `args.py` into a `systemd-nspawn` command-line.
 """
+import base64
 import importlib.resources
 import json
 import os
@@ -72,8 +73,68 @@ def _inject_os_release_args(subvol):
     return bind_args("/dev/null", os_release_paths[0])  # pragma: no cover
 
 
-def _nspawn_cmd(nspawn_subvol: Subvol):
+@contextmanager
+def _temp_cgroup(subvol: Subvol) -> Path:
+    with open("/proc/self/cgroup", "rb") as cg_file:
+        my_cg = cg_file.read()
+    cg2_prefix = b"0::"
+    assert my_cg.startswith(cg2_prefix), f"cgroup2 is required: {my_cg}"
+    assert my_cg.endswith(b"\n")
+    # This runs on the host, so we assume that cgroup2 is mounted in the
+    # usual place.
+    new_cg = Path(
+        b"/sys/fs/cgroup"
+        + my_cg[len(cg2_prefix) : -1]
+        + b"/antlir-"
+        # This is redundant with the UUID but aids debugging
+        + str(os.getpid()).encode()
+        + b"-"
+        # Guaranteed unique on this host
+        + base64.urlsafe_b64encode(uuid.uuid4().bytes).strip(b"=")
+    )
+    try:
+        yield new_cg
+    finally:
+        # Best-effort recursive cleanup of our cgroup.  This will only
+        # succeed if neither it, nor its descendants contain any processes.
+        #
+        # Unfortunately, this cannot use `-print0` because our ambient `tac`
+        # is too old to use `-s` to mean NUL-separated.  And this is not
+        # important enough to write more code.
+        #
+        # I abuse `Subvol` as an easier-to-use "run under `sudo`" API.
+        subvol.run_as_root(
+            [
+                "bash",
+                "-uec",
+                f"find {new_cg.shell_quote()} -type d | tac | xargs rmdir",
+            ],
+            # Leak without failing: checking this would likely result in
+            # painful and fruitless investigations of flaky tests in CI
+            # containers, which all get garbage-collected anyway.
+            check=False,
+        )
+
+
+def _nspawn_cmd(nspawn_subvol: Subvol, temp_cgroup: Path):
     return [
+        # Enter a unique, temporary cgroup because as of 8/2020, upstream
+        # `systemd-nspawn --keep-unit` runs in a hardcoded `payload`
+        # sub-cgroup in the current scope. The result is that when
+        # we run multiple `nspawn_in_subvol` tests concurrently, they
+        # see each other's cgroups and interfere.
+        #
+        # Hopefully, we can fix this upstream, but that will take a while to
+        # sort out, so for now, let's manage this manually.
+        "/bin/bash",
+        "-uec",
+        f"""
+        new_cg={temp_cgroup.shell_quote()}
+        mkdir "$new_cg"
+        echo $$ > "$new_cg"/cgroup.procs
+        exec "$@"
+        """,
+        "bash",  # $0 for the shell above
         # Without this, nspawn would look for the host systemd's cgroup setup,
         # which breaks us in continuous integration containers, which may not
         # have a `systemd` in the host container.
@@ -328,11 +389,11 @@ def _nspawn_setup(opts: _NspawnOpts, popen_args: PopenArgs) -> _NspawnSetup:
         _snapshot_subvol(opts.layer, opts.debug_only_opts.snapshot_into)
         if opts.snapshot
         else nullcontext(opts.layer)
-    ) as nspawn_subvol:
+    ) as nspawn_subvol, _temp_cgroup(opts.layer) as temp_cgroup:
         nspawn_args, cmd_env = _extra_nspawn_args_and_env(opts)
         yield _NspawnSetup(
             subvol=nspawn_subvol,
-            nspawn_cmd=(*_nspawn_cmd(nspawn_subvol), *nspawn_args),
+            nspawn_cmd=(*_nspawn_cmd(nspawn_subvol, temp_cgroup), *nspawn_args),
             # This is a safeguard in case the `sudo` policy lets through any
             # unwanted environment variables.
             nspawn_env=nspawn_sanitize_env(),
