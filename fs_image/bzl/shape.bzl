@@ -51,9 +51,9 @@ generated loader class.
 
 `shape.python_file` dumps a shape object to a raw python source file. This is
 useful for some cases where a python_binary is expected to be fully
-self-contained, but still require some build-time information. It provides a
-slightly more direct way to read a single shape object than `read_resource`.
-
+self-contained, but still require some build-time information. It is also useful
+in cases when shapes are being dynamically generated based on inputs to a macro.
+See the docblock of the function for an example.
 
 ## Example usage
 
@@ -376,12 +376,35 @@ def _loader(name, shape, classname = None, **kwargs):
         **kwargs
     )
 
-def _python_file(name, shape, classname = None):
-    """Codegen a static shape data structure that can be directly 'import'ed
-    by Python."""
+def _python_file(shape):
+    """Codegen a static shape data structure that can be directly 'import'ed by
+    Python. The object is available under the name "data". This should only be
+    used as the key of a `srcs` dictionary, with the value then representing the
+    name that will be imported in the underlying file.
+
+    Example:
+
+        python_binary(
+            name = provided_name,
+            srcs = {
+                shape.dynamic_python_file(
+                    shape = shape.new(
+                        some_shape_t,
+                        var = input_var,
+                    ),
+                ): "bin_bzl_args.py",
+            },
+            ...
+        )
+
+    can then be imported as:
+
+        from .bin_bzl_args import data
+    """
+    name = _next_type()
     if not _is_shape_instance(shape):
         fail("'{}' is not a shape".format(shape), attr = "shape")
-    python_src = _loader_src(shape._shape_type, classname or name)
+    python_src = _loader_src(shape._shape_type, name)
     json_str = shape._data.to_json()
     json_str = json_str.replace('"', '\\"')
     python_src += "\ndata = {}(**json.loads(\"{}\"))".format(name, json_str)
