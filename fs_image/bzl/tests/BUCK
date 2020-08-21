@@ -245,13 +245,12 @@ shape.loader(
 
 python_unittest(
     name = "test-shape",
-    srcs = [
-        "test_shape.py",
+    srcs = {
+        "test_shape.py": "test_shape.py",
         shape.python_file(
-            name = "pyfile_shape",
             shape = instance,
-        ),
-    ],
+        ): "pyfile_shape.py",
+    },
     resources = {
         shape.json_file(
             name = "example",
