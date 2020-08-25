@@ -93,6 +93,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":oss_shim.bzl", "buck_genrule", "python_library", "third_party")
+load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 
 _NO_DEFAULT = object()
@@ -401,13 +402,13 @@ def _python_file(shape):
 
         from .bin_bzl_args import data
     """
-    name = _next_type()
     if not _is_shape_instance(shape):
         fail("'{}' is not a shape".format(shape), attr = "shape")
-    python_src = _loader_src(shape._shape_type, name)
+    python_src = _loader_src(shape._shape_type, "shape")
     json_str = shape._data.to_json()
     json_str = json_str.replace('"', '\\"')
-    python_src += "\ndata = {}(**json.loads(\"{}\"))".format(name, json_str)
+    python_src += "\ndata = shape(**json.loads(\"{}\"))".format(json_str)
+    name = sha256_b64(python_src)
 
     # make it easier for direct inclusion in `srcs`
     name = "{}={}.py".format(name, name)
