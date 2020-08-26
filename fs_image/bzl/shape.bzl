@@ -95,6 +95,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load(":oss_shim.bzl", "buck_genrule", "python_library", "third_party")
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
+load(":target_helpers.bzl", "normalize_target")
 
 _NO_DEFAULT = object()
 
@@ -417,7 +418,7 @@ def _python_file(shape):
         out = name,
         cmd = "echo {} > $OUT".format(shell.quote(python_src)),
     )
-    return "//" + native.package_name() + ":" + name
+    return normalize_target(":" + name)
 
 def _json_file(name, shape):
     if not _is_shape_instance(shape):
@@ -427,7 +428,7 @@ def _json_file(name, shape):
         out = "out.json",
         cmd = "echo {} > $OUT".format(shell.quote(shape._data.to_json())),
     )
-    return "//" + native.package_name() + ":" + name
+    return normalize_target(":" + name)
 
 shape = struct(
     shape = _define_shape,
