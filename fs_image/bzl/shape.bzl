@@ -98,11 +98,6 @@ load(":structs.bzl", "structs")
 
 _NO_DEFAULT = object()
 
-__type_i = iter(range(10000))
-
-def _next_type():
-    return "t" + str(next(__type_i))
-
 def _is_type(x):
     return type(x) == type
 
@@ -165,10 +160,15 @@ def _to_field(field_or_type, **field_kwargs):
 def _define_shape(**fields):
     # expand top-level shape definitions as direct struct fields, so that they
     # don't need to be defined as standalone variables
-    # top_level_shape_fields = {key: val for key, val in fields.items() if _is_shape(val)}
     top_level_shape_fields = {key: val for key, val in fields.items()}
     fields = {key: _to_field(val) for key, val in fields.items()}
-    class_name = _next_type()
+
+    # deterministically name the class based on the shape field names and types
+    # to allow for buck caching and proper starlark runtime compatibility
+    class_name = "_" + sha256_b64(
+        str({key: field.python_type for key, field in fields.items()}),
+    ).replace("-", "_")
+
     python_src = [
         "@dataclass(frozen=True)",
         "class {}(object):".format(class_name),
