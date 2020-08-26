@@ -24,22 +24,20 @@ UNITS = {"tmp-hello.mount", "usr-tag.mount"}
 
 class TestShareGenerator(unittest.TestCase):
     def test_export_spec(self):
-        exportdir, _ = Share.export_spec(TEST_SHARES)
-        with exportdir as exportdirname:
-            with open(os.path.join(exportdirname, "exports")) as f:
+        with Share.export_spec(TEST_SHARES) as share:
+            with open(os.path.join(share.path, "exports")) as f:
                 self.assertEqual(
                     f.read(), "fs0 /tmp/hello\nexplicit_tag /usr/tag\n"
                 )
 
     def test_units(self):
-        exportdir, _ = Share.export_spec(TEST_SHARES)
         with importlib.resources.path(
             __package__, "9p-mount-generator"
-        ) as generator, exportdir as exportdirname, tempfile.TemporaryDirectory() as outdir:
+        ) as generator, Share.export_spec(
+            TEST_SHARES
+        ) as share, tempfile.TemporaryDirectory() as outdir:
             subprocess.run(
-                [generator, outdir],
-                env={"EXPORTS_DIR": exportdirname},
-                check=True,
+                [generator, outdir], env={"EXPORTS_DIR": share.path}, check=True
             )
 
             self.assertEqual(

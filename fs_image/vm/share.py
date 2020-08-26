@@ -6,8 +6,9 @@
 
 import os
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Iterable, Tuple
+from typing import ContextManager, Iterable
 
 
 __next_tag_index = 0
@@ -29,19 +30,16 @@ class Share(object):
     generator: bool = True
 
     @staticmethod
-    def export_spec(
-        shares: Iterable["Share"],
-    ) -> Tuple[tempfile.TemporaryDirectory, "Share"]:
+    @contextmanager
+    def export_spec(shares: Iterable["Share"]) -> ContextManager["Share"]:
         """share a meta-directory that contains all the mount tags and paths to
         mount them, which is then read early in boot by a systemd generator
         this cannot be performed with just the export tags, because encoding the
         full path would frequently make them too long to be valid 9p tags"""
-        exportdir = tempfile.TemporaryDirectory()  # noqa: P201,
-        # this is released by the calling function, and will be cleaned up in
-        # D22879966 with ExitStack
-        with open(os.path.join(exportdir.name, "exports"), "w") as f:
-            for share in shares:
-                if not share.generator:
-                    continue
-                f.write(f"{share.mount_tag} {str(share.path)}\n")
-        return exportdir, Share(exportdir.name, mount_tag="exports")
+        with tempfile.TemporaryDirectory() as exportdir:
+            with open(os.path.join(exportdir, "exports"), "w") as f:
+                for share in shares:
+                    if not share.generator:
+                        continue
+                    f.write(f"{share.mount_tag} {str(share.path)}\n")
+            yield Share(exportdir, mount_tag="exports")

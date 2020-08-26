@@ -13,7 +13,6 @@ python_library(
     deps = [
         ":share",
         "//fs_image/facebook/vm:share_fbcode_runtime",
-        "//fs_image/rpm:common",
     ],
 )
 

@@ -6,14 +6,19 @@
 
 import asyncio
 import importlib.resources
+import logging
 import os.path
 import sys
+import time
 from functools import wraps
 from typing import Iterable, List, Optional
 
 import click
 from fs_image.artifacts_dir import find_repo_root
 from fs_image.vm.vm import kernel_vm
+
+
+logger = logging.getLogger("vmtest")
 
 
 MINUTE = 60
@@ -28,6 +33,15 @@ def async_command(f):
     return wrapper
 
 
+class RelativeTimeFormatter(logging.Formatter):
+    def format(self, record):
+        # this is technically "uptime" from when the logger initializes, but
+        # the vm should be started within milliseconds so it's "good enough"
+        # for relative ordering between python logs and guest kernel logs
+        record.uptime = record.relativeCreated / 1000.0
+        return super().format(record)
+
+
 @click.command(context_settings={"ignore_unknown_options": True})
 @click.option(
     "-q/-e",
@@ -40,13 +54,17 @@ def async_command(f):
     type=int,
     # TestPilot sets this environment variable
     envvar="TIMEOUT",
-    default=10 * MINUTE,
+    default=5 * MINUTE,
     help="how many seconds to wait for the test to finish",
 )
 @click.option(
     "--up-timeout",
     type=int,
-    default=10 * MINUTE,
+    # Give the entire test timeout to boot
+    # Test run also gets the whole timeout, but testpilot will kill vmtest
+    # before that is reached. The internal timeouts exist only to make the
+    # experience better for humans running `buck run`.
+    envvar="TIMEOUT",
     help="how many seconds to wait for vm to boot",
 )
 @click.option(
@@ -90,7 +108,15 @@ async def main(
     ncpus: int,
     args: Iterable[str],
 ) -> None:
+    h = logging.StreamHandler()
+    h.setFormatter(
+        RelativeTimeFormatter(
+            "%(uptime).03f %(levelname)s:%(name)s: %(message)s"
+        )
+    )
+    logging.basicConfig(level=logging.DEBUG, handlers=[h])
     returncode = -1
+    start_time = time.time()
     fbcode = find_repo_root()
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
@@ -129,6 +155,7 @@ async def main(
             up_timeout=up_timeout,
             ncpus=ncpus,
         ) as vm:
+            boot_time_elapsed = time.time() - start_time
             if not interactive:
                 # Automatically execute test only under non-interactive mode.
 
@@ -154,14 +181,22 @@ async def main(
                 test_pilot_env = os.environ.get("TEST_PILOT")
                 if test_pilot_env:
                     test_env["TEST_PILOT"] = test_pilot_env
+                cmd = ["/test"] + list(args)
+                logger.debug(f"executing {cmd} inside guest")
                 returncode, _, _ = await vm.run(
-                    cmd=["/test"] + list(args),
-                    timeout=timeout,
+                    cmd=cmd,
+                    # a certain amount of the total timeout is allocated for
+                    # the host to boot, subtract the amount of time it actually
+                    # took, so that vmtest times out internally before choking
+                    # to TestPilot, which gives the same end result but should
+                    # allow for some slightly better logging opportunities
+                    timeout=timeout - boot_time_elapsed - 1,
                     env=test_env,
                     cwd=fbcode,
                 )
 
                 for path in file_arguments:
+                    logger.debug(f"copying {path} back to the host")
                     # copy any files that were written in the guest back to the
                     # host so that TestPilot can read from where it expects
                     # outputs to end up
