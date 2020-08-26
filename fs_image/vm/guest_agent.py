@@ -7,7 +7,6 @@
 import asyncio
 import base64
 import json
-import logging
 import os
 import random
 import sys
@@ -22,13 +21,7 @@ from typing import (
     Mapping,
     Optional,
     Tuple,
-    Type,
 )
-
-from fs_image.rpm.common import async_retryable
-
-
-logger = logging.getLogger(__name__)
 
 
 class QemuError(Exception):
@@ -36,9 +29,6 @@ class QemuError(Exception):
 
 
 DEFAULT_EXEC_TIMEOUT = timedelta(seconds=60)
-RETRYABLE_CONNECTION_ERRS: Tuple[Type[Exception], ...] = (
-    ConnectionRefusedError,
-)
 STREAM_LIMIT = 2 ** 20  # 1 MB
 
 
@@ -52,22 +42,7 @@ class QemuGuestAgent(object):
     async def _connect(
         self,
     ) -> AsyncContextManager[Tuple[asyncio.StreamReader, asyncio.StreamWriter]]:
-        @async_retryable(
-            format_msg="Guest_agent failed to open connection",
-            # Given that retryable will retry `len(delays)` times, with each
-            # iteration sleeping for its respective index into `delays`, we
-            # retry every 1 second `self.connect_timeout` times to approximate
-            # the timeout specified.
-            delays=[1 for _ in range(self.connect_timeout)],
-            is_exception_retryable=_is_exception_retryable,
-            log_exception=False,
-        )
-        async def open_conn():
-            return await asyncio.open_unix_connection(
-                str(self.path), limit=STREAM_LIMIT
-            )
-
-        r, w = await open_conn()
+        r, w = await asyncio.open_unix_connection(self.path, limit=STREAM_LIMIT)
         try:
             sync_id = random.randint(0, sys.maxsize)
             req = {
@@ -210,7 +185,3 @@ class QemuGuestAgent(object):
                 contents += base64.b64decode(read["buf-b64"])
                 if read["eof"]:
                     return contents
-
-
-def _is_exception_retryable(e: Exception) -> bool:
-    return isinstance(e, RETRYABLE_CONNECTION_ERRS)
