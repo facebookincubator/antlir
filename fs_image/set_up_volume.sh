@@ -25,7 +25,16 @@ assert() {
   )
 }
 
+ensure_permissions() {
+  # Explicitly set the image to read/write only by root to prevent potential
+  # leaking of sensitive information to unprivileged users.
+  chown root:root "$image"
+  chmod 0600 "$image"
+}
+
 mount_image() {
+  # Silently patch permissions of existing images.
+  ensure_permissions
   echo "Mounting btrfs $image at $volume"
   # Explicitly set filesystem type to detect shenanigans.
   mount -t btrfs -o loop,discard,nobarrier "$image" "$volume"
@@ -80,6 +89,7 @@ format_image() {
   fi
   resize_image "$min_bytes"
   mkfs.btrfs "$image"
+  ensure_permissions
 }
 
 ensure_mounted() {
