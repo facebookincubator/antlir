@@ -205,8 +205,7 @@ async def __kernel_vm_with_stack(
             logger.warning(
                 "KVM not available - falling back to slower, emulated CPU: "
                 + "see https://our.intern.facebook.com/intern/qa/5312/"
-                + "how-do-i-enable-kvm-on-my-devvm",
-                file=sys.stderr,
+                + "how-do-i-enable-kvm-on-my-devvm"
             )
 
         # this modules directory is mounted by init.sh at boot, to avoid having
