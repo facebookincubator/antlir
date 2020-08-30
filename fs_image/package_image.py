@@ -217,18 +217,23 @@ base images. Specific advantages to this include:
 """
 import argparse
 import os
+import pwd
 import stat
 import subprocess
-from typing import Mapping, NamedTuple
+from typing import Mapping, NamedTuple, Optional
+
+from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from fs_image.nspawn_in_subvol.non_booted import popen_non_booted_nspawn
 
 from .common import check_popen_returncode, init_logging
 from .find_built_subvol import find_built_subvol
-from .fs_utils import Path, create_ro
+from .fs_utils import Path, create_ro, generate_work_dir
 from .subvol_utils import Subvol, SubvolOpts
 
 
 class _Opts(NamedTuple):
     subvol_opts: SubvolOpts
+    build_appliance: Optional[Subvol]
 
 
 class Format:
@@ -327,6 +332,56 @@ class TarballGzipImage(Format, format_name="tar.gz"):
         check_popen_returncode(gz)
 
 
+class CPIOGzipImage(Format, format_name="cpio.gz"):
+    """
+    Packages the subvol as a gzip-compressed cpio.
+    """
+
+    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+        work_dir = generate_work_dir()
+
+        # This command is partly based on the recomendations of
+        # reproducible-builds.org:
+        # https://reproducible-builds.org/docs/archives/
+        # Note that this does *not* create a reproducible archive yet.
+        # For that we need 2 more things:
+        #   - Clearing of the timestamps
+        #   - Setting uid/gid to 0
+        # Those 2 operations mutate the filesystem.  Packaging
+        # should be transparent and not cause mutations, as such
+        # those operations should be added as foreign layers (or
+        # something similar) that mutates the filesystem being
+        # packaged *before* reaching this point.
+        create_archive_cmd = [
+            "/bin/bash",
+            "-c",
+            "set -ue -o pipefail;" f"pushd {work_dir} >/dev/null;"
+            # List all the files except sockets since cpio doesn't
+            # support them and they don't really mean much outside
+            # the context of the process that is using it.
+            "(set -ue -o pipefail; /bin/find . -mindepth 1 ! -type s | "
+            # Use LANG=C to avoid any surprises that locale might cause
+            "LANG=C /bin/sort | "
+            # Create the archive with bsdtar
+            "LANG=C /bin/bsdtar --create --format=newc "
+            "  --files-from - --file - |"
+            # And finally compress it
+            "/bin/gzip --stdout)",
+        ]
+
+        opts = new_nspawn_opts(
+            cmd=create_archive_cmd,
+            layer=opts.build_appliance,
+            bindmount_rw=[(subvol.path(), work_dir)],
+            user=pwd.getpwnam("root"),
+        )
+
+        with create_ro(output_path, "wb") as outfile, popen_non_booted_nspawn(
+            opts, PopenArgs(stdout=outfile)
+        ):
+            pass
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -382,6 +437,9 @@ def parse_args(argv):
         default=False,
         help="By default, we do not apply time-costly efforts to minimize the"
         " size of loopback image",
+    )
+    parser.add_argument(
+        "--build-appliance", help="Build appliance layer to use when packaging"
     )
     # Future: To add support for incremental send-streams, we'd want to
     # use this (see `--ancestor-jsons` in `image_package.bzl`)
@@ -439,7 +497,10 @@ def package_image(argv):
                 readonly=not args.writable_subvolume,
                 seed_device=args.seed_device,
                 multi_pass_size_minimization=args.multi_pass_size_minimization,
-            )
+            ),
+            build_appliance=find_built_subvol(args.build_appliance)
+            if args.build_appliance
+            else None,
         ),
     )
     # Paranoia: images are read-only after being built

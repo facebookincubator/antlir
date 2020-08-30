@@ -758,6 +758,8 @@ image.layer(
     ],
 )
 
+image.package(name = "create_ops.cpio.gz")
+
 replace_defaults_by_test_snapshot = [
     install_rpm_repo_snapshot("//fs_image/rpm:repo-snapshot-for-tests"),
     default_rpm_repo_snapshot_for(
