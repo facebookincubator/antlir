@@ -5,6 +5,7 @@ files, as described by the specified `format`.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
+load(":constants.bzl", "DEFAULT_BUILD_APPLIANCE", "DO_NOT_USE_BUILD_APPLIANCE")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 
@@ -26,12 +27,15 @@ def image_package(
         writable_subvolume = False,
         seed_device = False,
         # See comments in `oss_shim.bzl`
-        fs_image_internal_rule = False):
+        fs_image_internal_rule = False,
+        # Build appliance to use when creating packages
+        build_appliance = DEFAULT_BUILD_APPLIANCE):
     visibility = get_visibility(visibility, name)
 
     local_layer_rule, format = paths.split_extension(name)
     compound_format_specifiers = (
         ".sendstream.zst",
+        ".cpio.gz",
         ".tar.gz",
     )
     for compound_fmt in compound_format_specifiers:
@@ -72,12 +76,16 @@ def image_package(
               --layer-path $(query_outputs {layer}) \
               --format {format} \
               --output-path "$OUT" \
+              {maybe_build_appliance} \
               {rw} \
               {seed} \
               {multi_pass_size_minimization}
             '''.format(
                 format = format,
                 layer = layer,
+                maybe_build_appliance = "--build-appliance $(query_outputs {})".format(
+                    build_appliance,
+                ) if build_appliance != DO_NOT_USE_BUILD_APPLIANCE else "",
                 rw = "--writable-subvolume" if writable_subvolume else "",
                 seed = "--seed-device" if seed_device else "",
                 multi_pass_size_minimization = "" if ARTIFACTS_REQUIRE_REPO else "--multi-pass-size-minimization",

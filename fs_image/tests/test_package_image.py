@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import pwd
 import stat
 import subprocess
 import sys
@@ -17,6 +18,10 @@ from fs_image.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_gnu_tar,
 )
 from fs_image.btrfs_diff.tests.render_subvols import pop_path, render_sendstream
+from fs_image.fs_utils import generate_work_dir, open_for_read_decompress
+from fs_image.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from fs_image.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from fs_image.tests.layer_resource import layer_resource, layer_resource_subvol
 
 from ..find_built_subvol import subvolumes_dir
 from ..package_image import Format, package_image
@@ -57,6 +62,8 @@ class PackageImageTestCase(unittest.TestCase):
             out_path = os.path.join(td, format)
             package_image(
                 [
+                    "--build-appliance",
+                    layer_resource(__package__, "build-appliance"),
                     "--subvolumes-dir",
                     self.subvolumes_dir,
                     "--layer-path",
@@ -336,6 +343,64 @@ class PackageImageTestCase(unittest.TestCase):
                 ["(File d16384h16384d16384)"],
             )
             original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
+            self.assertEqual(
+                original_render, _render_sendstream_path(temp_sendstream.name)
+            )
+
+    def test_package_image_as_cpio(self):
+        with self._package_image(
+            self._sibling_path("create_ops.layer"), "cpio.gz"
+        ) as pkg_path, TempSubvolumes(
+            sys.argv[0]
+        ) as temp_subvolumes, tempfile.NamedTemporaryFile() as temp_sendstream:
+
+            extract_sv = temp_subvolumes.create("extract")
+            work_dir = generate_work_dir()
+
+            opts = new_nspawn_opts(
+                cmd=[
+                    "/bin/bash",
+                    "-c",
+                    "set -ue -o pipefail;" f"pushd {work_dir} >/dev/null;"
+                    # -S to properly handle sparse files on extract
+                    "/bin/bsdtar --file - --extract -S;",
+                ],
+                layer=layer_resource_subvol(__package__, "build-appliance"),
+                bindmount_rw=[(extract_sv.path(), work_dir)],
+                user=pwd.getpwnam("root"),
+                allow_mknod=True,  # cpio archives support device files
+            )
+
+            with open_for_read_decompress(pkg_path) as r:
+                run_non_booted_nspawn(opts, PopenArgs(stdin=r))
+
+            with extract_sv.mark_readonly_and_write_sendstream_to_file(
+                temp_sendstream
+            ):
+                pass
+
+            original_render = _render_sendstream_path(
+                self._sibling_path("create_ops-original.sendstream")
+            )
+
+            # CPIO does not preserve the original's cloned extents, there's
+            # really not much point in validating these so we'll just
+            # set them to what they should be.
+            original_render[1]["56KB_nuls"] = ["(File h57344)"]
+            original_render[1]["56KB_nuls_clone"] = ["(File h57344)"]
+            original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
+
+            # Our CPIO archive detatches hardlinks so that when it is
+            # unpacked each hardlinked file becomes unique and special.
+            original_render[1]["goodbye"] = ["(File)"]
+            original_render[1]["hello"][1] = {"world": ["(File)"]}
+
+            # CPIO does not support xattrs
+            original_render[1]["hello"][0] = "(Dir)"
+
+            # CPIO does not support unix sockets
+            original_render[1].pop("unix_sock")
+
             self.assertEqual(
                 original_render, _render_sendstream_path(temp_sendstream.name)
             )

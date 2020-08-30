@@ -1,3 +1,4 @@
+load("//fs_image/bzl:constants.bzl", "DEFAULT_BUILD_APPLIANCE")
 load("//fs_image/bzl:layer_resource.bzl", "layer_resource")
 load("//fs_image/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest")
 load("//fs_image/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -335,6 +336,9 @@ python_binary(
     deps = [
         ":find_built_subvol",
         ":subvol_utils",
+        ":testlib_temp_subvolumes",
+        "//fs_image/nspawn_in_subvol:args",
+        "//fs_image/nspawn_in_subvol:non_booted",
     ],
 )
 
@@ -352,14 +356,19 @@ python_unittest(
         TEST_IMAGE_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
         TEST_IMAGE_PREFIX + "create_ops": "tests/create_ops.layer",
         TEST_IMAGE_PREFIX + "create_ops-layer-via-tarball-package": "tests/create_ops-layer-via-tarball-package",
+        layer_resource(DEFAULT_BUILD_APPLIANCE): "tests/build-appliance",
     },
     deps = [
         ":find_built_subvol",
+        ":fs_utils",
         ":package-image-library",
+        ":testlib_layer_resource",
         ":testlib_temp_subvolumes",
         ":unshare",
         "//fs_image/btrfs_diff:testlib_demo_sendstreams",
         "//fs_image/btrfs_diff:testlib_render_subvols",
+        "//fs_image/nspawn_in_subvol:args",
+        "//fs_image/nspawn_in_subvol:non_booted",
     ],
 )
 
