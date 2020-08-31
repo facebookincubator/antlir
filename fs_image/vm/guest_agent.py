@@ -86,17 +86,14 @@ class QemuGuestAgent(object):
             raise QemuError(res["error"])
         return res["return"]
 
-    async def exec_sync(
-        self, *args, pipe_output=False, **kwargs
-    ) -> Tuple[int, str, str]:
-        return await self.run(*args, pipe_output=pipe_output, **kwargs)
+    async def exec_sync(self, *args, **kwargs) -> Tuple[int, str, str]:
+        return await self.run(*args, **kwargs)
 
     async def run(
         self,
         cmd: Iterable[str],
         timeout: timedelta = DEFAULT_EXEC_TIMEOUT,
         env: Optional[Mapping[str, str]] = None,
-        pipe_output: bool = True,
         cwd: Optional[os.PathLike] = None,
     ) -> Tuple[int, str, str]:
         """run a command inside the vm and optionally pipe stdout/stderr to the
@@ -134,32 +131,20 @@ class QemuGuestAgent(object):
                 w,
             )
             pid = pid["pid"]
-            stdout_printed = 0
-            stderr_printed = 0
             while True:
                 status = await self._call(
                     {"execute": "guest-exec-status", "arguments": {"pid": pid}},
                     r,
                     w,
                 )
-                stdout = base64.b64decode(status.get("out-data", b"")).decode(
-                    "utf-8"
-                )
-                stderr = base64.b64decode(status.get("err-data", b"")).decode(
-                    "utf-8"
-                )
-                if pipe_output:
-                    print(stdout[stdout_printed:], end="", flush=True)
-                    print(
-                        stderr[stderr_printed:],
-                        end="",
-                        flush=True,
-                        file=sys.stderr,
-                    )
-                stdout_printed = len(stdout)
-                stderr_printed = len(stderr)
-
+                # output is only made available when the process exits
                 if status["exited"]:
+                    stdout = base64.b64decode(
+                        status.get("out-data", b"")
+                    ).decode("utf-8")
+                    stderr = base64.b64decode(
+                        status.get("err-data", b"")
+                    ).decode("utf-8")
                     return status["exitcode"], stdout, stderr
                 await asyncio.sleep(0.1)
 

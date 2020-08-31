@@ -171,7 +171,7 @@ async def main(
                     test_env["TEST_PILOT"] = test_pilot_env
                 cmd = ["/test"] + list(args)
                 logger.debug(f"executing {cmd} inside guest")
-                returncode, _, _ = await vm.run(
+                returncode, stdout, stderr = await vm.run(
                     cmd=cmd,
                     # a certain amount of the total timeout is allocated for
                     # the host to boot, subtract the amount of time it actually
@@ -182,6 +182,8 @@ async def main(
                     env=test_env,
                     cwd=fbcode,
                 )
+                print(stdout, end="")
+                print(stderr, end="", file=sys.stderr)
 
                 for path in file_arguments:
                     logger.debug(f"copying {path} back to the host")
