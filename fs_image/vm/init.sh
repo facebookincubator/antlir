@@ -7,9 +7,6 @@
 set -e
 set -x
 
-mkdir /proc
-mkdir /sys
-
 mount -t proc none /proc
 mount -t sysfs none /sys
 
@@ -22,7 +19,6 @@ fi
 mdev -s
 
 NEWROOT="/newroot"
-mkdir "$NEWROOT"
 
 mount -o subvol=volume -t btrfs /dev/vda "$NEWROOT"
 
