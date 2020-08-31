@@ -6,6 +6,7 @@
 
 import asyncio
 import importlib.resources
+import io
 import logging
 import os.path
 import sys
@@ -40,6 +41,14 @@ class RelativeTimeFormatter(logging.Formatter):
         # for relative ordering between python logs and guest kernel logs
         record.uptime = record.relativeCreated / 1000.0
         return super().format(record)
+
+
+def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
+    blocking = os.get_blocking(file.fileno())
+    os.set_blocking(file.fileno(), True)
+    print(*args, file=file, **kwargs)
+    # reset to the old blocking mode
+    os.set_blocking(file.fileno(), blocking)
 
 
 @click.command(context_settings={"ignore_unknown_options": True})
@@ -182,8 +191,13 @@ async def main(
                     env=test_env,
                     cwd=fbcode,
                 )
-                print(stdout, end="")
-                print(stderr, end="", file=sys.stderr)
+                # Some tests have incredibly large amounts of output, which
+                # results in a BlockingIOError when stdout/err are in
+                # non-blocking mode. Just force it to print the output in
+                # blocking mode to avoid that - we don't really care how long
+                # it ends up blocked as long as it eventually gets written.
+                blocking_print(stdout.decode("utf-8"), end="")
+                blocking_print(stderr.decode("utf-8"), file=sys.stderr, end="")
 
                 for path in file_arguments:
                     logger.debug(f"copying {path} back to the host")

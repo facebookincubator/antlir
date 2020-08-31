@@ -95,7 +95,7 @@ class QemuGuestAgent(object):
         timeout: timedelta = DEFAULT_EXEC_TIMEOUT,
         env: Optional[Mapping[str, str]] = None,
         cwd: Optional[os.PathLike] = None,
-    ) -> Tuple[int, str, str]:
+    ) -> Tuple[int, bytes, bytes]:
         """run a command inside the vm and optionally pipe stdout/stderr to the
         parent
         """
@@ -139,12 +139,8 @@ class QemuGuestAgent(object):
                 )
                 # output is only made available when the process exits
                 if status["exited"]:
-                    stdout = base64.b64decode(
-                        status.get("out-data", b"")
-                    ).decode("utf-8")
-                    stderr = base64.b64decode(
-                        status.get("err-data", b"")
-                    ).decode("utf-8")
+                    stdout = base64.b64decode(status.get("out-data", b""))
+                    stderr = base64.b64decode(status.get("err-data", b""))
                     return status["exitcode"], stdout, stderr
                 await asyncio.sleep(0.1)
 
