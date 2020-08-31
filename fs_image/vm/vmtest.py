@@ -58,16 +58,6 @@ class RelativeTimeFormatter(logging.Formatter):
     help="how many seconds to wait for the test to finish",
 )
 @click.option(
-    "--up-timeout",
-    type=int,
-    # Give the entire test timeout to boot
-    # Test run also gets the whole timeout, but testpilot will kill vmtest
-    # before that is reached. The internal timeouts exist only to make the
-    # experience better for humans running `buck run`.
-    envvar="TIMEOUT",
-    help="how many seconds to wait for vm to boot",
-)
-@click.option(
     "--setenv",
     type=str,
     multiple=True,
@@ -98,7 +88,6 @@ class RelativeTimeFormatter(logging.Formatter):
 async def main(
     quiet: bool,
     timeout: int,
-    up_timeout: int,
     setenv: List[str],
     test_type: str,
     sync_file: List[str],
@@ -152,7 +141,6 @@ async def main(
             fbcode=fbcode,
             verbose=not quiet,
             interactive=interactive,
-            up_timeout=up_timeout,
             ncpus=ncpus,
         ) as vm:
             boot_time_elapsed = time.time() - start_time

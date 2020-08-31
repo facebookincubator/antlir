@@ -28,6 +28,7 @@ class QemuError(Exception):
     pass
 
 
+DEFAULT_CONNECT_TIMEOUT = timedelta(seconds=1)
 DEFAULT_EXEC_TIMEOUT = timedelta(seconds=60)
 STREAM_LIMIT = 2 ** 20  # 1 MB
 
@@ -36,7 +37,7 @@ STREAM_LIMIT = 2 ** 20  # 1 MB
 class QemuGuestAgent(object):
 
     path: os.PathLike
-    connect_timeout: int
+    connect_timeout: int = DEFAULT_CONNECT_TIMEOUT
 
     @asynccontextmanager
     async def _connect(

@@ -95,7 +95,6 @@ async def __kernel_vm_with_stack(
     interactive: bool = False,
     shares: Optional[Iterable[Share]] = None,
     dry_run: Optional[bool] = False,
-    up_timeout: Optional[int] = 2 * 60,
     ncpus: Optional[int] = 1,
 ):
     # we don't actually want to create files for the socket paths
@@ -242,17 +241,10 @@ async def __kernel_vm_with_stack(
                 stderr=subprocess.STDOUT,
             )
 
-        try:
-            await asyncio.wait_for(
-                __wait_for_boot(notify_sockfile), timeout=up_timeout
-            )
-        except asyncio.TimeoutError:
-            proc.terminate()
-            await proc.wait()
-            raise QemuError(f"guest failed to boot before {up_timeout}s")
+        await __wait_for_boot(notify_sockfile)
 
         try:
-            yield QemuGuestAgent(guest_agent_sockfile, up_timeout)
+            yield QemuGuestAgent(guest_agent_sockfile)
         except QemuError as err:
             print(f"Qemu failed with error: {err}", flush=True, file=sys.stderr)
         finally:
