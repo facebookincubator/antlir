@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import subprocess
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -29,6 +30,29 @@ class Share(object):
     mount_tag: str = field(default_factory=_next_tag)
     generator: bool = True
 
+    @property
+    def __mount_unit_name(self) -> str:
+        return subprocess.run(
+            ["systemd-escape", "--suffix=mount", "--path", self.path],
+            text=True,
+            capture_output=True,
+            check=True,
+        ).stdout.strip()
+
+    @property
+    def __mount_unit(self) -> str:
+        return f"""[Unit]
+Requires=systemd-modules-load.service
+After=systemd-modules-load.service
+Before=local-fs.target
+
+[Mount]
+What={self.mount_tag}
+Where={str(self.path)}
+Type=9p
+Options=version=9p2000.L,posixacl,cache=loose,ro
+"""
+
     @staticmethod
     @contextmanager
     def export_spec(shares: Iterable["Share"]) -> ContextManager["Share"]:
@@ -37,9 +61,10 @@ class Share(object):
         this cannot be performed with just the export tags, because encoding the
         full path would frequently make them too long to be valid 9p tags"""
         with tempfile.TemporaryDirectory() as exportdir:
-            with open(os.path.join(exportdir, "exports"), "w") as f:
-                for share in shares:
-                    if not share.generator:
-                        continue
-                    f.write(f"{share.mount_tag} {str(share.path)}\n")
+            for share in shares:
+                if not share.generator:
+                    continue
+                unit_path = os.path.join(exportdir, share.__mount_unit_name)
+                with open(unit_path, "w") as f:
+                    f.write(share.__mount_unit)
             yield Share(exportdir, mount_tag="exports")

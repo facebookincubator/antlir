@@ -23,15 +23,15 @@ python_library(
 )
 
 export_file(
-    name = "9p-mount-generator",
-    src = "9p-mount-generator",
+    name = "mount-generator",
+    src = "mount-generator",
 )
 
 python_unittest(
     name = "test-share-generator",
     srcs = ["test_share_generator.py"],
     resources = {
-        ":9p-mount-generator": "9p-mount-generator",
+        ":mount-generator": "mount-generator",
     },
     deps = [":share"],
 )
