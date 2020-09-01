@@ -115,7 +115,9 @@ class RepoSnapshot(NamedTuple):
         "error": "TEXT",
         "error_json": "TEXT",
         "size": "INTEGER NOT NULL",
-        "source_rpm": "TEXT NOT NULL",
+        # Repos can also contain source RPMs, for which this is NULL.
+        # `repodata_downloader.py` checks that only `.src.rpm`s do this.
+        "source_rpm": "TEXT",
         "storage_id": "TEXT",
     }
 
