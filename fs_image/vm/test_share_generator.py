@@ -23,16 +23,9 @@ UNITS = {"tmp-hello.mount", "usr-tag.mount"}
 
 
 class TestShareGenerator(unittest.TestCase):
-    def test_export_spec(self):
-        with Share.export_spec(TEST_SHARES) as share:
-            with open(os.path.join(share.path, "exports")) as f:
-                self.assertEqual(
-                    f.read(), "fs0 /tmp/hello\nexplicit_tag /usr/tag\n"
-                )
-
     def test_units(self):
         with importlib.resources.path(
-            __package__, "9p-mount-generator"
+            __package__, "mount-generator"
         ) as generator, Share.export_spec(
             TEST_SHARES
         ) as share, tempfile.TemporaryDirectory() as outdir:
@@ -52,7 +45,6 @@ class TestShareGenerator(unittest.TestCase):
 Requires=systemd-modules-load.service
 After=systemd-modules-load.service
 Before=local-fs.target
-RequiredBy=local-fs.target
 
 [Mount]
 What=explicit_tag
