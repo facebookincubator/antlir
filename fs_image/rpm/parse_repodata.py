@@ -130,7 +130,7 @@ class SQLiteRpmParser(AbstractContextManager):
                     canonical_checksum=None,
                     checksum=Checksum(algorithm=chk_type, hexdigest=chk_val),
                     location=location,
-                    source_rpm=source_rpm,
+                    source_rpm=source_rpm or None,
                     size=size,
                 )
 
@@ -250,7 +250,7 @@ class XMLRpmParser(AbstractContextManager):
                 elif m.group(2) == self._SIZE:
                     self._package[self._SIZE] = elt.attrib["package"]
                 elif m.group(2) == self._SOURCE_RPM:
-                    self._package[self._SOURCE_RPM] = elt.text
+                    self._package[self._SOURCE_RPM] = elt.text or None
                 elif m.group(2) == self._TIME:
                     self._package[self._TIME] = elt.attrib["build"]
 

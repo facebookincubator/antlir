@@ -108,7 +108,7 @@ def _download_repodata(
             # future runs don't need to redownload it
             outfile = cm.enter_context(storage.writer())
 
-        log.info(f"Fetching {repodata}")
+        log.info(f"Fetching {repodata} from {repo_url}")
         for chunk in verify_chunk_stream(
             read_chunks(infile, BUFFER_BYTES),
             [repodata.checksum],
@@ -123,6 +123,15 @@ def _download_repodata(
                     rpms.extend(rpm_parser.feed(chunk))
                 except Exception as ex:
                     raise RepodataParseError((repodata.location, ex))
+        # We consider `source_rpm` mandatory, since it's the best source of
+        # RPM grouping information that we have available.
+        if rpms:
+            no_source_rpm = [
+                r
+                for r in rpms
+                if r.source_rpm is None and not r.location.endswith(".src.rpm")
+            ]
+            assert not no_source_rpm, f"Empty source_rpm: {no_source_rpm}"
         # Must commit the output context to get a storage_id.
         if outfile:
             return DownloadRepodataReturnType(
