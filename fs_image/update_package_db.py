@@ -9,9 +9,9 @@
 # -- refer to its docblock for usage.
 """
 This CLI helps maintain package databases used by the Buck macro functions
-`fetched_package_layers_from_{bzl,json_dir}_db` to expose externally
-fetched packages as `image.layer` targets.  Read the documentation in
-`fetched_package_layer.bzl` for more details.
+`fetched_package_layers_from_json_dir_db` to expose externally fetched packages
+as `image.layer` targets.  Read the documentation in `fetched_package_layer.bzl`
+for more details.
 
 You will typically not run this manually, except to register a new package.
 For that usage, refer to the instructions in the TARGETS file of the project
@@ -29,7 +29,6 @@ Pay careful attention to the description of their `OPTIONS` parameter.
 
 """
 import argparse
-import ast
 import copy
 import hashlib
 import json
@@ -37,17 +36,11 @@ import os
 from typing import Callable, List, Mapping, Tuple
 
 from .common import get_file_logger, init_logging
-from .fs_utils import (
-    Path,
-    populate_temp_dir_and_rename,
-    populate_temp_file_and_rename,
-)
+from .fs_utils import Path, populate_temp_dir_and_rename
 
 
 _GENERATED = "@" + "generated"
 _JSON = ".json"
-_BZL_DB_PREFIX = "package_db = "
-_INDENT_SPACES = 4
 
 log = get_file_logger(__file__)
 
@@ -115,50 +108,6 @@ def _with_generated_header(contents, how_to_generate):
     )
 
 
-# TARGETS auto-formatting requires double-quotes and trailing commas, so we
-# need our own serializer :/ -- `repr` or JSON won't do.
-def _buildifier_repr(x, depth=0, *, is_inline=False):
-    indent = " " * _INDENT_SPACES * depth
-    first_indent = "" if is_inline else indent
-    if isinstance(x, str):
-        return first_indent + (
-            '"'
-            + x.encode("unicode_escape").decode("ascii").replace('"', '\\"')
-            + '"'
-        )
-    elif isinstance(x, bool):
-        return first_indent + str(x)
-    elif isinstance(x, dict):
-        return (
-            first_indent
-            + "{\n"
-            + ",\n".join(
-                (
-                    _buildifier_repr(k, depth + 1)
-                    + ": "
-                    + _buildifier_repr(v, depth + 1, is_inline=True).lstrip(" ")
-                )
-                for k, v in sorted(x.items())
-            )
-            + (",\n" if x else "")
-            + indent
-            + "}"
-        )
-
-
-def _write_bzl_db(db: PackageTagDb, path: Path, how_to_generate: str):
-    # NB: This will fail to replace a directory, preventing us from
-    # transparently converting JSON to BZL databases without using
-    # `--out-db`.  This is fine since the DB paths should look different
-    # anyhow (`dirname` vs `filename.bzl`).
-    with populate_temp_file_and_rename(path, overwrite=True) as outfile:
-        outfile.write(
-            _with_generated_header(
-                _BZL_DB_PREFIX + _buildifier_repr(db) + "\n", how_to_generate
-            )
-        )
-
-
 def _write_json_dir_db(db: PackageTagDb, path: Path, how_to_generate: str):
     with populate_temp_dir_and_rename(path, overwrite=True) as td:
         for package, tag_to_info in db.items():
@@ -173,23 +122,12 @@ def _write_json_dir_db(db: PackageTagDb, path: Path, how_to_generate: str):
                     )
 
 
-_FORMAT_NAME_TO_WRITER = {"bzl": _write_bzl_db, "json-dir": _write_json_dir_db}
-
-
 def _read_generated_header(infile):
     generated_header = infile.readline()
     # Note: We don't verify the signature verification on read, since it's
     # only point is to be checked by lint (doc on `_with_generated_header`).
     assert _GENERATED in generated_header, generated_header
     infile.readline()  # Our header is 2 lines, the second one is ignored
-
-
-def _read_bzl_db(path: Path) -> PackageTagDb:
-    with open(path) as infile:
-        _read_generated_header(infile)
-        db_str = infile.read()
-    assert db_str.startswith(_BZL_DB_PREFIX)
-    return ast.literal_eval(db_str[len(_BZL_DB_PREFIX) :])
 
 
 def _read_json_dir_db(path: Path) -> PackageTagDb:
@@ -205,18 +143,6 @@ def _read_json_dir_db(path: Path) -> PackageTagDb:
     return db
 
 
-def _read_db_and_get_writer(
-    path: Path,
-) -> Tuple[PackageTagDb, Callable[[PackageTagDb, str], None]]:
-    # We don't need very fancy autodetection at present, and I don't
-    # anticipate adding more DB formats soon.
-    if os.path.isfile(path):
-        return _read_bzl_db(path), _write_bzl_db
-    elif os.path.isdir(path):
-        return _read_json_dir_db(path), _write_json_dir_db
-    raise RuntimeError(f"Bad path {path}")  # pragma: no cover
-
-
 def _get_updated_db(
     *,
     existing_db: PackageTagDb,
@@ -225,7 +151,6 @@ def _get_updated_db(
     replace_items: ExplicitUpdates,
     get_db_info_fn: GetDbInfoFn,
 ) -> PackageTagDb:
-
     # The `updates` map tells us the packages, for which we have to fetch
     # new DB entries.
     updates = (
@@ -305,12 +230,6 @@ def _parse_args(argv, *, overview_doc, options_doc):
         help="Path for the updated database (defaults to `--db`)",
     )
     parser.add_argument(
-        "--out-format",
-        choices=set(_FORMAT_NAME_TO_WRITER.keys()),
-        help="Which database format to write? (defaults to the auto-detected "
-        "input format)",
-    )
-    parser.add_argument(
         "--no-update-existing",
         action="store_false",
         dest="update_existing",
@@ -371,16 +290,10 @@ def main(
     """
     args = _parse_args(argv, overview_doc=overview_doc, options_doc=options_doc)
     init_logging(debug=args.debug)
-    db, write_db_in_same_format = _read_db_and_get_writer(args.db)
-    write_db = (
-        _FORMAT_NAME_TO_WRITER[args.out_format]
-        if args.out_format
-        else write_db_in_same_format
-    )
     with get_db_info_factory as get_db_info_fn:
-        write_db(
+        _write_json_dir_db(
             _get_updated_db(
-                existing_db=db,
+                existing_db=_read_json_dir_db(args.db),
                 update_existing=args.update_existing,
                 create_items=_parse_updates("create", args.create),
                 replace_items=_parse_updates("replace", args.replace),
