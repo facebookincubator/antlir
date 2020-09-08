@@ -114,7 +114,7 @@ module.exports = {
           homePageId: 'introduction',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: FBInternalWithOssFallback(
-            'https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/docs/website',
+            'https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/antlir/docs/website',
             'https://github.com/facebookincubator/antlir/edit/master/website/',
           ),
         },

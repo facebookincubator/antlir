@@ -1,0 +1,84 @@
+load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
+
+python_library(
+    name = "common",
+    srcs = ["common.py"],
+    deps = [
+        "//antlir:common",
+        "//antlir/rpm:common",
+        "//antlir/rpm:db_connection",
+        "//antlir/rpm:open_url",
+        "//antlir/rpm:repo_db",
+        "//antlir/rpm:repo_objects",
+        "//antlir/rpm:repo_sizer",
+        "//antlir/rpm:repo_snapshot",
+        "//antlir/rpm:yum_dnf_conf",
+        "//antlir/rpm/storage:storage",
+    ],
+)
+
+python_library(
+    name = "deleted_mutable_rpms",
+    srcs = ["deleted_mutable_rpms.py"],
+    deps = ["//antlir/rpm/downloader/facebook:deleted_mutable_rpms"],
+)
+
+python_library(
+    name = "repomd_downloader",
+    srcs = ["repomd_downloader.py"],
+    deps = [":common"],
+)
+
+python_library(
+    name = "repodata_downloader",
+    srcs = ["repodata_downloader.py"],
+    deps = [
+        ":common",
+        "//antlir/rpm:parse_repodata",
+    ],
+)
+
+python_library(
+    name = "rpm_downloader",
+    srcs = ["rpm_downloader.py"],
+    deps = [
+        ":common",
+        ":deleted_mutable_rpms",
+        ":logger",
+    ],
+)
+
+python_library(
+    name = "repo_downloader",
+    srcs = ["repo_downloader.py"],
+    deps = [
+        ":repodata_downloader",
+        ":repomd_downloader",
+        ":rpm_downloader",
+    ],
+)
+
+python_library(
+    name = "logger",
+    srcs = ["logger.py"],
+    deps = [
+        "//antlir/rpm/downloader/facebook:logger",
+    ],
+)
+
+python_unittest(
+    name = "test-repo-downloader",
+    srcs = ["tests/test_repo_downloader.py"],
+    needed_coverage = [
+        (100, ":repo_downloader"),
+        (100, ":repodata_downloader"),
+        (100, ":repomd_downloader"),
+        (100, ":rpm_downloader"),
+        (100, ":logger"),
+        (100, "//antlir/rpm/downloader/facebook:logger"),
+    ],
+    deps = [
+        ":repo_downloader",
+        "//antlir/rpm:temp_repos",
+    ],
+)

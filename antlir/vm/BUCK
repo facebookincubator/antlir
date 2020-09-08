@@ -1,0 +1,58 @@
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_library", "python_unittest", "third_party")
+
+python_library(
+    name = "vm",
+    srcs = [
+        "guest_agent.py",
+        "vm.py",
+    ],
+    resources = {
+        third_party.library("qemu"): "qemu",
+        "//antlir/facebook/vm:qemu_bioses": "qemu_bioses",
+    },
+    deps = [
+        ":share",
+        "//antlir/facebook/vm:share_fbcode_runtime",
+    ],
+)
+
+# defines the `Share` dataclass for vm
+python_library(
+    name = "share",
+    srcs = ["share.py"],
+    deps = ["//antlir:fs_utils"],
+)
+
+export_file(
+    name = "mount-generator",
+    src = "mount-generator",
+)
+
+python_unittest(
+    name = "test-share-generator",
+    srcs = ["test_share_generator.py"],
+    resources = {
+        ":mount-generator": "mount-generator",
+    },
+    deps = [":share"],
+)
+
+export_file(
+    name = "init.sh",
+    src = "init.sh",
+)
+
+python_library(
+    # @autodeps-skip
+    name = "vmtest",
+    srcs = [
+        "vmtest.py",
+    ],
+    deps = [
+        third_party.library(
+            "click",
+            platform = "python",
+        ),
+        "//antlir:artifacts_dir",
+    ],
+)

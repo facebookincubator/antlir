@@ -1,0 +1,494 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
+load("//antlir/bzl:layer_resource.bzl", "layer_resource")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
+load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+load(":defs.bzl", "test_rpm_repo_snapshot")
+
+python_library(
+    name = "pluggable",
+    srcs = ["pluggable.py"],
+)
+
+python_library(
+    name = "common",
+    srcs = ["common.py"],
+    deps = [
+        ":yum_dnf_conf",
+        "//antlir:common",
+    ],
+)
+
+python_unittest(
+    name = "test-common",
+    srcs = ["tests/test_common.py"],
+    needed_coverage = [(100, ":common")],
+    deps = [
+        ":common",
+        "//antlir:fs_utils",
+    ],
+)
+
+python_library(
+    name = "find_snapshot",
+    srcs = ["find_snapshot.py"],
+    deps = ["//antlir:fs_utils"],
+)
+
+python_unittest(
+    name = "test-find-snapshot",
+    srcs = ["tests/test_find_snapshot.py"],
+    needed_coverage = [(100, ":find_snapshot")],
+)
+
+python_library(
+    name = "open_url",
+    srcs = ["open_url.py"],
+    deps = [
+        third_party.library(
+            "requests",
+            platform = "python",
+        ),
+    ],
+)
+
+python_unittest(
+    name = "test-open-url",
+    srcs = ["tests/test_open_url.py"],
+    needed_coverage = [(100, ":open_url")],
+    deps = [
+        ":open_url",
+        "//antlir:fs_utils",
+    ],
+)
+
+# NB: For Facebook-internal binaries, add `facebook:db_connection` to
+# your `deps`, but import this regular `antlir.rpm.db_connection` module.
+python_library(
+    name = "db_connection",
+    srcs = ["db_connection.py"],
+    deps = [
+        ":pluggable",
+        ":repo_db",
+    ],
+)
+
+python_library(
+    name = "repo_objects",
+    srcs = ["repo_objects.py"],
+    deps = [":common"],
+)
+
+python_library(
+    name = "temp_repos",
+    srcs = ["tests/temp_repos.py"],
+    resources = {
+        third_party.library("busybox", "bin/busybox"): "tests/busybox",
+        layer_resource(REPO_CFG.build_appliance_default): "tests/build-appliance",
+        ":gpg-test-signing-key": "tests/signing_key",
+    },
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir:testlib_layer_resource",
+        "//antlir/compiler/items:common",
+        "//antlir/nspawn_in_subvol:non_booted",
+    ],
+)
+
+python_unittest(
+    name = "test-repo-objects",
+    srcs = ["tests/test_repo_objects.py"],
+    needed_coverage = [
+        (100, ":repo_objects"),
+    ],
+    deps = [
+        ":repo_objects",
+        ":temp_repos",
+    ],
+)
+
+python_library(
+    name = "repo_sizer",
+    srcs = ["repo_sizer.py"],
+    deps = [
+        ":common",
+        ":repo_objects",
+        "//antlir:unionfind",
+    ],
+)
+
+python_unittest(
+    name = "test-repo-sizer",
+    srcs = ["tests/test_repo_sizer.py"],
+    needed_coverage = [
+        (100, ":repo_sizer"),
+    ],
+    deps = [":repo_sizer"],
+)
+
+python_library(
+    name = "parse_repodata",
+    srcs = ["parse_repodata.py"],
+    deps = [":repo_objects"],
+)
+
+python_unittest(
+    name = "test-parse-repodata",
+    srcs = ["tests/test_parse_repodata.py"],
+    needed_coverage = [
+        (100, ":parse_repodata"),
+    ],
+    deps = [
+        ":parse_repodata",
+        ":temp_repos",
+    ],
+)
+
+python_library(
+    name = "repo_snapshot",
+    srcs = ["repo_snapshot.py"],
+    deps = [
+        ":common",
+        ":repo_objects",
+        "//antlir:fs_utils",
+        "//antlir/rpm/storage:storage",
+        "//antlir/rpm/storage/facebook:storage",
+    ],
+)
+
+python_unittest(
+    name = "test-repo-snapshot",
+    srcs = ["tests/test_repo_snapshot.py"],
+    needed_coverage = [
+        (100, ":repo_snapshot"),
+    ],
+    deps = [":repo_snapshot"],
+)
+
+python_library(
+    name = "repo_db",
+    srcs = ["repo_db.py"],
+    deps = [
+        ":repo_objects",
+        "//antlir:common",
+    ],
+)
+
+python_unittest(
+    name = "test-repo-db",
+    srcs = ["tests/test_repo_db.py"],
+    needed_coverage = [
+        (100, ":repo_db"),
+    ],
+    deps = [
+        ":db_connection",
+        ":repo_db",
+    ],
+)
+
+python_library(
+    name = "repo_server",
+    srcs = ["repo_server.py"],
+    deps = [
+        ":common",
+        ":repo_snapshot",
+        "//antlir:fs_utils",
+        "//antlir/rpm/storage:storage",
+        "//antlir/rpm/storage/facebook:storage",
+    ],
+)
+
+python_unittest(
+    name = "test-repo-server",
+    srcs = ["tests/test_repo_server.py"],
+    needed_coverage = [
+        (100, ":repo_server"),
+    ],
+    deps = [
+        ":repo_server",
+        ":temp_repos",
+        third_party.library(
+            "requests",
+            platform = "python",
+        ),
+    ],
+)
+
+python_binary(
+    name = "repo-server",
+    main_module = "antlir.rpm.repo_server",
+    # Some FB-internal storage implementations embed binaries in this PAR
+    par_style = "xar",
+    deps = [":repo_server"],
+)
+
+python_library(
+    name = "common_args",
+    srcs = ["common_args.py"],
+    deps = [
+        ":common",
+        "//antlir:fs_utils",
+        "//antlir/rpm:db_connection",
+        "//antlir/rpm/facebook:db_connection",
+        "//antlir/rpm/storage:storage",
+        "//antlir/rpm/storage/facebook:storage",
+    ],
+)
+
+python_library(
+    name = "gpg_keys",
+    srcs = ["gpg_keys.py"],
+    deps = [
+        ":open_url",
+        "//antlir:fs_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-gpg-keys",
+    srcs = ["tests/test_gpg_keys.py"],
+    needed_coverage = [(100, ":gpg_keys")],
+    deps = [":gpg_keys"],
+)
+
+python_library(
+    name = "snapshot_repo",
+    srcs = ["snapshot_repo.py"],
+    deps = [
+        ":common",
+        ":common_args",
+        ":gpg_keys",
+        ":repo_sizer",
+        ":repo_snapshot",
+        ":yum_dnf_conf",
+        "//antlir:fs_utils",
+        "//antlir/rpm/downloader:common",
+        "//antlir/rpm/downloader:logger",
+        "//antlir/rpm/downloader:repo_downloader",
+        "//antlir/rpm/storage:storage",
+        "//antlir/rpm/storage/facebook:storage",
+    ],
+)
+
+python_binary(
+    name = "snapshot-repo",
+    main_module = "antlir.rpm.snapshot_repo",
+    deps = [":snapshot_repo"],
+)
+
+python_unittest(
+    name = "test-snapshot-repo",
+    srcs = ["tests/test_snapshot_repo.py"],
+    needed_coverage = [
+        (100, ":common_args"),
+        (100, ":snapshot_repo"),
+    ],
+    deps = [
+        ":snapshot_repo",
+        ":temp_repos",
+    ],
+)
+
+python_library(
+    name = "yum_dnf_conf",
+    srcs = ["yum_dnf_conf.py"],
+)
+
+python_unittest(
+    name = "test-yum-dnf-conf",
+    srcs = ["tests/test_yum_dnf_conf.py"],
+    needed_coverage = [
+        (100, ":yum_dnf_conf"),
+    ],
+    deps = [":yum_dnf_conf"],
+)
+
+python_binary(
+    name = "write-yum-dnf-conf",
+    srcs = ["write_yum_dnf_conf.py"],
+    main_module = "antlir.rpm.write_yum_dnf_conf",
+    par_style = "xar",  # To access resources in @mode/opt
+    resources = {
+        "//antlir/rpm/third_party:dnf_versionlock.gz": "dnf_versionlock.gz",
+        "//antlir/rpm/third_party:yum_versionlock.gz": "yum_versionlock.gz",
+    },
+    deps = [
+        ":yum_dnf_conf",
+        "//antlir:fs_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-write-yum-dnf-conf",
+    srcs = ["tests/test_write_yum_dnf_conf.py"],
+    needed_coverage = [
+        (100, ":write-yum-dnf-conf-library"),
+    ],
+    deps = [":write-yum-dnf-conf-library"],
+)
+
+python_binary(
+    name = "yum-dnf-from-snapshot",
+    srcs = ["yum_dnf_from_snapshot.py"],
+    main_module = "antlir.rpm.yum_dnf_from_snapshot",
+    deps = [
+        ":common",
+        ":yum_dnf_conf",
+        "//antlir:fs_utils",
+        "//antlir/nspawn_in_subvol/plugins:shadow_paths",
+    ],
+)
+
+# The static test keys were generated with the following commands:
+#
+# export GNUPGHOME=$(mktemp -d)
+# cat > "$GNUPGHOME/genkeyparams" <<EOF
+#     Key-Type: 1
+#     Key-Length: 2048
+#     Name-Real: Test Key
+#     Name-Email: key@example.com
+#     Expire-Date: 0
+#     %no-protection
+# EOF
+# gpg --batch --gen-key --verbose --debug-all "$GNUPGHOME/genkeyparams"
+# gpg --output private.key --armor --export-secret-key key@example.com
+# gpg --output public.key --armor --export key@example.com
+export_file(
+    name = "gpg-test-keypair",
+    src = "tests/gpg_test_keypair/",
+    # The only other uses of this file are the compiler test images.
+    # Let's keep it limited to just that.
+    visibility = ["//antlir/compiler/test_images/..."],
+)
+
+export_file(
+    name = "gpg-test-signing-key",
+    src = "tests/gpg_test_keypair/private.key",
+    visibility = ["//antlir/bzl/foreign/rpmbuild/..."],
+)
+
+export_file(
+    name = "gpg-test-public-key",
+    src = "tests/gpg_test_keypair/public.key",
+)
+
+python_binary(
+    name = "temp-snapshot",
+    srcs = ["tests/temp_snapshot.py"],
+    main_module = "antlir.rpm.tests.temp_snapshot",
+    deps = [
+        ":db_connection",
+        ":snapshot_repos",
+        ":temp_repos",
+        "//antlir/rpm/downloader:logger",
+        "//antlir/rpm/storage:storage",
+    ],
+)
+
+test_rpm_repo_snapshot(
+    name = "repo-snapshot-for-tests",
+    kind = "sample-step-0",
+    # `test-yum-dnf-from-snapshot` exercises both package managers.
+    # `test-rpm-action-item` also tests both by explicitly setting
+    # `LayerOpts.rpm_installer`.
+    # `test-image-layer` checks `validates-{yum,dnf}-build-appliance`.
+    #
+    # All other RPM installations via one of the few build appliances that
+    # install this snapshot use `REPO_CFG.rpm_installer_default`.
+    rpm_installers = ("dnf", "yum"),
+)
+
+test_rpm_repo_snapshot(
+    name = "non-default-repo-snapshot-for-tests",
+    kind = "non-default",
+    rpm_installers = ("dnf", "yum"),
+)
+
+image_python_unittest(
+    name = "test-yum-dnf-from-snapshot",
+    srcs = ["tests/test_yum_dnf_from_snapshot.py"],
+    # This is necessary because our CI environment does not guarantee that
+    # `/var/lib/dnf` is installed.
+    layer = "//antlir/compiler/test_images:build_appliance_testing",
+    needed_coverage = [
+        (100, ":yum-dnf-from-snapshot-library"),
+    ],
+    run_as_user = "root",  # We run `yum` / `dnf`
+    # NB: It's a little lame that we have to re-identify the snapshot path
+    # in 2 places:
+    #   - The construction of the image.
+    #   - `serve_repo_snapshots` in the unittest declaration.  Future: This
+    #     could be made to accept (a) a magic value for "all", (b) a magic
+    #     value for "default" (per installer? for both?).
+    serve_rpm_snapshots = [":repo-snapshot-for-tests"],
+    deps = [
+        ":find_snapshot",
+        ":yum-dnf-from-snapshot-library",
+    ],
+)
+
+python_library(
+    name = "snapshot_repos",
+    srcs = ["snapshot_repos.py"],
+    deps = [
+        ":common",
+        ":common_args",
+        ":gpg_keys",
+        ":repo_db",
+        ":repo_sizer",
+        ":yum_dnf_conf",
+        "//antlir:fs_utils",
+        "//antlir/rpm/downloader:common",
+        "//antlir/rpm/downloader:logger",
+        "//antlir/rpm/downloader:repo_downloader",
+    ],
+)
+
+python_binary(
+    name = "snapshot-repos",
+    main_module = "antlir.rpm.snapshot_repos",
+    deps = [":snapshot_repos"],
+)
+
+python_unittest(
+    name = "test-snapshot-repos",
+    srcs = ["tests/test_snapshot_repos.py"],
+    needed_coverage = [
+        (100, ":common_args"),
+        (100, ":snapshot_repos"),
+    ],
+    deps = [
+        ":snapshot_repos",
+        ":temp_repos",
+    ],
+)
+
+python_library(
+    name = "rpm_metadata",
+    srcs = ["rpm_metadata.py"],
+    deps = [
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-rpm-metadata",
+    srcs = ["tests/test_rpm_metadata.py"],
+    needed_coverage = [
+        (100, ":rpm_metadata"),
+    ],
+    par_style = "zip",
+    resources = {
+        TEST_IMAGE_PREFIX + "child/layer": "tests/child-layer",
+        TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello-layer",
+        "//antlir/rpm/third_party:version-compare-tests": "version-compare-tests",
+    },
+    deps = [
+        ":common",
+        ":rpm_metadata",
+        ":temp_repos",
+        "//antlir:find_built_subvol",
+    ],
+)

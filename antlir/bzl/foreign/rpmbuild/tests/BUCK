@@ -1,0 +1,91 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "buck_sh_binary", "export_file")
+load("//antlir/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
+
+export_file(name = "rpm_sign_test_functions.sh")
+
+export_file(name = "toy_srcs")
+
+export_file(name = "toy.spec")
+
+# An example of an RPM signer that can sign an RPM with a test key.
+#
+# When signing with an existing key in a gpg agent or keyring, you can omit the
+# `resources` argument below and update the script with the appropriate value
+# for `$GNUPGHOME`, and correct key ID to `rpmsign`.
+# For this use-case (i.e. "existing key in gpg agent or keyring"), a clean
+# approach would involve:
+# - A macro like `def gnupg_key_signer(name, key_id)`.  To minimize odds of
+#   collision, replace `key_id` with `fingerprint` (ideally `sha256_fingerprint`
+#   though it's not immediately obvious if one can force this to be usable
+#   regardless of the setting on the ambient OS).
+# - Internally, the analog of `rpm_sign_with_test_key.sh` would use a
+#   `$GNUPGHOME` available on the ambient OS.
+# - The build is still deterministic because we trust that the identifier
+#   (e.g. fingeprint) we used for the key identifies it uniquely.
+buck_sh_binary(
+    name = "rpm_sign_with_test_key.sh",
+    main = "rpm_sign_with_test_key.sh",
+    resources = [
+        ":rpm_sign_test_functions.sh",
+        "//antlir/rpm:gpg-test-signing-key",
+    ],
+    visibility = ["//antlir/bzl/foreign/rpmbuild/tests/..."],
+)
+
+image_rpmbuild(
+    name = "toy-rpm",
+    serve_rpm_snapshots = ["//antlir/rpm/facebook:fb_centos7"],
+    signer = ":rpm_sign_with_test_key.sh",
+    source = ":toy_srcs",
+    specfile = ":toy.spec",
+)
+
+# Tests that the internals of the `image_rpmbuild` layers are as we expect.
+image.python_unittest(
+    name = "test-toy-rpm-build",
+    srcs = ["test_toy_rpm_build.py"],
+    layer = ":toy-rpm-rpmbuild-build",
+    deps = ["//antlir/rpm:rpm_metadata"],
+)
+
+# Because `toy.rpm` was signed with a test key that isn't pre-installed in the
+# parent_layer, we need to import it before we install the RPM (below).
+image_import_rpm_public_key_layer(
+    name = "install-rpm-pubkey",
+    # We use the default BA here so that we have users and utilities set up
+    # for the unit test below.
+    parent_layer = REPO_CFG.build_appliance_default,
+    pubkeys = [
+        image.source(
+            "//antlir/rpm:gpg-test-public-key",
+        ),
+    ],
+)
+
+# Install a signed RPM via `image.source`.  Installing an unsigned RPM fails.
+image.layer(
+    name = "install-signed-toy-rpm",
+    parent_layer = ":install-rpm-pubkey",
+    features = [
+        image.rpms_install([
+            image.source(
+                ":toy-rpm",
+                path = "toy.rpm",
+            ),
+        ]),
+    ],
+    # The test BA has yum/dnf conf with gpgcheck=1 and localpkg_gpgcheck=1 so
+    # installing an unsigned RPM will fail.
+    build_opts = image.opts(
+        build_appliance = "//antlir/compiler/test_images:build_appliance_testing",
+    ),
+)
+
+# Check the result of installing the RPM we built.
+image.python_unittest(
+    name = "test-install-signed-toy-rpm",
+    srcs = ["test_install_signed_toy_rpm.py"],
+    layer = ":install-signed-toy-rpm",
+)

@@ -3,7 +3,7 @@ id: pyre
 title: Pyre
 ---
 
-We've begun incrementally adopting Pyre into `fs_image/`. The following are some
+We've begun incrementally adopting Pyre into `antlir/`. The following are some
 noteworthy snags of Pyre that we've discovered through this adoption, and
 recommended conventions to handle them.
 

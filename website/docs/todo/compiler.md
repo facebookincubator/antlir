@@ -8,7 +8,7 @@ title: compiler/
 - `image_layer` should document a manual test of some build errors, or
   better yet, there should be a Python script that attempts to `buck build`
   some known-broken TARGETS files.  When you do this, please don't break
-  building `fs_image/...`!
+  building `antlir/...`!
 
 - In the compiler language, consider requiring all paths to start with "/"
   to clarify that they are image-absolute.  At present, the leading "/" is

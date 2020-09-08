@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+import importlib.resources
+import os
+import subprocess
+import tempfile
+import unittest
+from dataclasses import dataclass
+
+from antlir.vm.share import BtrfsDisk, Plan9Export, Share
+
+
+@dataclass(frozen=True)
+class TestShare(object):
+    share: Share
+    unit: str
+    contents: str
+
+
+TEST_SHARES = [
+    TestShare(
+        Plan9Export(path="/tmp/hello"),
+        "tmp-hello.mount",
+        """[Unit]
+Description=Mount fs0 at /tmp/hello
+Requires=systemd-modules-load.service
+After=systemd-modules-load.service
+Before=local-fs.target
+
+[Mount]
+What=fs0
+Where=/tmp/hello
+Type=9p
+Options=version=9p2000.L,posixacl,cache=loose,ro
+""",
+    ),
+    TestShare(
+        Plan9Export(path="/usr/tag", mount_tag="explicit_tag"),
+        "usr-tag.mount",
+        """[Unit]
+Description=Mount explicit_tag at /usr/tag
+Requires=systemd-modules-load.service
+After=systemd-modules-load.service
+Before=local-fs.target
+
+[Mount]
+What=explicit_tag
+Where=/usr/tag
+Type=9p
+Options=version=9p2000.L,posixacl,cache=loose,ro
+""",
+    ),
+    TestShare(
+        Plan9Export(path="/tmp/not-included", generator=False), None, None
+    ),
+    TestShare(
+        Plan9Export(path="/some/host/path", mountpoint="/guest/other"),
+        "guest-other.mount",
+        """[Unit]
+Description=Mount fs2 at /guest/other
+Requires=systemd-modules-load.service
+After=systemd-modules-load.service
+Before=local-fs.target
+
+[Mount]
+What=fs2
+Where=/guest/other
+Type=9p
+Options=version=9p2000.L,posixacl,cache=loose,ro
+""",
+    ),
+    TestShare(
+        BtrfsDisk(path="/tmp/image.btrfs", mountpoint="/mnt/guest"),
+        "mnt-guest.mount",
+        """[Unit]
+Description=Mount vdc (/tmp/image.btrfs from host) at /mnt/guest
+Before=local-fs.target
+
+[Mount]
+What=/dev/vdc
+Where=/mnt/guest
+Type=btrfs
+Options=subvol=volume,ro
+""",
+    ),
+]
+
+
+class TestShareGenerator(unittest.TestCase):
+    def test_units(self):
+        with importlib.resources.path(
+            __package__, "mount-generator"
+        ) as generator, Share.export_spec(
+            [s.share for s in TEST_SHARES]
+        ) as share, tempfile.TemporaryDirectory() as outdir:
+            subprocess.run(
+                [generator, outdir], env={"EXPORTS_DIR": share.path}, check=True
+            )
+
+            units = {s.unit for s in TEST_SHARES if s.unit}
+
+            self.assertEqual(
+                set(os.listdir(outdir)),
+                units.union({"local-fs.target.requires"}),
+            )
+            self.assertEqual(
+                set(
+                    os.listdir(os.path.join(outdir, "local-fs.target.requires"))
+                ),
+                units,
+            )
+            for share in TEST_SHARES:
+                if not share.share.generator:
+                    continue
+                # check that the mount units have the expected content
+                with open(os.path.join(outdir, share.unit)) as f:
+                    self.assertEqual(f.read(), share.contents)
+
+                # set as a requirement of local-fs.target
+                self.assertEqual(
+                    os.readlink(
+                        os.path.join(
+                            outdir, "local-fs.target.requires", share.unit
+                        )
+                    ),
+                    os.path.join(outdir, share.unit),
+                )

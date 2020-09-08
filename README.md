@@ -1,9 +1,9 @@
-## What is `fs_image`?
-As it's primary purpose, `fs_image` is a set of
+## What is `antlir`?
+As it's primary purpose, `antlir` is a set of
 [Starlark](https://github.com/bazelbuild/starlark) macros suitable for use 
 by the [Buck](https://buck.build) build system to build OS images for containers
 and hosts, as well as other filesystem images.
 
 ### License                                                                                             
                                                                                                          
-`fs_image` is licensed under the MIT License.  See [here](LICENSE).  
+`antlir` is licensed under the MIT License.  See [here](LICENSE).  
