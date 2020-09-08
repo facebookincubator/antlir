@@ -105,11 +105,11 @@ user, which we should probably never do).
 
 """
 import subprocess
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from io import BytesIO
 from typing import Iterable, NamedTuple, Optional, Tuple
 
-from antlir.common import init_logging, nullcontext
+from antlir.common import init_logging
 
 from .args import PopenArgs, _NspawnOpts, _parse_cli_args
 from .booted import run_booted_nspawn

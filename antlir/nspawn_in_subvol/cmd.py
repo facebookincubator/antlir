@@ -16,12 +16,11 @@ import os
 import re
 import subprocess
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
 from antlir.artifacts_dir import find_repo_root
-from antlir.common import nullcontext
 from antlir.compiler import procfs_serde
 from antlir.compiler.items.common import META_ARTIFACTS_REQUIRE_REPO
 from antlir.compiler.items.mount import mounts_from_subvol_meta

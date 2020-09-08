@@ -7,9 +7,9 @@
 import json
 import os
 import unittest
+from contextlib import nullcontext
 
 from .. import update_package_db as updb
-from ..common import nullcontext
 from ..fs_utils import temp_dir
 
 

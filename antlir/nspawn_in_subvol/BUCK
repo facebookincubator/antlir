@@ -56,7 +56,6 @@ python_library(
     deps = [
         ":args",
         "//antlir:artifacts_dir",
-        "//antlir:common",
         "//antlir:find_built_subvol",
         "//antlir:send_fds_and_run",
         "//antlir:testlib_temp_subvolumes",
