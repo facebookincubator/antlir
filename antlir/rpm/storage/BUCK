@@ -103,5 +103,5 @@ python_binary(
     name = "mock-s3-cli",
     srcs = ["tests/mock_s3_cli.py"],
     main_module = "antlir.rpm.storage.tests.mock_s3_cli",
-    deps = ["//antlir:common"],
+    deps = [],
 )

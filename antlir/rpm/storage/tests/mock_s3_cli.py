@@ -11,8 +11,7 @@ Used to mock `aws s3` commands used in `tests/s3_storage.py`.
 import argparse
 import os
 import sys
-
-from antlir.common import nullcontext
+from contextlib import nullcontext
 
 
 def cp(args):

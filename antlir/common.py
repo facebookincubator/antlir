@@ -38,19 +38,6 @@ def init_logging(*, debug: bool = False):
     )
 
 
-# contextlib.nullcontext is 3.7+ but we are on 3.6 for now. This has to be a
-# class since it should be multi-use.
-class nullcontext(AbstractContextManager):
-    def __init__(self, val=None):
-        self._val = val
-
-    def __enter__(self):
-        return self._val
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return None  # Do not suppress exceptions
-
-
 def check_popen_returncode(proc: subprocess.Popen):
     if proc.returncode != 0:  # pragma: no cover
         # Providing a meaningful coverage test for this is annoying, so I just
