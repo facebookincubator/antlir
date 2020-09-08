@@ -55,7 +55,7 @@ cover` on a line or block level:
 
 ### Avoid `unittest.mock` when possible
 
--   To unit-test `fs_image` code, design testable interfaces from day 1.
+-   To unit-test `antlir` code, design testable interfaces from day 1.
 -   Also design code to permit bottom-up easy integration tests -- these are
     worth far more than mock tests.
 -   When it's necessary to cut out a dependency from a test (because it's heavy,
@@ -79,8 +79,8 @@ cover` on a line or block level:
 
 -   Please work to eliminate `base_module` from `TARGETS` files. This is
     deprecated throughout Facebook, and generally complicates code
-    comprehension. In other words, your module in `fbcode/fs_image/foo.py`
-    should be importable as `fs_image.foo`.
+    comprehension. In other words, your module in `fbcode/antlir/foo.py`
+    should be importable as `antlir.foo`.
 -   Use absolute imports. Two exceptions are OK:
     -   Access sibling libraries: `from . import sibling_module`
     -   Access parent from tests: `from .. import module_being_tested`.
@@ -136,7 +136,7 @@ import standard_module
 
 from other_standard import std_name
 
-from fs_image.foo import bar
+from antlir.foo import bar
 
 # In a submodule
 from .sibling_submodule import _impl_detail
@@ -152,7 +152,7 @@ from ..module_being_tested import func_to_test
 A main function of any complexity should be a separate function and covered by
 unit tests. Any main (simple or not) should be covered by *some* (not
 necessarily dedicated) integration test, unless it can only invoked by
-`fs_image` developers for debugging.
+`antlir` developers for debugging.
 
 A typical complex main:
 
@@ -174,7 +174,7 @@ It's the responsibility of any `__main__` to call `init_logging` (see the
 section on `__main__`).
 
 ```
-from fs_image.common import get_file_logger
+from antlir.common import get_file_logger
 
 log = get_file_logger(__file__)
 
@@ -188,7 +188,7 @@ log.info(f'foo {var}')
     re-formatting with logic changes. Super-small reformats may be begrudgingly
     tolerated.
 -   We don't nitpick formatting, as long as it's lint-clean, see
-    [fs\_image/.flake8](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/.flake8).
+    [fs\_image/.flake8](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/.flake8).
 -   80 chars optimizes for coding and review on smaller screens (laptop, WFH)
 -   Manual formatting: optimize for readability. Code is read far more than
     written.
@@ -196,7 +196,7 @@ log.info(f'foo {var}')
     can use `black -S -l 80` to retain ambient style. In new modules, you can
     use `"` if it makes you happy.
 
-### Use `Path` from `fs_image.fs_utils`, avoid `pathlib`
+### Use `Path` from `antlir.fs_utils`, avoid `pathlib`
 
 #### Why `Path`?
 
@@ -235,7 +235,7 @@ Specifically, be aware that:
 
 If not already familiar, learn about the virtues of
 [RAII](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization). In
-`fs_image`, we manage a lot of resources -- temporary files & directories, btrfs
+`antlir`, we manage a lot of resources -- temporary files & directories, btrfs
 subvolumes, subprocesses.
 
 You will often write code that manages resources, and then does something with
@@ -254,7 +254,7 @@ Things to avoid:
 -   `subprocess.run()`-style APIs for managing long-running processes. Just
     provide a `Popen`-style `@contextmanager` right away, and perhaps add
     `run()`-style syntax sugar commonly needed. Refactoring out of this design
-    mistake can be costly (look at the history of `fs_image/nspawn_in_subvol`).
+    mistake can be costly (look at the history of `antlir/nspawn_in_subvol`).
 -   `finally:` blocks that clean up more than one resources.
 
 Advanced readers might ask "what about `async`?". The general rule is that it's

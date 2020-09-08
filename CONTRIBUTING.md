@@ -1,4 +1,4 @@
-# Contributing to fs_image
+# Contributing to antlir
 We want to make contributing to this project as easy and transparent as
 possible.
 
@@ -27,5 +27,5 @@ disclosure of security bugs. In those cases, please go through the process
 outlined on that page and do not file a public issue.
 
 ## License
-By contributing to fs_image, you agree that your contributions will be licensed
+By contributing to antlir, you agree that your contributions will be licensed
 under the LICENSE file in the root directory of this source tree.

@@ -1,0 +1,79 @@
+load("//antlir/bzl:defs.bzl", "fake_macro_library")
+
+fake_macro_library(
+    name = "clone",
+    srcs = ["clone.bzl"],
+    deps = [
+        "//antlir/bzl:image_source",
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
+    name = "install",
+    srcs = ["install.bzl"],
+    deps = [
+        "//antlir/bzl:add_stat_options",
+        "//antlir/bzl:maybe_export_file",
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
+    name = "mkdir",
+    srcs = ["mkdir.bzl"],
+    deps = [
+        "//antlir/bzl:add_stat_options",
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
+    name = "mount",
+    srcs = ["mount.bzl"],
+    deps = [
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
+    name = "feature",
+    srcs = ["feature.bzl"],
+    deps = [
+        "//antlir/bzl:target_helpers",
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
+    name = "remove",
+    srcs = ["remove.bzl"],
+    deps = [
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
+    name = "rpms",
+    srcs = ["rpms.bzl"],
+    deps = [
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
+    name = "symlink",
+    srcs = ["symlink.bzl"],
+    deps = [
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
+    name = "tarball",
+    srcs = ["tarball.bzl"],
+    deps = [
+        "//antlir/bzl:maybe_export_file",
+        "//antlir/bzl:target_tagger",
+    ],
+)

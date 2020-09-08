@@ -60,7 +60,7 @@ building binaries is today. Here are our core values:
   will be hard to build the infra of tomorrow. To stay lean, we take the time
   to add each integration through the composition of separable, single-purpose
   tools. As a bonus, this keeps our
-  [nascent open-source release](https://github.com/facebookincubator/fs_image)
+  [nascent open-source release](https://github.com/facebookincubator/antlir)
   within reach.
 
 Here is an **aspirational** `TARGETS` file defining a service, from binary
@@ -165,7 +165,7 @@ Configerator or fbpkg to achieve this — all their code is in
 
 For each implemented feature, the code contains detailed comments explaining how
 to use it. For example, almost 50% of the implementation of
-[image.layer](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/fs_image/buck/image_layer.bzl)
+[image.layer](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/antlir/buck/image_layer.bzl)
 is documentation. Links to relevant docs are sprinkled throughout the rest of
 this note. It is on our roadmap to consolidate key user-facing docs on the wiki.
 For now, start here and read the comments for the details.
@@ -178,7 +178,7 @@ using this toolchain live in
 `<oncall_name>` (optionally, with subdirectories per project).
 
 **Contbuild configs:** Images are built and
-[tested](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/fs_image/buck/image_python_unittest.bzl)
+[tested](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/antlir/buck/image_python_unittest.bzl)
 by
 [Contbuild](https://our.intern.facebook.com/intern/wiki/Fbcode_Continuous_Build).
 The corresponding contbuild configs are named
@@ -234,7 +234,7 @@ mean you want to wait until H2 2019.
     garbage-collected so your devbox does not run out of space.
 -   All our code is testable by design, with enforced 100% test coverage. We
     invested in making it easy to write expressive tests — this
-    [handful of lines asserts](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/fs_image/compiler/tests/test_items.py;65cc006228fb8d852d70b5cc53132319b5bd71d4$259-270)
+    [handful of lines asserts](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/antlir/compiler/tests/test_items.py;65cc006228fb8d852d70b5cc53132319b5bd71d4$259-270)
     the complete state of the filesystem, down to SELinux attributes, xattrs,
     and even btrfs cloned blocks.
 -   We periodically store immutable snapshots of all prod RPM repos to make RPM
@@ -263,17 +263,17 @@ sugar from the vision above. The code has detailed API documentation —
 typically, you will want to read the file doc-block, and then skip to the `def`
 of the main function:
 
-- [image.layer](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/fs_image/buck/image_layer.bzl):
+- [image.layer](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/antlir/buck/image_layer.bzl):
   A container filesystem that acts as a Buck artifact. Layers support
   inheritance, and can be mounted inside other layers.
-- [image.feature](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/buck/image_actions/feature.bzl):
+- [image.feature](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/buck/image_actions/feature.bzl):
   A library-like abstraction — a set of things to be done to any layer
   that includes this feature.
--[image.python_unittest](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/fs_image/buck/image_python_unittest.bzl):
+-[image.python_unittest](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/antlir/buck/image_python_unittest.bzl):
   A regular `python_unittest` that runs inside an `image.layer`. This lets you
   you validate your filesystem by running code inside a container that loosely
   approximates production. You are encouraged to use the
-  [needs_coverage assertion](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/fs_image/buck/tests/test_image_python_unittest.py)
+  [needs_coverage assertion](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/antlir/buck/tests/test_image_python_unittest.py)
   to ensure 100% of your service's library gets exercised within the
   container. If your service is in C++ (or Java or Rust), you can easily
   include the `{cpp,java,rust,...}_binary` in the `resources` of your
@@ -289,14 +289,14 @@ of the main function:
   This rule is a simple combination of two primitives below — but prefer to
   use the higher-level one, since TW has specific plans to (transparently)
   optimize the packaging and distribution of custom images.
-  - [image.package](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/fs_image/buck/image_package.bzl):
+  - [image.package](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/antlir/buck/image_package.bzl):
     a serialization primitive for layers
-  - [fbpkg.builder](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/fs_image/buck/facebook/fbpkg_builder.bzl):
+  - [fbpkg.builder](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/antlir/buck/facebook/fbpkg_builder.bzl):
     a way to define and (cont)build Fbpkgs straight fbcode, no Configerator config needed.
-- [fbpkg.fetched\_layer](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/fbpkg/facebook/fbpkg.bzl):
+- [fbpkg.fetched\_layer](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/fbpkg/facebook/fbpkg.bzl):
   *(ready for use in container tests, but not for production)* A simple way to
   mount an `fbpkg:tag` in your container — add a new package by running
-  `buck run fs_image/fbpkg/facebook/db:update-db -- --db fs_image/fbpkg/facebook/db/main_db.bzl --create YOUR_PKG YOUR_TAG '{}'`,
+  `buck run antlir/fbpkg/facebook/db:update-db -- --db antlir/fbpkg/facebook/db/main_db.bzl --create YOUR_PKG YOUR_TAG '{}'`,
   and refer to the new target in your layer via in the `mounts` field. Let's
   contrast this with specifying `fbpkg:tag` in the `packages` field of your TW
   job. At present, if the `tag` changes mid-way through your ServiceFoundry
@@ -329,7 +329,7 @@ means of composition:
     primitives include making directories & symlinks, copying outputs of other
     build rules (and repo files via the `export_file` rule), and even extracting
     deterministic tarballs (for fbpkg support). See `def image_feature` in
-    [image\_feature.bzl](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/fs_image/buck/image_feature.bzl)
+    [image\_feature.bzl](https://phabricator.intern.facebook.com/diffusion/FBS/browse/master/fbcode/antlir/buck/image_feature.bzl)
     for an up-to-date list.
 -   **Inheritance:** By specifying `parent_layer` in `image.layer`, the new
     layer inherits the entire contents and runtime configuration of its parent.

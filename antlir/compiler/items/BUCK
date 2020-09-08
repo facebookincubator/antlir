@@ -1,0 +1,271 @@
+load("//antlir/bzl:layer_resource.bzl", "layer_resource")
+load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+
+python_library(
+    name = "clone",
+    srcs = ["clone.py"],
+    deps = [
+        ":common",
+        ":phases_provide",
+    ],
+)
+
+python_unittest(
+    name = "test-clone",
+    srcs = ["tests/test_clone.py"],
+    needed_coverage = [(100, ":clone")],
+    resources = {
+        layer_resource(TEST_IMAGE_PREFIX + "parent_layer"): "tests/src-layer",
+        layer_resource(TEST_IMAGE_PREFIX + "create_ops"): "tests/create_ops",
+    },
+    deps = [
+        ":clone",
+        ":common_testlib",
+        "//antlir:common",
+        "//antlir:find_built_subvol",
+        "//antlir:testlib_layer_resource",
+        "//antlir:testlib_temp_subvolumes",
+    ],
+)
+
+# Needs dedicated test coverage. For now, is covered by `test-items`.
+python_library(
+    name = "common",
+    srcs = ["common.py"],
+    deps = [
+        ":mount_utils",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir/compiler:procfs_serde",
+        "//antlir/rpm:yum_dnf_conf",
+    ],
+)
+
+# A helper for tests, so lacks its own tests.
+python_library(
+    name = "common_testlib",
+    srcs = ["tests/common.py"],
+    deps = [
+        ":common",
+        "//antlir:testlib_layer_resource",
+        "//antlir/btrfs_diff:testlib_render_subvols",
+        "//antlir/compiler:requires_provides",
+    ],
+)
+
+python_library(
+    name = "phases_provide",
+    srcs = ["phases_provide.py"],
+    deps = [":common"],
+)
+
+python_unittest(
+    name = "test-phases-provide",
+    srcs = ["tests/test_phases_provide.py"],
+    needed_coverage = [(100, ":phases_provide")],
+    deps = [
+        ":common_testlib",
+        ":phases_provide",
+        "//antlir:testlib_temp_subvolumes",
+    ],
+)
+
+python_library(
+    name = "rpm_action",
+    srcs = ["rpm_action.py"],
+    deps = [
+        ":common",
+        "//antlir/nspawn_in_subvol:non_booted",
+        "//antlir/nspawn_in_subvol/plugins:rpm",
+        "//antlir/rpm:find_snapshot",
+        "//antlir/rpm:rpm_metadata",
+    ],
+)
+
+python_library(
+    name = "rpm_action_base_testlib",
+    srcs = ["tests/rpm_action_base.py"],
+    resources = {
+        TEST_IMAGE_PREFIX + "rpm-test-cheese-1-1.rpm": "tests/rpm-test-cheese-1-1.rpm",
+    },
+    deps = [
+        ":common_testlib",
+        ":rpm_action",
+        "//antlir:fs_utils",
+        "//antlir:testlib_temp_subvolumes",
+    ],
+)
+
+python_unittest(
+    name = "test-rpm-action",
+    srcs = ["tests/test_rpm_action.py"],
+    needed_coverage = [(100, ":rpm_action")],
+    resources = {
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
+        ): "tests/test-with-one-local-rpm",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "layer-with-non-default-snapshot-no-rpms",
+        ): "tests/test-with-no-rpm",
+        TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
+    },
+    deps = [
+        ":rpm_action_base_testlib",
+        "//antlir:find_built_subvol",
+        "//antlir:testlib_layer_resource",
+    ],
+)
+
+python_library(
+    name = "foreign_layer",
+    srcs = ["foreign_layer.py"],
+    deps = [
+        ":common",
+        "//antlir/nspawn_in_subvol:non_booted",
+        "//antlir/nspawn_in_subvol/plugins:rpm",
+    ],
+)
+
+python_unittest(
+    name = "test-foreign-layer",
+    srcs = ["tests/test_foreign_layer.py"],
+    needed_coverage = [(100, ":foreign_layer")],
+    resources = {
+        layer_resource(
+            # We need something with the test RPM snapshot, with a working
+            # `sh`, `touch`, and `mkdir`, and `dnf`.  The former 3 could be
+            # provided through a busybox binary, but `dnf` pretty much
+            # presupposes a full OS, so use the test BA for now.
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/foreign-layer-base",
+        layer_resource(
+            # Must have a `busybox` binary as `/bin/sh`.
+            TEST_IMAGE_PREFIX + "validates-dnf-build-appliance",
+        ): "tests/foreign-layer-busybox-base",
+    },
+    deps = [
+        ":common_testlib",
+        ":make_subvol",
+        "//antlir:common",
+        "//antlir:find_built_subvol",
+        "//antlir:testlib_layer_resource",
+        "//antlir:testlib_temp_subvolumes",
+        "//antlir/rpm:find_snapshot",
+    ],
+)
+
+# Covered by `test-items`. Future: separate test & coverage.
+python_library(
+    name = "mount_utils",
+    srcs = ["mount_utils.py"],
+    deps = ["//antlir:subvol_utils"],
+)
+
+python_library(
+    name = "mount",
+    srcs = ["mount.py"],
+    deps = [
+        ":common",
+        ":mount_utils",
+        "//antlir/compiler:requires_provides",
+    ],
+)
+
+# Covered by `test-items`. Future: separate test & coverage.
+python_library(
+    name = "make_subvol",
+    srcs = ["make_subvol.py"],
+    deps = [
+        ":common",
+        ":mount_utils",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+    ],
+)
+
+# Future: Finish splitting this library, and tests, by item.  The only
+# challenge is to make sure that `common.py` gets coverage -- coverage of
+# its functions is currently distributed across various items.
+python_library(
+    name = "items",
+    srcs = [
+        "common.py",
+        "install_file.py",
+        "make_dirs.py",
+        "remove_path.py",
+        "stat_options.py",
+        "symlink.py",
+        "tarball.py",
+    ],
+    deps = [
+        ":common",
+        ":make_subvol",
+        ":mount",
+        ":mount_utils",
+        "//antlir/compiler:requires_provides",
+        "//antlir/compiler:subvolume_on_disk",
+        "//antlir/nspawn_in_subvol:ba_runner",
+        "//antlir/nspawn_in_subvol:non_booted",
+    ],
+)
+
+python_unittest(
+    name = "test-items",
+    srcs = [
+        "tests/test_common.py",
+        "tests/test_install_file.py",
+        "tests/test_make_dirs.py",
+        "tests/test_make_subvol.py",
+        "tests/test_mount.py",
+        "tests/test_remove_path.py",
+        "tests/test_symlink.py",
+        "tests/test_tarball.py",
+    ],
+    needed_coverage = [
+        (100, ":common"),
+        (100, ":items"),
+        (100, ":make_subvol"),
+        (100, ":mount_utils"),
+        (100, ":mount"),
+    ],
+    # "fastzip" would break :volume_for_repo in @mode/opt.  "xar" fails
+    # since `root` cannot access the content of an unprivileged XAR.
+    par_style = "zip",
+    resources = {
+        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
+        TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "test-layer-with-mounts",
+        ): "tests/test-layer-with-mounts",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "hello_world_base",
+        ): "tests/test-layer-without-mounts",
+    },
+    deps = [
+        ":common_testlib",
+        ":items",
+        ":phases_provide",  # test_mount.py uses this
+        "//antlir:find_built_subvol",
+        "//antlir:testlib_temp_subvolumes",
+        "//antlir/btrfs_diff:testlib_demo_sendstreams",
+    ],
+)
+
+# `items_for_features` and `sample_items` always depend on ~all items.
+python_library(
+    name = "all-items",
+    deps = [
+        ":clone",
+        ":foreign_layer",
+        ":items",
+        ":phases_provide",
+        ":rpm_action",
+    ],
+)

@@ -11,11 +11,11 @@
 [test]
   # This is needed to ensure that the test runner only executes the 
   # 'in image' unittest targets, and not the `IGNORE-ME*` wrapper tests
-  # (see fs_image/bzl/image_*_unittest.bzl for more crazy implementation
+  # (see antlir/bzl/image_*_unittest.bzl for more crazy implementation
   #  details).
   # 
   # Note, because buck doesn't have a config to always ignore
   # these excluded labels you must run `buck test` with the `--always-exclude`
   # option.
-  # ie:  `buck test //fs_image/rpm:test-yum-dnf-from-snapshot --always-exclude`
+  # ie:  `buck test //antlir/rpm:test-yum-dnf-from-snapshot --always-exclude`
   excluded_labels = exclude_test_if_transitive_dep

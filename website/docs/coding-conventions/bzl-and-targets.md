@@ -12,7 +12,7 @@ currently much more permissive).
 ## Please maintain `fake_macro_library` dependencies
 
 Take a look at the doc in
-[fs_image/bzl/TARGETS](https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/bzl/TARGETS?lines=5).
+[antlir/bzl/TARGETS](https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/antlir/bzl/TARGETS?lines=5).
 This is kind of a chore, but it helps kick off the right CI jobs when we edit
 `.bzl` files, so it's worth doing.
 
@@ -36,7 +36,7 @@ function nor a macro, but a mix.
 -   A function defines no targets, returns a value, and has no side-effects.
     Functions that take mutable arguments are acceptable only in very limited
     circumstances (e.g.
-    [set_new_key](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/common.py?commit=73c7b3f113146faebd6133d42eaf751cd05d9a8c&lines=77-81)).
+    [set_new_key](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/common.py?commit=73c7b3f113146faebd6133d42eaf751cd05d9a8c&lines=77-81)).
 -   A macro takes `name` as its first arg, and defines a target of that name
     (along with possibly auxiliary functions). When convenient, an internal
     macro **may** return a path to the target it created, but we have not made
@@ -58,9 +58,9 @@ that, ideally: - It does not show up in `buck` TAB-completion (put your magic in
 the prefix, not suffix) - The magic prefix should discourages people from typing
 it manually into their TARGETS files or `.bzl` files -- provide an accessor
 method when this is necessary, see e.g.
-[fbpkg.fetched_layer](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/fbpkg/facebook/fbpkg.bzl)
+[fbpkg.fetched_layer](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/fbpkg/facebook/fbpkg.bzl)
 - If appropriate, use
-  [mangle_target](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/bzl/target_tagger.bzl?commit=30ea8293608c719e3dc2ccdaaa3e6a2acc234265&lines=74),
+  [mangle_target](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/bzl/target_tagger.bzl?commit=30ea8293608c719e3dc2ccdaaa3e6a2acc234265&lines=74),
   but be aware that it's currently possible for the mangled form to collide
   among different input target names (there are lo-pri work items for this).
 
@@ -86,7 +86,7 @@ You know what `"$(ls)"` does in `bash`. Now you want this in the `bash =` field
 of your genrule. Unfortunately, this is hard. You have to do this two-liner:
 
 ```
-binary_path=( $(exe //fs_image:artifacts-dir) )
+binary_path=( $(exe //antlir:artifacts-dir) )
 artifacts_dir=\\$( "${binary_path[@]}" )
 ```
 
@@ -110,14 +110,14 @@ something like `python3 "/path to/the actual/binary"`.
 
 If your macro takes an argument that is a target, and that target might
 sometimes be an in-repo file, use `maybe_export_file
-<https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/fs_image/bzl/maybe_export_file.bzl>`__.
+<https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/bzl/maybe_export_file.bzl>`__.
 
-Use ``fs_image_internal_rule`` for any internal rules
+Use ``antlir_internal_rule`` for any internal rules
 -----------------------------------------------------
 
 If you're using any macros to generate internal "wrapper" rules (i.e. any rule
 that doesn't use the ``name`` of the underlying target), you should set the
-``fs_image_internal_rule`` kwarg to true in the definition.
+``antlir_internal_rule`` kwarg to true in the definition.
 
 This is good practice as it enables further post-processing when determining
 dependencies. We use this internally in fb for example to compute the
