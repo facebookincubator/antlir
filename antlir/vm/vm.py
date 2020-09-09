@@ -42,20 +42,20 @@ def kernel_resources() -> ContextManager[KernelResources]:
     try:
         # QEMU BIOSes are a FB-specific resource
         with importlib.resources.path(
-            "antlir.vm", "qemu_bioses"
+            __package__, "qemu_bioses"
         ) as qemu_bioses:
             bios_dir = qemu_bioses
     except FileNotFoundError:
         bios_dir = None
 
     with importlib.resources.path(
-        "antlir.vm", "vmlinuz"
+        __package__, "vmlinuz"
     ) as vmlinuz, importlib.resources.path(
-        "antlir.vm", "initrd"
+        __package__, "initrd"
     ) as initrd, importlib.resources.path(
-        "antlir.vm", "modules"
+        __package__, "modules"
     ) as modules, importlib.resources.path(
-        "antlir.vm", "qemu"
+        __package__, "qemu"
     ) as qemu:
         yield KernelResources(
             vmlinuz=vmlinuz,
@@ -87,10 +87,10 @@ async def __wait_for_boot(sockfile: os.PathLike) -> None:
 
 
 @asynccontextmanager
-async def __kernel_vm_with_stack(
+async def __vm_with_stack(
     stack: AsyncExitStack,
     image: Path,
-    fbcode: Optional[Path] = None,
+    repo_root: Optional[Path] = None,
     verbose: bool = False,
     interactive: bool = False,
     shares: Optional[Iterable[Share]] = None,
@@ -151,10 +151,10 @@ async def __kernel_vm_with_stack(
     except ImportError:  # pragma: no cover
         pass
 
-    if fbcode is not None:
-        # also share fbcode at the same mount point from the host so that
-        # absolute symlinks in fbcode work when in @mode/dev
-        shares += [Plan9Export(fbcode)]
+    if repo_root is not None:
+        # also share the repository root at the same mount point from the host
+        # so that the symlinks that buck constructs in @mode/dev work
+        shares += [Plan9Export(repo_root)]
 
     with kernel_resources() as kernel:
         args = [
@@ -265,6 +265,7 @@ async def __kernel_vm_with_stack(
             if interactive:
                 logger.debug("waiting for interactive vm to shutdown")
                 await proc.wait()
+
             if proc.returncode is None:
                 logger.debug("killing guest")
                 proc.terminate()
@@ -272,9 +273,9 @@ async def __kernel_vm_with_stack(
 
 
 @asynccontextmanager
-async def kernel_vm(*args, **kwargs) -> AsyncContextManager[QemuGuestAgent]:
+async def vm(*args, **kwargs) -> AsyncContextManager[QemuGuestAgent]:
     async with AsyncExitStack() as stack:
-        async with __kernel_vm_with_stack(*args, **kwargs, stack=stack) as vm:
+        async with __vm_with_stack(*args, **kwargs, stack=stack) as vm:
             yield vm
 
 

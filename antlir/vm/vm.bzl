@@ -1,6 +1,6 @@
 load("//antlir/bzl:oss_shim.bzl", "python_library")
 
-def kernel_vm(name, kernel):
+def vm(name, kernel):
     python_library(
         name = name,
         base_module = "antlir.vm",

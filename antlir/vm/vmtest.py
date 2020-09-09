@@ -17,7 +17,7 @@ from typing import Iterable, List, Optional
 import click
 from antlir.artifacts_dir import find_repo_root
 from antlir.vm.share import BtrfsDisk
-from antlir.vm.vm import kernel_vm
+from antlir.vm.vm import vm
 
 
 logger = logging.getLogger("vmtest")
@@ -116,7 +116,7 @@ async def main(
     logging.basicConfig(level=logging.DEBUG, handlers=[h])
     returncode = -1
     start_time = time.time()
-    fbcode = find_repo_root()
+    repo_root = find_repo_root()
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
     with importlib.resources.path(
@@ -133,7 +133,7 @@ async def main(
             # TODO(vmagro): the long-term goal should be to make vm boots as
             # fast as possible to avoid unintuitive tricks like this
             with importlib.resources.path(
-                "antlir.vm", "test_discovery_binary"
+                __package__, "test_discovery_binary"
             ) as inner_test_on_host:
                 proc = await asyncio.create_subprocess_exec(
                     str(inner_test_on_host),
@@ -150,14 +150,14 @@ async def main(
                 await proc.wait()
             sys.exit(proc.returncode)
 
-        async with kernel_vm(
+        async with vm(
             image=image,
-            fbcode=fbcode,
+            repo_root=repo_root,
             verbose=not quiet,
             interactive=interactive,
             ncpus=ncpus,
             shares=[BtrfsDisk(test_disk, "/vmtest")],
-        ) as vm:
+        ) as instance:
             boot_time_elapsed = time.time() - start_time
             if not interactive:
                 # Automatically execute test only under non-interactive mode.
@@ -175,7 +175,7 @@ async def main(
                     # host, so as another sanity check only create the
                     # directories in the VM that already exist on the host
                     if dirname and os.path.exists(dirname):
-                        await vm.exec_sync(("mkdir", "-p", dirname))
+                        await instance.exec_sync(("mkdir", "-p", dirname))
                         file_arguments.append(arg)
 
                 # The behavior of the FB-internal Python test main changes
@@ -186,7 +186,7 @@ async def main(
                     test_env["TEST_PILOT"] = test_pilot_env
                 cmd = ["/vmtest/test"] + list(args)
                 logger.debug(f"executing {cmd} inside guest")
-                returncode, stdout, stderr = await vm.run(
+                returncode, stdout, stderr = await instance.run(
                     cmd=cmd,
                     # a certain amount of the total timeout is allocated for
                     # the host to boot, subtract the amount of time it actually
@@ -195,7 +195,7 @@ async def main(
                     # allow for some slightly better logging opportunities
                     timeout=timeout - boot_time_elapsed - 1,
                     env=test_env,
-                    cwd=fbcode,
+                    cwd=repo_root,
                 )
                 # Some tests have incredibly large amounts of output, which
                 # results in a BlockingIOError when stdout/err are in
@@ -210,7 +210,7 @@ async def main(
                     # copy any files that were written in the guest back to the
                     # host so that TestPilot can read from where it expects
                     # outputs to end up
-                    outfile_contents = await vm.cat_file(str(path))
+                    outfile_contents = await instance.cat_file(str(path))
                     with open(path, "wb") as out:
                         out.write(outfile_contents)
 
