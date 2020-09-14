@@ -1,11 +1,49 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//third-party/fedora31/kernel:kernels.bzl", "kernels")
 
+_RULE_TYPE_KWARG = "antlir_rule"
+
+_RULE_PRIVATE = "antlir-private"
+
+_RULE_USER_FACING = "user-facing"
+
+_RULE_USER_INTERNAL = "user-internal"
+
+_ALLOWED_RULES = [
+    _RULE_PRIVATE,
+    _RULE_USER_FACING,
+    _RULE_USER_INTERNAL,
+]
+
 # The default native platform to use for shared libraries and static binary
 # dependencies.  Right now this tooling only supports one platform and so
 # this is not a method, but in the future as we support other native platforms
 # (like Debian, Arch Linux, etc..) this should be expanded to allow for those.
 _DEFAULT_NATIVE_PLATFORM = "fedora31"
+
+# Serves two important purposes:
+#  - Ensures that all user-instanted rules are annotated with
+#    `antlir_rule = "user-{facing,internal}", which is important for FB CI.
+#  - Discourages users from loading rules or functions from `oss_shim.bzl`.
+def _assert_package():
+    package = native.package_name()
+    if package == "antlir/compiler/test_images":
+        fail(
+            '`antlir/compiler/test_images` is treated as "outside of the ' +
+            'Antlir codebase" for the purposes of testing `antlir_rule`. ' +
+            "Therefore, you may not access `oss_shim.bzl` directly from its " +
+            "build file -- instead add and use a shim inside of " +
+            "`antlir/compiler/test_images/defs.bzl`. You may also get this " +
+            "error if you are adding a new user-instantiatable rule to the " +
+            "Antlir API. If so, read the `antlir_rule` section in " +
+            "`website/docs/coding-conventions/bzl-and-targets.md`",
+        )
+    if package != "antlir" and not package.startswith("antlir/"):
+        fail(
+            'Package `" + package + "` must not `load("//antlir/bzl:' +
+            'oss_shim.bzl")`. Antlir devs: read about `antlir_rule` in ' +
+            "`website/docs/coding-conventions/bzl-and-targets.md`.",
+        )
 
 def _invert_dict(d):
     """ In OSS Buck some of the dicts used by targets (`srcs` and `resources`
@@ -82,8 +120,11 @@ def _normalize_coverage(coverages):
     """ Exclude any coverage requirements that have `facebook` in the path as
     these are internal.
     """
-    return [(percent, dep) for percent, dep in coverages
-            if "facebook" not in dep] if coverages else None
+    return [
+        (percent, dep)
+        for percent, dep in coverages
+        if "facebook" not in dep
+    ] if coverages else None
 
 def _normalize_visibility(vis, name = None):
     """ OSS Buck has a slightly different handling of visibility.
@@ -121,6 +162,7 @@ def _third_party_library(project, rule = None, platform = None):
 
     If `rule` is not provided it is assumed to be the same as `project`.
     """
+    _assert_package()  # Antlir-private: only use with `oss_shim.bzl` macros.
 
     if not rule:
         rule = project
@@ -130,7 +172,54 @@ def _third_party_library(project, rule = None, platform = None):
 
     return "//third-party/" + platform + "/" + project + ":" + rule
 
-def _cpp_unittest(name, tags = [], visibility = None, **kwargs):
+def _wrap_internal(fn, args, kwargs):
+    """
+    Wrap a build target rule with support for the `antlir_rule` kwarg.
+
+    Three rule types are supported:
+
+      - "antlir-private" (default): Such rules MAY NOT be defined in user
+        packages (outside of the Antlir codebase) -- see `_assert_package()`.
+
+      - "user-internal": May be defined by user packages, but does not
+        produce a build artifact that the user can use **directly**, e.g.
+        "SUFFIX-<name>" intermediate rules, or `image.{feature,layer}`.
+
+      - "user-facing": Allowed in user packages, and builds artifacts that
+        the end user can use directly, e.g. `image.package`.
+
+    Rules are private by default to force Antlir devs to explicitly annotate
+    "user-internal" and "user-facing" rules.
+
+    See also `website/docs/coding-conventions/bzl-and-targets.md`.
+    """
+    rule_type = kwargs.pop(_RULE_TYPE_KWARG, _RULE_PRIVATE)
+    if rule_type == _RULE_PRIVATE:
+        # Private rules should only be defined within `antlir/`.
+        _assert_package()
+    elif rule_type not in _ALLOWED_RULES:
+        fail(
+            "Bad value {}, must be one of {}".format(rule_type, _ALLOWED_RULES),
+            _RULE_TYPE_KWARG,
+        )
+    fn(*args, **kwargs)
+
+def _command_alias(*args, **kwargs):
+    _wrap_internal(command_alias, args, kwargs)
+
+def _filegroup(*args, **kwargs):
+    _wrap_internal(filegroup, args, kwargs)
+
+def _genrule(*args, **kwargs):
+    _wrap_internal(genrule, args, kwargs)
+
+def _sh_binary(*args, **kwargs):
+    _wrap_internal(sh_binary, args, kwargs)
+
+def _sh_test(*args, **kwargs):
+    _wrap_internal(sh_test, args, kwargs)
+
+def _impl_cpp_unittest(name, tags = [], visibility = None, **kwargs):
     cxx_test(
         name = name,
         labels = tags,
@@ -138,7 +227,13 @@ def _cpp_unittest(name, tags = [], visibility = None, **kwargs):
         **kwargs
     )
 
-def _python_binary(
+def _cpp_unittest(*args, **kwargs):
+    _wrap_internal(_impl_cpp_unittest, args, kwargs)
+
+def _export_file(*args, **kwargs):
+    _wrap_internal(export_file, args, kwargs)
+
+def _impl_python_binary(
         name,
         main_module,
         par_style = None,
@@ -154,13 +249,16 @@ def _python_binary(
 
     python_binary(
         name = name,
-        deps = [":" + name + "-library"],
         main_module = main_module,
         package_style = _normalize_pkg_style(par_style),
         visibility = _normalize_visibility(visibility, name),
+        deps = [":" + name + "-library"],
     )
 
-def _python_library(
+def _python_binary(*args, **kwargs):
+    _wrap_internal(_impl_python_binary, args, kwargs)
+
+def _impl_python_library(
         name,
         deps = None,
         visibility = None,
@@ -176,7 +274,10 @@ def _python_library(
         **kwargs
     )
 
-def _python_unittest(
+def _python_library(*args, **kwargs):
+    _wrap_internal(_impl_python_library, args, kwargs)
+
+def _impl_python_unittest(
         cpp_deps = "ignored",
         deps = None,
         needed_coverage = None,
@@ -193,7 +294,23 @@ def _python_unittest(
         **kwargs
     )
 
+def _python_unittest(*args, **kwargs):
+    _wrap_internal(_impl_python_binary, args, kwargs)
+
+# Use = in the default filename to avoid clashing with RPM names.
+# The constant must match `update_allowed_versions.py`.
+# Omits `_wrap_internal` due to perf paranoia -- we have a callsite per RPM.
+def _rpm_vset(name, src = "empty=rpm=vset"):
+    export_file(
+        name = name,
+        src = src,
+        mode = "reference",
+        # `image.layer`s all over the repo will depend on these
+        visibility = ["PUBLIC"],
+    )
+
 ### BEGIN COPY-PASTA (@fbcode_macros//build_defs/lib:rule_target_types.bzl)
+# @lint-ignore BUILDIFIERLINT
 _RuleTargetProvider = provider(fields = [
     "name",  # The name of the rule
     "base_path",  # The base package within the repository
@@ -235,36 +352,38 @@ def _get_project_root_from_gen_dir():
     # `_get_buck_out_path`, but it seems like an unnecessary complication.
     return "../.."
 
-# Use = in the filename to avoid clashing with RPM names.
-def rpm_vset(name, src = "empty=rpm=vset"):
-    export_file(
-        name = name,
-        src = src,
-        mode = "reference",
-        # `image.layer`s all over the repo will depend on these
-        visibility = ["PUBLIC"],
-     )
-
+# Please keep each section lexicographically sorted.
 shim = struct(
+    #
+    # Rules -- IMPORTANT -- wrap **ALL** rules with `_wrap_internal`
+    #
+    buck_command_alias = _command_alias,
+    buck_filegroup = _filegroup,
+    buck_genrule = _genrule,
+    buck_sh_binary = _sh_binary,
+    buck_sh_test = _sh_test,
+    #
+    # Utility functions -- use `_assert_package()`, if at all possible.
+    #
+    config = struct(
+        # @lint-ignore BUCKFBCODENATIVE
+        get_current_repo_name = native.repository_name,
+        get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
+    ),
+    cpp_unittest = _cpp_unittest,
+    #
+    # Constants
+    #
+    default_vm_image = struct(
+        layer = None,
+        package = None,
+    ),
     # Future: We could conceivably add OSS support for a `.bzl`-based
     # deployment-specific customizations, but for now we expect non-FB
     # customers to use the `[antlir]` section in `.buckconfig`.
     # Look at `bzl/constants.bzl` for the available options.
     do_not_use_repo_cfg = {},
-    buck_command_alias = command_alias,
-    buck_filegroup = filegroup,
-    buck_genrule = genrule,
-    buck_sh_binary = sh_binary,
-    buck_sh_test = sh_test,
-    cpp_unittest = _cpp_unittest,
-    config = struct(
-        get_current_repo_name = native.repository_name,
-        get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
-    ),
-    default_vm_image = struct(
-        layer = None,
-        package = None,
-    ),
+    export_file = _export_file,
     get_visibility = _normalize_visibility,
     kernel_artifact = struct(
         default_kernel = _kernel_artifact_version("5.3.7-301.fc31.x86_64"),
@@ -274,7 +393,7 @@ shim = struct(
     python_binary = _python_binary,
     python_library = _python_library,
     python_unittest = _python_unittest,
-    rpm_vset = rpm_vset,
+    rpm_vset = _rpm_vset,  # Not wrapped due to perf paranoia.
     target_utils = struct(
         parse_target = _parse_target,
         to_label = _to_label,
