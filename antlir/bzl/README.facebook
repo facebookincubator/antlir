@@ -1,8 +1,0 @@
-The above directory contains open source specific implementations of some
-core antlir functionality.
-
-Mainly, this exists to play nicely with fbcode Buck macros inside FB, and
-public Buck macros on GitHub.
-
-All the files in the above directory will be remapped into `antlir/bzl`,
-overwriting any files of the same name.
