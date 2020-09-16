@@ -12,7 +12,34 @@
 # not be able to support the desired "just import" user interface.
 import collections
 import dataclasses
+import re
 import typing
+
+
+class ShapeMeta(type):
+    def __repr__(cls):
+        fields = ", ".join(
+            f"{f.name}={getattr(f.type, '__name__', str(f.type))}"
+            for f in dataclasses.fields(cls)
+        )
+        # hide the module since it is ultimately not important, shapes are not
+        # meant to be constructed in pure-python code, only in bzl macros
+        fields = fields.replace(cls.__module__ + ".shape(", "shape(")
+        # typing.Optional reduces down to a Union with NoneType, so show the
+        # original intent
+        fields = re.sub(
+            r"typing.Union\[(.*?), NoneType\]", r"typing.Optional[\1]", fields
+        )
+        # also hide typing. prefixes on things
+        fields = fields.replace("typing.", "")
+        return f"shape({fields})"
+
+
+def __shape_instance_repr(self):
+    fields = ", ".join(
+        f"{f.name}={getattr(self, f.name)}" for f in dataclasses.fields(self)
+    )
+    return f"shape({fields})"
 
 
 def __check_type(var, typ):
@@ -119,5 +146,8 @@ def __post_init(self):
 def shape_dataclass(cls):
     cls._SHAPE_DATACLASS = None
     cls.__post_init__ = __post_init
+    cls.__repr__ = __shape_instance_repr
     dc = dataclasses.dataclass(frozen=True)(cls)
+    cls.__name__ = repr(cls)
+    cls.__qualname__ = repr(cls)
     return dc

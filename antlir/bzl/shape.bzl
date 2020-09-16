@@ -172,7 +172,7 @@ def _define_shape(**fields):
 
     python_src = [
         "@shape_dataclass",
-        "class {}(object):".format(class_name),
+        "class {}(object, metaclass=ShapeMeta):".format(class_name),
     ]
 
     # fields with defaults must come after fields without default values
@@ -353,7 +353,7 @@ except ImportError:
 
     # this is heavily dependent on the generated code structure, but tests will
     # easily catch if this breaks
-    shape.python_src[1] = "class {}(object):".format(classname)
+    shape.python_src[1] = "class {}(object, metaclass=ShapeMeta):".format(classname)
     python_src += "\n".join(shape.python_src)
 
     python_src += """
