@@ -95,7 +95,7 @@ from contextlib import contextmanager
 from typing import Iterable, List, Mapping, Optional
 
 from antlir.common import check_popen_returncode, get_file_logger, init_logging
-from antlir.fs_utils import Path, temp_dir
+from antlir.fs_utils import META_DIR, Path, temp_dir
 from antlir.nspawn_in_subvol.plugins.shadow_paths import SHADOWED_PATHS_ROOT
 
 from .common import has_yum, yum_is_dnf
@@ -412,28 +412,32 @@ def yum_dnf_from_snapshot(
     # The paths that have trailing slashes are directories, others are
     # files.  There's a separate code path for protecting some files above.
     # The rationale is that those files are not guaranteed to exist.
-    protected_paths.extend(
-        [
-            # See the `_isolate_yum_dnf` docblock for how (and why) this list
-            # was produced.  All are assumed to exist on the host -- otherwise,
-            # we'd be in the awkard situation of leaving them unprotected, or
-            # creating them on the host to protect them.
-            "/etc/yum.repos.d/",  # dnf ALSO needs this isolated
-            f"/etc/{prog_name}/",  # A duplicate for the `yum` case
-            "/etc/pki/rpm-gpg/",
-            "/etc/rpm/",
-            # Hardcode `IMAGE/.meta` because it should ALWAYS be off-limits --
-            # even though the compiler will redundantly tell us to protect it.
-            ".meta/",
-        ]
-        + (
-            # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is
-            # missing
-            ["/etc/yum/"]
-            if (has_yum() and not yum_is_dnf())
-            else []
-        )
-    )
+    protected_paths = [  # do not mutate the argument
+        *protected_paths,
+        *(
+            [
+                # See the `_isolate_yum_dnf` docblock for how (and why) this
+                # list was produced.  All are assumed to exist on the host
+                # -- otherwise, we'd be in the awkard situation of leaving
+                # them unprotected, or creating them on the host.
+                "/etc/yum.repos.d/",  # dnf ALSO needs this isolated
+                f"/etc/{prog_name}/",  # A duplicate for the `yum` case
+                "/etc/pki/rpm-gpg/",
+                "/etc/rpm/",
+                # Hardcode `META_DIR` because it should ALWAYS be off-limits
+                # -- even though the compiler will redundantly tell us to
+                # protect it.
+                META_DIR.decode(),
+            ]
+            + (
+                # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is
+                # missing
+                ["/etc/yum/"]
+                if (has_yum() and not yum_is_dnf())
+                else []
+            )
+        ),
+    ]
     # Only isolate the host DBs and log if we are NOT installing to /.
     install_to_fs_root = install_root.realpath() == b"/"
     if not install_to_fs_root:
@@ -459,7 +463,16 @@ def yum_dnf_from_snapshot(
         ), "If you change --config, you will no longer use the repo snapshot"
 
     with _dummy_dev() as dummy_dev, _dummies_for_protected_paths(
-        protected_paths
+        p
+        for p in protected_paths
+        # Don't require META_DIR to be present, to permit the following
+        # "obvious" path for experimenting with RPM snapshots:
+        #    buck run :ba-container -- --user=root
+        #    mkdir /i1
+        #    dnf install -y --installroot=/i1 jq
+        # Without this check, novice users would be stymied by the
+        # missing `/i1/.meta`.
+        if META_DIR.decode() != p or os.path.exists(install_root / p)
     ) as protected_path_to_dummy, subprocess.Popen(
         [
             "sudo",

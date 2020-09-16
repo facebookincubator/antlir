@@ -26,6 +26,7 @@ from .common import byteme, check_popen_returncode, get_file_logger
 
 log = get_file_logger(__file__)
 
+
 # We need this for lists that can contain a combination of `str` and `bytes`,
 # which is very common with `subprocess`. See https://fburl.com/wiki/dqrqyd8r.
 MehStr = Union[str, bytes]
@@ -252,6 +253,17 @@ class Path(bytes):
     def __str__(self) -> str:
         'Matches `__format__` since people expect `f"{p}" == str(p)`.'
         return self.decode(errors="surrogateescape")
+
+
+# This path is off-limits to regular image operations, it exists only to
+# record image metadata and configuration.  This is at the root, instead of
+# in `etc` because that means that `FilesystemRoot` does not have to provide
+# `etc` and determine its permissions.  In other words, a top-level ".meta"
+# directory makes the compiler less opinionated about other image content.
+#
+# NB: The trailing slash is significant, making this a protected directory,
+# not a protected file.
+META_DIR = Path(".meta/")
 
 
 # Future: If it becomes necessary to serialize dict keys that are `Path`,
