@@ -8,8 +8,6 @@ import unittest
 from collections.abc import Sequence
 from typing import Optional, Union
 
-from pydantic import ValidationError
-
 from .example_loader import example as shape
 from .pyfile_shape import data
 
@@ -50,7 +48,7 @@ class TestShape(unittest.TestCase):
 
     def test_tuple_invalid_element_type(self):
         """fail to instantiate shape with one invalid tuple element"""
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(TypeError):
             shape(
                 answer=42,
                 field=True,
@@ -62,7 +60,7 @@ class TestShape(unittest.TestCase):
 
     def test_list_invalid_element_type(self):
         """fail to instantiate shape with one invalid list element"""
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(TypeError):
             shape(
                 answer=42,
                 field=True,

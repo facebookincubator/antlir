@@ -92,7 +92,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":oss_shim.bzl", "buck_genrule", "python_library", "third_party")
+load(":oss_shim.bzl", "buck_genrule", "python_library")
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
@@ -171,7 +171,7 @@ def _define_shape(**fields):
     ).replace("-", "_")
 
     python_src = [
-        "@dataclass(frozen=True)",
+        "@shape_dataclass",
         "class {}(object):".format(class_name),
     ]
 
@@ -333,15 +333,22 @@ def _validate_tuple_field(spec, data):
 
 def _loader_src(shape, classname):
     """codegen a fully type-hinted python source file to load the given shape"""
-    python_src = """#!/usr/bin/env python3
-import importlib.resources
+    python_src = """import importlib.resources
 import json
 import os
 import pathlib
 import typing
 
-from pydantic.dataclasses import dataclass
-
+# This generated code is used by both shape.python_file and
+# shape.python_loader, which have different constraints around how things can
+# be imported.
+# We prefer to import from the shared antlir.shape library, but
+# shape.python_file produces standalone python source that has the library
+# copied in.
+try:
+    from antlir.shape import *
+except ImportError:
+    pass
 """
 
     # this is heavily dependent on the generated code structure, but tests will
@@ -351,17 +358,17 @@ from pydantic.dataclasses import dataclass
 
     python_src += """
   @classmethod
-  def read_resource(cls, package: str, name: str) -> "shape":
+  def read_resource(cls, package: str, name: str) -> "{c}":
       with importlib.resources.open_text(package, name) as r:
           return cls.read_file(r)
 
   @classmethod
-  def read_file(cls, f: typing.Union[os.PathLike, typing.IO]) -> "shape":
+  def read_file(cls, f: typing.Union[os.PathLike, typing.IO]) -> "{c}":
       if isinstance(f, (str, pathlib.Path)):
           with open(f) as f:
               return cls(**json.load(f))
       return cls(**json.load(f))
-"""
+""".format(c = classname)
     return python_src
 
 def _loader(name, shape, classname = None, **kwargs):
@@ -377,12 +384,7 @@ def _loader(name, shape, classname = None, **kwargs):
     python_library(
         name = name,
         srcs = [":{}={}.py".format(name, name)],
-        deps = [
-            third_party.library(
-                "pydantic",
-                platform = "python",
-            ),
-        ],
+        deps = ["//antlir:shape"],
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
@@ -427,7 +429,10 @@ def _python_file(name, shape):
     buck_genrule(
         name = name,
         out = name,
-        cmd = "echo {} > $OUT".format(shell.quote(python_src)),
+        cmd = """
+            cp $(location //antlir:shape.py) $OUT
+            echo {} >> $OUT
+        """.format(shell.quote(python_src)),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",

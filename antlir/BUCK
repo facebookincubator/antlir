@@ -406,3 +406,15 @@ python_library(
     srcs = ["test_utils.py"],
     deps = [],
 )
+
+# shape.python_file uses the source directly
+export_file(
+    name = "shape.py",
+    src = "shape.py",
+)
+
+# shape.python_loader uses the library target
+python_library(
+    name = "shape",
+    srcs = ["shape.py"],
+)
