@@ -112,3 +112,37 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             hints["lst"].__args__[0].__args__[0].__annotations__, {"id": int}
         )
+
+    def test_repr(self):
+        # Shapes don't have nice classnames, so the repr is customized to be
+        # human-readable. While this has no functional impact on the code, it
+        # is critical for usability, so ensure there are unit tests.
+        self.assertEqual(
+            repr(data),
+            "shape("
+            "answer=42, "
+            "dct={'hello': 'world'}, "
+            "dct_w_shape={'apollo': shape(number=11)}, "
+            "field=True, "
+            "nested=shape(inner=True), "
+            "lst=[shape(id=0), shape(id=1)], "
+            "say_hi=None, "
+            "tp=(True, 42, shape(nested=True))"
+            ")",
+        )
+        # The generated classes also have a custom repr, which is much more
+        # readable
+        self.maxDiff = None
+        self.assertEqual(
+            repr(type(data)),
+            "shape("
+            "answer=int, "
+            "dct=Mapping[str, str], "
+            "dct_w_shape=Mapping[str, shape(number=int)], "
+            "field=bool, "
+            "nested=shape(inner=bool), "
+            "lst=Optional[Sequence[shape(id=int)]], "
+            "say_hi=Optional[str], "
+            "tp=Optional[Tuple[bool, int, shape(nested=bool)]]"
+            ")",
+        )
