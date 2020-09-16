@@ -75,6 +75,7 @@ def initrd(name, uname, module_source):
             module_source = module_source,
             module_list = " ".join(VM_MODULE_LIST),
         ),
+        antlir_rule = "user-internal",
     )
 
     module_base_dir = "/lib/modules/" + uname
@@ -116,4 +117,5 @@ def initrd(name, uname, module_source):
         name = name,
         cmd = "cp --reflink=auto $(location :{}.cpio.gz) $OUT".format(name),
         out = "initrd",
+        antlir_rule = "user-internal",
     )

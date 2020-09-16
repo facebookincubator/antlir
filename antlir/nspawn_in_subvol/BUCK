@@ -14,7 +14,7 @@ load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 buck_genrule(
     name = "repo_config",
     out = "out",
-    antlir_internal_rule = True,
+    antlir_rule = "user-internal",
     bash = "echo {} > $OUT".format(
         # Hack alert: `image.opts` just bypasses the `struct` linter
         shell.quote(image.opts(

@@ -63,7 +63,7 @@ def image_python_unittest(
         ),
         par_style = par_style,
         visibility = visibility,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
         **wrapper_props.inner_test_kwargs
     )
 
@@ -104,5 +104,6 @@ def image_python_unittest(
         # because `root` cannot access the content of unprivileged XARs.
         par_style = "zip",
         visibility = visibility,
+        antlir_rule = "user-facing",  # This runs in customer TARGETS files
         **wrapper_props.outer_test_kwargs
     )

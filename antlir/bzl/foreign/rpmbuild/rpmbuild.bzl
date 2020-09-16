@@ -68,7 +68,7 @@ def image_rpmbuild(
                 --numeric-owner -C $(location {source}) -czf "$OUT" .
         '''.format(source = maybe_export_file(source)),
         visibility = [],
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
     specfile_path = "/rpmbuild/SPECS/specfile.spec"
@@ -90,7 +90,7 @@ def image_rpmbuild(
             image_rpms_install(["yum-utils"]),
         ],
         visibility = [],
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
     rpmbuild_dir = "/rpmbuild"
@@ -114,7 +114,7 @@ def image_rpmbuild(
             specfile_path,
         ],
         serve_rpm_snapshots = serve_rpm_snapshots,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
         **image_layer_kwargs
     )
 
@@ -174,6 +174,7 @@ def image_rpmbuild(
             rpmbuild_layer = ":" + build_layer,
             signer_target = signer,
         ),
+        antlir_rule = "user-facing",
     )
 
 # You typically don't need this if you're installing an RPM signed with a key
@@ -205,7 +206,7 @@ def image_import_rpm_public_key_layer(
         name = copy_layer,
         parent_layer = parent_layer,
         features = [image_mkdir("/", gpg_key_dir[1:])] + install_keys,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
     import_layer = name + "-key-import"
@@ -216,7 +217,7 @@ def image_import_rpm_public_key_layer(
         # Need to be root to modify the RPM DB.
         user = "root",
         cmd = ["/bin/bash", "-c", "rpm --import {}/*".format(gpg_key_dir)],
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
         **image_layer_kwargs
     )
 

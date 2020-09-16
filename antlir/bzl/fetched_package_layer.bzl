@@ -136,7 +136,7 @@ def fetched_package_layers_from_json_dir_db(
         if not p.startswith(package_db_prefix) or not p.endswith(suffix):
             fail("Bug: {} was not {}*/*{}".format(p, package_db_prefix, suffix))
         package, tag = p[len(package_db_prefix):-len(suffix)].split("/")
-        export_file(name = p, antlir_internal_rule = True)
+        export_file(name = p, antlir_rule = "user-internal")
         print_how_to_fetch_json = _print_how_to_fetch_json(":" + p)
         _fetched_package_layer(
             name = package + "/" + tag + layer_suffix,
@@ -210,7 +210,7 @@ def _fetched_package_layer(
             quoted_package = shell.quote(package),
             print_how_to_fetch_json = print_how_to_fetch_json,
         ),
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
     image_layer(
@@ -218,7 +218,7 @@ def _fetched_package_layer(
         features = [":" + package_feature],
         mount_config = ":" + mount_config,
         visibility = visibility,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
 # Deliberately not usable stand-alone, use `fetched_package_layers_from_db`
@@ -250,5 +250,5 @@ def _fetched_package_with_nondeterministic_fs_metadata(
             print_how_to_fetch_json = print_how_to_fetch_json,
         ),
         visibility = get_visibility(visibility, name),
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )

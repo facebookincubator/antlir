@@ -90,3 +90,19 @@ def run_shape_selftests():
             "single_int": 1,
         },
     )
+
+    s = shape.new(
+        shape_spec,
+        dict_str_to_int = {"answer": 42},
+        nested = shape.new(shape_spec.nested, is_nested = True),
+        set_of_str = ("hello",),
+        single_int = 1,
+    )
+    if not hasattr(s, "single_int"):
+        fail("expected dot access to work")
+    if not hasattr(s.nested, "is_nested"):
+        fail("expected nested dot access to work")
+    if not s.nested.is_nested:
+        fail("s.nested.is_nested is wrong")
+    if not s.single_int:
+        fail("s.single_int is wrong")

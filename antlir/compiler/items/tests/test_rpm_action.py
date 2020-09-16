@@ -12,7 +12,7 @@ from antlir.btrfs_diff.tests.render_subvols import (
     check_common_rpm_render,
     pop_path,
 )
-from antlir.fs_utils import Path
+from antlir.fs_utils import Path, temp_dir
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -53,8 +53,10 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             layer_resource_subvol(__package__, "test-build-appliance")
         )
 
-    def _opts(self):
-        return DUMMY_LAYER_OPTS_BA._replace(rpm_installer=self._YUM_DNF)
+    def _opts(self, **kwargs):
+        return DUMMY_LAYER_OPTS_BA._replace(
+            **kwargs, rpm_installer=self._YUM_DNF
+        )
 
     @contextmanager
     def _test_rpm_action_item_install_local_setup(self):
@@ -83,6 +85,42 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
             yield r
 
+    def _check_rpm_action_item_subvol(
+        self, subvol, rpm_item: RpmActionItem, fs_render, *, opts=None
+    ):
+        RpmActionItem.get_phase_builder(
+            [rpm_item], opts if opts else self._opts()
+        )(subvol)
+        subvol.run_as_root(
+            [
+                "rm",
+                "-rf",
+                subvol.path("dev"),
+                subvol.path("etc"),
+                subvol.path(".meta"),
+                subvol.path("var"),
+            ]
+        )
+        self.assertEqual(["(Dir)", fs_render], render_subvol(subvol))
+
+    def test_version_lock(self):
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, temp_dir() as td:
+            with open(td / "vset", "w") as outfile:
+                outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
+
+            subvol = temp_subvolumes.create("rpm_ver_lock")
+            subvol.run_as_root(["mkdir", subvol.path(".meta")])
+            self._check_rpm_action_item_subvol(
+                subvol,
+                RpmActionItem(
+                    from_target="t",
+                    name="rpm-test-carrot",
+                    action=RpmAction.install,
+                    version_set=td / "vset",
+                ),
+                {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
+            )
+
     def test_rpm_action_item_auto_downgrade(self):
         parent_subvol = layer_resource_subvol(
             __package__, "test-with-one-local-rpm"
@@ -99,32 +137,12 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             assert compare_rpm_versions(src_data, subvol_data) < 0
 
             subvol = temp_subvolumes.snapshot(parent_subvol, "rpm_action")
-            RpmActionItem.get_phase_builder(
-                [
-                    RpmActionItem(
-                        from_target="t",
-                        source=src_rpm,
-                        action=RpmAction.install,
-                    )
-                ],
-                self._opts(),
-            )(subvol)
-            subvol.run_as_root(
-                [
-                    "rm",
-                    "-rf",
-                    subvol.path("dev"),
-                    subvol.path("etc"),
-                    subvol.path(".meta"),
-                    subvol.path("var"),
-                ]
-            )
-            self.assertEqual(
-                [
-                    "(Dir)",
-                    {"rpm_test": ["(Dir)", {"cheese1.txt": ["(File d42)"]}]},
-                ],
-                render_subvol(subvol),
+            self._check_rpm_action_item_subvol(
+                subvol,
+                RpmActionItem(
+                    from_target="t", source=src_rpm, action=RpmAction.install
+                ),
+                {"rpm_test": ["(Dir)", {"cheese1.txt": ["(File d42)"]}]},
             )
 
     def _check_cheese_removal(self, local_rpm_path: Path):
@@ -135,34 +153,14 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
             subvol = temp_subvolumes.snapshot(parent_subvol, "remove_cheese")
-            RpmActionItem.get_phase_builder(
-                [
-                    RpmActionItem(
-                        from_target="t",
-                        source=local_rpm_path,
-                        action=RpmAction.remove_if_exists,
-                    )
-                ],
-                self._opts(),
-            )(subvol)
-            subvol.run_as_root(
-                [
-                    "rm",
-                    "-rf",
-                    subvol.path("dev"),
-                    subvol.path("etc"),
-                    subvol.path(".meta"),
-                    subvol.path("var"),
-                ]
-            )
-            self.assertEqual(
-                [
-                    "(Dir)",
-                    {
-                        # No more `rpm_test/cheese2.txt` here.
-                    },
-                ],
-                render_subvol(subvol),
+            self._check_rpm_action_item_subvol(
+                subvol,
+                RpmActionItem(
+                    from_target="t",
+                    source=local_rpm_path,
+                    action=RpmAction.remove_if_exists,
+                ),
+                {},  # No more `rpm_test/cheese2.txt` here.
             )
 
     def test_rpm_action_item_remove_local(self):

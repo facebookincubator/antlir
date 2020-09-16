@@ -11,8 +11,9 @@ currently much more permissive).
 
 ## Please maintain `fake_macro_library` dependencies
 
-Take a look at the doc in
-[antlir/bzl/TARGETS](https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/antlir/bzl/TARGETS?lines=5).
+Take a look at the doc in [antlir/bzl/TARGETS](
+https://github.com/facebookincubator/antlir/blob/master/antlir/bzl/BUCK#L4
+).
 This is kind of a chore, but it helps kick off the right CI jobs when we edit
 `.bzl` files, so it's worth doing.
 
@@ -35,8 +36,9 @@ function nor a macro, but a mix.
 
 -   A function defines no targets, returns a value, and has no side-effects.
     Functions that take mutable arguments are acceptable only in very limited
-    circumstances (e.g.
-    [set_new_key](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/common.py?commit=73c7b3f113146faebd6133d42eaf751cd05d9a8c&lines=77-81)).
+    circumstances (e.g. [set_new_key](
+    https://github.com/facebookincubator/antlir/blob/master/antlir/common.py#L69
+    )).
 -   A macro takes `name` as its first arg, and defines a target of that name
     (along with possibly auxiliary functions). When convenient, an internal
     macro **may** return a path to the target it created, but we have not made
@@ -57,17 +59,17 @@ If your macro defines an purely internal target, make sure it's namespaced so
 that, ideally: - It does not show up in `buck` TAB-completion (put your magic in
 the prefix, not suffix) - The magic prefix should discourages people from typing
 it manually into their TARGETS files or `.bzl` files -- provide an accessor
-method when this is necessary, see e.g.
-[fbpkg.fetched_layer](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/fbpkg/facebook/fbpkg.bzl)
-- If appropriate, use
-  [mangle_target](https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/bzl/target_tagger.bzl?commit=30ea8293608c719e3dc2ccdaaa3e6a2acc234265&lines=74),
-  but be aware that it's currently possible for the mangled form to collide
-  among different input target names (there are lo-pri work items for this).
+method when this is necessary, see e.g.  the FB-internal `fetched_layer` in
+`fbpkg.bzl`.
+
+  - If appropriate, use [mangle_target](
+    https://github.com/facebookincubator/antlir/blob/master/antlir/bzl/target_helpers.bzl#L32
+    ).
 
 There are exceptions to this, which are magic target names that we expect users
-to type as part of a `buck` command-line on a regular basis, e.g.: -
-`-container` and `-boot` for `image.layer`s -`--test-layer` for
-`image.*_unittest`s
+to type as part of a `buck` command-line on a regular basis, e.g.:
+  - `-container` and `-boot` for `image.layer`s
+  - `--test-layer` for `image.*_unittest`s
 
 ## Get expert review when writing genrules
 
@@ -109,16 +111,60 @@ something like `python3 "/path to/the actual/binary"`.
 ## Use `maybe_export_file` when appropriate
 
 If your macro takes an argument that is a target, and that target might
-sometimes be an in-repo file, use `maybe_export_file
-<https://our.intern.facebook.com/intern/diffusion/FBS/browse/master/fbcode/antlir/bzl/maybe_export_file.bzl>`__.
+sometimes be an in-repo file, use [maybe_export_file](
+https://github.com/facebookincubator/antlir/blob/master/antlir/bzl/maybe_export_file.bzl
+).
 
-Use ``antlir_internal_rule`` for any internal rules
------------------------------------------------------
+## Load from `oss_shim.bzl`, avoid built-in (or fbcode) build rules
 
-If you're using any macros to generate internal "wrapper" rules (i.e. any rule
-that doesn't use the ``name`` of the underlying target), you should set the
-``antlir_internal_rule`` kwarg to true in the definition.
+This shim exists to bridge the differences between the semantics of
+FB-internal build rules, and those of OSS Buck.  If you bypass it, you will
+either break Antlir for FB-internal users, or for OSS users.
 
-This is good practice as it enables further post-processing when determining
-dependencies. We use this internally in fb for example to compute the
-"human-visible" dependency cost to a target, after omitting internal targets.
+Note that any newly shimmed rules have to follow a few basic practices:
+ - Follow the fbcode API, unless the rule has no counterpart in fbcode.
+ - Add both an OSS and FB implementation.
+ - In both implementations, wrap your rule with `_wrap_internal`.
+ - Follow the local naming & sorting conventions.
+
+## Mark user-instantiated rules with `antlir_rule = "user-{facing,internal}"`
+
+All Buck rules used within Antlir have an `antlir_rule` kwarg.
+
+You can declare Buck rules in one of three contexts.  The context
+corresponds to the value of the `antlir_rule` kwarg:
+
+ - `"antlir-private"` (default): A private implementation detail of Antlir --
+   e.g.  a `python_library` that is linked into the image compiler.  These
+   rules need no explicit annotation.
+
+ - `"user-facing"`: A rule that may be instantiated in a user project (aka
+   a Buck package outside of `//antlir`), and whose output is directly
+   consumed by the user.  Specifically, the rule's `name` must be the `name`
+   provided by the end-user, and the artifact must be user-exposed.  For
+   example, `image.package` is user-facing, whereas `image.feature` or
+   `image.layer` are considered implementation plumbing, even though users
+   declare them directly.
+
+ - `"user-internal"`: A rule that may be instantiated in a user project,
+   whose output is not directly usable by the client.  Besides
+   `image.{feature,layer}`, this includes private intermediate targets like
+   `PREFIX-<name>`.
+
+**Marking rules `"user-internal"` is important**, since FB on-diff CI only
+runs builds & test within a certain dependency distance from the modified
+sources, and `"user-internal"` targets get excluded from this distance
+calculation to ensure that the right CI targets get triggered.
+
+To ensure that all user-instantiated (`"user-facing"` / `"user-internal"`)
+rules are annotated, un-annotated rules will **fail to instantiate** from
+inside a user project.  That is, if your rule doesn't set `antlir_rule`, it
+defaults to `"antlir-private"`, which triggers `_assert_package()`, which
+will fail if the Buck package path does not start with `antlir/`. This
+has two desirable effects:
+ - Antlir devs will not forget to annotate user-instantiated rules.
+ - External devs will not be able to (erroneously) load rules from
+   `oss_shim.bzl`.
+
+The implementation details and more specific docs can be found in
+`antlir/bzl/oss_shim_impl.bzl`.

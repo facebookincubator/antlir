@@ -36,13 +36,16 @@ mv "$TMP/out" "$OUT"
         cacheable = False,
         executable = True,
         visibility = [],
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
 def _image_layer_impl(
         _rule_type,
         _layer_name,
         _make_subvol_cmd,
+        # For now, layer implementations mark this explicitly.  I doubt that
+        # "antlir-private" is a sensible default here.
+        antlir_rule,
         # Layers can be used in the `mounts` field of an `image.feature`.
         # This setting affects how **this** layer may be mounted inside
         # others.
@@ -77,8 +80,7 @@ def _image_layer_impl(
         # Set this to emit a `-boot` target, running which will boot
         # `systemd` inside the image.
         enable_boot_target = False,
-        visibility = None,
-        antlir_internal_rule = False):
+        visibility = None):
     visibility = get_visibility(visibility, _layer_name)
     if mount_config == None:
         mount_config = {}
@@ -177,7 +179,7 @@ def _image_layer_impl(
         cacheable = False,
         type = _rule_type,  # For queries
         visibility = visibility,
-        antlir_internal_rule = antlir_internal_rule,
+        antlir_rule = antlir_rule,
     )
     _add_run_in_subvol_target(_layer_name, "container")
     if enable_boot_target:

@@ -211,9 +211,14 @@ def _instantiate_shape(shape, **fields):
     error_msg = _validate_shape(shape, fields)
     if error_msg:
         fail(error_msg)
+    plain_data = {k: _plain_data(v) for k, v in fields.items()}
     return struct(
         _shape_type = shape,
-        _data = struct(**{k: _plain_data(v) for k, v in fields.items()}),
+        # _data is internally used for all serialization, but expose the fields
+        # as first-class members to enable easy access from starlark code after
+        # the shape instance has been constructed and validated
+        _data = struct(**plain_data),
+        **plain_data
     )
 
 def _primitive_field(type_, **field_kwargs):
@@ -365,6 +370,9 @@ def _loader(name, shape, classname = None, **kwargs):
         name = "{}={}.py".format(name, name),
         out = "unused.py",
         cmd = "echo {} > $OUT".format(shell.quote(python_src)),
+        # Antlir users should not directly use `shape`, but we do use it
+        # as an implementation detail of "builder" / "publisher" targets.
+        antlir_rule = "user-internal",
     )
     python_library(
         name = name,
@@ -375,6 +383,9 @@ def _loader(name, shape, classname = None, **kwargs):
                 platform = "python",
             ),
         ],
+        # Antlir users should not directly use `shape`, but we do use it
+        # as an implementation detail of "builder" / "publisher" targets.
+        antlir_rule = "user-internal",
         **kwargs
     )
 
@@ -417,6 +428,9 @@ def _python_file(name, shape):
         name = name,
         out = name,
         cmd = "echo {} > $OUT".format(shell.quote(python_src)),
+        # Antlir users should not directly use `shape`, but we do use it
+        # as an implementation detail of "builder" / "publisher" targets.
+        antlir_rule = "user-internal",
     )
     return normalize_target(":" + name)
 
@@ -427,6 +441,9 @@ def _json_file(name, shape):
         name = name,
         out = "out.json",
         cmd = "echo {} > $OUT".format(shell.quote(shape._data.to_json())),
+        # Antlir users should not directly use `shape`, but we do use it
+        # as an implementation detail of "builder" / "publisher" targets.
+        antlir_rule = "user-internal",
     )
     return normalize_target(":" + name)
 

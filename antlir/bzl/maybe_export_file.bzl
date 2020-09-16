@@ -40,6 +40,6 @@ def maybe_export_file(source):
         name = buck_target_name,
         src = source,
         visibility = ["//visibility:private"],
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
     return ":" + buck_target_name

@@ -75,11 +75,11 @@ class NspawnTestCase(NspawnTestBase):
                 ["--layer", "test", "--bind-repo-ro"]
             ),
         )
-        # artifacts_may_require_repo
+        # artifacts_require_repo
         self.assertIn(
             "/repo/root:/repo/root",
             self._wrapper_args_to_nspawn_args(
-                ["--layer", "test"], artifacts_may_require_repo=True
+                ["--layer", "test"], artifacts_require_repo=True
             ),
         )
 
@@ -129,7 +129,7 @@ class NspawnTestCase(NspawnTestBase):
                 allow_debug_only_opts=True,
             )
         with _mocks_for_extra_nspawn_args(
-            artifacts_may_require_repo=False
+            artifacts_require_repo=False
         ), mock.patch.dict(os.environ, {"THRIFT_TLS_TEST": "test_val"}):
             _nspawn_args, cmd_env = _extra_nspawn_args_and_env(args.opts)
             self.assertIn("THRIFT_TLS_TEST=test_val", cmd_env)

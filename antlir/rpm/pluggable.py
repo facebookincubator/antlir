@@ -36,6 +36,7 @@ class Pluggable:
                     f"{cls} and {d[plugin_kind]} have the same plugin kind"
                 )
             d[plugin_kind] = cls
+            cls._pluggable_kind = plugin_kind
 
     @classmethod
     def from_json(cls, json_cfg: Dict[str, Any]) -> "Pluggable":
@@ -61,7 +62,7 @@ class Pluggable:
                 f'`{p}`' for p in list(
                     inspect.signature(c.__init__).parameters.values()
                 )[1:]
-            )}"""
+            ) or 'no args'}"""
             for n, c in cls._pluggable_base._pluggable_kind_to_cls.items()
         )
         parser.add_argument(

@@ -30,7 +30,7 @@ def image_cpp_unittest(
         name = helpers.hidden_test_name(name),
         tags = helpers.tags_to_hide_test(),
         visibility = visibility,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
         **wrapper_props.inner_test_kwargs
     )
 
@@ -43,7 +43,7 @@ def image_cpp_unittest(
         # because `root` cannot access the content of unprivileged XARs.
         par_style = "zip",
         visibility = visibility,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
     # Here, we generate a C file, whose only job is to `execv` the Python
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {{
 ' > "$OUT"
         """,
         visibility = visibility,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
     env = wrapper_props.outer_test_kwargs.pop("env")
