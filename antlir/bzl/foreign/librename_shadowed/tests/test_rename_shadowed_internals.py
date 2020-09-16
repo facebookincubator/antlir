@@ -61,7 +61,7 @@ class TestRenameShadowedInternals(unittest.TestCase):
         # NB: This may leak on SystemExit et al
         cls.addClassCleanup(td_ctx.__exit__, None, None, None)
 
-        os.environ["FS_IMAGE_SHADOWED_PATHS_ROOT"] = f"{cls._shadow}"
+        os.environ["ANTLIR_SHADOWED_PATHS_ROOT"] = f"{cls._shadow}"
 
         lib_ctx = Path.resource(__package__, "librename_shadowed.so", exe=False)
         lib_path = lib_ctx.__enter__()

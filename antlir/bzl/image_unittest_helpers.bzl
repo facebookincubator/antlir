@@ -81,7 +81,7 @@ def _nspawn_wrapper_properties(
         parent_layer = layer,
         features = [image_install_buck_runnable(inner_test_target, binary_path)],
         visibility = visibility,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
     # Generate a `.py` file that sets some of the key container options.
@@ -136,7 +136,7 @@ mv $TMP/out "$OUT"
             binary_path_repr = repr(binary_path),
         ),
         visibility = visibility,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
         cacheable = False,
     )
 
@@ -163,7 +163,7 @@ mv $TMP/out "$OUT"
         deps = ["//antlir/nspawn_in_subvol:run-test-library"],
         resources = {":" + test_layer: "nspawn-in-test-subvol-layer"},
         srcs = {":" + test_spec_py: "__image_python_unittest_spec__.py"},
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
     return struct(

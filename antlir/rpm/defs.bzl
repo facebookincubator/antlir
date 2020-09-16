@@ -16,7 +16,7 @@ def test_rpm_repo_snapshot(name, kind, rpm_installers):
             --gpg-keypair-dir "$keypair_dir" \
             &> "$logfile" || (cat "$logfile" 1>&2 ; exit 1)
         """.format(quoted_kind = shell.quote(kind)),
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
     rpm_repo_snapshot(
         name = name,

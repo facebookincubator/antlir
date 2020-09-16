@@ -44,4 +44,7 @@ def image_layer_alias(name, layer, visibility = None):
         cacheable = False,
         type = "image_layer_alias",
         visibility = get_visibility(visibility, name),
+        # This should definitely not count towards CI dependency distance
+        # between sources & build nodes.
+        antlir_rule = "user-internal",
     )

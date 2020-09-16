@@ -1,0 +1,41 @@
+load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library")
+
+python_library(
+    name = "envra",
+    srcs = ["envra.py"],
+    deps = ["//antlir/rpm:rpm_metadata"],
+)
+
+# To use this, add `facebook:package_group` to your `deps`, but import this
+# outer `.package_group` module.
+python_library(
+    name = "package_group",
+    srcs = ["package_group.py"],
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir/rpm:pluggable",
+    ],
+)
+
+# To use this, add `facebook:version_policy` to your `deps`, but import this
+# outer `.version_policy` module.
+python_library(
+    name = "version_policy",
+    srcs = ["version_policy.py"],
+    deps = [
+        ":envra",
+        "//antlir:fs_utils",
+        "//antlir/rpm:pluggable",
+    ],
+)
+
+python_binary(
+    name = "update-allowed-versions",
+    srcs = ["update_allowed_versions.py"],
+    main_module = "antlir.rpm.allowed_versions.update_allowed_versions",
+    deps = [
+        ":envra",
+        "//antlir/rpm/allowed_versions/facebook:package_group",
+        "//antlir/rpm/allowed_versions/facebook:version_policy",
+    ],
+)

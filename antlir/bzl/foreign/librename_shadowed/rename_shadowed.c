@@ -7,7 +7,7 @@
 
 // This is meant to be `LD_PRELOAD`ed into `yum` or `dnf`.  We intercept the
 // `rename` glibc call, and check whether the destination path exists under
-// `FS_IMAGE_SHADOWED_PATHS_ROOT`.  If the shadowed path does exist, change
+// `ANTLIR_SHADOWED_PATHS_ROOT`.  If the shadowed path does exist, change
 // the destination path of the `rename` to overwrite it.  If the shadowed
 // path does not exist, or the environment variable is not set, perform the
 // unmodified `rename`.
@@ -89,14 +89,14 @@ __attribute__((__constructor__)) static void __init__() {
     //
     // As far as security, we're an `LD_PRELOAD` library, so we already
     // trust the environment roughly 100%.
-    g_shadowed_paths_root = getenv("FS_IMAGE_SHADOWED_PATHS_ROOT");
+    g_shadowed_paths_root = getenv("ANTLIR_SHADOWED_PATHS_ROOT");
     if (g_shadowed_paths_root) {
         g_len_shadowed_paths_root = strlen(g_shadowed_paths_root);
     }
 }
 
 // If the parent directory of `path` exists, and the environment variable
-// `FS_IMAGE_SHADOWED_PATHS_ROOT` is set, allocates and returns a
+// `ANTLIR_SHADOWED_PATHS_ROOT` is set, allocates and returns a
 // NUL-terminated canonical "shadowed original" for `path`, under that root.
 //
 // Returns NULL on error.

@@ -44,7 +44,7 @@ Read that target's docblock for more info, but in essence, that will:
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
@@ -102,7 +102,7 @@ def PRIVATE_DO_NOT_USE_feature_target_name(name, version_set):
     # When a feature is declared, it doesn't know the version set of the
     # layer that will use it, so we normally declare all possible variants.
     # This is only None when there are no version sets in use.
-    if version_set != None:
+    if version_set != VERSION_SET_ALLOW_ALL_VERSIONS:
         name += "__rpm_verset__" + version_set
     return name
 
@@ -141,8 +141,7 @@ def _normalize_feature_and_get_deps(feature, version_set):
         # only mutate the `version_set` key.
         feature_dict["rpms"] = [dict(**r) for r in aliased_rpms]
 
-    # This is only None when there are no version sets in use.
-    if version_set != None:
+    if version_set != VERSION_SET_ALLOW_ALL_VERSIONS:
         vs_path = REPO_CFG.version_set_to_path[version_set]
 
         # Resolve RPM names to version set targets.  We cannot avoid this
@@ -219,7 +218,7 @@ def private_do_not_use_feature_json_genrule(
             output_feature_cmd = output_feature_cmd,
         ),
         visibility = visibility,
-        antlir_internal_rule = True,
+        antlir_rule = "user-internal",
     )
 
 def image_feature(

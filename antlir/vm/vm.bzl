@@ -12,4 +12,5 @@ def vm(name, kernel):
             kernel.initrd: "initrd",
             kernel.modules: "modules",
         },
+        antlir_rule = "user-internal",
     )

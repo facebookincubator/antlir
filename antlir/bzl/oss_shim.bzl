@@ -9,16 +9,16 @@ def _check_args(rule, args, kwargs, allowed_kwargs):
         fail("use kwargs")
     for kwarg in kwargs:
         if kwarg not in allowed_kwargs:
-            fail("kwarg {} is not supported by {}".format(
+            fail("kwarg `{}` is not supported by the OSS shim for `{}`".format(
                 kwarg,
                 rule,
             ))
 
 def _make_rule_kwargs_dict(lst):
-    # `antlir_internal_rule` is forwarded to oss_shim_impl.bzl and is used to
-    # mark rules as internal to our antlir implementation. See further
-    # comments in that file to understand reasoning.
-    return {k: 1 for k in lst + ["antlir_internal_rule"]}
+    # `antlir_rule` is forwarded to oss_shim_impl.bzl and is used to mark
+    # rules as "antlir-private", "user-internal", or "user-facing".  Read
+    # the comments in that file for the detailed rationale.
+    return {k: 1 for k in lst + ["antlir_rule"]}
 
 _CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
     ["name", "deps", "env", "srcs", "tags", "use_default_test_main", "visibility", "external_deps"],

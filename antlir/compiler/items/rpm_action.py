@@ -8,6 +8,8 @@ import enum
 import os
 import pwd
 import shlex
+import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
@@ -203,6 +205,21 @@ def _rpms_and_bind_ros(
     return rpms, bind_ros
 
 
+@contextmanager
+def _prepare_versionlock(version_sets: Iterable[Path]) -> Path:
+    with tempfile.NamedTemporaryFile() as outfile:
+        # Blindly concatenate the files in the supplied paths; some modest
+        # error-checking will happen in `yum_dnf_versionlock.py`.
+        for vs_path in version_sets:
+            with open(vs_path, "rb") as infile:
+                for l in infile:
+                    outfile.write(l)
+                    if not l.endswith(b"\n"):
+                        outfile.write(b"\n")
+        outfile.flush()
+        yield outfile.name
+
+
 # These items are part of a phase, so they don't get dependency-sorted, so
 # there is no `requires()` or `provides()` or `build()` method.
 @dataclass(init=False, frozen=True)
@@ -210,7 +227,6 @@ class RpmActionItem(ImageItem):
     action: RpmAction
     name: Optional[str] = None
     source: Optional[str] = None
-    # NB: Unused at present, will be used in a future diff.
     version_set: Optional[Path] = None
 
     @classmethod
@@ -238,32 +254,42 @@ class RpmActionItem(ImageItem):
         # This Mapping[RpmAction, Union[str, _LocalRpm]] powers builder() below.
         action_to_names_or_rpms = _get_action_to_names_or_rpms(items)
 
+        # Future: when we add per-layer version set overrides, they will
+        # need apply on top of the repo-wide version set we are using.
+        version_sets = set()
+        for item in items:
+            if item.version_set is None:
+                continue
+            version_sets.add(item.version_set)
+
         def builder(subvol: Subvol) -> None:
-            # Convert porcelain RpmAction to plumbing YumDnfCommands.  This
-            # is done in the builder because we need access to the subvol.
-            #
-            # Sort by command for determinism and (hopefully) better behaivor.
-            for cmd, nors in sorted(
-                _convert_actions_to_commands(
-                    subvol, action_to_names_or_rpms
-                ).items(),
-                key=lambda cn: YUM_DNF_COMMAND_ORDER[cn[0]],
-            ):
-                rpms, bind_ros = _rpms_and_bind_ros(nors)
-                _yum_dnf_using_build_appliance(
-                    build_appliance=build_appliance,
-                    bind_ros=bind_ros,
-                    install_root=subvol.path(),
-                    protected_paths=protected_path_set(subvol),
-                    yum_dnf_args=[
-                        cmd.value,
-                        "--assumeyes",
-                        # Sort ensures determinism even if `yum` or `dnf` is
-                        # order-dependent
-                        *sorted(rpms),
-                    ],
-                    layer_opts=layer_opts,
-                )
+            with _prepare_versionlock(version_sets) as versionlock_path:
+                # Convert porcelain RpmAction to plumbing YumDnfCommands.  This
+                # is done in the builder because we need access to the subvol.
+                #
+                # Sort by command for determinism and clearer behaivor.
+                for cmd, nors in sorted(
+                    _convert_actions_to_commands(
+                        subvol, action_to_names_or_rpms
+                    ).items(),
+                    key=lambda cn: YUM_DNF_COMMAND_ORDER[cn[0]],
+                ):
+                    rpms, bind_ros = _rpms_and_bind_ros(nors)
+                    _yum_dnf_using_build_appliance(
+                        build_appliance=build_appliance,
+                        bind_ros=bind_ros,
+                        install_root=subvol.path(),
+                        protected_paths=protected_path_set(subvol),
+                        versionlock_list=versionlock_path,
+                        yum_dnf_args=[
+                            cmd.value,
+                            "--assumeyes",
+                            # Sort ensures determinism even if `yum` or
+                            # `dnf` is order-dependent
+                            *sorted(rpms),
+                        ],
+                        layer_opts=layer_opts,
+                    )
 
         return builder
 
@@ -283,6 +309,7 @@ def _yum_dnf_using_build_appliance(
     bind_ros: List[Tuple[str, str]],
     install_root: Path,
     protected_paths: Iterable[str],
+    versionlock_list: Path,
     yum_dnf_args: List[str],
     layer_opts: LayerOpts,
 ) -> None:
@@ -337,7 +364,9 @@ def _yum_dnf_using_build_appliance(
         PopenArgs(),
         plugins=rpm_nspawn_plugins(
             opts=opts,
-            # Future: add `snapshots_and_versionlocks` here:
-            plugin_args=NspawnPluginArgs(serve_rpm_snapshots=[snapshot_dir]),
+            plugin_args=NspawnPluginArgs(
+                serve_rpm_snapshots=[snapshot_dir],
+                snapshots_and_versionlocks=[(snapshot_dir, versionlock_list)],
+            ),
         ),
     )

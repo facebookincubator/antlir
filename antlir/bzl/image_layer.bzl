@@ -99,6 +99,8 @@ def image_layer(
         # A struct containing fields accepted by `_build_opts` from
         # `compile_image_features.bzl`.
         build_opts = None,
+        # Future: we plan to make this "user-internal" soon.
+        antlir_rule = "user-facing",
         # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
         # for all other supported kwargs.
         **image_layer_kwargs):
@@ -112,5 +114,6 @@ def image_layer(
             features = features,
             build_opts = build_opts,
         ),
+        antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

@@ -26,8 +26,10 @@ def image_package(
         visibility = None,
         writable_subvolume = False,
         seed_device = False,
-        # See comments in `oss_shim.bzl`
-        antlir_internal_rule = False,
+        # Since `image.package` produces a real Buck-visible build artifact,
+        # "user-facing" is the only sane default.  See comments in
+        # `oss_shim.bzl` for how this works.
+        antlir_rule = "user-facing",
         # Build appliance to use when creating packages
         build_appliance = REPO_CFG.build_appliance_default):
     visibility = get_visibility(visibility, name)
@@ -105,5 +107,5 @@ def image_package(
             target_name = name,
         ),
         visibility = visibility,
-        antlir_internal_rule = antlir_internal_rule,
+        antlir_rule = antlir_rule,
     )

@@ -41,11 +41,11 @@ def _mocks_for_parse_cli_args():
 
 
 @contextmanager
-def _mocks_for_extra_nspawn_args(*, artifacts_may_require_repo):
+def _mocks_for_extra_nspawn_args(*, artifacts_require_repo):
     with mock.patch(
-        "antlir.nspawn_in_subvol.cmd._artifacts_may_require_repo"
+        "antlir.nspawn_in_subvol.cmd._artifacts_require_repo"
     ) as amrr_mock:
-        amrr_mock.side_effect = [artifacts_may_require_repo]
+        amrr_mock.side_effect = [artifacts_require_repo]
         yield
 
 
@@ -74,12 +74,12 @@ class NspawnTestBase(TestCase):
         return ret
 
     def _wrapper_args_to_nspawn_args(
-        self, argv, *, artifacts_may_require_repo=False
+        self, argv, *, artifacts_require_repo=False
     ):
         with _mocks_for_parse_cli_args():
             args = _parse_cli_args(argv, allow_debug_only_opts=True)
         with _mocks_for_extra_nspawn_args(
-            artifacts_may_require_repo=artifacts_may_require_repo
+            artifacts_require_repo=artifacts_require_repo
         ):
             args, _env = _extra_nspawn_args_and_env(args.opts)
             return args

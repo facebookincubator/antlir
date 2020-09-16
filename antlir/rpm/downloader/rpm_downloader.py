@@ -84,9 +84,6 @@ def _detect_mutable_rpms(
         all_canonical_checksums_and_universes,
         my_checksums_and_universes,
     )
-    all_canonical_checksums_and_universes.difference_update(
-        my_checksums_and_universes
-    )
 
     # Ignore previously diagnosed & remediated bad RPM blobs
     rpm_nevra = rpm.nevra()
@@ -102,14 +99,16 @@ def _detect_mutable_rpms(
         f"{rpm} was in deleted_mutable_rpms with universe {rpm_universe}, "
         "but it still exists in repos"
     )
-    all_canonical_checksums_and_universes.difference_update(
-        deleted_checksums_and_universes
-    )
 
+    mutable_checksums_and_universes = (
+        all_canonical_checksums_and_universes
+        - my_checksums_and_universes
+        - deleted_checksums_and_universes
+    )
     # If anything is left over, the repos have this NEVRA with multiple
-    # variants of its contents, which means installig it would be
+    # variants of its contents, which means installing it would be
     # nondeterministic.  So, we will refuse to serve it from the snapshot.
-    if all_canonical_checksums_and_universes:
+    if mutable_checksums_and_universes:
         # Future: It would be nice to mark all mentions of the NEVRA
         # as bad, but that requires messy updates of multiple
         # `RepoSnapshot`s.  For now, we rely on the fact that the next
@@ -118,7 +117,7 @@ def _detect_mutable_rpms(
             location=rpm.location,
             storage_id=storage_id,
             checksum=rpm.canonical_checksum,
-            other_checksums_and_universes=all_canonical_checksums_and_universes,
+            other_checksums_and_universes=mutable_checksums_and_universes,
         )
     return storage_id
 

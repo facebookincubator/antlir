@@ -144,6 +144,7 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
             name = name,
             out = "dummyfile",
             bash = 'touch "$OUT"',
+            antlir_rule = "user-internal",
         )
         return False, target
     buck_genrule(
@@ -174,6 +175,7 @@ mv "$TMP/out" "$OUT"
         # Whatever we wrap was executable, so the wrapper might as well be, too
         executable = True,
         visibility = get_visibility(visibility, name),
+        antlir_rule = "user-internal",
     )
     return True, ":" + name
 

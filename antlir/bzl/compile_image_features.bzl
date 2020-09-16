@@ -91,7 +91,6 @@ def compile_image_features(
         features = []
 
     build_opts = _build_opts(**(structs.to_dict(build_opts) if build_opts else {}))
-
     target_tagger = new_target_tagger()
     normalized_features = normalize_features(
         features + (
@@ -115,10 +114,10 @@ def compile_image_features(
         #
         # `exe` vs `location` is explained in `image_package.py`.
         #
-        # We access `FS_IMAGE_DEBUG` because this is never expected to
+        # We access `ANTLIR_DEBUG` because this is never expected to
         # change the output, so it's deliberately not a Buck input.
         $(exe //antlir:compiler) {maybe_artifacts_require_repo} \
-          ${{FS_IMAGE_DEBUG:+--debug}} \
+          ${{ANTLIR_DEBUG:+--debug}} \
           --subvolumes-dir "$subvolumes_dir" \
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \

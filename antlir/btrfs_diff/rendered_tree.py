@@ -119,7 +119,6 @@ def gather_bottom_up(
     if not isinstance(ser, list):
         raise RuntimeError(f"Unknown type in rendered subvolume: {ser}")
     elif len(ser) == 1:
-        # pyre-fixme[7]: Generator vs Coroutine?!
         return (yield _path, ser[0], None)
     elif len(ser) != 2:
         raise RuntimeError(f"Rendered inode list length != 1, 2: {ser}")
@@ -138,7 +137,6 @@ def gather_bottom_up(
                 # normpath to remove the leading ./
                 _path=os.path.normpath(os.path.join(_path, name)),
             )
-    # pyre-fixme[7]: Generator vs Coroutine?!
     return (yield (_path, ino, child_results))  # noqa: B901
 
 

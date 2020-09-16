@@ -33,7 +33,17 @@ import copy
 import hashlib
 import json
 import os
-from typing import Callable, List, Mapping, Tuple
+from enum import Enum
+from typing import (
+    Callable,
+    ContextManager,
+    Dict,
+    Iterator,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+)
 
 from .common import get_file_logger, init_logging
 from .fs_utils import Path, populate_temp_dir_and_rename
@@ -48,11 +58,11 @@ Package = str
 Tag = str
 # For each (package, tag), the DB stores this opaque dictionary, which tells
 # `_PackageFetcherInfo.fetch_package` how to download the package.
-DbInfo = Mapping[str, str]
+DbInfo = Dict[str, str]
 # This opaque map is passed from the command-line (via `--create` or
 # `--replace`) down to the implementation in `GetDbInfoFn`, and helps
 # it to decide how to obtain the `DbInfo` for the given (package, tag).
-DbUpdateOptions = Mapping[str, str]
+DbUpdateOptions = Dict[str, str]
 # The simplest implementation of `GetDbInfoFn` is the identity:
 #
 #     def get_db_info(package, tag, options):
@@ -80,9 +90,21 @@ DbUpdateOptions = Mapping[str, str]
 #     updater --db path
 GetDbInfoFn = Callable[[Package, Tag, DbUpdateOptions], DbInfo]
 # The in-memory representation of the package DB.
-PackageTagDb = Mapping[Package, Mapping[Tag, DbInfo]]
-# `--replace` and `--create` parameters are parsed into this form.
-ExplicitUpdates = Mapping[Package, Mapping[Tag, DbUpdateOptions]]
+PackageTagDb = Dict[Package, Dict[Tag, DbInfo]]
+
+
+class UpdateAction(Enum):
+    CREATE = "create"
+    REPLACE = "replace"
+
+
+class PackageDbUpdate(NamedTuple):
+    action: UpdateAction
+    options: DbUpdateOptions
+
+
+# `--replace` and `--create` opts are parsed into this form.
+ExplicitUpdates = Dict[Package, Dict[Tag, PackageDbUpdate]]
 
 
 def _with_generated_header_impl(s, token, how_to_generate):
@@ -143,74 +165,121 @@ def _read_json_dir_db(path: Path) -> PackageTagDb:
     return db
 
 
+def _validate_updates(existing_db: PackageTagDb, pkg_updates: ExplicitUpdates):
+    """Perform validations on any updates that were provided:
+        - Don't create package:tag pairs that already exist
+        - Don't replace package:tag pairs that don't already exist
+    """
+    for pkg, tag_to_update in pkg_updates.items():
+        for tag, update in tag_to_update.items():
+            tag_exists = tag in existing_db.get(pkg, {})
+            if update.action == UpdateAction.CREATE and tag_exists:
+                raise AssertionError(
+                    "Attempting to create a package:tag that already "
+                    f"exists in the DB: {pkg}:{tag}"
+                )
+            elif update.action == UpdateAction.REPLACE and not tag_exists:
+                raise AssertionError(
+                    "Attempting to replace a package:tag that does not "
+                    f"exist in the DB: {pkg}:{tag}"
+                )
+
+
 def _get_updated_db(
     *,
     existing_db: PackageTagDb,
-    update_existing: bool,
-    create_items: ExplicitUpdates,
-    replace_items: ExplicitUpdates,
     get_db_info_fn: GetDbInfoFn,
+    update_existing: bool,
+    pkg_updates: ExplicitUpdates,
 ) -> PackageTagDb:
-    # The `updates` map tells us the packages, for which we have to fetch
-    # new DB entries.
-    updates = (
-        {
-            package: {tag: {} for tag in tag_to_info}
-            for package, tag_to_info in existing_db.items()
+    _validate_updates(existing_db, pkg_updates)
+    # Extract option dicts from the `PackageDbUpdate` objects that were
+    # provided, as this is the format of the existing DB that gets extracted
+    pkg_to_update_dcts = {
+        pkg: {tag: update.options for tag, update in tag_to_update.items()}
+        for pkg, tag_to_update in pkg_updates.items()
+    }
+    if update_existing:
+        # We're updating the entire DB so we start with a clean slate
+        db_to_update = {}
+        updates_to_apply = {
+            # These are existing DB entries for which we have to fetch and
+            # resolve new values.
+            **{
+                pkg: {tag: {} for tag in tag_to_info}
+                for pkg, tag_to_info in existing_db.items()
+            },
+            **pkg_to_update_dcts,
         }
-        if update_existing
-        else {}
-    )
-    # Merge any `ExplictUpdates` into `updates.  "replace" precedes "create"
-    # to make us fail if a `--replace` conflicts with a `--create`.
-    for explicit_updates in [replace_items, create_items]:
-        for package, in_tag_to_update_opts in explicit_updates.items():
-            out_tag_to_update_opts = updates.setdefault(package, {})
-            for tag, update_opts in in_tag_to_update_opts.items():
-                seen_before = (tag in out_tag_to_update_opts) or (
-                    tag in existing_db.get(package, {})
-                )
-                if explicit_updates is create_items:
-                    assert not seen_before, (package, tag)
-                elif explicit_updates is replace_items:
-                    # Since `replace` is applied first, this will never
-                    # erroneously `replace` a conflicting `create`.
-                    assert seen_before, (package, tag)
-                else:  # pragma: no cover
-                    raise AssertionError("Not reached")
-                out_tag_to_update_opts[tag] = update_opts
+    else:
+        # If we are not updating the existing DB (i.e. explicit updates only),
+        # start with a copy of the existing DB, and replace info as we go.
+        db_to_update = copy.deepcopy(existing_db)
+        updates_to_apply = pkg_to_update_dcts
 
-    # If we are not updating the existing DB (i.e. explicit updates only),
-    # start with a copy of the existing DB, and replace infos as we go.
-    new_db = copy.deepcopy(existing_db) if not update_existing else {}
-
-    # Apply all `updates` to `new_db`
-    for package, tag_to_update_opts in updates.items():
-        new_tag_to_info = new_db.setdefault(package, {})
-        for tag, update_opts in tag_to_update_opts.items():
-            log.info(f"Querying {package}:{tag} with options {update_opts}")
-            info = get_db_info_fn(package, tag, update_opts)
+    for pkg, tag_to_update in updates_to_apply.items():
+        new_tag_to_info = db_to_update.setdefault(pkg, {})
+        for tag, update_opts in tag_to_update.items():
+            log.info(f"Querying {pkg}:{tag} with options {update_opts}")
+            info = get_db_info_fn(pkg, tag, update_opts)
             new_tag_to_info[tag] = info
-            log.info(f"New info for {package}:{tag} -> {info}")
+            log.info(f"New info for {pkg}:{tag} -> {info}")
+    return db_to_update
 
-    return new_db
+
+def update_package_db(
+    *,
+    db_path: Path,
+    how_to_generate: str,
+    get_db_info_factory: ContextManager[GetDbInfoFn],
+    out_db_path: Optional[Path] = None,
+    update_existing: bool = True,
+    pkg_updates: Optional[ExplicitUpdates] = None,
+):
+    with get_db_info_factory as get_db_info:
+        _write_json_dir_db(
+            db=_get_updated_db(
+                existing_db=_read_json_dir_db(db_path),
+                get_db_info_fn=get_db_info,
+                update_existing=update_existing,
+                pkg_updates=pkg_updates or {},
+            ),
+            path=out_db_path or db_path,
+            how_to_generate=how_to_generate,
+        )
 
 
-def _parse_updates(
-    description: str, items: List[Tuple[Package, Tag, str]]
+UpdateArgs = List[Tuple[Package, Tag, str]]
+
+
+def _parse_update_args(
+    creates: UpdateArgs, replaces: UpdateArgs
 ) -> ExplicitUpdates:
-    updates = {}
-    for package, tag, opts_str in items:
-        opts = json.loads(opts_str)
-        stored_opts = updates.setdefault(package, {}).setdefault(tag, opts)
-        if stored_opts is not opts:  # `!=` would permit duplicates
-            # This detects conflicts only within a single update type,
-            # `_get_updated_db` detects conflicts between types.
-            raise RuntimeError(
-                f'Conflicting "{description}" updates for {package} / {tag}: '
-                f"{opts} ({id(opts)}) is not {stored_opts} ({id(stored_opts)}."
+    """Parses the provided update arg lists and creates corresponding
+    PackageDbUpdate tuples for each action.
+
+    Also validates that a given pkg:tag doesn't have multiple updates specified.
+    Note that this is a default guarantee provided by our data model for updates
+    (mapping of pkg to tag to update), but checking explcitly here allows us to
+    provide clear error messages.
+    """
+    pkg_updates = {}
+    for action_updates, action in zip(
+        (creates, replaces), (UpdateAction.CREATE, UpdateAction.REPLACE)
+    ):
+        for package, tag, opts_json in action_updates:
+            opts = json.loads(opts_json)
+            if tag in pkg_updates.setdefault(package, {}):
+                existing_up = pkg_updates[package][tag]
+                raise RuntimeError(
+                    f'Multiple updates specified for "{package}:{tag}": '
+                    f'"{action.value}" with {opts} and '
+                    f'"{existing_up.action.value}" with {existing_up.options}'
+                )
+            pkg_updates[package][tag] = PackageDbUpdate(
+                action=action, options=opts
             )
-    return updates
+    return pkg_updates
 
 
 def _parse_args(argv, *, overview_doc, options_doc):
@@ -235,6 +304,7 @@ def _parse_args(argv, *, overview_doc, options_doc):
         dest="update_existing",
         help="Only update package / tag pairs set via --create or --replace",
     )
+
     for action, doc in [
         (
             "create",
@@ -262,8 +332,13 @@ def _parse_args(argv, *, overview_doc, options_doc):
     return Path.parse_args(parser, argv)
 
 
-def main(
-    argv, get_db_info_factory, *, how_to_generate, overview_doc, options_doc
+def main_cli(
+    argv: List[str],
+    get_db_info_factory: ContextManager[Iterator[GetDbInfoFn]],
+    *,
+    how_to_generate: str,
+    overview_doc: str,
+    options_doc: str,
 ):
     """
     Implements the "update DB" CLI using your custom logic for obtaiing
@@ -290,15 +365,11 @@ def main(
     """
     args = _parse_args(argv, overview_doc=overview_doc, options_doc=options_doc)
     init_logging(debug=args.debug)
-    with get_db_info_factory as get_db_info_fn:
-        _write_json_dir_db(
-            _get_updated_db(
-                existing_db=_read_json_dir_db(args.db),
-                update_existing=args.update_existing,
-                create_items=_parse_updates("create", args.create),
-                replace_items=_parse_updates("replace", args.replace),
-                get_db_info_fn=get_db_info_fn,
-            ),
-            args.out_db or args.db,
-            how_to_generate,
-        )
+    update_package_db(
+        db_path=args.db,
+        how_to_generate=how_to_generate,
+        get_db_info_factory=get_db_info_factory,
+        out_db_path=args.out_db,
+        update_existing=args.update_existing,
+        pkg_updates=_parse_update_args(args.create, args.replace),
+    )

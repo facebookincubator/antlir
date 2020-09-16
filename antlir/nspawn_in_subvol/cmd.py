@@ -169,7 +169,7 @@ def _nspawn_cmd(nspawn_subvol: Subvol, temp_cgroup: Path):
 
 
 # This is a separate helper so that tests can mock it easily
-def _artifacts_may_require_repo(src_subvol: Subvol):
+def _artifacts_require_repo(src_subvol: Subvol):
     return procfs_serde.deserialize_int(
         src_subvol, META_ARTIFACTS_REQUIRE_REPO.decode()
     )
@@ -237,7 +237,7 @@ def _extra_nspawn_args_and_env(
         for src, dest in opts.bindmount_ro:
             extra_nspawn_args.extend(bind_args(src, dest, readonly=True))
 
-    if opts.bind_repo_ro or _artifacts_may_require_repo(opts.layer):
+    if opts.bind_repo_ro or _artifacts_require_repo(opts.layer):
         # NB: Since this bind mount is only made within the nspawn
         # container, it is not visible in the `--snapshot-into` filesystem.
         # This is a worthwhile trade-off -- it is technically possible to

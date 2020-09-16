@@ -13,6 +13,9 @@ def image_sendstream_layer(
         # A struct containing fields accepted by `_build_opts` from
         # `image_layer_compiled.bzl`.
         build_opts = None,
+        # A sendstream layer does not add any build logic on top of the
+        # input, so we treat it as internal to improve CI coverage.
+        antlir_rule = "user-internal",
         # Future: Support `parent_layer`.  Mechanistically, applying a
         # send-stream on top of an existing layer is just a regular `btrfs
         # receive`.  However, the rules in the current `receive`
@@ -39,5 +42,6 @@ def image_sendstream_layer(
             )],
             build_opts = build_opts,
         ),
+        antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

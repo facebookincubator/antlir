@@ -47,7 +47,7 @@ def _prepare_versionlock_lists(
     """
     # `dnf` and `yum` expect different formats, so we parse our own.
     with open(list_path) as rf:
-        envras = [l.split("\t") for l in rf]
+        envra_set = {tuple(l.split("\t")) for l in rf}
     templates = {"yum": "{e}:{n}-{v}-{r}.{a}", "dnf": "{n}-{e}:{v}-{r}.{a}"}
     dest_to_src_and_size = {}
     with temp_dir() as d:
@@ -58,14 +58,14 @@ def _prepare_versionlock_lists(
             template = templates[prog]
             src = d / (prog + "-versionlock.list")
             with create_ro(src, "w") as wf:
-                for e, n, v, r, a in envras:
+                for e, n, v, r, a in envra_set:
                     wf.write(template.format(e=e, n=n, v=v, r=r, a=a))
             set_new_key(
                 dest_to_src_and_size,
                 # This path convention must match how `write_yum_dnf_conf.py`
                 # and `rpm_repo_snapshot.bzl` set up their output.
                 snapshot_dir / f"{prog}/etc/{prog}/plugins/versionlock.list",
-                (src, len(envras)),
+                (src, len(envra_set)),
             )
         yield dest_to_src_and_size
 

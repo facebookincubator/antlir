@@ -74,12 +74,6 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     help="Specify an environment variable assignment of form NAME=VALUE",
 )
 @click.option(
-    "--test-type",
-    type=click.Choice(["gtest", "pyunit"]),
-    help="Which test type we are pretending to be",
-    required=False,
-)
-@click.option(
     "--sync-file",
     type=str,
     help="Sync this file for tpx from the vm to the host.",
@@ -99,7 +93,6 @@ async def main(
     quiet: bool,
     timeout: int,
     setenv: List[str],
-    test_type: str,
     sync_file: List[str],
     gtest_list_tests: bool,
     list_tests: Optional[str],

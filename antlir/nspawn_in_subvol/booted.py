@@ -209,7 +209,7 @@ def _systemd_reaper(setup, boot_proc, systemd_pid):
                 )
                 time.sleep(delay)
                 delay = min(0.25, delay * 2)
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError:  # pragma: no cover
                 pass  # Skip the wait if the PID is already invalid.
 
 

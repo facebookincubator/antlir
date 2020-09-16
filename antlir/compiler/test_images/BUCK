@@ -1,17 +1,12 @@
-##
-## image_feature: The goal of this section is to get good coverage for all
-## the syntax variants supported by the `image_feature` converter.  The unit
-## test will then check that they become the right image compiler Items.
-##
-
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+# IMPORTANT: Do NOT use `oss_shim.bzl` here, instead load fbcode macros via
+# the shim in `defs.bzl`.
+load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
+load(":defs.bzl", "defs")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "export_file", "python_binary")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/foreign/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
-load("//antlir/compiler/test_images:helper.bzl", "sign_rpm_test_file")
 
 # While the reproducible-builds.org instructions (see below) ensure that a
 # hash-stable artifact can be generated on the same system using the same
@@ -40,7 +35,7 @@ load("//antlir/compiler/test_images:helper.bzl", "sign_rpm_test_file")
 # attribute. This will cause the last 6 bytes of the `mtime` (offset 142) of
 # each file header to be different between systems.  This then causes the
 # full 8-byte `chksum` (offset 148) to be different as well.
-export_file(name = "prebuilt_hello_world.tar")
+defs.export_file(name = "prebuilt_hello_world.tar")
 
 # The rule `hello_world.tar` must be deterministic to be used in images.
 hello_tar_hash = (
@@ -48,12 +43,12 @@ hello_tar_hash = (
     "dd83365abc69fe39990096a9396d9d2d6fbf75f849ab1640a10fdf9614d8d03d"
 )
 
-buck_sh_binary(
+defs.buck_sh_binary(
     name = "hello_world_tar_generator.sh",
     main = "hello_world_tar_generator.sh",
 )
 
-buck_genrule(
+defs.buck_genrule(
     name = "hello_world.tar",
     out = "hello_world.tar",
     bash = """
@@ -101,7 +96,7 @@ image_build_librename_shadowed(
         build_opts = image.opts(
             rpm_installer = rpm_installer,
             build_appliance = ":build_appliance_testing",
-            version_set = None,
+            version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
         ),
     )
     for rpm_installer in [
@@ -177,17 +172,17 @@ image.feature(
 # You can build the RPMs with `rpmbuild` or update the spec section
 # in antlir/rpm/tests/temp_repos.py to build with this spec.
 #
-sign_rpm_test_file(
+defs.sign_rpm_test_file(
     name = "rpm-test-cheese-1-1.rpm",
     filename = "rpm-test-cheese-1-1.x86_64.rpm",
 )
 
-sign_rpm_test_file(
+defs.sign_rpm_test_file(
     name = "rpm-test-cheese-2-1.rpm",
     filename = "rpm-test-cheese-2-1.x86_64.rpm",
 )
 
-sign_rpm_test_file(
+defs.sign_rpm_test_file(
     name = "rpm-test-cheese-3-1.rpm",
     filename = "rpm-test-cheese-3-1.x86_64.rpm",
 )
@@ -244,7 +239,7 @@ image.layer(
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
-        version_set = None,
+        version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
 )
 
@@ -281,7 +276,7 @@ image.feature(
     ],
     # `rpm-test-*` RPMs may not be mentioned by all of the allowed version
     # sets, so just emit this feature for one.
-    _test_only_version_sets = [None],
+    _test_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
 )
 
 image.feature(
@@ -301,13 +296,13 @@ image.layer(
     ],
 )
 
-python_binary(
+defs.python_binary(
     name = "print-ok",
     srcs = ["print_ok.py"],
     main_module = "antlir.compiler.test_images.print_ok",
 )
 
-buck_genrule(
+defs.buck_genrule(
     name = "dir-print-ok",
     out = "dir",
     bash = '''
@@ -333,7 +328,7 @@ buck_genrule(
     executable = True,
 )
 
-buck_genrule(
+defs.buck_genrule(
     name = "dir-with-script",
     out = "dir",
     bash = '''
@@ -450,7 +445,7 @@ image.feature(
     ],
     # We can only build for "no version set" because our child
     # `feature_tar_and_rpms` provides no other version sets.
-    _test_only_version_sets = [None],
+    _test_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
 )
 
 ##
@@ -553,7 +548,7 @@ image.layer(
     mount_config = {"runtime_source": {"type": "chicken"}},
 )
 
-buck_genrule(
+defs.buck_genrule(
     name = "turkey_mount_config",
     out = "ignored",
     bash = '''echo '{"runtime_source": {"type": "turkey"}}' > "$OUT"''',
@@ -584,7 +579,7 @@ image.layer(
     ],
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
-        version_set = None,
+        version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
@@ -601,7 +596,7 @@ image.layer(
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
-        version_set = None,
+        version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
 )
 
@@ -627,7 +622,7 @@ image.layer(
     ],
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
-        version_set = None,
+        version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
 )
 
@@ -679,7 +674,7 @@ image.layer(
 ## These few rules help test `image.sendstream_layer`.
 ##
 
-python_binary(
+defs.python_binary(
     name = "save-demo-sendstream",
     srcs = ["save_demo_sendstream.py"],
     main_module = "antlir.compiler.test_images.save_demo_sendstream",
@@ -690,7 +685,7 @@ python_binary(
 # with btrfs to get it to find the parent subvolume.
 op = "create_ops"
 
-buck_genrule(
+defs.buck_genrule(
     name = op + "-original.sendstream",
     out = op + "-original.sendstream",
     bash = "$(exe :save-demo-sendstream) \"$OUT\" " + op,
@@ -708,7 +703,7 @@ image.package(name = op + ".sendstream")
 ## Check other forms of `sendstream_layer`, also verified in `test-image-layer`
 ##
 
-buck_genrule(
+defs.buck_genrule(
     name = "create_ops-dir",
     out = op + "create_ops-dir",
     bash = """\
