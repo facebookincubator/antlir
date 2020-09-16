@@ -24,22 +24,11 @@ import tempfile
 from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
 from antlir.compiler import procfs_serde
-from antlir.fs_utils import Path
+from antlir.fs_utils import META_DIR, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 
 from .mount_utils import mountpoints_from_subvol_meta
-
-
-# This path is off-limits to regular image operations, it exists only to
-# record image metadata and configuration.  This is at the root, instead of
-# in `etc` because that means that `FilesystemRoot` does not have to provide
-# `etc` and determine its permissions.  In other words, a top-level ".meta"
-# directory makes the compiler less opinionated about other image content.
-#
-# NB: The trailing slash is significant, making this a protected directory,
-# not a protected file.
-META_DIR = Path(".meta/")
 
 
 @enum.unique
