@@ -39,6 +39,7 @@ def parse_opts(argv):
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument("--debug", action="store_true", help="Log more")
     parser.add_argument(
         "--unix-sock",
         required=True,
@@ -68,10 +69,10 @@ def parse_opts(argv):
 # This cannot be tested as a library since it `exec`s and rewrites the file
 # descriptor table.  However, `test_send_fds_and_run.py` covers this fully.
 if __name__ == "__main__":  # pragma: no cover
-    init_logging()
     opts = parse_opts(sys.argv[1:])
+    init_logging(debug=opts.debug)
 
-    log.info(f"Receiving {opts.num_fds} FDs via {opts.unix_sock}")
+    log.debug(f"Receiving {opts.num_fds} FDs via {opts.unix_sock}")
     fds = recv_fds_from_unix_sock(opts.unix_sock, max_fds=opts.num_fds)
     assert len(fds) == opts.num_fds, (fds, opts)
     max_fd_count = max(resource.getrlimit(resource.RLIMIT_NOFILE))
@@ -86,7 +87,7 @@ if __name__ == "__main__":  # pragma: no cover
     # safe also.  This is an inductive proof that our `dup2`s never clobber
     # a received FD in the process of re-mapping them.
     fd_map = list(zip(fds, range(3, max_set_fd + 1)))
-    log.info(f"Passing received FDs as {dict(fd_map)} into {opts.cmd}")
+    log.debug(f"Passing received FDs as {dict(fd_map)} into {opts.cmd}")
     env = os.environ.copy()
     if opts.set_listen_fds:
         env["LISTEN_PID"] = str(os.getpid())

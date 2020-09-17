@@ -396,7 +396,6 @@ def yum_dnf_from_snapshot(
     snapshot_dir: Path,
     protected_paths: List[str],
     yum_dnf_args: List[str],
-    debug: bool = False,
     yum_dnf_binary: Optional[Path] = None,
 ):
     yum_dnf_binary = _resolve_rpm_installer_binary(yum_dnf, yum_dnf_binary)
@@ -580,5 +579,4 @@ if __name__ == "__main__":  # pragma: no cover
         snapshot_dir=args.snapshot_dir,
         protected_paths=args.protected_path,
         yum_dnf_args=args.args,
-        debug=args.debug,
     )

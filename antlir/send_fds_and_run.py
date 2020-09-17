@@ -39,6 +39,7 @@ wrap your post-`sudo` command.  See that function's docblock.
 """
 import argparse
 import array
+import logging
 import os
 import socket
 import subprocess
@@ -75,7 +76,7 @@ def send_fds(sock, fds):
 
 
 @contextmanager
-def popen_and_inject_fds_after_sudo(cmd, fds, popen, *, set_listen_fds):
+def popen_and_inject_fds_after_sudo(cmd, fds, popen, *, set_listen_fds: bool):
     """
     This is a context manager intended to let you imitate the as-CLI
     behavior documented in the module docblock.  See that docblock to
@@ -110,11 +111,13 @@ def popen_and_inject_fds_after_sudo(cmd, fds, popen, *, set_listen_fds):
             "--num-fds",
             str(len(fds)),
             *([] if set_listen_fds else ["--no-set-listen-fds"]),
+            # The receive end should debug-log iff the send side does.
+            *(["--debug"] if log.isEnabledFor(logging.DEBUG) else []),
             "--",
             *cmd,
         ]
     ) as proc:
-        log.info(f"Sending FDS {fds} to {cmd} via wrapper")
+        log.debug(f"Sending FDS {fds} to {cmd} via wrapper")
         lsock.settimeout(FD_UNIX_SOCK_TIMEOUT)
         with lsock.accept()[0] as csock:
             csock.settimeout(FD_UNIX_SOCK_TIMEOUT)
@@ -127,6 +130,7 @@ def parse_opts(argv):
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument("--debug", action="store_true", help="Log more")
     parser.add_argument(
         "--fd",
         type=int,
@@ -188,8 +192,8 @@ def send_fds_and_popen(opts, **popen_kwargs):
 #     buck run //antlir:send-fds-and-run -- --no-set-listen-fds -- \
 #         printenv LISTEN_FDS LISTEN_PID ; echo $?
 if __name__ == "__main__":  # pragma: no cover
-    init_logging()
     opts = parse_opts(sys.argv[1:])
+    init_logging(debug=opts.debug)
     with send_fds_and_popen(opts) as proc:
         # Since this program is a wrapper, it ought not keep random other
         # FDs open.  The harm of leaving them open is that the parties using
