@@ -88,7 +88,9 @@ DbUpdateOptions = Dict[str, str]
 # be updated from the CLI via:
 #
 #     updater --db path
-GetDbInfoFn = Callable[[Package, Tag, DbUpdateOptions], DbInfo]
+#
+# Note if None is returned, the given package:tag pair will be deleted
+GetDbInfoFn = Callable[[Package, Tag, DbUpdateOptions], Optional[DbInfo]]
 # The in-memory representation of the package DB.
 PackageTagDb = Dict[Package, Dict[Tag, DbInfo]]
 
@@ -222,8 +224,14 @@ def _get_updated_db(
         for tag, update_opts in tag_to_update.items():
             log.info(f"Querying {pkg}:{tag} with options {update_opts}")
             info = get_db_info_fn(pkg, tag, update_opts)
-            new_tag_to_info[tag] = info
-            log.info(f"New info for {pkg}:{tag} -> {info}")
+            if info is None:
+                log.info(
+                    f"Empty info returned for {pkg}:{tag} - not including in DB"
+                )
+                new_tag_to_info.pop(tag, None)
+            else:
+                new_tag_to_info[tag] = info
+                log.info(f"New info for {pkg}:{tag} -> {info}")
     return db_to_update
 
 

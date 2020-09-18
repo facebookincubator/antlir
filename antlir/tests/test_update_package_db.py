@@ -39,7 +39,12 @@ class UpdatePackageDbTestBase:
             self.assertEqual(content, infile.read())
 
     def _update(
-        self, db, pkg_updates=None, out_db=None, no_update_existing=False
+        self,
+        db,
+        pkg_updates=None,
+        out_db=None,
+        no_update_existing=False,
+        get_db_info_fn=None,
     ):
         raise NotImplementedError
 
@@ -152,10 +157,52 @@ class UpdatePackageDbTestBase:
                     },
                 )
 
+    def test_tag_deletion(self):
+        with temp_dir() as td:
+            db_path = td / "idb"
+            _write_json_db(db_path / "p1" / "tik.json", {"a": "b"})
+            _write_json_db(
+                db_path / "p2" / "tok.json", {"y": "z"}
+            )  # Will be deleted
+            self._update(
+                db=db_path,
+                pkg_updates={
+                    "p1": {
+                        "tik": updb.PackageDbUpdate(
+                            updb.UpdateAction.REPLACE, {"c": "d"}
+                        )
+                    },
+                    "never": {
+                        "seen": updb.PackageDbUpdate(
+                            updb.UpdateAction.CREATE, {"m": "n"}
+                        )
+                    },
+                },
+                # None will cause a deletion
+                get_db_info_fn=nullcontext(
+                    lambda _pkg, _tag, opts: opts if opts else None
+                ),
+            )
+            self._check_file(
+                db_path / "p1" / "tik.json",
+                _get_js_content("1003a3786a74bb5fc2b817e752d3499c", {"c": "d"}),
+            )
+            self._check_file(
+                db_path / "never" / "seen.json",
+                _get_js_content("3b96485ebd8dad07ef3393861364407a", {"m": "n"}),
+            )
+            # Should have been deleted
+            self.assertFalse((db_path / "p2" / "tok.json").exists())
+
 
 class UpdatePackageDbCliTestCase(UpdatePackageDbTestBase, unittest.TestCase):
     def _update(
-        self, db, pkg_updates=None, out_db=None, no_update_existing=False
+        self,
+        db,
+        pkg_updates=None,
+        out_db=None,
+        no_update_existing=False,
+        get_db_info_fn=None,
     ):
         args = [
             f"--db={db}",
@@ -172,10 +219,13 @@ class UpdatePackageDbCliTestCase(UpdatePackageDbTestBase, unittest.TestCase):
                         json.dumps(update.options),
                     ]
                 )
-
+        if get_db_info_fn is None:
+            get_db_info_fn = nullcontext(
+                lambda _pkg, _tag, opts: opts if opts else {"x": "z"}
+            )
         updb.main_cli(
             args,
-            nullcontext(lambda _pkg, _tag, opts: opts if opts else {"x": "z"}),
+            get_db_info_fn,
             how_to_generate="how",
             overview_doc="overview doc",
             options_doc="opts doc",
@@ -226,14 +276,21 @@ class UpdatePackageDbLibraryTestCase(
     UpdatePackageDbTestBase, unittest.TestCase
 ):
     def _update(
-        self, db, pkg_updates=None, out_db=None, no_update_existing=False
+        self,
+        db,
+        pkg_updates=None,
+        out_db=None,
+        no_update_existing=False,
+        get_db_info_fn=None,
     ):
+        if get_db_info_fn is None:
+            get_db_info_fn = nullcontext(
+                lambda _pkg, _tag, opts: opts if opts else {"x": "z"}
+            )
         updb.update_package_db(
             db_path=db,
             how_to_generate="how",
-            get_db_info_factory=nullcontext(
-                lambda _pkg, _tag, opts: opts if opts else {"x": "z"}
-            ),
+            get_db_info_factory=get_db_info_fn,
             out_db_path=out_db,
             update_existing=not no_update_existing,
             pkg_updates=pkg_updates,
