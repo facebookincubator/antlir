@@ -54,11 +54,11 @@ shape.bzl provides two mechanisms to pass shape objects to Python runtime code.
 from a file or resource, using `read_resource` or `read_file` of the
 generated loader class.
 
-`shape.python_file` dumps a shape object to a raw python source file. This is
-useful for some cases where a python_binary is expected to be fully
-self-contained, but still require some build-time information. It is also useful
-in cases when shapes are being dynamically generated based on inputs to a macro.
-See the docblock of the function for an example.
+`shape.python_data` dumps a shape object to a raw python source file. This
+is useful for some cases where a python_binary is expected to be fully
+self-contained, but still require some build-time information. It is also
+useful in cases when shapes are being dynamically generated based on inputs
+to a macro. See the docblock of the function for an example.
 
 ## Example usage
 
@@ -97,7 +97,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":oss_shim.bzl", "buck_genrule", "python_library")
+load(":oss_shim.bzl", "buck_genrule", "python_library", "third_party")
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
@@ -354,16 +354,7 @@ import os
 import pathlib
 import typing
 
-# This generated code is used by both shape.python_file and
-# shape.python_loader, which have different constraints around how things can
-# be imported.
-# We prefer to import from the shared antlir.shape library, but
-# shape.python_file produces standalone python source that has the library
-# copied in.
-try:
-    from antlir.shape import *
-except ImportError:
-    pass
+from antlir.shape import *
 """
 
     # this is heavily dependent on the generated code structure, but tests will
@@ -406,18 +397,19 @@ def _loader(name, shape, classname = None, **kwargs):
         **kwargs
     )
 
-def _python_file(name, shape):
+def _python_data(name, shape, module = None, **python_library_kwargs):
     """Codegen a static shape data structure that can be directly 'import'ed by
     Python. The object is available under the name "data". A common use case is
-    to use this in `srcs`, with `name` then representing the name of the module
-    that can be imported in the underlying file.
+    to call shape.python_library inline in a target's `deps`, with `module`
+    (defaults to `name`) then representing the name of the module that can be
+    imported in the underlying file.
 
     Example:
 
         python_binary(
             name = provided_name,
-            srcs = [
-                shape.python_file(
+            deps = [
+                shape.python_data(
                     name = "bin_bzl_args",
                     shape = shape.new(
                         some_shape_t,
@@ -439,18 +431,29 @@ def _python_file(name, shape):
     json_str = json_str.replace('"', '\\"')
     python_src += "\ndata = shape(**json.loads(\"{}\"))".format(json_str)
 
-    # make it easier for direct inclusion in `srcs`
-    name = "{}={}.py".format(name, name)
+    if not module:
+        module = name
+
+    src_name = "{}={}.py".format(name, module)
     buck_genrule(
-        name = name,
-        out = name,
-        cmd = """
-            cp $(location //antlir:shape.py) $OUT
-            echo {} >> $OUT
-        """.format(shell.quote(python_src)),
+        name = src_name,
+        out = src_name,
+        cmd = "echo {} >> $OUT".format(shell.quote(python_src)),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
+    )
+    python_library(
+        name = name,
+        srcs = [":{}".format(src_name)],
+        deps = [
+            "//antlir:shape",
+            third_party.library("pydantic", platform = "python"),
+        ],
+        # Antlir users should not directly use `shape`, but we do use it
+        # as an implementation detail of "builder" / "publisher" targets.
+        antlir_rule = "user-internal",
+        **python_library_kwargs
     )
     return normalize_target(":" + name)
 
@@ -477,5 +480,5 @@ shape = struct(
     tuple = _tuple_field,
     loader = _loader,
     json_file = _json_file,
-    python_file = _python_file,
+    python_data = _python_data,
 )

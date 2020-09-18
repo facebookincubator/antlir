@@ -8,8 +8,6 @@
 # directly, instead it contains supporting implementations for bzl/shape.bzl.
 # See that file for motivations and usage documentation.
 
-# This MUST NOT take on any non-stdlib dependencies, or shape.python_file will
-# not be able to support the desired "just import" user interface.
 import collections
 import dataclasses
 import re
