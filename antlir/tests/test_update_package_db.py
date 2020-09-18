@@ -131,7 +131,7 @@ class UpdatePackageDbTestBase:
             _write_json_db(db_path / "p1" / "a.json", {})
             _write_json_db(db_path / "p2" / "b.json", {})
             with self.assertRaisesRegex(
-                AssertionError, r"Attempting.*create.*p1:a"
+                updb.PackageExistsError, r".*create.*p1:a"
             ):
                 self._update(
                     db=db_path,
@@ -144,7 +144,7 @@ class UpdatePackageDbTestBase:
                     },
                 )
             with self.assertRaisesRegex(
-                AssertionError, r"Attempting.*replace.*p2:c"
+                updb.PackageDoesNotExistError, r".*replace.*p2:c"
             ):
                 self._update(
                     db=db_path,
