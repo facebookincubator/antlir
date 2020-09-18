@@ -1,0 +1,115 @@
+load("//antlir/bzl:oss_shim.bzl", "python_unittest")
+load("//antlir/bzl:shape.bzl", "shape")
+load(":shape_selftests.bzl", "run_shape_selftests")
+
+# There are a lot of shapes that are used in test cases.
+# This would rapidly clutter targets in antlir/bzl/tests, so define them all
+# here in a file dedicated to shape test cases
+
+# Test data adapted from the GraphQL Star Wars examples
+character_t = shape.shape(
+    name = str,
+    appears_in = shape.list(int),
+    friends = shape.list(shape.shape(
+        name = str,
+    )),
+    lightsaber_color = shape.field(
+        str,
+        optional = True,
+    ),
+    callsign = shape.tuple(
+        str,
+        int,
+        optional = True,
+    ),
+    metadata = shape.dict(
+        str,
+        str,
+        default = {"species": "human"},
+    ),
+)
+
+characters = [
+    shape.new(
+        character_t,
+        name = "Luke Skywalker",
+        appears_in = [
+            4,
+            5,
+            6,
+        ],
+        friends = [
+            shape.new(
+                character_t.friends.item_type,
+                name = "Han Solo",
+            ),
+            shape.new(
+                character_t.friends.item_type,
+                name = "Leia Organa",
+            ),
+            shape.new(
+                character_t.friends.item_type,
+                name = "C-3PO",
+            ),
+        ],
+        lightsaber_color = "green",
+        callsign = ("Red", 5),
+    ),
+    shape.new(
+        character_t,
+        name = "Darth Vader",
+        appears_in = [
+            4,
+            5,
+            6,
+        ],
+        friends = [],
+        lightsaber_color = "red",
+    ),
+    shape.new(
+        character_t,
+        name = "C-3PO",
+        appears_in = [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+        ],
+        friends = [
+            shape.new(
+                character_t.friends.item_type,
+                name = "R2-D2",
+            ),
+        ],
+        metadata = {"Droid-Function": "Protocol"},
+    ),
+]
+
+character_collection_t = shape.shape(characters = shape.list(character_t))
+
+python_unittest(
+    name = "test-shape",
+    srcs = ["test_shape.py"],
+    needed_coverage = [
+        (100, "//antlir:shape"),
+    ],
+    resources = {
+        shape.json_file(
+            name = "luke.json",
+            shape = characters[0],
+        ): "luke.json",
+    },
+    deps = [
+        shape.python_data(
+            name = "data",
+            shape = shape.new(
+                character_collection_t,
+                characters = characters,
+            ),
+        ),
+    ],
+)
+
+run_shape_selftests()

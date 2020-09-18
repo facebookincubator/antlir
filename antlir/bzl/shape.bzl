@@ -60,11 +60,17 @@ self-contained, but still require some build-time information. It is also
 useful in cases when shapes are being dynamically generated based on inputs
 to a macro. See the docblock of the function for an example.
 
+## Naming Conventions
+Shape types should be named with a suffix of '_t' to denote that it is a
+shape type.
+Shape instances should conform to whatever convention is used where they are
+declared (usually snake_case variables).
+
 ## Example usage
 
 Inspired by `image_actions/mount.bzl`:
 ```
-mount = shape.shape(
+mount_t = shape.shape(
     mount_config=shape.shape(
         build_source=shape.shape(
             source=str,
@@ -77,8 +83,8 @@ mount = shape.shape(
     target = shape.field(str, optional=True),
 )
 
-mount_instance = shape.new(
-    mount,
+mount = shape.new(
+    mount_t,
     mount_config=shape.new(
         mount.mount_config,
         build_source=shape.new(
