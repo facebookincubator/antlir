@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import logging
 import signal
 import socket
 import subprocess
@@ -25,6 +26,18 @@ from antlir.fs_utils import Path
 log = get_file_logger(__file__)
 
 
+def _make_debug_print(logger_name, fstring):
+    t = time.time()
+    ymdhms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
+    msecs = int((t - int(t)) * 1000)
+    return (
+        "print("
+        # Emulate the format of `init_logging(debug=True)`
+        + repr(f"DEBUG _make_sockets_and_send_via {ymdhms},{msecs:03} ")
+        + " + f'Sending {num_socks} FDs to parent', file=sys.stderr)"
+    )
+
+
 def _make_sockets_and_send_via(*, num_socks: int, unix_sock_fd: int):
     """
     Creates a TCP stream socket and sends it elsewhere via the provided Unix
@@ -34,6 +47,7 @@ def _make_sockets_and_send_via(*, num_socks: int, unix_sock_fd: int):
 
     IMPORTANT: This code must not write anything to stdout, the fd can be 1.
     """
+
     # NB: Some code here is (sort of) copy-pasta'd in `send_fds_and_run.py`,
     # but it's not obviously worthwhile to reuse it here.
     return [
@@ -54,7 +68,16 @@ def _make_sockets_and_send_via(*, num_socks: int, unix_sock_fd: int):
     num_socks = """
             + str(num_socks)
             + """
-    print(f'Sending {num_socks} FDs to parent', file=sys.stderr)
+    """  # indentation for the debug print
+            + (
+                _make_debug_print(
+                    "_make_sockets_and_send_via",
+                    "f'Sending {num_socks} FDs to parent'",
+                )
+                if log.isEnabledFor(logging.DEBUG)
+                else ""
+            )
+            + """
     with contextlib.ExitStack() as stack:
         # Make a socket in this netns, and send it to the parent.
         lsock = stack.enter_context(
@@ -121,11 +144,7 @@ def _create_sockets_inside_netns(
 
 @contextmanager
 def _launch_repo_server(
-    *,
-    repo_server_bin: Path,
-    sock: socket.socket,
-    snapshot_dir: Path,
-    debug: bool,
+    *, repo_server_bin: Path, sock: socket.socket, snapshot_dir: Path
 ):
     """
     Invokes `repo-server` with the given snapshot; passes it ownership of
@@ -141,7 +160,7 @@ def _launch_repo_server(
             str(sock.fileno()),
             "--snapshot-dir",
             snapshot_dir,
-            *(["--debug"] if debug else []),
+            *(["--debug"] if log.isEnabledFor(logging.DEBUG) else []),
         ],
         pass_fds=[sock.fileno()],
     ) as server_proc:
@@ -170,7 +189,7 @@ def _launch_repo_server(
 
 @contextmanager
 def launch_repo_servers_for_netns(
-    *, target_pid: int, snapshot_dir: Path, **kwargs
+    *, target_pid: int, snapshot_dir: Path, repo_server_bin: Path
 ):
     """
     Creates sockets inside the supplied netns, and binds them to the
@@ -191,7 +210,9 @@ def launch_repo_servers_for_netns(
             sock.bind(("127.0.0.1", port))
             stack.enter_context(
                 _launch_repo_server(
-                    sock=sock, snapshot_dir=snapshot_dir / "snapshot", **kwargs
+                    sock=sock,
+                    snapshot_dir=snapshot_dir / "snapshot",
+                    repo_server_bin=repo_server_bin,
                 )
             )
             log.info(f"Launched repo-server on {port} in {target_pid}'s netns")

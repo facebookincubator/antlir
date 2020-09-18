@@ -401,6 +401,4 @@ if __name__ == "__main__":  # pragma: no cover
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:  # pragma: no cover
-            if args.debug:
-                raise
             log.info("HTTP `repo-server` graceful shutdown on SIGINT")
