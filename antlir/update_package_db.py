@@ -105,6 +105,32 @@ class PackageDbUpdate(NamedTuple):
     options: DbUpdateOptions
 
 
+class InvalidCommandError(Exception):  # noqa: B903
+    def __init__(self, pkg: Package, tag: Tag):
+        self.pkg = pkg
+        self.tag = tag
+
+
+class PackageExistsError(InvalidCommandError):
+    def __init__(self, pkg: Package, tag: Tag, db_info: DbInfo):
+        super().__init__(pkg, tag)
+        self.db_info = db_info
+
+    def __str__(self):
+        return (
+            "Attempting to create a package:tag that already exists in the DB: "
+            f"{self.pkg}:{self.tag}"
+        )
+
+
+class PackageDoesNotExistError(InvalidCommandError):
+    def __str__(self):
+        return (
+            "Attempting to replace a package:tag that does not exist in the "
+            f"DB: {self.pkg}:{self.tag}"
+        )
+
+
 # `--replace` and `--create` opts are parsed into this form.
 ExplicitUpdates = Dict[Package, Dict[Tag, PackageDbUpdate]]
 
@@ -174,17 +200,11 @@ def _validate_updates(existing_db: PackageTagDb, pkg_updates: ExplicitUpdates):
     """
     for pkg, tag_to_update in pkg_updates.items():
         for tag, update in tag_to_update.items():
-            tag_exists = tag in existing_db.get(pkg, {})
-            if update.action == UpdateAction.CREATE and tag_exists:
-                raise AssertionError(
-                    "Attempting to create a package:tag that already "
-                    f"exists in the DB: {pkg}:{tag}"
-                )
-            elif update.action == UpdateAction.REPLACE and not tag_exists:
-                raise AssertionError(
-                    "Attempting to replace a package:tag that does not "
-                    f"exist in the DB: {pkg}:{tag}"
-                )
+            curr_info = existing_db.get(pkg, {})
+            if update.action == UpdateAction.CREATE and tag in curr_info:
+                raise PackageExistsError(pkg, tag, curr_info[tag])
+            elif update.action == UpdateAction.REPLACE and tag not in curr_info:
+                raise PackageDoesNotExistError(pkg, tag)
 
 
 def _get_updated_db(
