@@ -180,6 +180,10 @@ python_container_and_vm_test(
 example = shape.shape(
     answer = int,
     field = shape.field(bool),
+    defaulted = shape.field(
+        int,
+        default = 1337,
+    ),
     say_hi = shape.field(
         str,
         optional = True,
