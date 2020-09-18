@@ -5,12 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 
 import functools
+import logging
 
+from ..launch_repo_servers import log as logger_for_launch_repo_servers
 from .rpm_base import RpmNspawnTestBase
 
 
 class TestImpl:
     def test_repo_servers(self):
+        # Get basic coverage for our non-trivial debug log code.
+        logger_for_launch_repo_servers.setLevel(logging.DEBUG)
         self._check_yum_dnf_boot_or_not(
             self._PROG,
             "rpm-test-mice",

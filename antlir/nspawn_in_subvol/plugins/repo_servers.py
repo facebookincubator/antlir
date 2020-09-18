@@ -210,11 +210,10 @@ class RepoServers(NspawnPlugin):
                 stack.enter_context(
                     launch_repo_servers_for_netns(
                         target_pid=container_pid,
+                        snapshot_dir=snap_subvol.path(snap_dir),
                         repo_server_bin=snap_subvol.path(
                             snap_dir / "repo-server"
                         ),
-                        snapshot_dir=snap_subvol.path(snap_dir),
-                        debug=setup.opts.debug_only_opts.debug,
                     )
                 )
             self._container_pid_exfiltrator.send_ready()
