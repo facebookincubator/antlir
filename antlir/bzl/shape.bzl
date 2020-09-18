@@ -24,10 +24,15 @@ types available:
   dicts with homogenous key `field` types and homogenous `field` value type
   heterogenous tuples with `field` element types
 
-## Optional Fields
+## Optional and Defaulted Fields
 By default, fields are required to be set at instantiation time
-(`shape.new`). However, fields can be marked optional by using the `optional`
-kwarg in `shape.field` (or any of the collection field types: `shape.list`,
+(`shape.new`).
+
+Fields declared with `shape.field(..., default='val')` do not have to be
+instantiated explicitly.
+
+Additionally, fields can be marked optional by using the `optional` kwarg in
+`shape.field` (or any of the collection field types: `shape.list`,
 `shape.tuple`, or `shape.dict`).
 
 For example, `shape.field(int, optional=True)` denotes an integer field that
@@ -127,9 +132,19 @@ def _validate_shape(shape, data):
     if not types.is_dict(data):
         return "expected dict, got '{}'".format(data)
     for key, field_spec in shape.fields.items():
-        if not field_spec.optional and key not in data:
+        if (
+            not field_spec.optional and
+            field_spec.default == _NO_DEFAULT and
+            key not in data
+        ):
             return "{}: missing required field".format(key)
-        error_msg = field_spec.validate(field_spec, data.get(key, None))
+        error_msg = field_spec.validate(
+            field_spec,
+            data.get(
+                key,
+                None if field_spec.default == _NO_DEFAULT else field_spec.default,
+            ),
+        )
         if error_msg:
             return "{}: {}".format(key, error_msg)
     for given_key in data.keys():

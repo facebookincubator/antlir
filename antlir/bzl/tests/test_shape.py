@@ -13,11 +13,17 @@ from .pyfile_shape import data
 
 
 class TestShape(unittest.TestCase):
+    def setUp(self):
+        # More output for easier debugging
+        unittest.util._MAX_LENGTH = 12345
+        self.maxDiff = 12345
+
     def test_load(self):
         """load happy path from json_file, python_file and code"""
 
         def expected(e):
             self.assertEqual(42, e.answer)
+            self.assertEqual(1337, e.defaulted)
             self.assertEqual(True, e.field)
             self.assertEqual(True, e.nested.inner)
             self.assertEqual(True, e.tp[2].nested)
@@ -125,6 +131,7 @@ class TestShape(unittest.TestCase):
             "dct_w_shape={'apollo': shape(number=11)}, "
             "field=True, "
             "nested=shape(inner=True), "
+            "defaulted=1337, "
             "lst=[shape(id=0), shape(id=1)], "
             "say_hi=None, "
             "tp=(True, 42, shape(nested=True))"
@@ -141,6 +148,7 @@ class TestShape(unittest.TestCase):
             "dct_w_shape=Mapping[str, shape(number=int)], "
             "field=bool, "
             "nested=shape(inner=bool), "
+            "defaulted=int, "
             "lst=Optional[Sequence[shape(id=int)]], "
             "say_hi=Optional[str], "
             "tp=Optional[Tuple[bool, int, shape(nested=bool)]]"
