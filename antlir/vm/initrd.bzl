@@ -106,16 +106,7 @@ def initrd(name, uname, module_source):
     )
 
     image.package(
-        name = name + ".cpio.gz",
-        layer = ":" + name + "--layer",
-    )
-
-    # this is here because we want the target to be named exactly what
-    # was requested and image.package currently requires the packaging +
-    # compression scheme to be encoded in the name.
-    buck_genrule(
         name = name,
-        cmd = "cp --reflink=auto $(location :{}.cpio.gz) $OUT".format(name),
-        out = "initrd",
-        antlir_rule = "user-internal",
+        layer = ":" + name + "--layer",
+        format = "cpio.gz",
     )
