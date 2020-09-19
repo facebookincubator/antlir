@@ -86,9 +86,9 @@ mount_instance = shape.new(
             source="/etc/fbwhoami",
             type="host",
         ),
+        default_mountpoint="/etc/fbwhoami",
+        is_directory=False,
     ),
-    default_mountpoint="/etc/fbwhoami",
-    is_directory=False,
 )
 ```
 

@@ -70,7 +70,7 @@ def _image_source_impl(
         # source file.
         content_hash = None):
     if int(bool(source)) + int(bool(layer)) + int(bool(generator)) != 1:
-        fail("Exactly one of `source`, `layer` must be set")
+        fail("Exactly one of `source`, `layer`, `generator` must be set")
     if generator_args and not generator:
         fail("`generator_args` require `generator`")
 
@@ -90,7 +90,7 @@ def _image_source_impl(
     if generator and not content_hash:
         fail(
             "To ensure that generated `image.source`s are repo-hermetic, you " +
-            'must pass `hash = "algorithm:hexdigest"` (checked via Python ' +
+            'must pass `content_hash = "algorithm:hexdigest"` (checked via Python ' +
             "hashlib)",
         )
     return struct(
