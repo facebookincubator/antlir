@@ -186,8 +186,7 @@ def _define_shape(**fields):
     ).replace("-", "_")
 
     python_src = [
-        "@shape_dataclass",
-        "class {}(object, metaclass=ShapeMeta):".format(class_name),
+        "class {}(Shape):".format(class_name),
     ]
 
     # fields with defaults must come after fields without default values
@@ -348,33 +347,11 @@ def _validate_tuple_field(spec, data):
 
 def _loader_src(shape, classname):
     """codegen a fully type-hinted python source file to load the given shape"""
-    python_src = """import importlib.resources
-import json
-import os
-import pathlib
-import typing
-
-from antlir.shape import *
-"""
-
-    # this is heavily dependent on the generated code structure, but tests will
-    # easily catch if this breaks
-    shape.python_src[1] = "class {}(object, metaclass=ShapeMeta):".format(classname)
+    python_src = "import typing\nfrom antlir.shape import *\n"
     python_src += "\n".join(shape.python_src)
 
-    python_src += """
-  @classmethod
-  def read_resource(cls, package: str, name: str) -> "{c}":
-      with importlib.resources.open_text(package, name) as r:
-          return cls.read_file(r)
-
-  @classmethod
-  def read_file(cls, f: typing.Union[os.PathLike, typing.IO]) -> "{c}":
-      if isinstance(f, (str, pathlib.Path)):
-          with open(f) as f:
-              return cls(**json.load(f))
-      return cls(**json.load(f))
-""".format(c = classname)
+    # make the top-level class name something readable
+    python_src = python_src.replace(shape.__name__, classname)
     return python_src
 
 def _loader(name, shape, classname = None, **kwargs):
@@ -429,7 +406,7 @@ def _python_data(name, shape, module = None, **python_library_kwargs):
     python_src = _loader_src(shape._shape_type, "shape")
     json_str = shape._data.to_json()
     json_str = json_str.replace('"', '\\"')
-    python_src += "\ndata = shape(**json.loads(\"{}\"))".format(json_str)
+    python_src += "\ndata = shape.parse_raw(\"{}\")".format(json_str)
 
     if not module:
         module = name
