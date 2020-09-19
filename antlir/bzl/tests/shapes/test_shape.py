@@ -65,7 +65,6 @@ class TestShape(unittest.TestCase):
         # Shapes don't have nice classnames, so the repr is customized to be
         # human-readable. While this has no functional impact on the code, it
         # is critical for usability, so ensure there are unit tests.
-        self.maxDiff = None
         self.assertEqual(
             repr(characters[0]),
             "shape("
@@ -81,7 +80,6 @@ class TestShape(unittest.TestCase):
     def test_class_repr(self):
         # The generated classes also have a custom repr, which is much more
         # readable
-        self.maxDiff = None
         self.assertEqual(
             repr(character_t),
             "shape("
@@ -97,3 +95,63 @@ class TestShape(unittest.TestCase):
     def test_immutable_fields(self):
         with self.assertRaises(TypeError):
             characters[0].name = "Darth Vader's son"
+
+    def test_subclass(self):
+        """
+        Demonstrate a pure Python subclass of a shape type with added fields
+        and functions.
+        """
+
+        class Jedi(character_t):
+            padawan: Optional[str]
+
+            def train(self) -> str:
+                if self.padawan:
+                    return f"Training {self.padawan}"
+                return "No one to train right now"
+
+        obi_wan = Jedi(
+            padawan="Anakin Skywalker",
+            name="Obi-Wan Kenobi",
+            appears_in=[1, 2, 3, 4, 5, 6],
+            # TODO: there is not a good way to get at the type of an inner
+            # shape definition. It's not super important at this point since
+            # they should really only be deserialized from JSON that comes from
+            # Buck macros, and in the rare case that it's necessary, a dict
+            # with the same fields works and is properly validated.
+            friends=[{"name": "Yoda"}, {"name": "Padme Amidala"}],
+            lightsaber_color="blue",
+        )
+        # subclass should still be immutable by default
+        with self.assertRaises(TypeError):
+            obi_wan.padawan = "Luke Skywalker"
+
+        # subclass instance repr uses the human-written class name, and the
+        # inner shapes use shape()
+        self.assertEqual(
+            repr(obi_wan),
+            "Jedi("
+            "appears_in=[1, 2, 3, 4, 5, 6], "
+            "friends=[shape(name='Yoda'), shape(name='Padme Amidala')], "
+            "name='Obi-Wan Kenobi', "
+            "callsign=None, "
+            "lightsaber_color='blue', "
+            "metadata={'species': 'human'}, "
+            "padawan='Anakin Skywalker'"
+            ")",
+        )
+        # subclass type repr should also use the human-written class name
+        self.assertEqual(
+            repr(Jedi),
+            "Jedi("
+            "appears_in=Sequence[int], "
+            "friends=Sequence[shape(name=str)], "
+            "name=str, "
+            "callsign=Optional[Tuple[str, int]], "
+            "lightsaber_color=Optional[str], "
+            "metadata=Mapping[str, str], "
+            "padawan=Optional[str]"
+            ")",
+        )
+
+        self.assertEqual(obi_wan.train(), "Training Anakin Skywalker")

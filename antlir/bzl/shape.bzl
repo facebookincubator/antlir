@@ -193,6 +193,7 @@ def _define_shape(**fields):
 
     python_src = [
         "class {}(Shape):".format(class_name),
+        "  __GENERATED_SHAPE__ = True",
     ]
 
     # fields with defaults must come after fields without default values
@@ -356,8 +357,8 @@ def _loader_src(shape, classname):
     python_src = "import typing\nfrom antlir.shape import *\n"
     python_src += "\n".join(shape.python_src)
 
-    # make the top-level class name something readable
-    python_src = python_src.replace(shape.__name__, classname)
+    # alias the top-level class name to something readable
+    python_src += "\n{} = {}".format(classname, shape.__name__)
     return python_src
 
 def _loader(name, shape, classname = None, **kwargs):
