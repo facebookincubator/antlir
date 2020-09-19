@@ -251,10 +251,6 @@ python_unittest(
     name = "test-shape",
     srcs = [
         "test_shape.py",
-        shape.python_file(
-            name = "pyfile_shape",
-            shape = instance,
-        ),
     ],
     resources = {
         shape.json_file(
@@ -262,7 +258,13 @@ python_unittest(
             shape = instance,
         ): "example.json",
     },
-    deps = [":example_loader"],
+    deps = [
+        ":example_loader",
+        shape.python_data(
+            name = "pyfile_shape",
+            shape = instance,
+        ),
+    ],
 )
 
 run_shape_selftests()
