@@ -8,6 +8,8 @@ import unittest
 from collections.abc import Sequence
 from typing import Optional, Union
 
+import pydantic
+
 from .example_loader import example as shape
 from .pyfile_shape import data
 
@@ -49,12 +51,12 @@ class TestShape(unittest.TestCase):
 
     def test_missing_parameters(self):
         """fail to instantiate shape with missing required fields"""
-        with self.assertRaises(TypeError):
+        with self.assertRaises(pydantic.ValidationError):
             shape(answer=42)
 
     def test_tuple_invalid_element_type(self):
         """fail to instantiate shape with one invalid tuple element"""
-        with self.assertRaises(TypeError):
+        with self.assertRaises(pydantic.ValidationError):
             shape(
                 answer=42,
                 field=True,
@@ -66,7 +68,7 @@ class TestShape(unittest.TestCase):
 
     def test_list_invalid_element_type(self):
         """fail to instantiate shape with one invalid list element"""
-        with self.assertRaises(TypeError):
+        with self.assertRaises(pydantic.ValidationError):
             shape(
                 answer=42,
                 field=True,
@@ -119,10 +121,11 @@ class TestShape(unittest.TestCase):
             hints["lst"].__args__[0].__args__[0].__annotations__, {"id": int}
         )
 
-    def test_repr(self):
+    def test_instance_repr(self):
         # Shapes don't have nice classnames, so the repr is customized to be
         # human-readable. While this has no functional impact on the code, it
         # is critical for usability, so ensure there are unit tests.
+        self.maxDiff = None
         self.assertEqual(
             repr(data),
             "shape("
@@ -137,9 +140,10 @@ class TestShape(unittest.TestCase):
             "tp=(True, 42, shape(nested=True))"
             ")",
         )
+
+    def test_class_repr(self):
         # The generated classes also have a custom repr, which is much more
         # readable
-        self.maxDiff = None
         self.assertEqual(
             repr(type(data)),
             "shape("
@@ -154,3 +158,7 @@ class TestShape(unittest.TestCase):
             "tp=Optional[Tuple[bool, int, shape(nested=bool)]]"
             ")",
         )
+
+    def test_immutable_fields(self):
+        with self.assertRaises(TypeError):
+            data.answer = 123
