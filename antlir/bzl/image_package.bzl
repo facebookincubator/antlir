@@ -12,16 +12,21 @@ load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 _IMAGE_PACKAGE = "image_package"
 
 def image_package(
-        # Standard naming: <image_layer_name>.<package_format>.
+        # Implicit format naming: <image_layer_name>.<package_format>.
+        # If you are using implicit format naming and packaging an
+        # `image_layer` from a different TARGETS file, then pass
+        # `layer =`, and specify whatever name you want.
+        #
+        # To use an explicit format, instead of relying on the target name
+        # to chose the format, provide the `format` kwarg.  If an explicit
+        # format is provided, then a layer must also be provided.
         #
         # For supported formats, see `--format` here:
         #
         #     buck run :package-image -- --help
         #
-        # If you are packaging an `image_layer` from a different TARGETS
-        # file, then pass `layer =`, and specify whatever name you want.
         name = None,
-        # If possible, do not set this. Prefer the standard naming convention.
+        # If an explicit format is provided via `format` this must be set.
         layer = None,
         visibility = None,
         writable_subvolume = False,
@@ -31,28 +36,36 @@ def image_package(
         # `oss_shim.bzl` for how this works.
         antlir_rule = "user-facing",
         # Build appliance to use when creating packages
-        build_appliance = REPO_CFG.build_appliance_default):
+        build_appliance = REPO_CFG.build_appliance_default,
+        # The explicit format to use
+        format = None):
     visibility = get_visibility(visibility, name)
 
-    local_layer_rule, format = paths.split_extension(name)
-    compound_format_specifiers = (
-        ".sendstream.zst",
-        ".cpio.gz",
-        ".tar.gz",
-    )
-    for compound_fmt in compound_format_specifiers:
-        if name.endswith(compound_fmt):
-            local_layer_rule = name[:-len(compound_fmt)]
-            format = compound_fmt
-            break
+    if not format:
+        local_layer_rule, format = paths.split_extension(name)
+        compound_format_specifiers = (
+            ".sendstream.zst",
+            ".cpio.gz",
+            ".tar.gz",
+        )
+        for compound_fmt in compound_format_specifiers:
+            if name.endswith(compound_fmt):
+                local_layer_rule = name[:-len(compound_fmt)]
+                format = compound_fmt
+                break
 
-    if not format.startswith("."):
-        fail(name)
-    format = format[1:]
+        if not format.startswith("."):
+            fail(name)
+        format = format[1:]
+
+        if layer == None:
+            layer = ":" + local_layer_rule
+    elif layer == None:
+        fail("A layer must be provided when using an explicit format: {}".format(format))
+
     if "\000" in format or "/" in format:
         fail(repr(name))
-    if layer == None:
-        layer = ":" + local_layer_rule
+
     buck_genrule(
         name = name,
         out = "layer." + format,

@@ -355,6 +355,8 @@ python_unittest(
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
         TEST_IMAGE_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
         TEST_IMAGE_PREFIX + "create_ops": "tests/create_ops.layer",
+        TEST_IMAGE_PREFIX + "create_ops_cpio_gz": "tests/create_ops_cpio_gz",
+        TEST_IMAGE_PREFIX + "create_ops_squashfs": "tests/create_ops_squashfs",
         TEST_IMAGE_PREFIX + "create_ops-layer-via-tarball-package": "tests/create_ops-layer-via-tarball-package",
         layer_resource(REPO_CFG.build_appliance_default): "tests/build-appliance",
     },
