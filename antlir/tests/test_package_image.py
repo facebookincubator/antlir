@@ -275,10 +275,8 @@ class PackageImageTestCase(unittest.TestCase):
             class BadFormat(Format, format_name="sendstream"):
                 pass
 
-    def test_package_image_as_squashfs(self):
-        with self._package_image(
-            self._sibling_path("create_ops.layer"), "squashfs"
-        ) as out_path, TempSubvolumes(
+    def _verify_package_as_squashfs(self, pkg_path):
+        with TempSubvolumes(
             sys.argv[0]
         ) as temp_subvolumes, tempfile.NamedTemporaryFile() as temp_sendstream:
             subvol = temp_subvolumes.create("subvol")
@@ -293,7 +291,7 @@ class PackageImageTestCase(unittest.TestCase):
                         "squashfs",
                         "-o",
                         "loop",
-                        out_path,
+                        pkg_path,
                         mount_dir,
                     )
                 )
@@ -347,13 +345,20 @@ class PackageImageTestCase(unittest.TestCase):
                 original_render, _render_sendstream_path(temp_sendstream.name)
             )
 
-    def test_package_image_as_cpio(self):
+    def test_package_image_as_squashfs(self):
         with self._package_image(
-            self._sibling_path("create_ops.layer"), "cpio.gz"
-        ) as pkg_path, TempSubvolumes(
+            self._sibling_path("create_ops.layer"), "squashfs"
+        ) as pkg_path:
+            self._verify_package_as_squashfs(pkg_path)
+
+        self._verify_package_as_squashfs(
+            self._sibling_path("create_ops_squashfs")
+        )
+
+    def _verify_package_as_cpio(self, pkg_path):
+        with TempSubvolumes(
             sys.argv[0]
         ) as temp_subvolumes, tempfile.NamedTemporaryFile() as temp_sendstream:
-
             extract_sv = temp_subvolumes.create("extract")
             work_dir = generate_work_dir()
 
@@ -404,3 +409,12 @@ class PackageImageTestCase(unittest.TestCase):
             self.assertEqual(
                 original_render, _render_sendstream_path(temp_sendstream.name)
             )
+
+    def test_package_image_as_cpio(self):
+        with self._package_image(
+            self._sibling_path("create_ops.layer"), "cpio.gz"
+        ) as pkg_path:
+            self._verify_package_as_cpio(pkg_path)
+
+        # Verify the explicit format version from the bzl
+        self._verify_package_as_cpio(self._sibling_path("create_ops_cpio_gz"))
