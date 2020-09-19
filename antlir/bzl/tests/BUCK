@@ -3,7 +3,6 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "python_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
-load("//antlir/bzl/tests:shape_test.bzl", "run_shape_selftests")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load(":container_and_vm_test.bzl", "cpp_container_and_vm_test", "python_container_and_vm_test")
 
@@ -176,95 +175,3 @@ python_container_and_vm_test(
     needed_coverage = [(100, ":coverage_test_helper")],
     deps = [":coverage_test_helper"],
 )
-
-example = shape.shape(
-    answer = int,
-    field = shape.field(bool),
-    defaulted = shape.field(
-        int,
-        default = 1337,
-    ),
-    say_hi = shape.field(
-        str,
-        optional = True,
-    ),
-    nested = shape.shape(inner = bool),
-    tp = shape.tuple(
-        bool,
-        int,
-        shape.shape(nested = bool),
-        optional = True,
-    ),
-    lst = shape.list(
-        shape.shape(id = int),
-        optional = True,
-    ),
-    dct = shape.dict(str, str),
-    dct_w_shape = shape.dict(
-        str,
-        shape.shape(number = int),
-    ),
-)
-
-instance = shape.new(
-    example,
-    field = True,
-    answer = 42,
-    nested = shape.new(
-        example.nested,
-        inner = True,
-    ),
-    tp = (
-        True,
-        42,
-        shape.new(
-            example.tp.item_types[2],
-            nested = True,
-        ),
-    ),
-    lst = [
-        shape.new(
-            example.lst.item_type,
-            id = 0,
-        ),
-        shape.new(
-            example.lst.item_type,
-            id = 1,
-        ),
-    ],
-    dct = {"hello": "world"},
-    dct_w_shape = {
-        "apollo": shape.new(
-            example.dct_w_shape.val_type,
-            number = 11,
-        ),
-    },
-)
-
-shape.loader(
-    name = "example_loader",
-    shape = example,
-    classname = "example",
-)
-
-python_unittest(
-    name = "test-shape",
-    srcs = [
-        "test_shape.py",
-    ],
-    resources = {
-        shape.json_file(
-            name = "example",
-            shape = instance,
-        ): "example.json",
-    },
-    deps = [
-        ":example_loader",
-        shape.python_data(
-            name = "pyfile_shape",
-            shape = instance,
-        ),
-    ],
-)
-
-run_shape_selftests()
