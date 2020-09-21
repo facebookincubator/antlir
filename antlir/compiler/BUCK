@@ -212,12 +212,11 @@ python_unittest(
         ":procfs_serde",
         ":sample_items",
         "//antlir:artifacts_dir",
+        "//antlir:config",
         "//antlir:find_built_subvol",
         "//antlir:testlib_layer_resource",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
         "//antlir/btrfs_diff:testlib_render_subvols",
-        # For repo_config to validate the foreign layer
-        "//antlir/nspawn_in_subvol:cmd",
     ],
 )
 

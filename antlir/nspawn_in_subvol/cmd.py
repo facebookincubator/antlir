@@ -24,6 +24,7 @@ from antlir.artifacts_dir import find_repo_root
 from antlir.compiler import procfs_serde
 from antlir.compiler.items.common import META_ARTIFACTS_REQUIRE_REPO
 from antlir.compiler.items.mount import mounts_from_subvol_meta
+from antlir.config import load_repo_config
 from antlir.find_built_subvol import Subvol
 from antlir.fs_utils import Path
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
@@ -175,20 +176,6 @@ def _artifacts_require_repo(src_subvol: Subvol):
     )
 
 
-@dataclass
-class RepoConfig:
-    repo_artifacts_host_mounts: Iterable[Path] = ()
-
-
-def _load_config() -> RepoConfig:
-    """ Load a repository config structure from a resource and
-    return an instance of a `RepoConfig`.
-    """
-    return RepoConfig(
-        **json.loads(importlib.resources.read_text(__package__, "repo_config"))
-    )
-
-
 def _extra_nspawn_args_and_env(
     opts: _NspawnOpts,
 ) -> Tuple[
@@ -199,8 +186,8 @@ def _extra_nspawn_args_and_env(
     # and non-booted case.
     extra_nspawn_args = []
 
-    # load configs for this repository
-    repo_config = _load_config()
+    # Load configs for this repository
+    repo_config = load_repo_config()
 
     # Note: that nspawn_in_subvol only handles `BuildSource` mount
     # configurations.
@@ -255,7 +242,7 @@ def _extra_nspawn_args_and_env(
 
         # insert additional host mounts that are always required when
         # using repository artifacts.
-        for mount in repo_config.repo_artifacts_host_mounts:
+        for mount in repo_config.host_mounts_for_repo_artifacts:
             extra_nspawn_args.extend(bind_args(mount))
 
         # Future: we **may** also need to mount the scratch directory

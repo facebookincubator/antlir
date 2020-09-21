@@ -22,8 +22,8 @@ from antlir.btrfs_diff.tests.render_subvols import (
     render_sendstream,
 )
 from antlir.compiler.items.mount import mounts_from_subvol_meta
+from antlir.config import load_repo_config
 from antlir.find_built_subvol import find_built_subvol
-from antlir.nspawn_in_subvol.cmd import _load_config
 from antlir.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
 
 from ..procfs_serde import deserialize_int
@@ -288,8 +288,8 @@ class ImageLayerTestCase(unittest.TestCase):
                 # Along with the repo root, we might have some runtime host
                 # mounts injected in the environment by config.  Let's verify
                 # them as well.
-                repo_config = _load_config()
-                for mount in repo_config.repo_artifacts_host_mounts:
+                repo_config = load_repo_config()
+                for mount in repo_config.host_mounts_for_repo_artifacts:
                     d = os.path.abspath(mount)
                     while d != "/":
                         self.assertEqual(["(Dir)", {}], pop_path(r, d))
