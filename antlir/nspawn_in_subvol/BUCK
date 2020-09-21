@@ -8,22 +8,6 @@ load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
-# Generate config for required host mounts based on how the repository is configured.
-#
-# Future: switch this to use `shape.bzl`.
-buck_genrule(
-    name = "repo_config",
-    out = "out",
-    antlir_rule = "user-internal",
-    bash = "echo {} > $OUT".format(
-        # Hack alert: `image.opts` just bypasses the `struct` linter
-        shell.quote(image.opts(
-            repo_artifacts_host_mounts = REPO_CFG.host_mounts_for_repo_artifacts,
-        ).to_json()),
-    ),
-    visibility = [],
-)
-
 # Gets test coverage via `:test-run`
 python_library(
     name = "args",
@@ -50,12 +34,10 @@ python_unittest(
 python_library(
     name = "cmd",
     srcs = ["cmd.py"],
-    resources = {
-        ":repo_config": "repo_config",
-    },
     deps = [
         ":args",
         "//antlir:artifacts_dir",
+        "//antlir:config",
         "//antlir:find_built_subvol",
         "//antlir:send_fds_and_run",
         "//antlir:testlib_temp_subvolumes",

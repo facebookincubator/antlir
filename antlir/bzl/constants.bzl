@@ -4,6 +4,7 @@
 # Note that there's no deep reason for this struct / non-struct split, so we
 # could easily move everything into the struct.
 #
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:oss_shim.bzl", "do_not_use_repo_cfg")
 
 DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
@@ -50,7 +51,7 @@ def _get_version_set_to_path():
 
     # A layer can turn off version locking
     # via `version_set = VERSION_SET_ALLOW_ALL_VERSIONS`.
-    vs_to_path[VERSION_SET_ALLOW_ALL_VERSIONS] = None
+    vs_to_path[VERSION_SET_ALLOW_ALL_VERSIONS] = "TROLLING TROLLING TROLLING"
     return vs_to_path
 
 #
@@ -80,7 +81,24 @@ def _get_version_set_to_path():
 # details, so that buildifier-required lexicographic ordering of dictionary
 # keys results in related keys being grouped together.
 #
-REPO_CFG = struct(
+#
+# DANGER! ACHTUNG! PELIGRO! Опасность! PERICRLRM!
+# Modifications to this shape's attributes or the values in the instance
+# of it below (`REPO_CFG`) could (and likely will) cause excessive
+# rebuilding and incur significant build cost. These attributes and values
+# are effectively global and should be treated with extreme caution.
+# Don't be careless.
+repo_config_t = shape.shape(
+    build_appliance_default = shape.field(str),
+    host_mounts_allowed_in_targets = shape.field(shape.list(str), optional = True),
+    host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
+    rpm_installer_default = shape.field(str),
+    version_set_to_path = shape.field(shape.dict(str, str)),
+    version_set_default = shape.field(str),
+)
+
+REPO_CFG = shape.new(
+    repo_config_t,
     # The target path of the build appliance used for `image.layer`s that do
     # not specify one via `build_opts`.
     build_appliance_default = _get_optional_str_cfg("build_appliance_default"),

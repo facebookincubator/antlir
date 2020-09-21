@@ -1,6 +1,7 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:constants.bzl", "REPO_CFG", "repo_config_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 python_library(
@@ -409,14 +410,42 @@ python_library(
     deps = [],
 )
 
-# shape.python_file uses the source directly
-export_file(
-    name = "shape.py",
-    src = "shape.py",
-)
-
-# shape.python_loader uses the library target
 python_library(
     name = "shape",
     srcs = ["shape.py"],
+    deps = [
+        third_party.library(
+            "pydantic",
+            platform = "python",
+        ),
+    ],
+)
+
+shape.loader(
+    name = "repo_config_t",
+    shape = repo_config_t,
+    classname = "repo_config_t",
+    resources = {
+        shape.json_file(
+            name = "config.json",
+            shape = REPO_CFG,
+        ): "config.json",
+    },
+)
+
+python_library(
+    name = "config",
+    srcs = ["config.py"],
+    deps = [
+        ":repo_config_t",
+    ],
+)
+
+python_unittest(
+    name = "test-config",
+    srcs = ["tests/test_config.py"],
+    needed_coverage = [
+        (100, ":config"),
+    ],
+    deps = [":config"],
 )
