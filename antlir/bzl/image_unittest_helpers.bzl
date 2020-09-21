@@ -108,6 +108,8 @@ def nspawn_in_subvol_args():
         ],
         *[{maybe_boot}],
         *[{maybe_hostname}],
+        # Fixme: remove this in a follow-up diff
+        '--no-shadow-proxied-binaries',
         *[
             '--serve-rpm-snapshot={{}}'.format(s)
                 for s in {serve_rpm_snapshots_repr}

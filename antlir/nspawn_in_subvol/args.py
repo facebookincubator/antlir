@@ -421,6 +421,9 @@ class NspawnPluginArgs(NamedTuple):
     Keep in sync with ``_parser_add_plugin_args`. That documents the options.
     """
 
+    # Mandatory because it incurs a startup cost, so we should be explicit
+    # about where we need this.
+    shadow_proxied_binaries: bool
     serve_rpm_snapshots: Iterable[Path] = ()
     shadow_paths: Iterable[Path] = ()
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
@@ -428,6 +431,21 @@ class NspawnPluginArgs(NamedTuple):
 
 def _parser_add_plugin_args(parser: argparse.ArgumentParser):
     "Keep in sync with `NspawnPluginArgs`"
+    parser.add_argument(
+        "--no-shadow-proxied-binaries",
+        action="store_false",
+        dest="shadow_proxied_binaries",
+        help="By default, our container CLIs will attempt to shadow those "
+        "binaries in the container, for which we have available proxies. "
+        "For example, if the container has a default RPM snapshot "
+        "installed for either `yum` or `dnf`, the corresponding binary "
+        "will be shadowed with a proxy that uses the snapshot to install "
+        'RPMs. The net effect is that the program appears to "just work". '
+        "Pass this flag to turn off default behavior. In this case, you will "
+        "want to manually pass `--serve-rpm-snapshot`, and either use the "
+        "wrapper directly our of the snapshot, or use `--shadow-path` to "
+        "shadow the container binary with the snapshot's proxy.",
+    )
     parser.add_argument(
         "--serve-rpm-snapshot",
         action="append",
@@ -439,7 +457,8 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
         "will be provided with `repo-server`s listening on the ports "
         "specified in the `etc/{yum,dnf}/{yum,dnf}.conf` of the snapshot, "
         "so you can simply run `{yum,dnf} -c PATH_TO_CONF` to use them. "
-        "This option may be repeated to serve multiple snapshots.",
+        "This option may be repeated to serve multiple snapshots. See also: "
+        "`--no-shadow-proxied-binaries`.",
     )
     parser.add_argument(
         "--shadow-path",
@@ -447,6 +466,7 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
         dest="shadow_paths",
         nargs=2,
         metavar=("DEST_TO_SHADOW", "SRC"),
+        default=[],
         type=Path.from_argparse,
         help="Read-only bind-mount container path `SRC` over container-"
         "absolute path `DEST`. If `DEST` is a filename, search container "
@@ -455,7 +475,7 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
         "`/__antlir__/shadowed/REAL/PATH/TO/DEST`. These originals can "
         "be read or mutated, and `yum-dnf-from-snapshot` implements a "
         " trick to allow RPM installers to upgrade packages containing "
-        "shadowed files.",
+        "shadowed files. See also: `--no-shadow-proxied-binaries`.",
     )
     parser.add_argument(
         "--snapshot-to-versionlock",

@@ -13,7 +13,11 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
-from antlir.fs_utils import Path, generate_work_dir
+from antlir.fs_utils import (
+    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
+    Path,
+    generate_work_dir,
+)
 from antlir.nspawn_in_subvol.args import (
     NspawnPluginArgs,
     PopenArgs,
@@ -295,11 +299,14 @@ class RpmActionItem(ImageItem):
 
 
 def _default_snapshot(build_appliance: Subvol, prog_name: str) -> Path:
-    symlink_base = "/__antlir__/rpm/default-snapshot-for-installer/"
     return (
         # The symlink is relative, but we need an absolute path.
-        Path(symlink_base)
-        / os.readlink(build_appliance.path(symlink_base + prog_name))
+        Path(RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR)
+        / os.readlink(
+            build_appliance.path(
+                RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / prog_name
+            )
+        )
     ).normpath()
 
 
@@ -367,6 +374,8 @@ def _yum_dnf_using_build_appliance(
             plugin_args=NspawnPluginArgs(
                 serve_rpm_snapshots=[snapshot_dir],
                 snapshots_and_versionlocks=[(snapshot_dir, versionlock_list)],
+                # We'll explicitly call the RPM installer wrapper we need.
+                shadow_proxied_binaries=False,
             ),
         ),
     )

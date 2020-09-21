@@ -236,7 +236,7 @@ def default_rpm_repo_snapshot_for(prog, snapshot):
     have been installed by `install_rpm_repo_snapshot()`.
     """
 
-    # Keep in sync with `rpm_action.py` and `set_up_rpm_repo_snapshots()`
+    # Keep in sync with `fs_utils.py` and `set_up_rpm_repo_snapshots()`
     link_name = "__antlir__/rpm/default-snapshot-for-installer/" + prog
     return [
         # Silently replace the parent's default because there's not an

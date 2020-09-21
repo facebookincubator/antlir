@@ -84,7 +84,10 @@ class ForeignLayerItem(ImageItem):
                 plugins=rpm_nspawn_plugins(
                     opts=opts,
                     plugin_args=NspawnPluginArgs(
-                        serve_rpm_snapshots=item.serve_rpm_snapshots
+                        serve_rpm_snapshots=item.serve_rpm_snapshots,
+                        # Fixme: make this an arg, maybe remove
+                        # `serve_rpm_snapshots`.
+                        shadow_proxied_binaries=False,
                     ),
                 ),
             )
