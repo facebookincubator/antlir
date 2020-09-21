@@ -108,10 +108,47 @@ load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
 
-_NO_DEFAULT = object()
+_NO_DEFAULT = struct(__no_default_sentinel = True)
 
 def _is_type(x):
-    return type(x) == type
+    if type(x) == type:
+        return True
+
+    # starlark "types" are actually functions, not proper types anymore, they
+    # are just functions
+    if x == int:
+        return True
+    if x == bool:
+        return True
+    if x == str:
+        return True
+    return False
+
+def _type_name(t):
+    if hasattr(t, "__name__"):
+        return t.__name__
+    if t == int:
+        return "int"
+    if t == bool:
+        return "bool"
+    if t == str:
+        return "str"
+    fail("unknown type {}".format(t))
+
+def _isinstance(x, t):
+    if _is_field(t):
+        t = t.starlark_type
+    if _is_shape_instance(x):
+        return x._shape_type == t
+    if type(x) == t:
+        return True
+    if t == int:
+        return types.is_int(x)
+    if t == bool:
+        return types.is_bool(x)
+    if t == str:
+        return types.is_string(x)
+    fail("unknown type {}".format(t))
 
 def _is_field(x):
     return hasattr(x, "_field")
@@ -124,13 +161,6 @@ def _is_shape_instance(x):
 
 def _get_src(x):
     return getattr(x, "python_src", [])
-
-def _isinstance(x, t):
-    if _is_field(t):
-        t = t.starlark_type
-    if _is_shape_instance(x):
-        return x._shape_type == t
-    return type(x) == t
 
 def _validate_shape(shape, data):
     if structs.is_struct(data):
@@ -169,7 +199,7 @@ def _to_field(field_or_type, **field_kwargs):
         return field_or_type
     if _is_shape(field_or_type):
         return _field(
-            python_type = field_or_type.__name__,
+            python_type = _type_name(field_or_type),
             starlark_type = field_or_type,
             validate = _validate_shape_field,
             # shapes require an additional class definition on top of the
@@ -246,7 +276,7 @@ def _primitive_field(type_, **field_kwargs):
     if not _is_type(type_):
         fail("field type '{}' is not a starlark type".format(type_))
     return _field(
-        python_type = type_.__name__,
+        python_type = _type_name(type_),
         starlark_type = type_,
         validate = _validate_primitive,
         **field_kwargs
@@ -284,7 +314,7 @@ def _dict_field(key_type, val_type, **field_kwargs):
     if not _is_type(key_type):
         fail("dicts can only have primitives as keys", attr = "key_type")
     return _field(
-        python_type = "typing.Mapping[{}, {}]".format(key_type.__name__, val_type.__name__),
+        python_type = "typing.Mapping[{}, {}]".format(_type_name(key_type), _type_name(val_type)),
         starlark_type = (key_type, val_type),
         validate = _validate_dict_field,
         val_type = val_type,
@@ -328,7 +358,7 @@ def _set_field(*args, **kwargs):
     return _list_field(set_ = True, *args, **kwargs)
 
 def _tuple_field(*item_types, **field_kwargs):
-    item_type_names = ",".join([t.__name__ for t in item_types])
+    item_type_names = ",".join([_type_name(t) for t in item_types])
     python_src = []
     for t in item_types:
         python_src.extend(_get_src(t))
@@ -358,7 +388,7 @@ def _loader_src(shape, classname):
     python_src += "\n".join(shape.python_src)
 
     # alias the top-level class name to something readable
-    python_src += "\n{} = {}".format(classname, shape.__name__)
+    python_src += "\n{} = {}".format(classname, _type_name(shape))
     return python_src
 
 def _loader(name, shape, classname = None, **kwargs):

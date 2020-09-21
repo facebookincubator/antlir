@@ -1,5 +1,5 @@
 load("//antlir/bzl:artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
-load("//antlir/bzl:constants.bzl", "VERSION_SET_ALLOW_ALL_VERSIONS"),
+load("//antlir/bzl:constants.bzl", "VERSION_SET_ALLOW_ALL_VERSIONS")
 load("//antlir/bzl:oss_shim.bzl", "python_unittest")
 load("//antlir/bzl/image_actions:feature.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 
