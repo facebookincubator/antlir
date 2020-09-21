@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import shlex
 import tempfile
 import textwrap
 
@@ -21,28 +22,40 @@ class RpmNspawnTestBase(NspawnTestBase):
         package,
         *,
         extra_args=(),
-        # This helper powers two flavors of tests:
-        #
-        #  - `with_shadowing_wrapper=False`: Directly using the OS RPM
-        #    installer with `--config` and `--installroot` -- this may not
-        #    be a scenario we end up supporting long-term.
-        #
-        #  - `with_shadowing_wrapper=True`: The OS RPM installer is shadowed
-        #    with its wrapper from the `antlir`-generated RPM repo
-        #    snapshot.  This approximates the "RPM installation just works
-        #    by default" flow.  Here, we install to `/` instead of
-        #    `/target`, because RPM installers currently don't support
-        #    updating shadowed files when using `--installroot`, and we want
-        #    to test this behavior.
-        with_shadowing_wrapper=False,
         build_appliance_pair=(__package__, "build-appliance"),
+        # The `install_root` and `is_os_installer_wrapped` args are here so
+        # that we can test various scenarios where {prog} is shadowed by our
+        # `yum-dnf-from-snapshot` wrapper.  These are scenarios where to the
+        # user it appears that the OS RPM installer "just works" with the
+        # default RPM snapshot for that installer.
+        #
+        # We may want to phase out `is_os_installer_wrapped=False` entirely,
+        # because this implies directly using the OS-provided RPM installer
+        # with our snapshot's `--config`.  We do not necessarily want to
+        # support this scenario long-term, because it stops us from
+        # controlling the runtime environment of the RPM installer.
+        install_root="/target",
+        is_os_installer_wrapped=False,
     ):
-        # fmt: off
-        maybe_quoted_prog_args = ("" if with_shadowing_wrapper else " ".join([
-            f"--config={self._SNAPSHOT_DIR}/{prog}/etc/{prog}/{prog}.conf",
-            "--installroot=/target",
-        ]))
-        # fmt: on
+        maybe_config_arg = (
+            (f"--config={self._SNAPSHOT_DIR}/{prog}/etc/{prog}/{prog}.conf")
+            if not is_os_installer_wrapped
+            else ""
+        )
+
+        test_sh_script = textwrap.dedent(
+            f"""\
+            set -ex
+            install_root={shlex.quote(install_root)}
+            mkdir -p "$install_root"
+            {prog} -y --installroot="$install_root" {maybe_config_arg} \\
+                install {package} | tee /proc/self/fd/3
+            # We install only 1 RPM, so a glob tells us the filename.
+            # Use `head` instead of `cat` to fail nicer on exceeding 1.
+            head "$install_root"/rpm_test/*.txt >&4
+            """
+        )
+
         with tempfile.TemporaryFile(
             mode="w+b"
         ) as yum_dnf_stdout, tempfile.TemporaryFile(mode="w+") as rpm_contents:
@@ -53,25 +66,21 @@ class RpmNspawnTestBase(NspawnTestBase):
                 build_appliance_pair,
                 [
                     "--user=root",
-                    f"--serve-rpm-snapshot={self._SNAPSHOT_DIR}",
+                    *(
+                        []
+                        if is_os_installer_wrapped
+                        else [
+                            "--no-shadow-proxied-binaries",
+                            f"--serve-rpm-snapshot={self._SNAPSHOT_DIR}",
+                        ]
+                    ),
                     f"--forward-fd={yum_dnf_stdout.fileno()}",  # becomes FD 3
                     f"--forward-fd={rpm_contents.fileno()}",  # becomes FD 4
                     *extra_args,
                     "--",
                     "/bin/sh",
                     "-c",
-                    textwrap.dedent(
-                        f"""\
-                    set -ex
-                    install_root={'/' if with_shadowing_wrapper else '/target'}
-                    mkdir -p "$install_root"
-                    {prog} {maybe_quoted_prog_args} -y install {package} |
-                        tee /proc/self/fd/3
-                    # We install only 1 RPM, so a glob tells us the filename.
-                    # Use `head` instead of `cat` to fail nicer on exceeding 1.
-                    head "$install_root"/rpm_test/*.txt >&4
-                """
-                    ),
+                    test_sh_script,
                 ],
             )
             # Hack up the `CompletedProcess` for ease of testing.

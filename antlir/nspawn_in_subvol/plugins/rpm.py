@@ -33,6 +33,7 @@ from types import MappingProxyType
 from typing import Iterable
 
 from antlir.common import set_new_key
+from antlir.fs_utils import RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.nspawn_in_subvol.args import NspawnPluginArgs, _NspawnOpts
 
 from . import NspawnPlugin
@@ -44,11 +45,35 @@ from .yum_dnf_versionlock import YumDnfVersionlock
 def rpm_nspawn_plugins(
     *, opts: _NspawnOpts, plugin_args: NspawnPluginArgs
 ) -> Iterable[NspawnPlugin]:
+    serve_rpm_snapshots = set(plugin_args.serve_rpm_snapshots)
+    shadow_paths = [*plugin_args.shadow_paths]
+
+    # Shadow RPM installers by default, when running as "root".  It is ugly
+    # to condition this on "root", but in practice, it is a significant
+    # costs savings for non-root runs -- no need to start repo servers and
+    # shadow bind mounts that (`sudo` aside) would not get used.
+    default_snapshot_dir = opts.layer.path(
+        RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
+    )
+    if (
+        plugin_args.shadow_proxied_binaries
+        and opts.user.pw_name == "root"
+        and default_snapshot_dir.exists()
+    ):
+        # This can run as non-root since `set_up_rpm_repo_snapshots` makes
+        # this a world-readable directory.
+        for prog_name in default_snapshot_dir.listdir():
+            # Here, we need container, not host paths
+            snapshot_dir = RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / prog_name
+            serve_rpm_snapshots.add(snapshot_dir)
+            shadow_paths.append(
+                (prog_name, snapshot_dir / prog_name / "bin" / prog_name)
+            )
+
+    # Canonicalize paths here and below to ensure that it doesn't matter if
+    # snapshots are specified by symlink or by real location.
     serve_rpm_snapshots = frozenset(
-        # Canonicalize here and below to ensure that it doesn't matter if
-        # snapshots are specified by symlink or by real location.
-        opts.layer.canonicalize_path(p)
-        for p in plugin_args.serve_rpm_snapshots
+        opts.layer.canonicalize_path(p) for p in serve_rpm_snapshots
     )
 
     # Sanity-check the snapshot -> versionlock map
@@ -66,11 +91,7 @@ def rpm_nspawn_plugins(
         # because the two integrate -- a stacked diff will add a default
         # behavior to shadow the OS `yum` / `dnf` binaries with wrappers
         # that talk to our repo servers in `nspawn_in_subvol` containers.
-        *(
-            [ShadowPaths(plugin_args.shadow_paths)]
-            if plugin_args.shadow_paths
-            else []
-        ),
+        *([ShadowPaths(shadow_paths)] if shadow_paths else []),
         *(
             [
                 *(
