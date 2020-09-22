@@ -19,7 +19,7 @@ class RepoConfigTestCase(unittest.TestCase):
         # *require* this field to be provided many things in
         # this tool will blow up if it's not set, so it is, for
         # all intents and purposes, required.  So, we use that
-        # fact as a simple unit test to ensure the RepoConfig
+        # fact as a simple unit test to ensure the repo_config_t
         # can load properly.
         self.assertIsNotNone(config.build_appliance_default)
         self.assertNotEqual(config.build_appliance_default, "")
