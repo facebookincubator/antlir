@@ -19,6 +19,7 @@ from itertools import chain
 from pathlib import Path
 from typing import AsyncContextManager, ContextManager, Iterable, Optional
 
+from antlir.artifacts_dir import find_repo_root
 from antlir.config import load_repo_config
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
@@ -91,7 +92,7 @@ async def __wait_for_boot(sockfile: os.PathLike) -> None:
 async def __vm_with_stack(
     stack: AsyncExitStack,
     image: Path,
-    repo_root: Optional[Path] = None,
+    bind_repo_ro: bool = False,
     verbose: bool = False,
     interactive: bool = False,
     shares: Optional[Iterable[Share]] = None,
@@ -155,10 +156,10 @@ async def __vm_with_stack(
     except ImportError:  # pragma: no cover
         pass
 
-    if repo_root is not None:
+    if bind_repo_ro:
         # also share the repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
-        shares += [Plan9Export(repo_root)]
+        shares += [Plan9Export(find_repo_root())]
 
         # Also share any additionally configured host mounts needed
         # along with the repository root.

@@ -54,6 +54,19 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
 
 @click.command(context_settings={"ignore_unknown_options": True})
 @click.option(
+    "--bind-repo-ro",
+    # Note: this is set to `True` because it is not currently possible
+    # to determine if an image or it's artifacts require the repository.
+    # This is due to the inability to inspect the image's `.meta/` contents.
+    # When this issue is resolved, we can set this default to False.
+    default=True,
+    is_flag=True,
+    help="Makes a read-only bind-mount of the current Buck "
+    "project into the vm at the same location as it is on "
+    "the host. This is needed to run binaries that are built "
+    "to be run in-place.",
+)
+@click.option(
     "-q/-e",
     "--quiet/--echo",
     default=False,
@@ -90,6 +103,7 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @async_command
 async def main(
+    bind_repo_ro: bool,
     quiet: bool,
     timeout: int,
     setenv: List[str],
@@ -109,7 +123,6 @@ async def main(
     logging.basicConfig(level=logging.DEBUG, handlers=[h])
     returncode = -1
     start_time = time.time()
-    repo_root = find_repo_root()
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
     with importlib.resources.path(
@@ -144,8 +157,8 @@ async def main(
             sys.exit(proc.returncode)
 
         async with vm(
+            bind_repo_ro=bind_repo_ro,
             image=image,
-            repo_root=repo_root,
             verbose=not quiet,
             interactive=interactive,
             ncpus=ncpus,
@@ -188,7 +201,12 @@ async def main(
                     # allow for some slightly better logging opportunities
                     timeout=timeout - boot_time_elapsed - 1,
                     env=test_env,
-                    cwd=repo_root,
+                    # TODO(lsalis):  This is currently needed due to how some
+                    # cpp_unittest targets depend on artifacts in the code
+                    # repo.  Once we have proper support for `runtime_files`
+                    # this can be removed.  See here for more details:
+                    # https://fburl.com/xt322rks
+                    cwd=find_repo_root(),
                 )
                 # Some tests have incredibly large amounts of output, which
                 # results in a BlockingIOError when stdout/err are in
