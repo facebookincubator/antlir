@@ -2,6 +2,7 @@
 buck-out
 buck-image-out
 .buckd/
+.tools/
 
 # vim stuff
 **/*.swp
