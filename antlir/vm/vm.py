@@ -19,6 +19,7 @@ from itertools import chain
 from pathlib import Path
 from typing import AsyncContextManager, ContextManager, Iterable, Optional
 
+from antlir.config import load_repo_config
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
 
@@ -124,6 +125,9 @@ async def __vm_with_stack(
     # grow)?
     rwdevice.truncate(1 * 1024 * 1024 * 1024)
 
+    # Load the repo_config
+    repo_config = load_repo_config()
+
     shares = shares or []
     # The two initial disks (readonly rootfs seed device and the rw scratch
     # device) are required to have these two disk identifiers for the initrd to
@@ -155,6 +159,11 @@ async def __vm_with_stack(
         # also share the repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
         shares += [Plan9Export(repo_root)]
+
+        # Also share any additionally configured host mounts needed
+        # along with the repository root.
+        for mount in repo_config.host_mounts_for_repo_artifacts:
+            shares.append(Plan9Export(mount))
 
     with kernel_resources() as kernel:
         args = [
