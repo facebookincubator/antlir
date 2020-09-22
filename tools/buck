@@ -1,0 +1,79 @@
+#!/bin/bash
+set -e
+
+# This is a wrapper script for the buck build tool binary.  This will first check
+# to see if the actual buck binary needs to be downloaded and if so, will attempt
+# to do so from the official buck `jitpack.io` repository as described here:
+# https://github.com/facebook/buck#prebuilt-buck-binaries
+
+resolve_path() {
+  local path="$1"
+  pushd . > /dev/null
+  if cd -P "$path" 2> /dev/null; then
+    pwd
+  fi
+  popd > /dev/null
+}
+
+buck_root_dir() {
+  CWD="$(resolve_path "$(pwd)")"
+  while [[ "$CWD" != "/" ]]; do
+    if [[ -r "$CWD"/.buckconfig ]]; then
+      echo "$CWD"
+      return
+    fi
+    CWD=$(dirname "$CWD")
+  done
+}
+
+# Derive the actual buck binary location
+_buck_root="$(buck_root_dir)"
+# Keep the buck binary under .tools/ so it is moderately hidden, but not liable
+# to be wiped out by the buckd lifecycle
+_buck_bin_dir="${_buck_root}/.tools"
+
+expected_buck_version() {
+  cat "${_buck_root}/.buckversion"
+  return
+}
+
+BUCK="${_buck_bin_dir}/buck-$(expected_buck_version).pex"
+
+run_buck() {
+  pushd "${_buck_root}" > /dev/null
+  "${BUCK}" "${@}"
+  code=$?
+  popd > /dev/null
+  exit $code
+}
+
+BUCK_JITPACK_BASE_URL=https://jitpack.io/com/github/facebook/buck
+get_buck() {
+  _version=$(expected_buck_version)
+
+  # Download a the requested version directly from jitpack
+  mkdir -p "${_buck_bin_dir}"
+  pushd "${_buck_bin_dir}" > /dev/null
+  curl -o "${BUCK}.download" \
+    "${BUCK_JITPACK_BASE_URL}/${_version}/buck-${_version}.pex"
+  ret="$?"
+  if [ "${ret}" == "0" ]; then
+    # Make it executable
+    chmod +x "${BUCK}.download"
+    # Move it in place
+    mv "${BUCK}.download" "${BUCK}"
+    popd > /dev/null
+  else
+    echo "Error downloading new buck version!!"
+    rm "${BUCK}.download"
+    popd > /dev/null
+    exit 1
+  fi
+}
+
+if [[ ! -f "${BUCK}" ]]; then
+  echo "No buck ${BUCK} found! Downloading..."
+  get_buck
+fi
+
+run_buck "${@}"
