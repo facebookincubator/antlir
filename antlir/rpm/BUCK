@@ -388,6 +388,7 @@ python_binary(
 test_rpm_repo_snapshot(
     name = "repo-snapshot-for-tests",
     kind = "sample-step-0",
+    repo_server_ports = (28889, 28890),
     # `test-yum-dnf-from-snapshot` exercises both package managers.
     # `test-rpm-action-item` also tests both by explicitly setting
     # `LayerOpts.rpm_installer`.
@@ -401,6 +402,7 @@ test_rpm_repo_snapshot(
 test_rpm_repo_snapshot(
     name = "non-default-repo-snapshot-for-tests",
     kind = "non-default",
+    repo_server_ports = (28891, 28892),  # Coexists w/ `repo-snapshot-for-tests`
     rpm_installers = ("dnf", "yum"),
 )
 

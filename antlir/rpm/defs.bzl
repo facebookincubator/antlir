@@ -2,7 +2,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
 
-def test_rpm_repo_snapshot(name, kind, rpm_installers):
+def test_rpm_repo_snapshot(name, kind, rpm_installers, repo_server_ports):
     bare_snapshot_dir = "__bare_snapshot_dir_for__" + name
     buck_genrule(
         name = bare_snapshot_dir,
@@ -30,4 +30,5 @@ def test_rpm_repo_snapshot(name, kind, rpm_installers):
             "kind": "filesystem",
         },
         rpm_installers = rpm_installers,
+        repo_server_ports = repo_server_ports,
     )

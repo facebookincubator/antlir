@@ -17,6 +17,10 @@ class TestImpl:
 
     _SHADOW_BA_PAIR = (__package__, "shadow-build-appliance")
 
+    _NONDEFAULT_SNAPSHOT_DIR = snapshot_install_dir(
+        "//antlir/rpm:non-default-repo-snapshot-for-tests"
+    )
+
     def test_install_via_default_shadowed_installer(self):
         self._check_yum_dnf_boot_or_not(
             self._PROG,
@@ -26,35 +30,61 @@ class TestImpl:
                 "mice 0.1 a\n",
                 br"Installing\s+: rpm-test-mice-0.1-a.x86_64",
             ),
-            is_os_installer_wrapped=True,
+            run_prog_as_is=True,
         )
 
-    def test_install_via_manual_shadowed_installer(self):
-        # Use a non-default snapshot for our manual shadowing, so that we are
-        # sure that we're not seeing the effects of default snapshotting.
-        snapshot_dir = snapshot_install_dir(
-            "//antlir/rpm:non-default-repo-snapshot-for-tests"
-        )
+    def _nondefault_snapshot_prog(self):
+        return self._NONDEFAULT_SNAPSHOT_DIR / f"{self._PROG}/bin/{self._PROG}"
+
+    # Installing from a non-default snapshot lets us be sure that we're
+    # not accidentally using the default snapshot via the OS wrapper.
+    def _check_install_from_nondefault_snapshot(self, prog, extra_args):
         self._check_yum_dnf_boot_or_not(
-            self._PROG,
+            # NB: Thanks to `run_prog_as_is`, this can be a path, and not
+            # just `yum` or `dnf`.
+            prog,
             "rpm-test-cheese",
             extra_args=(
-                *(
-                    "--shadow-path",
-                    self._PROG,
-                    snapshot_dir / f"{self._PROG}/bin/{self._PROG}",
-                ),
-                # NB: these are the same as in  `_yum_or_dnf_install` in the
-                # `is_os_installer_wrapped=False` branch.
-                "--no-shadow-proxied-binaries",
-                f"--serve-rpm-snapshot={snapshot_dir}",
+                *extra_args,
+                f"--serve-rpm-snapshot={self._NONDEFAULT_SNAPSHOT_DIR}",
             ),
             check_ret_fn=functools.partial(
                 self._check_yum_dnf_ret,
                 "cheese 0 0\n",
                 br"Installing\s+: rpm-test-cheese-0-0.x86_64",
             ),
-            is_os_installer_wrapped=True,
+            # Enable default shadowing, and handle `prog` being be a
+            # filename, or a in-container absolute path.
+            run_prog_as_is=True,
+        )
+
+    def test_install_via_manually_shadowed_installer(self):
+        # Manually shadow the OS RPM installer, and call it via `PATH`.
+        self._check_install_from_nondefault_snapshot(
+            self._PROG,
+            [
+                "--no-shadow-proxied-binaries",
+                *(
+                    "--shadow-path",
+                    self._PROG,
+                    self._nondefault_snapshot_prog(),
+                ),
+            ],
+        )
+
+    def test_install_via_nondefault_snapshot(self):
+        # Shadow the OS RPM installer, but run the installer wrapper from a
+        # different snapshot.  Ensures that even though the OS installer is
+        # wrapped, the wrapper from another snapshot still works.
+        self._check_install_from_nondefault_snapshot(
+            self._nondefault_snapshot_prog(), []
+        )
+
+    def test_install_via_nondefault_snapshot_no_shadowing(self):
+        # Redundant with other tests: do not shadow the OS installer, run
+        # the installer wrapper straight from the snapshot.
+        self._check_install_from_nondefault_snapshot(
+            self._nondefault_snapshot_prog(), ["--no-shadow-proxied-binaries"]
         )
 
     def _check_shadow_ba(self):
@@ -88,8 +118,8 @@ class TestImpl:
                     ),
                     f"--snapshot-into={dest_subvol.path()}",
                 ),
-                # This will uses the default installer shadowing.
-                is_os_installer_wrapped=True,
+                # This container will have the default RPM installer shadowing.
+                run_prog_as_is=True,
                 # Our RPM installer wrapper doesn't support updating
                 # shadowed files with `--installroot` other than `/`.
                 install_root="/",
