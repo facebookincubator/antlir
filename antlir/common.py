@@ -56,7 +56,7 @@ def check_popen_returncode(proc: subprocess.Popen):
 def set_new_key(d, k, v):
     "`d[k] = v` that raises if it would it would overwrite an existing value"
     if k in d:
-        raise KeyError(f"{k} was already set")
+        raise KeyError(f"{k} was already set to {d[k]}, new value: {v}")
     d[k] = v
 
 

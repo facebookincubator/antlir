@@ -23,23 +23,28 @@ class RpmNspawnTestBase(NspawnTestBase):
         *,
         extra_args=(),
         build_appliance_pair=(__package__, "build-appliance"),
-        # The `install_root` and `is_os_installer_wrapped` args are here so
-        # that we can test various scenarios where {prog} is shadowed by our
+        # The `install_root` and `run_prog_as_is` args are here so that we
+        # can test various scenarios where {prog} is shadowed by our
         # `yum-dnf-from-snapshot` wrapper.  These are scenarios where to the
         # user it appears that the OS RPM installer "just works" with the
         # default RPM snapshot for that installer.
         #
-        # We may want to phase out `is_os_installer_wrapped=False` entirely,
-        # because this implies directly using the OS-provided RPM installer
-        # with our snapshot's `--config`.  We do not necessarily want to
-        # support this scenario long-term, because it stops us from
-        # controlling the runtime environment of the RPM installer.
+        # We may want to phase out `run_prog_as_is=False` entirely, because
+        # this implies directly using the OS-provided RPM installer with our
+        # snapshot's `--config`.  We do not necessarily want to support this
+        # scenario long-term, because it stops us from controlling the
+        # runtime environment of the RPM installer.
         install_root="/target",
-        is_os_installer_wrapped=False,
+        # The semantics of this are: just run `prog` (via `PATH` if a
+        # basename, as a path otherwise).  We also won't automatically serve
+        # a snapshot in the container, or disable installer shadowing.
+        # Fixme: this should really go away, and be done explicitly by the
+        # callsites that currently rely on the `False` branch.
+        run_prog_as_is=False,
     ):
         maybe_config_arg = (
             (f"--config={self._SNAPSHOT_DIR}/{prog}/etc/{prog}/{prog}.conf")
-            if not is_os_installer_wrapped
+            if not run_prog_as_is
             else ""
         )
 
@@ -68,7 +73,7 @@ class RpmNspawnTestBase(NspawnTestBase):
                     "--user=root",
                     *(
                         []
-                        if is_os_installer_wrapped
+                        if run_prog_as_is
                         else [
                             "--no-shadow-proxied-binaries",
                             f"--serve-rpm-snapshot={self._SNAPSHOT_DIR}",
