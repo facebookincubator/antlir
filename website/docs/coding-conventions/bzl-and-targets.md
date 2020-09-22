@@ -168,3 +168,20 @@ has two desirable effects:
 
 The implementation details and more specific docs can be found in
 `antlir/bzl/oss_shim_impl.bzl`.
+
+## Naming conventions when using `shape.bzl`
+
+Shape types should be named with a trailing `_t` to indicate that it is a
+shape type. Shape instance variable names should conform to the local style
+conventions.
+
+For example, the type and instance for installing a tarball might look like
+this:
+```
+tarball_t = shape.shape(
+  from_target = shape.field(str, optional = True),
+  into_dir = str,
+)
+
+install_tarball = shape.new(tarball_t, from_target=..., into_dir=...)
+```
