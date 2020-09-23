@@ -20,7 +20,6 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
-from antlir.artifacts_dir import find_repo_root
 from antlir.compiler import procfs_serde
 from antlir.compiler.items.common import META_ARTIFACTS_REQUIRE_REPO
 from antlir.compiler.items.mount import mounts_from_subvol_meta
@@ -236,7 +235,7 @@ def _extra_nspawn_args_and_env(
             bind_args(
                 # Buck seems to operate with `realpath` when it resolves
                 # `$(location)` macros, so this is what we should mount.
-                os.path.realpath(find_repo_root())
+                os.path.realpath(repo_config.repo_root)
             )
         )
 

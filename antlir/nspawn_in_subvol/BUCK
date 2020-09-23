@@ -36,7 +36,6 @@ python_library(
     srcs = ["cmd.py"],
     deps = [
         ":args",
-        "//antlir:artifacts_dir",
         "//antlir:config",
         "//antlir:find_built_subvol",
         "//antlir:send_fds_and_run",

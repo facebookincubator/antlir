@@ -12,7 +12,6 @@ python_library(
     },
     deps = [
         ":share",
-        "//antlir:artifacts_dir",
         "//antlir:config",
         "//antlir/facebook/vm:share_fbcode_runtime",
     ],

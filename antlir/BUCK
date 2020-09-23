@@ -437,6 +437,8 @@ python_library(
     name = "config",
     srcs = ["config.py"],
     deps = [
+        ":artifacts_dir",
+        ":fs_utils",
         ":repo_config_t",
     ],
 )
@@ -447,5 +449,9 @@ python_unittest(
     needed_coverage = [
         (100, ":config"),
     ],
-    deps = [":config"],
+    deps = [
+        ":artifacts_dir",
+        ":config",
+        ":fs_utils",
+    ],
 )
