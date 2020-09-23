@@ -55,6 +55,8 @@ python_library(
             "click",
             platform = "python",
         ),
+        ":share",
+        ":vm",
         "//antlir:artifacts_dir",
     ],
 )

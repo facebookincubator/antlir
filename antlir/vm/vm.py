@@ -156,8 +156,8 @@ async def __vm_with_stack(
     except ImportError:  # pragma: no cover
         pass
 
-    if bind_repo_ro:
-        # also share the repository root at the same mount point from the host
+    if bind_repo_ro or repo_config.artifacts_require_repo:
+        # Mount the code repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
         shares += [Plan9Export(find_repo_root())]
 

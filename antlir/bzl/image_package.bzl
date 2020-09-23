@@ -4,7 +4,6 @@ files, as described by the specified `format`.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(":artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
 load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
@@ -103,7 +102,7 @@ def image_package(
                 ) if build_appliance != DO_NOT_USE_BUILD_APPLIANCE else "",
                 rw = "--writable-subvolume" if writable_subvolume else "",
                 seed = "--seed-device" if seed_device else "",
-                multi_pass_size_minimization = "" if ARTIFACTS_REQUIRE_REPO else "--multi-pass-size-minimization",
+                multi_pass_size_minimization = "" if REPO_CFG.artifacts_require_repo else "--multi-pass-size-minimization",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,
                 # so that the packager can verify that the specified

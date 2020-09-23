@@ -1,5 +1,4 @@
-load("//antlir/bzl:artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
-load("//antlir/bzl:constants.bzl", "VERSION_SET_ALLOW_ALL_VERSIONS")
+load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS"),
 load("//antlir/bzl:oss_shim.bzl", "python_unittest")
 load("//antlir/bzl/image_actions:feature.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 
@@ -27,7 +26,7 @@ def image_feature_python_unittest(test_image_feature_transitive_deps, deps = Non
         for t in test_image_feature_transitive_deps
     })
     env["test_image_feature_built_artifacts_require_repo"] = \
-        str(int(ARTIFACTS_REQUIRE_REPO))
+        str(int(REPO_CFG.artifacts_require_repo))
 
     deps = (deps or []) + [":sample_items"]
 
