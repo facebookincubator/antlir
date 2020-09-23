@@ -19,7 +19,6 @@ from itertools import chain
 from pathlib import Path
 from typing import AsyncContextManager, ContextManager, Iterable, Optional
 
-from antlir.artifacts_dir import find_repo_root
 from antlir.config import load_repo_config
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
@@ -159,7 +158,7 @@ async def __vm_with_stack(
     if bind_repo_ro or repo_config.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
-        shares += [Plan9Export(find_repo_root())]
+        shares += [Plan9Export(repo_config.repo_root)]
 
         # Also share any additionally configured host mounts needed
         # along with the repository root.

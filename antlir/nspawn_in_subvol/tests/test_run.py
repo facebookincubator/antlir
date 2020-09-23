@@ -65,7 +65,7 @@ class NspawnTestCase(NspawnTestBase):
             ),
         )
 
-    @mock.patch("antlir.nspawn_in_subvol.cmd.find_repo_root")
+    @mock.patch("antlir.config.find_repo_root")
     def test_extra_nspawn_args_bind_repo_opts(self, root_mock):
         root_mock.return_value = "/repo/root"
         # opts.bind_repo_ro
