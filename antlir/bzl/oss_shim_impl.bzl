@@ -1,5 +1,6 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//third-party/fedora31/kernel:kernels.bzl", "kernels")
+# @lint-ignore-every BUCKFBCODENATIVE
 
 _RULE_TYPE_KWARG = "antlir_rule"
 
@@ -205,22 +206,22 @@ def _wrap_internal(fn, args, kwargs):
     fn(*args, **kwargs)
 
 def _command_alias(*args, **kwargs):
-    _wrap_internal(command_alias, args, kwargs)
+    _wrap_internal(native.command_alias, args, kwargs)
 
 def _filegroup(*args, **kwargs):
-    _wrap_internal(filegroup, args, kwargs)
+    _wrap_internal(native.filegroup, args, kwargs)
 
 def _genrule(*args, **kwargs):
-    _wrap_internal(genrule, args, kwargs)
+    _wrap_internal(native.genrule, args, kwargs)
 
 def _sh_binary(*args, **kwargs):
-    _wrap_internal(sh_binary, args, kwargs)
+    _wrap_internal(native.sh_binary, args, kwargs)
 
 def _sh_test(*args, **kwargs):
-    _wrap_internal(sh_test, args, kwargs)
+    _wrap_internal(native.sh_test, args, kwargs)
 
 def _impl_cpp_unittest(name, tags = [], visibility = None, **kwargs):
-    cxx_test(
+    native.cxx_test(
         name = name,
         labels = tags,
         visibility = _normalize_visibility(visibility),
@@ -231,7 +232,7 @@ def _cpp_unittest(*args, **kwargs):
     _wrap_internal(_impl_cpp_unittest, args, kwargs)
 
 def _export_file(*args, **kwargs):
-    _wrap_internal(export_file, args, kwargs)
+    _wrap_internal(native.export_file, args, kwargs)
 
 def _impl_python_binary(
         name,
@@ -247,7 +248,7 @@ def _impl_python_binary(
         **kwargs
     )
 
-    python_binary(
+    native.python_binary(
         name = name,
         main_module = main_module,
         package_style = _normalize_pkg_style(par_style),
@@ -265,7 +266,7 @@ def _impl_python_library(
         resources = None,
         srcs = None,
         **kwargs):
-    python_library(
+    native.python_library(
         name = name,
         deps = _normalize_deps(deps),
         resources = _normalize_resources(resources),
@@ -285,7 +286,7 @@ def _impl_python_unittest(
         tags = None,
         resources = None,
         **kwargs):
-    python_test(
+    native.python_test(
         deps = _normalize_deps(deps),
         labels = tags if tags else [],
         needed_coverage = _normalize_coverage(needed_coverage),
@@ -295,13 +296,13 @@ def _impl_python_unittest(
     )
 
 def _python_unittest(*args, **kwargs):
-    _wrap_internal(_impl_python_binary, args, kwargs)
+    _wrap_internal(_impl_python_unittest, args, kwargs)
 
 # Use = in the default filename to avoid clashing with RPM names.
 # The constant must match `update_allowed_versions.py`.
 # Omits `_wrap_internal` due to perf paranoia -- we have a callsite per RPM.
 def _rpm_vset(name, src = "empty=rpm=vset"):
-    export_file(
+    native.export_file(
         name = name,
         src = src,
         mode = "reference",
