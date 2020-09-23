@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load(":artifacts_require_repo.bzl", "ARTIFACTS_REQUIRE_REPO")
+load(":constants.bzl", "REPO_CFG")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 load(":target_helpers.bzl", "wrap_target")
 
@@ -139,7 +139,7 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
     this target. Output a dummy target (in place of the wrapper) in this case
     to appease it.
     """
-    if not ARTIFACTS_REQUIRE_REPO:
+    if not REPO_CFG.artifacts_require_repo:
         buck_genrule(
             name = name,
             out = "dummyfile",
@@ -191,7 +191,7 @@ def maybe_wrap_executable_target(target, wrap_prefix, **kwargs):
     if exists:
         # With self-contained artifacts, we create a dummy wrapper target to
         # satisfy the CI target determinator, but we must not use it.
-        if not ARTIFACTS_REQUIRE_REPO:
+        if not REPO_CFG.artifacts_require_repo:
             return False, target  # Don't create another dummy wrapper
         return True, ":" + wrapped_target
 

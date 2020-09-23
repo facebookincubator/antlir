@@ -89,6 +89,7 @@ def _get_version_set_to_path():
 # are effectively global and should be treated with extreme caution.
 # Don't be careless.
 repo_config_t = shape.shape(
+    artifacts_require_repo = shape.field(bool),
     build_appliance_default = shape.field(str),
     host_mounts_allowed_in_targets = shape.field(shape.list(str), optional = True),
     host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
@@ -99,6 +100,16 @@ repo_config_t = shape.shape(
 
 REPO_CFG = shape.new(
     repo_config_t,
+    # This one is not using the access methods to provide the precedence order
+    # because the way this is determined is *always* based on the build mode
+    # provided, ie `@mode/opt` vs `@mode/dev`.  And the build mode provided
+    # determines the value of the `.buckconfig` properties used. There is no
+    # way to override this value except to use a different build mode.
+    artifacts_require_repo = (
+        (native.read_config("defaults.cxx_library", "type") == "shared") or
+        (native.read_config("python", "package_style") == "inplace")
+    ),
+
     # The target path of the build appliance used for `image.layer`s that do
     # not specify one via `build_opts`.
     build_appliance_default = _get_optional_str_cfg("build_appliance_default"),

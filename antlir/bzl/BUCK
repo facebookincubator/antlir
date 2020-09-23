@@ -15,11 +15,6 @@ load(":oss_shim.bzl", "get_visibility")
 # This should eventually become unnecessary, follow Q10141.
 
 fake_macro_library(
-    name = "artifacts_require_repo",
-    srcs = ["artifacts_require_repo.bzl"],
-)
-
-fake_macro_library(
     name = "sha256",
     srcs = ["sha256.bzl"],
 )
@@ -85,7 +80,6 @@ fake_macro_library(
     name = "wrap_runtime_deps",
     srcs = ["wrap_runtime_deps.bzl"],
     deps = [
-        ":artifacts_require_repo",
         ":target_helpers",
     ],
 )
@@ -97,7 +91,6 @@ fake_macro_library(
         "image_layer.bzl",
     ],
     deps = [
-        ":artifacts_require_repo",
         ":image_utils",
         ":target_tagger",
         "//antlir/bzl/image_actions:install",
