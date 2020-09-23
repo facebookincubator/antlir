@@ -4,7 +4,6 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
-load(":container_and_vm_test.bzl", "cpp_container_and_vm_test", "python_container_and_vm_test")
 
 python_library(
     name = "coverage_test_helper",
@@ -51,11 +50,6 @@ image.python_unittest(
     hostname = "test-hostname.com",
 )
 
-# to do: support `user` kwarg in vmtest See T62319183
-# Future: have vmtest's default user as `nobody` to match `nspawn_in_subvol`
-# vmtest currently runs as `root`, whereas nspawn runs as user `nobody`.
-# For now, we will leave these as `image.cpp_unittest` instead of migrating
-# to cpp_container_and_vm_test
 image.cpp_unittest(
     name = "test-image-cpp-unittest",
     srcs = ["ImageCppUnittestTest.cpp"],
@@ -149,29 +143,4 @@ image.python_unittest(
     layer = ":systemd_feature-layer",
     srcs = ["test_systemd_features.py"],
     deps = ["//antlir:fs_utils"],
-)
-
-image.layer(
-    name = "layer-with-unique-path",
-    parent_layer = "//tupperware/image/vmtest:base",
-    features = [
-        image.mkdir("/", "unique"),
-        image.mkdir("/unique", "test"),
-        image.mkdir("/unique/test", "path"),
-    ],
-)
-
-cpp_container_and_vm_test(
-    name = "test-cpp-runs-in-layer",
-    srcs = ["RunsInLayerTest.cpp"],
-    layer = ":layer-with-unique-path",
-    deps = ["//common/files:files"],
-)
-
-python_container_and_vm_test(
-    name = "test-python-runs-in-layer",
-    srcs = ["test_runs_in_layer.py"],
-    layer = ":layer-with-unique-path",
-    needed_coverage = [(100, ":coverage_test_helper")],
-    deps = [":coverage_test_helper"],
 )
