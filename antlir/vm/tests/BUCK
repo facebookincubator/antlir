@@ -1,0 +1,46 @@
+load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest")
+load("//antlir/bzl:vm.bzl", "vm")
+
+# Don't run this test directly, it should only be used within the
+# `kernel_panic_test`.
+vm.python_unittest(
+    name = "vmtest_nothing",
+    srcs = ["vmtest_nothing.py"],
+    tags = helpers.tags_to_hide_test(),
+)
+
+# Don't run directly. Only for checking vmtest framework behavior.
+vm.python_unittest(
+    name = "vmtest_kernel_panic",
+    srcs = ["vmtest_kernel_panic.py"],
+    tags = helpers.tags_to_hide_test(),
+)
+
+python_unittest(
+    name = "kernel_panic_test",
+    srcs = ["kernel_panic_test.py"],
+    resources = {":vmtest_kernel_panic=runvm": "vmtest"},
+)
+
+export_file(name = "resource.txt")
+
+test_env_vars = {
+    "dogsgo": "woof",
+    "kitteh": "meow",
+}
+
+vm.python_unittest(
+    name = "python",
+    srcs = ["python_test.py"],
+    env = test_env_vars,
+    resources = {
+        ":resource.txt": "resource",
+    },
+)
+
+vm.cpp_unittest(
+    name = "cpp",
+    srcs = ["CppTest.cpp"],
+    env = test_env_vars,
+)

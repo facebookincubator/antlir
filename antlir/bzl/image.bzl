@@ -10,7 +10,6 @@ load("//antlir/bzl/image_actions:rpms.bzl", "image_rpms_install", "image_rpms_re
 load("//antlir/bzl/image_actions:symlink.bzl", "image_symlink_dir", "image_symlink_file")
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
-load(":image_kernel_opts.bzl", "image_kernel_opts")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_package.bzl", "image_package")
@@ -37,7 +36,6 @@ image = struct(
     layer = image_layer,
     layer_alias = image_layer_alias,
     opts = struct,
-    kernel_opts = image_kernel_opts,
     package = image_package,
     python_unittest = image_python_unittest,
     sendstream_layer = image_sendstream_layer,
