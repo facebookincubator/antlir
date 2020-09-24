@@ -27,6 +27,9 @@ character_t = shape.shape(
         str,
         default = {"species": "human"},
     ),
+    affiliations = shape.shape(
+        faction = str,
+    ),
 )
 
 characters = [
@@ -54,6 +57,10 @@ characters = [
         ],
         lightsaber_color = "green",
         callsign = ("Red", 5),
+        affiliations = shape.new(
+            character_t.affiliations,
+            faction = "Rebellion",
+        ),
     ),
     shape.new(
         character_t,
@@ -65,6 +72,10 @@ characters = [
         ],
         friends = [],
         lightsaber_color = "red",
+        affiliations = shape.new(
+            character_t.affiliations,
+            faction = "Empire",
+        ),
     ),
     shape.new(
         character_t,
@@ -84,6 +95,10 @@ characters = [
             ),
         ],
         metadata = {"Droid-Function": "Protocol"},
+        affiliations = shape.new(
+            character_t.affiliations,
+            faction = "Rebellion",
+        ),
     ),
 ]
 
