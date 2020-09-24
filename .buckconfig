@@ -24,3 +24,6 @@
   # option.
   # ie:  `buck test //antlir/rpm:test-yum-dnf-from-snapshot --always-exclude`
   excluded_labels = exclude_test_if_transitive_dep
+
+[antlir]
+  build_appliance_default = //appliance:host_build_appliance
