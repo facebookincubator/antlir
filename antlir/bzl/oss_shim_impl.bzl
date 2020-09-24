@@ -203,6 +203,7 @@ def _wrap_internal(fn, args, kwargs):
             "Bad value {}, must be one of {}".format(rule_type, _ALLOWED_RULES),
             _RULE_TYPE_KWARG,
         )
+    kwargs["visibility"] = _normalize_visibility(kwargs.get("visibility", None))
     fn(*args, **kwargs)
 
 def _command_alias(*args, **kwargs):
@@ -220,11 +221,10 @@ def _sh_binary(*args, **kwargs):
 def _sh_test(*args, **kwargs):
     _wrap_internal(native.sh_test, args, kwargs)
 
-def _impl_cpp_unittest(name, tags = [], visibility = None, **kwargs):
+def _impl_cpp_unittest(name, tags = [], **kwargs):
     native.cxx_test(
         name = name,
         labels = tags,
-        visibility = _normalize_visibility(visibility),
         **kwargs
     )
 
@@ -244,7 +244,7 @@ def _impl_python_binary(
     _impl_python_library(
         name = name + "-library",
         resources = resources,
-        visibility = _normalize_visibility(visibility, name),
+        visibility = visibility,
         **kwargs
     )
 
@@ -252,7 +252,7 @@ def _impl_python_binary(
         name = name,
         main_module = main_module,
         package_style = _normalize_pkg_style(par_style),
-        visibility = _normalize_visibility(visibility, name),
+        visibility = visibility,
         deps = [":" + name + "-library"],
     )
 
@@ -262,7 +262,6 @@ def _python_binary(*args, **kwargs):
 def _impl_python_library(
         name,
         deps = None,
-        visibility = None,
         resources = None,
         srcs = None,
         **kwargs):
@@ -271,7 +270,6 @@ def _impl_python_library(
         deps = _normalize_deps(deps),
         resources = _normalize_resources(resources),
         srcs = _invert_dict(srcs),
-        visibility = _normalize_visibility(visibility, name),
         **kwargs
     )
 
