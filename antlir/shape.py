@@ -26,6 +26,12 @@ class ShapeMeta(pydantic.main.ModelMetaclass):
         if cls.__GENERATED_SHAPE__:
             cls.__name__ = repr(cls)
             cls.__qualname__ = repr(cls)
+            # promote nested shape types to this class based on the field name
+            # so they can be referred to without the generated name
+            for key, f in cls.__fields__.items():
+                if getattr(f.type_, "__GENERATED_SHAPE__", False):
+                    setattr(cls, key, f.type_)
+
         return cls
 
     def __repr__(cls):  # noqa: B902
