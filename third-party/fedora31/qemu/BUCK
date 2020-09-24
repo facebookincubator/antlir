@@ -1,0 +1,8 @@
+# Emit a qemu "binary" that just invokes the system-installed qemu
+# This is a stopgap until antlir can vendor (probably a statically compiled)
+# qemu in some sane way
+sh_binary(
+    name = "qemu",
+    main = "system-qemu.sh",
+    visibility = ["PUBLIC"],
+)
