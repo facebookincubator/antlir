@@ -190,6 +190,7 @@ async def main(
                 test_pilot_env = os.environ.get("TEST_PILOT")
                 if test_pilot_env:
                     test_env["TEST_PILOT"] = test_pilot_env
+
                 cmd = ["/vmtest/test"] + list(args)
                 logger.debug(f"executing {cmd} inside guest")
                 returncode, stdout, stderr = await instance.run(
@@ -208,22 +209,38 @@ async def main(
                     # https://fburl.com/xt322rks
                     cwd=find_repo_root(),
                 )
+                if returncode != 0:
+                    logger.error(f"{cmd} failed with returncode {returncode}")
+                else:
+                    logger.debug(f"{cmd} succeeded")
                 # Some tests have incredibly large amounts of output, which
                 # results in a BlockingIOError when stdout/err are in
                 # non-blocking mode. Just force it to print the output in
                 # blocking mode to avoid that - we don't really care how long
                 # it ends up blocked as long as it eventually gets written.
-                blocking_print(stdout.decode("utf-8"), end="")
-                blocking_print(stderr.decode("utf-8"), file=sys.stderr, end="")
+                if stdout:
+                    blocking_print(stdout.decode("utf-8"), end="")
+                else:
+                    logger.warning("Test stdout was empty")
+                if stderr:
+                    logger.debug("Test stderr:")
+                    blocking_print(
+                        stderr.decode("utf-8"), file=sys.stderr, end=""
+                    )
+                else:
+                    logger.warning("Test stderr was empty")
 
                 for path in file_arguments:
                     logger.debug(f"copying {path} back to the host")
                     # copy any files that were written in the guest back to the
                     # host so that TestPilot can read from where it expects
                     # outputs to end up
-                    outfile_contents = await instance.cat_file(str(path))
-                    with open(path, "wb") as out:
-                        out.write(outfile_contents)
+                    try:
+                        outfile_contents = await instance.cat_file(str(path))
+                        with open(path, "wb") as out:
+                            out.write(outfile_contents)
+                    except Exception as e:
+                        logger.error(f"Failed to copy {path} to host: {str(e)}")
 
     sys.exit(returncode)
 
