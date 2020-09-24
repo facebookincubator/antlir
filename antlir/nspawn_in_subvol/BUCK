@@ -158,7 +158,7 @@ python_unittest(
         layer_resource(
             TEST_IMAGE_PREFIX + "hello_world_base",
         ): "tests/test-hello-world-base",
-        layer_resource("//tupperware/image/base:base"): "tests/bootable-systemd-os",
+        layer_resource("//appliance:host_build_appliance"): "tests/bootable-systemd-os",
         layer_resource(":host-hello-xar"): "tests/host-hello-xar",
     },
     deps = [":testlib_base"],
