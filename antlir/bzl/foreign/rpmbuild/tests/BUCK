@@ -36,7 +36,6 @@ buck_sh_binary(
 
 image_rpmbuild(
     name = "toy-rpm",
-    serve_rpm_snapshots = ["//antlir/rpm/facebook:fb_centos7"],
     signer = ":rpm_sign_with_test_key.sh",
     source = ":toy_srcs",
     specfile = ":toy.spec",

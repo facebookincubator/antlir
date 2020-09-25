@@ -1,7 +1,7 @@
 # Implementation detail for `image_layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
 load("//antlir/bzl/image_actions:feature.bzl", "normalize_features")
+load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
 load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -25,15 +25,10 @@ def _build_opts(
         # onerous when using non-default BAs, we could support a `default`
         # symlink under `default-snapshot-for-installer`.
         rpm_installer = REPO_CFG.rpm_installer_default,
-        # Syntactically, this is a Buck target path.  But, it is **not**
-        # used to depend on a Buck target.  A target may not even exist in
-        # the current repo at this path.  Rather, this target path is
-        # normalized, mangled, and then used to select a non-default child
-        # of `/__antlir__/rpm/repo-snapshot/` in the build appliance.  So
-        # this refers to a target that got incorporated into the build
-        # appliance, whenever that image was built.  `None` uses the default
-        # determined by looking up `rpm_installer` in
-        # `/__antlir__/rpm/repo-snapshot/default-snapshot-for-installer`.
+        # List of target or /__antlir__ paths, see `snapshot_install_dir` doc.
+        #
+        # `None` uses the default determined by looking up `rpm_installer`
+        # in `/__antlir__/rpm/repo-snapshot/default-snapshot-for-installer`.
         rpm_repo_snapshot = None,
         # By default `RpmActionItem` will not populate
         # `/var/cache/{dnf,yum}` in the built image.  We set this flag to

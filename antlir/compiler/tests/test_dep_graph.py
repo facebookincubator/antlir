@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.foreign_layer import ForeignLayerItem
+from antlir.compiler.items.foreign_layer_t import foreign_layer_t
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_dirs import MakeDirsItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
@@ -226,10 +227,18 @@ class DependencyGraphTestCase(unittest.TestCase):
 
     def test_foreign_layer_assert(self):
         foreign1 = ForeignLayerItem(
-            from_target="t1", cmd=["x"], user="y", serve_rpm_snapshots=()
+            from_target="t1",
+            cmd=["x"],
+            user="y",
+            # Fixme: D23887778 makes this better.
+            container_opts=foreign_layer_t.__annotations__["container_opts"](),
         )
         foreign2 = ForeignLayerItem(
-            from_target="t2", cmd=["a"], user="b", serve_rpm_snapshots=()
+            from_target="t2",
+            cmd=["a"],
+            user="b",
+            # Fixme: D23887778 makes this better.
+            container_opts=foreign_layer_t.__annotations__["container_opts"](),
         )
 
         # Good path: one FOREIGN_LAYER & default MAKE_SUBVOL

@@ -15,8 +15,29 @@ load(":oss_shim.bzl", "get_visibility")
 # This should eventually become unnecessary, follow Q10141.
 
 fake_macro_library(
-    name = "sha256",
-    srcs = ["sha256.bzl"],
+    name = "compile_image_features",
+    srcs = ["compile_image_features.bzl"],
+    deps = [
+        ":constants",
+        ":rpm_repo_snapshot",
+        ":structs",
+        ":target_tagger",
+        "//antlir/bzl/image_actions:feature",
+    ],
+)
+
+fake_macro_library(
+    name = "constants",
+    srcs = ["constants.bzl"],
+)
+
+fake_macro_library(
+    name = "container_opts",
+    srcs = ["container_opts.bzl"],
+    deps = [
+        ":rpm_repo_snapshot",
+        ":shape",
+    ],
 )
 
 fake_macro_library(
@@ -61,6 +82,7 @@ fake_macro_library(
     srcs = ["target_tagger.bzl"],
     deps = [
         ":image_source",
+        ":structs",
         ":target_helpers",
         ":wrap_runtime_deps",
     ],
@@ -73,6 +95,10 @@ fake_macro_library(
         ":maybe_export_file",
         ":target_helpers",
         ":wrap_runtime_deps",
+        "//antlir/bzl/image_actions:install",
+        "//antlir/bzl/image_actions:mkdir",
+        "//antlir/bzl/image_actions:remove",
+        "//antlir/bzl/image_actions:symlink",
     ],
 )
 
@@ -85,24 +111,32 @@ fake_macro_library(
 )
 
 fake_macro_library(
-    name = "image_layer",
-    srcs = [
-        "compile_image_features.bzl",
-        "image_layer.bzl",
-    ],
+    name = "image_foreign_layer",
+    srcs = ["image_foreign_layer.bzl"],
     deps = [
+        ":compile_image_features",
+        ":container_opts",
+        ":image_layer_utils",
         ":image_utils",
+        ":shape",
+        ":structs",
         ":target_tagger",
-        "//antlir/bzl/image_actions:install",
-        "//antlir/bzl/image_actions:mkdir",
-        "//antlir/bzl/image_actions:tarball",
+    ],
+)
+
+fake_macro_library(
+    name = "image_layer",
+    srcs = ["image_layer.bzl"],
+    deps = [
+        ":compile_image_features",
+        ":image_layer_utils",
+        ":image_utils",
     ],
 )
 
 fake_macro_library(
     name = "image_layer_alias",
     srcs = ["image_layer_alias.bzl"],
-    deps = [],
 )
 
 fake_macro_library(
@@ -143,6 +177,21 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "sha256",
+    srcs = ["sha256.bzl"],
+)
+
+fake_macro_library(
     name = "shape",
     srcs = ["shape.bzl"],
+    deps = [
+        ":sha256",
+        ":structs",
+        ":target_helpers",
+    ],
+)
+
+fake_macro_library(
+    name = "structs",
+    srcs = ["structs.bzl"],
 )
