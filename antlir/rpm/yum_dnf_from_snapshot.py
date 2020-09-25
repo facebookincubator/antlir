@@ -501,6 +501,14 @@ def yum_dnf_from_snapshot(
             ),
             "yum-dnf-from-snapshot",  # argv[0]
             yum_dnf_binary,
+            # Only permit known-good / known-needed plugins out of paranoia.
+            # Since we always run under a no-network build appliance, it's
+            # hard to think of a plugin that might do something truly
+            # atrocious, so it may be reasonable to relax this later.
+            "--disableplugin=*",
+            # `versionlock` is used by antilr's version selection.
+            # `builddep` powers `rpmbuild`.
+            "--enableplugin=versionlock,builddep",
             # Config options get isolated by our `YumDnfConfIsolator`
             # when `write-yum-dnf-conf` builds this file.  Note that
             # `yum` doesn't work if the config path is relative.

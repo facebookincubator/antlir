@@ -44,15 +44,6 @@ def populate_versionlock_conf(
     with create_ro(out_dir / "versionlock.list", "w"):
         pass
 
-    # Side-load the appropriate versionlock plugin, we currently don't have
-    # a good way to install this via an RPM.
-    with Path.resource(
-        __package__, f"{yum_dnf.value}_versionlock.gz", exe=False
-    ) as p, gzip.open(p) as rf, create_ro(
-        out_dir / "versionlock.py", "wb"
-    ) as wf:
-        wf.write(rf.read())
-
 
 def write_yum_dnf_conf(
     *,
@@ -102,7 +93,7 @@ def write_yum_dnf_conf(
         )
         .isolate_main(
             config_path=(install_dir / config_path).decode(),
-            versionlock_dir=(install_dir / plugin_dir).decode(),
+            pluginconf_dir=(install_dir / plugin_dir).decode(),
         )
     )
     with create_ro(out_dir / config_path, "w") as conf_out:

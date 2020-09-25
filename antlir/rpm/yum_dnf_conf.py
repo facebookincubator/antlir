@@ -128,7 +128,7 @@ class YumDnfConfIsolator:
         return self
 
     def isolate_main(
-        self, *, config_path: str, versionlock_dir: str
+        self, *, config_path: str, pluginconf_dir: str
     ) -> "YumDnfConfIsolator":
         """
         Set keys that could cause `yum` or `dnf` to interact with the host
@@ -170,11 +170,15 @@ class YumDnfConfIsolator:
         # NB: `sslcacert`, `sslclientcert`, and `sslclientkey` are left
         # as-is, though these read from the host filesystem.
 
-        # Allowing arbitrary plugins could easily break isolation, but we
-        # are actually only allowing our custom versionlock here.
+        # `yum-dnf-from-snapshot` and friends need certain plugins, and they
+        # are off by default in `yum`, so just enable them.  Don't worry,
+        # this won't turn on all plugins installed in the BA --
+        # `yum-dnf-from-snapshot` hardcodes a list of known-good ones on the
+        # command-line.
         main_sec["plugins"] = "1"
-        main_sec["pluginpath"] = versionlock_dir
-        main_sec["pluginconfpath"] = versionlock_dir
+        # Provide custom configuration, e.g. to set up version locking for
+        # the RPM snapshot that'll use this yum/dnf config.
+        main_sec["pluginconfpath"] = pluginconf_dir
 
         # This option seems to only exist for `dnf`.
         main_sec["varsdir"] = "/dev/null"
