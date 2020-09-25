@@ -68,13 +68,13 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             repr(characters[0]),
             "shape("
+            "name='Luke Skywalker', "
             "appears_in=[4, 5, 6], "
             "friends=[shape(name='Han Solo'), shape(name='Leia Organa'), shape(name='C-3PO')], "
-            "name='Luke Skywalker', "
-            "affiliations=shape(faction='Rebellion'), "
-            "callsign=('Red', 5), "
             "lightsaber_color='green', "
-            "metadata={'species': 'human'}"
+            "callsign=('Red', 5), "
+            "metadata={'species': 'human'}, "
+            "affiliations=shape(faction='Rebellion')"
             ")",
         )
 
@@ -84,13 +84,13 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             repr(character_t),
             "shape("
+            "name=str, "
             "appears_in=Sequence[int], "
             "friends=Sequence[shape(name=str)], "
-            "name=str, "
-            "affiliations=shape(faction=str), "
-            "callsign=Optional[Tuple[str, int]], "
             "lightsaber_color=Optional[str], "
-            "metadata=Mapping[str, str]"
+            "callsign=Optional[Tuple[str, int]], "
+            "metadata=Mapping[str, str], "
+            "affiliations=shape(faction=str)"
             ")",
         )
 
@@ -134,13 +134,13 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             repr(obi_wan),
             "Jedi("
+            "name='Obi-Wan Kenobi', "
             "appears_in=[1, 2, 3, 4, 5, 6], "
             "friends=[shape(name='Yoda'), shape(name='Padme Amidala')], "
-            "name='Obi-Wan Kenobi', "
-            "affiliations=shape(faction='Jedi Temple'), "
-            "callsign=None, "
             "lightsaber_color='blue', "
+            "callsign=None, "
             "metadata={'species': 'human'}, "
+            "affiliations=shape(faction='Jedi Temple'), "
             "padawan='Anakin Skywalker'"
             ")",
         )
@@ -148,13 +148,13 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             repr(Jedi),
             "Jedi("
+            "name=str, "
             "appears_in=Sequence[int], "
             "friends=Sequence[shape(name=str)], "
-            "name=str, "
-            "affiliations=shape(faction=str), "
-            "callsign=Optional[Tuple[str, int]], "
             "lightsaber_color=Optional[str], "
+            "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
+            "affiliations=shape(faction=str), "
             "padawan=Optional[str]"
             ")",
         )
