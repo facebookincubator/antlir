@@ -1,0 +1,29 @@
+load("//antlir/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:rpm_repo_snapshot.bzl", "RPM_SNAPSHOT_BASE_DIR")
+
+image.layer(
+    name = "host_build_appliance",
+    features = [
+        image.mkdir("/", "var"),
+        image.mkdir("/var", "tmp"),
+        image.mkdir("/var", "log"),
+        image.mkdir("/var", "cache"),
+        image.mkdir("/var/cache", "dnf"),
+        image.mkdir("/var", "lib/rpm"),
+        image.mkdir("/var/lib", "dnf"),
+        image.mkdir("/", RPM_SNAPSHOT_BASE_DIR),
+    ] + [
+        image.host_dir_mount(source)
+        for source in [
+            "/bin",
+            "/etc",
+            "/lib",
+            "/sbin",
+            "/usr",
+        ]
+    ],
+    build_opts = image.opts(
+        build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
+    ),
+)
