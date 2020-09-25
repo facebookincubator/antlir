@@ -6,6 +6,8 @@ load(":shape_selftests.bzl", "run_shape_selftests")
 # This would rapidly clutter targets in antlir/bzl/tests, so define them all
 # here in a file dedicated to shape test cases
 
+affiliations_t = shape.shape(faction = str)
+
 # Test data adapted from the GraphQL Star Wars examples
 character_t = shape.shape(
     name = str,
@@ -27,8 +29,12 @@ character_t = shape.shape(
         str,
         default = {"species": "human"},
     ),
-    affiliations = shape.shape(
-        faction = str,
+    affiliations = shape.field(
+        affiliations_t,
+        default = shape.new(
+            affiliations_t,
+            faction = "Rebellion",
+        ),
     ),
 )
 
@@ -58,7 +64,7 @@ characters = [
         lightsaber_color = "green",
         callsign = ("Red", 5),
         affiliations = shape.new(
-            character_t.affiliations,
+            affiliations_t,
             faction = "Rebellion",
         ),
     ),
@@ -73,7 +79,7 @@ characters = [
         friends = [],
         lightsaber_color = "red",
         affiliations = shape.new(
-            character_t.affiliations,
+            affiliations_t,
             faction = "Empire",
         ),
     ),
@@ -95,10 +101,6 @@ characters = [
             ),
         ],
         metadata = {"Droid-Function": "Protocol"},
-        affiliations = shape.new(
-            character_t.affiliations,
-            faction = "Rebellion",
-        ),
     ),
 ]
 
