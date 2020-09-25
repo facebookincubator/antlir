@@ -1,5 +1,7 @@
+load("//antlir/bzl:image_foreign_layer.bzl", "foreign_layer_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 python_library(
@@ -120,11 +122,18 @@ python_unittest(
     ],
 )
 
+shape.loader(
+    name = "foreign_layer_t",
+    shape = foreign_layer_t,
+    classname = "foreign_layer_t",
+)
+
 python_library(
     name = "foreign_layer",
     srcs = ["foreign_layer.py"],
     deps = [
         ":common",
+        ":foreign_layer_t",
         "//antlir/nspawn_in_subvol:non_booted",
         "//antlir/nspawn_in_subvol/plugins:rpm",
     ],

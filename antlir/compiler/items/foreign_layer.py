@@ -9,6 +9,7 @@ import pwd
 from dataclasses import dataclass
 from typing import Iterable
 
+import pydantic
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import (
     NspawnPluginArgs,
@@ -20,30 +21,27 @@ from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder
+from .foreign_layer_t import foreign_layer_t
 
 
-@dataclass(init=False, frozen=True)
-class ForeignLayerItem(ImageItem):
-    # IMPORTANT: Be very cautious about adding keys here, specifically
-    # rejecting any options that might compromise determinism / hermeticity.
-    # Foreign layers effectively run arbitrary code, so we should never
-    # allow access to the network, nor read-write access to files outside of
-    # the layer.  If you need something from the foreign layer, build it,
-    # then reach into it with `image.source`.
-    cmd: Iterable[str]
-    user: str
-    serve_rpm_snapshots: Iterable[str]
+# Future: this probably belongs in a container_opts library:
+def _nspawn_plugin_args_from_container_opts_t(opts):
+    return NspawnPluginArgs(
+        serve_rpm_snapshots=opts.serve_rpm_snapshots,
+        shadow_proxied_binaries=opts.shadow_proxied_binaries,
+    )
 
-    # This type-checking isn't strictly required, but it helps to fail fast.
-    def customize_fields(kwargs):  # noqa: B902
-        cmd = kwargs.pop("cmd")
-        assert all(isinstance(c, (str, bytes)) for c in cmd), cmd
-        kwargs["cmd"] = tuple(cmd)
 
-        assert isinstance(kwargs["user"], str), kwargs["user"]
-
-        kwargs["serve_rpm_snapshots"] = tuple(
-            Path(s) for s in kwargs.pop("serve_rpm_snapshots")
+class ForeignLayerItem(foreign_layer_t):
+    @pydantic.validator("container_opts")
+    def pathify(cls, opts):  # noqa: B902
+        # Future: use `shape.path` to make this unnecessary.
+        return opts.copy(
+            update={
+                "serve_rpm_snapshots": tuple(
+                    Path(s) for s in opts.serve_rpm_snapshots
+                )
+            }
         )
 
     def phase_order(self):
@@ -83,11 +81,8 @@ class ForeignLayerItem(ImageItem):
                 PopenArgs(),
                 plugins=rpm_nspawn_plugins(
                     opts=opts,
-                    plugin_args=NspawnPluginArgs(
-                        serve_rpm_snapshots=item.serve_rpm_snapshots,
-                        # Fixme: make this an arg, maybe remove
-                        # `serve_rpm_snapshots`.
-                        shadow_proxied_binaries=False,
+                    plugin_args=_nspawn_plugin_args_from_container_opts_t(
+                        item.container_opts
                     ),
                 ),
             )

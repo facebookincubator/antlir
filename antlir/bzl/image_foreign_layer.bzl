@@ -133,10 +133,24 @@ but only in a few artifacts that were built inside of it.  The example of
 """
 
 load(":compile_image_features.bzl", "compile_image_features")
+load(":container_opts.bzl", "container_opts_t", "make_container_opts")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
-load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
+load(":shape.bzl", "shape")
+load(":structs.bzl", "structs")
 load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
+
+foreign_layer_t = shape.shape(
+    # IMPORTANT: Be very cautious about adding keys here, specifically
+    # rejecting any options that might compromise determinism / hermeticity.
+    # Foreign layers effectively run arbitrary code, so we should never
+    # allow access to the network, nor read-write access to files outside of
+    # the layer.  If you need something from the foreign layer, build it,
+    # then reach into it with `image.source`.
+    cmd = shape.list(str),
+    user = str,
+    container_opts = container_opts_t,
+)
 
 def image_foreign_layer(
         name,
@@ -151,11 +165,13 @@ def image_foreign_layer(
         # The name of another `image_layer` target, on top of which the
         # current layer will install its features.
         parent_layer = None,
-        # List of target paths, see `_build_opts` doc for `rpm_repo_snapshot`.
-        serve_rpm_snapshots = (),
         # A struct containing fields accepted by `_build_opts` from
         # `compile_image_features.bzl`.
         build_opts = None,
+        # An `image.opts` containing keys from `container_opts_t`.
+        # If you want to install packages, you will want to
+        # set `shadow_proxied_binaries`.
+        container_opts = None,
         # Future: Should foreign layers also default to user-internal as we
         # plan to do for `image.layer`?
         antlir_rule = "user-facing",
@@ -165,6 +181,9 @@ def image_foreign_layer(
     # This is not strictly needed since `image_layer_impl` lacks this kwarg.
     if "features" in image_layer_kwargs:
         fail("\"features\" are not supported in image_foreign_layer")
+
+    if not container_opts:
+        container_opts = struct()
 
     target_tagger = new_target_tagger()
     image_layer_utils.image_layer_impl(
@@ -176,18 +195,21 @@ def image_foreign_layer(
             parent_layer = parent_layer,
             features = [target_tagger_to_feature(
                 target_tagger,
-                struct(foreign_layer = [{
-                    "cmd": cmd,
-                    "serve_rpm_snapshots": [
-                        snapshot_install_dir(s)
-                        for s in serve_rpm_snapshots
-                    ],
-                    "user": user,
-                }]),
+                struct(foreign_layer = [
+                    # TODO: use the `shape.to_dict()` helper from Arnav's diff.
+                    structs.to_dict(shape.new(
+                        foreign_layer_t,
+                        cmd = cmd,
+                        user = user,
+                        container_opts = make_container_opts(
+                            **structs.to_dict(container_opts)
+                        ),
+                    )._data),
+                ]),
+                extra_deps = ["//antlir/bzl:image_foreign_layer"],
             )],
             build_opts = build_opts,
         ),
-        # Future: Some foreign layers are probably internal, so
         antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

@@ -48,8 +48,6 @@ def image_rpmbuild(
         # Signers should not modify anything except the signatures on the RPMs.
         # This is verified after each call to sign an RPM.
         signer,
-        # Which RPM snapshots to use when installing build dependencies.
-        serve_rpm_snapshots = (),
         # An `image.layer` target, on top of which the current layer will
         # build the RPM.  This should have `rpm-build`, optionally macro
         # packages like `redhat-rpm-config`, and any of the spec file's
@@ -96,6 +94,13 @@ def image_rpmbuild(
     rpmbuild_dir = "/rpmbuild"
 
     install_deps_layer = name + "-rpmbuild-install-deps"
+
+    # `yum-builddep` uses the default snapshot specified by the build layer.
+    #
+    # In the unlikely event we need support for a non-default snapshot, we
+    # can expose a flag that chooses between enabling shadowing, or serving
+    # a specific snapshot.
+    snapshot_for_yum = "/__antlir__/rpm/default-snapshot-for-installer/yum/"
     image_foreign_layer(
         name = install_deps_layer,
         rule_type = "image_rpmbuild_install_deps_layer",
@@ -106,14 +111,19 @@ def image_rpmbuild(
             "yum-builddep",
             # Define the build directory for this project
             "--define=_topdir {}".format(rpmbuild_dir),
-            # Future: Try removing the `--config` argument when yum is fully
-            # transparent.
-            "--config",
-            "/__antlir__/rpm/default-snapshot-for-installer/yum/yum/etc/yum/yum.conf",
+            "--config=" + snapshot_for_yum + "yum/etc/yum/yum.conf",
             "--assumeyes",
             specfile_path,
         ],
-        serve_rpm_snapshots = serve_rpm_snapshots,
+        # For speed, just serve the snapshot that `yum-builddep` will need.
+        container_opts = struct(
+            serve_rpm_snapshots = [snapshot_for_yum],
+            # We do not use this because as it turns out, `yum-builddep`
+            # parses the system config directly, instead of via a library.
+            # This is a niche binary, so it doesn't seem worthwhile to add a
+            # wrapper or transparent shadowing support for it.
+            shadow_proxied_binaries = False,
+        ),
         antlir_rule = "user-internal",
         **image_layer_kwargs
     )

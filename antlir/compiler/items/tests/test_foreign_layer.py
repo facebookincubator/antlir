@@ -19,6 +19,7 @@ from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
 from ..foreign_layer import ForeignLayerItem
+from ..foreign_layer_t import foreign_layer_t
 from ..make_subvol import ParentLayerItem
 from .common import DUMMY_LAYER_OPTS
 
@@ -29,7 +30,11 @@ def _touch_cmd(path: str):
 
 def _item(cmd: Iterable[AnyStr]) -> ForeignLayerItem:
     return ForeignLayerItem(
-        from_target="t", user="root", cmd=cmd, serve_rpm_snapshots=()
+        from_target="t",
+        user="root",
+        cmd=cmd,
+        # Fixme: D23887778 makes this better.
+        container_opts=foreign_layer_t.__annotations__["container_opts"](),
     )
 
 
@@ -93,7 +98,10 @@ class ForeignLayerItemTestCase(unittest.TestCase):
                 """
                             ),
                         ],
-                        serve_rpm_snapshots=[snapshot_dir],
+                        # Fixme: D23887778 makes this better.
+                        container_opts=foreign_layer_t.__annotations__[
+                            "container_opts"
+                        ](serve_rpm_snapshots=[snapshot_dir]),
                     )
                 ],
                 DUMMY_LAYER_OPTS,
