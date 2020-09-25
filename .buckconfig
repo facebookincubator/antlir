@@ -27,3 +27,4 @@
 
 [antlir]
   build_appliance_default = //appliance:host_build_appliance
+  rpm_installer_default = dnf
