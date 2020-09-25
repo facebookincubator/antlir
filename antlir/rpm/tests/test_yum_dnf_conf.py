@@ -80,7 +80,7 @@ class YumDnfConfTestCaseImpl:
 
         out = io.StringIO()
         self.conf.isolate().isolate_repos(isolated_repos).isolate_main(
-            config_path="/config_path", versionlock_dir="/versionlock_dir"
+            config_path="/config_path", pluginconf_dir="/pluginconf_dir"
         ).write(out)
 
         extra_directives = ""
@@ -106,8 +106,7 @@ class YumDnfConfTestCaseImpl:
         timeout = 60
         localpkg_gpgcheck = 1
         plugins = 1
-        pluginpath = /versionlock_dir
-        pluginconfpath = /versionlock_dir
+        pluginconfpath = /pluginconf_dir
         varsdir = /dev/null
         usercache = 0
         syslog_device =\x20

@@ -45,7 +45,6 @@ config_file_path = /INSTALL/DIR/{prog_name}/{prog_name}.conf
 timeout = 60
 localpkg_gpgcheck = 1
 plugins = 1
-pluginpath = /INSTALL/DIR/{prog_name}/plugins
 pluginconfpath = /INSTALL/DIR/{prog_name}/plugins
 varsdir = /dev/null
 usercache = 0
@@ -73,6 +72,7 @@ enabled = 1
 # This is the base class for two test classes at the bottom of the file.
 class WriteYumDnfConfTestImpl:
     def test_conf(self):
+        self.maxDiff = None  # XXX
         install_dir = "/INSTALL/DIR"
         prog_name = self._YUM_DNF.value
         expected_out = _CONF_OUT.format(
