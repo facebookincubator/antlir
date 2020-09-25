@@ -68,10 +68,10 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             repr(characters[0]),
             "shape("
-            "affiliations=shape(faction='Rebellion'), "
             "appears_in=[4, 5, 6], "
             "friends=[shape(name='Han Solo'), shape(name='Leia Organa'), shape(name='C-3PO')], "
             "name='Luke Skywalker', "
+            "affiliations=shape(faction='Rebellion'), "
             "callsign=('Red', 5), "
             "lightsaber_color='green', "
             "metadata={'species': 'human'}"
@@ -84,10 +84,10 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             repr(character_t),
             "shape("
-            "affiliations=shape(faction=str), "
             "appears_in=Sequence[int], "
             "friends=Sequence[shape(name=str)], "
             "name=str, "
+            "affiliations=shape(faction=str), "
             "callsign=Optional[Tuple[str, int]], "
             "lightsaber_color=Optional[str], "
             "metadata=Mapping[str, str]"
@@ -134,10 +134,10 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             repr(obi_wan),
             "Jedi("
-            "affiliations=shape(faction='Jedi Temple'), "
             "appears_in=[1, 2, 3, 4, 5, 6], "
             "friends=[shape(name='Yoda'), shape(name='Padme Amidala')], "
             "name='Obi-Wan Kenobi', "
+            "affiliations=shape(faction='Jedi Temple'), "
             "callsign=None, "
             "lightsaber_color='blue', "
             "metadata={'species': 'human'}, "
@@ -148,10 +148,10 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             repr(Jedi),
             "Jedi("
-            "affiliations=shape(faction=str), "
             "appears_in=Sequence[int], "
             "friends=Sequence[shape(name=str)], "
             "name=str, "
+            "affiliations=shape(faction=str), "
             "callsign=Optional[Tuple[str, int]], "
             "lightsaber_color=Optional[str], "
             "metadata=Mapping[str, str], "

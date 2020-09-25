@@ -7,7 +7,7 @@ def _is_struct(s):
 
 def struct_to_dict(s):
     if hasattr(s, "_asdict"):
-        return s._asdict()
+        return dict(s._asdict())
 
     # both java starlark and rust starlark add a couple of extra things to the
     # results of dir(some_struct) strip those out.
