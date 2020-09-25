@@ -226,9 +226,7 @@ def _define_shape(**fields):
         "  __GENERATED_SHAPE__ = True",
     ]
 
-    # fields with defaults must come after fields without default values
-    fields_sorted_by_defaults = sorted([(f.default != _NO_DEFAULT, key, f) for key, f in fields.items()])
-    for _, key, field in fields_sorted_by_defaults:
+    for key, field in fields.items():
         python_src.extend(["  " + line for line in field.python_src])
         if field.default == _NO_DEFAULT:
             python_src.append("  {}: {}".format(key, field.python_type))
