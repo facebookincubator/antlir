@@ -163,7 +163,11 @@ def _third_party_library(project, rule = None, platform = None):
 
     If `rule` is not provided it is assumed to be the same as `project`.
     """
-    _assert_package()  # Antlir-private: only use with `oss_shim.bzl` macros.
+    # _assert_package(): This is mostly just called from `antlir` TARGETS
+    # files, but we also have a callsite in `vm/initrd.bzl`, which can be
+    # invoked from customer TARGETS files.  I could work around this with an
+    # extra boolean flag, but it should be unlikely that people start using
+    # this helper by accident (so far, it happened once).
 
     if not rule:
         rule = project
@@ -376,8 +380,8 @@ shim = struct(
     # Constants
     #
     default_vm_image = struct(
-        layer = None,
-        package = None,
+        layer = "//antlir/vm:default-image",
+        package = "//antlir/vm:default-image.btrfs",
     ),
     # Future: We could conceivably add OSS support for a `.bzl`-based
     # deployment-specific customizations, but for now we expect non-FB

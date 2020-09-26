@@ -1,3 +1,4 @@
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "python_unittest", "third_party")
 
 # qemu roms to provide
@@ -82,4 +83,12 @@ python_library(
         ":vm",
         "//antlir:artifacts_dir",
     ],
+)
+
+# default image used for vmtest
+image.layer(
+    name = "default-image",
+)
+image.package(
+    name = "default-image.btrfs",
 )
