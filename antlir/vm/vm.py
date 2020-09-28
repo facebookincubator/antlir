@@ -29,42 +29,41 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class KernelResources(object):
-    # these paths vary per kernel
     vmlinuz: Path
     initrd: Path
     modules: Path
-    # these are invariant and a part of //antlir/vm:vm
-    qemu: Path
-    qemu_bioses: Path
 
 
 @contextmanager
 def kernel_resources() -> ContextManager[KernelResources]:
-    try:
-        # QEMU BIOSes are a FB-specific resource
-        with importlib.resources.path(
-            __package__, "qemu_bioses"
-        ) as qemu_bioses:
-            bios_dir = qemu_bioses
-    except FileNotFoundError:
-        bios_dir = None
 
     with importlib.resources.path(
-        __package__, "vmlinuz"
-    ) as vmlinuz, importlib.resources.path(
         __package__, "initrd"
     ) as initrd, importlib.resources.path(
         __package__, "modules"
     ) as modules, importlib.resources.path(
+        __package__, "vmlinuz"
+    ) as vmlinuz:
+        yield KernelResources(initrd=initrd, modules=modules, vmlinuz=vmlinuz)
+
+
+@dataclass(frozen=True)
+class EmulatorResources(object):
+    qemu: Path
+    bios: Path
+    rom_path: Path
+
+
+@contextmanager
+def emulator_resources() -> ContextManager[EmulatorResources]:
+    with importlib.resources.path(
+        __package__, "bios"
+    ) as bios, importlib.resources.path(
         __package__, "qemu"
-    ) as qemu:
-        yield KernelResources(
-            vmlinuz=vmlinuz,
-            initrd=initrd,
-            modules=modules,
-            qemu=qemu,
-            qemu_bioses=bios_dir,
-        )
+    ) as qemu, importlib.resources.path(
+        __package__, "roms"
+    ) as rom_path:
+        yield EmulatorResources(bios=bios, qemu=qemu, rom_path=rom_path)
 
 
 async def __wait_for_boot(sockfile: os.PathLike) -> None:
@@ -165,7 +164,7 @@ async def __vm_with_stack(
         for mount in repo_config.host_mounts_for_repo_artifacts:
             shares.append(Plan9Export(mount))
 
-    with kernel_resources() as kernel:
+    with kernel_resources() as kernel, emulator_resources() as emulator:
         args = [
             "-no-reboot",
             "-display",
@@ -215,9 +214,11 @@ async def __vm_with_stack(
             "virtserialport,chardev=notify,name=notify-host",
         ]
 
-        # Only set directory for the BIOS if qemu_bioses are provided
-        if kernel.qemu_bioses:
-            args.extend(["-L", str(kernel.qemu_bioses)])
+        # The bios to boot the emulator with
+        args.extend(["-bios", str(emulator.bios)])
+
+        # Set the path for loading additional roms
+        args.extend(["-L", str(emulator.rom_path)])
 
         if os.access("/dev/kvm", os.R_OK | os.W_OK):
             args += ["-enable-kvm"]
@@ -243,21 +244,25 @@ async def __vm_with_stack(
         args += __qemu_share_args(shares)
         if dry_run:
             print(
-                str(kernel.qemu) + " " + " ".join(shlex.quote(a) for a in args)
+                str(emulator.qemu)
+                + " "
+                + " ".join(shlex.quote(a) for a in args)
             )
             sys.exit(0)
 
         if interactive:
-            proc = await asyncio.create_subprocess_exec(str(kernel.qemu), *args)
+            proc = await asyncio.create_subprocess_exec(
+                str(emulator.qemu), *args
+            )
         elif verbose:
             # don't connect stdin if we are simply in verbose mode and not
             # interactive
             proc = await asyncio.create_subprocess_exec(
-                str(kernel.qemu), *args, stdin=subprocess.PIPE
+                str(emulator.qemu), *args, stdin=subprocess.PIPE
             )
         else:
             proc = await asyncio.create_subprocess_exec(
-                str(kernel.qemu),
+                str(emulator.qemu),
                 *args,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
