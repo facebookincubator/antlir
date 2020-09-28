@@ -241,10 +241,10 @@ def _impl_python_binary(
         resources = None,
         visibility = None,
         **kwargs):
-    _python_library(
+    _impl_python_library(
         name = name + "-library",
         resources = resources,
-        visibility = visibility,
+        visibility = _normalize_visibility(visibility, name),
         **kwargs
     )
 
