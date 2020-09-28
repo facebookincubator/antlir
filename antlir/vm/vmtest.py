@@ -200,7 +200,8 @@ async def main(
                     # took, so that vmtest times out internally before choking
                     # to TestPilot, which gives the same end result but should
                     # allow for some slightly better logging opportunities
-                    timeout=timeout - boot_time_elapsed - 1,
+                    # Give at least 10s (sometimes this can even be negative)
+                    timeout=max(timeout - boot_time_elapsed - 1, 10),
                     env=test_env,
                     # TODO(lsalis):  This is currently needed due to how some
                     # cpp_unittest targets depend on artifacts in the code
