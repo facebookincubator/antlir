@@ -1,4 +1,25 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_library", "python_unittest", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "python_unittest", "third_party")
+
+# qemu roms to provide
+roms = [
+    "kvmvapic.bin",
+    "linuxboot_dma.bin",
+    "vgabios-stdvga.bin",
+]
+
+buck_genrule(
+    name = "roms",
+    out = ".",
+    cmd = " && ".join([
+        "cp $(location {}) $OUT/".format(
+            third_party.library(
+                "qemu",
+                "share/qemu/{}".format(rom),
+            ),
+        )
+        for rom in roms
+    ]),
+)
 
 python_library(
     name = "vm",
@@ -7,8 +28,11 @@ python_library(
         "vm.py",
     ],
     resources = {
+        # The actual emulator binary
         third_party.library("qemu"): "qemu",
-        "//antlir/facebook/vm:qemu_bioses": "qemu_bioses",
+        # The bios to boot the emulator with
+        third_party.library("qemu", "share/qemu/bios-256k.bin"): "bios",
+        ":roms": "roms",
     },
     deps = [
         ":share",
