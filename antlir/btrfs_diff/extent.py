@@ -273,6 +273,8 @@ class Extent(NamedTuple):
         while stack:
             idx, calls = stack[-1]
             # pyre-fixme[6]: probably a bug when list compared to int
+            # pyre-fixme[58]: `<=` is not supported for operand types
+            #  `Union[List[Tuple[Extent, int, Optional[int]]], int]` and `int`.
             assert idx <= len(calls)
             # pyre-fixme[6]: calls can be int!
             if idx == len(calls):
