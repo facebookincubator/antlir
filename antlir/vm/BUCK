@@ -66,6 +66,7 @@ python_unittest(
 export_file(
     name = "init.sh",
     src = "init.sh",
+    visibility = ["//third-party/fedora31/kernel/..."]
 )
 
 python_library(

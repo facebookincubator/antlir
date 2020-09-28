@@ -24,16 +24,16 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "export_file
 ANTLIR_RULE_TEST = "user-internal"  # Explained above
 
 def _buck_genrule(*args, **kwargs):
-    buck_genrule(antlir_rule = ANTLIR_RULE_TEST, *args, **kwargs)
+    buck_genrule(antlir_rule = ANTLIR_RULE_TEST, visibility = ["PUBLIC"], *args, **kwargs)
 
 def _buck_sh_binary(*args, **kwargs):
-    buck_sh_binary(antlir_rule = ANTLIR_RULE_TEST, *args, **kwargs)
+    buck_sh_binary(antlir_rule = ANTLIR_RULE_TEST, visibility = ["PUBLIC"], *args, **kwargs)
 
 def _export_file(*args, **kwargs):
-    export_file(antlir_rule = ANTLIR_RULE_TEST, *args, **kwargs)
+    export_file(antlir_rule = ANTLIR_RULE_TEST, visibility = ["PUBLIC"], *args, **kwargs)
 
 def _python_binary(*args, **kwargs):
-    python_binary(antlir_rule = ANTLIR_RULE_TEST, *args, **kwargs)
+    python_binary(antlir_rule = ANTLIR_RULE_TEST, visibility = ["PUBLIC"], *args, **kwargs)
 
 # Create a signed copy of the test RPM file passed in. It is signed with
 # the key from //antlir/rpm:gpg-test-keypair.

@@ -366,6 +366,7 @@ export_file(
 export_file(
     name = "gpg-test-public-key",
     src = "tests/gpg_test_keypair/public.key",
+    visibility = ["//antlir/bzl/foreign/rpmbuild/tests/..."],
 )
 
 python_binary(

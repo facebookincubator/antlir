@@ -10,7 +10,7 @@ export_file(
 [export_file(
     name = "share/qemu/{}".format(rom),
     src = "empty",
-    visibility = ["//antlir/vm:roms"],
+    visibility = ["//antlir/vm/..."],
  ) for rom in [
      "kvmvapic.bin",
      "linuxboot_dma.bin",
