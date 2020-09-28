@@ -21,7 +21,7 @@ def _make_rule_kwargs_dict(lst):
     return {k: 1 for k in lst + ["antlir_rule"]}
 
 _CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
-    ["name", "deps", "env", "srcs", "tags", "use_default_test_main", "visibility", "external_deps"],
+    ["name", "deps", "env", "headers", "srcs", "tags", "use_default_test_main", "visibility", "external_deps"],
 )
 
 def cpp_unittest(*args, **kwargs):
