@@ -2,39 +2,47 @@
 Similar to the image.{cpp,python}_unittest macros, the intent of
 vm.{cpp,python}_unittest is to be able to run unittests inside
 a specific antlir layer. The main difference is that the macros in this
-file will run the tests inside a VM, while image.{cpp,python}_unittest
-will run the tests inside a systemd-nspawn container.
+file will run the tests inside a fully booted VM instead of inside a
+systemd-nspawn container.
 
 The interface of vm.{cpp,python}_unittest has been designed to be
 similar to that of image.{cpp,python}_unittest; therefore, one should
-first look over the interface specified by those macros. In fact, the
-only key differences are:
-- With vm.{cpp,python}_unittest, the user has the option to provide
-  a `kernel_opts` value, which is a struct of the following format:
+first look over the interface specified by those macros to become familiar
+with the options allowed there.  The key differences with
+`vm.{cpp,python}_unittest` are:
+
+- A `kernel` attribute can optionally be provided to explicitly choose a
+  non-default kernel version to run the VM.  The `kernel` attribute is
+  a struct containing various attributes and target locations for artifacts.
+
+- A `layer` attribute can optionally be provided to explicitly choose a
+  non-default `image.layer` to boot the VM with and run the test.  Providing
+  a non-default `image.layer` will incur additional build cost due to the need
+  to consturct a btrfs seed device.  As such, if you can avoid a custom
+  `image.layer`, it would be ideal.
+  Note: this `image.layer` *must* be capable of successfully booting the
+  VM for the tests to run.
+
+- A user can provide a `vm_opts` struct which controls how the VM is
+  configured at runtime.  The `vm_opts` struct is created with the `vm.opts`
+  function and has the following form:
+
   ```
-  kernel_opts = vm.opts(
-      kernel = "//target/of/specific/kernel/version",
-      install_headers = Bool,
-      install_devel = Bool,
+  vm_opts = vm.opts(
+      # This boolean option will control the install of both the kernel headers
+      # and sources for the kernel version the unittest is configured to use.
+      devel = False,
+
+      # The number of Virtual CPUs to provide the VM.
+      ncpus = 1,
   )
   ```
-  This allows users to run their test using a desired kernel version.
-  `install_headers` and `install_devel` will install kernel headers if
-  the values are set to true, as some tests need them (bcc on kernels <5.2)
-  The difference in the packages themselves is that kernel-devel installs
-  the entire source tree for the kernel in /usr/src, while kernel-headers
-  provides only the header files for userspace tools that need them to compile.
 
 - Currently, `run_as_user` and `hostname` are not supported by VM tests.
   There are plans to add support for these options (see T62319183).
 
-- The `boot` option doesn't affect either of vm.{cpp,python}_unittest
-  as there is no way to run VM tests in non-booted mode.
-
-- vm.{cpp,python}_unittest has default values for both the image layer
-  as well as the kernel to use. These defaults are `default_vm_image` and
-  `default_vm_kernel` respectively. This means that when defining a vm.{cpp,python}_unittest,
-  it is not necessary to provide either `kernel_opts` or `layer`.
+- The `boot` option does not affect `vm.{cpp,python}_unittest` as there is
+  no way to run VM tests in non-booted mode.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
@@ -47,19 +55,18 @@ _RULE_TO_TEST_TYPE = {
     python_unittest: "pyunit",
 }
 
-def _vm_opts(
-        kernel,
-        install_headers = False,
-        install_devel = False):
+def _create_vm_opts(
+        devel = False,
+        ncpus = 1):
+    if ncpus == 2:
+        fail("ncpus=2 will cause kernel panic: https://fburl.com/md27i5k8")
+
     return struct(
-        kernel = kernel,
-        install_headers = install_headers,
-        install_devel = install_devel,
+        devel = devel,
+        ncpus = ncpus,
     )
 
-_default_vm_opts = _vm_opts(kernel_artifact.default_kernel)
-
-def _tags(unittest_rule, unittest_kwargs):
+def _tags(unittest_rule, kwargs):
     """
     Convert top-level 'tags' kwargs into separate tag sets for the outer and
     inner test rules.
@@ -67,7 +74,7 @@ def _tags(unittest_rule, unittest_kwargs):
     'tags' provided by a user are always applied to the outer test, so they
     control the behavior of TestPilot or to add information for 'buck query'.
     """
-    outer_tags = unittest_kwargs.get("tags", []) + ["vmtest"]
+    outer_tags = kwargs.get("tags", []) + ["vmtest"]
 
     # Make sure that the test runner ignores the underlying test, and only
     # looks at the version that runs in a VM.
@@ -88,13 +95,13 @@ def _inner_test(
         name,
         unittest_rule,
         inner_tags,
-        **unittest_kwargs):
+        **kwargs):
     inner_test_name = helpers.hidden_test_name(name)
     unittest_rule(
         name = inner_test_name,
         tags = inner_tags,
         visibility = [],
-        **unittest_kwargs
+        **kwargs
     )
     return inner_test_name
 
@@ -112,10 +119,7 @@ def _outer_test(
         tags,
         user_specified_deps,
         env,
-        ncpus):
-    if ncpus == 2:
-        fail("ncpus=2 will cause kernel panic: https://fburl.com/md27i5k8")
-
+        vm_opts):
     visibility = get_visibility(visibility, name)
 
     if not env:
@@ -158,7 +162,7 @@ def _outer_test(
                 var_value,
             )
             for var_name, var_value in env.items()
-        ] + ["--ncpus={}".format(ncpus)],
+        ] + ["--ncpus={}".format(vm_opts.ncpus)],
         labels = tags,
         test = ":" + _run_vmtest_name(name),
         type = _RULE_TO_TEST_TYPE[unittest_rule],
@@ -180,8 +184,9 @@ def _outer_test(
 def _vm_unittest(
         name,
         unittest_rule,
-        layer = default_vm_image.layer,
-        kernel_opts = None,
+        kernel = None,
+        layer = None,
+        vm_opts = None,
         visibility = None,
         env = None,
         # vmtest target graphs tend to be very deep, since they invoke multiple
@@ -192,23 +197,24 @@ def _vm_unittest(
         # inside) is too far away from the user-given deps see D19499568 and
         # linked discussions for more details
         user_specified_deps = None,
-        ncpus = 1,
-        **unittest_kwargs):
-    inner_tags, outer_tags = _tags(unittest_rule, unittest_kwargs)
-    unittest_kwargs.pop("tags", None)
+        **kwargs):
+    inner_tags, outer_tags = _tags(unittest_rule, kwargs)
+    kwargs.pop("tags", None)
 
     inner_test = _inner_test(
         name,
         unittest_rule,
         inner_tags,
         antlir_rule = "user-internal",
-        **unittest_kwargs
+        **kwargs
     )
 
-    if not kernel_opts:
-        kernel_opts = _default_vm_opts
+    kernel = kernel or kernel_artifact.default_kernel
+    layer = layer or default_vm_image.layer
+    vm_opts = vm_opts or _create_vm_opts()
 
-    # install the inner test binary at a well-known location in the guest image
+    # Create an image layer and package that contains the test binary. This package
+    # will be used as a device for the VM and mounted at `/vmtest`
     image.layer(
         name = "{}_test_layer".format(name),
         features = [
@@ -223,12 +229,12 @@ def _vm_unittest(
 
     features = []
 
-    # some tests need kernel headers (bcc on kernels <5.2), so provide an
-    # opt-in way to install them in the test image, instead of forcing it
-    # for every test, which leads back to the per-kernel image insanity
-    if kernel_opts.install_headers or kernel_opts.install_devel:
+    # some tests need kernel headers and kernel sources (bcc on kernels <5.2), so provide
+    # an opt-in way to install them in the test image, instead of forcing it
+    # for every test.
+    if vm_opts.devel:
         features.append(
-            image.rpms_install([kernel_opts.kernel.headers, kernel_opts.kernel.devel]),
+            image.rpms_install([kernel.headers, kernel.devel]),
         )
 
     # if there are no custom image features and the test is using the default
@@ -260,45 +266,45 @@ def _vm_unittest(
         env = env or {},
         inner_test = ":" + inner_test,
         inner_test_package = ":{}=test.btrfs".format(name),
-        kernel = kernel_opts.kernel,
-        ncpus = ncpus,
+        kernel = kernel,
         seed_device = seed_device,
         tags = outer_tags,
         unittest_rule = unittest_rule,
         user_specified_deps = user_specified_deps,
         visibility = visibility,
+        vm_opts = vm_opts,
     )
 
 def _vm_cpp_unittest(
         name,
-        layer = default_vm_image.layer,
-        kernel_opts = None,
+        kernel = None,
+        layer = None,
+        vm_opts = None,
         deps = (),
-        ncpus = 1,
-        **cpp_unittest_kwargs):
+        **kwargs):
     _vm_unittest(
         name,
         cpp_unittest,
+        kernel = kernel,
         layer = layer,
-        kernel_opts = kernel_opts,
+        vm_opts = vm_opts,
         deps = deps,
         user_specified_deps = deps,
-        ncpus = ncpus,
-        **cpp_unittest_kwargs
+        **kwargs
     )
 
 def _vm_python_unittest(
         name,
-        layer = default_vm_image.layer,
-        kernel_opts = None,
-        ncpus = 1,
-        **python_unittest_kwargs):
+        kernel = None,
+        layer = None,
+        vm_opts = None,
+        **kwargs):
     # Short circuit the target graph by attaching user_specified_deps to the outer
     # test layer.
     user_specified_deps = []
-    user_specified_deps += python_unittest_kwargs.get("deps", [])
-    user_specified_deps += python_unittest_kwargs.get("runtime_deps", [])
-    resources = python_unittest_kwargs.get("resources", [])
+    user_specified_deps += kwargs.get("deps", [])
+    user_specified_deps += kwargs.get("runtime_deps", [])
+    resources = kwargs.get("resources", [])
     if types.is_dict(resources):
         resources = list(resources.keys())
     user_specified_deps += resources
@@ -306,63 +312,61 @@ def _vm_python_unittest(
     _vm_unittest(
         name,
         python_unittest,
+        kernel = kernel,
         layer = layer,
-        kernel_opts = kernel_opts,
+        vm_opts = vm_opts,
         user_specified_deps = user_specified_deps,
         # unittest pars must be xars so that native libs work inside the vm without
         # linking / mounting trickery
         par_style = "xar",
-        ncpus = ncpus,
-        **python_unittest_kwargs
+        **kwargs
     )
 
 def _vm_multi_kernel_unittest(
         name,
         vm_unittest,
         kernels,
-        headers = False,
-        devel = False,
-        **vm_unittest_kwargs):
+        vm_opts = None,
+        **kwargs):
     for suffix, kernel in kernels.items():
         vm_unittest(
             name = "-".join([name, suffix]),
-            kernel_opts = _vm_opts(
-                kernel = kernel,
-                install_headers = headers,
-                install_devel = devel,
-            ),
-            **vm_unittest_kwargs
+            kernel = kernel,
+            vm_opts = vm_opts,
+            **kwargs
         )
 
 def _vm_multi_kernel_cpp_unittest(
         name,
-        **vm_cpp_unittest_kwargs):
+        **kwargs):
     _vm_multi_kernel_unittest(
         name,
         _vm_cpp_unittest,
-        **vm_cpp_unittest_kwargs
+        **kwargs
     )
 
 def _vm_multi_kernel_python_unittest(
         name,
-        **vm_python_unittest_kwargs):
+        **kwargs):
     _vm_multi_kernel_unittest(
         name,
         _vm_python_unittest,
-        **vm_python_unittest_kwargs
+        **kwargs
     )
 
 vm = struct(
+    # The set of reasonable defaults for running vms
     default = struct(
         kernel = kernel_artifact.default_kernel,
         layer = default_vm_image.layer,
-        opts = _vm_opts(kernel_artifact.default_kernel),
     ),
     cpp_unittest = _vm_cpp_unittest,
+    # An API for constructing a set of tests that are all the
+    # same except for the kernel version.
     multi_kernel = struct(
         cpp_unittest = _vm_multi_kernel_cpp_unittest,
         python_unittest = _vm_multi_kernel_python_unittest,
     ),
     python_unittest = _vm_python_unittest,
-    opts = _vm_opts,
+    opts = _create_vm_opts,
 )

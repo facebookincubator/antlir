@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import importlib.resources
+import multiprocessing
 import os
 import socket
 import unittest
@@ -36,3 +37,6 @@ class PythonVMTest(unittest.TestCase):
 
         with open("/set_us_up", "r") as f:
             self.assertEqual(f.read(), "All your base are belong to us!\n")
+
+    def test_running_multiple_cpus(self):
+        self.assertEqual(multiprocessing.cpu_count(), 4)
