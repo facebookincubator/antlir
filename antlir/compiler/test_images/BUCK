@@ -1,12 +1,12 @@
 # IMPORTANT: Do NOT use `oss_shim.bzl` here, instead load fbcode macros via
 # the shim in `defs.bzl`.
 load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
-load(":defs.bzl", "defs")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/foreign/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
+load(":defs.bzl", "defs")
 
 # While the reproducible-builds.org instructions (see below) ensure that a
 # hash-stable artifact can be generated on the same system using the same
@@ -76,7 +76,16 @@ image.layer(
             user = "nobody",
             group = "nobody",
         ),
+        "//antlir/features:build_artifact_cleanup",
     ],
+)
+
+# Some tests require a bootable container. For now, these are the same as the
+# "default" test layer, but in the future it may not be (as it was before), so
+# preserve the intention of a separate bootable layer for tests that need it.
+defs.export_file(
+    name = "bootable-systemd-os",
+    src = ":test-layer",
 )
 
 # This assumes that the host provides `cc`, since we cannot install packages
