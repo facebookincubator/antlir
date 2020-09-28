@@ -91,6 +91,17 @@ def run_shape_selftests():
         },
     )
 
+    # Check access to defaulted fields
+    s = shape.new(
+        shape_spec,
+        dict_str_to_int = {},
+        nested = shape.new(shape_spec.nested, is_nested = True),
+        set_of_str = (),
+    )
+    if not s.single_int == 42:
+        fail("unexpected .single_int: {}".format(s.single_int))
+
+    # Check non-defaulted fields
     s = shape.new(
         shape_spec,
         dict_str_to_int = {"answer": 42},
