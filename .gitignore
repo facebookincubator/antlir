@@ -6,3 +6,5 @@ buck-image-out
 
 # vim stuff
 **/*.swp
+
+.vscode/
