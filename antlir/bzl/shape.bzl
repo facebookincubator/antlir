@@ -259,9 +259,21 @@ def _plain_data(x):
     return x
 
 def _instantiate_shape(shape, **fields):
+    # Add defaults for fields that were not populated.
+    for name, field_spec in shape.fields.items():
+        if name in fields:
+            continue
+        if field_spec.default == _NO_DEFAULT:
+            continue  # Will fail in `_validate_shape` below
+
+        # TODO(vmagro): we should really make sure that defaults are either
+        # copies or immutable, because otherwise this is pretty disastrous.
+        fields[name] = field_spec.default
+
     error_msg = _validate_shape(shape, fields)
     if error_msg:
         fail(error_msg)
+
     plain_data = {k: _plain_data(v) for k, v in fields.items()}
     return struct(
         _shape_type = shape,
