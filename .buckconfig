@@ -5,6 +5,9 @@
 # require a system to have python2 to interpret .bzl/BUCK files
 [parser]
   default_build_file_syntax = SKYLARK
+  # force usage of oss_shim.bzl which applies all the correct visibility logic
+  # and more closely mimics the internal macros
+  disable_implicit_native_rules = true
 
 # There is only one python platform we support, and that is python3 with
 # inplace packages.  This will be expanded in the future to support

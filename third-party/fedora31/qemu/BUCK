@@ -1,3 +1,4 @@
+load("//antlir/bzl:oss_shim.bzl", "export_file")
 # This currently is all fake in that we rely on a functional system qemu
 # installation, rather than packaging qemu in any kind of reproducible way as
 # part of this repo.

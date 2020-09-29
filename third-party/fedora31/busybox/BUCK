@@ -1,3 +1,5 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
+
 http_file(
     name = "busybox-download",
     sha256 = "6450a95ecf5948a92a701e604cc9c067442f2f66815488b79a0097f2d3e66717",
@@ -6,7 +8,7 @@ http_file(
     ],
 )
 
-genrule(
+buck_genrule(
     name = "bin/busybox",
     out = "bin/busybox",
     bash = """

@@ -1,3 +1,4 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
 load("//antlir/vm:initrd.bzl", "initrd")
 load("//antlir/vm:vm.bzl", "vm")
 load(":kernels.bzl", "kernels")
@@ -26,7 +27,7 @@ http_file(
     ],
 )
 
-genrule(
+buck_genrule(
     name = "5.3.7-301.fc31.x86_64-rpm-exploded",
     out = ".",
     cmd = """
@@ -37,7 +38,7 @@ genrule(
     """,
 )
 
-genrule(
+buck_genrule(
     name = "5.3.7-301.fc31.x86_64-vmlinuz",
     out = "vmlinuz-5.3.7-301.fc31.x86_64",
     cmd = "cp --reflink=auto $(location :5.3.7-301.fc31.x86_64-rpm-exploded)/lib/modules/5.3.7-301.fc31.x86_64/vmlinuz $OUT",
@@ -46,7 +47,7 @@ genrule(
 # this is all the modules that the kernel could possibly need. they are
 # copied into the initrd so that they don't have to be installed in the
 # root disk
-genrule(
+buck_genrule(
     name = "5.3.7-301.fc31.x86_64-modules",
     out = ".",
     cmd = """

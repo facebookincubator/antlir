@@ -94,6 +94,7 @@ config = shim.config
 default_vm_image = shim.default_vm_image
 export_file = shim.export_file
 get_visibility = shim.get_visibility
+http_file = shim.http_file
 kernel_artifact = shim.kernel_artifact
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 rpm_vset = shim.rpm_vset

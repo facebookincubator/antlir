@@ -39,9 +39,19 @@ def _assert_package():
             "Antlir API. If so, read the `antlir_rule` section in " +
             "`website/docs/coding-conventions/bzl-and-targets.md`",
         )
-    if package != "antlir" and not package.startswith("antlir/"):
+
+    # In OSS, the shimmed rules are preferred over the native rules (the
+    # implicit loads of native rules is disabled) for consistency. Everything
+    # in the main cell except the above exception(s) are allowed to use
+    # oss_shim.bzl
+    cell = native.repository_name()
+
+    # TODO: if antlir is intended to _only_ be used as a Buck cell, the '@'
+    # check should be disabled. This is not currently the way the project is
+    # setup, so it is required for now.
+    if cell != "@antlir" and cell != "@":
         fail(
-            'Package `" + package + "` must not `load("//antlir/bzl:' +
+            'Package `{}` must not `load("//antlir/bzl:'.format(package) +
             'oss_shim.bzl")`. Antlir devs: read about `antlir_rule` in ' +
             "`website/docs/coding-conventions/bzl-and-targets.md`.",
         )
@@ -215,6 +225,9 @@ def _filegroup(*args, **kwargs):
 def _genrule(*args, **kwargs):
     _wrap_internal(native.genrule, args, kwargs)
 
+def _http_file(*args, **kwargs):
+    _wrap_internal(native.http_file, args, kwargs)
+
 def _sh_binary(*args, **kwargs):
     _wrap_internal(native.sh_binary, args, kwargs)
 
@@ -383,6 +396,7 @@ shim = struct(
     # Look at `bzl/constants.bzl` for the available options.
     do_not_use_repo_cfg = {},
     export_file = _export_file,
+    http_file = _http_file,
     get_visibility = _normalize_visibility,
     kernel_artifact = struct(
         default_kernel = _kernel_artifact_version("5.3.7-301.fc31.x86_64"),
