@@ -1,3 +1,7 @@
+load("//antlir/vm:initrd.bzl", "initrd")
+load("//antlir/vm:vm.bzl", "vm")
+load(":kernels.bzl", "kernels")
+
 http_file(
     name = "5.3.7-301.fc31.x86_64-core.rpm",
     sha256 = "f0509e333636e5c34726c8a2b8260bf88fe0a35b95cae6dda62191fee1be4c6a",
@@ -49,4 +53,15 @@ genrule(
         mkdir -p $OUT
         cp -R "$(location :5.3.7-301.fc31.x86_64-rpm-exploded)/lib/modules/5.3.7-301.fc31.x86_64/kernel" "$OUT"
     """,
+)
+
+vm(
+    name = "5.3.7-301.fc31.x86_64-vm",
+    kernel = kernels["5.3.7-301.fc31.x86_64"],
+)
+
+initrd(
+    name = "5.3.7-301.fc31.x86_64-initrd",
+    module_source = "//third-party/fedora31/kernel:5.3.7-301.fc31.x86_64-modules",
+    uname = "5.3.7-301.fc31.x86_64",
 )
