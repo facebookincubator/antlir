@@ -374,8 +374,8 @@ shim = struct(
     # Constants
     #
     default_vm_image = struct(
-        layer = None,
-        package = None,
+        layer = "//antlir/vm:default-image",
+        package = "//antlir/vm:default-image.btrfs",
     ),
     # Future: We could conceivably add OSS support for a `.bzl`-based
     # deployment-specific customizations, but for now we expect non-FB

@@ -1,0 +1,22 @@
+# This currently is all fake in that we rely on a functional system qemu
+# installation, rather than packaging qemu in any kind of reproducible way as
+# part of this repo.
+
+export_file(
+    name = "qemu",
+    visibility = ["//antlir/vm/..."],
+)
+
+[
+    export_file(
+        name = "share/qemu/{}".format(rom),
+        src = "empty",
+        visibility = ["//antlir/vm/..."],
+    )
+    for rom in [
+        "kvmvapic.bin",
+        "linuxboot_dma.bin",
+        "vgabios-stdvga.bin",
+        "bios-256k.bin",
+    ]
+]
