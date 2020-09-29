@@ -1,19 +1,7 @@
-http_file(
-    name = "requests-download",
-    sha256 = "43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee",
-    urls = [
-        "https://files.pythonhosted.org/packages/1a/70/1935c770cb3be6e3a8b78ced23d7e0f3b187f5cbfab4749523ed65d7c9b1/requests-2.23.0-py2.py3-none-any.whl",
-    ],
-)
+load("//third-party/python:pypi.bzl", "pypi_package")
 
-prebuilt_python_library(
+pypi_package(
     name = "requests",
-    binary_src = ":requests-download",
-    visibility = ["PUBLIC"],
-    deps = [
-        "//third-party/python/certifi:certifi",
-        "//third-party/python/chardet:chardet",
-        "//third-party/python/idna:idna",
-        "//third-party/python/urllib3:urllib3",
-    ],
+    sha256 = "43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee",
+    url = "https://files.pythonhosted.org/packages/1a/70/1935c770cb3be6e3a8b78ced23d7e0f3b187f5cbfab4749523ed65d7c9b1/requests-2.23.0-py2.py3-none-any.whl",
 )

@@ -1,13 +1,7 @@
-http_file(
-    name = "idna-download",
-    sha256 = "a068a21ceac8a4d63dbfd964670474107f541babbd2250d61922f029858365fa",
-    urls = [
-        "https://files.pythonhosted.org/packages/89/e3/afebe61c546d18fb1709a61bee788254b40e736cff7271c7de5de2dc4128/idna-2.9-py2.py3-none-any.whl",
-    ],
-)
+load("//third-party/python:pypi.bzl", "pypi_package")
 
-prebuilt_python_library(
+pypi_package(
     name = "idna",
-    binary_src = ":idna-download",
-    visibility = ["PUBLIC"],
+    sha256 = "a068a21ceac8a4d63dbfd964670474107f541babbd2250d61922f029858365fa",
+    url = "https://files.pythonhosted.org/packages/89/e3/afebe61c546d18fb1709a61bee788254b40e736cff7271c7de5de2dc4128/idna-2.9-py2.py3-none-any.whl",
 )

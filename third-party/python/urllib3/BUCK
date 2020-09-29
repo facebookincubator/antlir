@@ -1,13 +1,7 @@
-http_file(
-    name = "urllib3-download",
-    sha256 = "88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115",
-    urls = [
-        "https://files.pythonhosted.org/packages/e1/e5/df302e8017440f111c11cc41a6b432838672f5a70aa29227bf58149dc72f/urllib3-1.25.9-py2.py3-none-any.whl",
-    ],
-)
+load("//third-party/python:pypi.bzl", "pypi_package")
 
-prebuilt_python_library(
+pypi_package(
     name = "urllib3",
-    binary_src = ":urllib3-download",
-    visibility = ["PUBLIC"],
+    sha256 = "88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115",
+    url = "https://files.pythonhosted.org/packages/e1/e5/df302e8017440f111c11cc41a6b432838672f5a70aa29227bf58149dc72f/urllib3-1.25.9-py2.py3-none-any.whl",
 )
