@@ -83,9 +83,9 @@ image.layer(
 # Some tests require a bootable container. For now, these are the same as the
 # "default" test layer, but in the future it may not be (as it was before), so
 # preserve the intention of a separate bootable layer for tests that need it.
-defs.export_file(
+image.layer_alias(
     name = "bootable-systemd-os",
-    src = ":test-layer",
+    layer = ":test-layer",
 )
 
 # This assumes that the host provides `cc`, since we cannot install packages
