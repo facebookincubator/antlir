@@ -19,11 +19,21 @@ targets whose paths the `image_layer` converter would need to resolve.
 """
 
 load(":image_source.bzl", "image_source")
+load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
 load(":wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 
 _TargetTaggerInfo = provider(fields = ["targets"])
+
+target_tagged_image_source_shape = shape.shape(
+    source = shape.dict(str, str, optional = True),
+    layer = shape.dict(str, str, optional = True),
+    path = shape.dict(str, str, optional = True),
+    generator = shape.dict(str, str, optional = True),
+    generator_args = shape.list(str, optional = True),
+    content_hash = shape.field(str, optional = True),
+)
 
 def new_target_tagger():
     return _TargetTaggerInfo(targets = {})
@@ -69,6 +79,12 @@ def image_source_as_target_tagged_dict(target_tagger, user_source):
             is_layer = is_layer,
         )
     return src
+
+def image_source_as_target_tagged_shape(target_tagger, user_source):
+    return shape.new(
+        target_tagged_image_source_shape,
+        **image_source_as_target_tagged_dict(target_tagger, user_source)
+    )
 
 def target_tagger_to_feature(target_tagger, items, extra_deps = None):
     return struct(

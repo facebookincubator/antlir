@@ -1,7 +1,8 @@
 load("//antlir/bzl:image_foreign_layer.bzl", "foreign_layer_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image_actions:tarball.bzl", "tarball_t")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 python_library(
@@ -215,10 +216,15 @@ python_library(
         ":make_subvol",
         ":mount",
         ":mount_utils",
+        ":tarball_t",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:ba_runner",
         "//antlir/nspawn_in_subvol:non_booted",
+        third_party.library(
+            "pydantic",
+            platform = "python",
+        ),
     ],
 )
 
@@ -277,4 +283,10 @@ python_library(
         ":phases_provide",
         ":rpm_action",
     ],
+)
+
+shape.loader(
+    name = "tarball_t",
+    shape = tarball_t,
+    classname = "tarball_t",
 )
