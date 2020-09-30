@@ -38,6 +38,21 @@ character_t = shape.shape(
     ),
 )
 
+# TODO when read-only dicts land just use character_t
+hashable_t = shape.shape(
+    name = str,
+    appears_in = shape.list(int),
+    lightsaber_color = shape.field(
+        str,
+        optional = True,
+    ),
+    callsign = shape.tuple(
+        str,
+        int,
+        optional = True,
+    ),
+)
+
 characters = [
     shape.new(
         character_t,
@@ -106,6 +121,12 @@ characters = [
 
 character_collection_t = shape.shape(characters = shape.list(character_t))
 
+shape.loader(
+    name = "hashable_t",
+    shape = hashable_t,
+    classname = "hashable_t",
+)
+
 python_unittest(
     name = "test-shape",
     srcs = ["test_shape.py"],
@@ -119,6 +140,7 @@ python_unittest(
         ): "luke.json",
     },
     deps = [
+        ":hashable_t",
         shape.python_data(
             name = "data",
             shape = shape.new(
