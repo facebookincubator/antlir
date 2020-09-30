@@ -414,7 +414,7 @@ def _loader_src(shape, classname):
 def _loader(name, shape, classname = None, **kwargs):
     python_src = _loader_src(shape, classname or name)
     buck_genrule(
-        name = "{}={}.py".format(name, name),
+        name = "{}.py".format(name),
         out = "unused.py",
         cmd = "echo {} > $OUT".format(shell.quote(python_src)),
         # Antlir users should not directly use `shape`, but we do use it
@@ -423,7 +423,7 @@ def _loader(name, shape, classname = None, **kwargs):
     )
     python_library(
         name = name,
-        srcs = [":{}={}.py".format(name, name)],
+        srcs = {":{}.py".format(name): "{}.py".format(name)},
         deps = ["//antlir:shape"],
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
@@ -468,10 +468,9 @@ def _python_data(name, shape, module = None, **python_library_kwargs):
     if not module:
         module = name
 
-    src_name = "{}={}.py".format(name, module)
     buck_genrule(
-        name = src_name,
-        out = src_name,
+        name = "{}.py".format(name),
+        out = "unused.py",
         cmd = "echo {} >> $OUT".format(shell.quote(python_src)),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
@@ -479,7 +478,7 @@ def _python_data(name, shape, module = None, **python_library_kwargs):
     )
     python_library(
         name = name,
-        srcs = [":{}".format(src_name)],
+        srcs = {":{}.py".format(name): "{}.py".format(name)},
         deps = [
             "//antlir:shape",
             third_party.library("pydantic", platform = "python"),
