@@ -26,11 +26,25 @@ class ShapeMeta(pydantic.main.ModelMetaclass):
         if cls.__GENERATED_SHAPE__:
             cls.__name__ = repr(cls)
             cls.__qualname__ = repr(cls)
-            # promote nested shape types to this class based on the field name
-            # so they can be referred to without the generated name
+
+            # create an inner class `types` to make all the fields types usable
+            # from a user of shape without having to know the cryptic generated
+            # class names
+            if "types" in dct or "types" in dct.get("__annotations__", {}):
+                raise KeyError("'types' cannot be used as a shape field name")
+            types_cls = {}
             for key, f in cls.__fields__.items():
-                if getattr(f.type_, "__GENERATED_SHAPE__", False):
-                    setattr(cls, key, f.type_)
+                types_cls[key] = f.type_
+                # pydantic already does some magic to extract list element
+                # types and dict value types, but export tuples as a tuple of
+                # types instead of typing.Tuple
+                # NOTE: pydantic extracts the dict value type as the type,
+                # which is a little bit of a strange interface, so that is
+                # liable to change if we ever care about making a dict key
+                # accessible (for example, if the key is a shape)
+                if getattr(f.type_, "__origin__", None) == tuple:
+                    types_cls[key] = f.type_.__args__
+            cls.types = type("types", (object,), types_cls)
 
         return cls
 
@@ -58,7 +72,7 @@ class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
             return cls.parse_raw(r.read())
 
     def __hash__(self):
-        return hash((type(self), *self.__dict__.values(),))
+        return hash((type(self), *self.__dict__.values()))
 
     def __repr__(self):
         """

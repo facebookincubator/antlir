@@ -234,6 +234,7 @@ def _define_shape(**fields):
             python_src.append("  {}: {} = {}".format(key, field.python_type, repr(structs.to_dict(_plain_data(field.default)))))
         else:
             python_src.append("  {}: {} = {}".format(key, field.python_type, repr(field.default)))
+
     python_src = [line for line in python_src if line.lstrip().rstrip()]
     return struct(
         _shape = True,
