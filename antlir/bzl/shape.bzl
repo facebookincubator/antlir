@@ -253,7 +253,7 @@ def _plain_data(x):
     if hasattr(x, "_data"):
         return x._data
     if types.is_list(x) or types.is_tuple(x):
-        return [getattr(i, "_data", i) for i in x]
+        return tuple([getattr(i, "_data", i) for i in x])
     if types.is_dict(x):
         return {k: getattr(v, "_data", v) for k, v in x.items()}
     return x
@@ -346,10 +346,18 @@ def _validate_dict_field(spec, data):
     return ""
 
 def _list_field(item_type, set_ = False, **field_kwargs):
-    python_type = "typing.FrozenSet" if set_ else "typing.Sequence"
     item_type = _to_field(item_type)
+    if set_:
+        python_type = "typing.FrozenSet[{}]".format(item_type.python_type)
+    else:
+        python_type = "typing.Tuple[{}, ...]".format(item_type.python_type)
+
+    # convert defaults to read-only at shape definition
+    default = field_kwargs.get("default")
+    if default:
+        field_kwargs["default"] = tuple(field_kwargs["default"])
     return _field(
-        python_type = "{}[{}]".format(python_type, item_type.python_type),
+        python_type = python_type,
         starlark_type = item_type.starlark_type,
         validate = _validate_list_field,
         item_type = item_type.starlark_type,

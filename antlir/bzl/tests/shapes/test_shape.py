@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import unittest
-from typing import Mapping, Optional, Sequence, Tuple
+from typing import Mapping, Optional, Tuple
 
 from .data import data
 
@@ -25,7 +25,7 @@ class TestShape(unittest.TestCase):
         c = character_t.read_resource(__package__, "luke.json")
 
         self.assertEqual(c.name, "Luke Skywalker")
-        self.assertEqual(c.appears_in, [4, 5, 6])
+        self.assertEqual(c.appears_in, (4, 5, 6))
         self.assertEqual(
             [f.name for f in c.friends], ["Han Solo", "Leia Organa", "C-3PO"]
         )
@@ -52,7 +52,7 @@ class TestShape(unittest.TestCase):
         hints = _deep_typehints(character_t)
         expected = {
             "name": str,
-            "appears_in": Sequence[int],
+            "appears_in": Tuple[int, ...],
             "lightsaber_color": Optional[str],
             "callsign": Optional[Tuple[str, int]],
             "metadata": Mapping[str, str],
@@ -69,8 +69,9 @@ class TestShape(unittest.TestCase):
             repr(characters[0]),
             "shape("
             "name='Luke Skywalker', "
-            "appears_in=[4, 5, 6], "
-            "friends=[shape(name='Han Solo'), shape(name='Leia Organa'), shape(name='C-3PO')], "
+            "appears_in=(4, 5, 6), "
+            # FLAKE8 doesn't like the length but it maintains 1 field per line
+            "friends=(shape(name='Han Solo'), shape(name='Leia Organa'), shape(name='C-3PO')), "  # noqa E501
             "lightsaber_color='green', "
             "callsign=('Red', 5), "
             "metadata={'species': 'human'}, "
@@ -85,8 +86,8 @@ class TestShape(unittest.TestCase):
             repr(character_t),
             "shape("
             "name=str, "
-            "appears_in=Sequence[int], "
-            "friends=Sequence[shape(name=str)], "
+            "appears_in=Tuple[int, ...], "
+            "friends=Tuple[shape(name=str), ...], "
             "lightsaber_color=Optional[str], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
@@ -135,8 +136,8 @@ class TestShape(unittest.TestCase):
             repr(obi_wan),
             "Jedi("
             "name='Obi-Wan Kenobi', "
-            "appears_in=[1, 2, 3, 4, 5, 6], "
-            "friends=[shape(name='Yoda'), shape(name='Padme Amidala')], "
+            "appears_in=(1, 2, 3, 4, 5, 6), "
+            "friends=(shape(name='Yoda'), shape(name='Padme Amidala')), "
             "lightsaber_color='blue', "
             "callsign=None, "
             "metadata={'species': 'human'}, "
@@ -149,8 +150,8 @@ class TestShape(unittest.TestCase):
             repr(Jedi),
             "Jedi("
             "name=str, "
-            "appears_in=Sequence[int], "
-            "friends=Sequence[shape(name=str)], "
+            "appears_in=Tuple[int, ...], "
+            "friends=Tuple[shape(name=str), ...], "
             "lightsaber_color=Optional[str], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
