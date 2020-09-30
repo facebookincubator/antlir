@@ -1,0 +1,22 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Checkout submodules
+        run: git submodule update --init
+
+      - name: Fetch buck
+        run: ./tools/buck --version
+        
+      - name: Fetch third-party dependencies
+        run: ./tools/buck fetch //third-party/...
+        
+      - name: Evaluate target graph
+        run: ./tools/buck targets //...
