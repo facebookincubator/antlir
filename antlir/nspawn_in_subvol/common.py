@@ -6,6 +6,7 @@
 
 "No externally useful functions here.  Read the `run.py` docblock instead."
 import subprocess
+from typing import NamedTuple
 
 from antlir.fs_utils import Path
 
@@ -31,7 +32,12 @@ DEFAULT_SEARCH_PATHS = tuple(
 DEFAULT_PATH_ENV = b":".join(DEFAULT_SEARCH_PATHS)
 
 
-def nspawn_version() -> int:
+class NSpawnVersion(NamedTuple):
+    major: int
+    full: str
+
+
+def nspawn_version() -> NSpawnVersion:
     """
     We now care about the version of nspawn we are running.  The output of
     systemd-nspawn --version looks like:
@@ -44,6 +50,8 @@ def nspawn_version() -> int:
     We hope that the output of systemd-nspawn --version is stable enough
     to keep parsing it like this.
     """
-    return int(
-        subprocess.check_output(["systemd-nspawn", "--version"]).split()[1]
-    )
+    parts = subprocess.check_output(
+        ["systemd-nspawn", "--version"], text=True
+    ).split()
+    assert parts[2].startswith("(v") and parts[2].endswith(")"), parts
+    return NSpawnVersion(major=int(parts[1]), full=parts[2][2:-1])
