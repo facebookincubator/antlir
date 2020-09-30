@@ -1,0 +1,37 @@
+load(":native_cxx.bzl", "cxx_library", "subdir_glob", "prebuilt_cxx_library")
+
+prebuilt_cxx_library(
+    name = "pthread",
+    header_only = True,
+    supported_platforms_regex = "linux.*",
+    exported_linker_flags = ["-lpthread"],
+    visibility = [
+        "PUBLIC",
+    ],
+)
+
+# mostly copied from
+# https://buck.build/files-and-dirs/buckconfig.html#cxx.gtest_dep
+cxx_library(
+    name = "gtest",
+    srcs = [
+        "googletest/googletest/src/gtest-all.cc",
+        "googletest/googlemock/src/gmock-all.cc",
+        "googletest/googlemock/src/gmock_main.cc",
+    ],
+    header_namespace = "",
+    exported_headers = subdir_glob([
+        ("googletest/googletest/include", "**/*.h"),
+        ("googletest/googlemock/include", "**/*.h"),
+    ]),
+    headers = subdir_glob([
+        ("googletest/googletest", "src/*.cc"),
+        ("googletest/googletest", "src/*.h"),
+        ("googletest/googlemock", "src/*.cc"),
+        ("googletest/googlemock", "src/*.h"),
+    ]),
+    visibility = [
+        "PUBLIC",
+    ],
+    deps = [":pthread"],
+)
