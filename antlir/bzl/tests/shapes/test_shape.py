@@ -5,7 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import unittest
-from typing import Mapping, Optional, Tuple
+from typing import Mapping, Optional, Sequence, Tuple
+
+from antlir.shape import Shape
 
 from .data import data
 
@@ -45,6 +47,7 @@ class TestShape(unittest.TestCase):
             name="Stormtrooper",
             appears_in=[1, 2, 3, 4, 5, 6],
             friends=[],
+            metadata=None,
         )
         trooper2 = hashable_t(
             name="Stormtrooper",
@@ -88,8 +91,13 @@ class TestShape(unittest.TestCase):
             "shape("
             "name='Luke Skywalker', "
             "appears_in=(4, 5, 6), "
-            # FLAKE8 doesn't like the length but it maintains 1 field per line
-            "friends=(shape(name='Han Solo'), shape(name='Leia Organa'), shape(name='C-3PO')), "  # noqa E501
+            "friends=("
+            + (
+                "shape(name='Han Solo'), "
+                "shape(name='Leia Organa'), "
+                "shape(name='C-3PO')"
+            )
+            + "), "
             "lightsaber_color='green', "
             "callsign=('Red', 5), "
             "metadata={'species': 'human'}, "
@@ -142,7 +150,7 @@ class TestShape(unittest.TestCase):
             # with the same fields works and is properly validated.
             friends=[{"name": "Yoda"}, {"name": "Padme Amidala"}],
             lightsaber_color="blue",
-            affiliations=character_t.affiliations(faction="Jedi Temple"),
+            affiliations=character_t.types.affiliations(faction="Jedi Temple"),
         )
         # subclass should still be immutable by default
         with self.assertRaises(TypeError):
@@ -182,5 +190,39 @@ class TestShape(unittest.TestCase):
 
     def test_nested_shape_class(self):
         self.assertEqual(
-            character_t.affiliations(faction="shape.bzl").faction, "shape.bzl"
+            character_t.types.affiliations(faction="shape.bzl").faction,
+            "shape.bzl",
         )
+        # collection fields should do the sane thing
+        # dicts go to value type
+        self.assertEqual(character_t.types.metadata, str)
+        # tuples go to a tuple of element types
+        self.assertEqual(character_t.types.callsign, (str, int))
+        # lists go to the homogenous element type
+        self.assertEqual(
+            character_t.types.friends,
+            character_t.__annotations__["friends"].__args__[0],
+        )
+
+    def test_default_shape(self):
+        """default values for nested shapes must be deserialized"""
+        c3po = characters[2]
+        self.assertEqual(c3po.name, "C-3PO")
+        self.assertEqual(c3po.affiliations.faction, "Rebellion")
+
+    def test_failure_when_has_types_field(self):
+        with self.assertRaises(KeyError):
+
+            class AnnotationOnly(Shape):
+                # fake that this came from a class defined by shape.bzl
+                __GENERATED_SHAPE__ = True
+                # this is reserved for the type definitions class
+                types: Sequence[str]
+
+        with self.assertRaises(KeyError):
+
+            class WithDefault(Shape):
+                # fake that this came from a class defined by shape.bzl
+                __GENERATED_SHAPE__ = True
+                # this is reserved for the type definitions class
+                types: Sequence[str] = ("hello", "world")
