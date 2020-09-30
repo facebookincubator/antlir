@@ -9,6 +9,10 @@ from typing import Mapping, Optional, Tuple
 
 from .data import data
 
+# TODO remove all references to hashable and just use characters once
+# read-only dicts land
+from .hashable_t import hashable_t
+
 
 character_t = data.__annotations__["characters"].__args__[0]
 characters = data.characters
@@ -35,6 +39,20 @@ class TestShape(unittest.TestCase):
 
         # json_file and python_data produce identical objects
         self.assertEqual(c, characters[0])
+
+    def test_hash(self):
+        trooper1 = hashable_t(
+            name="Stormtrooper",
+            appears_in=[1, 2, 3, 4, 5, 6],
+            friends=[],
+        )
+        trooper2 = hashable_t(
+            name="Stormtrooper",
+            appears_in=[1, 2, 3, 4, 5, 6],
+            friends=[],
+            metadata=None,
+        )
+        self.assertEqual(trooper1.__hash__(), trooper2.__hash__())
 
     def test_typehints(self):
         """check type hints on generated classes"""
