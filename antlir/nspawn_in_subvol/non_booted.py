@@ -80,7 +80,7 @@ def _post_setup_popen_booted_nspawn(
     cmd.extend(["--setenv=" + se for se in setup.cmd_env])
     # FIXME: Remove this `no cover` once CI gets a newer `systemd` -- we'll
     # know when the CI coverage test starts failing.
-    if version.major > 247 or version.full == "246.1-1.fb3":  # pragma: no cover
+    if version.major > 247 or version.full == "v246.1-1.fb3":  # pragma: no cover
         # This gives better interactive behavior than the `--console=pipe`
         # setting below.  The security caveats still apply, but are harder
         # to trigger.  This is not a perfect fix for the issues, but it's
