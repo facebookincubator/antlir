@@ -31,3 +31,4 @@
 [antlir]
   build_appliance_default = //appliance:host_build_appliance
   rpm_installer_default = dnf
+  host_mounts_allowed_in_targets = //appliance:host_build_appliance
