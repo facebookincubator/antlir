@@ -167,7 +167,7 @@ class NspawnTestCase(NspawnTestBase):
         )
         self.assertEqual(b"ohai\n", ret.stdout)
         target_stderr = b"abracadabra\n"
-        if self.nspawn_version >= 244:
+        if self.nspawn_version.major >= 244:
             self.assertEqual(target_stderr, ret.stderr)
         else:
             # versions < 244 did not properly respect --quiet
@@ -389,7 +389,7 @@ class NspawnTestCase(NspawnTestBase):
         )
         self.assertNotEqual(0, ret.returncode)
         stderr_regex = b"mknod: (|')/foo(|'): Operation not permitted\n"
-        if self.nspawn_version >= 244:
+        if self.nspawn_version.major >= 244:
             self.assertRegex(ret.stderr, b"^" + stderr_regex + b"$")
         else:
             # versions < 244 did not properly respect --quiet
@@ -430,7 +430,7 @@ class NspawnTestCase(NspawnTestBase):
             msg=ret.stderr.strip(),
         )
         # versions < 244 did not properly respect --quiet
-        if self.nspawn_version >= 244:
+        if self.nspawn_version.major >= 244:
             self.assertEqual(b"", ret.stderr)
 
     def test_boot_cmd_failure(self):
@@ -444,7 +444,7 @@ class NspawnTestCase(NspawnTestBase):
         self.assertEqual(1, ret.returncode)
         self.assertEqual(b"", ret.stdout)
         # versions < 244 did not properly respect --quiet
-        if self.nspawn_version >= 244:
+        if self.nspawn_version.major >= 244:
             self.assertEqual(b"", ret.stderr)
 
     def test_boot_forward_fd(self):

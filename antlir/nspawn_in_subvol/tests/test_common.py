@@ -7,7 +7,7 @@
 import unittest
 from unittest import mock
 
-from ..common import nspawn_version
+from ..common import NSpawnVersion, nspawn_version
 
 
 class CommonTestCase(unittest.TestCase):
@@ -16,11 +16,14 @@ class CommonTestCase(unittest.TestCase):
             version.return_value = (
                 "systemd 602214076 (v602214076-2.fb1)\n+AVOGADROS SYSTEMD\n"
             )
-            self.assertEqual(602214076, nspawn_version())
+            self.assertEqual(
+                NSpawnVersion(major=602214076, full="602214076-2.fb1"),
+                nspawn_version(),
+            )
 
         # Check that the real nspawn on the machine running this test is
         # actually a sane version.  We need at least 239 to do anything useful
         # and 1000 seems like a reasonable upper bound, but mostly I'm just
         # guessing here.
-        self.assertTrue(nspawn_version() > 239)
-        self.assertTrue(nspawn_version() < 1000)
+        self.assertTrue(nspawn_version().major > 239)
+        self.assertTrue(nspawn_version().major < 1000)

@@ -78,7 +78,16 @@ def _post_setup_popen_booted_nspawn(
     ]
     # This is last to let the user have final say over the environment.
     cmd.extend(["--setenv=" + se for se in setup.cmd_env])
-    if version >= 242:
+    # FIXME: Remove this `no cover` once CI gets a newer `systemd` -- we'll
+    # know when the CI coverage test starts failing.
+    if version.major > 247 or version.full == "246.1-1.fb3":  # pragma: no cover
+        # This gives better interactive behavior than the `--console=pipe`
+        # setting below.  The security caveats still apply, but are harder
+        # to trigger.  This is not a perfect fix for the issues, but it's
+        # better than nothing, so we'll try out. See these PRs for context:
+        #   https://github.com/systemd/systemd/pull/17070 and 17082
+        cmd.append("--console=autopipe")
+    elif version.major >= 242:  # pragma: no cover
         # This essentially reverts to pre-242 behavior, where the container
         # has direct access to the caller's FDs 0/1/2, which may be the
         # running host's TTY/PTY (or other privileged FDs).  This is a

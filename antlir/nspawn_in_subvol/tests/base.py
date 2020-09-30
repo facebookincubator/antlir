@@ -57,7 +57,9 @@ class NspawnTestBase(TestCase):
         # `run.py`.  It would disappear if we passed `--quiet` to nspawn,
         # but we want to retain the extra debug logging.
         self.nspawn_version = nspawn_version()
-        self.maybe_extra_ending = b"\n" if self.nspawn_version < 242 else b""
+        self.maybe_extra_ending = (
+            b"\n" if self.nspawn_version.major < 242 else b""
+        )
 
     def _nspawn_in_boot_ret(self, rsrc_pair, argv, **kwargs):
         with _set_up_run_cli(

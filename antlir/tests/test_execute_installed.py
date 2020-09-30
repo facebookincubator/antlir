@@ -52,7 +52,7 @@ class ExecuteInstalledTestCase(unittest.TestCase):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            if nspawn_version() >= 244:
+            if nspawn_version().major >= 244:
                 self.assertEqual((b"ok\n", b""), (ret.stdout, ret.stderr))
             else:
                 # versions < 244 did not properly respect --quiet
