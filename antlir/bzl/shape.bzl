@@ -504,6 +504,11 @@ def _json_file(name, shape):
     )
     return normalize_target(":" + name)
 
+def _as_dict(shape):
+    if not _is_shape_instance(shape):
+        fail("'{}' is not a shape".format(shape), attr = "shape")
+    return structs.to_dict(shape._data)
+
 shape = struct(
     shape = _define_shape,
     new = _instantiate_shape,
@@ -515,4 +520,7 @@ shape = struct(
     loader = _loader,
     json_file = _json_file,
     python_data = _python_data,
+    is_shape = _is_shape,
+    is_shape_instance = _is_shape_instance,
+    as_dict = _as_dict,
 )

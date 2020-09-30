@@ -10,21 +10,43 @@
 """
 
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
+load("//antlir/bzl:shape.bzl", "shape")
+load(
+    "//antlir/bzl:target_tagger.bzl",
+    "image_source_as_target_tagged_shape",
+    "new_target_tagger",
+    "target_tagged_image_source_shape",
+    "target_tagger_to_feature",
+)
+
+tagged_tarball = shape.shape(
+    force_root_ownership = shape.field(bool, optional = True),
+    into_dir = str,
+    source = target_tagged_image_source_shape,
+)
+
+tarball_t = shape.shape(
+    from_target = shape.field(str, optional = True),
+    force_root_ownership = shape.field(bool, optional = True),
+    into_dir = str,
+    source = str,
+)
 
 def image_tarball(source, dest, force_root_ownership = False):
     target_tagger = new_target_tagger()
-    tarball_spec = {
-        "force_root_ownership": force_root_ownership,
-        "into_dir": dest,
-        "source": image_source_as_target_tagged_dict(
+    tarball = shape.new(
+        tagged_tarball,
+        force_root_ownership = force_root_ownership,
+        into_dir = dest,
+        source = image_source_as_target_tagged_shape(
             target_tagger,
             maybe_export_file(source),
         ),
-    }
+    )
+
     return target_tagger_to_feature(
         target_tagger,
-        items = struct(tarballs = [tarball_spec]),
+        items = struct(tarballs = [shape.as_dict(tarball)]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:tarball"],
     )

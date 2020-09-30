@@ -6,7 +6,6 @@
 
 import os
 import pwd
-from dataclasses import dataclass
 
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
@@ -17,26 +16,19 @@ from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.non_booted import run_non_booted_nspawn
 from antlir.subvol_utils import Subvol
+from pydantic import validator
 
-from .common import (
-    ImageItem,
-    LayerOpts,
-    coerce_path_field_normal_relative,
-    make_path_normal_relative,
-)
+from .common import ImageItem, LayerOpts, make_path_normal_relative
+from .tarball_t import tarball_t
 
 
-@dataclass(init=False, frozen=True)
-class TarballItem(ImageItem):
-    into_dir: str
-    source: str
-    force_root_ownership: bool
+class TarballItem(tarball_t, ImageItem):
+    from_target: str
 
-    @classmethod
-    def customize_fields(cls, kwargs):
-        super().customize_fields(kwargs)
-        coerce_path_field_normal_relative(kwargs, "into_dir")
-        assert kwargs["force_root_ownership"] in [True, False], kwargs
+    @validator("into_dir")
+    def path_is_normal_relative(cls, into_dir):  # noqa B902
+        # Validators are classmethods but flake8 doesn't catch that.
+        return make_path_normal_relative(into_dir)
 
     def provides(self):
         # We own ZST decompression, tarfile handles other gz, bz2, etc.
