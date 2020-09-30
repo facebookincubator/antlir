@@ -33,7 +33,12 @@ def get_file_logger(py_path: AnyStr):
 # result in logging to the default stream of StreamHandler, which is stderr.
 def init_logging(*, debug: bool = False):
     logging.basicConfig(
-        format="%(levelname)s %(name)s %(asctime)s %(message)s",
+        # The carriage return here is an unfortunate hack to make
+        # repo-server (and related) logs less broken when running under
+        # nspawn's `--console=interactive` mode (triggered by our `autopipe`
+        # setting).  This can go away when we switch `non_booted.py` to use
+        # `nsenter` to launch the user process.
+        format="%(levelname)s %(name)s %(asctime)s %(message)s\r",
         level=logging.DEBUG if debug else logging.INFO,
     )
 
