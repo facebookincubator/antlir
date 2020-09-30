@@ -231,7 +231,7 @@ def _define_shape(**fields):
         if field.default == _NO_DEFAULT:
             python_src.append("  {}: {}".format(key, field.python_type))
         elif _is_shape(field.starlark_type):
-            python_src.append("  {}: {} = {}".format(key, field.python_type, repr(structs.to_dict(_plain_data(field.default)))))
+            python_src.append("  {}: {} = {}(**{})".format(key, field.python_type, field.python_type, repr(structs.to_dict(_plain_data(field.default)))))
         else:
             python_src.append("  {}: {} = {}".format(key, field.python_type, repr(field.default)))
 
