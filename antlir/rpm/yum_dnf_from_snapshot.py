@@ -250,12 +250,6 @@ def _isolate_yum_dnf(
                         "ANTLIR_SHADOWED_PATHS_ROOT="
                         f"{SHADOWED_PATHS_ROOT.shell_quote()}"
                     ),
-                    # TODO: Remove this shim once we have a new BA built that
-                    # reads from the `ANTLIR_SHADOWED_PATHS_ROOT` env var.
-                    (
-                        "FS_IMAGE_SHADOWED_PATHS_ROOT="
-                        f"{SHADOWED_PATHS_ROOT.shell_quote()}"
-                    ),
                 ]
             )
             if os.path.exists(LIBRENAME_SHADOWED_PATH)
