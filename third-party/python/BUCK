@@ -1,0 +1,49 @@
+load("//third-party/python:pypi.bzl", "pypi_package")
+
+pypi_package(
+    name = "certifi",
+    sha256 = "1d987a998c75633c40847cc966fcf5904906c920a7f17ef374f5aa4282abd304",
+    url = "https://files.pythonhosted.org/packages/57/2b/26e37a4b034800c960a00c4e1b3d9ca5d7014e983e6e729e33ea2f36426c/certifi-2020.4.5.1-py2.py3-none-any.whl",
+)
+
+pypi_package(
+    name = "chardet",
+    sha256 = "fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691",
+    url = "https://files.pythonhosted.org/packages/bc/a9/01ffebfb562e4274b6487b4bb1ddec7ca55ec7510b22e4c51f14098443b8/chardet-3.0.4-py2.py3-none-any.whl",
+)
+
+pypi_package(
+    name = "click",
+    sha256 = "dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc",
+    url = "https://files.pythonhosted.org/packages/d2/3d/fa76db83bf75c4f8d338c2fd15c8d33fdd7ad23a9b5e57eb6c5de26b430e/click-7.1.2-py2.py3-none-any.whl",
+)
+
+pypi_package(
+    name = "idna",
+    sha256 = "a068a21ceac8a4d63dbfd964670474107f541babbd2250d61922f029858365fa",
+    url = "https://files.pythonhosted.org/packages/89/e3/afebe61c546d18fb1709a61bee788254b40e736cff7271c7de5de2dc4128/idna-2.9-py2.py3-none-any.whl",
+)
+
+pypi_package(
+    name = "pydantic",
+    sha256 = "b5b3489cb303d0f41ad4a7390cf606a5f2c7a94dcba20c051cd1c653694cb14d",
+    url = "https://files.pythonhosted.org/packages/25/69/4be0f2caa2ae3424cd34c0f934b460a02f01aa6897b1d58fc056664b15b7/pydantic-1.6.1-py36.py37.py38-none-any.whl",
+)
+
+pypi_package(
+    name = "requests",
+    sha256 = "43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee",
+    url = "https://files.pythonhosted.org/packages/1a/70/1935c770cb3be6e3a8b78ced23d7e0f3b187f5cbfab4749523ed65d7c9b1/requests-2.23.0-py2.py3-none-any.whl",
+    deps = [
+        ":certifi",
+        ":chardet",
+        ":idna",
+        ":urllib3",
+    ],
+)
+
+pypi_package(
+    name = "urllib3",
+    sha256 = "88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115",
+    url = "https://files.pythonhosted.org/packages/e1/e5/df302e8017440f111c11cc41a6b432838672f5a70aa29227bf58149dc72f/urllib3-1.25.9-py2.py3-none-any.whl",
+)

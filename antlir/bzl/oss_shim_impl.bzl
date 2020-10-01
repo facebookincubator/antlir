@@ -164,6 +164,8 @@ def _third_party_library(project, rule = None, platform = None):
     more info on these targets):
 
         //third-party/<platform>/<project>:<rule>
+        or
+        //third-party/python:<project> for python rules
 
     Thee are currently only 2 platforms supported in OSS:
         - python
@@ -180,6 +182,11 @@ def _third_party_library(project, rule = None, platform = None):
 
     if not platform:
         platform = _DEFAULT_NATIVE_PLATFORM
+
+    if platform == "python":
+        if not rule == project:
+            fail("python projects must omit rule or be identical to project")
+        return "//third-party/python:" + project
 
     return "//third-party/" + platform + "/" + project + ":" + rule
 
