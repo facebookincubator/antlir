@@ -388,12 +388,9 @@ class NspawnTestCase(NspawnTestBase):
             check=False,
         )
         self.assertNotEqual(0, ret.returncode)
-        stderr_regex = b"mknod: (|')/foo(|'): Operation not permitted\n"
-        if self.nspawn_version.major >= 244:
-            self.assertRegex(ret.stderr, b"^" + stderr_regex + b"$")
-        else:
-            # versions < 244 did not properly respect --quiet
-            self.assertRegex(ret.stderr, stderr_regex)
+        self.assertRegex(
+            ret.stderr, b"mknod: (|')/foo(|'): Operation not permitted\n"
+        )
 
     def test_boot_cmd_is_system_running(self):
         ret = self._nspawn_in(
@@ -431,7 +428,14 @@ class NspawnTestCase(NspawnTestBase):
         )
         # versions < 244 did not properly respect --quiet
         if self.nspawn_version.major >= 244:
-            self.assertEqual(b"", ret.stderr)
+            self.assertEqual(
+                [b""],
+                [
+                    l
+                    for l in ret.stderr.split(b"\n")
+                    if not l.startswith(b"DEBUG recv_fds_and_run.py")
+                ],
+            )
 
     def test_boot_cmd_failure(self):
         ret = self._nspawn_in(

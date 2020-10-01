@@ -32,7 +32,7 @@ def _clean_err(err):
     err = [
         l
         for l in err.split("\n")
-        if not l.startswith("INFO recv_fds_and_run.py")
+        if not l.startswith("DEBUG recv_fds_and_run.py")
     ]
     assert err[-1] == ""  # `split` will always leave us at least one empty str
     return err[:-1]
