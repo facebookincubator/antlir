@@ -154,6 +154,17 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         }
         set_new_key(obj, "error", error_dict)
 
+    # The default logging implementation does not flush. Gross.
+    def log_message(self, format, *args):
+        log.debug(
+            "%s - - [%s] %s\n"
+            % (
+                self.address_string(),
+                self.log_date_time_string(),
+                format % args,
+            )
+        )
+
     def do_GET(self) -> None:
         location, obj = self.send_head()
         if not obj:
@@ -401,4 +412,4 @@ if __name__ == "__main__":  # pragma: no cover
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:  # pragma: no cover
-            log.info("HTTP `repo-server` graceful shutdown on SIGINT")
+            log.debug("HTTP `repo-server` graceful shutdown on SIGINT")
