@@ -101,6 +101,7 @@ import os
 TEST_TYPE={test_type_repr}
 def nspawn_in_subvol_args():
     return [
+        *(['--debug'] if os.environ.get('ANTLIR_DEBUG') else []),
         '--user', {user_repr},
         *[
             '--setenv={{}}={{}}'.format(k, os.environ.get(k, ''))
