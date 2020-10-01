@@ -8,7 +8,7 @@ def image_cpp_unittest(
         run_as_user = "nobody",
         visibility = None,
         hostname = None,
-        serve_rpm_snapshots = (),
+        container_opts = None,
         **cpp_unittest_kwargs):
     visibility = get_visibility(visibility, name)
 
@@ -23,7 +23,7 @@ def image_cpp_unittest(
         caller_fake_library = "//antlir/bzl:image_cpp_unittest",
         visibility = visibility,
         hostname = hostname,
-        serve_rpm_snapshots = serve_rpm_snapshots,
+        container_opts = container_opts,
     )
 
     cpp_unittest(

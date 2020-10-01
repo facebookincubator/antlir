@@ -118,6 +118,11 @@ log = get_file_logger(__file__)
 # not worth the trouble in the absence of a VERY compelling need.
 LIBRENAME_SHADOWED_PATH = Path("/__antlir__/librename_shadowed.so")
 
+# This is yucky, but `test_update_shadowed` must not mock ALL uses of
+# `SHADOWED_PATHS_ROOT`, or it will be unable to find the original RPM
+# installer binary.  So we make this mock point available.
+_LIBRENAME_SHADOWED_PATHS_ROOT = SHADOWED_PATHS_ROOT
+
 
 def _isolate_yum_dnf(
     yum_dnf: YumDnf, install_root, dummy_dev, protected_path_to_dummy
@@ -248,7 +253,7 @@ def _isolate_yum_dnf(
                     f"LD_PRELOAD={LIBRENAME_SHADOWED_PATH.shell_quote()}",
                     (
                         "ANTLIR_SHADOWED_PATHS_ROOT="
-                        f"{SHADOWED_PATHS_ROOT.shell_quote()}"
+                        f"{_LIBRENAME_SHADOWED_PATHS_ROOT.shell_quote()}"
                     ),
                 ]
             )
@@ -378,10 +383,21 @@ def _resolve_rpm_installer_binary(
     # on top, because otherwise an `unlink` in the mount NS would remove the
     # bind mount in the parent NS.
     shadowed_binary = SHADOWED_PATHS_ROOT / yum_dnf_binary.lstrip(b"/")
-    # This is covered by `test_rpm_installer_shadow_paths.py`.
+
+    # We can't cover both branches in the same `image_python_unittest`,
+    # since either the binary will or won't be shadowed.  However, one can
+    # manually verify that each variant of `test-yum-dnf-from-snapshot-*`
+    # will cover a different side of the branch.
+
+    # This is also covered by `test_rpm_installer_shadow_paths.py`.
     if os.path.exists(shadowed_binary):  # pragma: no cover
+        log.debug(f"Using shadowed installer {shadowed_binary}")
         return shadowed_binary
-    return yum_dnf_binary
+    else:  # pragma: no cover
+        log.debug(
+            f"no {shadowed_binary}, using unshadowed installer {yum_dnf_binary}"
+        )
+        return yum_dnf_binary
 
 
 def yum_dnf_from_snapshot(

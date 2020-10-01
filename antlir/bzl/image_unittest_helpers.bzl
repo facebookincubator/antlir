@@ -1,10 +1,12 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl/image_actions:install.bzl", "image_install_buck_runnable")
 load(":constants.bzl", "QUERY_TARGETS_AND_OUTPUTS_SEP")
+load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
 load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
+load(":structs.bzl", "structs")
 
 def _hidden_test_name(name):
     # This is the test binary that is supposed to run inside the image.  The
@@ -53,14 +55,44 @@ def _nspawn_wrapper_properties(
         caller_fake_library,
         visibility,
         hostname,
-        serve_rpm_snapshots):
+        # An `image.opts` containing keys from `container_opts_t`.
+        # If you want to install packages, you will usually want to
+        # set `shadow_proxied_binaries`.
+        container_opts):
+    container_opts = normalize_container_opts(container_opts)
+
     # Fail early, so the user doesn't have to wait for the test to build.
     # Future: we could potentially relax this since some odd applications
     # might want to just talk to the repo-server, and not install RPMs.
-    if serve_rpm_snapshots and run_as_user != "root":
-        fail(
-            '"{}" needs `run_as_user = "root"` to install RPMs'.format(name),
+    if run_as_user != "root":
+        if container_opts.serve_rpm_snapshots:
+            fail(
+                'Needs `run_as_user = "root"` to install RPMs',
+                "container_opts.serve_rpm_snapshots",
+            )
+        if container_opts.shadow_proxied_binaries:
+            fail(
+                "All binaries now shadowed by `shadow_proxied_binaries` " +
+                'require `run_as_user = "root"`',
+                "container_opts.shadow_proxied_binaries",
+            )
+
+    # Since we do not pass the `shape` directly into `NspawnPluginArgs`,
+    # plumbing has to be added for each new option.  On the bright side,
+    # this lets us decide whether an option even makes sense in unit tests.
+    unsupported_opts = [
+        k
+        for k in structs.to_dict(container_opts).keys()
+        if not k.startswith("_") and not k in [
             "serve_rpm_snapshots",
+            "shadow_proxied_binaries",
+        ]
+    ]
+    if unsupported_opts:
+        fail(
+            "Not yet implemented: a small amount of plumbing is needed to " +
+            "enable these with `image.*_unittest`: {}".format(unsupported_opts),
+            "container_opts",
         )
 
     # These args must be on the outer wrapper test, regardless of language.
@@ -109,8 +141,7 @@ def nspawn_in_subvol_args():
         ],
         *[{maybe_boot}],
         *[{maybe_hostname}],
-        # Fixme: remove this in a follow-up diff
-        '--no-shadow-proxied-binaries',
+        {maybe_no_shadow_proxied_binaries}
         *[
             '--serve-rpm-snapshot={{}}'.format(s)
                 for s in {serve_rpm_snapshots_repr}
@@ -132,9 +163,16 @@ mv $TMP/out "$OUT"
             ),
             maybe_boot = "'--boot'" if boot else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
+            # The next 2 would be nice to pass as `container_opts_t`, but
+            # this entire interface is pinned to the `nspawn_in_subvol` CLI,
+            # so this manual marshaling is the path of least resistance.  In
+            # the future, one could consider `shape`ifying this interface.
+            maybe_no_shadow_proxied_binaries = (
+                "" if container_opts.shadow_proxied_binaries else "'--no-shadow-proxied-binaries',"
+            ),
             serve_rpm_snapshots_repr = repr([
                 snapshot_install_dir(s)
-                for s in serve_rpm_snapshots
+                for s in container_opts.serve_rpm_snapshots
             ]),
             binary_path_repr = repr(binary_path),
         ),

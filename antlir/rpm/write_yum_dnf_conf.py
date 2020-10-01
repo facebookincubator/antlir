@@ -54,7 +54,7 @@ def write_yum_dnf_conf(
     ports: Iterable[int],
 ):
     # `yum-dnf-from-snapshot` implicitly depends on this path convention for
-    # the config and for the plugins under `<snapshot_dir>/etc`.
+    # the main config and for the plugin configs under `<snapshot_dir>/etc`.
     plugin_dir = f"{yum_dnf.value}/plugins"
     config_path = f"{yum_dnf.value}/{yum_dnf.value}.conf"
 

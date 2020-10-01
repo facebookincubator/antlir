@@ -241,7 +241,7 @@ class YumFromSnapshotTestImpl:
             # Note that the shadowed root is under the install root, since
             # the `rename` runs under chroot.
             yum_dnf_from_snapshot,
-            "SHADOWED_PATHS_ROOT",
+            "_LIBRENAME_SHADOWED_PATHS_ROOT",
             Path("/shadow"),
         ):
             os.mkdir(root / META_DIR)
