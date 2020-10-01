@@ -47,3 +47,63 @@ pypi_package(
     sha256 = "88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115",
     url = "https://files.pythonhosted.org/packages/e1/e5/df302e8017440f111c11cc41a6b432838672f5a70aa29227bf58149dc72f/urllib3-1.25.9-py2.py3-none-any.whl",
 )
+
+pypi_package(
+    name = "boto3",
+    sha256 = "e0a1dbc0a0e460dc6de2f4144b5015edad3ab5c17ee83c6194b1a010d815bc60",
+    url = "https://files.pythonhosted.org/packages/d2/5a/7abee53ad5a686b2785de6e4d2cdad628662c4f34dbb520b3cb2a88c10e4/boto3-1.15.9-py2.py3-none-any.whl",
+    deps = [
+        ":botocore",
+        ":jmespath",
+        ":s3transfer",
+    ],
+)
+
+pypi_package(
+    name = "jmespath",
+    sha256 = "cdf6525904cc597730141d61b36f2e4b8ecc257c420fa2f4549bac2c2d0cb72f",
+    url = "https://files.pythonhosted.org/packages/07/cb/5f001272b6faeb23c1c9e0acc04d48eaaf5c862c17709d20e3469c6e0139/jmespath-0.10.0-py2.py3-none-any.whl",
+    deps = [],
+)
+
+pypi_package(
+    name = "botocore",
+    sha256 = "dc3244170254cbba7dfde00b0489f830069d93dd6a9e555178d989072d7ee7c2",
+    url = "https://files.pythonhosted.org/packages/34/74/88e40850f9f698b280ff11b387313bea34560c61a61be5e1fcd60b790aa9/botocore-1.18.9-py2.py3-none-any.whl",
+    deps = [
+        ":jmespath",
+        ":python-dateutil",
+        ":urllib3",
+    ],
+)
+
+pypi_package(
+    name = "python-dateutil",
+    sha256 = "75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a",
+    url = "https://files.pythonhosted.org/packages/d4/70/d60450c3dd48ef87586924207ae8907090de0b306af2bce5d134d78615cb/python_dateutil-2.8.1-py2.py3-none-any.whl",
+    deps = [":six"],
+)
+
+pypi_package(
+    name = "six",
+    sha256 = "8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced",
+    url = "https://files.pythonhosted.org/packages/ee/ff/48bde5c0f013094d729fe4b0316ba2a24774b3ff1c52d924a8a4cb04078a/six-1.15.0-py2.py3-none-any.whl",
+    deps = [],
+)
+
+pypi_package(
+    name = "s3transfer",
+    sha256 = "2482b4259524933a022d59da830f51bd746db62f047d6eb213f2f8855dcb8a13",
+    url = "https://files.pythonhosted.org/packages/69/79/e6afb3d8b0b4e96cefbdc690f741d7dd24547ff1f94240c997a26fa908d3/s3transfer-0.3.3-py2.py3-none-any.whl",
+    deps = [
+        ":botocore",
+        ":futures",
+    ],
+)
+
+pypi_package(
+    name = "futures",
+    sha256 = "49b3f5b064b6e3afc3316421a3f25f66c137ae88f068abbf72830170033c5e16",
+    url = "https://files.pythonhosted.org/packages/d8/a6/f46ae3f1da0cd4361c344888f59ec2f5785e69c872e175a748ef6071cdb5/futures-3.3.0-py2-none-any.whl",
+    deps = [],
+)
