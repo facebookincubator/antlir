@@ -479,7 +479,7 @@ def _python_data(name, shape, module = None, **python_library_kwargs):
     )
     python_library(
         name = name,
-        srcs = {":{}.py".format(name): "{}.py".format(name)},
+        srcs = {":{}.py".format(name): "{}.py".format(module)},
         deps = [
             "//antlir:shape",
             third_party.library("pydantic", platform = "python"),
