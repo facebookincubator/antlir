@@ -35,7 +35,7 @@ image.python_unittest(
     name = "test-image-unittest-repo-server",
     srcs = ["test_image_unittest_repo_server.py"],
     layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
-    serve_rpm_snapshots = ["//antlir/rpm:repo-snapshot-for-tests"],
+    container_opts = image.opts(shadow_proxied_binaries = True),
     run_as_user = "root",
     deps = [
         "//antlir:fs_utils",

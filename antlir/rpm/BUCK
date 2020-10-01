@@ -385,7 +385,7 @@ test_rpm_repo_snapshot(
     name = "repo-snapshot-for-tests",
     kind = "sample-step-0",
     repo_server_ports = (28889, 28890),
-    # `test-yum-dnf-from-snapshot` exercises both package managers.
+    # `test-yum-dnf-from-snapshot-*` exercise both package managers.
     # `test-rpm-action-item` also tests both by explicitly setting
     # `LayerOpts.rpm_installer`.
     # `test-image-layer` checks `validates-{yum,dnf}-build-appliance`.
@@ -402,28 +402,42 @@ test_rpm_repo_snapshot(
     rpm_installers = ("dnf", "yum"),
 )
 
-image_python_unittest(
-    name = "test-yum-dnf-from-snapshot",
-    srcs = ["tests/test_yum_dnf_from_snapshot.py"],
-    # This is necessary because our CI environment does not guarantee that
-    # `/var/lib/dnf` is installed.
-    layer = "//antlir/compiler/test_images:build_appliance_testing",
-    needed_coverage = [
-        (100, ":yum-dnf-from-snapshot-library"),
-    ],
-    run_as_user = "root",  # We run `yum` / `dnf`
-    # NB: It's a little lame that we have to re-identify the snapshot path
-    # in 2 places:
-    #   - The construction of the image.
-    #   - `serve_repo_snapshots` in the unittest declaration.  Future: This
-    #     could be made to accept (a) a magic value for "all", (b) a magic
-    #     value for "default" (per installer? for both?).
-    serve_rpm_snapshots = [":repo-snapshot-for-tests"],
-    deps = [
-        ":find_snapshot",
-        ":yum-dnf-from-snapshot-library",
-    ],
-)
+# Run the same test in two different container configurations to add
+# integration testing for `container_opts` covering both implicitly and
+# explicitly served RPM snapshots.
+[
+    image_python_unittest(
+        name = "test-yum-dnf-from-snapshot-{}".format(variant),
+        srcs = ["tests/test_yum_dnf_from_snapshot.py"],
+        container_opts = container_opts,
+        # This is necessary because our CI environment does not guarantee that
+        # `/var/lib/dnf` is installed.
+        layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
+        needed_coverage = [
+            (100, ":yum-dnf-from-snapshot-library"),
+        ],
+        run_as_user = "root",  # We run `yum` / `dnf`
+        deps = [
+            ":find_snapshot",
+            ":yum-dnf-from-snapshot-library",
+        ],
+    )
+    for variant, container_opts in [
+        # Use the inferior `dict` form of `container_opts` because I don't want
+        # to `load(':image.bzl')` here.
+        (
+            "shadowed",
+            {"shadow_proxied_binaries": True},
+        ),
+        (
+            "unshadowed",
+            {
+                "serve_rpm_snapshots": [":repo-snapshot-for-tests"],
+                "shadow_proxied_binaries": False,
+            },
+        ),
+    ]
+]
 
 python_library(
     name = "snapshot_repos",

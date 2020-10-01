@@ -133,7 +133,7 @@ but only in a few artifacts that were built inside of it.  The example of
 """
 
 load(":compile_image_features.bzl", "compile_image_features")
-load(":container_opts.bzl", "container_opts_t", "make_container_opts")
+load(":container_opts.bzl", "container_opts_t", "normalize_container_opts")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":shape.bzl", "shape")
@@ -169,7 +169,7 @@ def image_foreign_layer(
         # `compile_image_features.bzl`.
         build_opts = None,
         # An `image.opts` containing keys from `container_opts_t`.
-        # If you want to install packages, you will want to
+        # If you want to install packages, you will usually want to
         # set `shadow_proxied_binaries`.
         container_opts = None,
         # Future: Should foreign layers also default to user-internal as we
@@ -181,9 +181,6 @@ def image_foreign_layer(
     # This is not strictly needed since `image_layer_impl` lacks this kwarg.
     if "features" in image_layer_kwargs:
         fail("\"features\" are not supported in image_foreign_layer")
-
-    if not container_opts:
-        container_opts = struct()
 
     target_tagger = new_target_tagger()
     image_layer_utils.image_layer_impl(
@@ -201,8 +198,8 @@ def image_foreign_layer(
                         foreign_layer_t,
                         cmd = cmd,
                         user = user,
-                        container_opts = make_container_opts(
-                            **structs.to_dict(container_opts)
+                        container_opts = normalize_container_opts(
+                            container_opts,
                         ),
                     )._data),
                 ]),
