@@ -22,7 +22,7 @@ import textwrap
 from contextlib import contextmanager
 from typing import Any, AnyStr, Iterable, List, Mapping, NamedTuple, Tuple
 
-from antlir.common import set_new_key
+from antlir.common import get_file_logger, set_new_key
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
 from antlir.nspawn_in_subvol.common import DEFAULT_SEARCH_PATHS
@@ -35,6 +35,7 @@ from antlir.subvol_utils import Subvol
 from . import NspawnPlugin
 
 
+log = get_file_logger(__file__)
 SHADOWED_PATHS_ROOT = Path("__antlir__/shadowed")
 
 
@@ -300,6 +301,8 @@ class ShadowPaths(NspawnPlugin):
             subvol=opts.layer,
             search_dirs=tuple(_shadow_search_dirs(opts.setenv)),
         )
+        for cdest, src in container_dest_to_real_src.items():
+            log.debug(f"{src} will shadow {cdest}")
         with setup_ctx(
             # The bind-mounts are only applied later, at popen time, so
             # they do not interfere with the copying we do below.
