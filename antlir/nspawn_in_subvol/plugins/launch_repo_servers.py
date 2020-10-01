@@ -174,7 +174,7 @@ def _launch_repo_server(
         finally:
             # Although `repo-server` is a read-only proxy, give it the
             # chance to do graceful cleanup.
-            log.info("Trying to gracefully terminate `repo-server`")
+            log.debug("Trying to gracefully terminate `repo-server`")
             # `atexit` (used in an FB-specific `repo-server` plugin) only
             # works with SIGINT.  We signal once, and need to wait for it to
             # clean up the resources it must to free.  Signaling twice would
