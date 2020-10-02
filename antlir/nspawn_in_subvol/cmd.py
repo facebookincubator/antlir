@@ -72,18 +72,27 @@ def _inject_os_release_args(subvol):
     return bind_args("/dev/null", os_release_paths[0])  # pragma: no cover
 
 
+def _parse_cgroup_path(proc_cgroup: bytes) -> bytes:
+    cg2_prefix = b"0::"
+    my_cg = None
+    for line in proc_cgroup.splitlines():
+        if line.startswith(cg2_prefix):
+            assert my_cg is None, f"found two cgroup matches {my_cg} {line}"
+            my_cg = line
+    assert my_cg is not None, f"cgroup2 is required: {proc_cgroup}"
+    return my_cg[len(cg2_prefix) :]
+
+
 @contextmanager
 def _temp_cgroup(subvol: Subvol) -> Path:
     with open("/proc/self/cgroup", "rb") as cg_file:
-        my_cg = cg_file.read()
-    cg2_prefix = b"0::"
-    assert my_cg.startswith(cg2_prefix), f"cgroup2 is required: {my_cg}"
-    assert my_cg.endswith(b"\n")
+        my_cgs = cg_file.read()
+    my_cg = _parse_cgroup_path(my_cgs)
     # This runs on the host, so we assume that cgroup2 is mounted in the
     # usual place.
     new_cg = Path(
         b"/sys/fs/cgroup"
-        + my_cg[len(cg2_prefix) : -1]
+        + my_cg
         + b"/antlir-"
         # This is redundant with the UUID but aids debugging
         + str(os.getpid()).encode()
