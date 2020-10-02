@@ -53,5 +53,7 @@ def nspawn_version() -> NSpawnVersion:
     parts = subprocess.check_output(
         ["systemd-nspawn", "--version"], text=True
     ).split()
-    assert parts[2].startswith("(v") and parts[2].endswith(")"), parts
-    return NSpawnVersion(major=int(parts[1]), full=parts[2][2:-1])
+    full = parts[2]
+    assert full.startswith("(") and full.endswith(")"), parts
+    full = parts[2][1:-1].lstrip("v")
+    return NSpawnVersion(major=int(parts[1]), full=full)
