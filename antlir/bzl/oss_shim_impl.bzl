@@ -76,7 +76,7 @@ def _invert_dict(d):
     else:
         return d
 
-def _kernel_artifact_version(version):
+def _kernel(version):
     """ Resolve a kernel version to its corresponding kernel artifact.
     Currently, the only `kernel_artifact` available is in
     //third-party/fedora31/kernel:kernels.bzl.
@@ -405,9 +405,9 @@ shim = struct(
     export_file = _export_file,
     http_file = _http_file,
     get_visibility = _normalize_visibility,
-    kernel_artifact = struct(
-        default_kernel = _kernel_artifact_version("5.3.7-301.fc31.x86_64"),
-        version = _kernel_artifact_version,
+    kernel_get = struct(
+        default = _kernel("5.3.7-301.fc31.x86_64"),
+        version = _kernel,
     ),
     platform_utils = None,
     python_binary = _python_binary,

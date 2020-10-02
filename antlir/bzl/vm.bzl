@@ -48,7 +48,7 @@ with the options allowed there.  The key differences with
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":image.bzl", "image")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "buck_sh_test", "cpp_unittest", "default_vm_image", "get_visibility", "kernel_artifact", "python_binary", "python_unittest")
+load(":oss_shim.bzl", "buck_sh_test", "cpp_unittest", "default_vm_image", "get_visibility", "kernel_get", "python_binary", "python_unittest")
 
 _RULE_TO_TEST_TYPE = {
     cpp_unittest: "gtest",
@@ -209,7 +209,7 @@ def _vm_unittest(
         **kwargs
     )
 
-    kernel = kernel or kernel_artifact.default_kernel
+    kernel = kernel or kernel_get.default
     layer = layer or default_vm_image.layer
     vm_opts = vm_opts or _create_vm_opts()
 
@@ -357,7 +357,7 @@ def _vm_multi_kernel_python_unittest(
 vm = struct(
     # The set of reasonable defaults for running vms
     default = struct(
-        kernel = kernel_artifact.default_kernel,
+        kernel = kernel_get.default,
         layer = default_vm_image.layer,
     ),
     cpp_unittest = _vm_cpp_unittest,
