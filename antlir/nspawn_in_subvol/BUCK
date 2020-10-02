@@ -1,11 +1,9 @@
 # Future: we should eventually add per-library unit test coverage, as
 # appropriate, while also retaining integration test coverage.
 
-load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_binary", "python_library", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 # Gets test coverage via `:test-run`
@@ -43,6 +41,14 @@ python_library(
         "//antlir/compiler:procfs_serde",
         "//antlir/compiler/items:common",
         "//antlir/compiler/items:mount",
+    ],
+)
+
+python_unittest(
+    name = "test-cmd",
+    srcs = ["tests/test_cmd.py"],
+    deps = [
+        ":cmd",
     ],
 )
 
