@@ -27,3 +27,18 @@ class CommonTestCase(unittest.TestCase):
         # guessing here.
         self.assertTrue(nspawn_version().major > 239)
         self.assertTrue(nspawn_version().major < 1000)
+
+    def test_arch_version(self):
+        # the above version check unit test is biased towards an fb environment
+        # systemd in other distributions can have different version formats
+        with mock.patch("subprocess.check_output") as version:
+            version.return_value = (
+                "systemd 246 (246.4-1-arch)\n"
+                "+PAM +AUDIT -SELINUX -IMA -APPARMOR +SMACK -SYSVINIT "
+                "+UTMP +LIBCRYPTSETUP +GCRYPT +GNUTLS +ACL +XZ +LZ4 "
+                "+ZSTD +SECCOMP +BLKID +ELFUTILS +KMOD +IDN2 -IDN "
+                "+PCRE2 default-hierarchy=hybrid"
+            )
+            self.assertEqual(
+                NSpawnVersion(major=246, full="246.4-1-arch"), nspawn_version()
+            )
