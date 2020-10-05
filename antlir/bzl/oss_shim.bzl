@@ -20,6 +20,14 @@ def _make_rule_kwargs_dict(lst):
     # the comments in that file for the detailed rationale.
     return {k: 1 for k in lst + ["antlir_rule"]}
 
+_CPP_BINARY_KWARGS = _make_rule_kwargs_dict(
+    ["name", "srcs", "compiler_flags", "visibility", "external_deps"],
+)
+
+def cpp_binary(*args, **kwargs):
+    _check_args("cpp_binary", args, kwargs, _CPP_BINARY_KWARGS)
+    shim.cpp_binary(**kwargs)
+
 _CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
     ["name", "deps", "env", "headers", "srcs", "tags", "use_default_test_main", "visibility", "external_deps"],
 )

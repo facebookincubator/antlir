@@ -241,7 +241,21 @@ def _sh_binary(*args, **kwargs):
 def _sh_test(*args, **kwargs):
     _wrap_internal(native.sh_test, args, kwargs)
 
+def _impl_cpp_binary(name, tags = [], **kwargs):
+    # Future: make `external_deps` do something in OSS?
+    kwargs.pop("external_deps", None)
+    native.cxx_binary(
+        name = name,
+        labels = tags,
+        **kwargs
+    )
+
+def _cpp_binary(*args, **kwargs):
+    _wrap_internal(_impl_cpp_binary, args, kwargs)
+
 def _impl_cpp_unittest(name, tags = [], **kwargs):
+    # Future: make `external_deps` do something in OSS?
+    kwargs.pop("external_deps", None)
     native.cxx_test(
         name = name,
         labels = tags,
@@ -389,6 +403,7 @@ shim = struct(
         get_current_repo_name = native.repository_name,
         get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
     ),
+    cpp_binary = _cpp_binary,
     cpp_unittest = _cpp_unittest,
     #
     # Constants
