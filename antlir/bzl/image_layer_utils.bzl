@@ -10,13 +10,13 @@ def _add_run_in_subvol_target(name, kind, extra_args = None):
         name = name + "-" + kind,
         out = "run",
         bash = """
-cat > "$TMP/out" << EOF
+cat > "$TMP/out" << 'EOF'
 #!/bin/sh
 set -ue -o pipefail -o noclobber
 exec $(exe //antlir/nspawn_in_subvol:run) \
 --layer $(location {layer_quoted}) \
 {maybe_extra_args} \
---layer-dep-to-location "{layer_deps_query_macro}" \\$@
+--layer-dep-to-location "{layer_deps_query_macro}" "$@"
 EOF
 chmod a+x "$TMP/out"
 mv "$TMP/out" "$OUT"
