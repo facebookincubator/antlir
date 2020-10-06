@@ -287,7 +287,7 @@ class DownloadReposTestCase(unittest.TestCase):
                     #     We can't compare much since it's annoying to find
                     #     the corresponding object in `good_sido`.
 
-    @mock.patch("time.sleep", mock.Mock())
+    @mock.patch("antlir.rpm.common._mockable_retry_fn_sleep", mock.Mock())
     def test_rpm_download_errors(self):
 
         extra_bytes = b"change size"
@@ -309,7 +309,7 @@ class DownloadReposTestCase(unittest.TestCase):
             self.assertEqual(_MICE_LOCATION, error_dict["location"])
             self.assertEqual("sha256", error_dict["failed_check"])
 
-    @mock.patch("time.sleep")
+    @mock.patch("antlir.rpm.common._mockable_retry_fn_sleep")
     def test_rpm_download_errors_no_retry(self, mock_sleep):
         with self._check_download_error(
             MICE_01_RPM_REGEX, raise_fake_http_error, HTTPError
@@ -319,7 +319,7 @@ class DownloadReposTestCase(unittest.TestCase):
         # Shouldn't have retried for a 404 error
         mock_sleep.assert_not_called()
 
-    @mock.patch("time.sleep")
+    @mock.patch("antlir.rpm.common._mockable_retry_fn_sleep")
     def test_repomd_download_error(self, mock_sleep):
         with self._make_downloader("0/good_dog") as downloader:
             with self._break_open_url(
@@ -331,7 +331,7 @@ class DownloadReposTestCase(unittest.TestCase):
             len(REPOMD_MAX_RETRY_S), len(mock_sleep.call_args_list)
         )
 
-    @mock.patch("time.sleep")
+    @mock.patch("antlir.rpm.common._mockable_retry_fn_sleep")
     def test_rpm_download_errors_http_5xx(self, mock_sleep):
         def raise_5xx(_):
             raise requests.exceptions.HTTPError(
@@ -351,7 +351,7 @@ class DownloadReposTestCase(unittest.TestCase):
                 len(mock_sleep.call_args_list),
             )
 
-    @mock.patch("time.sleep", mock.Mock())
+    @mock.patch("antlir.rpm.common._mockable_retry_fn_sleep", mock.Mock())
     def test_repodata_download_errors(self):
         with self._make_downloader("0/good_dog") as downloader:
             # This will raise a RepodataParseError, which is not a
