@@ -98,9 +98,6 @@ python_binary(
     name = "run",
     srcs = ["run.py"],
     main_module = "antlir.nspawn_in_subvol.run",
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
     deps = [
         ":args",
         ":booted",
@@ -185,9 +182,6 @@ python_binary(
     name = "run-test",
     srcs = ["run_test.py"],
     main_module = "antlir.nspawn_in_subvol.run_test",
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
     deps = [
         ":args",
         ":cmd",
@@ -199,8 +193,5 @@ python_unittest(
     name = "test-run-test",
     srcs = ["tests/test_run_test.py"],
     needed_coverage = [(100, ":run-test-library")],
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
     deps = [":run-test-library"],
 )

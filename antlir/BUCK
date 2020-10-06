@@ -184,9 +184,6 @@ python_unittest(
         100,
         ":find_built_subvol",
     )],
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
     resources = {
         TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello_world_base",
     },
@@ -243,7 +240,6 @@ python_binary(
     name = "recv-fds-and-run",
     srcs = ["recv_fds_and_run.py"],
     main_module = "antlir.recv_fds_and_run",
-    par_style = "xar",
     deps = [
         ":common",
         ":fs_utils",
@@ -264,18 +260,12 @@ python_unittest(
     name = "test-send-fds-and-run",
     srcs = ["tests/test_send_fds_and_run.py"],
     needed_coverage = [(100, ":send_fds_and_run")],
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
     deps = [":send_fds_and_run"],
 )
 
 python_binary(
     name = "send-fds-and-run",
     main_module = "antlir.send_fds_and_run",
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
     deps = [":send_fds_and_run"],
 )
 
@@ -290,9 +280,6 @@ python_binary(
 python_binary(
     name = "compiler",
     main_module = "antlir.compiler.compiler",
-    # "fastzip" would break :volume_for_repo in @mode/opt.  "xar" fails
-    # since `root` cannot access the content of an unprivileged XAR.
-    par_style = "zip",
     deps = ["//antlir/compiler:compiler"],
 )
 
@@ -348,9 +335,6 @@ python_unittest(
     name = "test-package-image",
     srcs = ["tests/test_package_image.py"],
     needed_coverage = [(100, ":package-image-library")],
-    # Ensures we can read resources in @mode/opt. "xar" cannot work because
-    # `root` cannot access the content of unprivileged XARs.
-    par_style = "zip",
     resources = {
         # Same comment re: mutate_ops as in `test_layer_from_demo_sendstreams`.
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",

@@ -217,7 +217,8 @@ python_unittest(
 python_binary(
     name = "repo-server",
     main_module = "antlir.rpm.repo_server",
-    # Some FB-internal storage implementations embed binaries in this PAR
+    # This is included directly in the build appliane, and XAR looks to be
+    # over 10x smaller than the alternative.
     par_style = "xar",
     deps = [":repo_server"],
 )
@@ -307,7 +308,6 @@ python_binary(
     name = "write-yum-dnf-conf",
     srcs = ["write_yum_dnf_conf.py"],
     main_module = "antlir.rpm.write_yum_dnf_conf",
-    par_style = "xar",  # To access resources in @mode/opt
     deps = [
         ":yum_dnf_conf",
         "//antlir:fs_utils",
@@ -491,7 +491,6 @@ python_unittest(
     needed_coverage = [
         (100, ":rpm_metadata"),
     ],
-    par_style = "zip",
     resources = {
         TEST_IMAGE_PREFIX + "child/layer": "tests/child-layer",
         TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello-layer",

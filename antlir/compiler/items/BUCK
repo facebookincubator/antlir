@@ -247,9 +247,6 @@ python_unittest(
         (100, ":mount_utils"),
         (100, ":mount"),
     ],
-    # "fastzip" would break :volume_for_repo in @mode/opt.  "xar" fails
-    # since `root` cannot access the content of an unprivileged XAR.
-    par_style = "zip",
     resources = {
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
         TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
