@@ -14,7 +14,7 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from antlir.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 from pydantic import validator
 
@@ -143,4 +143,4 @@ class TarballItem(tarball_t, ImageItem):
                 forward_fd=[tf.fileno()],
                 allow_mknod=True,
             )
-            run_non_booted_nspawn(opts, PopenArgs())
+            run_nspawn(opts, PopenArgs())

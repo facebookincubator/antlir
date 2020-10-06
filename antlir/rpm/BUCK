@@ -91,7 +91,7 @@ python_library(
         "//antlir:fs_utils",
         "//antlir:testlib_layer_resource",
         "//antlir/compiler/items:common",
-        "//antlir/nspawn_in_subvol:non_booted",
+        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
 

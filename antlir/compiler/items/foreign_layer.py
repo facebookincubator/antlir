@@ -16,7 +16,7 @@ from antlir.nspawn_in_subvol.args import (
     PopenArgs,
     new_nspawn_opts,
 )
-from antlir.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.subvol_utils import Subvol
 
@@ -76,7 +76,7 @@ class ForeignLayerItem(foreign_layer_t):
                 # diverges from the out-of-container user DB.  And user NS.
                 user=pwd.getpwnam(item.user),
             )
-            run_non_booted_nspawn(  # NB: stdout redirects to stderr by default
+            run_nspawn(  # NB: stdout redirects to stderr by default
                 opts,
                 PopenArgs(),
                 plugins=rpm_nspawn_plugins(

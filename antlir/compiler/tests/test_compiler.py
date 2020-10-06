@@ -58,11 +58,11 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     fn = unittest.mock.patch.object(os.path, "lexists")(fn)
     fn = unittest.mock.patch.object(subvol_utils, "_path_is_btrfs_subvol")(fn)
     fn = unittest.mock.patch.object(subvol_utils.Subvol, "run_as_root")(fn)
-    fn = unittest.mock.patch.object(rpm_action, "run_non_booted_nspawn")(fn)
-    fn = unittest.mock.patch.object(tarball, "run_non_booted_nspawn")(fn)
-    fn = unittest.mock.patch.object(symlink, "run_non_booted_nspawn")(fn)
-    fn = unittest.mock.patch.object(make_dirs, "run_non_booted_nspawn")(fn)
-    fn = unittest.mock.patch.object(ba_runner, "run_non_booted_nspawn")(fn)
+    fn = unittest.mock.patch.object(rpm_action, "run_nspawn")(fn)
+    fn = unittest.mock.patch.object(tarball, "run_nspawn")(fn)
+    fn = unittest.mock.patch.object(symlink, "run_nspawn")(fn)
+    fn = unittest.mock.patch.object(make_dirs, "run_nspawn")(fn)
+    fn = unittest.mock.patch.object(ba_runner, "run_nspawn")(fn)
     return fn
 
 
@@ -152,11 +152,11 @@ class CompilerTestCase(unittest.TestCase):
         lexists,
         is_btrfs,
         run_as_root,
-        _run_non_booted_nspawn,
-        _run_non_booted_nspawn2,
-        _run_non_booted_nspawn3,
-        _run_non_booted_nspawn4,
-        _run_non_booted_nspawn5,
+        _run_nspawn,
+        _run_nspawn2,
+        _run_nspawn3,
+        _run_nspawn4,
+        _run_nspawn5,
     ):
         lexists.side_effect = _os_path_lexists
         run_as_root.side_effect = _run_as_root
@@ -241,11 +241,11 @@ class CompilerTestCase(unittest.TestCase):
         lexists,
         is_btrfs,
         run_as_root,
-        _run_non_booted_nspawn,
-        _run_non_booted_nspawn2,
-        _run_non_booted_nspawn3,
-        _run_non_booted_nspawn4,
-        _run_non_booted_nspawn5,
+        _run_nspawn,
+        _run_nspawn2,
+        _run_nspawn3,
+        _run_nspawn4,
+        _run_nspawn5,
     ):
         "Get the commands that each of the *expected* sample items would run"
         lexists.side_effect = _os_path_lexists

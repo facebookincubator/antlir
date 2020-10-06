@@ -190,8 +190,7 @@ def _extra_nspawn_args_and_env(
     List[AnyStr],  # Arguments to `systemd-nspawn`
     List[AnyStr],  # Environment variables to set when running `opts.cmd`
 ]:
-    # NB: This does not set `--user` since this differs between the booted
-    # and non-booted case.
+    # NB: This does not set `--user` since this is done via `nsenter`
     extra_nspawn_args = []
 
     # Load configs for this repository

@@ -326,7 +326,7 @@ python_binary(
         ":subvol_utils",
         ":testlib_temp_subvolumes",
         "//antlir/nspawn_in_subvol:args",
-        "//antlir/nspawn_in_subvol:non_booted",
+        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
 
@@ -355,7 +355,7 @@ python_unittest(
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
         "//antlir/btrfs_diff:testlib_render_subvols",
         "//antlir/nspawn_in_subvol:args",
-        "//antlir/nspawn_in_subvol:non_booted",
+        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
 
@@ -369,7 +369,7 @@ python_unittest(
     },
     deps = [
         "//antlir:testlib_layer_resource",
-        "//antlir/nspawn_in_subvol:non_booted",
+        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
 

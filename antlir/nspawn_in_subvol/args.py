@@ -65,15 +65,16 @@ class PopenArgs(NamedTuple):
         use `opts.setenv`, which has different semantics
       - `pass_fds` is replaced by `opts.forward_fd`, with differing semantics
 
-    (3) This also includes a nonstandard field: `boot_console`.  It lets
-        callers separate console logspam from actual program output.  By
-        default, it goes to `stderr` for ease of debugging.  Notes:
-          - We don't have a special `boot_stderr` because that just receives
+    (3) This also includes a nonstandard field: `console`.  It lets callers
+        separate `systemd-nspawn` (and `systemd` boot) logspam from actual
+        program output.  By default, it goes to `stderr` for ease of
+        debugging.  Notes:
+          - We don't have a special `nspawn_stderr` because that just receives
             logspam from `systemd-nspawn`, which is silenced by `--quiet`.
-          - We could add `boot_stdin`; for now, we use `--console=read-only`.
+          - We don't have `nspawn_stdin` because we use `--console=read-only`.
     """
 
-    boot_console: SubprocessRedirect = None  # Must be None for non-booted runs
+    console: SubprocessRedirect = None
     check: bool = True
     stdin: SubprocessRedirect = None
     stdout: SubprocessRedirect = None
@@ -191,6 +192,7 @@ class _NspawnOpts(NamedTuple):
 
     cmd: Iterable[str]
     layer: Subvol
+    boot: bool = False
     bind_repo_ro: bool = False  # to support @mode/dev
     # Future: maybe make these `Path`?
     bindmount_ro: Iterable[Tuple[AnyStr, AnyStr]] = ()  # for `RpmActionItem`
@@ -243,6 +245,12 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
     "Keep in sync with `_NspawnOpts`"
     defaults = _NspawnOpts._field_defaults
     parser.add_argument(
+        "--boot",
+        action="store_true",
+        help="Boot the container with nspawn.  This means invoke `systemd` "
+        "as PID 1 and let it start up services",
+    )
+    parser.add_argument(
         "--layer",
         required=True,
         type=find_built_subvol,
@@ -288,12 +296,11 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         "cmd",
         nargs="*",
         default=[_DEFAULT_SHELL],
-        help="The command to run in the container.  When not using "
-        "--boot the command is run as PID2.  In the booted case "
-        "the command is run using nsenter inside all the namespaces "
-        "used to construct the container with systemd-nspawn.  If "
-        "a command is not specified the default is to invoke a bash "
-        "shell.",
+        help="The command to run in the container. The command is run using "
+        "`nsenter` inside the cgroups & namespaces of the `systemd-nspawn` "
+        "container -- we use `nspawn` for container setup only, it is not "
+        "suitable for terminal management, see systemd PR 17070.  If a command "
+        "is not specified the default is to start `bash`.",
     )
     assert defaults["forward_fd"] == ()  # The argparse default must be mutable
     parser.add_argument(
@@ -343,12 +350,12 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         "a layer subvolume read-write. That voids all warranties.",
     )
     parser.add_argument(
-        # Get the pw database info for the requested user.  This is so we
-        # can use the uid/gid for the /logs tmpfs mount and for executing
-        # commands as the right user in the booted case.  Also, we use this
-        # set HOME properly for executing commands with nsenter.  Future:
-        # Don't assume that the image password DB is compatible with the
-        # host's, and look there instead.
+        # Get the pw database info for the requested user.  We need it to:
+        #  - use use the uid/gid for the /logs tmpfs mount,
+        #  - execute the command as the right user,
+        #  - set HOME properly.
+        # Future: Don't assume that the image password DB is compatible with
+        # the host's, and look there instead.
         "--user",
         default=defaults["user"],
         type=pwd.getpwnam,
@@ -501,8 +508,7 @@ class _NspawnCLIArgs(NamedTuple):
     Keep in sync with `_parse_cli_args`. That documents the options.
     """
 
-    boot: bool
-    append_boot_console: Optional[str]
+    append_console: Optional[str]
     opts: _NspawnOpts
     plugin_args: NspawnPluginArgs
 
@@ -530,27 +536,17 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    # This is outside of `_NspawnOpts` because it actually changes the
-    # API of the call substantially (there is one more process spawned,
-    # with an extra FD, the console).
     parser.add_argument(
-        "--boot",
-        action="store_true",
-        help="Boot the container with nspawn.  This means invoke systemd "
-        "as pid 1 and let it start up services",
-    )
-    parser.add_argument(
-        "--append-boot-console",
+        "--append-console",
         default=None,
-        help="Use with `--boot` to redirect output from the systemd console "
-        "PTY into a file. By default it goes to stdout for easy debugging.",
+        help="Redirect output from the `systemd-nspawn` console PTY into "
+        "a file. By default it goes to stdout for easy debugging.",
     )
     _parser_add_nspawn_opts(parser)
     _parser_add_plugin_args(parser)
     if allow_debug_only_opts:
         _parser_add_debug_only_not_for_prod_opts(parser)
     args = Path.parse_args(parser, argv)
-    assert args.boot or not args.append_boot_console, args
 
     return _extract_opts_from_dict(
         _new_nspawn_cli_args,

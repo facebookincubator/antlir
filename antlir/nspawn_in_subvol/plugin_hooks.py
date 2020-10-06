@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"The core logic of how plugins integrate with `popen_{non,}_booted_nspawn`"
+"The core logic of how plugins integrate with `popen_nspawn`"
 
 import functools
 import subprocess
@@ -16,10 +16,7 @@ from .cmd import _nspawn_setup, _NspawnSetup
 from .plugins import NspawnPlugin
 
 
-_PopenResult = Union[
-    subprocess.Popen,  # non-booted
-    Tuple[subprocess.Popen, subprocess.Popen],  # booted
-]
+_PopenResult = Tuple[subprocess.Popen, subprocess.Popen]
 _NspawnSetupCtxMgr = Callable[
     [_NspawnOpts, PopenArgs], ContextManager[_NspawnSetup]
 ]

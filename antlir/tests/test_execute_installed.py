@@ -16,14 +16,14 @@ import unittest
 
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.common import nspawn_version
-from antlir.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 
 from .layer_resource import layer_resource_subvol
 
 
 class ExecuteInstalledTestCase(unittest.TestCase):
     def _nspawn_in(self, rsrc_name, cmd, **kwargs):
-        return run_non_booted_nspawn(
+        nsenter_proc, _console_proc = run_nspawn(
             new_nspawn_opts(
                 cmd=cmd,
                 layer=layer_resource_subvol(__package__, rsrc_name),
@@ -31,6 +31,7 @@ class ExecuteInstalledTestCase(unittest.TestCase):
             ),
             PopenArgs(**kwargs),
         )
+        return nsenter_proc
 
     def test_execute(self):
         for print_ok in [

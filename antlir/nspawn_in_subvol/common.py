@@ -14,10 +14,6 @@ from antlir.fs_utils import Path
 # Our container runtimes are required to make this the `PATH` for the user
 # command in the container.  This also determines which container binaries
 # get shadowed by `--shadow-path`.
-#
-# For now, the non-booted case implicitly uses the `systemd-nspawn` default
-# `PATH`, so if that changes our test will fail.  That test failure in time
-# will be an opportunity to decide whether to set our own, or follow.
 DEFAULT_SEARCH_PATHS = tuple(
     Path(p)
     for p in (
