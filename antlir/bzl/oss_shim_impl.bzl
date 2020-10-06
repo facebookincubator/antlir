@@ -416,7 +416,18 @@ shim = struct(
     # deployment-specific customizations, but for now we expect non-FB
     # customers to use the `[antlir]` section in `.buckconfig`.
     # Look at `bzl/constants.bzl` for the available options.
-    do_not_use_repo_cfg = {},
+    do_not_use_repo_cfg = {
+        # Future: Once we can guarantee `libcap-ng` to be at least 0.8, add
+        # this in.
+        #
+        # Also check this issue to see if this can be detected from
+        # `cap-ng.h` instead -- once both OSS and FB builds can be
+        # guaranteed to have this issue fixed, we can move the conditonal
+        # compilation into the `.c` file and remove this config.
+        #   https://github.com/stevegrubb/libcap-ng/issues/20
+        #
+        # "libcap_ng_compiler_flags": "-DCAPNG_SUPPORTS_AMBIENT=1",
+    },
     export_file = _export_file,
     http_file = _http_file,
     get_visibility = _normalize_visibility,

@@ -1,0 +1,15 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:oss_shim.bzl", "cpp_binary")
+
+cpp_binary(
+    name = "clonecaps",
+    srcs = ["clonecaps.c"],
+    # This is hacky, but I didn't bother with finding a good way to not have
+    # to specify this on every `.c` file that uses `cap-ng`.  If it were
+    # used, widely, we could inject it via the OSS shims for all cpp_*
+    # targets, but this is much more work to get right.
+    #
+    # Future: can eventually be removed, see `bzl/oss/oss_shim_impl.bzl`.
+    compiler_flags = REPO_CFG.libcap_ng_compiler_flags,
+    external_deps = [("libcap-ng", None, "cap-ng")],
+)
