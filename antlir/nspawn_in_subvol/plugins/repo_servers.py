@@ -39,7 +39,7 @@ log = get_file_logger(__file__)
 # This is a temporary mountpoint for the host's `/proc` inside the
 # container.  It is unmounted and removed before the user command starts.
 # However, in the booted case, it may be visible to early boot-time units.
-_OUTER_PROC = "/outerproc_repo_server"  # Distinct from `/outerproc_boot`
+_OUTER_PROC = "/outerproc_repo_server"
 
 
 @dataclass
@@ -110,10 +110,10 @@ class _ContainerPidExfiltrator:
         self.ready_r.close()
 
         try:
-            # Note: this is `readline()` instead of `read()` because in the
-            # booted case, we cannot wait for `exfil_w` to get closed, the
-            # `nsenter` process also inherits it, and will hold it open for
-            # as long as the user command runs, causing us to deadlock here.
+            # Note: this is `readline()` instead of `read()` because we
+            # cannot wait for `exfil_w` to get closed, the `nsenter` process
+            # also inherits it, and will hold it open for as long as the
+            # user command runs, causing us to deadlock here.
             yield int(self.exfil_r.readline().decode().split(":")[1].strip())
         finally:
             if not self._ready_sent:

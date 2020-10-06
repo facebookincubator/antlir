@@ -3,7 +3,7 @@
 
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 # Gets test coverage via `:test-run`
@@ -65,8 +65,12 @@ python_library(
 
 # Gets test coverage via `:test-run`
 python_library(
-    name = "booted",
-    srcs = ["booted.py"],
+    name = "nspawn",
+    srcs = ["nspawn.py"],
+    resources = {
+        third_party.library("busybox", "bin/busybox"): "busybox",
+        "//antlir/nspawn_in_subvol/clonecaps:clonecaps": "clonecaps",
+    },
     deps = [
         ":args",
         ":cmd",
@@ -74,18 +78,6 @@ python_library(
         ":plugin_hooks",
         "//antlir:common",
         "//antlir:send_fds_and_run",
-    ],
-)
-
-# Gets test coverage via `:test-run`
-python_library(
-    name = "non_booted",
-    srcs = ["non_booted.py"],
-    deps = [
-        ":args",
-        ":cmd",
-        ":common",
-        ":plugin_hooks",
     ],
 )
 
@@ -100,9 +92,8 @@ python_binary(
     main_module = "antlir.nspawn_in_subvol.run",
     deps = [
         ":args",
-        ":booted",
         ":cmd",
-        ":non_booted",
+        ":nspawn",
         "//antlir:common",
         "//antlir/nspawn_in_subvol/plugins:plugins",
         "//antlir/nspawn_in_subvol/plugins:rpm",
@@ -137,7 +128,7 @@ python_unittest(
         "tests/test_run.py",
     ],
     env = {
-        # Needed to cover the `TERM` branch in `booted.py` because FB's test
+        # Needed to cover the `TERM` branch in `nspawn.py` because FB's test
         # runner otherwise strips out `TERM`.
         "TERM": "linux-clown",
     },
@@ -145,10 +136,9 @@ python_unittest(
     # it's supposed to cover everything.
     needed_coverage = [(100, target) for target in [
         ":args",
-        ":booted",
+        ":nspawn",
         ":cmd",
         ":common",
-        ":non_booted",
         ":run-library",
     ]],
     resources = {

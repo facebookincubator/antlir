@@ -223,7 +223,7 @@ import subprocess
 from typing import Mapping, NamedTuple, Optional
 
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from antlir.nspawn_in_subvol.non_booted import popen_non_booted_nspawn
+from antlir.nspawn_in_subvol.nspawn import popen_nspawn
 
 from .common import check_popen_returncode, init_logging
 from .find_built_subvol import find_built_subvol
@@ -376,7 +376,7 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
             user=pwd.getpwnam("root"),
         )
 
-        with create_ro(output_path, "wb") as outfile, popen_non_booted_nspawn(
+        with create_ro(output_path, "wb") as outfile, popen_nspawn(
             opts, PopenArgs(stdout=outfile)
         ):
             pass

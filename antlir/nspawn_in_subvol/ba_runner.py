@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-A simple wrapper around subvol.run_as_root() and run_non_booted_nspawn()
+A simple wrapper around subvol.run_as_root() and non-booted run_nspawn()
 """
 import os
 import pwd
@@ -13,7 +13,7 @@ from typing import AnyStr, List
 
 from antlir.fs_utils import Path, generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from antlir.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 
 
@@ -39,4 +39,4 @@ class BuildAppliance:
             user=pwd.getpwnam("root"),
             **kwargs,
         )
-        run_non_booted_nspawn(opts, PopenArgs())
+        run_nspawn(opts, PopenArgs())

@@ -18,10 +18,7 @@ from typing import Dict, List, NamedTuple, Optional
 
 from antlir.fs_utils import Path, generate_work_dir, temp_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from antlir.nspawn_in_subvol.non_booted import (
-    popen_non_booted_nspawn,
-    run_non_booted_nspawn,
-)
+from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
 from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol
 
@@ -229,7 +226,7 @@ rpmsign --define="_gpg_name $fingerprint" --addsign \
         bindmount_rw=[(os.path.dirname(rpm_path), package_dir)],
         user=pwd.getpwnam("root"),
     )
-    with popen_non_booted_nspawn(opts, PopenArgs(stdin=subprocess.PIPE)) as p:
+    with popen_nspawn(opts, PopenArgs(stdin=subprocess.PIPE)) as (p, _):
         p.stdin.write(gpg_signing_key.encode())
 
 
@@ -283,7 +280,7 @@ def build_rpm(
             user=pwd.getpwnam("root"),
             setenv=["HOME={quoted_home}".format(**format_kwargs)],
         )
-        run_non_booted_nspawn(opts, PopenArgs())
+        run_nspawn(opts, PopenArgs())
 
         # `rpmbuild` has a non-configurable output layout, so
         # we'll move the resulting rpm into our package dir.

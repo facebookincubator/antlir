@@ -14,7 +14,7 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import Path, generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from antlir.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
@@ -58,7 +58,7 @@ class MakeDirsItem(ImageItem):
                 bindmount_rw=[(subvol.path(), work_dir)],
                 user=pwd.getpwnam("root"),
             )
-            run_non_booted_nspawn(opts, PopenArgs())
+            run_nspawn(opts, PopenArgs())
         else:
             inner_dir = subvol.path(
                 os.path.join(self.into_dir, self.path_to_make)

@@ -514,14 +514,14 @@ class NspawnTestCase(NspawnTestBase):
 
             # We have to consume the read end of the pipe from a thread
             # because otherwise `systemd` could deadlock during shutdown.
-            # This is explained in the `booted.py` docblock.
+            # This is explained in the `nspawn.py` docblock.
             reader_thread = threading.Thread(target=read_console)
             reader_thread.start()
 
             ret, ret_boot = self._nspawn_in_boot_ret(
                 (__package__, "bootable-systemd-os"),
                 ["--boot", "--", "/bin/true"],
-                boot_console=w,
+                console=w,
                 check=True,
             )
         reader_thread.join()
@@ -551,7 +551,7 @@ class NspawnTestCase(NspawnTestBase):
             self._nspawn_in(
                 (__package__, "bootable-systemd-os"),
                 ["--boot", "--", "/bin/true"],
-                boot_console=subprocess.PIPE,
+                console=subprocess.PIPE,
                 check=True,
             )
 

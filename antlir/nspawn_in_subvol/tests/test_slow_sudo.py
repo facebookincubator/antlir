@@ -14,8 +14,8 @@ class SlowSudoTestCase(NspawnTestBase):
 
     The set-up for our specific bug are as follows:
       - The payload (starting with `timeout` below) is not in the cgroup of
-        the container's `systemd` -- which was the case when our `booted.py`
-        simply `nsenter`ed into the `systemd`'s container.
+        the container's `systemd` -- which used to be the case when our
+        `nspawn.py` simply `nsenter`ed into the `systemd`'s container.
       - The host has `cgroup2` mounted with `nsdelegate`, preventing the
         container's `systemd` from moving processes around between certain
         cgroups (see `man 7 cgroups`).

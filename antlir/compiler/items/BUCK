@@ -79,7 +79,7 @@ python_library(
     srcs = ["rpm_action.py"],
     deps = [
         ":common",
-        "//antlir/nspawn_in_subvol:non_booted",
+        "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:rpm",
         "//antlir/rpm:find_snapshot",
         "//antlir/rpm:rpm_metadata",
@@ -135,7 +135,7 @@ python_library(
     deps = [
         ":common",
         ":foreign_layer_t",
-        "//antlir/nspawn_in_subvol:non_booted",
+        "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:rpm",
     ],
 )
@@ -220,7 +220,7 @@ python_library(
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:ba_runner",
-        "//antlir/nspawn_in_subvol:non_booted",
+        "//antlir/nspawn_in_subvol:nspawn",
         third_party.library(
             "pydantic",
             platform = "python",

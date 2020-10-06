@@ -65,10 +65,8 @@ class NspawnTestBase(TestCase):
         with _set_up_run_cli(
             ["--layer", layer_resource(*rsrc_pair), *argv]
         ) as cli_setup:
-            if "boot_console" in kwargs:
-                cli_setup = cli_setup._replace(
-                    boot_console=kwargs.pop("boot_console")
-                )
+            if "console" in kwargs:
+                cli_setup = cli_setup._replace(console=kwargs.pop("console"))
             return cli_setup._run_nspawn(PopenArgs(**kwargs))
 
     def _nspawn_in(self, rsrc_pair, argv, **kwargs):

@@ -20,7 +20,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 from antlir.btrfs_diff.tests.render_subvols import pop_path, render_sendstream
 from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from antlir.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 
 from ..find_built_subvol import subvolumes_dir
@@ -377,7 +377,7 @@ class PackageImageTestCase(unittest.TestCase):
             )
 
             with open_for_read_decompress(pkg_path) as r:
-                run_non_booted_nspawn(opts, PopenArgs(stdin=r))
+                run_nspawn(opts, PopenArgs(stdin=r))
 
             with extract_sv.mark_readonly_and_write_sendstream_to_file(
                 temp_sendstream

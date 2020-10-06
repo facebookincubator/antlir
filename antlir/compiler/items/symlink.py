@@ -16,7 +16,7 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from antlir.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 
 from .common import (
@@ -94,7 +94,7 @@ class SymlinkBase(ImageItem):
                 bindmount_rw=[(subvol.path(), work_dir)],
                 user=pwd.getpwnam("root"),
             )
-            run_non_booted_nspawn(opts, PopenArgs())
+            run_nspawn(opts, PopenArgs())
         else:
             subvol.run_as_root(
                 ["ln", "--symbolic", "--no-dereference", rel_source, dest]

@@ -112,33 +112,28 @@ from typing import Iterable, NamedTuple, Optional, Tuple
 from antlir.common import init_logging
 
 from .args import PopenArgs, _NspawnOpts, _parse_cli_args
-from .booted import run_booted_nspawn
-from .non_booted import run_non_booted_nspawn
+from .nspawn import run_nspawn
 from .plugins import NspawnPlugin
 from .plugins.rpm import rpm_nspawn_plugins
 
 
 class _CliSetup(NamedTuple):
-    boot: bool
-    boot_console: BytesIO
+    console: BytesIO
     opts: _NspawnOpts
     plugins: Iterable[NspawnPlugin]
 
     def _run_nspawn(
         self, popen_args: PopenArgs
-    ) -> Tuple[
-        subprocess.CompletedProcess, Optional[subprocess.CompletedProcess]
-    ]:
-        # Enforce a single source of truth for `PopenArgs.boot_console`.
+    ) -> Tuple[subprocess.CompletedProcess, subprocess.CompletedProcess]:
+        # Enforce a single source of truth for `PopenArgs.console`.
         assert (
-            popen_args.boot_console is None
-        ), "To set `boot_console`, use `_CliSetup._replace(boot_console=)`."
-        res = (run_booted_nspawn if self.boot else run_non_booted_nspawn)(
+            popen_args.console is None
+        ), "To set `console`, use `_CliSetup._replace(console=)`."
+        return run_nspawn(
             self.opts,
-            popen_args._replace(boot_console=self.boot_console),
+            popen_args._replace(console=self.console),
             plugins=self.plugins,
         )
-        return res if self.boot else (res, None)
 
 
 @contextmanager
@@ -146,14 +141,13 @@ def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
     args = _parse_cli_args(argv, allow_debug_only_opts=True)
     init_logging(debug=args.opts.debug_only_opts.debug)
     with (
-        open(args.append_boot_console, "ab")
-        # By default, we send `systemd` console to `stderr`.
-        if args.boot and args.append_boot_console
+        # By default, we send the `systemd-nspawn` console to `stderr`.
+        open(args.append_console, "a")
+        if args.append_console
         else nullcontext()
-    ) as boot_console:
+    ) as console:
         yield _CliSetup(
-            boot=args.boot,
-            boot_console=boot_console,
+            console=console,
             opts=args.opts,
             plugins=rpm_nspawn_plugins(
                 opts=args.opts, plugin_args=args.plugin_args

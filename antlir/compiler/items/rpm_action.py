@@ -23,7 +23,7 @@ from antlir.nspawn_in_subvol.args import (
     PopenArgs,
     new_nspawn_opts,
 )
-from antlir.nspawn_in_subvol.non_booted import run_non_booted_nspawn
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.subvol_utils import Subvol
@@ -366,7 +366,7 @@ def _yum_dnf_using_build_appliance(
         bindmount_rw=[(install_root, work_dir)],
         user=pwd.getpwnam("root"),
     )
-    run_non_booted_nspawn(
+    run_nspawn(
         opts,
         PopenArgs(),
         plugins=rpm_nspawn_plugins(
