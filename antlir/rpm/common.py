@@ -30,6 +30,7 @@ from antlir.common import byteme, get_file_logger
 log = get_file_logger(__file__)
 _UINT64_STRUCT = struct.Struct("=Q")
 T = TypeVar("T")
+_mockable_retry_fn_sleep = time.sleep
 
 
 class DecorateContextEntry(Generic[T], AbstractContextManager):
@@ -75,7 +76,7 @@ def retry_fn(
                 f"{delay} seconds.\n\n",
                 exc_info=log_exception,
             )
-            time.sleep(delay)
+            _mockable_retry_fn_sleep(delay)
     return retryable_fn()  # With 0 retries, we should still run the function.
 
 
