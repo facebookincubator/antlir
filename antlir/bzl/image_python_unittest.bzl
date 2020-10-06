@@ -100,9 +100,6 @@ def image_python_unittest(
         },
         main_module = "antlir.nspawn_in_subvol.run_test",
         deps = [wrapper_props.impl_python_library],
-        # Ensures we can read resources in @mode/opt.  "xar" cannot work
-        # because `root` cannot access the content of unprivileged XARs.
-        par_style = "zip",
         visibility = visibility,
         antlir_rule = "user-facing",  # This runs in customer TARGETS files
         **wrapper_props.outer_test_kwargs

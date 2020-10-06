@@ -93,7 +93,9 @@ def popen_and_inject_fds_after_sudo(cmd, fds, popen, *, set_listen_fds: bool):
         callback will prepend its arguments with a `['sudo', '--some',
         '--args', '--']` invocation.
     """
-    with listen_temporary_unix_socket() as (lsock_path, lsock), popen(
+    with listen_temporary_unix_socket() as (lsock_path, lsock), Path.resource(
+        __package__, "recv-fds-and-run", exe=True
+    ) as recv_binary, popen(
         [
             # The wrapper is Python.  In @mode/dev this can end up writing
             # bytecode as `root` into `buck-out`, which would break Buck's
@@ -101,9 +103,7 @@ def popen_and_inject_fds_after_sudo(cmd, fds, popen, *, set_listen_fds: bool):
             # This doesn't affect @mode/opt since that is precompiled anyway.
             "env",
             "PYTHONDONTWRITEBYTECODE=1",
-            # The wrapper is part of this library's `resources`, so this will
-            # work in @mode/opt with ZIP-PAR or XAR packaging.
-            os.path.join(os.path.dirname(__file__), "recv-fds-and-run"),
+            recv_binary,
             # Although the permissions of lsock_path restrict it to the repo
             # user, the wrapper runs as `root`, so it can connect.
             "--unix-sock",

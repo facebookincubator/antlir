@@ -81,8 +81,6 @@ python_binary(
     name = "cli",
     srcs = ["cli.py"],
     main_module = "antlir.rpm.storage.cli",
-    # Some FB-internal storage implementations embed binaries in this PAR.
-    par_style = "xar",
     deps = [
         "//antlir:common",
         "//antlir:fs_utils",

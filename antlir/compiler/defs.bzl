@@ -37,8 +37,6 @@ def image_feature_python_unittest(test_image_feature_transitive_deps, deps = Non
     ]
     return python_unittest(
         env = env,
-        # The test reads `feature.json`, so we need actual files on disk.
-        par_style = "zip",
         deps = deps,
         cpp_deps = cpp_deps,
         **kwargs
