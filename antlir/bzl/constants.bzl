@@ -89,13 +89,14 @@ def _get_version_set_to_path():
 # are effectively global and should be treated with extreme caution.
 # Don't be careless.
 repo_config_t = shape.shape(
-    artifacts_require_repo = shape.field(bool),
-    build_appliance_default = shape.field(str),
+    artifacts_require_repo = bool,
+    build_appliance_default = str,
     host_mounts_allowed_in_targets = shape.field(shape.list(str), optional = True),
     host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
-    rpm_installer_default = shape.field(str),
-    version_set_to_path = shape.field(shape.dict(str, str)),
-    version_set_default = shape.field(str),
+    libcap_ng_compiler_flags = shape.list(str),
+    rpm_installer_default = str,
+    version_set_to_path = shape.dict(str, str),
+    version_set_default = str,
 )
 
 REPO_CFG = shape.new(
@@ -127,6 +128,14 @@ REPO_CFG = shape.new(
     # bzl/python.
     host_mounts_for_repo_artifacts = _get_str_list_cfg(
         "host_mounts_for_repo_artifacts",
+    ),
+
+    # Future: can eventually be removed, see `bzl/oss/oss_shim_impl.bzl`.
+    libcap_ng_compiler_flags = _get_str_list_cfg(
+        "libcap_ng_compiler_flags",
+        # Not used, just a reminder to solve this properly if we ever need
+        # multiple flags.
+        separator = "__SEP_COMILER_FLAGS__",
     ),
 
     # Whether RPMs are installed with `yum` or `dnf` by default.  When using
