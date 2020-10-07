@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 
 # NB: For anything that runs at Facebook, depend on `facebook:storage`, but
 # import the outer `rpm.storage` module.
@@ -23,7 +23,15 @@ python_library(
 python_library(
     name = "s3_storage",
     srcs = ["s3_storage.py"],
-    deps = [":cli_object_storage"],
+    deps = [
+        ":cli_object_storage",
+        "//antlir/rpm:open_url",
+        third_party.library(
+            "boto3",
+            "boto3",
+            platform = "python",
+        ),
+    ],
 )
 
 # Depend on this rather than on e.g. :base_storage or :filesystem_storage above
@@ -67,13 +75,10 @@ python_unittest(
     needed_coverage = [
         (100, ":storage"),
         (100, ":base_storage"),
-        (100, ":cli_object_storage"),
         (100, ":s3_storage"),
     ],
-    resources = {":mock-s3-cli": "tests/mock-s3-cli"},
     deps = [
         ":testlib_cli_object_storage_base_test",
-        "//antlir:fs_utils",
     ],
 )
 
@@ -95,11 +100,4 @@ python_unittest(
     srcs = ["tests/test_cli.py"],
     needed_coverage = [(100, ":cli-library")],
     deps = [":cli-library"],
-)
-
-python_binary(
-    name = "mock-s3-cli",
-    srcs = ["tests/mock_s3_cli.py"],
-    main_module = "antlir.rpm.storage.tests.mock_s3_cli",
-    deps = [],
 )
