@@ -206,8 +206,9 @@ class RepoServers(NspawnPlugin):
             container_pid = stack.enter_context(
                 self._container_pid_exfiltrator.exfiltrate_container_pid()
             )
-            for snap_dir in self._serve_rpm_snapshots:
-                stack.enter_context(
+            # To speed up startup, launch all the servers, and then await them.
+            snap_to_servers = {
+                snap_dir: stack.enter_context(
                     launch_repo_servers_for_netns(
                         target_pid=container_pid,
                         snapshot_dir=snap_subvol.path(snap_dir),
@@ -216,5 +217,23 @@ class RepoServers(NspawnPlugin):
                         ),
                     )
                 )
+                for snap_dir in self._serve_rpm_snapshots
+            }
+            # DELETE ME: We used to wait for the repo servers to listen here,
+            # but now that we use socket activation, this is no longer needed.
+            # Leaving it in so that we get a "working" variant in SCM.
+            if False:  # pragma: no cover
+                for servers in snap_to_servers.values():
+                    for server in servers:
+                        server.await_listen()
+            log.info(
+                "Started `repo-server` for snapshots (ports): "
+                + ", ".join(
+                    f"""{snap.basename()} ({' '.join(
+                        str(s.port) for s in servers
+                    )})"""
+                    for snap, servers in snap_to_servers.items()
+                )
+            )
             self._container_pid_exfiltrator.send_ready()
             yield popen_res
