@@ -328,7 +328,7 @@ class HTTPSocketServer(BaseServer):
         )
 
     def server_activate(self):
-        self.socket.listen()  # leaving the request queue size at default
+        self.socket.listen()  # leave the request queue size at default
 
     def server_close(self):
         self.socket.close()
@@ -368,7 +368,7 @@ def repo_server(sock, location_to_obj: Mapping[str, dict], storage: Storage):
 
 
 # Tested manually, as described in the file-level docblock.
-if __name__ == "__main__":  # pragma: no cover
+def main():  # pragma: no cover
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -386,8 +386,8 @@ if __name__ == "__main__":  # pragma: no cover
         "--socket-fd",
         required=True,
         type=int,
-        help="Listen on this socket. We assume that another process creates "
-        "and binds the socket for us.",
+        help="Listen on this socket. We assume that another process creates, "
+        " binds, and (optionally) listens on the socket for us.",
     )
     parser.add_argument("--debug", action="store_true", help="Log more")
     args = parser.parse_args()
@@ -407,8 +407,11 @@ if __name__ == "__main__":  # pragma: no cover
         read_snapshot_dir(args.snapshot_dir),
         Storage.from_json(storage),
     ) as httpd:
+        # In the current usage, we start listening in `_launch_repo_server`,
+        # but leaving this here should be harmless.
         httpd.server_activate()
-        log.info("HTTP `repo-server` is listening")
+        snapshot_short_name = args.snapshot_dir.dirname().basename()
+        log.debug(f"HTTP `repo-server` for {snapshot_short_name} is listening")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:  # pragma: no cover

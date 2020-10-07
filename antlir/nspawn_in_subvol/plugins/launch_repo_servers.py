@@ -11,7 +11,7 @@ import subprocess
 import textwrap
 import time
 from contextlib import ExitStack, contextmanager
-from typing import List
+from typing import List, NamedTuple, Optional
 
 from antlir.common import (
     FD_UNIX_SOCK_TIMEOUT,
@@ -142,55 +142,84 @@ def _create_sockets_inside_netns(
     return repo_server_socks
 
 
+class RepoServer(NamedTuple):
+    snapshot_dir: Path
+    port: int
+    # The socket & server are invalid after the `_launch_repo_server` context
+    sock: socket.socket
+    proc: Optional[subprocess.Popen] = None
+
+    def __format__(self, _spec):
+        return f"RepoServer({self.snapshot_dir}, port={self.port})"
+
+    # DELETE ME: While this works, and was previously used, this is dead
+    # code now -- I am only leaving it in here so that the refactored form
+    # gets into source control at least once.
+    def await_listen(self):  # pragma: no cover
+        assert self.proc is not None, self
+        log.debug(f"Waiting for {self} to listen")
+        while self.proc.poll() is None:
+            if self.sock.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN):
+                break
+            time.sleep(0.05)
+
+
 @contextmanager
-def _launch_repo_server(
-    *, repo_server_bin: Path, sock: socket.socket, snapshot_dir: Path
-):
+def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
     """
     Invokes `repo-server` with the given snapshot; passes it ownership of
     the bound TCP socket -- it listens & accepts connections.
+
+    Returns a copy of the `RepoServer` with `server` populated.
     """
-    # This could be a thread, but it's probably not worth the risks
-    # involved in mixing threads & subprocess (yes, lots of programs do,
-    # but yes, far fewer do it safely).
-    with sock, subprocess.Popen(
+    assert rs.proc is None
+    rs.sock.bind(("127.0.0.1", rs.port))
+    # Socket activation: allow requests to queue up, which means that
+    # we don't have to explicitly wait for the repo servers to start --
+    # any in-container clients will do so if/when needed. This reduces
+    # interactive `-container` boot time by hundreds of ms.
+    rs.sock.listen()  # leave the request queue size at default
+    with rs.sock, subprocess.Popen(
         [
             repo_server_bin,
             "--socket-fd",
-            str(sock.fileno()),
+            str(rs.sock.fileno()),
             "--snapshot-dir",
-            snapshot_dir,
+            rs.snapshot_dir,
             *(["--debug"] if log.isEnabledFor(logging.DEBUG) else []),
         ],
-        pass_fds=[sock.fileno()],
+        pass_fds=[rs.sock.fileno()],
     ) as server_proc:
         try:
-            log.info("Waiting for repo server to listen")
-            while server_proc.poll() is None:
-                if sock.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN):
-                    break
-                time.sleep(0.1)
-            yield
+            yield rs._replace(proc=server_proc)
         finally:
-            # Although `repo-server` is a read-only proxy, give it the
-            # chance to do graceful cleanup.
-            log.debug("Trying to gracefully terminate `repo-server`")
-            # `atexit` (used in an FB-specific `repo-server` plugin) only
-            # works with SIGINT.  We signal once, and need to wait for it to
-            # clean up the resources it must to free.  Signaling twice would
-            # interrupt cleanup (because this is Python, lol).
-            server_proc.send_signal(signal.SIGINT)  # `atexit` needs this
-            try:
-                server_proc.wait(60.0)
-            except subprocess.TimeoutExpired:  # pragma: no cover
-                log.info("Killing unresponsive `repo-server`")
-                server_proc.kill()
+            # Uh-oh, the server already exited. Did it crash?
+            if server_proc.poll() is not None:  # pragma: no cover
+                check_popen_returncode(server_proc)
+            else:
+                # Although `repo-server` is a read-only proxy, give it the
+                # chance to do graceful cleanup.
+                log.debug("Trying to gracefully terminate `repo-server`")
+                # `atexit` (used in an FB-specific `repo-server` plugin) only
+                # works on graceful termination.  In `repo_server_main.py`, we
+                # graceful set up handling of `SIGTERM`.  We signal once, and
+                # need to wait for it to clean up the resources it must to free.
+                # Signaling twice would interrupt cleanup (because this is
+                # Python, lol).
+                server_proc.send_signal(signal.SIGTERM)
+                try:
+                    server_proc.wait(60.0)
+                except subprocess.TimeoutExpired:  # pragma: no cover
+                    log.warning(
+                        f"Killing unresponsive `repo-server` {server_proc.pid}"
+                    )
+                    server_proc.kill()
 
 
 @contextmanager
 def launch_repo_servers_for_netns(
     *, target_pid: int, snapshot_dir: Path, repo_server_bin: Path
-):
+) -> List[RepoServer]:
     """
     Creates sockets inside the supplied netns, and binds them to the
     supplied ports on localhost.
@@ -203,17 +232,21 @@ def launch_repo_servers_for_netns(
         # Start a repo-server instance per port.  Give each one a socket
         # bound to the loopback inside the supplied netns.  We don't
         # `__enter__` the sockets since the servers take ownership of them.
+        servers = []
         for sock, port in zip(
             _create_sockets_inside_netns(target_pid, len(repo_server_ports)),
             repo_server_ports,
         ):
-            sock.bind(("127.0.0.1", port))
-            stack.enter_context(
+            rs = stack.enter_context(
                 _launch_repo_server(
-                    sock=sock,
-                    snapshot_dir=snapshot_dir / "snapshot",
-                    repo_server_bin=repo_server_bin,
+                    repo_server_bin,
+                    RepoServer(
+                        snapshot_dir=snapshot_dir / "snapshot",
+                        port=port,
+                        sock=sock,
+                    ),
                 )
             )
-            log.info(f"Launched repo-server on {port} in {target_pid}'s netns")
-        yield
+            log.debug(f"Launched {rs} in {target_pid}'s netns")
+            servers.append(rs)
+        yield servers
