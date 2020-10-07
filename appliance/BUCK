@@ -1,7 +1,72 @@
 load("//antlir/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:rpm_repo_snapshot.bzl", "RPM_SNAPSHOT_BASE_DIR")
+load("//antlir/bzl:oss_shim.bzl", "http_file")
+load("//antlir/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot", "set_up_rpm_repo_snapshots")
 
+http_file(
+    name = "stable_build_appliance.sendstream.zst",
+    sha256 = "3bc4a6ea07376759ae0e4ea693e8c62a7aece604af2a1b09a6fd1248dcbfe9bb",
+    urls = [
+        "https://antlir.s3.us-east-2.amazonaws.com/images/appliance/stable_build_appliance.sendstream.zst.3bc4a6ea07376759ae0e4ea693e8c62a7aece604af2a1b09a6fd1248dcbfe9bb",
+    ],
+)
+
+image.sendstream_layer(
+    name = "stable_build_appliance",
+    source = ":stable_build_appliance.sendstream.zst",
+    build_opts = image.opts(
+        build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
+    ),
+)
+
+# Below are images used for rebuilding the stable build appliance
+# they should not be used for normal operation for a few reasons:
+# 1) building the stable BA is a ~2 minute performance hit on every cache miss
+# 2) using stable BA from S3 allows non-rpm-based hosts to build images
+
+install_snapshots = [
+    set_up_rpm_repo_snapshots(),
+    install_rpm_repo_snapshot("//snapshot:fedora32"),
+    default_rpm_repo_snapshot_for("dnf", "//snapshot:fedora32"),
+]
+
+# This is the origin of the stable_build_appliance artifact uploaded to S3.
+image.layer(
+    name = "bootstrap_build_appliance",
+    features = [
+        # Note: need this because the yum_dnf_from_snapshot code can't deal
+        # with this directory not existing.
+        image.mkdir("/etc", "yum"),
+        image.rpms_install([
+            "btrfs-progs",
+            "coreutils",
+            "dnf",  # For installing rpms
+            "iproute",
+            "net-tools",
+            "python3",
+            "redhat-rpm-config",  # For building rpms
+            "rpm",  # For manipulating rpms
+            # "rpm-build", # For building rpms
+            # "rpm-sign",  # For signing rpms
+            "sudo",
+            "tar",
+        ]),
+    ] + install_snapshots,
+    build_opts = image.opts(
+        build_appliance = ":host_build_appliance",
+        rpm_repo_snapshot = "//snapshot:fedora32",
+    ),
+    enable_boot_target = True,
+)
+
+image.package(
+    name = "bootstrap_build_appliance.sendstream.zst",
+)
+
+# Host build appliance should never have to be used outside of the original
+# bootstrapping process.
+# It requires an rpm-based host system on which to build the bootstrapped build
+# appliance, which should be used for all subsequent operations.
 image.layer(
     name = "host_build_appliance",
     features = [
@@ -10,20 +75,22 @@ image.layer(
         image.mkdir("/var", "log"),
         image.mkdir("/var", "cache"),
         image.mkdir("/var/cache", "dnf"),
-        image.mkdir("/var", "lib/rpm"),
+        image.mkdir("/var", "lib"),
         image.mkdir("/var/lib", "dnf"),
-        image.mkdir("/", RPM_SNAPSHOT_BASE_DIR),
+        image.mkdir("/var/lib", "rpm"),
     ] + [
         image.host_dir_mount(source)
         for source in [
             "/bin",
             "/etc",
             "/lib",
+            "/lib64",
             "/sbin",
             "/usr",
         ]
-    ],
+    ] + install_snapshots,
     build_opts = image.opts(
         build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
     ),
+    visibility = [],
 )
