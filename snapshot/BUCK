@@ -14,20 +14,19 @@ export_file(
 )
 
 # Command to snapshot all the specified Fedora repos.
-# Currently only snapshot the Fedora32 Server 'os' repository, but this will be
+# Currently just snapshot the Fedora32 Everything 'os' repository, but this will be
 # expanded to support more Fedora versions and repos.
 buck_command_alias(
     name = "snapshot-fedora",
     args = [
         "--snapshot-dir=snapshot/fedora",
-        "--gpg-key-whitelist-dir=config/fedora",
+        "--gpg-key-whitelist-dir=snapshot/fedora/repos/everything-os/gpg_keys",
         '--db={"kind": "sqlite", "db_path": "snapshot/snapshots.sql3"}',
         "--threads=16",
         "--storage={}".format(repr(fedora_storage_config)),
         "--one-universe-for-all-repos=fedora",
         "--dnf-conf=$(location //snapshot:fedora/dnf.conf)",
         "--yum-conf=$(location //snapshot:fedora/dnf.conf)",
-        "--debug",
     ],
     exe = "//antlir/rpm:snapshot-repos",
 )
