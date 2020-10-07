@@ -4,7 +4,6 @@ buck-image-out
 .buckd/
 .tools/
 
-# vim stuff
 **/*.swp
-
 .vscode/
+*.local
