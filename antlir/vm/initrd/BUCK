@@ -1,5 +1,5 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file")
-load(":defs.bzl", "create_initrd_targets")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get")
+load(":defs.bzl", "initrd")
 
 export_file(
     name = "init.sh",
@@ -7,4 +7,7 @@ export_file(
 )
 
 # Create initrd targets for all known kernels
-create_initrd_targets()
+[initrd(
+    name = "{}-initrd".format(kernel.uname),
+    kernel = kernel,
+) for kernel in kernel_get.versions.values()]

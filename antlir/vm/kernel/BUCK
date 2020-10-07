@@ -1,4 +1,5 @@
-load(":defs.bzl", "create_vm_targets")
+load("//antlir/bzl:oss_shim.bzl", "kernel_get")
+load(":defs.bzl", "create_vm_target")
 
 # Create vm kernel targets for all known kernels
-create_vm_targets()
+[create_vm_target(kernel = kernel) for kernel in kernel_get.versions.values()]

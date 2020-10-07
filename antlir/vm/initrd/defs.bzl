@@ -1,12 +1,5 @@
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "third_party")
-
-def create_initrd_targets():
-    """
-    Create an initrd target for each known kernel version.
-    """
-    for uname, kernel in kernel_get.versions.items():
-        initrd("{}-initrd".format(uname), kernel)
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "third_party")
 
 VM_MODULE_LIST = [
     "drivers/block/virtio_blk.ko",
