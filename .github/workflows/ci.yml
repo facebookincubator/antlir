@@ -14,9 +14,11 @@ jobs:
 
       - name: Fetch buck
         run: ./tools/buck --version
-        
-      - name: Fetch third-party dependencies
-        run: ./tools/buck fetch //third-party/...
-        
-      - name: Evaluate target graph
-        run: ./tools/buck targets //...
+
+      - name: Fetch remote artifacts
+        run: ./tools/buck fetch //...
+
+      # Not every target can compile currently, so just build a set of example
+      # image(s) that are known to work right now
+      - name: Build example images
+        run: ./tools/buck build //images/examples/...
