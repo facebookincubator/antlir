@@ -247,12 +247,16 @@ def _sh_binary(*args, **kwargs):
 def _sh_test(*args, **kwargs):
     _wrap_internal(native.sh_test, args, kwargs)
 
+def _cxx_external_deps_linker_flags(kwargs):
+    external_deps = kwargs.pop("external_deps", [])
+    linker_flags = kwargs.pop("linker_flags", [])
+    return linker_flags + ["-l" + lib for _project, _version, lib in external_deps]
+
 def _impl_cpp_binary(name, tags = [], **kwargs):
-    # Future: make `external_deps` do something in OSS?
-    kwargs.pop("external_deps", None)
     native.cxx_binary(
         name = name,
         labels = tags,
+        linker_flags = _cxx_external_deps_linker_flags(kwargs),
         **kwargs
     )
 
@@ -260,11 +264,11 @@ def _cpp_binary(*args, **kwargs):
     _wrap_internal(_impl_cpp_binary, args, kwargs)
 
 def _impl_cpp_unittest(name, tags = [], **kwargs):
-    # Future: make `external_deps` do something in OSS?
-    kwargs.pop("external_deps", None)
+    external_deps = kwargs.pop("external_deps", [])
     native.cxx_test(
         name = name,
         labels = tags,
+        linker_flags = _cxx_external_deps_linker_flags(kwargs),
         **kwargs
     )
 
