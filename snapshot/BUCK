@@ -1,0 +1,40 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "export_file")
+load("//antlir/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
+
+fedora_storage_config = {
+    "bucket": "antlir",
+    "key": "s3",
+    "kind": "s3",
+    "prefix": "snapshots/fedora",
+    "region": "us-east-2",
+}
+
+export_file(
+    name = "fedora/dnf.conf",
+)
+
+# Command to snapshot all the specified Fedora repos.
+# Currently only snapshot the Fedora32 Server 'os' repository, but this will be
+# expanded to support more Fedora versions and repos.
+buck_command_alias(
+    name = "snapshot-fedora",
+    args = [
+        "--snapshot-dir=snapshot/fedora",
+        "--gpg-key-whitelist-dir=config/fedora",
+        '--db={"kind": "sqlite", "db_path": "snapshot/snapshots.sql3"}',
+        "--threads=16",
+        "--storage={}".format(repr(fedora_storage_config)),
+        "--one-universe-for-all-repos=fedora",
+        "--dnf-conf=$(location //snapshot:fedora/dnf.conf)",
+        "--yum-conf=$(location //snapshot:fedora/dnf.conf)",
+        "--debug",
+    ],
+    exe = "//antlir/rpm:snapshot-repos",
+)
+
+rpm_repo_snapshot(
+    name = "fedora32",
+    src = "fedora",
+    rpm_installers = ("dnf",),
+    storage = fedora_storage_config,
+)
