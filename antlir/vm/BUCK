@@ -64,11 +64,6 @@ python_unittest(
     deps = [":share"],
 )
 
-export_file(
-    name = "init.sh",
-    src = "init.sh",
-)
-
 python_library(
     # @autodeps-skip
     name = "vmtest",

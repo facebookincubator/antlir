@@ -433,7 +433,8 @@ shim = struct(
     get_visibility = _normalize_visibility,
     kernel_get = struct(
         default = _kernel("5.3.7-301.fc31.x86_64"),
-        version = _kernel,
+        get = _kernel,
+        versions = kernels,
     ),
     platform_utils = None,
     python_binary = _python_binary,

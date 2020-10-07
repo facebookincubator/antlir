@@ -142,7 +142,7 @@ def _outer_test(
         visibility = [],
         deps = [
             "//antlir/vm:vmtest",
-            kernel.vm,
+            "//antlir/vm/kernel:{}-vm".format(kernel.uname),
         ],
     )
 
