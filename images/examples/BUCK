@@ -1,0 +1,11 @@
+load("//antlir/bzl:image.bzl", "image")
+
+image.layer(
+    name = "example",
+    parent_layer = "//images/base:fedora32",
+    features = [
+        # this is provided in the base image, so must be removed first
+        image.remove("/etc/motd"),
+        image.install("motd", "/etc/motd"),
+    ],
+)
