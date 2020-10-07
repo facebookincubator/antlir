@@ -152,10 +152,16 @@ def _normalize_pkg_style(style):
     Internally, zip and fastzip internally behave similar to how an
     `inplace` python binary behaves in OSS Buck.
     """
-    if style and style in ("zip", "fastzip"):
+    if not style:
+        return None
+
+    # Support some aliases that are used internally, otherwise return the style
+    # directly if it is unrecognized
+    if style in ("zip", "fastzip"):
         return "inplace"
-    else:
+    if style in ("xar",):
         return "standalone"
+    return style
 
 def _third_party_library(project, rule = None, platform = None):
     """
@@ -429,8 +435,8 @@ shim = struct(
         # "libcap_ng_compiler_flags": "-DCAPNG_SUPPORTS_AMBIENT=1",
     },
     export_file = _export_file,
-    http_file = _http_file,
     get_visibility = _normalize_visibility,
+    http_file = _http_file,
     kernel_get = struct(
         default = _kernel("5.3.7-301.fc31.x86_64"),
         version = _kernel,
