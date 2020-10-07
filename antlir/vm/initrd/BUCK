@@ -1,0 +1,10 @@
+load("//antlir/bzl:oss_shim.bzl", "export_file")
+load(":defs.bzl", "create_initrd_targets")
+
+export_file(
+    name = "init.sh",
+    visibility = [],
+)
+
+# Create initrd targets for all known kernels
+create_initrd_targets()
