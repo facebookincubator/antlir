@@ -16,6 +16,7 @@ from typing import Iterable, List, Optional
 
 import click
 from antlir.artifacts_dir import find_repo_root
+from antlir.vm.common import async_wrapper
 from antlir.vm.share import BtrfsDisk
 from antlir.vm.vm import vm
 
@@ -24,15 +25,6 @@ logger = logging.getLogger("vmtest")
 
 
 MINUTE = 60
-
-
-def async_command(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        loop = asyncio.get_event_loop()
-        return loop.run_until_complete(f(*args, **kwargs))
-
-    return wrapper
 
 
 class RelativeTimeFormatter(logging.Formatter):
@@ -101,7 +93,7 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     "--ncpus", type=int, default=1, help="How many vCPUs the VM will have."
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-@async_command
+@async_wrapper
 async def main(
     bind_repo_ro: bool,
     quiet: bool,
