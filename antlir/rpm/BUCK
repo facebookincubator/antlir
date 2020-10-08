@@ -218,9 +218,6 @@ python_binary(
     name = "repo-server",
     srcs = ["repo_server_main.py"],
     main_module = "antlir.rpm.repo_server_main",
-    # This is included directly in the build appliane, and XAR looks to be
-    # over 10x smaller than the alternative.
-    par_style = "xar",
     deps = [":repo_server"],
 )
 
