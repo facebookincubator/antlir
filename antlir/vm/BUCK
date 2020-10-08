@@ -24,6 +24,13 @@ buck_genrule(
 )
 
 python_library(
+    name = "common",
+    srcs = [
+        "common.py",
+    ],
+)
+
+python_library(
     name = "vm",
     srcs = [
         "guest_agent.py",
@@ -40,6 +47,21 @@ python_library(
         ":share",
         "//antlir:config",
         "//antlir/facebook/vm:share_fbcode_runtime",
+    ],
+)
+
+python_library(
+    name = "run",
+    srcs = [
+        "run.py",
+    ],
+    deps = [
+        third_party.library(
+            "click",
+            platform = "python",
+        ),
+        ":common",
+        ":vm",
     ],
 )
 
@@ -65,7 +87,6 @@ python_unittest(
 )
 
 python_library(
-    # @autodeps-skip
     name = "vmtest",
     srcs = [
         "vmtest.py",
@@ -75,6 +96,7 @@ python_library(
             "click",
             platform = "python",
         ),
+        ":common",
         ":share",
         ":vm",
         "//antlir:artifacts_dir",
