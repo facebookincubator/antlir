@@ -33,6 +33,7 @@ class DBConnectionContext(AbstractContextManager, Pluggable):
 
 class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
     SQL_DIALECT = SQLDialect.SQLITE3
+    _warned_about_sqlite_force_master = False
 
     def __init__(
         self,
@@ -40,8 +41,12 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
         readonly: bool = False,
         force_master: Optional[bool] = None,
     ):
-        if force_master is not None:  # pragma: no cover
+        if (
+            force_master is not None
+            and not type(self)._warned_about_sqlite_force_master
+        ):  # pragma: no cover
             log.warning("`force_master` is not supported for SQLite - ignoring")
+            type(self)._warned_about_sqlite_force_master = True
         self.readonly = readonly
         self.db_path = db_path
         self._conn = None
