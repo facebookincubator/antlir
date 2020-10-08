@@ -46,6 +46,7 @@ _PYTHON_BINARY_KWARGS = _make_rule_kwargs_dict(
         "resources",
         "runtime_deps",
         "srcs",
+        "tags",
         "visibility",
     ],
 )
