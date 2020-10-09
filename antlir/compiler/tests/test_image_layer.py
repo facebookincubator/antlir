@@ -43,6 +43,9 @@ TARGET_TO_PATH = {
 }
 
 
+REPO_CFG = load_repo_config()
+
+
 class ImageLayerTestCase(unittest.TestCase):
     def setUp(self):
         # More output for easier debugging
@@ -248,12 +251,18 @@ class ImageLayerTestCase(unittest.TestCase):
 
             check_common_rpm_render(self, r, yum_dnf)
 
+    @unittest.skipUnless(
+        "dnf" in REPO_CFG.rpm_installers_supported, "dnf not supported"
+    )
     def test_dnf_build_appliance(self):
         with self._check_build_appliance(
             "validates-dnf-build-appliance", "dnf"
         ) as (_, r):
             self.assertEqual(["(Dir)", {}], pop_path(r, "usr/lib"))
 
+    @unittest.skipUnless(
+        "yum" in REPO_CFG.rpm_installers_supported, "yum not supported"
+    )
     def test_yum_build_appliance(self):
         with self._check_build_appliance(
             "validates-yum-build-appliance", "yum"
@@ -288,8 +297,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 # Along with the repo root, we might have some runtime host
                 # mounts injected in the environment by config.  Let's verify
                 # them as well.
-                repo_config = load_repo_config()
-                for mount in repo_config.host_mounts_for_repo_artifacts:
+                for mount in REPO_CFG.host_mounts_for_repo_artifacts:
                     d = os.path.abspath(mount)
                     while d != "/":
                         self.assertEqual(["(Dir)", {}], pop_path(r, d))
