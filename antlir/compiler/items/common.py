@@ -183,7 +183,7 @@ def _validate_artifacts_require_repo(
     dependency: Subvol, layer_opts: LayerOpts, message: str
 ):
     dep_arr = procfs_serde.deserialize_int(
-        dependency, META_ARTIFACTS_REQUIRE_REPO.decode()
+        dependency.path(), META_ARTIFACTS_REQUIRE_REPO.decode()
     )
     # The check is <= because we should permit building @mode/dev layers
     # that depend on published @mode/opt images.  The CLI arg is bool.

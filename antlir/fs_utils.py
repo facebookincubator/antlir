@@ -127,6 +127,53 @@ class Path(bytes):
     def relpath(self, start: AnyStr) -> "Path":
         return Path(os.path.relpath(self, byteme(start)))
 
+    def normalized_subpath(
+        self, path: AnyStr, *, no_dereference_leaf=False
+    ) -> "Path":
+        """
+        Returns a normalized path to `path` interpreted as a child of the
+        directory `self`, raising if the actual path points outside `self`.
+        We check for two risks:
+          - `path` is relative, and goes above `self` via '..'.
+          - Some component of the path is a symlink, and this symlink, when
+            interpreted by a non-chrooted tool, will attempt to access
+            something outside of `self`.
+        If `path` is absolute, the leading `/` is ignored.
+
+        At present, the above check fail on attempting to traverse an
+        symlink within `self` that is an absolute path to another directory
+        within the `self` -- i.e.  if you think of `self` as the root of
+        another filesystem, absolute symlinks won't work.  If needed,
+        support could easily be added.
+
+        Such absolute symlinks are not supported now because at present, I
+        believe that the right idiom is to encourage image authors to
+        manipulate the "real" locations of files, and not to manipulate
+        paths through symlinks.
+
+        In the rare case that you need to manipulate a symlink itself (e.g.
+        remove or rename), you will want to pass `no_dereference_leaf`.
+
+        Future: consider using a file descriptor to refer to the base
+        directory to better mitigate races due to renames in its path.
+        """
+        # Without the lstrip, we would lose the `self` prefix if the
+        # supplied path is absolute.
+        result_path = (self / (Path(path).lstrip(b"/"))).normpath()
+        # Paranoia: Make sure that, despite any symlinks in the path, the
+        # resulting path is not outside of `self`.
+        if (
+            (
+                (result_path.dirname().realpath() / result_path.basename())
+                if no_dereference_leaf
+                else result_path.realpath()
+            )
+            .relpath(self.realpath())
+            .has_leading_dot_dot()
+        ):
+            raise AssertionError(f"{path} is outside of {self}")
+        return Path(result_path)
+
     # Returns `str` because shell scripts are normally strings, not bytes.
     def shell_quote(self) -> str:
         return shlex.quote(self.decode())

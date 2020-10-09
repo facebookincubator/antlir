@@ -24,6 +24,7 @@ python_unittest(
 python_library(
     name = "procfs_serde",
     srcs = ["procfs_serde.py"],
+    deps = ["//antlir:fs_utils"],
 )
 
 python_unittest(

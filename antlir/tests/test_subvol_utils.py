@@ -55,7 +55,7 @@ class SubvolTestCase(unittest.TestCase):
                 td / "my_null",
                 Subvol(td).path("my_null", no_dereference_leaf=True),
             )
-            with self.assertRaisesRegex(AssertionError, "outside the subvol"):
+            with self.assertRaisesRegex(AssertionError, " is outside of "):
                 Subvol(td).path("my_null")
 
     def test_run_as_root_no_cwd(self):
@@ -82,7 +82,7 @@ class SubvolTestCase(unittest.TestCase):
         sv = Subvol("/subvol/need/not/exist")
 
         for bad_path in ["..", "a/../../b/c/d", "../c/d/e"]:
-            with self.assertRaisesRegex(AssertionError, "outside the subvol"):
+            with self.assertRaisesRegex(AssertionError, "is outside of"):
                 sv.path(bad_path)
 
         self.assertEqual(sv.path("a/b"), sv.path("/a/b/"))

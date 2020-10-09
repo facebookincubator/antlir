@@ -136,46 +136,14 @@ class Subvol:
         `os.path.join(subvol.path('a/path'), 'more/path')`, since that skips
         crucial safety checks.  Instead: `subvol.path(os.path.join(...))`.
 
-        This code has checks to mitigate two risks:
-          - `path_in_subvol` is relative, and exits the subvolume via '..'
-          - Some component of the path is a symlink, and this symlink, when
-            interpreted by a non-chrooted tool, will attempt to access
-            something outside of the subvolume.
-
-        At present, the above check fail on attempting to traverse an
-        in-subvolume symlink that is an absolute path to another directory
-        within the subvolume, but support could easily be added.  It is not
-        supported now because at present, I believe that the right idiom is
-        to encourage image authors to manipulate the "real" locations of
-        files, and not to manipulate paths through symlinks.
-
-        In the rare case that you need to manipulate a symlink itself (e.g.
-        remove or rename), you will want to pass `no_dereference_leaf`.
-
-        Future: consider using a file descriptor to refer to the subvolume
-        root directory to better mitigate races due to renames in its path.
+        See the `Path.ensure_child` doc for more details.
         """
-        # The `btrfs` CLI is not very flexible, so it will try to name a
-        # subvol '.' if we do not normalize `/subvol/.`.
-        result_path = (
-            # Without the lstrip, we would lose the subvolume prefix if the
-            # supplied path is absolute.
-            self._path
-            / (Path(path_in_subvol).lstrip(b"/"))
-        ).normpath()
-        # Paranoia: Make sure that, despite any symlinks in the path, the
-        # resulting path is not outside of the subvolume root.
-        if (
-            (
-                (result_path.dirname().realpath() / result_path.basename())
-                if no_dereference_leaf
-                else result_path.realpath()
-            )
-            .relpath(self._path.realpath())
-            .has_leading_dot_dot()
-        ):
-            raise AssertionError(f"{path_in_subvol} is outside the subvol")
-        return Path(result_path)
+        # It's important that this is normalized.  The `btrfs` CLI is not
+        # very flexible, so it will try to name a subvol '.' if we do not
+        # normalize `/subvol/.`.
+        return self._path.normalized_subpath(
+            path_in_subvol, no_dereference_leaf=no_dereference_leaf
+        )
 
     def canonicalize_path(self, path: AnyStr) -> Path:
         """

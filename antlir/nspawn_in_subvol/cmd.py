@@ -180,7 +180,7 @@ def _nspawn_cmd(nspawn_subvol: Subvol, temp_cgroup: Path):
 # This is a separate helper so that tests can mock it easily
 def _artifacts_require_repo(src_subvol: Subvol):
     return procfs_serde.deserialize_int(
-        src_subvol, META_ARTIFACTS_REQUIRE_REPO.decode()
+        src_subvol.path(), META_ARTIFACTS_REQUIRE_REPO.decode()
     )
 
 

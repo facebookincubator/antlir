@@ -95,6 +95,8 @@ Convention: in Python identifiers, the . of the extension maps to __.
 import os
 from typing import Any, List
 
+from antlir.fs_utils import Path
+
 
 def _make_script(dest: bytes, cmds: List[str]):
     return [
@@ -183,16 +185,16 @@ def serialize(data: Any, subvol, path_with_ext: str):
     )
 
 
-def deserialize_untyped(subvol, path_with_ext: str) -> Any:
-    # NB: while `isdir` and `isfile` do follow symbolic links, `subvol.path`
-    # will prevent the use of symlinks that take us outside the subvol.
-    if os.path.isdir(subvol.path(path_with_ext)):
+def deserialize_untyped(path: Path, path_with_ext: str) -> Any:
+    # `isdir` and `isfile` follow symbolic links so use `normalized_subpath`
+    # to prevent the use of symlinks that take us outside the base path.
+    if os.path.isdir(path.normalized_subpath(path_with_ext)):
         return {
-            k: deserialize_untyped(subvol, os.path.join(path_with_ext, k))
-            for k in os.listdir(subvol.path(path_with_ext).decode())
+            k: deserialize_untyped(path, os.path.join(path_with_ext, k))
+            for k in os.listdir(path.normalized_subpath(path_with_ext).decode())
         }
-    elif os.path.isfile(subvol.path(path_with_ext)):
-        with open(subvol.path(path_with_ext), "rb") as f:
+    elif os.path.isfile(path.normalized_subpath(path_with_ext)):
+        with open(path.normalized_subpath(path_with_ext), "rb") as f:
             s = f.read()
 
         _, ext = os.path.splitext(path_with_ext)
