@@ -276,7 +276,7 @@ class ImageLayerTestCase(unittest.TestCase):
             # up but it seems unlikely to affect prod since it's only a
             # thing in `@mode/dev`, which should never ship prod artifacts.
             if deserialize_int(
-                sv, "/.meta/private/opts/artifacts_may_require_repo"
+                sv.path(), "/.meta/private/opts/artifacts_may_require_repo"
             ):
                 # Assume that the prefix of the repo (e.g. /home or /data)
                 # is not one of the normal FHS-type directories below.

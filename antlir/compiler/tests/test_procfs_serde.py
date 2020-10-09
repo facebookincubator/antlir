@@ -35,7 +35,7 @@ class TestProcfsSerDe(unittest.TestCase):
         self, subvol, orig_dir, name_with_ext
     ):
         data = deserialize_untyped(
-            subvol, os.path.join(orig_dir, name_with_ext)
+            subvol.path(), os.path.join(orig_dir, name_with_ext)
         )
         new_dir = self._next_dir()
         serialize(data, subvol, os.path.join(new_dir, name_with_ext))
@@ -145,20 +145,20 @@ class TestProcfsSerDe(unittest.TestCase):
 
         with open(subvol.path("valid_int"), "wb") as f:
             f.write(b"37\n")
-        self.assertEquals(37, deserialize_int(subvol, "valid_int"))
+        self.assertEquals(37, deserialize_int(subvol.path(), "valid_int"))
 
         # Now check error conditions unrelated to type coercion
 
         with open(subvol.path("no_newline"), "wb") as f:
             f.write(b"3.14")
         with self.assertRaisesRegex(AssertionError, " a trailing newline,"):
-            deserialize_untyped(subvol, "no_newline")
+            deserialize_untyped(subvol.path(), "no_newline")
 
         with open(subvol.path("foo.badext"), "wb") as f:
             f.write(b"\n")
         with self.assertRaisesRegex(AssertionError, "Unsupported extension "):
-            deserialize_untyped(subvol, "foo.badext")
+            deserialize_untyped(subvol.path(), "foo.badext")
 
         os.mkfifo(subvol.path("a_fifo"))
         with self.assertRaisesRegex(AssertionError, " a file nor a dir"):
-            deserialize_untyped(subvol, "a_fifo")
+            deserialize_untyped(subvol.path(), "a_fifo")

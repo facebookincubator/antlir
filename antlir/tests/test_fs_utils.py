@@ -126,6 +126,20 @@ class TestFsUtils(unittest.TestCase):
             ),
         )
 
+    def test_normalized_subpath(self):
+        for p in [Path("/need/not/exist"), Path("something/relative")]:
+            self.assertEqual(p, p.normalized_subpath("."))
+
+            for bad_path in ["..", "a/../../b/c/d", "../c/d/e"]:
+                with self.assertRaisesRegex(AssertionError, "is outside of"):
+                    p.normalized_subpath(bad_path)
+
+            self.assertEqual(
+                p.normalized_subpath("a/b"), p.normalized_subpath("/a/b/.")
+            )
+
+            self.assertEqual(b"a/b", p.normalized_subpath("a/b").relpath(p))
+
     def test_path_json(self):
         # We can serialize `Path` to JSON, including invalid UTF-8.
         # Unfortunately, `json` doesn't allow us to custom-serialize keys.

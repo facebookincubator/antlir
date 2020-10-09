@@ -196,7 +196,7 @@ def mounts_from_subvol_meta(subvol: Optional[Subvol]) -> Iterator[Tuple[Path]]:
 
             # Deserialize the mount madness
             cfg = procfs_serde.deserialize_untyped(
-                subvol, Path(META_MOUNTS_DIR / relpath).decode()
+                subvol.path(), Path(META_MOUNTS_DIR / relpath).decode()
             )
 
             # Convert config info proper types and create a Mount
