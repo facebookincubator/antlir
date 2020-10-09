@@ -108,10 +108,7 @@ image_build_librename_shadowed(
             version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
         ),
     )
-    for rpm_installer in [
-        "yum",
-        "dnf",
-    ]
+    for rpm_installer in REPO_CFG.rpm_installers_supported
 ]
 
 # Since `rpm-test-milk` provides `/bin/sh`, use it to exercise foreign layers.

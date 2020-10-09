@@ -162,8 +162,6 @@ image_feature_python_unittest(
 )
 
 IMAGE_LAYER_DEPS = [
-    "validates-dnf-build-appliance",
-    "validates-yum-build-appliance",
     "foreign-layer",
     "layer-with-non-default-snapshot-rpm",
     "installed-files",
@@ -179,6 +177,9 @@ IMAGE_LAYER_DEPS = [
     "create_ops-from-dir",
     "create_ops-from-layer",
     "create_ops-alias",
+] + [
+    "validates-{}-build-appliance".format(i)
+    for i in REPO_CFG.rpm_installers_supported
 ]
 
 python_unittest(

@@ -37,9 +37,9 @@ def _get_optional_str_cfg(name, default = None):
 # We use space to separate plurals because spaces are not allowed in target
 # paths, and also because that's what `.buckconfig` is supposed to support
 # for list configs (but does not, due to bugs).
-def _get_str_list_cfg(name, separator = " "):
+def _get_str_list_cfg(name, separator = " ", default = None):
     s = _do_not_use_directly_get_cfg(name)
-    return s.split(separator) if s else []
+    return s.split(separator) if s else (default or [])
 
 # Defaults to the empty list if the config is not set
 def _get_version_set_to_path():
@@ -95,6 +95,7 @@ repo_config_t = shape.shape(
     host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
     libcap_ng_compiler_flags = shape.list(str),
     rpm_installer_default = str,
+    rpm_installers_supported = shape.list(str),
     version_set_to_path = shape.dict(str, str),
     version_set_default = str,
 )
@@ -142,6 +143,9 @@ REPO_CFG = shape.new(
     # a non-default build appliance, you will usually also want to override
     # this via your layer's `build_opts`.
     rpm_installer_default = _get_optional_str_cfg("rpm_installer_default"),
+    # Which RPM installers are supported. Internally antlir supports both dnf
+    # and yum, but the OSS appliance(s) are more modern and only support dnf.
+    rpm_installers_supported = _get_str_list_cfg("rpm_installers_supported", default = ["dnf", "yum"]),
 
     # TODO(mpatlasov,lesha): add docs.  This feature is in development, and
     # should not be used yet.
