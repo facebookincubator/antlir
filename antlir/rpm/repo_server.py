@@ -391,6 +391,7 @@ def main():  # pragma: no cover
     )
     parser.add_argument("--debug", action="store_true", help="Log more")
     args = parser.parse_args()
+    init_logging(debug=args.debug)
 
     with open(args.snapshot_dir / "storage.json") as f:
         storage = json.load(f)
@@ -399,8 +400,6 @@ def main():  # pragma: no cover
         storage["base_dir"] = (
             args.snapshot_dir / storage["base_dir"]
         ).normpath()
-
-    init_logging(debug=args.debug)
 
     with repo_server(
         socket.socket(fileno=args.socket_fd),

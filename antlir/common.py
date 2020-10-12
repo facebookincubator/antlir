@@ -25,17 +25,38 @@ def byteme(s: AnyStr) -> bytes:
     return s.encode() if isinstance(s, str) else s
 
 
-def get_file_logger(py_path: AnyStr):
-    return logging.getLogger(os.path.basename(py_path))
+# It's possible that `get_file_logger` is obtained, **and** logs, before
+# `init_logging` is called.  Such usage is a minor bug; rather than hide the
+# bug by never showing the debug logs, we'll make those logs visible.
+_INITIALIZED_LOGGING = False
 
 
 # NB: Many callsites in antlir rely on the assumption that this function will
 # result in logging to the default stream of StreamHandler, which is stderr.
 def init_logging(*, debug: bool = False):
-    logging.basicConfig(
-        format="%(levelname)s %(name)s %(asctime)s %(message)s",
-        level=logging.DEBUG if debug else logging.INFO,
-    )
+    global _INITIALIZED_LOGGING
+    level = logging.DEBUG if debug else logging.INFO
+    # The first time around, just set up the stream handler & formatter --
+    # this will be inherited by all `get_file_logger` instances.
+    if not _INITIALIZED_LOGGING:
+        _INITIALIZED_LOGGING = True
+        logging.basicConfig(
+            format="%(levelname)s %(name)s %(asctime)s %(message)s", level=level
+        )
+        return
+    # Logging is being "explicitly" re-initialized, so we may need to update
+    # the level.  We only need to touch the root logger because all others
+    # use `NOTSET` per `get_file_logger`.
+    logging.getLogger().setLevel(level)
+
+
+def get_file_logger(py_path: AnyStr):
+    # Default-initialize with `debug=True` until the user tells us otherwise.
+    if not _INITIALIZED_LOGGING:
+        init_logging(debug=True)
+    logger = logging.getLogger(os.path.basename(py_path))
+    logger.setLevel(logging.NOTSET)
+    return logger
 
 
 def check_popen_returncode(proc: subprocess.Popen):
