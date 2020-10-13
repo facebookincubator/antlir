@@ -247,7 +247,6 @@ class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
 
     def test_rpm_action_item_install_local_dnf(self):
         with self._test_rpm_action_item_install_local_setup() as r:
-            pop_path(r, "var/cache/yum")
             pop_path(r, "var/lib/yum")
             pop_path(r, "var/log/yum.log")
             check_common_rpm_render(self, r, "dnf")

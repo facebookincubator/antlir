@@ -75,7 +75,6 @@ DUMMY_LAYER_OPTS = LayerOpts(
     subvolumes_dir=None,
     rpm_installer=None,
     rpm_repo_snapshot=None,
-    preserve_yum_dnf_cache=False,
     allowed_host_mount_targets=[],
 )
 

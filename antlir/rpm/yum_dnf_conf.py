@@ -128,7 +128,7 @@ class YumDnfConfIsolator:
         return self
 
     def isolate_main(
-        self, *, config_path: str, pluginconf_dir: str
+        self, *, config_path: str, pluginconf_dir: str, cache_dir: str
     ) -> "YumDnfConfIsolator":
         """
         Set keys that could cause `yum` or `dnf` to interact with the host
@@ -139,22 +139,27 @@ class YumDnfConfIsolator:
         assert (
             "include" not in main_sec and "include" not in self._cp["DEFAULT"]
         ), "Includes are not supported"
+
+        # Since we have an immutable snapshot of the repos, we can pre-build
+        # the cache as part of the snapshot, and it never expires.
+        main_sec["cachedir"] = cache_dir
+        main_sec["metadata_expire"] = "never"
+        main_sec["check_config_file_age"] = "0"
+
         # This list was obtained by scrolling through `man yum.conf`.  To be
         # really thorough, we'd also remove glob filesystem dependencies
         # from options like `exclude`, `includepkgs`, `protected_packages`,
         # `exactarchlist`, etc -- but this is a moot point now that all RPM
         # installs go trough a build appliance.
         #
-        # `cachedir` and `persistdir` are under `--installroot`, so no
-        # isolation needed.  However, ensuring defaults makes later
-        # container customization (e.g.  cleanup) easier.  These can be
-        # optionalized later if a good reason arises.  In that case,
-        # remember that `RpmActionItem` has special handling for `cachedir`.
-        main_sec["cachedir"] = f"/var/cache/{prog_name}"  # default
+        # `persistdir` is under `--installroot`, so no isolation needed.
+        # However, ensuring defaults makes later container customization
+        # (e.g.  cleanup) easier.  These can be optionalized later if a good
+        # reason arises.
         main_sec["persistdir"] = f"/var/lib/{prog_name}"  # default
         # Specify repos only via this `.conf` -- that eases isolating them.
         main_sec["reposdir"] = "/dev/null"
-        # See the note about `cachedir` -- the same logic applies.
+        # See the note about `persistdir` -- the same logic applies.
         main_sec["logfile"] = f"/var/log/{prog_name}.log"  # default
         main_sec["config_file_path"] = config_path
         # Our download path isn't very fast, nor are the CI hosts. So, we make

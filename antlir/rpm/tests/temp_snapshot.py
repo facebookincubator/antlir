@@ -23,7 +23,6 @@ def _make_test_yum_dnf_conf(
         textwrap.dedent(
             f"""\
         [main]
-        cachedir=/var/cache/{yum_dnf}
         debuglevel=2
         keepcache=1
         logfile=/var/log/{yum_dnf}.log

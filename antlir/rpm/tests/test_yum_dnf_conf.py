@@ -26,6 +26,7 @@ class YumDnfConfTestCaseImpl:
         [main]
         debuglevel=2
         gpgcheck=1
+        metadata_expire = 1  # seconds
 
         [potato]
         baseurl=file:///pot.at/to
@@ -80,7 +81,9 @@ class YumDnfConfTestCaseImpl:
 
         out = io.StringIO()
         self.conf.isolate().isolate_repos(isolated_repos).isolate_main(
-            config_path="/config_path", pluginconf_dir="/pluginconf_dir"
+            config_path="/config_path",
+            pluginconf_dir="/pluginconf_dir",
+            cache_dir="/cache_dir",
         ).write(out)
 
         extra_directives = ""
@@ -98,7 +101,9 @@ class YumDnfConfTestCaseImpl:
         [main]
         debuglevel = 2
         gpgcheck = 1
-        cachedir = /var/cache/{prog_name}
+        metadata_expire = never
+        cachedir = /cache_dir
+        check_config_file_age = 0
         persistdir = /var/lib/{prog_name}
         reposdir = /dev/null
         logfile = /var/log/{prog_name}.log

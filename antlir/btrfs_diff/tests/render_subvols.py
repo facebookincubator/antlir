@@ -45,9 +45,8 @@ def check_common_rpm_render(test, rendered_subvol, yum_dnf: str):
     if yum_dnf == "yum":
         (ino,) = pop_path(r, "var/log/yum.log")
         test.assertRegex(ino, r"^\(File m600 d[0-9]+\)$")
-        for ignore_dir in ["var/cache/yum", "var/lib/yum"]:
-            ino, _ = pop_path(r, ignore_dir)
-            test.assertEqual("(Dir)", ino)
+        ino, _ = pop_path(r, "var/lib/yum")
+        test.assertEqual("(Dir)", ino)
     elif yum_dnf == "dnf":
         test.assertEqual(
             ["(Dir)", {"dnf": ["(Dir)", {"modules.d": ["(Dir)", {}]}]}],
@@ -61,9 +60,8 @@ def check_common_rpm_render(test, rendered_subvol, yum_dnf: str):
         ]:
             (ino,) = pop_path(r, f"var/log/{logname}")
             test.assertRegex(ino, r"^\(File d[0-9]+\)$", logname)
-        for ignore_dir in ["var/cache/dnf", "var/lib/dnf"]:
-            ino, _ = pop_path(r, ignore_dir)
-            test.assertEqual("(Dir)", ino)
+        ino, _ = pop_path(r, "var/lib/dnf")
+        test.assertEqual("(Dir)", ino)
     else:
         raise AssertionError(yum_dnf)
 
@@ -93,14 +91,7 @@ def check_common_rpm_render(test, rendered_subvol, yum_dnf: str):
                         ]
                     },
                 ],
-                "var": [
-                    "(Dir)",
-                    {
-                        "cache": ["(Dir)", {}],
-                        "lib": ["(Dir)", {}],
-                        "log": ["(Dir)", {}],
-                    },
-                ],
+                "var": ["(Dir)", {"lib": ["(Dir)", {}], "log": ["(Dir)", {}]}],
             },
         ],
         r,
