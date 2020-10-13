@@ -103,13 +103,13 @@ class RemovePathItem(ImageItem):
                 subvol.run_as_root(
                     [
                         "rm",
-                        "-r",
                         # This prevents us from making removes outside of the
                         # per-repo loopback, which is an important safeguard.
                         # It does not stop us from reaching into other subvols,
                         # but since those have random IDs in the path, this is
                         # nearly impossible to do by accident.
                         "--one-file-system",
+                        "--recursive",
                         path,
                     ]
                 )
