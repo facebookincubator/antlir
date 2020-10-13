@@ -70,9 +70,9 @@ class TarballItem(tarball_t, ImageItem):
                 # collide with whatever is already present.  However, it's
                 # hard to state that with complete confidence, especially if
                 # we start adding support for following directory symlinks.
-                "-C",
+                "--directory",
                 work_dir + "/" + self.into_dir,
-                "-x",
+                "--extract",
                 # preserving xattrs need to be specified on both sides (packing
                 # and unpacking)
                 "--xattrs",
@@ -124,7 +124,7 @@ class TarballItem(tarball_t, ImageItem):
                 #        drwx------. 2 lesha users 17 Sep 11 21:50 IN
                 #        drwxr-xr-x. 2 lesha users 17 Sep 11 21:54 OUT
                 "--keep-old-files",
-                "-f",
+                "--file",
                 "-",
             ]
         )

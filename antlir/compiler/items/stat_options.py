@@ -68,17 +68,29 @@ def build_stat_options(
         # creating a directory that already has something inside it.  On the
         # plus side, it helps with nested directory creation.
         if build_appliance:
-            ba.run(["chmod", "-R", mode_to_str(item.mode), ba.path(rel_path)])
+            ba.run(
+                [
+                    "chmod",
+                    "--recursive",
+                    mode_to_str(item.mode),
+                    ba.path(rel_path),
+                ]
+            )
         else:
             subvol.run_as_root(
-                ["chmod", "-R", mode_to_str(item.mode), full_target_path]
+                [
+                    "chmod",
+                    "--recursive",
+                    mode_to_str(item.mode),
+                    full_target_path,
+                ]
             )
     if build_appliance:
         ba.run(
             [
                 "chown",
                 "--no-dereference",
-                "-R",
+                "--recursive",
                 item.user_group,
                 ba.path(rel_path),
             ],
@@ -92,7 +104,7 @@ def build_stat_options(
             [
                 "chown",
                 "--no-dereference",
-                "-R",
+                "--recursive",
                 item.user_group,
                 full_target_path,
             ]

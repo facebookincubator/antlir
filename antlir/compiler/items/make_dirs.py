@@ -53,7 +53,7 @@ class MakeDirsItem(ImageItem):
             work_dir = generate_work_dir()
             full_path = Path(work_dir) / self.into_dir / self.path_to_make
             opts = new_nspawn_opts(
-                cmd=["mkdir", "-p", full_path],
+                cmd=["mkdir", "--parents", full_path],
                 layer=layer_opts.build_appliance,
                 bindmount_rw=[(subvol.path(), work_dir)],
                 user=pwd.getpwnam("root"),
@@ -63,7 +63,7 @@ class MakeDirsItem(ImageItem):
             inner_dir = subvol.path(
                 os.path.join(self.into_dir, self.path_to_make)
             )
-            subvol.run_as_root(["mkdir", "-p", inner_dir])
+            subvol.run_as_root(["mkdir", "--parents", inner_dir])
         outer_dir = self.path_to_make.split("/", 1)[0]
         build_stat_options(
             self,
