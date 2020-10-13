@@ -220,7 +220,6 @@ def _vm_unittest(
         features = [
             image.install_buck_runnable(":" + inner_test, "/test"),
         ],
-        antlir_rule = "user-internal",
     )
     image.package(
         name = "{}=test.btrfs".format(name),
@@ -246,7 +245,6 @@ def _vm_unittest(
             name = "{}-image".format(name),
             parent_layer = layer,
             features = features,
-            antlir_rule = "user-internal",
         )
         layer = ":{}-image".format(name)
 
