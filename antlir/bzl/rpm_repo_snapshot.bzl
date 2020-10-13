@@ -162,16 +162,18 @@ def rpm_repo_snapshot(
     per_installer_cmds = []
     for rpm_installer in rpm_installers:
         per_installer_cmds.append('''
-mkdir -p "$OUT"/{prog}/bin
-cp $(location {yum_or_dnf_wrapper}) "$OUT"/{prog}/bin/{prog}
-
 $(exe //antlir/rpm:write-yum-dnf-conf) \\
     --rpm-installer {prog} \\
     --input-conf "$OUT"/snapshot/{prog}.conf \\
-    --output-dir "$OUT"/{prog}/etc \\
-    --install-dir {quoted_install_dir}/{prog}/etc \\
+    --output-dir "$OUT"/{prog} \\
+    --install-dir {quoted_install_dir}/{prog} \\
     --repo-server-ports {quoted_repo_server_ports} \\
 
+mkdir -p "$OUT"/{prog}/bin
+cp $(location {yum_or_dnf_wrapper}) "$OUT"/{prog}/bin/{prog}
+
+# Fixme: remove this shim once we're actually calling `makecache` to make it.
+mkdir -p "$OUT"/{prog}/var/cache/{prog}
 '''.format(
             prog = rpm_installer,
             yum_or_dnf_wrapper = _yum_or_dnf_wrapper(rpm_installer, name),

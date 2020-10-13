@@ -55,8 +55,9 @@ def write_yum_dnf_conf(
 ):
     # `yum-dnf-from-snapshot` implicitly depends on this path convention for
     # the main config and for the plugin configs under `<snapshot_dir>/etc`.
-    plugin_dir = f"{yum_dnf.value}/plugins"
-    config_path = f"{yum_dnf.value}/{yum_dnf.value}.conf"
+    plugin_dir = f"etc/{yum_dnf.value}/plugins"
+    cache_dir = f"var/cache/{yum_dnf.value}"  # created via foreign_layer later
+    config_path = f"etc/{yum_dnf.value}/{yum_dnf.value}.conf"
 
     os.makedirs(out_dir / plugin_dir)
     populate_versionlock_conf(
@@ -94,6 +95,7 @@ def write_yum_dnf_conf(
         .isolate_main(
             config_path=(install_dir / config_path).decode(),
             pluginconf_dir=(install_dir / plugin_dir).decode(),
+            cache_dir=(install_dir / cache_dir).decode(),
         )
     )
     with create_ro(out_dir / config_path, "w") as conf_out:

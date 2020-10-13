@@ -263,7 +263,6 @@ class CompilerTestCase(unittest.TestCase):
             subvolumes_dir=_SUBVOLS_DIR,
             rpm_installer=YumDnf.dnf,
             rpm_repo_snapshot=None,
-            preserve_yum_dnf_cache=False,
         )
         phase_item_ids = set()
         for builder_maker, item_ids in si.ORDERED_PHASES:

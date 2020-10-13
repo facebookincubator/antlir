@@ -19,8 +19,8 @@ behavior.
 
     Besides RPM repo data, the snapshot includes the `yum-dnf-from-snapshot`
     binary, a configuration file pointed at the appropriate repo-servers,
-    and (in the very near future) a warm cache for the package manager
-    generated using the included repo snapshot.
+    and a warm cache for the package manager generated using the included
+    repo snapshot.
 
     The intent is for both `antlir/` and the RPM snapshot to be committed
     to the source control repo, so that the source control repo revision
@@ -63,8 +63,7 @@ The current tool works well, with these caveats:
   - `yum` & `dnf` leave various caches inside `--installroot`, which bloat
     the image.  `RpmActionItem` has a bind-mount to prevent this leakage,
     and we also provide `//antlir/features:rpm_cleanup` which should be
-    included in all production layers. Future: once caches are part of the
-    snapshot, this issue can be fixed completely.
+    included in all production layers.
 
   - Base CentOS packages deposit a vanilla CentOS `yum` configuration into
     the install root via `/etc/yum.repos.d/`, bearing no relation to the
@@ -85,16 +84,18 @@ The current tool works well, with these caveats:
     snapshot host to the snapshot?
 """
 import argparse
+import base64
 import os
 import shutil
 import subprocess
 import tempfile
 import textwrap
+import uuid
 from configparser import ConfigParser
 from contextlib import contextmanager
 from typing import Iterable, List, Mapping, Optional
 
-from antlir.common import check_popen_returncode, get_file_logger, init_logging
+from antlir.common import get_file_logger, init_logging
 from antlir.fs_utils import META_DIR, Path, temp_dir
 from antlir.nspawn_in_subvol.plugins.shadow_paths import SHADOWED_PATHS_ROOT
 
@@ -124,8 +125,17 @@ LIBRENAME_SHADOWED_PATH = Path("/__antlir__/librename_shadowed.so")
 _LIBRENAME_SHADOWED_PATHS_ROOT = SHADOWED_PATHS_ROOT
 
 
+def _install_to_current_root(install_root):
+    return install_root.realpath() == b"/"
+
+
 def _isolate_yum_dnf(
-    yum_dnf: YumDnf, install_root, dummy_dev, protected_path_to_dummy
+    yum_dnf: YumDnf,
+    install_root,
+    *,
+    dummy_dev: Path,
+    protected_path_to_dummy,
+    cache_dir: Path,
 ):
     "Isolate yum/dnf from the host filesystem."
     # Yum is incorrigible -- it is impossible to give it a set of options
@@ -195,6 +205,8 @@ def _isolate_yum_dnf(
     mount {quoted_dummy_dev} "$install_root"/dev/ -o bind
     mount /dev/null "$install_root"/dev/null -o bind
 
+    {quoted_maybe_clone_cache_dir}
+    mkdir -p -m 0755 /var/cache/{prog_name}  # must exist to be protected
     {quoted_protected_paths}
 
     # Also protect potentially non-hermetic files that are not required to
@@ -221,7 +233,8 @@ def _isolate_yum_dnf(
 
     # Clean up the isolation directories. Since we're running as `root`,
     # `rmdir` feels a lot safer, and also asserts that we did not litter.
-    trap 'rmdir "$var_tmp"' EXIT
+    trap 'rmdir "$var_tmp"; [ -n "$cache_dir" ] &&
+        umount "$cache_dir" ; rmdir "$cache_dir"' EXIT
 
     # NB: The `trap` above means the `bash` process is not replaced by the
     # child, but that's not a problem.
@@ -233,8 +246,18 @@ def _isolate_yum_dnf(
                 YumDnf.yum: "/etc/yum.conf",
                 YumDnf.dnf: "/etc/dnf/dnf.conf",
             }[yum_dnf],
-            quoted_dummy_dev=dummy_dev,
+            quoted_dummy_dev=dummy_dev.shell_quote(),
             quoted_install_root=install_root.shell_quote(),
+            # Workaround for `dnf` PR 1672. Remove once we drop dnf <= 4.4.0.
+            quoted_maybe_clone_cache_dir=(
+                "cache_dir="
+                if _install_to_current_root(install_root)
+                else f"""
+                cache_dir={cache_dir.shell_quote()}
+                mkdir "$cache_dir"  # `trap` cleans up
+                mount -o bind "$install_root/$cache_dir" "$cache_dir"
+                """
+            ),
             quoted_protected_paths="\n".join(
                 "mount {} {} -o bind,ro".format(
                     dummy.shell_quote(),
@@ -252,7 +275,9 @@ def _isolate_yum_dnf(
                 [
                     f"LD_PRELOAD={LIBRENAME_SHADOWED_PATH.shell_quote()}",
                     (
-                        "ANTLIR_SHADOWED_PATHS_ROOT="
+                        # Must be absolute, or much shadowing-related code
+                        # will only work when cwd is /.
+                        "ANTLIR_SHADOWED_PATHS_ROOT=/"
                         f"{_LIBRENAME_SHADOWED_PATHS_ROOT.shell_quote()}"
                     ),
                 ]
@@ -264,20 +289,18 @@ def _isolate_yum_dnf(
 
 
 @contextmanager
-def _dummy_dev() -> str:
+def _dummy_dev() -> Path:
     "A whitelist of devices is safer than the entire host /dev"
-    dummy_dev = tempfile.mkdtemp()
+    dummy_dev = Path(tempfile.mkdtemp())
     try:
         subprocess.check_call(["sudo", "chown", "root:root", dummy_dev])
         subprocess.check_call(["sudo", "chmod", "0755", dummy_dev])
-        subprocess.check_call(
-            ["sudo", "touch", os.path.join(dummy_dev, "null")]
-        )
+        subprocess.check_call(["sudo", "touch", dummy_dev / "null"])
         yield dummy_dev
     finally:
-        # We cannot use `TemporaryDirectory` for cleanup since the directory
-        # and contents are owned by root.  Remove recursively since RPMs
-        # like `filesystem` can touch this dummy directory.  We will discard
+        # We cannot use `temp_dir` for cleanup since the directory and
+        # contents are owned by root.  Remove recursively since RPMs like
+        # `filesystem` can touch this dummy directory.  We will discard
         # their writes, which do not, anyhow, belong in a container image.
         subprocess.run(["sudo", "rm", "-r", dummy_dev])
 
@@ -400,6 +423,55 @@ def _resolve_rpm_installer_binary(
         return yum_dnf_binary
 
 
+@contextmanager
+def _set_up_yum_dnf_cache(
+    yum_dnf: YumDnf, install_root: Path, snapshot_dir: Path
+) -> Path:
+    """
+    Reflink-copy (and clean up on exit) the snapshot's repodata cache into
+    `install_root / <random string>`.  Yield the `install_root`-relative
+    path.
+
+    We don't want to use `cachedir=/__antlir__/rpm/...` because the RPM
+    installers want to put the cache **inside** `install_root`.  If we did
+    use the original `__antlir__` path, we would need to clean up parts of a
+    nested directory tree that could be shared with real artifacts from the
+    image under construction.  That is much more messy and error-prone than
+    having a dedicated path.
+
+    We copy instead of bind-mounting because it's possible that a user will
+    run concurrent installs from the same snapshot.  With a bind-mounted
+    cache, the RPM installer would either hit contention (likely -- it has
+    locking) or corruption (not impossible -- this locking is not tested in
+    a bind-mount setup).
+
+    On the other hand, a copy is very cheap thanks to `btrfs`, and
+    eliminates concurrency bugs.
+    """
+    cache_name = base64.urlsafe_b64encode(uuid.uuid4().bytes).strip(b"=")
+    cache_dest = install_root / cache_name
+    prog = yum_dnf.value
+    try:
+        log.debug(f"Setting up ephemeral {prog} cache in {cache_dest}")
+        subprocess.check_call(
+            [
+                "sudo",
+                "cp",
+                "--recursive",
+                "--archive",
+                # We can demand reflinking because we're always on `btrfs`.
+                "--reflink=always",
+                snapshot_dir / f"{prog}/var/cache/{prog}",
+                cache_dest,
+            ]
+        )
+        yield Path("/") / cache_name
+    finally:
+        # The assert is paranoia to make sure we don't `rm` something wrong.
+        assert cache_dest.endswith(b"/" + cache_name), cache_dest
+        subprocess.check_call(["sudo", "rm", "-rf", cache_dest])
+
+
 def yum_dnf_from_snapshot(
     *,
     yum_dnf: YumDnf,
@@ -437,6 +509,9 @@ def yum_dnf_from_snapshot(
                 # -- even though the compiler will redundantly tell us to
                 # protect it.
                 META_DIR.decode(),
+                # Protect the cache even when installing to / because the
+                # snapshot has its own cache.
+                f"/var/cache/{prog_name}/",
             ]
             + (
                 # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is
@@ -448,22 +523,12 @@ def yum_dnf_from_snapshot(
         ),
     ]
     # Only isolate the host DBs and log if we are NOT installing to /.
-    install_to_fs_root = install_root.realpath() == b"/"
-    if not install_to_fs_root:
+    if not _install_to_current_root(install_root):
         # Ensure the log exists, so we can guarantee we don't write to the host.
         log_path = f"/var/log/{prog_name}.log"
         subprocess.check_call(["sudo", "touch", log_path])
         protected_paths.extend(
-            [
-                log_path,
-                f"/var/lib/{prog_name}/",
-                "/var/lib/rpm/",
-                # Future: We should isolate the cache even when installing to /
-                # because the snapshot should have its own cache, and should not
-                # pollute the OS cache.  However, right now our cache handling
-                # is pretty broken, so this change is deferred.
-                f"/var/cache/{prog_name}/",
-            ]
+            [log_path, f"/var/lib/{prog_name}/", "/var/lib/rpm/"]
         )
 
     for arg in yum_dnf_args:
@@ -482,8 +547,10 @@ def yum_dnf_from_snapshot(
         # Without this check, novice users would be stymied by the
         # missing `/i1/.meta`.
         if META_DIR.decode() != p or os.path.exists(install_root / p)
-    ) as protected_path_to_dummy, subprocess.Popen(
-        [
+    ) as protected_path_to_dummy, _set_up_yum_dnf_cache(
+        yum_dnf, install_root, snapshot_dir
+    ) as cache_dir:
+        cmd = [
             "sudo",
             # We need `--mount` so as not to leak our `--protect-path`
             # bind mounts outside of the package manager invocation.
@@ -507,7 +574,11 @@ def yum_dnf_from_snapshot(
             "--uts",
             "--ipc",
             *_isolate_yum_dnf(
-                yum_dnf, install_root, dummy_dev, protected_path_to_dummy
+                yum_dnf,
+                install_root,
+                dummy_dev=dummy_dev,
+                protected_path_to_dummy=protected_path_to_dummy,
+                cache_dir=cache_dir,
             ),
             "yum-dnf-from-snapshot",  # argv[0]
             yum_dnf_binary,
@@ -523,17 +594,19 @@ def yum_dnf_from_snapshot(
             # when `write-yum-dnf-conf` builds this file.  Note that
             # `yum` doesn't work if the config path is relative.
             f"--config={conf_path.abspath()}",
+            # Expose the snapshot's cache as an ephemeral copy.
+            #
+            # NB: Prior to PR 1672, `dnf` would ignore the `install_root`
+            # cache and, worse, dump the cache to the ambient OS.
+            # `_isolate_yum_dnf` provides a `cache_dir` workaround.
+            f"--setopt=cachedir={cache_dir}",
             f"--installroot={install_root}",
             # NB: We omit `--downloaddir` because the default behavior
             # is to put any downloaded RPMs in `$installroot/$cachedir`,
             # which is reasonable, and easy to clean up in a post-pass.
             *yum_dnf_args,
         ]
-    ) as yum_dnf_proc:
-
-        # Wait **before** we tear down all the `yum` / `dnf` isolation.
-        yum_dnf_proc.wait()
-        check_popen_returncode(yum_dnf_proc)
+        subprocess.check_call(cmd)
 
 
 # This argument-parsing logic is covered by RpmActionItem tests.

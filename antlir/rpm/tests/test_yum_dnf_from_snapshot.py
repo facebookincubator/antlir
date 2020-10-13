@@ -88,7 +88,6 @@ class YumFromSnapshotTestImpl:
         for path in [
             f"var/lib/{prog_name}",
             "var/lib/rpm",
-            f"var/cache/{prog_name}",
             "usr/lib/.build-id",
         ]:
             remove.append(install_root / path)
@@ -105,6 +104,7 @@ class YumFromSnapshotTestImpl:
             self.assertTrue(path.startswith(install_root))
             # Most files are owned by root, so the sudo is needed.
             subprocess.run(["sudo", "rm", "-rf", path], check=True)
+
         subprocess.run(
             [
                 "sudo",
@@ -113,7 +113,6 @@ class YumFromSnapshotTestImpl:
                 "usr/lib",
                 "usr",
                 "var/lib",
-                "var/cache",
                 "var/log",
                 "var/tmp",
                 "var",

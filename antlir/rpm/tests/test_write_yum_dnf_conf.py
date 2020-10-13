@@ -37,15 +37,17 @@ _CONF_OUT = """\
 [main]
 debuglevel = 2
 gpgcheck = 1
-cachedir = /var/cache/{prog_name}
+cachedir = /INSTALL/DIR/var/cache/{prog_name}
+metadata_expire = never
+check_config_file_age = 0
 persistdir = /var/lib/{prog_name}
 reposdir = /dev/null
 logfile = /var/log/{prog_name}.log
-config_file_path = /INSTALL/DIR/{prog_name}/{prog_name}.conf
+config_file_path = /INSTALL/DIR/etc/{prog_name}/{prog_name}.conf
 timeout = 60
 localpkg_gpgcheck = 1
 plugins = 1
-pluginconfpath = /INSTALL/DIR/{prog_name}/plugins
+pluginconfpath = /INSTALL/DIR/etc/{prog_name}/plugins
 varsdir = /dev/null
 usercache = 0
 syslog_device =\x20
@@ -71,6 +73,11 @@ enabled = 1
 
 # This is the base class for two test classes at the bottom of the file.
 class WriteYumDnfConfTestImpl:
+    def setUp(self):
+        # More output for easier debugging
+        unittest.util._MAX_LENGTH = 12345
+        self.maxDiff = 12345
+
     def test_conf(self):
         install_dir = "/INSTALL/DIR"
         prog_name = self._YUM_DNF.value
@@ -97,7 +104,7 @@ class WriteYumDnfConfTestImpl:
                     "--repo-server-ports=1234 5678",
                 ]
             )
-            with open(td / f"out/{prog_name}/{prog_name}.conf") as infile:
+            with open(td / f"out/etc/{prog_name}/{prog_name}.conf") as infile:
                 self.assertEqual(expected_out, infile.read())
 
 

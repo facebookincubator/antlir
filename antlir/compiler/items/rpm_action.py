@@ -322,14 +322,6 @@ def _yum_dnf_using_build_appliance(
 ) -> None:
     work_dir = generate_work_dir()
     prog_name = layer_opts.rpm_installer.value
-    mount_cache = (
-        ""
-        if layer_opts.preserve_yum_dnf_cache
-        else f"""
-        mkdir -p {work_dir}/var/cache/{prog_name} ; \
-        mount --bind /var/cache/{prog_name} {work_dir}/var/cache/{prog_name} ;
-    """
-    )
     snapshot_dir = (
         layer_opts.rpm_repo_snapshot
         if layer_opts.rpm_repo_snapshot
@@ -340,7 +332,6 @@ def _yum_dnf_using_build_appliance(
             "sh",
             "-uec",
             f"""\
-            {mount_cache}
             {
                 (snapshot_dir / 'yum-dnf-from-snapshot').shell_quote()
             } \

@@ -112,7 +112,6 @@ class LayerOpts(NamedTuple):
     rpm_repo_snapshot: Optional[str]
     target_to_path: Mapping[str, str]
     subvolumes_dir: str
-    preserve_yum_dnf_cache: bool
     debug: bool = False
     allowed_host_mount_targets: FrozenSet[str] = frozenset()
 

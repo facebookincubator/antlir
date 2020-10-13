@@ -17,14 +17,11 @@ from .common import DUMMY_LAYER_OPTS, render_subvol
 
 class RpmActionItemTestBase:
     def _check_rpm_action_item_build_appliance(self, ba_path: Path):
-        for preserve_yum_dnf_cache in [True, False]:
-            self._check_rpm_action_item(
-                layer_opts=DUMMY_LAYER_OPTS._replace(
-                    build_appliance=ba_path,
-                    preserve_yum_dnf_cache=preserve_yum_dnf_cache,
-                    rpm_installer=self._YUM_DNF,
-                )
+        self._check_rpm_action_item(
+            layer_opts=DUMMY_LAYER_OPTS._replace(
+                build_appliance=ba_path, rpm_installer=self._YUM_DNF
             )
+        )
 
     def _check_rpm_action_item(self, layer_opts):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
@@ -124,29 +121,11 @@ class RpmActionItemTestBase:
                         subvol.path("etc"),
                     ]
                 )
-            # The way that `RpmActionItem` nspawns into build_appliance must
-            # gurantee that `/var/cache/{dnf,yum}` is empty.  The next two
-            # lines test that the cache directory is empty because `rmdir`
-            # fails if it is not.  It is important that the cache of built
-            # images be empty, to avoid unnecessarily increasing the
-            # distributed image size.
-            rm_cmd = (
-                ["rmdir"]
-                if (
-                    layer_opts.build_appliance
-                    and not layer_opts.preserve_yum_dnf_cache
-                )
-                else ["rm", "-rf"]
-            )
-            subvol.run_as_root(
-                rm_cmd + [subvol.path(f"var/cache/{self._YUM_DNF.value}")]
-            )
             subvol.run_as_root(
                 [
                     "rmdir",
                     subvol.path("dev"),  # made by yum_dnf_from_snapshot.py
                     subvol.path(".meta"),
-                    subvol.path("var/cache"),
                     subvol.path("var/lib"),
                     subvol.path("var/log"),
                     subvol.path("var/tmp"),
@@ -155,6 +134,9 @@ class RpmActionItemTestBase:
                     subvol.path("bin"),
                 ]
             )
+            # `/var/cache/{dnf,yum}` should not be populated by
+            # `RpmActionItem`.  It is important that the cache of built
+            # images be empty to avoid bloating the distributed image size.
             self.assertEqual(
                 [
                     "(Dir)",

@@ -29,13 +29,7 @@ def _build_opts(
         #
         # `None` uses the default determined by looking up `rpm_installer`
         # in `/__antlir__/rpm/repo-snapshot/default-snapshot-for-installer`.
-        rpm_repo_snapshot = None,
-        # By default `RpmActionItem` will not populate
-        # `/var/cache/{dnf,yum}` in the built image.  We set this flag to
-        # `True` for the special case of a build appliance (BA) image.  It
-        # is beneficial to have the BA's cache populated because it speeds
-        # up `RpmActionItem` in builds based on this BA.
-        preserve_yum_dnf_cache = False):
+        rpm_repo_snapshot = None):
     if build_appliance == None:
         fail(
             "Must be a target path, or a value from `constants.bzl`",
@@ -57,7 +51,6 @@ def _build_opts(
         )
     return struct(
         build_appliance = build_appliance,
-        preserve_yum_dnf_cache = preserve_yum_dnf_cache,
         version_set = version_set,
         rpm_installer = rpm_installer,
         rpm_repo_snapshot = (
@@ -118,7 +111,6 @@ def compile_image_features(
           {maybe_quoted_build_appliance_args} \
           {maybe_quoted_rpm_installer_args} \
           {maybe_quoted_rpm_repo_snapshot_args} \
-          {maybe_preserve_yum_dnf_cache_args} \
           {maybe_allowed_host_mount_target_args} \
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
@@ -190,8 +182,5 @@ def compile_image_features(
             "--rpm-repo-snapshot {}".format(
                 shell.quote(build_opts.rpm_repo_snapshot),
             ) if build_opts.rpm_repo_snapshot else ""
-        ),
-        maybe_preserve_yum_dnf_cache_args = (
-            "--preserve-yum-dnf-cache" if build_opts.preserve_yum_dnf_cache else ""
         ),
     )
