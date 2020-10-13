@@ -10,11 +10,13 @@ from antlir.artifacts_dir import find_repo_root
 from antlir.repo_config_t import repo_config_t as base_repo_config_t
 
 
-def load_repo_config():
+def load_repo_config(path_in_repo=None):
     with importlib.resources.open_text(__package__, "config.json") as r:
         data = json.load(r)
 
-    return repo_config_t(repo_root=find_repo_root(), **data)
+    return repo_config_t(
+        repo_root=find_repo_root(path_in_repo=path_in_repo), **data
+    )
 
 
 class repo_config_t(base_repo_config_t):
