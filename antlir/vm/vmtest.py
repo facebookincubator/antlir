@@ -200,7 +200,7 @@ async def main(
                     # repo.  Once we have proper support for `runtime_files`
                     # this can be removed.  See here for more details:
                     # https://fburl.com/xt322rks
-                    cwd=find_repo_root(),
+                    cwd=find_repo_root(path_in_repo=os.getcwd()),
                 )
                 if returncode != 0:
                     logger.error(f"{cmd} failed with returncode {returncode}")

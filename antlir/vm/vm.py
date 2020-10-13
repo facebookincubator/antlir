@@ -125,7 +125,17 @@ async def __vm_with_stack(
     rwdevice.truncate(1 * 1024 * 1024 * 1024)
 
     # Load the repo_config
-    repo_config = load_repo_config()
+    # Note that we currently rely on the assumption that the binary that ends
+    # up executing this code (//antlir/vm:vmtest or //antlir/vm:run) is being
+    # executed while the cwd is within the repo path.  This might *not* always
+    # be the case, but given the nature of the fact that these are invoked via
+    # either `buck run` or `buck test` , and buck requires a working repo to
+    # function, this is a reasonable assumption.  Note that we need this here
+    # in the first place because we test that we can run a test binary inside
+    # a VM via another test binary *outside* the VM and this kind of embedding
+    # can cause the sys.argv[0] of the executing binary to live outside
+    # of the repo. (See the //antlir/vm/tests:kernel_panic_test)
+    repo_config = load_repo_config(path_in_repo=os.getcwd())
 
     shares = shares or []
     # The two initial disks (readonly rootfs seed device and the rw scratch
