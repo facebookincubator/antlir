@@ -19,7 +19,7 @@ module.exports = {
     'internal': 'https://www.internalfb.com/intern/staticdocs/antlir',
     'external': 'https://www.github.com/facebookincubator/antlir',
   }),
-  baseUrl: '/',
+  baseUrl: '/antlir/',
   favicon: 'img/favicon.ico',
   organizationName: 'facebookincubator', // Usually your GitHub org/user name.
   projectName: 'antlir', // Usually your repo name.
