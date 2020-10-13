@@ -113,7 +113,6 @@ def _nspawn_wrapper_properties(
         parent_layer = layer,
         features = [image_install_buck_runnable(inner_test_target, binary_path)],
         visibility = visibility,
-        antlir_rule = "user-internal",
     )
 
     # Generate a `.py` file that sets some of the key container options.

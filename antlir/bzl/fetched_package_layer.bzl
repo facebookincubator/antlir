@@ -218,7 +218,6 @@ def _fetched_package_layer(
         features = [":" + package_feature],
         mount_config = ":" + mount_config,
         visibility = visibility,
-        antlir_rule = "user-internal",
     )
 
 # Deliberately not usable stand-alone, use `fetched_package_layers_from_db`

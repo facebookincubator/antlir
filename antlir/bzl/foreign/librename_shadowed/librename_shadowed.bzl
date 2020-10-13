@@ -52,7 +52,6 @@ def image_build_librename_shadowed(name, parent_layer):
                 "/build/rename_shadowed.c",
             ),
         ],
-        antlir_rule = "user-internal",
     )
     image_foreign_layer(
         name = name,

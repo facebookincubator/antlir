@@ -99,8 +99,10 @@ def image_layer(
         # A struct containing fields accepted by `_build_opts` from
         # `compile_image_features.bzl`.
         build_opts = None,
-        # Future: we plan to make this "user-internal" soon.
-        antlir_rule = "user-facing",
+        # `image_layer`s are marked as internal as at build time they can
+        # essentially be thought of as transparent conduits between other
+        # concrete, user visible targets.
+        antlir_rule = "user-internal",
         # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
         # for all other supported kwargs.
         **image_layer_kwargs):

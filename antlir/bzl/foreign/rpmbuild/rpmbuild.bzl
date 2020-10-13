@@ -88,7 +88,6 @@ def image_rpmbuild(
             image_rpms_install(["yum-utils"]),
         ],
         visibility = [],
-        antlir_rule = "user-internal",
     )
 
     rpmbuild_dir = "/rpmbuild"
@@ -216,7 +215,6 @@ def image_import_rpm_public_key_layer(
         name = copy_layer,
         parent_layer = parent_layer,
         features = [image_mkdir("/", gpg_key_dir[1:])] + install_keys,
-        antlir_rule = "user-internal",
     )
 
     import_layer = name + "-key-import"
