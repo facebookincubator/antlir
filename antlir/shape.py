@@ -13,6 +13,10 @@ from typing import Type, TypeVar
 
 import pydantic
 
+# types that may be used by generated code (which imports * from this file for
+# convenience)
+from antlir.fs_utils import Path  # noqa: F401
+
 
 S = TypeVar("S")
 

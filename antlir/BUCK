@@ -398,6 +398,7 @@ python_library(
     name = "shape",
     srcs = ["shape.py"],
     deps = [
+        ":fs_utils",
         third_party.library(
             "pydantic",
             platform = "python",

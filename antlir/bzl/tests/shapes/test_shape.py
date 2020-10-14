@@ -7,6 +7,7 @@
 import unittest
 from typing import Mapping, Optional, Sequence, Tuple
 
+from antlir.fs_utils import Path
 from antlir.shape import Shape
 
 from .data import data
@@ -38,6 +39,10 @@ class TestShape(unittest.TestCase):
         self.assertEqual(c.lightsaber_color, "green")
         self.assertEqual(c.callsign, ("Red", 5))
         self.assertEqual(c.metadata, {"species": "human"})
+        self.assertEqual(
+            c.personnel_file, Path("/rebellion/luke_skywalker.txt")
+        )
+        self.assertIsInstance(c.personnel_file, Path)
 
         # json_file and python_data produce identical objects
         self.assertEqual(c, characters[0])
@@ -101,7 +106,8 @@ class TestShape(unittest.TestCase):
             "lightsaber_color='green', "
             "callsign=('Red', 5), "
             "metadata={'species': 'human'}, "
-            "affiliations=shape(faction='Rebellion')"
+            "affiliations=shape(faction='Rebellion'), "
+            "personnel_file=b'/rebellion/luke_skywalker.txt'"
             ")",
         )
 
@@ -117,7 +123,8 @@ class TestShape(unittest.TestCase):
             "lightsaber_color=Optional[str], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
-            "affiliations=shape(faction=str)"
+            "affiliations=shape(faction=str), "
+            "personnel_file=Optional[Path]"
             ")",
         )
 
@@ -168,6 +175,7 @@ class TestShape(unittest.TestCase):
             "callsign=None, "
             "metadata={'species': 'human'}, "
             "affiliations=shape(faction='Jedi Temple'), "
+            "personnel_file=None, "
             "padawan='Anakin Skywalker'"
             ")",
         )
@@ -182,6 +190,7 @@ class TestShape(unittest.TestCase):
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
             "affiliations=shape(faction=str), "
+            "personnel_file=Optional[Path], "
             "padawan=Optional[str]"
             ")",
         )

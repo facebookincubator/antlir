@@ -62,6 +62,16 @@ class Path(bytes):
     def __new__(cls, arg, *args, **kwargs):
         return super().__new__(cls, byteme(arg), *args, **kwargs)
 
+    @classmethod
+    def __get_validators__(cls):
+        # force Pydantic to deserialize a string to an actual Path, instead of
+        # str/bytes
+        yield cls._validate
+
+    @classmethod
+    def _validate(cls, v):
+        return cls(v)
+
     def __eq__(self, obj) -> bool:
         if not isinstance(obj, (bytes, type(None))):
             # NB: The verbose error can be expensive, but this error must

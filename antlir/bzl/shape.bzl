@@ -375,6 +375,10 @@ def _validate_list_field(spec, data):
             return "item '{}' (at {}) is not '{}'".format(item, i, item_type)
     return ""
 
+def _path_field(**kwargs):
+    """Alias that is a string in Starlark, but deserialized as an antlir.fs_utils.Path"""
+    return _field("Path", str, validate = _validate_primitive, **kwargs)
+
 def _set_field(*args, **kwargs):
     return _list_field(set_ = True, *args, **kwargs)
 
@@ -515,6 +519,7 @@ shape = struct(
     dict = _dict_field,
     field = _to_field,
     list = _list_field,
+    path = _path_field,
     set = _set_field,
     tuple = _tuple_field,
     loader = _loader,

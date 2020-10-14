@@ -211,6 +211,13 @@ class TestFsUtils(unittest.TestCase):
 
             self.assertTrue(os.path.exists(tmp_path))
 
+    def test_path_validate(self):
+        result = "a/b"
+        for validator in Path.__get_validators__():
+            result = validator(result)
+        self.assertEqual(result, Path("a/b"))
+        self.assertIsInstance(result, Path)
+
     def test_open_for_read_decompress(self):
         # The goal is that our stream should be bigger than any buffers
         # involved (so we get to test edge effects), but not so big that the
