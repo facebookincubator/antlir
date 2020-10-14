@@ -11,6 +11,9 @@ load(":structs.bzl", "structs")
 container_opts_t = shape.shape(
     shadow_proxied_binaries = shape.field(bool, default = False),
     serve_rpm_snapshots = shape.list(str, default = []),
+    # Do not use this, it is only exposed so that Antlir can populate the
+    # repodata caches for the RPM snapshots.
+    internal_only_unprotect_antlir_dir = shape.field(bool, default = False),
 )
 
 def _new_container_opts_t(

@@ -86,6 +86,7 @@ def _nspawn_wrapper_properties(
         if not k.startswith("_") and not k in [
             "serve_rpm_snapshots",
             "shadow_proxied_binaries",
+            "internal_only_unprotect_antlir_dir",  # Unavailable in tests
         ]
     ]
     if unsupported_opts:
@@ -94,6 +95,8 @@ def _nspawn_wrapper_properties(
             "enable these with `image.*_unittest`: {}".format(unsupported_opts),
             "container_opts",
         )
+    if container_opts.internal_only_unprotect_antlir_dir:
+        fail("`internal_only_unprotect_antlir_dir` is not allowed in tests")
 
     # These args must be on the outer wrapper test, regardless of language.
     outer_kwarg_names = ["tags", "env"]
