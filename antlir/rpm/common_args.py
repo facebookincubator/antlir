@@ -26,7 +26,7 @@ def add_standard_args(parser):
         "to `--storage`.",
     )
     parser.add_argument(  # Pass this to `snapshot_gpg_keys`
-        "--gpg-key-whitelist-dir",
+        "--gpg-key-allowlist-dir",
         required=True,
         type=Path.from_argparse,
         help="We will only trust (and snapshot) GPG keys from this list -- "

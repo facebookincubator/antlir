@@ -60,7 +60,7 @@ def snapshot_repo(argv):
         help="(May be repeated) Yum will need to import this key to gpgcheck "
         "the repo. To avoid placing blind trust in these keys (e.g. in "
         "case this is an HTTP URL), they are verified against "
-        "`--gpg-key-whitelist-dir`",
+        "`--gpg-key-allowlist-dir`",
     )
     args = Path.parse_args(parser, argv)
 
@@ -74,7 +74,7 @@ def snapshot_repo(argv):
         sizer = RepoSizer()
         snapshot_gpg_keys(
             key_urls=args.gpg_url,
-            whitelist_dir=args.gpg_key_whitelist_dir,
+            whitelist_dir=args.gpg_key_allowlist_dir,
             snapshot_dir=td,
         )
         repo = YumDnfConfRepo(

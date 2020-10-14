@@ -20,7 +20,7 @@ buck_command_alias(
     name = "snapshot-fedora",
     args = [
         "--snapshot-dir=snapshot/fedora",
-        "--gpg-key-whitelist-dir=snapshot/fedora/repos/everything-os/gpg_keys",
+        "--gpg-key-allowlist-dir=snapshot/fedora/repos/everything-os/gpg_keys",
         '--db={"kind": "sqlite", "db_path": "snapshot/snapshots.sql3"}',
         "--threads=16",
         "--storage={}".format(repr(fedora_storage_config)),

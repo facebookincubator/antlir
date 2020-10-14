@@ -115,7 +115,7 @@ def snapshot_repos(
     db_cfg: Dict[str, str],
     storage_cfg: Dict[str, str],
     rpm_shard: RpmShard,
-    gpg_key_whitelist_dir: str,
+    gpg_key_allowlist_dir: str,
     exclude: FrozenSet[str],
     threads: int,
 ):
@@ -154,7 +154,7 @@ def snapshot_repos(
             ) as td:
                 snapshot_gpg_keys(
                     key_urls=repo.gpg_key_urls,
-                    whitelist_dir=gpg_key_whitelist_dir,
+                    whitelist_dir=gpg_key_allowlist_dir,
                     snapshot_dir=td,
                 )
 
@@ -240,7 +240,7 @@ def snapshot_repos_from_args(argv: List[str]):
             db_cfg=args.db,
             storage_cfg=args.storage,
             rpm_shard=args.rpm_shard,
-            gpg_key_whitelist_dir=args.gpg_key_whitelist_dir,
+            gpg_key_allowlist_dir=args.gpg_key_allowlist_dir,
             exclude=frozenset(args.exclude),
             threads=args.threads,
         )
