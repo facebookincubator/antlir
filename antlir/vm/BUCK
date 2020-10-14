@@ -1,6 +1,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "python_unittest", "third_party")
+load("//antlir/bzl:vm.bzl", "vm")
 
 # qemu roms to provide
 roms = [
@@ -31,6 +32,18 @@ python_library(
     ],
 )
 
+# This is the client ssh key used to connect to the virtual machine with SSH
+export_file(
+    name = "ssh-privkey",
+    src = "id_ecdsa",
+)
+
+# And the corresponding public key that is installed into the default image
+export_file(
+    name = "ssh-pubkey",
+    src = "id_ecdsa.pub",
+)
+
 python_library(
     name = "vm",
     srcs = [
@@ -46,7 +59,9 @@ python_library(
     },
     deps = [
         ":share",
+        ":tap",
         "//antlir:config",
+        "//antlir:unshare",
         "//antlir/facebook/vm:share_fbcode_runtime",
     ],
 )
@@ -64,6 +79,20 @@ python_library(
         ":common",
         ":vm",
     ],
+)
+
+python_library(
+    name = "tap",
+    srcs = ["tap.py"],
+    deps = [
+        "//antlir:unshare",
+    ],
+)
+
+vm.python_unittest(
+    name = "test-tap",
+    srcs = ["test_tap.py"],
+    deps = [":tap"],
 )
 
 # defines the `Share` dataclass for vm

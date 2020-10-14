@@ -204,3 +204,51 @@ class UnshareTestCase(unittest.TestCase):
                 if proc.poll() is None:
                     os.kill(sleep_pid, signal.SIGTERM)
                 proc.wait()
+
+    def test_network_namespace(self):
+        # create a network namespace and a tap device within it, ensuring that
+        # it is only visible within the namespace
+        with Unshare([Namespace.NETWORK]) as unshare:
+            # does not already exist within the namespace
+            self.assertNotIn(
+                "ns-tap",
+                subprocess.run(
+                    nsenter_as_root(unshare, "ip", "link"),
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    text=True,
+                ).stdout,
+            )
+            subprocess.run(
+                nsenter_as_root(
+                    unshare,
+                    "ip",
+                    "tuntap",
+                    "add",
+                    "dev",
+                    "ns-tap",
+                    "mode",
+                    "tap",
+                ),
+                check=True,
+            )
+            # visible inside the namespace
+            self.assertIn(
+                "ns-tap",
+                subprocess.run(
+                    nsenter_as_root(unshare, "ip", "link"),
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    text=True,
+                ).stdout,
+            )
+            # not visible outside the namespace
+            self.assertNotIn(
+                "ns-tap",
+                subprocess.run(
+                    ["ip", "link"],
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    text=True,
+                ).stdout,
+            )

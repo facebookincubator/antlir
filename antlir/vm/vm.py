@@ -20,8 +20,10 @@ from pathlib import Path
 from typing import AsyncContextManager, ContextManager, Iterable, Optional
 
 from antlir.config import load_repo_config
+from antlir.unshare import Namespace, Unshare
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
+from antlir.vm.tap import VmTap
 
 
 logger = logging.getLogger(__name__)
@@ -89,6 +91,7 @@ async def __wait_for_boot(sockfile: os.PathLike) -> None:
 @asynccontextmanager
 async def __vm_with_stack(
     stack: AsyncExitStack,
+    ns: Unshare,
     image: Path,
     bind_repo_ro: bool = False,
     verbose: bool = False,
@@ -174,6 +177,7 @@ async def __vm_with_stack(
         for mount in repo_config.host_mounts_for_repo_artifacts:
             shares.append(Plan9Export(mount))
 
+    tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
     with kernel_resources() as kernel, emulator_resources() as emulator:
         args = [
             "-no-reboot",
@@ -191,8 +195,6 @@ async def __vm_with_stack(
             "rng-random,filename=/dev/urandom,id=rng0",
             "-device",
             "virtio-rng-pci,rng=rng0",
-            "-net",
-            "none",
             "-device",
             "virtio-serial",
             "-kernel",
@@ -222,7 +224,7 @@ async def __vm_with_stack(
             f"socket,path={notify_sockfile},id=notify,server",
             "-device",
             "virtserialport,chardev=notify,name=notify-host",
-        ]
+        ] + list(tapdev.qemu_args)
 
         # The bios to boot the emulator with
         args.extend(["-bios", str(emulator.bios)])
@@ -262,24 +264,26 @@ async def __vm_with_stack(
 
         if interactive:
             proc = await asyncio.create_subprocess_exec(
-                str(emulator.qemu), *args
+                *ns.nsenter_as_user(str(emulator.qemu), *args)
             )
         elif verbose:
             # don't connect stdin if we are simply in verbose mode and not
             # interactive
             proc = await asyncio.create_subprocess_exec(
-                str(emulator.qemu), *args, stdin=subprocess.PIPE
+                *ns.nsenter_as_user(str(emulator.qemu), *args),
+                stdin=subprocess.PIPE,
             )
         else:
             proc = await asyncio.create_subprocess_exec(
-                str(emulator.qemu),
-                *args,
+                *ns.nsenter_as_user(str(emulator.qemu), *args),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
 
         await __wait_for_boot(notify_sockfile)
+
+        logger.debug(f"guest link-local ipv6: {tapdev.guest_ipv6_ll}")
 
         try:
             yield QemuGuestAgent(guest_agent_sockfile)
@@ -291,15 +295,18 @@ async def __vm_with_stack(
                 await proc.wait()
 
             if proc.returncode is None:
-                logger.debug("killing guest")
-                proc.terminate()
-                await proc.wait()
+                logger.debug("killing guest vm")
+                kill = await asyncio.create_subprocess_exec(
+                    "sudo", "kill", "-KILL", str(proc.pid)
+                )
+                await kill.wait()
 
 
 @asynccontextmanager
 async def vm(*args, **kwargs) -> AsyncContextManager[QemuGuestAgent]:
     async with AsyncExitStack() as stack:
-        async with __vm_with_stack(*args, **kwargs, stack=stack) as vm:
+        ns = stack.enter_context(Unshare([Namespace.NETWORK, Namespace.PID]))
+        async with __vm_with_stack(*args, **kwargs, ns=ns, stack=stack) as vm:
             yield vm
 
 
