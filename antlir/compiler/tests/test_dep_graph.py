@@ -230,15 +230,13 @@ class DependencyGraphTestCase(unittest.TestCase):
             from_target="t1",
             cmd=["x"],
             user="y",
-            # Fixme: D23887778 makes this better.
-            container_opts=foreign_layer_t.__annotations__["container_opts"](),
+            container_opts=foreign_layer_t.types.container_opts(),
         )
         foreign2 = ForeignLayerItem(
             from_target="t2",
             cmd=["a"],
             user="b",
-            # Fixme: D23887778 makes this better.
-            container_opts=foreign_layer_t.__annotations__["container_opts"](),
+            container_opts=foreign_layer_t.types.container_opts(),
         )
 
         # Good path: one FOREIGN_LAYER & default MAKE_SUBVOL

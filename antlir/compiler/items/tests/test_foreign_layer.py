@@ -33,8 +33,7 @@ def _item(cmd: Iterable[AnyStr]) -> ForeignLayerItem:
         from_target="t",
         user="root",
         cmd=cmd,
-        # Fixme: D23887778 makes this better.
-        container_opts=foreign_layer_t.__annotations__["container_opts"](),
+        container_opts=foreign_layer_t.types.container_opts(),
     )
 
 
@@ -98,10 +97,9 @@ class ForeignLayerItemTestCase(unittest.TestCase):
                 """
                             ),
                         ],
-                        # Fixme: D23887778 makes this better.
-                        container_opts=foreign_layer_t.__annotations__[
-                            "container_opts"
-                        ](serve_rpm_snapshots=[snapshot_dir]),
+                        container_opts=foreign_layer_t.types.container_opts(
+                            serve_rpm_snapshots=[snapshot_dir]
+                        ),
                     )
                 ],
                 DUMMY_LAYER_OPTS,
