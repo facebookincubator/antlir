@@ -49,7 +49,7 @@ def _make_test_yum_dnf_conf(
 
 
 def make_temp_snapshot(
-    repos, out_dir, gpg_signing_key, gpg_key_path, gpg_key_whitelist_dir
+    repos, out_dir, gpg_signing_key, gpg_key_path, gpg_key_allowlist_dir
 ) -> Path:
     "Generates temporary RPM repo snapshots for tests to use as inputs."
     snapshot_dir = out_dir / "temp_snapshot_dir"
@@ -76,7 +76,7 @@ def make_temp_snapshot(
                 "base_dir": out_dir / "storage",
             },
             rpm_shard=RpmShard(shard=0, modulo=1),
-            gpg_key_whitelist_dir=gpg_key_whitelist_dir,
+            gpg_key_allowlist_dir=gpg_key_allowlist_dir,
             exclude=frozenset(),
             threads=4,
         )

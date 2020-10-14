@@ -45,7 +45,7 @@ class SnapshotRepoTestCase(unittest.TestCase):
                     "--repo-universe=fakeverse",
                     "--repo-name=dog",
                     "--repo-url=" + (repos_root / "0/dog").file_url(),
-                    f"--gpg-key-whitelist-dir={whitelist_dir}",
+                    f"--gpg-key-allowlist-dir={whitelist_dir}",
                     "--gpg-url=" + (td / "fake_gpg_key").file_url(),
                     f'--snapshot-dir={td / "snap"}',
                     f"--storage={Path.json_dumps(storage_dict)}",
