@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pwd import struct_passwd
 from unittest import mock
 
-from antlir.artifacts_dir import find_repo_root
+from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import pipe
 from antlir.find_built_subvol import find_built_subvol
 from antlir.tests.layer_resource import layer_resource
@@ -65,7 +65,7 @@ class NspawnTestCase(NspawnTestBase):
             ),
         )
 
-    @mock.patch("antlir.config.find_repo_root")
+    @mock.patch("antlir.config.find_buck_cell_root")
     def test_extra_nspawn_args_bind_repo_opts(self, root_mock):
         root_mock.return_value = "/repo/root"
         # opts.bind_repo_ro
@@ -269,7 +269,7 @@ class NspawnTestCase(NspawnTestBase):
                 "grep",
                 "supercalifragilisticexpialidocious",
                 os.path.join(
-                    os.path.realpath(find_repo_root()),
+                    os.path.realpath(find_buck_cell_root()),
                     "antlir/nspawn_in_subvol/tests",
                     os.path.basename(__file__),
                 ),

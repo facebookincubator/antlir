@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from grp import getgrnam
 from pwd import getpwnam
 
-from antlir.artifacts_dir import find_repo_root
+from antlir.artifacts_dir import find_buck_cell_root
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
@@ -289,7 +289,7 @@ class ImageLayerTestCase(unittest.TestCase):
             ):
                 # Assume that the prefix of the repo (e.g. /home or /data)
                 # is not one of the normal FHS-type directories below.
-                d = os.path.abspath(find_repo_root())
+                d = os.path.abspath(find_buck_cell_root())
                 while d != "/":
                     self.assertEqual(["(Dir)", {}], pop_path(r, d))
                     d = os.path.dirname(d)

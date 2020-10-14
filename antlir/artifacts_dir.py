@@ -60,7 +60,7 @@ def _maybe_make_symlink_to_scratch(
     return target_path
 
 
-def find_repo_root(path_in_repo: Optional[str] = None) -> str:
+def find_buck_cell_root(path_in_repo: Optional[str] = None) -> str:
     """
     If the caller does not provide a path known to be in the repo, a reasonable
     default of sys.argv[0] will be used. This is reasonable as binaries/tests
@@ -68,7 +68,10 @@ def find_repo_root(path_in_repo: Optional[str] = None) -> str:
 
     This is intended to work:
      - under Buck's internal macro interpreter, and
-     - using the system python from `facebookexperimental/buckit`.
+     - using the system python from `facebookincubator/antlir`.
+
+    This is functionally equivalent to `buck root`, but we opt to do it here as
+    `buck root` takes >2s to execute (due to CLI startup time).
     """
     if path_in_repo is None:
         path_in_repo = sys.argv[0]
@@ -87,8 +90,8 @@ def find_repo_root(path_in_repo: Optional[str] = None) -> str:
 def ensure_per_repo_artifacts_dir_exists(
     path_in_repo: Optional[str] = None,
 ) -> str:
-    "See `find_repo_root`'s docblock to understand `path_in_repo`"
-    repo_path = find_repo_root(path_in_repo)
+    "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
+    repo_path = find_buck_cell_root(path_in_repo)
     artifacts_dir = os.path.join(repo_path, "buck-image-out")
 
     # On Facebook infra, the repo might be hosted on an Eden filesystem,
