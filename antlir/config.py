@@ -6,7 +6,7 @@
 import importlib
 import json
 
-from antlir.artifacts_dir import find_repo_root
+from antlir.artifacts_dir import find_buck_cell_root
 from antlir.repo_config_t import repo_config_t as base_repo_config_t
 
 
@@ -15,7 +15,7 @@ def load_repo_config(path_in_repo=None):
         data = json.load(r)
 
     return repo_config_t(
-        repo_root=find_repo_root(path_in_repo=path_in_repo), **data
+        repo_root=find_buck_cell_root(path_in_repo=path_in_repo), **data
     )
 
 

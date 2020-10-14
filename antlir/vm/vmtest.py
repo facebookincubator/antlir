@@ -15,7 +15,7 @@ from functools import wraps
 from typing import Iterable, List, Optional
 
 import click
-from antlir.artifacts_dir import find_repo_root
+from antlir.artifacts_dir import find_buck_cell_root
 from antlir.vm.common import async_wrapper
 from antlir.vm.share import BtrfsDisk
 from antlir.vm.vm import vm
@@ -200,7 +200,7 @@ async def main(
                     # repo.  Once we have proper support for `runtime_files`
                     # this can be removed.  See here for more details:
                     # https://fburl.com/xt322rks
-                    cwd=find_repo_root(path_in_repo=os.getcwd()),
+                    cwd=find_buck_cell_root(path_in_repo=os.getcwd()),
                 )
                 if returncode != 0:
                     logger.error(f"{cmd} failed with returncode {returncode}")
