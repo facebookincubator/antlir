@@ -15,9 +15,10 @@ export_file(
         visibility = ["//antlir/vm/..."],
     )
     for rom in [
+        "bios-256k.bin",
+        "efi-virtio.rom",
         "kvmvapic.bin",
         "linuxboot_dma.bin",
         "vgabios-stdvga.bin",
-        "bios-256k.bin",
     ]
 ]
