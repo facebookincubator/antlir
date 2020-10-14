@@ -30,7 +30,7 @@ class Namespace(enum.Enum):
     # CGROUP = '--cgroup'
     # IPC = '--ipc'
     MOUNT = "--mount"
-    # NETWORK = '--net'
+    NETWORK = "--net"
     PID = "--pid"
     # UTS = '--uts'
 
@@ -89,7 +89,7 @@ class Unshare:
         # Namespace.CGROUP: 'cgroup',
         # Namespace.IPC: 'ipc',
         Namespace.MOUNT: "mnt",
-        # Namespace.NETWORK: 'net',
+        Namespace.NETWORK: "net",
         Namespace.PID: "pid",
         # Namespace.UTS: 'uts',
     }
