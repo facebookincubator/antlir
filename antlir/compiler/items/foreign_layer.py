@@ -55,21 +55,25 @@ class ForeignLayerItem(foreign_layer_t):
         assert isinstance(item, ForeignLayerItem), item
 
         def builder(subvol: Subvol):
-            antlir_path = subvol.path("__antlir__")
-            # Use `.stat()`, not `.exists()`, to fail if `/` is not readable.
-            try:
-                os.stat(antlir_path)
-                maybe_protect_antlir = ((antlir_path, "/__antlir__"),)
-            except FileNotFoundError:
-                maybe_protect_antlir = ()
+            maybe_protect_antlir = ()
+            if not item.container_opts.internal_only_unprotect_antlir_dir:
+                antlir_path = subvol.path("__antlir__")
+                # Use `.stat()`, not `.exists()`, to fail if `/` is not readable
+                try:
+                    os.stat(antlir_path)
+                    maybe_protect_antlir = ((antlir_path, "/__antlir__"),)
+                except FileNotFoundError:
+                    pass
 
             opts = new_nspawn_opts(
                 layer=subvol,
                 snapshot=False,
                 cmd=item.cmd,
                 bindmount_ro=(
-                    # The command cannot change `/.meta` & `/__antlir__`
+                    # The command can never change `/.meta`.
                     (subvol.path("/.meta"), "/.meta"),
+                    # Block changes to `/__antlir__`, except for the purpose
+                    # of populating snapshot caches.
                     *maybe_protect_antlir,
                 ),
                 # Future: support the case where the in-container user DB
