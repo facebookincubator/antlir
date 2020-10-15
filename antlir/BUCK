@@ -9,6 +9,13 @@ python_library(
     srcs = ["common.py"],
 )
 
+python_unittest(
+    name = "test-common",
+    srcs = [
+        "tests/test_common.py",
+    ],
+)
+
 python_library(
     name = "fs_utils",
     srcs = ["fs_utils.py"],
