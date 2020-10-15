@@ -91,10 +91,10 @@ class RpmMetadata(NamedTuple):
 # cover a wide variety of normal and weird version comparsions.
 def compare_rpm_versions(a: RpmMetadata, b: RpmMetadata) -> int:
     """
-        Returns:
-            1 if the version of a is newer than b
-            0 if the versions match
-            -1 if the version of a is older than b
+    Returns:
+        1 if the version of a is newer than b
+        0 if the versions match
+        -1 if the version of a is older than b
     """
 
     # This is not a rule, but it makes sense that our libs don't want to
