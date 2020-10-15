@@ -119,7 +119,7 @@ async def async_retry_fn(
     what: str,
     log_exception: bool = True,
 ) -> T:
-    """ Similar to retry_fn except the function is executed asynchronously.
+    """Similar to retry_fn except the function is executed asynchronously.
     See retry_fn docblock for details.
     """
     for i, delay in enumerate(delays):

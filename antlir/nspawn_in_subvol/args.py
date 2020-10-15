@@ -229,7 +229,7 @@ def new_nspawn_opts(**kwargs):
 
 
 def _target_to_subvol_pair(arg: str) -> Mapping[AnyStr, Subvol]:
-    """ Convert an argument that is a combination of TARGET:LOCATION pairs
+    """Convert an argument that is a combination of TARGET:LOCATION pairs
     delimited by _QUERY_TARGETS_AND_OUTPUTS_SEP into a (target, subvol) pair.
     """
     targs_locs = arg.split(_QUERY_TARGETS_AND_OUTPUTS_SEP)

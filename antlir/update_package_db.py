@@ -195,8 +195,8 @@ def _read_json_dir_db(path: Path) -> PackageTagDb:
 
 def _validate_updates(existing_db: PackageTagDb, pkg_updates: ExplicitUpdates):
     """Perform validations on any updates that were provided:
-        - Don't create package:tag pairs that already exist
-        - Don't replace package:tag pairs that don't already exist
+    - Don't create package:tag pairs that already exist
+    - Don't replace package:tag pairs that don't already exist
     """
     for pkg, tag_to_update in pkg_updates.items():
         for tag, update in tag_to_update.items():
