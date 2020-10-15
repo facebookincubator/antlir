@@ -33,12 +33,6 @@ module.exports = {
         {
           'Buck Macros': [
             'fb/fbpkg/fbpkg-fetched-buck-macros',
-            {
-              'fbpkg.builder': [
-                'fb/fbpkg/fbpkg-builder-buck-macros/overview',
-                'fb/fbpkg/fbpkg-builder-buck-macros/future-work',
-              ],
-            },
           ],
         },
       ],
