@@ -18,8 +18,8 @@ from typing import (
     Tuple,
 )
 
-from antlir.common import get_file_logger, set_new_key, shuffled
-from antlir.rpm.common import read_chunks, retryable
+from antlir.common import get_file_logger, retryable, set_new_key, shuffled
+from antlir.rpm.common import read_chunks
 from antlir.rpm.downloader.common import (
     BUFFER_BYTES,
     DownloadConfig,

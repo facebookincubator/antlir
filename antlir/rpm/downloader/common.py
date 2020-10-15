@@ -25,8 +25,8 @@ from typing import (
 )
 
 import requests
-from antlir.common import get_file_logger
-from antlir.rpm.common import DecorateContextEntry, RpmShard, retryable
+from antlir.common import get_file_logger, retryable
+from antlir.rpm.common import DecorateContextEntry, RpmShard
 from antlir.rpm.db_connection import DBConnectionContext
 from antlir.rpm.open_url import open_url
 from antlir.rpm.repo_db import RepoDBContext, StorageTable

@@ -7,8 +7,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable, Iterator, Tuple
 
-from antlir.common import get_file_logger
-from antlir.rpm.common import retryable
+from antlir.common import get_file_logger, retryable
 from antlir.rpm.downloader.common import (
     DownloadConfig,
     DownloadResult,

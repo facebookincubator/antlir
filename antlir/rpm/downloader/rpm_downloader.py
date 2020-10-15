@@ -13,8 +13,8 @@ from functools import partial
 from types import MappingProxyType
 from typing import Dict, FrozenSet, Iterable, Iterator, Set, Tuple
 
-from antlir.common import get_file_logger, not_none, shuffled
-from antlir.rpm.common import read_chunks, retryable
+from antlir.common import get_file_logger, not_none, retryable, shuffled
+from antlir.rpm.common import read_chunks
 from antlir.rpm.db_connection import DBConnectionContext
 from antlir.rpm.downloader.common import (
     BUFFER_BYTES,
