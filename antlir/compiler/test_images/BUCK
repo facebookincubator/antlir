@@ -790,5 +790,8 @@ replace_defaults_by_test_snapshot = [
 image.layer(
     name = "build_appliance_testing",
     parent_layer = REPO_CFG.build_appliance_default,
-    features = replace_defaults_by_test_snapshot,
+    features = replace_defaults_by_test_snapshot + [
+        # Fixme: remove this, it should be in the default BA soon.
+        image.rpms_install(["yum-utils"]),
+    ],
 )

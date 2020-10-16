@@ -536,6 +536,23 @@ def yum_dnf_from_snapshot(
             "--config"
         ), "If you change --config, you will no longer use the repo snapshot"
 
+    # NB: This intentionally under-matches because options could precede the
+    # command verb.  However, this is guaranteed not to overmatch, and it
+    # will definitely work with the Antlir code that depends on this
+    # behavior, so it's good enough.
+    if yum_dnf_args[:1] == ["builddep"]:
+        if yum_dnf == YumDnf.yum:
+            # In `yum`, this is not a verb but a separate command.  But our
+            # wrapper makes it work like it does in `dnf`.  One motivation
+            # is a more uniform implementation of `rpmbuild.bzl`, but a more
+            # important one is that need the ephemeral cache behavior
+            # provided by `_set_up_yum_dnf_cache`, since `/__antlir__` is
+            # read-only in foreign layers. Calling `yum-builddep` directly
+            # would not fail with "Read-only filesystem", but a confusing:
+            #     Error: No Package found for <RPM name>
+            yum_dnf_binary = "yum-builddep"
+            yum_dnf_args = yum_dnf_args[1:]
+
     with _dummy_dev() as dummy_dev, _dummies_for_protected_paths(
         p
         for p in protected_paths
@@ -588,8 +605,13 @@ def yum_dnf_from_snapshot(
             # atrocious, so it may be reasonable to relax this later.
             "--disableplugin=*",
             # `versionlock` is used by antilr's version selection.
-            # `builddep` powers `rpmbuild`.
-            "--enableplugin=versionlock,builddep",
+            "--enableplugin=versionlock"
+            + (
+                # `dnf builddep` powers `rpmbuild`.
+                ",builddep"
+                if yum_dnf == YumDnf.dnf
+                else ""
+            ),
             # Config options get isolated by our `YumDnfConfIsolator`
             # when `write-yum-dnf-conf` builds this file.  Note that
             # `yum` doesn't work if the config path is relative.

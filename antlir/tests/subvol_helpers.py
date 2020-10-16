@@ -41,7 +41,9 @@ def pop_path(render, path):
 # Future: this isn't really the right place for it, but for now we just have
 # 2 places that need it, and it's annoying to create a whole new module just
 # for this helper.
-def check_common_rpm_render(test, rendered_subvol, yum_dnf: str):
+def check_common_rpm_render(
+    test, rendered_subvol, yum_dnf: str, *, no_meta=False
+):
     r = copy.deepcopy(rendered_subvol)
 
     # Ignore a bunch of yum / dnf / rpm spam
@@ -72,29 +74,29 @@ def check_common_rpm_render(test, rendered_subvol, yum_dnf: str):
     ino, _ = pop_path(r, "var/lib/rpm")
     test.assertEqual("(Dir)", ino)
 
+    # We permit RPM installs without `/.meta` in the root.
+    meta_render = {
+        ".meta": [
+            "(Dir)",
+            {
+                "private": [
+                    "(Dir)",
+                    {
+                        "opts": [
+                            "(Dir)",
+                            {"artifacts_may_require_repo": ["(File d2)"]},
+                        ]
+                    },
+                ]
+            },
+        ]
+    }
     test.assertEqual(
         [
             "(Dir)",
             {
                 "dev": ["(Dir)", {}],
-                ".meta": [
-                    "(Dir)",
-                    {
-                        "private": [
-                            "(Dir)",
-                            {
-                                "opts": [
-                                    "(Dir)",
-                                    {
-                                        "artifacts_may_require_repo": [
-                                            "(File d2)"
-                                        ]
-                                    },
-                                ]
-                            },
-                        ]
-                    },
-                ],
+                **({} if no_meta else meta_render),
                 "var": ["(Dir)", {"lib": ["(Dir)", {}], "log": ["(Dir)", {}]}],
             },
         ],

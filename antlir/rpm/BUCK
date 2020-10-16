@@ -400,6 +400,8 @@ test_rpm_repo_snapshot(
     rpm_installers = ("dnf", "yum"),
 )
 
+export_file(name = "tests/needs-carrot.spec")
+
 # Run the same test in two different container configurations to add
 # integration testing for `container_opts` covering both implicitly and
 # explicitly served RPM snapshots.
@@ -414,10 +416,14 @@ test_rpm_repo_snapshot(
         needed_coverage = [
             (100, ":yum-dnf-from-snapshot-library"),
         ],
+        resources = {
+            ":tests/needs-carrot.spec": "tests/needs-carrot.spec",
+        },
         run_as_user = "root",  # We run `yum` / `dnf`
         deps = [
             ":find_snapshot",
             ":yum-dnf-from-snapshot-library",
+            "//antlir:testlib_subvol_helpers",
         ],
     )
     for variant, container_opts in [
