@@ -92,7 +92,7 @@ import tempfile
 import textwrap
 import uuid
 from configparser import ConfigParser
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from typing import Iterable, List, Mapping, Optional
 
 from antlir.common import get_file_logger, init_logging
@@ -251,7 +251,7 @@ def _isolate_yum_dnf(
             # Workaround for `dnf` PR 1672. Remove once we drop dnf <= 4.4.0.
             quoted_maybe_clone_cache_dir=(
                 "cache_dir="
-                if _install_to_current_root(install_root)
+                if not cache_dir or _install_to_current_root(install_root)
                 else f"""
                 cache_dir={cache_dir.shell_quote()}
                 mkdir "$cache_dir"  # `trap` cleans up
@@ -536,10 +536,14 @@ def yum_dnf_from_snapshot(
             "--config"
         ), "If you change --config, you will no longer use the repo snapshot"
 
-    # NB: This intentionally under-matches because options could precede the
-    # command verb.  However, this is guaranteed not to overmatch, and it
-    # will definitely work with the Antlir code that depends on this
-    # behavior, so it's good enough.
+    # NB: The subsequnt verb tests intentionally under-match because options
+    # could precede the command verb.  However, this is guaranteed not to
+    # overmatch, and it will definitely work with the Antlir code that
+    # depends on this behavior, so it's good enough.
+    #
+    # For `image_yum_dnf_make_snapshot_cache` only.
+    is_makecache = yum_dnf_args[:1] == ["makecache"]
+    # For `rpmbuild.bzl` only:
     if yum_dnf_args[:1] == ["builddep"]:
         if yum_dnf == YumDnf.yum:
             # In `yum`, this is not a verb but a separate command.  But our
@@ -564,8 +568,10 @@ def yum_dnf_from_snapshot(
         # Without this check, novice users would be stymied by the
         # missing `/i1/.meta`.
         if META_DIR.decode() != p or os.path.exists(install_root / p)
-    ) as protected_path_to_dummy, _set_up_yum_dnf_cache(
-        yum_dnf, install_root, snapshot_dir
+    ) as protected_path_to_dummy, (
+        nullcontext()
+        if is_makecache
+        else _set_up_yum_dnf_cache(yum_dnf, install_root, snapshot_dir)
     ) as cache_dir:
         cmd = [
             "sudo",
@@ -621,7 +627,7 @@ def yum_dnf_from_snapshot(
             # NB: Prior to PR 1672, `dnf` would ignore the `install_root`
             # cache and, worse, dump the cache to the ambient OS.
             # `_isolate_yum_dnf` provides a `cache_dir` workaround.
-            f"--setopt=cachedir={cache_dir}",
+            *([f"--setopt=cachedir={cache_dir}"] if cache_dir else []),
             f"--installroot={install_root}",
             # NB: We omit `--downloaddir` because the default behavior
             # is to put any downloaded RPMs in `$installroot/$cachedir`,

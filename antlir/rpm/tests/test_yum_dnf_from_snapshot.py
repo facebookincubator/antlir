@@ -33,7 +33,18 @@ _SNAPSHOT_DIR = snapshot_install_dir("//antlir/rpm:repo-snapshot-for-tests")
 init_logging()
 
 
-class YumFromSnapshotTestImpl:
+# Move this to `subvol_helpers.py` or similar if the pattern recurs.
+@contextmanager
+def _temp_subvol(name: str) -> Subvol:
+    sv = Subvol(Path("/") / f"{name}-{uuid.uuid4().hex}")
+    try:
+        sv.create()
+        yield sv
+    finally:
+        sv.delete()
+
+
+class YumDnfFromSnapshotTestImpl:
     def setUp(self):  # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
@@ -279,20 +290,45 @@ class YumFromSnapshotTestImpl:
                 # But we updated the shadowed file
                 self.assertEqual("carrot 2 rc0\n", shadowed.read_text())
 
+    def test_makecache(self):
+        # The preceding tests implicitly assert that we leak no cache in
+        # normal usage.  But `makecache` must write one!  Note that this is
+        # not exercised in the expected `--installroot=/` because that would
+        # couple the test to the state of the caches in the BA (which should
+        # normally be "populated").
 
-# Move this to `subvol_helpers.py` or similar if the pattern recurs.
-@contextmanager
-def _temp_subvol(name: str) -> Subvol:
-    sv = Subvol(Path("/") / f"{name}-{uuid.uuid4().hex}")
-    try:
-        sv.create()
-        yield sv
-    finally:
-        sv.delete()
+        with _temp_subvol("test_makecache") as sv:
+            self._yum_dnf_from_snapshot(
+                protected_paths=[],
+                yum_dnf_args=[
+                    "makecache",  # our implementation needs this to be argv[1]
+                    f"--installroot={sv.path()}",
+                    *(["fast"] if self._YUM_DNF == "yum" else []),
+                ],
+            )
+            prog = self._YUM_DNF.value
+            r = render_subvol(sv)
+            antlir_r = pop_path(r, "__antlir__")
+            snap_r = pop_path(antlir_r, "rpm/repo-snapshot")
+            self.assertEqual(["(Dir)", {"rpm": ["(Dir)", {}]}], antlir_r)
+            (snap_name,) = snap_r[1].keys()
+            cache_ino, cache_contents = pop_path(
+                snap_r, f"{snap_name}/{prog}/var/cache/{prog}"
+            )
+            self.assertEqual("(Dir)", cache_ino)
+            self.assertLess(0, len(cache_contents))
+            self.assertEqual(
+                ["(Dir)", {"var": ["(Dir)", {"cache": ["(Dir)", {}]}]}],
+                pop_path(snap_r, f"{snap_name}/{prog}"),
+            )
+            self.assertEqual(["(Dir)", {snap_name: ["(Dir)", {}]}], snap_r)
+            check_common_rpm_render(
+                self, r, self._YUM_DNF.value, no_meta=True, is_makecache=True
+            )
 
 
 @unittest.skipIf(yum_is_dnf() or not has_yum(), "yum == dnf or yum missing")
-class YumFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
+class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
     _YUM_DNF = YumDnf.yum
 
     def test_yum_builddep(self):
@@ -319,5 +355,5 @@ class YumFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
             )
 
 
-class DnfFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
+class DnfFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
     _YUM_DNF = YumDnf.dnf

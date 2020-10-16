@@ -42,7 +42,7 @@ def pop_path(render, path):
 # 2 places that need it, and it's annoying to create a whole new module just
 # for this helper.
 def check_common_rpm_render(
-    test, rendered_subvol, yum_dnf: str, *, no_meta=False
+    test, rendered_subvol, yum_dnf: str, *, no_meta=False, is_makecache=False
 ):
     r = copy.deepcopy(rendered_subvol)
 
@@ -50,14 +50,20 @@ def check_common_rpm_render(
 
     if yum_dnf == "yum":
         (ino,) = pop_path(r, "var/log/yum.log")
-        test.assertRegex(ino, r"^\(File m600 d[0-9]+\)$")
+        test.assertRegex(
+            ino,
+            r"^\(File m600\)$" if is_makecache else r"^\(File m600 d[0-9]+\)$",
+        )
         ino, _ = pop_path(r, "var/lib/yum")
         test.assertEqual("(Dir)", ino)
     elif yum_dnf == "dnf":
-        test.assertEqual(
-            ["(Dir)", {"dnf": ["(Dir)", {"modules.d": ["(Dir)", {}]}]}],
-            pop_path(r, "etc"),
-        )
+        if not is_makecache:
+            test.assertEqual(
+                ["(Dir)", {"dnf": ["(Dir)", {"modules.d": ["(Dir)", {}]}]}],
+                pop_path(r, "etc"),
+            )
+            ino, _ = pop_path(r, "var/lib/dnf")
+            test.assertEqual("(Dir)", ino)
         for logname in [
             "dnf.log",
             "dnf.librepo.log",
@@ -66,8 +72,6 @@ def check_common_rpm_render(
         ]:
             (ino,) = pop_path(r, f"var/log/{logname}")
             test.assertRegex(ino, r"^\(File d[0-9]+\)$", logname)
-        ino, _ = pop_path(r, "var/lib/dnf")
-        test.assertEqual("(Dir)", ino)
     else:
         raise AssertionError(yum_dnf)
 
