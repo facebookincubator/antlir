@@ -16,8 +16,12 @@ class KernelPanicTest(unittest.TestCase):
         with importlib.resources.path(resource, "vmtest") as vmtest:
             exe = Path(vmtest).resolve()
 
-        proc = subprocess.run([exe], env={}, capture_output=True, text=True)
-        combined = proc.stdout + proc.stderr
+        proc = subprocess.run([exe], env={}, capture_output=True)
 
-        self.assertIn("Kernel panic", combined)
-        self.assertNotEqual(proc.returncode, 0)
+        stdout = proc.stdout.decode("utf-8")
+        stderr = proc.stderr.decode("utf-8")
+        combined = f"\nstdout:\n{stdout}\nstderr:\n{stderr}"
+
+        # Expect vmtest failed with QemuError
+        self.assertEqual(proc.returncode, 255)
+        self.assertTrue("Qemu failed with error: " in stderr, msg=combined)

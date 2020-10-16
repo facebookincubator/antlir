@@ -21,7 +21,7 @@ from typing import AsyncContextManager, ContextManager, Iterable, Optional
 
 from antlir.config import load_repo_config
 from antlir.unshare import Namespace, Unshare
-from antlir.vm.guest_conn import QemuGuestConnection
+from antlir.vm.guest_agent import QemuError, QemuGuestAgent
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
 from antlir.vm.tap import VmTap
 
@@ -100,7 +100,10 @@ async def __vm_with_stack(
     dry_run: Optional[bool] = False,
     ncpus: Optional[int] = 1,
 ):
-    # we don't actually want to create a file for the socket path
+    # we don't actually want to create files for the socket paths
+    guest_agent_sockfile = os.path.join(
+        tempfile.gettempdir(), "vmtest_guest_agent" + uuid.uuid4().hex + ".sock"
+    )
     notify_sockfile = os.path.join(
         tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
     )
@@ -211,6 +214,11 @@ async def __vm_with_stack(
                 " rd.emergency=poweroff"
                 " rd.debug"
             ),
+            # qemu-guest-agent socket/serial device pair
+            "-chardev",
+            f"socket,path={guest_agent_sockfile},server,nowait,id=qga0",
+            "-device",
+            "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0",
             # socket/serial device pair (for use by __wait_for_boot)
             "-chardev",
             f"socket,path={notify_sockfile},id=notify,server",
@@ -278,13 +286,9 @@ async def __vm_with_stack(
         logger.debug(f"guest link-local ipv6: {tapdev.guest_ipv6_ll}")
 
         try:
-            privkey = importlib.resources.read_binary(__package__, "privkey")
-            with tempfile.NamedTemporaryFile() as privkey_file:
-                privkey_file.write(privkey)
-                privkey_file.flush()
-                yield QemuGuestConnection(
-                    tapdev, ssh_privkey=Path(privkey_file.name)
-                )
+            yield QemuGuestAgent(guest_agent_sockfile)
+        except QemuError as err:
+            print(f"Qemu failed with error: {err}", flush=True, file=sys.stderr)
         finally:
             if interactive:
                 logger.debug("waiting for interactive vm to shutdown")
@@ -299,7 +303,7 @@ async def __vm_with_stack(
 
 
 @asynccontextmanager
-async def vm(*args, **kwargs) -> AsyncContextManager[QemuGuestConnection]:
+async def vm(*args, **kwargs) -> AsyncContextManager[QemuGuestAgent]:
     async with AsyncExitStack() as stack:
         ns = stack.enter_context(Unshare([Namespace.NETWORK, Namespace.PID]))
         async with __vm_with_stack(*args, **kwargs, ns=ns, stack=stack) as vm:

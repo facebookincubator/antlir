@@ -47,7 +47,7 @@ export_file(
 python_library(
     name = "vm",
     srcs = [
-        "guest_conn.py",
+        "guest_agent.py",
         "vm.py",
     ],
     resources = {
@@ -55,7 +55,6 @@ python_library(
         third_party.library("qemu"): "qemu",
         # The bios to boot the emulator with
         third_party.library("qemu", "share/qemu/bios-256k.bin"): "bios",
-        ":ssh-privkey": "privkey",
         ":roms": "roms",
     },
     deps = [
@@ -64,7 +63,6 @@ python_library(
         "//antlir:config",
         "//antlir:unshare",
         "//antlir/facebook/vm:share_fbcode_runtime",
-        "//antlir/nspawn_in_subvol:common",
     ],
 )
 
