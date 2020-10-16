@@ -28,14 +28,25 @@ from .cmd import PopenArgs
 from .run import _set_up_run_cli
 
 
-def forward_test_runner_env_vars(environ: Dict[str, str]) -> Iterable[str]:
-    "Propagate env vars used by FB test runners"
+def forward_env_vars(environ: Dict[str, str]) -> Iterable[str]:
+    """
+    Propagate into the test container the environment variables that are
+    required for test infra & debugging.
+
+    IMPORTANT: Only add things here that have a minimal likelihood of
+    breaking test reproducibility.
+    """
     for k, v in environ.items():
-        # IMPORTANT: When editing these lines, make sure you are not
-        # breaking TestPilot behaviour and you are not letting test targets
-        # pass even when they should fail.  Also check tests are properly
-        # discovered.
-        if k.startswith("TEST_PILOT"):
+        if (
+            k.startswith(
+                # IMPORTANT: When editing this line, make sure you are not
+                # breaking TPX / TestPilot behaviour and you are not letting
+                # test targets pass even when they should fail.  Also check
+                # that tests are properly discovered.
+                "TEST_PILOT"
+            )
+            or k == "ANTLIR_DEBUG"
+        ):
             yield f"--setenv={k}={v}"
 
 
@@ -183,7 +194,7 @@ _TEST_TYPE_TO_REWRITE_CMD = {
 if __name__ == "__main__":  # pragma: no cover
     argv = []
 
-    argv.extend(forward_test_runner_env_vars(os.environ))
+    argv.extend(forward_env_vars(os.environ))
 
     # When used as part of the `image.python_unittest` implementation, there
     # is no good way to pass arguments to this nspawn wrapper.  So, we
