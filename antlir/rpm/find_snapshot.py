@@ -10,7 +10,7 @@ import hashlib
 from antlir.fs_utils import Path
 
 
-# KEEP IN SYNC with their copies in `bzl/rpm_repo_snapshot.bzl`
+# KEEP IN SYNC with their copies in `bzl/snapshot_install_dir.bzl`
 RPM_SNAPSHOT_BASE_DIR = Path("/__antlir__/rpm/repo-snapshot")
 
 
@@ -33,6 +33,6 @@ def mangle_target(normalized_target: str, min_abbrev: int = 15) -> str:
     ) + f"__{_sha256_b64(normalized_target.encode())[:20]}"
 
 
-# KEEP IN SYNC with its copy in `bzl/rpm_repo_snapshot.bzl`
+# KEEP IN SYNC with its copy in `bzl/snapshot_install_dir.bzl`
 def snapshot_install_dir(snapshot):
     return RPM_SNAPSHOT_BASE_DIR / mangle_target(snapshot)

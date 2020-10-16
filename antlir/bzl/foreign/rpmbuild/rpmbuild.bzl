@@ -145,6 +145,7 @@ def image_rpmbuild(
             "-bb",  # Only build the binary packages (no SRPMs)
             "{}/SPECS/specfile.spec".format(rpmbuild_dir),
         ],
+        antlir_rule = "user-facing",
         **image_layer_kwargs
     )
 

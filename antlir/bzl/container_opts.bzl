@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
+load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
 

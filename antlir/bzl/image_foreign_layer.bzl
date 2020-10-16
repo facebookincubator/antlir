@@ -172,9 +172,6 @@ def image_foreign_layer(
         # If you want to install packages, you will usually want to
         # set `shadow_proxied_binaries`.
         container_opts = None,
-        # Future: Should foreign layers also default to user-internal as we
-        # plan to do for `image.layer`?
-        antlir_rule = "user-facing",
         # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
         # for all other supported kwargs.
         **image_layer_kwargs):
@@ -207,6 +204,5 @@ def image_foreign_layer(
             )],
             build_opts = build_opts,
         ),
-        antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

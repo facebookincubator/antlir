@@ -5,7 +5,7 @@ load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
-load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
+load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 
 def _hidden_test_name(name):

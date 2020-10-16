@@ -19,7 +19,7 @@ fake_macro_library(
     srcs = ["compile_image_features.bzl"],
     deps = [
         ":constants",
-        ":rpm_repo_snapshot",
+        ":snapshot_install_dir",
         ":structs",
         ":target_tagger",
         "//antlir/bzl/image_actions:feature",
@@ -35,8 +35,8 @@ fake_macro_library(
     name = "container_opts",
     srcs = ["container_opts.bzl"],
     deps = [
-        ":rpm_repo_snapshot",
         ":shape",
+        ":snapshot_install_dir",
     ],
 )
 
@@ -92,7 +92,9 @@ fake_macro_library(
     name = "rpm_repo_snapshot",
     srcs = ["rpm_repo_snapshot.bzl"],
     deps = [
+        ":image_layer",
         ":maybe_export_file",
+        ":snapshot_install_dir",
         ":target_helpers",
         ":wrap_runtime_deps",
         "//antlir/bzl/image_actions:install",
@@ -100,6 +102,12 @@ fake_macro_library(
         "//antlir/bzl/image_actions:remove",
         "//antlir/bzl/image_actions:symlink",
     ],
+)
+
+fake_macro_library(
+    name = "snapshot_install_dir",
+    srcs = ["snapshot_install_dir.bzl"],
+    deps = [":target_helpers"],
 )
 
 fake_macro_library(
@@ -159,7 +167,12 @@ fake_macro_library(
     name = "image_unittest_helpers",
     srcs = ["image_unittest_helpers.bzl"],
     deps = [
+        ":constants",
+        ":container_opts",
         ":image_layer",
+        ":image_utils",
+        ":snapshot_install_dir",
+        ":structs",
         "//antlir/bzl/image_actions:install",
     ],
 )
