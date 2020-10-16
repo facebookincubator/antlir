@@ -216,7 +216,6 @@ class UnshareTestCase(unittest.TestCase):
                     nsenter_as_root(unshare, "ip", "link"),
                     check=True,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
                     text=True,
                 ).stdout,
             )
@@ -232,7 +231,6 @@ class UnshareTestCase(unittest.TestCase):
                     "tap",
                 ),
                 check=True,
-                capture_output=True,
             )
             # visible inside the namespace
             self.assertIn(
@@ -241,7 +239,6 @@ class UnshareTestCase(unittest.TestCase):
                     nsenter_as_root(unshare, "ip", "link"),
                     check=True,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
                     text=True,
                 ).stdout,
             )
@@ -252,7 +249,6 @@ class UnshareTestCase(unittest.TestCase):
                     ["ip", "link"],
                     check=True,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
                     text=True,
                 ).stdout,
             )
