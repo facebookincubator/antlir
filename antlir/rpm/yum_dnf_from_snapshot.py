@@ -233,8 +233,7 @@ def _isolate_yum_dnf(
 
     # Clean up the isolation directories. Since we're running as `root`,
     # `rmdir` feels a lot safer, and also asserts that we did not litter.
-    trap 'rmdir "$var_tmp"; [ -n "$cache_dir" ] &&
-        umount "$cache_dir" ; rmdir "$cache_dir"' EXIT
+    trap 'rmdir "$var_tmp"' EXIT
 
     # NB: The `trap` above means the `bash` process is not replaced by the
     # child, but that's not a problem.
@@ -248,14 +247,13 @@ def _isolate_yum_dnf(
             }[yum_dnf],
             quoted_dummy_dev=dummy_dev.shell_quote(),
             quoted_install_root=install_root.shell_quote(),
-            # Workaround for `dnf` PR 1672. Remove once we drop dnf <= 4.4.0.
+            # Read `_set_up_yum_dnf_cache` for the rationale.
             quoted_maybe_clone_cache_dir=(
                 "cache_dir="
                 if not cache_dir or _install_to_current_root(install_root)
                 else f"""
                 cache_dir={cache_dir.shell_quote()}
-                mkdir "$cache_dir"  # `trap` cleans up
-                mount -o bind "$install_root/$cache_dir" "$cache_dir"
+                mount -o bind "$cache_dir" "$install_root/$cache_dir"
                 """
             ),
             quoted_protected_paths="\n".join(
@@ -448,27 +446,87 @@ def _set_up_yum_dnf_cache(
     On the other hand, a copy is very cheap thanks to `btrfs`, and
     eliminates concurrency bugs.
     """
+    # Our ephemeral cache set-up is very particular, for reasons that boil
+    # down to the fact that as of 2020, Linux does not allow reflinks to
+    # cross mounts, even if they are on the same filesystem.  See e.g. the
+    # discussion here:
+    #     https://lore.kernel.org/linux-fsdevel/CAOQ4uxj1csY-
+    #         Vn2suFZMseEZgvAZzhQ82TR+XtDRQ=cOzwvzzw@mail.gmail.com/
+    #
+    # Here are the actors in our play (assuming `install_root != "/"`):
+    #   - snapshot cache:
+    #     `/__antlir__/rpm/repo-snapshot/*//{prog}/var/cache/{prog}`
+    #   - ephemeral copy of the snapshot cache: `/cache_name`
+    #   - bind-mount of the ephemeral copy: `install_root/cache_name`
+    #
+    # First, we never want to try to do a reflink copy from the snapshot
+    # cache to the install root, because that can be a bind mount (e.g. in
+    # `RpmActionItem`).  This is why we copy to `/cache_name`, and then
+    # bind-mount into the install root.
+    #
+    # Second, foreign layers do `mount -o bind /__antlir__ /__antlir__` to
+    # prevent accidental changes to `/__antlir__`.  However, this breaks
+    # reflink copies from the snapshot cache (in its own bind-mount) to the
+    # container root.
+    #
+    # To fix the second issue, we run our reflink copy in a mount namespace,
+    # and (transiently) re-purpose `/cache_name` to bind-mount `/`. This has
+    # the effect of stripping away the `__antlir__` bind-mount, and letting
+    # us do the reflink on the root FS.
+    #
+    # IMPORTANT: This means that `/__antlir__` must always be on the root
+    # filesystem, it cannot e.g. by an `image.layer_mount`.  This is a
+    # reasonable restriction, because the cache contents is coupled to the
+    # content of the root FS in any case -- the `yum` / `dnf` version must
+    # match for the cache to make sense.
+    #
+    # The above messy setup also works around the bug in `dnf` PR 1672,
+    # because we end up with a copy of the cache both in the container and
+    # in the install root, at the same location.
     cache_name = base64.urlsafe_b64encode(uuid.uuid4().bytes).strip(b"=")
-    cache_dest = install_root / cache_name
+    cache_dest = Path(b"/" + cache_name)
     prog = yum_dnf.value
+    install_to_cur_root = _install_to_current_root(install_root)
     try:
+        os.mkdir(cache_dest)  # needed for the `/` bind-mount below
+        if not install_to_cur_root:
+            os.mkdir(install_root / cache_name)  # `_isolate_yum_dnf` bind-mount
         log.debug(f"Setting up ephemeral {prog} cache in {cache_dest}")
         subprocess.check_call(
             [
                 "sudo",
-                "cp",
-                "--recursive",
-                "--archive",
-                # We can demand reflinking because we're always on `btrfs`.
-                "--reflink=always",
-                snapshot_dir / f"{prog}/var/cache/{prog}",
-                cache_dest,
+                "unshare",
+                "-m",
+                "bash",
+                "-uec",
+                ";".join(
+                    [
+                        # This odd `mount` is explained in the long doc above.
+                        f"mount -o bind / {cache_dest}",
+                        " ".join(
+                            [
+                                "cp",
+                                "--archive",
+                                "--reflink=always",
+                                "--no-target-directory",
+                                (
+                                    cache_dest
+                                    / snapshot_dir.lstrip(b"/")
+                                    / f"{prog}/var/cache/{prog}"
+                                ).shell_quote(),
+                                (cache_dest / cache_name).shell_quote(),
+                            ]
+                        ),
+                    ]
+                ),
             ]
         )
-        yield Path("/") / cache_name
+        yield cache_dest
     finally:
+        if not install_to_cur_root:
+            os.rmdir(install_root / cache_name)
         # The assert is paranoia to make sure we don't `rm` something wrong.
-        assert cache_dest.endswith(b"/" + cache_name), cache_dest
+        assert cache_dest == b"/" + cache_name, cache_dest
         subprocess.check_call(["sudo", "rm", "-rf", cache_dest])
 
 
