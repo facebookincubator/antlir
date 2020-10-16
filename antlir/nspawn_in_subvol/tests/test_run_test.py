@@ -11,7 +11,7 @@ from unittest import mock
 from antlir.fs_utils import temp_dir
 from antlir.nspawn_in_subvol.run_test import (
     do_not_rewrite_cmd,
-    forward_test_runner_env_vars,
+    forward_env_vars,
     rewrite_testpilot_python_cmd,
     rewrite_tpx_gtest_cmd,
 )
@@ -19,10 +19,18 @@ from antlir.nspawn_in_subvol.run_test import (
 
 class NspawnTestInSubvolTestCase(unittest.TestCase):
     def test_forward_env_vars(self):
-        self.assertEqual([], list(forward_test_runner_env_vars({"a": "b"})))
+        self.assertEqual([], list(forward_env_vars({"a": "b"})))
         self.assertEqual(
             ["--setenv=TEST_PILOT=xyz"],
-            list(forward_test_runner_env_vars({"a": "b", "TEST_PILOT": "xyz"})),
+            list(forward_env_vars({"a": "b", "TEST_PILOT": "xyz"})),
+        )
+        self.assertEqual(
+            ["--setenv=ANTLIR_DEBUG=1", "--setenv=TEST_PILOT=foo"],
+            list(
+                forward_env_vars(
+                    {"a": "b", "ANTLIR_DEBUG": "1", "TEST_PILOT": "foo"}
+                )
+            ),
         )
 
     def test_do_not_rewrite_cmd(self):

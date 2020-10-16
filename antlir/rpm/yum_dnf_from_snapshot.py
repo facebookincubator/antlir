@@ -85,6 +85,7 @@ The current tool works well, with these caveats:
 """
 import argparse
 import base64
+import logging
 import os
 import shutil
 import subprocess
@@ -186,9 +187,10 @@ def _isolate_yum_dnf(
     #   required for `rpm` to function.
     return [
         "bash",
+        *(["-x"] if log.isEnabledFor(logging.DEBUG) else []),
         "-o",
         "pipefail",
-        "-uexc",
+        "-uec",
         textwrap.dedent(
             """\
     # The image needs to have a valid `/dev` so that e.g.  RPM post-install
@@ -221,8 +223,6 @@ def _isolate_yum_dnf(
             ; do
         if [[ -e "$bad_file" ]] ; then
             mount /dev/null "$bad_file" -o bind
-        else
-            echo "Not isolating $bad_file -- does not exist" 1>&2
         fi
     done
 
@@ -734,7 +734,12 @@ if __name__ == "__main__":  # pragma: no cover
         "`--installroot`. The path must already exist. There are some "
         "internal defaults that cannot be un-protected. May be repeated.",
     )
-    main_parser.add_argument("--debug", action="store_true", help="Log more")
+    main_parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=bool(os.environ.get("ANTLIR_DEBUG")),
+        help="Log more -- also enabled via the ANTLIR_DEBUG env var",
+    )
     main_parser.add_argument("yum_dnf", type=YumDnf, help="yum or dnf")
     main_parser.add_argument(
         "args",
