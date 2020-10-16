@@ -17,11 +17,11 @@ from typing import Iterator
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_gnu_tar,
 )
-from antlir.btrfs_diff.tests.render_subvols import pop_path, render_sendstream
 from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
+from antlir.tests.subvol_helpers import pop_path, render_sendstream
 
 from ..find_built_subvol import subvolumes_dir
 from ..package_image import Format, package_image

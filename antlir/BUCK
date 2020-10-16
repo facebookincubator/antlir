@@ -71,6 +71,15 @@ python_library(
 )
 
 python_library(
+    name = "testlib_subvol_helpers",
+    srcs = ["tests/subvol_helpers.py"],
+    deps = [
+        ":subvol_utils",
+        "//antlir/btrfs_diff:testlib_render_subvols",
+    ],
+)
+
+python_library(
     name = "testlib_temp_subvolumes",
     srcs = [
         "tests/temp_subvolumes.py",
@@ -125,14 +134,14 @@ python_unittest(
         ":subvol_utils",
     )],
     resources = {
-        TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello-layer",
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
     },
     deps = [
         ":subvol_utils",
+        ":testlib_layer_resource",
+        ":testlib_subvol_helpers",
         ":testlib_temp_subvolumes",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
-        "//antlir/btrfs_diff:testlib_render_subvols",
     ],
 )
 
@@ -357,10 +366,10 @@ python_unittest(
         ":fs_utils",
         ":package-image-library",
         ":testlib_layer_resource",
+        ":testlib_subvol_helpers",
         ":testlib_temp_subvolumes",
         ":unshare",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
-        "//antlir/btrfs_diff:testlib_render_subvols",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
     ],

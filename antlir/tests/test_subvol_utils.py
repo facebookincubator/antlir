@@ -14,11 +14,11 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_gnu_tar,
     render_demo_subvols,
 )
-from antlir.btrfs_diff.tests.render_subvols import render_sendstream
 
 from ..find_built_subvol import subvolumes_dir, volume_dir
 from ..fs_utils import Path, temp_dir
-from ..subvol_utils import Subvol, SubvolOpts, get_subvolume
+from ..subvol_utils import Subvol, SubvolOpts
+from .subvol_helpers import render_subvol
 from .temp_subvolumes import with_temp_subvols
 
 
@@ -268,13 +268,6 @@ class SubvolTestCase(unittest.TestCase):
                 ),
             )
 
-    def test_get_subvolume(self):
-        layer_json = os.path.join(
-            os.path.dirname(__file__), "hello-layer", "layer.json"
-        )
-        subvol = get_subvolume(layer_json, subvolumes_dir())
-        self.assertTrue(os.path.exists(subvol.path() / "hello_world"))
-
     @with_temp_subvols
     def test_receive(self, temp_subvols):
         new_subvol_name = "differs_from_create_ops"
@@ -284,8 +277,7 @@ class SubvolTestCase(unittest.TestCase):
         ) as f, sv.receive(f):
             pass
         self.assertEqual(
-            render_demo_subvols(create_ops=new_subvol_name),
-            render_sendstream(sv.mark_readonly_and_get_sendstream()),
+            render_demo_subvols(create_ops=new_subvol_name), render_subvol(sv)
         )
 
     @with_temp_subvols
@@ -319,7 +311,4 @@ class SubvolTestCase(unittest.TestCase):
             create_ops=demo_sv_name
         )
 
-        self.assertEqual(
-            demo_render,
-            render_sendstream(unpacked_sv.mark_readonly_and_get_sendstream()),
-        )
+        self.assertEqual(demo_render, render_subvol(unpacked_sv))

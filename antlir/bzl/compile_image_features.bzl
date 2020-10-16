@@ -169,7 +169,7 @@ def compile_image_features(
             REPO_CFG.artifacts_require_repo else ""
         ),
         maybe_quoted_build_appliance_args = (
-            "--build-appliance-json $(location {})/layer.json".format(
+            "--build-appliance-buck-out $(location {})".format(
                 build_opts.build_appliance,
             ) if build_opts.build_appliance else ""
         ),

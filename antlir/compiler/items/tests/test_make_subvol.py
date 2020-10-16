@@ -10,7 +10,6 @@ import sys
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
-from antlir.btrfs_diff.tests.render_subvols import render_sendstream
 from antlir.fs_utils import Path
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
@@ -113,5 +112,5 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(subvol)
             self.assertEqual(
                 render_demo_subvols(create_ops=new_subvol_name),
-                render_sendstream(subvol.mark_readonly_and_get_sendstream()),
+                render_subvol(subvol),
             )

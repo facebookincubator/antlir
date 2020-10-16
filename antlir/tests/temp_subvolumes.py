@@ -117,6 +117,11 @@ class TempSubvolumes(contextlib.AbstractContextManager):
         self.subvols.append(subvol)
         return subvol
 
+    def external_command_will_create(self, rel_path: AnyStr) -> Subvol:
+        subvol = self.caller_will_create(rel_path)
+        subvol._exists = True
+        return subvol
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         # If any of subvolumes are nested, and the parents were made
         # read-only, we won't be able to delete them.

@@ -16,15 +16,15 @@ from antlir.artifacts_dir import find_buck_cell_root
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
-from antlir.btrfs_diff.tests.render_subvols import (
-    check_common_rpm_render,
-    pop_path,
-    render_sendstream,
-)
 from antlir.compiler.items.mount import mounts_from_subvol_meta
 from antlir.config import load_repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
+from antlir.tests.subvol_helpers import (
+    check_common_rpm_render,
+    pop_path,
+    render_subvol,
+)
 
 from ..procfs_serde import deserialize_int
 
@@ -214,7 +214,7 @@ class ImageLayerTestCase(unittest.TestCase):
             ) as sv:
                 self.assertEqual(
                     render_demo_subvols(**{original_name: original_name}),
-                    render_sendstream(sv.mark_readonly_and_get_sendstream()),
+                    render_subvol(sv),
                 )
 
     # This is reused by `test_foreign_layer` because we currently lack
@@ -222,7 +222,7 @@ class ImageLayerTestCase(unittest.TestCase):
     @contextmanager
     def _check_build_appliance(self, rsrc_name, yum_dnf):
         with self.target_subvol(rsrc_name) as sv:
-            r = render_sendstream(sv.mark_readonly_and_get_sendstream())
+            r = render_subvol(sv)
             (ino,) = pop_path(r, "bin/sh")  # Busybox from `rpm-test-milk`
             # NB: We changed permissions on this at some point, but after
             # the migration diffs land, the [75] can become a 5.
@@ -314,7 +314,7 @@ class ImageLayerTestCase(unittest.TestCase):
 
     def test_non_default_rpm_snapshot(self):
         with self.target_subvol("layer-with-non-default-snapshot-rpm") as sv:
-            r = render_sendstream(sv.mark_readonly_and_get_sendstream())
+            r = render_subvol(sv)
 
             self.assertEqual(
                 [
@@ -377,7 +377,7 @@ class ImageLayerTestCase(unittest.TestCase):
 
     def test_installed_files(self):
         with self.target_subvol("installed-files") as sv:
-            r = render_sendstream(sv.mark_readonly_and_get_sendstream())
+            r = render_subvol(sv)
             self._check_installed_files_bar(pop_path(r, "foo/bar"))
             self.assertEqual(
                 [
@@ -409,7 +409,7 @@ class ImageLayerTestCase(unittest.TestCase):
 
     def test_cloned_files(self):
         with self.target_subvol("cloned-files") as sv:
-            r = render_sendstream(sv.mark_readonly_and_get_sendstream())
+            r = render_subvol(sv)
             for bar in ["bar", "bar2", "bar3"]:
                 self._check_installed_files_bar(pop_path(r, bar))
             self.assertEqual(

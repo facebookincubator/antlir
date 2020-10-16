@@ -237,13 +237,7 @@ class NspawnTestCase(NspawnTestBase):
 
     @with_temp_subvols
     def test_non_ephemeral_snapshot(self, temp_subvols):
-        dest_subvol = temp_subvols.caller_will_create("persistent")
-        # We won't create this subvol by manipulating this very object, but
-        # rather indirectly through its path.  So its _exists would never
-        # get updated, which would cause the TempSubvolumes cleanup to fail.
-        # Arguably, the cleanup should be robust to this, but since this is
-        # the unique place we have to do it, keep it simple.
-        dest_subvol._exists = True
+        dest_subvol = temp_subvols.external_command_will_create("persistent")
         self._nspawn_in(
             (__package__, "test-layer"),
             [

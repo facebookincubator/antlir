@@ -9,8 +9,10 @@ import subprocess
 import tempfile
 import unittest
 
-from antlir.btrfs_diff.tests.render_subvols import render_sendstream
-from antlir.find_built_subvol import find_built_subvol, volume_dir
+from antlir.fs_utils import Path
+from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.tests.subvol_helpers import render_subvol
+from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..compiler import build_image, parse_args
 
@@ -28,13 +30,6 @@ class AddRemoveConflictTestCase(unittest.TestCase):
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
-
-    def _resource_path(self, name: str):
-        return os.path.join(
-            # This works even in @mode/opt because the test is a XAR
-            os.path.dirname(__file__),
-            "data/" + name,
-        )
 
     def test_check_layers(self):
         meta = {
@@ -56,70 +51,51 @@ class AddRemoveConflictTestCase(unittest.TestCase):
         # The parent has a couple of directories.
         self.assertEqual(
             ["(Dir)", {"a": ["(Dir)", {"b": ["(Dir)", {}]}], **meta}],
-            render_sendstream(
-                find_built_subvol(
-                    self._resource_path("parent")
-                ).mark_readonly_and_get_sendstream()
-            ),
+            render_subvol(layer_resource_subvol(__package__, "parent")),
         )
         # The child is near-empty because the `remove_paths` cleaned it up.
         self.assertEqual(
             ["(Dir)", {**meta}],
-            render_sendstream(
-                find_built_subvol(
-                    self._resource_path("child")
-                ).mark_readonly_and_get_sendstream()
-            ),
+            render_subvol(layer_resource_subvol(__package__, "child")),
         )
 
     def test_conflict(self):
-        # Future: de-duplicate this with TempSubvolumes, perhaps?
-        tmp_parent = os.path.join(volume_dir(), "tmp")
-        try:
-            os.mkdir(tmp_parent)
-        except FileExistsError:
-            pass
-        # Removes get built before adds, so a conflict means nothing to remove
-        with tempfile.TemporaryDirectory(
-            dir=tmp_parent
-        ) as temp_subvol_dir, self.assertRaisesRegex(
-            AssertionError, "Path does not exist"
+        with TempSubvolumes() as tmp_subvols, Path.resource(
+            __package__, "feature_both", exe=False
+        ) as feature_both, Path.resource(
+            __package__, "feature_add", exe=False
+        ) as feature_add, Path.resource(
+            __package__, "feature_remove", exe=False
+        ) as feature_remove, self.assertRaisesRegex(
+            # Removes get built before adds; a conflict means nothing to remove
+            AssertionError,
+            "Path does not exist",
         ):
-            try:
-                # We cannot make this an `image.layer` target, since Buck
-                # doesn't (yet) have a nice story for testing targets whose
-                # builds are SUPPOSED to fail.
-                build_image(
-                    parse_args(
-                        [
-                            "--subvolumes-dir",
-                            temp_subvol_dir,
-                            "--subvolume-rel-path",
-                            "SUBVOL",
-                            "--child-layer-target",
-                            "unused",
-                            "--child-feature-json",
-                            self._resource_path("feature_both"),
+            subvol = tmp_subvols.external_command_will_create("test_conflict")
+            # We cannot make this an `image.layer` target, since Buck
+            # doesn't (yet) have a nice story for testing targets whose
+            # builds are SUPPOSED to fail.
+            build_image(
+                parse_args(
+                    [
+                        "--subvolumes-dir",
+                        subvol.path().dirname(),
+                        "--subvolume-rel-path",
+                        subvol.path().basename(),
+                        "--child-layer-target",
+                        "unused",
+                        f"--child-feature-json={feature_both}",
+                        *(
                             "--child-dependencies",
                             _test_feature_target(
                                 "feature_addremove_conflict_add"
                             ),
-                            self._resource_path("feature_add"),
+                            feature_add,
                             _test_feature_target(
                                 "feature_addremove_conflict_remove"
                             ),
-                            self._resource_path("feature_remove"),
-                        ]
-                    )
-                )
-            finally:
-                # Ignore error code in case something broke early in the test
-                subprocess.run(
-                    [
-                        "sudo",
-                        "btrfs",
-                        "subvolume",
-                        "delete",
-                        os.path.join(temp_subvol_dir, "SUBVOL"),
+                            feature_remove,
+                        ),
                     ]
                 )
+            )

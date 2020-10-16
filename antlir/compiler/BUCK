@@ -36,8 +36,8 @@ python_unittest(
     )],
     deps = [
         ":procfs_serde",
+        "//antlir:testlib_subvol_helpers",
         "//antlir:testlib_temp_subvolumes",
-        "//antlir/btrfs_diff:testlib_render_subvols",
     ],
 )
 
@@ -155,10 +155,15 @@ image_feature_python_unittest(
         ":compiler",
     )],
     resources = {
-        TEST_IMAGE_PREFIX + "build_appliance_testing": "tests/test-build-appliance",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
     },
     test_image_feature_transitive_deps = TEST_IMAGE_FEATURE_TRANSITIVE_DEPS,
-    deps = [":compiler"],
+    deps = [
+        ":compiler",
+        "//antlir:testlib_layer_resource",
+    ],
 )
 
 IMAGE_LAYER_DEPS = [
@@ -210,8 +215,8 @@ python_unittest(
         "//antlir:config",
         "//antlir:find_built_subvol",
         "//antlir:testlib_layer_resource",
+        "//antlir:testlib_subvol_helpers",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
-        "//antlir/btrfs_diff:testlib_render_subvols",
     ],
 )
 
@@ -222,19 +227,24 @@ python_unittest(
     resources = {
         TEST_IMAGE_PREFIX + READ_MY_DOC_image_feature_target(
             "feature_addremove_conflict_add",
-        ): "tests/data/feature_add",
+        ): "tests/feature_add",
         TEST_IMAGE_PREFIX + READ_MY_DOC_image_feature_target(
             "feature_addremove_conflict_remove",
-        ): "tests/data/feature_remove",
+        ): "tests/feature_remove",
         TEST_IMAGE_PREFIX + READ_MY_DOC_image_feature_target(
             "feature_addremove_conflict_both",
-        ): "tests/data/feature_both",
-        TEST_IMAGE_PREFIX + "addremove_conflict_child": "tests/data/child",
-        TEST_IMAGE_PREFIX + "addremove_conflict_parent": "tests/data/parent",
+        ): "tests/feature_both",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "addremove_conflict_child",
+        ): "tests/child",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "addremove_conflict_parent",
+        ): "tests/parent",
     },
     deps = [
         ":compiler",
-        "//antlir:find_built_subvol",
-        "//antlir/btrfs_diff:testlib_render_subvols",
+        "//antlir:testlib_layer_resource",
+        "//antlir:testlib_subvol_helpers",
+        "//antlir:testlib_temp_subvolumes",
     ],
 )

@@ -47,10 +47,8 @@ class ShadowPathTestCase(NspawnTestBase):
 
     @with_temp_subvols
     def test_path_search_and_snapshot_into(self, temp_subvols):
-        dest_subvol = temp_subvols.caller_will_create("shadow_dest")
-        # Fixme: formalize this pattern from `test_non_ephemeral_snapshot`
-        dest_subvol._exists = True
         self._assert_original_shadow_me()
+        dest_subvol = temp_subvols.external_command_will_create("shadow_dest")
         self._nspawn_in(
             _SRC_SUBVOL_PAIR,
             [
@@ -161,10 +159,10 @@ class ShadowPathTestCase(NspawnTestBase):
 
     @with_temp_subvols
     def test_copy_and_move_back(self, temp_subvols):
-        dest_subvol = temp_subvols.caller_will_create("shadow_copy_move")
-        # Fixme: formalize this pattern from `test_non_ephemeral_snapshot`
-        dest_subvol._exists = True
         self._assert_original_shadow_me()
+        dest_subvol = temp_subvols.external_command_will_create(
+            "shadow_copy_move"
+        )
         self.assertEqual(
             b"i will shadow\n",
             self._nspawn_in(

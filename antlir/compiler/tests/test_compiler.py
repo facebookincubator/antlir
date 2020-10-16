@@ -19,6 +19,7 @@ from antlir.find_built_subvol import subvolumes_dir
 from antlir.fs_utils import Path, temp_dir
 from antlir.nspawn_in_subvol import ba_runner
 from antlir.rpm.yum_dnf_conf import YumDnf
+from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from .. import subvolume_on_disk as svod
@@ -139,10 +140,6 @@ class CompilerTestCase(unittest.TestCase):
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
-        self.ba_path = os.path.join(
-            os.path.dirname(__file__), "test-build-appliance", "layer.json"
-        )
-
     @_subvol_mock_lexists_is_btrfs_and_run_as_root
     @unittest.mock.patch.object(svod, "_btrfs_get_volume_props")
     def _compile(
@@ -176,7 +173,7 @@ class CompilerTestCase(unittest.TestCase):
                         "--subvolume-rel-path",
                         _FAKE_SUBVOL,
                         "--build-appliance",
-                        self.ba_path,
+                        layer_resource(__package__, "test-build-appliance"),
                         "--child-layer-target",
                         "CHILD_TARGET",
                         "--child-feature-json",
@@ -255,8 +252,8 @@ class CompilerTestCase(unittest.TestCase):
         )
         layer_opts = LayerOpts(
             layer_target="fake-target",
-            build_appliance=subvol_utils.get_subvolume(
-                self.ba_path, subvolumes_dir()
+            build_appliance=layer_resource_subvol(
+                __package__, "test-build-appliance"
             ),
             artifacts_may_require_repo=True,  # Must match CLI arg in `_compile`
             target_to_path=si.TARGET_TO_PATH,
