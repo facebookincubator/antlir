@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 import unittest
+import uuid
 from contextlib import contextmanager
 from unittest import mock
 
@@ -15,6 +16,12 @@ from antlir.common import init_logging
 from antlir.fs_utils import META_DIR, Path, create_ro, temp_dir
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
+from antlir.subvol_utils import Subvol
+from antlir.tests.subvol_helpers import (
+    check_common_rpm_render,
+    pop_path,
+    render_subvol,
+)
 
 from .. import yum_dnf_from_snapshot
 from ..common import has_yum, yum_is_dnf
@@ -27,6 +34,10 @@ init_logging()
 
 
 class YumFromSnapshotTestImpl:
+    def setUp(self):  # More output for easier debugging
+        unittest.util._MAX_LENGTH = 12345
+        self.maxDiff = 12345
+
     def _yum_dnf_from_snapshot(self, **kwargs):
         yum_dnf_from_snapshot.yum_dnf_from_snapshot(
             yum_dnf=self._YUM_DNF, snapshot_dir=_SNAPSHOT_DIR, **kwargs
@@ -44,8 +55,7 @@ class YumFromSnapshotTestImpl:
     ):
         if install_args is None:
             install_args = _INSTALL_ARGS
-        install_root = Path(tempfile.mkdtemp())
-        try:
+        with temp_dir() as install_root:
             for p in set(protected_paths) | extra_mkdirs:
                 if p.endswith("/"):
                     os.makedirs(install_root / p)
@@ -64,10 +74,6 @@ class YumFromSnapshotTestImpl:
                 yum_dnf_args=[f"--installroot={install_root}", *install_args],
             )
             yield install_root
-        finally:
-            assert install_root.realpath() != b"/"
-            # Courtesy of `yum`, the `install_root` is now owned by root.
-            subprocess.run(["sudo", "rm", "-rf", install_root], check=True)
 
     def _check_installed_content(self, install_root, installed_content):
         # Remove known content so we can check there is nothing else.
@@ -212,8 +218,7 @@ class YumFromSnapshotTestImpl:
         # container "after", (c) rendered the incremental sendstream.  Since
         # incremental rendering is not implemented, settle for this basic
         # smoke-test for now.
-        with open("/rpm_test/mice.txt") as infile:
-            self.assertEqual("mice 0.1 a\n", infile.read())
+        self.assertEqual("mice 0.1 a\n", Path("/rpm_test/mice.txt").read_text())
 
     @contextmanager
     def _set_up_shadow(self, replacement, to_shadow):
@@ -249,17 +254,15 @@ class YumFromSnapshotTestImpl:
 
             to_shadow = root / "rpm_test/carrot.txt"
             replacement = root / "rpm_test/shadows_carrot.txt"
-            shadowed_original = root / "shadow/rpm_test/carrot.txt"
+            shadowed = root / "shadow/rpm_test/carrot.txt"
 
             # Our shadowing setup is supposed to have moved the original here.
-            with create_ro(shadowed_original, "w") as outfile:
-                outfile.write("yum/dnf overwrites this")
+            with create_ro(shadowed, "w") as outfile:
+                outfile.write("`rpm` writes here")
 
             with self._set_up_shadow(replacement, to_shadow):
-                with open(to_shadow) as infile:
-                    self.assertEqual("shadows carrot", infile.read())
-                with open(shadowed_original) as infile:
-                    self.assertEqual("yum/dnf overwrites this", infile.read())
+                self.assertEqual("shadows carrot", to_shadow.read_text())
+                self.assertEqual("`rpm` writes here", shadowed.read_text())
 
                 self._yum_dnf_from_snapshot(
                     protected_paths=[],
@@ -272,16 +275,48 @@ class YumFromSnapshotTestImpl:
                 )
 
                 # The shadow is still in place
-                with open(to_shadow) as infile:
-                    self.assertEqual("shadows carrot", infile.read())
+                self.assertEqual("shadows carrot", to_shadow.read_text())
                 # But we updated the shadowed file
-                with open(shadowed_original) as infile:
-                    self.assertEqual("carrot 2 rc0\n", infile.read())
+                self.assertEqual("carrot 2 rc0\n", shadowed.read_text())
+
+
+# Move this to `subvol_helpers.py` or similar if the pattern recurs.
+@contextmanager
+def _temp_subvol(name: str) -> Subvol:
+    sv = Subvol(Path("/") / f"{name}-{uuid.uuid4().hex}")
+    try:
+        sv.create()
+        yield sv
+    finally:
+        sv.delete()
 
 
 @unittest.skipIf(yum_is_dnf() or not has_yum(), "yum == dnf or yum missing")
 class YumFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
     _YUM_DNF = YumDnf.yum
+
+    def test_yum_builddep(self):
+        with _temp_subvol("test_yum_builddep") as sv, Path.resource(
+            __package__, "needs-carrot.spec", exe=False
+        ) as spec_path:
+            self._yum_dnf_from_snapshot(
+                protected_paths=[],
+                yum_dnf_args=[
+                    "builddep",  # our implementation needs this to be argv[1]
+                    f"--installroot={sv.path()}",
+                    "--assumeyes",
+                    spec_path.decode(),
+                ],
+            )
+            r = render_subvol(sv)
+            self.assertEqual(
+                ["(Dir)", {"carrot.txt": ["(File d13)"]}],
+                pop_path(r, "rpm_test"),
+            )
+            check_common_rpm_render(self, r, self._YUM_DNF.value, no_meta=True)
+            self.assertEqual(
+                "carrot 2 rc0\n", sv.path("rpm_test/carrot.txt").read_text()
+            )
 
 
 class DnfFromSnapshotTestCase(YumFromSnapshotTestImpl, unittest.TestCase):
