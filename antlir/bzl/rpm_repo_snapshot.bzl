@@ -1,37 +1,15 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("//antlir/bzl/foreign/yum_dnf_cache:yum_dnf_cache.bzl", "image_yum_dnf_make_snapshot_cache")
 load("//antlir/bzl/image_actions:install.bzl", "image_install")
 load("//antlir/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
 load("//antlir/bzl/image_actions:symlink.bzl", "image_symlink_dir")
+load(":image_layer.bzl", "image_layer")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
-load(":target_helpers.bzl", "mangle_target")
+load(":snapshot_install_dir.bzl", "RPM_SNAPSHOT_BASE_DIR", "snapshot_install_dir")
 load(":wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
-
-# KEEP IN SYNC with its copy in `rpm/find_snapshot.py`
-RPM_SNAPSHOT_BASE_DIR = "__antlir__/rpm/repo-snapshot"
-
-# Here are the ways to specify a snapshot:
-#
-#  - An /__antlir__ path that's valid in the container.  This is mainly used
-#    like so: `/__antlir__/rpm/default-snapshot-for-installer/...`.
-#
-#  - A Buck target path.  But, it is **not** used to depend on a Buck
-#    target.  A target may not even exist in the current repo at this path.
-#    Rather, this target path is normalized, mangled, and then used to
-#    select a non-default child of `/__antlir__/rpm/repo-snapshot/` in the
-#    build appliance.  So this refers to a target that got incorporated into
-#    the build appliance, whenever that image was built.
-#
-# KEEP THE `mangle_target` PART IN SYNC with its copy in `rpm/find_snapshot.py`
-def snapshot_install_dir(snapshot):
-    if ":" in snapshot:
-        return paths.join("/", RPM_SNAPSHOT_BASE_DIR, mangle_target(snapshot))
-    if snapshot.startswith("/__antlir__/rpm/"):
-        return snapshot
-    fail("Bad RPM snapshot; see `snapshot_install_dir`: {}".format(snapshot))
 
 def _yum_or_dnf_wrapper(yum_or_dnf, snapshot_name):
     if yum_or_dnf not in ("yum", "dnf"):
@@ -245,6 +223,10 @@ def install_rpm_repo_snapshot(snapshot):
     target in `snapshot` in its canonical location.
 
     The layer must also include `set_up_rpm_repo_snapshots()`.
+
+    A layer that installs snapshots should be followed by a
+    `image_yum_dnf_make_snapshot_cache` layer so that `yum` / `dnf` repodata
+    caches are properly populated.  Otherwise, RPM installs will be slow.
     """
     return [image_install(snapshot, snapshot_install_dir(snapshot))]
 
@@ -263,3 +245,64 @@ def default_rpm_repo_snapshot_for(prog, snapshot):
         image_remove(link_name, must_exist = False),
         image_symlink_dir(snapshot_install_dir(snapshot), link_name),
     ]
+
+def add_rpm_repo_snapshots_layer(
+        name,
+        parent_layer,
+        dnf_snapshot = None,  # install, make default for `dnf`, make cache
+        yum_snapshot = None,  # install, make default for `yum`, make cache
+        make_caches_for_other_snapshot_installers = None,  # install, make cache
+        features = None,
+        **image_layer_kwargs):
+    """
+    For the specified snapshots, install them into the parent layer, and
+    pre-generate the repodata caches for each of the mentioned snapshots and
+    installers.
+
+    This is meant to be the most common way of installing snapshots into
+    layers, so it acts as syntax sugar.
+
+    Note that `parent_layer` must include `set_up_rpm_repo_snapshots()`.
+
+    A careful reader will note that we could automatically build caches for
+    all installers supported by a snapshot, but we currently do not do this
+    because building caches is fairly slow, whereas a supported installer is
+    not necessarily going to get used.  If we change our position on this,
+    the `make_caches_for_other_snapshot_installers` argument can be removed.
+    """
+    features = features or []
+
+    default_s_i_pairs = [
+        (s, i)
+        for s, i in [(dnf_snapshot, "dnf"), (yum_snapshot, "yum")]
+        if s != None
+    ]
+    for snapshot, installer in default_s_i_pairs:
+        features.append(default_rpm_repo_snapshot_for(installer, snapshot))
+
+    make_cache_for_s_i_pairs = {}
+    for s_i in (
+        default_s_i_pairs + (make_caches_for_other_snapshot_installers or [])
+    ):
+        if s_i not in make_cache_for_s_i_pairs:
+            make_cache_for_s_i_pairs[s_i] = True
+            features.append(install_rpm_repo_snapshot(s_i[0]))
+
+    name_without_caches = name + "precursor-without-caches-to-" + name
+    image_layer(
+        name = name_without_caches,
+        parent_layer = parent_layer,
+        features = features,
+        **image_layer_kwargs
+    )
+
+    snapshot_to_installers = {}
+    for snapshot, installer in make_cache_for_s_i_pairs.keys():
+        snapshot_to_installers.setdefault(snapshot, []).append(installer)
+
+    image_yum_dnf_make_snapshot_cache(
+        name = name,
+        parent_layer = ":" + name_without_caches,
+        snapshot_to_installers = snapshot_to_installers,
+        **image_layer_kwargs
+    )

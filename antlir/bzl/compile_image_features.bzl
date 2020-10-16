@@ -2,7 +2,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl/image_actions:feature.bzl", "normalize_features")
 load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
-load(":rpm_repo_snapshot.bzl", "snapshot_install_dir")
+load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
