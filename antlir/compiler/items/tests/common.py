@@ -5,20 +5,22 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import subprocess
 import tempfile
 import unittest
 from contextlib import contextmanager
 
-from antlir.btrfs_diff.tests.render_subvols import pop_path, render_sendstream
 from antlir.compiler.requires_provides import ProvidesDirectory, ProvidesFile
 from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.tests.subvol_helpers import pop_path, render_subvol
 
 from ..common import LayerOpts
 
 
-pop_path = pop_path  # Re-export for convenience
+# Re-export for legacy reasons
+pop_path = pop_path
+render_subvol = render_subvol
+
 DEFAULT_STAT_OPTS = ["--user=root", "--group=root", "--mode=0755"]
 DUMMY_LAYER_OPTS = LayerOpts(
     layer_target="fake target",  # Only used by error messages
@@ -42,23 +44,6 @@ def get_dummy_layer_opts_ba():
             __package__, "test-build-appliance"
         )
     )
-
-
-def render_subvol(subvol: Subvol):
-    # Determine the original ro/rw state of the subvol so we can put it back
-    # the way it was after rendering.
-    was_readonly = (
-        subvol.run_as_root(
-            ["btrfs", "property", "get", "-ts", subvol.path(), "ro"],
-            text=True,
-            stdout=subprocess.PIPE,
-        ).stdout.strip()
-        == "ro=true"
-    )
-
-    rendered = render_sendstream(subvol.mark_readonly_and_get_sendstream())
-    subvol.set_readonly(was_readonly)
-    return rendered
 
 
 def populate_temp_filesystem(img_path):

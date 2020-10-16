@@ -24,9 +24,10 @@ from contextlib import ExitStack
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
+from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.rpm.yum_dnf_conf import YumDnf
-from antlir.subvol_utils import Subvol, get_subvolume
+from antlir.subvol_utils import Subvol
 
 from .dep_graph import DependencyGraph
 from .subvolume_on_disk import SubvolumeOnDisk
@@ -66,8 +67,8 @@ def parse_args(args) -> argparse.Namespace:
         "should already exist.",
     )
     parser.add_argument(
-        "--build-appliance-json",
-        help="Path to the JSON output of target referred by build_appliance",
+        "--build-appliance-buck-out",
+        help="Path to the Buck output of the build appliance target",
     )
     parser.add_argument(
         "--rpm-installer",
@@ -144,10 +145,10 @@ def build_image(args):
     subvol = Subvol(os.path.join(args.subvolumes_dir, args.subvolume_rel_path))
     layer_opts = LayerOpts(
         layer_target=args.child_layer_target,
-        build_appliance=get_subvolume(
-            args.build_appliance_json, args.subvolumes_dir
+        build_appliance=find_built_subvol(
+            args.build_appliance_buck_out, subvolumes_dir=args.subvolumes_dir
         )
-        if args.build_appliance_json
+        if args.build_appliance_buck_out
         else None,
         rpm_installer=args.rpm_installer,
         rpm_repo_snapshot=args.rpm_repo_snapshot,

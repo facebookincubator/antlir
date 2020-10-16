@@ -52,7 +52,7 @@ python_library(
     deps = [
         ":common",
         "//antlir:testlib_layer_resource",
-        "//antlir/btrfs_diff:testlib_render_subvols",
+        "//antlir:testlib_subvol_helpers",
         "//antlir/compiler:requires_provides",
     ],
 )

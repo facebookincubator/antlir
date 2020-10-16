@@ -24,18 +24,6 @@ KiB = 2 ** 10
 MiB = 2 ** 20
 
 
-# A simple helper returning path to subvolume referred by
-# "subvolume_rel_path" key in layer_json json file
-def get_subvolume(layer_json, subvolumes_dir):
-    with open(layer_json) as infile:
-        return Subvol(
-            SubvolumeOnDisk.from_json_file(
-                infile, subvolumes_dir
-            ).subvolume_path(),
-            already_exists=True,
-        )
-
-
 # Exposed as a helper so that test_compiler.py can mock it.
 def _path_is_btrfs_subvol(path: Path) -> bool:
     "Ensure that there is a btrfs subvolume at this path. As per @kdave at "

@@ -8,16 +8,10 @@ import os
 import subprocess
 import unittest
 
-from antlir.btrfs_diff.tests.render_subvols import render_sendstream
+from antlir.tests.subvol_helpers import render_subvol
 from antlir.tests.temp_subvolumes import with_temp_subvols
 
 from ..procfs_serde import deserialize_int, deserialize_untyped, serialize
-
-
-def _render_subvol(subvol):
-    rendered = render_sendstream(subvol.mark_readonly_and_get_sendstream())
-    subvol.set_readonly(False)  # YES, all our subvolumes are read-write.
-    return rendered
 
 
 class TestProcfsSerDe(unittest.TestCase):
@@ -39,7 +33,7 @@ class TestProcfsSerDe(unittest.TestCase):
         )
         new_dir = self._next_dir()
         serialize(data, subvol, os.path.join(new_dir, name_with_ext))
-        rendered = _render_subvol(subvol)[1]
+        rendered = render_subvol(subvol)[1]
         # Ensure that the metadata of the once-serialized and
         # twice-serialized directories are identical.
         self.assertEqual(rendered[orig_dir], rendered[new_dir])
@@ -57,7 +51,7 @@ class TestProcfsSerDe(unittest.TestCase):
         )
         self.assertEqual(
             ["(Dir)", {name_with_ext: [f"(File d{len(expected)})"]}],
-            _render_subvol(subvol)[1][outer_dir],
+            render_subvol(subvol)[1][outer_dir],
         )
         with open(subvol.path(path_with_ext), "rb") as f:
             self.assertEqual(expected, f.read())
@@ -70,7 +64,7 @@ class TestProcfsSerDe(unittest.TestCase):
             subvol, outer_dir, name_with_ext
         )
         self.assertEqual(
-            ["(Dir)", expect_render], _render_subvol(subvol)[1][outer_dir]
+            ["(Dir)", expect_render], render_subvol(subvol)[1][outer_dir]
         )
         # NB: Not checking file contents because the scalar test cover that.
 
@@ -113,7 +107,7 @@ class TestProcfsSerDe(unittest.TestCase):
         # None produces no output
         outer_dir = self._next_dir()
         serialize(None, subvol, os.path.join(outer_dir, "nothing here"))
-        self.assertNotIn(outer_dir, _render_subvol(subvol)[1])
+        self.assertNotIn(outer_dir, render_subvol(subvol)[1])
 
         self._check_serialize_dict({"foo": ["(Dir)", {}]}, {}, subvol, "foo")
         self._check_serialize_dict(

@@ -99,10 +99,7 @@ class TestImpl:
     def _check_update_shadowed_file(self, temp_subvols, *, boot):
         self._check_shadow_ba()
 
-        dest_subvol = temp_subvols.caller_will_create("shadow_ba")
-        # Fixme: formalize this pattern from `test_non_ephemeral_snapshot`
-        dest_subvol._exists = True
-
+        dest_subvol = temp_subvols.external_command_will_create("shadow_ba")
         self._check_yum_dnf_ret(
             "i will shadow\n",
             br"Installing\s+: rpm-test-carrot-2-rc0.x86_64",
