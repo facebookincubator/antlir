@@ -10,15 +10,15 @@ from typing import Mapping, Optional, Sequence, Tuple
 from antlir.fs_utils import Path
 from antlir.shape import Shape
 
-from .data import data
-
 # TODO remove all references to hashable and just use characters once
 # read-only dicts land
 from .hashable_t import hashable_t
+from .loader import shape
+from .luke import data as luke
 
 
-character_t = data.__annotations__["characters"].__args__[0]
-characters = data.characters
+character_t = shape.types.characters
+characters = shape.read_resource(__package__, "characters.json").characters
 
 
 class TestShape(unittest.TestCase):
@@ -28,9 +28,7 @@ class TestShape(unittest.TestCase):
         self.maxDiff = 12345
 
     def test_load(self):
-        """load happy path from json_file, and python_data"""
-        c = character_t.read_resource(__package__, "luke.json")
-
+        c = characters[0]
         self.assertEqual(c.name, "Luke Skywalker")
         self.assertEqual(c.appears_in, (4, 5, 6))
         self.assertEqual(
@@ -45,7 +43,7 @@ class TestShape(unittest.TestCase):
         self.assertIsInstance(c.personnel_file, Path)
 
         # json_file and python_data produce identical objects
-        self.assertEqual(c, characters[0])
+        self.assertEqual(luke, characters[0])
 
     def test_hash(self):
         trooper1 = hashable_t(

@@ -1,3 +1,4 @@
+load("//antlir/bzl:oss_shim.bzl", "export_file")
 load(":defs.bzl", "fake_macro_library")
 load(":oss_shim.bzl", "get_visibility")
 
@@ -202,6 +203,10 @@ fake_macro_library(
         ":structs",
         ":target_helpers",
     ],
+)
+
+export_file(
+    name = "shape.bzl",
 )
 
 fake_macro_library(

@@ -1,6 +1,5 @@
-load("//antlir/bzl:oss_shim.bzl", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
-load(":shape_selftests.bzl", "run_shape_selftests")
 
 # There are a lot of shapes that are used in test cases.
 # This would rapidly clutter targets in antlir/bzl/tests, so define them all
@@ -137,20 +136,55 @@ python_unittest(
     ],
     resources = {
         shape.json_file(
-            name = "luke.json",
-            shape = characters[0],
-        ): "luke.json",
-    },
-    deps = [
-        ":hashable_t",
-        shape.python_data(
-            name = "data",
+            name = "characters.json",
             shape = shape.new(
                 character_collection_t,
                 characters = characters,
             ),
+        ): "characters.json",
+    },
+    deps = [
+        ":hashable_t",
+        shape.python_data(
+            name = "luke",
+            shape = characters[0],
+            module = "luke",
+            shape_t = character_t,
+        ),
+        shape.loader(
+            name = "loader",
+            shape = character_collection_t,
         ),
     ],
 )
 
-run_shape_selftests()
+# construct a file with some shims to allow the python_unittest below to import
+# shape.bzl as a valid python source file
+buck_genrule(
+    name = "shape_bzl.py",
+    out = "shape_bzl.py",
+    cmd = """
+    echo "from .shape_bzl_shims import *" > $OUT
+    # small hack to keep line numbers the same as the original source, just
+    # remove the first line which is a comment anyway
+    tail -n +2 $(location //antlir/bzl:shape.bzl) >> $OUT
+    """,
+)
+
+python_library(
+    name = "shape_bzl",
+    srcs = {
+        ":shape_bzl.py": "shape_bzl.py",
+        "shape_bzl_shims.py": "shape_bzl_shims.py",
+    },
+)
+
+python_unittest(
+    name = "test-shape-bzl",
+    srcs = [
+        "test_shape_bzl.py",
+    ],
+    needed_coverage = [
+        (100, ":shape_bzl"),
+    ],
+)
