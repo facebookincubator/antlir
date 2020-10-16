@@ -27,8 +27,10 @@ class YumDnfConfTestCaseImpl:
         debuglevel=2
         gpgcheck=1
         metadata_expire = 1  # seconds
+        sslcacert =/some/file
 
         [potato]
+        sslclientkey = /another/file
         baseurl=file:///pot.at/to
         enabled=1
 

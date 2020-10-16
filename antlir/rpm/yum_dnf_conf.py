@@ -50,6 +50,19 @@ class YumDnfConfRepo(NamedTuple):
         )
 
 
+def _isolate_ssl_options(cfg):
+    # We don't actually need the SSL options, because we serve everything
+    # over HTTP from the local `repo-server`, so they shouldn't affect
+    # anything.  However, `yum` prints this annoying logspam when the
+    # snapshot's original `yum.conf` contains `sslcacert`, and when that
+    # cert is no longer included in the image with the snapshot:
+    #     Repo EACH_REPO forced skip_if_unavailable=True due to BAD_CA_FILE
+    # So, let's eliminate references to non-default files that may not exist
+    # (this leaves `sslverify` alone since it's not a file):
+    for ssl_opt in ["sslcacert", "sslclientcert", "sslclientkey"]:
+        cfg.pop(ssl_opt, None)
+
+
 class YumDnfConfIsolator:
     """
     The functions in this class ATTEMPT to edit `{yum,dnf}.conf` in such a
@@ -121,8 +134,7 @@ class YumDnfConfIsolator:
                 "gpgcakey",
             ]:
                 assert unsupported_key not in repo_sec, (unsupported_key, repo)
-            # NB: As with [main], we let the SSL-related options come
-            # from the host: `sslcacert`, `sslclientcert`, and `sslclientkey`
+            _isolate_ssl_options(repo_sec)
         assert not unchanged_repos, f"Failed to isolate {unchanged_repos}"
         self._isolated_repos = True
         return self
@@ -172,8 +184,7 @@ class YumDnfConfIsolator:
         main_sec["gpgcheck"] = "1"
         main_sec["localpkg_gpgcheck"] = "1"
 
-        # NB: `sslcacert`, `sslclientcert`, and `sslclientkey` are left
-        # as-is, though these read from the host filesystem.
+        _isolate_ssl_options(main_sec)
 
         # `yum-dnf-from-snapshot` and friends need certain plugins, and they
         # are off by default in `yum`, so just enable them.  Don't worry,
