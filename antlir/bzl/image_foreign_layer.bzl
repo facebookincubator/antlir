@@ -191,14 +191,14 @@ def image_foreign_layer(
                 target_tagger,
                 struct(foreign_layer = [
                     # TODO: use the `shape.to_dict()` helper from Arnav's diff.
-                    structs.to_dict(shape.new(
+                    shape.as_dict(shape.new(
                         foreign_layer_t,
                         cmd = cmd,
                         user = user,
                         container_opts = normalize_container_opts(
                             container_opts,
                         ),
-                    )._data),
+                    )),
                 ]),
                 extra_deps = ["//antlir/bzl:image_foreign_layer"],
             )],
