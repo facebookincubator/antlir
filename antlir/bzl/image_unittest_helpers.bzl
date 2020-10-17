@@ -84,6 +84,7 @@ def _nspawn_wrapper_properties(
         k
         for k in structs.to_dict(container_opts).keys()
         if not k.startswith("_") and not k in [
+            "internal_only_logs_tmpfs",
             "serve_rpm_snapshots",
             "shadow_proxied_binaries",
             "internal_only_unprotect_antlir_dir",  # Unavailable in tests
@@ -143,6 +144,7 @@ def nspawn_in_subvol_args():
         ],
         *[{maybe_boot}],
         *[{maybe_hostname}],
+        {maybe_logs_tmpfs}
         {maybe_no_shadow_proxied_binaries}
         *[
             '--serve-rpm-snapshot={{}}'.format(s)
@@ -165,10 +167,13 @@ mv $TMP/out "$OUT"
             ),
             maybe_boot = "'--boot'" if boot else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
-            # The next 2 would be nice to pass as `container_opts_t`, but
+            # The next 3 would be nice to pass as `container_opts_t`, but
             # this entire interface is pinned to the `nspawn_in_subvol` CLI,
             # so this manual marshaling is the path of least resistance.  In
             # the future, one could consider `shape`ifying this interface.
+            maybe_logs_tmpfs = (
+                "'--logs-tmpfs'," if container_opts.internal_only_logs_tmpfs else ""
+            ),
             maybe_no_shadow_proxied_binaries = (
                 "" if container_opts.shadow_proxied_binaries else "'--no-shadow-proxied-binaries',"
             ),
