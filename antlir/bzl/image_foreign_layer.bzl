@@ -179,6 +179,12 @@ def image_foreign_layer(
     if "features" in image_layer_kwargs:
         fail("\"features\" are not supported in image_foreign_layer")
 
+    container_opts = normalize_container_opts(container_opts)
+    if container_opts.internal_only_logs_tmpfs:
+        # The mountpoint directory would leak into the built images, and it
+        # doesn't even make sense for foreign layer construction.
+        fail("Foreign layers do not allow setting up a `/logs` tmpfs")
+
     target_tagger = new_target_tagger()
     image_layer_utils.image_layer_impl(
         _rule_type = "image_foreign_layer_" + rule_type,
@@ -195,9 +201,7 @@ def image_foreign_layer(
                         foreign_layer_t,
                         cmd = cmd,
                         user = user,
-                        container_opts = normalize_container_opts(
-                            container_opts,
-                        ),
+                        container_opts = container_opts,
                     )),
                 ]),
                 extra_deps = ["//antlir/bzl:image_foreign_layer"],

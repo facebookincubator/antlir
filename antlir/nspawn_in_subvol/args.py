@@ -107,7 +107,7 @@ class _NspawnDebugOnlyNotForProdOpts(NamedTuple):
     """
 
     forward_tls_env: bool = False
-    logs_tmpfs: bool = True
+    logs_tmpfs: bool = False
     snapshot_into: Optional[Path] = None
     # We might later remove this.  It was originally added to allow setting
     # up loopbacks inside nested network namespaces, so it's technically
@@ -145,16 +145,14 @@ def _parser_add_debug_only_not_for_prod_opts(parser: argparse.ArgumentParser):
         "of the layer to ensure that the contained paths are valid.",
     )
     parser.add_argument(
-        "--no-logs-tmpfs",
-        action="store_false",
-        dest="logs_tmpfs",
+        "--logs-tmpfs",
+        action="store_true",
         help="Our production runtime always provides a user-writable `/logs` "
-        "in the container, so this wrapper simulates it by mounting a "
-        "tmpfs at that location by default. You may need this flag to "
-        "use `--no-snapshot` with a layer that lacks a `/logs` "
-        "mountpoint. NB: we do not supply a persistent writable mount "
-        "since that is guaranteed to break hermeticity and e.g. make "
-        "somebody's image tests very hard to debug.",
+        "in the container. Passing this flag will cause us to create the "
+        "mount-point at runtime, if it does not exist, and mount a `tmpfs` "
+        "there. Unlike real container logs, we do not supply a persistent "
+        "writable mount since that is guaranteed to break hermeticity and "
+        "e.g. make somebody's image tests very hard to debug.",
     )
     parser.add_argument(
         "--snapshot-into",

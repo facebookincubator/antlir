@@ -17,7 +17,7 @@ class ImagePythonUnittestTest(unittest.TestCase):
         # This should cause our 100% coverage assertion to pass.
         coverage_test_helper()
         self.assertEqual("nobody", getpass.getuser())
-        # Container /logs should be writable
+        # Test `internal_only_logs_tmpfs`: container /logs should be writable
         with open("/logs/garfield", "w") as catlog:
             catlog.write("Feed me.")
         # Future: add more assertions here as it becomes necessary what

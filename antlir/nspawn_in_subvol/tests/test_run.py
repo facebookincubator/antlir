@@ -88,12 +88,12 @@ class NspawnTestCase(NspawnTestBase):
         # opts.logs_tmpfs
         self.assertIn(
             "--tmpfs=/logs:uid=123,gid=123,mode=0755,nodev,nosuid,noexec",
-            self._wrapper_args_to_nspawn_args(base_argv),
+            self._wrapper_args_to_nspawn_args(base_argv + ["--logs-tmpfs"]),
         )
         # !opts.logs_tmpfs
         self.assertNotIn(
             "--tmpfs=/logs:uid=123,gid=123,mode=0755,nodev,nosuid,noexec",
-            self._wrapper_args_to_nspawn_args(base_argv + ["--no-logs-tmpfs"]),
+            self._wrapper_args_to_nspawn_args(base_argv),
         )
 
     def test_extra_nspawn_args_cap_net_admin_opts(self):
@@ -191,10 +191,11 @@ class NspawnTestCase(NspawnTestBase):
         )
 
     def test_logs_directory(self):
-        # The log directory is on by default.
+        # The log directory is created if we ask for it.
         ret = self._nspawn_in(
             (__package__, "test-layer"),
             [
+                "--logs-tmpfs",
                 "--",
                 "sh",
                 "-c",
@@ -206,12 +207,11 @@ class NspawnTestCase(NspawnTestBase):
         self.assertEqual(
             b"nobody nobody 755\nnobody\n" + self.maybe_extra_ending, ret.stdout
         )
-        # And the option prevents it from being created.
+        # But it does not exist by default.
         self.assertEqual(
             0,
             self._nspawn_in(
-                (__package__, "test-layer"),
-                ["--no-logs-tmpfs", "--", "test", "!", "-e", "/logs"],
+                (__package__, "test-layer"), ["--", "test", "!", "-e", "/logs"]
             ).returncode,
         )
 

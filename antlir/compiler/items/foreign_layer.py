@@ -24,14 +24,6 @@ from .common import ImageItem, LayerOpts, PhaseOrder
 from .foreign_layer_t import foreign_layer_t
 
 
-# Future: this probably belongs in a container_opts library:
-def _nspawn_plugin_args_from_container_opts_t(opts):
-    return NspawnPluginArgs(
-        serve_rpm_snapshots=opts.serve_rpm_snapshots,
-        shadow_proxied_binaries=opts.shadow_proxied_binaries,
-    )
-
-
 class ForeignLayerItem(foreign_layer_t):
     @pydantic.validator("container_opts")
     def pathify(cls, opts):  # noqa: B902
@@ -55,8 +47,12 @@ class ForeignLayerItem(foreign_layer_t):
         assert isinstance(item, ForeignLayerItem), item
 
         def builder(subvol: Subvol):
+            c_opts = item.container_opts
+            # We should not auto-create /logs in foreign layers.
+            assert not c_opts.internal_only_logs_tmpfs
+
             maybe_protect_antlir = ()
-            if not item.container_opts.internal_only_unprotect_antlir_dir:
+            if not c_opts.internal_only_unprotect_antlir_dir:
                 antlir_path = subvol.path("__antlir__")
                 # Use `.stat()`, not `.exists()`, to fail if `/` is not readable
                 try:
@@ -85,8 +81,9 @@ class ForeignLayerItem(foreign_layer_t):
                 PopenArgs(),
                 plugins=rpm_nspawn_plugins(
                     opts=opts,
-                    plugin_args=_nspawn_plugin_args_from_container_opts_t(
-                        item.container_opts
+                    plugin_args=NspawnPluginArgs(
+                        serve_rpm_snapshots=c_opts.serve_rpm_snapshots,
+                        shadow_proxied_binaries=c_opts.shadow_proxied_binaries,
                     ),
                 ),
             )

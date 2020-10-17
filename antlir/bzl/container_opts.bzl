@@ -14,6 +14,10 @@ container_opts_t = shape.shape(
     # Do not use this, it is only exposed so that Antlir can populate the
     # repodata caches for the RPM snapshots.
     internal_only_unprotect_antlir_dir = shape.field(bool, default = False),
+    # This is exposed here only because we need some way to enable this FB-
+    # centric feature in FB container image tests.  A future refactor should
+    # take this away and put it into a FB-internal overlay.
+    internal_only_logs_tmpfs = shape.field(bool, default = False),
 )
 
 def _new_container_opts_t(
