@@ -11,7 +11,6 @@ import shlex
 import shutil
 import subprocess
 import tempfile
-import textwrap
 from configparser import ConfigParser
 from contextlib import contextmanager
 from typing import Dict, List, NamedTuple, Optional
@@ -43,6 +42,9 @@ class Rpm(NamedTuple):
     # Be careful with enabling this broadly since it make the RPM
     # dramatically bigger and likely makes the test slower.
     test_post_install: bool = False
+    # If this is set, `test_post_install` and `override_contents` are
+    # ignored. This is a finished spec body, not a `.format()` template.
+    custom_body: Optional[str] = None
 
     def spec(self, busybox_path: Path) -> str:
         format_kwargs = {
@@ -55,56 +57,66 @@ class Rpm(NamedTuple):
             "quoted_busybox_path": busybox_path.shell_quote(),
         }
 
-        common_spec = textwrap.dedent(
+        spec = []
+        spec.append(
             """\
-        Summary: The "{name}" package.
-        Name: rpm-test-{name}
-        Version: {version}
-        Release: {release}
-        Provides: virtual-{name}
-        License: MIT
-        Group: Facebook/Script
-        Vendor: Facebook, Inc.
-        Packager: somebody@example.com
-
-        %description
-        %install
-        mkdir -p "$RPM_BUILD_ROOT"/rpm_test
-        echo {quoted_contents} > "$RPM_BUILD_ROOT"/rpm_test/{name}.txt
-        mkdir -p "$RPM_BUILD_ROOT"/bin
-        """
-        ).format(**format_kwargs)
-
-        return (
-            common_spec
-            + textwrap.dedent(
-                (
-                    """\
-            %files
-            /rpm_test/{name}.txt
-        """
-                )
-                if not self.test_post_install
-                else (
-                    """\
-            cp {quoted_busybox_path} "$RPM_BUILD_ROOT"/bin/sh
-            %post
-            """
-                    # yum-dnf-from-snapshot prepares /dev in a subtle way to
-                    # protect host system from side-effects of rpm post-install
-                    # scripts. The command below lets us test that /dev/null is
-                    # prepared properly: if "echo > /dev/null" fails, tests will
-                    # catch the absence of post.txt
-                    """\
-            echo > /dev/null && echo 'stuff' > \
-              "$RPM_BUILD_ROOT"/rpm_test/post.txt
-            %files
-            /bin/sh
-            /rpm_test/{name}.txt
-        """
-                )
-            ).format(**format_kwargs)
+Summary: The "{name}" package.
+Name: rpm-test-{name}
+Version: {version}
+Release: {release}
+Provides: virtual-{name}
+License: MIT
+Group: Facebook/Script
+Vendor: Facebook, Inc.
+Packager: somebody@example.com
+%description
+""".format(
+                **format_kwargs
+            )
         )
+
+        if self.custom_body:
+            spec.append(self.custom_body)
+            return "".join(spec)
+
+        spec.append(
+            """\
+%install
+mkdir -p "$RPM_BUILD_ROOT"/rpm_test
+echo {quoted_contents} > "$RPM_BUILD_ROOT"/rpm_test/{name}.txt
+mkdir -p "$RPM_BUILD_ROOT"/bin
+""".format(
+                **format_kwargs
+            )
+        )
+        if self.test_post_install:
+            spec.append(
+                """\
+cp {quoted_busybox_path} "$RPM_BUILD_ROOT"/bin/sh
+%post
+# yum-dnf-from-snapshot prepares /dev in a subtle way to
+# protect host system from side-effects of rpm post-install
+# scripts. The command below lets us test that /dev/null is
+# prepared properly: if "echo > /dev/null" fails, tests will
+# catch the absence of post.txt
+echo > /dev/null && echo 'stuff' > "$RPM_BUILD_ROOT"/rpm_test/post.txt
+%files
+/bin/sh
+/rpm_test/{name}.txt
+""".format(
+                    **format_kwargs
+                )
+            )
+        else:
+            spec.append(
+                """\
+%files
+/rpm_test/{name}.txt
+""".format(
+                    **format_kwargs
+                )
+            )
+        return "".join(spec)
 
 
 class Repo(NamedTuple):
