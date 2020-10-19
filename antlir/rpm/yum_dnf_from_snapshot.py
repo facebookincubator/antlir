@@ -87,6 +87,7 @@ import argparse
 import base64
 import logging
 import os
+import pwd
 import shutil
 import subprocess
 import tempfile
@@ -211,21 +212,6 @@ def _isolate_yum_dnf(
     mkdir -p -m 0755 /var/cache/{prog_name}  # must exist to be protected
     {quoted_protected_paths}
 
-    # Also protect potentially non-hermetic files that are not required to
-    # exist on the host.  We don't expect these to be written, only read, so
-    # failing to protect the non-existent ones is OK.
-    for bad_file in \
-            {default_conf_file} \
-            ~/.rpmrc \
-            /etc/rpmrc \
-            ~/.rpmmacros \
-            /etc/rpm/macros \
-            ; do
-        if [[ -e "$bad_file" ]] ; then
-            mount /dev/null "$bad_file" -o bind
-        fi
-    done
-
     # `yum` & `dnf` also use the host's /var/tmp, and since I don't trust
     # them to isolate themselves, let's also relocate that.
     var_tmp=$(mktemp -d --suffix=_isolated_{prog_name}_var_tmp)
@@ -241,10 +227,6 @@ def _isolate_yum_dnf(
     """
         ).format(
             prog_name=yum_dnf.value,
-            default_conf_file={
-                YumDnf.yum: "/etc/yum.conf",
-                YumDnf.dnf: "/etc/dnf/dnf.conf",
-            }[yum_dnf],
             quoted_dummy_dev=dummy_dev.shell_quote(),
             quoted_install_root=install_root.shell_quote(),
             # Read `_set_up_yum_dnf_cache` for the rationale.
@@ -305,13 +287,24 @@ def _dummy_dev() -> Path:
 
 @contextmanager
 def _dummies_for_protected_paths(
-    protected_paths: Iterable[str],
+    install_root: Path,
+    must_exist: Iterable[str],
+    may_exist: Iterable[str],
 ) -> Mapping[Path, Path]:
     """
     Some locations (some host yum/dnf directories, and install root /.meta/
     and mountpoints) should be off-limits to writes by RPMs.  We enforce
     that by bind-mounting an empty file or directory on top of each one.
     """
+    protected_paths = [*must_exist]
+    for p in may_exist:
+        if (
+            # Convention: relative for image, or absolute for host.
+            Path(p)
+            if p.startswith("/")
+            else (install_root / p)
+        ).exists(raise_permission_error=True):
+            protected_paths.append(p)
     with temp_dir() as td, tempfile.NamedTemporaryFile() as tf:
         # NB: There may be duplicates in protected_paths, so we normalize.
         # If the duplicates include both a file and a directory, this picks
@@ -548,46 +541,73 @@ def yum_dnf_from_snapshot(
     conf_path = snapshot_dir / f"{prog_name}/etc/{prog_name}/{prog_name}.conf"
     install_root = _install_root(conf_path, yum_dnf_args)
 
+    # The protected path logic below and in `RpmActionItem` assumes this:
+    assert not META_DIR.startswith(b"/")
     # The paths that have trailing slashes are directories, others are
-    # files.  There's a separate code path for protecting some files above.
-    # The rationale is that those files are not guaranteed to exist.
-    protected_paths = [  # do not mutate the argument
+    # files. If you omit the leading slash, this path is relative to
+    # `installroot`.
+    protected_paths = [  # do not mutate the function argument
         *protected_paths,
-        *(
+        # Protect the cache even when installing to / because the
+        # snapshot has its own cache.
+        f"/var/cache/{prog_name}/",
+        # RPM must never touch META_DIR on the host filesystem.  We are sure
+        # that it exists since snapshots only exist in Antlir-built images.
+        f"/{META_DIR}",
+    ]
+    optional_protected_paths = []
+    if not _install_to_current_root(install_root):
+        # Ensure the host log exists, so we can guarantee we don't write to it.
+        log_path = f"/var/log/{prog_name}.log"
+        subprocess.check_call(["sudo", "touch", log_path])
+        # If we are installing to /, it makes no sense to isolate /etc, or the
+        # RPM installer DBs, or the install logs -- `rpm` can write there.
+        protected_paths.extend(
             [
                 # See the `_isolate_yum_dnf` docblock for how (and why) this
                 # list was produced.  All are assumed to exist on the host
                 # -- otherwise, we'd be in the awkard situation of leaving
                 # them unprotected, or creating them on the host.
                 "/etc/yum.repos.d/",  # dnf ALSO needs this isolated
-                f"/etc/{prog_name}/",  # A duplicate for the `yum` case
+                f"/etc/{prog_name}/",  # Also covers /etc/dnf/dnf.conf
                 "/etc/pki/rpm-gpg/",
-                "/etc/rpm/",
-                # Hardcode `META_DIR` because it should ALWAYS be off-limits
-                # -- even though the compiler will redundantly tell us to
-                # protect it.
-                META_DIR.decode(),
-                # Protect the cache even when installing to / because the
-                # snapshot has its own cache.
-                f"/var/cache/{prog_name}/",
+                "/etc/rpm/",  # Also covers /etc/rpm/macros
+                log_path,
+                f"/var/lib/{prog_name}/",
+                "/var/lib/rpm/",
             ]
             + (
-                # On Fedora, `yum` is just a symlink to `dnf`, so `/etc/yum` is
-                # missing
+                # Fedora's `yum` is a symlink to `dnf`, so `/etc/yum` is absent
+                # When `yum_dnf == yum`, this duplicates `/etc/{prog_name}`.
                 ["/etc/yum/"]
                 if (has_yum() and not yum_is_dnf())
                 else []
             )
-        ),
-    ]
-    # Only isolate the host DBs and log if we are NOT installing to /.
-    if not _install_to_current_root(install_root):
-        # Ensure the log exists, so we can guarantee we don't write to the host.
-        log_path = f"/var/log/{prog_name}.log"
-        subprocess.check_call(["sudo", "touch", log_path])
-        protected_paths.extend(
-            [log_path, f"/var/lib/{prog_name}/", "/var/lib/rpm/"]
         )
+        # Also protect potentially non-hermetic files that are not required
+        # to exist on the host.  We don't expect these to be written, only
+        # read, so failing to protect the non-existent ones is OK.
+        user_home = pwd.getpwnam("root").pw_dir  # Assume we `sudo` as `root`.
+        optional_protected_paths.extend(
+            [
+                user_home + "/.rpmrc",
+                "/etc/rpmrc",
+                user_home + "/.rpmmacros",
+            ]
+        )
+        # Unlike `/etc/dnf/dnf.conf` this isn't protected by an outer directory
+        if yum_dnf == YumDnf.yum:
+            optional_protected_paths.append("/etc/yum.conf")
+        # Protect `install_root / META_DIR` if it exists, because it should
+        # always be off-limits to RPMs -- it is for `antlir/compiler/`
+        # alone.  NB: `RpmActionItem` will also add it to `protected_paths`.
+        #
+        # But, don't **require** META_DIR to be present, to permit the
+        # following normal usage of Antlir containers:
+        #    buck run :ba-container -- --user=root
+        #    mkdir /i1
+        #    dnf install -y --installroot=/i1 jq
+        optional_protected_paths.append(META_DIR.decode())
 
     for arg in yum_dnf_args:
         assert arg != "-c" and not arg.startswith(
@@ -616,16 +636,9 @@ def yum_dnf_from_snapshot(
             yum_dnf_args = yum_dnf_args[1:]
 
     with _dummy_dev() as dummy_dev, _dummies_for_protected_paths(
-        p
-        for p in protected_paths
-        # Don't require META_DIR to be present, to permit the following
-        # "obvious" path for experimenting with RPM snapshots:
-        #    buck run :ba-container -- --user=root
-        #    mkdir /i1
-        #    dnf install -y --installroot=/i1 jq
-        # Without this check, novice users would be stymied by the
-        # missing `/i1/.meta`.
-        if META_DIR.decode() != p or os.path.exists(install_root / p)
+        install_root=install_root,
+        must_exist=protected_paths,
+        may_exist=optional_protected_paths,
     ) as protected_path_to_dummy, (
         nullcontext()
         if is_makecache
