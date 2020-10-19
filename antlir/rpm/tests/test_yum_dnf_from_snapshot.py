@@ -12,7 +12,6 @@ import uuid
 from contextlib import contextmanager
 from unittest import mock
 
-from antlir.common import init_logging
 from antlir.fs_utils import META_DIR, Path, create_ro, temp_dir
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
@@ -29,8 +28,6 @@ from ..common import has_yum, yum_is_dnf
 
 _INSTALL_ARGS = ["install", "--assumeyes", "rpm-test-carrot", "rpm-test-milk"]
 _SNAPSHOT_DIR = snapshot_install_dir("//antlir/rpm:repo-snapshot-for-tests")
-
-init_logging()
 
 
 # Move this to `subvol_helpers.py` or similar if the pattern recurs.
@@ -290,13 +287,61 @@ class YumDnfFromSnapshotTestImpl:
                 # But we updated the shadowed file
                 self.assertEqual("carrot 2 rc0\n", shadowed.read_text())
 
+    def _check_test_macro_contents(self, install_root: Path, prog):
+        self.assertEqual(
+            {
+                YumDnf.dnf: "does not function\n",
+                YumDnf.yum: "young urban male?\n",
+            }[self._YUM_DNF],
+            Path(install_root / f"etc/rpm/macros.test-{prog}").read_text(),
+        )
+
+    # This test shows that when we're installing to /, that our normal "host
+    # FS protected paths" do not apply.
+    #
+    # The `yum` and `dnf` variants of this tests install separate,
+    # independent RPMs, so they won't collide even if they run in the same
+    # test container.
+    def test_install_to_host_etc(self):
+        prog = self._YUM_DNF.value
+        self._yum_dnf_from_snapshot(
+            protected_paths=[],
+            yum_dnf_args=[
+                "install",
+                "--assumeyes",
+                f"rpm-test-etc-{prog}-macro",
+            ],
+        )
+        self._check_test_macro_contents(Path("/"), prog)
+
+    def test_install_to_installroot_etc(self):
+        with _temp_subvol("test_install_to_installroot_etc") as sv:
+            prog = self._YUM_DNF.value
+            self._yum_dnf_from_snapshot(
+                protected_paths=[],
+                yum_dnf_args=[
+                    "install",
+                    "--assumeyes",
+                    f"--installroot={sv.path()}",
+                    f"rpm-test-etc-{prog}-macro",
+                ],
+            )
+            self._check_test_macro_contents(sv.path(), prog)
+            r = render_subvol(sv)
+            self.assertEqual(
+                ["(Dir)", {f"macros.test-{prog}": ["(File d18)"]}],
+                pop_path(r, "etc/rpm"),
+            )
+            if self._YUM_DNF == YumDnf.yum:
+                self.assertEqual(["(Dir)", {}], pop_path(r, "etc"))
+            check_common_rpm_render(self, r, prog, no_meta=True)
+
     def test_makecache(self):
         # The preceding tests implicitly assert that we leak no cache in
         # normal usage.  But `makecache` must write one!  Note that this is
         # not exercised in the expected `--installroot=/` because that would
         # couple the test to the state of the caches in the BA (which should
         # normally be "populated").
-
         with _temp_subvol("test_makecache") as sv:
             self._yum_dnf_from_snapshot(
                 protected_paths=[],
@@ -323,7 +368,7 @@ class YumDnfFromSnapshotTestImpl:
             )
             self.assertEqual(["(Dir)", {snap_name: ["(Dir)", {}]}], snap_r)
             check_common_rpm_render(
-                self, r, self._YUM_DNF.value, no_meta=True, is_makecache=True
+                self, r, prog, no_meta=True, is_makecache=True
             )
 
 

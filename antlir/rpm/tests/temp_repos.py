@@ -182,6 +182,28 @@ SAMPLE_STEPS = [
                 Rpm("carrot", "2", "rc0"),  # Same version as in `bunny`
                 Rpm("mutable", "a", "f"),
             ]
+            + [
+                # These two RPMs are separate so that they can be installed
+                # **independently** as part of the same test container by
+                # `{Yum,Dnf}FromSnapshotTestCaase` test cases.
+                Rpm(
+                    f"etc-{prog}-macro",
+                    "1",
+                    "2",
+                    custom_body=f"""\
+%install
+mkdir -p "$RPM_BUILD_ROOT"/etc/rpm
+echo {contents} > "$RPM_BUILD_ROOT"/etc/rpm/macros.test-{prog}
+%files
+/etc/rpm/macros.test-{prog}
+""",
+                )
+                for prog, contents in [
+                    # A test lazily relies on both files having the same length
+                    ("yum", "young urban male?"),
+                    ("dnf", "does not function"),
+                ]
+            ]
         ),
         "puppy": "dog",
     },
