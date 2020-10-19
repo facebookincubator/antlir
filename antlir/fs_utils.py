@@ -99,8 +99,14 @@ class Path(bytes):
     def __rtruediv__(self, left: AnyStr) -> "Path":
         return Path(os.path.join(byteme(left), self))
 
-    def exists(self) -> bool:
-        return os.path.exists(self)
+    def exists(self, raise_permission_error=False) -> bool:
+        if not raise_permission_error:
+            return os.path.exists(self)
+        try:
+            os.stat(self)
+            return True
+        except FileNotFoundError:
+            return False
 
     def file_url(self) -> str:
         return "file://" + urllib.parse.quote(self.abspath())
