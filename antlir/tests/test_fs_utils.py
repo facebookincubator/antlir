@@ -93,14 +93,27 @@ class TestFsUtils(unittest.TestCase):
             )
 
     def test_path_exists(self):
-        does_not_exist = Path("non/existat")
-        self.assertFalse(does_not_exist.exists())
+        does_not_exist = Path("non/existent")
+        for err in [True, False]:
+            self.assertFalse(does_not_exist.exists(raise_permission_error=err))
 
-        with tempfile.TemporaryDirectory() as td:
-            i_exist = Path(td) / "cogito_ergo_sum"
+        with temp_dir() as td:
+            i_exist = td / "cogito_ergo_sum"
             i_exist.touch()
+            for err in [True, False]:
+                self.assertTrue(i_exist.exists(raise_permission_error=err))
 
-            self.assertTrue(i_exist.exists())
+            if os.geteuid() == 0:
+                return  # Skip "permission error" tests, `root` can see all.
+
+            old_mode = os.stat(td).st_mode
+            try:
+                os.chmod(td, 0)
+                self.assertFalse(i_exist.exists(raise_permission_error=False))
+                with self.assertRaises(PermissionError):
+                    i_exist.exists(raise_permission_error=True)
+            finally:
+                os.chmod(td, old_mode)
 
     def test_path_format(self):
         first = Path("a/b")

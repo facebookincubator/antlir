@@ -54,12 +54,9 @@ class ForeignLayerItem(foreign_layer_t):
             maybe_protect_antlir = ()
             if not c_opts.internal_only_unprotect_antlir_dir:
                 antlir_path = subvol.path("__antlir__")
-                # Use `.stat()`, not `.exists()`, to fail if `/` is not readable
-                try:
-                    os.stat(antlir_path)
+                # Fail if `/` is not readable:
+                if antlir_path.exists(raise_permission_error=True):
                     maybe_protect_antlir = ((antlir_path, "/__antlir__"),)
-                except FileNotFoundError:
-                    pass
 
             opts = new_nspawn_opts(
                 layer=subvol,
