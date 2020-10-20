@@ -12,6 +12,7 @@ NB: Surprisingly, we don't need any special cleanup for the `mount` operations
 """
 import json
 import os
+import subprocess
 from dataclasses import dataclass
 from typing import Iterator, Mapping, NamedTuple, Optional, Tuple
 
@@ -21,7 +22,7 @@ from antlir.compiler.requires_provides import (
     require_directory,
 )
 from antlir.find_built_subvol import find_built_subvol
-from antlir.fs_utils import Path
+from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
@@ -170,15 +171,12 @@ def _raise(ex):  # pragma: no cover
     raise ex
 
 
-def mounts_from_subvol_meta(subvol: Optional[Subvol]) -> Iterator[Tuple[Path]]:
+def mounts_from_meta(volume_path: Path) -> Iterator[Tuple[Path]]:
     """
-    Returns a list of constructed `MountItem`s built from the .meta/ of the
-    provided subvol.
+    Returns a list of constructed `MountItem`s built from the a .meta/ dir
+    directly under the provided path.
     """
-    if not subvol:
-        return
-
-    mounts_path = subvol.path(META_MOUNTS_DIR)
+    mounts_path = volume_path / META_MOUNTS_DIR
     if not mounts_path.exists():
         return
 
@@ -196,7 +194,7 @@ def mounts_from_subvol_meta(subvol: Optional[Subvol]) -> Iterator[Tuple[Path]]:
 
             # Deserialize the mount madness
             cfg = procfs_serde.deserialize_untyped(
-                subvol.path(), Path(META_MOUNTS_DIR / relpath).decode()
+                volume_path, Path(META_MOUNTS_DIR / relpath).decode()
             )
 
             # Convert config info proper types and create a Mount
@@ -212,4 +210,28 @@ def mounts_from_subvol_meta(subvol: Optional[Subvol]) -> Iterator[Tuple[Path]]:
             )
 
             assert not cfg, cfg
+            yield mount
+
+
+def mounts_from_image_meta(image: Path) -> Iterator[Tuple[Path]]:
+    """
+    Returns a list of constructed `MountItem`s built from the .meta of
+    the provided btrfs loopback image.
+    """
+
+    # Extract the mount meta from the provided image with
+    # btrfs restore
+    with temp_dir() as td:
+        subprocess.check_call(
+            [
+                "btrfs",
+                "restore",
+                f"{image}",
+                f"{td}",
+                "--path-regex",
+                "^/(volume(|/.meta(|/.*)))$",
+            ],
+        )
+
+        for mount in mounts_from_meta(td / "volume"):
             yield mount

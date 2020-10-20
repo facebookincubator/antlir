@@ -15,6 +15,7 @@ from antlir.compiler.requires_provides import (
     require_directory,
 )
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
+from antlir.fs_utils import Path, temp_dir
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
@@ -24,7 +25,8 @@ from ..mount import (
     Mount,
     MountItem,
     RuntimeSource,
-    mounts_from_subvol_meta,
+    mounts_from_image_meta,
+    mounts_from_meta,
 )
 from ..phases_provide import PhasesProvideItem
 from .common import DUMMY_LAYER_OPTS, BaseItemTestCase, render_subvol
@@ -353,7 +355,7 @@ class MountItemTestCase(BaseItemTestCase):
 
     def test_parse_mount_meta(self):
         test_subvol = layer_resource_subvol(
-            __package__, "test-layer-with-mounts"
+            __package__, "small-layer-with-mounts"
         )
 
         expected_mounts = [
@@ -388,7 +390,7 @@ class MountItemTestCase(BaseItemTestCase):
         # just confirm that the mounts we expect are there.
         self.assertTrue(
             set(expected_mounts).issubset(
-                set(mounts_from_subvol_meta(test_subvol))
+                set(mounts_from_meta(test_subvol.path()))
             )
         )
 
@@ -398,8 +400,20 @@ class MountItemTestCase(BaseItemTestCase):
         )
 
         self.assertEqual(
-            [], list(mounts_from_subvol_meta(test_subvol_no_mounts))
+            [], list(mounts_from_meta(test_subvol_no_mounts.path()))
         )
 
-        # Test when no layer is passed
-        self.assertEqual([], list(mounts_from_subvol_meta(None)))
+        # Test when the path doesn't have a meta dir
+        with temp_dir() as td:
+            self.assertEqual([], list(mounts_from_meta(td)))
+
+        # Test an image package with mounts
+        test_image_with_mounts = (
+            Path(__file__).dirname() / "small-layer-with-mounts.btrfs"
+        )
+
+        self.assertTrue(
+            set(expected_mounts).issubset(
+                set(mounts_from_image_meta(test_image_with_mounts))
+            )
+        )

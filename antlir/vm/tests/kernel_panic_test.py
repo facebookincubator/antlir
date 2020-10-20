@@ -7,21 +7,26 @@
 import importlib.resources
 import subprocess
 import unittest
-from pathlib import Path
+
+from antlir.fs_utils import Path
+from antlir.nspawn_in_subvol.common import DEFAULT_PATH_ENV
 
 
 class KernelPanicTest(unittest.TestCase):
     def test_vmtest_kernel_panic(self):
         resource = "antlir.vm.tests"
         with importlib.resources.path(resource, "vmtest") as vmtest:
-            exe = Path(vmtest).resolve()
+            exe = Path(vmtest)
 
-        proc = subprocess.run([exe], env={}, capture_output=True)
+        proc = subprocess.run(
+            [exe],
+            env={"PATH": DEFAULT_PATH_ENV},
+            capture_output=True,
+            text=True,
+        )
 
-        stdout = proc.stdout.decode("utf-8")
-        stderr = proc.stderr.decode("utf-8")
-        combined = f"\nstdout:\n{stdout}\nstderr:\n{stderr}"
+        combined = f"\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
 
         # Expect vmtest failed with QemuError
         self.assertEqual(proc.returncode, 255)
-        self.assertTrue("Qemu failed with error: " in stderr, msg=combined)
+        self.assertTrue("Qemu failed with error: " in combined, msg=combined)

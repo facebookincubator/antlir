@@ -16,7 +16,7 @@ from antlir.artifacts_dir import find_buck_cell_root
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
-from antlir.compiler.items.mount import mounts_from_subvol_meta
+from antlir.compiler.items.mount import mounts_from_meta
 from antlir.config import load_repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
@@ -94,7 +94,7 @@ class ImageLayerTestCase(unittest.TestCase):
         # *does not* validate that the mount itself exists.
         self.assertTrue(
             "mounted_hello"
-            in (m.mountpoint for m in mounts_from_subvol_meta(subvol))
+            in (m.mountpoint for m in mounts_from_meta(subvol.path()))
         )
 
         # :feature_symlinks

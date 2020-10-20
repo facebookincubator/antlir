@@ -181,6 +181,8 @@ python_library(
     deps = [
         ":common",
         ":mount_utils",
+        "//antlir:find_built_subvol",
+        "//antlir:testlib_temp_subvolumes",
         "//antlir/compiler:requires_provides",
     ],
 )
@@ -254,17 +256,19 @@ python_unittest(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "tests/test-build-appliance",
         layer_resource(
-            TEST_IMAGE_PREFIX + "test-layer-with-mounts",
-        ): "tests/test-layer-with-mounts",
+            TEST_IMAGE_PREFIX + "small-layer-with-mounts",
+        ): "tests/small-layer-with-mounts",
         layer_resource(
             TEST_IMAGE_PREFIX + "hello_world_base",
         ): "tests/test-layer-without-mounts",
+        TEST_IMAGE_PREFIX + "small-layer-with-mounts.btrfs": "tests/small-layer-with-mounts.btrfs",
     },
     deps = [
         ":common_testlib",
         ":items",
         ":phases_provide",  # test_mount.py uses this
         "//antlir:find_built_subvol",
+        "//antlir:fs_utils",
         "//antlir:testlib_temp_subvolumes",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
     ],

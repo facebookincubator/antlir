@@ -18,9 +18,15 @@ vm.python_unittest(
 )
 
 python_unittest(
-    name = "kernel_panic_test",
+    name = "kernel-panic-test",
     srcs = ["kernel_panic_test.py"],
-    resources = {":vmtest_kernel_panic=runvm": "vmtest"},
+    resources = {
+        ":vmtest_kernel_panic=runvm": "vmtest",
+    },
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir/nspawn_in_subvol:common",
+    ],
 )
 
 export_file(name = "resource.txt")
