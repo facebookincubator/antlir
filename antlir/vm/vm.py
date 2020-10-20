@@ -19,6 +19,7 @@ from itertools import chain
 from pathlib import Path
 from typing import AsyncContextManager, ContextManager, Iterable, Optional
 
+from antlir.compiler.items.mount import mounts_from_image_meta
 from antlir.config import load_repo_config
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
@@ -105,6 +106,41 @@ async def __vm_with_stack(
         tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
     )
 
+    # Initialize this early
+    shares = shares or []
+
+    # Load the repo_config
+    # Note that we currently rely on the assumption that the binary that ends
+    # up executing this code (//antlir/vm:vmtest or //antlir/vm:run) is being
+    # executed while the cwd is within the repo path.  This might *not* always
+    # be the case, but given the nature of the fact that these are invoked via
+    # either `buck run` or `buck test` , and buck requires a working repo to
+    # function, this is a reasonable assumption.  Note that we need this here
+    # in the first place because we test that we can run a test binary inside
+    # a VM via another test binary *outside* the VM and this kind of embedding
+    # can cause the sys.argv[0] of the executing binary to live outside
+    # of the repo. (See the //antlir/vm/tests:kernel_panic_test)
+    repo_config = load_repo_config(path_in_repo=os.getcwd())
+
+    # Process all the mounts from the root image we are using
+    mounts = mounts_from_image_meta(image)
+
+    for mount in mounts:
+        if mount.build_source.type == "host":
+            shares.append(
+                Plan9Export(
+                    path=mount.build_source.source,
+                    mountpoint=mount.mountpoint,
+                    mount_tag=mount.build_source.source.replace("/", "-")[1:],
+                )
+            )
+        else:
+            logger.warn(
+                f"non-host mount found: {mount}. "
+                "`antlir.vm` does not yet support "
+                "non-host mounts"
+            )
+
     rwdevice = stack.enter_context(
         tempfile.NamedTemporaryFile(
             prefix="vm_",
@@ -124,50 +160,30 @@ async def __vm_with_stack(
     # grow)?
     rwdevice.truncate(1 * 1024 * 1024 * 1024)
 
-    # Load the repo_config
-    # Note that we currently rely on the assumption that the binary that ends
-    # up executing this code (//antlir/vm:vmtest or //antlir/vm:run) is being
-    # executed while the cwd is within the repo path.  This might *not* always
-    # be the case, but given the nature of the fact that these are invoked via
-    # either `buck run` or `buck test` , and buck requires a working repo to
-    # function, this is a reasonable assumption.  Note that we need this here
-    # in the first place because we test that we can run a test binary inside
-    # a VM via another test binary *outside* the VM and this kind of embedding
-    # can cause the sys.argv[0] of the executing binary to live outside
-    # of the repo. (See the //antlir/vm/tests:kernel_panic_test)
-    repo_config = load_repo_config(path_in_repo=os.getcwd())
-
-    shares = shares or []
     # The two initial disks (readonly rootfs seed device and the rw scratch
     # device) are required to have these two disk identifiers for the initrd to
     # be able to mount them. In the future, it might be possible to remove this
     # requirement in a systemd-based initrd that is a little more intelligent,
     # but is very low-pri now
-    shares = [
-        BtrfsDisk(path=str(image), dev="vda", generator=False, mountpoint="/"),
-        BtrfsDisk(
-            path=rwdevice.name,
-            dev="vdb",
-            generator=False,
-            readonly=False,
-            mountpoint="/",
-        ),
-    ] + shares
-
-    # Mount directories that are specific to the Facebook
-    try:
-        from antlir.facebook.vm.share_fbcode_runtime import (
-            gen_fb_share_fbcode_runtime as _gen_fb_share_fbcode_runtime,
-        )
-
-        shares.extend(_gen_fb_share_fbcode_runtime())
-    except ImportError:  # pragma: no cover
-        pass
+    shares.extend(
+        [
+            BtrfsDisk(
+                path=str(image), dev="vda", generator=False, mountpoint="/"
+            ),
+            BtrfsDisk(
+                path=rwdevice.name,
+                dev="vdb",
+                generator=False,
+                readonly=False,
+                mountpoint="/",
+            ),
+        ]
+    )
 
     if bind_repo_ro or repo_config.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
-        shares += [Plan9Export(repo_config.repo_root)]
+        shares.append(Plan9Export(repo_config.repo_root))
 
         # Also share any additionally configured host mounts needed
         # along with the repository root.

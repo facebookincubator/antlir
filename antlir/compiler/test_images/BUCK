@@ -303,6 +303,19 @@ image.layer(
     ],
 )
 
+image.layer(
+    name = "small-layer-with-mounts",
+    features = [
+        ":feature_mount",
+    ],
+)
+
+image.package(
+    name = "small-layer-with-mounts.btrfs",
+    format = "btrfs",
+    layer = ":small-layer-with-mounts",
+)
+
 defs.python_binary(
     name = "print-ok",
     srcs = ["print_ok.py"],

@@ -39,13 +39,19 @@ class NspawnTestCase(NspawnTestBase):
         # opts.private_network
         self.assertIn(
             "--private-network",
-            self._wrapper_args_to_nspawn_args(["--layer", "test"]),
+            self._wrapper_args_to_nspawn_args(
+                ["--layer", layer_resource(__package__, "test-layer")]
+            ),
         )
         # !opts.private_network
         self.assertNotIn(
             "--private-network",
             self._wrapper_args_to_nspawn_args(
-                ["--layer", "test", "--no-private-network"]
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--no-private-network",
+                ]
             ),
         )
 
@@ -54,14 +60,26 @@ class NspawnTestCase(NspawnTestBase):
         self._assertIsSubseq(
             ["--bind", "/src:/dest"],
             self._wrapper_args_to_nspawn_args(
-                ["--layer", "test", "--bindmount-rw", "/src", "/dest"]
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--bindmount-rw",
+                    "/src",
+                    "/dest",
+                ]
             ),
         )
         # opts.bindmount_ro
         self._assertIsSubseq(
             ["--bind-ro", "/src:/dest"],
             self._wrapper_args_to_nspawn_args(
-                ["--layer", "test", "--bindmount-ro", "/src", "/dest"]
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--bindmount-ro",
+                    "/src",
+                    "/dest",
+                ]
             ),
         )
 
@@ -72,19 +90,28 @@ class NspawnTestCase(NspawnTestBase):
         self.assertIn(
             "/repo/root:/repo/root",
             self._wrapper_args_to_nspawn_args(
-                ["--layer", "test", "--bind-repo-ro"]
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--bind-repo-ro",
+                ]
             ),
         )
         # artifacts_require_repo
         self.assertIn(
             "/repo/root:/repo/root",
             self._wrapper_args_to_nspawn_args(
-                ["--layer", "test"], artifacts_require_repo=True
+                ["--layer", layer_resource(__package__, "test-layer")],
+                artifacts_require_repo=True,
             ),
         )
 
     def test_extra_nspawn_args_log_tmpfs_opts(self):
-        base_argv = ["--layer", "test", "--user=is_mocked"]
+        base_argv = [
+            "--layer",
+            layer_resource(__package__, "test-layer"),
+            "--user=is_mocked",
+        ]
         # opts.logs_tmpfs
         self.assertIn(
             "--tmpfs=/logs:uid=123,gid=123,mode=0755,nodev,nosuid,noexec",
@@ -101,7 +128,11 @@ class NspawnTestCase(NspawnTestBase):
         self.assertIn(
             "--capability=CAP_NET_ADMIN",
             self._wrapper_args_to_nspawn_args(
-                ["--layer", "test", "--cap-net-admin"]
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--cap-net-admin",
+                ]
             ),
         )
 
@@ -110,7 +141,12 @@ class NspawnTestCase(NspawnTestBase):
         self.assertIn(
             "--hostname=test-host",
             self._wrapper_args_to_nspawn_args(
-                ["--layer", "test", "--hostname", "test-host"]
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--hostname",
+                    "test-host",
+                ]
             ),
         )
 
@@ -118,14 +154,24 @@ class NspawnTestCase(NspawnTestBase):
         # opts.quiet
         self.assertIn(
             "--quiet",
-            self._wrapper_args_to_nspawn_args(["--layer", "test", "--quiet"]),
+            self._wrapper_args_to_nspawn_args(
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--quiet",
+                ]
+            ),
         )
 
     def test_extra_nspawn_args_foward_tls_env_opts(self):
         # opts.foward_tls_env
         with _mocks_for_parse_cli_args():
             args = _parse_cli_args(
-                ["--layer", "test", "--forward-tls-env"],
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--forward-tls-env",
+                ],
                 allow_debug_only_opts=True,
             )
         with _mocks_for_extra_nspawn_args(

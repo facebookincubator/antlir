@@ -20,9 +20,7 @@ from ..run import _set_up_run_cli
 def _mocks_for_parse_cli_args():
     with mock.patch(
         "antlir.nspawn_in_subvol.args.pwd.getpwnam"
-    ) as getpwnam_mock, mock.patch(
-        "antlir.nspawn_in_subvol.args.find_built_subvol"
-    ) as find_built_subvol_mock:
+    ) as getpwnam_mock:
         getpwnam_mock.side_effect = [
             struct_passwd(
                 [
@@ -36,7 +34,6 @@ def _mocks_for_parse_cli_args():
                 ]
             )
         ]
-        find_built_subvol_mock.side_effect = [None]
         yield
 
 

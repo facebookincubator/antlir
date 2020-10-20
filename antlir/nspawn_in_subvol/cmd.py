@@ -22,7 +22,7 @@ from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
 from antlir.compiler import procfs_serde
 from antlir.compiler.items.common import META_ARTIFACTS_REQUIRE_REPO
-from antlir.compiler.items.mount import mounts_from_subvol_meta
+from antlir.compiler.items.mount import mounts_from_meta
 from antlir.config import load_repo_config
 from antlir.find_built_subvol import Subvol
 from antlir.fs_utils import Path
@@ -198,7 +198,7 @@ def _extra_nspawn_args_and_env(
 
     # Note: that nspawn_in_subvol only handles `BuildSource` mount
     # configurations.
-    for mount in mounts_from_subvol_meta(opts.layer):
+    for mount in mounts_from_meta(opts.layer.path()):
         if mount.build_source.type == "host":
             extra_nspawn_args.extend(
                 bind_args(
