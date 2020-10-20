@@ -778,8 +778,6 @@ image.package(
 add_rpm_repo_snapshots_layer(
     name = "build_appliance_testing",
     dnf_snapshot = "//antlir/rpm:repo-snapshot-for-tests",
-    # Fixme: remove this, it should be in the default BA soon.
-    features = [image.rpms_install(["yum-utils"])],
     make_caches_for_other_snapshot_installers = [
         ("//antlir/rpm:non-default-repo-snapshot-for-tests", "dnf"),
         ("//antlir/rpm:non-default-repo-snapshot-for-tests", "yum"),
