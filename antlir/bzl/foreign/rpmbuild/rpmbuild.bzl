@@ -13,7 +13,6 @@ load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl/image_actions:install.bzl", "image_install")
 load("//antlir/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
-load("//antlir/bzl/image_actions:rpms.bzl", "image_rpms_install")
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
 
 RPMBUILD_LAYER_SUFFIX = "rpmbuild-build"
@@ -84,8 +83,6 @@ def image_rpmbuild(
             image_mkdir("/rpmbuild", "SOURCES"),
             image_mkdir("/rpmbuild", "SPECS"),
             image_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
-            # Needed to install RPM dependencies below
-            image_rpms_install(["yum-utils"]),
         ],
         visibility = [],
     )
@@ -93,13 +90,6 @@ def image_rpmbuild(
     rpmbuild_dir = "/rpmbuild"
 
     install_deps_layer = name + "-rpmbuild-install-deps"
-
-    # `yum-builddep` uses the default snapshot specified by the build layer.
-    #
-    # In the unlikely event we need support for a non-default snapshot, we
-    # can expose a flag that chooses between enabling shadowing, or serving
-    # a specific snapshot.
-    snapshot_for_yum = "/__antlir__/rpm/default-snapshot-for-installer/yum/"
     image_foreign_layer(
         name = install_deps_layer,
         rule_type = "image_rpmbuild_install_deps_layer",
@@ -107,21 +97,22 @@ def image_rpmbuild(
         # Auto-installing RPM dependencies requires `root`.
         user = "root",
         cmd = [
-            "yum-builddep",
+            "yum",
+            "builddep",  # Hack: our `yum` wrapper maps this to `yum-builddep`
             # Define the build directory for this project
             "--define=_topdir {}".format(rpmbuild_dir),
-            "--config=" + snapshot_for_yum + "yum/etc/yum/yum.conf",
             "--assumeyes",
             specfile_path,
         ],
-        # For speed, just serve the snapshot that `yum-builddep` will need.
         container_opts = struct(
-            serve_rpm_snapshots = [snapshot_for_yum],
-            # We do not use this because as it turns out, `yum-builddep`
-            # parses the system config directly, instead of via a library.
-            # This is a niche binary, so it doesn't seem worthwhile to add a
-            # wrapper or transparent shadowing support for it.
-            shadow_proxied_binaries = False,
+            # Serve default snapshots for the RPM installers that define
+            # one.  So, we may start `repo-server`s for both `yum` and `dnf`
+            # -- this minor inefficiency is worth the simplicity.
+            #
+            # In the unlikely event we need support for a non-default snapshot,
+            # we can expose a flag that chooses between enabling shadowing, or
+            # serving a specific snapshot.
+            shadow_proxied_binaries = True,
         ),
         antlir_rule = "user-internal",
         **image_layer_kwargs
