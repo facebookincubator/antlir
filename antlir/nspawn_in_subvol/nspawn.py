@@ -393,7 +393,7 @@ def _popen_nspawn(
 
         # Note: for the booted case, this doesn't mean that boot has finished,
         # just that `systemd` has signal handlers and `/run/systemd/private`.
-        log.debug("Started container {container_proc_pid}, injecting command")
+        log.debug(f"Started container {container_proc_pid}, injecting command")
 
         if setup.opts.boot:
             with _systemd_reaper(setup, nspawn_proc, container_proc_pid):
