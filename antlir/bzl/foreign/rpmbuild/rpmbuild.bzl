@@ -10,6 +10,7 @@ load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
+load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image_actions:install.bzl", "image_install")
 load("//antlir/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
@@ -68,6 +69,7 @@ def image_rpmbuild(
         antlir_rule = "user-internal",
     )
 
+    rpmbuild_dir = "/rpmbuild"
     specfile_path = "/rpmbuild/SPECS/specfile.spec"
 
     setup_layer = name + "-rpmbuild-setup"
@@ -85,9 +87,14 @@ def image_rpmbuild(
             image_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
         ],
         visibility = [],
+        antlir_rule = "user-internal",
     )
 
-    rpmbuild_dir = "/rpmbuild"
+    # Figure out which build command to use to install dependencies in the
+    # <name>-rpmbuild-install-deps layer.
+    build_opts = image_layer_kwargs.get("build_opts")
+    build_opts_dict = structs.to_dict(build_opts) if build_opts else {}
+    installer = build_opts_dict.get("rpm_installer", "yum")
 
     install_deps_layer = name + "-rpmbuild-install-deps"
     image_foreign_layer(
@@ -97,7 +104,7 @@ def image_rpmbuild(
         # Auto-installing RPM dependencies requires `root`.
         user = "root",
         cmd = [
-            "yum",
+            installer,
             "builddep",  # Hack: our `yum` wrapper maps this to `yum-builddep`
             # Define the build directory for this project
             "--define=_topdir {}".format(rpmbuild_dir),
