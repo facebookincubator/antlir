@@ -36,6 +36,9 @@ def _build_opts(
             "build_appliance",
         )
 
+    if rpm_installer != "yum" and rpm_installer != "dnf":
+        fail("Unsupported rpm_installer supplied in build_opts")
+
     # When building the BA itself, we need this constant to avoid a circular
     # dependency.
     #
