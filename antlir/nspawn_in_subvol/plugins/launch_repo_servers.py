@@ -24,6 +24,7 @@ from antlir.fs_utils import Path
 
 
 log = get_logger()
+_mockable_popen_for_repo_server = subprocess.Popen
 
 
 def _make_debug_print(logger_name, fstring):
@@ -152,17 +153,6 @@ class RepoServer(NamedTuple):
     def __format__(self, _spec):
         return f"RepoServer({self.snapshot_dir}, port={self.port})"
 
-    # DELETE ME: While this works, and was previously used, this is dead
-    # code now -- I am only leaving it in here so that the refactored form
-    # gets into source control at least once.
-    def await_listen(self):  # pragma: no cover
-        assert self.proc is not None, self
-        log.debug(f"Waiting for {self} to listen")
-        while self.proc.poll() is None:
-            if self.sock.getsockopt(socket.SOL_SOCKET, socket.SO_ACCEPTCONN):
-                break
-            time.sleep(0.05)
-
 
 @contextmanager
 def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
@@ -179,7 +169,7 @@ def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
     # any in-container clients will do so if/when needed. This reduces
     # interactive `-container` boot time by hundreds of ms.
     rs.sock.listen()  # leave the request queue size at default
-    with rs.sock, subprocess.Popen(
+    with rs.sock, _mockable_popen_for_repo_server(
         [
             repo_server_bin,
             "--socket-fd",
