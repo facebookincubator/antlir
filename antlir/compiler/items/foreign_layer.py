@@ -9,7 +9,6 @@ import pwd
 from dataclasses import dataclass
 from typing import Iterable
 
-import pydantic
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import (
     NspawnPluginArgs,
@@ -25,17 +24,6 @@ from .foreign_layer_t import foreign_layer_t
 
 
 class ForeignLayerItem(foreign_layer_t):
-    @pydantic.validator("container_opts")
-    def pathify(cls, opts):  # noqa: B902
-        # Future: use `shape.path` to make this unnecessary.
-        return opts.copy(
-            update={
-                "serve_rpm_snapshots": tuple(
-                    Path(s) for s in opts.serve_rpm_snapshots
-                )
-            }
-        )
-
     def phase_order(self):
         return PhaseOrder.FOREIGN_LAYER
 
