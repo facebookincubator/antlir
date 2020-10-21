@@ -37,7 +37,7 @@ expected_buck_version() {
   return
 }
 
-BUCK="${_buck_bin_dir}/buck-$(expected_buck_version).pex"
+BUCK="${_buck_bin_dir}/buck-$(expected_buck_version)-java11.pex"
 
 run_buck() {
   pushd "${_buck_root}" > /dev/null
@@ -55,7 +55,7 @@ get_buck() {
   mkdir -p "${_buck_bin_dir}"
   pushd "${_buck_bin_dir}" > /dev/null
   curl -o "${BUCK}.download" \
-    "${BUCK_JITPACK_BASE_URL}/${_version}/buck-${_version}.pex"
+    "${BUCK_JITPACK_BASE_URL}/${_version}/buck-${_version}-java11.pex"
   ret="$?"
   if [ "${ret}" == "0" ]; then
     # Make it executable
