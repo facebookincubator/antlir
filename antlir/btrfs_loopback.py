@@ -19,11 +19,11 @@ import sys
 import tempfile
 from typing import Optional, Tuple
 
-from .common import byteme, get_file_logger, run_stdout_to_err
+from .common import byteme, get_logger, run_stdout_to_err
 from .unshare import Unshare, nsenter_as_root, nsenter_as_user
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 MiB = 2 ** 20
 # Otherwise, `mkfs.btrfs` fails with:
 #   ERROR: minimum size for each btrfs device is 114294784

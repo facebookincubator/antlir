@@ -12,7 +12,7 @@ all repos from a given `yum.conf`.
 import argparse
 import sys
 
-from antlir.common import get_file_logger, init_logging
+from antlir.common import get_logger, init_logging
 from antlir.fs_utils import Path, populate_temp_dir_and_rename
 from antlir.rpm.downloader.common import DownloadConfig
 from antlir.rpm.downloader.logger import init_sample_logging
@@ -26,7 +26,7 @@ from .storage import Storage
 from .yum_dnf_conf import YumDnfConfRepo
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 def snapshot_repo(argv):

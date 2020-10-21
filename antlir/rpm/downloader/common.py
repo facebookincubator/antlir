@@ -25,7 +25,7 @@ from typing import (
 )
 
 import requests
-from antlir.common import get_file_logger, retryable
+from antlir.common import get_logger, retryable
 from antlir.rpm.common import DecorateContextEntry, RpmShard
 from antlir.rpm.db_connection import DBConnectionContext
 from antlir.rpm.open_url import open_url
@@ -46,7 +46,7 @@ from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 # complexity bug that makes it slow for large INPUT_CHUNK/OUTPUT_CHUNK.
 BUFFER_BYTES = 2 ** 19
 DB_MAX_RETRY_S = [2 ** i for i in range(8)]  # 255 sec == 4m15s
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 class LogOp(Enum):

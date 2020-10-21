@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from typing import Iterable, List, Optional, Tuple
 
-from antlir.common import get_file_logger, pipe
+from antlir.common import get_logger, pipe
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
 from antlir.nspawn_in_subvol.plugin_hooks import (
@@ -34,7 +34,7 @@ from . import NspawnPlugin
 from .launch_repo_servers import launch_repo_servers_for_netns
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 # This is a temporary mountpoint for the host's `/proc` inside the
 # container.  It is unmounted and removed before the user command starts.

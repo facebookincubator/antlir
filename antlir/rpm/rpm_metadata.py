@@ -9,12 +9,12 @@ import re
 import subprocess
 from typing import NamedTuple
 
-from antlir.common import get_file_logger
+from antlir.common import get_logger
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 class RpmMetadata(NamedTuple):

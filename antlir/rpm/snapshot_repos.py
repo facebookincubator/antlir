@@ -35,7 +35,7 @@ from configparser import ConfigParser
 from io import StringIO
 from typing import Callable, Dict, FrozenSet, Iterable, List
 
-from antlir.common import get_file_logger, init_logging
+from antlir.common import get_logger, init_logging
 from antlir.fs_utils import Path, create_ro, populate_temp_dir_and_rename
 from antlir.rpm.downloader.common import DownloadConfig
 from antlir.rpm.downloader.logger import init_sample_logging
@@ -51,7 +51,7 @@ from .storage import Storage
 from .yum_dnf_conf import YumDnf, YumDnfConfParser, YumDnfConfRepo
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 def _write_confs_get_repos(

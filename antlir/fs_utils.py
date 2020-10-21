@@ -21,10 +21,10 @@ import uuid
 from contextlib import contextmanager
 from typing import AnyStr, Generator, Iterable, Iterator, List, Union
 
-from .common import byteme, check_popen_returncode, get_file_logger
+from .common import byteme, check_popen_returncode, get_logger
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 # We need this for lists that can contain a combination of `str` and `bytes`,

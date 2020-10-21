@@ -12,10 +12,10 @@ from contextlib import AbstractContextManager
 from io import BytesIO
 from typing import ContextManager, Generic, Iterable, NamedTuple, TypeVar
 
-from antlir.common import byteme, get_file_logger
+from antlir.common import byteme, get_logger
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 _UINT64_STRUCT = struct.Struct("=Q")
 T = TypeVar("T")
 

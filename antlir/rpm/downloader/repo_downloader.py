@@ -47,7 +47,7 @@ as opposed to a sheared mix of the repo at various points in time) if:
 """
 from typing import Iterable, Iterator, Tuple
 
-from antlir.common import get_file_logger, not_none
+from antlir.common import get_logger, not_none
 from antlir.rpm.downloader.common import DownloadConfig, DownloadResult
 from antlir.rpm.downloader.repodata_downloader import gen_repodatas_from_repomds
 from antlir.rpm.downloader.repomd_downloader import gen_repomds_from_repos
@@ -57,7 +57,7 @@ from antlir.rpm.repo_snapshot import RepoSnapshot
 from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 def visit_results(

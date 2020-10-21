@@ -21,7 +21,7 @@ cadence than we change repo snapshots.
 from contextlib import ExitStack, contextmanager
 from typing import Dict, Mapping, Tuple
 
-from antlir.common import get_file_logger, set_new_key
+from antlir.common import get_logger, set_new_key
 from antlir.fs_utils import Path, create_ro, temp_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
 from antlir.nspawn_in_subvol.plugin_hooks import (
@@ -33,7 +33,7 @@ from antlir.subvol_utils import Subvol
 from . import NspawnPlugin
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 @contextmanager

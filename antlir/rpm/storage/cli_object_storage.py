@@ -10,7 +10,7 @@ from abc import abstractmethod
 from contextlib import contextmanager
 from typing import ContextManager, List, Mapping, NamedTuple
 
-from antlir.common import check_popen_returncode, get_file_logger
+from antlir.common import check_popen_returncode, get_logger
 
 # Module import ensures we get plugins
 from antlir.rpm.storage import Storage, StorageInput, StorageOutput
@@ -19,7 +19,7 @@ from antlir.rpm.storage import Storage, StorageInput, StorageOutput
 from antlir.rpm.storage.storage import _CommitCallback
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 class _StorageRemover(NamedTuple):

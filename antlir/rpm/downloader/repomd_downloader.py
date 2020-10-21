@@ -7,7 +7,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable, Iterator, Tuple
 
-from antlir.common import get_file_logger, retryable
+from antlir.common import get_logger, retryable
 from antlir.rpm.downloader.common import (
     DownloadConfig,
     DownloadResult,
@@ -19,7 +19,7 @@ from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
 REPOMD_MAX_RETRY_S = [2 ** i for i in range(8)]  # 256 sec ==  4m16s
 LOOP_LIMIT = 5  # Times we'll loop downloading repomds before exiting
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 # This should realistically only fail on HTTP errors
