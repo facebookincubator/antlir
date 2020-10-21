@@ -3,7 +3,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "http_file")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot", "set_up_rpm_repo_snapshots")
 
-stable_build_appliance_sha = "0c3b9580c1412c85551accc2d2f316d60ee6b2fbe612bf28765ad6b10d0863e8"
+stable_build_appliance_sha = "319d222fb04d3de4a50d6fff5db0975cf31bbabeb54b64eec8ccdda83762305b"
 
 http_file(
     name = "stable_build_appliance.sendstream.zst",
