@@ -62,6 +62,7 @@ SECURITY NOTE: Just as with `systemd-nspawn`'s `--console=pipe`, this can
 pass FDs pointed at your terminal into the container, allowing the guest to
 synthesize keystrokes on the host.
 """
+import errno
 import functools
 import os
 import shutil
@@ -78,7 +79,11 @@ from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 
 from .args import PopenArgs, _NspawnOpts
 from .cmd import _NspawnSetup, maybe_popen_and_inject_fds
-from .common import DEFAULT_PATH_ENV
+from .common import (
+    DEFAULT_PATH_ENV,
+    find_cgroup2_mountpoint,
+    parse_cgroup2_path,
+)
 from .plugin_hooks import _popen_plugin_driver
 from .plugins import NspawnPlugin
 
@@ -426,6 +431,13 @@ def _popen_nsenter_into_container(
     if term_env is not None:
         default_env["TERM"] = term_env
 
+    with open(f"/proc/{container_proc_pid}/cgroup", "rb") as f:
+        cgroup = parse_cgroup2_path(f.read()).lstrip(b"/")
+    cgroup_procs = find_cgroup2_mountpoint() / cgroup / "cgroup.procs"
+    assert (
+        cgroup_procs.exists()
+    ), f"{cgroup_procs} does not exist, cannot nsenter"
+
     # Set the user properly for the nsenter'd command to run.
     # Future: consider properly logging in as the user with su
     # or something better so that a real user session is created
@@ -437,13 +449,8 @@ def _popen_nsenter_into_container(
         # cgroup will be unmanageable via `systemd`' view of `/sys/fs/cgroup`,
         # and it will be unable to move it into a user session. The specific
         # failure mode is described by `SlowSudoTestCase`.
-        #
-        # Note that this runs on the host, so it's OK to assume that cgroup2
-        # is mounted at the usual location.
         f"""
-        echo $$ > "$(
-            sed 's|^0::|/sys/fs/cgroup/|' < /proc/{container_proc_pid}/cgroup
-        )"/cgroup.procs
+        echo $$ > {cgroup_procs}
         exec "$@"
         """,
         "bash",  # $0 for `bash` above

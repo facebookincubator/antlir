@@ -53,3 +53,26 @@ def nspawn_version() -> NSpawnVersion:
     assert full.startswith("(") and full.endswith(")"), parts
     full = parts[2][1:-1].lstrip("v")
     return NSpawnVersion(major=int(parts[1]), full=full)
+
+
+def find_cgroup2_mountpoint() -> Path:
+    with open("/proc/self/mounts", "rb") as mounts:
+        for mount in mounts.readlines():
+            if mount.startswith(b"cgroup2 "):
+                return Path(mount.split()[1])
+    raise RuntimeError("No cgroupv2 mountpoint found")  # pragma: no cover
+
+
+def parse_cgroup2_path(proc_cgroup: bytes) -> bytes:
+    """
+    Find the cgroup2 within the input from /proc/*/cgroup
+    This ignores any other controller hierarchies that do not start with 0::
+    """
+    cg2_prefix = b"0::"
+    my_cg = None
+    for line in proc_cgroup.splitlines():
+        if line.startswith(cg2_prefix):
+            assert my_cg is None, f"found two cgroup matches {my_cg} {line}"
+            my_cg = line
+    assert my_cg is not None, f"cgroup2 is required: {proc_cgroup}"
+    return my_cg[len(cg2_prefix) :]

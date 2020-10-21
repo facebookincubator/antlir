@@ -30,6 +30,7 @@ from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from .args import PopenArgs, _NspawnOpts
+from .common import find_cgroup2_mountpoint, parse_cgroup2_path
 
 
 def _colon_quote_path(path: AnyStr) -> Path:
@@ -72,27 +73,14 @@ def _inject_os_release_args(subvol):
     return bind_args("/dev/null", os_release_paths[0])  # pragma: no cover
 
 
-def _parse_cgroup_path(proc_cgroup: bytes) -> bytes:
-    cg2_prefix = b"0::"
-    my_cg = None
-    for line in proc_cgroup.splitlines():
-        if line.startswith(cg2_prefix):
-            assert my_cg is None, f"found two cgroup matches {my_cg} {line}"
-            my_cg = line
-    assert my_cg is not None, f"cgroup2 is required: {proc_cgroup}"
-    return my_cg[len(cg2_prefix) :]
-
-
 @contextmanager
 def _temp_cgroup(subvol: Subvol) -> Path:
     with open("/proc/self/cgroup", "rb") as cg_file:
-        my_cgs = cg_file.read()
-    my_cg = _parse_cgroup_path(my_cgs)
+        my_cg = parse_cgroup2_path(cg_file.read())
     # This runs on the host, so we assume that cgroup2 is mounted in the
     # usual place.
-    new_cg = Path(
-        b"/sys/fs/cgroup"
-        + my_cg
+    new_cg = find_cgroup2_mountpoint() / Path(
+        my_cg
         + b"/antlir-"
         # This is redundant with the UUID but aids debugging
         + str(os.getpid()).encode()
