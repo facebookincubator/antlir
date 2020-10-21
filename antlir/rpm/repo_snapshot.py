@@ -22,7 +22,7 @@ import tempfile
 from contextlib import contextmanager
 from typing import Any, Callable, Iterable, Mapping, NamedTuple, Union
 
-from antlir.common import get_file_logger
+from antlir.common import get_logger
 from antlir.fs_utils import Path, create_ro
 
 from .common import read_chunks
@@ -30,7 +30,7 @@ from .repo_objects import Repodata, RepoMetadata, Rpm
 from .storage import Storage
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 # Places making this assumption should be findable by the string "3.7"
 assert sys.hexversion >= 0x030700F0, "This relies on dicts being ordered."

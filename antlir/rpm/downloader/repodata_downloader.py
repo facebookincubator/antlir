@@ -18,7 +18,7 @@ from typing import (
     Tuple,
 )
 
-from antlir.common import get_file_logger, retryable, set_new_key, shuffled
+from antlir.common import get_logger, retryable, set_new_key, shuffled
 from antlir.rpm.common import read_chunks
 from antlir.rpm.downloader.common import (
     BUFFER_BYTES,
@@ -37,7 +37,7 @@ from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 REPODATA_MAX_RETRY_S = [2 ** i for i in range(10)]  # 1024sec == 17m4s
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 class RepodataParseError(Exception):

@@ -14,12 +14,12 @@ from typing import AnyStr, BinaryIO, Iterable, Iterator, NamedTuple, TypeVar
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 
 from .btrfs_loopback import LoopbackVolume, run_stdout_to_err
-from .common import check_popen_returncode, get_file_logger, open_fd, pipe
+from .common import check_popen_returncode, get_logger, open_fd, pipe
 from .fs_utils import Path
 from .unshare import Namespace, Unshare, nsenter_as_root, nsenter_as_user
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 KiB = 2 ** 10
 MiB = 2 ** 20
 

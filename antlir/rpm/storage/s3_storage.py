@@ -11,14 +11,14 @@ from contextlib import contextmanager
 from typing import ContextManager
 
 import boto3
-from antlir.common import get_file_logger
+from antlir.common import get_logger
 from antlir.rpm.storage.storage import _CommitCallback
 
 from ..open_url import open_url
 from ..storage import Storage, StorageInput, StorageOutput
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 boto3.set_stream_logger("", logging.WARNING)
 

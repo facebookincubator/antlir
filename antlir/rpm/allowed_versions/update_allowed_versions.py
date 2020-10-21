@@ -30,7 +30,7 @@ from typing import (
     Union,
 )
 
-from antlir.common import get_file_logger, init_logging, set_new_key
+from antlir.common import get_logger, init_logging, set_new_key
 from antlir.fs_utils import Path, create_ro, populate_temp_dir_and_rename
 
 from .envra import SortableENVRA, SortableEVRA
@@ -52,7 +52,7 @@ def Literalish(x):
     return Literal[x] if sys.hexversion >= 0x030800F0 else Type[x]
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 # Must match `rpm_vset` in `oss_shim*` Starlark files.
 _EMPTY_VSET_PATH = "empty=rpm=vset"

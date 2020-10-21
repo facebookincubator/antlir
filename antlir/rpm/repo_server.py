@@ -36,7 +36,7 @@ from http.server import BaseHTTPRequestHandler, HTTPStatus
 from socketserver import BaseServer
 from typing import Mapping, Tuple
 
-from antlir.common import get_file_logger, init_logging, set_new_key
+from antlir.common import get_logger, init_logging, set_new_key
 from antlir.fs_utils import Path
 
 from .common import Checksum
@@ -44,7 +44,7 @@ from .repo_snapshot import FileIntegrityError, ReportableError
 from .storage import Storage
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 # How big are our reads against Storage? Exposed for the unit test.
 _CHUNK_SIZE = 2 ** 21

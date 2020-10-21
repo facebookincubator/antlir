@@ -9,13 +9,13 @@ import urllib.parse
 from contextlib import AbstractContextManager
 from typing import Optional
 
-from antlir.common import get_file_logger
+from antlir.common import get_logger
 
 from .pluggable import Pluggable
 from .repo_db import SQLDialect
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 class DBConnectionContext(AbstractContextManager, Pluggable):

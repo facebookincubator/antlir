@@ -38,10 +38,37 @@ def byteme(s: AnyStr) -> bytes:
     return s.encode() if isinstance(s, str) else s
 
 
-# It's possible that `get_file_logger` is obtained, **and** logs, before
+# It's possible that `get_logger` is obtained, **and** logs, before
 # `init_logging` is called.  Such usage is a minor bug; rather than hide the
 # bug by never showing the debug logs, we'll make those logs visible.
 _INITIALIZED_LOGGING = False
+
+
+class ColorFormatter(logging.Formatter):
+    _base_fmt = (
+        "\x1b[90m %(asctime)s.%(msecs)03d %(name)s:%(lineno)d "
+        "\x1b[0m%(message)s"
+    )
+    _level_to_prefix = {
+        logging.DEBUG: "\x1b[37mD",  # White
+        logging.INFO: "\x1b[94mI",  # Blue
+        logging.WARNING: "\x1b[93mW",  # Yellow
+        logging.ERROR: "\x1b[91mE",  # Red
+        logging.CRITICAL: "\x1b[95mF",  # Magenta
+    }
+
+    def __init__(self):
+        super().__init__(datefmt="%Y%m%d %H:%M:%S")
+
+    def format(self, record):
+        try:
+            self._style._fmt = (
+                self._level_to_prefix[record.levelno] + self._base_fmt
+            )
+        except KeyError:
+            # Fall back to just prepending the log level int
+            self._style._fmt = str(record.levelno) + self._base_fmt
+        return logging.Formatter.format(self, record)
 
 
 # NB: Many callsites in antlir rely on the assumption that this function will
@@ -50,29 +77,33 @@ def init_logging(*, debug: bool = False):
     global _INITIALIZED_LOGGING
     level = logging.DEBUG if debug else logging.INFO
     # The first time around, just set up the stream handler & formatter --
-    # this will be inherited by all `get_file_logger` instances.
+    # this will be inherited by all `get_logger` instances.
     if not _INITIALIZED_LOGGING:
         _INITIALIZED_LOGGING = True
-        logging.basicConfig(
-            format="%(levelname)s %(name)s %(asctime)s %(message)s", level=level
-        )
+        hdlr = logging.StreamHandler()
+        hdlr.setFormatter(ColorFormatter())
+        logging.root.addHandler(hdlr)
         return
     # Logging is being "explicitly" re-initialized, so we may need to update
     # the level.  We only need to touch the root logger because all others
-    # use `NOTSET` per `get_file_logger`.
+    # use `NOTSET` per `get_logger`.
     logging.getLogger().setLevel(level)
 
 
-def get_file_logger(py_path: AnyStr):
+def get_logger():
     # Default-initialize with `debug=True` until the user tells us otherwise.
     if not _INITIALIZED_LOGGING:
         init_logging(debug=True)
-    logger = logging.getLogger(os.path.basename(py_path))
+    calling_file = os.path.basename(inspect.stack()[1].filename)
+    # Strip extension from log messages
+    if calling_file.endswith(".py"):
+        calling_file = calling_file[: -len(".py")]
+    logger = logging.getLogger(calling_file)
     logger.setLevel(logging.NOTSET)
     return logger
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 def check_popen_returncode(proc: subprocess.Popen):

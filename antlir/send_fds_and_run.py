@@ -48,14 +48,14 @@ from contextlib import contextmanager
 
 from .common import (
     FD_UNIX_SOCK_TIMEOUT,
-    get_file_logger,
+    get_logger,
     init_logging,
     listen_temporary_unix_socket,
 )
 from .fs_utils import Path
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 # NB: This was copy-pasta'd from yum_dnf_from_snapshot.py

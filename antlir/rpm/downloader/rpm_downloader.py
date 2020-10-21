@@ -13,7 +13,7 @@ from functools import partial
 from types import MappingProxyType
 from typing import Dict, FrozenSet, Iterable, Iterator, Set, Tuple
 
-from antlir.common import get_file_logger, not_none, retryable, shuffled
+from antlir.common import get_logger, not_none, retryable, shuffled
 from antlir.rpm.common import read_chunks
 from antlir.rpm.db_connection import DBConnectionContext
 from antlir.rpm.downloader.common import (
@@ -42,7 +42,7 @@ from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 RPM_MAX_RETRY_S = [2 ** i for i in range(9)]  # 512 sec ==  8m32s
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 def _is_retryable_http_err(e: Exception) -> bool:

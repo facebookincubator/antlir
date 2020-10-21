@@ -22,7 +22,7 @@ import textwrap
 from contextlib import contextmanager
 from typing import Any, AnyStr, Iterable, List, Mapping, NamedTuple, Tuple
 
-from antlir.common import get_file_logger, set_new_key
+from antlir.common import get_logger, set_new_key
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
 from antlir.nspawn_in_subvol.common import DEFAULT_SEARCH_PATHS
@@ -35,7 +35,7 @@ from antlir.subvol_utils import Subvol
 from . import NspawnPlugin
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 SHADOWED_PATHS_ROOT = Path("__antlir__/shadowed")
 
 

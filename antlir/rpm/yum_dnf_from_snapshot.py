@@ -97,7 +97,7 @@ from configparser import ConfigParser
 from contextlib import contextmanager, nullcontext
 from typing import Iterable, List, Mapping, Optional
 
-from antlir.common import get_file_logger, init_logging
+from antlir.common import get_logger, init_logging
 from antlir.fs_utils import META_DIR, Path, temp_dir
 from antlir.nspawn_in_subvol.plugins.shadow_paths import SHADOWED_PATHS_ROOT
 
@@ -105,7 +105,7 @@ from .common import has_yum, yum_is_dnf
 from .yum_dnf_conf import YumDnf
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 # We expect this to be provided as part of the layer that's executing `yum`
 # (most frequently, this is the build appliance).  The reason is that to be

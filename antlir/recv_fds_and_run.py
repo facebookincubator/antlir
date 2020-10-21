@@ -27,11 +27,11 @@ import os
 import resource
 import sys
 
-from .common import get_file_logger, init_logging, recv_fds_from_unix_sock
+from .common import get_logger, init_logging, recv_fds_from_unix_sock
 from .fs_utils import Path
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 def parse_opts(argv):

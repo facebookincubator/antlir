@@ -45,14 +45,14 @@ from typing import (
     Tuple,
 )
 
-from .common import get_file_logger, init_logging
+from .common import get_logger, init_logging
 from .fs_utils import Path, populate_temp_dir_and_rename
 
 
 _GENERATED = "@" + "generated"
 _JSON = ".json"
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 Package = str
 Tag = str

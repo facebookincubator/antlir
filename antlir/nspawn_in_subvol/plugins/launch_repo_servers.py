@@ -16,14 +16,14 @@ from typing import List, NamedTuple, Optional
 from antlir.common import (
     FD_UNIX_SOCK_TIMEOUT,
     check_popen_returncode,
-    get_file_logger,
+    get_logger,
     listen_temporary_unix_socket,
     recv_fds_from_unix_sock,
 )
 from antlir.fs_utils import Path
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 
 def _make_debug_print(logger_name, fstring):

@@ -72,7 +72,7 @@ import time
 from contextlib import closing, contextmanager, nullcontext
 from typing import ContextManager, Iterable, List, Tuple
 
-from antlir.common import byteme, get_file_logger, pipe
+from antlir.common import byteme, get_logger, pipe
 from antlir.fs_utils import MehStr, Path, temp_dir
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 
@@ -83,7 +83,7 @@ from .plugin_hooks import _popen_plugin_driver
 from .plugins import NspawnPlugin
 
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 # This is a temporary mountpoint where we inject `busybox` and the host's
 # `/proc` inside the container.  It is unmounted and removed before the user

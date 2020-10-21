@@ -174,9 +174,9 @@ It's the responsibility of any `__main__` to call `init_logging` (see the
 section on `__main__`).
 
 ```
-from antlir.common import get_file_logger
+from antlir.common import get_logger
 
-log = get_file_logger(__file__)
+log = get_logger()
 
 ...
 log.info(f'foo {var}')
