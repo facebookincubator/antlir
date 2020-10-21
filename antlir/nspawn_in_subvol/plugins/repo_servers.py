@@ -219,13 +219,6 @@ class RepoServers(NspawnPlugin):
                 )
                 for snap_dir in self._serve_rpm_snapshots
             }
-            # DELETE ME: We used to wait for the repo servers to listen here,
-            # but now that we use socket activation, this is no longer needed.
-            # Leaving it in so that we get a "working" variant in SCM.
-            if False:  # pragma: no cover
-                for servers in snap_to_servers.values():
-                    for server in servers:
-                        server.await_listen()
             log.info(
                 "Started `repo-server` for snapshots (ports): "
                 + ", ".join(
