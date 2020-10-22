@@ -6,8 +6,14 @@
 
 import unittest
 from unittest import mock
+from unittest.mock import mock_open, patch
 
-from ..common import NSpawnVersion, nspawn_version
+from ..common import (
+    NSpawnVersion,
+    find_cgroup2_mountpoint,
+    nspawn_version,
+    parse_cgroup2_path,
+)
 
 
 class CommonTestCase(unittest.TestCase):
@@ -42,3 +48,49 @@ class CommonTestCase(unittest.TestCase):
             self.assertEqual(
                 NSpawnVersion(major=246, full="246.4-1-arch"), nspawn_version()
             )
+
+    def test_cgroup2_mountpoint_usual(self):
+        with patch(
+            "antlir.nspawn_in_subvol.common.open",
+            mock_open(
+                read_data=b"cgroup2 /sys/fs/cgroup cgroup2 "
+                b"rw,nosuid,nodev,noexec,relatime 0 0\n"
+                b"/dev/mapper/ssd-ssdstripe / btrfs "
+                b"rw,relatime,compress=zstd:3,ssd,space_cache,subvolid=5,"
+                b"subvol=/ 0 0\n"
+            ),
+        ):
+            self.assertEqual(b"/sys/fs/cgroup", find_cgroup2_mountpoint())
+
+    def test_cgroup2_mountpoint_unified(self):
+        with patch(
+            "antlir.nspawn_in_subvol.common.open",
+            mock_open(
+                read_data=b"cgroup2 /sys/fs/cgroup/unified cgroup2 "
+                b"rw,nosuid,nodev,noexec,relatime 0 0\n"
+                b"/dev/mapper/ssd-ssdstripe / btrfs "
+                b"rw,relatime,compress=zstd:3,ssd,space_cache,subvolid=5,"
+                b"subvol=/ 0 0\n"
+            ),
+        ):
+            self.assertEqual(
+                b"/sys/fs/cgroup/unified", find_cgroup2_mountpoint()
+            )
+
+    def test_parse_cgroup_path(self):
+        # usually there is only this one line
+        proc_self_cgroup = b"0::/user.slice/foo.slice/bar.scope\n"
+        self.assertEqual(
+            parse_cgroup2_path(proc_self_cgroup),
+            b"/user.slice/foo.slice/bar.scope",
+        )
+        # sometimes there is an extra systemd hierarchy that we should ignore
+        proc_self_cgroup = b"1:name=systemd:/\n" + proc_self_cgroup
+        self.assertEqual(
+            parse_cgroup2_path(proc_self_cgroup),
+            b"/user.slice/foo.slice/bar.scope",
+        )
+
+        proc_self_cgroup += b"0::/invalid/second/match.scope\n"
+        with self.assertRaises(AssertionError):
+            parse_cgroup2_path(proc_self_cgroup)
