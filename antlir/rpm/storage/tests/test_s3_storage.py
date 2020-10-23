@@ -39,8 +39,6 @@ class S3StorageTestCase(StorageBaseTestCase):
         self.s3 = MagicMock()
         self.s3.upload_fileobj.side_effect = self._mock_upload_fileobj
         self.s3.delete_object.side_effect = self._mock_delete_object
-        s3_storage.boto3 = MagicMock()
-        s3_storage.boto3.client.return_value = self.s3
         self.storage = Storage.make(
             key="test",
             kind="s3",
@@ -49,9 +47,14 @@ class S3StorageTestCase(StorageBaseTestCase):
             region=self.region,
             timeout_seconds=3,
         )
-        s3_storage.boto3.client.assert_called_with("s3")
+        self.boto3_client_patch = patch("boto3.client")
+        boto3_client = self.boto3_client_patch.start()
+        boto3_client.return_value = self.s3
         self.assertEqual(self.storage.s3, self.s3)
         s3_storage.open_url = self._mock_open_url
+
+    def tearDown(self):
+        self.boto3_client_patch.stop()
 
     def test_write_and_read_back(self):
         # Do a bunch of mock writes and ensure that the s3 client was called
