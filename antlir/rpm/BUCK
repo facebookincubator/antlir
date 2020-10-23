@@ -218,6 +218,7 @@ python_binary(
     name = "repo-server",
     srcs = ["repo_server_main.py"],
     main_module = "antlir.rpm.repo_server_main",
+    par_style = "xar",
     deps = [":repo_server"],
 )
 

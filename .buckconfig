@@ -10,11 +10,11 @@
   disable_implicit_native_rules = true
 
 # There is only one python platform we support, and that is python3 with
-# inplace packages.  This will be expanded in the future to support
-# standalone python binaries, but it will always be python3.
+# standalone packages.  This will be expanded in the future to support
+# inplace python binaries in local dev mode, but it will always be python3.
 [python]
   interpreter = /usr/bin/python3
-  package_style = inplace
+  package_style = standalone
 
 [cxx]
   gtest_dep = //third-party/cxx:gtest

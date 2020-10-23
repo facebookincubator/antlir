@@ -10,7 +10,6 @@ import uuid
 from contextlib import contextmanager
 from typing import ContextManager
 
-import boto3
 from antlir.common import get_logger
 from antlir.rpm.storage.storage import _CommitCallback
 
@@ -19,8 +18,6 @@ from ..storage import Storage, StorageInput, StorageOutput
 
 
 log = get_logger()
-
-boto3.set_stream_logger("", logging.WARNING)
 
 
 class S3Storage(Storage, plugin_kind="s3"):
@@ -38,11 +35,6 @@ class S3Storage(Storage, plugin_kind="s3"):
         self.prefix = prefix
         self.region = region
         self.timeout_seconds = timeout_seconds
-        # Reads require no credentials, writes go through AWS authentication
-        # and will fail if the required environment variables are not set
-        # Full details here, but in practice it's ok to ignore the intricacies.
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
-        self.s3 = boto3.client("s3")
 
     @classmethod
     def _make_storage_id(cls) -> str:
@@ -62,6 +54,20 @@ class S3Storage(Storage, plugin_kind="s3"):
         )
         with open_url(url) as f:
             yield StorageInput(input=f)
+
+    @property
+    def s3(self):
+        # botocore does not support running from a pex/zip (aka a 'standalone'
+        # binary that gets installed in an image), so only import it when on
+        # the write path, which happens in an 'inplace' context on the host
+        import boto3
+
+        boto3.set_stream_logger("", logging.WARNING)
+        # Reads require no credentials, writes go through AWS authentication
+        # and will fail if the required environment variables are not set
+        # Full details here, but in practice it's ok to ignore the intricacies.
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
+        return boto3.client("s3")
 
     @contextmanager
     def writer(self) -> ContextManager[StorageOutput]:
