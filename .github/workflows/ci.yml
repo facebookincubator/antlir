@@ -1,10 +1,8 @@
-name: CI
-
 on: [push, pull_request]
 
 jobs:
-  smoke-test:
-    runs-on: ubuntu-latest
+  test:
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v2
@@ -12,11 +10,36 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init
 
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '~3.8'
+
+      # .buckconfig explicitly references /usr/bin/python3
+      # Ensure that /usr/bin/python3 points to the python3.8 install setup by
+      # the above step
+      - name: Symlink Python
+        run: sudo ln -sf $(which python3.8) /usr/bin/python3
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y systemd-container libcap-ng-dev
+
+      - name: Setup $PATH
+        run: echo $(pwd)/tools > $GITHUB_PATH
+
       - name: Fetch buck
-        run: ./tools/buck --version
-        
-      - name: Fetch third-party dependencies
-        run: ./tools/buck fetch //third-party/...
-        
-      - name: Evaluate target graph
-        run: ./tools/buck targets //...
+        run: buck --version
+
+      - name: Fetch remote artifacts
+        run: buck fetch //...
+
+      # This is not quite a test, but exercises a lot of antlir and is expected
+      # to pass, unlike the unit tests below, not all of which have been fixed
+      # to support the OSS build (mainly due to missing 'yum')
+      - name: Build base image
+        run: buck build //images/base:fedora32
+
+      - name: Build all targets
+        run: buck build //...
+
+      - name: Run tests
+        run: buck test //... --exclude disabled
