@@ -44,14 +44,6 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-cmd",
-    srcs = ["tests/test_cmd.py"],
-    deps = [
-        ":cmd",
-    ],
-)
-
 # Gets test coverage via `plugins:test-yum-dnf-versionlock`
 python_library(
     name = "plugin_hooks",
