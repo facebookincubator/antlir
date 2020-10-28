@@ -21,6 +21,7 @@ from typing import AsyncContextManager, ContextManager, Iterable, Optional
 
 from antlir.compiler.items.mount import mounts_from_image_meta
 from antlir.config import load_repo_config
+from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
@@ -39,15 +40,15 @@ class KernelResources(object):
 
 @contextmanager
 def kernel_resources() -> ContextManager[KernelResources]:
-
     with importlib.resources.path(
         __package__, "initrd"
-    ) as initrd, importlib.resources.path(
-        __package__, "modules"
-    ) as modules, importlib.resources.path(
-        __package__, "vmlinuz"
-    ) as vmlinuz:
-        yield KernelResources(initrd=initrd, modules=modules, vmlinuz=vmlinuz)
+    ) as initrd, importlib.resources.path(__package__, "vmlinuz") as vmlinuz:
+
+        yield KernelResources(
+            initrd=initrd,
+            modules=layer_resource_subvol(__package__, "modules").path(),
+            vmlinuz=vmlinuz,
+        )
 
 
 @dataclass(frozen=True)
@@ -132,7 +133,7 @@ async def __vm_with_stack(
             shares.append(
                 Plan9Export(
                     path=mount.build_source.source,
-                    mountpoint=mount.mountpoint,
+                    mountpoint=Path("/") / mount.mountpoint,
                     mount_tag=mount.build_source.source.replace("/", "-")[1:],
                 )
             )

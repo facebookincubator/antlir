@@ -16,8 +16,10 @@ from typing import Iterable, List, Optional
 
 import click
 from antlir.artifacts_dir import find_buck_cell_root
+from antlir.find_built_subvol import find_built_subvol
+from antlir.fs_utils import Path
 from antlir.vm.common import async_wrapper
-from antlir.vm.share import BtrfsDisk
+from antlir.vm.share import BtrfsDisk, Plan9Export
 from antlir.vm.vm import vm
 
 
@@ -92,6 +94,21 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
 @click.option(
     "--ncpus", type=int, default=1, help="How many vCPUs the VM will have."
 )
+# These two options are here to provide support for mounting the devel/headers
+# for a kernel as an image layer via 9p.
+# Future: The layer will be provided transparently via runtime mounts + the
+#         runtime config compiler. The uname is here only so that we can build
+#         the correct mountpoint for the supplied devel-layer.
+@click.option(
+    "--devel-layer",
+    type=find_built_subvol,
+    help="On disk path to devel layer",
+)
+@click.option(
+    "--uname",
+    type=str,
+    help="The Uname of the kernel we are using for the vm.",
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @async_wrapper
 async def main(
@@ -104,6 +121,9 @@ async def main(
     list_tests: Optional[str],
     interactive: bool,
     ncpus: int,
+    # devel options
+    devel_layer: Path,
+    uname: str,
     args: Iterable[str],
 ) -> None:
     h = logging.StreamHandler()
@@ -148,13 +168,33 @@ async def main(
                 await proc.wait()
             sys.exit(proc.returncode)
 
+        # Build shares to provide to the vm
+        shares = [BtrfsDisk(test_disk, "/vmtest")] + (
+            [
+                Plan9Export(
+                    path=devel_layer.path(),
+                    mountpoint="/usr/src/kernels/{}".format(uname),
+                    mount_tag="kernel-devel-src",
+                    generator=True,
+                ),
+                Plan9Export(
+                    path=devel_layer.path(),
+                    mountpoint="/usr/lib/modules/{}/build".format(uname),
+                    mount_tag="kernel-devel-build",
+                    generator=True,
+                ),
+            ]
+            if devel_layer
+            else []
+        )
+
         async with vm(
             bind_repo_ro=bind_repo_ro,
             image=image,
             verbose=not quiet,
             interactive=interactive,
             ncpus=ncpus,
-            shares=[BtrfsDisk(test_disk, "/vmtest")],
+            shares=shares,
         ) as instance:
             boot_time_elapsed = time.time() - start_time
             if not interactive:

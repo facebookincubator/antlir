@@ -39,16 +39,10 @@ mount -o remount,rw "$NEWROOT"
 # the root fs. There are some kernel modules that are built into the initrd (at
 # a minimum 9p and 9pnet_virtio) based on kernel version, but all modules are
 # available under this 9p mount
-mkdir -p "$NEWROOT/lib/modules/$(uname -r)/kernel"
+mkdir -p "$NEWROOT/lib/modules/$(uname -r)"
 modprobe 9pnet
 modprobe 9pnet_virtio
 modprobe 9p
-mount -t 9p -o trans=virtio,version=9p2000.L,cache=loose,posixacl kernel-modules "$NEWROOT/lib/modules/$(uname -r)/kernel"
-
-# We cannot run depmod at build time, because we need to mount only the
-# `kernel/` directory of /lib/modules/$rel, because bpf tests require the
-# /lib/modules/$rel/build symlink, and buck fails when there are broken
-# symlinks in an output directory
-chroot "$NEWROOT" /sbin/depmod
+mount -t 9p -o ro,trans=virtio,version=9p2000.L,cache=loose,posixacl kernel-modules "$NEWROOT/lib/modules/$(uname -r)"
 
 exec switch_root "$NEWROOT" /sbin/init

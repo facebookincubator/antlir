@@ -1,3 +1,4 @@
+load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "default_vm_image", "python_binary", "python_library", "third_party")
 
 def create_kernel_vm_targets(kernel):
@@ -15,7 +16,7 @@ def create_kernel_vm_targets(kernel):
         resources = {
             "//antlir/vm/initrd:{}-initrd".format(kernel.uname): "initrd",
             kernel.vmlinuz: "vmlinuz",
-            kernel.modules: "modules",
+            layer_resource(kernel.modules): "modules",
         },
         antlir_rule = "user-internal",
     )
