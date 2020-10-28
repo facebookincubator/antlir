@@ -113,7 +113,7 @@ class SymlinkToDirItem(SymlinkBase, ImageItem):
 
 # We should allow symlinks to certain files that will be in the image
 # at runtime but may not be at build time.
-def _whitelisted_symlink_source(source: str) -> bool:
+def _allowlisted_symlink_source(source: str) -> bool:
     return source in ["dev/null"]
 
 
@@ -123,6 +123,6 @@ class SymlinkToFileItem(SymlinkBase, ImageItem):
         yield ProvidesFile(path=self.dest)
 
     def requires(self):
-        if not _whitelisted_symlink_source(self.source):
+        if not _allowlisted_symlink_source(self.source):
             yield require_file(self.source)
         yield require_directory(os.path.dirname(self.dest))

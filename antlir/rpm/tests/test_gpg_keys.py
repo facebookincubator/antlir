@@ -20,24 +20,24 @@ class OpenUrlTestCase(unittest.TestCase):
             with open(hello_path, "w") as out_f:
                 out_f.write("world")
 
-            whitelist_dir = td / "whitelist"
-            os.mkdir(whitelist_dir)
+            allowlist_dir = td / "allowlist"
+            os.mkdir(allowlist_dir)
 
             def try_snapshot(snapshot_dir):
                 snapshot_gpg_keys(
                     key_urls=[hello_path.file_url()],
-                    whitelist_dir=whitelist_dir,
+                    allowlist_dir=allowlist_dir,
                     snapshot_dir=snapshot_dir,
                 )
 
-            # The snapshot won't work until the key is correctly whitelisted.
+            # The snapshot won't work until the key is correctly allowlisted.
             with temp_dir() as snap_dir, self.assertRaises(FileNotFoundError):
                 try_snapshot(snap_dir)
-            with open(whitelist_dir / "hello", "w") as out_f:
+            with open(allowlist_dir / "hello", "w") as out_f:
                 out_f.write("wrong contents")
             with temp_dir() as snap_dir, self.assertRaises(AssertionError):
                 try_snapshot(snap_dir)
-            shutil.copy(hello_path, whitelist_dir)
+            shutil.copy(hello_path, allowlist_dir)
 
             with temp_dir() as snapshot_dir:
                 try_snapshot(snapshot_dir)

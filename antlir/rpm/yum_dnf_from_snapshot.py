@@ -49,7 +49,7 @@ It should be safe to `--assumeyes` (which auto-imports GPG keys), because:
     version-controlled snapshot before sending them out.
   - Snapshotted repos are required to have `gpgcheck` enabled. When
     `snapshot-repos` downloads GPG keys, it checks them against a
-    predetermined whitelist, protecting us against transient key injections.
+    predetermined allowlist, protecting us against transient key injections.
     Many other sanity checks happen at snapshot time.
 
 This binary normally runs inside a build appliance (see `RpmActionItem`).
@@ -270,7 +270,7 @@ def _isolate_yum_dnf(
 
 @contextmanager
 def _dummy_dev() -> Path:
-    "A whitelist of devices is safer than the entire host /dev"
+    "An allowlist of devices is safer than the entire host /dev"
     dummy_dev = Path(tempfile.mkdtemp())
     try:
         subprocess.check_call(["sudo", "chown", "root:root", dummy_dev])

@@ -74,7 +74,7 @@ def snapshot_repo(argv):
         sizer = RepoSizer()
         snapshot_gpg_keys(
             key_urls=args.gpg_url,
-            whitelist_dir=args.gpg_key_allowlist_dir,
+            allowlist_dir=args.gpg_key_allowlist_dir,
             snapshot_dir=td,
         )
         repo = YumDnfConfRepo(

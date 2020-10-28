@@ -22,8 +22,8 @@ TEST(ImageCppUnittest, TestEnv) {
   ASSERT_STREQ("meow", std::getenv("kitteh"));
   // Ensure that the container's environment is sanitized.
   //
-  // Unlike the Python test, we don't check the environment against a
-  // whitelist, but only because it's considerably more hassle to figure out
+  // Unlike the Python test, we don't check the environment against an
+  // allowlist, but only because it's considerably more hassle to figure out
   // how to do this in GTest.
   ASSERT_EQ(nullptr, ::getenv("BUCK_BUILD_ID"));
 }
