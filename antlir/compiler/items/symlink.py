@@ -114,7 +114,8 @@ class SymlinkToDirItem(SymlinkBase, ImageItem):
 # We should allow symlinks to certain files that will be in the image
 # at runtime but may not be at build time.
 def _whitelisted_symlink_source(source: str) -> bool:
-    return source in ["dev/null"]
+    return source in ["dev/null", "something-else"]  # @oss-disable
+    # @oss-enable: return source in ["dev/null"]
 
 
 @dataclass(init=False, frozen=True)
