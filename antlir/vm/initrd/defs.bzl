@@ -62,17 +62,23 @@ def initrd(name, kernel):
             set -x
             mkdir -p $OUT
             pushd $OUT 2>/dev/null
-            mod_source="$(location {kernel_modules})"
+
+            # copy the needed modules out of the module layer
+            binary_path=( $(exe //antlir:find-built-subvol) )
+            layer_loc="$(location {module_layer})"
+            mod_layer_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
+
             mods="{module_list}"
             for mod in $mods; do
-                if [[ -f "$mod_source/$mod" ]]; then
+                mod_src="$mod_layer_path/kernel/$mod"
+                if [[ -f "$mod_src" ]]; then
                     mod_dir=\\$(dirname "$mod")
                     mkdir -p "$mod_dir"
-                    cp "$mod_source/$mod" "$mod_dir"
+                    cp "$mod_src" "$mod_dir"
                 fi
             done
         """.format(
-            kernel_modules = kernel.modules,
+            module_layer = kernel.modules,
             module_list = " ".join(VM_MODULE_LIST),
         ),
         antlir_rule = "user-internal",

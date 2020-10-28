@@ -61,6 +61,7 @@ python_library(
         ":share",
         ":tap",
         "//antlir:config",
+        "//antlir:testlib_layer_resource",
         "//antlir:unshare",
         "//antlir/compiler/items:mount",
     ],
@@ -130,6 +131,8 @@ python_library(
         ":share",
         ":vm",
         "//antlir:artifacts_dir",
+        "//antlir:find_built_subvol",
+        "//antlir:fs_utils",
     ],
 )
 

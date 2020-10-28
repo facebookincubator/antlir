@@ -48,6 +48,14 @@ vm.python_unittest(
     ),
 )
 
+vm.python_unittest(
+    name = "test-with-kernel-devel",
+    srcs = ["test_kernel_devel.py"],
+    vm_opts = vm.opts(
+        devel = True,
+    ),
+)
+
 vm.cpp_unittest(
     name = "cpp",
     srcs = ["CppTest.cpp"],

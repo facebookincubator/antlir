@@ -160,6 +160,8 @@ set -ue -o pipefail -o noclobber
 exec $(exe {vm_binary_target}) \
   {setenv_quoted} \
   {ncpus} \
+  {uname_quoted} \
+  {maybe_devel_layer_quoted} \
   "$@"
 EOF
 chmod +x "$TMP/out"
@@ -179,6 +181,10 @@ mv "$TMP/out" "$OUT"
                 )
                 for var_name, var_value in env.items()
             ]),
+            uname_quoted = "--uname={}".format(shell.quote(kernel.uname)),
+            maybe_devel_layer_quoted = "--devel-layer={}".format(
+                shell.quote("$(location {})".format(kernel.devel)),
+            ) if vm_opts.devel else "",
             ncpus = "--ncpus={}".format(vm_opts.ncpus),
             vm_binary_target = ":{}=runvm".format(name),
         ),
@@ -258,25 +264,13 @@ def _vm_unittest(
         layer = ":{}_test_layer".format(name),
     )
 
-    features = []
-
-    # some tests need kernel headers and kernel sources (bcc on kernels <5.2), so provide
-    # an opt-in way to install them in the test image, instead of forcing it
-    # for every test.
-    if vm_opts.devel:
-        features.append(
-            image.rpms_install([kernel.headers, kernel.devel]),
-        )
-
-    # if there are no custom image features and the test is using the default
-    # rootfs layer, we can use the pre-packaged seed device and save lots of
-    # build time
+    # If the test is using the default rootfs layer, we can use the
+    # pre-packaged seed device and save lots of build time
     seed_device = default_vm_image.package
-    if features or layer != default_vm_image.layer:
+    if layer != default_vm_image.layer:
         image.layer(
             name = "{}-image".format(name),
             parent_layer = layer,
-            features = features,
         )
         layer = ":{}-image".format(name)
 
