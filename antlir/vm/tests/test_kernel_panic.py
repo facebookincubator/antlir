@@ -14,8 +14,7 @@ from antlir.nspawn_in_subvol.common import DEFAULT_PATH_ENV
 
 class KernelPanicTest(unittest.TestCase):
     def test_vmtest_kernel_panic(self):
-        resource = "antlir.vm.tests"
-        with importlib.resources.path(resource, "vmtest") as vmtest:
+        with importlib.resources.path(__package__, "vmtest") as vmtest:
             exe = Path(vmtest)
 
         proc = subprocess.run(

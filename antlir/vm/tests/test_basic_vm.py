@@ -11,7 +11,7 @@ import socket
 import unittest
 
 
-class PythonVMTest(unittest.TestCase):
+class BasicVMTest(unittest.TestCase):
     def test_env(self):
         self.assertEqual(os.environ.pop("kitteh"), "meow")
         self.assertEqual(os.environ.pop("dogsgo"), "woof")
