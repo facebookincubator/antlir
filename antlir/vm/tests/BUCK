@@ -5,23 +5,17 @@ load("//antlir/bzl:vm.bzl", "vm")
 # Don't run this test directly, it should only be used within the
 # `kernel_panic_test`.
 vm.python_unittest(
-    name = "vmtest_nothing",
-    srcs = ["vmtest_nothing.py"],
+    name = "create-kernel-panic",
+    srcs = ["create_kernel_panic.py"],
     tags = helpers.tags_to_hide_test(),
-)
-
-# Don't run directly. Only for checking vmtest framework behavior.
-vm.python_unittest(
-    name = "vmtest_kernel_panic",
-    srcs = ["vmtest_kernel_panic.py"],
-    tags = helpers.tags_to_hide_test(),
+    visibility = [],
 )
 
 python_unittest(
-    name = "kernel-panic-test",
-    srcs = ["kernel_panic_test.py"],
+    name = "test-kernel-panic",
+    srcs = ["test_kernel_panic.py"],
     resources = {
-        ":vmtest_kernel_panic=runvm": "vmtest",
+        ":create-kernel-panic=runvm": "vmtest",
     },
     deps = [
         "//antlir:fs_utils",
@@ -38,7 +32,7 @@ test_env_vars = {
 
 vm.python_unittest(
     name = "python",
-    srcs = ["python_test.py"],
+    srcs = ["test_basic_vm.py"],
     env = test_env_vars,
     resources = {
         ":resource.txt": "resource",
@@ -48,16 +42,16 @@ vm.python_unittest(
     ),
 )
 
+vm.cpp_unittest(
+    name = "cpp",
+    srcs = ["CppTest.cpp"],
+    env = test_env_vars,
+)
+
 vm.python_unittest(
     name = "test-with-kernel-devel",
     srcs = ["test_kernel_devel.py"],
     vm_opts = vm.opts(
         devel = True,
     ),
-)
-
-vm.cpp_unittest(
-    name = "cpp",
-    srcs = ["CppTest.cpp"],
-    env = test_env_vars,
 )
