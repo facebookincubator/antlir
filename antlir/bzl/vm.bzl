@@ -45,10 +45,11 @@ with the options allowed there.  The key differences with
   no way to run VM tests in non-booted mode.
 """
 
+load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":image.bzl", "image")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "buck_sh_test", "cpp_unittest", "default_vm_image", "get_visibility", "kernel_get", "python_binary", "python_unittest")
+load(":oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "get_visibility", "kernel_get", "python_binary", "python_unittest")
 
 _RULE_TO_TEST_TYPE = {
     cpp_unittest: "gtest",
@@ -105,9 +106,6 @@ def _inner_test(
     )
     return inner_test_name
 
-def _run_vmtest_name(name):
-    return "{}=runvm".format(name)
-
 def _outer_test(
         name,
         unittest_rule,
@@ -126,7 +124,7 @@ def _outer_test(
         env = {}
 
     python_binary(
-        name = _run_vmtest_name(name),
+        name = "{}=runvm".format(name),
         base_module = "antlir.vm",
         antlir_rule = "user-internal",
         main_module = "antlir.vm.vmtest",
@@ -146,6 +144,50 @@ def _outer_test(
         ],
     )
 
+    # Build an executable script that collects all the options passed to the
+    # vmtest binary.  This provides a way to manually execute the vmtest script
+    # that is invoked by the test runner directly.
+    # Future: Expand this to provide support for other executable entry points
+    #         for running vms.  ie: as something like a -run-vm target for a
+    #         kernel or an image.
+    buck_genrule(
+        name = "{}=vmtest".format(name),
+        out = "run",
+        bash = """
+cat > "$TMP/out" << 'EOF'
+#!/bin/sh
+set -ue -o pipefail -o noclobber
+exec $(exe {vm_binary_target}) \
+  {setenv_quoted} \
+  {ncpus} \
+  "$@"
+EOF
+chmod +x "$TMP/out"
+mv "$TMP/out" "$OUT"
+        """.format(
+            # Manually extract any environment variables set and format
+            # them into `--setenv NAME=VALUE`. THese are passed during the call to
+            # vmtest which will forward them inside the vm for the inner test.
+            setenv_quoted = " ".join([
+                "--setenv={}".format(
+                    shell.quote(
+                        "{}={}".format(
+                            var_name,
+                            var_value,
+                        ),
+                    ),
+                )
+                for var_name, var_value in env.items()
+            ]),
+            ncpus = "--ncpus={}".format(vm_opts.ncpus),
+            vm_binary_target = ":{}=runvm".format(name),
+        ),
+        cacheable = False,
+        executable = True,
+        visibility = [],
+        antlir_rule = "user-internal",
+    )
+
     # building a buck_sh_test with a specific type lets us trick TestPilot into
     # thinking that it is running a unit test of the specific type directly,
     # when in reality vmtest.par will transparently run the binary in a VM
@@ -153,18 +195,8 @@ def _outer_test(
     # given to TestPilot
     buck_sh_test(
         name = name,
-        # We will manually extract any environment variables set and format
-        # them into `--setenv NAME=VALUE`. THese are passed during the call to
-        # vmtest which will forward them inside the vm for the inner test.
-        args = [
-            "--setenv={}={}".format(
-                var_name,
-                var_value,
-            )
-            for var_name, var_value in env.items()
-        ] + ["--ncpus={}".format(vm_opts.ncpus)],
         labels = tags,
-        test = ":" + _run_vmtest_name(name),
+        test = ":{}=vmtest".format(name),
         type = _RULE_TO_TEST_TYPE[unittest_rule],
         visibility = visibility,
         # Although the outer test doesn't actually need these dependencies,
