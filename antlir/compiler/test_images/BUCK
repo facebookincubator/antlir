@@ -161,7 +161,7 @@ image.feature(
         image.symlink_dir("/foo/bar", "/foo/face"),
         image.symlink_dir("/foo/bar", "/foo/bar/baz/"),  # / -> "bar" basename
         image.symlink_file("/foo/hello_world.tar", "/foo/symlink_to_hello_world.tar"),
-        # /dev/null is whitelisted to be a dangling symlink
+        # /dev/null is allowlisted to be a dangling symlink
         image.symlink_file("/dev/null", "/foo/symlink_to_dev_null"),
     ],
 )

@@ -27,7 +27,7 @@ class ImagePythonUnittestTest(unittest.TestCase):
         # Ensure that per-test `env` settings do reach the container.
         self.assertEqual("meow", os.environ.pop("kitteh"))
         # Ensure that the container's environment is sanitized.
-        env_whitelist = {
+        env_allowlist = {
             # Session basics
             "HOME",
             "LOGNAME",
@@ -58,8 +58,8 @@ class ImagePythonUnittestTest(unittest.TestCase):
         for var in os.environ:
             if var.startswith("FB_PAR_"):  # Set for non-in-place build modes
                 continue
-            self.assertIn(var, env_whitelist)
-        # If the whitelist proves unmaintainable, Buck guarantees that this
+            self.assertIn(var, env_allowlist)
+        # If the allowlist proves unmaintainable, Buck guarantees that this
         # variable is set, and it is NOT explicitly passed into containers,
         # so it ought to be absent.  See also `test-unsanitized-env`.
         self.assertNotIn("BUCK_BUILD_ID", os.environ)

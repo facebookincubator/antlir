@@ -31,9 +31,9 @@ class SnapshotRepoTestCase(unittest.TestCase):
             with open(td / "fake_gpg_key", "w"):
                 pass
 
-            whitelist_dir = td / "gpg_whitelist"
-            os.mkdir(whitelist_dir)
-            shutil.copy(td / "fake_gpg_key", whitelist_dir)
+            allowlist_dir = td / "gpg_allowlist"
+            os.mkdir(allowlist_dir)
+            shutil.copy(td / "fake_gpg_key", allowlist_dir)
 
             storage_dict = {
                 "key": "test",
@@ -45,7 +45,7 @@ class SnapshotRepoTestCase(unittest.TestCase):
                     "--repo-universe=fakeverse",
                     "--repo-name=dog",
                     "--repo-url=" + (repos_root / "0/dog").file_url(),
-                    f"--gpg-key-allowlist-dir={whitelist_dir}",
+                    f"--gpg-key-allowlist-dir={allowlist_dir}",
                     "--gpg-url=" + (td / "fake_gpg_key").file_url(),
                     f'--snapshot-dir={td / "snap"}',
                     f"--storage={Path.json_dumps(storage_dict)}",

@@ -154,7 +154,7 @@ def snapshot_repos(
             ) as td:
                 snapshot_gpg_keys(
                     key_urls=repo.gpg_key_urls,
-                    whitelist_dir=gpg_key_allowlist_dir,
+                    allowlist_dir=gpg_key_allowlist_dir,
                     snapshot_dir=td,
                 )
 

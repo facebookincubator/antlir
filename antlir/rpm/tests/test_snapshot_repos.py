@@ -40,7 +40,7 @@ class SnapshotReposTestCase(unittest.TestCase):
     def test_invalid_json(self):
         args = [
             "--gpg-key-allowlist-dir",
-            ("not_used/gpg_whitelist"),
+            ("not_used/gpg_allowlist"),
             "--storage",
             json.dumps(
                 {"key": "test", "kindd": "filesystem", "base_dir": "foo"}
@@ -110,7 +110,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                 ),
             ), tempfile.NamedTemporaryFile("w") as ru_json:
                 common_args = [
-                    f'--gpg-key-allowlist-dir={td / "gpg_whitelist"}',
+                    f'--gpg-key-allowlist-dir={td / "gpg_allowlist"}',
                     "--storage=" + Path.json_dumps(storage_dict),
                     "--db="
                     + Path.json_dumps(
