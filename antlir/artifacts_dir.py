@@ -73,18 +73,22 @@ def find_buck_cell_root(path_in_repo: Optional[str] = None) -> str:
     This is functionally equivalent to `buck root`, but we opt to do it here as
     `buck root` takes >2s to execute (due to CLI startup time).
     """
-    if path_in_repo is None:
-        path_in_repo = sys.argv[0]
-    repo_path = os.path.abspath(path_in_repo)
-    while True:
-        if os.path.realpath(repo_path) == "/":  # No infinite loop on //
-            raise RuntimeError(
-                f"Could not find .buckconfig in any ancestor of {path_in_repo}"
-            )
-        if os.path.exists(os.path.join(repo_path, ".buckconfig")):
-            return repo_path
-        repo_path = os.path.dirname(repo_path)
-    # Not reached
+    paths_to_try = (
+        [path_in_repo] if path_in_repo else [os.getcwd(), sys.argv[0]]
+    )
+    for path_in_repo in paths_to_try:
+        repo_path = os.path.abspath(path_in_repo)
+        while True:
+            if os.path.realpath(repo_path) == "/":  # No infinite loop on //
+                break
+            if os.path.exists(os.path.join(repo_path, ".buckconfig")):
+                return repo_path
+            repo_path = os.path.dirname(repo_path)
+
+    # If we got this far we never found the cell root
+    raise RuntimeError(
+        f"Could not find .buckconfig in any ancestor of {paths_to_try}"
+    )
 
 
 def ensure_per_repo_artifacts_dir_exists(
