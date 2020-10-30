@@ -22,16 +22,8 @@ NEWROOT="/newroot"
 
 mount -o subvol=volume -t btrfs /dev/vda "$NEWROOT"
 
-# make the new root writable using 'btrfs device add'
-# TODO(T62846368): this requires that the root image has btrfs-progs installed,
-# which is currently always the case, but should be automatically added to any
-# arbitrary user-provided image.layer when that is the only API to use vmtest
-cd "$NEWROOT"
-mount -t proc proc proc/
-mount --rbind /sys sys/
-mount --rbind /dev dev/
-chroot "$NEWROOT" /sbin/btrfs device add /dev/vdb /
-umount proc sys dev
+# make the new root writable by adding /dev/vdb
+seedroot
 
 mount -o remount,rw "$NEWROOT"
 
