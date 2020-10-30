@@ -102,6 +102,11 @@ def initrd(name, kernel):
             image.mkdir("/", "tmp"),
             image.mkdir("/", module_base_dir),
             busybox,
+            image.clone(
+                src_layer = ":seedroot",
+                src_path = "/build/seedroot",
+                dest_path = "/bin/seedroot",
+            ),
             image.install(
                 image.source(
                     source = ":" + name + "--modules",
