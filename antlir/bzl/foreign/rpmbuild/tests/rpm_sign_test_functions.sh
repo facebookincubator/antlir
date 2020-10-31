@@ -20,7 +20,7 @@ function sign_with_test_key {
 
     trap 'rm -rf "$GNUPGHOME"' RETURN
 
-    signing_key="$BUCK_PROJECT_ROOT/antlir/rpm/tests/gpg_test_keypair/private.key"
+    signing_key="$BUCK_DEFAULT_RUNTIME_RESOURCES/gpg-test-signing-key"
     gpg -q --import "$signing_key"
     rpmsign --addsign --define='_gpg_name Test Key' --define='_gpg_digest_algo sha256' "$1"
 }
