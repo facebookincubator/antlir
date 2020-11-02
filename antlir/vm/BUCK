@@ -47,7 +47,7 @@ export_file(
 python_library(
     name = "vm",
     srcs = [
-        "guest_agent.py",
+        "guest_conn.py",
         "vm.py",
     ],
     resources = {
@@ -55,6 +55,7 @@ python_library(
         third_party.library("qemu"): "qemu",
         # The bios to boot the emulator with
         third_party.library("qemu", "share/qemu/bios-256k.bin"): "bios",
+        ":ssh-privkey": "privkey",
         ":roms": "roms",
     },
     deps = [
@@ -64,6 +65,7 @@ python_library(
         "//antlir:testlib_layer_resource",
         "//antlir:unshare",
         "//antlir/compiler/items:mount",
+        "//antlir/nspawn_in_subvol:common",
     ],
 )
 
