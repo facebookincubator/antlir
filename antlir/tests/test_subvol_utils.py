@@ -312,3 +312,11 @@ class SubvolTestCase(unittest.TestCase):
         )
 
         self.assertEqual(demo_render, render_subvol(unpacked_sv))
+
+    @with_temp_subvols
+    def test_equal_and_hash(self, temp_subvols):
+        sv = temp_subvols.create("subvol")
+        other_sv = Subvol(sv.path(), already_exists=True)
+
+        self.assertEqual(sv, other_sv)
+        self.assertEqual(sv.__hash__(), hash(sv._path))

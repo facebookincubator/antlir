@@ -116,6 +116,13 @@ class Subvol:
         if self._exists and not _path_is_btrfs_subvol(self._path):
             raise AssertionError(f"No btrfs subvol at {self._path}")
 
+    def __eq__(self, other: "Subvol") -> bool:
+        assert self._exists == other._exists, self.path()
+        return self._path == other._path
+
+    def __hash__(self) -> int:
+        return hash(self._path)
+
     def path(
         self, path_in_subvol: AnyStr = b".", *, no_dereference_leaf=False
     ) -> Path:
