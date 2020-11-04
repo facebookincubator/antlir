@@ -36,7 +36,7 @@ from . import NspawnPlugin
 
 
 log = get_logger()
-SHADOWED_PATHS_ROOT = Path("__antlir__/shadowed")
+SHADOWED_PATHS_ROOT = Path("/__antlir__/shadowed")
 
 
 def _shadow_search_dirs(setenv: Iterable[AnyStr]) -> Iterable[Path]:

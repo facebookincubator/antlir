@@ -121,6 +121,9 @@ log = get_logger()
 # not worth the trouble in the absence of a VERY compelling need.
 LIBRENAME_SHADOWED_PATH = Path("/__antlir__/librename_shadowed.so")
 
+# This wrapper won't work outside of / if this is violated.
+assert SHADOWED_PATHS_ROOT.startswith(b"/"), SHADOWED_PATHS_ROOT
+
 # This is yucky, but `test_update_shadowed` must not mock ALL uses of
 # `SHADOWED_PATHS_ROOT`, or it will be unable to find the original RPM
 # installer binary.  So we make this mock point available.
@@ -255,9 +258,7 @@ def _isolate_yum_dnf(
                 [
                     f"LD_PRELOAD={LIBRENAME_SHADOWED_PATH.shell_quote()}",
                     (
-                        # Must be absolute, or much shadowing-related code
-                        # will only work when cwd is /.
-                        "ANTLIR_SHADOWED_PATHS_ROOT=/"
+                        "ANTLIR_SHADOWED_PATHS_ROOT="
                         f"{_LIBRENAME_SHADOWED_PATHS_ROOT.shell_quote()}"
                     ),
                 ]
