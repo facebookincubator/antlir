@@ -1,6 +1,6 @@
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":shape.bzl", "shape")
+load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 
 # Forward container runtime configuration to the Python implementation.

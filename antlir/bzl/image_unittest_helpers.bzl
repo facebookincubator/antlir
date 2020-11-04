@@ -1,4 +1,3 @@
-load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl/image_actions:install.bzl", "image_install_buck_runnable")
 load(":constants.bzl", "QUERY_TARGETS_AND_OUTPUTS_SEP")
 load(":container_opts.bzl", "normalize_container_opts")

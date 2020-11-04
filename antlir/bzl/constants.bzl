@@ -4,8 +4,8 @@
 # Note that there's no deep reason for this struct / non-struct split, so we
 # could easily move everything into the struct.
 #
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:oss_shim.bzl", "do_not_use_repo_cfg")
+load("//antlir/bzl:shape.bzl", "shape")
 
 DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
 VERSION_SET_ALLOW_ALL_VERSIONS = "__VERSION_SET_ALLOW_ALL_VERSIONS__"

@@ -55,8 +55,8 @@ python_library(
         third_party.library("qemu"): "qemu",
         # The bios to boot the emulator with
         third_party.library("qemu", "share/qemu/bios-256k.bin"): "bios",
-        ":ssh-privkey": "privkey",
         ":roms": "roms",
+        ":ssh-privkey": "privkey",
     },
     deps = [
         ":share",

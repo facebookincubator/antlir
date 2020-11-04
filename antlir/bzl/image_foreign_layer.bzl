@@ -137,7 +137,6 @@ load(":container_opts.bzl", "container_opts_t", "normalize_container_opts")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":shape.bzl", "shape")
-load(":structs.bzl", "structs")
 load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 
 foreign_layer_t = shape.shape(

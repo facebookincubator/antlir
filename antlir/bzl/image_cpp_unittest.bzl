@@ -1,5 +1,5 @@
-load(":oss_shim.bzl", "buck_genrule", "cpp_unittest", "get_visibility", "python_binary")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
+load(":oss_shim.bzl", "buck_genrule", "cpp_unittest", "get_visibility", "python_binary")
 
 def image_cpp_unittest(
         name,

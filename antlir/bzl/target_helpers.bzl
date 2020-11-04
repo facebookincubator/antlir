@@ -1,5 +1,5 @@
-load(":sha256.bzl", "sha256_b64")
 load(":oss_shim.bzl", "target_utils")
+load(":sha256.bzl", "sha256_b64")
 
 def normalize_target(target):
     parsed = target_utils.parse_target(
