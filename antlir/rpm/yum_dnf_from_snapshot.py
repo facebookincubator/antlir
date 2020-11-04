@@ -682,8 +682,10 @@ def yum_dnf_from_snapshot(
             # hard to think of a plugin that might do something truly
             # atrocious, so it may be reasonable to relax this later.
             "--disableplugin=*",
-            # `versionlock` is used by antilr's version selection.
-            "--enableplugin=versionlock"
+            # `versionlock` is used by Antlir's version selection.
+            # `download` is nice so that folks can easily get snapshot RPMs:
+            #    buck run :x-container -- --user=root -- dnf download ...
+            "--enableplugin=versionlock,download"
             + (
                 # `dnf builddep` powers `rpmbuild`.
                 ",builddep"
@@ -711,6 +713,9 @@ def yum_dnf_from_snapshot(
 
 # This argument-parsing logic is covered by RpmActionItem tests.
 if __name__ == "__main__":  # pragma: no cover
+    import shlex
+    import sys
+
     main_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -769,10 +774,29 @@ if __name__ == "__main__":  # pragma: no cover
 
     init_logging(debug=args.debug)
 
-    yum_dnf_from_snapshot(
-        yum_dnf=args.yum_dnf,
-        yum_dnf_binary=args.yum_dnf_binary,
-        snapshot_dir=args.snapshot_dir,
-        protected_paths=args.protected_path,
-        yum_dnf_args=args.args,
-    )
+    try:
+        yum_dnf_from_snapshot(
+            yum_dnf=args.yum_dnf,
+            yum_dnf_binary=args.yum_dnf_binary,
+            snapshot_dir=args.snapshot_dir,
+            protected_paths=args.protected_path,
+            yum_dnf_args=args.args,
+        )
+    except BaseException as ex:
+        what_ran = f"""`{args.yum_dnf.value} {
+            ' '.join(shlex.quote(a) for a in args.args)
+        }` from snapshot `{args.snapshot_dir}`"""
+        if args.debug:
+            log.exception(f"While running {what_ran}:")
+        else:
+            # Dumping a long stack trace obscures the actual yum/dnf error.
+            log.error(
+                f"""{type(ex).__name__} while running {what_ran}. """
+                f"For more logs, run your container and `{args.yum_dnf.value}` "
+                "command with `ANTLIR_DEBUG=1`."
+            )
+        sys.exit(
+            ex.returncode
+            if isinstance(ex, subprocess.CalledProcessError)
+            else 1  # No return code to forward
+        )
