@@ -1,6 +1,5 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 load(":defs.bzl", "fake_macro_library")
-load(":oss_shim.bzl", "get_visibility")
 
 # IMPORTANT: If you add new `.bzl` files or dependencies in `antlir/`,
 # make sure their dependency structure is reflected below.  Just run `grep
