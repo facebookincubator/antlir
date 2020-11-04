@@ -155,8 +155,8 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         set_new_key(obj, "error", error_dict)
 
     # The default logging implementation does not flush. Gross.
-    def log_message(self, format, *args):
-        log.debug(
+    def log_message(self, format, *args, _antlir_logger=log.debug):
+        _antlir_logger(
             "%s - - [%s] %s\n"
             % (
                 self.address_string(),
@@ -164,6 +164,11 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
                 format % args,
             )
         )
+
+    def log_error(self, format, *args):
+        # `repo-server` errors should be visible when e.g.  `yum` or `dnf`
+        # are running in a default `buck run :foo-container`.
+        self.log_message(format, *args, _antlir_logger=log.warning)
 
     def do_GET(self) -> None:
         location, obj = self.send_head()
