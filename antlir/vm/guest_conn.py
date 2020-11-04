@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from itertools import chain
 from typing import Iterable, List, Mapping, Optional, Tuple
 
+from antlir.common import retryable
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.common import DEFAULT_PATH_ENV
 from antlir.vm.tap import VmTap
@@ -25,6 +26,7 @@ class QemuGuestConnection(object):
     ssh_privkey: Path
     connect_timeout: int = DEFAULT_CONNECT_TIMEOUT
 
+    @retryable(format_msg="retrying {cmd} over ssh", delays=[1] * 15)
     def run(
         self,
         cmd: Iterable[str],

@@ -61,6 +61,7 @@ python_library(
     deps = [
         ":share",
         ":tap",
+        "//antlir:common",
         "//antlir:config",
         "//antlir:testlib_layer_resource",
         "//antlir:unshare",
