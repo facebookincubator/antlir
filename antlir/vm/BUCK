@@ -47,7 +47,7 @@ export_file(
 python_library(
     name = "vm",
     srcs = [
-        "guest_conn.py",
+        "guest_agent.py",
         "vm.py",
     ],
     resources = {
@@ -61,12 +61,10 @@ python_library(
     deps = [
         ":share",
         ":tap",
-        "//antlir:common",
         "//antlir:config",
         "//antlir:testlib_layer_resource",
         "//antlir:unshare",
         "//antlir/compiler/items:mount",
-        "//antlir/nspawn_in_subvol:common",
     ],
 )
 
