@@ -8,7 +8,7 @@ import unittest
 from typing import Mapping, Optional, Sequence, Tuple
 
 from antlir.fs_utils import Path
-from antlir.shape import Shape
+from antlir.shape import Shape, Target
 
 # TODO remove all references to hashable and just use characters once
 # read-only dicts land
@@ -18,6 +18,7 @@ from .luke import data as luke
 
 
 character_t = shape.types.characters
+lightsaber_t = character_t.types.lightsaber
 characters = shape.read_resource(__package__, "characters.json").characters
 
 
@@ -39,20 +40,23 @@ class TestShape(unittest.TestCase):
         # models are immutable, we'll make a deep copy and udpate with a static
         # value.
         lightsaber_target_fixed = c.lightsaber.target.copy(
-            update={"path": b"/static/test/path"}
+            update={"path": b"/static/target/path"}
         )
         lightsaber_fixed = c.lightsaber.copy(
-            deep=True, update={"target": lightsaber_target_fixed}
+            update={
+                "target": lightsaber_target_fixed,
+            },
         )
         self.assertEqual(
             lightsaber_fixed,
-            {
-                "color": "green",
-                "target": {
-                    "name": ":luke-lightsaber",
-                    "path": b"/static/test/path",
-                },
-            },
+            lightsaber_t(
+                color="green",
+                target=Target(
+                    name=":luke-lightsaber",
+                    path=b"/static/target/path",
+                ),
+                layer_target=c.lightsaber.layer_target,
+            ),
         )
         self.assertEqual(c.callsign, ("Red", 5))
         self.assertEqual(c.metadata, {"species": "human"})
@@ -108,10 +112,20 @@ class TestShape(unittest.TestCase):
         # environments, so we assign a static value so that we can compare
         # the repr properly.
         lightsaber_target_fixed = characters[0].lightsaber.target.copy(
-            update={"path": b"/static/test/path"}
+            update={"path": b"/static/target/path"}
+        )
+        lightsaber_layer_fixed = characters[0].lightsaber.layer_target.copy(
+            update={
+                "path": b"/static/layer/path",
+                "subvol": None,
+            }
         )
         lightsaber_fixed = characters[0].lightsaber.copy(
-            deep=True, update={"target": lightsaber_target_fixed}
+            deep=True,
+            update={
+                "target": lightsaber_target_fixed,
+                "layer_target": lightsaber_layer_fixed,
+            },
         )
 
         # Shapes don't have nice classnames, so the repr is customized to be
@@ -133,7 +147,13 @@ class TestShape(unittest.TestCase):
             + (
                 "color='green', "
                 "target=Target("
-                "name=':luke-lightsaber', path=b'/static/test/path')"
+                "name=':luke-lightsaber', path=b'/static/target/path'"
+                "), "
+                "layer_target=LayerTarget("
+                "name=':luke-lightsaber-layer', "
+                "path=b'/static/layer/path', "
+                "subvol=None"
+                ")"
             )
             + "), "
             "callsign=('Red', 5), "
@@ -152,7 +172,15 @@ class TestShape(unittest.TestCase):
             "name=str, "
             "appears_in=Tuple[int, ...], "
             "friends=Tuple[shape(name=str), ...], "
-            "lightsaber=Optional[shape(color=str, target=Optional[Target])], "
+            "lightsaber=Optional["
+            + (
+                "shape("
+                "color=str, "
+                "target=Optional[Target], "
+                "layer_target=Optional[LayerTarget]"
+                ")"
+            )
+            + "], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
             "affiliations=shape(faction=str), "
@@ -203,7 +231,7 @@ class TestShape(unittest.TestCase):
             "name='Obi-Wan Kenobi', "
             "appears_in=(1, 2, 3, 4, 5, 6), "
             "friends=(shape(name='Yoda'), shape(name='Padme Amidala')), "
-            "lightsaber=shape(color='blue', target=None), "
+            "lightsaber=shape(color='blue', target=None, layer_target=None), "
             "callsign=None, "
             "metadata={'species': 'human'}, "
             "affiliations=shape(faction='Jedi Temple'), "
@@ -218,7 +246,13 @@ class TestShape(unittest.TestCase):
             "name=str, "
             "appears_in=Tuple[int, ...], "
             "friends=Tuple[shape(name=str), ...], "
-            "lightsaber=Optional[shape(color=str, target=Optional[Target])], "
+            "lightsaber=Optional[shape("
+            + (
+                "color=str, "
+                "target=Optional[Target], "
+                "layer_target=Optional[LayerTarget]"
+            )
+            + ")], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
             "affiliations=shape(faction=str), "
