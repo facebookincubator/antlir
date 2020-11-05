@@ -7,9 +7,7 @@
  * @format
  */
 
-function FBInternalOnly(elements) {
-  return process.env.FB_INTERNAL ? elements : [];
-}
+const {fbInternalOnly} = require('internaldocs-fb-helpers');
 
 module.exports = {
   docs: {
@@ -20,14 +18,14 @@ module.exports = {
       'coding-conventions/python',
     ],
     TODOs: ['todo/overview', 'todo/btrfs_diff', 'todo/compiler'],
-    Tutorials: [...FBInternalOnly(['tutorials/fb/contributing-docs'])],
+    Tutorials: [...fbInternalOnly(['tutorials/fb/contributing-docs'])],
     RPMs: [
-      ...FBInternalOnly([
+      ...fbInternalOnly([
         'rpms/fb/overview',
         'rpms/fb/version-selection-in-buck-built-images',
       ]),
     ],
-    ...FBInternalOnly({
+    ...fbInternalOnly({
       Fbpkg: [
         'fb/fbpkg/overview',
         {
