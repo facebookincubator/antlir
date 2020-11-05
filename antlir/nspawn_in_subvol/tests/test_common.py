@@ -51,7 +51,7 @@ class CommonTestCase(unittest.TestCase):
 
     def test_cgroup2_mountpoint_usual(self):
         with patch(
-            "antlir.nspawn_in_subvol.common.open",
+            "antlir.nspawn_in_subvol.common._open_mounts",
             mock_open(
                 read_data=b"cgroup2 /sys/fs/cgroup cgroup2 "
                 b"rw,nosuid,nodev,noexec,relatime 0 0\n"
@@ -64,7 +64,7 @@ class CommonTestCase(unittest.TestCase):
 
     def test_cgroup2_mountpoint_unified(self):
         with patch(
-            "antlir.nspawn_in_subvol.common.open",
+            "antlir.nspawn_in_subvol.common._open_mounts",
             mock_open(
                 read_data=b"cgroup2 /sys/fs/cgroup/unified cgroup2 "
                 b"rw,nosuid,nodev,noexec,relatime 0 0\n"

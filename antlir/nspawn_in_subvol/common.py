@@ -28,6 +28,11 @@ DEFAULT_SEARCH_PATHS = tuple(
 DEFAULT_PATH_ENV = b":".join(DEFAULT_SEARCH_PATHS)
 
 
+# alias open(/proc/self/mounts) so that it is more easily mocked
+def _open_mounts():  # pragma: no cover
+    return open("/proc/self/mounts", "rb")
+
+
 class NSpawnVersion(NamedTuple):
     major: int
     full: str
@@ -56,7 +61,7 @@ def nspawn_version() -> NSpawnVersion:
 
 
 def find_cgroup2_mountpoint() -> Path:
-    with open("/proc/self/mounts", "rb") as mounts:
+    with _open_mounts() as mounts:
         for mount in mounts.readlines():
             if mount.startswith(b"cgroup2 "):
                 return Path(mount.split()[1])
