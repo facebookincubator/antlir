@@ -1,3 +1,4 @@
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 
@@ -11,6 +12,7 @@ affiliations_t = shape.shape(faction = str)
 lightsaber_t = shape.shape(
     color = str,
     target = shape.target(optional = True),
+    layer_target = shape.layer(optional = True),
 )
 
 # Test data adapted from the GraphQL Star Wars examples
@@ -66,11 +68,25 @@ buck_genrule(
     visibility = [],
 )
 
+image.layer(
+    name = "luke-lightsaber-layer",
+    features = [
+        image.install(":luke-lightsaber", "/lightsaber"),
+    ],
+)
+
 buck_genrule(
     name = "vader-lightsaber",
     out = "out",
     bash = "echo 'vader-lightsaber' > $OUT",
     visibility = [],
+)
+
+image.layer(
+    name = "vader-lightsaber-layer",
+    features = [
+        image.install(":vader-lightsaber", "/lightsaber"),
+    ],
 )
 
 characters = [
@@ -100,6 +116,7 @@ characters = [
             lightsaber_t,
             color = "green",
             target = ":luke-lightsaber",
+            layer_target = ":luke-lightsaber-layer",
         ),
         callsign = ("Red", 5),
         affiliations = shape.new(
@@ -121,6 +138,7 @@ characters = [
             lightsaber_t,
             color = "red",
             target = ":vader-lightsaber",
+            layer_target = ":vader-lightsaber-layer",
         ),
         affiliations = shape.new(
             affiliations_t,

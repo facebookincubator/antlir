@@ -414,7 +414,9 @@ python_library(
     name = "shape",
     srcs = ["shape.py"],
     deps = [
+        ":find_built_subvol",
         ":fs_utils",
+        ":subvol_utils",
         third_party.library(
             "pydantic",
             platform = "python",

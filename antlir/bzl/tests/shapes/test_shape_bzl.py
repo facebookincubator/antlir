@@ -29,6 +29,7 @@ class TestShapeBzl(unittest.TestCase):
             ("/hello/world", shape.path()),
             ("@cell//project/path:rule", shape.target()),
             (":rule", shape.target()),
+            (":rule", shape.layer()),
         ):
             with self.subTest(x=x, t=t):
                 check_type(x, t)
@@ -47,6 +48,7 @@ class TestShapeBzl(unittest.TestCase):
             (2, shape.target()),
             ("invalid_target", shape.target()),
             ("also:invalid_target", shape.target()),
+            ("invalid_layer", shape.layer()),
         ):
             with self.subTest(x=x, t=t):
                 with self.assertRaises(Exception):

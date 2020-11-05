@@ -170,7 +170,7 @@ def _check_type(x, t):
         return "expected str, got {}".format(x)
     if t == "Path":
         return _check_type(x, str)
-    if t == "Target":
+    if t == "Target" or t == "LayerTarget":
         type_error = _check_type(x, str)
         if not type_error:
             # If parsing the target works, we don't have an error
@@ -324,6 +324,9 @@ def _path(**field_kwargs):
 def _target(**field_kwargs):
     return _field(type = "Target", **field_kwargs)
 
+def _layer(**field_kwargs):
+    return _field(type = "LayerTarget", **field_kwargs)
+
 def _shape(**fields):
     for name, f in fields.items():
         # transparently convert fields that are just a type have no options to
@@ -471,7 +474,7 @@ def _translate_targets(val, t):  # pragma: no cover
             ]
         else:
             return None
-    elif t == "Target":
+    elif t in ("Target", "LayerTarget"):
         return struct(
             name = val,
             path = "$(location {})".format(val),
@@ -504,6 +507,7 @@ shape = struct(
     tuple = _tuple,
     path = _path,
     target = _target,
+    layer = _layer,
     loader = _loader,
     json_file = _json_file,
     python_data = _python_data,
