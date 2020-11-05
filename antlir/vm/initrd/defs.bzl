@@ -59,7 +59,6 @@ def initrd(name, kernel):
         name = name + "--modules",
         out = ".",
         cmd = """
-            set -x
             mkdir -p $OUT
             pushd $OUT 2>/dev/null
 
