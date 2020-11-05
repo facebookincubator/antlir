@@ -7,24 +7,28 @@
  * @format
  */
 
-function FBInternalWithOssFallback(elements, fallback) {
-  return process.env.FB_INTERNAL ? elements : fallback;
-}
+const {fbContent} = require('internaldocs-fb-helpers');
 
 module.exports = {
-  title: FBInternalWithOssFallback('Antlir @FB', 'Antlir'),
+  title: fbContent({
+    'internal': 'Antlir @FB',
+    'external': 'Antlir'
+  }),
   tagline: 'A filesystem image builder',
-  url: FBInternalWithOssFallback(
-    'https://www.internalfb.com/intern/staticdocs/antlir',
-    'https://www.github.com/facebookincubator/antlir',
-  ),
+  url: fbContent({
+    'internal': 'https://www.internalfb.com/intern/staticdocs/antlir',
+    'external': 'https://www.github.com/facebookincubator/antlir',
+  }),
   baseUrl: '/',
   favicon: 'img/favicon.ico',
   organizationName: 'facebookincubator', // Usually your GitHub org/user name.
   projectName: 'antlir', // Usually your repo name.
   themeConfig: {
     navbar: {
-      title: FBInternalWithOssFallback('Antlir @FB', 'Antlir'),
+      title: fbContent({
+        'internal': 'Antlir @FB',
+        'external': 'Antlir',
+      }),
       logo: {
         alt: 'My Facebook Project Logo',
         src: 'img/logo.svg',
@@ -113,10 +117,10 @@ module.exports = {
         docs: {
           homePageId: 'introduction',
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: FBInternalWithOssFallback(
-            'https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/antlir/website',
-            'https://github.com/facebookincubator/antlir/edit/master/website/',
-          ),
+          editUrl: fbContent({
+            'internal': 'https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/antlir/website',
+            'external': 'https://github.com/facebookincubator/antlir/edit/master/website/',
+          }),
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
