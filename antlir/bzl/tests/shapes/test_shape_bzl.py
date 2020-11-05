@@ -27,6 +27,8 @@ class TestShapeBzl(unittest.TestCase):
             (None, shape.field(str, optional=True)),
             ({"a": "b"}, shape.dict(str, str)),
             ("/hello/world", shape.path()),
+            ("@cell//project/path:rule", shape.target()),
+            (":rule", shape.target()),
         ):
             with self.subTest(x=x, t=t):
                 check_type(x, t)
@@ -42,9 +44,12 @@ class TestShapeBzl(unittest.TestCase):
             ("nope", shape.list(str)),
             ("nope", shape.tuple(str)),
             (1, shape.path()),
+            (2, shape.target()),
+            ("invalid_target", shape.target()),
+            ("also:invalid_target", shape.target()),
         ):
             with self.subTest(x=x, t=t):
-                with self.assertRaises(AssertionError):
+                with self.assertRaises(Exception):
                     check_type(x, t)
 
     def test_shape_with_defaults(self):
@@ -124,6 +129,7 @@ class TestShapeBzl(unittest.TestCase):
             world=shape.field(str, optional=True),
             answer=shape.field(int, default=42),
             file=shape.path(),
+            location=shape.target(),
             nested=shape.field(nested, default=shape.new(nested, inner=True)),
             dct=shape.dict(str, str),
             lst=shape.list(int),
@@ -143,6 +149,7 @@ class TestShapeBzl(unittest.TestCase):
   world: Optional[str]
   answer: int = 42
   file: Path
+  location: Target
   class _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ(Shape):
     __GENERATED_SHAPE__ = True
     inner: bool

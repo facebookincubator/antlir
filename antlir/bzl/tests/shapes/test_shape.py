@@ -34,7 +34,26 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             [f.name for f in c.friends], ["Han Solo", "Leia Organa", "C-3PO"]
         )
-        self.assertEqual(c.lightsaber_color, "green")
+        # The target's on disk path is specific to the host that the test runs
+        # on. So we need a static value that we can reliably test.  Since
+        # models are immutable, we'll make a deep copy and udpate with a static
+        # value.
+        lightsaber_target_fixed = c.lightsaber.target.copy(
+            update={"path": b"/static/test/path"}
+        )
+        lightsaber_fixed = c.lightsaber.copy(
+            deep=True, update={"target": lightsaber_target_fixed}
+        )
+        self.assertEqual(
+            lightsaber_fixed,
+            {
+                "color": "green",
+                "target": {
+                    "name": ":luke-lightsaber",
+                    "path": b"/static/test/path",
+                },
+            },
+        )
         self.assertEqual(c.callsign, ("Red", 5))
         self.assertEqual(c.metadata, {"species": "human"})
         self.assertEqual(
@@ -77,7 +96,6 @@ class TestShape(unittest.TestCase):
         expected = {
             "name": str,
             "appears_in": Tuple[int, ...],
-            "lightsaber_color": Optional[str],
             "callsign": Optional[Tuple[str, int]],
             "metadata": Mapping[str, str],
         }
@@ -86,11 +104,21 @@ class TestShape(unittest.TestCase):
         )
 
     def test_instance_repr(self):
+        # The on-disk path for resolved targets will be different between
+        # environments, so we assign a static value so that we can compare
+        # the repr properly.
+        lightsaber_target_fixed = characters[0].lightsaber.target.copy(
+            update={"path": b"/static/test/path"}
+        )
+        lightsaber_fixed = characters[0].lightsaber.copy(
+            deep=True, update={"target": lightsaber_target_fixed}
+        )
+
         # Shapes don't have nice classnames, so the repr is customized to be
         # human-readable. While this has no functional impact on the code, it
         # is critical for usability, so ensure there are unit tests.
         self.assertEqual(
-            repr(characters[0]),
+            repr(characters[0].copy(update={"lightsaber": lightsaber_fixed})),
             "shape("
             "name='Luke Skywalker', "
             "appears_in=(4, 5, 6), "
@@ -101,7 +129,13 @@ class TestShape(unittest.TestCase):
                 "shape(name='C-3PO')"
             )
             + "), "
-            "lightsaber_color='green', "
+            "lightsaber=shape("
+            + (
+                "color='green', "
+                "target=Target("
+                "name=':luke-lightsaber', path=b'/static/test/path')"
+            )
+            + "), "
             "callsign=('Red', 5), "
             "metadata={'species': 'human'}, "
             "affiliations=shape(faction='Rebellion'), "
@@ -118,7 +152,7 @@ class TestShape(unittest.TestCase):
             "name=str, "
             "appears_in=Tuple[int, ...], "
             "friends=Tuple[shape(name=str), ...], "
-            "lightsaber_color=Optional[str], "
+            "lightsaber=Optional[shape(color=str, target=Optional[Target])], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
             "affiliations=shape(faction=str), "
@@ -154,7 +188,7 @@ class TestShape(unittest.TestCase):
             # Buck macros, and in the rare case that it's necessary, a dict
             # with the same fields works and is properly validated.
             friends=[{"name": "Yoda"}, {"name": "Padme Amidala"}],
-            lightsaber_color="blue",
+            lightsaber=character_t.types.lightsaber(color="blue"),
             affiliations=character_t.types.affiliations(faction="Jedi Temple"),
         )
         # subclass should still be immutable by default
@@ -169,7 +203,7 @@ class TestShape(unittest.TestCase):
             "name='Obi-Wan Kenobi', "
             "appears_in=(1, 2, 3, 4, 5, 6), "
             "friends=(shape(name='Yoda'), shape(name='Padme Amidala')), "
-            "lightsaber_color='blue', "
+            "lightsaber=shape(color='blue', target=None), "
             "callsign=None, "
             "metadata={'species': 'human'}, "
             "affiliations=shape(faction='Jedi Temple'), "
@@ -184,7 +218,7 @@ class TestShape(unittest.TestCase):
             "name=str, "
             "appears_in=Tuple[int, ...], "
             "friends=Tuple[shape(name=str), ...], "
-            "lightsaber_color=Optional[str], "
+            "lightsaber=Optional[shape(color=str, target=Optional[Target])], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
             "affiliations=shape(faction=str), "

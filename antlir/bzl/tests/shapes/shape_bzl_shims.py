@@ -45,6 +45,27 @@ def fail(msg, attr=None):
     raise Fail(msg)
 
 
+class target_utils(object):
+    @staticmethod
+    def parse_target(target):
+        if target.count(":") != 1:
+            fail(f'rule name must contain exactly one ":" "{target}"')
+
+        repo_base_path, name = target.split(":")
+        if not repo_base_path:
+            return (None, None, name)
+
+        if repo_base_path.count("//") != 1:
+            fail(
+                'absolute rule name must contain one "//" '
+                f'before ":": "{target}"'
+            )
+
+        repo, base_path = repo_base_path.split("//", 1)
+
+        return (repo, base_path, name)
+
+
 class structs(object):
     @staticmethod
     def is_struct(x):
