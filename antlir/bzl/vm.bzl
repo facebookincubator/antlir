@@ -67,7 +67,7 @@ def _create_vm_opts(
         ncpus = ncpus,
     )
 
-def _tags(unittest_rule, kwargs):
+def _build_test_tags(unittest_rule, tags):
     """
     Convert top-level 'tags' kwargs into separate tag sets for the outer and
     inner test rules.
@@ -75,7 +75,7 @@ def _tags(unittest_rule, kwargs):
     'tags' provided by a user are always applied to the outer test, so they
     control the behavior of TestPilot or to add information for 'buck query'.
     """
-    outer_tags = kwargs.get("tags", []) + ["vmtest"]
+    wrapper_tags = tags + ["vmtest"]
 
     # Make sure that the test runner ignores the underlying test, and only
     # looks at the version that runs in a VM.
@@ -85,57 +85,102 @@ def _tags(unittest_rule, kwargs):
     # change the runtime behavior of the outer test, as well as build-time
     # behavior of the inner target.
     if unittest_rule == python_unittest:
-        outer_tags.append("use-testpilot-adapter")
+        wrapper_tags.append("use-testpilot-adapter")
         inner_tags.append("use-testpilot-adapter")
     if unittest_rule == cpp_unittest:
-        outer_tags.append("tpx-test-type:vmtest_gtest")
+        wrapper_tags.append("tpx-test-type:vmtest_gtest")
 
-    return inner_tags, outer_tags
+    return inner_tags, wrapper_tags
 
-def _inner_test(
+def _vm_unittest(
         name,
         unittest_rule,
-        inner_tags,
+        kernel = None,
+        layer = None,
+        vm_opts = None,
+        visibility = None,
+        env = None,
+        # vmtest target graphs tend to be very deep, since they invoke multiple
+        # layers of images, kernel targets as well as the inner test target
+        # user-specified deps end up attached only to the inner test target,
+        # which frequently cause Sandcastle to skip running vmtest since the
+        # resulting outer test target (that actually runs a VM and the tests
+        # inside) is too far away from the user-given deps see D19499568 and
+        # linked discussions for more details
+        user_specified_deps = None,
         **kwargs):
-    inner_test_name = helpers.hidden_test_name(name)
+    # Set some defaults
+    env = env or {}
+    kernel = kernel or kernel_get.default
+    layer = layer or default_vm_image.layer
+    vm_opts = vm_opts or _create_vm_opts()
+
+    # Construct tags for controlling/influencing the unittest runner.
+    # Future: These tags are heavily FB specific and really have no place
+    # in the OSS side.  It would be nice if these weren't blindly applied.
+    actual_test_tags, wrapper_tags = _build_test_tags(unittest_rule, kwargs.pop("tags", []))
+
+    # Build the actual unit test binary/target here
+    actual_test_binary = helpers.hidden_test_name(name)
     unittest_rule(
-        name = inner_test_name,
-        tags = inner_tags,
+        name = actual_test_binary,
+        tags = actual_test_tags,
         visibility = [],
+        antlir_rule = "user-internal",
         **kwargs
     )
-    return inner_test_name
 
-def _outer_test(
-        name,
-        unittest_rule,
-        inner_test,
-        inner_test_package,
-        seed_device,
-        kernel,
-        visibility,
-        tags,
-        user_specified_deps,
-        env,
-        vm_opts):
-    visibility = get_visibility(visibility, name)
+    # Build an image layer + package containing the actual test binary
+    actual_test_layer = "{}--test-binary-layer".format(name)
+    actual_test_image = "{}=image.btrfs".format(actual_test_layer)
+    image.layer(
+        name = actual_test_layer,
+        features = [
+            image.install_buck_runnable(":" + actual_test_binary, "/test"),
+        ],
+    )
+    image.package(
+        name = actual_test_image,
+        layer = ":" + actual_test_layer,
+    )
 
-    if not env:
-        env = {}
+    # If the test is using the default rootfs layer, we can use the
+    # pre-packaged seed device and save lots of build time
+    # Otherwise we have to build a seed device using the layer
+    # the user provided
+    rootfs_seed_image = default_vm_image.package
+    if layer != default_vm_image.layer:
+        new_rootfs_layer = "{}--rootfs-layer".format(name)
 
+        image.layer(
+            name = new_rootfs_layer,
+            parent_layer = layer,
+        )
+        image.package(
+            name = "{}=seed.btrfs".format(name),
+            layer = ":" + new_rootfs_layer,
+            seed_device = True,
+            writable_subvolume = True,
+            visibility = [],
+            antlir_rule = "user-internal",
+        )
+        rootfs_seed_image = ":{}=seed.btrfs".format(name)
+
+    # Build the binary that serves as the entry point for executing the test
+    # inside of a VM
     python_binary(
-        name = "{}=runvm".format(name),
+        name = "{}--vmtest-binary".format(name),
         base_module = "antlir.vm",
         antlir_rule = "user-internal",
         main_module = "antlir.vm.vmtest",
         par_style = "xar",
         resources = {
-            seed_device: "image",
-            inner_test_package: "test.btrfs",
+            rootfs_seed_image: "image",
+            ":" + actual_test_image: "test.btrfs",
             # the inner_test here is used for discovery only, the actual test
             # binary is installed into the vm with
             # `image.install_buck_runnable`
-            inner_test: "test_discovery_binary",
+            ":" + actual_test_binary: "test_discovery_binary",
         },
         visibility = [],
         deps = [
@@ -186,7 +231,7 @@ mv "$TMP/out" "$OUT"
                 shell.quote("$(location {})".format(kernel.devel)),
             ) if vm_opts.devel else "",
             ncpus = "--ncpus={}".format(vm_opts.ncpus),
-            vm_binary_target = ":{}=runvm".format(name),
+            vm_binary_target = ":{}--vmtest-binary".format(name),
         ),
         cacheable = False,
         executable = True,
@@ -194,109 +239,28 @@ mv "$TMP/out" "$OUT"
         antlir_rule = "user-internal",
     )
 
-    # building a buck_sh_test with a specific type lets us trick TestPilot into
-    # thinking that it is running a unit test of the specific type directly,
-    # when in reality vmtest.par will transparently run the binary in a VM
-    # buck will write the given type into the external_runner_spec.json that is
-    # given to TestPilot
+    # Building buck_sh_test with a specific type to trick TestPilot into
+    # thinking that it is running a unit test of the specific type directly.
+    # In reality {}--vmtest-binary will transparently run the binary in a VM
+    # and buck will write the given type into the external_runner_spec.json that
+    # is given to TestPilot
     buck_sh_test(
         name = name,
-        labels = tags,
+        labels = wrapper_tags,
         test = ":{}=vmtest".format(name),
         type = _RULE_TO_TEST_TYPE[unittest_rule],
         visibility = visibility,
-        # Although the outer test doesn't actually need these dependencies,
+        # Although the wrapper test doesn't actually need these dependencies,
         # we add this to reduce the dependency distance from outer test target
         # to the libraries that the inner test target depends on. Reducing the
         # dependency distance maximizes the chances that CI will kick off the
-        # outer test target when deps change. See D19499568 and linked
-        # discussions for more details.
+        # outer test target when deps change.
         deps = user_specified_deps,
         # TPX is unaware of the inner test binary, so it must be informed of
         # its location for things that need to inspect the actual inner test
         # binary, like llvm-cov
-        env = {"BUCK_BASE_BINARY": "$(location {})".format(inner_test)},
+        env = {"BUCK_BASE_BINARY": "$(location :{})".format(actual_test_binary)},
         antlir_rule = "user-facing",
-    )
-
-def _vm_unittest(
-        name,
-        unittest_rule,
-        kernel = None,
-        layer = None,
-        vm_opts = None,
-        visibility = None,
-        env = None,
-        # vmtest target graphs tend to be very deep, since they invoke multiple
-        # layers of images, kernel targets as well as the inner test target
-        # user-specified deps end up attached only to the inner test target,
-        # which frequently cause Sandcastle to skip running vmtest since the
-        # resulting outer test target (that actually runs a VM and the tests
-        # inside) is too far away from the user-given deps see D19499568 and
-        # linked discussions for more details
-        user_specified_deps = None,
-        **kwargs):
-    inner_tags, outer_tags = _tags(unittest_rule, kwargs)
-    kwargs.pop("tags", None)
-
-    inner_test = _inner_test(
-        name,
-        unittest_rule,
-        inner_tags,
-        antlir_rule = "user-internal",
-        **kwargs
-    )
-
-    kernel = kernel or kernel_get.default
-    layer = layer or default_vm_image.layer
-    vm_opts = vm_opts or _create_vm_opts()
-
-    # Create an image layer and package that contains the test binary. This package
-    # will be used as a device for the VM and mounted at `/vmtest`
-    image.layer(
-        name = "{}_test_layer".format(name),
-        features = [
-            image.install_buck_runnable(":" + inner_test, "/test"),
-        ],
-    )
-    image.package(
-        name = "{}=test.btrfs".format(name),
-        layer = ":{}_test_layer".format(name),
-    )
-
-    # If the test is using the default rootfs layer, we can use the
-    # pre-packaged seed device and save lots of build time
-    seed_device = default_vm_image.package
-    if layer != default_vm_image.layer:
-        image.layer(
-            name = "{}-image".format(name),
-            parent_layer = layer,
-        )
-        layer = ":{}-image".format(name)
-
-        seed_device = "{}=seed.btrfs".format(name)
-        image.package(
-            name = seed_device,
-            layer = ":{}-image".format(name),
-            seed_device = True,
-            writable_subvolume = True,
-            visibility = [],
-            antlir_rule = "user-internal",
-        )
-        seed_device = ":" + seed_device
-
-    _outer_test(
-        name,
-        env = env or {},
-        inner_test = ":" + inner_test,
-        inner_test_package = ":{}=test.btrfs".format(name),
-        kernel = kernel,
-        seed_device = seed_device,
-        tags = outer_tags,
-        unittest_rule = unittest_rule,
-        user_specified_deps = user_specified_deps,
-        visibility = visibility,
-        vm_opts = vm_opts,
     )
 
 def _vm_cpp_unittest(
