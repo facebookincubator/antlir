@@ -104,7 +104,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":oss_shim.bzl", "buck_genrule", "python_library", "third_party")
+load(":oss_shim.bzl", "buck_genrule", "python_library", "target_utils", "third_party")
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
@@ -170,6 +170,14 @@ def _check_type(x, t):
         return "expected str, got {}".format(x)
     if t == "Path":
         return _check_type(x, str)
+    if t == "Target":
+        type_error = _check_type(x, str)
+        if not type_error:
+            # If parsing the target works, we don't have an error
+            if target_utils.parse_target(x):
+                return None
+        else:
+            return type_error
     if _is_field(t):
         if t.optional and type(x) == type(None):
             return None
@@ -310,6 +318,12 @@ def _is_collection(x):
 def _path(**field_kwargs):
     return _field(type = "Path", **field_kwargs)
 
+# A target is special kind of Path in that it will be resolved to an on-disk location
+# when the shape is rendered to json.  But when the shape instance is being
+# used in bzl macros, the field will be a valid buck target.
+def _target(**field_kwargs):
+    return _field(type = "Target", **field_kwargs)
+
 def _shape(**fields):
     for name, f in fields.items():
         # transparently convert fields that are just a type have no options to
@@ -370,7 +384,7 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
     )
     return normalize_target(":" + name)
 
-def _python_data(name, shape, shape_t, module = None, **python_library_kwargs):  # pragma: no cover
+def _python_data(name, instance, shape, module = None, **python_library_kwargs):  # pragma: no cover
     """Codegen a static shape data structure that can be directly 'import'ed by
     Python. The object is available under the name "data". A common use case is
     to call shape.python_data inline in a target's `deps`, with `module`
@@ -384,11 +398,11 @@ def _python_data(name, shape, shape_t, module = None, **python_library_kwargs): 
             deps = [
                 shape.python_data(
                     name = "bin_bzl_args",
-                    shape = shape.new(
+                    instance = shape.new(
                         some_shape_t,
                         var = input_var,
                     ),
-                    shape_t = some_shape_t,
+                    shape = some_shape_t,
                 ),
             ],
             ...
@@ -399,8 +413,8 @@ def _python_data(name, shape, shape_t, module = None, **python_library_kwargs): 
         from .bin_bzl_args import data
     """
     python_src = "from typing import *\nfrom antlir.shape import *\n"
-    python_src += "\n".join(_codegen_shape(shape_t, "shape"))
-    python_src += "\ndata = shape.parse_raw('{}')".format(shape.to_json())
+    python_src += "\n".join(_codegen_shape(shape, "shape"))
+    python_src += "\ndata = shape.parse_raw('{}')".format(_translate_targets(instance, shape).to_json())
 
     if not module:
         module = name
@@ -427,11 +441,54 @@ def _python_data(name, shape, shape_t, module = None, **python_library_kwargs): 
     )
     return normalize_target(":" + name)
 
-def _json_file(name, shape):  # pragma: no cover
+# This will traverse all of the elements of the provided shape instance looking for
+# fields that are of type `Target` and then replace the value with a struct that
+# has the target name and it's on-disk path generated via a `$(location )` macro.
+#
+# Note: This is not covered by the python unittest coverage metric because the only
+# two callsites are also not covered.  However, this is excersized by the tests
+# via the actual shape types being built, loaded, and tested.
+def _translate_targets(val, t):  # pragma: no cover
+    if _is_shape(t):
+        new = {}
+        for name, field in t.fields.items():
+            new[name] = _translate_targets(getattr(val, name, None), field)
+        return struct(**new)
+    elif _is_field(t):
+        if t.optional and type(val) == type(None):
+            return None
+        return _translate_targets(val, t.type)
+    elif _is_collection(t):
+        if t.collection == dict:
+            return {
+                k: _translate_targets(v, t.item_type)
+                for k, v in val.items()
+            }
+        elif t.collection == list or t.collection == tuple:
+            return [
+                _translate_targets(v, t.item_type)
+                for v in val
+            ]
+        else:
+            return None
+    elif t == "Target":
+        return struct(
+            name = val,
+            path = "$(location {})".format(val),
+        )
+    else:
+        return val
+
+def _json_file(name, instance, shape):  # pragma: no cover
+    instance = _translate_targets(instance, shape)
+
     buck_genrule(
         name = name,
         out = "out.json",
-        cmd = "echo {} > $OUT".format(shell.quote(shape.to_json())),
+        cmd = "echo {} > $OUT".format(shell.quote(instance.to_json())),
+        # The shape output cannot be cacheable because it may contain
+        # the on-disk path of target via $(location ).
+        cacheable = False,
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
@@ -446,6 +503,7 @@ shape = struct(
     list = _list,
     tuple = _tuple,
     path = _path,
+    target = _target,
     loader = _loader,
     json_file = _json_file,
     python_data = _python_data,

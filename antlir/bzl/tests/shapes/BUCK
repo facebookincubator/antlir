@@ -7,6 +7,12 @@ load("//antlir/bzl:shape.bzl", "shape")
 
 affiliations_t = shape.shape(faction = str)
 
+# A shape that references buck targets
+lightsaber_t = shape.shape(
+    color = str,
+    target = shape.target(optional = True),
+)
+
 # Test data adapted from the GraphQL Star Wars examples
 character_t = shape.shape(
     name = str,
@@ -14,8 +20,8 @@ character_t = shape.shape(
     friends = shape.list(shape.shape(
         name = str,
     )),
-    lightsaber_color = shape.field(
-        str,
+    lightsaber = shape.field(
+        lightsaber_t,
         optional = True,
     ),
     callsign = shape.tuple(
@@ -53,6 +59,20 @@ hashable_t = shape.shape(
     ),
 )
 
+buck_genrule(
+    name = "luke-lightsaber",
+    out = "out",
+    bash = "echo 'luke-lightsaber' > $OUT",
+    visibility = [],
+)
+
+buck_genrule(
+    name = "vader-lightsaber",
+    out = "out",
+    bash = "echo 'vader-lightsaber' > $OUT",
+    visibility = [],
+)
+
 characters = [
     shape.new(
         character_t,
@@ -76,7 +96,11 @@ characters = [
                 name = "C-3PO",
             ),
         ],
-        lightsaber_color = "green",
+        lightsaber = shape.new(
+            lightsaber_t,
+            color = "green",
+            target = ":luke-lightsaber",
+        ),
         callsign = ("Red", 5),
         affiliations = shape.new(
             affiliations_t,
@@ -93,7 +117,11 @@ characters = [
             6,
         ],
         friends = [],
-        lightsaber_color = "red",
+        lightsaber = shape.new(
+            lightsaber_t,
+            color = "red",
+            target = ":vader-lightsaber",
+        ),
         affiliations = shape.new(
             affiliations_t,
             faction = "Empire",
@@ -137,7 +165,8 @@ python_unittest(
     resources = {
         shape.json_file(
             name = "characters.json",
-            shape = shape.new(
+            shape = character_collection_t,
+            instance = shape.new(
                 character_collection_t,
                 characters = characters,
             ),
@@ -147,9 +176,9 @@ python_unittest(
         ":hashable_t",
         shape.python_data(
             name = "luke",
-            shape = characters[0],
+            instance = characters[0],
             module = "luke",
-            shape_t = character_t,
+            shape = character_t,
         ),
         shape.loader(
             name = "loader",

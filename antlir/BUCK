@@ -429,7 +429,8 @@ shape.loader(
     resources = {
         shape.json_file(
             name = "config.json",
-            shape = REPO_CFG,
+            instance = REPO_CFG,
+            shape = repo_config_t,
         ): "config.json",
     },
 )

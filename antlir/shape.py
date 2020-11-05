@@ -90,3 +90,10 @@ class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
             f"{key}={repr(getattr(self, key))}" for key in self.__fields__
         )
         return f"shape({fields})"
+
+
+# A Target is special mapping of a buck target name -> on disk path to the
+# constructed artifact
+class Target(Shape):
+    name: str
+    path: Path
