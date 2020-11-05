@@ -213,7 +213,7 @@ async def main(
                     # host, so as another sanity check only create the
                     # directories in the VM that already exist on the host
                     if dirname and os.path.exists(dirname):
-                        instance.run(("mkdir", "-p", dirname))
+                        await instance.exec_sync(("mkdir", "-p", dirname))
                         file_arguments.append(arg)
 
                 # The behavior of the FB-internal Python test main changes
@@ -225,7 +225,7 @@ async def main(
 
                 cmd = ["/vmtest/test"] + list(args)
                 logger.debug(f"executing {cmd} inside guest")
-                returncode, stdout, stderr = instance.run(
+                returncode, stdout, stderr = await instance.run(
                     cmd=cmd,
                     # a certain amount of the total timeout is allocated for
                     # the host to boot, subtract the amount of time it actually
@@ -269,7 +269,7 @@ async def main(
                     # host so that TestPilot can read from where it expects
                     # outputs to end up
                     try:
-                        outfile_contents = instance.cat_file(str(path))
+                        outfile_contents = await instance.cat_file(str(path))
                         with open(path, "wb") as out:
                             out.write(outfile_contents)
                     except Exception as e:
