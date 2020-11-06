@@ -1,4 +1,5 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
+load("//antlir/vm/kernel:defs.bzl", "kernel_artifact_layers")
 
 http_file(
     name = "5.3.7-301.fc31.x86_64-core.rpm",
@@ -42,14 +43,9 @@ buck_genrule(
     cmd = "cp --reflink=auto $(location :5.3.7-301.fc31.x86_64-rpm-exploded)/lib/modules/5.3.7-301.fc31.x86_64/vmlinuz $OUT",
 )
 
-# this is all the modules that the kernel could possibly need. they are
-# copied into the initrd so that they don't have to be installed in the
-# root disk
-buck_genrule(
-    name = "5.3.7-301.fc31.x86_64-modules",
-    out = ".",
-    cmd = """
-        mkdir -p $OUT
-        cp -R "$(location :5.3.7-301.fc31.x86_64-rpm-exploded)/lib/modules/5.3.7-301.fc31.x86_64/kernel" "$OUT"
-    """,
+kernel_artifact_layers(
+    devel_rpm = ":5.3.7-301.fc31.x86_64-devel.rpm",
+    include_vmlinux = False,
+    rpm_exploded = ":5.3.7-301.fc31.x86_64-rpm-exploded",
+    uname = "5.3.7-301.fc31.x86_64",
 )
