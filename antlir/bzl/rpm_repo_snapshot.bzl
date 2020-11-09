@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl/foreign/yum_dnf_cache:yum_dnf_cache.bzl", "image_yum_dnf_make_snapshot_cache")
 load("//antlir/bzl/image_actions:install.bzl", "image_install")
@@ -8,7 +9,7 @@ load("//antlir/bzl/image_actions:symlink.bzl", "image_symlink_dir")
 load(":image_layer.bzl", "image_layer")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
-load(":snapshot_install_dir.bzl", "RPM_SNAPSHOT_BASE_DIR", "snapshot_install_dir")
+load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "RPM_SNAPSHOT_BASE_DIR", "snapshot_install_dir")
 load(":wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 
 def _yum_or_dnf_wrapper(yum_or_dnf, snapshot_name):
@@ -212,9 +213,14 @@ echo {quoted_storage_cfg} > "$OUT"/snapshot/storage.json
 
 # Future: Once we have `ensure_dir_exists`, this can be implicit.
 def set_up_rpm_repo_snapshots():
+    # This will fail loudly if the two constants stop being siblings.
+    defaults_dir = paths.relativize(
+        RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
+        paths.dirname(RPM_SNAPSHOT_BASE_DIR),
+    )
     return [
         image_mkdir("/", RPM_SNAPSHOT_BASE_DIR),
-        image_mkdir("/__antlir__/rpm", "default-snapshot-for-installer"),
+        image_mkdir("/__antlir__/rpm", defaults_dir),
     ]
 
 def install_rpm_repo_snapshot(snapshot):
@@ -236,8 +242,7 @@ def default_rpm_repo_snapshot_for(prog, snapshot):
     have been installed by `install_rpm_repo_snapshot()`.
     """
 
-    # Keep in sync with `fs_utils.py` and `set_up_rpm_repo_snapshots()`
-    link_name = "__antlir__/rpm/default-snapshot-for-installer/" + prog
+    link_name = RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR + "/" + prog
     return [
         # Silently replace the parent's default because there's not an
         # obvious scenario in which this is an error, and so forcing the

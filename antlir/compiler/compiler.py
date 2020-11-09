@@ -80,8 +80,8 @@ def parse_args(args) -> argparse.Namespace:
         "--rpm-repo-snapshot",
         type=Path.from_argparse,
         help="Path to snapshot directory in the build appliance image. "
-        "The default is the BA symlink `/__antlir__/rpm/"
-        "default-snapshot-for-installer/<--rpm-installer>`.",
+        "The default is the BA symlink for `--rpm-installer` under "
+        "`RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR`.",
     )
     parser.add_argument(
         "--artifacts-may-require-repo",

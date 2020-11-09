@@ -1,13 +1,18 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":target_helpers.bzl", "mangle_target")
 
+ANTLIR_DIR = "/__antlir__"
+
 # KEEP IN SYNC with its copy in `rpm/find_snapshot.py`
-RPM_SNAPSHOT_BASE_DIR = "__antlir__/rpm/repo-snapshot"
+RPM_SNAPSHOT_BASE_DIR = "/__antlir__/rpm/repo-snapshot"
+
+# KEEP IN SYNC with the copy in `fs_utils.py`
+RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR = "/__antlir__/rpm/default-snapshot-for-installer"
 
 # Here are the ways to specify a snapshot:
 #
 #  - An /__antlir__ path that's valid in the container.  This is mainly used
-#    like so: `/__antlir__/rpm/default-snapshot-for-installer/...`.
+#    like so: `RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR + "/prog"`.
 #
 #  - A Buck target path.  But, it is **not** used to depend on a Buck
 #    target.  A target may not even exist in the current repo at this path.
@@ -19,7 +24,7 @@ RPM_SNAPSHOT_BASE_DIR = "__antlir__/rpm/repo-snapshot"
 # KEEP THE `mangle_target` PART IN SYNC with its copy in `rpm/find_snapshot.py`
 def snapshot_install_dir(snapshot):
     if ":" in snapshot:
-        return paths.join("/", RPM_SNAPSHOT_BASE_DIR, mangle_target(snapshot))
+        return paths.join(RPM_SNAPSHOT_BASE_DIR, mangle_target(snapshot))
     if snapshot.startswith("/__antlir__/rpm/"):
         return snapshot
     fail("Bad RPM snapshot; see `snapshot_install_dir`: {}".format(snapshot))
