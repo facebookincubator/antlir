@@ -15,7 +15,7 @@ python_unittest(
     name = "test-kernel-panic",
     srcs = ["test_kernel_panic.py"],
     resources = {
-        ":create-kernel-panic--vmtest-binary": "vmtest",
+        ":create-kernel-panic=vmtest": "vmtest",
     },
     deps = [
         "//antlir:fs_utils",
