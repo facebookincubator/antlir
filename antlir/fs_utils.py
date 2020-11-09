@@ -328,7 +328,7 @@ class Path(bytes):
 # not a protected file.
 META_DIR = Path(".meta/")
 
-# Keep in sync with `rpm_repo_snapshot.bzl`
+# Keep in sync with `snapshot_install_dir.bzl`
 RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR = Path(
     "/__antlir__/rpm/default-snapshot-for-installer/"
 )
