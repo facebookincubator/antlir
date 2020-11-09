@@ -1,6 +1,8 @@
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_unittest")
 load("//antlir/bzl:vm.bzl", "vm")
+load("//antlir/vm:kernel.bzl", "make_kernel_artifacts")
 
 # Don't run this test directly, it should only be used within the
 # `kernel_panic_test`.
@@ -54,4 +56,45 @@ vm.python_unittest(
     vm_opts = vm.opts(
         devel = True,
     ),
+)
+
+KERNEL_ARTIFACTS = [
+    "devel",
+    "modules",
+    "vmlinuz",
+]
+
+[
+    buck_genrule(
+        name = "0.01-{}-data".format(artifact),
+        out = "out",
+        cmd = "echo {} > $OUT".format(artifact),
+        visibility = [],
+    )
+    for artifact in KERNEL_ARTIFACTS
+]
+
+[
+    image.layer(
+        name = "0.01-{}".format(artifact),
+        features = [
+            image.install(
+                ":0.01-{}-data".format(artifact),
+                "/data",
+            ),
+        ],
+        visibility = [],
+    )
+    for artifact in KERNEL_ARTIFACTS
+]
+
+python_unittest(
+    name = "test-kernel-artifacts",
+    srcs = ["test_kernel_artifacts.py"],
+    resources = {
+        make_kernel_artifacts("0.01"): "kernel-artifacts",
+    },
+    deps = [
+        "//antlir/vm:kernel_artifacts_t",
+    ],
 )
