@@ -174,14 +174,6 @@ def _vm_unittest(
         antlir_rule = "user-internal",
         main_module = "antlir.vm.vmtest",
         par_style = "xar",
-        resources = {
-            rootfs_seed_image: "image",
-            ":" + actual_test_image: "test.btrfs",
-            # the inner_test here is used for discovery only, the actual test
-            # binary is installed into the vm with
-            # `image.install_buck_runnable`
-            ":" + actual_test_binary: "test_discovery_binary",
-        },
         visibility = [],
         deps = [
             "//antlir/vm:vmtest",
@@ -203,19 +195,31 @@ cat > "$TMP/out" << 'EOF'
 #!/bin/sh
 set -ue -o pipefail -o noclobber
 exec $(exe {vm_binary_target}) \
-  {setenv_quoted} \
-  {ncpus} \
-  {uname_quoted} \
+  --rootfs-image $(location {rootfs_image_quoted}) \
+  --test-binary $(location {test_binary_quoted}) \
+  --test-binary-image $(location {test_binary_image_quoted}) \
+  --ncpus {ncpus} \
+  --uname {uname_quoted} \
   {maybe_devel_layer_quoted} \
+  {maybe_setenv_quoted} \
   "$@"
 EOF
 chmod +x "$TMP/out"
 mv "$TMP/out" "$OUT"
         """.format(
+            ncpus = vm_opts.ncpus,
+            rootfs_image_quoted = shell.quote(rootfs_seed_image),
+            test_binary_quoted = shell.quote(":" + actual_test_binary),
+            test_binary_image_quoted = shell.quote(":" + actual_test_image),
+            uname_quoted = shell.quote(kernel.uname),
+            vm_binary_target = ":{}--vmtest-binary".format(name),
+            maybe_devel_layer_quoted = "--devel-layer={}".format(
+                shell.quote("$(location {})".format(kernel.devel)),
+            ) if vm_opts.devel else "",
             # Manually extract any environment variables set and format
             # them into `--setenv NAME=VALUE`. THese are passed during the call to
             # vmtest which will forward them inside the vm for the inner test.
-            setenv_quoted = " ".join([
+            maybe_setenv_quoted = " ".join([
                 "--setenv={}".format(
                     shell.quote(
                         "{}={}".format(
@@ -226,12 +230,6 @@ mv "$TMP/out" "$OUT"
                 )
                 for var_name, var_value in env.items()
             ]),
-            uname_quoted = "--uname={}".format(shell.quote(kernel.uname)),
-            maybe_devel_layer_quoted = "--devel-layer={}".format(
-                shell.quote("$(location {})".format(kernel.devel)),
-            ) if vm_opts.devel else "",
-            ncpus = "--ncpus={}".format(vm_opts.ncpus),
-            vm_binary_target = ":{}--vmtest-binary".format(name),
         ),
         cacheable = False,
         executable = True,
