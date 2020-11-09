@@ -81,6 +81,57 @@ def _new_vm_opts(**kwargs):
         **kwargs
     )
 
+def _build_run_target(
+        # The name of the runnable target
+        name,
+        # A list of additional cli args to pass to the provided exe_target.
+        # This is passed directly to the `exe_target` so they should already be
+        # properly formatted.
+        args = None,
+        # The exe target to execute.
+        exe_target = None,
+        # A target for the image package to use as the rootfs.
+        rootfs = None,
+        # An instance of a vm_opts_t shape.
+        vm_opts = None):
+    # Set defaults
+    vm_opts = vm_opts or _new_vm_opts()
+
+    buck_genrule(
+        name = name,
+        out = "run",
+        bash = """
+cat > "$TMP/out" << 'EOF'
+#!/bin/sh
+set -ue -o pipefail -o noclobber
+exec $(exe {exe_target}) \
+--opts $(location {opts_quoted}) \
+--rootfs-image $(location {rootfs_quoted}) \
+{extra_args} \
+"$@"
+EOF
+chmod +x "$TMP/out"
+mv "$TMP/out" "$OUT"
+        """.format(
+            exe_target = exe_target,
+            extra_args = " ".join(args) if args else "",
+            opts_quoted = shell.quote(
+                shape.json_file(
+                    name = "{}--vm-opts.json".format(name),
+                    instance = vm_opts,
+                    shape = vm_opts_t,
+                ),
+            ),
+            rootfs_quoted = shell.quote(rootfs),
+        ),
+        cacheable = False,
+        executable = True,
+        visibility = [],
+        antlir_rule = "user-internal",
+    )
+
+    return name
+
 def _build_test_tags(unittest_rule, tags):
     """
     Convert top-level 'tags' kwargs into separate tag sets for the outer and
@@ -195,69 +246,35 @@ def _vm_unittest(
         ],
     )
 
-    # Build an executable script that collects all the options passed to the
-    # vmtest binary.  This provides a way to manually execute the vmtest script
-    # that is invoked by the test runner directly.
-    # Future: Expand this to provide support for other executable entry points
-    #         for running vms.  ie: as something like a -run-vm target for a
-    #         kernel or an image.
-    buck_genrule(
+    run_target = _build_run_target(
         name = "{}=vmtest".format(name),
-        out = "run",
-        bash = """
-cat > "$TMP/out" << 'EOF'
-#!/bin/sh
-set -ue -o pipefail -o noclobber
-exec $(exe {vm_binary_target}) \
-  --opts $(location {vm_opts_quoted}) \
-  --rootfs-image $(location {rootfs_image_quoted}) \
-  --test-binary $(location {test_binary_quoted}) \
-  --test-binary-image $(location {test_binary_image_quoted}) \
-  --uname {uname_quoted} \
-  {maybe_devel_layer_quoted} \
-  {maybe_setenv_quoted} \
-  "$@"
-EOF
-chmod +x "$TMP/out"
-mv "$TMP/out" "$OUT"
-        """.format(
-            rootfs_image_quoted = shell.quote(rootfs_seed_image),
-            test_binary_quoted = shell.quote(":" + actual_test_binary),
-            test_binary_image_quoted = shell.quote(":" + actual_test_image),
-            uname_quoted = shell.quote(kernel.uname),
-            vm_binary_target = ":{}--vmtest-binary".format(name),
-            vm_opts_quoted = shell.quote(
-                shape.json_file(
-                    name = "{}--vm-opts.json".format(name),
-                    instance = vm_opts,
-                    shape = vm_opts_t,
-                ),
-            ),
-            # Future: This devel layer is just another mount to configure the VM with.
-            # it's not special except that we don't hvae clean abstraction (yet) to
-            # provide aribtrary mounts that should be setup by the VM.
-            maybe_devel_layer_quoted = "--devel-layer={}".format(
-                shell.quote("$(location {})".format(kernel.devel)),
-            ) if vm_opts.devel else "",
+        args = [
+            "--test-binary $(location {})".format(shell.quote(":" + actual_test_binary)),
+            "--test-binary-image $(location {})".format(shell.quote(":" + actual_test_image)),
+        ] + [
             # Manually extract any environment variables set and format
             # them into `--setenv NAME=VALUE`. THese are passed during the call to
             # vmtest which will forward them inside the vm for the inner test.
-            maybe_setenv_quoted = " ".join([
-                "--setenv={}".format(
-                    shell.quote(
-                        "{}={}".format(
-                            var_name,
-                            var_value,
-                        ),
+            "--setenv={}".format(
+                shell.quote(
+                    "{}={}".format(
+                        var_name,
+                        var_value,
                     ),
-                )
-                for var_name, var_value in env.items()
-            ]),
-        ),
-        cacheable = False,
-        executable = True,
-        visibility = [],
-        antlir_rule = "user-internal",
+                ),
+            )
+            for var_name, var_value in env.items()
+        ] + ([
+            # Future: This devel layer is just another mount to configure the VM with.
+            # it's not special except that we don't hvae clean abstraction (yet) to
+            # provide aribtrary mounts that should be setup by the VM.
+            "--devel-layer $(location {})".format(shell.quote(kernel.devel)),
+            # We need the uname to mount the --devel-layer in the right place
+            "--uname {}".format(shell.quote(kernel.uname)),
+        ] if vm_opts.devel else []),
+        exe_target = ":{}--vmtest-binary".format(name),
+        rootfs = rootfs_seed_image,
+        vm_opts = vm_opts,
     )
 
     # Building buck_sh_test with a specific type to trick TestPilot into
@@ -268,7 +285,7 @@ mv "$TMP/out" "$OUT"
     buck_sh_test(
         name = name,
         labels = wrapper_tags,
-        test = ":{}=vmtest".format(name),
+        test = ":" + run_target,
         type = _RULE_TO_TEST_TYPE[unittest_rule],
         visibility = visibility,
         # Although the wrapper test doesn't actually need these dependencies,
@@ -378,4 +395,5 @@ vm = struct(
     ),
     python_unittest = _vm_python_unittest,
     opts = _new_vm_opts,
+    run = _build_run_target,
 )

@@ -2,6 +2,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "default_vm_image", "python_binary", "python_library", "third_party")
+load("//antlir/bzl:vm.bzl", "vm")
 
 def create_kernel_vm_targets(kernel):
     """
@@ -11,7 +12,7 @@ def create_kernel_vm_targets(kernel):
 
     # This wraps up the necessary kernel artifacts into a python library
     # that is imported into `antlir.vm`.
-    # Future: replace with a kernel_t shape.
+    # Future: replace with a kernel_artifacts_t shape.
     python_library(
         name = "{}-vm".format(kernel.uname),
         antlir_rule = "user-internal",
@@ -24,10 +25,7 @@ def create_kernel_vm_targets(kernel):
     )
 
     python_binary(
-        name = kernel.uname,
-        # Needed so that we can properly find the image resource that is
-        # bundled with the binary.
-        base_module = "antlir.vm",
+        name = "{}-run".format(kernel.uname),
         main_module = "antlir.vm.run",
         par_style = "xar",
         resources = {
@@ -36,8 +34,15 @@ def create_kernel_vm_targets(kernel):
         deps = [
             ":{}-vm".format(kernel.uname),
             "//antlir/vm:run",
-            third_party.library("click", platform = "python"),
         ],
+        visibility = [],
+    )
+
+    # build runnable target
+    vm.run(
+        name = kernel.uname,
+        exe_target = ":{}-run".format(kernel.uname),
+        rootfs = default_vm_image.package,
     )
 
 def kernel_artifact_layers(uname, devel_rpm, rpm_exploded, extra_modules = None, include_vmlinux = True):

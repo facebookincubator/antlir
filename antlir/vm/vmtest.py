@@ -62,16 +62,16 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     "to be run in-place.",
 )
 @click.option(
-    "--rootfs-image",
-    type=Path,
-    help="Path to a btrfs seed device to use as the rootfs image for the VM",
-    required=True,
-)
-@click.option(
     "--opts",
     type=vm_opts_t.load,
     help="Path to a serialized vm_opts_t instance containing configuration "
     "details for the vm.",
+    required=True,
+)
+@click.option(
+    "--rootfs-image",
+    type=Path,
+    help="Path to a btrfs seed device to use as the rootfs image for the VM",
     required=True,
 )
 # These two options are here to provide support for mounting the devel/headers
@@ -151,8 +151,8 @@ async def main(
     timeout: int,
     quiet: bool,
     # devel options
-    devel_layer: Path,
-    uname: str,
+    devel_layer: Path = None,
+    uname: str = None,
 ) -> None:
     h = logging.StreamHandler()
     h.setFormatter(
