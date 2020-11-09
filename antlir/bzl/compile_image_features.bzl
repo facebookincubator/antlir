@@ -1,66 +1,9 @@
 # Implementation detail for `image_layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl/image_actions:feature.bzl", "normalize_features")
-load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
-load(":snapshot_install_dir.bzl", "snapshot_install_dir")
-load(":structs.bzl", "structs")
+load(":build_opts.bzl", "normalize_build_opts")
+load(":constants.bzl", "REPO_CFG")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
-
-def _build_opts(
-        # The name of the btrfs subvolume to create.
-        subvol_name = "volume",
-        # Path to a layer target of a build appliance, containing an
-        # installed `rpm_repo_snapshot()`, plus an OS image with other
-        # image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
-        build_appliance = REPO_CFG.build_appliance_default,
-        # A "version set" name, see `bzl/constants.bzl`.
-        # Currently used for RPM version locking.
-        #
-        # Future: refer to the OSS "version selection" doc once ready.
-        version_set = REPO_CFG.version_set_default,
-        # The build appliance currently does not set a default package
-        # manager -- in non-default settings, this has to be chosen per
-        # image, since a BA can support multiple package managers.  In the
-        # future, if specifying a non-default installer per image proves
-        # onerous when using non-default BAs, we could support a `default`
-        # symlink under `default-snapshot-for-installer`.
-        rpm_installer = REPO_CFG.rpm_installer_default,
-        # List of target or /__antlir__ paths, see `snapshot_install_dir` doc.
-        #
-        # `None` uses the default determined by looking up `rpm_installer`
-        # in `/__antlir__/rpm/repo-snapshot/default-snapshot-for-installer`.
-        rpm_repo_snapshot = None):
-    if build_appliance == None:
-        fail(
-            "Must be a target path, or a value from `constants.bzl`",
-            "build_appliance",
-        )
-
-    if rpm_installer != "yum" and rpm_installer != "dnf":
-        fail("Unsupported rpm_installer supplied in build_opts")
-
-    # When building the BA itself, we need this constant to avoid a circular
-    # dependency.
-    #
-    # This feature is exposed a non-`None` magic constant so that callers
-    # cannot get confused whether `None` refers to "no BA" or "default BA".
-    if build_appliance == DO_NOT_USE_BUILD_APPLIANCE:
-        build_appliance = None
-
-    if version_set not in REPO_CFG.version_set_to_path:
-        fail(
-            "Must be in {}".format(list(REPO_CFG.version_set_to_path)),
-            "version_set",
-        )
-    return struct(
-        build_appliance = build_appliance,
-        version_set = version_set,
-        rpm_installer = rpm_installer,
-        rpm_repo_snapshot = (
-            snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else None
-        ),
-        subvol_name = subvol_name,
-    )
 
 def _query_set(target_paths):
     'Returns `set("//foo:target1" "//bar:target2")` for use in Buck queries.'
@@ -80,7 +23,7 @@ def compile_image_features(
     if features == None:
         features = []
 
-    build_opts = _build_opts(**(structs.to_dict(build_opts) if build_opts else {}))
+    build_opts = normalize_build_opts(build_opts)
     target_tagger = new_target_tagger()
     normalized_features = normalize_features(
         features + (
