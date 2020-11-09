@@ -97,7 +97,7 @@ from configparser import ConfigParser
 from contextlib import contextmanager, nullcontext
 from typing import Iterable, List, Mapping, Optional
 
-from antlir.common import get_logger, init_logging
+from antlir.common import add_antlir_debug_arg, get_logger, init_logging
 from antlir.fs_utils import META_DIR, Path, temp_dir
 from antlir.nspawn_in_subvol.plugins.shadow_paths import SHADOWED_PATHS_ROOT
 
@@ -753,12 +753,6 @@ if __name__ == "__main__":  # pragma: no cover
         "`--installroot`. The path must already exist. There are some "
         "internal defaults that cannot be un-protected. May be repeated.",
     )
-    main_parser.add_argument(
-        "--debug",
-        action="store_true",
-        default=bool(os.environ.get("ANTLIR_DEBUG")),
-        help="Log more -- also enabled via the ANTLIR_DEBUG env var",
-    )
     main_parser.add_argument("yum_dnf", type=YumDnf, help="yum or dnf")
     main_parser.add_argument(
         "args",
@@ -770,8 +764,9 @@ if __name__ == "__main__":  # pragma: no cover
         "host system) -- this tool implements protections, but it "
         "may not be foolproof.",
     )
-    args = main_parser.parse_args()
 
+    add_antlir_debug_arg(main_parser)
+    args = Path.parse_args(main_parser, sys.argv[1:])
     init_logging(debug=args.debug)
 
     try:

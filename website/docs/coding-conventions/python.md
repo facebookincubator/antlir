@@ -154,12 +154,18 @@ unit tests. Any main (simple or not) should be covered by *some* (not
 necessarily dedicated) integration test, unless it can only invoked by
 `antlir` developers for debugging.
 
-A typical complex main:
+A typical complex main (most tools benefit from `--debug`):
 
 ```
 if __name__ == '__main__':
-    args = parse_args(sys.argv[1:1])
-    # Only expose `--debug` if it's appropriate for the tool
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    # ADD YOUR ARGS HERE
+
+    add_antlir_debug_arg(parser)
+    args = Path.parse_args(sys.argv[1:])
     init_logging(debug=args.debug)
     business_logic(args)
 ```
