@@ -26,6 +26,7 @@ from antlir.unshare import Namespace, Unshare
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
 from antlir.vm.tap import VmTap
+from antlir.vm.vm_opts_t import vm_opts_t
 
 
 logger = logging.getLogger(__name__)
@@ -94,12 +95,12 @@ async def __wait_for_boot(sockfile: os.PathLike) -> None:
 async def __vm_with_stack(
     stack: AsyncExitStack,
     image: Path,
+    opts: vm_opts_t = None,
     bind_repo_ro: bool = False,
     verbose: bool = False,
     interactive: bool = False,
     shares: Optional[Iterable[Share]] = None,
     dry_run: Optional[bool] = False,
-    ncpus: Optional[int] = 1,
 ):
     # we don't actually want to create files for the socket paths
     guest_agent_sockfile = os.path.join(
@@ -109,7 +110,8 @@ async def __vm_with_stack(
         tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
     )
 
-    # Initialize this early
+    # Set defaults
+    opts = opts or vm_opts_t()
     shares = shares or []
 
     # Load the repo_config
@@ -205,9 +207,9 @@ async def __vm_with_stack(
             "-cpu",
             "max",
             "-smp",
-            str(ncpus),
+            str(opts.cpus),
             "-m",
-            "4G",
+            "{}M".format(str(opts.mem_mb)),
             "-object",
             "rng-random,filename=/dev/urandom,id=rng0",
             "-device",

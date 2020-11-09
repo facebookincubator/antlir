@@ -1,4 +1,5 @@
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 
@@ -174,6 +175,12 @@ shape.loader(
     classname = "hashable_t",
 )
 
+shape.json_file(
+    name = "vader.json",
+    shape = character_t,
+    instance = characters[1],
+)
+
 python_unittest(
     name = "test-shape",
     srcs = ["test_shape.py"],
@@ -189,6 +196,10 @@ python_unittest(
                 characters = characters,
             ),
         ): "characters.json",
+        # :vader.json isn't really a layer, but i'm using this because it
+        # does what I want which is write the resolved location of the
+        # target to a file that can be read by importlib.
+        layer_resource(":vader.json"): "vader.json",
     },
     deps = [
         ":hashable_t",

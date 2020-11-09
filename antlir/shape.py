@@ -74,6 +74,11 @@ class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
         with importlib.resources.open_text(package, name) as r:
             return cls.parse_raw(r.read())
 
+    @classmethod
+    def load(cls: Type[S], path: Path) -> S:
+        with open(path, "r") as r:
+            return cls.parse_raw(r.read())
+
     def __hash__(self):
         return hash((type(self), *self.__dict__.values()))
 

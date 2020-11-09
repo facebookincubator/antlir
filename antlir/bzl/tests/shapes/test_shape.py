@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import importlib
 import unittest
 from typing import Mapping, Optional, Sequence, Tuple
 
@@ -67,6 +68,15 @@ class TestShape(unittest.TestCase):
 
         # json_file and python_data produce identical objects
         self.assertEqual(luke, characters[0])
+
+        # test loading from a file path
+        v = character_t.load(
+            Path(importlib.resources.read_text(__package__, "vader.json"))
+        )
+
+        # Don't validate everything, we just wanted to check that `load` works
+        # as expected.
+        self.assertEqual(v.name, "Darth Vader")
 
     def test_hash(self):
         trooper1 = hashable_t(
