@@ -52,25 +52,6 @@ def kernel_resources() -> ContextManager[KernelResources]:
         )
 
 
-@dataclass(frozen=True)
-class EmulatorResources(object):
-    qemu: Path
-    bios: Path
-    rom_path: Path
-
-
-@contextmanager
-def emulator_resources() -> ContextManager[EmulatorResources]:
-    with importlib.resources.path(
-        __package__, "bios"
-    ) as bios, importlib.resources.path(
-        __package__, "qemu"
-    ) as qemu, importlib.resources.path(
-        __package__, "roms"
-    ) as rom_path:
-        yield EmulatorResources(bios=bios, qemu=qemu, rom_path=rom_path)
-
-
 async def __wait_for_boot(sockfile: os.PathLike) -> None:
     """
     The guest sends a READY message to this socket when it is ready to run
@@ -95,7 +76,7 @@ async def __wait_for_boot(sockfile: os.PathLike) -> None:
 async def __vm_with_stack(
     stack: AsyncExitStack,
     image: Path,
-    opts: vm_opts_t = None,
+    opts: vm_opts_t,
     bind_repo_ro: bool = False,
     verbose: bool = False,
     interactive: bool = False,
@@ -111,7 +92,6 @@ async def __vm_with_stack(
     )
 
     # Set defaults
-    opts = opts or vm_opts_t()
     shares = shares or []
 
     # Load the repo_config
@@ -197,7 +177,7 @@ async def __vm_with_stack(
 
     ns = stack.enter_context(Unshare([Namespace.NETWORK, Namespace.PID]))
     tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
-    with kernel_resources() as kernel, emulator_resources() as emulator:
+    with kernel_resources() as kernel:
         args = [
             "-no-reboot",
             "-display",
@@ -246,10 +226,10 @@ async def __vm_with_stack(
         ] + list(tapdev.qemu_args)
 
         # The bios to boot the emulator with
-        args.extend(["-bios", str(emulator.bios)])
+        args.extend(["-bios", str(opts.bios.path)])
 
         # Set the path for loading additional roms
-        args.extend(["-L", str(emulator.rom_path)])
+        args.extend(["-L", str(opts.emulator_roms_dir.path)])
 
         if os.access("/dev/kvm", os.R_OK | os.W_OK):
             args += ["-enable-kvm"]
@@ -275,13 +255,13 @@ async def __vm_with_stack(
         args += __qemu_share_args(shares)
         if dry_run:
             print(
-                str(emulator.qemu)
+                str(opts.emulator.path)
                 + " "
                 + " ".join(shlex.quote(a) for a in args)
             )
             sys.exit(0)
 
-        qemu_cmd = ns.nsenter_as_user(str(emulator.qemu), *args)
+        qemu_cmd = ns.nsenter_as_user(str(opts.emulator.path), *args)
 
         if interactive:
             proc = await asyncio.create_subprocess_exec(*qemu_cmd)

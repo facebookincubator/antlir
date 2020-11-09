@@ -52,7 +52,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":image.bzl", "image")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "get_visibility", "kernel_get", "python_binary", "python_unittest")
+load(":oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "kernel_get", "python_binary", "python_unittest", "third_party")
 load(":shape.bzl", "shape")
 
 _RULE_TO_TEST_TYPE = {
@@ -61,7 +61,13 @@ _RULE_TO_TEST_TYPE = {
 }
 
 vm_opts_t = shape.shape(
-    # Provide the kernel devel package to the vm.
+    # Bios to use for booting
+    bios = shape.target(),
+    # The actual emulator to invoke
+    emulator = shape.target(),
+    # Provide a directory from where the emulator can load firmware roms
+    emulator_roms_dir = shape.target(default = "//antlir/vm:roms"),
+    # Flag to provide the kernel devel package to the vm.
     # Future: This should be moved into a `kernel_opts_t` since this
     # isn't really a vm specific thing.
     devel = shape.field(bool, default = False),
@@ -71,13 +77,23 @@ vm_opts_t = shape.shape(
     mem_mb = shape.field(int, default = 4096),
 )
 
-def _new_vm_opts(**kwargs):
+def _new_vm_opts(bios = None, cpus = 1, emulator = None, **kwargs):
     # Don't allow an invalid cpu count
-    if kwargs.get("cpus") == 2:
+    if cpus == 2:
         fail("ncpus=2 will cause kernel panic: https://fburl.com/md27i5k8")
+
+    # These defaults have to be set here due to the use of the
+    # `third_party.library` function.  It must be invoked inside of
+    # either a rule definition or another function, it cannot be used
+    # at the top-level of an included .bzl file (where the type def is).
+    bios = bios or third_party.library("qemu", "share/qemu/bios-256k.bin")
+    emulator = emulator or third_party.library("qemu")
 
     return shape.new(
         vm_opts_t,
+        bios = bios,
+        cpus = cpus,
+        emulator = emulator,
         **kwargs
     )
 
