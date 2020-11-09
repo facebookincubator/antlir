@@ -1,7 +1,9 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "python_unittest", "third_party")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:vm.bzl", "vm")
+load("//antlir/vm:kernel.bzl", "kernel_artifacts_t")
 
 # qemu roms to provide
 roms = [
@@ -44,6 +46,12 @@ export_file(
     src = "id_ecdsa.pub",
 )
 
+shape.loader(
+    name = "kernel_artifacts_t",
+    classname = "kernel_artifacts_t",
+    shape = kernel_artifacts_t,
+)
+
 python_library(
     name = "vm",
     srcs = [
@@ -59,6 +67,7 @@ python_library(
         ":ssh-privkey": "privkey",
     },
     deps = [
+        ":kernel_artifacts_t",
         ":share",
         ":tap",
         "//antlir:config",
