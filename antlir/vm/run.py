@@ -8,16 +8,32 @@ import asyncio
 import importlib.resources
 import logging
 import sys
+from typing import Iterable
 
 import click
+from antlir.fs_utils import Path
 from antlir.vm.common import async_wrapper
 from antlir.vm.vm import vm
+from antlir.vm.vm_opts_t import vm_opts_t
 
 
 logger = logging.getLogger(__file__)
 
 
 @click.command()
+@click.option(
+    "--opts",
+    type=vm_opts_t.load,
+    help="Path to a serialized vm_opts_t instance containing configuration "
+    "details for the vm.",
+    required=True,
+)
+@click.option(
+    "--rootfs-image",
+    type=Path,
+    help="Path to a btrfs seed device to use as the rootfs image for the VM",
+    required=True,
+)
 @click.option("-v", "--verbose", count=True)
 @click.option("--dry-run", is_flag=True, help="print qemu command and exit")
 @click.option(
@@ -28,7 +44,14 @@ logger = logging.getLogger(__file__)
 )
 @click.argument("cmd", nargs=-1)
 @async_wrapper
-async def run(verbose, dry_run, timeout, cmd):
+async def run(
+    cmd: Iterable[str],
+    dry_run: bool,
+    opts: vm_opts_t,
+    rootfs_image: Path,
+    timeout: int,
+    verbose: int,
+):
     # warn is 30, should default to 30 when verbose=0
     # each level below warning is 10 less than the previous
     log_level = -10 * verbose + 30
@@ -41,19 +64,19 @@ async def run(verbose, dry_run, timeout, cmd):
     # if we didn't get a comamnd, use a shell
     cmd = cmd or ["/bin/bash"]
 
-    with importlib.resources.path(__package__, "image") as image:
-        async with vm(
-            image=image,
-            verbose=verbose > 0,
-            interactive=not cmd or cmd == ["/bin/bash"],
-            dry_run=dry_run,
-        ) as instance:
-            if cmd:
-                try:
-                    returncode, _, _ = await instance.run(cmd, timeout=timeout)
-                except asyncio.TimeoutError:
-                    click.echo(f"'{' '.join(cmd)}' timed out!", err=True)
-                    sys.exit(124)
+    async with vm(
+        image=rootfs_image,
+        opts=opts,
+        verbose=verbose > 0,
+        interactive=not cmd or cmd == ["/bin/bash"],
+        dry_run=dry_run,
+    ) as instance:
+        if cmd:
+            try:
+                returncode, _, _ = await instance.run(cmd, timeout=timeout)
+            except asyncio.TimeoutError:
+                click.echo(f"'{' '.join(cmd)}' timed out!", err=True)
+                sys.exit(124)
 
     sys.exit(returncode)
 
