@@ -21,6 +21,7 @@ from antlir.fs_utils import Path
 from antlir.vm.common import async_wrapper
 from antlir.vm.share import BtrfsDisk, Plan9Export
 from antlir.vm.vm import vm
+from antlir.vm.vm_opts_t import vm_opts_t
 
 
 logger = logging.getLogger("vmtest")
@@ -61,11 +62,40 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     "to be run in-place.",
 )
 @click.option(
+    "--rootfs-image",
+    type=Path,
+    help="Path to a btrfs seed device to use as the rootfs image for the VM",
+    required=True,
+)
+@click.option(
+    "--opts",
+    type=vm_opts_t.load,
+    help="Path to a serialized vm_opts_t instance containing configuration "
+    "details for the vm.",
+    required=True,
+)
+# These two options are here to provide support for mounting the devel/headers
+# for a kernel as an image layer via 9p.
+# Future: The layer will be provided transparently via runtime mounts + the
+#         runtime config compiler. The uname is here only so that we can build
+#         the correct mountpoint for the supplied devel-layer.
+@click.option(
+    "--devel-layer",
+    type=find_built_subvol,
+    help="On disk path to devel layer",
+)
+@click.option(
+    "--uname",
+    type=str,
+    help="The Uname of the kernel we are using for the vm.",
+)
+@click.option(
     "-q/-e",
     "--quiet/--echo",
     default=False,
     help="hide all vm output (including boot messages)",
 )
+# All options below are specific to testing
 @click.option(
     "--timeout",
     type=int,
@@ -73,12 +103,6 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     envvar="TIMEOUT",
     default=5 * MINUTE,
     help="how many seconds to wait for the test to finish",
-)
-@click.option(
-    "--rootfs-image",
-    type=Path,
-    help="Path to a btrfs seed device to use as the rootfs image for the VM",
-    required=True,
 )
 @click.option(
     "--setenv",
@@ -110,24 +134,6 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
 @click.option(
     "--interactive", is_flag=True, help="Connect VM console in foreground"
 )
-@click.option(
-    "--ncpus", type=int, default=1, help="How many vCPUs the VM will have."
-)
-# These two options are here to provide support for mounting the devel/headers
-# for a kernel as an image layer via 9p.
-# Future: The layer will be provided transparently via runtime mounts + the
-#         runtime config compiler. The uname is here only so that we can build
-#         the correct mountpoint for the supplied devel-layer.
-@click.option(
-    "--devel-layer",
-    type=find_built_subvol,
-    help="On disk path to devel layer",
-)
-@click.option(
-    "--uname",
-    type=str,
-    help="The Uname of the kernel we are using for the vm.",
-)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @async_wrapper
 async def main(
@@ -136,7 +142,7 @@ async def main(
     gtest_list_tests: bool,
     interactive: bool,
     list_tests: Optional[str],
-    ncpus: int,
+    opts: vm_opts_t,
     rootfs_image: Path,
     setenv: List[str],
     sync_file: List[str],
@@ -204,10 +210,10 @@ async def main(
 
     async with vm(
         bind_repo_ro=bind_repo_ro,
+        opts=opts,
         image=rootfs_image,
         verbose=not quiet,
         interactive=interactive,
-        ncpus=ncpus,
         shares=shares,
     ) as instance:
         boot_time_elapsed = time.time() - start_time

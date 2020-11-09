@@ -23,8 +23,8 @@ with the options allowed there.  The key differences with
   Note: this `image.layer` *must* be capable of successfully booting the
   VM for the tests to run.
 
-- A user can provide a `vm_opts` struct which controls how the VM is
-  configured at runtime.  The `vm_opts` struct is created with the `vm.opts`
+- A user can provide a `vm_opts` shape which controls how the VM is
+  configured at runtime.  The `vm_opts` shape is created with the `vm.opts`
   function and has the following form:
 
   ```
@@ -34,7 +34,10 @@ with the options allowed there.  The key differences with
       devel = False,
 
       # The number of Virtual CPUs to provide the VM.
-      ncpus = 1,
+      cpus = 1,
+
+      # The amount of memory, in mb, to provide to the VM.
+      mem_mb = 4096,
   )
   ```
 
@@ -50,21 +53,32 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load(":image.bzl", "image")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load(":oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "get_visibility", "kernel_get", "python_binary", "python_unittest")
+load(":shape.bzl", "shape")
 
 _RULE_TO_TEST_TYPE = {
     cpp_unittest: "gtest",
     python_unittest: "pyunit",
 }
 
-def _create_vm_opts(
-        devel = False,
-        ncpus = 1):
-    if ncpus == 2:
+vm_opts_t = shape.shape(
+    # Provide the kernel devel package to the vm.
+    # Future: This should be moved into a `kernel_opts_t` since this
+    # isn't really a vm specific thing.
+    devel = shape.field(bool, default = False),
+    # Number of cpus to provide
+    cpus = shape.field(int, default = 1),
+    # Amount of memory in mb
+    mem_mb = shape.field(int, default = 4096),
+)
+
+def _new_vm_opts(**kwargs):
+    # Don't allow an invalid cpu count
+    if kwargs.get("cpus") == 2:
         fail("ncpus=2 will cause kernel panic: https://fburl.com/md27i5k8")
 
-    return struct(
-        devel = devel,
-        ncpus = ncpus,
+    return shape.new(
+        vm_opts_t,
+        **kwargs
     )
 
 def _build_test_tags(unittest_rule, tags):
@@ -113,7 +127,7 @@ def _vm_unittest(
     env = env or {}
     kernel = kernel or kernel_get.default
     layer = layer or default_vm_image.layer
-    vm_opts = vm_opts or _create_vm_opts()
+    vm_opts = vm_opts or _new_vm_opts()
 
     # Construct tags for controlling/influencing the unittest runner.
     # Future: These tags are heavily FB specific and really have no place
@@ -195,10 +209,10 @@ cat > "$TMP/out" << 'EOF'
 #!/bin/sh
 set -ue -o pipefail -o noclobber
 exec $(exe {vm_binary_target}) \
+  --opts $(location {vm_opts_quoted}) \
   --rootfs-image $(location {rootfs_image_quoted}) \
   --test-binary $(location {test_binary_quoted}) \
   --test-binary-image $(location {test_binary_image_quoted}) \
-  --ncpus {ncpus} \
   --uname {uname_quoted} \
   {maybe_devel_layer_quoted} \
   {maybe_setenv_quoted} \
@@ -207,12 +221,21 @@ EOF
 chmod +x "$TMP/out"
 mv "$TMP/out" "$OUT"
         """.format(
-            ncpus = vm_opts.ncpus,
             rootfs_image_quoted = shell.quote(rootfs_seed_image),
             test_binary_quoted = shell.quote(":" + actual_test_binary),
             test_binary_image_quoted = shell.quote(":" + actual_test_image),
             uname_quoted = shell.quote(kernel.uname),
             vm_binary_target = ":{}--vmtest-binary".format(name),
+            vm_opts_quoted = shell.quote(
+                shape.json_file(
+                    name = "{}--vm-opts.json".format(name),
+                    instance = vm_opts,
+                    shape = vm_opts_t,
+                ),
+            ),
+            # Future: This devel layer is just another mount to configure the VM with.
+            # it's not special except that we don't hvae clean abstraction (yet) to
+            # provide aribtrary mounts that should be setup by the VM.
             maybe_devel_layer_quoted = "--devel-layer={}".format(
                 shell.quote("$(location {})".format(kernel.devel)),
             ) if vm_opts.devel else "",
@@ -354,5 +377,5 @@ vm = struct(
         python_unittest = _vm_multi_kernel_python_unittest,
     ),
     python_unittest = _vm_python_unittest,
-    opts = _create_vm_opts,
+    opts = _new_vm_opts,
 )

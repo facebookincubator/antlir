@@ -40,7 +40,7 @@ vm.python_unittest(
         ":resource.txt": "resource",
     },
     vm_opts = vm.opts(
-        ncpus = 4,
+        cpus = 4,
     ),
 )
 
