@@ -328,6 +328,7 @@ python_binary(
     deps = [
         ":common",
         ":yum_dnf_conf",
+        "//antlir:cli",
         "//antlir:fs_utils",
         "//antlir/nspawn_in_subvol/plugins:shadow_paths",
     ],

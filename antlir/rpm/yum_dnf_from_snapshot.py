@@ -97,7 +97,7 @@ from configparser import ConfigParser
 from contextlib import contextmanager, nullcontext
 from typing import Iterable, List, Mapping, Optional
 
-from antlir.common import add_antlir_debug_arg, get_logger, init_logging
+from antlir.common import get_logger
 from antlir.fs_utils import META_DIR, Path, temp_dir
 from antlir.nspawn_in_subvol.plugins.shadow_paths import SHADOWED_PATHS_ROOT
 
@@ -716,59 +716,55 @@ if __name__ == "__main__":  # pragma: no cover
     import shlex
     import sys
 
-    main_parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    main_parser.add_argument(
-        "--snapshot-dir",
-        required=True,
-        type=Path.from_argparse,
-        help="Multi-repo snapshot directory.",
-    )
-    # When a wrapper from an RPM repo snapshot is shadowing an OS rpm
-    # installer, it needs this argument to invoke the exact binary that it
-    # is shadowing.
-    #
-    # Caveat: the basename of this path may differ from the `yum_dnf`
-    # argument below because on Fedora, `yum` is a symlink to `dnf`.
-    main_parser.add_argument(
-        "--yum-dnf-binary",
-        type=Path.from_argparse,
-        help="Optional absolute path, defaults to resolving the `yum_dnf` "
-        "argument via `PATH`. This is the non-shadowed path to the "
-        "actual RPM installer binary that we are wrapping.",
-    )
-    main_parser.add_argument(
-        "--protected-path",
-        action="append",
-        default=[],
-        # Future: if desired, the trailing / convention could be relaxed,
-        # see `_protected_path_set`.  If so, this program would just need to
-        # run `os.path.isdir` against each of the paths.
-        help="When `yum` or `dnf` runs, this path will have an empty file or "
-        "directory read-only bind-mounted on top. If the path has a "
-        "trailing /, it is a directory, otherwise -- a file. If the path "
-        "is absolute, it is a host path. Otherwise, it is relative to "
-        "`--installroot`. The path must already exist. There are some "
-        "internal defaults that cannot be un-protected. May be repeated.",
-    )
-    main_parser.add_argument("yum_dnf", type=YumDnf, help="yum or dnf")
-    main_parser.add_argument(
-        "args",
-        nargs="+",
-        help="Pass these through to `yum` or `dnf`. You will want to use -- "
-        "before any such argument to prevent `yum-dnf-from-snapshot` "
-        "from parsing them. Avoid arguments that might break hermeticity "
-        "(e.g. affecting the host system, or making us depend on the "
-        "host system) -- this tool implements protections, but it "
-        "may not be foolproof.",
-    )
+    from antlir.cli import init_cli
 
-    add_antlir_debug_arg(main_parser)
-    args = Path.parse_args(main_parser, sys.argv[1:])
-    init_logging(debug=args.debug)
+    with init_cli(__doc__) as cli:
+        cli.parser.add_argument(
+            "--snapshot-dir",
+            required=True,
+            type=Path.from_argparse,
+            help="Multi-repo snapshot directory.",
+        )
+        # When a wrapper from an RPM repo snapshot is shadowing an OS rpm
+        # installer, it needs this argument to invoke the exact binary that
+        # it is shadowing.
+        #
+        # Caveat: the basename of this path may differ from the `yum_dnf`
+        # argument below because on Fedora, `yum` is a symlink to `dnf`.
+        cli.parser.add_argument(
+            "--yum-dnf-binary",
+            type=Path.from_argparse,
+            help="Optional absolute path, defaults to resolving the `yum_dnf` "
+            "argument via `PATH`. This is the non-shadowed path to the "
+            "actual RPM installer binary that we are wrapping.",
+        )
+        cli.parser.add_argument(
+            "--protected-path",
+            action="append",
+            default=[],
+            # Future: if desired, the trailing / convention could be
+            # relaxed, see `_protected_path_set`.  If so, this program would
+            # just need to run `os.path.isdir` against each of the paths.
+            help="When `yum` or `dnf` runs, this path will have an empty file "
+            "or directory read-only bind-mounted on top. If the path has a "
+            "trailing /, it is a directory, otherwise -- a file. If the path "
+            "is absolute, it is a host path. Otherwise, it is relative to "
+            "`--installroot`. The path must already exist. There are some "
+            "internal defaults that cannot be un-protected. May be repeated.",
+        )
+        cli.parser.add_argument("yum_dnf", type=YumDnf, help="yum or dnf")
+        cli.parser.add_argument(
+            "args",
+            nargs="+",
+            help="Pass these through to `yum` or `dnf`. You will want to use "
+            "-- before any such argument to prevent `yum-dnf-from-snapshot` "
+            "from parsing them. Avoid arguments that might break hermeticity "
+            "(e.g. affecting the host system, or making us depend on the "
+            "host system) -- this tool implements protections, but it "
+            "may not be foolproof.",
+        )
 
+    args = cli.args
     try:
         yum_dnf_from_snapshot(
             yum_dnf=args.yum_dnf,

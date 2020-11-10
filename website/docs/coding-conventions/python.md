@@ -154,25 +154,22 @@ unit tests. Any main (simple or not) should be covered by *some* (not
 necessarily dedicated) integration test, unless it can only invoked by
 `antlir` developers for debugging.
 
-A typical complex main (most tools benefit from `--debug`):
+A typical main should use `init_cli` to set up logging & argparse:
 
 ```
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    # ADD YOUR ARGS HERE
+    from antlir.cli import init_cli
 
-    add_antlir_debug_arg(parser)
-    args = Path.parse_args(sys.argv[1:])
-    init_logging(debug=args.debug)
-    business_logic(args)
+    with init_cli(__doc__) as cli:
+        cli.parser.add_argument("--your-arg")
+
+    business_logic(cli.args)
 ```
 
-In a "simple" main that has ample integration test coverage, you can parse 3-4
-args inline, and glue together a few functions inline. **If in doubt, use a
-separate main function and write unit-tests.**
+In a "simple" main that has ample integration test coverage, it is OK to
+compose a few business logic functions inline, as long as you do no
+branching.  **If in doubt, use a separate main function and write
+unit-tests.**
 
 ### Logging
 
