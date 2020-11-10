@@ -347,12 +347,3 @@ def async_retryable(
         return decorated
 
     return wrapper
-
-
-def add_antlir_debug_arg(parser):
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        default=bool(os.environ.get("ANTLIR_DEBUG")),
-        help="Log more -- also enabled via the ANTLIR_DEBUG env var",
-    )

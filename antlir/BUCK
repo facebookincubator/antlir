@@ -17,6 +17,15 @@ python_unittest(
 )
 
 python_library(
+    name = "cli",
+    srcs = ["cli.py"],
+    deps = [
+        ":common",
+        ":fs_utils",
+    ],
+)
+
+python_library(
     name = "fs_utils",
     srcs = ["fs_utils.py"],
     deps = [":common"],
