@@ -8,7 +8,6 @@
 import argparse
 import os
 import sys
-
 from contextlib import contextmanager
 from typing import Iterator
 
