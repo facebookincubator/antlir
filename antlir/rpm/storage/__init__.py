@@ -10,10 +10,11 @@ re-ordered by a formatter.
 
 isort:skip_file
 """
+from .cli_object_storage import CLIObjectStorage
+
 # fmt: off
 
 from .storage import Storage, StorageInput, StorageOutput
-from .cli_object_storage import CLIObjectStorage
 
 __all__ = [Storage, StorageInput, StorageOutput, CLIObjectStorage]
 
