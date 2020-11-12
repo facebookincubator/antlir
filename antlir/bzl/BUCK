@@ -199,6 +199,12 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "image_test_rpm_names",
+    srcs = ["image_test_rpm_names.bzl"],
+    deps = [":image_python_unittest"],
+)
+
+fake_macro_library(
     name = "sha256",
     srcs = ["sha256.bzl"],
 )

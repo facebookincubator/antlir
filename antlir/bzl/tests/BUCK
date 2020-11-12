@@ -4,6 +4,13 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
+# Powers `image.test_rpm_names`
+python_library(
+    name = "check_rpm_names",
+    srcs = ["check_rpm_names.py"],
+    deps = ["//antlir:fs_utils"],
+)
+
 python_library(
     name = "coverage_test_helper",
     srcs = ["coverage_test_helper.py"],
