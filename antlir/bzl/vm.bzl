@@ -121,7 +121,7 @@ cat > "$TMP/out" << 'EOF'
 #!/bin/sh
 set -ue -o pipefail -o noclobber
 exec $(exe {exe_target}) \
---opts $(location {opts_quoted}) \
+--opts {opts_quoted} \
 --rootfs-image $(location {rootfs_quoted}) \
 {extra_args} \
 "$@"
@@ -131,13 +131,10 @@ mv "$TMP/out" "$OUT"
         """.format(
             exe_target = exe_target,
             extra_args = " ".join(args) if args else "",
-            opts_quoted = shell.quote(
-                shape.json_file(
-                    name = "{}--vm-opts.json".format(name),
-                    instance = vm_opts,
-                    shape = vm_opts_t,
-                ),
-            ),
+            opts_quoted = shell.quote(shape.do_not_cache_me_json(
+                instance = vm_opts,
+                shape = vm_opts_t,
+            )),
             rootfs_quoted = shell.quote(rootfs),
         ),
         cacheable = False,

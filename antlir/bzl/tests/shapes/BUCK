@@ -1,5 +1,4 @@
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 
@@ -175,43 +174,61 @@ shape.loader(
     classname = "hashable_t",
 )
 
-shape.json_file(
-    name = "vader.json",
+shape.loader(
+    name = "character_t",
     shape = character_t,
-    instance = characters[1],
+    classname = "character_t",
+)
+
+shape.loader(
+    name = "character_collection_t",
+    shape = character_collection_t,
+    classname = "character_collection_t",
 )
 
 python_unittest(
     name = "test-shape",
     srcs = ["test_shape.py"],
+    env = {
+        "characters": shape.do_not_cache_me_json(
+            shape.new(
+                character_collection_t,
+                characters = characters,
+            ),
+            character_collection_t,
+        ),
+    },
     needed_coverage = [
         (100, "//antlir:shape"),
     ],
     resources = {
         shape.json_file(
-            name = "characters.json",
-            shape = character_collection_t,
+            name = "data.json",
             instance = shape.new(
-                character_collection_t,
-                characters = characters,
+                hashable_t,
+                name = "Stormtrooper",
+                appears_in = [1],
+                friends = [],
+                metadata = None,
             ),
-        ): "characters.json",
-        # :vader.json isn't really a layer, but i'm using this because it
-        # does what I want which is write the resolved location of the
-        # target to a file that can be read by importlib.
-        layer_resource(":vader.json"): "vader.json",
+            shape = hashable_t,
+        ): "data.json",
     },
     deps = [
+        ":character_collection_t",
+        ":character_t",
         ":hashable_t",
         shape.python_data(
-            name = "luke",
-            instance = characters[0],
-            module = "luke",
-            shape = character_t,
-        ),
-        shape.loader(
-            name = "loader",
-            shape = character_collection_t,
+            name = "data",
+            instance = shape.new(
+                hashable_t,
+                name = "Stormtrooper",
+                appears_in = [1],
+                friends = [],
+                metadata = None,
+            ),
+            module = "data",
+            shape = hashable_t,
         ),
     ],
 )

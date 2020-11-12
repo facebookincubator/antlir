@@ -63,7 +63,7 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
 )
 @click.option(
     "--opts",
-    type=vm_opts_t.load,
+    type=vm_opts_t.parse_raw,
     help="Path to a serialized vm_opts_t instance containing configuration "
     "details for the vm.",
     required=True,

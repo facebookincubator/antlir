@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import json
 import unittest
 
 from .shape_bzl import Fail, _check_type, _codegen_shape, shape, struct
@@ -172,3 +173,55 @@ class TestShapeBzl(unittest.TestCase):
     answer: int
   dct_of_lst_of_shape: Mapping[str, Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]]""",
         )
+
+    def test_location_serialization(self):
+        target_t = shape.shape(target=shape.target())
+        layer_t = shape.shape(layer=shape.layer())
+        nested_target_t = shape.shape(nested=target_t)
+        list_with_targets_t = shape.shape(lst=shape.list(target_t))
+        dict_with_targets_t = shape.shape(dct=shape.dict(str, target_t))
+        tuple_with_targets_t = shape.shape(tup=shape.tuple(str, target_t))
+        shapes = [
+            (target_t, shape.new(target_t, target="//example:target")),
+            (layer_t, shape.new(layer_t, layer="//example:layer")),
+            (
+                nested_target_t,
+                shape.new(
+                    nested_target_t,
+                    nested=shape.new(target_t, target="//example:target"),
+                ),
+            ),
+            (
+                list_with_targets_t,
+                shape.new(
+                    list_with_targets_t,
+                    lst=[shape.new(target_t, target="//example:target")],
+                ),
+            ),
+            (
+                dict_with_targets_t,
+                shape.new(
+                    dict_with_targets_t,
+                    dct={"a": shape.new(target_t, target="//example:target")},
+                ),
+            ),
+            (
+                tuple_with_targets_t,
+                shape.new(
+                    tuple_with_targets_t,
+                    tup=("a", shape.new(target_t, target="//example:target")),
+                ),
+            ),
+        ]
+
+        for t, i in shapes:
+            with self.subTest(shape=t, instance=i):
+                # serializing directly to files should be blocked
+                with self.assertRaises(Fail):
+                    shape.json_file("json", i, t)
+                with self.assertRaises(Fail):
+                    shape.python_data("py", i, t)
+                # serializing to a json string is allowed as the user is
+                # implicitly acknowledging that they will do the right thing
+                # and not cache the results
+                json.loads(shape.do_not_cache_me_json(i, t))
