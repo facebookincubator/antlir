@@ -11,16 +11,16 @@ from typing import Mapping, Optional, Sequence, Tuple
 from antlir.fs_utils import Path
 from antlir.shape import Shape, Target
 
+from .character_collection_t import character_collection_t
+from .character_t import character_t
+
 # TODO remove all references to hashable and just use characters once
 # read-only dicts land
 from .hashable_t import hashable_t
-from .loader import shape
-from .luke import data as luke
 
 
-character_t = shape.types.characters
 lightsaber_t = character_t.types.lightsaber
-characters = shape.read_resource(__package__, "characters.json").characters
+characters = character_collection_t.from_env("characters").characters
 
 
 class TestShape(unittest.TestCase):
@@ -66,17 +66,20 @@ class TestShape(unittest.TestCase):
         )
         self.assertIsInstance(c.personnel_file, Path)
 
-        # json_file and python_data produce identical objects
-        self.assertEqual(luke, characters[0])
+    def test_data_and_resources(self):
+        # hashable_t is just a (incomplete) subset of the character type that
+        # is both hashable and serializable to python_data/json_file
+        res = hashable_t.read_resource(__package__, "data.json")
+        self.assertEqual(res.name, "Stormtrooper")
+        # load the same thing from a file path
+        with importlib.resources.path(__package__, "data.json") as path:
+            f = hashable_t.load(path)
+        self.assertEqual(f, res)
+        # lastly, the directly imported python_data version should also be
+        # equivalent
+        from .data import data as imp
 
-        # test loading from a file path
-        v = character_t.load(
-            Path(importlib.resources.read_text(__package__, "vader.json"))
-        )
-
-        # Don't validate everything, we just wanted to check that `load` works
-        # as expected.
-        self.assertEqual(v.name, "Darth Vader")
+        self.assertEqual(imp, res)
 
     def test_hash(self):
         trooper1 = hashable_t(

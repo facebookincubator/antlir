@@ -9,6 +9,7 @@
 # See that file for motivations and usage documentation.
 
 import importlib.resources
+import os
 from typing import Type, TypeVar
 
 import pydantic
@@ -78,6 +79,10 @@ class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
     def load(cls: Type[S], path: Path) -> S:
         with open(path, "r") as r:
             return cls.parse_raw(r.read())
+
+    @classmethod
+    def from_env(cls: Type[S], envvar: str) -> S:
+        return cls.parse_raw(os.environ[envvar])
 
     def __hash__(self):
         return hash((type(self), *self.__dict__.values()))

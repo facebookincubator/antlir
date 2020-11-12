@@ -14,6 +14,7 @@ covered by the other tests that exercise shape.bzl within buck.
 import base64
 import dataclasses
 import hashlib
+import json
 
 
 def __dataclass_eq(left, right):
@@ -22,11 +23,15 @@ def __dataclass_eq(left, right):
     return dataclasses.asdict(left) == dataclasses.asdict(right)
 
 
+def __struct_to_json(s):
+    return json.dumps(dataclasses.asdict(s))
+
+
 def struct(**kwargs):
     cls = dataclasses.make_dataclass(
         "struct",
         [(k, type(v)) for k, v in kwargs.items()],
-        namespace={"__eq__": __dataclass_eq},
+        namespace={"__eq__": __dataclass_eq, "to_json": __struct_to_json},
     )
     return cls(**kwargs)
 

@@ -109,6 +109,15 @@ load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
 
+_SERIALIZING_LOCATION_MSG = (
+    "shapes with layer/target fields cannot safely be serialized in the" +
+    " output of a buck target.\n" +
+    "For buck_genrule uses, consider passing an argument with the (shell quoted)" +
+    " result of 'shape.do_not_cache_me_json'\n" +
+    "For unit tests, consider setting an environment variable with the same" +
+    " JSON string"
+)
+
 _NO_DEFAULT = struct(no_default = True)
 
 def _python_type(t):
@@ -387,69 +396,12 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
     )
     return normalize_target(":" + name)
 
-def _python_data(name, instance, shape, module = None, **python_library_kwargs):  # pragma: no cover
-    """Codegen a static shape data structure that can be directly 'import'ed by
-    Python. The object is available under the name "data". A common use case is
-    to call shape.python_data inline in a target's `deps`, with `module`
-    (defaults to `name`) then representing the name of the module that can be
-    imported in the underlying file.
-
-    Example:
-
-        python_binary(
-            name = provided_name,
-            deps = [
-                shape.python_data(
-                    name = "bin_bzl_args",
-                    instance = shape.new(
-                        some_shape_t,
-                        var = input_var,
-                    ),
-                    shape = some_shape_t,
-                ),
-            ],
-            ...
-        )
-
-    can then be imported as:
-
-        from .bin_bzl_args import data
-    """
-    python_src = "from typing import *\nfrom antlir.shape import *\n"
-    python_src += "\n".join(_codegen_shape(shape, "shape"))
-    python_src += "\ndata = shape.parse_raw('{}')".format(_translate_targets(instance, shape).to_json())
-
-    if not module:
-        module = name
-
-    buck_genrule(
-        name = "{}.py".format(name),
-        out = "unused.py",
-        cmd = "echo {} >> $OUT".format(shell.quote(python_src)),
-        # Antlir users should not directly use `shape`, but we do use it
-        # as an implementation detail of "builder" / "publisher" targets.
-        antlir_rule = "user-internal",
-    )
-    python_library(
-        name = name,
-        srcs = {":{}.py".format(name): "{}.py".format(module)},
-        deps = [
-            "//antlir:shape",
-            third_party.library("pydantic", platform = "python"),
-        ],
-        # Antlir users should not directly use `shape`, but we do use it
-        # as an implementation detail of "builder" / "publisher" targets.
-        antlir_rule = "user-internal",
-        **python_library_kwargs
-    )
-    return normalize_target(":" + name)
-
 # This will traverse all of the elements of the provided shape instance looking for
 # fields that are of type `Target` and then replace the value with a struct that
 # has the target name and it's on-disk path generated via a `$(location )` macro.
 #
 # Note: This is not covered by the python unittest coverage metric because the only
-# two callsites are also not covered.  However, this is excersized by the tests
+# callsite is also not covered.  However, this is exercised by the tests
 # via the actual shape types being built, loaded, and tested.
 def _translate_targets(val, t):  # pragma: no cover
     if _is_shape(t):
@@ -482,21 +434,112 @@ def _translate_targets(val, t):  # pragma: no cover
     else:
         return val
 
+def _type_has_location(t):
+    if _is_field(t):
+        if t.type in ("Target", "LayerTarget"):
+            return True
+        return _type_has_location(t.type)
+    if _is_collection(t):
+        if t.collection == dict:
+            kt, vt = t.item_type
+            return _type_has_location(kt) or _type_has_location(vt)
+        elif t.collection == list:
+            return _type_has_location(t.item_type)
+        elif t.collection == tuple:
+            for it in t.item_type:
+                if _type_has_location(it):
+                    return True
+    if not _is_shape(t):
+        return False
+    for name, field in t.fields.items():
+        if _type_has_location(field):
+            return True
+    return False  # pragma: no cover
+
+def _python_data(name, instance, shape, module = None, **python_library_kwargs):  # pragma: no cover
+    """Codegen a static shape data structure that can be directly 'import'ed by
+    Python. The object is available under the name "data". A common use case is
+    to call shape.python_data inline in a target's `deps`, with `module`
+    (defaults to `name`) then representing the name of the module that can be
+    imported in the underlying file.
+
+    Example:
+
+        python_binary(
+            name = provided_name,
+            deps = [
+                shape.python_data(
+                    name = "bin_bzl_args",
+                    instance = shape.new(
+                        some_shape_t,
+                        var = input_var,
+                    ),
+                    shape = some_shape_t,
+                ),
+            ],
+            ...
+        )
+
+    can then be imported as:
+
+        from .bin_bzl_args import data
+    """
+    if _type_has_location(shape):
+        fail(_SERIALIZING_LOCATION_MSG)
+    python_src = "from typing import *\nfrom antlir.shape import *\n"
+    python_src += "\n".join(_codegen_shape(shape, "shape"))
+    python_src += "\ndata = shape.parse_raw('{}')".format(instance.to_json())
+
+    if not module:
+        module = name
+
+    buck_genrule(
+        name = "{}.py".format(name),
+        out = "unused.py",
+        cmd = "echo {} >> $OUT".format(shell.quote(python_src)),
+        # Antlir users should not directly use `shape`, but we do use it
+        # as an implementation detail of "builder" / "publisher" targets.
+        antlir_rule = "user-internal",
+    )
+    python_library(
+        name = name,
+        srcs = {":{}.py".format(name): "{}.py".format(module)},
+        deps = [
+            "//antlir:shape",
+            third_party.library("pydantic", platform = "python"),
+        ],
+        # Antlir users should not directly use `shape`, but we do use it
+        # as an implementation detail of "builder" / "publisher" targets.
+        antlir_rule = "user-internal",
+        **python_library_kwargs
+    )
+    return normalize_target(":" + name)
+
 def _json_file(name, instance, shape):  # pragma: no cover
-    instance = _translate_targets(instance, shape)
+    if _type_has_location(shape):
+        fail(_SERIALIZING_LOCATION_MSG)
 
     buck_genrule(
         name = name,
         out = "out.json",
         cmd = "echo {} > $OUT".format(shell.quote(instance.to_json())),
-        # The shape output cannot be cacheable because it may contain
-        # the on-disk path of target via $(location ).
-        cacheable = False,
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
     )
     return normalize_target(":" + name)
+
+def _do_not_cache_me_json(instance, shape):
+    """
+    Serialize the given shape instance to a JSON string, which is the only
+    way to safely refer to other Buck targets' locations in the case where
+    the binary being invoked with a certain shape instance is cached.
+
+    Warning: Do not ever put this into a target that can be cached, it should
+    only be used in cmdline args or environment variables.
+    """
+    instance = _translate_targets(instance, shape)
+    return instance.to_json()
 
 shape = struct(
     shape = _shape,
@@ -512,4 +555,5 @@ shape = struct(
     json_file = _json_file,
     python_data = _python_data,
     as_dict = structs.to_dict,
+    do_not_cache_me_json = _do_not_cache_me_json,
 )
