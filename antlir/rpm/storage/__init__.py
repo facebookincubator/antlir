@@ -10,16 +10,15 @@ re-ordered by a formatter.
 
 isort:skip_file
 """
-from .cli_object_storage import CLIObjectStorage
-
 # fmt: off
 
-from .storage import Storage, StorageInput, StorageOutput
+from .storage import Storage, StorageInput, StorageOutput  # usort:skip
+from .cli_object_storage import CLIObjectStorage  # usort:skip
 
 __all__ = [Storage, StorageInput, StorageOutput, CLIObjectStorage]
 
 # Register implementations with Storage
-from . import filesystem_storage, s3_storage  # noqa: F401
+from . import filesystem_storage, s3_storage  # usort:skip # noqa: F401
 try:
     # Import FB-specific implementations if available
     from . import facebook  # noqa: F401
