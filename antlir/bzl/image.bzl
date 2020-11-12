@@ -9,6 +9,7 @@ load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
 load("//antlir/bzl/image_actions:rpms.bzl", "image_rpms_install", "image_rpms_remove_if_exists")
 load("//antlir/bzl/image_actions:symlink.bzl", "image_symlink_dir", "image_symlink_file")
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
+load(":image_test_rpm_names.bzl", "image_test_rpm_names")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
@@ -18,8 +19,8 @@ load(":image_sendstream_layer.bzl", "image_sendstream_layer")
 load(":image_source.bzl", "image_source")
 
 image = struct(
-    cpp_unittest = image_cpp_unittest,
     clone = image_clone,
+    cpp_unittest = image_cpp_unittest,
     feature = image_feature,
     mkdir = image_mkdir,
     install = image_install,
@@ -40,4 +41,5 @@ image = struct(
     python_unittest = image_python_unittest,
     sendstream_layer = image_sendstream_layer,
     source = image_source,
+    test_rpm_names = image_test_rpm_names,
 )
