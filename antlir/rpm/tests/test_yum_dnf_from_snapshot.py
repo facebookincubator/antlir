@@ -217,7 +217,7 @@ class YumDnfFromSnapshotTestImpl:
                 "--setopt=usr_w_check=false",
                 "install-n",
                 "--assumeyes",
-                "rpm-test-mice",
+                "rpm-test-milk-no-sh",
             ],
         )
         # Since we're running on /, asserting the effect on the complete
@@ -226,7 +226,9 @@ class YumDnfFromSnapshotTestImpl:
         # container "after", (c) rendered the incremental sendstream.  Since
         # incremental rendering is not implemented, settle for this basic
         # smoke-test for now.
-        self.assertEqual("mice 0.1 a\n", Path("/rpm_test/mice.txt").read_text())
+        self.assertEqual("lala\n", Path("/rpm_test/milk-no-sh.txt").read_text())
+        # Check that our post-install scriptlet worked
+        self.assertEqual("stuff\n", Path("/rpm_test/post.txt").read_text())
 
     @contextmanager
     def _set_up_shadow(self, replacement, to_shadow):

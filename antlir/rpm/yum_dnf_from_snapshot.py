@@ -134,6 +134,52 @@ def _install_to_current_root(install_root):
     return install_root.realpath() == b"/"
 
 
+# Yum is incorrigible -- it is impossible to give it a set of options
+# that will completely prevent it from accessing host configuration &
+# caches.  So instead, we do this to avoid littering inside the
+# surrounding `nspawn_in_subvol` container:
+#
+#  - `YumDnfConfIsolator` coerces the config to "isolated" or "default",
+#    as much as possible.
+#
+#  - In our mount namespace, we bind-mount no-op files and directories
+#    on top of all the configuration paths that `yum` might try to
+#    access on the host (whether it does or not).  The sources for this
+#    information are (i) `man yum.conf`, (ii) `man rpm`, and (iii)
+#    adding `strace -ff -e trace=file -oyumtrace` below.  To check the
+#    isolation, one may grep for "/(etc|var)" in the traces, keeping in
+#    mind that many of the accesses happen in chroots.  E.g.
+#
+#      grep '(".*"' yumtrace.* | cut -f 2 -d\\" |
+#        grep -v '/tmp/tmp[^/]*install/' | sort -u | less -N
+#
+#    Note that once `yum` starts chrooting into the install root, one
+#    has to do a bit of work to filter out the chrooted actions.  It's
+#    not too painful to cut out the bulk of them so manually with an
+#    editor, after verifying thus that all the chrooted accesses come in
+#    one continuous block:
+#
+#      grep -v '^[abd-z][a-z]*("/\\+tmp/tmp9q0y0pshinstall' \
+#        yumtrace.3803399 |
+#        egrep -v '"(/proc/self/loginuid|/var/tmp|/sys/)' |
+#        egrep -v '"(/etc/selinux|/etc/localtime|/")' |
+#        python3 -c 'import sys;print(sys.stdin.read(
+#        ).replace(
+#        "chroot(\\".\\")                             = 0\\n" +
+#        "chroot(\\"/tmp/tmp9q0y0pshinstall/\\")      = 0\\n",
+#        ""
+#        ))'| less -N
+#
+#    Even though that still leaves some child processes that ran
+#    entirely inside a chroot, the post-edit file list was still
+#    possible to vet by hand, since the bulk of accesses fell into
+#    /lib*, /opt, /sbin, and /usr.
+#
+#    NB: I kept access to:
+#     /usr/lib/rpm/rpmrc /usr/lib/rpm/redhat/rpmrc
+#     /usr/lib/rpm/macros /usr/lib/rpm/redhat/macros
+#   on the premise that unlike the local customizations, these may be
+#   required for `rpm` to function.
 def _isolate_yum_dnf(
     yum_dnf: YumDnf,
     install_root,
@@ -143,52 +189,29 @@ def _isolate_yum_dnf(
     cache_dir: Path,
 ):
     "Isolate yum/dnf from the host filesystem."
-    # Yum is incorrigible -- it is impossible to give it a set of options
-    # that will completely prevent it from accessing host configuration &
-    # caches.  So instead, we do this to avoid littering inside the
-    # surrounding `nspawn_in_subvol` container:
+    # When installing to a chroot, provide a mock `/dev/null` so that
+    # post-install scripts can write to `/dev/null`.  If we used nspawn to
+    # sandbox the install, this would be taken care of, but it would also
+    # litter the install root, so we haven't done it yet. A hack for now:
     #
-    #  - `YumDnfConfIsolator` coerces the config to "isolated" or "default",
-    #    as much as possible.
-    #
-    #  - In our mount namespace, we bind-mount no-op files and directories
-    #    on top of all the configuration paths that `yum` might try to
-    #    access on the host (whether it does or not).  The sources for this
-    #    information are (i) `man yum.conf`, (ii) `man rpm`, and (iii)
-    #    adding `strace -ff -e trace=file -oyumtrace` below.  To check the
-    #    isolation, one may grep for "/(etc|var)" in the traces, keeping in
-    #    mind that many of the accesses happen in chroots.  E.g.
-    #
-    #      grep '(".*"' yumtrace.* | cut -f 2 -d\\" |
-    #        grep -v '/tmp/tmp[^/]*install/' | sort -u | less -N
-    #
-    #    Note that once `yum` starts chrooting into the install root, one
-    #    has to do a bit of work to filter out the chrooted actions.  It's
-    #    not too painful to cut out the bulk of them so manually with an
-    #    editor, after verifying thus that all the chrooted accesses come in
-    #    one continuous block:
-    #
-    #      grep -v '^[abd-z][a-z]*("/\\+tmp/tmp9q0y0pshinstall' \
-    #        yumtrace.3803399 |
-    #        egrep -v '"(/proc/self/loginuid|/var/tmp|/sys/)' |
-    #        egrep -v '"(/etc/selinux|/etc/localtime|/")' |
-    #        python3 -c 'import sys;print(sys.stdin.read(
-    #        ).replace(
-    #        "chroot(\\".\\")                             = 0\\n" +
-    #        "chroot(\\"/tmp/tmp9q0y0pshinstall/\\")      = 0\\n",
-    #        ""
-    #        ))'| less -N
-    #
-    #    Even though that still leaves some child processes that ran
-    #    entirely inside a chroot, the post-edit file list was still
-    #    possible to vet by hand, since the bulk of accesses fell into
-    #    /lib*, /opt, /sbin, and /usr.
-    #
-    #    NB: I kept access to:
-    #     /usr/lib/rpm/rpmrc /usr/lib/rpm/redhat/rpmrc
-    #     /usr/lib/rpm/macros /usr/lib/rpm/redhat/macros
-    #   on the premise that unlike the local customizations, these may be
-    #   required for `rpm` to function.
+    # Note that our mock `/dev` must be read-write in case a package like
+    # `filesystem` is installed and wants to mutate `/dev/`.  Such changes
+    # will be gleefully discarded.
+    set_up_dev = (
+        """\
+install_root={quoted_install_root}
+mkdir -p "$install_root"/dev/
+chown root:root "$install_root"/dev/
+chmod 0755 "$install_root"/dev/
+mount {quoted_dummy_dev} "$install_root"/dev/ -o bind
+mount /dev/null "$install_root"/dev/null -o bind
+""".format(
+            quoted_dummy_dev=dummy_dev.shell_quote(),
+            quoted_install_root=install_root.shell_quote(),
+        )
+        if not _install_to_current_root(install_root)
+        else ""
+    )
     return [
         "bash",
         *(["-x"] if log.isEnabledFor(logging.DEBUG) else []),
@@ -197,41 +220,27 @@ def _isolate_yum_dnf(
         "-uec",
         textwrap.dedent(
             """\
-    # The image needs to have a valid `/dev` so that e.g.  RPM post-install
-    # scripts can work correctly (true bug: a script writing a regular file
-    # at `/dev/null`).  Unfortunately, the way we are invoking `yum`/`dnf`
-    # now, it's not feasible to use `systemd-nspawn`, so we hack it like so:
-    install_root={quoted_install_root}
-    mkdir -p "$install_root"/dev/
-    chown root:root "$install_root"/dev/
-    chmod 0755 "$install_root"/dev/
-    # The mount must be read-write in case a package like `filesystem` is
-    # installed and wants to mutate `/dev/`.  Those changes will be
-    # gleefully discarded.
-    mount {quoted_dummy_dev} "$install_root"/dev/ -o bind
-    mount /dev/null "$install_root"/dev/null -o bind
+{quoted_maybe_set_up_dev}
+{quoted_maybe_clone_cache_dir}
+mkdir -p -m 0755 /var/cache/{prog_name}  # must exist to be protected
+{quoted_protected_paths}
 
-    {quoted_maybe_clone_cache_dir}
-    mkdir -p -m 0755 /var/cache/{prog_name}  # must exist to be protected
-    {quoted_protected_paths}
+# `yum` & `dnf` also use the host's /var/tmp, and since I don't trust
+# them to isolate themselves, let's also relocate that.
+var_tmp=$(mktemp -d --suffix=_isolated_{prog_name}_var_tmp)
+mount "$var_tmp" /var/tmp -o bind
 
-    # `yum` & `dnf` also use the host's /var/tmp, and since I don't trust
-    # them to isolate themselves, let's also relocate that.
-    var_tmp=$(mktemp -d --suffix=_isolated_{prog_name}_var_tmp)
-    mount "$var_tmp" /var/tmp -o bind
+# Clean up the isolation directories. Since we're running as `root`,
+# `rmdir` feels a lot safer, and also asserts that we did not litter.
+trap 'rmdir "$var_tmp"' EXIT
 
-    # Clean up the isolation directories. Since we're running as `root`,
-    # `rmdir` feels a lot safer, and also asserts that we did not litter.
-    trap 'rmdir "$var_tmp"' EXIT
-
-    # NB: The `trap` above means the `bash` process is not replaced by the
-    # child, but that's not a problem.
-    {maybe_set_env_vars} exec "$@"
-    """
+# NB: The `trap` above means the `bash` process is not replaced by the
+# child, but that's not a problem.
+{maybe_set_env_vars} exec "$@"
+"""
         ).format(
             prog_name=yum_dnf.value,
-            quoted_dummy_dev=dummy_dev.shell_quote(),
-            quoted_install_root=install_root.shell_quote(),
+            quoted_maybe_set_up_dev=set_up_dev,
             # Read `_set_up_yum_dnf_cache` for the rationale.
             quoted_maybe_clone_cache_dir=(
                 "cache_dir="
