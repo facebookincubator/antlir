@@ -34,6 +34,14 @@ def get_test_signing_key() -> str:
             return keyfile.read()
 
 
+_CHECK_DEV_NULL_AND_WRITE_POST_TXT = """\
+# yum-dnf-from-snapshot prepares /dev in a subtle way to protect host system
+# from side-effects of rpm post-install scripts.  If /dev/null is not set up
+# correctly, tests will catch the absence of post.txt
+[ -c /dev/null ] && echo 'stuff' > "$RPM_BUILD_ROOT"/rpm_test/post.txt
+"""
+
+
 class Rpm(NamedTuple):
     name: str
     version: str
@@ -94,17 +102,13 @@ mkdir -p "$RPM_BUILD_ROOT"/bin
                 """\
 cp {quoted_busybox_path} "$RPM_BUILD_ROOT"/bin/sh
 %post
-# yum-dnf-from-snapshot prepares /dev in a subtle way to
-# protect host system from side-effects of rpm post-install
-# scripts. The command below lets us test that /dev/null is
-# prepared properly: if "echo > /dev/null" fails, tests will
-# catch the absence of post.txt
-echo > /dev/null && echo 'stuff' > "$RPM_BUILD_ROOT"/rpm_test/post.txt
+{post}
 %files
 /bin/sh
 /rpm_test/{name}.txt
 """.format(
-                    **format_kwargs
+                    **format_kwargs,
+                    post=_CHECK_DEV_NULL_AND_WRITE_POST_TXT,
                 )
             )
         else:
@@ -169,6 +173,22 @@ SAMPLE_STEPS = [
                     # Installing at least one such package is important for
                     # validating the `yum-dnf-from-snapshot` runtime.
                     test_post_install=True,
+                ),
+                Rpm(
+                    # Similar to "milk" but installable to /, because it does
+                    # not provide `/bin/sh`, which conflicts with `bash`.
+                    "milk-no-sh",
+                    "v",
+                    "r",
+                    custom_body=f"""
+%install
+mkdir -p "$RPM_BUILD_ROOT"/rpm_test
+echo lala > "$RPM_BUILD_ROOT"/rpm_test/milk-no-sh.txt
+%post
+{_CHECK_DEV_NULL_AND_WRITE_POST_TXT}
+%files
+/rpm_test/milk-no-sh.txt
+""",
                 ),
                 Rpm("mice", "0.1", "a"),
                 # Since this is older than version `2-rc0` it needs versionlock.

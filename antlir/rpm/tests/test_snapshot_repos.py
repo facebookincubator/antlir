@@ -299,6 +299,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                         ("cat", "cat-pkgs/rpm-test-carrot-1-lockme"),
                         ("cat", "cat-pkgs/rpm-test-mice-0.1-a"),
                         ("cat", "cat-pkgs/rpm-test-milk-2.71-8"),
+                        ("cat", "cat-pkgs/rpm-test-milk-no-sh-v-r"),
                         ("dog", "dog-pkgs/rpm-test-carrot-2-rc0"),
                         ("dog", "dog-pkgs/rpm-test-etc-dnf-macro-1-2"),
                         ("dog", "dog-pkgs/rpm-test-etc-yum-macro-1-2"),
@@ -308,6 +309,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                         ("kitteh", "cat-pkgs/rpm-test-carrot-1-lockme"),
                         ("kitteh", "cat-pkgs/rpm-test-mice-0.1-a"),
                         ("kitteh", "cat-pkgs/rpm-test-milk-2.71-8"),
+                        ("kitteh", "cat-pkgs/rpm-test-milk-no-sh-v-r"),
                     },
                 ),
                 # These are "bunny" & "cat" (as "kitteh") from
@@ -335,6 +337,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                             "kitteh",
                             "cat-pkgs/rpm-test-milk-2.71-8",
                         ),  # may error
+                        ("kitteh", "cat-pkgs/rpm-test-milk-no-sh-v-r"),
                     },
                 ),
             ]:
