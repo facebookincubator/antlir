@@ -11,7 +11,7 @@ const {fbInternalOnly} = require('internaldocs-fb-helpers');
 
 module.exports = {
   docs: {
-    Introduction: ['introduction', 'faqs'],
+    Introduction: ['introduction', 'faq', ...fbInternalOnly(['fb/faq'])],
     Tutorials: ['tutorials/defining-an-image'],
     API: [
       {
@@ -27,20 +27,22 @@ module.exports = {
     'Concepts & Design': [
       {
         RPMs: [
+          ...fbInternalOnly(['concepts/rpms/fb/how-rpms-are-updated']),
+          'concepts/rpms/how-rpms-are-updated',
           'concepts/rpms/using-rpms-in-images',
           'concepts/rpms/version-selection',
-          'concepts/rpms/overview',
         ],
         'Pre-built Artifacts': [
           {
             Fbpkgs: [
               ...fbInternalOnly([
-                'concepts/pre-built-artifacts/fb/fbpkgs/overview',
+                'concepts/pre-built-artifacts/fb/fbpkgs/how-fbpkgs-are-updated',
                 'concepts/pre-built-artifacts/fb/fbpkgs/using-fbpkgs-in-images',
-                'concepts/pre-built-artifacts/fb/fbpkgs/fbpkg-fetched-buck-macros',
+                // 'concepts/pre-built-artifacts/fb/fbpkgs/images-as-fbpkgs',
               ]),
             ],
           },
+          // 'concepts/pre-built-artifacts//fetched-artifacts',
         ],
       },
     ],
