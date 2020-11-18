@@ -19,6 +19,7 @@ from itertools import chain
 from pathlib import Path
 from typing import AsyncContextManager, ContextManager, Iterable, Optional
 
+from antlir.common import get_logger
 from antlir.compiler.items.mount import mounts_from_image_meta
 from antlir.config import load_repo_config
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -29,7 +30,7 @@ from antlir.vm.tap import VmTap
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 
 @dataclass(frozen=True)
