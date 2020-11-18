@@ -143,6 +143,8 @@ image.layer(
         )),
         # Mask a unit
         systemd.mask_units(["cheese-source.service"]),
+        # Mask a tmpfiles.d config
+        systemd.mask_tmpfiles(["testconfig.conf"]),
     ],
 )
 
