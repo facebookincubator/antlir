@@ -337,6 +337,14 @@ def _layer(**field_kwargs):
     return _field(type = "LayerTarget", **field_kwargs)
 
 def _shape(**fields):
+    """
+    Define a new shape type with the fields as given by the kwargs.
+
+    Example usage:
+    ```
+    shape.shape(hello=str)
+    ```
+    """
     for name, f in fields.items():
         # transparently convert fields that are just a type have no options to
         # the rich field type for internal use
@@ -363,6 +371,16 @@ def _shape_defaults_dict(shape):
     return defaults
 
 def _new_shape(shape, **fields):
+    """
+    Type check and instantiate a struct of the given shape type using the
+    values from the **fields kwargs.
+
+    Example usage:
+    ```
+    example_t = shape.shape(hello=str)
+    example = shape.new(example_t, hello="world")
+    ```
+    """
     with_defaults = _shape_defaults_dict(shape)
     with_defaults.update(fields)
     instance = struct(**with_defaults)
@@ -457,28 +475,30 @@ def _type_has_location(t):
     return False  # pragma: no cover
 
 def _python_data(name, instance, shape, module = None, **python_library_kwargs):  # pragma: no cover
-    """Codegen a static shape data structure that can be directly 'import'ed by
-    Python. The object is available under the name "data". A common use case is
-    to call shape.python_data inline in a target's `deps`, with `module`
+    """
+    Codegen a static shape data structure that can be directly 'import'ed by
+    Python. The object is available under the name "data". A common use case
+    is to call shape.python_data inline in a target's `deps`, with `module`
     (defaults to `name`) then representing the name of the module that can be
     imported in the underlying file.
 
-    Example:
-
-        python_binary(
-            name = provided_name,
-            deps = [
-                shape.python_data(
-                    name = "bin_bzl_args",
-                    instance = shape.new(
-                        some_shape_t,
-                        var = input_var,
-                    ),
-                    shape = some_shape_t,
+    Example usage:
+    ```
+    python_binary(
+        name = provided_name,
+        deps = [
+            shape.python_data(
+                name = "bin_bzl_args",
+                instance = shape.new(
+                    some_shape_t,
+                    var = input_var,
                 ),
-            ],
-            ...
-        )
+                shape = some_shape_t,
+            ),
+        ],
+        ...
+    )
+    ```
 
     can then be imported as:
 
@@ -516,6 +536,14 @@ def _python_data(name, instance, shape, module = None, **python_library_kwargs):
     return normalize_target(":" + name)
 
 def _json_file(name, instance, shape):  # pragma: no cover
+    """
+    Serialize the given shape instance to a JSON file that can be used in the
+    `resources` section of a `python_binary` or a `$(location)` macro in a
+    `buck_genrule`.
+
+    Warning: this will fail to serialize any shape type that contains a
+    reference to a target location, as that cannot be safely cached by buck.
+    """
     if _type_has_location(shape):
         fail(_SERIALIZING_LOCATION_MSG)
 

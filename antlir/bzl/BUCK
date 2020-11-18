@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file")
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file")
 load(":defs.bzl", "fake_macro_library")
 
 # IMPORTANT: If you add new `.bzl` files or dependencies in `antlir/`,
@@ -226,4 +226,9 @@ export_file(
 fake_macro_library(
     name = "structs",
     srcs = ["structs.bzl"],
+)
+
+buck_filegroup(
+    name = "bzldoc-files",
+    srcs = ["shape.bzl"],
 )
