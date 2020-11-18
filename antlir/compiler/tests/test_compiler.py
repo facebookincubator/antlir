@@ -258,6 +258,7 @@ class CompilerTestCase(unittest.TestCase):
             artifacts_may_require_repo=True,  # Must match CLI arg in `_compile`
             target_to_path=si.TARGET_TO_PATH,
             subvolumes_dir=_SUBVOLS_DIR,
+            version_set_override=None,
             rpm_installer=YumDnf.dnf,
             rpm_repo_snapshot=None,
         )

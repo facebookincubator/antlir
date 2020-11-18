@@ -10,7 +10,6 @@ import unittest
 from contextlib import contextmanager
 
 from antlir.compiler.requires_provides import ProvidesDirectory, ProvidesFile
-from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path, render_subvol
 
@@ -31,6 +30,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     target_to_path=None,
     subvolumes_dir=None,
     rpm_installer=None,
+    version_set_override=None,
     rpm_repo_snapshot=None,
     allowed_host_mount_targets=[],
 )

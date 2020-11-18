@@ -1,5 +1,7 @@
 # Implementation detail for `image_layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl/image_actions:feature.bzl", "normalize_features")
 load(":build_opts.bzl", "normalize_build_opts")
 load(":constants.bzl", "REPO_CFG")
@@ -40,6 +42,22 @@ def compile_image_features(
         version_set = build_opts.version_set,
     )
 
+    vset_override_name = None
+    if build_opts.rpm_version_set_overrides:
+        vset_override_name = "vset-override-" + sha256_b64(current_target)
+        buck_genrule(
+            name = vset_override_name,
+            out = "unused",
+            bash = """
+cat > "$OUT" << 'EOF'
+{envra_file_contents}
+EOF
+            """.format(
+                envra_file_contents = "\n".join(["\t".join(envra._private_envra) for envra in build_opts.rpm_version_set_overrides]),
+            ),
+            antlir_rule = "user-internal",
+        )
+
     return '''
         # Take note of `targets_and_outputs` below -- this enables the
         # compiler to map the `target_tagger` target sigils in the outputs
@@ -58,6 +76,7 @@ def compile_image_features(
           {maybe_quoted_rpm_installer_args} \
           {maybe_quoted_rpm_repo_snapshot_args} \
           {maybe_allowed_host_mount_target_args} \
+          {maybe_version_set_override} \
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
           --child-dependencies {feature_deps_query_macro} \
@@ -70,8 +89,8 @@ def compile_image_features(
             for t in normalized_features.targets
         ] + (
             ["--child-feature-json <(echo {})".format(shell.quote(struct(
-                target = current_target,
                 features = normalized_features.inline_features,
+                target = current_target,
             ).to_json()))] if normalized_features.inline_features else []
         )),
         maybe_allowed_host_mount_target_args = (
@@ -128,5 +147,8 @@ def compile_image_features(
             "--rpm-repo-snapshot {}".format(
                 shell.quote(build_opts.rpm_repo_snapshot),
             ) if build_opts.rpm_repo_snapshot else ""
+        ),
+        maybe_version_set_override = (
+            "--version-set-override $(location :{})".format(vset_override_name) if vset_override_name else ""
         ),
     )

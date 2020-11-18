@@ -127,6 +127,11 @@ def parse_args(args) -> argparse.Namespace:
         help="Target name that is allowed to contain host mounts used as "
         "build_sources.  Can be specified more than once.",
     )
+    parser.add_argument(
+        "--version-set-override",
+        help="Path to a file containing TAB-separated ENVRAs, one per line."
+        "Also refer to `build_opts.bzl`.",
+    )
     return Path.parse_args(parser, args)
 
 
@@ -155,6 +160,7 @@ def build_image(args):
         artifacts_may_require_repo=args.artifacts_may_require_repo,
         target_to_path=make_target_path_map(args.child_dependencies),
         subvolumes_dir=args.subvolumes_dir,
+        version_set_override=args.version_set_override,
         debug=args.debug,
         allowed_host_mount_targets=frozenset(args.allowed_host_mount_target),
     )

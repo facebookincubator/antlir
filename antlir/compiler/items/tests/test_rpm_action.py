@@ -118,6 +118,28 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
             )
 
+    def test_version_override(self):
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, temp_dir() as td:
+            with open(td / "vset", "w") as outfile:
+                outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
+
+            subvol = temp_subvolumes.create("rpm_ver_lock")
+            subvol.run_as_root(["mkdir", subvol.path(".meta")])
+            self._check_rpm_action_item_subvol(
+                subvol,
+                RpmActionItem(
+                    from_target="t",
+                    name="rpm-test-carrot",
+                    action=RpmAction.install,
+                ),
+                {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
+                opts=self._opts(version_set_override=td / "vset"),
+            )
+            self.assertEquals(
+                "carrot 1 lockme\n",
+                subvol.path("/rpm_test/carrot.txt").read_text(),
+            )
+
     def test_rpm_action_item_auto_downgrade(self):
         parent_subvol = layer_resource_subvol(
             __package__, "test-with-one-local-rpm"

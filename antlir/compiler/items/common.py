@@ -112,6 +112,7 @@ class LayerOpts(NamedTuple):
     rpm_repo_snapshot: Optional[str]
     target_to_path: Mapping[str, str]
     subvolumes_dir: str
+    version_set_override: Optional[str]
     debug: bool = False
     allowed_host_mount_targets: FrozenSet[str] = frozenset()
 

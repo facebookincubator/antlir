@@ -25,7 +25,10 @@ def _build_opts(
         #
         # `None` uses the default determined by looking up `rpm_installer`
         # in `RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR`.
-        rpm_repo_snapshot = None):
+        rpm_repo_snapshot = None,
+        # List of nevra objects (see antlir/bzl/image_rpm.bzl for definition).
+        # If rpm with given name to be installed, the nevra defines its version.
+        rpm_version_set_overrides = None):
     if build_appliance == None:
         fail(
             "Must be a target path, or a value from `constants.bzl`",
@@ -56,6 +59,7 @@ def _build_opts(
             snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else None
         ),
         subvol_name = subvol_name,
+        rpm_version_set_overrides = rpm_version_set_overrides,
     )
 
 def normalize_build_opts(build_opts):
