@@ -38,6 +38,9 @@ with the options allowed there.  The key differences with
 
       # The amount of memory, in mb, to provide to the VM.
       mem_mb = 4096,
+
+      # The rootfs image to use for the vm, specified as a buck target
+      rootfs_image = "//buck/target/path:image",
   )
   ```
 
@@ -75,12 +78,17 @@ vm_opts_t = shape.shape(
     cpus = shape.field(int, default = 1),
     # Amount of memory in mb
     mem_mb = shape.field(int, default = 4096),
+    # Rootfs image for the vm
+    rootfs_image = shape.target(),
 )
 
-def _new_vm_opts(bios = None, cpus = 1, emulator = None, **kwargs):
+def _new_vm_opts(bios = None, cpus = 1, emulator = None, layer = None, **kwargs):
     # Don't allow an invalid cpu count
     if cpus == 2:
         fail("ncpus=2 will cause kernel panic: https://fburl.com/md27i5k8")
+
+    if kwargs.pop("rootfs_image", None):
+        fail("Do not use `rootfs_image` directly, please provide the `layer` attribute to configure a custom rootfs")
 
     # These defaults have to be set here due to the use of the
     # `third_party.library` function.  It must be invoked inside of
@@ -89,11 +97,35 @@ def _new_vm_opts(bios = None, cpus = 1, emulator = None, **kwargs):
     bios = bios or third_party.library("qemu", "share/qemu/bios-256k.bin")
     emulator = emulator or third_party.library("qemu")
 
+    # If the vm is using the default rootfs layer, we can use the
+    # pre-packaged seed device and save lots of build time
+    # Otherwise we have to build a seed device using the layer
+    # the user provided
+    if layer and layer != default_vm_image.layer:
+        # Convert the provided layer name into something that we can safely use
+        # as the base for a new target name.  This is only used for the
+        # vm being constructed here, so it doesn't have to be pretty.
+        layer_name = layer.lstrip(":").lstrip("//").replace("/", "_").replace(":", "__")
+        seed_image_target = "{}=seed.btrfs".format(layer_name)
+        if not native.rule_exists(seed_image_target):
+            image.package(
+                name = seed_image_target,
+                layer = layer,
+                seed_device = True,
+                writable_subvolume = True,
+                visibility = [],
+                antlir_rule = "user-internal",
+            )
+        rootfs_image = ":" + seed_image_target
+    else:
+        rootfs_image = default_vm_image.package
+
     return shape.new(
         vm_opts_t,
         bios = bios,
         cpus = cpus,
         emulator = emulator,
+        rootfs_image = rootfs_image,
         **kwargs
     )
 
@@ -106,11 +138,8 @@ def _build_run_target(
         args = None,
         # The exe target to execute.
         exe_target = None,
-        # A target for the image package to use as the rootfs.
-        rootfs = None,
         # An instance of a vm_opts_t shape.
         vm_opts = None):
-    # Set defaults
     vm_opts = vm_opts or _new_vm_opts()
 
     buck_genrule(
@@ -122,7 +151,6 @@ cat > "$TMP/out" << 'EOF'
 set -ue -o pipefail -o noclobber
 exec $(exe {exe_target}) \
 --opts {opts_quoted} \
---rootfs-image $(location {rootfs_quoted}) \
 {extra_args} \
 "$@"
 EOF
@@ -135,7 +163,6 @@ mv "$TMP/out" "$OUT"
                 instance = vm_opts,
                 shape = vm_opts_t,
             )),
-            rootfs_quoted = shell.quote(rootfs),
         ),
         cacheable = False,
         executable = True,
@@ -174,7 +201,6 @@ def _vm_unittest(
         name,
         unittest_rule,
         kernel = None,
-        layer = None,
         vm_opts = None,
         visibility = None,
         env = None,
@@ -187,10 +213,12 @@ def _vm_unittest(
         # linked discussions for more details
         user_specified_deps = None,
         **kwargs):
+    if kwargs.pop("layer", None):
+        fail("The `layer` attribute is not support for vm unittests.  Please provide `layer` within `vm_opts` instead")
+
     # Set some defaults
     env = env or {}
     kernel = kernel or kernel_get.default
-    layer = layer or default_vm_image.layer
     vm_opts = vm_opts or _new_vm_opts()
 
     # Construct tags for controlling/influencing the unittest runner.
@@ -221,28 +249,6 @@ def _vm_unittest(
         name = actual_test_image,
         layer = ":" + actual_test_layer,
     )
-
-    # If the test is using the default rootfs layer, we can use the
-    # pre-packaged seed device and save lots of build time
-    # Otherwise we have to build a seed device using the layer
-    # the user provided
-    rootfs_seed_image = default_vm_image.package
-    if layer != default_vm_image.layer:
-        new_rootfs_layer = "{}--rootfs-layer".format(name)
-
-        image.layer(
-            name = new_rootfs_layer,
-            parent_layer = layer,
-        )
-        image.package(
-            name = "{}=seed.btrfs".format(name),
-            layer = ":" + new_rootfs_layer,
-            seed_device = True,
-            writable_subvolume = True,
-            visibility = [],
-            antlir_rule = "user-internal",
-        )
-        rootfs_seed_image = ":{}=seed.btrfs".format(name)
 
     # Build the binary that serves as the entry point for executing the test
     # inside of a VM
@@ -286,7 +292,6 @@ def _vm_unittest(
             "--uname {}".format(shell.quote(kernel.uname)),
         ] if vm_opts.devel else []),
         exe_target = ":{}--vmtest-binary".format(name),
-        rootfs = rootfs_seed_image,
         vm_opts = vm_opts,
     )
 
@@ -317,7 +322,6 @@ def _vm_unittest(
 def _vm_cpp_unittest(
         name,
         kernel = None,
-        layer = None,
         vm_opts = None,
         deps = (),
         **kwargs):
@@ -325,7 +329,6 @@ def _vm_cpp_unittest(
         name,
         cpp_unittest,
         kernel = kernel,
-        layer = layer,
         vm_opts = vm_opts,
         deps = deps,
         user_specified_deps = deps,
@@ -335,7 +338,6 @@ def _vm_cpp_unittest(
 def _vm_python_unittest(
         name,
         kernel = None,
-        layer = None,
         vm_opts = None,
         **kwargs):
     # Short circuit the target graph by attaching user_specified_deps to the outer
@@ -352,7 +354,6 @@ def _vm_python_unittest(
         name,
         python_unittest,
         kernel = kernel,
-        layer = layer,
         vm_opts = vm_opts,
         user_specified_deps = user_specified_deps,
         # unittest pars must be xars so that native libs work inside the vm without

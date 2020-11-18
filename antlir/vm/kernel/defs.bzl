@@ -42,7 +42,6 @@ def create_kernel_vm_targets(kernel):
     vm.run(
         name = kernel.uname,
         exe_target = ":{}-run".format(kernel.uname),
-        rootfs = default_vm_image.package,
     )
 
 def kernel_artifact_layers(uname, devel_rpm, rpm_exploded, extra_modules = None, include_vmlinux = True):

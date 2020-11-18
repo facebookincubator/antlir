@@ -40,3 +40,6 @@ class BasicVMTest(unittest.TestCase):
 
     def test_running_multiple_cpus(self):
         self.assertEqual(multiprocessing.cpu_count(), 4)
+
+    def test_custom_rootfs(self):
+        self.assertTrue(os.path.exists("/etc/i_am_a_custom_rootfs"))

@@ -75,7 +75,6 @@ async def __wait_for_boot(sockfile: os.PathLike) -> None:
 @asynccontextmanager
 async def __vm_with_stack(
     stack: AsyncExitStack,
-    image: Path,
     opts: vm_opts_t,
     bind_repo_ro: bool = False,
     verbose: bool = False,
@@ -108,7 +107,7 @@ async def __vm_with_stack(
     repo_config = load_repo_config(path_in_repo=os.getcwd())
 
     # Process all the mounts from the root image we are using
-    mounts = mounts_from_image_meta(image)
+    mounts = mounts_from_image_meta(opts.rootfs_image.path)
 
     for mount in mounts:
         if mount.build_source.type == "host":
@@ -153,7 +152,10 @@ async def __vm_with_stack(
     shares.extend(
         [
             BtrfsDisk(
-                path=str(image), dev="vda", generator=False, mountpoint="/"
+                path=str(opts.rootfs_image.path),
+                dev="vda",
+                generator=False,
+                mountpoint="/",
             ),
             BtrfsDisk(
                 path=rwdevice.name,

@@ -23,15 +23,9 @@ logger = logging.getLogger(__file__)
 @click.command()
 @click.option(
     "--opts",
-    type=vm_opts_t.load,
+    type=vm_opts_t.parse_raw,
     help="Path to a serialized vm_opts_t instance containing configuration "
     "details for the vm.",
-    required=True,
-)
-@click.option(
-    "--rootfs-image",
-    type=Path,
-    help="Path to a btrfs seed device to use as the rootfs image for the VM",
     required=True,
 )
 @click.option("-v", "--verbose", count=True)
@@ -48,7 +42,6 @@ async def run(
     cmd: Iterable[str],
     dry_run: bool,
     opts: vm_opts_t,
-    rootfs_image: Path,
     timeout: int,
     verbose: int,
 ):
@@ -65,7 +58,6 @@ async def run(
     cmd = cmd or ["/bin/bash"]
 
     async with vm(
-        image=rootfs_image,
         opts=opts,
         verbose=verbose > 0,
         interactive=not cmd or cmd == ["/bin/bash"],

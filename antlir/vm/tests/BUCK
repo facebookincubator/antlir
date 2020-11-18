@@ -1,11 +1,11 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "default_vm_image", "export_file", "python_unittest")
 load("//antlir/bzl:vm.bzl", "vm")
 load("//antlir/vm:kernel.bzl", "make_kernel_artifacts")
 
-# Don't run this test directly, it should only be used within the
-# `kernel_panic_test`.
+# Don't run this test directly, it should only be used within
+# `:test-kernel-panic`.
 vm.python_unittest(
     name = "create-kernel-panic",
     srcs = ["create_kernel_panic.py"],
@@ -32,6 +32,17 @@ test_env_vars = {
     "kitteh": "meow",
 }
 
+image.layer(
+    name = "vmtest-custom-layer",
+    parent_layer = default_vm_image.layer,
+    features = [
+        image.install(
+            ":resource.txt",
+            "/etc/i_am_a_custom_rootfs",
+        ),
+    ],
+)
+
 vm.python_unittest(
     name = "python",
     srcs = ["test_basic_vm.py"],
@@ -41,6 +52,7 @@ vm.python_unittest(
     },
     vm_opts = vm.opts(
         cpus = 4,
+        layer = ":vmtest-custom-layer",
     ),
 )
 
@@ -68,6 +80,7 @@ KERNEL_ARTIFACTS = [
     buck_genrule(
         name = "0.01-{}-data".format(artifact),
         out = "out",
+        cacheable = False,
         cmd = "echo {} > $OUT".format(artifact),
         visibility = [],
     )
