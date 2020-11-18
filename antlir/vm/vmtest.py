@@ -68,12 +68,6 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     "details for the vm.",
     required=True,
 )
-@click.option(
-    "--rootfs-image",
-    type=Path,
-    help="Path to a btrfs seed device to use as the rootfs image for the VM",
-    required=True,
-)
 # These two options are here to provide support for mounting the devel/headers
 # for a kernel as an image layer via 9p.
 # Future: The layer will be provided transparently via runtime mounts + the
@@ -143,7 +137,6 @@ async def main(
     interactive: bool,
     list_tests: Optional[str],
     opts: vm_opts_t,
-    rootfs_image: Path,
     setenv: List[str],
     sync_file: List[str],
     test_binary: Path,
@@ -211,7 +204,6 @@ async def main(
     async with vm(
         bind_repo_ro=bind_repo_ro,
         opts=opts,
-        image=rootfs_image,
         verbose=not quiet,
         interactive=interactive,
         shares=shares,
