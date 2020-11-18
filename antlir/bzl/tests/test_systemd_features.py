@@ -13,6 +13,7 @@ from antlir.fs_utils import Path
 
 PROV_ROOT = Path("/usr/lib/systemd/system")
 ADMIN_ROOT = Path("/etc/systemd/system")
+TMPFILES_ROOT = Path("/etc/tmpfiles.d")
 
 # tuple of the form:
 # ( <unit name>, <enabled target>, <masked bool> )
@@ -75,3 +76,7 @@ class TestSystemdFeatures(unittest.TestCase):
 
                 # Yes, systemd (at least in v243) is OK with a relative link
                 self.assertEqual(os.readlink(masked_unit), b"../../../dev/null")
+
+        self.assertEqual(
+            os.readlink(TMPFILES_ROOT / "testconfig.conf"), b"../../dev/null"
+        )
