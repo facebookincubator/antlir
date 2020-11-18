@@ -6,18 +6,18 @@
 
 import asyncio
 import importlib.resources
-import logging
 import sys
 from typing import Iterable
 
 import click
+from antlir.common import init_logging, get_logger
 from antlir.fs_utils import Path
 from antlir.vm.common import async_wrapper
 from antlir.vm.vm import vm
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
-logger = logging.getLogger(__file__)
+logger = get_logger()
 
 
 @click.command()
@@ -28,6 +28,7 @@ logger = logging.getLogger(__file__)
     "details for the vm.",
     required=True,
 )
+@click.option("-d", "--debug", is_flag=True, default=False)
 @click.option("-v", "--verbose", count=True)
 @click.option("--dry-run", is_flag=True, help="print qemu command and exit")
 @click.option(
@@ -40,18 +41,13 @@ logger = logging.getLogger(__file__)
 @async_wrapper
 async def run(
     cmd: Iterable[str],
+    debug: bool,
     dry_run: bool,
     opts: vm_opts_t,
     timeout: int,
     verbose: int,
 ):
-    # warn is 30, should default to 30 when verbose=0
-    # each level below warning is 10 less than the previous
-    log_level = -10 * verbose + 30
-    logging.basicConfig(
-        format="%(levelname)s:%(name)s: %(message)s", level=log_level
-    )
-
+    init_logging(debug=debug)
     returncode = 0
 
     # if we didn't get a comamnd, use a shell

@@ -16,6 +16,7 @@ from typing import Iterable, List, Optional
 
 import click
 from antlir.artifacts_dir import find_buck_cell_root
+from antlir.common import init_logging, get_logger
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.vm.common import async_wrapper
@@ -24,7 +25,7 @@ from antlir.vm.vm import vm
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
-logger = logging.getLogger("vmtest")
+logger = get_logger()
 
 
 MINUTE = 60
@@ -68,6 +69,7 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     "details for the vm.",
     required=True,
 )
+@click.option("-d", "--debug", is_flag=True, default=False)
 # These two options are here to provide support for mounting the devel/headers
 # for a kernel as an image layer via 9p.
 # Future: The layer will be provided transparently via runtime mounts + the
@@ -133,6 +135,7 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
 async def main(
     args: Iterable[str],
     bind_repo_ro: bool,
+    debug: bool,
     gtest_list_tests: bool,
     interactive: bool,
     list_tests: Optional[str],
@@ -147,13 +150,16 @@ async def main(
     devel_layer: Path = None,
     uname: str = None,
 ) -> None:
+    init_logging(debug=debug)
+
     h = logging.StreamHandler()
     h.setFormatter(
         RelativeTimeFormatter(
             "%(uptime).03f %(levelname)s:%(name)s: %(message)s"
         )
     )
-    logging.basicConfig(level=logging.DEBUG, handlers=[h])
+    logger.addHandler(h)
+
     returncode = -1
     start_time = time.time()
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
