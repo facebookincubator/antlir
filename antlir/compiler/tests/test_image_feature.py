@@ -56,6 +56,7 @@ class ImageFeatureTestCase(unittest.TestCase):
                     if target_to_path is None
                     else target_to_path,
                     subvolumes_dir=None,
+                    version_set_override=None,
                     rpm_installer=None,
                     rpm_repo_snapshot=None,
                 ),

@@ -73,6 +73,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     artifacts_may_require_repo=True,
     target_to_path=None,
     subvolumes_dir=None,
+    version_set_override=None,
     rpm_installer=None,
     rpm_repo_snapshot=None,
     allowed_host_mount_targets=[],

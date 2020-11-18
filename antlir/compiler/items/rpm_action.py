@@ -210,16 +210,27 @@ def _rpms_and_bind_ros(
 
 
 @contextmanager
-def _prepare_versionlock(version_sets: Iterable[Path]) -> Path:
+def _prepare_versionlock(
+    version_sets: Iterable[Path], version_set_override: Optional[str]
+) -> Path:
     with tempfile.NamedTemporaryFile() as outfile:
         # Blindly concatenate the files in the supplied paths; some modest
         # error-checking will happen in `yum_dnf_versionlock.py`.
-        for vs_path in version_sets:
-            with open(vs_path, "rb") as infile:
+        overridden_rpm_names = set()
+        if version_set_override:
+            with open(version_set_override, "rb") as infile:
                 for l in infile:
+                    overridden_rpm_names.add(l.split()[1])
                     outfile.write(l)
                     if not l.endswith(b"\n"):
                         outfile.write(b"\n")
+        for vs_path in version_sets:
+            with open(vs_path, "rb") as infile:
+                for l in infile:
+                    if not l.split()[1] in overridden_rpm_names:
+                        outfile.write(l)
+                        if not l.endswith(b"\n"):
+                            outfile.write(b"\n")
         outfile.flush()
         yield outfile.name
 
@@ -267,7 +278,9 @@ class RpmActionItem(ImageItem):
             version_sets.add(item.version_set)
 
         def builder(subvol: Subvol) -> None:
-            with _prepare_versionlock(version_sets) as versionlock_path:
+            with _prepare_versionlock(
+                version_sets, layer_opts.version_set_override
+            ) as versionlock_path:
                 # Convert porcelain RpmAction to plumbing YumDnfCommands.  This
                 # is done in the builder because we need access to the subvol.
                 #
