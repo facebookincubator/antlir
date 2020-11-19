@@ -17,7 +17,11 @@ There is currently no additional parsing done on the docstrings themselves
 """
 import argparse
 import ast
+import os
+from dataclasses import dataclass
+from typing import Iterable, Mapping, Optional
 
+from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import get_logger
 from antlir.fs_utils import Path
 
@@ -25,84 +29,175 @@ from antlir.fs_utils import Path
 log = get_logger()
 
 
-def generate_md(module: ast.Module, export_id: str):
-    functions = [
-        node for node in module.body if isinstance(node, ast.FunctionDef)
-    ]
-    functions = {fdef.name: fdef for fdef in functions}
+# Global mapping to track all the parse modules to resolve references between
+# files, since antlir apis heavily employ redirection in API exports.
+all_modules: Mapping[Path, "BzlFile"] = {}
 
-    # Look for a public top-level struct definition that is the exported
-    # API of this file.
-    assignments = [node for node in module.body if isinstance(node, ast.Assign)]
-    api_struct = None
-    for e in reversed(assignments):
-        # For easy matching, it is assumed that the name of the struct
-        # matches the module name
-        if len(e.targets) == 1 and e.targets[0].id == export_id:
-            api_struct = {kw.arg: kw.value for kw in e.value.keywords}
 
-    assert api_struct, f"expected a struct named '{export_id}'"
+@dataclass(frozen=True)
+class BzlFile(object):
+    path: Path
+    module: ast.Module
 
-    api_functions = {}
-    for key, val in api_struct.items():
-        if not isinstance(val, ast.Name):
-            log.warning(f"Not documenting non-name '{key}: {val}'")
-            continue
-        if val.id not in functions:
-            log.warning(
-                f"Not documenting non-locally defined function '{val.id}'"
-            )
-            continue
-        api_functions[key] = functions[val.id]
+    @property
+    def name(self) -> str:
+        return self.path.basename().decode()
 
-    md = ast.get_docstring(module)
-    md += "\n\n"
-    md += "API\n===\n"
-    for name, func in api_functions.items():
-        args = [a.arg for a in func.args.args]
-        if func.args.vararg:
-            args.append("*" + func.args.vararg.arg)
-        if func.args.kwarg:
-            args.append("**" + func.args.kwarg.arg)
-        args = ", ".join(args)
-        md += f"`{name}({args})`\n---\n"
-        md += ast.get_docstring(func) or "No docstring available.\n"
+    @property
+    def docblock(self) -> Optional[str]:
+        return ast.get_docstring(self.module)
+
+    @property
+    def body(self) -> Iterable[ast.AST]:
+        return self.module.body
+
+    @property
+    def export_struct(self) -> Optional[Mapping[str, ast.AST]]:
+        """Look for a struct that exports the 'public api' of this module"""
+        assignments = [
+            node for node in self.body if isinstance(node, ast.Assign)
+        ]
+        # typically this is at the end of the module, so iterate backwards
+        for e in reversed(assignments):
+            # For easy matching, it is assumed that the name of the struct
+            # matches the module name
+            if len(e.targets) == 1 and e.targets[0].id == self.name:
+                return {kw.arg: kw.value for kw in e.value.keywords}
+        return None
+
+    @property
+    def functions(self) -> Mapping[str, ast.FunctionDef]:
+        return {
+            node.name: node
+            for node in self.body
+            if isinstance(node, ast.FunctionDef)
+        }
+
+    @property
+    def loaded_symbols(self) -> Mapping[str, str]:
+        """Returns map of symbol -> source file target"""
+        loads = [
+            node.value
+            for node in self.body
+            if isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name)
+            and node.value.func.id == "load"
+        ]
+        symbols = {}
+        for load in loads:
+            file = load.args[0].s.lstrip("/").encode()
+            if file.startswith(b":"):
+                file = self.path.dirname() / file.lstrip(b":")
+            file = Path(file.replace(b":", b"/")[:-4])
+
+            file_symbols = [a.s for a in load.args[1:]]
+            for s in file_symbols:
+                symbols[s] = file
+        return symbols
+
+    def resolve_function(self, name: str) -> Optional[ast.FunctionDef]:
+        """
+        Attempt to resolve the given function name, traversing load()
+        calls if it is not defined locally.
+        """
+        f = self.functions.get(name, None)
+        if f:
+            return f
+        src = self.loaded_symbols.get(name, None)
+        if src:
+            if src not in all_modules:
+                log.warning(
+                    f"{name} is loaded from {src}, which was not parsed"
+                )
+                return None
+            return all_modules[src].resolve_function(name)
+        log.warning(f"{self.path}: '{name}' not defined locally or loaded")
+        return None
+
+    @property
+    def header(self) -> str:
+        return (
+            f"""---
+id: {self.path.basename().decode()}
+title: {self.path.basename().decode().capitalize()}
+generated: """
+            + "'@"
+            + "generated'"
+            + "\n---\n"
+        )
+
+    def generate_md(self) -> Optional[str]:
+        """
+        Generate a .md doc describing the exported API of this module, or
+        None if there is no export struct.
+        This MUST be called after parsing every module, since it does
+        cross-module docstring resolution.
+        """
+        if not self.export_struct:
+            log.warning(f"{self.path}: missing export struct, not documenting")
+            return None
+
+        md = self.header
+        md += self.docblock or ""
         md += "\n\n"
-    return md
+        md += "API\n===\n"
+        for name, node in self.export_struct.items():
+            if not isinstance(node, ast.Name):
+                log.warning(f"not documenting non-name '{name}: {node}'")
+                continue
+            func = self.resolve_function(node.id)
+            if not func:
+                log.warning(f"not documenting unresolved func '{name}'")
+                continue
+
+            args = [a.arg for a in func.args.args]
+            if func.args.vararg:
+                args.append("*" + func.args.vararg.arg)
+            if func.args.kwarg:
+                args.append("**" + func.args.kwarg.arg)
+            args = ", ".join(args)
+            md += f"`{name}({args})`\n---\n"
+            md += ast.get_docstring(func) or "No docstring available.\n"
+            md += "\n\n"
+
+        return md
 
 
 def bzldoc():
     parser = argparse.ArgumentParser()
-    parser.add_argument("bzldir", type=Path.from_argparse)
+    parser.add_argument("bzls", type=Path.from_argparse, nargs="+")
     parser.add_argument("outdir", type=Path.from_argparse)
 
     args = parser.parse_args()
 
-    bzldir = args.bzldir
+    bzls = args.bzls
     outdir = args.outdir
-    assert bzldir.exists()
     assert outdir.exists()
 
-    for bzl in bzldir.listdir():
-        if not bzl.endswith(b".bzl"):
+    repo_root = find_buck_cell_root()
+
+    for bzl in bzls:
+        # always deal with relative paths from repo root
+        parsed = ast.parse(bzl.read_text())
+        bzl = bzl.abspath().relpath(repo_root)
+        assert bzl.endswith(b".bzl")
+        module_path = Path(bzl[:-4])
+        module = BzlFile(module_path, parsed)
+        all_modules[module_path] = module
+
+    for mod in all_modules.values():
+        md = mod.generate_md()
+        if not md:
             continue
+        dst = outdir / mod.path.relpath("antlir/bzl")
+        dst = Path(dst + b".md")
+        dstdir = dst.dirname()
+        if not dstdir.exists():
+            os.makedirs(dstdir, exist_ok=True)
 
-        bzl = bzldir / bzl
-
-        bzlid = bzl.basename().replace(b".bzl", b"").decode()
-        title = bzlid.capitalize()
-
-        module = ast.parse(bzl.read_text())
-
-        with open(outdir / bzlid + b".md", "w") as md:
-            md.write("---\n")
-            md.write(f"id: {bzlid}\n")
-            md.write(f"title: {title}\n")
-            md.write('generated: "@')
-            md.write('generated"\n')
-            md.write("---\n")
-
-            md.write(generate_md(module, bzlid))
+        with open(dst, "w") as out:
+            out.write(md)
 
 
 if __name__ == "__main__":
