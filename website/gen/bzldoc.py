@@ -157,7 +157,9 @@ generated: """
             if func.args.kwarg:
                 args.append("**" + func.args.kwarg.arg)
             args = ", ".join(args)
-            md += f"`{name}({args})`\n---\n"
+
+            md += f"`{name}`\n---\n"
+            md += f"`{name}({args})`\n"
             md += ast.get_docstring(func) or "No docstring available.\n"
             md += "\n\n"
 
@@ -190,9 +192,8 @@ def bzldoc():
         md = mod.generate_md()
         if not md:
             continue
-        dst = outdir / mod.path.relpath("antlir/bzl")
-        dst = Path(dst + b".md")
-        dstdir = dst.dirname()
+        dstdir = outdir / mod.path.relpath("antlir/bzl").dirname()
+        dst = dstdir / f"gen-{mod.path.basename()}.md"
         if not dstdir.exists():
             os.makedirs(dstdir, exist_ok=True)
 

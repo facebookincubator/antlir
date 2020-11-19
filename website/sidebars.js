@@ -14,13 +14,10 @@ module.exports = {
     Introduction: ['introduction', 'faq', ...fbInternalOnly(['fb/faq'])],
     Tutorials: ['tutorials/defining-an-image'],
     API: [
+      'api/image',
       {
-        'Building Images': [
-          'api/building-images/image-layer',
-          {'Image Actions': ['api/building-images/image-actions/make-dirs']},
-        ],
-        'nspawn Runtime': ['api/building-images/nspawn-runtime/image-unittest'],
-        'VM Runtime': ['api/building-images/vm-runtime/vm-unittest'],
+        'nspawn Runtime': ['runtime/nspawn-runtime/image-unittest'],
+        'VM Runtime': ['runtime/vm-runtime/vm-unittest'],
       },
       'api/shape',
     ],

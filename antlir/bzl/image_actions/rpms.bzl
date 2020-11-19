@@ -1,20 +1,3 @@
-"""
-`image.rpms_install(["foo"])` installs `foo.rpm`,
-`image.rpms_install(["//target:bar"])` builds `bar` target and installs
-resulting RPM,
-`image.rpms_remove_if_exists(["baz"])` removes `baz.rpm` if exists --
-
-The argument to both functions is a list of RPM package names to install,
-without version or release numbers. Dependencies are installed as needed. Order
-is not significant. Note that removals may only be applied against the parent
-layer -- if your current layer includes features both removing and installing
-the same package, this will cause a build failure.
-
-As shown in the above example, RPMs may also be installed that are the outputs
-of another buck rule by providing a target path or an `image.source` (docs
-in`image_source.bzl`), or by directly providing a target path.
-"""
-
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
 
@@ -57,9 +40,30 @@ def _build_rpm_feature(rpmlist, action, needs_version_set):
     )
 
 def image_rpms_install(rpmlist):
+    """
+`image.rpms_install(["foo"])` installs `foo.rpm`,
+`image.rpms_install(["//target:bar"])` builds `bar` target and installs
+resulting RPM.
+
+The argument to both functions is a list of RPM package names to install,
+without version or release numbers. Dependencies are installed as needed.
+Order is not significant.
+
+As shown in the above example, RPMs may also be installed that are the
+outputs of another buck rule by providing a target path or an `image.source`
+(docs in`image_source.bzl`), or by directly providing a target path.
+    """
+
     return _build_rpm_feature(rpmlist, "install", needs_version_set = True)
 
 def image_rpms_remove_if_exists(rpmlist):
+    """
+`image.rpms_remove_if_exists(["baz"])` removes `baz.rpm` if exists.
+
+Note that removals may only be applied against the parent layer -- if your
+current layer includes features both removing and installing the same
+package, this will cause a build failure.
+    """
     return _build_rpm_feature(
         rpmlist,
         "remove_if_exists",

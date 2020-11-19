@@ -1,22 +1,4 @@
 """
-`image.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
-buck-runnable artifact `exe` to `dir/foo` in the image.  Unlike `install`,
-this supports only single files -- though you can extract a file from a
-buck-runnable directory via `image.source`, see below.
-
-`image.install("//path/fs:data", "dir/bar")` installs file or directory
-`data` to `dir/bar` in the image.
-
-## When to use `install_buck_runnable` vs `install`?
-
-If the file being copied is a buck-runnable (e.g.  `cpp_binary`,
-`python_binary`), use `install_buck_runnable`.  Ditto for copying executable
-files from inside directories output by buck-runnable rules.  For everything
-else, use `install` [1].
-
-Important: failing to use `install_buck_runnable` will cause the installed
-binary to be unusable in image tests in @mode/dev.
-
 ## Usage of `install_*` actions
 
 The object to be installed is specified using `image.source` syntax, except
@@ -80,6 +62,23 @@ def _forbid_layer_source(source_dict):
         )
 
 def image_install_buck_runnable(source, dest, mode = None, user = None, group = None):
+    """
+`image.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
+buck-runnable artifact `exe` to `dir/foo` in the image. Unlike `install`,
+this supports only single files -- though you can extract a file from a
+buck-runnable directory via `image.source`, see below.
+
+### When to use `install_buck_runnable` vs `install`?
+
+If the file being copied is a buck-runnable (e.g. `cpp_binary`,
+`python_binary`), use `install_buck_runnable`. Ditto for copying executable
+files from inside directories output by buck-runnable rules. For everything
+else, use `install` [1].
+
+Important: failing to use `install_buck_runnable` will cause the installed
+binary to be unusable in image tests in @mode/dev.
+    """
+
     target_tagger = new_target_tagger()
 
     # Normalize to the `image.source` interface
@@ -117,6 +116,11 @@ def image_install_buck_runnable(source, dest, mode = None, user = None, group = 
     )
 
 def image_install(source, dest, mode = None, user = None, group = None):
+    """
+`image.install("//path/fs:data", "dir/bar")` installs file or directory
+`data` to `dir/bar` in the image.
+    """
+
     target_tagger = new_target_tagger()
     install_spec = {
         "dest": dest,
