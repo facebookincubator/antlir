@@ -159,7 +159,7 @@ generated: """
             args = ", ".join(args)
 
             md += f"`{name}`\n---\n"
-            md += f"`{name}({args})`\n"
+            md += f"Prototype: `{name}({args})`\n\n"
             md += ast.get_docstring(func) or "No docstring available.\n"
             md += "\n\n"
 
