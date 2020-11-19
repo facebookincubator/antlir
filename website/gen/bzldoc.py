@@ -197,8 +197,14 @@ def bzldoc():
         if not dstdir.exists():
             os.makedirs(dstdir, exist_ok=True)
 
-        with open(dst, "w") as out:
-            out.write(md)
+        # avoid rewriting the file if the contents are the same to avoid
+        # endlessly recompiling in `yarn watch`
+        if dst.exists() and dst.read_text() == md:
+            log.debug(f"{dst} is unchanged")
+        else:
+            log.info(f"updating generated docs {dst}")
+            with open(dst, "w") as out:
+                out.write(md)
 
 
 if __name__ == "__main__":

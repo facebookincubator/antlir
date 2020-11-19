@@ -8,16 +8,17 @@
  */
 
 const {fbContent} = require('internaldocs-fb-helpers');
+const path = require('path');
 
 module.exports = {
   title: fbContent({
-    'internal': 'Antlir @FB',
-    'external': 'Antlir'
+    internal: 'Antlir @FB',
+    external: 'Antlir',
   }),
   tagline: 'A filesystem image builder',
   url: fbContent({
-    'internal': 'https://www.internalfb.com/intern/staticdocs/antlir',
-    'external': 'https://facebookincubator.github.io/antlir',
+    internal: 'https://www.internalfb.com/intern/staticdocs/antlir',
+    external: 'https://facebookincubator.github.io/antlir',
   }),
   baseUrl: '/antlir/',
   favicon: 'img/favicon.ico',
@@ -26,8 +27,8 @@ module.exports = {
   themeConfig: {
     navbar: {
       title: fbContent({
-        'internal': 'Antlir @FB',
-        'external': 'Antlir',
+        internal: 'Antlir @FB',
+        external: 'Antlir',
       }),
       logo: {
         alt: 'My Facebook Project Logo',
@@ -118,8 +119,10 @@ module.exports = {
           homePageId: 'introduction',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: fbContent({
-            'internal': 'https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/antlir/website',
-            'external': 'https://github.com/facebookincubator/antlir/edit/master/website/',
+            internal:
+              'https://www.internalfb.com/intern/diffusion/FBS/browse/master/fbcode/antlir/website',
+            external:
+              'https://github.com/facebookincubator/antlir/edit/master/website/',
           }),
         },
         theme: {
@@ -128,5 +131,8 @@ module.exports = {
       },
     ],
   ],
-  plugins: [require.resolve('docusaurus-plugin-internaldocs-fb')],
+  plugins: [
+    path.resolve(__dirname, 'gen'),
+    require.resolve('docusaurus-plugin-internaldocs-fb'),
+  ],
 };
