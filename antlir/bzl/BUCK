@@ -227,8 +227,3 @@ fake_macro_library(
     name = "structs",
     srcs = ["structs.bzl"],
 )
-
-buck_filegroup(
-    name = "bzldoc-files",
-    srcs = ["shape.bzl"],
-)

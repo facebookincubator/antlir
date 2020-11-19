@@ -1,17 +1,12 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "python_binary")
+load("//antlir/bzl:oss_shim.bzl", "python_binary")
 
 python_binary(
     name = "bzldoc",
     srcs = ["bzldoc.py"],
     main_module = "antlir.website.gen.bzldoc",
     deps = [
+        "//antlir:artifacts_dir",
         "//antlir:common",
         "//antlir:fs_utils",
     ],
-)
-
-buck_command_alias(
-    name = "generate-all-bzldoc",
-    args = ["$(location //antlir/bzl:bzldoc-files)"],
-    exe = ":bzldoc",
 )
