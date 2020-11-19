@@ -1,14 +1,3 @@
-"""
-`image.tarball("files/xyz.tar", "/a/b")` extracts tarball located at `files/xyz.tar` to `/a/b` in the image --
-  - `source` is one of:
-    - an `image.source` (docs in `image_source.bzl`), or
-    - the path of a target outputting a tarball target path,
-      e.g. an `export_file` or a `genrule`
-  - `dest` is the destination of the unpacked tarball in the image.
-    This is an image-absolute path to a directory that must be created
-    by another `image_feature` item.
-"""
-
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 load(
@@ -33,6 +22,16 @@ tarball_t = shape.shape(
 )
 
 def image_tarball(source, dest, force_root_ownership = False):
+    """
+`image.tarball("files/xyz.tar", "/a/b")` extracts tarball located at `files/xyz.tar` to `/a/b` in the image --
+- `source` is one of:
+    - an `image.source` (docs in `image_source.bzl`), or
+    - the path of a target outputting a tarball target path,
+    e.g. an `export_file` or a `genrule`
+- `dest` is the destination of the unpacked tarball in the image.
+    This is an image-absolute path to a directory that must be created
+    by another `image_feature` item.
+    """
     target_tagger = new_target_tagger()
     tarball = shape.new(
         tagged_tarball,
