@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "start": "yarn bzldoc && docusaurus start",
-    "bzldoc": "buck run //antlir/website/gen:bzldoc -- ../bzl/*.bzl ../bzl/**/*.bzl ./docs/api/",
     "build": "yarn bzldoc && yarn docusaurus build",
+    "bzldoc": "buck run //antlir/website/gen:bzldoc -- ../bzl/*.bzl ../bzl/**/*.bzl ./docs/api/",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "ci": "yarn lint && yarn prettier:diff",
