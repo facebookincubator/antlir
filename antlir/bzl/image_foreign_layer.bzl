@@ -190,6 +190,7 @@ def image_foreign_layer(
         _layer_name = name,
         # Build a new layer. It may be empty.
         _make_subvol_cmd = compile_image_features(
+            name = name,
             current_target = image_utils.current_target(name),
             parent_layer = parent_layer,
             features = [target_tagger_to_feature(

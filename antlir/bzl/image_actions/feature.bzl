@@ -50,6 +50,8 @@ load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
+FEATURES_FOR_LAYER_PREFIX = "features-for-layer-"
+
 # ## Why are `image.feature`s forbidden as dependencies?
 #
 # The long target suffix below exists to discourage people from directly
@@ -105,6 +107,12 @@ def PRIVATE_DO_NOT_USE_feature_target_name(name, version_set):
     if version_set != VERSION_SET_ALLOW_ALL_VERSIONS:
         name += "__rpm_verset__" + version_set
     return name
+
+def PRIVATE_DO_NOT_USE_features_for_layer(layer_name, version_set):
+    return FEATURES_FOR_LAYER_PREFIX + PRIVATE_DO_NOT_USE_feature_target_name(
+        layer_name,
+        version_set,
+    )
 
 def _flatten_nested_lists(lst):
     flat_lst = []
@@ -225,7 +233,7 @@ def image_feature(
         name,
         features,
         visibility = None,
-        _test_only_version_sets = REPO_CFG.version_set_to_path):
+        _internal_only_version_sets = REPO_CFG.version_set_to_path):
     """
     Turns a group of image actions into a Buck target, so it can be
     referenced from outside the current project via `//path/to:name`.
@@ -238,7 +246,7 @@ def image_feature(
     the container (install RPMs, remove files/directories, create symlinks
     or directories, copy executable or data files, declare mounts).
     """
-    for version_set in _test_only_version_sets:
+    for version_set in _internal_only_version_sets:
         _image_feature_impl(
             name = name,
             features = features,
