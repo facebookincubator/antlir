@@ -119,7 +119,6 @@ def _new_vm_opts(
     # not allow it at this time.
     initrd = "{}:{}-initrd".format(kernel_get.base_target, kernel.uname)
 
-
     # If the vm is using the default rootfs layer, we can use the
     # pre-packaged seed device and save lots of build time
     # Otherwise we have to build a seed device using the layer
@@ -164,8 +163,7 @@ def _build_run_target(
         # properly formatted.
         args = None,
         # The exe target to execute.
-        exe_target = None):
-
+        exe_target = "//antlir/vm:run"):
     buck_genrule(
         name = name,
         out = "run",
@@ -379,6 +377,7 @@ def _vm_multi_kernel_unittest(
         if vm_opts:
             merged_vm_opts = shape.as_dict(vm_opts)
             merged_vm_opts["kernel"] = kernel
+
             # Don't provide the initrd originally constructed since
             # the kernel version likely changed
             merged_vm_opts.pop("initrd")

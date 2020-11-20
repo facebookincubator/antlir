@@ -57,7 +57,6 @@ initrd(kernel = kernel)
 
 vm.run(
     name = "5.3.7-301.fc31.x86_64",
-    exe_target = "//antlir/vm:run",
     vm_opts = vm.opts(
         kernel = kernel,
     ),
