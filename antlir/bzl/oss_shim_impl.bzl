@@ -440,6 +440,7 @@ shim = struct(
     get_visibility = _normalize_visibility,
     http_file = _http_file,
     kernel_get = struct(
+        base_target = "//third-party/fedora31/kernel",
         default = _kernel("5.3.7-301.fc31.x86_64"),
         get = _kernel,
         versions = kernels,

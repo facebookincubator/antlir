@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
-load("//antlir/vm/kernel:defs.bzl", "kernel_artifact_layers")
+load("//antlir/bzl:vm.bzl", "vm")
+load("//antlir/vm:kernel.bzl", "build_kernel_artifacts")
+load("//antlir/vm/initrd:defs.bzl", "initrd")
 
 http_file(
     name = "5.3.7-301.fc31.x86_64-core.rpm",
@@ -43,9 +45,20 @@ buck_genrule(
     cmd = "cp --reflink=auto $(location :5.3.7-301.fc31.x86_64-rpm-exploded)/lib/modules/5.3.7-301.fc31.x86_64/vmlinuz $OUT",
 )
 
-kernel_artifact_layers(
+# Build kernel artifacts and get back a shape instance
+kernel = build_kernel_artifacts(
     devel_rpm = ":5.3.7-301.fc31.x86_64-devel.rpm",
     include_vmlinux = False,
     rpm_exploded = ":5.3.7-301.fc31.x86_64-rpm-exploded",
     uname = "5.3.7-301.fc31.x86_64",
+)
+
+initrd(kernel = kernel)
+
+vm.run(
+    name = "5.3.7-301.fc31.x86_64",
+    exe_target = "//antlir/vm:run",
+    vm_opts = vm.opts(
+        kernel = kernel,
+    ),
 )

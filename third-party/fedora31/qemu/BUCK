@@ -5,14 +5,20 @@ load("//antlir/bzl:oss_shim.bzl", "export_file")
 
 export_file(
     name = "qemu",
-    visibility = ["//antlir/vm/..."],
+    visibility = [
+        "//antlir/vm/...",
+        "//third-party/...",
+    ],
 )
 
 [
     export_file(
         name = "share/qemu/{}".format(rom),
         src = "empty",
-        visibility = ["//antlir/vm/..."],
+        visibility = [
+            "//antlir/vm/...",
+            "//third-party/...",
+        ],
     )
     for rom in [
         "bios-256k.bin",

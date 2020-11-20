@@ -1,6 +1,6 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "python_unittest", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:vm.bzl", "vm", "vm_opts_t")
 load("//antlir/vm:kernel.bzl", "kernel_artifacts_t")
@@ -80,11 +80,12 @@ python_library(
     ],
 )
 
-python_library(
+python_binary(
     name = "run",
     srcs = [
         "run.py",
     ],
+    main_module = "antlir.vm.run",
     deps = [
         third_party.library(
             "click",
@@ -130,11 +131,12 @@ python_unittest(
     deps = [":share"],
 )
 
-python_library(
+python_binary(
     name = "vmtest",
     srcs = [
         "vmtest.py",
     ],
+    main_module = "antlir.vm.vmtest",
     deps = [
         third_party.library(
             "click",
@@ -144,6 +146,7 @@ python_library(
         ":share",
         ":vm",
         "//antlir:artifacts_dir",
+        "//antlir:common",
         "//antlir:find_built_subvol",
         "//antlir:fs_utils",
     ],

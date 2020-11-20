@@ -7,7 +7,6 @@
 import asyncio
 import importlib.resources
 import io
-import logging
 import os.path
 import sys
 import time
@@ -29,15 +28,6 @@ logger = get_logger()
 
 
 MINUTE = 60
-
-
-class RelativeTimeFormatter(logging.Formatter):
-    def format(self, record):
-        # this is technically "uptime" from when the logger initializes, but
-        # the vm should be started within milliseconds so it's "good enough"
-        # for relative ordering between python logs and guest kernel logs
-        record.uptime = record.relativeCreated / 1000.0
-        return super().format(record)
 
 
 def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
@@ -152,14 +142,6 @@ async def main(
 ) -> None:
     init_logging(debug=debug)
 
-    h = logging.StreamHandler()
-    h.setFormatter(
-        RelativeTimeFormatter(
-            "%(uptime).03f %(levelname)s:%(name)s: %(message)s"
-        )
-    )
-    logger.addHandler(h)
-
     returncode = -1
     start_time = time.time()
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
@@ -215,6 +197,7 @@ async def main(
         shares=shares,
     ) as instance:
         boot_time_elapsed = time.time() - start_time
+        logger.debug(f"VM took {boot_time_elapsed} seconds to boot")
         if not interactive:
             # Automatically execute test only under non-interactive mode.
 

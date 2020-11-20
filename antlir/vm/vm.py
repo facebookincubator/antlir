@@ -6,7 +6,6 @@
 
 import asyncio
 import importlib.resources
-import logging
 import os
 import shlex
 import subprocess
@@ -31,26 +30,6 @@ from antlir.vm.vm_opts_t import vm_opts_t
 
 
 logger = get_logger()
-
-
-@dataclass(frozen=True)
-class KernelResources(object):
-    vmlinuz: Path
-    initrd: Path
-    modules: Path
-
-
-@contextmanager
-def kernel_resources() -> ContextManager[KernelResources]:
-    with importlib.resources.path(
-        __package__, "initrd"
-    ) as initrd, importlib.resources.path(__package__, "vmlinuz") as vmlinuz:
-
-        yield KernelResources(
-            initrd=initrd,
-            modules=layer_resource_subvol(__package__, "modules").path(),
-            vmlinuz=vmlinuz,
-        )
 
 
 async def __wait_for_boot(sockfile: os.PathLike) -> None:
@@ -180,128 +159,129 @@ async def __vm_with_stack(
 
     ns = stack.enter_context(Unshare([Namespace.NETWORK, Namespace.PID]))
     tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
-    with kernel_resources() as kernel:
-        args = [
-            "-no-reboot",
-            "-display",
-            "none",
-            "-serial",
-            "mon:stdio",
-            "-cpu",
-            "max",
-            "-smp",
-            str(opts.cpus),
-            "-m",
-            "{}M".format(str(opts.mem_mb)),
-            "-object",
-            "rng-random,filename=/dev/urandom,id=rng0",
-            "-device",
-            "virtio-rng-pci,rng=rng0",
-            "-device",
-            "virtio-serial",
-            "-kernel",
-            str(kernel.vmlinuz),
-            "-initrd",
-            str(kernel.initrd),
-            "-append",
-            (
-                "console=ttyS0,115200"
-                " root=/dev/vda"
-                " noapic"
-                " panic=-1"
-                " cgroup_no_v1=all"
-                " systemd.unified_cgroup_hierarchy=1"
-                " rootflags=subvol=volume"
-                " rw"
-                " rd.emergency=poweroff"
-                " rd.debug"
-            ),
-            # qemu-guest-agent socket/serial device pair
-            "-chardev",
-            f"socket,path={guest_agent_sockfile},server,nowait,id=qga0",
-            "-device",
-            "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0",
-            # socket/serial device pair (for use by __wait_for_boot)
-            "-chardev",
-            f"socket,path={notify_sockfile},id=notify,server",
-            "-device",
-            "virtserialport,chardev=notify,name=notify-host",
-        ] + list(tapdev.qemu_args)
+    args = [
+        "-no-reboot",
+        "-display",
+        "none",
+        "-serial",
+        "mon:stdio",
+        "-cpu",
+        "max",
+        "-smp",
+        str(opts.cpus),
+        "-m",
+        "{}M".format(str(opts.mem_mb)),
+        "-object",
+        "rng-random,filename=/dev/urandom,id=rng0",
+        "-device",
+        "virtio-rng-pci,rng=rng0",
+        "-device",
+        "virtio-serial",
+        "-kernel",
+        str(opts.kernel.artifacts.vmlinuz.path),
+        "-initrd",
+        str(opts.initrd.path),
+        "-append",
+        (
+            "console=ttyS0,115200"
+            " root=/dev/vda"
+            " noapic"
+            " panic=-1"
+            " cgroup_no_v1=all"
+            " systemd.unified_cgroup_hierarchy=1"
+            " rootflags=subvol=volume"
+            " rw"
+            " rd.emergency=poweroff"
+            " rd.debug"
+        ),
+        # qemu-guest-agent socket/serial device pair
+        "-chardev",
+        f"socket,path={guest_agent_sockfile},server,nowait,id=qga0",
+        "-device",
+        "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0",
+        # socket/serial device pair (for use by __wait_for_boot)
+        "-chardev",
+        f"socket,path={notify_sockfile},id=notify,server",
+        "-device",
+        "virtserialport,chardev=notify,name=notify-host",
+    ] + list(tapdev.qemu_args)
 
-        # The bios to boot the emulator with
-        args.extend(["-bios", str(opts.bios.path)])
+    # The bios to boot the emulator with
+    args.extend(["-bios", str(opts.bios.path)])
 
-        # Set the path for loading additional roms
-        args.extend(["-L", str(opts.emulator_roms_dir.path)])
+    # Set the path for loading additional roms
+    args.extend(["-L", str(opts.emulator_roms_dir.path)])
 
-        if os.access("/dev/kvm", os.R_OK | os.W_OK):
-            args += ["-enable-kvm"]
-        else:
-            logger.warning(
-                "KVM not available - falling back to slower, emulated CPU: "
-                + "see https://our.intern.facebook.com/intern/qa/5312/"
-                + "how-do-i-enable-kvm-on-my-devvm"
-            )
+    if os.access("/dev/kvm", os.R_OK | os.W_OK):
+        args += ["-enable-kvm"]
+    else:
+        logger.warning(
+            "KVM not available - falling back to slower, emulated CPU: "
+            + "see https://our.intern.facebook.com/intern/qa/5312/"
+            + "how-do-i-enable-kvm-on-my-devvm"
+        )
 
-        # this modules directory is mounted by init.sh at boot, to avoid having
-        # to install kernels in the root fs and avoid expensive copying of
-        # ~400M worth of modules during boot
-        shares += [
-            Plan9Export(
-                kernel.modules, mount_tag="kernel-modules", generator=False
-            )
-        ]
+    # this modules directory is mounted by init.sh at boot, to avoid having
+    # to install kernels in the root fs and avoid expensive copying of
+    # ~400M worth of modules during boot
+    shares += [
+        Plan9Export(
+            opts.kernel.artifacts.modules.subvol.path(),
+            mount_tag="kernel-modules",
+            generator=False,
+        )
+    ]
 
-        export_share = stack.enter_context(Share.export_spec(shares))
-        shares += [export_share]
+    export_share = stack.enter_context(Share.export_spec(shares))
+    shares += [export_share]
 
-        args += __qemu_share_args(shares)
-        if dry_run:
-            print(
-                str(opts.emulator.path)
-                + " "
-                + " ".join(shlex.quote(a) for a in args)
-            )
-            sys.exit(0)
+    args += __qemu_share_args(shares)
+    if dry_run:
+        print(
+            str(opts.emulator.path)
+            + " "
+            + " ".join(shlex.quote(a) for a in args)
+        )
+        sys.exit(0)
 
-        qemu_cmd = ns.nsenter_as_user(str(opts.emulator.path), *args)
+    qemu_cmd = ns.nsenter_as_user(str(opts.emulator.path), *args)
 
+    if interactive:
+        proc = await asyncio.create_subprocess_exec(*qemu_cmd)
+    elif verbose:
+        # don't connect stdin if we are simply in verbose mode and not
+        # interactive
+        proc = await asyncio.create_subprocess_exec(
+            *qemu_cmd,
+            stdin=subprocess.PIPE,
+        )
+    else:
+        proc = await asyncio.create_subprocess_exec(
+            *qemu_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+    await __wait_for_boot(notify_sockfile)
+
+    logger.debug(f"guest link-local ipv6: {tapdev.guest_ipv6_ll}")
+
+    try:
+        yield QemuGuestAgent(guest_agent_sockfile)
+    except QemuError as err:
+        print(f"Qemu failed with error: {err}", flush=True, file=sys.stderr)
+    finally:
         if interactive:
-            proc = await asyncio.create_subprocess_exec(*qemu_cmd)
-        elif verbose:
-            # don't connect stdin if we are simply in verbose mode and not
-            # interactive
-            proc = await asyncio.create_subprocess_exec(
-                *qemu_cmd,
-                stdin=subprocess.PIPE,
+            logger.debug("waiting for interactive vm to shutdown")
+            await proc.wait()
+
+        if proc.returncode is None:
+            logger.debug("killing guest vm")
+            kill = await asyncio.create_subprocess_exec(
+                "sudo", "kill", "-KILL", str(proc.pid)
             )
-        else:
-            proc = await asyncio.create_subprocess_exec(
-                *qemu_cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-
-        await __wait_for_boot(notify_sockfile)
-
-        logger.debug(f"guest link-local ipv6: {tapdev.guest_ipv6_ll}")
-
-        try:
-            yield QemuGuestAgent(guest_agent_sockfile)
-        except QemuError as err:
-            print(f"Qemu failed with error: {err}", flush=True, file=sys.stderr)
-        finally:
-            if interactive:
-                logger.debug("waiting for interactive vm to shutdown")
-                await proc.wait()
-
-            if proc.returncode is None:
-                logger.debug("killing guest vm")
-                kill = await asyncio.create_subprocess_exec(
-                    "sudo", "kill", "-KILL", str(proc.pid)
-                )
-                await kill.wait()
+            await kill.wait()
 
 
 @asynccontextmanager

@@ -6,14 +6,7 @@ load(":defs.bzl", "initrd")
 
 export_file(
     name = "init.sh",
-    visibility = [],
 )
-
-# Create initrd targets for all known kernels
-[initrd(
-    name = "{}-initrd".format(kernel.uname),
-    kernel = kernel,
-) for kernel in kernel_get.versions.values()]
 
 # Use system gcc in a foreign layer to always force static linking and avoid
 # any possible FB deps being injected by cpp_binary macros
