@@ -14,7 +14,14 @@ def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
 
 def image_symlink_dir(link_target, link_name):
     """
-`image.symlink_dir("/a", "/b/c")` symlinks directory `/a` to `/b/c`,
+The operation follows rsync convention for a destination (`link_name`):
+`ends/in/slash/` means "write into this directory", `does/not/end/with/slash`
+means "write with the specified filename":
+
+- `image.symlink_dir("/d", "/e/")` symlinks directory `/d` to `/e/d`
+- `image.symlink_dir("/a", "/b/c")` symlinks directory `/a` to `/b/c`
+
+Both arguments are mandatory:
 
 - `link_target` is the image-absolute source file/dir of the symlink.
     This file must exist as we do not support dangling symlinks.
@@ -36,7 +43,14 @@ def image_symlink_dir(link_target, link_name):
 
 def image_symlink_file(link_target, link_name):
     """
-`image.symlink_file("/d", "/e/")` symlinks file `/d` to `/e/d` --
+The operation follows rsync convention for a destination (`link_name`):
+`ends/in/slash/` means "write into this directory", `does/not/end/with/slash`
+means "write with the specified filename":
+
+- `image.symlink_file("/d", "/e/")` symlinks file `/d` to `/e/d`
+- `image.symlink_file("/a", "/b/c")` symlinks file `/a` to `/b/c`
+
+Both arguments are mandatory:
 
 - `link_target` is the image-absolute source file/dir of the symlink.
     This file must exist as we do not support dangling symlinks.
