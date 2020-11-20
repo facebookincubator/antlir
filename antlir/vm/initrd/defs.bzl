@@ -8,7 +8,7 @@ VM_MODULE_LIST = [
     "net/9p/9pnet_virtio.ko",
 ]
 
-def initrd(name, kernel):
+def initrd(kernel):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
     kernel in a virtual machine and setup the root disk as a btrfs seed device
@@ -17,6 +17,8 @@ def initrd(name, kernel):
     The init is built "from scratch" with busybox which allows us easier
     customization as well as much faster build time than using dracut.
     """
+
+    name = "{}-initrd".format(kernel.uname)
 
     busybox = [
         image.install(
@@ -77,7 +79,7 @@ def initrd(name, kernel):
                 fi
             done
         """.format(
-            module_layer = kernel.modules,
+            module_layer = kernel.artifacts.modules,
             module_list = " ".join(VM_MODULE_LIST),
         ),
         antlir_rule = "user-internal",
@@ -91,7 +93,7 @@ def initrd(name, kernel):
             # Setup the init script
             image.install(
                 dest = "/init",
-                source = ":init.sh",
+                source = "//antlir/vm/initrd:init.sh",
                 mode = "u+rwx,og+rx",
             ),
             image.mkdir("/", "bin"),
@@ -102,7 +104,7 @@ def initrd(name, kernel):
             image.mkdir("/", module_base_dir),
             busybox,
             image.clone(
-                src_layer = ":seedroot",
+                src_layer = "//antlir/vm/initrd:seedroot",
                 src_path = "/build/seedroot",
                 dest_path = "/bin/seedroot",
             ),
@@ -121,5 +123,4 @@ def initrd(name, kernel):
         name = name,
         layer = ":" + name + "--layer",
         format = "cpio.gz",
-        visibility = ["//antlir/..."],
     )

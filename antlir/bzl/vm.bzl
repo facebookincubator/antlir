@@ -53,6 +53,7 @@ with the options allowed there.  The key differences with
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/vm:kernel.bzl", "kernel_t", "normalize_kernel")
 load(":image.bzl", "image")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load(":oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "kernel_get", "python_binary", "python_unittest", "third_party")
@@ -66,29 +67,43 @@ _RULE_TO_TEST_TYPE = {
 vm_opts_t = shape.shape(
     # Bios to use for booting
     bios = shape.target(),
-    # The actual emulator to invoke
-    emulator = shape.target(),
-    # Provide a directory from where the emulator can load firmware roms
-    emulator_roms_dir = shape.target(default = "//antlir/vm:roms"),
+    # Number of cpus to provide
+    cpus = shape.field(int, default = 1),
     # Flag to provide the kernel devel package to the vm.
     # Future: This should be moved into a `kernel_opts_t` since this
     # isn't really a vm specific thing.
     devel = shape.field(bool, default = False),
-    # Number of cpus to provide
-    cpus = shape.field(int, default = 1),
+    # The actual emulator to invoke
+    emulator = shape.target(),
+    # Provide a directory from where the emulator can load firmware roms
+    emulator_roms_dir = shape.target(default = "//antlir/vm:roms"),
+    # The initrd to use to boot the vm
+    initrd = shape.target(),
+    # The kernel to boot the vm with
+    kernel = kernel_t,
     # Amount of memory in mb
     mem_mb = shape.field(int, default = 4096),
     # Rootfs image for the vm
     rootfs_image = shape.target(),
 )
 
-def _new_vm_opts(bios = None, cpus = 1, emulator = None, layer = None, **kwargs):
+def _new_vm_opts(
+        bios = None,
+        cpus = 1,
+        emulator = None,
+        kernel = None,
+        layer = None,
+        rootfs_image = None,
+        **kwargs):
     # Don't allow an invalid cpu count
     if cpus == 2:
         fail("ncpus=2 will cause kernel panic: https://fburl.com/md27i5k8")
 
-    if kwargs.pop("rootfs_image", None):
-        fail("Do not use `rootfs_image` directly, please provide the `layer` attribute to configure a custom rootfs")
+    if rootfs_image and layer:
+        fail("Cannot use `rootfs_image` and `layer` together")
+
+    # Convert the (optionally) provided kernel struct into a shape type
+    kernel = normalize_kernel(kernel or kernel_get.default)
 
     # These defaults have to be set here due to the use of the
     # `third_party.library` function.  It must be invoked inside of
@@ -96,6 +111,14 @@ def _new_vm_opts(bios = None, cpus = 1, emulator = None, layer = None, **kwargs)
     # at the top-level of an included .bzl file (where the type def is).
     bios = bios or third_party.library("qemu", "share/qemu/bios-256k.bin")
     emulator = emulator or third_party.library("qemu")
+
+    # The initrd target is derived from the kernel uname.
+    # Note: In the future we would like to support user provided initrds.
+    # However, the initrd must match the kernel uname and since we don't
+    # have a good way to verify that this is the case, we will instea
+    # not allow it at this time.
+    initrd = "{}:{}-initrd".format(kernel_get.base_target, kernel.uname)
+
 
     # If the vm is using the default rootfs layer, we can use the
     # pre-packaged seed device and save lots of build time
@@ -125,6 +148,8 @@ def _new_vm_opts(bios = None, cpus = 1, emulator = None, layer = None, **kwargs)
         bios = bios,
         cpus = cpus,
         emulator = emulator,
+        initrd = initrd,
+        kernel = kernel,
         rootfs_image = rootfs_image,
         **kwargs
     )
@@ -132,15 +157,14 @@ def _new_vm_opts(bios = None, cpus = 1, emulator = None, layer = None, **kwargs)
 def _build_run_target(
         # The name of the runnable target
         name,
+        # An instance of a vm_opts_t shape.
+        vm_opts,
         # A list of additional cli args to pass to the provided exe_target.
         # This is passed directly to the `exe_target` so they should already be
         # properly formatted.
         args = None,
         # The exe target to execute.
-        exe_target = None,
-        # An instance of a vm_opts_t shape.
-        vm_opts = None):
-    vm_opts = vm_opts or _new_vm_opts()
+        exe_target = None):
 
     buck_genrule(
         name = name,
@@ -200,7 +224,6 @@ def _build_test_tags(unittest_rule, tags):
 def _vm_unittest(
         name,
         unittest_rule,
-        kernel = None,
         vm_opts = None,
         visibility = None,
         env = None,
@@ -214,11 +237,13 @@ def _vm_unittest(
         user_specified_deps = None,
         **kwargs):
     if kwargs.pop("layer", None):
-        fail("The `layer` attribute is not support for vm unittests.  Please provide `layer` within `vm_opts` instead")
+        fail("Please provide the `layer` attribute as part of `vm_opts`.")
+
+    if kwargs.pop("kernel", None):
+        fail("Please provide the `kernel` attribute as part of `vm_opts`.")
 
     # Set some defaults
     env = env or {}
-    kernel = kernel or kernel_get.default
     vm_opts = vm_opts or _new_vm_opts()
 
     # Construct tags for controlling/influencing the unittest runner.
@@ -250,21 +275,6 @@ def _vm_unittest(
         layer = ":" + actual_test_layer,
     )
 
-    # Build the binary that serves as the entry point for executing the test
-    # inside of a VM
-    python_binary(
-        name = "{}--vmtest-binary".format(name),
-        base_module = "antlir.vm",
-        antlir_rule = "user-internal",
-        main_module = "antlir.vm.vmtest",
-        par_style = "xar",
-        visibility = [],
-        deps = [
-            "//antlir/vm:vmtest",
-            "//antlir/vm/kernel:{}-vm".format(kernel.uname),
-        ],
-    )
-
     run_target = _build_run_target(
         name = "{}=vmtest".format(name),
         args = [
@@ -287,11 +297,11 @@ def _vm_unittest(
             # Future: This devel layer is just another mount to configure the VM with.
             # it's not special except that we don't hvae clean abstraction (yet) to
             # provide aribtrary mounts that should be setup by the VM.
-            "--devel-layer $(location {})".format(shell.quote(kernel.devel)),
+            "--devel-layer $(location {})".format(shell.quote(vm_opts.kernel.artifacts.devel)),
             # We need the uname to mount the --devel-layer in the right place
-            "--uname {}".format(shell.quote(kernel.uname)),
+            "--uname {}".format(shell.quote(vm_opts.kernel.uname)),
         ] if vm_opts.devel else []),
-        exe_target = ":{}--vmtest-binary".format(name),
+        exe_target = "//antlir/vm:vmtest",
         vm_opts = vm_opts,
     )
 
@@ -321,14 +331,12 @@ def _vm_unittest(
 
 def _vm_cpp_unittest(
         name,
-        kernel = None,
         vm_opts = None,
         deps = (),
         **kwargs):
     _vm_unittest(
         name,
         cpp_unittest,
-        kernel = kernel,
         vm_opts = vm_opts,
         deps = deps,
         user_specified_deps = deps,
@@ -353,7 +361,6 @@ def _vm_python_unittest(
     _vm_unittest(
         name,
         python_unittest,
-        kernel = kernel,
         vm_opts = vm_opts,
         user_specified_deps = user_specified_deps,
         # unittest pars must be xars so that native libs work inside the vm without
@@ -369,9 +376,18 @@ def _vm_multi_kernel_unittest(
         vm_opts = None,
         **kwargs):
     for suffix, kernel in kernels.items():
+        if vm_opts:
+            merged_vm_opts = shape.as_dict(vm_opts)
+            merged_vm_opts["kernel"] = kernel
+            # Don't provide the initrd originally constructed since
+            # the kernel version likely changed
+            merged_vm_opts.pop("initrd")
+            vm_opts = _new_vm_opts(**merged_vm_opts)
+        else:
+            vm_opts = _new_vm_opts(kernel = kernel)
+
         vm_unittest(
             name = "-".join([name, suffix]),
-            kernel = kernel,
             vm_opts = vm_opts,
             **kwargs
         )
@@ -397,7 +413,6 @@ def _vm_multi_kernel_python_unittest(
 vm = struct(
     # The set of reasonable defaults for running vms
     default = struct(
-        kernel = kernel_get.default,
         layer = default_vm_image.layer,
     ),
     cpp_unittest = _vm_cpp_unittest,
