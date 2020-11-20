@@ -474,7 +474,13 @@ def _type_has_location(t):
             return True
     return False  # pragma: no cover
 
-def _python_data(name, instance, shape, module = None, **python_library_kwargs):  # pragma: no cover
+def _python_data(
+        name,
+        instance,
+        shape,
+        module = None,
+        classname = "shape",
+        **python_library_kwargs):  # pragma: no cover
     """
     Codegen a static shape data structure that can be directly 'import'ed by
     Python. The object is available under the name "data". A common use case
@@ -507,8 +513,11 @@ def _python_data(name, instance, shape, module = None, **python_library_kwargs):
     if _type_has_location(shape):
         fail(_SERIALIZING_LOCATION_MSG)
     python_src = "from typing import *\nfrom antlir.shape import *\n"
-    python_src += "\n".join(_codegen_shape(shape, "shape"))
-    python_src += "\ndata = shape.parse_raw('{}')".format(instance.to_json())
+    python_src += "\n".join(_codegen_shape(shape, classname))
+    python_src += "\ndata = {classname}.parse_raw('{shape_json}')".format(
+        classname = classname,
+        shape_json = instance.to_json(),
+    )
 
     if not module:
         module = name

@@ -77,9 +77,10 @@ class TestShape(unittest.TestCase):
         self.assertEqual(f, res)
         # lastly, the directly imported python_data version should also be
         # equivalent
-        from .data import data as imp
+        from .data import data as imp, StormtrooperArgsType
 
         self.assertEqual(imp, res)
+        self.assertTrue(isinstance(imp, StormtrooperArgsType))
 
     def test_hash(self):
         trooper1 = hashable_t(
