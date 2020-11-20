@@ -229,6 +229,7 @@ python_unittest(
             ),
             module = "data",
             shape = hashable_t,
+            classname = "StormtrooperArgsType",
         ),
     ],
 )
