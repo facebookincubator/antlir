@@ -283,7 +283,7 @@ image.feature(
     ],
     # `rpm-test-*` RPMs may not be mentioned by all of the allowed version
     # sets, so just emit this feature for one.
-    _test_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
+    _internal_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
 )
 
 image.feature(
@@ -465,7 +465,7 @@ image.feature(
     ],
     # We can only build for "no version set" because our child
     # `feature_tar_and_rpms` provides no other version sets.
-    _test_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
+    _internal_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
 )
 
 ##

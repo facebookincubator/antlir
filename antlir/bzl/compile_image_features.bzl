@@ -2,7 +2,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load("//antlir/bzl/image_actions:feature.bzl", "normalize_features")
+load("//antlir/bzl/image_actions:feature.bzl", "FEATURES_FOR_LAYER_PREFIX", "image_feature", "normalize_features")
 load(":build_opts.bzl", "normalize_build_opts")
 load(":constants.bzl", "REPO_CFG")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -18,6 +18,7 @@ def _query_set(target_paths):
     return 'set("' + '" "'.join(target_paths) + '")'
 
 def compile_image_features(
+        name,
         current_target,
         parent_layer,
         features,
@@ -27,8 +28,13 @@ def compile_image_features(
 
     build_opts = normalize_build_opts(build_opts)
     target_tagger = new_target_tagger()
-    normalized_features = normalize_features(
-        features + (
+
+    # Outputs the feature JSON for the given layer to disk so that it can be
+    # parsed by other tooling.
+    features_for_layer = FEATURES_FOR_LAYER_PREFIX + name
+    image_feature(
+        name = features_for_layer,
+        features = features + (
             [target_tagger_to_feature(
                 target_tagger,
                 items = struct(parent_layer = [{"subvol": tag_target(
@@ -38,6 +44,10 @@ def compile_image_features(
                 )}]),
             )] if parent_layer else []
         ),
+        _internal_only_version_sets = [build_opts.version_set],
+    )
+    normalized_features = normalize_features(
+        [":" + features_for_layer],
         current_target,
         version_set = build_opts.version_set,
     )

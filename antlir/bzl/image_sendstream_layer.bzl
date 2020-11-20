@@ -27,6 +27,7 @@ def image_sendstream_layer(
         _rule_type = "image_sendstream_layer",
         _layer_name = name,
         _make_subvol_cmd = compile_image_features(
+            name = name,
             current_target = image_utils.current_target(name),
             parent_layer = None,
             features = [target_tagger_to_feature(
