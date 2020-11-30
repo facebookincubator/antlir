@@ -116,7 +116,7 @@ module.exports = {
       '@docusaurus/preset-classic',
       {
         docs: {
-          homePageId: 'introduction',
+          homePageId: 'overview',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: fbContent({
             internal:
