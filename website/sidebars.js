@@ -15,10 +15,12 @@ module.exports = {
       type: 'doc',
       id: 'introduction',
     },
-    ...fbInternalOnly([{
-      type: 'doc',
-      id: 'fb/getting_started',
-    }]),
+    ...fbInternalOnly([
+      {
+        type: 'doc',
+        id: 'fb/getting_started',
+      },
+    ]),
     {
       type: 'doc',
       id: 'getting_started',
@@ -27,10 +29,12 @@ module.exports = {
       type: 'doc',
       id: 'faq',
     },
-    ...fbInternalOnly([{
-      type: 'doc',
-      id: 'fb/faq',
-    }]),
+    ...fbInternalOnly([
+      {
+        type: 'doc',
+        id: 'fb/faq',
+      },
+    ]),
     {
       type: 'category',
       label: 'Tutorials',
@@ -53,13 +57,12 @@ module.exports = {
             {
               Fbpkgs: [
                 ...fbInternalOnly([
-                  'concepts/pre-built-artifacts/fb/fbpkgs/how-fbpkgs-are-updated',
+                  'concepts/pre-built-artifacts/fb/fbpkgs/updating-fetched-fbpkgs',
                   'concepts/pre-built-artifacts/fb/fbpkgs/using-fbpkgs-in-images',
-                  // 'concepts/pre-built-artifacts/fb/fbpkgs/images-as-fbpkgs',
                 ]),
               ],
             },
-            // 'concepts/pre-built-artifacts//fetched-artifacts',
+            'concepts/pre-built-artifacts/fetched-artifacts',
           ],
         },
       ],
@@ -89,7 +92,10 @@ module.exports = {
             'contributing/coding-conventions/pyre',
             'contributing/coding-conventions/python',
           ],
-          TODOs: ['contributing/todos/btrfs_diff', 'contributing/todos/compiler'],
+          TODOs: [
+            'contributing/todos/btrfs_diff',
+            'contributing/todos/compiler',
+          ],
         },
       ],
     },
