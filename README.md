@@ -1,9 +1,6 @@
-## What is `antlir`?
-As it's primary purpose, `antlir` is a set of
-[Starlark](https://github.com/bazelbuild/starlark) macros suitable for use
-by the [Buck](https://buck.build) build system to build OS images for containers
-and hosts, as well as other filesystem images.
+Antlir can **reproducibly build**, **test**, and **run** OS images for
+containers and hosts.  Learn more by [reading the documentation](
+https://facebookincubator.github.io/antlir/docs).
 
-### License
-
-`antlir` is licensed under the MIT License.  See [here](LICENSE).
+Antlir is licensed under the MIT License.  See
+[here](https://github.com/facebookincubator/antlir/blob/main/LICENSE).
