@@ -105,11 +105,9 @@ module.exports = {
       type: 'doc',
       id: 'installing',
     },
-    {
-      type: 'category',
-      label: 'Appendix',
-      collapsed: true,
-      items: ['appendix/vision-containers-as-build-artifacts'],
-    },
+    ...fbInternalOnly([{
+      type: 'doc',
+      id: 'fb/vision-containers-as-build-artifacts',
+    }]),
   ],
 };
