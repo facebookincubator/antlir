@@ -17,19 +17,34 @@ import styles from './styles.module.css';
 
 const features = [
   {
-    title: <>Builds Stuff</>,
+    title: <>
+      What you <a href="https://buck.build/"><tt>buck build</tt></a>...
+    </>,
     imageUrl: 'img/undraw_docusaurus_mountain.svg',
-    description: <>You can build some stuff.</>,
+    description: <ul>
+      <li>Fast</li>
+      <li>Safe, declarative API</li>
+      <li>Source-repo determinstic</li>
+      <li>RPM package support</li>
+      <li>Pre-built artifact support</li>
+    </ul>,
   },
   {
-    title: <>Tests Stuff</>,
+    title: <>is what you `buck test`...</>,
     imageUrl: 'img/undraw_docusaurus_tree.svg',
-    description: <>You can test some stuff.</>,
+    description: <ul>
+      <li>Run tests inside or outside your image</li>
+      <li>Easily compare entire filesystems</li>
+    </ul>,
   },
   {
-    title: <>Runs Stuff</>,
+    title: <>is what you deploy.</>,
     imageUrl: 'img/undraw_docusaurus_react.svg',
-    description: <>You can run some stuff.</>,
+    description: <ul>
+      <li>To hosts</li>
+      <li>To multiple container runtimes</li>
+      <li>In various packaging formats</li>
+    </ul>,
   },
 ];
 
@@ -74,7 +89,7 @@ function Home() {
                   styles.getStartedButton,
                 )}
                 to={useBaseUrl('docs/')}>
-                Get Started
+                Read the docs
               </Link>
             </div>
           </div>
