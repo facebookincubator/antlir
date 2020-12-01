@@ -10,6 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Add tools/ to PATH
+        run: echo "$(pwd)/tools" >> $GITHUB_PATH
+
       - name: Install docs tools
         run: yarn
         working-directory: website
