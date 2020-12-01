@@ -214,8 +214,8 @@ def _prepare_versionlock(
     version_sets: Iterable[Path], version_set_override: Optional[str]
 ) -> Path:
     with tempfile.NamedTemporaryFile() as outfile:
-        # Blindly concatenate the files in the supplied paths; some modest
-        # error-checking will happen in `yum_dnf_versionlock.py`.
+        # Calculate overridden_rpm_names -- the names of rpms listed in
+        # `version_set_override`. Copy this file to `outfile`.
         overridden_rpm_names = set()
         if version_set_override:
             with open(version_set_override, "rb") as infile:
@@ -224,6 +224,9 @@ def _prepare_versionlock(
                     outfile.write(l)
                     if not l.endswith(b"\n"):
                         outfile.write(b"\n")
+        # Blindly concatenate the files in the supplied paths dropping lines
+        # with rpm names defined by `overridden_rpm_names`; some modest
+        # error-checking will happen in `yum_dnf_versionlock.py`.
         for vs_path in version_sets:
             with open(vs_path, "rb") as infile:
                 for l in infile:
