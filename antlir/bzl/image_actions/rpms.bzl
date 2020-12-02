@@ -52,6 +52,22 @@ Order is not significant.
 As shown in the above example, RPMs may also be installed that are the
 outputs of another buck rule by providing a target path or an `image.source`
 (docs in`image_source.bzl`), or by directly providing a target path.
+
+If the argument `rpmlist` lists both RPM name and buck rule targets, RPMs
+specified by buck rule targets are installed before RPMs specified by names.
+Hence, if an RPM defined by name requires a newer version of an RPM defined by
+buck rule target, the RPM will be upgraded and the whole operation may succeed.
+Thus, the explicit specification of RPM version by buck rule does not guarantee
+that this particular version is present in resulting image.
+
+`image.rpms_install()` provides only limited support for RPM post-install
+scripts. Those scripts are executed in a virtual environment without runtime
+mounts like `/proc`. As an example, the script may invoke a binary requiring
+`/proc/self/exe` or a shared library from a directory not available in the
+image. Then the binary fails, and the final result of the operation would differ
+from the RPM installation on the host where the binary succeeds. The issue may
+be aggravated by the lack of error handling in the script making the RPM install
+operation successful even if the binary fails.
     """
 
     return _build_rpm_feature(rpmlist, "install", needs_version_set = True)
