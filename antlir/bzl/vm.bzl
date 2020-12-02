@@ -53,105 +53,16 @@ with the options allowed there.  The key differences with
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/vm:kernel.bzl", "kernel_t", "normalize_kernel")
 load(":image.bzl", "image")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "kernel_get", "python_binary", "python_unittest", "third_party")
+load(":oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "python_unittest")
 load(":shape.bzl", "shape")
+load(":vm_opts.bzl", "new_vm_opts", "vm_opts_t")
 
 _RULE_TO_TEST_TYPE = {
     cpp_unittest: "gtest",
     python_unittest: "pyunit",
 }
-
-vm_opts_t = shape.shape(
-    # Bios to use for booting
-    bios = shape.target(),
-    # Number of cpus to provide
-    cpus = shape.field(int, default = 1),
-    # Flag to provide the kernel devel package to the vm.
-    # Future: This should be moved into a `kernel_opts_t` since this
-    # isn't really a vm specific thing.
-    devel = shape.field(bool, default = False),
-    # The actual emulator to invoke
-    emulator = shape.target(),
-    # Provide a directory from where the emulator can load firmware roms
-    emulator_roms_dir = shape.target(default = "//antlir/vm:roms"),
-    # The initrd to use to boot the vm
-    initrd = shape.target(),
-    # The kernel to boot the vm with
-    kernel = kernel_t,
-    # Amount of memory in mb
-    mem_mb = shape.field(int, default = 4096),
-    # Rootfs image for the vm
-    rootfs_image = shape.target(),
-)
-
-def _new_vm_opts(
-        bios = None,
-        cpus = 1,
-        emulator = None,
-        kernel = None,
-        layer = None,
-        rootfs_image = None,
-        **kwargs):
-    # Don't allow an invalid cpu count
-    if cpus == 2:
-        fail("ncpus=2 will cause kernel panic: https://fburl.com/md27i5k8")
-
-    if rootfs_image and layer:
-        fail("Cannot use `rootfs_image` and `layer` together")
-
-    # Convert the (optionally) provided kernel struct into a shape type
-    kernel = normalize_kernel(kernel or kernel_get.default)
-
-    # These defaults have to be set here due to the use of the
-    # `third_party.library` function.  It must be invoked inside of
-    # either a rule definition or another function, it cannot be used
-    # at the top-level of an included .bzl file (where the type def is).
-    bios = bios or third_party.library("qemu", "share/qemu/bios-256k.bin")
-    emulator = emulator or third_party.library("qemu")
-
-    # The initrd target is derived from the kernel uname.
-    # Note: In the future we would like to support user provided initrds.
-    # However, the initrd must match the kernel uname and since we don't
-    # have a good way to verify that this is the case, we will instea
-    # not allow it at this time.
-    initrd = "{}:{}-initrd".format(kernel_get.base_target, kernel.uname)
-
-    # If the vm is using the default rootfs layer, we can use the
-    # pre-packaged seed device and save lots of build time
-    # Otherwise we have to build a seed device using the layer
-    # the user provided
-    if layer and layer != default_vm_image.layer:
-        # Convert the provided layer name into something that we can safely use
-        # as the base for a new target name.  This is only used for the
-        # vm being constructed here, so it doesn't have to be pretty.
-        layer_name = layer.lstrip(":").lstrip("//").replace("/", "_").replace(":", "__")
-        seed_image_target = "{}=seed.btrfs".format(layer_name)
-        if not native.rule_exists(seed_image_target):
-            image.package(
-                name = seed_image_target,
-                layer = layer,
-                seed_device = True,
-                writable_subvolume = True,
-                visibility = [],
-                antlir_rule = "user-internal",
-            )
-        rootfs_image = ":" + seed_image_target
-    else:
-        rootfs_image = default_vm_image.package
-
-    return shape.new(
-        vm_opts_t,
-        bios = bios,
-        cpus = cpus,
-        emulator = emulator,
-        initrd = initrd,
-        kernel = kernel,
-        rootfs_image = rootfs_image,
-        **kwargs
-    )
 
 def _build_run_target(
         # The name of the runnable target
@@ -242,7 +153,7 @@ def _vm_unittest(
 
     # Set some defaults
     env = env or {}
-    vm_opts = vm_opts or _new_vm_opts()
+    vm_opts = vm_opts or new_vm_opts()
 
     # Construct tags for controlling/influencing the unittest runner.
     # Future: These tags are heavily FB specific and really have no place
@@ -380,9 +291,9 @@ def _vm_multi_kernel_unittest(
             # Don't provide the initrd originally constructed since
             # the kernel version likely changed
             merged_vm_opts.pop("initrd")
-            vm_opts = _new_vm_opts(**merged_vm_opts)
+            vm_opts = new_vm_opts(**merged_vm_opts)
         else:
-            vm_opts = _new_vm_opts(kernel = kernel)
+            vm_opts = new_vm_opts(kernel = kernel)
 
         vm_unittest(
             name = "-".join([name, suffix]),
@@ -409,11 +320,11 @@ def _vm_multi_kernel_python_unittest(
     )
 
 vm = struct(
+    cpp_unittest = _vm_cpp_unittest,
     # The set of reasonable defaults for running vms
     default = struct(
         layer = default_vm_image.layer,
     ),
-    cpp_unittest = _vm_cpp_unittest,
     # An API for constructing a set of tests that are all the
     # same except for the kernel version.
     multi_kernel = struct(
@@ -421,6 +332,6 @@ vm = struct(
         python_unittest = _vm_multi_kernel_python_unittest,
     ),
     python_unittest = _vm_python_unittest,
-    opts = _new_vm_opts,
+    opts = new_vm_opts,
     run = _build_run_target,
 )

@@ -2,7 +2,8 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:vm.bzl", "vm", "vm_opts_t")
+load("//antlir/bzl:vm.bzl", "vm")
+load("//antlir/bzl:vm_opts.bzl", "vm_opts_t")
 load("//antlir/vm:kernel.bzl", "kernel_artifacts_t")
 
 # qemu roms to provide
