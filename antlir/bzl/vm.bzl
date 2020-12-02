@@ -294,10 +294,9 @@ def _vm_unittest(
         ] + ([
             # Future: This devel layer is just another mount to configure the VM with.
             # it's not special except that we don't hvae clean abstraction (yet) to
-            # provide aribtrary mounts that should be setup by the VM.
-            "--devel-layer $(location {})".format(shell.quote(vm_opts.kernel.artifacts.devel)),
-            # We need the uname to mount the --devel-layer in the right place
-            "--uname {}".format(shell.quote(vm_opts.kernel.uname)),
+            # provide aribtrary mounts that should be setup by the VM.  For now we
+            # provide this flag so the vmtest binary can setup the devel mount.
+            "--devel-layer",
         ] if vm_opts.devel else []),
         exe_target = "//antlir/vm:vmtest",
         vm_opts = vm_opts,
