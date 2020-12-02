@@ -227,3 +227,21 @@ fake_macro_library(
     name = "structs",
     srcs = ["structs.bzl"],
 )
+
+fake_macro_library(
+    name = "vm",
+    srcs = ["vm.bzl"],
+    deps = [
+        ":vm_opts",
+    ],
+)
+
+fake_macro_library(
+    name = "vm_opts",
+    srcs = [
+        "vm_opts.bzl",
+    ],
+    deps = [
+        "//antlir/vm:kernel",
+    ],
+)
