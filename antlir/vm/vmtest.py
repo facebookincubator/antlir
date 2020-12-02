@@ -63,17 +63,13 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
 # These two options are here to provide support for mounting the devel/headers
 # for a kernel as an image layer via 9p.
 # Future: The layer will be provided transparently via runtime mounts + the
-#         runtime config compiler. The uname is here only so that we can build
-#         the correct mountpoint for the supplied devel-layer.
+#         runtime config compiler.  once that is in place, the flag to indicate
+#         that this layer should be mounted would be defined by the vm target.
 @click.option(
     "--devel-layer",
-    type=find_built_subvol,
-    help="On disk path to devel layer",
-)
-@click.option(
-    "--uname",
-    type=str,
-    help="The Uname of the kernel we are using for the vm.",
+    is_flag=True,
+    default=False,
+    help="Provide the kernel devel layer as a mount to the booted VM",
 )
 @click.option(
     "-q/-e",
@@ -137,8 +133,7 @@ async def main(
     timeout: int,
     quiet: bool,
     # devel options
-    devel_layer: Path = None,
-    uname: str = None,
+    devel_layer: bool = False,
 ) -> None:
     init_logging(debug=debug)
 
@@ -173,14 +168,16 @@ async def main(
     shares = [BtrfsDisk(test_binary_image, "/vmtest")] + (
         [
             Plan9Export(
-                path=devel_layer.path(),
-                mountpoint="/usr/src/kernels/{}".format(uname),
+                path=opts.kernel.artifacts.devel.subvol.path(),
+                mountpoint="/usr/src/kernels/{}".format(opts.kernel.uname),
                 mount_tag="kernel-devel-src",
                 generator=True,
             ),
             Plan9Export(
-                path=devel_layer.path(),
-                mountpoint="/usr/lib/modules/{}/build".format(uname),
+                path=opts.kernel.artifacts.devel.subvol.path(),
+                mountpoint="/usr/lib/modules/{}/build".format(
+                    opts.kernel.uname
+                ),
                 mount_tag="kernel-devel-build",
                 generator=True,
             ),
