@@ -5,7 +5,7 @@
   "scripts": {
     "start": "yarn bzldoc && docusaurus start",
     "build": "yarn bzldoc && yarn docusaurus build",
-    "bzldoc": "buck run //antlir/website/gen:bzldoc -- ../bzl/*.bzl ../bzl/**/*.bzl ./docs/api/",
+    "bzldoc": "buck run gen:bzldoc -- ../bzl/*.bzl ../bzl/**/*.bzl ./docs/api/",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "ci": "yarn lint && yarn prettier:diff",
