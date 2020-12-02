@@ -68,6 +68,8 @@ buck-runnable artifact `exe` to `dir/foo` in the image. Unlike `install`,
 this supports only single files -- though you can extract a file from a
 buck-runnable directory via `image.source`, see below.
 
+See **`install`** for documentation on arguments `mode`, `user`, and `group`.
+
 ### When to use `install_buck_runnable` vs `install`?
 
 If the file being copied is a buck-runnable (e.g. `cpp_binary`,
@@ -118,7 +120,30 @@ binary to be unusable in image tests in @mode/dev.
 def image_install(source, dest, mode = None, user = None, group = None):
     """
 `image.install("//path/fs:data", "dir/bar")` installs file or directory
-`data` to `dir/bar` in the image.
+`data` to `dir/bar` in the image. `dir/bar` must not exist, otherwise
+the operation fails.
+
+The arguments `source` and `dest` are mandatory; `mode`, `user`, and `group` are
+optional.
+
+`source` is either a regular file or a directory. If it is a directory, it must
+contain only regular files and directories (recursively).
+
+`mode` can be used only if `source` is a regular file.
+
+ - If set, it changes file mode bits of `dest` (after installation of `source`
+to `dest`). `mode` can be an integer fully specifying the bits or a symbolic
+string like `u+rx`. In the latter case, the changes are applied on top of
+mode 0.
+ - If not set, the mode of `source` is ignored, and instead the mode of `dest`
+(and all files and directories inside the `dest` if it is a directory) is set
+according to the following rule: "u+rwx,og+rx" for directories, "a+rx" for files
+executable by the Buck repo user, "a+r" for other files.
+
+The arguments `user` and `group` change file owner and group of all
+directories in `dest`. `user` and `group` can be integers or symbolic strings.
+In the latter case, the passwd/group database from the host (not from the
+image) is used. The default for `user` and `group` is `root`.
     """
 
     target_tagger = new_target_tagger()
