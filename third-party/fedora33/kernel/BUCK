@@ -1,0 +1,63 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
+load("//antlir/bzl:vm.bzl", "vm")
+load("//antlir/vm:kernel.bzl", "build_kernel_artifacts")
+load("//antlir/vm/initrd:defs.bzl", "initrd")
+
+http_file(
+    name = "5.8.15-301.fc31.x86_64-core.rpm",
+    sha256 = "d8f263272b87175ece88f200f6b843c89c4294ee2abf630ff38485abac90fb47",
+    urls = [
+        "http://mirrors.kernel.org/fedora/releases/33/Everything/x86_64/os/Packages/k/kernel-core-5.8.15-301.fc33.x86_64.rpm",
+    ],
+    visibility = [],
+)
+
+http_file(
+    name = "5.8.15-301.fc31.x86_64-headers.rpm",
+    sha256 = "dfbb5d9dba165d13a9a5210cce54f2af13976ff34ae8bc63c02bdc7180719bd1",
+    urls = [
+        "http://mirrors.kernel.org/fedora/releases/33/Everything/x86_64/os/Packages/k/kernel-headers-5.8.11-300.fc33.x86_64.rpm",
+    ],
+)
+
+http_file(
+    name = "5.8.15-301.fc31.x86_64-devel.rpm",
+    sha256 = "206daac2df7f704a0811c1ec7dd4833ae346315a351e2795a6d3710826440d40",
+    urls = [
+        "http://mirrors.kernel.org/fedora/releases/33/Everything/x86_64/os/Packages/k/kernel-devel-5.8.15-301.fc33.x86_64.rpm",
+    ],
+)
+
+buck_genrule(
+    name = "5.8.15-301.fc31.x86_64-rpm-exploded",
+    out = ".",
+    cmd = """
+        cd $OUT
+        rpm2cpio $(location :5.8.15-301.fc31.x86_64-core.rpm) | cpio -idm
+        # Removing build and source since they are symlinks that do not exist on the host
+        rm -r lib/modules/5.8.15-301.fc31.x86_64/build lib/modules/5.8.15-301.fc31.x86_64/source
+    """,
+)
+
+buck_genrule(
+    name = "5.8.15-301.fc31.x86_64-vmlinuz",
+    out = "vmlinuz-5.8.15-301.fc31.x86_64",
+    cmd = "cp --reflink=auto $(location :5.8.15-301.fc31.x86_64-rpm-exploded)/lib/modules/5.8.15-301.fc31.x86_64/vmlinuz $OUT",
+)
+
+# Build kernel artifacts and get back a shape instance
+kernel = build_kernel_artifacts(
+    devel_rpm = ":5.8.15-301.fc31.x86_64-devel.rpm",
+    include_vmlinux = False,
+    rpm_exploded = ":5.8.15-301.fc31.x86_64-rpm-exploded",
+    uname = "5.8.15-301.fc31.x86_64",
+)
+
+initrd(kernel = kernel)
+
+vm.run(
+    name = "5.8.15-301.fc31.x86_64",
+    vm_opts = vm.opts(
+        kernel = kernel,
+    ),
+)

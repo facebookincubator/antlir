@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//third-party/fedora31/kernel:kernels.bzl", "kernels")
+load("//third-party/fedora33/kernel:kernels.bzl", "kernels")
 # @lint-ignore-every BUCKFBCODENATIVE
 
 _RULE_TYPE_KWARG = "antlir_rule"
@@ -20,7 +20,7 @@ _ALLOWED_RULES = [
 # dependencies.  Right now this tooling only supports one platform and so
 # this is not a method, but in the future as we support other native platforms
 # (like Debian, Arch Linux, etc..) this should be expanded to allow for those.
-_DEFAULT_NATIVE_PLATFORM = "fedora31"
+_DEFAULT_NATIVE_PLATFORM = "fedora33"
 
 # Serves two important purposes:
 #  - Ensures that all user-instanted rules are annotated with
@@ -79,7 +79,7 @@ def _invert_dict(d):
 def _kernel(version):
     """ Resolve a kernel version to its corresponding kernel artifact.
     Currently, the only `kernel_artifact` available is in
-    //third-party/fedora31/kernel:kernels.bzl.
+    //third-party/fedora33/kernel:kernels.bzl.
 
     a `kernel_artifact`is a struct containing the following members:
     - uname
@@ -175,9 +175,9 @@ def _third_party_library(project, rule = None, platform = None):
 
     Thee are currently only 2 platforms supported in OSS:
         - python
-        - fedora31
+        - fedora33
 
-    If `platform` is not provided it is assumed to be `fedora31`.
+    If `platform` is not provided it is assumed to be `fedora33`.
 
     If `rule` is not provided it is assumed to be the same as `project`.
     """
@@ -440,8 +440,8 @@ shim = struct(
     get_visibility = _normalize_visibility,
     http_file = _http_file,
     kernel_get = struct(
-        base_target = "//third-party/fedora31/kernel",
-        default = _kernel("5.3.7-301.fc31.x86_64"),
+        base_target = "//third-party/fedora33/kernel",
+        default = _kernel("5.8.15-301.fc31.x86_64"),
         get = _kernel,
         versions = kernels,
     ),
