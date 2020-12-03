@@ -23,6 +23,9 @@
 [project]
   ignore = .git, .hg, buck-image-out
 
+[download]
+  in_build = true
+
 [test]
   # This is needed to ensure that the test runner only executes the
   # 'in image' unittest targets, and not the `IGNORE-ME*` wrapper tests
