@@ -438,13 +438,15 @@ class RepoDBContext(AbstractContextManager):
                     # don't want to import MySQLdb here, since it is an
                     # optional dependency for this specific module.
                     if (
-                        type(ex).__qualname__ != "OperationalError"
+                        type(ex).__qualname__
+                        not in ("OperationalError", "ProgrammingError")
                         or type(ex).__module__
                         not in [
                             "sqlite3",
                             # MySQLdb versions vary the module path.
                             "_mysql_exceptions",
                             "MySQLdb._exceptions",
+                            "mysql.connector.errors",
                         ]
                         or "already exists" not in str(ex.args)
                     ):

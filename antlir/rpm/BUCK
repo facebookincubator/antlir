@@ -70,6 +70,14 @@ python_library(
     deps = [
         ":pluggable",
         ":repo_db",
+        third_party.library(
+            "boto3",
+            platform = "python",
+        ),
+        third_party.library(
+            "mysql-connector-python",
+            platform = "python",
+        ),
     ],
 )
 

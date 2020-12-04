@@ -27,7 +27,6 @@ python_library(
         "//antlir/rpm:open_url",
         third_party.library(
             "boto3",
-            "boto3",
             platform = "python",
         ),
     ],

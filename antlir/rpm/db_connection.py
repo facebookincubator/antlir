@@ -9,6 +9,8 @@ import urllib.parse
 from contextlib import AbstractContextManager
 from typing import Optional
 
+import boto3
+import mysql.connector
 from antlir.common import get_logger
 
 from .pluggable import Pluggable
@@ -33,7 +35,7 @@ class DBConnectionContext(AbstractContextManager, Pluggable):
 
 class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
     SQL_DIALECT = SQLDialect.SQLITE3
-    _warned_about_sqlite_force_master = False
+    _warned_about_force_master = False
 
     def __init__(
         self,
@@ -43,10 +45,10 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
     ):
         if (
             force_master is not None
-            and not type(self)._warned_about_sqlite_force_master
+            and not type(self)._warned_about_force_master
         ):  # pragma: no cover
             log.warning("`force_master` is not supported for SQLite - ignoring")
-            type(self)._warned_about_sqlite_force_master = True
+            type(self)._warned_about_force_master = True
         self.readonly = readonly
         self.db_path = db_path
         self._conn = None
@@ -69,29 +71,103 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
         self._conn = None
 
 
-# NB: If needed, it would be trivial to add a plain MySQL context. I'm
-# leaving it commented-out since I have no plans of testing it soon.
-#
-#   import MySQLdb
-#   class MySQLConnectionContext(DBConnectionContext, plugin_kind='mysql'):
-#       SQL_DIALECT = SQLDialect.MYSQL
-#
-#       def __init__(self, ...):
-#           self.... = ...
-#           self._conn = None
-#
-#       def __enter__(self):
-#           assert self._conn is None, 'MySQLConnectionContext not reentrant'
-#           # Reconnect every time, since MySQL connections go away quickly.
-#           self._conn = MySQLdb.connect(
-#               ..., charset="ascii", use_unicode=True,
-#           )
-#           return self._conn
-#
-#       # Does not suppress exceptions
-#       def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-#           self._conn.close()
-#           self._conn = None
+class MySQLConnectionContext(DBConnectionContext, plugin_kind="mysql"):
+    SQL_DIALECT = SQLDialect.MYSQL
+    _warned_about_readonly = False
+    _warned_about_force_master = False
+
+    def __init__(
+        self,
+        endpoint: str,
+        dbname: str,
+        user: str,
+        password: str,
+        port: int = 3306,
+        # readonly and force_master cannot be generically applied to MySQL
+        # connections, it depends on the endpoint host and the user. The
+        # parameters are accepted for consistency, but they are not used.
+        readonly: bool = False,
+        force_master: Optional[bool] = None,
+    ):
+        self.endpoint = endpoint
+        self.dbname = dbname
+        self.user = user
+        self.password = password
+        self.port = port
+
+        if (
+            readonly and not type(self)._warned_about_readonly
+        ):  # pragma: no cover
+            log.warning("`readonly` is not supported for MySQL - ignoring")
+            type(self)._warned_about_readonly = True
+
+        if (
+            force_master is not None
+            and not type(self)._warned_about_force_master
+        ):  # pragma: no cover
+            log.warning("`force_master` is not supported for MySQL - ignoring")
+            type(self)._warned_about_force_master = True
+
+        self._conn = None
+
+    def __enter__(self):
+        assert self._conn is None, "MySQLConnectionContext not reentrant"
+        # Reconnect every time, since MySQL connections go away quickly.
+        self._conn = mysql.connector.connect(
+            host=self.endpoint,
+            user=self.user,
+            passwd=self.password,
+            port=self.port,
+            database=self.dbname,
+        )
+        return self._conn
+
+    # Does not suppress exceptions
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        # We must act equivalently to the MySQL context in rolling back
+        # uncommitted changes on context exit.
+        self._conn.rollback()
+        self._conn.close()
+        self._conn = None
+
+
+class RDSMySQLConnectionContext(
+    MySQLConnectionContext, plugin_kind="rds_mysql"
+):
+    SQL_DIALECT = SQLDialect.MYSQL
+
+    def __init__(
+        self,
+        region: str,
+        **kwargs,
+    ):
+        assert (
+            "password" not in kwargs
+        ), "password is not accepted for RDS connections"
+        super().__init__(**kwargs)
+
+        self._conn = None
+
+    @property
+    def password(self) -> str:
+        # Override the password property that the parent uses to get a
+        # connection token via boto3 and IAM.
+        # These tokens are valid for 15 minutes, so regenerate on each
+        # request to guarantee freshness.
+        client = boto3.client("rds", region_name=self.region)
+        return client.generate_db_auth_token(
+            DBHostname=self.endpoint,
+            Port=self.port,
+            DBUsername=self.user,
+            Region=self.region,
+        )
+
+    # noop on password property set, it always needs to be generated, but this
+    # allows subclassing the base MySQL connector
+    @password.setter
+    def password(self, x: str) -> None:
+        pass
+
 
 try:
     # Import FB-specific implementations if available. Do this last in the

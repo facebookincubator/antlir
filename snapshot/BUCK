@@ -1,6 +1,19 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "export_file")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
 
+# The snapshot described in this file can only be updated by an AWS machine
+# that is in the correct VPC and has the necessary IAM role to write to the
+# Antlir database and S3 bucket. The configuration parameters can be altered to
+# run on a custom database for other organizations hosting their own snapshots.
+db_config = {
+    "dbname": "snapshots",
+    "endpoint": "rpm-snapshots.cic1w82jlt6n.us-east-2.rds.amazonaws.com",
+    "kind": "rds_mysql",
+    "port": 3306,
+    "region": "us-east-2",
+    "user": "snapshot_writer",
+}
+
 fedora_storage_config = {
     "bucket": "antlir",
     "key": "s3",
@@ -14,14 +27,14 @@ export_file(
 )
 
 # Command to snapshot all the specified Fedora repos.
-# Currently just snapshot the Fedora32 Everything 'os' repository, but this will be
+# Currently just snapshot the Fedmra32 Everything 'os' repository, but this will be
 # expanded to support more Fedora versions and repos.
 buck_command_alias(
     name = "snapshot-fedora",
     args = [
         "--snapshot-dir=snapshot/fedora",
         "--gpg-key-allowlist-dir=snapshot/fedora/repos/everything-os/gpg_keys",
-        '--db={"kind": "sqlite", "db_path": "snapshot/snapshots.sql3"}',
+        "--db={}".format(repr(db_config)),
         "--threads=16",
         "--storage={}".format(repr(fedora_storage_config)),
         "--one-universe-for-all-repos=fedora",

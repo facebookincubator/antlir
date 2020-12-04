@@ -99,3 +99,9 @@ pypi_package(
         ":botocore",
     ],
 )
+
+pypi_package(
+    name = "mysql-connector-python",
+    sha256 = "5517802ed71c4d07cfd7e73d4301d45410cdf4b1982e457b4c6abeaa6cf63fac",
+    url = "https://files.pythonhosted.org/packages/95/35/c265446061e0821f50d78f44bf2f266a765755268533fa591b516d433f99/mysql_connector_python-8.0.22-cp38-cp38-manylinux1_x86_64.whl",
+)
