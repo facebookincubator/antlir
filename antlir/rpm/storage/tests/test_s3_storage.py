@@ -71,6 +71,14 @@ class S3StorageTestCase(StorageBaseTestCase):
                 actual = f.read()
                 self.assertEqual(actual, b"".join(contents))
 
+    def test_writer_prefix(self):
+        # Reads are expected to already have the prefix, but writes should
+        # create new blobs under the set prefix
+        with self.storage.writer() as out:
+            out.write(b"Hello world!")
+            sid = out.commit()
+        self.assertTrue(sid.startswith(f"test:{self.prefix}/"), sid)
+
     def test_delete(self):
         with self.storage.writer() as out:
             out.write(b"Hello world!")
@@ -83,7 +91,7 @@ class S3StorageTestCase(StorageBaseTestCase):
 
     def test_reader_url(self):
         with patch("antlir.rpm.storage.s3_storage.open_url") as open_url:
-            with self.storage.reader("1234") as _:
+            with self.storage.reader("test/prefix/1234") as _:
                 pass
             open_url.assert_called_with(
                 "https://antlir-test.s3-test-region.amazonaws.com/"
@@ -91,7 +99,8 @@ class S3StorageTestCase(StorageBaseTestCase):
             )
 
     def test_object_key(self):
-        blob_sid = "123"
+        blob_sid = "test/prefix/123"
         self.assertEqual(
-            self.storage._object_key(blob_sid), f"test/prefix/{blob_sid}"
+            self.storage._object_key(blob_sid),
+            "test/prefix/123",
         )

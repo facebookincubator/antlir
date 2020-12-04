@@ -6,6 +6,7 @@
 
 import io
 import logging
+import os.path
 import uuid
 from contextlib import contextmanager
 from typing import ContextManager
@@ -36,22 +37,16 @@ class S3Storage(Storage, plugin_kind="s3"):
         self.region = region
         self.timeout_seconds = timeout_seconds
 
-    @classmethod
-    def _make_storage_id(cls) -> str:
-        return str(uuid.uuid4()).replace("-", "")
-
     def _object_key(self, sid: str) -> str:
         key = sid
         if ":" in key:
             key = self.strip_key(sid)
-        return f"{self.prefix}/{key}"
+        return key
 
     @contextmanager
     def reader(self, sid: str) -> ContextManager[StorageInput]:
-        url = (
-            f"https://{self.bucket}.s3-{self.region}.amazonaws.com/"
-            + self._object_key(sid)
-        )
+        key = self._object_key(sid)
+        url = f"https://{self.bucket}.s3-{self.region}.amazonaws.com/{key}"
         with open_url(url) as f:
             yield StorageInput(input=f)
 
@@ -71,8 +66,8 @@ class S3Storage(Storage, plugin_kind="s3"):
 
     @contextmanager
     def writer(self) -> ContextManager[StorageOutput]:
-        sid = self._make_storage_id()
-        key = self._object_key(sid)
+        sid = str(uuid.uuid4()).replace("-", "")
+        key = os.path.join(self.prefix, sid)
         log_prefix = f"{self.__class__.__name__}"
         log.debug(f"{log_prefix} - Writing to {key}")
 
@@ -84,7 +79,7 @@ class S3Storage(Storage, plugin_kind="s3"):
             self.s3.upload_fileobj(buf, self.bucket, key)
             # S3 does not do partial puts, if the request returned 200, then
             # there is read-after-write guarantees
-            yield sid
+            yield key
 
         with _CommitCallback(self, get_id_and_release_resources) as commit:
             yield StorageOutput(output=buf, commit_callback=commit)
