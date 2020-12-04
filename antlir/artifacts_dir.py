@@ -137,6 +137,9 @@ def ensure_clean_sh_exists(artifacts_dir: Path) -> None:
             # Leave any checkouts as they may still be mounted by Eden
             REPOS="buck-image-out/eden/repos"
             mkdir -p "$REPOS"
+            # Remove leftover lock files
+            find "$REPOS" -maxdepth 2 -depth -type f -print0 -path ".lock_*" | xargs -0 rm 2>/dev/null || true
+            # Remove empty checkout dirs
             find "$REPOS" -maxdepth 2 -depth -type d -print0 | xargs -0 rmdir 2>/dev/null || true
             if [ -d "$REPOS" ]; then
                 echo "Eden checkouts remain in $REPOS and were not cleaned up"
