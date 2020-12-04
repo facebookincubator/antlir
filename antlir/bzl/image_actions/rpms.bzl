@@ -60,6 +60,11 @@ buck rule target, the RPM will be upgraded and the whole operation may succeed.
 Thus, the explicit specification of RPM version by buck rule does not guarantee
 that this particular version is present in resulting image.
 
+Another important caveat about RPMs specified by buck rule targets is that
+downgrade is allowable: if the parent layer has RPM `foobar-v2` installed, and
+then `foobar-v1` is specified by a buck rule, the result of RPM installation
+will be `foobar-v2` downgraded to `foobar-v1`.
+
 `image.rpms_install()` provides only limited support for RPM post-install
 scripts. Those scripts are executed in a virtual environment without runtime
 mounts like `/proc`. As an example, the script may invoke a binary requiring
