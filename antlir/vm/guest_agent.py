@@ -23,6 +23,8 @@ from typing import (
     Tuple,
 )
 
+from antlir.common import async_retryable
+
 
 class QemuError(Exception):
     pass
@@ -39,11 +41,20 @@ class QemuGuestAgent(object):
     path: os.PathLike
     connect_timeout: int = DEFAULT_CONNECT_TIMEOUT
 
+    @async_retryable("Failed to find {self.path}", [0.1] * 5)
+    async def _open(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
+        return await asyncio.open_unix_connection(self.path, limit=STREAM_LIMIT)
+
     @asynccontextmanager
     async def _connect(
         self,
     ) -> AsyncContextManager[Tuple[asyncio.StreamReader, asyncio.StreamWriter]]:
-        r, w = await asyncio.open_unix_connection(self.path, limit=STREAM_LIMIT)
+
+        # Qemu creates the socket file for us, sometimes it can be a bit slow
+        # and we will try and connect before it is created. `_open()` will
+        # retry until the file shows up.
+        r, w = await self._open()
+
         try:
             sync_id = random.randint(0, sys.maxsize)
             req = {
@@ -52,7 +63,6 @@ class QemuGuestAgent(object):
             }
             w.write(b"\xFF")
             w.write(json.dumps(req).encode("utf-8"))
-            # TODO: retries and timeouts can definitely be improved here, but
             # that can wait until it becomes necessary, right now things seem to
             # be generally working
             await w.drain()
