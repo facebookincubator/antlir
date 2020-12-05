@@ -60,7 +60,6 @@ async def __vm_with_stack(
     verbose: bool = False,
     interactive: bool = False,
     shares: Optional[Iterable[Share]] = None,
-    dry_run: Optional[bool] = False,
 ):
     # we don't actually want to create files for the socket paths
     guest_agent_sockfile = os.path.join(
@@ -236,13 +235,6 @@ async def __vm_with_stack(
     shares += [export_share]
 
     args += __qemu_share_args(shares)
-    if dry_run:
-        print(
-            str(opts.emulator.path)
-            + " "
-            + " ".join(shlex.quote(a) for a in args)
-        )
-        sys.exit(0)
 
     qemu_cmd = ns.nsenter_as_user(str(opts.emulator.path), *args)
 

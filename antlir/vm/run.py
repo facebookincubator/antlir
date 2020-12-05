@@ -30,7 +30,6 @@ logger = get_logger()
 )
 @click.option("-d", "--debug", is_flag=True, default=False)
 @click.option("-v", "--verbose", count=True)
-@click.option("--dry-run", is_flag=True, help="print qemu command and exit")
 @click.option(
     "--timeout",
     type=int,
@@ -42,7 +41,6 @@ logger = get_logger()
 async def run(
     cmd: Iterable[str],
     debug: bool,
-    dry_run: bool,
     opts: vm_opts_t,
     timeout: int,
     verbose: int,
@@ -57,7 +55,6 @@ async def run(
         opts=opts,
         verbose=verbose > 0,
         interactive=not cmd or cmd == ["/bin/bash"],
-        dry_run=dry_run,
     ) as instance:
         if cmd:
             try:
