@@ -441,7 +441,7 @@ shim = struct(
     http_file = _http_file,
     kernel_get = struct(
         base_target = "//third-party/fedora33/kernel",
-        default = _kernel("5.8.15-301.fc31.x86_64"),
+        default = _kernel("5.8.15-301.fc33.x86_64"),
         get = _kernel,
         versions = kernels,
     ),
