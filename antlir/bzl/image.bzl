@@ -13,6 +13,7 @@ load(":image_cpp_unittest.bzl", "image_cpp_unittest")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_package.bzl", "image_package")
+load(":image_packaged_layer.bzl", "image_packaged_layer")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":image_rpm.bzl", "image_rpm")
 load(":image_sendstream_layer.bzl", "image_sendstream_layer")
@@ -39,6 +40,7 @@ image = struct(
     layer_alias = image_layer_alias,
     opts = struct,
     package = image_package,
+    packaged_layer = image_packaged_layer,
     python_unittest = image_python_unittest,
     sendstream_layer = image_sendstream_layer,
     source = image_source,

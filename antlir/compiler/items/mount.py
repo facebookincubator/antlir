@@ -63,11 +63,19 @@ class RuntimeSource:
 
 
 @dataclass(frozen=True)
+class LayerPublisher:
+    package: str
+    # Path to the target, e.g. //foo:bar
+    target_path: str
+
+
+@dataclass(frozen=True)
 class Mount:
     mountpoint: str
     build_source: BuildSource
     is_directory: bool
     runtime_source: Optional[RuntimeSource] = None
+    layer_publisher: Optional[LayerPublisher] = None
 
 
 @dataclass(init=False, frozen=True)
@@ -76,6 +84,7 @@ class MountItem(ImageItem):
     build_source: BuildSource
     runtime_source: str
     is_directory: bool
+    layer_publisher: str
 
     @classmethod
     def customize_fields(cls, kwargs):
@@ -124,6 +133,10 @@ class MountItem(ImageItem):
             )
         kwargs["runtime_source"] = json.dumps(runtime_source, sort_keys=True)
 
+        kwargs["layer_publisher"] = json.dumps(
+            cfg.pop("layer_publisher", None), sort_keys=True
+        )
+
         assert cfg == {}, f"Unparsed fields in {kwargs} mount_config: {cfg}"
 
     def provides(self):
@@ -143,6 +156,7 @@ class MountItem(ImageItem):
             ("is_directory", self.is_directory),
             ("build_source", self.build_source._asdict()),
             ("runtime_source", json.loads(self.runtime_source)),
+            ("layer_publisher", json.loads(self.layer_publisher)),
         ):
             procfs_serde.serialize(
                 data, subvol, Path(mount_dir / name).decode()
@@ -205,6 +219,11 @@ def mounts_from_meta(volume_path: Path) -> Iterator[Tuple[Path]]:
                 runtime_source=(
                     RuntimeSource(**cfg.pop("runtime_source"))
                     if "runtime_source" in cfg
+                    else None
+                ),
+                layer_publisher=(
+                    LayerPublisher(**cfg.pop("layer_publisher"))
+                    if "layer_publisher" in cfg
                     else None
                 ),
             )
