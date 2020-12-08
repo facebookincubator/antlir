@@ -24,7 +24,7 @@ from antlir.compiler import procfs_serde
 from antlir.compiler.items.common import META_ARTIFACTS_REQUIRE_REPO
 from antlir.compiler.items.mount import mounts_from_meta
 from antlir.config import load_repo_config
-from antlir.find_built_subvol import Subvol
+from antlir.find_built_subvol import Subvol, find_built_subvol
 from antlir.fs_utils import Path
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 from antlir.tests.temp_subvolumes import TempSubvolumes
@@ -198,7 +198,7 @@ def _extra_nspawn_args_and_env(
             target = mount.build_source.source
             extra_nspawn_args.extend(
                 bind_args(
-                    opts.layer_dep_to_location[target].path(),
+                    find_built_subvol(opts.targets_and_outputs[target]).path(),
                     "/" + mount.mountpoint,
                     readonly=True,
                 )

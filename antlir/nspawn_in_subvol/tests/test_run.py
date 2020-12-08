@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import json
 import os
 import subprocess
 import tempfile
@@ -15,10 +16,11 @@ from unittest import mock
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import pipe
 from antlir.find_built_subvol import find_built_subvol
+from antlir.fs_utils import Path
 from antlir.tests.layer_resource import layer_resource
 from antlir.tests.temp_subvolumes import with_temp_subvols
 
-from ..args import _QUERY_TARGETS_AND_OUTPUTS_SEP, _parse_cli_args
+from ..args import _parse_cli_args
 from ..cmd import _colon_quote_path, _extra_nspawn_args_and_env
 from ..common import DEFAULT_PATH_ENV
 from .base import (
@@ -615,59 +617,76 @@ class NspawnTestCase(NspawnTestBase):
                     )
 
     def test_mount_args(self):
-        argv = [
-            "--layer",
-            layer_resource(__package__, "test-layer-with-mounts"),
-            "--layer-dep-to-location",
-            "{target}{sep}{location}".format(
-                location=layer_resource(__package__, "test-hello-world-base"),
-                sep=_QUERY_TARGETS_AND_OUTPUTS_SEP,
-                target="//antlir/compiler/test_images:hello_world_base",
-            ),
-        ]
-
-        args = _parse_cli_args(argv, allow_debug_only_opts=False)
-        args, _env = _extra_nspawn_args_and_env(args.opts)
-
-        # Verify that host mounts are properly setup as
-        # --bind-ro args to nspawn
-        self._assertIsSubseq(["--bind-ro", "/dev/null:/dev_null"], args)
-        self._assertIsSubseq(["--bind-ro", "/etc:/host_etc"], args)
-
-        # Verify that layer mounts are properly setup as
-        # --bind-ro args to nspawn
-        self._assertIsSubseq(
-            [
-                "--bind-ro",
-                "{subvol}:{mount}".format(
-                    subvol=_colon_quote_path(
-                        find_built_subvol(
+        # generate a json mapping of the targets-and-outputs data that the
+        # nspawn cli expects
+        with tempfile.NamedTemporaryFile() as tf:
+            tf.write(
+                json.dumps(
+                    {
+                        "//antlir/compiler/test_images:hello_world_base": str(
                             layer_resource(__package__, "test-hello-world-base")
-                        ).path()
+                        ),
+                    }
+                ).encode()
+            )
+            tf.seek(0)
+
+            argv = [
+                "--layer",
+                layer_resource(__package__, "test-layer-with-mounts"),
+                "--targets-and-outputs",
+                tf.name,
+            ]
+
+            args = _parse_cli_args(argv, allow_debug_only_opts=False)
+            args, _env = _extra_nspawn_args_and_env(args.opts)
+
+            # Verify that host mounts are properly setup as
+            # --bind-ro args to nspawn
+            self._assertIsSubseq(["--bind-ro", "/dev/null:/dev_null"], args)
+            self._assertIsSubseq(["--bind-ro", "/etc:/host_etc"], args)
+
+            # Verify that layer mounts are properly setup as
+            # --bind-ro args to nspawn
+            self._assertIsSubseq(
+                [
+                    "--bind-ro",
+                    "{subvol}:{mount}".format(
+                        subvol=_colon_quote_path(
+                            find_built_subvol(
+                                layer_resource(
+                                    __package__, "test-hello-world-base"
+                                )
+                            ).path()
+                        ),
+                        mount="/meownt",
                     ),
-                    mount="/meownt",
-                ),
-            ],
-            args,
-        )
+                ],
+                args,
+            )
 
     def test_mounted_mounts(self):
         expected_mounts = [b"/dev_null", b"/host_etc", b"/meownt"]
 
-        with tempfile.TemporaryFile() as tf:
+        with (tempfile.TemporaryFile()) as tf, (
+            tempfile.NamedTemporaryFile()
+        ) as ts_and_os:
+            ts_and_os.write(
+                Path.json_dumps(
+                    {
+                        "//antlir/compiler/test_images:hello_world_base": str(
+                            layer_resource(__package__, "test-hello-world-base")
+                        ),
+                    }
+                ).encode()
+            )
+            ts_and_os.seek(0)
+
             self._nspawn_in(
                 (__package__, "test-layer-with-mounts"),
                 [
-                    "--layer-dep-to-location",
-                    "{target}{sep}{location}".format(
-                        location=layer_resource(
-                            __package__, "test-hello-world-base"
-                        ),
-                        sep=_QUERY_TARGETS_AND_OUTPUTS_SEP,
-                        target=(
-                            "//antlir/compiler/test_images:" "hello_world_base"
-                        ),
-                    ),
+                    "--targets-and-outputs",
+                    ts_and_os.name,
                     "--forward-fd",
                     str(tf.fileno()),
                     "--",
