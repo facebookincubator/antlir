@@ -192,12 +192,14 @@ class InstallFileItem(ImageItem):
             sorted((mode_to_str(i.mode), i.provides.path) for i in self.paths),
             lambda x: x[0],
         ):
+            # Batching chmod calls has the unfortunate side effect of failing
+            # on installing large amounts of files with one `image.install`.
+            # xargs will break up the command for us if we overrun the maximum
+            # args size limit.
             # `chmod` follows symlinks, and there's no option to stop it.
             # However, `customize_fields` should have failed on symlinks.
+            paths = b"\0".join(subvol.path(p) for _, p in modes_and_paths)
             subvol.run_as_root(
-                [
-                    "chmod",
-                    mode_str,
-                    *(subvol.path(p) for _, p in modes_and_paths),
-                ]
+                ["xargs", "-0", "--max-proc=0", "chmod", mode_str],
+                input=paths,
             )
