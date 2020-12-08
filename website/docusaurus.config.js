@@ -113,7 +113,7 @@ module.exports = {
   },
   presets: [
     [
-      '@docusaurus/preset-classic',
+      require.resolve('docusaurus-plugin-internaldocs-fb/docusaurus-preset'),
       {
         docs: {
           homePageId: 'overview',
@@ -133,6 +133,5 @@ module.exports = {
   ],
   plugins: [
     path.resolve(__dirname, 'gen'),
-    require.resolve('docusaurus-plugin-internaldocs-fb'),
   ],
 };
