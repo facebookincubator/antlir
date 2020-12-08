@@ -11,6 +11,7 @@ python_library(
     name = "args",
     srcs = ["args.py"],
     deps = [
+        "//antlir:cli",
         "//antlir:find_built_subvol",
         "//antlir:fs_utils",
     ],

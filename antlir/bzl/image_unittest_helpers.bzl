@@ -1,11 +1,12 @@
 load("//antlir/bzl/image_actions:install.bzl", "image_install_buck_runnable")
-load(":constants.bzl", "QUERY_TARGETS_AND_OUTPUTS_SEP")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
+load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
+load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 
 def _hidden_test_name(name):
     # This is the test binary that is supposed to run inside the image.  The
@@ -149,21 +150,13 @@ def nspawn_in_subvol_args():
             '--serve-rpm-snapshot={{}}'.format(s)
                 for s in {serve_rpm_snapshots_repr}
         ],
-        '--layer-dep-to-location', "{layer_deps_query_macro}",
+        *{targets_and_outputs},
         '--', {binary_path_repr},
     ]
 EOF
 mv $TMP/out "$OUT"
         """.format(
-            test_type_repr = repr(test_type),
-            user_repr = repr(run_as_user),
-            pass_through_env_repr = repr(outer_test_kwargs.get("env", [])),
-            layer_deps_query_macro = """$(query_targets_and_outputs {sep} '
-                    attrfilter(type, image_layer, deps("{layer}"))
-                ')""".format(
-                layer = image_utils.current_target(test_layer),
-                sep = QUERY_TARGETS_AND_OUTPUTS_SEP,
-            ),
+            binary_path_repr = repr(binary_path),
             maybe_boot = "'--boot'" if boot else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
             # The next 3 would be nice to pass as `container_opts_t`, but
@@ -176,11 +169,19 @@ mv $TMP/out "$OUT"
             maybe_no_shadow_proxied_binaries = (
                 "" if container_opts.shadow_proxied_binaries else "'--no-shadow-proxied-binaries',"
             ),
+            pass_through_env_repr = repr(outer_test_kwargs.get("env", [])),
             serve_rpm_snapshots_repr = repr([
                 snapshot_install_dir(s)
                 for s in container_opts.serve_rpm_snapshots
             ]),
-            binary_path_repr = repr(binary_path),
+            targets_and_outputs = targets_and_outputs_arg_list(
+                name = name,
+                query = image_layer_utils.layer_deps_query(
+                    layer = image_utils.current_target(test_layer),
+                ),
+            ),
+            test_type_repr = repr(test_type),
+            user_repr = repr(run_as_user),
         ),
         visibility = visibility,
         antlir_rule = "user-internal",

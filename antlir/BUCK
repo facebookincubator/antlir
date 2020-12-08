@@ -468,3 +468,20 @@ python_unittest(
         ":fs_utils",
     ],
 )
+
+python_binary(
+    name = "serialize-targets-and-outputs",
+    srcs = ["serialize_targets_and_outputs.py"],
+    main_module = "antlir.serialize_targets_and_outputs",
+)
+
+python_unittest(
+    name = "test-serialize-targets-and-outputs",
+    srcs = ["tests/test_serialize_targets_and_outputs.py"],
+    needed_coverage = [
+        (100, ":serialize-targets-and-outputs-library"),
+    ],
+    deps = [
+        ":serialize-targets-and-outputs-library",
+    ],
+)

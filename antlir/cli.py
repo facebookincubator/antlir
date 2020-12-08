@@ -6,13 +6,27 @@
 
 "Common CLI boilerplate for Antlir binaries."
 import argparse
+import json
 import os
 import sys
 from contextlib import contextmanager
-from typing import Iterator
+from typing import AnyStr, Iterator, Mapping
 
 from antlir.common import init_logging
 from antlir.fs_utils import Path
+
+
+def _load_targets_and_outputs(arg: str) -> Mapping[AnyStr, Path]:
+    return json.loads(Path(arg).read_text())
+
+
+def add_targets_and_outputs_arg(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "--targets-and-outputs",
+        type=_load_targets_and_outputs,
+        help="Load and parse a json document containing a mapping"
+        "of targets -> on disk outputs",
+    )
 
 
 def add_antlir_debug_arg(parser: argparse.ArgumentParser):
