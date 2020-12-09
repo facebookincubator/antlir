@@ -5,17 +5,9 @@ load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl/image_actions:feature.bzl", "FEATURES_FOR_LAYER_PREFIX", "image_feature", "normalize_features")
 load(":build_opts.bzl", "normalize_build_opts")
 load(":constants.bzl", "REPO_CFG")
+load(":query.bzl", "query")
+load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
-
-def _query_set(target_paths):
-    'Returns `set("//foo:target1" "//bar:target2")` for use in Buck queries.'
-
-    if not target_paths:
-        return "set()"
-
-    # This does not currently escape double-quotes since Buck docs say they
-    # cannot occur: https://buck.build/concept/build_target.html
-    return 'set("' + '" "'.join(target_paths) + '")'
 
 def compile_image_features(
         name,
@@ -68,6 +60,23 @@ EOF
             antlir_rule = "user-internal",
         )
 
+    deps_query = query.union([
+        # For inline `image.feature`s, we already know the direct deps.
+        query.set(normalized_features.direct_deps),
+        # We will query the deps of the features that are targets.
+        query.deps(
+            expr = query.attrfilter(
+                label = "type",
+                value = "image_feature",
+                expr = query.deps(
+                    expr = query.set(normalized_features.targets),
+                    depth = query.UNBOUNDED,
+                ),
+            ),
+            depth = 1,
+        ),
+    ])
+
     return '''
         # Take note of `targets_and_outputs` below -- this enables the
         # compiler to map the `target_tagger` target sigils in the outputs
@@ -89,8 +98,15 @@ EOF
           {maybe_version_set_override} \
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
-          --child-dependencies {feature_deps_query_macro} \
+          {targets_and_outputs} \
               > "$layer_json"
+
+        # Insert the outputs of the queried dependencies to short-circuit
+        # the dep-graph. This will ensure that this target gets rebuilt
+        # if any dep returned by the query has changed. This is a bit of
+        # an unfortunate requirement due to the non-cachable nature of this
+        # rule.
+        # $(query_outputs '{deps_query}')
     '''.format(
         subvol_name_quoted = shell.quote(build_opts.subvol_name),
         current_target_quoted = shell.quote(current_target),
@@ -116,20 +132,11 @@ EOF
         # Note that we need no special logic to exclude parent-layer
         # features -- this query does not traverse them anyhow, since the
         # the parent layer feature is added as an "inline feature" above.
-        #
-        # We have two layers of quoting here.  The outer '' groups the query
-        # into a single argument for `query_targets_and_outputs`.  Then,
-        # `_query_set` double-quotes each target name to allow the use of
-        # special characters like `=` in target names.
-        feature_deps_query_macro = """$(query_targets_and_outputs '
-            {direct_deps_set} union
-            deps(attrfilter(type, image_feature, deps({feature_set})), 1)
-        ')""".format(
-            # For inline `image.feature`s, we already know the direct deps.
-            direct_deps_set = _query_set(normalized_features.direct_deps),
-            # We will query the direct deps of the features that are targets.
-            feature_set = _query_set(normalized_features.targets),
-        ),
+        targets_and_outputs = " ".join(targets_and_outputs_arg_list(
+            name = name,
+            query = deps_query,
+        )),
+        deps_query = deps_query,
         maybe_artifacts_require_repo = (
             "--artifacts-may-require-repo" if
             # Future: Consider **only** emitting this flag if the image is

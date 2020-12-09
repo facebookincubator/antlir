@@ -60,7 +60,9 @@ class AddRemoveConflictTestCase(unittest.TestCase):
         )
 
     def test_conflict(self):
-        with TempSubvolumes() as tmp_subvols, Path.resource(
+        with TempSubvolumes() as tmp_subvols, (
+            tempfile.NamedTemporaryFile()
+        ) as tf, Path.resource(
             __package__, "feature_both", exe=False
         ) as feature_both, Path.resource(
             __package__, "feature_add", exe=False
@@ -71,6 +73,21 @@ class AddRemoveConflictTestCase(unittest.TestCase):
             AssertionError,
             "Path does not exist",
         ):
+            # Write the targets_and_outputs file
+            tf.write(
+                Path.json_dumps(
+                    {
+                        _test_feature_target(
+                            "feature_addremove_conflict_add"
+                        ): feature_add,
+                        _test_feature_target(
+                            "feature_addremove_conflict_remove"
+                        ): feature_remove,
+                    }
+                ).encode()
+            )
+            tf.seek(0)
+
             subvol = tmp_subvols.external_command_will_create("test_conflict")
             # We cannot make this an `image.layer` target, since Buck
             # doesn't (yet) have a nice story for testing targets whose
@@ -85,17 +102,8 @@ class AddRemoveConflictTestCase(unittest.TestCase):
                         "--child-layer-target",
                         "unused",
                         f"--child-feature-json={feature_both}",
-                        *(
-                            "--child-dependencies",
-                            _test_feature_target(
-                                "feature_addremove_conflict_add"
-                            ),
-                            feature_add,
-                            _test_feature_target(
-                                "feature_addremove_conflict_remove"
-                            ),
-                            feature_remove,
-                        ),
+                        "--targets-and-outputs",
+                        tf.name,
                     ]
                 )
             )

@@ -21,6 +21,7 @@ import stat
 import sys
 from contextlib import ExitStack
 
+from antlir.cli import add_targets_and_outputs_arg
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
@@ -31,20 +32,6 @@ from antlir.subvol_utils import Subvol
 
 from .dep_graph import DependencyGraph
 from .subvolume_on_disk import SubvolumeOnDisk
-
-
-# At the moment, the target names emitted by `image_feature` targets seem to
-# be normalized the same way as those provided to us by `image_layer`.  If
-# this were to ever change, this would be a good place to re-normalize them.
-def make_target_path_map(targets_followed_by_paths):
-    "Buck query_targets_and_outputs gives us `//target path/to/target/out`"
-    if len(targets_followed_by_paths) % 2 != 0:
-        raise RuntimeError(
-            f"Odd-length --child-dependencies {targets_followed_by_paths}"
-        )
-    it = iter(targets_followed_by_paths)
-    d = dict(zip(it, it))
-    return d
 
 
 def parse_args(args) -> argparse.Namespace:
@@ -108,17 +95,6 @@ def parse_args(args) -> argparse.Namespace:
         help="The path of the JSON output of any `image.feature`s that are"
         "directly included by the layer being built",
     )
-    parser.add_argument(
-        "--child-dependencies",
-        nargs=argparse.REMAINDER,
-        metavar=["TARGET", "PATH"],
-        default=(),
-        help="Consumes the remaining arguments on the command-line, with "
-        "arguments at positions 1, 3, 5, 7, ... used as Buck target names "
-        "(to be matched with the targets in per-feature JSON outputs). "
-        "The argument immediately following each target name must be a "
-        "path to the output of that target on disk.",
-    )
     parser.add_argument("--debug", action="store_true", help="Log more")
     parser.add_argument(
         "--allowed-host-mount-target",
@@ -132,6 +108,8 @@ def parse_args(args) -> argparse.Namespace:
         help="Path to a file containing TAB-separated ENVRAs, one per line."
         "Also refer to `build_opts.bzl`.",
     )
+
+    add_targets_and_outputs_arg(parser)
     return Path.parse_args(parser, args)
 
 
@@ -158,7 +136,7 @@ def build_image(args):
         rpm_installer=args.rpm_installer,
         rpm_repo_snapshot=args.rpm_repo_snapshot,
         artifacts_may_require_repo=args.artifacts_may_require_repo,
-        target_to_path=make_target_path_map(args.child_dependencies),
+        target_to_path=args.targets_and_outputs,
         subvolumes_dir=args.subvolumes_dir,
         version_set_override=args.version_set_override,
         debug=args.debug,

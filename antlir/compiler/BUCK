@@ -143,6 +143,7 @@ python_library(
         ":dep_graph",
         ":items_for_features",
         ":subvolume_on_disk",
+        "//antlir:cli",
         "//antlir:fs_utils",
     ],
 )

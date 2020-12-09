@@ -9,6 +9,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 import unittest.mock
 from contextlib import contextmanager
@@ -185,18 +186,6 @@ class CompilerTestCase(unittest.TestCase):
             run_as_root.call_args_list,
         )
 
-    def test_child_dependency_errors(self):
-        with self.assertRaisesRegex(
-            RuntimeError, "Odd-length --child-dependencies "
-        ):
-            self._compile(["--child-dependencies", "foo"])
-
-        # Our T_KITCHEN_SINK feature does have dependencies
-        with self.assertRaisesRegex(
-            RuntimeError, f"{si.T_BASE}:[^ ]* not in {{}}"
-        ):
-            self._compile([])
-
     def _compiler_run_as_root_calls(self, *, parent_feature_json, parent_dep):
         """
         Invoke the compiler on the targets from the "sample_items" test
@@ -210,27 +199,32 @@ class CompilerTestCase(unittest.TestCase):
         `test_image_layer.py` does an end-to-end test that validates the
         final state of a compiled, live subvolume.
         """
-        res, run_as_root_calls = self._compile(
-            [
-                *parent_feature_json,
-                "--child-dependencies",
-                *itertools.chain.from_iterable(si.TARGET_TO_PATH.items()),
-                *parent_dep,
-            ]
-        )
-        self.assertEqual(
-            svod.SubvolumeOnDisk(
-                **{
-                    svod._BTRFS_UUID: "fake uuid",
-                    svod._BTRFS_PARENT_UUID: None,
-                    svod._HOSTNAME: "fake host",
-                    svod._SUBVOLUMES_BASE_DIR: _SUBVOLS_DIR,
-                    svod._SUBVOLUME_REL_PATH: _FAKE_SUBVOL,
-                }
-            ),
-            res._replace(**{svod._HOSTNAME: "fake host"}),
-        )
-        return run_as_root_calls
+        with tempfile.NamedTemporaryFile() as tf:
+            deps = parent_dep.copy() or {}
+            deps.update(si.TARGET_TO_PATH)
+            tf.write(Path.json_dumps(deps).encode())
+            tf.seek(0)
+
+            res, run_as_root_calls = self._compile(
+                [
+                    *parent_feature_json,
+                    "--targets-and-outputs",
+                    tf.name,
+                ]
+            )
+            self.assertEqual(
+                svod.SubvolumeOnDisk(
+                    **{
+                        svod._BTRFS_UUID: "fake uuid",
+                        svod._BTRFS_PARENT_UUID: None,
+                        svod._HOSTNAME: "fake host",
+                        svod._SUBVOLUMES_BASE_DIR: _SUBVOLS_DIR,
+                        svod._SUBVOLUME_REL_PATH: _FAKE_SUBVOL,
+                    }
+                ),
+                res._replace(**{svod._HOSTNAME: "fake host"}),
+            )
+            return run_as_root_calls
 
     @_subvol_mock_lexists_is_btrfs_and_run_as_root  # Mocks from _compile()
     def _expected_run_as_root_calls(
@@ -329,7 +323,7 @@ class CompilerTestCase(unittest.TestCase):
         self._assert_equal_call_sets(
             expected_calls,
             self._compiler_run_as_root_calls(
-                parent_feature_json=[], parent_dep=[]
+                parent_feature_json=[], parent_dep={}
             ),
         )
 
@@ -395,7 +389,7 @@ class CompilerTestCase(unittest.TestCase):
                             "--child-feature-json="
                             + f'{parent_dir / "feature.json"}'
                         ],
-                        parent_dep=["//fake:parent", parent_dir.decode()],
+                        parent_dep={"//fake:parent": parent_dir.decode()},
                     ),
                 )
 
