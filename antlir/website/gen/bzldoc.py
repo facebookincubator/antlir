@@ -175,7 +175,7 @@ def bzldoc():
 
     bzls = args.bzls
     outdir = args.outdir
-    assert outdir.exists()
+    os.makedirs(outdir, exist_ok=True)
 
     repo_root = find_buck_cell_root()
 
