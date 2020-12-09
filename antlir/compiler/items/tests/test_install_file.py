@@ -213,3 +213,44 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 ],
                 render_subvol(subvol),
             )
+
+    def test_install_file_large_batched_chmod(self):
+        # Create a large number of files with long names to intentionally
+        # overflow the normal size limit of the chmod call
+        with temp_dir() as td:
+            arg_max = os.sysconf(os.sysconf_names["SC_ARG_MAX"])
+            paths = [
+                f"{td}/{i:0120d}"
+                for i in range(10 + arg_max // (len(td) + 1 + 120))
+            ]
+            # simple check that the large exec behavior would otherwise be
+            # triggered by this test case
+            self.assertGreater(len("\0".join(paths)), arg_max)
+            for path in paths:
+                open(path, "w").close()
+
+            dir_item = _install_file_item(
+                from_target="t",
+                source={"source": td},
+                dest="/d",
+            )
+
+            with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+                subvol = temp_subvolumes.create("large-chmod")
+                dir_item.build(subvol, DUMMY_LAYER_OPTS)
+
+                self.assertEqual(
+                    [
+                        "(Dir)",
+                        {
+                            "d": [
+                                "(Dir)",
+                                {
+                                    os.path.basename(p): ["(File m444)"]
+                                    for p in paths
+                                },
+                            ]
+                        },
+                    ],
+                    render_subvol(subvol),
+                )
