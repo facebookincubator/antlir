@@ -84,7 +84,7 @@ def targets_and_outputs_arg_list(name, query):
         name = target,
         out = "map.json",
         bash = """
-echo -n "$(query_targets_and_outputs {delim} '{query}')" | \
+echo -n "$(query_targets_and_outputs {delim} '{query}'){delim}::QUERY::{delim}{query}" | \
 $(exe //antlir:serialize-targets-and-outputs) "{delim}" > $OUT
         """.format(
             delim = "<|ThisDelimiterIsSizzlin|>",

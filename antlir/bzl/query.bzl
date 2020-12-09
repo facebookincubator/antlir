@@ -3,13 +3,8 @@ This API provides the ability to construct query strings suitable for use
 with `buck query` style parameter macros.  This API currently implements a
 subset of the available query expressions implemented in Buck.  See the
 `Query functions` section of
-https://buck.build/function/string_parameter_macros.html for more detail.
-
-As of this version, the implemented query expressions are:
-  - deps
-  - attrfilter
-  - set
-  - union
+https://buck.build/function/string_parameter_macros.html for more detail
+about the specific expressions.
 """
 
 load(":target_helpers.bzl", "normalize_target")
@@ -66,7 +61,7 @@ def _union(queries):
     Create a union of multiple query expressions.
     """
 
-    return " union ".join(queries)
+    return "(" + " union ".join(queries) + ")"
 
 # The API for constructing buck queries
 query = struct(
