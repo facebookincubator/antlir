@@ -43,9 +43,24 @@ hello_tar_hash = (
     "dd83365abc69fe39990096a9396d9d2d6fbf75f849ab1640a10fdf9614d8d03d"
 )
 
-defs.buck_sh_binary(
+defs.buck_genrule(
     name = "hello_world_tar_generator.sh",
-    main = "hello_world_tar_generator.sh",
+    out = "run",
+    cacheable = False,
+    executable = True,
+    bash = """
+cat > "$TMP/out" << 'EOF'
+#!/bin/bash -uex
+set -o pipefail
+test $# -eq 2
+tarball_name=$1  # Exercises `generator_args`
+out_dir=$2  # Provided per the tarball generator contract
+cp -a "$(location :prebuilt_hello_world.tar)" "$out_dir/$tarball_name"
+echo "$tarball_name"  # Required by the tarball generator contract
+EOF
+chmod a+x "$TMP/out"
+mv "$TMP/out" "$OUT"
+    """,
 )
 
 defs.buck_genrule(
@@ -53,7 +68,7 @@ defs.buck_genrule(
     out = "hello_world.tar",
     bash = """
     $(exe :hello_world_tar_generator.sh) "\\$(basename $OUT)" \
-    $(location :prebuilt_hello_world.tar) "\\$(dirname $OUT)"
+    "\\$(dirname $OUT)"
     """,
 )
 
@@ -549,12 +564,10 @@ image.layer(
             image.source(
                 generator = ":hello_world_tar_generator.sh",
                 # Most generators would not have this API wart of externally
-                # specifying the output filename or the location of a prebuilt
-                # tar file.  This mis-feature only exists
+                # specifying the output filename. This mis-feature only exists
                 # to exercise `generator_args`.
                 generator_args = [
                     "hello_world.tar",
-                    "$(location :prebuilt_hello_world.tar)",
                 ],
                 content_hash = hello_tar_hash,
             ),
