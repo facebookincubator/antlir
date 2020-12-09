@@ -19,7 +19,7 @@ import tempfile
 import urllib.parse
 import uuid
 from contextlib import contextmanager
-from typing import AnyStr, Generator, Iterable, Iterator, List, Union
+from typing import AnyStr, Generator, IO, Iterable, Iterator, List, Union
 
 from .common import byteme, check_popen_returncode, get_logger
 
@@ -227,8 +227,13 @@ class Path(bytes):
         )
 
     def read_text(self) -> str:
-        with open(self) as infile:
+        with self.open() as infile:
             return infile.read()
+
+    @contextmanager
+    def open(self, mode="r") -> IO:
+        with open(self, mode=mode) as f:
+            yield f
 
     @classmethod
     @contextmanager
@@ -293,7 +298,7 @@ class Path(bytes):
         return self == b".." or self.startswith(b"../")
 
     def touch(self) -> "Path":
-        with open(self, "a"):
+        with self.open(mode="a"):
             pass
         return self
 
@@ -368,7 +373,7 @@ def open_for_read_decompress(path):
     elif path.endswith(b".gz") or path.endswith(b".tgz"):
         decompress = "gzip"
     else:
-        with open(path, "rb") as f:
+        with path.open(mode="rb") as f:
             yield f
         return
     with subprocess.Popen(
