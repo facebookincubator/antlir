@@ -196,6 +196,14 @@ class TestFsUtils(unittest.TestCase):
                 f.write("hello\n")
             self.assertEqual("hello\n", tmp_path.read_text())
 
+    def test_path_open(self):
+        with temp_dir() as td:
+            tmp_path = Path(td / "foo.txt")
+            with tmp_path.open(mode="w+") as f:
+                f.write("hello\n")
+            with tmp_path.open() as f:
+                self.assertEqual("hello\n", f.read())
+
     def test_path_shell_quote(self):
         self.assertEqual(
             Path(r"""/a\ b/c d/e'"f/( \t/""").shell_quote(),
