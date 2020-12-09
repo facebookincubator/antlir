@@ -60,6 +60,8 @@ class ForeignLayerItem(foreign_layer_t):
                 # Future: support the case where the in-container user DB
                 # diverges from the out-of-container user DB.  And user NS.
                 user=pwd.getpwnam(item.user),
+                # Make sure we give nspawn the target -> outputs mapping
+                targets_and_outputs=layer_opts.target_to_path,
             )
             run_nspawn(  # NB: stdout redirects to stderr by default
                 opts,
