@@ -82,7 +82,7 @@ def _get_version_set_to_path():
 # keys results in related keys being grouped together.
 #
 #
-# DANGER! ACHTUNG! PELIGRO! Опасность! PERICRLRM!
+# DANGER! ACHTUNG! PELIGRO! PERICRLRM!
 # Modifications to this shape's attributes or the values in the instance
 # of it below (`REPO_CFG`) could (and likely will) cause excessive
 # rebuilding and incur significant build cost. These attributes and values
