@@ -94,7 +94,7 @@ def image_rpmbuild(
     # <name>-rpmbuild-install-deps layer.
     build_opts = image_layer_kwargs.get("build_opts")
     build_opts_dict = structs.to_dict(build_opts) if build_opts else {}
-    installer = build_opts_dict.get("rpm_installer", "yum")
+    installer = build_opts_dict.get("rpm_installer", REPO_CFG.rpm_installer_default)
 
     install_deps_layer = name + "-rpmbuild-install-deps"
     image_foreign_layer(
