@@ -6,10 +6,29 @@
 
 set -o pipefail
 
-# $BUCK_PROJECT_ROOT is a mirror of the source and artifact trees containing the
-# `resources` specified in the target for this buck_sh_binary.  Since it's
-# determined at runtime it cannot be shellcheck-ed.
-# shellcheck source=/dev/null
-source "$BUCK_PROJECT_ROOT/antlir/bzl/foreign/rpmbuild/tests/rpm_sign_test_functions.sh"
+function sign_with_test_key {
+    if [[ $# -ne 1 ]] ; then
+        echo "Must supply one argument to sign_with_test_key()"
+        return 1
+    fi
+
+    # Since we're using a test key, create a temporary directory to house the
+    # gpg configuration and trust data so as not to pollute the user's host
+    # data.
+    GNUPGHOME=$( mktemp -d )
+    export GNUPGHOME
+
+    trap 'rm -rf "$GNUPGHOME"' RETURN
+
+    if [ -f "$BUCK_PROJECT_ROOT/antlir/rpm/tests/gpg_test_keypair/private.key" ]; then
+        # FB internal buck layout
+        signing_key="$BUCK_PROJECT_ROOT/antlir/rpm/tests/gpg_test_keypair/private.key"
+    else
+        # OSS buck layout
+        signing_key="$BUCK_PROJECT_ROOT/buck-out/gen/antlir/rpm/gpg-test-signing-key/gpg-test-signing-key"
+    fi
+    gpg -q --import "$signing_key"
+    rpmsign --addsign --define='_gpg_name Test Key' --define='_gpg_digest_algo sha256' "$1"
+}
 
 sign_with_test_key "$1"
