@@ -312,6 +312,12 @@ class ImageLayerTestCase(unittest.TestCase):
             # shouldn't affect production use-cases.
             self.assertEqual(["(Symlink usr/lib)"], pop_path(r, "lib"))
 
+            with self.target_subvol("foreign-layer-with-mounts") as sv:
+                # Check that the `layer_mount` was mounted when the foreign
+                # layer ran
+                with open(sv.path("/FOREIGN_LAYER_MOUNTS"), "r") as f:
+                    self.assertIn("/meownt", f.read())
+
     def test_non_default_rpm_snapshot(self):
         with self.target_subvol("layer-with-non-default-snapshot-rpm") as sv:
             r = render_subvol(sv)

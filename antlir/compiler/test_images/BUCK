@@ -140,6 +140,19 @@ image_foreign_layer(
     user = "root",
 )
 
+image_foreign_layer(
+    name = "foreign-layer-with-mounts",
+    antlir_rule = "user-internal",
+    cmd = [
+        "/bin/sh",
+        "-c",
+        "/bin/mount > /FOREIGN_LAYER_MOUNTS",
+    ],
+    parent_layer = ":test-layer-with-mounts",
+    rule_type = "image_test_foreign_layer",
+    user = "root",
+)
+
 # The next two targets exercise:
 #  - all forms of constructing a make_dirs request
 #  - specifying `stat` options, like user:group & mode

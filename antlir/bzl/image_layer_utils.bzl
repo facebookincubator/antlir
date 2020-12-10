@@ -3,25 +3,8 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "config", "get_visibility")
-load(":query.bzl", "query")
+load(":query.bzl", "layer_deps_query")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
-
-def _layer_deps_query(layer):
-    """
-    Build a query with `//antlir/bzl:query.bzl` to get all of the
-    immediate layers that are deps of this layer.
-    """
-
-    return query.attrfilter(
-        expr = query.deps(
-            expr = query.set([
-                layer,
-            ]),
-            depth = query.UNBOUNDED,
-        ),
-        label = "type",
-        value = "image_layer",
-    )
 
 def _add_run_in_subvol_target(name, kind, extra_args = None):
     target = name + "-" + kind
@@ -46,7 +29,7 @@ mv "$TMP/out" "$OUT"
             targets_and_outputs = " ".join(
                 targets_and_outputs_arg_list(
                     name = target,
-                    query = _layer_deps_query(
+                    query = layer_deps_query(
                         layer = image_utils.current_target(name),
                     ),
                 ),
@@ -207,5 +190,4 @@ def _image_layer_impl(
 
 image_layer_utils = struct(
     image_layer_impl = _image_layer_impl,
-    layer_deps_query = _layer_deps_query,
 )
