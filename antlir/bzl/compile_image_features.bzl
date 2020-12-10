@@ -5,7 +5,7 @@ load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl/image_actions:feature.bzl", "FEATURES_FOR_LAYER_PREFIX", "image_feature", "normalize_features")
 load(":build_opts.bzl", "normalize_build_opts")
 load(":constants.bzl", "REPO_CFG")
-load(":query.bzl", "query")
+load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
@@ -60,22 +60,26 @@ EOF
             antlir_rule = "user-internal",
         )
 
-    deps_query = query.union([
-        # For inline `image.feature`s, we already know the direct deps.
-        query.set(normalized_features.direct_deps),
-        # We will query the deps of the features that are targets.
-        query.deps(
-            expr = query.attrfilter(
-                label = "type",
-                value = "image_feature",
-                expr = query.deps(
-                    expr = query.set(normalized_features.targets),
-                    depth = query.UNBOUNDED,
+    deps_query = query.union(
+        [
+            # For inline `image.feature`s, we already know the direct deps.
+            query.set(normalized_features.direct_deps),
+            # We will query the deps of the features that are targets.
+            query.deps(
+                expr = query.attrfilter(
+                    label = "type",
+                    value = "image_feature",
+                    expr = query.deps(
+                        expr = query.set(normalized_features.targets),
+                        depth = query.UNBOUNDED,
+                    ),
                 ),
+                depth = 1,
             ),
-            depth = 1,
-        ),
-    ])
+        ] + ([
+            layer_deps_query(parent_layer),
+        ] if parent_layer else []),
+    )
 
     return '''
         # Take note of `targets_and_outputs` below -- this enables the

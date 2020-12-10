@@ -71,3 +71,20 @@ query = struct(
     union = _union,
     UNBOUNDED = -1,
 )
+
+def layer_deps_query(layer):
+    """
+    Build and return a query to get all of the image_layer deps of the supplied
+    layer.
+    """
+
+    return query.attrfilter(
+        expr = query.deps(
+            expr = query.set([
+                layer,
+            ]),
+            depth = query.UNBOUNDED,
+        ),
+        label = "type",
+        value = "image_layer",
+    )

@@ -4,6 +4,7 @@ load(":image_layer.bzl", "image_layer")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
+load(":query.bzl", "layer_deps_query")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
@@ -176,7 +177,7 @@ mv $TMP/out "$OUT"
             ]),
             targets_and_outputs = targets_and_outputs_arg_list(
                 name = name,
-                query = image_layer_utils.layer_deps_query(
+                query = layer_deps_query(
                     layer = image_utils.current_target(test_layer),
                 ),
             ),
