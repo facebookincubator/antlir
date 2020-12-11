@@ -30,6 +30,9 @@ from .base import (
 )
 
 
+TEST_IMAGE_PREFIX = "//antlir/compiler/test_images:"
+
+
 class NspawnTestCase(NspawnTestBase):
     def _assertIsSubseq(self, subseq, seq, msg=None):
         subseqs = [
@@ -621,10 +624,17 @@ class NspawnTestCase(NspawnTestBase):
         # nspawn cli expects
         with tempfile.NamedTemporaryFile() as tf:
             tf.write(
-                json.dumps(
+                Path.json_dumps(
                     {
-                        "//antlir/compiler/test_images:hello_world_base": str(
+                        TEST_IMAGE_PREFIX
+                        + "hello_world_base": str(
                             layer_resource(__package__, "test-hello-world-base")
+                        ),
+                        TEST_IMAGE_PREFIX
+                        + "create_ops-from-layer": str(
+                            layer_resource(
+                                __package__, "test-create-ops-from-layer"
+                            )
                         ),
                     }
                 ).encode()
@@ -664,6 +674,23 @@ class NspawnTestCase(NspawnTestBase):
                 ],
                 args,
             )
+            self._assertIsSubseq(
+                [
+                    "--bind-ro",
+                    "{subvol}:{mount}".format(
+                        subvol=_colon_quote_path(
+                            find_built_subvol(
+                                layer_resource(
+                                    __package__,
+                                    "test-create-ops-from-layer",
+                                )
+                            ).path()
+                        ),
+                        mount="/sendstream_meownt",
+                    ),
+                ],
+                args,
+            )
 
     def test_mounted_mounts(self):
         expected_mounts = [b"/dev_null", b"/host_etc", b"/meownt"]
@@ -674,10 +701,17 @@ class NspawnTestCase(NspawnTestBase):
             ts_and_os.write(
                 Path.json_dumps(
                     {
-                        "//antlir/compiler/test_images:hello_world_base": str(
+                        TEST_IMAGE_PREFIX
+                        + "hello_world_base": str(
                             layer_resource(__package__, "test-hello-world-base")
                         ),
-                    }
+                        TEST_IMAGE_PREFIX
+                        + "create_ops-from-layer": str(
+                            layer_resource(
+                                __package__, "test-create-ops-from-layer"
+                            )
+                        ),
+                    },
                 ).encode()
             )
             ts_and_os.seek(0)

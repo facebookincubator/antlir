@@ -328,6 +328,10 @@ image.layer(
     parent_layer = ":test-layer",
     features = [
         ":feature_mount",
+        image.layer_mount(
+            ":create_ops-from-layer",
+            "/sendstream_meownt",
+        ),
     ],
 )
 

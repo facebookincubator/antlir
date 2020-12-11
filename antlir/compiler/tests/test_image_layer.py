@@ -316,7 +316,9 @@ class ImageLayerTestCase(unittest.TestCase):
                 # Check that the `layer_mount` was mounted when the foreign
                 # layer ran
                 with open(sv.path("/FOREIGN_LAYER_MOUNTS"), "r") as f:
-                    self.assertIn("/meownt", f.read())
+                    mounts = f.read()
+                    self.assertIn("/meownt", mounts)
+                    self.assertIn("/sendstream_meownt", mounts)
 
     def test_non_default_rpm_snapshot(self):
         with self.target_subvol("layer-with-non-default-snapshot-rpm") as sv:
