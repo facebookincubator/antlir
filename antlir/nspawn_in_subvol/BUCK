@@ -144,6 +144,9 @@ python_unittest(
         layer_resource(
             TEST_IMAGE_PREFIX + "hello_world_base",
         ): "tests/test-hello-world-base",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "create_ops-from-layer",
+        ): "tests/test-create-ops-from-layer",
         layer_resource(TEST_IMAGE_PREFIX + "bootable-systemd-os"): "tests/bootable-systemd-os",
         layer_resource(":host-hello-xar"): "tests/host-hello-xar",
     },

@@ -82,10 +82,11 @@ def targets_and_outputs_arg_list(name, query):
     target = "targets-to-outputs-deps-{}-{}".format(name, sha256_b64(name + query))
     buck_genrule(
         name = target,
-        out = "map.json",
+        out = ".",
         bash = """
-echo -n "$(query_targets_and_outputs {delim} '{query}'){delim}::QUERY::{delim}{query}" | \
-$(exe //antlir:serialize-targets-and-outputs) "{delim}" > $OUT
+echo -n "$(query_targets_and_outputs {delim} '{query}')" | \
+$(exe //antlir:serialize-targets-and-outputs) "{delim}" > "$OUT/targets-and-outputs.json"
+echo -n '{query}' > "$OUT/query"
         """.format(
             delim = "<|ThisDelimiterIsSizzlin|>",
             query = query,
@@ -96,4 +97,4 @@ $(exe //antlir:serialize-targets-and-outputs) "{delim}" > $OUT
         cacheable = False,
     )
 
-    return ["--targets-and-outputs", "$(location :{})".format(target)]
+    return ["--targets-and-outputs", "$(location :{})/targets-and-outputs.json".format(target)]

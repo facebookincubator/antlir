@@ -41,6 +41,22 @@ def _attrfilter(label, value, expr):
         expr = expr,
     )
 
+def _attrregexfilter(label, pattern, expr):
+    """
+    Build an `attrregexfilter(<label>, <pattern>, <expr>)` type query
+    expression.
+
+    `pattern` is a regular expression for matching against the provided
+    `label`.
+
+    `expr` is a query expression of any supported type.
+    """
+    return 'attrregexfilter({label}, "{pattern}", {expr})'.format(
+        label = label,
+        pattern = pattern,
+        expr = expr,
+    )
+
 def _set(targets):
     """
     Builds a `set("//foo:target1" "//bar:target2")` query expression.
@@ -66,6 +82,7 @@ def _union(queries):
 # The API for constructing buck queries
 query = struct(
     attrfilter = _attrfilter,
+    attrregexfilter = _attrregexfilter,
     deps = _deps,
     set = _set,
     union = _union,
@@ -74,11 +91,11 @@ query = struct(
 
 def layer_deps_query(layer):
     """
-    Build and return a query to get all of the image_layer deps of the supplied
-    layer.
+    Build and return a query to get all of the image_layer and variant deps
+    of the supplied layer.
     """
 
-    return query.attrfilter(
+    return query.attrregexfilter(
         expr = query.deps(
             expr = query.set([
                 layer,
@@ -86,5 +103,5 @@ def layer_deps_query(layer):
             depth = query.UNBOUNDED,
         ),
         label = "type",
-        value = "image_layer",
+        pattern = "(image_layer|image_sendstream_layer)",
     )
