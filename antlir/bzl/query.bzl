@@ -7,6 +7,7 @@ https://buck.build/function/string_parameter_macros.html for more detail
 about the specific expressions.
 """
 
+load("@bazel_skylib//lib:types.bzl", "types")
 load(":target_helpers.bzl", "normalize_target")
 
 _UNBOUNDED = -1
@@ -33,7 +34,7 @@ def _attrfilter(label, value, expr):
     """
     Build an `attrfilter(<label>, <value>, <expr>)` type query expression.
 
-    `epxr` is a query expression of any supported type.
+    `expr` is a query expression of any supported type.
     """
     return "attrfilter({label}, {value}, {expr})".format(
         label = label,
@@ -65,6 +66,9 @@ def _set(targets):
     if not targets:
         return "set()"
 
+    if not types.is_list(targets):
+        targets = [targets]
+
     # This does not currently escape double-quotes since Buck docs say they
     # cannot occur: https://buck.build/concept/build_target.html
     return 'set("' + '" "'.join([
@@ -79,11 +83,18 @@ def _union(queries):
 
     return "(" + " union ".join(queries) + ")"
 
+def _diff(queries):
+    """
+    Builds an expression using the - operator
+    """
+    return "(" + " - ".join(queries) + ")"
+
 # The API for constructing buck queries
 query = struct(
     attrfilter = _attrfilter,
     attrregexfilter = _attrregexfilter,
     deps = _deps,
+    diff = _diff,
     set = _set,
     union = _union,
     UNBOUNDED = -1,
