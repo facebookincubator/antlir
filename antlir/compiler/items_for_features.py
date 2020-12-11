@@ -6,7 +6,7 @@
 
 "Makes Items from the JSON that was produced by the Buck target image_feature"
 import json
-from typing import Iterable, Union
+from typing import Iterable, Union, Mapping, Optional
 
 from antlir.compiler.items.clone import CloneItem
 from antlir.compiler.items.common import LayerOpts, image_source_item
@@ -25,7 +25,11 @@ from antlir.compiler.items.tarball import TarballItem
 from antlir.find_built_subvol import find_built_subvol
 
 
-def replace_targets_by_paths(x, layer_opts: LayerOpts):
+def replace_targets_by_paths(
+    x,
+    target_to_path: Mapping[str, str],
+    subvolumes_dir: Optional[str],
+):
     """
     Converts target_tagger.bzl sigils to buck-out paths or Subvol objects.
 
@@ -36,31 +40,67 @@ def replace_targets_by_paths(x, layer_opts: LayerOpts):
     the compiler receives a dictionary of target-to-path mappings as
     `--child-dependencies`, and performs the substitution in any image
     feature JSON it consumes.
+
+    Note: If `subvolumes_dir` is None, layer targets will not be replaced by
+    their corresponding subvolumes, and will instead be left as-is.
     """
     if type(x) is dict:
         if "__BUCK_TARGET" in x or "__BUCK_LAYER_TARGET" in x:
             assert len(x) == 1, x
             ((sigil, target),) = x.items()
-            path = layer_opts.target_to_path.get(target)
+            if sigil == "__BUCK_LAYER_TARGET" and subvolumes_dir is None:
+                return target  # pragma: no cover
+            path = target_to_path.get(target)
             if not path:
-                raise RuntimeError(
-                    f"{target} not in {layer_opts.target_to_path}"
-                )
+                raise RuntimeError(f"{target} not in {target_to_path}")
             return (
                 path
                 if sigil == "__BUCK_TARGET"
-                else find_built_subvol(
-                    path, subvolumes_dir=layer_opts.subvolumes_dir
-                )
+                else find_built_subvol(path, subvolumes_dir=subvolumes_dir)
             )
         return {
-            k: replace_targets_by_paths(v, layer_opts) for k, v in x.items()
+            k: replace_targets_by_paths(v, target_to_path, subvolumes_dir)
+            for k, v in x.items()
         }
     elif type(x) is list:
-        return [replace_targets_by_paths(v, layer_opts) for v in x]
+        return [
+            replace_targets_by_paths(v, target_to_path, subvolumes_dir)
+            for v in x
+        ]
     elif type(x) in [int, float, str, bool, type(None)]:
         return x
     raise AssertionError(f"Unknown {type(x)} for {x}")  # pragma: no cover
+
+
+def gen_included_features(
+    features_or_paths: Iterable[Union[str, dict]],
+    target_to_path: Mapping[str, str],
+    subvolumes_dir: Optional[str],
+):
+    for feature_or_path in features_or_paths:
+        if isinstance(feature_or_path, str):
+            with open(feature_or_path) as f:
+                items = replace_targets_by_paths(
+                    json.load(f),
+                    target_to_path,
+                    subvolumes_dir,
+                )
+        else:
+            # Any inline feature would have had its target paths unwrapped by
+            # the outer feature that contains it.  That's always true because
+            # the compiler gets the root features on the command line as paths
+            # to JSON.
+            items = feature_or_path
+
+        yield from gen_included_features(
+            features_or_paths=items.pop("features", []),
+            target_to_path=target_to_path,
+            subvolumes_dir=subvolumes_dir,
+        )
+
+        target = items.pop("target")
+        for feature_key, configs in items.items():
+            yield (feature_key, target, configs)
 
 
 def gen_items_for_features(
@@ -102,32 +142,14 @@ def gen_items_for_features(
             )
         )
 
-    for feature_or_path in features_or_paths:
-        if isinstance(feature_or_path, str):
-            with open(feature_or_path) as f:
-                items = replace_targets_by_paths(json.load(f), layer_opts)
-        else:
-            # An inline features would have had its target paths unwrapped
-            # by the outer feature that contains it.  That's always true
-            # because the compiler gets the root features on the command
-            # line as paths to JSON.
-            items = feature_or_path
-
-        yield from gen_items_for_features(
-            exit_stack=exit_stack,
-            features_or_paths=items.pop("features", []),
-            layer_opts=layer_opts,
-        )
-
-        target = items.pop("target")
-        for key, item_factory in key_to_item_factory.items():
-            for dct in items.pop(key, []):
-                try:
-                    yield item_factory(from_target=target, **dct)
-                except Exception as ex:  # pragma: no cover
-                    raise RuntimeError(
-                        f"Failed to process {key}: {dct} from target "
-                        f"{target}, please read the exception above."
-                    ) from ex
-
-        assert not items, f"Unsupported items: {items}"
+    for (feature_key, target, configs) in gen_included_features(
+        features_or_paths=features_or_paths,
+        target_to_path=layer_opts.target_to_path,
+        subvolumes_dir=layer_opts.subvolumes_dir,
+    ):
+        assert (
+            feature_key in key_to_item_factory
+        ), f"Unsupported item: {feature_key}"
+        item_factory = key_to_item_factory[feature_key]
+        for config in configs:
+            yield item_factory(from_target=target, **config)
