@@ -52,6 +52,9 @@ load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "targe
 
 FEATURES_FOR_LAYER_PREFIX = "features-for-layer-"
 
+# See the comment below to understand why you should not use this
+DO_NOT_USE_FEATURES_SUFFIX = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
+
 # ## Why are `image.feature`s forbidden as dependencies?
 #
 # The long target suffix below exists to discourage people from directly
@@ -87,14 +90,8 @@ FEATURES_FOR_LAYER_PREFIX = "features-for-layer-"
 # have direct access to the `image.feature` JSON outputs in any case.  Most
 # users will want to depend on build artifacts that are downstream of
 # `image.feature`, like `image.layer`.
-#
-# Maintainers of this code: please change this string at will, **without**
-# searching the codebase for people who might be referring to it.  They have
-# seen this note, and they have agreed to have their code broken without
-# warning.  Do not incentivize hacky engineering practices by "being nice."
-# (Caveat: don't change it daily to avoid forcing excessive rebuilds.)
 def PRIVATE_DO_NOT_USE_feature_target_name(name, version_set):
-    name += "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
+    name += DO_NOT_USE_FEATURES_SUFFIX
     if version_set not in REPO_CFG.version_set_to_path:
         fail(
             "Must be in {}".format(list(REPO_CFG.version_set_to_path)),

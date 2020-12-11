@@ -248,6 +248,7 @@ def _fetched_package_with_nondeterministic_fs_metadata(
             quoted_package = shell.quote(package),
             print_how_to_fetch_json = print_how_to_fetch_json,
         ),
+        type = "fetched_package_with_nondeterministic_fs_metadata",
         visibility = get_visibility(visibility, name),
         antlir_rule = "user-internal",
     )
