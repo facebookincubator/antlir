@@ -1,9 +1,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_sh_binary", "export_file")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
 load("//antlir/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
-
-export_file(name = "rpm_sign_test_functions.sh")
 
 export_file(name = "toy_srcs")
 
@@ -24,19 +22,22 @@ export_file(name = "toy.spec")
 #   `$GNUPGHOME` available on the ambient OS.
 # - The build is still deterministic because we trust that the identifier
 #   (e.g. fingeprint) we used for the key identifies it uniquely.
-buck_sh_binary(
-    name = "rpm_sign_with_test_key.sh",
-    main = "rpm_sign_with_test_key.sh",
-    resources = [
-        ":rpm_sign_test_functions.sh",
-        "//antlir/rpm:gpg-test-signing-key",
+python_binary(
+    name = "rpm-sign-with-test-key",
+    srcs = ["rpm_sign_with_test_key.py"],
+    main_module = "antlir.bzl.foreign.rpmbuild.tests.rpm_sign_with_test_key",
+    resources = {
+        "//antlir/rpm:gpg-test-signing-key": "gpg-test-signing-key",
+    },
+    visibility = [
+        "//antlir/bzl/foreign/rpmbuild/facebook/...",
+        "//antlir/bzl/foreign/rpmbuild/tests/...",
     ],
-    visibility = ["//antlir/bzl/foreign/rpmbuild/tests/..."],
 )
 
 image_rpmbuild(
     name = "toy-rpm",
-    signer = ":rpm_sign_with_test_key.sh",
+    signer = ":rpm-sign-with-test-key",
     source = ":toy_srcs",
     specfile = ":toy.spec",
 )
