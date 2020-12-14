@@ -32,6 +32,7 @@ def sign_with_test_key(rpm: str) -> None:
                 "_gpg_digest_algo sha256",
                 rpm,
             ],
+            env={"GNUPGHOME": gnupg_home},
             check=True,
         )
 
