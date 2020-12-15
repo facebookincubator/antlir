@@ -38,6 +38,7 @@ def new_vm_opts(
         kernel = None,
         layer = None,
         rootfs_image = None,
+        initrd = None,
         **kwargs):
     # Don't allow an invalid cpu count
     if cpus == 2:
@@ -56,12 +57,12 @@ def new_vm_opts(
     bios = bios or third_party.library("qemu", "share/qemu/bios-256k.bin")
     emulator = emulator or third_party.library("qemu")
 
-    # The initrd target is derived from the kernel uname.
-    # Note: In the future we would like to support user provided initrds.
-    # However, the initrd must match the kernel uname and since we don't
-    # have a good way to verify that this is the case, we will instea
-    # not allow it at this time.
-    initrd = "{}:{}-initrd".format(kernel_get.base_target, kernel.uname)
+    # Allow the user to provide their own initrd. Currently there is no way for
+    # us to verify that this initrd will actually work with the given kernel,
+    # but if someone is using this (eg, the vm appliance), assume they are
+    # accepting the risks.
+    # The default initrd target is derived from the kernel uname.
+    initrd = initrd or "{}:{}-initrd".format(kernel_get.base_target, kernel.uname)
 
     # If the vm is using the default rootfs layer, we can use the
     # pre-packaged seed device and save lots of build time
