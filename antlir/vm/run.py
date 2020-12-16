@@ -5,13 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import asyncio
-import importlib.resources
 import sys
 from typing import Iterable
 
 import click
 from antlir.common import init_logging, get_logger
-from antlir.fs_utils import Path
 from antlir.vm.common import async_wrapper
 from antlir.vm.vm import vm
 from antlir.vm.vm_opts_t import vm_opts_t
@@ -28,6 +26,14 @@ logger = get_logger()
     "details for the vm.",
     required=True,
 )
+@click.option(
+    "--bind-repo-ro",
+    is_flag=True,
+    help="Makes a read-only bind-mount of the current Buck "
+    "project into the vm at the same location as it is on "
+    "the host. This is needed to run binaries that are built "
+    "to be run in-place.",
+)
 @click.option("-d", "--debug", is_flag=True, default=False)
 @click.option("-v", "--verbose", count=True)
 @click.option(
@@ -40,6 +46,7 @@ logger = get_logger()
 @async_wrapper
 async def run(
     cmd: Iterable[str],
+    bind_repo_ro: bool,
     debug: bool,
     opts: vm_opts_t,
     timeout: int,
@@ -53,6 +60,7 @@ async def run(
 
     async with vm(
         opts=opts,
+        bind_repo_ro=bind_repo_ro,
         verbose=verbose > 0,
         interactive=not cmd or cmd == ["/bin/bash"],
     ) as instance:
