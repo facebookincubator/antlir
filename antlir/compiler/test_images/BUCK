@@ -110,11 +110,14 @@ image_build_librename_shadowed(
     parent_layer = ":test-layer",
 )
 
+defs.export_file(name = "shadow_me")
+
 # Verified by `test_*_build_appliance` in `test-image-layer`.
 [
     image.layer(
         name = "validates-{}-build-appliance".format(rpm_installer),
         features = [
+            image.install(":shadow_me", "/shadow_me"),
             image.rpms_install(["rpm-test-milk"]),
         ],
         build_opts = image.opts(
@@ -133,8 +136,14 @@ image_foreign_layer(
     cmd = [
         "/bin/sh",
         "-c",
-        "exec -a touch /bin/sh /I_AM_FOREIGN_LAYER",
+        "exec -a cp /bin/sh /shadow_me /I_AM_FOREIGN_LAYER",
     ],
+    container_opts = image.opts(
+        # `shadow_proxied_binaries` and `serve_rpm_snapshots` are covered by
+        # `rpmbuild.bzl` tests.
+        shadow_paths = [("/shadow_me", "/rpm_test/milk.txt")],
+        # The `internal_only_*` things are covered by the stuff that uses them.
+    ),
     parent_layer = ":validates-dnf-build-appliance",
     rule_type = "image_test_foreign_layer",
     user = "root",

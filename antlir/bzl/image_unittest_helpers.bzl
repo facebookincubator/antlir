@@ -87,6 +87,7 @@ def _nspawn_wrapper_properties(
         if not k.startswith("_") and not k in [
             "internal_only_logs_tmpfs",
             "serve_rpm_snapshots",
+            "shadow_paths",
             "shadow_proxied_binaries",
             "internal_only_unprotect_antlir_dir",  # Unavailable in tests
         ]
@@ -151,6 +152,7 @@ def nspawn_in_subvol_args():
             '--serve-rpm-snapshot={{}}'.format(s)
                 for s in {serve_rpm_snapshots_repr}
         ],
+        *[{shadow_paths_repr}],
         *{targets_and_outputs},
         '--', {binary_path_repr},
     ]
@@ -174,6 +176,10 @@ mv $TMP/out "$OUT"
             serve_rpm_snapshots_repr = repr([
                 snapshot_install_dir(s)
                 for s in container_opts.serve_rpm_snapshots
+            ]),
+            shadow_paths_repr = ", ".join([
+                "'--shadow-paths', {}, {}".format(repr(d), repr(s))
+                for d, s in container_opts.shadow_paths
             ]),
             targets_and_outputs = targets_and_outputs_arg_list(
                 name = name,

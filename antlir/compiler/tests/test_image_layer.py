@@ -44,6 +44,7 @@ TARGET_TO_PATH = {
 
 
 REPO_CFG = load_repo_config()
+SHADOW_ME = "shadow me"
 
 
 class ImageLayerTestCase(unittest.TestCase):
@@ -249,6 +250,13 @@ class ImageLayerTestCase(unittest.TestCase):
             self.assertEqual(["(Dir)", {}], pop_path(r, "var/tmp"))
             self.assertEqual(["(Dir)", {}], pop_path(r, "usr"))
 
+            # This is never changed in the underlying layer, just shadowed
+            # at runtime.
+            self.assertEqual(
+                [f"(File m444 d{len(SHADOW_ME)})"],
+                pop_path(r, "shadow_me"),
+            )
+
             check_common_rpm_render(self, r, yum_dnf)
 
     @unittest.skipUnless(
@@ -270,9 +278,16 @@ class ImageLayerTestCase(unittest.TestCase):
             self.assertEqual(["(Dir)", {}], pop_path(r, "usr/lib"))
 
     def test_foreign_layer(self):
+        # This checks that `shadow_paths` worked as expected.
+        shadowed = "milk 2.71 8\n"
+        assert len(shadowed) != len(SHADOW_ME), (shadowed, SHADOW_ME)
         with self._check_build_appliance("foreign-layer", "dnf") as (sv, r):
-            # The desired side effect of the run:
-            self.assertEqual(["(File)"], pop_path(r, "I_AM_FOREIGN_LAYER"))
+            # The desired side effect of the run.  This also checks that the
+            # path shadowing worked.
+            self.assertEqual(
+                [f"(File d{len(shadowed)})"],
+                pop_path(r, "I_AM_FOREIGN_LAYER"),
+            )
 
             # Fixme: This `os-release` is an artifact of `nspawn_in_subvol`.
             # We should probably not be leaking this into the layer, but
@@ -312,13 +327,15 @@ class ImageLayerTestCase(unittest.TestCase):
             # shouldn't affect production use-cases.
             self.assertEqual(["(Symlink usr/lib)"], pop_path(r, "lib"))
 
-            with self.target_subvol("foreign-layer-with-mounts") as sv:
-                # Check that the `layer_mount` was mounted when the foreign
-                # layer ran
-                with open(sv.path("/FOREIGN_LAYER_MOUNTS"), "r") as f:
-                    mounts = f.read()
-                    self.assertIn("/meownt", mounts)
-                    self.assertIn("/sendstream_meownt", mounts)
+    def test_foreign_layer_mounts(self):
+        # test_foreign_layer checks the actual image contents
+        with self.target_subvol("foreign-layer-with-mounts") as sv:
+            # Check that the `layer_mount` was mounted when the foreign
+            # layer ran
+            with open(sv.path("/FOREIGN_LAYER_MOUNTS"), "r") as f:
+                mounts = f.read()
+                self.assertIn("/meownt", mounts)
+                self.assertIn("/sendstream_meownt", mounts)
 
     def test_non_default_rpm_snapshot(self):
         with self.target_subvol("layer-with-non-default-snapshot-rpm") as sv:

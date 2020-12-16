@@ -18,7 +18,6 @@ To allow in-place upgrades of the package managers, we set up shadow
 copies that are compatible with the `LD_PRELOAD=librename_shadowed.so` hack.
 """
 import subprocess
-import textwrap
 from contextlib import contextmanager
 from typing import Any, AnyStr, Iterable, List, Mapping, NamedTuple, Tuple
 
@@ -126,14 +125,12 @@ def _resolve_to_canonical_shadow_paths(
                     # If both the candidate destination, and the source exist,
                     # output them together with the the input dest so we can
                     # match it in `shadow_paths`.
-                    textwrap.dedent(
-                        f"""\
-            dst=$(readlink -f {c.host_dest.shell_quote()}) &&
-            src=$(readlink -f {c.host_src.shell_quote()}) &&
-            test -f "$dst" -a -f "$src" &&
-            printf '%s\\0%s\\0%s\\0' "$dst" {c.input_dest.shell_quote()} "$src"
-            """
-                    )
+                    f"""\
+dst=$(readlink -f {c.host_dest.shell_quote()}) &&
+src=$(readlink -f {c.host_src.shell_quote()}) &&
+test -f "$dst" -a -f "$src" &&
+printf '%s\\0%s\\0%s\\0' "$dst" {c.input_dest.shell_quote()} "$src"
+"""
                     for c in candidates
                     # The trailing `true` means that we ignore errors from `test
                     # -e` but not e.g. if `/bin/sh` does no texist.
@@ -213,14 +210,12 @@ def _copy_to_shadowed_root(subvol: Subvol, container_paths: Iterable[Path]):
                 "sh",
                 "-uec",
                 "\n".join(
-                    textwrap.dedent(
-                        f"""\
-                b={backup.shell_quote()}
-                b_dir=$(dirname "$b")
-                mkdir -p "$b_dir"
-                cp --reflink=auto --preserve=all {orig.shell_quote()} "$b"
-                """
-                    )
+                    f"""\
+b={backup.shell_quote()}
+b_dir=$(dirname "$b")
+mkdir -p "$b_dir"
+cp --reflink=auto --preserve=all {orig.shell_quote()} "$b"
+"""
                     for orig, backup in originals_and_backups
                 ),
             ]
@@ -252,23 +247,22 @@ def _copy_to_shadowed_root(subvol: Subvol, container_paths: Iterable[Path]):
                 "sh",
                 "-uec",
                 "\n".join(
-                    textwrap.dedent(
-                        f"""\
-                o={orig.shell_quote()}
-                cp --reflink=always --preserve=all {backup.shell_quote()} "$o"
-                rm {backup.shell_quote()}
-                """
-                    )
+                    f"""\
+o={orig.shell_quote()}
+cp --reflink=always --preserve=all {backup.shell_quote()} "$o"
+rm {backup.shell_quote()}
+"""
                     for orig, backup in originals_and_backups
                 )
                 + "\n"
-                + textwrap.dedent(
-                    f"""
-                find {
-                    subvol.path(SHADOWED_PATHS_ROOT).shell_quote()
-                } -type d | sort -r | xargs rmdir
-            """
-                ),
+                # Try to remove /__antlir__ because it is possible that this
+                # plugin was the only thing that made it exist.
+                + f"""
+spr={subvol.path(SHADOWED_PATHS_ROOT).shell_quote()}
+find "$spr" -type d | sort -r | xargs rmdir
+antlir=$(dirname "$spr")
+if [[ -d "$antlir" ]] ; then rmdir --ignore-fail-on-non-empty "$antlir" ; fi
+""",
             ]
         )
 
