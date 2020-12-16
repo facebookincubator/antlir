@@ -71,6 +71,7 @@ class ForeignLayerItem(foreign_layer_t):
                     plugin_args=NspawnPluginArgs(
                         serve_rpm_snapshots=c_opts.serve_rpm_snapshots,
                         shadow_proxied_binaries=c_opts.shadow_proxied_binaries,
+                        shadow_paths=c_opts.shadow_paths,
                     ),
                 ),
             )
