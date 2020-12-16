@@ -129,19 +129,6 @@ def gen_items_for_features(
         "foreign_layer": ForeignLayerItem,
     }
 
-    try:
-        from antlir.compiler.items.facebook import fb_items_for_features
-    except ImportError:  # pragma: no cover
-        pass
-    else:
-        key_to_item_factory.update(
-            fb_items_for_features.gen_items_for_features(
-                exit_stack=exit_stack,
-                features_or_paths=features_or_paths,
-                layer_opts=layer_opts,
-            )
-        )
-
     for (feature_key, target, configs) in gen_included_features(
         features_or_paths=features_or_paths,
         target_to_path=layer_opts.target_to_path,
