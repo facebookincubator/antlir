@@ -149,7 +149,7 @@ class TestShapeBzl(unittest.TestCase):
             """class shape(Shape):
   __GENERATED_SHAPE__ = True
   hello: str
-  world: Optional[str]
+  world: Optional[str] = None
   answer: int = 42
   file: Path
   location: Target

@@ -223,13 +223,14 @@ async def __vm_with_stack(
     # this modules directory is mounted by init.sh at boot, to avoid having
     # to install kernels in the root fs and avoid expensive copying of
     # ~400M worth of modules during boot
-    shares += [
-        Plan9Export(
-            opts.kernel.artifacts.modules.subvol.path(),
-            mount_tag="kernel-modules",
-            generator=False,
-        )
-    ]
+    if opts.kernel.artifacts.modules is not None:
+        shares += [
+            Plan9Export(
+                opts.kernel.artifacts.modules.subvol.path(),
+                mount_tag="kernel-modules",
+                generator=False,
+            )
+        ]
 
     export_share = stack.enter_context(Share.export_spec(shares))
     shares += [export_share]

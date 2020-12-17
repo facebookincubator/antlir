@@ -165,8 +165,13 @@ async def main(
         sys.exit(proc.returncode)
 
     # Build shares to provide to the vm
-    shares = [BtrfsDisk(test_binary_image, "/vmtest")] + (
-        [
+    shares = [BtrfsDisk(test_binary_image, "/vmtest")]
+    if devel_layer and opts.kernel.artifacts.devel is None:
+        raise Exception(
+            "--devel-layer requires kernel.artifacts.devel set in vm_opts"
+        )
+    if devel_layer:
+        shares += [
             Plan9Export(
                 path=opts.kernel.artifacts.devel.subvol.path(),
                 mountpoint="/usr/src/kernels/{}".format(opts.kernel.uname),
@@ -182,9 +187,6 @@ async def main(
                 generator=True,
             ),
         ]
-        if devel_layer
-        else []
-    )
 
     async with vm(
         bind_repo_ro=bind_repo_ro,
