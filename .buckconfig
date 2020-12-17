@@ -14,7 +14,7 @@
 # inplace python binaries in local dev mode, but it will always be python3.
 [python]
   interpreter = /usr/bin/python3
-  package_style = standalone
+  package_style = inplace
 
 [cxx]
   gtest_dep = //third-party/cxx:gtest
