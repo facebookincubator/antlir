@@ -1,0 +1,30 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_worker_tool", "python_binary", "python_unittest")
+load(":worker.bzl", "worker_genrule")
+
+python_binary(
+    name = "worker",
+    srcs = ["worker.py"],
+    main_module = "antlir.vm.appliance.worker",
+    deps = [
+        "//antlir:common",
+        "//antlir:fs_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-worker",
+    srcs = ["test_worker.py"],
+    needed_coverage = [(100, ":worker-library")],
+    deps = [":worker-library"],
+)
+
+buck_worker_tool(
+    name = "worker_tool",
+    exe = ":worker",
+)
+
+worker_genrule(
+    name = "worker-output",
+    out = "out",
+    cmd = "echo hello > $OUT",
+)
