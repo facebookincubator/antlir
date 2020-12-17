@@ -414,16 +414,6 @@ class NspawnTestCase(NspawnTestBase):
                     ret.stdout,
                 )
 
-    def test_xar(self):
-        "Make sure that XAR binaries work in vanilla `buck run` containers"
-        ret = self._nspawn_in(
-            (__package__, "host-hello-xar"),
-            ["--", "/hello.xar"],
-            stdout=subprocess.PIPE,
-            check=True,
-        )
-        self.assertEqual(b"hello world\n" + self.maybe_extra_ending, ret.stdout)
-
     def test_mknod(self):
         "CAP_MKNOD is dropped by our runtime."
         ret = self._nspawn_in(
