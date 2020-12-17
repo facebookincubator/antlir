@@ -32,6 +32,12 @@ jobs:
       - name: Set up $PATH
         run: echo $(pwd)/tools > $GITHUB_PATH
 
+      # antlir is primarily developed on CentOS, which has a 'nobody:nobody'
+      # user and group. GitHub actions is running on ubuntu which uses
+      # 'nobody:nogroup', so create a 'nobody' group to use
+      - name: Set up nobody group
+        run: sudo groupadd nobody; sudo usermod -aG nobody nobody
+
       - uses: actions/setup-python@v2
         with:
           python-version: '~3.8'
