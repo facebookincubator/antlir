@@ -42,4 +42,4 @@
   build_appliance_default = //images/appliance:stable_build_appliance
   rpm_installer_default = dnf
   rpm_installers_supported = dnf
-  host_mounts_allowed_in_targets = //images/appliance:host_build_appliance
+  host_mounts_allowed_in_targets = //images/appliance:host_build_appliance //images/appliance:features-for-layer-host_build_appliance
