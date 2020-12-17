@@ -136,6 +136,11 @@ image.layer(
 )
 
 export_file(
+    name = "vmlinuz",
+    src = "kernel/vmlinuz",
+)
+
+export_file(
     name = "init.sh",
 )
 
