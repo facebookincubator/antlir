@@ -88,6 +88,8 @@ class Plan9Export(Share):
     mountpoint: Optional[Path] = None
     mount_tag: str = field(default_factory=_next_tag)
     generator: bool = True
+    # This should be used in readonly mode unless absolutely necessary.
+    readonly: bool = True
 
     def __post_init__(self):
         if not self.mountpoint:
@@ -95,6 +97,8 @@ class Plan9Export(Share):
 
     @property
     def mount_unit(self) -> Tuple[str, str]:
+        cache = "loose" if self.readonly else "none"
+        ro_rw = "ro" if self.readonly else "rw"
         return (
             self._systemd_escape_mount(self.mountpoint),
             f"""[Unit]
@@ -107,17 +111,18 @@ Before=local-fs.target
 What={self.mount_tag}
 Where={self.mountpoint}
 Type=9p
-Options=version=9p2000.L,posixacl,cache=loose,ro
+Options=version=9p2000.L,posixacl,cache={cache},{ro_rw}
 """,
         )
 
     @property
     def qemu_args(self) -> Iterable[str]:
+        maybe_readonly = ",readonly" if self.readonly else ""
         return (
             "-virtfs",
             (
                 f"local,path={self.path},security_model=none,"
-                f"readonly,multidevs=remap,mount_tag={self.mount_tag}"
+                f"multidevs=remap,mount_tag={self.mount_tag}{maybe_readonly}"
             ),
         )
 
