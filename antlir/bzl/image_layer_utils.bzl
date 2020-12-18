@@ -79,7 +79,10 @@ def _image_layer_impl(
         #      hopefully people don't have to change it too much.
         # (ii) For sendstreams, it's much more plausible to correctly
         #      estimate the size requirements, so we might do that sooner.
-        layer_size_bytes = "100" + "0" * 9,
+        # The default is `LOOP_SIZE`, see definition in
+        # `antlir/volume_for_repo.py`. Setting this here would introduce an
+        # issue. See an explanation above definition.
+        layer_size_bytes = None,
         # Set this to emit a `-boot` target, running which will boot
         # `systemd` inside the image.
         enable_boot_target = False,
@@ -172,9 +175,9 @@ def _image_layer_impl(
                     )
                 ),
             ),
-            volume_min_free_bytes = layer_size_bytes,
             rule_type = _rule_type,
             target_name = _layer_name,
+            volume_min_free_bytes = layer_size_bytes,
         ),
         # Layers are only usable on the same host that built them, so
         # keep our output JSON out of the distributed Buck cache.  See

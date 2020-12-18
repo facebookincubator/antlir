@@ -16,9 +16,8 @@ from .volume_for_repo import get_volume_for_current_repo
 
 # NB: Memoizing this function would be pretty reasonable.
 def volume_dir(path_in_repo=None):
-    lots_of_bytes = 1e10  # Our loopback is sparse, so just make it huge.
     return get_volume_for_current_repo(
-        lots_of_bytes, ensure_per_repo_artifacts_dir_exists(path_in_repo)
+        ensure_per_repo_artifacts_dir_exists(path_in_repo)
     )
 
 
