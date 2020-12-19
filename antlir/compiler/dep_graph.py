@@ -12,12 +12,16 @@ Item is installed only after all of the Items that match its Requires have
 already been installed.  This is known as dependency order or topological
 sort.
 """
-from collections import namedtuple
-from typing import Iterator
+from typing import Iterator, Union, NamedTuple, Dict, Callable, Set
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
+
+from .requires_provides import (
+    ProvidesPathObject,
+    PathRequiresPredicate,
+)
 
 
 # To build the item-to-item dependency graph, we need to first build up a
@@ -30,11 +34,25 @@ from antlir.compiler.items.phases_provide import PhasesProvideItem
 # To avoid re-evaluating ImageItem.{provides,requires}(), we'll just store
 # everything in these data structures:
 
-ItemProv = namedtuple("ItemProv", ["provides", "item"])
+
+class ItemProv(NamedTuple):
+    provides: ProvidesPathObject
+    item: ImageItem
+
+
 # NB: since the item is part of the tuple, we'll store identical
 # requirements that come from multiple items multiple times.  This is OK.
-ItemReq = namedtuple("ItemReq", ["requires", "item"])
-ItemReqsProvs = namedtuple("ItemReqsProvs", ["item_provs", "item_reqs"])
+class ItemReq(NamedTuple):
+    requires: PathRequiresPredicate
+    item: ImageItem
+
+
+class ItemReqsProvs(NamedTuple):
+    item_provs: Set[ItemProv]
+    item_reqs: Set[ItemReq]
+
+
+ReqOrProv = Union[ProvidesPathObject, PathRequiresPredicate]
 
 
 class ValidatedReqsProvs:
@@ -43,11 +61,11 @@ class ValidatedReqsProvs:
     computes {'path': {ItemReqProv{}, ...}} so that we can build the
     DependencyGraph for these Items.  In the process validates that:
      - No one item provides or requires the same path twice,
-     - Each path is provided by at most one item (could be relaxed later),
+     - Each path is provided by at most one item (excl. _ALLOWED_COLLISIONS),
      - Every Requires is matched by a Provides at that path.
     """
 
-    def __init__(self, items):
+    def __init__(self, items: Set[ImageItem]):
         self.path_to_reqs_provs = {}
 
         for item in items:
@@ -82,11 +100,15 @@ class ValidatedReqsProvs:
                     )
 
     @staticmethod
-    def _add_to_req_map(reqs_provs, req, item):
+    def _add_to_req_map(
+        reqs_provs: ItemReqsProvs, req: PathRequiresPredicate, item: ImageItem
+    ):
         reqs_provs.item_reqs.add(ItemReq(requires=req, item=item))
 
     @staticmethod
-    def _add_to_prov_map(reqs_provs, prov, item):
+    def _add_to_prov_map(
+        reqs_provs: ItemReqsProvs, prov: ProvidesPathObject, item: ImageItem
+    ):
         # I see no reason to allow provides-provides collisions.
         if len(reqs_provs.item_provs):
             raise RuntimeError(
@@ -96,7 +118,11 @@ class ValidatedReqsProvs:
         reqs_provs.item_provs.add(ItemProv(provides=prov, item=item))
 
     def _add_to_map(
-        self, path_to_req_or_prov, req_or_prov, item, add_to_map_fn
+        self,
+        path_to_req_or_prov: Dict[str, ReqOrProv],
+        req_or_prov: ReqOrProv,
+        item: ImageItem,
+        add_to_map_fn: Callable[[ItemReqsProvs, ReqOrProv, ImageItem], None],
     ):
         # One ImageItem should not emit provides / requires clauses that
         # collide on the path.  Such duplication can always be avoided by
