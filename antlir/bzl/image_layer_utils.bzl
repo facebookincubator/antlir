@@ -2,43 +2,24 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":image_utils.bzl", "image_utils")
-load(":oss_shim.bzl", "buck_genrule", "config", "get_visibility")
+load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config", "get_visibility")
 load(":query.bzl", "layer_deps_query")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 
 def _add_run_in_subvol_target(name, kind, extra_args = None):
     target = name + "-" + kind
-    buck_genrule(
+    buck_command_alias(
         name = target,
-        out = "run",
-        bash = """
-cat > "$TMP/out" << 'EOF'
-#!/bin/sh
-set -ue -o pipefail -o noclobber
-exec $(exe //antlir/nspawn_in_subvol:run) \
---layer $(location {layer_quoted}) \
-{maybe_extra_args} \
-{targets_and_outputs} \
-"$@"
-EOF
-chmod a+x "$TMP/out"
-mv "$TMP/out" "$OUT"
-        """.format(
-            layer_quoted = shell.quote(":" + name),
-            maybe_extra_args = " ".join(extra_args) if extra_args else "",
-            targets_and_outputs = " ".join(
-                targets_and_outputs_arg_list(
-                    name = target,
-                    query = layer_deps_query(
-                        layer = image_utils.current_target(name),
-                    ),
-                ),
+        exe = "//antlir/nspawn_in_subvol:run",
+        args = [
+            "--layer",
+            "$(location {})".format(shell.quote(":" + name)),
+        ] + (extra_args or []) + targets_and_outputs_arg_list(
+            name = target,
+            query = layer_deps_query(
+                layer = image_utils.current_target(name),
             ),
         ),
-        # This genrule is unique to the host on which it is generated
-        cacheable = False,
-        executable = True,
-        visibility = [],
         antlir_rule = "user-internal",
     )
 
