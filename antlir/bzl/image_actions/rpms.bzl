@@ -53,6 +53,37 @@ As shown in the above example, RPMs may also be installed that are the
 outputs of another buck rule by providing a target path or an `image.source`
 (docs in`image_source.bzl`), or by directly providing a target path.
 
+If RPMs are specified by name, as in the first example above, the default
+behavior is to install the latest available version of the RPMs. Particular
+versions of RPMs can be pinned by specifying `image.opts` with
+`rpm_version_set_overrides` argument. This argument must be the list of
+structures defined by `image.rpm.nevra()`:
+
+```
+image.layer(
+    name = "my_layer",
+    features = [
+        image.rpms_install([
+            "foo",
+        ]),
+    ],
+    build_opts = image.opts(
+        rpm_version_set_overrides = [
+            image.rpm.nevra(
+                name = "foo",
+                epoch = "0",
+                version = "1",
+                release = "el7",
+                arch = "x86_64"
+            ),
+        ],
+    ),
+)
+```
+
+In this example `foo-1-el7.x86_64` will be installed into the layer `my_layer`
+even if a newer version is available.
+
 If the argument `rpmlist` lists both RPM name and buck rule targets, RPMs
 specified by buck rule targets are installed before RPMs specified by names.
 Hence, if an RPM defined by name requires a newer version of an RPM defined by
