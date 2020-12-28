@@ -20,7 +20,7 @@ from antlir.fs_utils import Path
 from antlir.tests.layer_resource import layer_resource
 from antlir.tests.temp_subvolumes import with_temp_subvols
 
-from ..args import _parse_cli_args
+from ..args import _parse_cli_args, _NOBODY_USER
 from ..cmd import _colon_quote_path, _extra_nspawn_args_and_env
 from ..common import DEFAULT_PATH_ENV
 from .base import (
@@ -250,13 +250,15 @@ class NspawnTestCase(NspawnTestBase):
                 "--",
                 "sh",
                 "-c",
-                'touch /logs/foo && stat --format="%U %G %a" /logs && whoami',
+                'touch /logs/foo && stat --format="%u %g %a" /logs',
             ],
             stdout=subprocess.PIPE,
         )
         self.assertEqual(0, ret.returncode)
         self.assertEqual(
-            b"nobody nobody 755\nnobody\n" + self.maybe_extra_ending, ret.stdout
+            f"{_NOBODY_USER.pw_uid} {_NOBODY_USER.pw_gid} 755\n".encode()
+            + self.maybe_extra_ending,
+            ret.stdout,
         )
         # But it does not exist by default.
         self.assertEqual(
@@ -516,13 +518,20 @@ class NspawnTestCase(NspawnTestBase):
     def test_boot_unprivileged_user(self):
         ret = self._nspawn_in(
             (__package__, "bootable-systemd-os"),
-            ["--boot", "--", "/bin/whoami"],
+            ["--boot", "--", "/bin/id"],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
             check=True,
+            stderr=subprocess.PIPE,
         )
         self.assertEqual(0, ret.returncode)
-        self.assertEqual(b"nobody\n", ret.stdout)
+        # 'nobody' on the host may have a different [ug]id than 'nobody' in the
+        # image - for example on my arch host nobody:nogroup is 99:99, but in
+        # the fedora appliance image it is 65543:65543
+        self.assertEqual(
+            f"uid={_NOBODY_USER.pw_uid} gid={_NOBODY_USER.pw_gid} "
+            + f"groups={_NOBODY_USER.pw_gid}\n",
+            ret.stdout.decode(),
+        )
         self.assertEqual(b"", ret.stderr)
 
     def test_boot_env_clean(self):
