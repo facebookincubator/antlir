@@ -349,7 +349,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 pop_path(r, "rpm_test"),
             )
 
-            check_common_rpm_render(self, r, "yum")
+            check_common_rpm_render(self, r, REPO_CFG.rpm_installer_default)
 
     def _check_installed_files_bar(self, r):
         (  # We don't know the exact sizes because these 2 may be wrapped
