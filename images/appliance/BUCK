@@ -3,7 +3,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "http_file")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot", "set_up_rpm_repo_snapshots")
 
-stable_build_appliance_sha = "8b9764f7b2f1311b532ab3560bb8b6b791e946b8f78ed3d436fa12e72d7fbb64"
+stable_build_appliance_sha = "3643e1e66281def91655202a772af41c8ac8274291dbd0e35231d8d6073fbeb8"
 
 http_file(
     name = "stable_build_appliance.sendstream.zst",
@@ -28,8 +28,8 @@ image.sendstream_layer(
 
 install_snapshots = [
     set_up_rpm_repo_snapshots(),
-    install_rpm_repo_snapshot("//snapshot:fedora32"),
-    default_rpm_repo_snapshot_for("dnf", "//snapshot:fedora32"),
+    install_rpm_repo_snapshot("//snapshot:fedora33"),
+    default_rpm_repo_snapshot_for("dnf", "//snapshot:fedora33"),
 ]
 
 # This is the origin of the stable_build_appliance artifact uploaded to S3.
@@ -63,14 +63,18 @@ image.layer(
         # build appliance should be able to rebuild itself or any changes that
         # might have been introduced since publishing.
         # build_appliance = ":host_build_appliance",
-        rpm_repo_snapshot = "//snapshot:fedora32",
+        rpm_repo_snapshot = "//snapshot:fedora33",
     ),
     enable_boot_target = True,
 )
 
+# IMPORTANT: This should always be built with the config option
+# `python.package_style=standalone`, or the resulting image will only work on
+# the same host it was built on. Unfortunately there is no way to enforce this
+# at build time, but any breakage will be surfaced by CI (and any automated
+# build of the BA will do the right thing already).
 image.package(
     name = "bootstrap_build_appliance.sendstream.zst",
-    build_appliance = ":host_build_appliance",
 )
 
 # Host build appliance should never have to be used outside of the original

@@ -1,7 +1,7 @@
 load("//antlir/bzl:image.bzl", "image")
 
 image.layer(
-    name = "fedora32",
+    name = "fedora",
     features = [
         image.rpms_install([
             "basesystem",
@@ -11,6 +11,6 @@ image.layer(
     build_opts = image.opts(
         # This is the default, but I am making it explicit since the target is
         # named fedora
-        rpm_repo_snapshot = "//snapshot:fedora32",
+        rpm_repo_snapshot = "//snapshot:fedora33",
     ),
 )
