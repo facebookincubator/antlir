@@ -40,16 +40,23 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: '~3.8'
+          # Annoyingly, the same python version used to build the stable ba
+          # must also exist in the host.
+          # TODO: figure out how python version is leaking from the BA -> host.
+          python-version: '~3.9'
 
-      # .buckconfig explicitly references /usr/bin/python3
-      # Ensure that /usr/bin/python3 points to the python3.8 install setup by
-      # the above step
-      - name: Symlink Python3.8
+      # .buckconfig explicitly references /usr/bin/python3, so the desired
+      # version of python must be present there
+      - name: Symlink Python3.9
         run: sudo ln -sf $(which python3.8) /usr/bin/python3
 
       - name: Fetch buck
         run: buck --version
+
+      # Make it very clear if a failure is due to the target graph being
+      # unparseable, or an actual build failure.
+      - name: Validate target graph
+        run: buck targets //...
 
       - name: Fetch remote artifacts
         run: buck fetch //...
@@ -57,8 +64,8 @@ jobs:
       # This is not quite a test, but exercises a lot of antlir and is expected
       # to pass, unlike the unit tests below, not all of which have been fixed
       # to support the OSS build (mainly due to missing 'yum')
-      - name: Build base image
-        run: buck build //images/base:fedora32
+      - name: Build base image(s)
+        run: buck build //images/base/...
 
       - name: Build all targets
         run: buck build //...
