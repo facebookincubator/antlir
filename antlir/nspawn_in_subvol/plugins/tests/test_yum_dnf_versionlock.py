@@ -9,6 +9,9 @@ import subprocess
 import tempfile
 from contextlib import contextmanager
 from typing import Iterable
+from unittest import skipIf
+
+from antlir.rpm.common import yum_is_dnf, has_yum
 
 from .rpm_base import RpmNspawnTestBase
 
@@ -64,5 +67,6 @@ class DnfVersionlockTestCase(TestImpl, RpmNspawnTestBase):
     _PROG = "dnf"
 
 
+@skipIf(yum_is_dnf() or not has_yum(), "yum == dnf or yum missing")
 class YumVersionlockTestCase(TestImpl, RpmNspawnTestBase):
     _PROG = "yum"
