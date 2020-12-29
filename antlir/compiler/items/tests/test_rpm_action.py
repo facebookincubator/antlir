@@ -8,6 +8,7 @@ import os
 import sys
 from contextlib import contextmanager
 
+from antlir.config import load_repo_config
 from antlir.fs_utils import Path, temp_dir
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.rpm.yum_dnf_conf import YumDnf
@@ -22,6 +23,9 @@ from .rpm_action_base import RpmActionItemTestBase
 
 
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
+
+
+REPO_CFG = load_repo_config()
 
 
 class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
@@ -44,6 +48,12 @@ class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
 
 class RpmActionItemTestImpl(RpmActionItemTestBase):
     "Subclasses run these tests with concrete values of `self._YUM_DNF`."
+
+    def setUp(self):
+        if self._YUM_DNF.value not in REPO_CFG.rpm_installers_supported:
+            self.skipTest(
+                f"'{self._YUM_DNF}' not in '{REPO_CFG.rpm_installers_supported}'"
+            )
 
     def test_rpm_action_item_build_appliance(self):
         self._check_rpm_action_item_build_appliance(
@@ -293,6 +303,6 @@ class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
 
     def test_rpm_action_item_install_local_dnf(self):
         with self._test_rpm_action_item_install_local_setup() as r:
-            pop_path(r, "var/lib/yum")
-            pop_path(r, "var/log/yum.log")
+            pop_path(r, "var/lib/yum", None)
+            pop_path(r, "var/log/yum.log", None)
             check_common_rpm_render(self, r, "dnf")
