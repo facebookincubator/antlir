@@ -63,6 +63,7 @@ image.layer(
         # build appliance should be able to rebuild itself or any changes that
         # might have been introduced since publishing.
         # build_appliance = ":host_build_appliance",
+        build_appliance = ":stable_build_appliance",
         rpm_repo_snapshot = "//snapshot:fedora33",
     ),
     enable_boot_target = True,
