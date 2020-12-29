@@ -48,7 +48,7 @@ jobs:
       # .buckconfig explicitly references /usr/bin/python3, so the desired
       # version of python must be present there
       - name: Symlink Python3.9
-        run: sudo ln -sf $(which python3.8) /usr/bin/python3
+        run: sudo ln -sf $(which python3.9) /usr/bin/python3
 
       - name: Fetch buck
         run: buck --version
