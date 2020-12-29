@@ -74,7 +74,10 @@ python_unittest(
         (100, ":yum_dnf_versionlock"),
         (100, "//antlir/nspawn_in_subvol:plugin_hooks"),
     ],
-    deps = [":testlib_rpm_base"],
+    deps = [
+        ":testlib_rpm_base",
+        "//antlir/rpm:common",
+    ],
 )
 
 python_library(
