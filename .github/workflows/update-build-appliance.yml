@@ -1,0 +1,74 @@
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'images/appliance/**'
+      - '.github/workflows/update-build-appliance.yml'
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Checkout submodules
+        run: git submodule update --init
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y attr libcap-ng-dev systemd-container
+
+      - name: Set up $PATH
+        run: echo $(pwd)/tools > $GITHUB_PATH
+
+      - uses: actions/setup-python@v2
+        with:
+          # Annoyingly, the same python version used to build the stable ba
+          # must also exist in the host.
+          # TODO: figure out how python version is leaking from the BA -> host.
+          python-version: '~3.9'
+
+      # .buckconfig explicitly references /usr/bin/python3, so the desired
+      # version of python must be present there
+      - name: Symlink Python3.9
+        run: sudo ln -sf $(which python3.8) /usr/bin/python3
+
+      - name: Fetch buck
+        run: buck --version
+
+      - name: Validate appliance
+        run: buck build -c antlir.build_appliance_default=//images/appliance:bootstrap_build_appliance //images/...
+
+      - name: Build appliance
+        run: buck build -c python.package_style=standalone --out stable_build_appliance.sendstream.zst //images/appliance:bootstrap_build_appliance.sendstream.zst
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_GH_ACTIONS_USER_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_GH_ACTIONS_USER_SECRET_KEY }}
+          aws-region: us-east-2
+
+      - name: Upload to S3
+        run: |
+          sha="$(sha256sum stable_build_appliance.sendstream.zst | awk '{ print $1 }')"
+          aws s3 cp stable_build_appliance.sendstream.zst "s3://antlir/images/appliance/stable_build_appliance.sendstream.zst.$sha"
+          rm stable_build_appliance.sendstream.zst
+          echo "stable_build_appliance_sha = $sha" > images/appliance/stable_appliance.bzl
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: Update stable build appliance
+          branch: preserve-stable-build-appliance
+          delete-branch: true
+          title: Preserve stable build appliance
+          body: |
+            Summary:
+            Update the stable build appliance using the latest changes.
+            This appliance has already been tested by building some images,
+            and should be safe to land without further investigation.
+
+            antlir_oss oncall: please import and land this PR internally.
