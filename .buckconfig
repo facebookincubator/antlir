@@ -36,7 +36,7 @@
   # these excluded labels you must run `buck test` with the `--always-exclude`
   # option.
   # ie:  `buck test //antlir/rpm:test-yum-dnf-from-snapshot --always-exclude`
-  excluded_labels = exclude_test_if_transitive_dep
+  excluded_labels = exclude_test_if_transitive_dep, disabled
 
 [antlir]
   build_appliance_default = //images/appliance:stable_build_appliance
