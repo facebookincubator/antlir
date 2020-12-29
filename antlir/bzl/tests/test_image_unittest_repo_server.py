@@ -8,8 +8,11 @@ import os
 import subprocess
 import unittest
 
+from antlir.config import load_repo_config
 from antlir.fs_utils import temp_dir
 from antlir.rpm.find_snapshot import snapshot_install_dir
+
+REPO_CFG = load_repo_config()
 
 
 class ImageUnittestTestRepoServer(unittest.TestCase):
@@ -17,7 +20,7 @@ class ImageUnittestTestRepoServer(unittest.TestCase):
         snapshot_dir = snapshot_install_dir(
             "//antlir/rpm:repo-snapshot-for-tests"
         )
-        for prog in ("dnf", "yum"):
+        for prog in REPO_CFG.rpm_installers_supported:
             with temp_dir() as td:
                 os.mkdir(td / ".meta")
                 subprocess.check_call(
