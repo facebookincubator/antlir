@@ -118,6 +118,7 @@ python_unittest(
     },
     deps = [
         ":rpm_action_base_testlib",
+        "//antlir:config",
         "//antlir:find_built_subvol",
         "//antlir:testlib_layer_resource",
     ],
