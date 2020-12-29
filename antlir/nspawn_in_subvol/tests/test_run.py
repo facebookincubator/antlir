@@ -344,7 +344,12 @@ class NspawnTestCase(NspawnTestBase):
     def test_hostname(self):
         ret = self._nspawn_in(
             (__package__, "test-layer"),
-            ["--hostname=test-host.com", "--", "/bin/hostname"],
+            [
+                "--hostname=test-host.com",
+                "--",
+                "cat",
+                "/proc/sys/kernel/hostname",
+            ],
             stdout=subprocess.PIPE,
             check=True,
         )
