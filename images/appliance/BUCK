@@ -3,7 +3,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "http_file")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot", "set_up_rpm_repo_snapshots")
 
-stable_build_appliance_sha = "3643e1e66281def91655202a772af41c8ac8274291dbd0e35231d8d6073fbeb8"
+stable_build_appliance_sha = "a6c024a253199ed673b05510bff8c6a76ebd5c0491c139201450e2f088dcad6e"
 
 http_file(
     name = "stable_build_appliance.sendstream.zst",
@@ -44,6 +44,7 @@ image.layer(
             "btrfs-progs",
             "coreutils",
             "dnf",  # For installing rpms
+            "dnf-command(versionlock)",
             "dnf-utils",
             "gcc",  # build code in foreign_layers
             "iproute",
