@@ -28,7 +28,7 @@ from .stat_options import (
     Mode,
     build_stat_options,
     customize_stat_options,
-    mode_to_str,
+    mode_to_octal_str,
 )
 
 # TODO(jtru): Uncomment xattrs check when new BA is released
@@ -100,7 +100,7 @@ class EnsureDirsExistItem(ImageItem):
                 _BUILD_SCRIPT,
                 "bash",
                 full_path,
-                f"{mode_to_str(self.mode)} {self.user_group}",
+                f"{mode_to_octal_str(self.mode)} {self.user_group}",
             ],
             layer=layer_opts.build_appliance,
             bindmount_rw=[(subvol.path(), work_dir)],

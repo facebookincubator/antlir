@@ -7,6 +7,7 @@
 import os
 
 from antlir.compiler.items.common import LayerOpts
+from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_dirs import MakeDirsItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
@@ -27,6 +28,7 @@ T_BASE = "//antlir/compiler/test_images"
 # since that's what we are testing.
 T_DIRS = f"{T_BASE}:feature_dirs"
 T_BAD_DIR = f"{T_BASE}:feature_bad_dir"
+T_BAD_DIR_MODE_MISMATCH = f"{T_BASE}:feature_bad_dir_mode_mismatch"
 T_MOUNT = f"{T_BASE}:feature_mount"
 T_SYMLINKS = f"{T_BASE}:feature_symlinks"
 T_TAR = f"{T_BASE}:feature_tar_and_rpms"
@@ -90,6 +92,19 @@ ID_TO_ITEM = {
     ),
     "foo/bar/baz": MakeDirsItem(
         from_target=T_DIRS, into_dir="/foo/bar", path_to_make="baz"
+    ),
+    "alpha": EnsureDirsExistItem(
+        from_target=T_DIRS, into_dir="/", basename="alpha", mode="a+rw"
+    ),
+    "alpha/beta": EnsureDirsExistItem(
+        from_target=T_DIRS, into_dir="/alpha", basename="beta", mode="a+rwx"
+    ),
+    # From `feature_bad_dir_mode_mismatch`:
+    "bad_mode:alpha": EnsureDirsExistItem(
+        from_target=T_BAD_DIR_MODE_MISMATCH,
+        into_dir="/",
+        basename="alpha",
+        mode="a+rwx",
     ),
     # From `feature_bad_dir`:
     "foo/borf/beep": MakeDirsItem(

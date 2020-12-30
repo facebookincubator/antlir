@@ -171,6 +171,25 @@ image.feature(
     features = [
         image.mkdir("/", "foo/bar"),
         image.mkdir("/foo/bar", "baz"),
+        image.ensure_dirs_exist(
+            "/alpha",
+            mode = "a+rw",
+        ),
+        image.ensure_subdirs_exist(
+            "/alpha",
+            "beta",
+            mode = "a+rwx",
+        ),
+    ],
+)
+
+image.feature(
+    name = "feature_bad_dir_mode_mismatch",
+    features = [
+        image.ensure_dirs_exist(
+            "/alpha",
+            mode = "a+rwx",
+        ),
     ],
 )
 
@@ -476,8 +495,9 @@ image.layer(
     ],
 )
 
-# Omnibus feature for test-compiler and test-image-feature.  It currently
-# cannot be materialized as an `image.layer` because of `feature_bad_dir`.
+# Omnibus feature for test-compiler and test-image-feature.  It currently cannot
+# be materialized as an `image.layer` because of `feature_bad_dir` and
+# `feature_bad_dir_mode_mismatch`.
 #
 # Exercises:
 #  - all forms of specifying target outputs to copy
@@ -498,6 +518,7 @@ image.feature(
         ),
         image.remove("/another/path/to/remove"),
         ":feature_bad_dir",
+        ":feature_bad_dir_mode_mismatch",
         ":feature_dirs",
         ":feature_install_files",
         ":feature_mount",

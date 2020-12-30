@@ -120,3 +120,19 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 EnsureDirsExistItem(**{**good, "user_group": "77:88"}).build(
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
+
+    def test_ensure_dirs_exist_item_stat_chmod_str_mismatch(self):
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+            subvol = temp_subvolumes.create("ensure-dirs-exist-item")
+            subvol.run_as_root(["mkdir", "-p", subvol.path("m")])
+            good = {
+                "from_target": "t",
+                "into_dir": "m",
+                "basename": "n",
+                "mode": "u+rw",
+            }
+            EnsureDirsExistItem(**good).build(subvol, DUMMY_LAYER_OPTS_BA)
+            with self.assertRaises(subprocess.CalledProcessError):
+                EnsureDirsExistItem(**{**good, "mode": "u+rwx"}).build(
+                    subvol, DUMMY_LAYER_OPTS_BA
+                )

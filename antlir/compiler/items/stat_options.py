@@ -15,12 +15,23 @@ from antlir.nspawn_in_subvol.ba_runner import BuildAppliance
 from antlir.subvol_utils import Subvol
 
 
-# `mode` can be an integer fully specifying the bits, or a symbolic
-# string like `u+rx`.  In the latter case, the changes are applied on
-# top of mode 0.
+# `mode` can be an integer fully specifying the bits, or a chmod symbolic string
+# like `u+rx`.  In the latter case, the changes are applied on top of mode 0.
 STAT_OPTION_FIELDS = [("mode", None), ("user_group", None)]
 
-Mode = Union[str, int]  # human-readable, or octal
+Mode = Union[str, int]  # human-readable chmod symbolic string, or octal
+
+_STAT_CLASSES = {
+    "u": lambda b: b << 6,
+    "g": lambda b: b << 3,
+    "o": lambda b: b,
+    "a": lambda b: b << 6 | b << 3 | b,
+}
+_STAT_PERMS = {
+    "r": 0b100,
+    "w": 0b010,
+    "x": 0b001,
+}
 
 
 def customize_stat_options(kwargs, *, default_mode):
@@ -29,6 +40,48 @@ def customize_stat_options(kwargs, *, default_mode):
         kwargs["mode"] = default_mode
     if kwargs.get("user_group") is None:
         kwargs["user_group"] = "root:root"
+
+
+def mode_to_octal_str(mode: Mode) -> str:
+    """Converts an instance of `Mode` to an octal string. If `mode` is a string,
+    it's expected to be in the chmod symbolic string format with the following
+    added restrictions:
+
+    - Only append ("+") actions are supported, as we always apply the changes on
+      top of mode 0
+    - Only simple permissions ("rwx") are supported (i.e. no "X" or "s"). This
+      is because this conversion must also be compatible with `stat`.
+    """
+    # `mode` can be the empty string
+    mode = mode or 0
+    if isinstance(mode, int):
+        return f"{mode:04o}"
+    assert (
+        "-" not in mode and "=" not in mode
+    ), "Only append actions ('+') are supported in mode strings"
+    result = 0
+    for directive in mode.split(","):
+        try:
+            lhs, rhs = directive.split("+", maxsplit=1)
+        except ValueError:
+            raise ValueError(
+                "Expected directive in the form [classes...]+[perms...] "
+                f"for {mode}"
+            )
+        for stat_cls in lhs:
+            stat_cls_fn = _STAT_CLASSES.get(stat_cls, None)
+            assert stat_cls_fn, (
+                f'Only classes of "{",".join(_STAT_CLASSES.keys())}" '
+                "are supported when setting mode"
+            )
+            for action in rhs:
+                mask = _STAT_PERMS.get(action, None)
+                assert mask, (
+                    f'Only permissions of "{",".join(_STAT_PERMS.keys())}" '
+                    "are supported when setting mode"
+                )
+                result |= stat_cls_fn(mask)
+    return f"{result:04o}"
 
 
 def mode_to_str(mode: Mode) -> str:
