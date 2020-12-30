@@ -20,6 +20,15 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "ensure_dir_exists",
+    srcs = ["ensure_dir_exists.bzl"],
+    deps = [
+        "//antlir/bzl:add_stat_options",
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
     name = "mkdir",
     srcs = ["mkdir.bzl"],
     deps = [
