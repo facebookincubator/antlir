@@ -170,8 +170,8 @@ python_unittest(
 )
 
 python_library(
-    name = "ensure_dir_exists",
-    srcs = ["ensure_dir_exists.py"],
+    name = "ensure_dirs_exist",
+    srcs = ["ensure_dirs_exist.py"],
     deps = [
         ":common",
         ":stat_options",
@@ -184,8 +184,8 @@ python_library(
 
 python_unittest(
     name = "test-ensure-dir-exists",
-    srcs = ["tests/test_ensure_dir_exists.py"],
-    needed_coverage = [(100, ":ensure_dir_exists")],
+    srcs = ["tests/test_ensure_dirs_exist.py"],
+    needed_coverage = [(100, ":ensure_dirs_exist")],
     resources = {
         layer_resource(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
@@ -193,7 +193,7 @@ python_unittest(
     },
     deps = [
         ":common_testlib",
-        ":ensure_dir_exists",
+        ":ensure_dirs_exist",
         "//antlir:common",
         "//antlir:find_built_subvol",
         "//antlir:testlib_temp_subvolumes",
@@ -320,7 +320,7 @@ python_library(
     name = "all-items",
     deps = [
         ":clone",
-        ":ensure_dir_exists",
+        ":ensure_dirs_exist",
         ":foreign_layer",
         ":items",
         ":phases_provide",

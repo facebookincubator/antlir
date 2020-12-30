@@ -9,8 +9,8 @@ import unittest
 from dataclasses import dataclass
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
-from antlir.compiler.items.ensure_dir_exists import (
-    ensure_dir_exists_factory,
+from antlir.compiler.items.ensure_dirs_exist import (
+    ensure_subdirs_exist_factory,
 )
 from antlir.compiler.items.foreign_layer import ForeignLayerItem
 from antlir.compiler.items.foreign_layer_t import foreign_layer_t
@@ -65,12 +65,15 @@ class DepGraphTestBase(unittest.TestCase):
             from_target="t", subvol=temp_svs.create("subvol")
         )
         abc, ab, a = list(
-            ensure_dir_exists_factory(from_target="", path="/a/b/c")
+            ensure_subdirs_exist_factory(
+                from_target="", into_dir="/", subdirs_to_create="/a/b/c"
+            )
         )
-        ade, ad, a2 = list(
-            ensure_dir_exists_factory(from_target="", path="/a/d/e")
+        ade, ad = list(
+            ensure_subdirs_exist_factory(
+                from_target="", into_dir="a", subdirs_to_create="d/e"
+            )
         )
-        self.assertEqual(a, a2)
         abcf = InstallFileItem(from_target="", source=_FILE1, dest="a/b/c/F")
         adeg = InstallFileItem(from_target="", source=_FILE2, dest="a/d/e/G")
         a_ln = SymlinkToDirItem(from_target="", source="/a", dest="/a/d/e")
@@ -136,7 +139,9 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                 [
                     self.provides_root,
                     InstallFileItem(from_target="", source=_FILE1, dest="y/x"),
-                    *ensure_dir_exists_factory(from_target="", path="/y/x"),
+                    *ensure_subdirs_exist_factory(
+                        from_target="", into_dir="/", subdirs_to_create="/y/x"
+                    ),
                 ]
             )
 
@@ -145,7 +150,9 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             [
                 self.provides_root,
                 SymlinkToDirItem(from_target="", source="/y", dest="/y/x/z"),
-                *ensure_dir_exists_factory(from_target="", path="/y/x"),
+                *ensure_subdirs_exist_factory(
+                    from_target="", into_dir="/", subdirs_to_create="y/x"
+                ),
             ]
         )
 
@@ -212,7 +219,9 @@ class DependencyGraphTestCase(DepGraphTestBase):
             DependencyGraph(
                 [
                     foreign1,
-                    *ensure_dir_exists_factory(from_target="", path="a/b"),
+                    *ensure_subdirs_exist_factory(
+                        from_target="", into_dir="/", subdirs_to_create="a/b"
+                    ),
                 ],
                 "layer_t",
             )
@@ -308,9 +317,11 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
 
         first = FilesystemRootItem(from_target="")
         second = FakeRemovePaths()
-        rest = list(ensure_dir_exists_factory(from_target="", path="/a/b"))[
-            ::-1
-        ]
+        rest = list(
+            ensure_subdirs_exist_factory(
+                from_target="", into_dir="/", subdirs_to_create="a/b"
+            )
+        )[::-1]
         dg = DependencyGraph([second, first, *rest], layer_target="t")
         self.assertEqual(
             _fs_root_phases(first)
