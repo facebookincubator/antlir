@@ -8,6 +8,7 @@ import sys
 import unittest
 
 from antlir.compiler.items.common import LayerOpts
+from antlir.compiler.items.ensure_dir_exists import EnsureDirExistsItem
 from antlir.compiler.items.make_dirs import MakeDirsItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
@@ -38,6 +39,7 @@ class ImageFeatureTestCase(unittest.TestCase):
                     {
                         "target": "t1",
                         "make_dirs": [{"into_dir": "/a", "path_to_make": "b"}],
+                        "ensure_dir_exists": [{"path": "/a/x"}],
                         "features": [
                             {
                                 "target": "t2",
@@ -69,6 +71,12 @@ class ImageFeatureTestCase(unittest.TestCase):
             | {
                 # These come the inline features added above.
                 MakeDirsItem(from_target="t1", into_dir="/a", path_to_make="b"),
+                EnsureDirExistsItem(
+                    from_target="t1", into_dir=".", basename="a"
+                ),
+                EnsureDirExistsItem(
+                    from_target="t1", into_dir="/a", basename="x"
+                ),
                 MakeDirsItem(from_target="t2", into_dir="/c", path_to_make="d"),
             },
             self._items_for_features(),

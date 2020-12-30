@@ -78,6 +78,7 @@ python_unittest(
     deps = [
         ":dep_graph",
         "//antlir:testlib_temp_subvolumes",
+        "//antlir/compiler/items:ensure_dir_exists",
         "//antlir/compiler/items:items",
     ],
 )
