@@ -169,6 +169,37 @@ python_unittest(
     ],
 )
 
+python_library(
+    name = "ensure_dir_exists",
+    srcs = ["ensure_dir_exists.py"],
+    deps = [
+        ":common",
+        ":stat_options",
+        "//antlir/compiler:requires_provides",
+        "//antlir/compiler:subvolume_on_disk",
+        "//antlir/nspawn_in_subvol:ba_runner",
+        "//antlir/nspawn_in_subvol:nspawn",
+    ],
+)
+
+python_unittest(
+    name = "test-ensure-dir-exists",
+    srcs = ["tests/test_ensure_dir_exists.py"],
+    needed_coverage = [(100, ":ensure_dir_exists")],
+    resources = {
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
+    },
+    deps = [
+        ":common_testlib",
+        ":ensure_dir_exists",
+        "//antlir:common",
+        "//antlir:find_built_subvol",
+        "//antlir:testlib_temp_subvolumes",
+    ],
+)
+
 # Covered by `test-items`. Future: separate test & coverage.
 python_library(
     name = "mount_utils",
@@ -200,6 +231,15 @@ python_library(
     ],
 )
 
+python_library(
+    name = "stat_options",
+    srcs = ["stat_options.py"],
+    deps = [
+        "//antlir:subvol_utils",
+        "//antlir/nspawn_in_subvol:ba_runner",
+    ],
+)
+
 # Future: Finish splitting this library, and tests, by item.  The only
 # challenge is to make sure that `common.py` gets coverage -- coverage of
 # its functions is currently distributed across various items.
@@ -210,7 +250,6 @@ python_library(
         "install_file.py",
         "make_dirs.py",
         "remove_path.py",
-        "stat_options.py",
         "symlink.py",
         "tarball.py",
     ],
@@ -219,6 +258,7 @@ python_library(
         ":make_subvol",
         ":mount",
         ":mount_utils",
+        ":stat_options",
         ":tarball_t",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
@@ -280,6 +320,7 @@ python_library(
     name = "all-items",
     deps = [
         ":clone",
+        ":ensure_dir_exists",
         ":foreign_layer",
         ":items",
         ":phases_provide",
