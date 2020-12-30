@@ -9,13 +9,16 @@ import unittest
 from dataclasses import dataclass
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
+from antlir.compiler.items.ensure_dir_exists import (
+    ensure_dir_exists_factory,
+)
 from antlir.compiler.items.foreign_layer import ForeignLayerItem
 from antlir.compiler.items.foreign_layer_t import foreign_layer_t
 from antlir.compiler.items.install_file import InstallFileItem
-from antlir.compiler.items.make_dirs import MakeDirsItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
+from antlir.compiler.items.symlink import SymlinkToDirItem
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..dep_graph import (
@@ -37,19 +40,82 @@ from ..requires_provides import (
 # we need to give it filenames that exist.
 _FILE1 = "/etc/passwd"
 _FILE2 = "/etc/group"
-PATH_TO_ITEM = {
-    "/a/b/c": MakeDirsItem(from_target="", into_dir="/", path_to_make="a/b/c"),
-    "/a/d/e": MakeDirsItem(from_target="", into_dir="a", path_to_make="d/e"),
-    "/a/b/c/F": InstallFileItem(from_target="", source=_FILE1, dest="a/b/c/F"),
-    "/a/d/e/G": InstallFileItem(from_target="", source=_FILE2, dest="a/d/e/G"),
-}
 
 
 def _fs_root_phases(item):
     return [(FilesystemRootItem.get_phase_builder, (item,))]
 
 
-class ValidateReqsProvsTestCase(unittest.TestCase):
+def _build_req_prov(path, req_items, prov_items, prov_t=None):
+    prov_t = ProvidesDirectory if prov_t is None else prov_t
+    return ItemReqsProvs(
+        item_reqs={ItemReq(require_directory(path=path), i) for i in req_items},
+        item_provs={ItemProv(prov_t(path=path), i) for i in prov_items},
+    )
+
+
+class DepGraphTestBase(unittest.TestCase):
+    def setUp(self):
+        self.maxDiff = None
+        unittest.util._MAX_LENGTH = 12345
+        self._temp_svs_ctx = TempSubvolumes(sys.argv[0])
+        temp_svs = self._temp_svs_ctx.__enter__()
+        self.addCleanup(self._temp_svs_ctx.__exit__, None, None, None)
+        self.provides_root = PhasesProvideItem(
+            from_target="t", subvol=temp_svs.create("subvol")
+        )
+        abc, ab, a = list(
+            ensure_dir_exists_factory(from_target="", path="/a/b/c")
+        )
+        ade, ad, a2 = list(
+            ensure_dir_exists_factory(from_target="", path="/a/d/e")
+        )
+        self.assertEqual(a, a2)
+        abcf = InstallFileItem(from_target="", source=_FILE1, dest="a/b/c/F")
+        adeg = InstallFileItem(from_target="", source=_FILE2, dest="a/d/e/G")
+        a_ln = SymlinkToDirItem(from_target="", source="/a", dest="/a/d/e")
+        # There is a bit of duplication here but it's clearer to explicitly
+        # define our expectations around these rather than derive them from one
+        # another. It's also simpler to define these here where we have access
+        # to the item variables rather than make all of those class variables
+        # and define the maps in various test functions.
+        self.item_to_items_it_reqs = {
+            a: {self.provides_root},
+            ab: {a},
+            abc: {ab},
+            ad: {a},
+            ade: {ad, a_ln},
+            abcf: {abc},
+            adeg: {ade, a_ln},
+            a_ln: {a, ad},
+        }
+        self.items = self.item_to_items_it_reqs.keys()
+        self.item_to_items_it_provs = {
+            self.provides_root: {a},
+            a: {ab, ad, a_ln},
+            ab: {abc},
+            abc: {abcf},
+            ad: {ade, a_ln},
+            ade: {adeg},
+            a_ln: {ade, adeg},
+        }
+        # [[items, requiring, it], [items, it, requires]]
+        self.path_to_reqs_provs = {
+            "/.meta": _build_req_prov(
+                "/.meta", [], [self.provides_root], ProvidesDoNotAccess
+            ),
+            "/": _build_req_prov("/", [a], [self.provides_root]),
+            "/a": _build_req_prov("/a", [ab, ad, a_ln], [a]),
+            "/a/b": _build_req_prov("/a/b", [abc], [ab]),
+            "/a/b/c": _build_req_prov("/a/b/c", [abcf], [abc]),
+            "/a/d": _build_req_prov("/a/d", [ade, a_ln], [ad]),
+            "/a/d/e": _build_req_prov("/a/d/e", [adeg], [ade, a_ln]),
+            "/a/d/e/G": _build_req_prov("/a/d/e/G", [], [adeg], ProvidesFile),
+            "/a/b/c/F": _build_req_prov("/a/b/c/F", [], [abcf], ProvidesFile),
+        }
+
+
+class ValidateReqsProvsTestCase(DepGraphTestBase):
     def test_duplicate_paths_in_same_item(self):
         @dataclass(init=False, frozen=True)
         class BadDuplicatePathItem(ImageItem):
@@ -68,12 +134,20 @@ class ValidateReqsProvsTestCase(unittest.TestCase):
         ):
             ValidatedReqsProvs(
                 [
+                    self.provides_root,
                     InstallFileItem(from_target="", source=_FILE1, dest="y/x"),
-                    MakeDirsItem(
-                        from_target="", into_dir="/", path_to_make="y/x"
-                    ),
+                    *ensure_dir_exists_factory(from_target="", path="/y/x"),
                 ]
             )
+
+    def test_allowed_duplicate_paths(self):
+        ValidatedReqsProvs(
+            [
+                self.provides_root,
+                SymlinkToDirItem(from_target="", source="/y", dest="/y/x/z"),
+                *ensure_dir_exists_factory(from_target="", path="/y/x"),
+            ]
+        )
 
     def test_unmatched_requirement(self):
         item = InstallFileItem(from_target="", source=_FILE1, dest="y")
@@ -85,145 +159,32 @@ class ValidateReqsProvsTestCase(unittest.TestCase):
             ValidatedReqsProvs([item])
 
     def test_paths_to_reqs_provs(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
-            subvol = temp_subvolumes.create("subvol")
-            provides_root = PhasesProvideItem(from_target="t", subvol=subvol)
-            expected = {
-                "/.meta": ItemReqsProvs(
-                    item_provs={
-                        ItemProv(
-                            ProvidesDoNotAccess(path="/.meta"), provides_root
-                        )
-                    },
-                    item_reqs=set(),
-                ),
-                "/": ItemReqsProvs(
-                    item_provs={
-                        ItemProv(ProvidesDirectory(path="/"), provides_root)
-                    },
-                    item_reqs={
-                        ItemReq(require_directory("/"), PATH_TO_ITEM["/a/b/c"])
-                    },
-                ),
-                "/a": ItemReqsProvs(
-                    item_provs={
-                        ItemProv(
-                            ProvidesDirectory(path="a"), PATH_TO_ITEM["/a/b/c"]
-                        )
-                    },
-                    item_reqs={
-                        ItemReq(require_directory("a"), PATH_TO_ITEM["/a/d/e"])
-                    },
-                ),
-                "/a/b": ItemReqsProvs(
-                    item_provs={
-                        ItemProv(
-                            ProvidesDirectory(path="a/b"),
-                            PATH_TO_ITEM["/a/b/c"],
-                        )
-                    },
-                    item_reqs=set(),
-                ),
-                "/a/b/c": ItemReqsProvs(
-                    item_provs={
-                        ItemProv(
-                            ProvidesDirectory(path="a/b/c"),
-                            PATH_TO_ITEM["/a/b/c"],
-                        )
-                    },
-                    item_reqs={
-                        ItemReq(
-                            require_directory("a/b/c"), PATH_TO_ITEM["/a/b/c/F"]
-                        )
-                    },
-                ),
-                "/a/b/c/F": ItemReqsProvs(
-                    item_provs={
-                        ItemProv(
-                            ProvidesFile(path="a/b/c/F"),
-                            PATH_TO_ITEM["/a/b/c/F"],
-                        )
-                    },
-                    item_reqs=set(),
-                ),
-                "/a/d": ItemReqsProvs(
-                    item_provs={
-                        ItemProv(
-                            ProvidesDirectory(path="a/d"),
-                            PATH_TO_ITEM["/a/d/e"],
-                        )
-                    },
-                    item_reqs=set(),
-                ),
-                "/a/d/e": ItemReqsProvs(
-                    item_provs={
-                        ItemProv(
-                            ProvidesDirectory(path="a/d/e"),
-                            PATH_TO_ITEM["/a/d/e"],
-                        )
-                    },
-                    item_reqs={
-                        ItemReq(
-                            require_directory("a/d/e"), PATH_TO_ITEM["/a/d/e/G"]
-                        )
-                    },
-                ),
-                "/a/d/e/G": ItemReqsProvs(
-                    item_provs={
-                        ItemProv(
-                            ProvidesFile(path="a/d/e/G"),
-                            PATH_TO_ITEM["/a/d/e/G"],
-                        )
-                    },
-                    item_reqs=set(),
-                ),
-            }
-            self.assertEqual(
-                ValidatedReqsProvs(
-                    [provides_root, *PATH_TO_ITEM.values()]
-                ).path_to_reqs_provs,
-                expected,
-            )
+        self.assertDictEqual(
+            ValidatedReqsProvs(
+                {self.provides_root, *self.items}
+            ).path_to_reqs_provs,
+            self.path_to_reqs_provs,
+        )
 
 
-class DependencyGraphTestCase(unittest.TestCase):
+class DependencyGraphTestCase(DepGraphTestBase):
     def test_item_predecessors(self):
-        dg = DependencyGraph(PATH_TO_ITEM.values(), layer_target="t-34")
+        dg = DependencyGraph(self.items, layer_target="t-34")
         self.assertEqual(
             _fs_root_phases(FilesystemRootItem(from_target="t-34")),
             list(dg.ordered_phases()),
         )
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
-            subvol = temp_subvolumes.create("subvol")
-            phases_provide = PhasesProvideItem(from_target="t", subvol=subvol)
-            ns = dg._prep_item_predecessors(phases_provide)
-        path_to_item = {"/": phases_provide, **PATH_TO_ITEM}
-        self.assertEqual(
+        ns = dg._prep_item_predecessors(self.provides_root)
+
+        self.assertDictEqual(
             ns.item_to_predecessors,
-            {
-                path_to_item[k]: {path_to_item[v] for v in vs}
-                for k, vs in {
-                    "/a/b/c": {"/"},
-                    "/a/d/e": {"/a/b/c"},
-                    "/a/b/c/F": {"/a/b/c"},
-                    "/a/d/e/G": {"/a/d/e"},
-                }.items()
-            },
+            self.item_to_items_it_reqs,
         )
-        self.assertEqual(
+        self.assertDictEqual(
             ns.predecessor_to_items,
-            {
-                path_to_item[k]: {path_to_item[v] for v in vs}
-                for k, vs in {
-                    "/": {"/a/b/c"},
-                    "/a/b/c": {"/a/d/e", "/a/b/c/F"},
-                    "/a/b/c/F": set(),
-                    "/a/d/e": {"/a/d/e/G"},
-                    "/a/d/e/G": set(),
-                }.items()
-            },
+            self.item_to_items_it_provs,
         )
-        self.assertEqual(ns.items_without_predecessors, {path_to_item["/"]})
+        self.assertEqual(ns.items_without_predecessors, {self.provides_root})
 
     def test_foreign_layer_assert(self):
         foreign1 = ForeignLayerItem(
@@ -251,9 +212,7 @@ class DependencyGraphTestCase(unittest.TestCase):
             DependencyGraph(
                 [
                     foreign1,
-                    MakeDirsItem(
-                        from_target="", into_dir="a", path_to_make="b"
-                    ),
+                    *ensure_dir_exists_factory(from_target="", path="a/b"),
                 ],
                 "layer_t",
             )
@@ -271,55 +230,61 @@ class DependencyGraphTestCase(unittest.TestCase):
             )
 
 
-class DependencyOrderItemsTestCase(unittest.TestCase):
+class DependencyOrderItemsTestCase(DepGraphTestBase):
+    def assert_before(self, res, x, y):
+        self.assertLess(res.index(x), res.index(y))
+
     def test_gen_dependency_graph(self):
-        dg = DependencyGraph(PATH_TO_ITEM.values(), layer_target="t-72")
+        dg = DependencyGraph(self.items, layer_target="t-72")
         self.assertEqual(
             _fs_root_phases(FilesystemRootItem(from_target="t-72")),
             list(dg.ordered_phases()),
         )
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
-            subvol = temp_subvolumes.create("subvol")
-            self.assertIn(
-                tuple(
-                    dg.gen_dependency_order_items(
-                        PhasesProvideItem(from_target="t", subvol=subvol)
-                    )
-                ),
-                {
-                    tuple(PATH_TO_ITEM[p] for p in paths)
-                    for paths in [
-                        # A few orders are valid, don't make the test fragile.
-                        ["/a/b/c", "/a/b/c/F", "/a/d/e", "/a/d/e/G"],
-                        ["/a/b/c", "/a/d/e", "/a/b/c/F", "/a/d/e/G"],
-                        ["/a/b/c", "/a/d/e", "/a/d/e/G", "/a/b/c/F"],
-                    ]
-                },
-            )
+        res = tuple(dg.gen_dependency_order_items(self.provides_root))
+        self.assertNotIn(self.provides_root, res)
+        res = (self.provides_root, *res)
+        for item, items_it_requires in self.item_to_items_it_reqs.items():
+            for item_it_requires in items_it_requires:
+                self.assertLess(
+                    res.index(item_it_requires),
+                    res.index(item),
+                    f"{item_it_requires} was not before {item}",
+                )
+
+        for item, items_requiring_it in self.item_to_items_it_provs.items():
+            for item_requiring_it in items_requiring_it:
+                self.assertLess(
+                    res.index(item),
+                    res.index(item_requiring_it),
+                    f"{item} was not before {item_requiring_it}",
+                )
 
     def test_cycle_detection(self):
-        def requires_provides_directory_class(requires_dir, provides_dir):
+        def requires_provides_directory_class(requires_dir, provides_dirs):
             @dataclass(init=False, frozen=True)
             class RequiresProvidesDirectory(ImageItem):
                 def requires(self):
                     yield require_directory(requires_dir)
 
                 def provides(self):
-                    yield ProvidesDirectory(path=provides_dir)
+                    for d in provides_dirs:
+                        yield ProvidesDirectory(path=d)
 
             return RequiresProvidesDirectory
 
         # `dg_ok`: dependency-sorting will work without a cycle
         first = FilesystemRootItem(from_target="")
-        second = requires_provides_directory_class("/", "a")(from_target="")
-        third = MakeDirsItem(from_target="", into_dir="a", path_to_make="b/c")
+        second = requires_provides_directory_class("/", ["a"])(from_target="")
+        third = requires_provides_directory_class("/a", ["/a/b", "/a/b/c"])(
+            from_target=""
+        )
         dg_ok = DependencyGraph([second, first, third], layer_target="t")
         self.assertEqual(_fs_root_phases(first), list(dg_ok.ordered_phases()))
 
         # `dg_bad`: changes `second` to get a cycle
         dg_bad = DependencyGraph(
             [
-                requires_provides_directory_class("a/b", "a")(from_target=""),
+                requires_provides_directory_class("a/b", ["a"])(from_target=""),
                 first,
                 third,
             ],
@@ -327,15 +292,12 @@ class DependencyOrderItemsTestCase(unittest.TestCase):
         )
         self.assertEqual(_fs_root_phases(first), list(dg_bad.ordered_phases()))
 
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
-            subvol = temp_subvolumes.create("subvol")
-            provides_root = PhasesProvideItem(from_target="t", subvol=subvol)
-            self.assertEqual(
-                [second, third],
-                list(dg_ok.gen_dependency_order_items(provides_root)),
-            )
-            with self.assertRaisesRegex(AssertionError, "^Cycle in "):
-                list(dg_bad.gen_dependency_order_items(provides_root))
+        self.assertEqual(
+            [second, third],
+            list(dg_ok.gen_dependency_order_items(self.provides_root)),
+        )
+        with self.assertRaisesRegex(AssertionError, "^Cycle in "):
+            list(dg_bad.gen_dependency_order_items(self.provides_root))
 
     def test_phase_order(self):
         class FakeRemovePaths:
@@ -346,23 +308,19 @@ class DependencyOrderItemsTestCase(unittest.TestCase):
 
         first = FilesystemRootItem(from_target="")
         second = FakeRemovePaths()
-        third = MakeDirsItem(from_target="", into_dir="/", path_to_make="a/b")
-        dg = DependencyGraph([second, first, third], layer_target="t")
+        rest = list(ensure_dir_exists_factory(from_target="", path="/a/b"))[
+            ::-1
+        ]
+        dg = DependencyGraph([second, first, *rest], layer_target="t")
         self.assertEqual(
             _fs_root_phases(first)
             + [(FakeRemovePaths.get_phase_builder, (second,))],
             list(dg.ordered_phases()),
         )
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
-            subvol = temp_subvolumes.create("subvol")
-            self.assertEqual(
-                [third],
-                list(
-                    dg.gen_dependency_order_items(
-                        PhasesProvideItem(from_target="t", subvol=subvol)
-                    )
-                ),
-            )
+        self.assertEqual(
+            rest,
+            list(dg.gen_dependency_order_items(self.provides_root)),
+        )
 
 
 if __name__ == "__main__":
