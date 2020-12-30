@@ -1,7 +1,7 @@
 "This provides a more friendly UI to the image_* macros."
 
 load("//antlir/bzl/image_actions:clone.bzl", "image_clone")
-load("//antlir/bzl/image_actions:ensure_dir_exists.bzl", "image_ensure_dir_exists")
+load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_dirs_exist", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:feature.bzl", "image_feature")
 load("//antlir/bzl/image_actions:install.bzl", "image_install", "image_install_buck_runnable")
 load("//antlir/bzl/image_actions:mkdir.bzl", "image_mkdir")
@@ -26,7 +26,8 @@ image = struct(
     cpp_unittest = image_cpp_unittest,
     feature = image_feature,
     mkdir = image_mkdir,
-    ensure_dir_exists = image_ensure_dir_exists,
+    ensure_dirs_exist = image_ensure_dirs_exist,
+    ensure_subdirs_exist = image_ensure_subdirs_exist,
     install = image_install,
     install_buck_runnable = image_install_buck_runnable,
     tarball = image_tarball,

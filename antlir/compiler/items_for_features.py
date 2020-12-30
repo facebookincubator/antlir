@@ -10,7 +10,7 @@ from typing import Any, Iterable, Union, Mapping, Optional, NamedTuple
 
 from antlir.compiler.items.clone import CloneItem
 from antlir.compiler.items.common import LayerOpts, image_source_item
-from antlir.compiler.items.ensure_dir_exists import ensure_dir_exists_factory
+from antlir.compiler.items.ensure_dirs_exist import ensure_subdirs_exist_factory
 from antlir.compiler.items.foreign_layer import ForeignLayerItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_dirs import MakeDirsItem
@@ -131,7 +131,7 @@ def gen_items_for_features(
         "foreign_layer": ForeignLayerItem,
     }
     key_to_items_factory = {
-        "ensure_dir_exists": ensure_dir_exists_factory,
+        "ensure_subdirs_exist": ensure_subdirs_exist_factory,
     }
 
     for (feature_key, target, config) in gen_included_features(

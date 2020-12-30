@@ -16,7 +16,7 @@ from collections import defaultdict
 from typing import Iterator, Union, NamedTuple, Dict, Callable, Set
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
-from antlir.compiler.items.ensure_dir_exists import EnsureDirExistsItem
+from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 
@@ -57,7 +57,7 @@ class ItemReqsProvs(NamedTuple):
 
 ReqOrProv = Union[ProvidesPathObject, PathRequiresPredicate]
 # See the comments in _add_to_prov_map
-_ALLOWED_COLLISIONS = frozenset({EnsureDirExistsItem})
+_ALLOWED_COLLISIONS = frozenset({EnsureDirsExistItem})
 
 
 class ValidatedReqsProvs:
@@ -118,15 +118,15 @@ class ValidatedReqsProvs:
         on the same path.
 
         The sole case where this is supported is when there are any number of
-        EnsureDirExists items, and at most one other directory provider of a
-        type other than EnsureDirExists. This is done because EnsureDirExists
+        EnsureDirsExist items, and at most one other directory provider of a
+        type other than EnsureDirsExist. This is done because EnsureDirsExist
         are explicitly run last for a given path (see comments in
         _add_dir_deps_for_item_provs), and check corresponding attributes on the
         path they're about to create. As such, any number of them may exist for
-        a given path. We allow one other non-EnsureDirExists directory provider
+        a given path. We allow one other non-EnsureDirsExist directory provider
         as its attributes will also be checked. More than one is disallowed as
         it could result in non-determinism, as we could only support that if we
-        were certain an EnsureDirExists also existed for the path, which the
+        were certain an EnsureDirsExist also existed for the path, which the
         data model is not currently set up to support.
         """
         new_item_prov = ItemProv(provides=prov, item=item)
@@ -222,19 +222,19 @@ class DependencyGraph:
 
     @staticmethod
     def _add_dir_deps_for_item_provs(ns, item_provs: Set[ItemProv]):
-        """EnsureDirExists items are a special case in the dependency graph in
+        """EnsureDirsExist items are a special case in the dependency graph in
         that, for a given path, we want to ensure they're the last providers to
         be run. This is because they're the only items that will explicitly
         check the attributes of the given path to ensure they match the provided
         stat args. Thus, if another directory provider were to run before them,
         it's possible it would unexpectedly modify the attributes of the
-        directory provided by the EnsureDirExists item.
+        directory provided by the EnsureDirsExist item.
 
         To enforce this, we explicitly add dependency edges from all
-        non-EnsureDirExists items to all EnsureDirExists items.
+        non-EnsureDirsExist items to all EnsureDirsExist items.
         """
         ede_item_provs = {
-            x for x in item_provs if isinstance(x.item, EnsureDirExistsItem)
+            x for x in item_provs if isinstance(x.item, EnsureDirsExistItem)
         }
         non_ede_item_provs = item_provs - ede_item_provs
         # Guaranteed by checks in _add_to_prov_map

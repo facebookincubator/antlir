@@ -14,7 +14,10 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
-from ..ensure_dir_exists import EnsureDirExistsItem, ensure_dir_exists_factory
+from ..ensure_dirs_exist import (
+    EnsureDirsExistItem,
+    ensure_subdirs_exist_factory,
+)
 from .common import (
     BaseItemTestCase,
     get_dummy_layer_opts_ba,
@@ -25,12 +28,13 @@ from .common import (
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 
 
-class EnsureDirExistsItemTestCase(BaseItemTestCase):
-    def test_ensure_dir_exists(self):
+class EnsureDirsExistItemTestCase(BaseItemTestCase):
+    def test_ensure_subdirs_exist(self):
         for item, (expected_req, expected_prov) in zip_longest(
-            ensure_dir_exists_factory(from_target="t", path="/a/b/c/d"),
+            ensure_subdirs_exist_factory(
+                from_target="t", into_dir="/", subdirs_to_create="/a/b/c"
+            ),
             [
-                ("/a/b/c", "/a/b/c/d"),
                 ("/a/b", "/a/b/c"),
                 ("/a", "/a/b"),
                 ("/", "/a"),
@@ -41,15 +45,37 @@ class EnsureDirExistsItemTestCase(BaseItemTestCase):
                 {ProvidesDirectory(path=expected_prov)},
                 {require_directory(expected_req)},
             )
+        for item, (expected_req, expected_prov) in zip_longest(
+            ensure_subdirs_exist_factory(
+                from_target="t", into_dir="/w/x", subdirs_to_create="y/z"
+            ),
+            [
+                ("/w/x/y", "/w/x/y/z"),
+                ("/w/x", "/w/x/y"),
+            ],
+        ):
+            self._check_item(
+                item,
+                {ProvidesDirectory(path=expected_prov)},
+                {require_directory(expected_req)},
+            )
 
-    def test_ensure_dir_exists_command(self):
+    def test_ensure_subdirs_exist_invalid_into_dir(self):
+        with self.assertRaisesRegex(ValueError, "empty string"):
+            list(
+                ensure_subdirs_exist_factory(
+                    from_target="t", into_dir="", subdirs_to_create="/a/b"
+                )
+            )
+
+    def test_ensure_subdirs_exist_command(self):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
-            subvol = temp_subvolumes.create("ensure-dir-exists-cmd")
-
+            subvol = temp_subvolumes.create("ensure-subdirs-exist-cmd")
             ensure_items = list(
-                ensure_dir_exists_factory(
+                ensure_subdirs_exist_factory(
                     from_target="t",
-                    path="/d/a/b",
+                    into_dir="/",
+                    subdirs_to_create="/d/a/b",
                     user_group="77:88",
                     mode="u+rx",
                 )
@@ -74,24 +100,23 @@ class EnsureDirExistsItemTestCase(BaseItemTestCase):
                 render_subvol(subvol),
             )
 
-    def test_ensure_dir_exists_command_stat_mismatch(self):
+    def test_ensure_dirs_exist_item_stat_mismatch(self):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
-            subvol = temp_subvolumes.create("ensure-dir-exists-cmd")
+            subvol = temp_subvolumes.create("ensure-dirs-exist-item")
+            subvol.run_as_root(["mkdir", "-p", subvol.path("j")])
             good = {
                 "from_target": "t",
-                "into_dir": "/",
-                "basename": "z",
-                "mode": "u+rx",
+                "into_dir": "j",
+                "basename": "k",
+                "mode": 0o777,
             }
-            EnsureDirExistsItem(**good).build(subvol, DUMMY_LAYER_OPTS_BA)
-
+            EnsureDirsExistItem(**good).build(subvol, DUMMY_LAYER_OPTS_BA)
             # Fail on different attributes
             with self.assertRaises(subprocess.CalledProcessError):
-                EnsureDirExistsItem(**{**good, "mode": "u+rwx"}).build(
+                EnsureDirsExistItem(**{**good, "mode": 0o775}).build(
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
-
             with self.assertRaises(subprocess.CalledProcessError):
-                EnsureDirExistsItem(**{**good, "user_group": "77:88"}).build(
+                EnsureDirsExistItem(**{**good, "user_group": "77:88"}).build(
                     subvol, DUMMY_LAYER_OPTS_BA
                 )

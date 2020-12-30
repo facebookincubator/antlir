@@ -1,7 +1,6 @@
 # Future: we should eventually add per-library unit test coverage, as
 # appropriate, while also retaining integration test coverage.
 
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -77,6 +76,12 @@ python_library(
 python_library(
     name = "ba_runner",
     srcs = ["ba_runner.py"],
+    deps = [
+        ":args",
+        ":nspawn",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+    ],
 )
 
 python_binary(

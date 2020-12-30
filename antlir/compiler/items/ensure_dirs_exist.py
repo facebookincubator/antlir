@@ -7,7 +7,7 @@
 import os
 import pwd
 from dataclasses import dataclass
-from typing import Iterator
+from typing import Iterator, Optional
 
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
@@ -35,8 +35,7 @@ from .stat_options import (
 _BUILD_SCRIPT = r"""
 path_to_make="$1"
 expected_stat="$2"
-# If dir exists ensure its attributes match expectations
-if [ -d "$path_to_make" ]; then
+if  [ -d "$path_to_make" ]; then
     stat_res="$(stat --format="0%a %U:%G" "$path_to_make")"
     if [ "$stat_res" != "$expected_stat" ]; then
         echo "ERROR: stat did not match \"$expected_stat\" for $path_to_make: $stat_res"
@@ -53,9 +52,15 @@ fi
 """  # noqa: E501
 
 
-# `ensure_dir_exists_factory` below should be used to construct these
+def _validate_into_dir(into_dir: Optional[str]) -> str:
+    if into_dir == "":
+        raise ValueError('`into_dir` was the empty string; for root, use "/"')
+    return into_dir
+
+
+# `ensure_subdirs_exist_factory` below should be used to construct this
 @dataclass(init=False, frozen=True)
-class EnsureDirExistsItem(ImageItem):
+class EnsureDirsExistItem(ImageItem):
     into_dir: str
     basename: str
 
@@ -66,7 +71,9 @@ class EnsureDirExistsItem(ImageItem):
     @classmethod
     def customize_fields(cls, kwargs):
         super().customize_fields(kwargs)
+        _validate_into_dir(kwargs.get("into_dir", None))
         coerce_path_field_normal_relative(kwargs, "into_dir")
+        coerce_path_field_normal_relative(kwargs, "basename")
         # We want this to be a single path component (the dir being made)
         assert "/" not in kwargs.get("basename", "")
         # Unlike files, leave directories as writable by the owner by
@@ -108,47 +115,53 @@ class EnsureDirExistsItem(ImageItem):
         )
 
 
-def ensure_dir_exists_factory(
-    *, path: str, **kwargs
-) -> Iterator[EnsureDirExistsItem]:
-    """Convenience factory to create a set of EnsureDirExistsItems. This allows
-    us to provide one cohesive API for a given path and then denormalize that
-    path to separate items for each path component. For example, for the given
-    image feature:
+def ensure_subdirs_exist_factory(
+    *, into_dir: str, subdirs_to_create: str, **kwargs
+) -> Iterator[EnsureDirsExistItem]:
+    """Convenience factory to create a set of EnsureDirsExistItems. This allows
+    us to provide a single API for the creation of a given directory, and then
+    denormalize that path to separate items for each path component.
 
-        image.ensure_dir_exists('/a/b/c')
+    Specifically, this provides the ability for users to specify subdirs to
+    create within a directory that's known to exist. This is useful if the
+    caller would like the attributes of subdirs to differ from those of their
+    parents.
+
+    This denormalization of a path to separate items is a critical to avoid
+    circular dependencies. For example, for the given image feature:
+
+        image.ensure_dirs_exist("/a/b/c")
 
     This factory would yield:
 
-        EnsureDirExistsItem("/", "a"),
-        EnsureDirExistsItem("/a", "b"),
-        EnsureDirExistsItem("/a/b", "c"),
+        EnsureDirsExistItem("/", "a"),
+        EnsureDirsExistItem("/a", "b"),
+        EnsureDirsExistItem("/a/b", "c"),
 
-    This separation into multiple items is a necessary step to avoid circular
-    dependencies. Specifically:
+    In the above, it's worth noting:
 
-    - EnsureDirExists (EDE) items take a dependency on any other item types in
+    - EnsureDirsExist (EDE) items take a dependency on any other item types in
         the dependency graph, to ensure they're the last items to run for a
         given path (for more info, see comments in `dep_graph.py`).
     - It's also possible that any items providing a directory may depend on an
         EDE item for another directory (see example below).
     - In this situation, if a full path were provided only by a single EDE item,
-      cycles would be possible any time another item type providing directories
-      also required a directory only supplied by that EDE item.
+        cycles would be possible any time another item type providing
+        directories also required a directory only supplied by that EDE item.
 
     To visualize this problem, consider the following setup:
 
     ```
-        image.ensure_dir_exists("/a/b/c/d"),
+        image.ensure_dirs_exist("/a/b/c/d"),
         image.symlink_dir("/x/y", "/a/b/c/d"),
     ```
 
     Here, `symlink_dir` requires dirs "/x/y" and "/a/b/c" and provides
-    "/a/b/c/d". If `ensure_dir_exists` were a single item, it would provide
+    "/a/b/c/d". If `ensure_dirs_exist` were a single item, it would provide
     paths "/a", "/a/b", "/a/b/c", "/a/b/c/d". This means `symlinks_dir` requires
-    `ensure_dir_exists` (e.g. for path "/a/b/c"), but `ensure_dir_exists` also
+    `ensure_dirs_exist` (e.g. for path "/a/b/c"), but `ensure_dirs_exist` also
     requires `symlinks_dir` (for path "/a/b/c/d", because they both provide it,
-    and we need to ensure `ensure_dir_exists` runs last, so we make an
+    and we need to ensure `ensure_dirs_exist` runs last, so we make an
     artificial dep). Thus, we hit a cycle in the dep graph.
 
     Now, if we instead denormalize the EDE declaration into a separate item for
@@ -156,15 +169,17 @@ def ensure_dir_exists_factory(
     EDE providing "/a/b/c" and the EDE requiring `symlink_dir` for "/a/b/c/d"
     are separate items.
     """
-    curr_path = make_path_normal_relative(path)
-    assert not curr_path.startswith("/")
+    into_dir = make_path_normal_relative(_validate_into_dir(into_dir))
+    subdirs_to_create = make_path_normal_relative(subdirs_to_create)
+    path = os.path.join(into_dir, subdirs_to_create)
     while True:
-        into_dir = os.path.dirname(curr_path)
-        yield EnsureDirExistsItem(
+        parent = os.path.dirname(path)
+        yield EnsureDirsExistItem(
             **kwargs,
-            into_dir=into_dir,
-            basename=os.path.basename(curr_path),
+            # Want to provide root rather than the empty string
+            into_dir=parent or "/",
+            basename=os.path.basename(path),
         )
-        if not into_dir:
-            return
-        curr_path = into_dir
+        if parent == into_dir:
+            break
+        path = parent
