@@ -56,6 +56,10 @@ python_unittest(
     resources = {":test-helper-binary": "tests/helper-binary"},
 )
 
+export_file(
+    name = "tests/test_fs_utils_path_resource.py",
+)
+
 # This is meant to get full functional coverage for `Path.resource`,
 # exercising it across all supported `par_style`s.  We cannot do
 # `needed_coverage` here, but `test-fs-utils` checks part of the function.
@@ -63,16 +67,15 @@ python_unittest(
     python_unittest(
         name = "test-fs-utils-path-resource-" + style,
         srcs = ["tests/test_fs_utils_path_resource.py"],
-        # The "fastzip" test is very important, it is the analog of the
-        # open-source PEX format.
         par_style = style,
         resources = {":test-helper-binary": "tests/helper-binary"},
         deps = [":fs_utils"],
     )
     for style in [
         "fastzip",
-        "xar",
         "zip",
+        # XARs are tested internally only, since OSS does not currently support
+        # XAR python_binary targets
     ]
 ]
 
