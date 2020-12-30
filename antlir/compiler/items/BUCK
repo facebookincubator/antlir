@@ -240,6 +240,12 @@ python_library(
     ],
 )
 
+python_unittest(
+    name = "test-stat-options",
+    srcs = ["tests/test_stat_options.py"],
+    deps = [":stat_options"],
+)
+
 # Future: Finish splitting this library, and tests, by item.  The only
 # challenge is to make sure that `common.py` gets coverage -- coverage of
 # its functions is currently distributed across various items.

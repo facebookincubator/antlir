@@ -90,6 +90,7 @@ class ImageLayerTestCase(unittest.TestCase):
         self.assertTrue(
             os.path.isdir(os.path.join(subvol_path, b"foo/bar/baz"))
         )
+        self.assertTrue(os.path.isdir(os.path.join(subvol_path, b"alpha/beta")))
 
         # :hello_world_base has a mount entry in the meta.  Note that this
         # *does not* validate that the mount itself exists.
@@ -403,6 +404,7 @@ class ImageLayerTestCase(unittest.TestCase):
     def test_installed_files(self):
         with self.target_subvol("installed-files") as sv:
             r = render_subvol(sv)
+            pop_path(r, "alpha")
             self._check_installed_files_bar(pop_path(r, "foo/bar"))
             self.assertEqual(
                 [
