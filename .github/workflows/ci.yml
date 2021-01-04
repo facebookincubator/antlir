@@ -40,15 +40,7 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          # Annoyingly, the same python version used to build the stable ba
-          # must also exist in the host.
-          # TODO: figure out how python version is leaking from the BA -> host.
           python-version: '~3.9'
-
-      # .buckconfig explicitly references /usr/bin/python3, so the desired
-      # version of python must be present there
-      - name: Symlink Python3.9
-        run: sudo ln -sf $(which python3.9) /usr/bin/python3
 
       - name: Fetch buck
         run: buck --version
