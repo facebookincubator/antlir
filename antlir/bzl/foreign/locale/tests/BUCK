@@ -1,0 +1,40 @@
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/foreign/locale:locale.bzl", "image_build_locale_archive")
+
+image_build_locale_archive(
+    name = "build-multiple-locales",
+    locales = [
+        "en_US.utf8",
+        "en_CA.utf8",
+    ],
+    parent_layer = "//antlir/compiler/test_images:test-layer",
+)
+
+image_build_locale_archive(
+    name = "build-single-locale",
+    locales = ["en_US.utf8"],
+    parent_layer = "//antlir/compiler/test_images:test-layer",
+)
+
+image.layer(
+    name = "custom-locales-layer",
+    parent_layer = "//antlir/compiler/test_images:test-layer",
+    features = [
+        image.clone(
+            src_layer = ":build-multiple-locales",
+            src_path = "/locale-archive",
+            dest_path = "/multiple-locale-archive",
+        ),
+        image.clone(
+            src_layer = ":build-single-locale",
+            src_path = "/locale-archive",
+            dest_path = "/single-locale-archive",
+        ),
+    ],
+)
+
+image.python_unittest(
+    name = "test-locales",
+    layer = ":custom-locales-layer",
+    srcs = ["test_locales.py"],
+)
