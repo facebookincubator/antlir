@@ -29,15 +29,6 @@ fake_macro_library(
 )
 
 fake_macro_library(
-    name = "mkdir",
-    srcs = ["mkdir.bzl"],
-    deps = [
-        "//antlir/bzl:add_stat_options",
-        "//antlir/bzl:target_tagger",
-    ],
-)
-
-fake_macro_library(
     name = "mount",
     srcs = ["mount.bzl"],
     deps = [

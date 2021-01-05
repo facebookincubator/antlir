@@ -84,7 +84,7 @@ image.layer(
     parent_layer = REPO_CFG.build_appliance_default,
     features = [
         # `test_non_ephemeral_snapshot` needs a place to write as `nobody`.
-        image.mkdir(
+        image.ensure_subdirs_exist(
             "/home",
             "nobody",
             mode = "u+rwx,og+rx",
@@ -163,14 +163,14 @@ image_foreign_layer(
 )
 
 # The next two targets exercise:
-#  - all forms of constructing a make_dirs request
+#  - all forms of constructing a directory creation request
 #  - specifying `stat` options, like user:group & mode
 
 image.feature(
     name = "feature_dirs",
     features = [
-        image.mkdir("/", "foo/bar"),
-        image.mkdir("/foo/bar", "baz"),
+        image.ensure_subdirs_exist("/", "foo/bar"),
+        image.ensure_subdirs_exist("/foo/bar", "baz"),
         image.ensure_dirs_exist(
             "/alpha",
             mode = "a+rw",
@@ -197,7 +197,7 @@ image.feature(
 image.feature(
     name = "feature_bad_dir",
     features = [
-        image.mkdir(
+        image.ensure_subdirs_exist(
             "/foo",
             "borf/beep",
             mode = "mmm",
@@ -436,7 +436,7 @@ image.feature(
     name = "feature_install_files",
     features = [
         ":feature_dirs",  # We use /foo/bar for a couple of installs.
-        image.mkdir("/foo/bar", "installed"),  # Most things will go here.
+        image.ensure_subdirs_exist("/foo/bar", "installed"),  # Most things will go here.
         image.install(":hello_world.tar", "/foo/bar/hello_world.tar"),
         image.install(
             ":hello_world.tar",
@@ -490,7 +490,7 @@ image.layer(
     features = [
         image.clone(":installed-files", "/foo/bar", "/"),
         image.clone(":installed-files", "/foo/bar", "/bar3"),
-        image.mkdir("/", "bar2"),
+        image.ensure_subdirs_exist("/", "bar2"),
         image.clone(":installed-files", "/foo/bar/", "/bar2/"),
     ],
 )
@@ -541,7 +541,7 @@ image.feature(
 image.feature(
     name = "feature_addremove_conflict_add",
     features = [
-        image.mkdir("/", "a/b"),
+        image.ensure_subdirs_exist("/", "a/b"),
     ],
 )
 
@@ -688,9 +688,9 @@ image.layer(
     parent_layer = ":parent_layer_with_cheese",
     features = [
         ":feature_tar_and_rpms",
-        image.mkdir("/foo", "borf"),  # for :feature_tar
-        image.mkdir("/foo", "extracted_hello"),
-        image.mkdir(
+        image.ensure_subdirs_exist("/foo", "borf"),  # for :feature_tar
+        image.ensure_subdirs_exist("/foo", "extracted_hello"),
+        image.ensure_subdirs_exist(
             "/foo",
             "more_extracted_hello",
             mode = 0o711,

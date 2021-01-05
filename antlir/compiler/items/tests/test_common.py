@@ -13,8 +13,8 @@ from antlir.compiler.requires_provides import (
 )
 
 from ..common import ImageItem, image_source_item
+from ..ensure_dirs_exist import EnsureDirsExistItem
 from ..install_file import InstallFileItem
-from ..make_dirs import MakeDirsItem
 from .common import DUMMY_LAYER_OPTS, BaseItemTestCase
 
 
@@ -46,15 +46,15 @@ class ItemsCommonTestCase(BaseItemTestCase):
 
     def test_stat_options(self):
         self._check_item(
-            MakeDirsItem(
+            EnsureDirsExistItem(
                 from_target="t",
-                into_dir="x",
-                path_to_make="y/z",
+                into_dir="x/y",
+                basename="z",
                 mode=0o733,
                 user_group="cat:dog",
             ),
-            {ProvidesDirectory(path="x/y"), ProvidesDirectory(path="x/y/z")},
-            {require_directory("x")},
+            {ProvidesDirectory(path="x/y/z")},
+            {require_directory("x/y")},
         )
 
     def test_image_non_default_after_default(self):
