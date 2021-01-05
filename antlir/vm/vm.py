@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import argparse
 import asyncio
 import importlib.resources
 import os
@@ -16,11 +17,17 @@ from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
-from typing import AsyncContextManager, ContextManager, Iterable, Optional
+from typing import (
+    AsyncContextManager,
+    Iterable,
+    Optional,
+    List,
+)
 
-from antlir.common import get_logger
+from antlir.common import init_logging, get_logger
 from antlir.compiler.items.mount import mounts_from_image_meta
 from antlir.config import load_repo_config
+from antlir.shape import Shape
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
@@ -50,6 +57,90 @@ async def __wait_for_boot(sockfile: os.PathLike) -> None:
     logger.debug("waiting for guest boot event")
     await conn_r.readline()
     logger.debug("received guest boot event")
+
+
+class VMExecOpts(Shape):
+    """
+    This is the common set of arguments that can be passed to an `antlir.vm`
+    cli.
+    """
+
+    # Bind the repository root into the VM
+    bind_repo_ro: bool = True
+    # Extra, undefined arguments that are passed on the cli
+    extra: List[str] = []
+    # VM Opts instance passed to the CLI
+    opts: vm_opts_t
+    # Enable debug logs
+    debug: bool = False
+
+    # Future:  Since we're using `Shape` for this, which uses pydantic.  I
+    # think it is possible automagically construct this based on the field
+    # defintions of the type itself.  This would remove the need for the
+    # overloading in subclasses.  That is a bit more magic than I wanted
+    # to add at the moment, so I'm holding off.
+    @classmethod
+    def setup_cli(cls, parser):
+        """
+        Add attributes defined on this type to the parser.
+
+        Subclasses of `VMExecOpts` should overload this classmethod to provide
+        their own arguments.  Subclass implementors should take care to call
+        `super(<SubClassType>, cls).setup_cli(parser)` to make sure that these
+        base class args are added.
+        """
+        parser.add_argument(
+            "--bind-repo-ro",
+            action="store_true",
+            default=True,
+            help="Makes a read-only bind-mount of the current Buck project "
+            "into the vm at the same location as it is on the host. This is "
+            "needed to run binaries that are built to be run in-place and for "
+            "binaries that make assumptions about files being available "
+            "relative to the binary.",
+        )
+
+        parser.add_argument(
+            "--opts",
+            type=vm_opts_t.parse_raw,
+            help="Path to a serialized vm_opts_t instance containing "
+            "configuration details for the vm.",
+            required=True,
+        )
+
+        parser.add_argument(
+            "--debug",
+            action="store_true",
+            default=True,
+            help="Show debug logs",
+        )
+
+    @classmethod
+    def parse_cli(cls, argv) -> "VMExecOpts":
+        """
+        Construct a CLI parser, parse the arguments, and return a constructed
+        instance from those arguments of type `cls`.
+        """
+
+        parser = argparse.ArgumentParser(
+            description=__doc__,
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+
+        cls.setup_cli(parser)
+
+        args, extra = parser.parse_known_args(argv)
+
+        init_logging(debug=args.debug)
+
+        if extra:
+            logger.debug(f"Got extra args: {extra} from {argv}")
+            args.extra = extra
+
+        logger.debug(
+            f"Creating instance of {cls} for VM execution args using: {args}"
+        )
+        return cls(**args.__dict__)
 
 
 @asynccontextmanager

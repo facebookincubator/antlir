@@ -76,6 +76,7 @@ python_library(
         ":vm_opts_t",
         "//antlir:common",
         "//antlir:config",
+        "//antlir:shape",
         "//antlir:testlib_layer_resource",
         "//antlir:unshare",
         "//antlir/compiler/items:mount",
@@ -89,10 +90,6 @@ python_binary(
     ],
     main_module = "antlir.vm.run",
     deps = [
-        third_party.library(
-            "click",
-            platform = "python",
-        ),
         ":common",
         ":vm",
     ],
@@ -140,10 +137,6 @@ python_binary(
     ],
     main_module = "antlir.vm.vmtest",
     deps = [
-        third_party.library(
-            "click",
-            platform = "python",
-        ),
         ":common",
         ":share",
         ":vm",

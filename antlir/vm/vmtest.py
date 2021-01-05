@@ -5,22 +5,17 @@
 # LICENSE file in the root directory of this source tree.
 
 import asyncio
-import importlib.resources
 import io
 import os.path
 import sys
 import time
-from functools import wraps
-from typing import Iterable, List, Optional
+from typing import List, Optional
 
-import click
 from antlir.artifacts_dir import find_buck_cell_root
-from antlir.common import init_logging, get_logger
-from antlir.find_built_subvol import find_built_subvol
+from antlir.common import get_logger
 from antlir.fs_utils import Path
-from antlir.vm.common import async_wrapper
 from antlir.vm.share import BtrfsDisk, Plan9Export
-from antlir.vm.vm import vm
+from antlir.vm.vm import vm, VMExecOpts
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
@@ -38,117 +33,111 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     os.set_blocking(file.fileno(), blocking)
 
 
-@click.command(context_settings={"ignore_unknown_options": True})
-@click.option(
-    "--bind-repo-ro",
-    # Note: this is set to `True` because it is not currently possible
-    # to determine if an image or it's artifacts require the repository.
-    # This is due to the inability to inspect the image's `.meta/` contents.
-    # When this issue is resolved, we can set this default to False.
-    default=True,
-    is_flag=True,
-    help="Makes a read-only bind-mount of the current Buck "
-    "project into the vm at the same location as it is on "
-    "the host. This is needed to run binaries that are built "
-    "to be run in-place.",
-)
-@click.option(
-    "--opts",
-    type=vm_opts_t.parse_raw,
-    help="Path to a serialized vm_opts_t instance containing configuration "
-    "details for the vm.",
-    required=True,
-)
-@click.option("-d", "--debug", is_flag=True, default=False)
-# These two options are here to provide support for mounting the devel/headers
-# for a kernel as an image layer via 9p.
-# Future: The layer will be provided transparently via runtime mounts + the
-#         runtime config compiler.  once that is in place, the flag to indicate
-#         that this layer should be mounted would be defined by the vm target.
-@click.option(
-    "--devel-layer",
-    is_flag=True,
-    default=False,
-    help="Provide the kernel devel layer as a mount to the booted VM",
-)
-@click.option(
-    "-q/-e",
-    "--quiet/--echo",
-    default=False,
-    help="hide all vm output (including boot messages)",
-)
-# All options below are specific to testing
-@click.option(
-    "--timeout",
-    type=int,
-    # TestPilot sets this environment variable
-    envvar="TIMEOUT",
-    default=5 * MINUTE,
-    help="how many seconds to wait for the test to finish",
-)
-@click.option(
-    "--setenv",
-    type=str,
-    multiple=True,
-    help="Specify an environment variable assignment of form NAME=VALUE",
-)
-@click.option(
-    "--sync-file",
-    type=str,
-    help="Sync this file for tpx from the vm to the host.",
-    multiple=True,
-)
-@click.option(
-    "--test-binary",
-    type=Path,
-    help="Path to the actual test binary that will be invoked.  This is used "
-    "to discover tests before they are executed inside the VM",
-    required=True,
-)
-@click.option(
-    "--test-binary-image",
-    type=Path,
-    help="Path to a btrfs loopback image that contains the test binary to run",
-    required=True,
-)
-@click.option("--gtest_list_tests", is_flag=True)  # C++ gtest
-@click.option("--list-tests")  # Python pyunit with the new TestPilot adapter
-@click.option(
-    "--interactive", is_flag=True, help="Connect VM console in foreground"
-)
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
-@async_wrapper
-async def main(
-    args: Iterable[str],
+class VMTestExecOpts(VMExecOpts):
+    """
+    Custom execution options for this VM entry point.
+    """
+
+    devel_layer: bool = False
+    interactive: bool = False
+    timeout: int = 0
+    setenv: List[str] = []
+    sync_file: List[Path] = []
+    test_binary: Path
+    test_binary_image: Path
+    gtest_list_tests: bool
+    list_tests: Optional[str]
+
+    @classmethod
+    def setup_cli(cls, parser):
+        super(VMTestExecOpts, cls).setup_cli(parser)
+
+        parser.add_argument(
+            "--devel-layer",
+            action="store_true",
+            default=False,
+            help="Provide the kernel devel layer as a mount to the booted VM",
+        )
+        parser.add_argument(
+            "--interactive",
+            action="store_true",
+            default=False,
+            help="Boot into the VM for manual interaction. This will setup the "
+            "test but will not execute it.",
+        )
+        parser.add_argument(
+            "--timeout",
+            type=int,
+            # TestPilot sets this environment variable
+            default=os.environ.get("TIMEOUT", 5 * MINUTE),
+            help="how many seconds to wait for the test to finish",
+        )
+        parser.add_argument(
+            "--setenv",
+            action="append",
+            default=[],
+            help="Specify an environment variable to pass to the test "
+            "in the form NAME=VALUE",
+        )
+
+        parser.add_argument(
+            "--sync-file",
+            type=Path,
+            action="append",
+            default=[],
+            help="Sync this file for tpx from the vm to the host.",
+        )
+        parser.add_argument(
+            "--test-binary",
+            type=Path,
+            help="Path to the actual test binary that will be invoked.  This "
+            "is used to discover tests before they are executed inside the VM",
+            required=True,
+        )
+        parser.add_argument(
+            "--test-binary-image",
+            type=Path,
+            help="Path to a btrfs loopback image that contains the test binary "
+            "to run",
+            required=True,
+        )
+        parser.add_argument(
+            "--gtest_list_tests",
+            action="store_true",
+        )  # For c++ gtest
+        parser.add_argument(
+            "--list-tests",
+        )  # Python pyunit with the new TestPilot adapter
+
+
+async def run(
+    # common args from VMExecOpts
     bind_repo_ro: bool,
     debug: bool,
+    extra: List[str],
+    opts: vm_opts_t,
+    # antlir.vm.vmtest specific args
+    devel_layer: bool,
     gtest_list_tests: bool,
     interactive: bool,
     list_tests: Optional[str],
-    opts: vm_opts_t,
     setenv: List[str],
     sync_file: List[str],
     test_binary: Path,
     test_binary_image: Path,
     timeout: int,
-    quiet: bool,
-    # devel options
-    devel_layer: bool = False,
 ) -> None:
-    init_logging(debug=debug)
 
-    returncode = -1
-    start_time = time.time()
-    test_env = dict(s.split("=", maxsplit=1) for s in setenv)
-
+    # Start the test binary directly to list out test cases instead of
+    # starting an entire VM.  This is faster, but it's also a potential
+    # security hazard since the test code may expect that it always runs
+    # sandboxed, and may run untrusted code as part of listing tests.
+    # TODO(vmagro): the long-term goal should be to make vm boots as
+    # fast as possible to avoid unintuitive tricks like this
     if gtest_list_tests or list_tests:
-        assert not (gtest_list_tests and list_tests), sys.argv
-        # Start the test binary directly to list out test cases instead of
-        # starting an entire VM.  This is faster, but it's also a potential
-        # security hazard since the test code may expect that it always runs
-        # sandboxed, and may run untrusted code as part of listing tests.
-        # TODO(vmagro): the long-term goal should be to make vm boots as
-        # fast as possible to avoid unintuitive tricks like this
+        assert not (
+            gtest_list_tests and list_tests
+        ), "Cannot provide both --gtest_list_tests and --list-tests"
         proc = await asyncio.create_subprocess_exec(
             str(test_binary),
             *(
@@ -163,6 +152,12 @@ async def main(
         )
         await proc.wait()
         sys.exit(proc.returncode)
+
+    # If we've made it this far we are executing the actual test, not just
+    # listing tests
+    returncode = -1
+    start_time = time.time()
+    test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
     # Build shares to provide to the vm
     shares = [BtrfsDisk(test_binary_image, "/vmtest")]
@@ -191,18 +186,18 @@ async def main(
     async with vm(
         bind_repo_ro=bind_repo_ro,
         opts=opts,
-        verbose=not quiet,
+        verbose=debug,
         interactive=interactive,
         shares=shares,
     ) as instance:
+
         boot_time_elapsed = time.time() - start_time
         logger.debug(f"VM took {boot_time_elapsed} seconds to boot")
         if not interactive:
-            # Automatically execute test only under non-interactive mode.
 
             # Sync the file which tpx needs from the vm to the host.
             file_arguments = list(sync_file)
-            for arg in args:
+            for arg in extra:
                 # for any args that look like files make sure that the
                 # directory exists so that the test binary can write to
                 # files that it expects to exist (that would normally be
@@ -222,7 +217,7 @@ async def main(
             if test_pilot_env:
                 test_env["TEST_PILOT"] = test_pilot_env
 
-            cmd = ["/vmtest/test"] + list(args)
+            cmd = ["/vmtest/test"] + list(extra)
             logger.debug(f"executing {cmd} inside guest")
             returncode, stdout, stderr = await instance.run(
                 cmd=cmd,
@@ -245,6 +240,7 @@ async def main(
                 logger.error(f"{cmd} failed with returncode {returncode}")
             else:
                 logger.debug(f"{cmd} succeeded")
+
             # Some tests have incredibly large amounts of output, which
             # results in a BlockingIOError when stdout/err are in
             # non-blocking mode. Just force it to print the output in
@@ -276,4 +272,4 @@ async def main(
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(run(**dict(VMTestExecOpts.parse_cli(sys.argv[1:]))))
