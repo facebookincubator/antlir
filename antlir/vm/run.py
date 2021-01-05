@@ -6,73 +6,54 @@
 
 import asyncio
 import sys
-from typing import Iterable
+from typing import (
+    Iterable,
+    List,
+)
 
-import click
-from antlir.common import init_logging, get_logger
-from antlir.vm.common import async_wrapper
-from antlir.vm.vm import vm
+from antlir.common import get_logger
+from antlir.vm.vm import vm, VMExecOpts
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
-logger = get_logger()
+log = get_logger()
 
 
-@click.command()
-@click.option(
-    "--opts",
-    type=vm_opts_t.parse_raw,
-    help="Path to a serialized vm_opts_t instance containing configuration "
-    "details for the vm.",
-    required=True,
-)
-@click.option(
-    "--bind-repo-ro",
-    is_flag=True,
-    help="Makes a read-only bind-mount of the current Buck "
-    "project into the vm at the same location as it is on "
-    "the host. This is needed to run binaries that are built "
-    "to be run in-place.",
-)
-@click.option("-d", "--debug", is_flag=True, default=False)
-@click.option("-v", "--verbose", count=True)
-@click.option(
-    "--timeout",
-    type=int,
-    help="seconds to wait for cmd to complete",
-    default=60 * 60,
-)
-@click.argument("cmd", nargs=-1)
-@async_wrapper
+class VMRunExecOpts(VMExecOpts):
+    cmd: List[str] = ["/bin/bash"]
+
+    @classmethod
+    def setup_cli(cls, parser):
+        super(VMRunExecOpts, cls).setup_cli(parser)
+
+        parser.add_argument(
+            "cmd",
+            nargs="*",
+            default=["/bin/bash"],
+            help="The command to run inside the VM",
+        )
+
+
 async def run(
     cmd: Iterable[str],
+    # common args from VMExecOpts
     bind_repo_ro: bool,
     debug: bool,
+    extra: List[str],
     opts: vm_opts_t,
-    timeout: int,
-    verbose: int,
+    # antlir.vm.run specific args
+    cmd: List[str],
 ):
-    init_logging(debug=debug)
-    returncode = 0
-
-    # if we didn't get a comamnd, use a shell
-    cmd = cmd or ["/bin/bash"]
-
     async with vm(
-        opts=opts,
         bind_repo_ro=bind_repo_ro,
-        verbose=verbose > 0,
-        interactive=not cmd or cmd == ["/bin/bash"],
+        opts=opts,
+        verbose=debug,
+        interactive=cmd == ["/bin/bash"],
     ) as instance:
-        if cmd:
-            try:
-                returncode, _, _ = await instance.run(cmd, timeout=timeout)
-            except asyncio.TimeoutError:
-                click.echo(f"'{' '.join(cmd)}' timed out!", err=True)
-                sys.exit(124)
+        returncode, _, _ = await instance.run(cmd)
 
     sys.exit(returncode)
 
 
 if __name__ == "__main__":
-    run()
+    asyncio.run(run(**dict(VMRunExecOpts.parse_cli(sys.argv[1:]))))
