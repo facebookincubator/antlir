@@ -1,1 +1,1 @@
-stable_build_appliance_sha = "a6c024a253199ed673b05510bff8c6a76ebd5c0491c139201450e2f088dcad6e"
+stable_build_appliance_sha = "d4593eb98d58bc8b659da67b9dc5ffb20e620ecc18741200c9d4e3408e430de4"
