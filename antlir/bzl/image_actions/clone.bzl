@@ -18,9 +18,9 @@ More explicitly:
 - A trailing slash in `src_path` means "use the `rsync` convention":
     * Do not clone the source directory, but only its contents.
     * `dest_path` must be a pre-existing dir, and it must end in `/`
-- Similar to `image.symlink*`, a trailing slash in `dest_path` means that
-    it's a pre-existing directory (e.g.  made by `image.mkdir`), and `clone`
-    will only write to:
+- Similar to `image.symlink*`, a trailing slash in `dest_path` means that it's a
+    pre-existing directory (e.g.  made by `image.ensure_dirs_exist`), and
+    `clone` will only write to:
     * `dest/(basename of src_path)` if `src_path` lacks a trailing /
     * `dest/(children of src_path)` if `src_path` has a trailing /
 

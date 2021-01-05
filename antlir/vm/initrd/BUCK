@@ -24,7 +24,7 @@ image.layer(
     # this has a c compiler
     parent_layer = ":seedroot-glibc-static",
     features = [
-        image.mkdir("/", "build"),
+        image.ensure_subdirs_exist("/", "build"),
         image.install("seedroot.c", "/build/seedroot.c"),
     ],
 )

@@ -37,7 +37,7 @@ image.layer(
     name = '_setup_foo',
     parent_layer = '...',
     features = [
-        image.make_dirs('/', 'output'),
+        image.ensure_subdirs_exist('/', 'output'),
         image.install(':foo', '/output/_temp_foo'),
     ],
 )

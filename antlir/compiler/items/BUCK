@@ -254,7 +254,6 @@ python_library(
     srcs = [
         "common.py",
         "install_file.py",
-        "make_dirs.py",
         "remove_path.py",
         "symlink.py",
         "tarball.py",
@@ -282,7 +281,6 @@ python_unittest(
     srcs = [
         "tests/test_common.py",
         "tests/test_install_file.py",
-        "tests/test_make_dirs.py",
         "tests/test_make_subvol.py",
         "tests/test_mount.py",
         "tests/test_remove_path.py",
@@ -312,6 +310,7 @@ python_unittest(
     },
     deps = [
         ":common_testlib",
+        ":ensure_dirs_exist",
         ":items",
         ":phases_provide",  # test_mount.py uses this
         "//antlir:find_built_subvol",

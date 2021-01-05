@@ -9,7 +9,6 @@ import unittest
 
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
-from antlir.compiler.items.make_dirs import MakeDirsItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
@@ -38,15 +37,14 @@ class ImageFeatureTestCase(unittest.TestCase):
                     # Exercise inline features, including nesting
                     {
                         "target": "t1",
-                        "make_dirs": [{"into_dir": "/a", "path_to_make": "b"}],
                         "ensure_subdirs_exist": [
-                            {"into_dir": "/a", "subdirs_to_create": "x"}
+                            {"into_dir": "/a", "subdirs_to_create": "b"}
                         ],
                         "features": [
                             {
                                 "target": "t2",
-                                "make_dirs": [
-                                    {"into_dir": "/c", "path_to_make": "d"}
+                                "ensure_subdirs_exist": [
+                                    {"into_dir": "/c", "subdirs_to_create": "d"}
                                 ],
                             }
                         ],
@@ -72,11 +70,12 @@ class ImageFeatureTestCase(unittest.TestCase):
             {v for k, v in si.ID_TO_ITEM.items() if k != "/"}
             | {
                 # These come the inline features added above.
-                MakeDirsItem(from_target="t1", into_dir="/a", path_to_make="b"),
                 EnsureDirsExistItem(
-                    from_target="t1", into_dir="/a", basename="x"
+                    from_target="t1", into_dir="/a", basename="b"
                 ),
-                MakeDirsItem(from_target="t2", into_dir="/c", path_to_make="d"),
+                EnsureDirsExistItem(
+                    from_target="t2", into_dir="/c", basename="d"
+                ),
             },
             self._items_for_features(),
         )
@@ -138,8 +137,14 @@ class ImageFeatureTestCase(unittest.TestCase):
         }
         self.assertLess(id_to_idx["alpha"], id_to_idx["alpha/beta"])
         self.assertLess(id_to_idx["bad_mode:alpha"], id_to_idx["alpha/beta"])
+        self.assertLess(id_to_idx["foo"], id_to_idx["foo/bar"])
+        self.assertLess(id_to_idx["foo"], id_to_idx["foo/borf"])
+        self.assertLess(id_to_idx["foo/borf"], id_to_idx["foo/borf/beep"])
+        self.assertLess(id_to_idx["foo/bar"], id_to_idx["foo/bar/baz"])
+        self.assertLess(id_to_idx["foo/bar"], id_to_idx["foo/fighter"])
+        self.assertLess(id_to_idx["foo/bar"], id_to_idx["foo/face"])
         self.assertLess(
-            id_to_idx["foo/borf/beep"], id_to_idx["foo/borf/hello_world"]
+            id_to_idx["foo/borf"], id_to_idx["foo/borf/hello_world"]
         )
 
 

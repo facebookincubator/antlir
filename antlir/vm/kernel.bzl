@@ -150,7 +150,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, extra_modules = None,
             # If the devel headers/source are needed they will be
             # bind mounted into place on this directory. This is here
             # to support that.
-            image.mkdir("/", "build"),
+            image.ensure_subdirs_exist("/", "build"),
         ],
     )
 
