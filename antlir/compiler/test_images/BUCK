@@ -173,7 +173,7 @@ image.feature(
         image.ensure_subdirs_exist("/foo/bar", "baz"),
         image.ensure_dirs_exist(
             "/alpha",
-            mode = "a+rw",
+            mode = "a+rx",
         ),
         image.ensure_subdirs_exist(
             "/alpha",
