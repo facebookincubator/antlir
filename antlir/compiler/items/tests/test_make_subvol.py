@@ -69,14 +69,14 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             item = ParentLayerItem(from_target="t", subvol=parent)
             self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
 
-            for item in reversed(
+            for ede_item in reversed(
                 list(
                     ensure_subdirs_exist_factory(
                         from_target="t", into_dir="/", subdirs_to_create="a/b"
                     )
                 )
             ):
-                item.build(parent, DUMMY_LAYER_OPTS_BA)
+                ede_item.build(parent, DUMMY_LAYER_OPTS_BA)
 
             parent_content = ["(Dir)", {"a": ["(Dir)", {"b": ["(Dir)", {}]}]}]
             self.assertEqual(parent_content, render_subvol(parent))
