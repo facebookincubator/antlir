@@ -11,7 +11,7 @@ jobs:
         run: git submodule update --init
 
       - name: Install system dependencies
-        run: sudo apt-get install -y systemd-container libcap-ng-dev
+        run: sudo apt-get install -y attr libcap-ng-dev systemd-container
 
       # createrepo_c is not packaged for Ubuntu 20.04. Until it is or until we
       # can use a hosted runner that is based on CentOS (or Fedora), compile
