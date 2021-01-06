@@ -96,7 +96,7 @@ ID_TO_ITEM = {
         from_target=T_DIRS, into_dir="/foo/bar", basename="baz"
     ),
     "alpha": EnsureDirsExistItem(
-        from_target=T_DIRS, into_dir="/", basename="alpha", mode="a+rw"
+        from_target=T_DIRS, into_dir="/", basename="alpha", mode="a+rx"
     ),
     "alpha/beta": EnsureDirsExistItem(
         from_target=T_DIRS, into_dir="/alpha", basename="beta", mode="a+rwx"
