@@ -35,7 +35,6 @@ class VMRunExecOpts(VMExecOpts):
 
 
 async def run(
-    cmd: Iterable[str],
     # common args from VMExecOpts
     bind_repo_ro: bool,
     debug: bool,
