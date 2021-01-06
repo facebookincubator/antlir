@@ -62,12 +62,20 @@ jobs:
       - name: Build all targets
         run: buck build //...
 
+      - name: Run cxx tests
+        # TODO(vmagro): cxx_tests are excluded from 'buck test' because the
+        # test runner assumes that test output ends up in a certain spot on the
+        # host, and we have so few of these it doesn't make sense to invest in
+        # fixing our wrappers for both internal and external use for right now.
+        run: buck query 'kind(cxx_test, //...)' | xargs -n1 buck run
+        continue-on-error: true
+
       - name: Run tests
         # Run all tests, excluding any that are disabled (mainly the hidden
         # layer tests)
         # TODO(vmagro): re-enable vm tests soon, right now they are
-        # known-broken due to some missing infra
-        run: buck test --always-exclude $(buck query 'set(//...) - set(//antlir/vm/...)')
+        # known-broken due to some missing infra.
+        run: buck test --always-exclude $(buck query 'set(//...) - kind(cxx_test, //...) - set(//antlir/vm/...)')
         # Not all tests pass yet, so we should be giving green signal as long
         # as the build passed in the meantime.
         continue-on-error: true
