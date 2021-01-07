@@ -8,13 +8,12 @@ import tempfile
 import unittest
 
 from antlir.artifacts_dir import find_repo_root
-from antlir.fs_utils import Path
+from antlir.fs_utils import Path, temp_dir
 
 
 class ArtifactsDirTests(unittest.TestCase):
     def test_git_repo_root(self):
-        with tempfile.TemporaryDirectory() as td:
-            td = Path(td)
+        with temp_dir() as td:
             # Make the td the repo root
             os.makedirs(td / b".git")
 
@@ -35,8 +34,7 @@ class ArtifactsDirTests(unittest.TestCase):
             )
 
     def test_hg_repo_root(self):
-        with tempfile.TemporaryDirectory() as td:
-            td = Path(td)
+        with temp_dir() as td:
             # Make the td the repo root
             os.makedirs(td / b".hg")
 
