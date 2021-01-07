@@ -5,7 +5,7 @@
 
 import unittest
 
-from antlir.artifacts_dir import find_buck_cell_root
+from antlir.artifacts_dir import find_repo_root
 from antlir.config import load_repo_config, repo_config_t
 
 
@@ -25,4 +25,4 @@ class RepoConfigTestCase(unittest.TestCase):
         self.assertIsNotNone(config.build_appliance_default)
         self.assertNotEqual(config.build_appliance_default, "")
 
-        self.assertEqual(config.repo_root, find_buck_cell_root())
+        self.assertEqual(config.repo_root, str(find_repo_root()))

@@ -16,7 +16,6 @@ import uuid
 from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from itertools import chain
-from pathlib import Path
 from typing import (
     AsyncContextManager,
     Iterable,
@@ -27,6 +26,7 @@ from typing import (
 from antlir.common import init_logging, get_logger
 from antlir.compiler.items.mount import mounts_from_image_meta
 from antlir.config import load_repo_config
+from antlir.fs_utils import Path
 from antlir.shape import Shape
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.unshare import Namespace, Unshare
@@ -174,7 +174,7 @@ async def __vm_with_stack(
     # a VM via another test binary *outside* the VM and this kind of embedding
     # can cause the sys.argv[0] of the executing binary to live outside
     # of the repo. (See the //antlir/vm/tests:kernel_panic_test)
-    repo_config = load_repo_config(path_in_repo=os.getcwd())
+    repo_config = load_repo_config(path_in_repo=Path(os.getcwd()))
 
     # Process all the mounts from the root image we are using
     mounts = mounts_from_image_meta(opts.rootfs_image.path)

@@ -60,6 +60,50 @@ def _maybe_make_symlink_to_scratch(
     return target_path
 
 
+def _find_root_path(
+    start_path: Path, sigil_name: str, is_dir: bool
+) -> Optional[Path]:
+    root_path = start_path.abspath()
+    while True:
+        if root_path.realpath() == Path("/"):  # No infinite loop on //
+            return None
+        maybe_sigil_path = root_path / sigil_name
+        if maybe_sigil_path.exists() and (
+            os.path.isdir(maybe_sigil_path)
+            if is_dir
+            else os.path.isfile(maybe_sigil_path)
+        ):
+            return root_path
+        root_path = root_path.dirname()
+
+
+def find_repo_root(path_in_repo: Optional[Path] = None) -> Path:
+    """
+    Find the path of the VCS repository root.  This could be the same thing
+    as `find_buck_cell_root` but importantly, it might not be.  Buck has the
+    concept of cells, of which many can be contained within a single VCS
+    repository.  When you need to know the actual root of the VCS repo, use
+    this method.
+    """
+
+    # We have to start somewhere reasonable.  If we don't get an explicit path
+    # start from the location of the binary being executed.
+    path_in_repo = path_in_repo or Path(sys.argv[0]).dirname()
+
+    repo_root = _find_root_path(
+        path_in_repo, ".hg", is_dir=True
+    ) or _find_root_path(path_in_repo, ".git", is_dir=True)
+
+    if repo_root:
+        return repo_root
+
+    # If we got this far we never found the repo root
+    raise RuntimeError(
+        f"No hg or git root found in any ancestor of {path_in_repo}."
+        f" Is this an hg or git repo?"
+    )
+
+
 def find_buck_cell_root(path_in_repo: Optional[str] = None) -> str:
     """
     If the caller does not provide a path known to be in the repo, a reasonable
@@ -77,13 +121,13 @@ def find_buck_cell_root(path_in_repo: Optional[str] = None) -> str:
         [path_in_repo] if path_in_repo else [os.getcwd(), sys.argv[0]]
     )
     for path_in_repo in paths_to_try:
-        repo_path = os.path.abspath(path_in_repo)
-        while True:
-            if os.path.realpath(repo_path) == "/":  # No infinite loop on //
-                break
-            if os.path.exists(os.path.join(repo_path, ".buckconfig")):
-                return repo_path
-            repo_path = os.path.dirname(repo_path)
+        cell_path = _find_root_path(
+            Path(path_in_repo), ".buckconfig", is_dir=False
+        )
+        if cell_path:
+            # Future: this should just use Path, but we have to finish
+            # converting all the downstream uses of this first
+            return str(cell_path)
 
     # If we got this far we never found the cell root
     raise RuntimeError(
