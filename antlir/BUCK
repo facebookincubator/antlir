@@ -67,7 +67,7 @@ export_file(
     python_unittest(
         name = "test-fs-utils-path-resource-" + style,
         srcs = {
-            "//antlir:tests/test_fs_utils_path_resource.py": "tests/test_fs_utils_path_resource.py",
+            ":tests/test_fs_utils_path_resource.py": "tests/test_fs_utils_path_resource.py",
         },
         par_style = style,
         resources = {":test-helper-binary": "tests/helper-binary"},
