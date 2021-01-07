@@ -60,7 +60,7 @@ def _maybe_make_symlink_to_scratch(
     return target_path
 
 
-def _find_root_path(
+def _first_parent_containing_sigil(
     start_path: Path, sigil_name: str, is_dir: bool
 ) -> Optional[Path]:
     root_path = start_path.abspath()
@@ -90,9 +90,9 @@ def find_repo_root(path_in_repo: Optional[Path] = None) -> Path:
     # start from the location of the binary being executed.
     path_in_repo = path_in_repo or Path(sys.argv[0]).dirname()
 
-    repo_root = _find_root_path(
+    repo_root = _first_parent_containing_sigil(
         path_in_repo, ".hg", is_dir=True
-    ) or _find_root_path(path_in_repo, ".git", is_dir=True)
+    ) or _first_parent_containing_sigil(path_in_repo, ".git", is_dir=True)
 
     if repo_root:
         return repo_root
@@ -121,7 +121,7 @@ def find_buck_cell_root(path_in_repo: Optional[str] = None) -> str:
         [path_in_repo] if path_in_repo else [os.getcwd(), sys.argv[0]]
     )
     for path_in_repo in paths_to_try:
-        cell_path = _find_root_path(
+        cell_path = _first_parent_containing_sigil(
             Path(path_in_repo), ".buckconfig", is_dir=False
         )
         if cell_path:
