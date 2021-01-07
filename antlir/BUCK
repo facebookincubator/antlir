@@ -186,6 +186,14 @@ python_library(
     deps = [":fs_utils"],
 )
 
+python_unittest(
+    name = "test-artifacts-dir",
+    srcs = ["tests/test_artifacts_dir.py"],
+    deps = [
+        ":artifacts_dir",
+    ],
+)
+
 python_library(
     name = "subvolume_garbage_collector",
     srcs = ["subvolume_garbage_collector.py"],
