@@ -100,28 +100,7 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 render_subvol(subvol),
             )
 
-    def test_ensure_dirs_exist_item_stat_mismatch(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
-            subvol = temp_subvolumes.create("ensure-dirs-exist-item")
-            subvol.run_as_root(["mkdir", "-p", subvol.path("j")])
-            good = {
-                "from_target": "t",
-                "into_dir": "j",
-                "basename": "k",
-                "mode": 0o777,
-            }
-            EnsureDirsExistItem(**good).build(subvol, DUMMY_LAYER_OPTS_BA)
-            # Fail on different attributes
-            with self.assertRaises(subprocess.CalledProcessError):
-                EnsureDirsExistItem(**{**good, "mode": 0o775}).build(
-                    subvol, DUMMY_LAYER_OPTS_BA
-                )
-            with self.assertRaises(subprocess.CalledProcessError):
-                EnsureDirsExistItem(**{**good, "user_group": "77:88"}).build(
-                    subvol, DUMMY_LAYER_OPTS_BA
-                )
-
-    def test_ensure_dirs_exist_item_stat_chmod_str_mismatch(self):
+    def test_ensure_dirs_exist_item_stat_check(self):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.create("ensure-dirs-exist-item")
             subvol.run_as_root(["mkdir", "-p", subvol.path("m")])
@@ -132,7 +111,19 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 "mode": "u+rw",
             }
             EnsureDirsExistItem(**good).build(subvol, DUMMY_LAYER_OPTS_BA)
+            EnsureDirsExistItem(**{**good, "mode": 0o600}).build(
+                subvol, DUMMY_LAYER_OPTS_BA
+            )
+            # Fail on different attributes
+            with self.assertRaises(subprocess.CalledProcessError):
+                EnsureDirsExistItem(**{**good, "mode": 0o775}).build(
+                    subvol, DUMMY_LAYER_OPTS_BA
+                )
             with self.assertRaises(subprocess.CalledProcessError):
                 EnsureDirsExistItem(**{**good, "mode": "u+rwx"}).build(
+                    subvol, DUMMY_LAYER_OPTS_BA
+                )
+            with self.assertRaises(subprocess.CalledProcessError):
+                EnsureDirsExistItem(**{**good, "user_group": "77:88"}).build(
                     subvol, DUMMY_LAYER_OPTS_BA
                 )

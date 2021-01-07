@@ -12,6 +12,7 @@ from ..stat_options import mode_to_octal_str
 class StatOptionsTestCase(unittest.TestCase):
     def test_mode_to_octal_str(self):
         str_to_octal = {
+            # Regular permissions 'rwx'
             "a+rx,u+w": "0755",
             "u+w,a+xr": "0755",
             "a+wrx": "0777",
@@ -23,7 +24,21 @@ class StatOptionsTestCase(unittest.TestCase):
             "a+r,o+w": "0446",
             "a+r,a+w,u+x": "0766",
             "u+x": "0100",
+            "+x": "0111",
             "": "0000",
+            # Sticky bit 't'
+            "+t": "1000",
+            "+tx": "1111",
+            "u+t,a+r": "0444",
+            "a+t,a+r": "1444",
+            # Set on execution bit 's'
+            "u+sr": "4400",
+            "g+sw": "2020",
+            "a+srx": "6555",
+            "u+s,g+s": "6000",
+            "u+s,g+s,a+s": "6000",
+            "ug+s": "6000",
+            "ug+s,a+trx": "7555",
         }
         for val, exp in str_to_octal.items():
             res = mode_to_octal_str(val)
