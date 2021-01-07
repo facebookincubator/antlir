@@ -328,6 +328,7 @@ def _impl_python_unittest(
         par_style = None,
         tags = None,
         resources = None,
+        srcs = None,
         **kwargs):
     native.python_test(
         deps = _normalize_deps(deps),
@@ -335,6 +336,7 @@ def _impl_python_unittest(
         needed_coverage = _normalize_coverage(needed_coverage),
         package_style = _normalize_pkg_style(par_style),
         resources = _normalize_resources(resources),
+        srcs = _invert_dict(srcs),
         **kwargs
     )
 
