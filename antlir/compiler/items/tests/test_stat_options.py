@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import subprocess
+import tempfile
 import unittest
 
 from ..stat_options import mode_to_octal_str
@@ -11,42 +13,50 @@ from ..stat_options import mode_to_octal_str
 
 class StatOptionsTestCase(unittest.TestCase):
     def test_mode_to_octal_str(self):
-        str_to_octal = {
+        inputs = [
             # Regular permissions 'rwx'
-            "a+rx,u+w": "0755",
-            "u+w,a+xr": "0755",
-            "a+wrx": "0777",
-            "u+wrx,g+xrw,o+rwx": "0777",
-            "u+wrx,og+xrw": "0777",
-            "u+wrx,og+r": "0744",
-            "uog+w": "0222",
-            "u+wrx,g+xrw,o+rwx,a+r": "0777",
-            "a+r,o+w": "0446",
-            "a+r,a+w,u+x": "0766",
-            "u+x": "0100",
-            "+x": "0111",
-            "": "0000",
+            "",
+            "+x",
+            "u+x",
+            "a+rx,u+w",
+            "u+w,a+xr",
+            "a+wrx",
+            "u+wrx,g+xrw,o+rwx",
+            "u+wrx,og+xrw",
+            "u+wrx,og+r",
+            "uog+w",
+            "u+wrx,g+xrw,o+rwx,a+r",
+            "a+r,o+w",
+            "a+r,a+w,u+x",
             # Sticky bit 't'
-            "+t": "1000",
-            "+tx": "1111",
-            "u+t,a+r": "0444",
-            "a+t,a+r": "1444",
+            "+t",
+            "+tx",
+            "u+t,a+r",
+            "a+t,a+r",
             # Set on execution bit 's'
-            "u+sr": "4400",
-            "g+sw": "2020",
-            "a+srx": "6555",
-            "u+s,g+s": "6000",
-            "u+s,g+s,a+s": "6000",
-            "ug+s": "6000",
-            "ug+s,a+trx": "7555",
-        }
-        for val, exp in str_to_octal.items():
-            res = mode_to_octal_str(val)
-            self.assertEqual(
-                exp,
-                mode_to_octal_str(val),
-                f"Expected {val} to produce {exp}, got {res}",
-            )
+            "u+sr",
+            "g+sw",
+            "ug+s",
+            "a+srx",
+            "u+s,g+s",
+            "u+s,g+s,a+s",
+            "ug+s,a+trx",
+        ]
+        with tempfile.TemporaryDirectory() as td:
+            for val in inputs:
+                subprocess.check_call(
+                    ["chmod", f"a-rwxXst{',' + val if val else ''}", td]
+                )
+                stat_res = subprocess.check_output(
+                    ["stat", "--format=%a", td], text=True
+                ).strip()
+                stat_oct = f"{int(stat_res, base=8):04o}"
+                conversion = mode_to_octal_str(val)
+                self.assertEqual(
+                    stat_oct,
+                    conversion,
+                    f"Expected {val} to produce {stat_oct}, got {conversion}",
+                )
 
     def test_mode_to_octal_str_errs(self):
         with self.assertRaisesRegex(AssertionError, "Only append actions"):
