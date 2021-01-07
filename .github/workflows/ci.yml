@@ -59,9 +59,6 @@ jobs:
       - name: Build base image(s)
         run: buck build //images/base/...
 
-      - name: Build all targets
-        run: buck build //...
-
       - name: Run cxx tests
         # TODO(vmagro): cxx_tests are excluded from 'buck test' because the
         # test runner assumes that test output ends up in a certain spot on the
@@ -77,7 +74,11 @@ jobs:
         # assumes that test output ends up in a certain spot on the host.
         # TODO(vmagro): re-enable vm tests soon, right now they are
         # known-broken due to some missing infra.
-        run: buck test --always-exclude $(buck query 'set(//...) - kind(cxx_test, //...) - set(//antlir/vm/...)')
-        # Not all tests pass yet, so we should be giving green signal as long
-        # as the build passed in the meantime.
-        continue-on-error: true
+        # TODO(lsalis): re-enable locale tests when there is a working
+        # alternative to build-locale-archive for fedora
+        run: |
+            buck test --always-exclude $(buck query 'set(//...) - kind(cxx_test, //...) - set(//antlir/vm/...) - set(//antlir/bzl/foreign/locale/...)') --xml tests.xml > buck.log 2> buck.err || true
+            echo Buck stderr
+            cat buck.err
+            echo Test results
+            ./tools/results_parser.py tests.xml

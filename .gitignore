@@ -7,3 +7,5 @@ buck-image-out
 **/*.swp
 .vscode/
 *.local
+
+__pycache__/
