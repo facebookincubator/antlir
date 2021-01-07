@@ -31,6 +31,17 @@ _STAT_PERMS = {
     "r": 0b100,
     "w": 0b010,
     "x": 0b001,
+    # These are handled separately
+    "s": 0b000,
+    "t": 0b000,
+}
+# Handle sticky and "set on execution" bits separately as they only apply to
+# certain classes, and are always applied to the 3 leftmost bits
+_STAT_EXTRA_PERMS = {
+    ("s", "u"): 0b100,
+    ("s", "g"): 0b010,
+    ("s", "a"): 0b110,
+    ("t", "a"): 0b001,
 }
 
 
@@ -48,9 +59,8 @@ def mode_to_octal_str(mode: Mode) -> str:
     added restrictions:
 
     - Only append ("+") actions are supported, as we always apply the changes on
-      top of mode 0
-    - Only simple permissions ("rwx") are supported (i.e. no "X" or "s"). This
-      is because this conversion must also be compatible with `stat`.
+      top of mode 0.
+    - No "X" is supported, as this conversion must be compatible with `stat(1)`.
     """
     # `mode` can be the empty string
     mode = mode or 0
@@ -62,25 +72,30 @@ def mode_to_octal_str(mode: Mode) -> str:
     result = 0
     for directive in mode.split(","):
         try:
-            lhs, rhs = directive.split("+", maxsplit=1)
+            classes, perms = directive.split("+")
         except ValueError:
             raise ValueError(
                 "Expected directive in the form [classes...]+[perms...] "
                 f"for {mode}"
             )
-        for stat_cls in lhs:
+        # Support empty classes
+        classes = classes or ["a"]
+        for stat_cls in classes:
             stat_cls_fn = _STAT_CLASSES.get(stat_cls, None)
             assert stat_cls_fn, (
                 f'Only classes of "{",".join(_STAT_CLASSES.keys())}" '
                 "are supported when setting mode"
             )
-            for action in rhs:
-                mask = _STAT_PERMS.get(action, None)
-                assert mask, (
-                    f'Only permissions of "{",".join(_STAT_PERMS.keys())}" '
-                    "are supported when setting mode"
-                )
-                result |= stat_cls_fn(mask)
+            for perm in perms:
+                if perm in {"s", "t"}:
+                    result |= _STAT_EXTRA_PERMS.get((perm, stat_cls), 0) << 9
+                else:
+                    mask = _STAT_PERMS.get(perm, None)
+                    assert mask, (
+                        f'Only permissions of "{",".join(_STAT_PERMS.keys())}" '
+                        "are supported when setting mode"
+                    )
+                    result |= stat_cls_fn(mask)
     return f"{result:04o}"
 
 
