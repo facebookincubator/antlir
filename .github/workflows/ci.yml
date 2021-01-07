@@ -73,6 +73,8 @@ jobs:
       - name: Run tests
         # Run all tests, excluding any that are disabled (mainly the hidden
         # layer tests)
+        # TODO(vmagro): cxx_test is excluded because the Buck test runner
+        # assumes that test output ends up in a certain spot on the host.
         # TODO(vmagro): re-enable vm tests soon, right now they are
         # known-broken due to some missing infra.
         run: buck test --always-exclude $(buck query 'set(//...) - kind(cxx_test, //...) - set(//antlir/vm/...)')
