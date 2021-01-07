@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from io import StringIO
 
@@ -114,6 +115,28 @@ class TestFsUtils(unittest.TestCase):
                     i_exist.exists(raise_permission_error=True)
             finally:
                 os.chmod(td, old_mode)
+
+    def test_path_wait_for(self):
+        with tempfile.TemporaryDirectory() as td:
+            to_wait_for = Path(td) / "will_you_wait_for_me"
+
+            def _make_file():
+                to_wait_for.touch()
+
+            t = threading.Timer(0.5, _make_file)
+            t.start()
+
+            # This will return without an exception
+            to_wait_for.wait_for()
+
+            # Just to be sure
+            t.cancel()
+
+            # Reset the file to re-run the test for negative assertion
+            os.unlink(to_wait_for)
+
+            with self.assertRaises(FileNotFoundError):
+                to_wait_for.wait_for(timeout_sec=0.2)
 
     def test_path_format(self):
         first = Path("a/b")
