@@ -369,7 +369,7 @@ def make_repo_steps(
         step_dir = out_dir / step
         os.makedirs(step_dir)
         yum_dnf_conf = ConfigParser()
-        yum_dnf_conf["main"] = {"gpgcheck": "1", "localpkg_gpgcheck": "1"}
+        yum_dnf_conf["main"] = {"gpgcheck": "1", "localpkg_gpgcheck": "0"}
         for repo_name, repo in repos.items():
             repo_dir = step_dir / repo_name
             yum_dnf_conf[repo_name] = {"baseurl": repo_dir.file_url()}

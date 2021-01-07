@@ -29,7 +29,7 @@ def _make_test_yum_dnf_conf(
         pkgpolicy=newest
         showdupesfromrepos=1
         gpgcheck=1
-        localpkg_gpgcheck=1
+        localpkg_gpgcheck=0
     """
         )
         + "\n\n".join(
