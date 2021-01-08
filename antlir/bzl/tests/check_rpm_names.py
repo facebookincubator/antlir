@@ -13,7 +13,11 @@ def check_rpm_names(test_case, package, resource):
     with Path.resource(package, resource, exe=False) as expected_path, open(
         expected_path
     ) as expected_file:
-        expected = {s.strip("\n") for s in expected_file}
+        expected = {
+            # `rpms-with-reason` adds a TAB-separated reason to the RPM name
+            s.split("\t")[0].strip()
+            for s in expected_file
+        }
     test_case.assertEqual(
         expected,
         {
