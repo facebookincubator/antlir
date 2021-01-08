@@ -40,7 +40,6 @@ class VMTestExecOpts(VMExecOpts):
 
     devel_layer: bool = False
     interactive: bool = False
-    timeout: int = 0
     setenv: List[str] = []
     sync_file: List[Path] = []
     test_binary: Path
@@ -64,13 +63,6 @@ class VMTestExecOpts(VMExecOpts):
             default=False,
             help="Boot into the VM for manual interaction. This will setup the "
             "test but will not execute it.",
-        )
-        parser.add_argument(
-            "--timeout",
-            type=int,
-            # TestPilot sets this environment variable
-            default=os.environ.get("TIMEOUT", 5 * MINUTE),
-            help="how many seconds to wait for the test to finish",
         )
         parser.add_argument(
             "--setenv",
@@ -116,6 +108,7 @@ async def run(
     debug: bool,
     extra: List[str],
     opts: vm_opts_t,
+    timeout_ms: int,
     # antlir.vm.vmtest specific args
     devel_layer: bool,
     gtest_list_tests: bool,
@@ -125,7 +118,6 @@ async def run(
     sync_file: List[str],
     test_binary: Path,
     test_binary_image: Path,
-    timeout: int,
 ) -> None:
 
     # Start the test binary directly to list out test cases instead of
@@ -156,7 +148,6 @@ async def run(
     # If we've made it this far we are executing the actual test, not just
     # listing tests
     returncode = -1
-    start_time = time.time()
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
     # Build shares to provide to the vm
@@ -189,12 +180,9 @@ async def run(
         verbose=debug,
         interactive=interactive,
         shares=shares,
-    ) as instance:
-
-        boot_time_elapsed = time.time() - start_time
-        logger.debug(f"VM took {boot_time_elapsed} seconds to boot")
+        timeout_ms=timeout_ms,
+    ) as (instance, boot_elapsed_ms, timeout_ms):
         if not interactive:
-
             # Sync the file which tpx needs from the vm to the host.
             file_arguments = list(sync_file)
             for arg in extra:
@@ -221,13 +209,8 @@ async def run(
             logger.debug(f"executing {cmd} inside guest")
             returncode, stdout, stderr = await instance.run(
                 cmd=cmd,
-                # a certain amount of the total timeout is allocated for
-                # the host to boot, subtract the amount of time it actually
-                # took, so that vmtest times out internally before choking
-                # to TestPilot, which gives the same end result but should
-                # allow for some slightly better logging opportunities
-                # Give at least 10s (sometimes this can even be negative)
-                timeout=max(timeout - boot_time_elapsed - 1, 10),
+                # Future: support ms precision for timeouts
+                timeout=timeout_ms / 1000,
                 env=test_env,
                 # TODO(lsalis):  This is currently needed due to how some
                 # cpp_unittest targets depend on artifacts in the code
