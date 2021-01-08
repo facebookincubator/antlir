@@ -109,13 +109,14 @@ class Path(bytes):
         except FileNotFoundError:
             return False
 
-    def wait_for(self, timeout_sec=5):
+    def wait_for(self, timeout_ms=5000) -> int:
+        start_ms = int(time.monotonic() * 1000)
         elapsed_ms = 0
-        while elapsed_ms < timeout_sec * 1000:
+        while elapsed_ms < timeout_ms:
             if self.exists(raise_permission_error=False):
-                return
+                return elapsed_ms
             time.sleep(0.1)
-            elapsed_ms = elapsed_ms + 100
+            elapsed_ms = int(time.monotonic() * 1000) - start_ms
 
         raise FileNotFoundError(self)
 
