@@ -3,6 +3,15 @@ load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helper
 load("//antlir/bzl:oss_shim.bzl", "default_vm_image", "export_file", "python_unittest")
 load("//antlir/bzl:vm.bzl", "vm")
 
+python_unittest(
+    name = "test-vm",
+    srcs = ["test_vm.py"],
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir/vm:vm",
+    ],
+)
+
 # Don't run this test directly, it should only be used within
 # `:test-kernel-panic`.
 vm.python_unittest(

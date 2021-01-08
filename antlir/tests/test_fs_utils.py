@@ -123,11 +123,12 @@ class TestFsUtils(unittest.TestCase):
             def _make_file():
                 to_wait_for.touch()
 
-            t = threading.Timer(0.5, _make_file)
+            t = threading.Timer(0.1, _make_file)
             t.start()
 
             # This will return without an exception
-            to_wait_for.wait_for()
+            elapsed_ms = to_wait_for.wait_for(timeout_ms=100000)
+            self.assertTrue(elapsed_ms > 0)
 
             # Just to be sure
             t.cancel()
@@ -136,7 +137,7 @@ class TestFsUtils(unittest.TestCase):
             os.unlink(to_wait_for)
 
             with self.assertRaises(FileNotFoundError):
-                to_wait_for.wait_for(timeout_sec=0.2)
+                to_wait_for.wait_for(timeout_ms=100)
 
     def test_path_format(self):
         first = Path("a/b")

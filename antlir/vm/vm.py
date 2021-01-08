@@ -9,9 +9,11 @@ import asyncio
 import importlib.resources
 import os
 import shlex
+import socket
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
 from dataclasses import dataclass
@@ -19,6 +21,7 @@ from itertools import chain
 from typing import (
     AsyncContextManager,
     Iterable,
+    NamedTuple,
     Optional,
     List,
 )
@@ -39,24 +42,58 @@ from antlir.vm.vm_opts_t import vm_opts_t
 logger = get_logger()
 
 
-async def __wait_for_boot(sockfile: os.PathLike) -> None:
-    """
-    The guest sends a READY message to this socket when it is ready to run
-    a test. Block until that message is received.
-    """
-    # qemu might not have started up on the first couple connection attempts,
-    # so wait until it binds to this socket path
-    logger.debug("connecting to qemu guest notify socket")
-    while True:
-        try:
-            conn_r, _ = await asyncio.open_unix_connection(sockfile)
-            break
-        except FileNotFoundError:
-            await asyncio.sleep(0.1)
+class VMBootError(Exception):
+    """The VM failed to boot"""
 
-    logger.debug("waiting for guest boot event")
-    await conn_r.readline()
-    logger.debug("received guest boot event")
+    pass
+
+
+def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:
+    """
+    The guest sends a READY message to the unix domain socket when it has
+    reached the booted state.  This will wait for up to `timeout_sec` seconds
+    the notify socket to actually show up and be connectable, and then wait
+    for the remaining amount of `timeout_sec` for the actual boot event.
+
+    This method returns the number of milliseconds that it took to receive the
+    boot event from inside the VM.
+    """
+    start_ms = int(time.monotonic() * 1000)
+    # The emulator is the thing that actually ends up creating the uds file, so
+    # we might have to wait a bit for the file to show up.
+    logger.debug(f"Waiting {timeout_ms}ms for notify socket: {sockfile}")
+    try:
+        elapsed_ms = sockfile.wait_for(timeout_ms=timeout_ms)
+    except FileNotFoundError as fnfe:
+        logger.debug(f"Notify socket never showed up: {fnfe}")
+        raise VMBootError(f"Timeout waiting for notify socket: {fnfe}")
+
+    # Calculate how much time we have left for the recv portion of this.
+    # The socket APIs operate in seconds, so we have to convert, floats are ok.
+    recv_timeout_sec = (timeout_ms - elapsed_ms) / 1000
+    logger.debug(f"Connecting to notify socket: {sockfile}")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        try:
+            logger.debug(
+                f"Waiting {recv_timeout_sec:.4f}s for boot event: {sockfile}"
+            )
+            sock.settimeout(recv_timeout_sec)
+            sock.connect(sockfile)
+
+            # Note: we don't really read anything from this socket, we just wait
+            # for *some* data to show up. In the future we could have the notify
+            # service that runs in the VM actually send some useful data that
+            # we could use.
+            sock.recv(16)
+            logger.debug("Guest boot event received")
+
+            # Return "real" elapsed_ms since we started
+            return int(time.monotonic() * 1000) - start_ms
+
+        except socket.timeout:
+            elapsed_ms = int(time.monotonic() * 1000) - start_ms
+            logger.debug(f"socket timeout after {elapsed_ms}ms")
+            raise VMBootError(f"Timeout waiting for boot event: {timeout_ms}ms")
 
 
 class VMExecOpts(Shape):
@@ -156,8 +193,10 @@ async def __vm_with_stack(
     guest_agent_sockfile = os.path.join(
         tempfile.gettempdir(), "vmtest_guest_agent" + uuid.uuid4().hex + ".sock"
     )
-    notify_sockfile = os.path.join(
-        tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
+    notify_sockfile = Path(
+        os.path.join(
+            tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
+        )
     )
 
     # Set defaults
@@ -289,7 +328,7 @@ async def __vm_with_stack(
         f"socket,path={guest_agent_sockfile},server,nowait,id=qga0",
         "-device",
         "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0",
-        # socket/serial device pair (for use by __wait_for_boot)
+        # socket/serial device pair (for use by _wait_for_boot)
         "-chardev",
         f"socket,path={notify_sockfile},id=notify,server",
         "-device",
@@ -347,14 +386,15 @@ async def __vm_with_stack(
             stderr=subprocess.STDOUT,
         )
 
-    await __wait_for_boot(notify_sockfile)
-
-    logger.debug(f"guest link-local ipv6: {tapdev.guest_ipv6_ll}")
-
     try:
+        boot_elapsed_ms = _wait_for_boot(notify_sockfile)
+        logger.debug(f"VM boot time: {boot_elapsed_ms}ms")
+        logger.debug(f"VM ipv6: {tapdev.guest_ipv6_ll}")
         yield QemuGuestAgent(guest_agent_sockfile)
     except QemuError as err:
-        print(f"Qemu failed with error: {err}", flush=True, file=sys.stderr)
+        logger.error(f"Qemu failed with error: {err}")
+    except VMBootError as vbe:
+        logger.error(f"VM failed to boot: {vbe}")
     finally:
         if interactive:
             logger.debug("waiting for interactive vm to shutdown")
