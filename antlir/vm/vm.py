@@ -110,6 +110,9 @@ class VMExecOpts(Shape):
     opts: vm_opts_t
     # Enable debug logs
     debug: bool = False
+    # How many millis to allow the VM to run.  The timeout starts
+    # as soon as the emulator process is spawned.
+    timeout_ms: int = 300 * 1000
 
     # Future:  Since we're using `Shape` for this, which uses pydantic.  I
     # think it is possible automagically construct this based on the field
@@ -152,6 +155,22 @@ class VMExecOpts(Shape):
             help="Show debug logs",
         )
 
+        parser.add_argument(
+            "--timeout",
+            dest="timeout_ms",
+            # We want to allow the cli to specify seconds, mostly because that
+            # is what external tools that invoke this will use.  But internally
+            # we want to use millis, so we'll convert it right here to avoid
+            # any confusion later.
+            type=lambda t: int(t) * 1000,
+            # Inside FB some tools set an env var instead of passing an
+            # option. Maybe we can get rid of this if we fix the few
+            # tools that call this.
+            default=os.environ.get("TIMEOUT", 300 * 1000),
+            help="How many seconds to allow the VM to run.  The clock starts "
+            "as soon as the emulator is spawned.",
+        )
+
     @classmethod
     def parse_cli(cls, argv) -> "VMExecOpts":
         """
@@ -184,6 +203,7 @@ class VMExecOpts(Shape):
 async def __vm_with_stack(
     stack: AsyncExitStack,
     opts: vm_opts_t,
+    timeout_ms: int,
     bind_repo_ro: bool = False,
     verbose: bool = False,
     interactive: bool = False,
@@ -387,14 +407,23 @@ async def __vm_with_stack(
         )
 
     try:
-        boot_elapsed_ms = _wait_for_boot(notify_sockfile)
-        logger.debug(f"VM boot time: {boot_elapsed_ms}ms")
+        boot_elapsed_ms = _wait_for_boot(notify_sockfile, timeout_ms=timeout_ms)
+        timeout_ms = timeout_ms - boot_elapsed_ms
+        logger.debug(
+            f"VM boot time: {boot_elapsed_ms}ms, "
+            f"timeout_ms is now: {timeout_ms}ms"
+        )
         logger.debug(f"VM ipv6: {tapdev.guest_ipv6_ll}")
-        yield QemuGuestAgent(guest_agent_sockfile)
+        yield (
+            QemuGuestAgent(guest_agent_sockfile),
+            boot_elapsed_ms,
+            timeout_ms,
+        )
     except QemuError as err:
         logger.error(f"Qemu failed with error: {err}")
     except VMBootError as vbe:
         logger.error(f"VM failed to boot: {vbe}")
+        raise RuntimeError(f"VM failed to boot: {vbe}")
     finally:
         if interactive:
             logger.debug("waiting for interactive vm to shutdown")

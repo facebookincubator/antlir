@@ -40,6 +40,7 @@ async def run(
     debug: bool,
     extra: List[str],
     opts: vm_opts_t,
+    timeout_ms: int,
     # antlir.vm.run specific args
     cmd: List[str],
 ):
@@ -47,8 +48,9 @@ async def run(
         bind_repo_ro=bind_repo_ro,
         opts=opts,
         verbose=debug,
+        timeout_ms=timeout_ms,
         interactive=cmd == ["/bin/bash"],
-    ) as instance:
+    ) as (instance, _, _):
         returncode, _, _ = await instance.run(cmd)
 
     sys.exit(returncode)
