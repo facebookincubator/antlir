@@ -15,7 +15,7 @@ from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import get_logger
 from antlir.fs_utils import Path
 from antlir.vm.share import BtrfsDisk, Plan9Export
-from antlir.vm.vm import vm, VMExecOpts
+from antlir.vm.vm import ShellMode, vm, VMExecOpts
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
@@ -39,7 +39,6 @@ class VMTestExecOpts(VMExecOpts):
     """
 
     devel_layer: bool = False
-    interactive: bool = False
     setenv: List[str] = []
     sync_file: List[Path] = []
     test_binary: Path
@@ -56,13 +55,6 @@ class VMTestExecOpts(VMExecOpts):
             action="store_true",
             default=False,
             help="Provide the kernel devel layer as a mount to the booted VM",
-        )
-        parser.add_argument(
-            "--interactive",
-            action="store_true",
-            default=False,
-            help="Boot into the VM for manual interaction. This will setup the "
-            "test but will not execute it.",
         )
         parser.add_argument(
             "--setenv",
@@ -108,11 +100,11 @@ async def run(
     debug: bool,
     extra: List[str],
     opts: vm_opts_t,
+    shell: Optional[ShellMode],
     timeout_ms: int,
     # antlir.vm.vmtest specific args
     devel_layer: bool,
     gtest_list_tests: bool,
-    interactive: bool,
     list_tests: Optional[str],
     setenv: List[str],
     sync_file: List[str],
@@ -178,11 +170,15 @@ async def run(
         bind_repo_ro=bind_repo_ro,
         opts=opts,
         verbose=debug,
-        interactive=interactive,
         shares=shares,
+        shell=shell,
         timeout_ms=timeout_ms,
     ) as (instance, boot_elapsed_ms, timeout_ms):
-        if not interactive:
+        # If we are run with `--shell` mode, we don't get an instance since
+        # the --shell mode takes over.  This is a bit of a wart that exists
+        # because if a context manager doesn't yield *something* it will
+        # throw an exception that this caller has to handle.
+        if instance:
             # Sync the file which tpx needs from the vm to the host.
             file_arguments = list(sync_file)
             for arg in extra:

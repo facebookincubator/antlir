@@ -16,7 +16,7 @@ import tempfile
 import time
 import uuid
 from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
-from dataclasses import dataclass
+from enum import Enum
 from itertools import chain
 from typing import (
     AsyncContextManager,
@@ -96,6 +96,13 @@ def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:
             raise VMBootError(f"Timeout waiting for boot event: {timeout_ms}ms")
 
 
+class ShellMode(Enum):
+    console = "console"
+
+    def __str__(self):
+        return self.value
+
+
 class VMExecOpts(Shape):
     """
     This is the common set of arguments that can be passed to an `antlir.vm`
@@ -110,6 +117,8 @@ class VMExecOpts(Shape):
     opts: vm_opts_t
     # Enable debug logs
     debug: bool = False
+    # Connect to a shell inside the vm via the specified method
+    shell: Optional[ShellMode] = None
     # How many millis to allow the VM to run.  The timeout starts
     # as soon as the emulator process is spawned.
     timeout_ms: int = 300 * 1000
@@ -153,6 +162,17 @@ class VMExecOpts(Shape):
             action="store_true",
             default=True,
             help="Show debug logs",
+        )
+
+        parser.add_argument(
+            "--shell",
+            choices=list(ShellMode),
+            type=ShellMode,
+            default=None,
+            help="Connect to an interactive shell inside the VM via the "
+            "specified method.  When this option is used, no additional "
+            "commands or automation is allowed.  When you exit the shell "
+            "the VM will terminate.",
         )
 
         parser.add_argument(
@@ -206,7 +226,7 @@ async def __vm_with_stack(
     timeout_ms: int,
     bind_repo_ro: bool = False,
     verbose: bool = False,
-    interactive: bool = False,
+    shell: Optional[ShellMode] = None,
     shares: Optional[Iterable[Share]] = None,
 ):
     # we don't actually want to create files for the socket paths
@@ -389,24 +409,24 @@ async def __vm_with_stack(
 
     qemu_cmd = ns.nsenter_as_user(str(opts.emulator.path), *args)
 
-    if interactive:
-        proc = await asyncio.create_subprocess_exec(*qemu_cmd)
-    elif verbose:
-        # don't connect stdin if we are simply in verbose mode and not
-        # interactive
-        proc = await asyncio.create_subprocess_exec(
-            *qemu_cmd,
-            stdin=subprocess.PIPE,
-        )
-    else:
-        proc = await asyncio.create_subprocess_exec(
-            *qemu_cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-
     try:
+        if shell and shell == ShellMode.console:
+            proc = await asyncio.create_subprocess_exec(*qemu_cmd)
+
+        elif verbose:
+            # don't connect stdin if we are simply in verbose mode
+            proc = await asyncio.create_subprocess_exec(
+                *qemu_cmd,
+                stdin=subprocess.PIPE,
+            )
+        else:
+            proc = await asyncio.create_subprocess_exec(
+                *qemu_cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+
         boot_elapsed_ms = _wait_for_boot(notify_sockfile, timeout_ms=timeout_ms)
         timeout_ms = timeout_ms - boot_elapsed_ms
         logger.debug(
@@ -414,18 +434,24 @@ async def __vm_with_stack(
             f"timeout_ms is now: {timeout_ms}ms"
         )
         logger.debug(f"VM ipv6: {tapdev.guest_ipv6_ll}")
-        yield (
-            QemuGuestAgent(guest_agent_sockfile),
-            boot_elapsed_ms,
-            timeout_ms,
-        )
-    except QemuError as err:
-        logger.error(f"Qemu failed with error: {err}")
+
+        if shell:
+            yield (None, boot_elapsed_ms, timeout_ms)
+        else:
+            try:
+                yield (
+                    QemuGuestAgent(guest_agent_sockfile),
+                    boot_elapsed_ms,
+                    timeout_ms,
+                )
+            except QemuError as err:
+                logger.error(f"Communication with VM failed: {err}")
+
     except VMBootError as vbe:
         logger.error(f"VM failed to boot: {vbe}")
         raise RuntimeError(f"VM failed to boot: {vbe}")
     finally:
-        if interactive:
+        if shell:
             logger.debug("waiting for interactive vm to shutdown")
             await proc.wait()
 
