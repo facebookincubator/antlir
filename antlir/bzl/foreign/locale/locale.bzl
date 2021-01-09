@@ -22,7 +22,7 @@ def image_build_locale_archive(name, parent_layer, locales):
 cp /usr/lib/locale/locale-archive /usr/lib/locale/locale-archive.tmpl
 build-locale-archive --install-langs="{}"
 cp /usr/lib/locale/locale-archive /
-        """.format(":".join(locales)[:-1]),
+        """.format(":".join(locales)),
         ],
         parent_layer = parent_layer,
         rule_type = "image_build_locale_archive",
