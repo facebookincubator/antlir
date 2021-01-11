@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 load("//antlir/vm:kernel.bzl", "kernel_t", "normalize_kernel")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", "default_vm_image", "kernel_get", "third_party")

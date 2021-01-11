@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
 load("//antlir/bzl:oss_shim.bzl", "python_unittest")
 load("//antlir/bzl/image_actions:feature.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")

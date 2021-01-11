@@ -19,7 +19,7 @@ title: btrfs_diff/
   `serialized_subvol_add_fake_inode_ids` for the hardlink example.
 
 - It is problematic that we have frozen & unfrozen versions of everything,
-  with subtle distinctions in semantics besides read-only vs read-write. 
+  with subtle distinctions in semantics besides read-only vs read-write.
   For example, it is silly that I need to `freeze` to
   `assert_valid_and_complete`.  We have this wart for two reasons:
 
@@ -51,7 +51,7 @@ title: btrfs_diff/
   points:
     * `get_children` should maybe just return names, not full paths?
 
-- Consistently use `sendstream` in filenames instead of `send_stream`. 
+- Consistently use `sendstream` in filenames instead of `send_stream`.
   Rationale: `send-stream` is a compound noun, the underscore makes it
   confusable with `send stream`.
 

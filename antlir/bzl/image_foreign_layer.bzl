@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """
 The core `image.layer` abstraction deliberately prevents execution of
 arbitrary commands as part of the image build.  There are many reasons:
