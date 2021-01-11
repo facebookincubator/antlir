@@ -14,11 +14,19 @@ class InstallSignedToyRpmTestCase(unittest.TestCase):
         self.assertTrue(os.path.exists("/usr/bin/toy_src_file"))
         self.assertFalse(os.path.exists("/antlir-rpm-gpg-keys"))
 
-    def test_rpm_signature(self):
+    def test_installed_rpm_signature(self):
         info = subprocess.check_output(
-            ["rpm", "-q", "toy", "--queryformat", "%{SIGPGP:pgpsig}"], text=True
+            ["rpm", "-qi", "toy"],
+            text=True,
         )
-        self.assertRegex(info, "RSA/SHA256, .*, Key ID 4785998712764132")
+        self.assertIn("Key ID 4785998712764132", info)
+
+    def test_rpm_file_signature(self):
+        info = subprocess.check_output(
+            ["rpm", "-qip", "/antlir/toy.rpm"],
+            text=True,
+        )
+        self.assertIn("Key ID 4785998712764132", info)
 
     def test_key_import(self):
         keys = subprocess.check_output(

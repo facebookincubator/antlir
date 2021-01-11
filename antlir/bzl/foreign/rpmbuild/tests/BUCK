@@ -75,6 +75,14 @@ image.layer(
                 path = "toy.rpm",
             ),
         ]),
+        image.ensure_dirs_exist("/antlir"),
+        image.install(
+            image.source(
+                ":toy-rpm",
+                path = "toy.rpm",
+            ),
+            "/antlir/toy.rpm",
+        ),
     ],
     # The test BA has yum/dnf conf with gpgcheck=1 and localpkg_gpgcheck=1 so
     # installing an unsigned RPM will fail.
