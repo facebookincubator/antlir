@@ -99,6 +99,7 @@ buck_filegroup = shim.buck_filegroup
 buck_genrule = shim.buck_genrule
 buck_sh_binary = shim.buck_sh_binary
 buck_sh_test = shim.buck_sh_test
+buck_worker_tool = shim.buck_worker_tool
 config = shim.config
 default_vm_image = shim.default_vm_image
 export_file = shim.export_file

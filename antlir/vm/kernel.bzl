@@ -1,13 +1,14 @@
-load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 
 kernel_artifacts_t = shape.shape(
-    devel = shape.layer(),
-    modules = shape.layer(),
     vmlinuz = shape.target(),
+    # devel and modules may not exist, such as in the case of a vmlinuz with
+    # all necessary features compiled with =y
+    devel = shape.layer(optional = True),
+    modules = shape.layer(optional = True),
 )
 
 kernel_t = shape.shape(
@@ -149,7 +150,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, extra_modules = None,
             # If the devel headers/source are needed they will be
             # bind mounted into place on this directory. This is here
             # to support that.
-            image.mkdir("/", "build"),
+            image.ensure_subdirs_exist("/", "build"),
         ],
     )
 

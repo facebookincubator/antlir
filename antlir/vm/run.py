@@ -5,66 +5,77 @@
 # LICENSE file in the root directory of this source tree.
 
 import asyncio
-import importlib.resources
 import sys
-from typing import Iterable
+from typing import (
+    Iterable,
+    List,
+    Optional,
+)
 
-import click
-from antlir.common import init_logging, get_logger
-from antlir.fs_utils import Path
-from antlir.vm.common import async_wrapper
-from antlir.vm.vm import vm
+from antlir.common import get_logger
+from antlir.vm.vm import ShellMode, vm, VMExecOpts
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
-logger = get_logger()
+log = get_logger()
 
 
-@click.command()
-@click.option(
-    "--opts",
-    type=vm_opts_t.parse_raw,
-    help="Path to a serialized vm_opts_t instance containing configuration "
-    "details for the vm.",
-    required=True,
-)
-@click.option("-d", "--debug", is_flag=True, default=False)
-@click.option("-v", "--verbose", count=True)
-@click.option(
-    "--timeout",
-    type=int,
-    help="seconds to wait for cmd to complete",
-    default=60 * 60,
-)
-@click.argument("cmd", nargs=-1)
-@async_wrapper
+class VMRunExecOpts(VMExecOpts):
+    cmd: Optional[List[str]] = None
+
+    @classmethod
+    def setup_cli(cls, parser):
+        super(VMRunExecOpts, cls).setup_cli(parser)
+
+        parser.add_argument(
+            "cmd",
+            nargs="*",
+            help="The command to run inside the VM.  If no command is provided "
+            "the user will be dropped into a shell using the ShellMode.",
+        )
+
+
 async def run(
-    cmd: Iterable[str],
+    # common args from VMExecOpts
+    bind_repo_ro: bool,
     debug: bool,
+    extra: List[str],
     opts: vm_opts_t,
-    timeout: int,
-    verbose: int,
+    shell: Optional[ShellMode],
+    timeout_ms: int,
+    # antlir.vm.run specific args
+    cmd: List[str],
 ):
-    init_logging(debug=debug)
+    # This is just a shortcut so that if the user doesn't provide a command
+    # we drop them into a shell using the standard mechanism for that.
+    if not cmd:
+        shell = ShellMode.console
+
     returncode = 0
-
-    # if we didn't get a comamnd, use a shell
-    cmd = cmd or ["/bin/bash"]
-
     async with vm(
+        bind_repo_ro=bind_repo_ro,
         opts=opts,
-        verbose=verbose > 0,
-        interactive=not cmd or cmd == ["/bin/bash"],
-    ) as instance:
-        if cmd:
-            try:
-                returncode, _, _ = await instance.run(cmd, timeout=timeout)
-            except asyncio.TimeoutError:
-                click.echo(f"'{' '.join(cmd)}' timed out!", err=True)
-                sys.exit(124)
+        verbose=debug,
+        timeout_ms=timeout_ms,
+        shell=shell,
+    ) as (instance, _, _):
+        # If we are run with `--shell` mode, we don't get an instance since
+        # the --shell mode takes over.  This is a bit of a wart that exists
+        # because if a context manager doesn't yield *something* it will
+        # throw an exception that this caller has to handle.
+        if instance:
+            returncode, stdout, stderr = await instance.run(cmd)
+
+            # We want to write whatever we get from the command out to the
+            # respective fds.
+            # Note: in the near future this will be replaced with ssh,
+            # which can be setup to just write directly to the users
+            # stdout/stderr fd's instead of having to buffer like this.
+            sys.stdout.write(stdout.decode())
+            sys.stderr.write(stderr.decode())
 
     sys.exit(returncode)
 
 
 if __name__ == "__main__":
-    run()
+    asyncio.run(run(**dict(VMRunExecOpts.parse_cli(sys.argv[1:]))))

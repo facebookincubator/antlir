@@ -404,7 +404,7 @@ class NspawnPluginArgs(NamedTuple):
     # about where we need this.
     shadow_proxied_binaries: bool
     serve_rpm_snapshots: Iterable[Path] = ()
-    shadow_paths: Iterable[Path] = ()
+    shadow_paths: Iterable[Tuple[Path, Path]] = ()
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
 
 

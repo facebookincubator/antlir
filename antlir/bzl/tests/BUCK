@@ -1,6 +1,6 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
@@ -9,6 +9,13 @@ python_library(
     name = "check_rpm_names",
     srcs = ["check_rpm_names.py"],
     deps = ["//antlir:fs_utils"],
+)
+
+# Useful together with `image.test_rpm_names`
+python_binary(
+    name = "rpms-with-reason",
+    srcs = ["rpms_with_reason.py"],
+    main_module = "antlir.bzl.tests.rpms_with_reason",
 )
 
 python_library(
@@ -46,6 +53,7 @@ image.python_unittest(
     container_opts = image.opts(shadow_proxied_binaries = True),
     run_as_user = "root",
     deps = [
+        "//antlir:config",
         "//antlir:fs_utils",
         "//antlir/rpm:find_snapshot",
     ],

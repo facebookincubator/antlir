@@ -7,8 +7,8 @@
 import os
 
 from antlir.compiler.items.common import LayerOpts
+from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.install_file import InstallFileItem
-from antlir.compiler.items.make_dirs import MakeDirsItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.mount import MountItem
 from antlir.compiler.items.remove_path import RemovePathAction, RemovePathItem
@@ -27,6 +27,7 @@ T_BASE = "//antlir/compiler/test_images"
 # since that's what we are testing.
 T_DIRS = f"{T_BASE}:feature_dirs"
 T_BAD_DIR = f"{T_BASE}:feature_bad_dir"
+T_BAD_DIR_MODE_MISMATCH = f"{T_BASE}:feature_bad_dir_mode_mismatch"
 T_MOUNT = f"{T_BASE}:feature_mount"
 T_SYMLINKS = f"{T_BASE}:feature_symlinks"
 T_TAR = f"{T_BASE}:feature_tar_and_rpms"
@@ -85,17 +86,40 @@ DUMMY_LAYER_OPTS = LayerOpts(
 ID_TO_ITEM = {
     "/": FilesystemRootItem(from_target=None),
     # From `feature_dirs`:
-    "foo/bar": MakeDirsItem(
-        from_target=T_DIRS, into_dir="/", path_to_make="/foo/bar"
+    "foo": EnsureDirsExistItem(
+        from_target=T_DIRS, into_dir="/", basename="foo"
     ),
-    "foo/bar/baz": MakeDirsItem(
-        from_target=T_DIRS, into_dir="/foo/bar", path_to_make="baz"
+    "foo/bar": EnsureDirsExistItem(
+        from_target=T_DIRS, into_dir="/foo", basename="bar"
+    ),
+    "foo/bar/baz": EnsureDirsExistItem(
+        from_target=T_DIRS, into_dir="/foo/bar", basename="baz"
+    ),
+    "alpha": EnsureDirsExistItem(
+        from_target=T_DIRS, into_dir="/", basename="alpha", mode="a+rx"
+    ),
+    "alpha/beta": EnsureDirsExistItem(
+        from_target=T_DIRS, into_dir="/alpha", basename="beta", mode="a+rwx"
+    ),
+    # From `feature_bad_dir_mode_mismatch`:
+    "bad_mode:alpha": EnsureDirsExistItem(
+        from_target=T_BAD_DIR_MODE_MISMATCH,
+        into_dir="/",
+        basename="alpha",
+        mode="a+rwx",
     ),
     # From `feature_bad_dir`:
-    "foo/borf/beep": MakeDirsItem(
+    "foo/borf": EnsureDirsExistItem(
         from_target=T_BAD_DIR,
         into_dir="/foo",
-        path_to_make="borf/beep",
+        basename="borf",
+        user_group="uuu:ggg",
+        mode="mmm",
+    ),
+    "foo/borf/beep": EnsureDirsExistItem(
+        from_target=T_BAD_DIR,
+        into_dir="/foo/borf",
+        basename="beep",
         user_group="uuu:ggg",
         mode="mmm",
     ),
@@ -195,10 +219,10 @@ ID_TO_ITEM = {
         dest="/foo/bar/hello_world_again.tar",
         user_group="nobody:nobody",
     ),
-    "foo/bar/installed": MakeDirsItem(
+    "foo/bar/installed": EnsureDirsExistItem(
         from_target=T_INSTALL_FILES,
         into_dir="/foo/bar",
-        path_to_make="/installed",
+        basename="/installed",
     ),
     "foo/bar/installed/yittal-kitteh": InstallFileItem(
         from_target=T_INSTALL_FILES,

@@ -42,11 +42,12 @@ def byteme(s: AnyStr) -> bytes:
 # `init_logging` is called.  Such usage is a minor bug; rather than hide the
 # bug by never showing the debug logs, we'll make those logs visible.
 _INITIALIZED_LOGGING = False
+_ANTLIR_ROOT_LOGGER = "antlir"
 
 
 class ColorFormatter(logging.Formatter):
     _base_fmt = (
-        "\x1b[90m %(asctime)s.%(msecs)03d %(name)s:%(lineno)d "
+        "\x1b[90m %(asctime)s.%(msecs)03d %(filename)s:%(lineno)d "
         "\x1b[0m%(message)s"
     )
     _level_to_prefix = {
@@ -76,18 +77,19 @@ class ColorFormatter(logging.Formatter):
 def init_logging(*, debug: bool = False):
     global _INITIALIZED_LOGGING
     level = logging.DEBUG if debug else logging.INFO
+    logger = logging.getLogger(_ANTLIR_ROOT_LOGGER)
     # The first time around, just set up the stream handler & formatter --
     # this will be inherited by all `get_logger` instances.
     if not _INITIALIZED_LOGGING:
         _INITIALIZED_LOGGING = True
         hdlr = logging.StreamHandler()
         hdlr.setFormatter(ColorFormatter())
-        logging.root.addHandler(hdlr)
+        logger.addHandler(hdlr)
         return
     # Logging is being "explicitly" re-initialized, so we may need to update
     # the level.  We only need to touch the root logger because all others
     # use `NOTSET` per `get_logger`.
-    logging.getLogger().setLevel(level)
+    logger.setLevel(level)
 
 
 def get_logger():
@@ -95,10 +97,10 @@ def get_logger():
     if not _INITIALIZED_LOGGING:
         init_logging(debug=True)
     calling_file = os.path.basename(inspect.stack()[1].filename)
-    # Strip extension from log messages
+    # Strip extension from name of logger
     if calling_file.endswith(".py"):
         calling_file = calling_file[: -len(".py")]
-    logger = logging.getLogger(calling_file)
+    logger = logging.getLogger(_ANTLIR_ROOT_LOGGER + "." + calling_file)
     logger.setLevel(logging.NOTSET)
     return logger
 

@@ -30,12 +30,12 @@ def render_subvol(subvol: Subvol):
         subvol.set_readonly(was_readonly)
 
 
-def pop_path(render, path):
+def pop_path(render, path, *default):
     assert not isinstance(path, bytes), path  # Renderings are `str`
     parts = path.lstrip("/").split("/")
     for part in parts[:-1]:
         render = render[1][part]
-    return render[1].pop(parts[-1])
+    return render[1].pop(parts[-1], *default)
 
 
 # Future: this isn't really the right place for it, but for now we just have

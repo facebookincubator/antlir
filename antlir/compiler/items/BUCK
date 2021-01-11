@@ -118,6 +118,7 @@ python_unittest(
     },
     deps = [
         ":rpm_action_base_testlib",
+        "//antlir:config",
         "//antlir:find_built_subvol",
         "//antlir:testlib_layer_resource",
     ],
@@ -168,6 +169,37 @@ python_unittest(
     ],
 )
 
+python_library(
+    name = "ensure_dirs_exist",
+    srcs = ["ensure_dirs_exist.py"],
+    deps = [
+        ":common",
+        ":stat_options",
+        "//antlir/compiler:requires_provides",
+        "//antlir/compiler:subvolume_on_disk",
+        "//antlir/nspawn_in_subvol:ba_runner",
+        "//antlir/nspawn_in_subvol:nspawn",
+    ],
+)
+
+python_unittest(
+    name = "test-ensure-dir-exists",
+    srcs = ["tests/test_ensure_dirs_exist.py"],
+    needed_coverage = [(100, ":ensure_dirs_exist")],
+    resources = {
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
+    },
+    deps = [
+        ":common_testlib",
+        ":ensure_dirs_exist",
+        "//antlir:common",
+        "//antlir:find_built_subvol",
+        "//antlir:testlib_temp_subvolumes",
+    ],
+)
+
 # Covered by `test-items`. Future: separate test & coverage.
 python_library(
     name = "mount_utils",
@@ -199,6 +231,21 @@ python_library(
     ],
 )
 
+python_library(
+    name = "stat_options",
+    srcs = ["stat_options.py"],
+    deps = [
+        "//antlir:subvol_utils",
+        "//antlir/nspawn_in_subvol:ba_runner",
+    ],
+)
+
+python_unittest(
+    name = "test-stat-options",
+    srcs = ["tests/test_stat_options.py"],
+    deps = [":stat_options"],
+)
+
 # Future: Finish splitting this library, and tests, by item.  The only
 # challenge is to make sure that `common.py` gets coverage -- coverage of
 # its functions is currently distributed across various items.
@@ -207,9 +254,7 @@ python_library(
     srcs = [
         "common.py",
         "install_file.py",
-        "make_dirs.py",
         "remove_path.py",
-        "stat_options.py",
         "symlink.py",
         "tarball.py",
     ],
@@ -218,6 +263,7 @@ python_library(
         ":make_subvol",
         ":mount",
         ":mount_utils",
+        ":stat_options",
         ":tarball_t",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
@@ -235,7 +281,6 @@ python_unittest(
     srcs = [
         "tests/test_common.py",
         "tests/test_install_file.py",
-        "tests/test_make_dirs.py",
         "tests/test_make_subvol.py",
         "tests/test_mount.py",
         "tests/test_remove_path.py",
@@ -265,6 +310,7 @@ python_unittest(
     },
     deps = [
         ":common_testlib",
+        ":ensure_dirs_exist",
         ":items",
         ":phases_provide",  # test_mount.py uses this
         "//antlir:find_built_subvol",
@@ -279,6 +325,7 @@ python_library(
     name = "all-items",
     deps = [
         ":clone",
+        ":ensure_dirs_exist",
         ":foreign_layer",
         ":items",
         ":phases_provide",

@@ -16,8 +16,15 @@ from antlir.fs_utils import Path
 IMAGE_FILE = "image.btrfs"
 VOLUME_DIR = "volume"
 
+# The size of loop device when it is created first time. Overriding this may
+# introduce an issue: test coverage would depend on the sequence of tests.
+# For example, if we set this high in `image_layer_utils.bzl`, and low here,
+# tests would pass if a "normal" volume is created first, but fail if a "tmp"
+# volume is the first volume created.
+LOOP_SIZE = 1e11
 
-def get_volume_for_current_repo(min_free_bytes, artifacts_dir):
+
+def get_volume_for_current_repo(artifacts_dir, min_free_bytes=LOOP_SIZE):
     """
     Multiple repos need to be able to concurrently build images on the same
     host.  The cleanest way to achieve such isolation is to supply each repo
@@ -86,4 +93,5 @@ if __name__ == "__main__":  # pragma: no cover
         print("https://fburl.com/vmtest-root", file=sys.stderr)
         sys.exit(1)
 
-    print(get_volume_for_current_repo(float(sys.argv[2]), sys.argv[1]))
+    second_arg = [] if sys.argv[2] == "None" else [float(sys.argv[2])]
+    print(get_volume_for_current_repo(*[sys.argv[1]] + second_arg))

@@ -1,0 +1,10 @@
+[Unit]
+Description=Notify host that vmtest is ready
+After=qemu-guest-agent.service
+Requires=qemu-guest-agent.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/echo READY
+StandardOutput=file:/dev/virtio-ports/notify-host

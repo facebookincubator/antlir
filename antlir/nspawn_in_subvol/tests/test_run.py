@@ -20,7 +20,7 @@ from antlir.fs_utils import Path
 from antlir.tests.layer_resource import layer_resource
 from antlir.tests.temp_subvolumes import with_temp_subvols
 
-from ..args import _parse_cli_args
+from ..args import _parse_cli_args, _NOBODY_USER
 from ..cmd import _colon_quote_path, _extra_nspawn_args_and_env
 from ..common import DEFAULT_PATH_ENV
 from .base import (
@@ -88,7 +88,7 @@ class NspawnTestCase(NspawnTestBase):
             ),
         )
 
-    @mock.patch("antlir.config.find_buck_cell_root")
+    @mock.patch("antlir.config.find_repo_root")
     def test_extra_nspawn_args_bind_repo_opts(self, root_mock):
         root_mock.return_value = "/repo/root"
         # opts.bind_repo_ro
@@ -250,13 +250,15 @@ class NspawnTestCase(NspawnTestBase):
                 "--",
                 "sh",
                 "-c",
-                'touch /logs/foo && stat --format="%U %G %a" /logs && whoami',
+                'touch /logs/foo && stat --format="%u %g %a" /logs',
             ],
             stdout=subprocess.PIPE,
         )
         self.assertEqual(0, ret.returncode)
         self.assertEqual(
-            b"nobody nobody 755\nnobody\n" + self.maybe_extra_ending, ret.stdout
+            f"{_NOBODY_USER.pw_uid} {_NOBODY_USER.pw_gid} 755\n".encode()
+            + self.maybe_extra_ending,
+            ret.stdout,
         )
         # But it does not exist by default.
         self.assertEqual(
@@ -344,7 +346,12 @@ class NspawnTestCase(NspawnTestBase):
     def test_hostname(self):
         ret = self._nspawn_in(
             (__package__, "test-layer"),
-            ["--hostname=test-host.com", "--", "/bin/hostname"],
+            [
+                "--hostname=test-host.com",
+                "--",
+                "cat",
+                "/proc/sys/kernel/hostname",
+            ],
             stdout=subprocess.PIPE,
             check=True,
         )
@@ -413,16 +420,6 @@ class NspawnTestCase(NspawnTestBase):
                     + "Read-only file system",
                     ret.stdout,
                 )
-
-    def test_xar(self):
-        "Make sure that XAR binaries work in vanilla `buck run` containers"
-        ret = self._nspawn_in(
-            (__package__, "host-hello-xar"),
-            ["--", "/hello.xar"],
-            stdout=subprocess.PIPE,
-            check=True,
-        )
-        self.assertEqual(b"hello world\n" + self.maybe_extra_ending, ret.stdout)
 
     def test_mknod(self):
         "CAP_MKNOD is dropped by our runtime."
@@ -521,13 +518,19 @@ class NspawnTestCase(NspawnTestBase):
     def test_boot_unprivileged_user(self):
         ret = self._nspawn_in(
             (__package__, "bootable-systemd-os"),
-            ["--boot", "--", "/bin/whoami"],
+            ["--boot", "--", "/bin/id"],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
             check=True,
+            stderr=subprocess.PIPE,
         )
         self.assertEqual(0, ret.returncode)
-        self.assertEqual(b"nobody\n", ret.stdout)
+        # 'nobody' on the host may have a different [ug]id than 'nobody' in the
+        # image - for example on my arch host nobody:nogroup is 99:99, but in
+        # the fedora appliance image it is 65543:65543
+        self.assertRegex(
+            ret.stdout.decode(),
+            fr"uid={_NOBODY_USER.pw_uid}(\(nobody\))? gid={_NOBODY_USER.pw_gid}(\(nobody\))? groups={_NOBODY_USER.pw_gid}(\(nobody\))?\n",
+        )
         self.assertEqual(b"", ret.stderr)
 
     def test_boot_env_clean(self):

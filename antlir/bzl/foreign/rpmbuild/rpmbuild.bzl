@@ -11,8 +11,8 @@ load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:structs.bzl", "structs")
+load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:install.bzl", "image_install")
-load("//antlir/bzl/image_actions:mkdir.bzl", "image_mkdir")
 load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
 
@@ -78,12 +78,12 @@ def image_rpmbuild(
         parent_layer = parent_layer,
         features = [
             image_install(specfile, specfile_path),
-            image_mkdir("/", "rpmbuild"),
-            image_mkdir("/rpmbuild", "BUILD"),
-            image_mkdir("/rpmbuild", "BUILDROOT"),
-            image_mkdir("/rpmbuild", "RPMS"),
-            image_mkdir("/rpmbuild", "SOURCES"),
-            image_mkdir("/rpmbuild", "SPECS"),
+            image_ensure_subdirs_exist("/", "rpmbuild"),
+            image_ensure_subdirs_exist("/rpmbuild", "BUILD"),
+            image_ensure_subdirs_exist("/rpmbuild", "BUILDROOT"),
+            image_ensure_subdirs_exist("/rpmbuild", "RPMS"),
+            image_ensure_subdirs_exist("/rpmbuild", "SOURCES"),
+            image_ensure_subdirs_exist("/rpmbuild", "SPECS"),
             image_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
         ],
         visibility = [],
@@ -213,7 +213,7 @@ def image_import_rpm_public_key_layer(
     image_layer(
         name = copy_layer,
         parent_layer = parent_layer,
-        features = [image_mkdir("/", gpg_key_dir[1:])] + install_keys,
+        features = [image_ensure_subdirs_exist("/", gpg_key_dir[1:])] + install_keys,
     )
 
     import_layer = name + "-key-import"

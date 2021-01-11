@@ -36,8 +36,9 @@ Both arguments are mandatory:
     ending with a filename for the new symlink.
 
     As with `image.clone`, a traling / means that `link_name` must be a
-    pre-existing directory in the image (e.g. created via `image.mkdir`), and
-    the actual link will be placed at `link_name/(basename of link_target)`.
+    pre-existing directory in the image (e.g. created via
+    `image.ensure_dirs_exist`), and the actual link will be placed at
+    `link_name/(basename of link_target)`.
     """
     return _build_symlink_feature(link_target, link_name, "symlinks_to_dirs")
 
@@ -65,7 +66,8 @@ Both arguments are mandatory:
     ending with a filename for the new symlink.
 
     As with `image.clone`, a traling / means that `link_name` must be a
-    pre-existing directory in the image (e.g. created via `image.mkdir`), and
-    the actual link will be placed at `link_name/(basename of link_target)`.
+    pre-existing directory in the image (e.g. created via
+    `image.ensure_dirs_exist`), and the actual link will be placed at
+    `link_name/(basename of link_target)`.
     """
     return _build_symlink_feature(link_target, link_name, "symlinks_to_files")

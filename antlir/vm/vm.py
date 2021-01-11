@@ -4,23 +4,33 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import argparse
 import asyncio
 import importlib.resources
 import os
 import shlex
+import socket
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
-from dataclasses import dataclass
+from enum import Enum
 from itertools import chain
-from pathlib import Path
-from typing import AsyncContextManager, ContextManager, Iterable, Optional
+from typing import (
+    AsyncContextManager,
+    Iterable,
+    NamedTuple,
+    Optional,
+    List,
+)
 
-from antlir.common import get_logger
+from antlir.common import init_logging, get_logger
 from antlir.compiler.items.mount import mounts_from_image_meta
 from antlir.config import load_repo_config
+from antlir.fs_utils import Path
+from antlir.shape import Shape
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
@@ -32,41 +42,201 @@ from antlir.vm.vm_opts_t import vm_opts_t
 logger = get_logger()
 
 
-async def __wait_for_boot(sockfile: os.PathLike) -> None:
-    """
-    The guest sends a READY message to this socket when it is ready to run
-    a test. Block until that message is received.
-    """
-    # qemu might not have started up on the first couple connection attempts,
-    # so wait until it binds to this socket path
-    logger.debug("connecting to qemu guest notify socket")
-    while True:
-        try:
-            conn_r, _ = await asyncio.open_unix_connection(sockfile)
-            break
-        except FileNotFoundError:
-            await asyncio.sleep(0.1)
+class VMBootError(Exception):
+    """The VM failed to boot"""
 
-    logger.debug("waiting for guest boot event")
-    await conn_r.readline()
-    logger.debug("received guest boot event")
+    pass
+
+
+def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:
+    """
+    The guest sends a READY message to the unix domain socket when it has
+    reached the booted state.  This will wait for up to `timeout_sec` seconds
+    the notify socket to actually show up and be connectable, and then wait
+    for the remaining amount of `timeout_sec` for the actual boot event.
+
+    This method returns the number of milliseconds that it took to receive the
+    boot event from inside the VM.
+    """
+    start_ms = int(time.monotonic() * 1000)
+    # The emulator is the thing that actually ends up creating the uds file, so
+    # we might have to wait a bit for the file to show up.
+    logger.debug(f"Waiting {timeout_ms}ms for notify socket: {sockfile}")
+    try:
+        elapsed_ms = sockfile.wait_for(timeout_ms=timeout_ms)
+    except FileNotFoundError as fnfe:
+        logger.debug(f"Notify socket never showed up: {fnfe}")
+        raise VMBootError(f"Timeout waiting for notify socket: {fnfe}")
+
+    # Calculate how much time we have left for the recv portion of this.
+    # The socket APIs operate in seconds, so we have to convert, floats are ok.
+    recv_timeout_sec = (timeout_ms - elapsed_ms) / 1000
+    logger.debug(f"Connecting to notify socket: {sockfile}")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        try:
+            logger.debug(
+                f"Waiting {recv_timeout_sec:.4f}s for boot event: {sockfile}"
+            )
+            sock.settimeout(recv_timeout_sec)
+            sock.connect(sockfile)
+
+            # Note: we don't really read anything from this socket, we just wait
+            # for *some* data to show up. In the future we could have the notify
+            # service that runs in the VM actually send some useful data that
+            # we could use.
+            sock.recv(16)
+            logger.debug("Guest boot event received")
+
+            # Return "real" elapsed_ms since we started
+            return int(time.monotonic() * 1000) - start_ms
+
+        except socket.timeout:
+            elapsed_ms = int(time.monotonic() * 1000) - start_ms
+            logger.debug(f"socket timeout after {elapsed_ms}ms")
+            raise VMBootError(f"Timeout waiting for boot event: {timeout_ms}ms")
+
+
+class ShellMode(Enum):
+    console = "console"
+
+    def __str__(self):
+        return self.value
+
+
+class VMExecOpts(Shape):
+    """
+    This is the common set of arguments that can be passed to an `antlir.vm`
+    cli.
+    """
+
+    # Bind the repository root into the VM
+    bind_repo_ro: bool = True
+    # Extra, undefined arguments that are passed on the cli
+    extra: List[str] = []
+    # VM Opts instance passed to the CLI
+    opts: vm_opts_t
+    # Enable debug logs
+    debug: bool = False
+    # Connect to a shell inside the vm via the specified method
+    shell: Optional[ShellMode] = None
+    # How many millis to allow the VM to run.  The timeout starts
+    # as soon as the emulator process is spawned.
+    timeout_ms: int = 300 * 1000
+
+    # Future:  Since we're using `Shape` for this, which uses pydantic.  I
+    # think it is possible automagically construct this based on the field
+    # defintions of the type itself.  This would remove the need for the
+    # overloading in subclasses.  That is a bit more magic than I wanted
+    # to add at the moment, so I'm holding off.
+    @classmethod
+    def setup_cli(cls, parser):
+        """
+        Add attributes defined on this type to the parser.
+
+        Subclasses of `VMExecOpts` should overload this classmethod to provide
+        their own arguments.  Subclass implementors should take care to call
+        `super(<SubClassType>, cls).setup_cli(parser)` to make sure that these
+        base class args are added.
+        """
+        parser.add_argument(
+            "--bind-repo-ro",
+            action="store_true",
+            default=True,
+            help="Makes a read-only bind-mount of the current Buck project "
+            "into the vm at the same location as it is on the host. This is "
+            "needed to run binaries that are built to be run in-place and for "
+            "binaries that make assumptions about files being available "
+            "relative to the binary.",
+        )
+
+        parser.add_argument(
+            "--opts",
+            type=vm_opts_t.parse_raw,
+            help="Path to a serialized vm_opts_t instance containing "
+            "configuration details for the vm.",
+            required=True,
+        )
+
+        parser.add_argument(
+            "--debug",
+            action="store_true",
+            default=True,
+            help="Show debug logs",
+        )
+
+        parser.add_argument(
+            "--shell",
+            choices=list(ShellMode),
+            type=ShellMode,
+            default=None,
+            help="Connect to an interactive shell inside the VM via the "
+            "specified method.  When this option is used, no additional "
+            "commands or automation is allowed.  When you exit the shell "
+            "the VM will terminate.",
+        )
+
+        parser.add_argument(
+            "--timeout",
+            dest="timeout_ms",
+            # We want to allow the cli to specify seconds, mostly because that
+            # is what external tools that invoke this will use.  But internally
+            # we want to use millis, so we'll convert it right here to avoid
+            # any confusion later.
+            type=lambda t: int(t) * 1000,
+            # Inside FB some tools set an env var instead of passing an
+            # option. Maybe we can get rid of this if we fix the few
+            # tools that call this.
+            default=os.environ.get("TIMEOUT", 300 * 1000),
+            help="How many seconds to allow the VM to run.  The clock starts "
+            "as soon as the emulator is spawned.",
+        )
+
+    @classmethod
+    def parse_cli(cls, argv) -> "VMExecOpts":
+        """
+        Construct a CLI parser, parse the arguments, and return a constructed
+        instance from those arguments of type `cls`.
+        """
+
+        parser = argparse.ArgumentParser(
+            description=__doc__,
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+
+        cls.setup_cli(parser)
+
+        args, extra = parser.parse_known_args(argv)
+
+        init_logging(debug=args.debug)
+
+        if extra:
+            logger.debug(f"Got extra args: {extra} from {argv}")
+            args.extra = extra
+
+        logger.debug(
+            f"Creating instance of {cls} for VM execution args using: {args}"
+        )
+        return cls(**args.__dict__)
 
 
 @asynccontextmanager
 async def __vm_with_stack(
     stack: AsyncExitStack,
     opts: vm_opts_t,
+    timeout_ms: int,
     bind_repo_ro: bool = False,
     verbose: bool = False,
-    interactive: bool = False,
+    shell: Optional[ShellMode] = None,
     shares: Optional[Iterable[Share]] = None,
 ):
     # we don't actually want to create files for the socket paths
     guest_agent_sockfile = os.path.join(
         tempfile.gettempdir(), "vmtest_guest_agent" + uuid.uuid4().hex + ".sock"
     )
-    notify_sockfile = os.path.join(
-        tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
+    notify_sockfile = Path(
+        os.path.join(
+            tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
+        )
     )
 
     # Set defaults
@@ -83,7 +253,7 @@ async def __vm_with_stack(
     # a VM via another test binary *outside* the VM and this kind of embedding
     # can cause the sys.argv[0] of the executing binary to live outside
     # of the repo. (See the //antlir/vm/tests:kernel_panic_test)
-    repo_config = load_repo_config(path_in_repo=os.getcwd())
+    repo_config = load_repo_config(path_in_repo=Path(os.getcwd()))
 
     # Process all the mounts from the root image we are using
     mounts = mounts_from_image_meta(opts.rootfs_image.path)
@@ -198,7 +368,7 @@ async def __vm_with_stack(
         f"socket,path={guest_agent_sockfile},server,nowait,id=qga0",
         "-device",
         "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0",
-        # socket/serial device pair (for use by __wait_for_boot)
+        # socket/serial device pair (for use by _wait_for_boot)
         "-chardev",
         f"socket,path={notify_sockfile},id=notify,server",
         "-device",
@@ -223,13 +393,14 @@ async def __vm_with_stack(
     # this modules directory is mounted by init.sh at boot, to avoid having
     # to install kernels in the root fs and avoid expensive copying of
     # ~400M worth of modules during boot
-    shares += [
-        Plan9Export(
-            opts.kernel.artifacts.modules.subvol.path(),
-            mount_tag="kernel-modules",
-            generator=False,
-        )
-    ]
+    if opts.kernel.artifacts.modules is not None:
+        shares += [
+            Plan9Export(
+                opts.kernel.artifacts.modules.subvol.path(),
+                mount_tag="kernel-modules",
+                generator=False,
+            )
+        ]
 
     export_share = stack.enter_context(Share.export_spec(shares))
     shares += [export_share]
@@ -238,33 +409,49 @@ async def __vm_with_stack(
 
     qemu_cmd = ns.nsenter_as_user(str(opts.emulator.path), *args)
 
-    if interactive:
-        proc = await asyncio.create_subprocess_exec(*qemu_cmd)
-    elif verbose:
-        # don't connect stdin if we are simply in verbose mode and not
-        # interactive
-        proc = await asyncio.create_subprocess_exec(
-            *qemu_cmd,
-            stdin=subprocess.PIPE,
-        )
-    else:
-        proc = await asyncio.create_subprocess_exec(
-            *qemu_cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-
-    await __wait_for_boot(notify_sockfile)
-
-    logger.debug(f"guest link-local ipv6: {tapdev.guest_ipv6_ll}")
-
     try:
-        yield QemuGuestAgent(guest_agent_sockfile)
-    except QemuError as err:
-        print(f"Qemu failed with error: {err}", flush=True, file=sys.stderr)
+        if shell and shell == ShellMode.console:
+            proc = await asyncio.create_subprocess_exec(*qemu_cmd)
+
+        elif verbose:
+            # don't connect stdin if we are simply in verbose mode
+            proc = await asyncio.create_subprocess_exec(
+                *qemu_cmd,
+                stdin=subprocess.PIPE,
+            )
+        else:
+            proc = await asyncio.create_subprocess_exec(
+                *qemu_cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+
+        boot_elapsed_ms = _wait_for_boot(notify_sockfile, timeout_ms=timeout_ms)
+        timeout_ms = timeout_ms - boot_elapsed_ms
+        logger.debug(
+            f"VM boot time: {boot_elapsed_ms}ms, "
+            f"timeout_ms is now: {timeout_ms}ms"
+        )
+        logger.debug(f"VM ipv6: {tapdev.guest_ipv6_ll}")
+
+        if shell:
+            yield (None, boot_elapsed_ms, timeout_ms)
+        else:
+            try:
+                yield (
+                    QemuGuestAgent(guest_agent_sockfile),
+                    boot_elapsed_ms,
+                    timeout_ms,
+                )
+            except QemuError as err:
+                logger.error(f"Communication with VM failed: {err}")
+
+    except VMBootError as vbe:
+        logger.error(f"VM failed to boot: {vbe}")
+        raise RuntimeError(f"VM failed to boot: {vbe}")
     finally:
-        if interactive:
+        if shell:
             logger.debug("waiting for interactive vm to shutdown")
             await proc.wait()
 

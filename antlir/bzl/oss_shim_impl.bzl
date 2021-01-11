@@ -247,6 +247,9 @@ def _sh_binary(*args, **kwargs):
 def _sh_test(*args, **kwargs):
     _wrap_internal(native.sh_test, args, kwargs)
 
+def _worker_tool(*args, **kwargs):
+    _wrap_internal(native.worker_tool, args, kwargs)
+
 def _cxx_external_deps(kwargs):
     external_deps = kwargs.pop("external_deps", [])
     return ["//third-party/cxx:" + lib for _project, _version, lib in external_deps]
@@ -325,6 +328,7 @@ def _impl_python_unittest(
         par_style = None,
         tags = None,
         resources = None,
+        srcs = None,
         **kwargs):
     native.python_test(
         deps = _normalize_deps(deps),
@@ -332,6 +336,7 @@ def _impl_python_unittest(
         needed_coverage = _normalize_coverage(needed_coverage),
         package_style = _normalize_pkg_style(par_style),
         resources = _normalize_resources(resources),
+        srcs = _invert_dict(srcs),
         **kwargs
     )
 
@@ -403,6 +408,7 @@ shim = struct(
     buck_genrule = _genrule,
     buck_sh_binary = _sh_binary,
     buck_sh_test = _sh_test,
+    buck_worker_tool = _worker_tool,
     #
     # Utility functions -- use `_assert_package()`, if at all possible.
     #

@@ -285,6 +285,8 @@ def _codegen_shape(shape, classname = None):
     return src
 
 def _field(type, optional = False, default = _NO_DEFAULT):
+    if optional and default == _NO_DEFAULT:
+        default = None
     return struct(
         type = type,
         optional = optional,

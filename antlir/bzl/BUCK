@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file")
+load("//antlir/bzl:oss_shim.bzl", "export_file")
 load(":defs.bzl", "fake_macro_library")
 
 # IMPORTANT: If you add new `.bzl` files or dependencies in `antlir/`,
@@ -106,8 +106,8 @@ fake_macro_library(
         ":snapshot_install_dir",
         ":target_helpers",
         ":wrap_runtime_deps",
+        "//antlir/bzl/image_actions:ensure_dirs_exist",
         "//antlir/bzl/image_actions:install",
-        "//antlir/bzl/image_actions:mkdir",
         "//antlir/bzl/image_actions:remove",
         "//antlir/bzl/image_actions:symlink",
     ],

@@ -31,7 +31,9 @@ def _run(argv):
 def _clean_err(err):
     logging.info(f"From wrapper:\n{err}")
     err = [
-        l for l in err.split("\n") if not re.search(r"D.+recv_fds_and_run:", l)
+        l
+        for l in err.split("\n")
+        if not re.search(r"D.+recv_fds_and_run.py:", l)
     ]
     assert err[-1] == ""  # `split` will always leave us at least one empty str
     return err[:-1]

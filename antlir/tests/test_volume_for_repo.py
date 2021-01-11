@@ -23,7 +23,7 @@ class VolumeForRepoTestCase(unittest.TestCase):
         try:
             self.assertEqual(
                 vfr.get_volume_for_current_repo(
-                    min_free_bytes=min_free_bytes, artifacts_dir=artifacts_dir
+                    artifacts_dir=artifacts_dir, min_free_bytes=min_free_bytes
                 ),
                 volume_dir,
             )

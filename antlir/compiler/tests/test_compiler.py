@@ -15,7 +15,12 @@ import unittest.mock
 from contextlib import contextmanager
 
 from antlir import subvol_utils
-from antlir.compiler.items import make_dirs, rpm_action, symlink, tarball
+from antlir.compiler.items import (
+    ensure_dirs_exist,
+    rpm_action,
+    symlink,
+    tarball,
+)
 from antlir.find_built_subvol import subvolumes_dir
 from antlir.fs_utils import Path, temp_dir
 from antlir.nspawn_in_subvol import ba_runner
@@ -63,7 +68,8 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     fn = unittest.mock.patch.object(rpm_action, "run_nspawn")(fn)
     fn = unittest.mock.patch.object(tarball, "run_nspawn")(fn)
     fn = unittest.mock.patch.object(symlink, "run_nspawn")(fn)
-    fn = unittest.mock.patch.object(make_dirs, "run_nspawn")(fn)
+    fn = unittest.mock.patch.object(ensure_dirs_exist, "run_nspawn")(fn)
+    fn = unittest.mock.patch.object(ensure_dirs_exist, "mode_to_octal_str")(fn)
     fn = unittest.mock.patch.object(ba_runner, "run_nspawn")(fn)
     return fn
 
@@ -150,11 +156,7 @@ class CompilerTestCase(unittest.TestCase):
         lexists,
         is_btrfs,
         run_as_root,
-        _run_nspawn,
-        _run_nspawn2,
-        _run_nspawn3,
-        _run_nspawn4,
-        _run_nspawn5,
+        *_run_nspawns,
     ):
         lexists.side_effect = _os_path_lexists
         run_as_root.side_effect = _run_as_root
@@ -232,11 +234,7 @@ class CompilerTestCase(unittest.TestCase):
         lexists,
         is_btrfs,
         run_as_root,
-        _run_nspawn,
-        _run_nspawn2,
-        _run_nspawn3,
-        _run_nspawn4,
-        _run_nspawn5,
+        *_run_nspawns,
     ):
         "Get the commands that each of the *expected* sample items would run"
         lexists.side_effect = _os_path_lexists

@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from grp import getgrnam
 from pwd import getpwnam
 
-from antlir.artifacts_dir import find_buck_cell_root
+from antlir.artifacts_dir import find_repo_root
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
@@ -44,6 +44,7 @@ TARGET_TO_PATH = {
 
 
 REPO_CFG = load_repo_config()
+SHADOW_ME = "shadow me"
 
 
 class ImageLayerTestCase(unittest.TestCase):
@@ -89,6 +90,7 @@ class ImageLayerTestCase(unittest.TestCase):
         self.assertTrue(
             os.path.isdir(os.path.join(subvol_path, b"foo/bar/baz"))
         )
+        self.assertTrue(os.path.isdir(os.path.join(subvol_path, b"alpha/beta")))
 
         # :hello_world_base has a mount entry in the meta.  Note that this
         # *does not* validate that the mount itself exists.
@@ -249,6 +251,13 @@ class ImageLayerTestCase(unittest.TestCase):
             self.assertEqual(["(Dir)", {}], pop_path(r, "var/tmp"))
             self.assertEqual(["(Dir)", {}], pop_path(r, "usr"))
 
+            # This is never changed in the underlying layer, just shadowed
+            # at runtime.
+            self.assertEqual(
+                [f"(File m444 d{len(SHADOW_ME)})"],
+                pop_path(r, "shadow_me"),
+            )
+
             check_common_rpm_render(self, r, yum_dnf)
 
     @unittest.skipUnless(
@@ -270,9 +279,16 @@ class ImageLayerTestCase(unittest.TestCase):
             self.assertEqual(["(Dir)", {}], pop_path(r, "usr/lib"))
 
     def test_foreign_layer(self):
+        # This checks that `shadow_paths` worked as expected.
+        shadowed = "milk 2.71 8\n"
+        assert len(shadowed) != len(SHADOW_ME), (shadowed, SHADOW_ME)
         with self._check_build_appliance("foreign-layer", "dnf") as (sv, r):
-            # The desired side effect of the run:
-            self.assertEqual(["(File)"], pop_path(r, "I_AM_FOREIGN_LAYER"))
+            # The desired side effect of the run.  This also checks that the
+            # path shadowing worked.
+            self.assertEqual(
+                [f"(File d{len(shadowed)})"],
+                pop_path(r, "I_AM_FOREIGN_LAYER"),
+            )
 
             # Fixme: This `os-release` is an artifact of `nspawn_in_subvol`.
             # We should probably not be leaking this into the layer, but
@@ -289,7 +305,7 @@ class ImageLayerTestCase(unittest.TestCase):
             ):
                 # Assume that the prefix of the repo (e.g. /home or /data)
                 # is not one of the normal FHS-type directories below.
-                d = os.path.abspath(find_buck_cell_root())
+                d = os.path.abspath(str(find_repo_root()))
                 while d != "/":
                     self.assertEqual(["(Dir)", {}], pop_path(r, d))
                     d = os.path.dirname(d)
@@ -312,13 +328,15 @@ class ImageLayerTestCase(unittest.TestCase):
             # shouldn't affect production use-cases.
             self.assertEqual(["(Symlink usr/lib)"], pop_path(r, "lib"))
 
-            with self.target_subvol("foreign-layer-with-mounts") as sv:
-                # Check that the `layer_mount` was mounted when the foreign
-                # layer ran
-                with open(sv.path("/FOREIGN_LAYER_MOUNTS"), "r") as f:
-                    mounts = f.read()
-                    self.assertIn("/meownt", mounts)
-                    self.assertIn("/sendstream_meownt", mounts)
+    def test_foreign_layer_mounts(self):
+        # test_foreign_layer checks the actual image contents
+        with self.target_subvol("foreign-layer-with-mounts") as sv:
+            # Check that the `layer_mount` was mounted when the foreign
+            # layer ran
+            with open(sv.path("/FOREIGN_LAYER_MOUNTS"), "r") as f:
+                mounts = f.read()
+                self.assertIn("/meownt", mounts)
+                self.assertIn("/sendstream_meownt", mounts)
 
     def test_non_default_rpm_snapshot(self):
         with self.target_subvol("layer-with-non-default-snapshot-rpm") as sv:
@@ -332,7 +350,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 pop_path(r, "rpm_test"),
             )
 
-            check_common_rpm_render(self, r, "yum")
+            check_common_rpm_render(self, r, REPO_CFG.rpm_installer_default)
 
     def _check_installed_files_bar(self, r):
         (  # We don't know the exact sizes because these 2 may be wrapped
@@ -386,6 +404,7 @@ class ImageLayerTestCase(unittest.TestCase):
     def test_installed_files(self):
         with self.target_subvol("installed-files") as sv:
             r = render_subvol(sv)
+            pop_path(r, "alpha")
             self._check_installed_files_bar(pop_path(r, "foo/bar"))
             self.assertEqual(
                 [

@@ -114,9 +114,9 @@ def image_package(
                 # specifying it would make `get_subvolume_on_disk_stack`
                 # more efficient.
             ),
-            volume_min_free_bytes = 0,  # We are not writing to the volume.
             rule_type = _IMAGE_PACKAGE,
             target_name = name,
+            volume_min_free_bytes = 0,  # We are not writing to the volume.
         ),
         visibility = visibility,
         antlir_rule = antlir_rule,

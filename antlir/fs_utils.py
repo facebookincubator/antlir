@@ -16,6 +16,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import time
 import urllib.parse
 import uuid
 from contextlib import contextmanager
@@ -107,6 +108,17 @@ class Path(bytes):
             return True
         except FileNotFoundError:
             return False
+
+    def wait_for(self, timeout_ms=5000) -> int:
+        start_ms = int(time.monotonic() * 1000)
+        elapsed_ms = 0
+        while elapsed_ms < timeout_ms:
+            if self.exists(raise_permission_error=False):
+                return elapsed_ms
+            time.sleep(0.1)
+            elapsed_ms = int(time.monotonic() * 1000) - start_ms
+
+        raise FileNotFoundError(self)
 
     def file_url(self) -> str:
         return "file://" + urllib.parse.quote(self.abspath())

@@ -1,7 +1,6 @@
 # Future: we should eventually add per-library unit test coverage, as
 # appropriate, while also retaining integration test coverage.
 
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -77,6 +76,12 @@ python_library(
 python_library(
     name = "ba_runner",
     srcs = ["ba_runner.py"],
+    deps = [
+        ":args",
+        ":nspawn",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+    ],
 )
 
 python_binary(
@@ -91,19 +96,6 @@ python_binary(
         "//antlir/nspawn_in_subvol/plugins:plugins",
         "//antlir/nspawn_in_subvol/plugins:rpm",
     ],
-)
-
-# This minimal XAR shipped as tests/hello.xar was generated via:
-#
-#   pip install xar && mkdir -p hello &&
-#   echo "print('hello world')" > hello/__main__.py &&
-#   python -m xar.make_xar -- --python hello --output hello.xar
-#
-# NB: Internally, you can use `buck run //tools/xar:make_xar` instead.
-image.layer(
-    name = "host-hello-xar",
-    parent_layer = TEST_IMAGE_PREFIX + "test-layer",
-    features = [image.install("tests/hello.xar", "/hello.xar")],
 )
 
 python_library(
@@ -148,7 +140,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "create_ops-from-layer",
         ): "tests/test-create-ops-from-layer",
         layer_resource(TEST_IMAGE_PREFIX + "bootable-systemd-os"): "tests/bootable-systemd-os",
-        layer_resource(":host-hello-xar"): "tests/host-hello-xar",
     },
     deps = [":testlib_base"],
 )

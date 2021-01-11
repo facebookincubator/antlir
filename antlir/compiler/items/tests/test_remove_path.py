@@ -11,8 +11,8 @@ import unittest.mock
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder, protected_path_set
+from ..ensure_dirs_exist import ensure_subdirs_exist_factory
 from ..install_file import InstallFileItem
-from ..make_dirs import MakeDirsItem
 from ..remove_path import RemovePathAction, RemovePathItem
 from ..symlink import SymlinkToDirItem
 from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
@@ -29,16 +29,26 @@ class RemovePathItemTestCase(BaseItemTestCase):
             subvol = temp_subvolumes.create("remove_action")
             self.assertEqual(["(Dir)", {}], render_subvol(subvol))
 
-            MakeDirsItem(
-                from_target="t", path_to_make="/a/b/c", into_dir="/"
-            ).build(subvol, DUMMY_LAYER_OPTS_BA)
+            for item in reversed(
+                list(
+                    ensure_subdirs_exist_factory(
+                        from_target="t", into_dir="/", subdirs_to_create="a/b/c"
+                    )
+                )
+            ):
+                item.build(subvol, DUMMY_LAYER_OPTS_BA)
             for d in ["d", "e"]:
                 InstallFileItem(
                     from_target="t", source=empty_tf.name, dest=f"/a/b/c/{d}"
                 ).build(subvol, DUMMY_LAYER_OPTS_BA)
-            MakeDirsItem(
-                from_target="t", path_to_make="/f/g", into_dir="/"
-            ).build(subvol, DUMMY_LAYER_OPTS_BA)
+            for item in reversed(
+                list(
+                    ensure_subdirs_exist_factory(
+                        from_target="t", into_dir="/", subdirs_to_create="f/g"
+                    )
+                )
+            ):
+                item.build(subvol, DUMMY_LAYER_OPTS_BA)
             # Checks that `rm` won't follow symlinks
             SymlinkToDirItem(
                 from_target="t", source="/f", dest="/a/b/f_sym"

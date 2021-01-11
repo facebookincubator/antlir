@@ -14,7 +14,10 @@ from antlir.fs_utils import Path
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
-from ..make_dirs import MakeDirsItem
+from ..ensure_dirs_exist import (
+    EnsureDirsExistItem,
+    ensure_subdirs_exist_factory,
+)
 from ..make_subvol import (
     FilesystemRootItem,
     ParentLayerItem,
@@ -66,18 +69,24 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             item = ParentLayerItem(from_target="t", subvol=parent)
             self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
 
-            MakeDirsItem(
-                from_target="t", into_dir="/", path_to_make="a/b"
-            ).build(parent, DUMMY_LAYER_OPTS_BA)
+            for ede_item in reversed(
+                list(
+                    ensure_subdirs_exist_factory(
+                        from_target="t", into_dir="/", subdirs_to_create="a/b"
+                    )
+                )
+            ):
+                ede_item.build(parent, DUMMY_LAYER_OPTS_BA)
+
             parent_content = ["(Dir)", {"a": ["(Dir)", {"b": ["(Dir)", {}]}]}]
             self.assertEqual(parent_content, render_subvol(parent))
 
             # Take a snapshot and add one more directory.
             child = temp_subvolumes.caller_will_create("child")
             item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(child)
-            MakeDirsItem(from_target="t", into_dir="a", path_to_make="c").build(
-                child, DUMMY_LAYER_OPTS_BA
-            )
+            EnsureDirsExistItem(
+                from_target="t", into_dir="a", basename="c"
+            ).build(child, DUMMY_LAYER_OPTS_BA)
 
             # The parent is unchanged.
             self.assertEqual(parent_content, render_subvol(parent))

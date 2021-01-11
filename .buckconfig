@@ -14,7 +14,13 @@
 # inplace python binaries in local dev mode, but it will always be python3.
 [python]
   interpreter = /usr/bin/python3
-  package_style = standalone
+  package_style = inplace
+  # NOTE: this assumes that the system on which we are running this
+  # python_binary is "new enough" (at the time of this writing, >=3.7)
+  # In practice, this is true for the environments that we care about, and
+  # avoids issues with mismatches between the build host and container
+  # environments.
+  pex_flags = --python-shebang="/usr/bin/env python3"
 
 [cxx]
   gtest_dep = //third-party/cxx:gtest
@@ -36,10 +42,10 @@
   # these excluded labels you must run `buck test` with the `--always-exclude`
   # option.
   # ie:  `buck test //antlir/rpm:test-yum-dnf-from-snapshot --always-exclude`
-  excluded_labels = exclude_test_if_transitive_dep
+  excluded_labels = exclude_test_if_transitive_dep, disabled
 
 [antlir]
   build_appliance_default = //images/appliance:stable_build_appliance
   rpm_installer_default = dnf
   rpm_installers_supported = dnf
-  host_mounts_allowed_in_targets = //images/appliance:host_build_appliance
+  host_mounts_allowed_in_targets = //images/appliance:host_build_appliance //images/appliance:features-for-layer-host_build_appliance

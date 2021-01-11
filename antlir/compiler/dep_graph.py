@@ -12,12 +12,19 @@ Item is installed only after all of the Items that match its Requires have
 already been installed.  This is known as dependency order or topological
 sort.
 """
-from collections import namedtuple
-from typing import Iterator
+from collections import defaultdict
+from typing import Iterator, Union, NamedTuple, Dict, Callable, Set
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
+from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
+
+from .requires_provides import (
+    ProvidesPathObject,
+    ProvidesDirectory,
+    PathRequiresPredicate,
+)
 
 
 # To build the item-to-item dependency graph, we need to first build up a
@@ -30,11 +37,27 @@ from antlir.compiler.items.phases_provide import PhasesProvideItem
 # To avoid re-evaluating ImageItem.{provides,requires}(), we'll just store
 # everything in these data structures:
 
-ItemProv = namedtuple("ItemProv", ["provides", "item"])
+
+class ItemProv(NamedTuple):
+    provides: ProvidesPathObject
+    item: ImageItem
+
+
 # NB: since the item is part of the tuple, we'll store identical
 # requirements that come from multiple items multiple times.  This is OK.
-ItemReq = namedtuple("ItemReq", ["requires", "item"])
-ItemReqsProvs = namedtuple("ItemReqsProvs", ["item_provs", "item_reqs"])
+class ItemReq(NamedTuple):
+    requires: PathRequiresPredicate
+    item: ImageItem
+
+
+class ItemReqsProvs(NamedTuple):
+    item_provs: Set[ItemProv]
+    item_reqs: Set[ItemReq]
+
+
+ReqOrProv = Union[ProvidesPathObject, PathRequiresPredicate]
+# See the comments in _add_to_prov_map
+_ALLOWED_COLLISIONS = frozenset({EnsureDirsExistItem})
 
 
 class ValidatedReqsProvs:
@@ -43,11 +66,11 @@ class ValidatedReqsProvs:
     computes {'path': {ItemReqProv{}, ...}} so that we can build the
     DependencyGraph for these Items.  In the process validates that:
      - No one item provides or requires the same path twice,
-     - Each path is provided by at most one item (could be relaxed later),
+     - Each path is provided by at most one item (excl. _ALLOWED_COLLISIONS),
      - Every Requires is matched by a Provides at that path.
     """
 
-    def __init__(self, items):
+    def __init__(self, items: Set[ImageItem]):
         self.path_to_reqs_provs = {}
 
         for item in items:
@@ -82,21 +105,53 @@ class ValidatedReqsProvs:
                     )
 
     @staticmethod
-    def _add_to_req_map(reqs_provs, req, item):
+    def _add_to_req_map(
+        reqs_provs: ItemReqsProvs, req: PathRequiresPredicate, item: ImageItem
+    ):
         reqs_provs.item_reqs.add(ItemReq(requires=req, item=item))
 
     @staticmethod
-    def _add_to_prov_map(reqs_provs, prov, item):
-        # I see no reason to allow provides-provides collisions.
-        if len(reqs_provs.item_provs):
-            raise RuntimeError(
-                f"Both {reqs_provs.item_provs} and {prov} from {item} provide "
-                "the same path"
-            )
-        reqs_provs.item_provs.add(ItemProv(provides=prov, item=item))
+    def _add_to_prov_map(
+        reqs_provs: ItemReqsProvs, prov: ProvidesPathObject, item: ImageItem
+    ):
+        """For the majority of cases, we do not allow two `provides` to collide
+        on the same path.
+
+        The sole case where this is supported is when there are any number of
+        EnsureDirsExist items, and at most one other directory provider of a
+        type other than EnsureDirsExist. This is done because EnsureDirsExist
+        are explicitly run last for a given path (see comments in
+        _add_dir_deps_for_item_provs), and check corresponding attributes on the
+        path they're about to create. As such, any number of them may exist for
+        a given path. We allow one other non-EnsureDirsExist directory provider
+        as its attributes will also be checked. More than one is disallowed as
+        it could result in non-determinism, as we could only support that if we
+        were certain an EnsureDirsExist also existed for the path, which the
+        data model is not currently set up to support.
+        """
+        new_item_prov = ItemProv(provides=prov, item=item)
+        if reqs_provs.item_provs:
+            collision_provs = [
+                ip.provides
+                for ip in [*reqs_provs.item_provs, new_item_prov]
+                if type(ip.item) not in _ALLOWED_COLLISIONS
+            ]
+            if collision_provs and (
+                len(collision_provs) > 1
+                or not isinstance(collision_provs[0], ProvidesDirectory)
+            ):
+                raise RuntimeError(
+                    f"Both {reqs_provs.item_provs} and {prov} from {item} "
+                    "provide the same path"
+                )
+        reqs_provs.item_provs.add(new_item_prov)
 
     def _add_to_map(
-        self, path_to_req_or_prov, req_or_prov, item, add_to_map_fn
+        self,
+        path_to_req_or_prov: Dict[str, ReqOrProv],
+        req_or_prov: ReqOrProv,
+        item: ImageItem,
+        add_to_map_fn: Callable[[ItemReqsProvs, ReqOrProv, ImageItem], None],
     ):
         # One ImageItem should not emit provides / requires clauses that
         # collide on the path.  Such duplication can always be avoided by
@@ -165,6 +220,30 @@ class DependencyGraph:
             assert len(all_builder_makers) == 1, all_builder_makers
             yield all_builder_makers.pop(), tuple(items)
 
+    @staticmethod
+    def _add_dir_deps_for_item_provs(ns, item_provs: Set[ItemProv]):
+        """EnsureDirsExist items are a special case in the dependency graph in
+        that, for a given path, we want to ensure they're the last providers to
+        be run. This is because they're the only items that will explicitly
+        check the attributes of the given path to ensure they match the provided
+        stat args. Thus, if another directory provider were to run before them,
+        it's possible it would unexpectedly modify the attributes of the
+        directory provided by the EnsureDirsExist item.
+
+        To enforce this, we explicitly add dependency edges from all
+        non-EnsureDirsExist items to all EnsureDirsExist items.
+        """
+        ede_item_provs = {
+            x for x in item_provs if isinstance(x.item, EnsureDirsExistItem)
+        }
+        non_ede_item_provs = item_provs - ede_item_provs
+        # Guaranteed by checks in _add_to_prov_map
+        assert len(non_ede_item_provs) <= 1
+        for item_prov in non_ede_item_provs:
+            for ede_item_prov in ede_item_provs:
+                ns.item_to_predecessors[ede_item_prov.item].add(item_prov.item)
+                ns.predecessor_to_items[item_prov.item].add(ede_item_prov.item)
+
     # Separated so that unit tests can check the internal state.
     def _prep_item_predecessors(self, phases_provide: PhasesProvideItem):
         # The `ImageItem` part of the build needs an item that `provides`
@@ -182,23 +261,21 @@ class DependencyGraph:
         # An item is only added here if it requires at least one other item,
         # otherwise it goes in `.items_without_predecessors`.
         ns = Namespace()
-        ns.item_to_predecessors = {}  # {item: {items, it, requires}}
-        ns.predecessor_to_items = {}  # {item: {items, requiring, it}}
+        # {item: {items, it, requires}}
+        ns.item_to_predecessors = defaultdict(set)
+        # {item: {items, requiring, it}}
+        ns.predecessor_to_items = defaultdict(set)
 
         # For each path, treat items that provide something at that path as
         # predecessors of items that require something at the path.
         for _path, rp in ValidatedReqsProvs(
             self.items
         ).path_to_reqs_provs.items():
+            self._add_dir_deps_for_item_provs(ns, rp.item_provs)
             for item_prov in rp.item_provs:
-                requiring_items = ns.predecessor_to_items.setdefault(
-                    item_prov.item, set()
-                )
                 for item_req in rp.item_reqs:
-                    requiring_items.add(item_req.item)
-                    ns.item_to_predecessors.setdefault(
-                        item_req.item, set()
-                    ).add(item_prov.item)
+                    ns.predecessor_to_items[item_prov.item].add(item_req.item)
+                    ns.item_to_predecessors[item_req.item].add(item_prov.item)
 
         ns.items_without_predecessors = (
             self.items - ns.item_to_predecessors.keys()

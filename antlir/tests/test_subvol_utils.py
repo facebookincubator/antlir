@@ -186,7 +186,7 @@ class SubvolTestCase(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as loop_path:
             # The default waste factor succeeds in 1 try, but a too-low
             # factor results in 2 tries.
-            waste_too_low = 1.0002
+            waste_too_low = 1.00015
             self.assertEqual(
                 2,
                 sv.mark_readonly_and_send_to_new_loopback(

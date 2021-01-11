@@ -13,9 +13,13 @@ import unittest
 from contextlib import contextmanager
 
 from antlir.common import check_popen_returncode
+from antlir.config import load_repo_config
 
 from .. import launch_repo_servers
 from .rpm_base import RpmNspawnTestBase
+
+
+REPO_CFG = load_repo_config()
 
 
 class TestImpl:
@@ -58,6 +62,12 @@ class TestImpl:
                 (seen_repomds, expected_repomds),
             )
         check_popen_returncode(tee)
+
+    def setUp(self):
+        if self._PROG not in REPO_CFG.rpm_installers_supported:
+            self.skipTest(
+                f"'{self._PROG}'' not in '{REPO_CFG.rpm_installers_supported}'"
+            )
 
     def test_repo_servers(self):
         # Get basic coverage for our non-trivial debug log code.

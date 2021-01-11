@@ -3,9 +3,9 @@ load(":oss_shim.bzl", "target_utils")
 def _wrap_bash_build_in_common_boilerplate(
         self_dependency,
         bash,
-        volume_min_free_bytes,
         rule_type,
-        target_name):
+        target_name,
+        volume_min_free_bytes = None):
     return """
     # CAREFUL: To avoid inadvertently masking errors, we should
     # only perform command substitutions with variable
@@ -84,7 +84,7 @@ def _wrap_bash_build_in_common_boilerplate(
     )
     """.format(
         bash = bash,
-        min_free_bytes = volume_min_free_bytes,
+        min_free_bytes = volume_min_free_bytes if volume_min_free_bytes else "None",
         log_description = "{}:{}(name={})".format(
             native.package_name(),
             rule_type,

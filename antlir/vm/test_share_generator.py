@@ -74,6 +74,22 @@ Options=version=9p2000.L,posixacl,cache=loose,ro
 """,
     ),
     TestShare(
+        Plan9Export(path="/tmp/hello_rw", readonly=False),
+        "tmp-hello_rw.mount",
+        """[Unit]
+Description=Mount fs3 at /tmp/hello_rw
+Requires=systemd-modules-load.service
+After=systemd-modules-load.service
+Before=local-fs.target
+
+[Mount]
+What=fs3
+Where=/tmp/hello_rw
+Type=9p
+Options=version=9p2000.L,posixacl,cache=none,rw
+""",
+    ),
+    TestShare(
         BtrfsDisk(path="/tmp/image.btrfs", mountpoint="/mnt/guest"),
         "mnt-guest.mount",
         """[Unit]
