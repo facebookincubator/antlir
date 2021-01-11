@@ -257,7 +257,6 @@ def add_rpm_repo_snapshots_layer(
         dnf_snapshot = None,  # install, make default for `dnf`, make cache
         yum_snapshot = None,  # install, make default for `yum`, make cache
         make_caches_for_other_snapshot_installers = None,  # install, make cache
-        features = None,
         **image_layer_kwargs):
     """
     For the specified snapshots, install them into the parent layer, and
@@ -275,8 +274,7 @@ def add_rpm_repo_snapshots_layer(
     not necessarily going to get used.  If we change our position on this,
     the `make_caches_for_other_snapshot_installers` argument can be removed.
     """
-    features = features or []
-
+    features = []
     default_s_i_pairs = [
         (s, i)
         for s, i in [(dnf_snapshot, "dnf"), (yum_snapshot, "yum")]
