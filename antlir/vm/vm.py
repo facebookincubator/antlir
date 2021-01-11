@@ -455,12 +455,27 @@ async def __vm_with_stack(
             logger.debug("waiting for interactive vm to shutdown")
             await proc.wait()
 
+        # Future: unless we are running in `--shell` mode, the VM hasn't been
+        # told to shutdown yet.  So this is the 'default' behavior for
+        # termination, but really this should be a last resort kind of thing.
+        # The VM should terminate gracefully from within the Guest OS if
+        # possible, and only if it doesn't terminate by itself within the
+        # timeout, then we kill it like this.
         if proc.returncode is None:
-            logger.debug("killing guest vm")
-            kill = await asyncio.create_subprocess_exec(
-                "sudo", "kill", "-KILL", str(proc.pid)
+            logger.debug(
+                f"VM has not yet terminated, " f"sending -KILL to: {proc.pid}"
             )
-            await kill.wait()
+
+            kill = subprocess.run(
+                ["sudo", "kill", "-KILL", str(proc.pid)],
+                # Don't throw if this fails, the pid could have exited by the
+                # time this runs
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            logger.debug(f"VM -KILL returned with: {kill.returncode}")
+            await proc.wait()
 
 
 @asynccontextmanager
