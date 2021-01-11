@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """
 Similar to the image.{cpp,python}_unittest macros, the intent of
 vm.{cpp,python}_unittest is to be able to run unittests inside

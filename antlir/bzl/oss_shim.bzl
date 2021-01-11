@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 # This file redeclares (and potentially validates) JUST the part of the
 # fbcode macro API that is allowed within `antlir/`.  This way,
 # FB-internal contributors will be less likely to accidentally break

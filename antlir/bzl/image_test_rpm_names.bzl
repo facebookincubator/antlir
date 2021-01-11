@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":maybe_export_file.bzl", "maybe_export_file")

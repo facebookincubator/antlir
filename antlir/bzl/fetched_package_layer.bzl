@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """
 We want to be able to use packages of files, fetched from an external data
 store, for in-repo builds. Conceptually, this is pretty simple:

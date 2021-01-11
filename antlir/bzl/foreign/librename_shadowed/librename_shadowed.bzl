@@ -1,3 +1,8 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 """
 WATCH OUT: This has no dedicated tests.  That's mostly because of laziness,
 but also because at present it's meant to only be used as part of
