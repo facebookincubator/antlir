@@ -39,6 +39,7 @@ from antlir.rpm.repo_snapshot import (
     ReportableError,
 )
 from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
+from urllib3.exceptions import ProtocolError  # import a name in case it changes
 
 
 RPM_MAX_RETRY_S = [2 ** i for i in range(9)]  # 512 sec ==  8m32s
@@ -46,12 +47,19 @@ log = get_logger()
 
 
 def _is_retryable_http_err(e: Exception) -> bool:
-    if not isinstance(e, HTTPError):
-        return False
-    # 408 is 'Request Timeout' and, as with 5xx, can reasonably be presumed
-    # to be a transient issue that's worth retrying
-    status = e.to_dict()["http_status"]
-    return status // 100 == 5 or status == 408
+    if isinstance(e, ProtocolError):
+        if len(e.args) < 2 or not isinstance(e.args[1], ConnectionError):
+            # We can add retries if these actually happen.
+            return False  # pragma: no cover
+        # E.g. urllib3.exceptions.ProtocolError: ("Connection broken: ...",
+        # ConnectionResetError(104, 'Connection reset by peer')).
+        return True
+    if isinstance(e, HTTPError):
+        # 408 is 'Request Timeout' and, as with 5xx, can reasonably be
+        # presumed to be a transient issue that's worth retrying
+        status = e.to_dict()["http_status"]
+        return status // 100 == 5 or status == 408
+    return False
 
 
 def _detect_mutable_rpms(
@@ -160,6 +168,8 @@ def _download_rpm(
                 algorithm=CANONICAL_HASH, hexdigest=canonical_hash.hexdigest()
             )
         )
+        # IMPORTANT: Do not do anything that can throw after this point,
+        # since this method is @retryable.
         storage_id = output.commit()
     assert storage_id is not None
     return rpm, storage_id
