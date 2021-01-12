@@ -1,11 +1,23 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "default_vm_image", "export_file", "python_unittest")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:vm.bzl", "vm")
+load("//antlir/bzl:vm_opts.bzl", "new_vm_opts", "vm_opts_t")
 
 python_unittest(
     name = "test-vm",
     srcs = ["test_vm.py"],
+    env = {
+        "test-vm-json": shape.do_not_cache_me_json(
+            new_vm_opts(),
+            vm_opts_t,
+        ),
+    },
+    needed_coverage = [
+        (57, "//antlir/vm:vm"),
+        (33, "//antlir/vm:guest-agent"),
+    ],
     deps = [
         "//antlir:fs_utils",
         "//antlir/vm:vm",

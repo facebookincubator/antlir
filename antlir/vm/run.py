@@ -12,12 +12,8 @@ from typing import (
     Optional,
 )
 
-from antlir.common import get_logger
-from antlir.vm.vm import ShellMode, vm, VMExecOpts
+from antlir.vm.vm import ConsoleRedirect, ShellMode, vm, VMExecOpts
 from antlir.vm.vm_opts_t import vm_opts_t
-
-
-log = get_logger()
 
 
 class VMRunExecOpts(VMExecOpts):
@@ -38,6 +34,7 @@ class VMRunExecOpts(VMExecOpts):
 async def run(
     # common args from VMExecOpts
     bind_repo_ro: bool,
+    console: ConsoleRedirect,
     debug: bool,
     extra: List[str],
     opts: vm_opts_t,
@@ -55,7 +52,7 @@ async def run(
     async with vm(
         bind_repo_ro=bind_repo_ro,
         opts=opts,
-        verbose=debug,
+        console=console,
         timeout_ms=timeout_ms,
         shell=shell,
     ) as (instance, _, _):

@@ -15,14 +15,11 @@ from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import get_logger
 from antlir.fs_utils import Path
 from antlir.vm.share import BtrfsDisk, Plan9Export
-from antlir.vm.vm import ShellMode, vm, VMExecOpts
+from antlir.vm.vm import ConsoleRedirect, ShellMode, vm, VMExecOpts
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
 logger = get_logger()
-
-
-MINUTE = 60
 
 
 def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
@@ -97,6 +94,7 @@ class VMTestExecOpts(VMExecOpts):
 async def run(
     # common args from VMExecOpts
     bind_repo_ro: bool,
+    console: ConsoleRedirect,
     debug: bool,
     extra: List[str],
     opts: vm_opts_t,
@@ -168,8 +166,8 @@ async def run(
 
     async with vm(
         bind_repo_ro=bind_repo_ro,
+        console=console,
         opts=opts,
-        verbose=debug,
         shares=shares,
         shell=shell,
         timeout_ms=timeout_ms,

@@ -3,13 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import socket
 import tempfile
 import threading
 import unittest
 
 from antlir.fs_utils import Path
-from antlir.vm.vm import _wait_for_boot, VMBootError
+from antlir.vm.vm import _wait_for_boot, ShellMode, VMBootError, VMExecOpts
+from antlir.vm.vm_opts_t import vm_opts_t
 
 
 class TestAntlirVM(unittest.TestCase):
@@ -91,3 +93,62 @@ class TestAntlirVM(unittest.TestCase):
 
             finally:
                 sock.close()
+
+    def test_parse_cli(self):
+        opts_instance = vm_opts_t.from_env("test-vm-json")
+        opts_cli_arg = "--opts={}".format(os.environ["test-vm-json"])
+        # Test defaults of everything that has a default
+        self.assertEqual(
+            VMExecOpts(
+                opts=opts_instance,
+            ),
+            VMExecOpts.parse_cli(
+                [
+                    opts_cli_arg,
+                ]
+            ),
+            opts_instance,
+        )
+
+        # Test extra, debug, shell mode as console
+        self.assertEqual(
+            VMExecOpts(
+                opts=opts_instance,
+                debug=True,
+                shell=ShellMode.console,
+                extra=["--extra-argument"],
+            ),
+            VMExecOpts.parse_cli(
+                [
+                    opts_cli_arg,
+                    "--debug",
+                    "--shell=console",
+                    "--extra-argument",
+                ]
+            ),
+        )
+
+        # Test --console
+        self.assertEqual(
+            VMExecOpts(
+                opts=opts_instance,
+                console=None,
+            ),
+            VMExecOpts.parse_cli(
+                [
+                    opts_cli_arg,
+                    "--console",
+                ]
+            ),
+        )
+
+        # Test --console=/path/to/something
+        with tempfile.NamedTemporaryFile() as t:
+            t = Path(t.name)
+            self.assertEqual(
+                VMExecOpts(
+                    opts=opts_instance,
+                    console=t,
+                ),
+                VMExecOpts.parse_cli([opts_cli_arg, "--console={}".format(t)]),
+            )

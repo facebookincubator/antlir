@@ -24,6 +24,7 @@ from typing import (
     NamedTuple,
     Optional,
     List,
+    Union,
 )
 
 from antlir.common import init_logging, get_logger
@@ -94,6 +95,9 @@ def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:
             elapsed_ms = int(time.monotonic() * 1000) - start_ms
             logger.debug(f"socket timeout after {elapsed_ms}ms")
             raise VMBootError(f"Timeout waiting for boot event: {timeout_ms}ms")
+        finally:
+            logger.debug(f"Closing notify socket: {sockfile}")
+            sock.close()
 
 
 class ShellMode(Enum):
@@ -101,6 +105,21 @@ class ShellMode(Enum):
 
     def __str__(self):
         return self.value
+
+
+ConsoleRedirect = Union[int, Path, None]
+
+
+def _console_redirect_parse(arg):
+    if not arg:
+        return None
+    elif arg == subprocess.DEVNULL:
+        return arg
+    # Assume that a string is a path
+    elif isinstance(arg, str):
+        return Path(arg)
+    else:
+        raise ValueError(f"Invalid console argument: {arg}")
 
 
 class VMExecOpts(Shape):
@@ -111,6 +130,8 @@ class VMExecOpts(Shape):
 
     # Bind the repository root into the VM
     bind_repo_ro: bool = True
+    # Where should the console output for the VM go?
+    console: ConsoleRedirect = subprocess.DEVNULL
     # Extra, undefined arguments that are passed on the cli
     extra: List[str] = []
     # VM Opts instance passed to the CLI
@@ -150,6 +171,18 @@ class VMExecOpts(Shape):
         )
 
         parser.add_argument(
+            "--console",
+            const=None,
+            default=subprocess.DEVNULL,
+            nargs="?",
+            type=_console_redirect_parse,
+            help="If --console=/path/to/file is provided, append the console "
+            "output to the file.  If just --console is provided, the "
+            "console output is sent to stdout for easier debugging. "
+            "By default the console output is supressed.",
+        )
+
+        parser.add_argument(
             "--opts",
             type=vm_opts_t.parse_raw,
             help="Path to a serialized vm_opts_t instance containing "
@@ -160,7 +193,7 @@ class VMExecOpts(Shape):
         parser.add_argument(
             "--debug",
             action="store_true",
-            default=True,
+            default=False,
             help="Show debug logs",
         )
 
@@ -224,8 +257,8 @@ async def __vm_with_stack(
     stack: AsyncExitStack,
     opts: vm_opts_t,
     timeout_ms: int,
+    console: ConsoleRedirect,
     bind_repo_ro: bool = False,
-    verbose: bool = False,
     shell: Optional[ShellMode] = None,
     shares: Optional[Iterable[Share]] = None,
 ):
@@ -238,6 +271,13 @@ async def __vm_with_stack(
             tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
         )
     )
+
+    # Special console handling here.
+    # Future: This should really be done long before we get to this point
+    # and the value of `console` passed to this method should not be mutated.
+    if console and isinstance(console, Path):
+        logger.debug(f"console is a file: {console}")
+        console = stack.enter_context(console.open(mode="a"))
 
     # Set defaults
     shares = shares or []
@@ -411,19 +451,14 @@ async def __vm_with_stack(
 
     try:
         if shell and shell == ShellMode.console:
-            proc = await asyncio.create_subprocess_exec(*qemu_cmd)
-
-        elif verbose:
-            # don't connect stdin if we are simply in verbose mode
-            proc = await asyncio.create_subprocess_exec(
-                *qemu_cmd,
-                stdin=subprocess.PIPE,
-            )
+            proc = subprocess.Popen(qemu_cmd)
         else:
-            proc = await asyncio.create_subprocess_exec(
-                *qemu_cmd,
+            proc = subprocess.Popen(
+                qemu_cmd,
+                # Never have stdin connected unless we are in shell mode
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
+                stdout=console,
+                # Send stderr to the same place that console goes
                 stderr=subprocess.STDOUT,
             )
 
@@ -453,7 +488,7 @@ async def __vm_with_stack(
     finally:
         if shell:
             logger.debug("waiting for interactive vm to shutdown")
-            await proc.wait()
+            proc.wait()
 
         # Future: unless we are running in `--shell` mode, the VM hasn't been
         # told to shutdown yet.  So this is the 'default' behavior for
@@ -475,7 +510,7 @@ async def __vm_with_stack(
                 text=True,
             )
             logger.debug(f"VM -KILL returned with: {kill.returncode}")
-            await proc.wait()
+            proc.wait()
 
 
 @asynccontextmanager
