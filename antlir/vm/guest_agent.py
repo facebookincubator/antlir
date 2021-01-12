@@ -96,9 +96,6 @@ class QemuGuestAgent(object):
             raise QemuError(res["error"])
         return res["return"]
 
-    async def exec_sync(self, *args, **kwargs) -> Tuple[int, str, str]:
-        return await self.run(*args, **kwargs)
-
     async def run(
         self,
         cmd: Iterable[str],
