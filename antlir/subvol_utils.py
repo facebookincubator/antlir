@@ -570,7 +570,7 @@ class Subvol:
                     "The second pass of btrfs send-receive produced worse"
                     f"results that the first: {new_size} vs. {image_size}"
                 )
-                break
+                break  # pragma: no cover
             fs_bytes += leftover_bytes
             log.warning(
                 f"{self._path} did not fit in {fs_bytes} bytes, "
