@@ -457,7 +457,8 @@ def populate_temp_dir_and_rename(dest_path, *, overwrite=False) -> Path:
                 log.exception(  # pragma: no cover
                     f"Retrying deleting {dest_path}, another writer raced us"
                 )
-            break  # We won the race
+            # We won the race
+            break  # pragma: no cover
     except BaseException:
         shutil.rmtree(td)
         raise
