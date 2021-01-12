@@ -62,15 +62,25 @@ shape.loader(
 )
 
 python_library(
-    name = "vm",
+    name = "guest-agent",
     srcs = [
         "guest_agent.py",
+    ],
+    deps = [
+        "//antlir:common",
+    ],
+)
+
+python_library(
+    name = "vm",
+    srcs = [
         "vm.py",
     ],
     resources = {
         ":ssh-privkey": "privkey",
     },
     deps = [
+        ":guest-agent",
         ":share",
         ":tap",
         ":vm_opts_t",
