@@ -23,6 +23,7 @@ from typing import List, Tuple
 from unittest import mock
 
 import requests
+import urllib3
 from antlir.common import set_new_key
 from antlir.fs_utils import temp_dir
 from antlir.rpm.common import RpmShard
@@ -325,8 +326,7 @@ class DownloadReposTestCase(unittest.TestCase):
             with self._break_open_url(
                 r".*repomd.xml", raise_fake_http_error
             ), self.assertRaises(HTTPError):
-                # Since the download failed no snapshots are returned
-                self.assertIsNone(next(downloader()))
+                next(downloader())
         self.assertEqual(
             len(REPOMD_MAX_RETRY_S), len(mock_sleep.call_args_list)
         )
@@ -350,6 +350,29 @@ class DownloadReposTestCase(unittest.TestCase):
                 len(rpm_downloader.RPM_MAX_RETRY_S),
                 len(mock_sleep.call_args_list),
             )
+
+    @mock.patch("antlir.common._mockable_retry_fn_sleep")
+    def test_rpm_download_errors_protocol_error(self, mock_sleep):
+        def raise_protocol_error(_):
+            raise urllib3.exceptions.ProtocolError(
+                "blah blah",
+                ConnectionResetError(104, "Connection reset by peer OF DOOM"),
+            )
+
+        with self._make_downloader("0/good_dog") as downloader:
+            with self._break_open_url(
+                MICE_01_RPM_REGEX, raise_protocol_error
+            ), self.assertRaisesRegex(
+                # We'll retry up to the max (assertion below), and then fail.
+                urllib3.exceptions.ProtocolError,
+                " OF DOOM",
+            ):
+                next(downloader())
+
+        self.assertEqual(
+            len(rpm_downloader.RPM_MAX_RETRY_S),
+            len(mock_sleep.call_args_list),
+        )
 
     @mock.patch("antlir.common._mockable_retry_fn_sleep", mock.Mock())
     def test_repodata_download_errors(self):
