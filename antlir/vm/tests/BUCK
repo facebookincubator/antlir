@@ -15,7 +15,7 @@ python_unittest(
         ),
     },
     needed_coverage = [
-        (57, "//antlir/vm:vm"),
+        (54, "//antlir/vm:vm"),
         (32, "//antlir/vm:guest-agent"),
     ],
     deps = [

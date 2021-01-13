@@ -213,6 +213,7 @@ async def run(
                 # https://fburl.com/xt322rks
                 cwd=find_buck_cell_root(path_in_repo=os.getcwd()),
             )
+
             if returncode != 0:
                 logger.error(f"{cmd} failed with returncode {returncode}")
             else:
@@ -227,8 +228,8 @@ async def run(
                 blocking_print(stdout.decode("utf-8"), end="")
             else:
                 logger.warning("Test stdout was empty")
+
             if stderr:
-                logger.debug("Test stderr:")
                 blocking_print(stderr.decode("utf-8"), file=sys.stderr, end="")
             else:
                 logger.warning("Test stderr was empty")
