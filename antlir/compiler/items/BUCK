@@ -183,7 +183,7 @@ python_library(
 )
 
 python_unittest(
-    name = "test-ensure-dir-exists",
+    name = "test-ensure-dirs-exist",
     srcs = ["tests/test_ensure_dirs_exist.py"],
     needed_coverage = [(100, ":ensure_dirs_exist")],
     resources = {

@@ -31,7 +31,6 @@ from .stat_options import (
     mode_to_octal_str,
 )
 
-# TODO(jtru): Uncomment xattrs check when new BA is released
 _BUILD_SCRIPT = r"""
 path_to_make="$1"
 expected_stat="$2"
@@ -41,11 +40,11 @@ if  [ -d "$path_to_make" ]; then
         echo "ERROR: stat did not match \"$expected_stat\" for $path_to_make: $stat_res"
         exit 1
     fi
-    # xattrs_res="$(getfattr -m '-' -d --absolute-names "$path_to_make" | grep -v '^\(# file: \|security\.selinux=\)')"
-    # if [ -n "$xattrs_res" ]; then
-    #     echo "ERROR: xattrs was not empty for $path_to_make: $xattrs_res"
-    #     exit 1
-    # fi
+    xattrs_res="$(getfattr -m '-' -d --absolute-names "$path_to_make" | (grep -vE '^(# file: |security\.selinux=|$)' || :))"
+    if [ -n "$xattrs_res" ]; then
+        echo "ERROR: xattrs was not empty for $path_to_make: $xattrs_res"
+        exit 1
+    fi
 else
     mkdir "$path_to_make"
 fi
