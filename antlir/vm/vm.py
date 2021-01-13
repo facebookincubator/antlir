@@ -35,6 +35,7 @@ from antlir.shape import Shape
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.guest_agent import QemuError, QemuGuestAgent
+from antlir.vm.guest_ssh import GuestSSHConnection
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
 from antlir.vm.tap import VmTap
 from antlir.vm.vm_opts_t import vm_opts_t
@@ -102,6 +103,7 @@ def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:
 
 class ShellMode(Enum):
     console = "console"
+    ssh = "ssh"
 
     def __str__(self):
         return self.value
@@ -176,9 +178,9 @@ class VMExecOpts(Shape):
             default=subprocess.DEVNULL,
             nargs="?",
             type=_console_redirect_parse,
-            help="If --console=/path/to/file is provided, append the console "
-            "output to the file.  If just --console is provided, the "
-            "console output is sent to stdout for easier debugging. "
+            help="Where to send console output. If --console=/path/to/file is "
+            "provided, append the console output to the file.  If just "
+            "--console is provided, send to stdout for easier debugging. "
             "By default the console output is supressed.",
         )
 
@@ -271,13 +273,6 @@ async def __vm_with_stack(
             tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
         )
     )
-
-    # Special console handling here.
-    # Future: This should really be done long before we get to this point
-    # and the value of `console` passed to this method should not be mutated.
-    if console and isinstance(console, Path):
-        logger.debug(f"console is a file: {console}")
-        console = stack.enter_context(console.open(mode="a"))
 
     # Set defaults
     shares = shares or []
@@ -449,14 +444,25 @@ async def __vm_with_stack(
 
     qemu_cmd = ns.nsenter_as_user(str(opts.emulator.path), *args)
 
+    # Special console handling here.
+    # Future: This should really be done by the caller and provided as a
+    # BytesIO type.
+    if console and isinstance(console, Path):
+        logger.debug(f"console is a file: {console}")
+        console = stack.enter_context(console.open(mode="a"))
+
     try:
+        logger.info("Booting VM")
+        # If we are asking for a shell, and more specifically a *console* shell
+        # then we need to start the emulator process with stdin, stdout, and
+        # stderr attached to the users tty.  This is a special case
         if shell and shell == ShellMode.console:
             proc = subprocess.Popen(qemu_cmd)
         else:
             proc = subprocess.Popen(
                 qemu_cmd,
                 # Never have stdin connected unless we are in shell mode
-                stdin=subprocess.PIPE,
+                stdin=subprocess.DEVNULL,
                 stdout=console,
                 # Send stderr to the same place that console goes
                 stderr=subprocess.STDOUT,
@@ -464,13 +470,31 @@ async def __vm_with_stack(
 
         boot_elapsed_ms = _wait_for_boot(notify_sockfile, timeout_ms=timeout_ms)
         timeout_ms = timeout_ms - boot_elapsed_ms
+
         logger.debug(
             f"VM boot time: {boot_elapsed_ms}ms, "
             f"timeout_ms is now: {timeout_ms}ms"
         )
         logger.debug(f"VM ipv6: {tapdev.guest_ipv6_ll}")
 
+        # Note: This logic is quite weird and convoluted.  It will get cleaner
+        # in coming diffs.
         if shell:
+            if shell == ShellMode.ssh:
+                logger.debug("Using ShellMode == ShellMode.ssh")
+                with GuestSSHConnection(tapdev=tapdev) as ssh:
+                    ssh_cmd = ssh.ssh_cmd()
+                    logger.debug(f"cmd: {ssh_cmd}")
+                    shell_proc = subprocess.Popen(ssh_cmd)
+                    shell_proc.wait()
+
+                logger.debug(f"Shell has terminated: {shell_proc.returncode}")
+
+            # Future: This is because the control flow is backwards.
+            # Once this is inverted the specific behavior provided by
+            # the current callers will be provided via a co-routine passed
+            # to this method.  The co-routine will only be called if
+            # necessary.
             yield (None, boot_elapsed_ms, timeout_ms)
         else:
             try:
@@ -485,21 +509,18 @@ async def __vm_with_stack(
     except VMBootError as vbe:
         logger.error(f"VM failed to boot: {vbe}")
         raise RuntimeError(f"VM failed to boot: {vbe}")
+    except Exception as e:
+        logger.error(f"Unknown error occured: {e}")
     finally:
-        if shell:
-            logger.debug("waiting for interactive vm to shutdown")
-            proc.wait()
 
-        # Future: unless we are running in `--shell` mode, the VM hasn't been
-        # told to shutdown yet.  So this is the 'default' behavior for
-        # termination, but really this should be a last resort kind of thing.
-        # The VM should terminate gracefully from within the Guest OS if
-        # possible, and only if it doesn't terminate by itself within the
-        # timeout, then we kill it like this.
-        if proc.returncode is None:
-            logger.debug(
-                f"VM has not yet terminated, " f"sending -KILL to: {proc.pid}"
-            )
+        # Future: unless we are running in `--shell=console` mode, the VM
+        # hasn't been told to shutdown yet.  So this is the 'default'
+        # behavior for termination, but really this should be a last resort
+        # kind of thing.  The VM should terminate gracefully from within the
+        # Guest OS if possible, and only if it doesn't terminate by itself
+        # within the timeout, then we kill it like this.
+        if (shell and shell == ShellMode.ssh) or proc.returncode is None:
+            logger.debug(f"Sending kill to VM: {proc.pid}")
 
             kill = subprocess.run(
                 ["sudo", "kill", "-KILL", str(proc.pid)],
@@ -510,7 +531,11 @@ async def __vm_with_stack(
                 text=True,
             )
             logger.debug(f"VM -KILL returned with: {kill.returncode}")
-            proc.wait()
+
+        # Now we just wait
+        logger.info("Waiting for vm to terminate")
+        proc.wait()
+        logger.debug(f"VM exited with: {proc.returncode}")
 
 
 @asynccontextmanager

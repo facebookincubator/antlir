@@ -62,6 +62,20 @@ shape.loader(
 )
 
 python_library(
+    name = "guest-ssh",
+    srcs = [
+        "guest_ssh.py",
+    ],
+    resources = {
+        ":ssh-privkey": "privkey",
+    },
+    deps = [
+        "//antlir:common",
+        "//antlir/nspawn_in_subvol:common",
+    ],
+)
+
+python_library(
     name = "guest-agent",
     srcs = [
         "guest_agent.py",
@@ -76,11 +90,9 @@ python_library(
     srcs = [
         "vm.py",
     ],
-    resources = {
-        ":ssh-privkey": "privkey",
-    },
     deps = [
         ":guest-agent",
+        ":guest-ssh",
         ":share",
         ":tap",
         ":vm_opts_t",

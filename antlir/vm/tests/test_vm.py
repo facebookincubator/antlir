@@ -152,3 +152,17 @@ class TestAntlirVM(unittest.TestCase):
                 ),
                 VMExecOpts.parse_cli([opts_cli_arg, "--console={}".format(t)]),
             )
+
+        # Test --shell=ssh
+        self.assertEqual(
+            VMExecOpts(
+                opts=opts_instance,
+                shell=ShellMode.ssh,
+            ),
+            VMExecOpts.parse_cli(
+                [
+                    opts_cli_arg,
+                    "--shell=ssh",
+                ]
+            ),
+        )
