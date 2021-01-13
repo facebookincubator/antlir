@@ -403,7 +403,9 @@ def open_for_read_decompress(path):
     #     should likely be provided as a wrapper, not as part of the API --
     #     if it's even desirable.
     #   - The extra API complexity is of dubious utility.
-    if proc.returncode != -signal.SIGPIPE:
+    if proc.returncode == -signal.SIGPIPE:
+        log.error(f"Ignoring SIGPIPE exit of child `{decompress}` for `{path}`")
+    else:
         check_popen_returncode(proc)
 
 
