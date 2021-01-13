@@ -283,6 +283,10 @@ class TestFsUtils(unittest.TestCase):
                     for l in infile:
                         self.assertEqual(my_line, l)
 
+                # Test that an incomplete read doesn't cause SIGPIPE
+                with open_for_read_decompress(td / filename) as infile:
+                    pass
+
         # Test uncompressed
         with temp_dir() as td:
             with open(td / "kitteh", "wb") as outfile:

@@ -13,6 +13,7 @@ import json
 import os
 import shlex
 import shutil
+import signal
 import stat
 import subprocess
 import tempfile
@@ -392,7 +393,18 @@ def open_for_read_decompress(path):
         [decompress, "--decompress", "--stdout", path], stdout=subprocess.PIPE
     ) as proc:
         yield proc.stdout
-    check_popen_returncode(proc)
+    # If the caller does not consume all of `proc.stdout`, the decompressor
+    # program can get a SIGPIPE as it tries to write to a closed pipe.
+    #
+    # Rationale for just ignoring the signal -- I considered adding a
+    # mandatory `must_read_all_data` boolean arg , but decided it against it:
+    #   - Adding this in the no-compression case feels artificial.
+    #   - This is not typical behavior for Python file context managers -- it
+    #     should likely be provided as a wrapper, not as part of the API --
+    #     if it's even desirable.
+    #   - The extra API complexity is of dubious utility.
+    if proc.returncode != -signal.SIGPIPE:
+        check_popen_returncode(proc)
 
 
 def create_ro(path, mode):
