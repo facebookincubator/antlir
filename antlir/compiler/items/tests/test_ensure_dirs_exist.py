@@ -127,3 +127,28 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 EnsureDirsExistItem(**{**good, "user_group": "77:88"}).build(
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
+
+    def test_ensure_dirs_exist_item_xattrs_check(self):
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+            subvol = temp_subvolumes.create("ensure-dirs-exist-item")
+            subvol.run_as_root(["mkdir", "-p", subvol.path("alpha")])
+            subvol.run_as_root(["chmod", "755", subvol.path("alpha")])
+            ede_item = EnsureDirsExistItem(
+                from_target="t",
+                into_dir="/",
+                basename="alpha",
+                mode=0o755,
+            )
+            ede_item.build(subvol, DUMMY_LAYER_OPTS_BA)
+            subvol.run_as_root(
+                [
+                    "setfattr",
+                    "-n",
+                    "user.test_attr",
+                    "-v",
+                    "uhoh",
+                    subvol.path("/alpha"),
+                ]
+            )
+            with self.assertRaises(subprocess.CalledProcessError):
+                ede_item.build(subvol, DUMMY_LAYER_OPTS_BA)
