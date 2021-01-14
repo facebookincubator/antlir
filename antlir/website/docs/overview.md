@@ -146,7 +146,7 @@ registry.  This of course does not prevent integration with third-party
 image registries, but simply exists to allow for reproducible,
 closed-ecosystem builds that involve pre-built artifacts. Read more in the
 [pre-built artifacts section](
-/concepts/pre-built-artifacts/fetched-artifacts.md).
+concepts/pre-built-artifacts/fetched-artifacts).
 
 ## Bonus features of Antlir
 
