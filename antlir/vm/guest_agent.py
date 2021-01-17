@@ -9,6 +9,7 @@ import base64
 import json
 import os
 import random
+import subprocess
 import sys
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -23,23 +24,24 @@ from typing import (
     Tuple,
 )
 
-from antlir.common import async_retryable
+from antlir.common import get_logger, async_retryable
+from antlir.fs_utils import Path
 
 
 class QemuError(Exception):
     pass
 
 
-DEFAULT_CONNECT_TIMEOUT = timedelta(seconds=1)
+logger = get_logger()
+
+
 DEFAULT_EXEC_TIMEOUT = timedelta(seconds=60)
 STREAM_LIMIT = 2 ** 20  # 1 MB
 
 
 @dataclass(frozen=True)
 class QemuGuestAgent(object):
-
-    path: os.PathLike
-    connect_timeout: int = DEFAULT_CONNECT_TIMEOUT
+    path: Path
 
     @async_retryable("Failed to find {self.path}", [0.1] * 5)
     async def _open(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
@@ -50,6 +52,7 @@ class QemuGuestAgent(object):
         self,
     ) -> AsyncContextManager[Tuple[asyncio.StreamReader, asyncio.StreamWriter]]:
 
+        logger.debug(f"connect: {self.path}")
         # Qemu creates the socket file for us, sometimes it can be a bit slow
         # and we will try and connect before it is created. `_open()` will
         # retry until the file shows up.
@@ -73,7 +76,7 @@ class QemuGuestAgent(object):
                     f"guest-sync-delimited ID does not match {sync_id}: {resp}"
                 )  # pragma: no cover
             yield r, w
-        except ConnectionResetError as err:
+        except ConnectionResetError as err:  # pragma: no cover
             raise QemuError("Guest agent connection reset") from err
         finally:
             if not w.is_closing():
@@ -89,17 +92,19 @@ class QemuGuestAgent(object):
         writer.write(json.dumps(call).encode("utf-8"))
         await writer.drain()
         received = await reader.readline()
-        if reader.at_eof():
+        if reader.at_eof():  # pragma: no cover
             raise QemuError("Reached EOF")
         res = json.loads(received)
-        if "error" in res:
+
+        if "error" in res:  # pragma: no cover
             raise QemuError(res["error"])
         return res["return"]
 
     async def run(
         self,
         cmd: Iterable[str],
-        timeout: timedelta = DEFAULT_EXEC_TIMEOUT,
+        timeout_ms: int,
+        check: bool = False,
         env: Optional[Mapping[str, str]] = None,
         cwd: Optional[os.PathLike] = None,
     ) -> Tuple[int, bytes, bytes]:
@@ -111,14 +116,12 @@ class QemuGuestAgent(object):
             path = cmd[0]
             args = cmd[1:]
             env = env or {}
-            if isinstance(timeout, timedelta):
-                timeout = timeout.seconds
             systemd_run_args = [
                 "--pipe",
                 "--wait",
                 "--quiet",
                 "--service-type=exec",
-                f"--property=RuntimeMaxSec={str(timeout)}",
+                f"--property=RuntimeMaxSec={int(timeout_ms/1000)}",
             ]
             systemd_run_args += [
                 f"--setenv={key}={val}" for key, val in env.items()
@@ -138,6 +141,7 @@ class QemuGuestAgent(object):
                 w,
             )
             pid = pid["pid"]
+
             while True:
                 status = await self._call(
                     {"execute": "guest-exec-status", "arguments": {"pid": pid}},
@@ -146,31 +150,22 @@ class QemuGuestAgent(object):
                 )
                 # output is only made available when the process exits
                 if status["exited"]:
+                    retcode = status["exitcode"]
                     stdout = base64.b64decode(status.get("out-data", b""))
                     stderr = base64.b64decode(status.get("err-data", b""))
-                    return status["exitcode"], stdout, stderr
-                await asyncio.sleep(0.1)
+                    logger.debug(
+                        f"retcode: {retcode}, "
+                        f"stdout: {stdout}, "
+                        f"stderr: {stderr}"
+                    )
+                    if check and (retcode != 0):
+                        raise subprocess.CalledProcessError(
+                            returncode=retcode,
+                            cmd=cmd,
+                            output=stdout,
+                            stderr=stderr,
+                        )
+                    else:
+                        return retcode, stdout, stderr
 
-    async def cat_file(self, path: os.PathLike, timeout: int) -> bytes:
-        async with self._connect() as (r, w):
-            handle = await self._call(
-                {
-                    "execute": "guest-file-open",
-                    "arguments": {"path": str(path)},
-                },
-                r,
-                w,
-            )
-            contents = b""
-            while True:
-                read = await self._call(
-                    {
-                        "execute": "guest-file-read",
-                        "arguments": {"handle": handle},
-                    },
-                    r,
-                    w,
-                )
-                contents += base64.b64decode(read["buf-b64"])
-                if read["eof"]:
-                    return contents
+                await asyncio.sleep(0.1)

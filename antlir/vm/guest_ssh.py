@@ -29,11 +29,6 @@ logger = get_logger()
 class GuestSSHConnection:
     tapdev: VmTap
     privkey: Path = None
-    timeout_sec: int = DEFAULT_TIMEOUT_SEC
-
-    def __init__(self, tapdev: VmTap, timeout_sec: int = DEFAULT_TIMEOUT_SEC):
-        self.tapdev = tapdev
-        self.timeout_sec = timeout_sec
 
     def __enter__(self):
         self.privkey = Path(tempfile.NamedTemporaryFile(delete=False).name)
@@ -47,17 +42,16 @@ class GuestSSHConnection:
         logger.debug(f"Exit ssh context.  Remove private key: {self.privkey}")
         try:
             os.remove(self.privkey)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error(f"Error removing privkey: {self.privkey}: {e}")
-            pass
 
     async def run(
         self,
         cmd: Iterable[str],
-        timeout: int,
+        timeout_ms: int,
         env: Optional[Mapping[str, str]] = None,
-        cwd: Optional[Path] = None,
         check: bool = False,
+        cwd: Optional[Path] = None,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     ) -> Tuple[int, bytes, bytes]:
@@ -73,13 +67,19 @@ class GuestSSHConnection:
             "--wait",
             "--quiet",
             "--service-type=exec",
-            f"--property=RuntimeMaxSec={timeout}",
+            f"--property=RuntimeMaxSec={int(timeout_ms/1000)}",
         ] + [f"--setenv={key}={val}" for key, val in run_env.items()]
 
         if cwd is not None:
             systemd_run_args += [f"--working-directory={str(cwd)}"]
 
-        cmd = self.ssh_cmd() + ["--"] + systemd_run_args + ["--"] + cmd
+        cmd = (
+            self.ssh_cmd(timeout_ms=timeout_ms)
+            + ["--"]
+            + systemd_run_args
+            + ["--"]
+            + cmd
+        )
 
         logger.debug(f"Running {cmd} in vm at {self.tapdev.guest_ipv6_ll}")
         logger.debug(f"{' '.join(cmd)}")
@@ -94,12 +94,12 @@ class GuestSSHConnection:
         logger.debug(f"res: {res.returncode}, {res.stdout}, {res.stderr}")
         return res.returncode, res.stdout, res.stderr
 
-    def ssh_cmd(self, **kwargs) -> List[str]:
+    def ssh_cmd(self, timeout_ms: int, **kwargs) -> List[str]:
         options = {
             # just ignore the ephemeral vm fingerprint
             "UserKnownHostsFile": "/dev/null",
             "StrictHostKeyChecking": "no",
-            "ConnectTimeout": self.timeout_sec,
+            "ConnectTimeout": int(timeout_ms / 1000),
             "ConnectionAttempts": 10,
         }
         logger.debug(f"Additional options: {kwargs}")
@@ -114,12 +114,3 @@ class GuestSSHConnection:
             str(self.privkey),
             f"root@{self.tapdev.guest_ipv6_ll}",
         )
-
-    async def cat_file(self, path: os.PathLike, timeout: int) -> bytes:
-        _, stdout, _ = await self.run(
-            ["cat", str(path)],
-            check=True,
-            stdout=subprocess.PIPE,
-            timeout=timeout,
-        )
-        return stdout

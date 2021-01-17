@@ -55,13 +55,15 @@ async def run(
         console=console,
         timeout_ms=timeout_ms,
         shell=shell,
-    ) as (instance, _, _):
+    ) as (instance, boot_ms, timeout_ms):
         # If we are run with `--shell` mode, we don't get an instance since
         # the --shell mode takes over.  This is a bit of a wart that exists
         # because if a context manager doesn't yield *something* it will
         # throw an exception that this caller has to handle.
         if instance:
-            returncode, stdout, stderr = await instance.run(cmd)
+            returncode, stdout, stderr = await instance.run(
+                cmd, timeout_ms=timeout_ms
+            )
 
             # We want to write whatever we get from the command out to the
             # respective fds.
