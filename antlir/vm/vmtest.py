@@ -172,6 +172,7 @@ async def run(
         shell=shell,
         timeout_ms=timeout_ms,
     ) as (instance, boot_elapsed_ms, timeout_ms):
+
         # If we are run with `--shell` mode, we don't get an instance since
         # the --shell mode takes over.  This is a bit of a wart that exists
         # because if a context manager doesn't yield *something* it will
@@ -189,7 +190,9 @@ async def run(
                 # host, so as another sanity check only create the
                 # directories in the VM that already exist on the host
                 if dirname and os.path.exists(dirname):
-                    await instance.run(("mkdir", "-p", dirname))
+                    await instance.run(
+                        ("mkdir", "-p", dirname), timeout=timeout_ms / 1000
+                    )
                     file_arguments.append(arg)
 
             # The behavior of the FB-internal Python test main changes
@@ -226,13 +229,9 @@ async def run(
             # it ends up blocked as long as it eventually gets written.
             if stdout:
                 blocking_print(stdout.decode("utf-8"), end="")
-            else:
-                logger.warning("Test stdout was empty")
 
             if stderr:
                 blocking_print(stderr.decode("utf-8"), file=sys.stderr, end="")
-            else:
-                logger.warning("Test stderr was empty")
 
             for path in file_arguments:
                 logger.debug(f"copying {path} back to the host")
@@ -240,7 +239,9 @@ async def run(
                 # host so that TestPilot can read from where it expects
                 # outputs to end up
                 try:
-                    outfile_contents = await instance.cat_file(str(path))
+                    outfile_contents = await instance.cat_file(
+                        str(path), timeout=timeout_ms / 1000
+                    )
                     with open(path, "wb") as out:
                         out.write(outfile_contents)
                 except Exception as e:
