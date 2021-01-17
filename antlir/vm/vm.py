@@ -411,7 +411,7 @@ async def __vm_with_stack(
 
     if os.access("/dev/kvm", os.R_OK | os.W_OK):
         args += ["-enable-kvm"]
-    else:
+    else:  # pragma: no cover
         logger.warning(
             "KVM not available - falling back to slower, emulated CPU: "
             + "see https://our.intern.facebook.com/intern/qa/5312/"
@@ -449,7 +449,9 @@ async def __vm_with_stack(
         # If we are asking for a shell, and more specifically a *console* shell
         # then we need to start the emulator process with stdin, stdout, and
         # stderr attached to the users tty.  This is a special case
-        if shell and shell == ShellMode.console:
+        # Note: this is not covered by the test cases yet because the API does
+        # not yet provide a good way to expose this.
+        if shell and shell == ShellMode.console:  # pragma: no cover
             proc = subprocess.Popen(qemu_cmd)
         else:
             proc = subprocess.Popen(
@@ -472,11 +474,13 @@ async def __vm_with_stack(
 
         # Note: This logic is quite weird and convoluted.  It will get cleaner
         # in coming diffs.
-        if shell:
+        # Also Note: this is not covered in test cases because the API does
+        # not yet provide a good way to expose this.
+        if shell:  # pragma: no cover
             if shell == ShellMode.ssh:
                 logger.debug("Using ShellMode == ShellMode.ssh")
                 with GuestSSHConnection(tapdev=tapdev) as ssh:
-                    ssh_cmd = ssh.ssh_cmd()
+                    ssh_cmd = ssh.ssh_cmd(timeout_ms=timeout_ms)
                     logger.debug(f"cmd: {ssh_cmd}")
                     shell_proc = subprocess.Popen(ssh_cmd)
                     shell_proc.wait()
@@ -503,10 +507,11 @@ async def __vm_with_stack(
                 raise AttributeError(
                     f"Invalid VM connect scheme: {opts.connect_scheme}"
                 )  # pragma: no cover
-    except VMBootError as vbe:
+    # Note: The error cases are not yet covered properly in tests.
+    except VMBootError as vbe:  # pragma: no cover
         logger.error(f"VM failed to boot: {vbe}")
         raise RuntimeError(f"VM failed to boot: {vbe}")
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.error(f"VM failed: {e}")
         raise RuntimeError(f"VM failed: {e}")
     finally:

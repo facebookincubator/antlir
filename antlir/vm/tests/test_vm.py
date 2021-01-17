@@ -6,6 +6,7 @@
 import asyncio
 import os
 import socket
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -180,21 +181,61 @@ class AsyncTestAntlirVm(unittest.TestCase):
     def tearDownClass(cls):
         cls.event_loop.close()
 
-    async def _test_vm(self, scheme):
+    async def _test_vm_scheme(self, scheme):
         opts_instance = vm_opts_t.from_env(f"test-vm-{scheme}-json")
         async with vm(
             opts=opts_instance,
         ) as (instance, boottime_ms, timeout_ms):
-            retcode, stdout, stderr = await instance.run(
+            retcode, stdout, _ = await instance.run(
                 cmd=["/bin/hostname"],
-                timeout=timeout_ms / 1000,
+                timeout_ms=timeout_ms,
             )
 
-        self.assertEqual(stdout, b"vmtest\n")
-        self.assertEqual(retcode, 0)
+            self.assertEqual(stdout, b"vmtest\n")
+            self.assertEqual(retcode, 0)
 
-    def test_agent_vm(self):
-        self.event_loop.run_until_complete(self._test_vm(scheme="agent"))
+            retcode, stdout, _ = await instance.run(
+                cmd=["pwd"],
+                cwd="/tmp",
+                timeout_ms=timeout_ms,
+            )
+            self.assertEqual(stdout, b"/tmp\n")
+            self.assertEqual(retcode, 0)
 
-    def test_ssh_vm(self):
-        self.event_loop.run_until_complete(self._test_vm(scheme="ssh"))
+            with self.assertRaises(subprocess.CalledProcessError):
+                await instance.run(
+                    check=True,
+                    cmd=["/bin/false"],
+                    timeout_ms=timeout_ms,
+                )
+
+    def test_connect_scheme_agent(self):
+        self.event_loop.run_until_complete(self._test_vm_scheme(scheme="agent"))
+
+    def test_connect_scheme_ssh(self):
+        self.event_loop.run_until_complete(self._test_vm_scheme(scheme="ssh"))
+
+    def test_vm_console(self):
+        opts_instance = vm_opts_t.from_env("test-vm-ssh-json")
+
+        async def _test():
+            with tempfile.NamedTemporaryFile() as tf:
+                async with vm(
+                    opts=opts_instance,
+                    console=Path(tf.name),
+                ) as (instance, boottime_ms, timeout_ms):
+                    # We only care about capturing console output
+                    retcode, _, _ = await instance.run(
+                        [
+                            "bash",
+                            "-c",
+                            r"""echo "TEST CONSOLE" > /dev/console""",
+                        ],
+                        check=True,
+                        timeout_ms=timeout_ms,
+                    )
+
+                with open(tf.name, "r") as f:
+                    self.assertIn("TEST CONSOLE", f.read())
+
+        self.event_loop.run_until_complete(_test())

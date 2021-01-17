@@ -191,7 +191,8 @@ async def run(
                 # directories in the VM that already exist on the host
                 if dirname and os.path.exists(dirname):
                     await instance.run(
-                        ("mkdir", "-p", dirname), timeout=timeout_ms / 1000
+                        ["mkdir", "-p", dirname],
+                        timeout_ms=timeout_ms,
                     )
                     file_arguments.append(arg)
 
@@ -206,8 +207,7 @@ async def run(
             logger.debug(f"executing {cmd} inside guest")
             returncode, stdout, stderr = await instance.run(
                 cmd=cmd,
-                # Future: support ms precision for timeouts
-                timeout=timeout_ms / 1000,
+                timeout_ms=timeout_ms,
                 env=test_env,
                 # TODO(lsalis):  This is currently needed due to how some
                 # cpp_unittest targets depend on artifacts in the code
@@ -239,11 +239,13 @@ async def run(
                 # host so that TestPilot can read from where it expects
                 # outputs to end up
                 try:
-                    outfile_contents = await instance.cat_file(
-                        str(path), timeout=timeout_ms / 1000
+                    retcode, contents, _ = await instance.run(
+                        ["cat", str(path)],
+                        check=True,
+                        timeout_ms=timeout_ms,
                     )
                     with open(path, "wb") as out:
-                        out.write(outfile_contents)
+                        out.write(contents)
                 except Exception as e:
                     logger.error(f"Failed to copy {path} to host: {str(e)}")
 
