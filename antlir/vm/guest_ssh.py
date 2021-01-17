@@ -54,14 +54,15 @@ class GuestSSHConnection:
     async def run(
         self,
         cmd: Iterable[str],
+        timeout: int,
         env: Optional[Mapping[str, str]] = None,
         cwd: Optional[Path] = None,
         check: bool = False,
-        stdout=None,
-        stderr=None,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     ) -> Tuple[int, bytes, bytes]:
-        """run a command inside the vm and optionally pipe stdout/stderr to the
-        parent
+        """
+        run a command inside the vm
         """
         cmd = list(cmd)
         run_env = DEFAULT_ENV.copy()
@@ -72,12 +73,13 @@ class GuestSSHConnection:
             "--wait",
             "--quiet",
             "--service-type=exec",
+            f"--property=RuntimeMaxSec={timeout}",
         ] + [f"--setenv={key}={val}" for key, val in run_env.items()]
 
         if cwd is not None:
             systemd_run_args += [f"--working-directory={str(cwd)}"]
 
-        cmd = (self.ssh_cmd() + ["--"], +systemd_run_args + ["--"] + cmd)
+        cmd = self.ssh_cmd() + ["--"] + systemd_run_args + ["--"] + cmd
 
         logger.debug(f"Running {cmd} in vm at {self.tapdev.guest_ipv6_ll}")
         logger.debug(f"{' '.join(cmd)}")
@@ -86,9 +88,10 @@ class GuestSSHConnection:
             check=check,
             stdout=stdout,
             stderr=stderr,
-            # Never connect stdin
-            stdin=subprocess.DEVNULL,
+            # Future: handle stdin properly so that we can pipe input from
+            # the caller into a program being executing inside a VM
         )
+        logger.debug(f"res: {res.returncode}, {res.stdout}, {res.stderr}")
         return res.returncode, res.stdout, res.stderr
 
     def ssh_cmd(self, **kwargs) -> List[str]:
@@ -97,6 +100,7 @@ class GuestSSHConnection:
             "UserKnownHostsFile": "/dev/null",
             "StrictHostKeyChecking": "no",
             "ConnectTimeout": self.timeout_sec,
+            "ConnectionAttempts": 10,
         }
         logger.debug(f"Additional options: {kwargs}")
         options.update(kwargs)
@@ -111,6 +115,11 @@ class GuestSSHConnection:
             f"root@{self.tapdev.guest_ipv6_ll}",
         )
 
-    def cat_file(self, path: os.PathLike) -> bytes:
-        _, stdout, _ = self.run(["cat", str(path)], check=True)
+    async def cat_file(self, path: os.PathLike, timeout: int) -> bytes:
+        _, stdout, _ = await self.run(
+            ["cat", str(path)],
+            check=True,
+            stdout=subprocess.PIPE,
+            timeout=timeout,
+        )
         return stdout

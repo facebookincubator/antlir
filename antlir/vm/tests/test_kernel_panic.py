@@ -27,7 +27,5 @@ class KernelPanicTest(unittest.TestCase):
         combined = f"\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
 
         # Expect vmtest failed with QemuError
-        self.assertEqual(proc.returncode, 255, proc.returncode)
-        self.assertTrue(
-            "Communication with VM failed: " in combined, msg=combined
-        )
+        self.assertEqual(proc.returncode, 1, proc.returncode)
+        self.assertTrue("VM failed: " in combined, msg=combined)

@@ -71,7 +71,7 @@ class QemuGuestAgent(object):
             if resp["return"] != sync_id:
                 raise QemuError(
                     f"guest-sync-delimited ID does not match {sync_id}: {resp}"
-                )
+                )  # pragma: no cover
             yield r, w
         except ConnectionResetError as err:
             raise QemuError("Guest agent connection reset") from err
@@ -151,7 +151,7 @@ class QemuGuestAgent(object):
                     return status["exitcode"], stdout, stderr
                 await asyncio.sleep(0.1)
 
-    async def cat_file(self, path: os.PathLike) -> bytes:
+    async def cat_file(self, path: os.PathLike, timeout: int) -> bytes:
         async with self._connect() as (r, w):
             handle = await self._call(
                 {

@@ -110,18 +110,8 @@ class ShellMode(Enum):
 
 
 ConsoleRedirect = Union[int, Path, None]
-
-
-def _console_redirect_parse(arg):
-    if not arg:
-        return None
-    elif arg == subprocess.DEVNULL:
-        return arg
-    # Assume that a string is a path
-    elif isinstance(arg, str):
-        return Path(arg)
-    else:
-        raise ValueError(f"Invalid console argument: {arg}")
+DEFAULT_CONSOLE = subprocess.DEVNULL
+DEFAULT_TIMEOUT_MS = 300 * 1000
 
 
 class VMExecOpts(Shape):
@@ -133,7 +123,7 @@ class VMExecOpts(Shape):
     # Bind the repository root into the VM
     bind_repo_ro: bool = True
     # Where should the console output for the VM go?
-    console: ConsoleRedirect = subprocess.DEVNULL
+    console: ConsoleRedirect = DEFAULT_CONSOLE
     # Extra, undefined arguments that are passed on the cli
     extra: List[str] = []
     # VM Opts instance passed to the CLI
@@ -144,7 +134,7 @@ class VMExecOpts(Shape):
     shell: Optional[ShellMode] = None
     # How many millis to allow the VM to run.  The timeout starts
     # as soon as the emulator process is spawned.
-    timeout_ms: int = 300 * 1000
+    timeout_ms: int = DEFAULT_TIMEOUT_MS
 
     # Future:  Since we're using `Shape` for this, which uses pydantic.  I
     # think it is possible automagically construct this based on the field
@@ -174,10 +164,13 @@ class VMExecOpts(Shape):
 
         parser.add_argument(
             "--console",
+            # This is used when the bare option with no arg is used.
             const=None,
+            # This is used when no option is provided
             default=subprocess.DEVNULL,
             nargs="?",
-            type=_console_redirect_parse,
+            # This is used only when an argument is provided
+            type=Path.from_argparse,
             help="Where to send console output. If --console=/path/to/file is "
             "provided, append the console output to the file.  If just "
             "--console is provided, send to stdout for easier debugging. "
@@ -221,7 +214,7 @@ class VMExecOpts(Shape):
             # Inside FB some tools set an env var instead of passing an
             # option. Maybe we can get rid of this if we fix the few
             # tools that call this.
-            default=os.environ.get("TIMEOUT", 300 * 1000),
+            default=os.environ.get("TIMEOUT", DEFAULT_TIMEOUT_MS),
             help="How many seconds to allow the VM to run.  The clock starts "
             "as soon as the emulator is spawned.",
         )
@@ -258,9 +251,9 @@ class VMExecOpts(Shape):
 async def __vm_with_stack(
     stack: AsyncExitStack,
     opts: vm_opts_t,
-    timeout_ms: int,
-    console: ConsoleRedirect,
-    bind_repo_ro: bool = False,
+    timeout_ms: int = DEFAULT_TIMEOUT_MS,
+    console: ConsoleRedirect = DEFAULT_CONSOLE,
+    bind_repo_ro: bool = True,
     shell: Optional[ShellMode] = None,
     shares: Optional[Iterable[Share]] = None,
 ):
@@ -307,7 +300,7 @@ async def __vm_with_stack(
                 f"non-host mount found: {mount}. "
                 "`antlir.vm` does not yet support "
                 "non-host mounts"
-            )
+            )  # pragma: no cover
 
     rwdevice = stack.enter_context(
         tempfile.NamedTemporaryFile(
@@ -497,20 +490,25 @@ async def __vm_with_stack(
             # necessary.
             yield (None, boot_elapsed_ms, timeout_ms)
         else:
-            try:
+            if opts.connect_scheme == "agent":
                 yield (
                     QemuGuestAgent(guest_agent_sockfile),
                     boot_elapsed_ms,
                     timeout_ms,
                 )
-            except QemuError as err:
-                logger.error(f"Communication with VM failed: {err}")
-
+            elif opts.connect_scheme == "ssh":
+                with GuestSSHConnection(tapdev=tapdev) as ssh:
+                    yield (ssh, boot_elapsed_ms, timeout_ms)
+            else:
+                raise AttributeError(
+                    f"Invalid VM connect scheme: {opts.connect_scheme}"
+                )  # pragma: no cover
     except VMBootError as vbe:
         logger.error(f"VM failed to boot: {vbe}")
         raise RuntimeError(f"VM failed to boot: {vbe}")
     except Exception as e:
-        logger.error(f"Unknown error occured: {e}")
+        logger.error(f"VM failed: {e}")
+        raise RuntimeError(f"VM failed: {e}")
     finally:
 
         # Future: unless we are running in `--shell=console` mode, the VM

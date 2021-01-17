@@ -9,14 +9,23 @@ python_unittest(
     name = "test-vm",
     srcs = ["test_vm.py"],
     env = {
-        "test-vm-json": shape.do_not_cache_me_json(
-            new_vm_opts(),
+        "test-vm-agent-json": shape.do_not_cache_me_json(
+            new_vm_opts(
+                connect_scheme = "agent",
+            ),
+            vm_opts_t,
+        ),
+        "test-vm-ssh-json": shape.do_not_cache_me_json(
+            new_vm_opts(
+                connect_scheme = "ssh",
+            ),
             vm_opts_t,
         ),
     },
     needed_coverage = [
-        (54, "//antlir/vm:vm"),
-        (32, "//antlir/vm:guest-agent"),
+        (86, "//antlir/vm:vm"),
+        (82, "//antlir/vm:guest-agent"),
+        (89, "//antlir/vm:guest-ssh"),
     ],
     deps = [
         "//antlir:fs_utils",
@@ -63,18 +72,25 @@ image.layer(
     ],
 )
 
-vm.python_unittest(
-    name = "python",
-    srcs = ["test_basic_vm.py"],
-    env = test_env_vars,
-    resources = {
-        ":resource.txt": "resource",
-    },
-    vm_opts = vm.opts(
-        cpus = 4,
-        layer = ":vmtest-custom-layer",
-    ),
-)
+[
+    vm.python_unittest(
+        name = "python-{}".format(scheme),
+        srcs = ["test_basic_vm.py"],
+        env = test_env_vars,
+        resources = {
+            ":resource.txt": "resource",
+        },
+        vm_opts = vm.opts(
+            cpus = 4,
+            layer = ":vmtest-custom-layer",
+            connect_scheme = scheme,
+        ),
+    )
+    for scheme in [
+        "agent",
+        "ssh",
+    ]
+]
 
 vm.cpp_unittest(
     name = "cpp",

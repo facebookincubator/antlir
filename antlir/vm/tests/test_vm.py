@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import asyncio
 import os
 import socket
 import tempfile
@@ -10,7 +11,7 @@ import threading
 import unittest
 
 from antlir.fs_utils import Path
-from antlir.vm.vm import _wait_for_boot, ShellMode, VMBootError, VMExecOpts
+from antlir.vm.vm import _wait_for_boot, ShellMode, VMBootError, VMExecOpts, vm
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
@@ -95,8 +96,8 @@ class TestAntlirVM(unittest.TestCase):
                 sock.close()
 
     def test_parse_cli(self):
-        opts_instance = vm_opts_t.from_env("test-vm-json")
-        opts_cli_arg = "--opts={}".format(os.environ["test-vm-json"])
+        opts_instance = vm_opts_t.from_env("test-vm-agent-json")
+        opts_cli_arg = "--opts={}".format(os.environ["test-vm-agent-json"])
         # Test defaults of everything that has a default
         self.assertEqual(
             VMExecOpts(
@@ -166,3 +167,34 @@ class TestAntlirVM(unittest.TestCase):
                 ]
             ),
         )
+
+
+class AsyncTestAntlirVm(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Needed for the async tests
+        cls.event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(cls.event_loop)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.event_loop.close()
+
+    async def _test_vm(self, scheme):
+        opts_instance = vm_opts_t.from_env(f"test-vm-{scheme}-json")
+        async with vm(
+            opts=opts_instance,
+        ) as (instance, boottime_ms, timeout_ms):
+            retcode, stdout, stderr = await instance.run(
+                cmd=["/bin/hostname"],
+                timeout=timeout_ms / 1000,
+            )
+
+        self.assertEqual(stdout, b"vmtest\n")
+        self.assertEqual(retcode, 0)
+
+    def test_agent_vm(self):
+        self.event_loop.run_until_complete(self._test_vm(scheme="agent"))
+
+    def test_ssh_vm(self):
+        self.event_loop.run_until_complete(self._test_vm(scheme="ssh"))
