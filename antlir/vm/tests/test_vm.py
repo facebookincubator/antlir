@@ -187,7 +187,7 @@ class AsyncTestAntlirVm(unittest.TestCase):
             opts=opts_instance,
         ) as (instance, boottime_ms, timeout_ms):
             retcode, stdout, _ = await instance.run(
-                cmd=["/bin/hostname"],
+                cmd=["/bin/hostnamectl", "status", "--static"],
                 timeout_ms=timeout_ms,
             )
 
