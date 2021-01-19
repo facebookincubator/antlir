@@ -47,5 +47,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "resolutions": {
+    "**/node-fetch": "2.6.1",
+    "**/highlight.js": "10.4.1"
   }
 }
