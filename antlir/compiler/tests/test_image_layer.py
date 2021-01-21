@@ -352,13 +352,13 @@ class ImageLayerTestCase(unittest.TestCase):
 
             check_common_rpm_render(self, r, REPO_CFG.rpm_installer_default)
 
-    def _check_installed_files_bar(self, r):
+    def _check_installed_files_bar(self, r, clones_re=""):
         (  # We don't know the exact sizes because these 2 may be wrapped
             ino,
         ) = pop_path(r, "installed/print-ok")
-        self.assertRegex(ino, r"^\(File m555 d[0-9]+\)$")
+        self.assertRegex(ino, r"^\(File m555 d[0-9]+" + clones_re + r"\)$")
         (ino,) = pop_path(r, "installed/print-ok-too")
-        self.assertRegex(ino, r"^\(File m555 d[0-9]+\)$")
+        self.assertRegex(ino, r"^\(File m555 d[0-9]+" + clones_re + r"\)$")
         (hello_ino,) = pop_path(r, "hello_world.tar")
         # Depending on the build host OS, our tarball may or may not get
         # automatically sparsified.
@@ -438,7 +438,11 @@ class ImageLayerTestCase(unittest.TestCase):
         with self.target_subvol("cloned-files") as sv:
             r = render_subvol(sv)
             for bar in ["bar", "bar2", "bar3"]:
-                self._check_installed_files_bar(pop_path(r, bar))
+                self._check_installed_files_bar(
+                    pop_path(r, bar),
+                    # When multiple `test_cloned_files` run concurrently, XXX
+                    clones_re=r"(|\([^)]*\))",
+                )
             self.assertEqual(
                 [
                     "(Dir)",
