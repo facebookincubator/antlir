@@ -14,7 +14,7 @@ vm_opts_t = shape.shape(
     # How to connect for sending commands, by default use the guest agent
     # but other possibilities include:
     #   - ssh
-    connect_scheme = shape.field(str, default = "agent"),
+    connect_scheme = shape.field(str, default = "ssh"),
     # Number of cpus to provide
     cpus = shape.field(int, default = 1),
     # Flag to mount the kernel.artifacts.devel layer into the vm at runtime.

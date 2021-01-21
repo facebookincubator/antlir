@@ -40,6 +40,9 @@ vm.python_unittest(
     srcs = ["create_kernel_panic.py"],
     tags = helpers.tags_to_hide_test(),
     visibility = [],
+    vm_opts = vm.opts(
+        connect_scheme = "agent",
+    ),
 )
 
 python_unittest(
