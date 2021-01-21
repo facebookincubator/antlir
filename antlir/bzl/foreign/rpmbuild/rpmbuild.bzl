@@ -219,6 +219,7 @@ def image_import_rpm_public_key_layer(
         name = copy_layer,
         parent_layer = parent_layer,
         features = [image_ensure_subdirs_exist("/", gpg_key_dir[1:])] + install_keys,
+        **image_layer_kwargs
     )
 
     import_layer = name + "-key-import"
@@ -239,4 +240,5 @@ def image_import_rpm_public_key_layer(
         name = name,
         parent_layer = ":" + import_layer,
         features = [image_remove(gpg_key_dir)],
+        **image_layer_kwargs
     )
