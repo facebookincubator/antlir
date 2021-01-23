@@ -125,19 +125,6 @@ python_library(
     ],
 )
 
-# Future When we run a VM the tap device is actually created
-# on the host, but this test runs inside a VM, which needs
-# a tap device...  Yes, this is circular, since tap devices
-# are created inside of network namespaces (always), it *should*
-# be ok to run this inside of a regular test instead.  However,
-# this needs to run as root... so really this should probably
-# be run inside a container instead of a vm.
-vm.python_unittest(
-    name = "test-tap",
-    srcs = ["test_tap.py"],
-    deps = [":tap"],
-)
-
 # defines the `Share` dataclass for vm
 python_library(
     name = "share",
@@ -148,15 +135,6 @@ python_library(
 export_file(
     name = "mount-generator",
     src = "mount-generator",
-)
-
-python_unittest(
-    name = "test-share-generator",
-    srcs = ["test_share_generator.py"],
-    resources = {
-        ":mount-generator": "mount-generator",
-    },
-    deps = [":share"],
 )
 
 python_binary(

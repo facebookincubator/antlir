@@ -6,6 +6,28 @@ load("//antlir/bzl:vm.bzl", "vm")
 load("//antlir/bzl:vm_opts.bzl", "new_vm_opts", "vm_opts_t")
 
 python_unittest(
+    name = "test-share-generator",
+    srcs = ["test_share_generator.py"],
+    resources = {
+        "//antlir/vm:mount-generator": "mount-generator",
+    },
+    deps = ["//antlir/vm:share"],
+)
+
+# Future: when we run a VM the tap device is actually created
+# on the host, but this test runs inside a VM, which needs
+# a tap device...  Yes, this is circular, since tap devices
+# are created inside of network namespaces (always), it *should*
+# be ok to run this inside of a regular test instead.  However,
+# this needs to run as root... so really this should probably
+# be run inside a container instead of a vm.
+vm.python_unittest(
+    name = "test-tap",
+    srcs = ["test_tap.py"],
+    deps = ["//antlir/vm:tap"],
+)
+
+python_unittest(
     name = "test-vm",
     srcs = ["test_vm.py"],
     env = {
