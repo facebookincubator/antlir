@@ -443,9 +443,8 @@ async def __vm_with_stack(
     if console and isinstance(console, Path):
         logger.debug(f"console is a file: {console}")
         console = stack.enter_context(console.open(mode="a"))
-
     try:
-        logger.info("Booting VM")
+        logger.info(f"Booting VM using ShellMode: {shell}")
         # If we are asking for a shell, and more specifically a *console* shell
         # then we need to start the emulator process with stdin, stdout, and
         # stderr attached to the users tty.  This is a special case
@@ -522,7 +521,12 @@ async def __vm_with_stack(
         # kind of thing.  The VM should terminate gracefully from within the
         # Guest OS if possible, and only if it doesn't terminate by itself
         # within the timeout, then we kill it like this.
-        if (shell and shell == ShellMode.ssh) or proc.returncode is None:
+        # Note: we can't easily test the console mode yet, so we don't cover
+        # this branch
+        if shell == ShellMode.console:  # pragma: nocover
+            logger.info("Wait for VM to terminate via console")
+            proc.wait()
+        elif proc.returncode is None or shell == ShellMode.ssh:
             logger.debug(f"Sending kill to VM: {proc.pid}")
 
             kill = subprocess.run(
@@ -535,9 +539,18 @@ async def __vm_with_stack(
             )
             logger.debug(f"VM -KILL returned with: {kill.returncode}")
 
-        # Now we just wait
-        logger.info("Waiting for vm to terminate")
-        proc.wait()
+            # Now we just wait
+            logger.info("Wait for VM to terminate via kill")
+            proc.wait()
+        # This branch should never be reached, but we want to know if the elif
+        # condition is sometimes not met.  But I don't know how to trigger it,
+        # so we can't easily cover this.
+        else:  # pragma: nocover
+            raise RuntimeError(
+                "Unknown VM termination state: "
+                f"ret: {proc.returncode}, pid: {proc.pid}"
+            )
+
         logger.debug(f"VM exited with: {proc.returncode}")
 
 
