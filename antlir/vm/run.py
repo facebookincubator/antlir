@@ -45,7 +45,7 @@ async def run(
 ):
     # This is just a shortcut so that if the user doesn't provide a command
     # we drop them into a shell using the standard mechanism for that.
-    if not cmd:
+    if not cmd and not shell:
         shell = ShellMode.ssh
 
     returncode = 0
