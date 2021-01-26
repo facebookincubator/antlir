@@ -28,6 +28,7 @@ logger = get_logger()
 @dataclass()
 class GuestSSHConnection:
     tapdev: VmTap
+    options: Mapping[str, str] = None
     privkey: Path = None
 
     def __enter__(self):
@@ -102,8 +103,11 @@ class GuestSSHConnection:
             "ConnectTimeout": int(timeout_ms / 1000),
             "ConnectionAttempts": 10,
         }
-        logger.debug(f"Additional options: {kwargs}")
-        options.update(kwargs)
+
+        if self.options:
+            logger.debug(f"Additional options: {self.options}")
+            options.update(self.options)
+
         options = list(
             chain.from_iterable(["-o", f"{k}={v}"] for k, v in options.items())
         )

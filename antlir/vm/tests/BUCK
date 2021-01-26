@@ -2,8 +2,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "default_vm_image", "export_file", "python_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:vm.bzl", "vm")
-load("//antlir/bzl:vm_opts.bzl", "new_vm_opts", "vm_opts_t")
+load("//antlir/bzl/vm:defs.bzl", "vm")
 
 python_unittest(
     name = "test-share-generator",
@@ -32,16 +31,29 @@ python_unittest(
     srcs = ["test_vm.py"],
     env = {
         "test-vm-agent-json": shape.do_not_cache_me_json(
-            new_vm_opts(
-                connect_scheme = "agent",
+            vm.types.opts.new(
+                runtime = vm.types.runtime.new(
+                    connection = vm.types.connection.new(
+                        scheme = "agent",
+                    ),
+                ),
             ),
-            vm_opts_t,
+            vm.types.opts.t,
         ),
         "test-vm-ssh-json": shape.do_not_cache_me_json(
-            new_vm_opts(
-                connect_scheme = "ssh",
+            vm.types.opts.new(
+                runtime = vm.types.runtime.new(
+                    connection = vm.types.connection.new(
+                        scheme = "ssh",
+                        # Test using ssh options
+                        options = {
+                            "ServerAliveCountMax": "1",
+                            "ServerAliveInterval": "1",
+                        },
+                    ),
+                ),
             ),
-            vm_opts_t,
+            vm.types.opts.t,
         ),
     },
     needed_coverage = [
@@ -62,8 +74,19 @@ vm.python_unittest(
     srcs = ["create_kernel_panic.py"],
     tags = helpers.tags_to_hide_test(),
     visibility = [],
-    vm_opts = vm.opts(
-        connect_scheme = "agent",
+    vm_opts = vm.types.opts.new(
+        runtime = vm.types.runtime.new(
+            connection = vm.types.connection.new(
+                scheme = "ssh",
+                # Set the options such that it fails fast when
+                # the vm crashes.  This is just to make the test
+                # run in a reasonable amount of time.
+                options = {
+                    "ServerAliveCountMax": "1",
+                    "ServerAliveInterval": "1",
+                },
+            ),
+        ),
     ),
 )
 
@@ -71,7 +94,7 @@ python_unittest(
     name = "test-kernel-panic",
     srcs = ["test_kernel_panic.py"],
     resources = {
-        ":create-kernel-panic=vmtest": "vmtest",
+        ":create-kernel-panic=vmtest": "create-kernel-panic",
     },
     deps = [
         "//antlir:fs_utils",
@@ -105,10 +128,17 @@ image.layer(
         resources = {
             ":resource.txt": "resource",
         },
-        vm_opts = vm.opts(
+        vm_opts = vm.types.opts.new(
             cpus = 4,
-            layer = ":vmtest-custom-layer",
-            connect_scheme = scheme,
+            disk = vm.types.disk.new(
+                seed = True,
+                layer = ":vmtest-custom-layer",
+            ),
+            runtime = vm.types.runtime.new(
+                connection = vm.types.connection.new(
+                    scheme = scheme,
+                ),
+            ),
         ),
     )
     for scheme in [
@@ -126,7 +156,7 @@ vm.cpp_unittest(
 vm.python_unittest(
     name = "test-with-kernel-devel",
     srcs = ["test_kernel_devel.py"],
-    vm_opts = vm.opts(
+    vm_opts = vm.types.opts.new(
         devel = True,
     ),
 )

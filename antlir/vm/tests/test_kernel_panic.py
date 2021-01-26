@@ -6,6 +6,7 @@
 
 import importlib.resources
 import subprocess
+import tempfile
 import unittest
 
 from antlir.fs_utils import Path
@@ -14,18 +15,21 @@ from antlir.nspawn_in_subvol.common import DEFAULT_PATH_ENV
 
 class KernelPanicTest(unittest.TestCase):
     def test_vmtest_kernel_panic(self):
-        with importlib.resources.path(__package__, "vmtest") as vmtest:
-            exe = Path(vmtest)
+        with importlib.resources.path(
+            __package__, "create-kernel-panic"
+        ) as vmtest, tempfile.NamedTemporaryFile() as console_f:
 
-        proc = subprocess.run(
-            [exe],
-            env={"PATH": DEFAULT_PATH_ENV},
-            capture_output=True,
-            text=True,
-        )
+            # This is the running the fully materialized =vmtest script
+            # that buck built.
+            proc = subprocess.run(
+                [Path(vmtest), "--console={}".format(console_f.name)],
+            )
 
-        combined = f"\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
-
-        # Expect vmtest failed with QemuError
-        self.assertEqual(proc.returncode, 1, proc.returncode)
-        self.assertTrue("VM failed: " in combined, msg=combined)
+            # This fails because ssh terminates, and ssh exits with 255 anytime
+            # there is an error on the connection
+            self.assertEqual(proc.returncode, 255)
+            # Expect to see the kernel panic message in the console output
+            self.assertIn(
+                b"Kernel panic - not syncing: sysrq triggered crash",
+                console_f.read(),
+            )

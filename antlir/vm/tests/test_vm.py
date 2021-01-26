@@ -209,13 +209,13 @@ class AsyncTestAntlirVm(unittest.TestCase):
                     timeout_ms=timeout_ms,
                 )
 
-    def test_connect_scheme_agent(self):
+    def test_api_scheme_agent(self):
         self.event_loop.run_until_complete(self._test_vm_scheme(scheme="agent"))
 
-    def test_connect_scheme_ssh(self):
+    def test_api_scheme_ssh(self):
         self.event_loop.run_until_complete(self._test_vm_scheme(scheme="ssh"))
 
-    def test_vm_console(self):
+    def test_api_console(self):
         opts_instance = vm_opts_t.from_env("test-vm-ssh-json")
 
         async def _test():
@@ -229,12 +229,44 @@ class AsyncTestAntlirVm(unittest.TestCase):
                         [
                             "bash",
                             "-c",
-                            r"""echo "TEST CONSOLE" > /dev/console""",
+                            r"""'echo "TEST CONSOLE" > /dev/console'""",
                         ],
                         check=True,
                         timeout_ms=timeout_ms,
                     )
 
                 self.assertIn(b"TEST CONSOLE", tf.read())
+
+        self.event_loop.run_until_complete(_test())
+
+    def test_api_kernel_panic(self):
+        opts_instance = vm_opts_t.from_env("test-vm-ssh-json")
+
+        async def _test():
+            with tempfile.NamedTemporaryFile() as console_f:
+                async with vm(
+                    opts=opts_instance,
+                    console=Path(console_f.name),
+                ) as (instance, boottime_ms, timeout_ms):
+                    # We only care about capturing console output
+                    retcode, _, _ = await instance.run(
+                        [
+                            "bash",
+                            "-c",
+                            r"""'echo c > /proc/sysrq-trigger'""",
+                        ],
+                        # This is expected to fail
+                        check=False,
+                        timeout_ms=timeout_ms,
+                    )
+
+                # Expect to see the kernel panic message in the console output
+                self.assertIn(
+                    b"Kernel panic - not syncing: sysrq triggered crash",
+                    console_f.read(),
+                )
+                # Expect that we failed with 255, which is the error returned by
+                # SSH when it encounters an error.
+                self.assertEqual(retcode, 255)
 
         self.event_loop.run_until_complete(_test())
