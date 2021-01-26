@@ -284,7 +284,7 @@ async def __vm_with_stack(
     repo_config = load_repo_config(path_in_repo=Path(os.getcwd()))
 
     # Process all the mounts from the root image we are using
-    mounts = mounts_from_image_meta(opts.rootfs_image.path)
+    mounts = mounts_from_image_meta(opts.disk.package.path)
 
     for mount in mounts:
         if mount.build_source.type == "host":
@@ -329,7 +329,7 @@ async def __vm_with_stack(
     shares.extend(
         [
             BtrfsDisk(
-                path=str(opts.rootfs_image.path),
+                path=str(opts.disk.package.path),
                 dev="vda",
                 generator=False,
                 mountpoint="/",
@@ -410,10 +410,10 @@ async def __vm_with_stack(
     ] + list(tapdev.qemu_args)
 
     # The bios to boot the emulator with
-    args.extend(["-bios", str(opts.bios.path)])
+    args.extend(["-bios", str(opts.runtime.emulator.bios.path)])
 
     # Set the path for loading additional roms
-    args.extend(["-L", str(opts.emulator_roms_dir.path)])
+    args.extend(["-L", str(opts.runtime.emulator.roms_dir.path)])
 
     if os.access("/dev/kvm", os.R_OK | os.W_OK):
         args += ["-enable-kvm"]
@@ -441,7 +441,7 @@ async def __vm_with_stack(
 
     args += __qemu_share_args(shares)
 
-    qemu_cmd = ns.nsenter_as_user(str(opts.emulator.path), *args)
+    qemu_cmd = ns.nsenter_as_user(str(opts.runtime.emulator.binary.path), *args)
 
     # Special console handling here.
     # Future: This should really be done by the caller and provided as a
@@ -484,9 +484,11 @@ async def __vm_with_stack(
         if shell:  # pragma: no cover
             if shell == ShellMode.ssh:
                 logger.debug("Using ShellMode == ShellMode.ssh")
-                with GuestSSHConnection(tapdev=tapdev) as ssh:
+                with GuestSSHConnection(
+                    tapdev=tapdev, options=opts.runtime.connection.options
+                ) as ssh:
                     ssh_cmd = ssh.ssh_cmd(timeout_ms=timeout_ms)
-                    logger.debug(f"cmd: {ssh_cmd}")
+                    logger.debug(f"cmd: {' '.join(ssh_cmd)}")
                     shell_proc = subprocess.Popen(ssh_cmd)
                     shell_proc.wait()
 
@@ -499,18 +501,21 @@ async def __vm_with_stack(
             # necessary.
             yield (None, boot_elapsed_ms, timeout_ms)
         else:
-            if opts.connect_scheme == "agent":
+            if opts.runtime.connection.scheme == "agent":
                 yield (
                     QemuGuestAgent(guest_agent_sockfile),
                     boot_elapsed_ms,
                     timeout_ms,
                 )
-            elif opts.connect_scheme == "ssh":
-                with GuestSSHConnection(tapdev=tapdev) as ssh:
+            elif opts.runtime.connection.scheme == "ssh":
+                with GuestSSHConnection(
+                    tapdev=tapdev, options=opts.runtime.connection.options
+                ) as ssh:
                     yield (ssh, boot_elapsed_ms, timeout_ms)
             else:
                 raise AttributeError(
-                    f"Invalid VM connect scheme: {opts.connect_scheme}"
+                    "Invalid VM connect scheme: "
+                    f"{opts.runtime.connection.scheme}"
                 )  # pragma: no cover
     # Note: The error cases are not yet covered properly in tests.
     except VMBootError as vbe:  # pragma: no cover

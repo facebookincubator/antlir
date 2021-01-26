@@ -58,11 +58,11 @@ with the options allowed there.  The key differences with
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":image.bzl", "image")
-load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "python_unittest")
-load(":shape.bzl", "shape")
-load(":vm_opts.bzl", "new_vm_opts", "vm_opts_t")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "python_unittest")
+load("//antlir/bzl:shape.bzl", "shape")
+load(":types.bzl", "api")
 
 _RULE_TO_TEST_TYPE = {
     cpp_unittest: "gtest",
@@ -99,7 +99,7 @@ mv "$TMP/out" "$OUT"
             extra_args = " ".join(args) if args else "",
             opts_quoted = shell.quote(shape.do_not_cache_me_json(
                 instance = vm_opts,
-                shape = vm_opts_t,
+                shape = api.opts.t,
             )),
         ),
         cacheable = False,
@@ -158,7 +158,7 @@ def _vm_unittest(
 
     # Set some defaults
     env = env or {}
-    vm_opts = vm_opts or new_vm_opts()
+    vm_opts = vm_opts or api.opts.new()
 
     # Construct tags for controlling/influencing the unittest runner.
     # Future: These tags are heavily FB specific and really have no place
@@ -299,9 +299,9 @@ def _vm_multi_kernel_unittest(
             # Don't provide the initrd originally constructed since
             # the kernel version likely changed
             merged_vm_opts.pop("initrd")
-            vm_opts = new_vm_opts(**merged_vm_opts)
+            vm_opts = api.opts.new(**merged_vm_opts)
         else:
-            vm_opts = new_vm_opts(kernel = kernel)
+            vm_opts = api.opts.new(kernel = kernel)
 
         vm_unittest(
             name = "-".join([name, suffix]),
@@ -340,6 +340,7 @@ vm = struct(
         python_unittest = _vm_multi_kernel_python_unittest,
     ),
     python_unittest = _vm_python_unittest,
-    opts = new_vm_opts,
+    # API export for building vm_opt_t and related types
+    types = api,
     run = _build_run_target,
 )
