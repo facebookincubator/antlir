@@ -355,6 +355,12 @@ async def __vm_with_stack(
             shares.append(Plan9Export(mount))
 
     ns = stack.enter_context(Unshare([Namespace.NETWORK, Namespace.PID]))
+
+    logger.debug(
+        "Namespace has been created. Enter with: "
+        f"{' '.join(ns.nsenter_as_user('/bin/bash'))}"
+    )
+
     tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
     args = [
         "-no-reboot",
