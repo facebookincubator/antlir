@@ -219,7 +219,6 @@ class SubvolumeSetMutator(NamedTuple):
                 parent_subvol.id_map.inner.description, SubvolumeDescription
             )
             subvol = copy.deepcopy(
-                # pyre-fixme[6]: unsafe(?) deepcopy across different types!!!
                 parent_subvol,
                 memo={id(parent_subvol.id_map.inner.description): description},
             )
@@ -240,7 +239,6 @@ class SubvolumeSetMutator(NamedTuple):
             description.name_uuid_prefixes()
         )
 
-        # pyre-fixme[6]: subvol is Union[Subvolume, SubvolumeDescription] eh?!
         return cls(subvolume=subvol, subvolume_set=subvol_set)
 
     def apply_item(self, item: SendStreamItem):
