@@ -235,7 +235,6 @@ class AsyncTestAntlirVm(unittest.TestCase):
                         timeout_ms=timeout_ms,
                     )
 
-                with open(tf.name, "r") as f:
-                    self.assertIn("TEST CONSOLE", f.read())
+                self.assertIn(b"TEST CONSOLE", tf.read())
 
         self.event_loop.run_until_complete(_test())

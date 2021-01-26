@@ -2,7 +2,6 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get")
-load(":defs.bzl", "initrd")
 
 export_file(
     name = "init.sh",
