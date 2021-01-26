@@ -209,9 +209,6 @@ class AsyncTestAntlirVm(unittest.TestCase):
                     timeout_ms=timeout_ms,
                 )
 
-    def test_api_scheme_agent(self):
-        self.event_loop.run_until_complete(self._test_vm_scheme(scheme="agent"))
-
     def test_api_scheme_ssh(self):
         self.event_loop.run_until_complete(self._test_vm_scheme(scheme="ssh"))
 

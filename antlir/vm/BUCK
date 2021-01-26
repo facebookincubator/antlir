@@ -66,22 +66,11 @@ python_library(
 )
 
 python_library(
-    name = "guest-agent",
-    srcs = [
-        "guest_agent.py",
-    ],
-    deps = [
-        "//antlir:common",
-    ],
-)
-
-python_library(
     name = "vm",
     srcs = [
         "vm.py",
     ],
     deps = [
-        ":guest-agent",
         ":guest-ssh",
         ":share",
         ":tap",
