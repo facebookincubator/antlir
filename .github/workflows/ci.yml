@@ -11,7 +11,9 @@ jobs:
         run: git submodule update --init
 
       - name: Install system dependencies
-        run: sudo apt-get install -y attr libcap-ng-dev systemd-container
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr libcap-ng-dev systemd-container
 
       # createrepo_c is not packaged for Ubuntu 20.04. Until it is or until we
       # can use a hosted runner that is based on CentOS (or Fedora), compile
@@ -19,7 +21,6 @@ jobs:
       # rpm repositories.
       - name: Build createrepo_c
         run: |
-          sudo apt-get update
           sudo apt-get install libssl-dev liblzma-dev libxml2-dev libmagic-dev libcurl4-openssl-dev libbz2-dev librpm-dev
           curl -L https://github.com/rpm-software-management/createrepo_c/archive/0.16.2.tar.gz | gunzip | tar -x
           cd createrepo_c-0.16.2
