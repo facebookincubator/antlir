@@ -58,7 +58,6 @@ python_unittest(
     },
     needed_coverage = [
         (100, "//antlir/vm:vm"),
-        (100, "//antlir/vm:guest-agent"),
         (100, "//antlir/vm:guest-ssh"),
     ],
     deps = [
@@ -142,7 +141,6 @@ image.layer(
         ),
     )
     for scheme in [
-        "agent",
         "ssh",
     ]
 ]
