@@ -242,6 +242,6 @@ fake_macro_library(
         "vm_opts.bzl",
     ],
     deps = [
-        "//antlir/vm:kernel",
+        "//antlir/bzl:shape",
     ],
 )
