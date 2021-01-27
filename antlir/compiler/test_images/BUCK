@@ -91,6 +91,12 @@ image.layer(
             user = "nobody",
             group = "nobody",
         ),
+        image.rpms_install(
+            [
+                # Needed to check CAP_NET_ADMIN
+                "iproute",
+            ],
+        ),
         "//antlir/features:build_artifact_cleanup",
     ],
 )

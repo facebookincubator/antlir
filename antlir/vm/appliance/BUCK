@@ -109,6 +109,7 @@ guest_agent = [
 # the bases.
 notify = [
     systemd.install_unit("notify-host.service"),
+    image.ensure_dirs_exist("/etc/udev/rules.d/"),
     image.install("notify-host.rules", "/etc/udev/rules.d/99-notify-host.rules"),
 ]
 
