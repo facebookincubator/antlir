@@ -87,19 +87,24 @@ def find_repo_root(path_in_repo: Optional[Path] = None) -> Path:
     """
 
     # We have to start somewhere reasonable.  If we don't get an explicit path
-    # start from the location of the binary being executed.
-    path_in_repo = path_in_repo or Path(sys.argv[0]).dirname()
+    # start from the cwd and then the location of the binary being executed.
+    paths_to_try = (
+        [path_in_repo]
+        if path_in_repo
+        else [Path(os.getcwd()), Path(sys.argv[0]).dirname()]
+    )
 
-    repo_root = _first_parent_containing_sigil(
-        path_in_repo, ".hg", is_dir=True
-    ) or _first_parent_containing_sigil(path_in_repo, ".git", is_dir=True)
+    for path_in_repo in paths_to_try:
+        repo_root = _first_parent_containing_sigil(
+            path_in_repo, ".hg", is_dir=True
+        ) or _first_parent_containing_sigil(path_in_repo, ".git", is_dir=True)
 
-    if repo_root:
-        return repo_root
+        if repo_root:
+            return repo_root
 
     # If we got this far we never found the repo root
     raise RuntimeError(
-        f"No hg or git root found in any ancestor of {path_in_repo}."
+        f"No hg or git root found in any ancestor of {paths_to_try}."
         f" Is this an hg or git repo?"
     )
 
