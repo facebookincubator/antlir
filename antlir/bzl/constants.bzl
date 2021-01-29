@@ -59,6 +59,16 @@ def _get_version_set_to_path():
     vs_to_path[VERSION_SET_ALLOW_ALL_VERSIONS] = "TROLLING TROLLING TROLLING"
     return vs_to_path
 
+# Defaults to the empty list if the config is not set
+def _get_artifact_key_to_path():
+    lst = _get_str_list_cfg("artifact_key_to_path")
+    key_to_path = dict(zip(lst[::2], lst[1::2]))
+
+    if 2 * len(key_to_path) != len(lst):
+        fail("antlir.artifact_key_to_path is a space-separated dict: k1 v1 k2 v2")
+
+    return key_to_path
+
 #
 # These are repo-specific configuration keys, which can be overridden via
 # the Buck CLI for debugging / development purposes.
@@ -115,6 +125,10 @@ REPO_CFG = shape.new(
         (native.read_config("defaults.cxx_library", "type") == "shared") or
         (native.read_config("python", "package_style") == "inplace")
     ),
+
+    # This is a dictionary that allow for looking up configurable artifact
+    # targets by a key.
+    artifact = _get_artifact_key_to_path(),
 
     # The target path of the build appliance used for `image.layer`s that do
     # not specify one via `build_opts`.

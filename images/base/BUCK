@@ -14,3 +14,9 @@ image.layer(
         rpm_repo_snapshot = "//snapshot:fedora33",
     ),
 )
+
+image.package(
+    name = "fedora.btrfs",
+    seed_device = True,
+    writable_subvolume = True,
+)

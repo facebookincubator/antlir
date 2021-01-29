@@ -3,8 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "default_vm_image", "kernel_get", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "kernel_get", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":kernel.bzl", "kernel_t", "normalize_kernel")
 
@@ -73,7 +74,7 @@ def _new_vm_disk(
         package = ":" + package_target
 
     elif not package:
-        package = default_vm_image.package
+        package = REPO_CFG.artifact["vm.rootfs.btrfs.stable"]
 
     return shape.new(
         _vm_disk_t,

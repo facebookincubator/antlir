@@ -1,6 +1,5 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/vm:defs.bzl", "vm")
 
@@ -133,13 +132,22 @@ python_binary(
     ],
 )
 
-# This will eventually be the default image used for vmtest both internally and
-# externally, but for now is only used in the OSS antlir project.
-image.layer(
-    name = "default-image",
-    parent_layer = REPO_CFG.build_appliance_default,
+vm.run(
+    name = "default-stable",
+    vm_opts = vm.types.opts.new(
+        kernel = kernel_get.default,
+        disk = vm.types.disk.new(
+            package = vm.artifacts.rootfs.package.stable,
+        ),
+    ),
 )
 
-image.package(
-    name = "default-image.btrfs",
+vm.run(
+    name = "default-rc",
+    vm_opts = vm.types.opts.new(
+        kernel = kernel_get.default,
+        disk = vm.types.disk.new(
+            package = vm.artifacts.rootfs.package.rc,
+        ),
+    ),
 )

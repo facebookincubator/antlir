@@ -58,9 +58,10 @@ with the options allowed there.  The key differences with
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "default_vm_image", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "python_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":types.bzl", "api")
 
@@ -329,9 +330,19 @@ def _vm_multi_kernel_python_unittest(
 
 vm = struct(
     cpp_unittest = _vm_cpp_unittest,
-    # The set of reasonable defaults for running vms
-    default = struct(
-        layer = default_vm_image.layer,
+    # This nested structure is for looking up the default set of artifacts
+    # used for this subsystem.
+    artifacts = struct(
+        rootfs = struct(
+            layer = struct(
+                rc = REPO_CFG.artifact["vm.rootfs.layer.rc"],
+                stable = REPO_CFG.artifact["vm.rootfs.layer.stable"],
+            ),
+            package = struct(
+                rc = REPO_CFG.artifact["vm.rootfs.btrfs.rc"],
+                stable = REPO_CFG.artifact["vm.rootfs.btrfs.stable"],
+            ),
+        ),
     ),
     # An API for constructing a set of tests that are all the
     # same except for the kernel version.
