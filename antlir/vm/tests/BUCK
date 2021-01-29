@@ -1,6 +1,6 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "default_vm_image", "export_file", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/vm:defs.bzl", "vm")
 
@@ -110,7 +110,7 @@ test_env_vars = {
 
 image.layer(
     name = "vmtest-custom-layer",
-    parent_layer = default_vm_image.layer,
+    parent_layer = vm.artifacts.rootfs.layer.stable,
     features = [
         image.install(
             ":resource.txt",
