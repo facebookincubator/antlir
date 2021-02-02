@@ -59,6 +59,30 @@ def image_rpmbuild(
         # build dependencies installed.
         parent_layer = REPO_CFG.build_appliance_default,
         **image_layer_kwargs):
+    private_image_rpmbuild_impl(
+        name,
+        specfile,
+        source,
+        signer,
+        parent_layer,
+        **image_layer_kwargs
+    )
+
+def private_image_rpmbuild_impl(
+        name,
+        specfile,
+        source,
+        signer,
+        parent_layer,
+        # Additional setup features used by wrapper command
+        setup_features = None,
+        # A wrapper command to run rpmbuild instead of running it standalone
+        wrapper_cmd = None,
+        **image_layer_kwargs):
+    """
+    Implementation of image_rpmbuild, see docs in `image_rpmbuild`.
+    """
+
     # Future: We tar the source directory and untar it inside the subvolume
     # before building because the "install_*_trees" feature does not yet
     # exist.
@@ -90,7 +114,7 @@ def image_rpmbuild(
             image_ensure_subdirs_exist("/rpmbuild", "SOURCES"),
             image_ensure_subdirs_exist("/rpmbuild", "SPECS"),
             image_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
-        ],
+        ] + (setup_features or []),
         visibility = [],
         antlir_rule = "user-internal",
     )
@@ -139,7 +163,7 @@ def image_rpmbuild(
         # typical case will want to auto-install dependencies, which
         # requires `root`.
         user = "root",
-        cmd = [
+        cmd = (wrapper_cmd or []) + [
             "rpmbuild",
             # Change the destination for the built RPMs
             "--define=_topdir {}".format(rpmbuild_dir),
