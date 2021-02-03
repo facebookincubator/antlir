@@ -395,11 +395,6 @@ class PackageImageTestCase(unittest.TestCase):
             original_render[1]["56KB_nuls_clone"] = ["(File h57344)"]
             original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
 
-            # Our CPIO archive detatches hardlinks so that when it is
-            # unpacked each hardlinked file becomes unique and special.
-            original_render[1]["goodbye"] = ["(File)"]
-            original_render[1]["hello"][1] = {"world": ["(File)"]}
-
             # CPIO does not support xattrs
             original_render[1]["hello"][0] = "(Dir)"
 

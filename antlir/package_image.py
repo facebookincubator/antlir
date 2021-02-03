@@ -363,8 +363,7 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
             # Use LANG=C to avoid any surprises that locale might cause
             "LANG=C /bin/sort | "
             # Create the archive with bsdtar
-            "LANG=C /bin/bsdtar --create --format=newc "
-            "  --files-from - --file - |"
+            "LANG=C /bin/cpio -o -H newc |"
             # And finally compress it
             "/bin/gzip --stdout)",
         ]
