@@ -440,7 +440,7 @@ async def __vm_with_stack(
         logger.debug(f"console is a file: {console}")
         console = stack.enter_context(console.open(mode="a"))
     try:
-        logger.info(f"Booting VM using ShellMode: {shell}")
+        logger.debug(f"Booting VM using ShellMode: {shell}")
         # If we are asking for a shell, and more specifically a *console* shell
         # then we need to start the emulator process with stdin, stdout, and
         # stderr attached to the users tty.  This is a special case
@@ -467,22 +467,22 @@ async def __vm_with_stack(
         )
         logger.debug(f"VM ipv6: {tapdev.guest_ipv6_ll}")
 
-        # Note: This logic is quite weird and convoluted.  It will get cleaner
-        # in coming diffs.
-        # Also Note: this is not covered in test cases because the API does
+        if shell == ShellMode.console:  # pragma: no cover
+            logger.debug("Waiting for VM console to terminate")
+            proc.wait()
+        # Note: this is not covered in test cases because the API does
         # not yet provide a good way to expose this.
-        if shell:  # pragma: no cover
-            if shell == ShellMode.ssh:
-                logger.debug("Using ShellMode == ShellMode.ssh")
-                with GuestSSHConnection(
-                    tapdev=tapdev, options=opts.runtime.connection.options
-                ) as ssh:
-                    ssh_cmd = ssh.ssh_cmd(timeout_ms=timeout_ms)
-                    logger.debug(f"cmd: {' '.join(ssh_cmd)}")
-                    shell_proc = subprocess.Popen(ssh_cmd)
-                    shell_proc.wait()
+        elif shell == ShellMode.ssh:  # pragma: no cover
+            logger.debug("Using ShellMode == ShellMode.ssh")
+            with GuestSSHConnection(
+                tapdev=tapdev, options=opts.runtime.connection.options
+            ) as ssh:
+                ssh_cmd = ssh.ssh_cmd(timeout_ms=timeout_ms)
+                logger.debug(f"cmd: {' '.join(ssh_cmd)}")
+                shell_proc = subprocess.Popen(ssh_cmd)
+                shell_proc.wait()
 
-                logger.debug(f"Shell has terminated: {shell_proc.returncode}")
+            logger.debug(f"Shell has terminated: {shell_proc.returncode}")
 
             # Future: This is because the control flow is backwards.
             # Once this is inverted the specific behavior provided by
@@ -498,9 +498,10 @@ async def __vm_with_stack(
                     yield (ssh, boot_elapsed_ms, timeout_ms)
             else:
                 raise AttributeError(
-                    "Invalid VM connect scheme: "
+                    f"Invalid VM connect scheme: "
                     f"{opts.runtime.connection.scheme}"
                 )  # pragma: no cover
+
     # Note: The error cases are not yet covered properly in tests.
     except VMBootError as vbe:  # pragma: no cover
         logger.error(f"VM failed to boot: {vbe}")
@@ -519,7 +520,7 @@ async def __vm_with_stack(
         # Note: we can't easily test the console mode yet, so we don't cover
         # this branch
         if shell == ShellMode.console:  # pragma: nocover
-            logger.info("Wait for VM to terminate via console")
+            logger.debug("Wait for VM to terminate via console")
             proc.wait()
         elif proc.returncode is None or shell == ShellMode.ssh:
             logger.debug(f"Sending kill to VM: {proc.pid}")
@@ -535,7 +536,7 @@ async def __vm_with_stack(
             logger.debug(f"VM -KILL returned with: {kill.returncode}")
 
             # Now we just wait
-            logger.info("Wait for VM to terminate via kill")
+            logger.debug("Wait for VM to terminate via kill")
             proc.wait()
         # This branch should never be reached, but we want to know if the elif
         # condition is sometimes not met.  But I don't know how to trigger it,
