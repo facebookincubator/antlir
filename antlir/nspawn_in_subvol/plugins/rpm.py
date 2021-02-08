@@ -60,7 +60,7 @@ def rpm_nspawn_plugins(
         and opts.user.pw_name == "root"
         and default_snapshot_dir.exists()
     ):
-        # This can run as non-root since `set_up_rpm_repo_snapshots` makes
+        # This can run as non-root since `_set_up_rpm_repo_snapshots` makes
         # this a world-readable directory.
         for prog_name in default_snapshot_dir.listdir():
             # Here, we need container, not host paths

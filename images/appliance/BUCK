@@ -1,7 +1,7 @@
 load("//antlir/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "http_file")
-load("//antlir/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot", "set_up_rpm_repo_snapshots")
+load("//antlir/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot")
 load(":stable_appliance.bzl", "stable_build_appliance_sha")
 
 http_file(
@@ -26,7 +26,6 @@ image.sendstream_layer(
 # 2) using stable BA from S3 allows non-rpm-based hosts to build images
 
 install_snapshots = [
-    set_up_rpm_repo_snapshots(),
     install_rpm_repo_snapshot("//snapshot:fedora33"),
     default_rpm_repo_snapshot_for("dnf", "//snapshot:fedora33"),
 ]
