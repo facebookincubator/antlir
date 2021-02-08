@@ -109,12 +109,14 @@ class SubvolTestCase(unittest.TestCase):
             self.assertEqual(b"/", sv.canonicalize_path("./."))
 
     def test_delete_inner_subvols(self):
-        volume_tmp_dir = os.path.join(volume_dir(), "tmp")
+        volume_tmp_dir = volume_dir() / "tmp"
         try:
             os.mkdir(volume_tmp_dir)
         except FileExistsError:
             pass
-        with temp_dir(dir=volume_tmp_dir, prefix="delete_recursive") as td:
+        with temp_dir(
+            dir=volume_tmp_dir.decode(), prefix="delete_recursive"
+        ) as td:
             try:
                 outer = Subvol(td / "outer")
                 outer.create()

@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import sys
 
 from .artifacts_dir import ensure_per_repo_artifacts_dir_exists
@@ -15,14 +14,14 @@ from .volume_for_repo import get_volume_for_current_repo
 
 
 # NB: Memoizing this function would be pretty reasonable.
-def volume_dir(path_in_repo=None):
+def volume_dir(path_in_repo=None) -> Path:
     return get_volume_for_current_repo(
         ensure_per_repo_artifacts_dir_exists(path_in_repo)
     )
 
 
-def subvolumes_dir(path_in_repo=None):
-    return os.path.join(volume_dir(path_in_repo), "targets")
+def subvolumes_dir(path_in_repo=None) -> Path:
+    return volume_dir(path_in_repo) / "targets"
 
 
 _get_subvolumes_dir = subvolumes_dir
@@ -32,13 +31,12 @@ def find_built_subvol(layer_output, *, path_in_repo=None, subvolumes_dir=None):
     # It's OK for both to be None (uses the current file to find repo), but
     # it's not OK to set both.
     assert (path_in_repo is None) or (subvolumes_dir is None)
+    if subvolumes_dir is None:
+        subvolumes_dir = _get_subvolumes_dir(path_in_repo).decode()
     with open(Path(layer_output) / "layer.json") as infile:
         return Subvol(
             SubvolumeOnDisk.from_json_file(
-                infile,
-                subvolumes_dir
-                if subvolumes_dir
-                else _get_subvolumes_dir(path_in_repo),
+                infile, subvolumes_dir
             ).subvolume_path(),
             already_exists=True,
         )

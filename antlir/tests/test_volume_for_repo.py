@@ -10,14 +10,16 @@ import subprocess
 import tempfile
 import unittest
 
+from antlir.fs_utils import Path
+
 from .. import volume_for_repo as vfr
 
 
 class VolumeForRepoTestCase(unittest.TestCase):
     def test_volume_repo(self):
-        artifacts_dir = tempfile.mkdtemp(prefix="test_volume_repo")
-        volume_dir = os.path.join(artifacts_dir, vfr.VOLUME_DIR)
-        image_file = os.path.join(artifacts_dir, vfr.IMAGE_FILE)
+        artifacts_dir = Path(tempfile.mkdtemp(prefix="test_volume_repo"))
+        volume_dir = artifacts_dir / vfr.VOLUME_DIR
+        image_file = artifacts_dir / vfr.IMAGE_FILE
         min_free_bytes = 250e6
 
         try:
