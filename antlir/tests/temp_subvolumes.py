@@ -61,7 +61,7 @@ class TempSubvolumes(contextlib.AbstractContextManager):
     def __init__(self, path_in_repo=None):
         self.subvols = []
         # The 'tmp' subdirectory simplifies cleanup of leaked temp subvolumes
-        volume_tmp_dir = os.path.join(volume_dir(path_in_repo), "tmp")
+        volume_tmp_dir = volume_dir(path_in_repo) / "tmp"
         try:
             os.mkdir(volume_tmp_dir)
         except FileExistsError:
@@ -69,7 +69,7 @@ class TempSubvolumes(contextlib.AbstractContextManager):
         # Our exit is written with exception-safety in mind, so this
         # `_temp_dir_ctx` **should** get `__exit__`ed when this class does.
         self._temp_dir_ctx = temp_dir(  # noqa: P201
-            dir=volume_tmp_dir, prefix=self.__class__.__name__ + "_"
+            dir=volume_tmp_dir.decode(), prefix=self.__class__.__name__ + "_"
         )
 
     def __enter__(self):

@@ -37,7 +37,7 @@ _orig_btrfs_get_volume_props = svod._btrfs_get_volume_props
 # We need the actual subvolume directory for this mock because the
 # `MountItem` build process in `test_compiler.py` loads a real subvolume
 # through this path (`:hello_world_base`).
-_SUBVOLS_DIR = subvolumes_dir()
+_SUBVOLS_DIR = subvolumes_dir().decode()
 _FAKE_SUBVOL = "FAKE_SUBVOL"
 _FIND_ARGS = [
     "find",

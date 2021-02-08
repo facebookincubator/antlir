@@ -17,8 +17,10 @@ from .fs_utils import Path, populate_temp_file_and_rename
 
 
 def _maybe_make_symlink_to_scratch(
-    symlink_path: str, target_in_scratch, path_in_repo: str
-) -> str:
+    symlink_path: Path,
+    target_in_scratch: Path,
+    path_in_repo: Path,
+) -> Path:
     """
     IMPORTANT: This must be safe against races with other concurrent copies
     of `artifacts_dir.py`.
@@ -27,14 +29,10 @@ def _maybe_make_symlink_to_scratch(
     if scratch_bin is None:
         return symlink_path
 
-    # If the decode ever fails, we should probably switch this entire
-    # function to return `bytes`.
-    target_path, _ = (
+    target_path = Path(
         subprocess.check_output(
             [scratch_bin, "path", "--subdir", target_in_scratch, path_in_repo]
-        )
-        .decode()
-        .rsplit("\n", 1)
+        ).rstrip()
     )
 
     # Atomically ensure the desired symlink exists.
@@ -50,7 +48,8 @@ def _maybe_make_symlink_to_scratch(
             f"{symlink_path} is not a symlink. Clean up whatever is there "
             "and try again?"
         )
-    real_target = os.path.realpath(symlink_path)
+
+    real_target = symlink_path.realpath()
     if real_target != target_path:
         raise RuntimeError(
             f"{symlink_path} points at {real_target}, but should point "
@@ -142,10 +141,11 @@ def find_buck_cell_root(path_in_repo: Optional[str] = None) -> str:
 
 def ensure_per_repo_artifacts_dir_exists(
     path_in_repo: Optional[str] = None,
-) -> str:
+) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
-    repo_path = find_buck_cell_root(path_in_repo)
-    artifacts_dir = os.path.join(repo_path, "buck-image-out")
+    buck_cell_root = Path(find_buck_cell_root(path_in_repo))
+    buck_image_out = Path("buck-image-out")
+    artifacts_dir = buck_cell_root / buck_image_out
 
     # On Facebook infra, the repo might be hosted on an Eden filesystem,
     # which is not intended as a backing store for a large sparse loop
@@ -155,7 +155,7 @@ def ensure_per_repo_artifacts_dir_exists(
     # The location in the scratch directory is a hardcoded path because
     # this really must be a per-repo singleton.
     real_dir = _maybe_make_symlink_to_scratch(
-        artifacts_dir, "buck-image-out", repo_path
+        artifacts_dir, buck_image_out, buck_cell_root
     )
 
     try:
@@ -163,7 +163,7 @@ def ensure_per_repo_artifacts_dir_exists(
     except FileExistsError:
         pass  # May race with another mkdir from a concurrent artifacts_dir.py
 
-    ensure_clean_sh_exists(Path(artifacts_dir))
+    ensure_clean_sh_exists(artifacts_dir)
     return artifacts_dir
 
 

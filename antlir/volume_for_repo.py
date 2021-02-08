@@ -24,7 +24,7 @@ VOLUME_DIR = "volume"
 LOOP_SIZE = 1e11
 
 
-def get_volume_for_current_repo(artifacts_dir, min_free_bytes=LOOP_SIZE):
+def get_volume_for_current_repo(artifacts_dir: Path, min_free_bytes=LOOP_SIZE):
     """
     Multiple repos need to be able to concurrently build images on the same
     host.  The cleanest way to achieve such isolation is to supply each repo
@@ -44,10 +44,10 @@ def get_volume_for_current_repo(artifacts_dir, min_free_bytes=LOOP_SIZE):
 
     PRE-CONDITION: `artifacts_dir` exists and is writable by `root`.
     """
-    if not os.path.exists(artifacts_dir):  # pragma: no cover
+    if not artifacts_dir.exists():  # pragma: no cover
         raise RuntimeError(f"{artifacts_dir} must exist")
 
-    volume_dir = os.path.join(artifacts_dir, VOLUME_DIR)
+    volume_dir = artifacts_dir / VOLUME_DIR
     with Path.resource(__package__, "set_up_volume.sh", exe=True) as binary:
         subprocess.check_call(
             [
@@ -56,13 +56,11 @@ def get_volume_for_current_repo(artifacts_dir, min_free_bytes=LOOP_SIZE):
                 # or corrupt the whole buld cache, so add some locking to be on
                 # the safe side.
                 "flock",
-                os.path.join(
-                    artifacts_dir, ".lock.set_up_volume.sh.never.rm.or.mv"
-                ),
+                artifacts_dir / ".lock.set_up_volume.sh.never.rm.or.mv",
                 "sudo",
                 binary,
                 str(int(min_free_bytes)),  # Accepts floats & ints
-                os.path.join(artifacts_dir, IMAGE_FILE),
+                artifacts_dir / IMAGE_FILE,
                 volume_dir,
             ]
         )
@@ -94,4 +92,5 @@ if __name__ == "__main__":  # pragma: no cover
         sys.exit(1)
 
     second_arg = [] if sys.argv[2] == "None" else [float(sys.argv[2])]
-    print(get_volume_for_current_repo(*[sys.argv[1]] + second_arg))
+    args = [Path(sys.argv[1])] + second_arg
+    print(get_volume_for_current_repo(*args))
