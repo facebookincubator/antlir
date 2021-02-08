@@ -38,28 +38,12 @@ mount_image() {
   echo "Mounting btrfs $image at $volume"
   # Explicitly set filesystem type to detect shenanigans.
   mount -t btrfs -o loop,discard,nobarrier "$image" "$volume"
-  # Mark our mount "shared slave".  We'll accept propagation events from the
-  # parent mount, but will not send events outside of "$volume".  And any
-  # mounts made within the volume are allowed to exchange propagation events
-  # as they choose.
-  #
-  # We **need** a shared peer group to be a parent for all the `image.layer`
-  # subvolumes.  If "$volume" was not shared, `ro_rbind_mount` from the
-  # `image.feature` implementation of `mounts` would make private mounts
-  # instead of slave, which would cause `test_mount_items` to fail.  We
-  # explicitly call `--make-shared` because on some CI hosts, the parent
-  # mount is not shared.
-  #
-  # The `--make-slave` is not **required** for Buck image build to work.  It
-  # is a safeguard to prevent mount propagation events from the mounts we
-  # make internally from leaking out to the rest of the host.  Buck images
-  # **are** allowed to make host mounts, and for those, "slave" is fine (if
-  # the parent mountpoint chooses to propagate events).  However, we don't
-  # want other parts of the host to be receiving our mounts.  At best, this
-  # is a violation of encapsulation.  At worst, it could cause an
-  # exponential bind mount explosion.
-  mount --make-slave "$volume"
-  mount --make-shared "$volume"
+  # Mark our mount "private".  We do not accept propagation events from the
+  # parent mount, and will not send events outside of "$volume".  And any
+  # mounts made within the volume should be contained to the volume.
+  # But really, there just shouldn't be any mounts made within this
+  # volume that are *not* inside a container.
+  mount --make-private "$volume"
 }
 
 resize_image() {
