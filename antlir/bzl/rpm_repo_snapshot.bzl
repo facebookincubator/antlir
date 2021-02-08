@@ -216,8 +216,7 @@ echo {quoted_storage_cfg} > "$OUT"/snapshot/storage.json
         visibility = get_visibility(visibility, name),
     )
 
-# Future: Once we have `ensure_dir_exists`, this can be implicit.
-def set_up_rpm_repo_snapshots():
+def _set_up_rpm_repo_snapshots():
     # This will fail loudly if the two constants stop being siblings.
     defaults_dir = paths.relativize(
         RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
@@ -233,13 +232,12 @@ def install_rpm_repo_snapshot(snapshot):
     Returns an `image.feature`, which installs the `rpm_repo_snapshot`
     target in `snapshot` in its canonical location.
 
-    The layer must also include `set_up_rpm_repo_snapshots()`.
-
     A layer that installs snapshots should be followed by a
     `image_yum_dnf_make_snapshot_cache` layer so that `yum` / `dnf` repodata
     caches are properly populated.  Otherwise, RPM installs will be slow.
     """
-    return [image_install(snapshot, snapshot_install_dir(snapshot))]
+
+    return _set_up_rpm_repo_snapshots() + [image_install(snapshot, snapshot_install_dir(snapshot))]
 
 def default_rpm_repo_snapshot_for(prog, snapshot):
     """
@@ -271,15 +269,14 @@ def add_rpm_repo_snapshots_layer(
     This is meant to be the most common way of installing snapshots into
     layers, so it acts as syntax sugar.
 
-    Note that `parent_layer` must include `set_up_rpm_repo_snapshots()`.
-
     A careful reader will note that we could automatically build caches for
     all installers supported by a snapshot, but we currently do not do this
     because building caches is fairly slow, whereas a supported installer is
     not necessarily going to get used.  If we change our position on this,
     the `make_caches_for_other_snapshot_installers` argument can be removed.
     """
-    features = []
+
+    features = _set_up_rpm_repo_snapshots()
     default_s_i_pairs = [
         (s, i)
         for s, i in [(dnf_snapshot, "dnf"), (yum_snapshot, "yum")]
