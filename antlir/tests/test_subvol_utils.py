@@ -15,7 +15,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
 
-from ..find_built_subvol import subvolumes_dir, volume_dir
+from ..find_built_subvol import volume_dir
 from ..fs_utils import Path, temp_dir
 from ..subvol_utils import Subvol, SubvolOpts
 from .subvol_helpers import render_subvol

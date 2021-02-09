@@ -207,7 +207,6 @@ python_library(
         ":artifacts_dir",
         ":fs_utils",
         ":subvol_utils",
-        ":volume_for_repo",
         "//antlir/compiler:subvolume_on_disk",
     ],
 )
