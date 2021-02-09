@@ -62,25 +62,15 @@ class GuestSSHConnection:
         cmd = list(cmd)
         run_env = DEFAULT_ENV.copy()
         run_env.update(env or {})
-        systemd_run_args = [
-            "systemd-run",
-            "--pipe",
-            "--wait",
-            "--quiet",
-            "--service-type=exec",
-            f"--property=RuntimeMaxSec={int(timeout_ms/1000)}",
-        ] + [f"--setenv={key}={val}" for key, val in run_env.items()]
 
+        cmd_pre = []
         if cwd is not None:
-            systemd_run_args += [f"--working-directory={str(cwd)}"]
-
-        cmd = (
-            self.ssh_cmd(timeout_ms=timeout_ms)
-            + ["--"]
-            + systemd_run_args
-            + ["--"]
-            + cmd
+            cmd_pre.append(f"cd {str(cwd)};")
+        cmd_pre.append(
+            " ".join(f"{key}={val}" for key, val in run_env.items()),
         )
+
+        cmd = self.ssh_cmd(timeout_ms=timeout_ms) + ["--"] + cmd_pre + cmd
 
         logger.debug(f"Running {cmd} in vm at {self.tapdev.guest_ipv6_ll}")
         logger.debug(f"{' '.join(cmd)}")
@@ -91,6 +81,7 @@ class GuestSSHConnection:
             stderr=stderr,
             # Future: handle stdin properly so that we can pipe input from
             # the caller into a program being executing inside a VM
+            timeout=timeout_ms / 1000,
         )
         logger.debug(f"res: {res.returncode}, {res.stdout}, {res.stderr}")
         return res.returncode, res.stdout, res.stderr
