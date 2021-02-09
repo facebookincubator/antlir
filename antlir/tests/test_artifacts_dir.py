@@ -9,6 +9,7 @@ import unittest
 from antlir.artifacts_dir import (
     find_repo_root,
     ensure_per_repo_artifacts_dir_exists,
+    find_buck_cell_root,
 )
 from antlir.fs_utils import Path, temp_dir
 
@@ -50,7 +51,7 @@ class ArtifactsDirTests(unittest.TestCase):
     def test_ensure_per_repo_artifacts_dir_exists(self):
         with temp_dir() as td:
             # Make the td the buck cell root
-            open(td / b".buckconfig", "a").close()
+            (td / b".buckconfig").touch()
 
             repo_subdir = td / "i/am/a/subdir/of/the/repo"
             os.makedirs(repo_subdir)
@@ -59,3 +60,22 @@ class ArtifactsDirTests(unittest.TestCase):
             self.assertEqual(td / "buck-image-out", artifacts_dir)
             self.assertTrue(artifacts_dir.exists())
             self.assertTrue((artifacts_dir / "clean.sh").exists())
+
+    def test_find_buck_cell_root(self):
+        with temp_dir() as td:
+            # Make the td the buck cell root
+            (td / b".buckconfig").touch()
+
+            repo_subdir = td / "i/am/a/subdir/of/the/repo"
+            os.makedirs(repo_subdir)
+            have = find_buck_cell_root(repo_subdir)
+            self.assertEqual(td, have)
+
+    def test_find_buck_cell_root_missing(self):
+        with temp_dir() as td:
+            try:
+                find_buck_cell_root(td)
+            except RuntimeError:
+                return
+
+            self.fail("Expected RuntimeError when missing .buckconfig")

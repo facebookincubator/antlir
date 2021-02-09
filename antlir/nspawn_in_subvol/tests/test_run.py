@@ -4,13 +4,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import json
 import os
 import subprocess
 import tempfile
 import threading
-from contextlib import contextmanager
-from pwd import struct_passwd
 from unittest import mock
 
 from antlir.artifacts_dir import find_buck_cell_root
@@ -315,10 +312,10 @@ class NspawnTestCase(NspawnTestBase):
                 "--",
                 "grep",
                 "supercalifragilisticexpialidocious",
-                os.path.join(
-                    os.path.realpath(find_buck_cell_root()),
-                    "antlir/nspawn_in_subvol/tests",
-                    os.path.basename(__file__),
+                (
+                    find_buck_cell_root().realpath()
+                    / "antlir/nspawn_in_subvol/tests"
+                    / os.path.basename(__file__)
                 ),
             ],
         )
