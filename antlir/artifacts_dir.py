@@ -19,7 +19,7 @@ from .fs_utils import Path, populate_temp_file_and_rename
 def _maybe_make_symlink_to_scratch(
     symlink_path: Path,
     target_in_scratch: Path,
-    path_in_repo: Path,
+    target_in_repo: Path,
 ) -> Path:
     """
     IMPORTANT: This must be safe against races with other concurrent copies
@@ -31,7 +31,7 @@ def _maybe_make_symlink_to_scratch(
 
     target_path = Path(
         subprocess.check_output(
-            [scratch_bin, "path", "--subdir", target_in_scratch, path_in_repo]
+            [scratch_bin, "path", "--subdir", target_in_scratch, target_in_repo]
         ).rstrip()
     )
 
@@ -122,7 +122,7 @@ def find_buck_cell_root(path_in_repo: Optional[Path] = None) -> Path:
     `buck root` takes >2s to execute (due to CLI startup time).
     """
     paths_to_try = (
-        [path_in_repo]
+        [Path(path_in_repo)]
         if path_in_repo
         else [Path(os.getcwd()), Path(sys.argv[0])]
     )
@@ -141,15 +141,17 @@ def find_buck_cell_root(path_in_repo: Optional[Path] = None) -> Path:
     )
 
 
+def find_artifacts_dir(path_in_repo: Optional[Path] = None) -> Path:
+    "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
+    return find_buck_cell_root(path_in_repo=path_in_repo) / "buck-image-out"
+
+
 def ensure_per_repo_artifacts_dir_exists(
     path_in_repo: Optional[str] = None,
 ) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
-    buck_cell_root = find_buck_cell_root(
-        Path(path_in_repo) if path_in_repo else None
-    )
-    buck_image_out = Path("buck-image-out")
-    artifacts_dir = buck_cell_root / buck_image_out
+    buck_cell_root = find_buck_cell_root(path_in_repo=path_in_repo)
+    artifacts_dir = find_artifacts_dir(path_in_repo=path_in_repo)
 
     # On Facebook infra, the repo might be hosted on an Eden filesystem,
     # which is not intended as a backing store for a large sparse loop
@@ -159,7 +161,7 @@ def ensure_per_repo_artifacts_dir_exists(
     # The location in the scratch directory is a hardcoded path because
     # this really must be a per-repo singleton.
     real_dir = _maybe_make_symlink_to_scratch(
-        artifacts_dir, buck_image_out, buck_cell_root
+        artifacts_dir, "buck-image-out", buck_cell_root
     )
 
     try:

@@ -23,7 +23,7 @@ from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path, render_sendstream
 
-from ..find_built_subvol import subvolumes_dir
+from ..find_built_subvol import _get_subvolumes_dir
 from ..package_image import Format, package_image
 from ..unshare import Namespace, Unshare, nsenter_as_root
 from .temp_subvolumes import TempSubvolumes
@@ -46,7 +46,6 @@ class PackageImageTestCase(unittest.TestCase):
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
-        self.subvolumes_dir = subvolumes_dir(sys.argv[0])
         # Works in @mode/opt since the files of interest are baked into the XAR
         self.my_dir = os.path.dirname(__file__)
 
@@ -65,7 +64,7 @@ class PackageImageTestCase(unittest.TestCase):
                     "--build-appliance",
                     layer_resource(__package__, "build-appliance"),
                     "--subvolumes-dir",
-                    self.subvolumes_dir,
+                    _get_subvolumes_dir(),
                     "--layer-path",
                     layer_path,
                     "--format",
