@@ -107,9 +107,10 @@ user, which we should probably never do).
 import subprocess
 from contextlib import contextmanager, nullcontext
 from io import BytesIO
-from typing import Iterable, NamedTuple, Optional, Tuple
+from typing import Iterable, NamedTuple, Tuple, Union
 
 from antlir.common import init_logging
+from antlir.fs_utils import Path
 
 from .args import PopenArgs, _NspawnOpts, _parse_cli_args
 from .nspawn import run_nspawn
@@ -137,7 +138,7 @@ class _CliSetup(NamedTuple):
 
 
 @contextmanager
-def _set_up_run_cli(argv: Iterable[str]) -> _CliSetup:
+def _set_up_run_cli(argv: Iterable[Union[str, Path]]) -> _CliSetup:
     args = _parse_cli_args(argv, allow_debug_only_opts=True)
     init_logging(debug=args.opts.debug_only_opts.debug)
     with (

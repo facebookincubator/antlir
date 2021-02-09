@@ -108,7 +108,7 @@ def find_repo_root(path_in_repo: Optional[Path] = None) -> Path:
     )
 
 
-def find_buck_cell_root(path_in_repo: Optional[str] = None) -> str:
+def find_buck_cell_root(path_in_repo: Optional[Path] = None) -> Path:
     """
     If the caller does not provide a path known to be in the repo, a reasonable
     default of sys.argv[0] will be used. This is reasonable as binaries/tests
@@ -122,16 +122,18 @@ def find_buck_cell_root(path_in_repo: Optional[str] = None) -> str:
     `buck root` takes >2s to execute (due to CLI startup time).
     """
     paths_to_try = (
-        [path_in_repo] if path_in_repo else [os.getcwd(), sys.argv[0]]
+        [path_in_repo]
+        if path_in_repo
+        else [Path(os.getcwd()), Path(sys.argv[0])]
     )
     for path_in_repo in paths_to_try:
         cell_path = _first_parent_containing_sigil(
-            Path(path_in_repo), ".buckconfig", is_dir=False
+            path_in_repo, ".buckconfig", is_dir=False
         )
         if cell_path:
             # Future: this should just use Path, but we have to finish
             # converting all the downstream uses of this first
-            return str(cell_path)
+            return cell_path
 
     # If we got this far we never found the cell root
     raise RuntimeError(
@@ -143,7 +145,9 @@ def ensure_per_repo_artifacts_dir_exists(
     path_in_repo: Optional[str] = None,
 ) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
-    buck_cell_root = Path(find_buck_cell_root(path_in_repo))
+    buck_cell_root = find_buck_cell_root(
+        Path(path_in_repo) if path_in_repo else None
+    )
     buck_image_out = Path("buck-image-out")
     artifacts_dir = buck_cell_root / buck_image_out
 

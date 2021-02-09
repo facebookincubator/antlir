@@ -214,7 +214,7 @@ async def run(
                 # repo.  Once we have proper support for `runtime_files`
                 # this can be removed.  See here for more details:
                 # https://fburl.com/xt322rks
-                cwd=find_buck_cell_root(path_in_repo=os.getcwd()),
+                cwd=find_buck_cell_root(path_in_repo=Path(os.getcwd())),
             )
 
             if returncode != 0:
