@@ -264,9 +264,9 @@ class MountItemTestCase(BaseItemTestCase):
                 self.assertEqual(contents, f.read())
 
     def _write_layer_json_into(self, subvol, out_dir):
-        subvol_path = subvol.path().decode()
+        subvol_path = subvol.path()
         # subvolumes_dir is the grandparent of the subvol by convention
-        subvolumes_dir = os.path.dirname(os.path.dirname(subvol_path))
+        subvolumes_dir = subvol_path.dirname().dirname()
         with open(os.path.join(out_dir, "layer.json"), "w") as f:
             SubvolumeOnDisk.from_subvolume_path(
                 subvol_path, subvolumes_dir

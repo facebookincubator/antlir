@@ -23,11 +23,12 @@ from antlir.compiler.items.rpm_action import RpmActionItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
 from antlir.find_built_subvol import find_built_subvol
+from antlir.fs_utils import Path
 
 
 class GenFeaturesContext(NamedTuple):
     target_to_path: Mapping[str, str]
-    subvolumes_dir: Optional[str]
+    subvolumes_dir: Optional[Path]
     ignore_missing_paths: bool
 
 

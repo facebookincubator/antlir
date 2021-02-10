@@ -6,12 +6,12 @@
 
 import io
 import os
-import tempfile
 import unittest
 import unittest.mock
 
-from .. import subvolume_on_disk
+from antlir.fs_utils import Path, temp_dir
 
+from .. import subvolume_on_disk
 
 _MY_HOST = "my_host"
 
@@ -77,20 +77,20 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
     def test_from_json_file_errors(self):
         with self.assertRaisesRegex(RuntimeError, "Parsing subvolume JSON"):
             subvolume_on_disk.SubvolumeOnDisk.from_json_file(
-                io.StringIO("invalid json"), "/subvols"
+                io.StringIO("invalid json"), Path("/subvols")
             )
         with self.assertRaisesRegex(RuntimeError, "Parsed subvolume JSON"):
             subvolume_on_disk.SubvolumeOnDisk.from_json_file(
-                io.StringIO("5"), "/subvols"
+                io.StringIO("5"), Path("/subvols")
             )
 
     def test_from_serializable_dict_and_validation(self):
-        with tempfile.TemporaryDirectory() as td:
+        with temp_dir() as td:
             # Note: Unlike test_from_subvolume_path, this test uses a
             # trailing / (to increase coverage).
-            subvols = td + "/"
-            rel_path = "test_subvol:v/test_subvol"
-            good_path = os.path.join(subvols, rel_path)
+            subvols = Path(td + b"/")
+            rel_path = Path("test_subvol:v/test_subvol")
+            good_path = subvols / rel_path
             os.makedirs(good_path)  # `from_serializable_dict` checks this
             good_uuid = self._test_uuid(good_path)
             good = {
@@ -100,16 +100,17 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
             }
 
             bad_path = good.copy()
-            bad_path[subvolume_on_disk._SUBVOLUME_REL_PATH] += "/x"
+            bad_path[subvolume_on_disk._SUBVOLUME_REL_PATH] /= "x"
             with self.assertRaisesRegex(RuntimeError, "must have the form"):
                 subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
                     bad_path, subvols
                 )
 
             wrong_inner = good.copy()
-            wrong_inner[subvolume_on_disk._SUBVOLUME_REL_PATH] += "x"
+            wrong_inner[subvolume_on_disk._SUBVOLUME_REL_PATH] += b"x"
             with self.assertRaisesRegex(
-                RuntimeError, r"\['test_subvol'\] instead of \['test_subvolx'"
+                RuntimeError,
+                r"\[b'test_subvol'\] instead of \[b'test_subvolx'\]",
             ):
                 subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
                     wrong_inner, subvols
@@ -152,12 +153,12 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
             )
 
     def test_from_subvolume_path(self):
-        with tempfile.TemporaryDirectory() as td:
+        with temp_dir() as td:
             # Note: Unlike test_from_serializable_dict_and_validation, this
             # test does NOT use a trailing / (to increase coverage).
-            subvols = td.rstrip("/")
-            rel_path = "test_rule:vvv/test:subvol"
-            subvol_path = os.path.join(subvols, rel_path)
+            subvols = Path(td.rstrip(b"/"))
+            rel_path = Path("test_rule:vvv/test:subvol")
+            subvol_path = subvols / rel_path
             os.makedirs(subvol_path)  # `from_serializable_dict` checks this
 
             subvol = subvolume_on_disk.SubvolumeOnDisk.from_subvolume_path(
@@ -189,7 +190,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                 RuntimeError, "must be located inside the subvolumes directory"
             ):
                 subvolume_on_disk.SubvolumeOnDisk.from_subvolume_path(
-                    subvol_path=subvol_path, subvolumes_dir=subvols + "/bad"
+                    subvol_path=subvol_path, subvolumes_dir=subvols / "bad"
                 )
 
 

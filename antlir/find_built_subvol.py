@@ -22,7 +22,7 @@ def _get_subvolumes_dir(path_in_repo=None) -> Path:
 
 
 def find_built_subvol(
-    layer_output, *, path_in_repo=None, subvolumes_dir=None
+    layer_output, *, path_in_repo=None, subvolumes_dir: Path = None
 ) -> Subvol:
     # It's OK for both to be None (uses the current file to find repo), but
     # it's not OK to set both.
@@ -30,7 +30,7 @@ def find_built_subvol(
     with open(Path(layer_output) / "layer.json") as infile:
         return Subvol(
             SubvolumeOnDisk.from_json_file(
-                infile, str(subvolumes_dir or _get_subvolumes_dir(path_in_repo))
+                infile, subvolumes_dir or _get_subvolumes_dir(path_in_repo)
             ).subvolume_path(),
             already_exists=True,
         )
