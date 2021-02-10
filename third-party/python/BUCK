@@ -99,3 +99,9 @@ pypi_package(
         ":botocore",
     ],
 )
+
+pypi_package(
+    name = "pyelftools",
+    sha256 = "5609aa6da1123fccfae2e8431a67b4146aa7fad5b3889f808df12b110f230937",
+    url = "https://files.pythonhosted.org/packages/6f/50/3d7729d64bb23393aa4c166af250a6e6f9def40c90bf0e9af3c5ad25b6f7/pyelftools-0.27-py2.py3-none-any.whl",
+)
