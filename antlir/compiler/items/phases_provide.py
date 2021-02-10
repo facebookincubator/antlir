@@ -30,15 +30,15 @@ def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
     'Yields "Provides" instances for a path `subtree` in `subvol`.'
     # "Provides" classes use image-absolute paths that are `str` (for now).
     # Accept any string type to ease future migrations.
-    subtree = os.path.join("/", Path(subtree).decode())
+    subtree = b"/" + subtree
 
     protected_paths = protected_path_set(subvol)
     for prot_path in protected_paths:
-        rel_to_subtree = os.path.relpath(os.path.join("/", prot_path), subtree)
-        if not Path(rel_to_subtree).has_leading_dot_dot():
-            yield ProvidesDoNotAccess(path=rel_to_subtree)
+        rel_to_subtree = Path(os.path.join("/", prot_path)).relpath(subtree)
+        if not rel_to_subtree.has_leading_dot_dot():
+            yield ProvidesDoNotAccess(path=rel_to_subtree.decode())
 
-    subtree_full_path = subvol.path(subtree).decode()
+    subtree_full_path = subvol.path(subtree)
     subtree_exists = False
     # Traverse the subvolume as root, so that we have permission to access
     # everything.
@@ -77,27 +77,28 @@ def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
     ).stdout.split(b"\0"):
         if not type_and_path:  # after the trailing \0
             continue
-        filetype, abspath = type_and_path.decode().split(" ", 1)
-        relpath = os.path.relpath(abspath, subtree_full_path)
+        filetype_bytes, abspath = type_and_path.split(b" ", 1)
+        relpath = Path(abspath).relpath(subtree_full_path)
 
-        assert not Path(relpath).has_leading_dot_dot(), (
+        assert not relpath.has_leading_dot_dot(), (
             abspath,
             subtree_full_path,
         )
         # We already "provided" this path above, and it should have been
         # filtered out by `find`.
-        assert not is_path_protected(relpath, protected_paths), relpath
+        assert not is_path_protected(relpath.decode(), protected_paths), relpath
 
         # Future: This provides all symlinks as files, while we should
         # probably provide symlinks to valid directories inside the image as
         # directories to be consistent with SymlinkToDirItem.
+        filetype = filetype_bytes.decode()
         if filetype in ["b", "c", "p", "f", "l", "s"]:
-            yield ProvidesFile(path=relpath)
+            yield ProvidesFile(path=relpath.decode())
         elif filetype == "d":
-            yield ProvidesDirectory(path=relpath)
+            yield ProvidesDirectory(path=relpath.decode())
         else:  # pragma: no cover
             raise AssertionError(f"Unknown {filetype} for {abspath}")
-        if relpath == ".":
+        if relpath == b".":
             subtree_exists = True
 
     # We should've gotten a CalledProcessError from `find`.
@@ -109,7 +110,7 @@ class PhasesProvideItem(ImageItem):
     subvol: Subvol
 
     def provides(self):
-        return gen_subvolume_subtree_provides(self.subvol, "/")
+        return gen_subvolume_subtree_provides(self.subvol, Path("/"))
 
     def requires(self):
         return ()

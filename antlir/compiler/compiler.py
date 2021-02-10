@@ -41,6 +41,7 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument(
         "--subvolumes-dir",
         required=True,
+        type=Path.from_argparse,
         help="A directory on a btrfs volume to store the compiled subvolume "
         "representing the new layer",
     )
@@ -49,12 +50,14 @@ def parse_args(args) -> argparse.Namespace:
     parser.add_argument(
         "--subvolume-rel-path",
         required=True,
+        type=Path.from_argparse,
         help="Path underneath --subvolumes-dir where we should create "
         "the subvolume. Note that all path components but the basename "
         "should already exist.",
     )
     parser.add_argument(
         "--build-appliance-buck-out",
+        type=Path.from_argparse,
         help="Path to the Buck output of the build appliance target",
     )
     parser.add_argument(
@@ -125,7 +128,7 @@ def build_image(args):
         cur_umask & stat.S_IXUSR == 0
     ), f"Refusing to run with pathological umask 0o{cur_umask:o}"
 
-    subvol = Subvol(os.path.join(args.subvolumes_dir, args.subvolume_rel_path))
+    subvol = Subvol(args.subvolumes_dir / args.subvolume_rel_path)
     layer_opts = LayerOpts(
         layer_target=args.child_layer_target,
         build_appliance=find_built_subvol(
@@ -175,7 +178,7 @@ def build_image(args):
         return SubvolumeOnDisk.from_subvolume_path(
             # Converting to a path here does not seem too risky since this
             # class shouldn't have a reason to follow symlinks in the subvol.
-            subvol.path().decode(),
+            subvol.path(),
             args.subvolumes_dir,
         )
     # The complexity of covering this is high, but the only thing that can

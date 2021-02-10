@@ -37,15 +37,15 @@ _orig_btrfs_get_volume_props = svod._btrfs_get_volume_props
 # We need the actual subvolume directory for this mock because the
 # `MountItem` build process in `test_compiler.py` loads a real subvolume
 # through this path (`:hello_world_base`).
-_SUBVOLS_DIR = str(_get_subvolumes_dir())
-_FAKE_SUBVOL = "FAKE_SUBVOL"
+_SUBVOLS_DIR = _get_subvolumes_dir()
+_FAKE_SUBVOL = Path("FAKE_SUBVOL")
 _FIND_ARGS = [
     "find",
     "-P",
-    f"{_SUBVOLS_DIR}/{_FAKE_SUBVOL}",
+    _SUBVOLS_DIR / _FAKE_SUBVOL,
     "(",
     "-path",
-    f"{_SUBVOLS_DIR}/{_FAKE_SUBVOL}/.meta".encode(),
+    _SUBVOLS_DIR / _FAKE_SUBVOL / ".meta",
     ")",
     "-prune",
     "-o",
@@ -82,7 +82,7 @@ def _run_as_root(args, **kwargs):
     if args[0] == "find":
         assert args == _FIND_ARGS, args
         ret = unittest.mock.Mock()
-        ret.stdout = f"d {_SUBVOLS_DIR}/{_FAKE_SUBVOL}\0".encode()
+        ret.stdout = f"d {_SUBVOLS_DIR/_FAKE_SUBVOL}\0".encode()
         return ret
 
 
@@ -97,7 +97,7 @@ def _os_path_lexists(path):
 
 
 def _btrfs_get_volume_props(subvol_path):
-    if subvol_path == os.path.join(_SUBVOLS_DIR, _FAKE_SUBVOL):
+    if subvol_path == _SUBVOLS_DIR / _FAKE_SUBVOL:
         # We don't have an actual btrfs subvolume, so make up a UUID.
         return {"UUID": "fake uuid", "Parent UUID": None}
     return _orig_btrfs_get_volume_props(subvol_path)

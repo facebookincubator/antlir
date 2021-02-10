@@ -9,6 +9,7 @@ load(":defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_IMAGE_PREFIX", "imag
 python_library(
     name = "subvolume_on_disk",
     srcs = ["subvolume_on_disk.py"],
+    deps = ["//antlir:fs_utils"],
 )
 
 python_unittest(

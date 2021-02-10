@@ -389,6 +389,7 @@ def parse_args(argv):
     parser.add_argument(
         "--subvolumes-dir",
         required=True,
+        type=Path.from_argparse,
         help="A directory on a btrfs volume, where all the subvolume wrapper "
         "directories reside.",
     )

@@ -35,8 +35,8 @@ class BuildSource(NamedTuple):
     source: str
 
     def to_path(
-        self, *, target_to_path: Mapping[str, str], subvolumes_dir: str
-    ) -> str:
+        self, *, target_to_path: Mapping[str, str], subvolumes_dir: Path
+    ) -> Path:
         if self.type == "layer":
             out_path = target_to_path.get(self.source)
             if out_path is None:
@@ -47,7 +47,7 @@ class BuildSource(NamedTuple):
                 out_path, subvolumes_dir=subvolumes_dir
             ).path()
         elif self.type == "host":
-            return self.source
+            return Path(self.source)
         else:  # pragma: no cover
             raise AssertionError(
                 f'Bad mount source "{self.type}" for {self.source}'

@@ -109,9 +109,9 @@ class LayerOpts(NamedTuple):
     layer_target: str
     rpm_installer: YumDnf
     # If set, overrides the package manager's default snapshot from the BA.
-    rpm_repo_snapshot: Optional[str]
+    rpm_repo_snapshot: Optional[Path]
     target_to_path: Mapping[str, str]
-    subvolumes_dir: str
+    subvolumes_dir: Path
     version_set_override: Optional[str]
     debug: bool = False
     allowed_host_mount_targets: FrozenSet[str] = frozenset()
