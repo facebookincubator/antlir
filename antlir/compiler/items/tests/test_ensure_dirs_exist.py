@@ -152,3 +152,32 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
             )
             with self.assertRaises(subprocess.CalledProcessError):
                 ede_item.build(subvol, DUMMY_LAYER_OPTS_BA)
+
+    def test_ensure_other_dirs_are_kept_intact(self):
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+            subvol = temp_subvolumes.create("ensure-dirs-exist-item")
+            subvol.run_as_root(["mkdir", "-p", subvol.path("foo")])
+            subvol.run_as_root(["chmod", "755", subvol.path("foo")])
+            subvol.run_as_root(["mkdir", "-p", subvol.path("foo/inn")])
+            subvol.run_as_root(["chmod", "555", subvol.path("foo/inn")])
+            ensure_items = list(
+                ensure_subdirs_exist_factory(
+                    from_target="t",
+                    into_dir="/",
+                    subdirs_to_create="/foo/bar",
+                )
+            )
+            for item in reversed(ensure_items):
+                item.build(subvol, DUMMY_LAYER_OPTS_BA)
+            self.assertEqual(
+                [
+                    "(Dir)",
+                    {
+                        "foo": [
+                            "(Dir)",
+                            {"bar": ["(Dir)", {}], "inn": ["(Dir m555)", {}]},
+                        ]
+                    },
+                ],
+                render_subvol(subvol),
+            )

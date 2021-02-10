@@ -89,6 +89,9 @@ class EnsureDirsExistItem(ImageItem):
         # If path already exists ensure it has expected attrs, else make it.
         work_dir = generate_work_dir()
         full_path = Path(work_dir) / self.into_dir / self.basename
+        path_to_make_exists = os.path.exists(
+            subvol.path() / self.into_dir / self.basename
+        )
         opts = new_nspawn_opts(
             cmd=[
                 "/bin/bash",
@@ -106,12 +109,13 @@ class EnsureDirsExistItem(ImageItem):
             user=pwd.getpwnam("root"),
         )
         run_nspawn(opts, PopenArgs())
-        build_stat_options(
-            self,
-            subvol,
-            subvol.path(os.path.join(self.into_dir, self.basename)),
-            build_appliance=layer_opts.build_appliance,
-        )
+        if not path_to_make_exists:
+            build_stat_options(
+                self,
+                subvol,
+                subvol.path(os.path.join(self.into_dir, self.basename)),
+                build_appliance=layer_opts.build_appliance,
+            )
 
 
 def ensure_subdirs_exist_factory(
