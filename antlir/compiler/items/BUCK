@@ -2,6 +2,7 @@ load("//antlir/bzl:image_foreign_layer.bzl", "foreign_layer_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image_actions:symlink.bzl", "symlink_t")
 load("//antlir/bzl/image_actions:tarball.bzl", "tarball_t")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
@@ -264,6 +265,7 @@ python_library(
         ":mount",
         ":mount_utils",
         ":stat_options",
+        ":symlink_t",
         ":tarball_t",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
@@ -337,4 +339,10 @@ shape.loader(
     name = "tarball_t",
     shape = tarball_t,
     classname = "tarball_t",
+)
+
+shape.loader(
+    name = "symlink_t",
+    shape = symlink_t,
+    classname = "symlink_t",
 )

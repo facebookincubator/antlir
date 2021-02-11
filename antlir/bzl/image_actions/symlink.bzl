@@ -3,16 +3,23 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 
+symlink_t = shape.shape(
+    dest = str,
+    source = str,
+)
+
 def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
-    symlink_spec = {
-        "dest": link_name,
-        "source": link_target,
-    }
+    symlink_spec = shape.new(
+        symlink_t,
+        dest = link_name,
+        source = link_target,
+    )
     return target_tagger_to_feature(
         new_target_tagger(),
-        items = struct(**{symlinks_to_arg: [symlink_spec]}),
+        items = struct(**{symlinks_to_arg: [shape.as_dict(symlink_spec)]}),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:symlink"],
     )

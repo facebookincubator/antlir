@@ -6,7 +6,6 @@
 
 import os
 import pwd
-from dataclasses import dataclass
 
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
@@ -18,13 +17,14 @@ from antlir.fs_utils import generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
+from pydantic import root_validator, validator
 
 from .common import (
     ImageItem,
     LayerOpts,
-    coerce_path_field_normal_relative,
     make_path_normal_relative,
 )
+from .symlink_t import symlink_t
 
 
 def _make_rsync_style_dest_path(dest: str, source: str) -> str:
@@ -43,19 +43,18 @@ def _make_rsync_style_dest_path(dest: str, source: str) -> str:
     )
 
 
-@dataclass(init=False, frozen=True)
-class SymlinkBase(ImageItem):
-    source: str
-    dest: str
+class SymlinkBase(symlink_t, ImageItem):
+    _normalize_source = validator("source", allow_reuse=True, pre=True)(
+        make_path_normal_relative
+    )
 
-    @classmethod
-    def customize_fields(cls, kwargs):
-        super().customize_fields(kwargs)
-        coerce_path_field_normal_relative(kwargs, "source")
-
-        kwargs["dest"] = _make_rsync_style_dest_path(
-            kwargs["dest"], kwargs["source"]
+    @root_validator
+    def dest_is_rsync_style(cls, values):  # noqa B902
+        # Validators are classmethods but flake8 doesn't catch that.
+        values["dest"] = _make_rsync_style_dest_path(
+            values["dest"], values["source"]
         )
+        return values
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         dest = subvol.path(self.dest)
@@ -77,7 +76,7 @@ class SymlinkBase(ImageItem):
         rel_source = abs_source.relpath(dest.dirname())
         assert os.path.normpath(dest / rel_source).startswith(
             subvol.path()
-        ), "{self}: A symlink to {rel_source} would point outside the image"
+        ), f"{self}: A symlink to {rel_source} would point outside the image"
         if layer_opts.build_appliance:
             build_appliance = layer_opts.build_appliance
             work_dir = generate_work_dir()
@@ -101,8 +100,7 @@ class SymlinkBase(ImageItem):
             )
 
 
-@dataclass(init=False, frozen=True)
-class SymlinkToDirItem(SymlinkBase, ImageItem):
+class SymlinkToDirItem(SymlinkBase):
     def provides(self):
         yield ProvidesDirectory(path=self.dest)
 
@@ -117,8 +115,7 @@ def _allowlisted_symlink_source(source: str) -> bool:
     return source in ["dev/null"]
 
 
-@dataclass(init=False, frozen=True)
-class SymlinkToFileItem(SymlinkBase, ImageItem):
+class SymlinkToFileItem(SymlinkBase):
     def provides(self):
         yield ProvidesFile(path=self.dest)
 
