@@ -255,3 +255,14 @@ class UnshareTestCase(unittest.TestCase):
                     text=True,
                 ).stdout,
             )
+
+    def test_nsenter_without_sudo(self):
+        # This just creates the namespace and then compares commands generated
+        # to confirm that the `sudo` is dropped.  Since `nsenter` requires
+        # root to enter a namespace, if we tried to actually run the command
+        # it would surely break.
+        with Unshare([Namespace.MOUNT]) as unshare:
+            sudo_cmd = unshare.nsenter_as_root(["/bin/ls"])
+            no_sudo_cmd = unshare.nsenter_without_sudo(["/bin/ls"])
+
+        self.assertEqual(no_sudo_cmd, sudo_cmd[1:])
