@@ -25,9 +25,10 @@ from antlir.compiler.items.common import META_ARTIFACTS_REQUIRE_REPO
 from antlir.compiler.items.mount import mounts_from_meta
 from antlir.config import load_repo_config
 from antlir.find_built_subvol import Subvol, find_built_subvol
-from antlir.fs_utils import Path
+from antlir.fs_utils import Path, temp_dir
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.unshare import Namespace, Unshare
 
 from .args import PopenArgs, _NspawnOpts
 from .common import find_cgroup2_mountpoint, parse_cgroup2_path
@@ -111,16 +112,38 @@ def _temp_cgroup(subvol: Subvol) -> Path:
         )
 
 
-def _nspawn_cmd(nspawn_subvol: Subvol, temp_cgroup: Path):
-    return [
-        # Enter a unique, temporary cgroup because as of 8/2020, upstream
-        # `systemd-nspawn --keep-unit` runs in a hardcoded `payload`
-        # sub-cgroup in the current scope. The result is that when
-        # we run multiple `nspawn_in_subvol` tests concurrently, they
-        # see each other's cgroups and interfere.
-        #
-        # Hopefully, we can fix this upstream, but that will take a while to
-        # sort out, so for now, let's manage this manually.
+def _nspawn_cmd(
+    nspawn_subvol: Subvol,
+    temp_cgroup: Path,
+    temp_bind_rootfs: Path,
+    ns: Unshare,
+):
+    """
+    This generates the exact command used to invoke systemd-nspawn for our
+    runtime experience.
+    - `nspawn_subvol`: This is the actual subvol that is used for the container.
+        This is need to inspect and determine if a fake /etc/os-release file is
+        required to satisfy systemd-nspawn requirements.
+    - `temp_cgroup`:  A unique, temporary cgroup because as of 8/2020, upstream
+        `systemd-nspawn --keep-unit` runs in a hardcoded `payload`
+        sub-cgroup in the current scope. The result is that when
+        we run multiple `nspawn_in_subvol` tests concurrently, they
+        see each other's cgroups and interfere.
+        Hopefully, we can fix this upstream, but that will take a while to
+        sort out, so for now, we can manage this manually.
+    - `temp_bind_rootfs`:  A temporary directory that is bind mounted to
+        `nspawn_subvol`.  This is necessary to prevent a mount explosion
+        when `--bind-repo-ro` is used.  In that case, the repository, which
+        includes the actual btrfs volume where `nspawn_subvol` exists is
+        exposed to the container.  This will end up causing a mount explosion
+        because all of the mounts created by nspawn (/proc, /sys, /dev, etc..)
+        will end up getting recursively included.  This is undesirable, so
+        this path, which is outside the repository, is used to ensure that
+        the runtime mounts don't get included.
+    - ns: This is an unshare instance with just a unique mount namepsace that
+        contains the bind mounts used for `temp_bind_rootfs`.
+    """
+    cmd = [
         "/bin/bash",
         "-uec",
         f"""
@@ -138,30 +161,34 @@ def _nspawn_cmd(nspawn_subvol: Subvol, temp_cgroup: Path):
         # configuration because it's important that it be set.
         "env",
         "UNIFIED_CGROUP_HIERARCHY=yes",
-        "systemd-nspawn",
-        # These are needed since we do not want to require a working `dbus` on
-        # the host.
-        "--register=no",
-        "--keep-unit",
-        # Randomize --machine so that the container has a random hostname
-        # each time. The goal is to help detect builds that somehow use the
-        # hostname to influence the resulting image.
-        "--machine",
-        uuid.uuid4().hex,
-        "--directory",
-        nspawn_subvol.path(),
-        *_inject_os_release_args(nspawn_subvol),
-        # Don't pollute the host's /var/log/journal
-        "--link-journal=no",
-        # Explicitly do not look for any settings for our ephemeral machine
-        # on the host.
-        "--settings=no",
-        # The timezone should be set up explicitly, not by nspawn's fiat.
-        "--timezone=off",  # requires v239+
-        # Future: Uncomment.  This is good container hygiene.  It had to go
-        # since it breaks XAR binaries, which rely on a setuid bootstrap.
-        # '--no-new-privileges=1',
+        *ns.nsenter_without_sudo(
+            "systemd-nspawn",
+            # These are needed since we do not want to require a working `dbus`
+            # on the host.
+            "--register=no",
+            "--keep-unit",
+            # Randomize --machine so that the container has a random hostname
+            # each time. The goal is to help detect builds that somehow use the
+            # hostname to influence the resulting image.
+            "--machine",
+            uuid.uuid4().hex,
+            "--directory",
+            temp_bind_rootfs,
+            *_inject_os_release_args(nspawn_subvol),
+            # Don't pollute the host's /var/log/journal
+            "--link-journal=no",
+            # Explicitly do not look for any settings for our ephemeral machine
+            # on the host.
+            "--settings=no",
+            # The timezone should be set up explicitly, not by nspawn's fiat.
+            "--timezone=off",  # requires v239+
+            # Future: Uncomment.  This is good container hygiene.  It had to go
+            # since it breaks XAR binaries, which rely on a setuid bootstrap.
+            # '--no-new-privileges=1',
+        ),
     ]
+
+    return cmd
 
 
 # This is a separate helper so that tests can mock it easily
@@ -369,11 +396,32 @@ def _nspawn_setup(opts: _NspawnOpts, popen_args: PopenArgs) -> _NspawnSetup:
         _snapshot_subvol(opts.layer, opts.debug_only_opts.snapshot_into)
         if opts.snapshot
         else nullcontext(opts.layer)
-    ) as nspawn_subvol, _temp_cgroup(opts.layer) as temp_cgroup:
+    ) as nspawn_subvol, _temp_cgroup(opts.layer) as temp_cgroup, temp_dir(
+        # Hardcoding /tmp is ugly, but buck will often set TMP to a path in
+        # buck-out that ends up being underneath the repository and we need to
+        # ensure that this bind location is separate from the repository dir.
+        dir="/tmp",
+        # Use a prefix that helps aids mere humans in debugging.
+        prefix=f"antlir-{os.getpid()}-{nspawn_subvol.path().basename()}",
+    ) as temp_bind_rootfs, Unshare(
+        [Namespace.MOUNT]
+    ) as ns:
         nspawn_args, cmd_env = _extra_nspawn_args_and_env(opts)
+        nspawn_subvol.run_as_root(
+            ns.nsenter_without_sudo(
+                "mount",
+                "--bind",
+                nspawn_subvol.path(),
+                temp_bind_rootfs,
+            )
+        )
+
         yield _NspawnSetup(
             subvol=nspawn_subvol,
-            nspawn_cmd=(*_nspawn_cmd(nspawn_subvol, temp_cgroup), *nspawn_args),
+            nspawn_cmd=(
+                *_nspawn_cmd(nspawn_subvol, temp_cgroup, temp_bind_rootfs, ns),
+                *nspawn_args,
+            ),
             # This is a safeguard in case the `sudo` policy lets through any
             # unwanted environment variables.
             nspawn_env=nspawn_sanitize_env(),

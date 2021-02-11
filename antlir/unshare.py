@@ -269,6 +269,9 @@ class Unshare:
             ),
         ]
 
+    def nsenter_without_sudo(self, *cmd: List[AnyStr]) -> List[AnyStr]:
+        return ["nsenter", *self._nsenter_args(), *cmd]
+
     def nsenter_as_root(self, *cmd: List[AnyStr]) -> List[AnyStr]:
         return ["sudo", "nsenter", *self._nsenter_args(), *cmd]
 
