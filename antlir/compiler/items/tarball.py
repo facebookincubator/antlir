@@ -25,10 +25,9 @@ from .tarball_t import tarball_t
 class TarballItem(tarball_t, ImageItem):
     from_target: str
 
-    @validator("into_dir")
-    def path_is_normal_relative(cls, into_dir):  # noqa B902
-        # Validators are classmethods but flake8 doesn't catch that.
-        return make_path_normal_relative(into_dir)
+    _normalize_into_dir = validator("into_dir", allow_reuse=True)(
+        make_path_normal_relative
+    )
 
     def provides(self):
         # We own ZST decompression, tarfile handles other gz, bz2, etc.
