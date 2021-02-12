@@ -133,6 +133,9 @@ class Path(bytes):
     def dirname(self) -> "Path":
         return Path(os.path.dirname(self))
 
+    def islink(self) -> bool:
+        return os.path.islink(self)
+
     # NB: A lazy `gen_dir_names()` was briefly considered, but rejected (for
     # now) because:
     #   (1) `listdir` is clearly analogous to the standard `os` module

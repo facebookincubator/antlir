@@ -116,6 +116,23 @@ class TestFsUtils(unittest.TestCase):
             finally:
                 os.chmod(td, old_mode)
 
+    def test_path_islink(self):
+        with temp_dir() as td:
+            target = td / "target"
+            link = td / "link"
+
+            # Real files aren't symlinks
+            self.assertFalse(target.islink())
+
+            os.symlink(target, link)
+
+            # Broken symlinks are still symlinks
+            self.assertTrue(link.islink())
+
+            # Non-broken symlinks are symlinks :)
+            target.touch()
+            self.assertTrue(link.islink())
+
     def test_path_wait_for(self):
         with tempfile.TemporaryDirectory() as td:
             to_wait_for = Path(td) / "will_you_wait_for_me"
