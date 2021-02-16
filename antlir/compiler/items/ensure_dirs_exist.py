@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import pwd
 from dataclasses import dataclass
 from typing import Iterator, Optional
@@ -80,7 +79,9 @@ class EnsureDirsExistItem(ImageItem):
         customize_stat_options(kwargs, default_mode=0o755)
 
     def provides(self):
-        yield ProvidesDirectory(path=os.path.join(self.into_dir, self.basename))
+        yield ProvidesDirectory(
+            path=(Path(self.into_dir) / self.basename).decode()
+        )
 
     def requires(self):
         yield require_directory(self.into_dir)
@@ -89,9 +90,10 @@ class EnsureDirsExistItem(ImageItem):
         # If path already exists ensure it has expected attrs, else make it.
         work_dir = generate_work_dir()
         full_path = Path(work_dir) / self.into_dir / self.basename
-        path_to_make_exists = os.path.exists(
-            subvol.path() / self.into_dir / self.basename
-        )
+        path_to_make = subvol.path() / self.into_dir / self.basename
+        # Cannot postpone exists() check because _BUILD_SCRIPT will create the
+        # directory `path_to_make`
+        path_to_make_exists = path_to_make.exists()
         opts = new_nspawn_opts(
             cmd=[
                 "/bin/bash",
@@ -113,7 +115,7 @@ class EnsureDirsExistItem(ImageItem):
             build_stat_options(
                 self,
                 subvol,
-                subvol.path(os.path.join(self.into_dir, self.basename)),
+                path_to_make,
                 build_appliance=layer_opts.build_appliance,
             )
 
@@ -172,16 +174,16 @@ def ensure_subdirs_exist_factory(
     EDE providing "/a/b/c" and the EDE requiring `symlink_dir` for "/a/b/c/d"
     are separate items.
     """
-    into_dir = make_path_normal_relative(_validate_into_dir(into_dir))
+    into_dir = Path(make_path_normal_relative(_validate_into_dir(into_dir)))
     subdirs_to_create = make_path_normal_relative(subdirs_to_create)
-    path = os.path.join(into_dir, subdirs_to_create)
+    path = into_dir / subdirs_to_create
     while True:
-        parent = os.path.dirname(path)
+        parent = path.dirname()
         yield EnsureDirsExistItem(
             **kwargs,
             # Want to provide root rather than the empty string
-            into_dir=parent or "/",
-            basename=os.path.basename(path),
+            into_dir=parent.decode() or "/",
+            basename=path.basename().decode(),
         )
         if parent == into_dir:
             break
