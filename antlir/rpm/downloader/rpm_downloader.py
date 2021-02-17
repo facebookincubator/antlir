@@ -281,6 +281,8 @@ def _download_rpms(
                         LogOp.REPO_DB_WRITE,
                         rpm=rpm,
                         universe=universe,
+                        db_cfg=str(cfg.db_cfg),
+                        db_table=rpm_table.NAME,
                     )
                 ):
                     res_storage_id = maybe_write_id(
