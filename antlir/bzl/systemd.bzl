@@ -136,10 +136,19 @@ def _install_unit(
         paths.join(install_root, dest),
     )
 
+def _set_default_target(
+        # An existing systemd target to be set as the default
+        target):
+    return image.symlink_file(
+        paths.join(PROVIDER_ROOT, target),
+        paths.join(PROVIDER_ROOT, "default.target"),
+    )
+
 systemd = struct(
     enable_unit = _enable_unit,
     install_unit = _install_unit,
     mask_tmpfiles = _mask_tmpfiles,
     mask_units = _mask_units,
+    set_default_target = _set_default_target,
     unmask_units = _unmask_units,
 )
