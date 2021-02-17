@@ -1,0 +1,81 @@
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "buck_sh_test")
+load("//antlir/bzl:systemd.bzl", "systemd")
+load(":busybox.bzl", "clone_busybox")
+load(":initrd_release.bzl", "initrd_release")
+load(":systemd.bzl", "clone_systemd")
+
+image.layer(
+    name = "deps",
+    features = [
+        image.rpms_install([
+            "busybox",
+            "systemd",
+            "systemd-udev",
+        ]),
+    ],
+)
+
+# Generate /etc/initrd-release based on scm/fbpkg revision info
+initrd_release(
+    name = "initrd-release",
+)
+
+filesystem = [
+    image.ensure_dirs_exist("/etc"),
+    image.ensure_dirs_exist("/run"),
+    image.ensure_dirs_exist("/tmp"),
+    image.ensure_dirs_exist("/usr/bin"),
+    image.ensure_dirs_exist("/usr/lib"),
+    image.ensure_dirs_exist("/var"),
+    image.symlink_dir("/usr/bin", "/bin"),
+    image.symlink_dir("/usr/bin", "/sbin"),
+    image.symlink_dir("/usr/lib", "/lib"),
+    image.symlink_dir("/run", "/var/run"),
+    image.ensure_dirs_exist("/sysroot"),  # rootfs mountpoint to switch-root into
+    image.ensure_dirs_exist("/usr/lib/systemd"),
+]
+
+# Kernel-agnostic base initrd
+image.layer(
+    name = "base",
+    features = [
+        filesystem,
+        clone_systemd(":deps"),
+        # TODO: is there a reason to have busybox when not using
+        # rd.systemd.debug_shell? It would save 1.2M to only include it in a
+        # special "debug boot" mode that could be selected ahead of PXE
+        clone_busybox(":deps"),
+        image.symlink_file("/usr/lib/systemd/systemd", "/init"),
+        # Systemd uses the presence of /etc/initrd-release to determine if it
+        # is running in an initrd, however there are cases where it only parses
+        # /{etc,usr/lib}/os-release, so just cover all our bases with symlinks
+        image.install(":initrd-release", "/usr/lib/initrd-release"),
+        image.symlink_file("/usr/lib/initrd-release", "/etc/initrd-release"),
+        image.symlink_file("/usr/lib/initrd-release", "/usr/lib/os-release"),
+        image.symlink_file("/usr/lib/initrd-release", "/etc/os-release"),
+        # This is automatically the target that systemd tries to reach when it
+        # detects /etc/initrd-release, but explicitly symlinking it makes
+        # systemd-analyze work as expected too
+        systemd.set_default_target("initrd.target"),
+        # explicitly enable systemd-networkd to configure the network links
+        # early in boot
+        systemd.enable_unit(
+            "systemd-networkd.service",
+            target = "initrd.target",
+        ),
+    ],
+)
+
+# CPIO archive to which environment specific overlays are appended. For
+# example, vmtest appends units that load required kernel modules and sets up
+# the BTRFS seed device on /
+image.package(
+    name = "base.cpio.gz",
+)
+
+buck_sh_test(
+    name = "base-size",
+    args = ["$(location :base.cpio.gz)"],
+    test = "tests/check_size.sh",
+)
