@@ -84,10 +84,13 @@ def _enable_unit(
         target = "multi-user.target"):
     _fail_if_path(unit, "Enable Unit")
 
-    return image.symlink_file(
-        paths.join(PROVIDER_ROOT, unit),
-        paths.join(PROVIDER_ROOT, target + ".wants", unit),
-    )
+    return [
+        image.ensure_subdirs_exist(PROVIDER_ROOT, target + ".wants", mode = 0o755),
+        image.symlink_file(
+            paths.join(PROVIDER_ROOT, unit),
+            paths.join(PROVIDER_ROOT, target + ".wants", unit),
+        ),
+    ]
 
 def _install_unit(
         # The source for the unit to be installed. This can be one of:
