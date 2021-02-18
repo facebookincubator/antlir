@@ -6,32 +6,35 @@
 
 import os
 import subprocess
-from dataclasses import dataclass
 
 from antlir.compiler.requires_provides import require_directory
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
+from pydantic import root_validator, validator
 
-from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
+from .clone_t import clone_t
+from .common import ImageItem, LayerOpts, make_path_normal_relative
 from .phases_provide import gen_subvolume_subtree_provides
 
 
-@dataclass(init=False, frozen=True)
-class CloneItem(ImageItem):
-
-    dest: str
-    omit_outer_dir: bool
-    pre_existing_dest: bool
+class CloneItem(clone_t, ImageItem):
+    class Config:
+        arbitrary_types_allowed = True
 
     source: Path
     source_layer: Subvol
 
-    @classmethod
-    def customize_fields(cls, kwargs):
-        super().customize_fields(kwargs)
+    _normalize_dest = validator("dest", allow_reuse=True, pre=True)(
+        make_path_normal_relative
+    )
+
+    @root_validator
+    def check_flags(cls, values):  # noqa B902
+        # Validators are classmethods but flake8 doesn't catch that.
+
         # This is already checked in `clone.bzl`
-        assert not kwargs["omit_outer_dir"] or kwargs["pre_existing_dest"]
-        coerce_path_field_normal_relative(kwargs, "dest")
+        assert not values["omit_outer_dir"] or values["pre_existing_dest"]
+        return values
 
     def provides(self):
         img_rel_src = self.source.relpath(self.source_layer.path())

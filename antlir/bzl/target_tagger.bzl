@@ -34,7 +34,7 @@ _TargetTaggerInfo = provider(fields = ["targets"])
 target_tagged_image_source_shape = shape.shape(
     source = shape.dict(str, str, optional = True),
     layer = shape.dict(str, str, optional = True),
-    path = shape.dict(str, str, optional = True),
+    path = shape.field(str, optional = True),
     generator = shape.dict(str, str, optional = True),
     generator_args = shape.list(str, optional = True),
     content_hash = shape.field(str, optional = True),

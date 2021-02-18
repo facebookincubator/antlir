@@ -2,14 +2,22 @@ load("//antlir/bzl:image_foreign_layer.bzl", "foreign_layer_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image_actions:clone.bzl", "clone_t")
 load("//antlir/bzl/image_actions:symlink.bzl", "symlink_t")
 load("//antlir/bzl/image_actions:tarball.bzl", "tarball_t")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+
+shape.loader(
+    name = "clone_t",
+    shape = clone_t,
+    classname = "clone_t",
+)
 
 python_library(
     name = "clone",
     srcs = ["clone.py"],
     deps = [
+        ":clone_t",
         ":common",
         ":phases_provide",
     ],

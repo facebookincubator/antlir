@@ -4,7 +4,23 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image_source.bzl", "image_source")
-load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "tag_target", "target_tagger_to_feature")
+load("//antlir/bzl:shape.bzl", "shape")
+load(
+    "//antlir/bzl:target_tagger.bzl",
+    "image_source_as_target_tagged_shape",
+    "new_target_tagger",
+    "tag_target",
+    "target_tagged_image_source_shape",
+    "target_tagger_to_feature",
+)
+
+clone_t = shape.shape(
+    dest = str,
+    omit_outer_dir = bool,
+    pre_existing_dest = bool,
+    source = target_tagged_image_source_shape,
+    source_layer = shape.dict(str, str),
+)
 
 def image_clone(src_layer, src_path, dest_path):
     """
@@ -61,18 +77,22 @@ metadata to a deterministic state, while the state of the on-disk metadata in
         )
 
     target_tagger = new_target_tagger()
+
+    clone = shape.new(
+        clone_t,
+        dest = dest_path,
+        omit_outer_dir = omit_outer_dir,
+        pre_existing_dest = pre_existing_dest,
+        source = image_source_as_target_tagged_shape(
+            target_tagger,
+            image_source(layer = src_layer, path = src_path),
+        ),
+        source_layer = tag_target(target_tagger, src_layer, is_layer = True),
+    )
+
     return target_tagger_to_feature(
         target_tagger,
-        items = struct(clone = [{
-            "dest": dest_path,
-            "omit_outer_dir": omit_outer_dir,
-            "pre_existing_dest": pre_existing_dest,
-            "source": image_source_as_target_tagged_dict(
-                target_tagger,
-                image_source(layer = src_layer, path = src_path),
-            ),
-            "source_layer": tag_target(target_tagger, src_layer, is_layer = True),
-        }]),
+        items = struct(clone = [shape.as_dict(clone)]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:clone"],
     )
