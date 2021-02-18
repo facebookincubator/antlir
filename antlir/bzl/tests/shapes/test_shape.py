@@ -51,7 +51,7 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             lightsaber_fixed,
             lightsaber_t(
-                color="green",
+                color=lightsaber_t.types.color.GREEN,
                 target=Target(
                     name=":luke-lightsaber",
                     path=b"/static/target/path",
@@ -159,7 +159,7 @@ class TestShape(unittest.TestCase):
             + "), "
             "lightsaber=shape("
             + (
-                "color='green', "
+                "color=GREEN, "
                 "target=Target("
                 "name=':luke-lightsaber', path=b'/static/target/path'"
                 "), "
@@ -189,7 +189,7 @@ class TestShape(unittest.TestCase):
             "lightsaber=Optional["
             + (
                 "shape("
-                "color=str, "
+                "color=enum, "
                 "target=Optional[Target], "
                 "layer_target=Optional[LayerTarget]"
                 ")"
@@ -245,7 +245,7 @@ class TestShape(unittest.TestCase):
             "name='Obi-Wan Kenobi', "
             "appears_in=(1, 2, 3, 4, 5, 6), "
             "friends=(shape(name='Yoda'), shape(name='Padme Amidala')), "
-            "lightsaber=shape(color='blue', target=None, layer_target=None), "
+            "lightsaber=shape(color=BLUE, target=None, layer_target=None), "
             "callsign=None, "
             "metadata={'species': 'human'}, "
             "affiliations=shape(faction='Jedi Temple'), "
@@ -262,7 +262,7 @@ class TestShape(unittest.TestCase):
             "friends=Tuple[shape(name=str), ...], "
             "lightsaber=Optional[shape("
             + (
-                "color=str, "
+                "color=enum, "
                 "target=Optional[Target], "
                 "layer_target=Optional[LayerTarget]"
             )

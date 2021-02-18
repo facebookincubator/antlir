@@ -30,6 +30,7 @@ class TestShapeBzl(unittest.TestCase):
             ("hello", shape.field(str, optional=True)),
             (None, shape.field(str, optional=True)),
             ({"a": "b"}, shape.dict(str, str)),
+            ("world", shape.enum("hello", "world")),
             ("/hello/world", shape.path()),
             ("@cell//project/path:rule", shape.target()),
             (":rule", shape.target()),
@@ -54,6 +55,7 @@ class TestShapeBzl(unittest.TestCase):
             ("nope", shape.dict(str, str)),
             ("nope", shape.list(str)),
             ("nope", shape.tuple(str)),
+            ("goodbye", shape.enum("hello", "world")),
             (1, shape.path()),
             (2, shape.target()),
             ("invalid_target", shape.target()),
@@ -111,6 +113,14 @@ class TestShapeBzl(unittest.TestCase):
         with self.assertRaises(Fail):
             shape.new(t, tup=("hello", "2"))
 
+    def test_enum(self):
+        t = shape.shape(e=shape.enum("hello", "world"))
+        self.assertEqual(shape.new(t, e="world"), struct(e="world"))
+        with self.assertRaises(Fail):
+            shape.new(t, e="goodbye")
+        with self.assertRaises(Fail):
+            shape.shape(e=shape.enum("hello", 42))
+
     def test_nested_list(self):
         t = shape.shape(lst=shape.list(shape.shape(answer=int)))
         self.assertEqual(
@@ -164,6 +174,7 @@ class TestShapeBzl(unittest.TestCase):
             hello=str,
             world=shape.field(str, optional=True),
             answer=shape.field(int, default=42),
+            enum=shape.enum("hello", "world"),
             file=shape.path(),
             location=shape.target(),
             nested=shape.field(nested, default=shape.new(nested, inner=True)),
@@ -185,6 +196,10 @@ class TestShapeBzl(unittest.TestCase):
   hello: str
   world: Optional[str] = None
   answer: int = 42
+  class Hello_World(Enum):
+    HELLO = 'hello'
+    WORLD = 'world'
+  enum: Hello_World
   file: Path
   location: Target
   class _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ(Shape):
