@@ -10,7 +10,7 @@ affiliations_t = shape.shape(faction = str)
 
 # A shape that references buck targets
 lightsaber_t = shape.shape(
-    color = str,
+    color = shape.enum("red", "green", "blue"),
     target = shape.target(optional = True),
     layer_target = shape.layer(optional = True),
 )
