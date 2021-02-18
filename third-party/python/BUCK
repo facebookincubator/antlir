@@ -105,3 +105,9 @@ pypi_package(
     sha256 = "5609aa6da1123fccfae2e8431a67b4146aa7fad5b3889f808df12b110f230937",
     url = "https://files.pythonhosted.org/packages/6f/50/3d7729d64bb23393aa4c166af250a6e6f9def40c90bf0e9af3c5ad25b6f7/pyelftools-0.27-py2.py3-none-any.whl",
 )
+
+pypi_package(
+    name = "jinja2",
+    sha256 = "03e47ad063331dd6a3f04a43eddca8a966a26ba0c5b7207a9a9e4e08f1b29419",
+    url = "https://files.pythonhosted.org/packages/7e/c2/1eece8c95ddbc9b1aeb64f5783a9e07a286de42191b7204d67b7496ddf35/Jinja2-2.11.3-py2.py3-none-any.whl",
+)

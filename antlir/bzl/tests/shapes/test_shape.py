@@ -315,3 +315,10 @@ class TestShape(unittest.TestCase):
                 __GENERATED_SHAPE__ = True
                 # this is reserved for the type definitions class
                 types: Sequence[str] = ("hello", "world")
+
+    def test_rendered_template(self):
+        self.assertEqual(
+            "Stormtrooper is a character that appears in episode(s) 1, 2, 3, 4, 5, 6 of\n"
+            "the Star Wars franchise and is friends with Vader, Palpatine and Tarkin.",
+            importlib.resources.read_text(__package__, "template.txt"),
+        )
