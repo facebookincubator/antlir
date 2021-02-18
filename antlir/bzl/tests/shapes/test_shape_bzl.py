@@ -10,6 +10,9 @@ import unittest
 from .shape_bzl import Fail, _check_type, _codegen_shape, shape, struct
 
 
+TestUnionType = shape.unionT(bool, int)
+
+
 class TestShapeBzl(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
@@ -31,6 +34,12 @@ class TestShapeBzl(unittest.TestCase):
             ("@cell//project/path:rule", shape.target()),
             (":rule", shape.target()),
             (":rule", shape.layer()),
+            (1, shape.union(str, int)),
+            ("hello", shape.union(str, int)),
+            ("hello", shape.unionT(str, int)),
+            ("hello", shape.field(shape.unionT(str, int))),
+            ("hello", shape.union(str, int, optional=True)),
+            (None, shape.union(str, int, optional=True)),
         ):
             with self.subTest(x=x, t=t):
                 check_type(x, t)
@@ -50,6 +59,7 @@ class TestShapeBzl(unittest.TestCase):
             ("invalid_target", shape.target()),
             ("also:invalid_target", shape.target()),
             ("invalid_layer", shape.layer()),
+            ("nope", shape.union(bool, int)),
         ):
             with self.subTest(x=x, t=t):
                 with self.assertRaises(Exception):
@@ -123,6 +133,29 @@ class TestShapeBzl(unittest.TestCase):
             struct(dct={"a": [struct(answer=42)]}),
         )
 
+    def test_empty_union_type(self):
+        with self.assertRaises(Fail):
+            shape.union()
+
+    def test_nested_union(self):
+        t = shape.shape(
+            nested=shape.union(shape.unionT(str, int), shape.unionT(bool))
+        )
+        for v in ("hi", 1, True):
+            shape.new(t, nested=v)
+
+    def test_union_of_shapes(self):
+        s = shape.shape(s=str)
+        n = shape.shape(n=int)
+        b = shape.shape(b=bool)
+        t = shape.shape(u=shape.union(s, n, b))
+        for v in (
+            shape.new(s, s="foo"),
+            shape.new(n, n=10),
+            shape.new(b, b=False),
+        ):
+            shape.new(t, u=v)
+
     def test_codegen(self):
         # the generated code is tested in test_shape.py, but this is our
         # opportunity to test it as text
@@ -142,6 +175,7 @@ class TestShapeBzl(unittest.TestCase):
             dct_of_lst_of_shape=shape.dict(
                 str, shape.list(shape.shape(answer=int))
             ),
+            union_of_things=shape.union(int, str),
         )
         code = "\n".join(_codegen_shape(t, "shape"))
         self.assertEqual(
@@ -171,8 +205,14 @@ class TestShapeBzl(unittest.TestCase):
   class __wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE(Shape):
     __GENERATED_SHAPE__ = True
     answer: int
-  dct_of_lst_of_shape: Mapping[str, Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]]""",
+  dct_of_lst_of_shape: Mapping[str, Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]]
+  union_of_things: Union[int, str]""",  # noqa: E501
         )
+
+    def test_codegen_with_empty_union_type(self):
+        for t in (shape.shape(empty_list=[]), shape.shape(empty_tuple=())):
+            with self.assertRaises(Fail):
+                _codegen_shape(t)
 
     def test_location_serialization(self):
         target_t = shape.shape(target=shape.target())
@@ -225,3 +265,13 @@ class TestShapeBzl(unittest.TestCase):
                 # implicitly acknowledging that they will do the right thing
                 # and not cache the results
                 json.loads(shape.do_not_cache_me_json(i, t))
+
+    def test_unionT_typedef(self):
+        self.assertIsNone(_check_type(True, TestUnionType))
+        self.assertIsNone(_check_type(False, TestUnionType))
+        self.assertIsNone(_check_type(0, TestUnionType))
+        self.assertIsNone(_check_type(1, TestUnionType))
+        self.assertEqual(
+            "union (<class 'bool'>, <class 'int'>): expected bool, got foo; expected int, got foo",  # noqa: E501
+            _check_type("foo", TestUnionType),
+        )
