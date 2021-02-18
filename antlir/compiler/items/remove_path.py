@@ -9,6 +9,7 @@ import os
 from dataclasses import dataclass
 from typing import Iterable
 
+from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 
 from .common import (
@@ -81,7 +82,7 @@ class RemovePathItem(ImageItem):
             for item in sorted(
                 items, reverse=True, key=lambda i: i.__sort_key()
             ):
-                if is_path_protected(item.path, protected_paths):
+                if is_path_protected(Path(item.path), protected_paths):
                     # For META_DIR, this is never reached because of
                     # make_path_normal_relative's check, but for other
                     # protected paths, this is required.

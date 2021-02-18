@@ -7,7 +7,7 @@
 "Separate from `mount.py` to avoid circular dep with `common.py`"
 import json
 import os
-from typing import AnyStr, Iterator
+from typing import Iterator
 
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -49,4 +49,4 @@ def mountpoints_from_subvol_meta(subvol: Subvol) -> Iterator[Path]:
             # image), but this is much more legible and probably safe.
             with open(Path(path) / "is_directory") as f:
                 is_directory = json.load(f)
-            yield mountpoint + (b"/" if is_directory else b"")
+            yield mountpoint / "" if is_directory else mountpoint

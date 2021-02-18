@@ -11,7 +11,6 @@ subvolume after all the phases have finished executing, in order to
 `provide()` whatever was created during the phases to the dependency sorter.
 """
 import itertools
-import os
 import subprocess
 from dataclasses import dataclass
 
@@ -34,7 +33,7 @@ def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
 
     protected_paths = protected_path_set(subvol)
     for prot_path in protected_paths:
-        rel_to_subtree = Path(os.path.join("/", prot_path)).relpath(subtree)
+        rel_to_subtree = (b"/" / prot_path).relpath(subtree)
         if not rel_to_subtree.has_leading_dot_dot():
             yield ProvidesDoNotAccess(path=rel_to_subtree.decode())
 
@@ -62,7 +61,7 @@ def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
                         # `normpath` removes the trailing / for protected dirs
                         "-o",
                         "-path",
-                        subvol.path(os.path.normpath(p)),
+                        subvol.path(p.normpath()),
                     ]
                     for p in protected_paths
                 ),
@@ -86,7 +85,7 @@ def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
         )
         # We already "provided" this path above, and it should have been
         # filtered out by `find`.
-        assert not is_path_protected(relpath.decode(), protected_paths), relpath
+        assert not is_path_protected(relpath, protected_paths), relpath
 
         # Future: This provides all symlinks as files, while we should
         # probably provide symlinks to valid directories inside the image as

@@ -11,8 +11,16 @@ from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     require_directory,
 )
+from antlir.fs_utils import Path
+from antlir.tests.temp_subvolumes import TempSubvolumes
 
-from ..common import ImageItem, image_source_item
+from ..common import (
+    META_DIR,
+    ImageItem,
+    image_source_item,
+    protected_path_set,
+    is_path_protected,
+)
 from ..ensure_dirs_exist import EnsureDirsExistItem
 from ..install_file import InstallFileItem
 from .common import DUMMY_LAYER_OPTS, BaseItemTestCase
@@ -85,4 +93,52 @@ class ItemsCommonTestCase(BaseItemTestCase):
                 unexpected="a",
                 another="b",
                 lastone="c",
+            )
+
+    def test_protected_path_set_no_subvol(self):
+        self.assertEqual({META_DIR}, protected_path_set(None))
+
+    def test_protected_path_set(self):
+        with TempSubvolumes() as temp_subvolumes:
+            subvol = temp_subvolumes.create("protected_path_set")
+            subvol.run_as_root(
+                ["mkdir", "-p", subvol.path(".meta/private/mount/a/b/c/MOUNT")]
+            )
+            subvol.run_as_root(
+                [
+                    "tee",
+                    subvol.path(".meta/private/mount/a/b/c/MOUNT/is_directory"),
+                ],
+                input=b"true",
+            )
+            subvol.run_as_root(
+                ["mkdir", "-p", subvol.path(".meta/private/mount/d/e/f/MOUNT")]
+            )
+            subvol.run_as_root(
+                [
+                    "tee",
+                    subvol.path(".meta/private/mount/d/e/f/MOUNT/is_directory"),
+                ],
+                input=b"false",
+            )
+            self.assertEqual(
+                {META_DIR, Path("a/b/c/"), Path("d/e/f")},
+                protected_path_set(subvol),
+            )
+
+    def test_is_path_protected(self):
+        for path, protected_paths, want in (
+            (Path("a"), {Path("a")}, True),
+            (Path("a"), {Path("b"), Path("a")}, True),
+            (Path("c"), {Path("b"), Path("a")}, False),
+            (Path("a/b"), {Path("a")}, True),
+            (Path("a"), {Path("ab")}, False),
+            (Path("ab"), {Path("a")}, False),
+            (Path("a/b"), {Path("ab")}, False),
+            (Path("/path/to/file/oops"), {Path("/path/to/file")}, True),
+        ):
+            self.assertEqual(
+                want,
+                is_path_protected(path, protected_paths),
+                f"{path}, {protected_paths}",
             )
