@@ -13,6 +13,7 @@ from antlir.compiler.requires_provides import (
     require_directory,
 )
 from antlir.tests.temp_subvolumes import TempSubvolumes
+from pydantic import ValidationError
 
 from ..ensure_dirs_exist import (
     EnsureDirsExistItem,
@@ -186,4 +187,22 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                     },
                 ],
                 render_subvol(subvol),
+            )
+
+    def test_ensure_dirs_exist_item_disallows_subdirs_to_create(self):
+        with self.assertRaises(ValidationError):
+            EnsureDirsExistItem(
+                from_target="t",
+                into_dir="a/b",
+                basename="c",
+                subdirs_to_create="b/c",
+            )
+
+        # don't even allow None
+        with self.assertRaises(ValidationError):
+            EnsureDirsExistItem(
+                from_target="t",
+                into_dir="a/b",
+                basename="c",
+                subdirs_to_create=None,
             )

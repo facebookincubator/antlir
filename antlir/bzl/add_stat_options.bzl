@@ -3,6 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:shape.bzl", "shape")
+
+mode_t = shape.unionT(int, str)
+
 def add_stat_options(d, mode, user, group):
     if mode != None:
         d["mode"] = mode

@@ -3,8 +3,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
+load("//antlir/bzl:add_stat_options.bzl", "add_stat_options", "mode_t")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
+
+ensure_subdirs_exist_t = shape.shape(
+    into_dir = str,
+    subdirs_to_create = str,
+    mode = shape.union(mode_t, optional = True),
+    user_group = shape.field(str, optional = True),
+)
 
 def image_ensure_dirs_exist(path, mode = None, user = None, group = None):
     """Equivalent to `image.ensure_subdirs_exist("/", path, ...)`."""
@@ -40,9 +48,10 @@ def image_ensure_subdirs_exist(into_dir, subdirs_to_create, mode = None, user = 
 
     dir_spec = {"into_dir": into_dir, "subdirs_to_create": subdirs_to_create}
     add_stat_options(dir_spec, mode, user, group)
+    ensure_subdirs_exist = shape.new(ensure_subdirs_exist_t, **dir_spec)
     return target_tagger_to_feature(
         new_target_tagger(),
-        items = struct(ensure_subdirs_exist = [dir_spec]),
+        items = struct(ensure_subdirs_exist = [shape.as_dict(ensure_subdirs_exist)]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:ensure_dirs_exist"],
     )
