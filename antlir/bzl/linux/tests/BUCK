@@ -1,0 +1,52 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "third_party")
+load("//antlir/bzl/linux:defs.bzl", "linux")
+
+# The `busybox.install()` feature requires a source image.layer
+# from which to clone `/busybox` from.  These targets produce
+# image layers with `busybox` installed at `/`, one built from
+# the default Build Appliance and the other built from a
+# `third_party.library` target.
+image.layer(
+    name = "busybox-src-from-ba",
+    features = [
+        image.clone(
+            REPO_CFG.build_appliance_default,
+            "/usr/sbin/busybox",
+            "/busybox",
+        ),
+    ],
+)
+
+image.layer(
+    name = "busybox-src-from-third-party",
+    features = [
+        image.install(
+            third_party.library("busybox", "bin/busybox"),
+            "/busybox",
+        ),
+    ],
+)
+
+# Now use the respective busybox source layers to construct
+# test linux layers.
+image.layer(
+    name = "test-linux-busybox-from-ba",
+    features = [
+        linux.filesystem.install(),
+        linux.busybox.install(
+            src = ":busybox-src-from-ba",
+        ),
+    ],
+)
+
+image.layer(
+    name = "test-linux-busybox-from-third-party",
+    features = [
+        linux.filesystem.install(),
+        linux.busybox.install(
+            src = ":busybox-src-from-third-party",
+        ),
+    ],
+)

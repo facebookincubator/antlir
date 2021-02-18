@@ -245,3 +245,17 @@ fake_macro_library(
         "//antlir/bzl:shape",
     ],
 )
+
+fake_macro_library(
+    name = "linux_busybox",
+    srcs = [
+        "linux/busybox.bzl",
+    ],
+)
+
+fake_macro_library(
+    name = "linux_filesystem",
+    srcs = [
+        "linux/filesystem.bzl",
+    ],
+)
