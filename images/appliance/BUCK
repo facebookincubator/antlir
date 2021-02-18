@@ -38,6 +38,7 @@ image.layer(
         # with this directory not existing.
         image.ensure_subdirs_exist("/etc", "yum"),
         image.rpms_install([
+            "attr",
             "bsdtar",  # For building reproducible archives
             "btrfs-progs",
             "coreutils",
