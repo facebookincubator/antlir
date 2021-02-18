@@ -4,8 +4,21 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:shape.bzl", "shape")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":structs.bzl", "structs")
+
+image_source_t = shape.shape(
+    source = shape.field("Target", optional = True),
+    layer = shape.field("Target", optional = True),
+    path = shape.field("Path", optional = True),
+    generator = shape.field("Path", optional = True),
+    generator_args = shape.field(
+        shape.list(str),
+        optional = True,
+    ),
+    content_hash = shape.field(str, optional = True),
+)
 
 # Note to users: all callsites accepting `image.source` objects also accept
 # plain strings, which are interpreted as `image.source(<the string>)`.
@@ -98,7 +111,9 @@ def _image_source_impl(
             'must pass `content_hash = "algorithm:hexdigest"` (checked via Python ' +
             "hashlib)",
         )
-    return struct(
+
+    return shape.new(
+        image_source_t,
         source = maybe_export_file(source),
         layer = layer,
         path = path,
@@ -109,9 +124,12 @@ def _image_source_impl(
 
 # `_image_source_impl` documents the function signature.  It is intentional
 # that arguments besides `source` are keyword-only.
-def image_source(source = None, **kwargs):
+def image_source_shape(source = None, **kwargs):
     if source == None or types.is_string(source):
         return _image_source_impl(source = source, **kwargs)
     if kwargs:
         fail("Got struct source {} with other args".format(source))
     return _image_source_impl(**structs.to_dict(source))
+
+def image_source(source = None, **kwargs):
+    return struct(**shape.as_dict(image_source_shape(source, **kwargs)))
