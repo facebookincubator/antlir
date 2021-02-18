@@ -8,6 +8,7 @@
 # directly, instead it contains supporting implementations for bzl/shape.bzl.
 # See that file for motivations and usage documentation.
 
+import enum
 import importlib.resources
 import os
 from typing import Type, TypeVar
@@ -119,3 +120,16 @@ class LayerTarget(Target):
     @pydantic.validator("subvol", always=True, pre=True)
     def find_layer_as_subvol(cls, v, *, values):  # noqa B902
         return find_built_subvol(values["path"])
+
+
+class Enum(enum.Enum):
+    def __repr__(self):
+        return self.name
+
+    def __eq__(self, o):
+        # it can sometimes be hard to get the exact same instance of this enum
+        # class due to the way the codegen works, so allow comparisons by value
+        # as well as the normal identity-based comparison
+        if hasattr(o, "value"):
+            return self.value == o.value
+        return super().__eq__(o)  # pragma: no cover

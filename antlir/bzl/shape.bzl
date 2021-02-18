@@ -26,6 +26,7 @@ types available:
   homogenous lists of a single `field` element type
   dicts with homogenous key `field` types and homogenous `field` value type
   heterogenous tuples with `field` element types
+  enums with string values
   unions via shape.union(type1, type2, ...)
 
 If using a union, use the most specific type first as Pydantic will attempt to
@@ -145,6 +146,8 @@ def _python_type(t):
             return "Tuple[{}, ...]".format(_python_type(t.item_type))
         if t.collection == tuple:
             return "Tuple[{}]".format(", ".join([_python_type(x) for x in t.item_type]))
+    if _is_enum(t):
+        return "_".join([str(v.capitalize()) for v in t.enum])
     if _is_field(t):
         python_type = _python_type(t.type)
         if t.optional:
@@ -187,6 +190,10 @@ def _check_type(x, t):
         if types.is_string(x):
             return None
         return "expected str, got {}".format(x)
+    if _is_enum(t):
+        if x in t.enum:
+            return None
+        return "expected one of {}, got {}".format(t.enum, x)
     if t == "Path":
         return _check_type(x, str)
     if t == "Target" or t == "LayerTarget":
@@ -270,6 +277,8 @@ def _shapes_for_field(field_or_type):
 
             for t in item_types:
                 src.extend(_shapes_for_field(t))
+        if _is_enum(field.type):
+            src.extend(_codegen_enum(field.type))
     elif _is_shape(field_or_type):
         src.extend(_codegen_shape(field_or_type))
     return src
@@ -300,6 +309,14 @@ def _codegen_shape(shape, classname = None):
 
     for name, field in shape.fields.items():
         src.extend(["  " + line for line in _codegen_field(name, field)])
+    return src
+
+def _codegen_enum(enum):
+    classname = _python_type(enum)
+    src = [
+        "class {}(Enum):".format(classname),
+    ]
+    src.extend(["  {} = {}".format(value.upper(), repr(value)) for value in enum.enum])
     return src
 
 def _field(type, optional = False, default = _NO_DEFAULT):
@@ -359,6 +376,21 @@ def _union(*union_types, **field_kwargs):
         type = _union_type(*union_types),
         **field_kwargs
     )
+
+def _enum(*values, **field_kwargs):
+    # since enum values go into class member names, they must be strings
+    for val in values:
+        if not types.is_string(val):
+            fail("all enum values must be strings, got {}".format(val))
+    return _field(
+        type = struct(
+            enum = tuple(values),
+        ),
+        **field_kwargs
+    )
+
+def _is_enum(t):
+    return structs.is_struct(t) and sorted(structs.to_dict(t).keys()) == sorted(["enum"])
 
 def _path(**field_kwargs):
     return _field(type = "Path", **field_kwargs)
@@ -623,6 +655,7 @@ shape = struct(
     tuple = _tuple,
     union = _union,
     unionT = _union_type,
+    enum = _enum,
     path = _path,
     target = _target,
     layer = _layer,
