@@ -3,6 +3,7 @@ load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image_actions:clone.bzl", "clone_t")
+load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "ensure_subdirs_exist_t")
 load("//antlir/bzl/image_actions:symlink.bzl", "symlink_t")
 load("//antlir/bzl/image_actions:tarball.bzl", "tarball_t")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -178,11 +179,18 @@ python_unittest(
     ],
 )
 
+shape.loader(
+    name = "ensure_subdirs_exist_t",
+    shape = ensure_subdirs_exist_t,
+    classname = "ensure_subdirs_exist_t",
+)
+
 python_library(
     name = "ensure_dirs_exist",
     srcs = ["ensure_dirs_exist.py"],
     deps = [
         ":common",
+        ":ensure_subdirs_exist_t",
         ":stat_options",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
@@ -202,7 +210,6 @@ python_unittest(
     },
     deps = [
         ":common_testlib",
-        ":ensure_dirs_exist",
         "//antlir:common",
         "//antlir:find_built_subvol",
         "//antlir:testlib_temp_subvolumes",

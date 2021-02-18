@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import pwd
-from dataclasses import dataclass
 from typing import Iterator, Optional
 
 from antlir.compiler.requires_provides import (
@@ -16,13 +15,14 @@ from antlir.fs_utils import Path, generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
+from pydantic import root_validator, validator
 
 from .common import (
     ImageItem,
     LayerOpts,
-    coerce_path_field_normal_relative,
     make_path_normal_relative,
 )
+from .ensure_subdirs_exist_t import ensure_subdirs_exist_t
 from .stat_options import (
     Mode,
     build_stat_options,
@@ -57,26 +57,46 @@ def _validate_into_dir(into_dir: Optional[str]) -> str:
 
 
 # `ensure_subdirs_exist_factory` below should be used to construct this
-@dataclass(init=False, frozen=True)
-class EnsureDirsExistItem(ImageItem):
-    into_dir: str
+class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
     basename: str
+    mode: Optional[Mode]
 
-    # Stat option fields
-    mode: Mode
-    user_group: str
+    # `subdirs_to_create` is an `ensure_subdirs_exist_t` shape field that is
+    # processed by `ensure_subdirs_exist_factory` below to create an
+    # `EnsureDirsExistItem` item for each subdir level. This field is
+    # required in the shape, but should never be provided to this item. Thus,
+    # we've overridden the field to be Optional and assert that it is None
+    # in the validator below. Alternatively, we could remove the field, but
+    # that is unnatural (both conceptually and in implementation).
+    #
+    # NB: `ensure_subdirs_exist_factory` breaks up the incoming item config
+    # to resolve cicular dependencies and allow for a cleaner dependency
+    # graph. More info available in the factory function's docstring.
+    subdirs_to_create: Optional[str]
 
-    @classmethod
-    def customize_fields(cls, kwargs):
-        super().customize_fields(kwargs)
-        _validate_into_dir(kwargs.get("into_dir", None))
-        coerce_path_field_normal_relative(kwargs, "into_dir")
-        coerce_path_field_normal_relative(kwargs, "basename")
+    @validator("subdirs_to_create")
+    def validate_subdirs_to_create(cls, subdirs_to_create):  # noqa B902
+        # subdirs_to_create should only exist on the config args being
+        # passed to `ensure_subdirs_exist_factory` and must not be
+        # passed to EnsureDirsExistItem.
+        raise AssertionError(subdirs_to_create)
+
+    @validator("into_dir")
+    def validate_into_dir(cls, into_dir):  # noqa B902
+        # Validators are classmethods but flake8 doesn't catch that.
+        return make_path_normal_relative(_validate_into_dir(into_dir))
+
+    @validator("basename")
+    def validate_basename(cls, basename):  # noqa B902
+        basename = make_path_normal_relative(basename)
         # We want this to be a single path component (the dir being made)
-        assert "/" not in kwargs.get("basename", "")
-        # Unlike files, leave directories as writable by the owner by
-        # default, since it's reasonable for files to be added at runtime.
-        customize_stat_options(kwargs, default_mode=0o755)
+        assert "/" not in basename
+        return basename
+
+    @root_validator
+    def set_default_stat_options(cls, values):  # noqa B902
+        customize_stat_options(values, default_mode=0o755)
+        return values
 
     def provides(self):
         yield ProvidesDirectory(
