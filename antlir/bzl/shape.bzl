@@ -26,6 +26,11 @@ types available:
   homogenous lists of a single `field` element type
   dicts with homogenous key `field` types and homogenous `field` value type
   heterogenous tuples with `field` element types
+  unions via shape.union(type1, type2, ...)
+
+If using a union, use the most specific type first as Pydantic will attempt to
+coerce to the types in the order listed
+(see https://pydantic-docs.helpmanual.io/usage/types/#unions) for more info.
 
 ## Optional and Defaulted Fields
 By default, fields are required to be set at instantiation time
@@ -151,6 +156,9 @@ def _python_type(t):
         return "_" + sha256_b64(
             str({key: _python_type(field) for key, field in t.fields.items()}),
         ).replace("-", "_")
+    if _is_union(t):
+        type_names = [_python_type(union_t) for union_t in t.union_types]
+        return "Union[{}]".format(", ".join(type_names))
 
     # If t is a string, then it should be the name of a type that will exist in
     # the Shape generated code context
@@ -201,6 +209,14 @@ def _check_type(x, t):
         return None
     if _is_collection(t):
         return _check_collection_type(x, t)
+    if _is_union(t):
+        type_errors = []
+        for union_t in t.union_types:
+            type_error = _check_type(x, union_t)
+            if type_error == None:
+                return None
+            type_errors.append(type_error)
+        return "union {}: ".format(t.union_types) + "; ".join(type_errors)
 
     return "unsupported type {}".format(t)  # pragma: no cover
 
@@ -217,7 +233,7 @@ def _check_collection_type(x, t):
             if val_type_error:
                 return "val: " + val_type_error
         return None
-    elif t.collection == list:
+    if t.collection == list:
         if not types.is_list(x) and not types.is_tuple(x):
             return "{} is not list".format(x)
         for i, val in enumerate(x):
@@ -225,7 +241,7 @@ def _check_collection_type(x, t):
             if type_error:
                 return "item {}: {}".format(i, type_error)
         return None
-    elif t.collection == tuple:
+    if t.collection == tuple:
         if not types.is_list(x) and not types.is_tuple(x):
             return "{} is not tuple".format(x)
         for i, (val, item_type) in enumerate(zip(x, t.item_type)):
@@ -328,6 +344,22 @@ def _tuple(*item_types, **field_kwargs):
 def _is_collection(x):
     return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["collection", "item_type"])
 
+def _is_union(x):
+    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["union_types"])
+
+def _union_type(*union_types):
+    if len(union_types) == 0:
+        fail("union must specify at one type")
+    return struct(
+        union_types = union_types,
+    )
+
+def _union(*union_types, **field_kwargs):
+    return _field(
+        type = _union_type(*union_types),
+        **field_kwargs
+    )
+
 def _path(**field_kwargs):
     return _field(type = "Path", **field_kwargs)
 
@@ -352,7 +384,7 @@ def _shape(**fields):
     for name, f in fields.items():
         # transparently convert fields that are just a type have no options to
         # the rich field type for internal use
-        if not hasattr(f, "type"):
+        if not hasattr(f, "type") or _is_union(f):
             fields[name] = _field(f)
     return struct(
         fields = fields,
@@ -589,6 +621,8 @@ shape = struct(
     dict = _dict,
     list = _list,
     tuple = _tuple,
+    union = _union,
+    unionT = _union_type,
     path = _path,
     target = _target,
     layer = _layer,
