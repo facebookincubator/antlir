@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest.mock
 
+from antlir.fs_utils import Path
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder, protected_path_set
@@ -100,7 +101,8 @@ class RemovePathItemTestCase(BaseItemTestCase):
             for prot_path in ["xyz", "xyz/potato/carrot"]:
                 with unittest.mock.patch(
                     "antlir.compiler.items.remove_path.protected_path_set",
-                    side_effect=lambda sv: protected_path_set(sv) | {"xyz"},
+                    side_effect=lambda sv: protected_path_set(sv)
+                    | {Path("xyz")},
                 ), self.assertRaisesRegex(
                     AssertionError, f"Cannot remove protected .*{prot_path}"
                 ):

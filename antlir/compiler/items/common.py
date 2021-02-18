@@ -219,7 +219,7 @@ def coerce_path_field_normal_relative(kwargs, field: str):
         kwargs[field] = make_path_normal_relative(d)
 
 
-def protected_path_set(subvol: Optional[Subvol]) -> Set[str]:
+def protected_path_set(subvol: Optional[Subvol]) -> Set[Path]:
     """
     Identifies the protected paths in a subvolume.  Pass `subvol=None` if
     the subvolume doesn't yet exist (for FilesystemRoot).
@@ -244,17 +244,17 @@ def protected_path_set(subvol: Optional[Subvol]) -> Set[str]:
     # Return these as strings for use in yum-dnf-from-snapshot and
     # the logic in phases_provide.py.  Those callsites don't yet
     # understand the Path type.
-    return {path.decode() for path in paths}
+    return paths
 
 
-def is_path_protected(path: str, protected_paths: Set[str]) -> bool:
+def is_path_protected(path: Path, protected_paths: Set[Path]) -> bool:
     # NB: The O-complexity could obviously be lots better, if needed.
     for prot_path in protected_paths:
         # Handle both protected files and directories.  This test is written
         # to return True even if `prot_path` is `/path/to/file` while `path`
         # is `/path/to/file/oops`.
-        if (path + "/").startswith(
-            prot_path + ("" if prot_path.endswith("/") else "/")
+        if (path + b"/").startswith(
+            prot_path + (b"" if prot_path.endswith(b"/") else b"/")
         ):
             return True
     return False

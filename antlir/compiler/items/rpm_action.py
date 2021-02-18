@@ -356,7 +356,7 @@ def _yum_dnf_using_build_appliance(
                 shlex.quote(prog_name)
             } {
                 ' '.join(
-                    '--protected-path=' + shlex.quote(p)
+                    '--protected-path=' + p.shell_quote()
                         for p in protected_paths
                 )
             } {

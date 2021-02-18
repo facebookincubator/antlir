@@ -207,6 +207,7 @@ class Path(bytes):
         return Path(result_path)
 
     # Returns `str` because shell scripts are normally strings, not bytes.
+    # Also, shlex.quote doesn't support bytes (see Python Issue #25567).
     def shell_quote(self) -> str:
         return shlex.quote(self.decode())
 
