@@ -4,60 +4,42 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import enum
 import os
-from dataclasses import dataclass
 from typing import Iterable
 
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
+from pydantic import validator
 
 from .common import (
     ImageItem,
     LayerOpts,
     PhaseOrder,
-    coerce_path_field_normal_relative,
+    make_path_normal_relative,
     is_path_protected,
     protected_path_set,
 )
+from .remove_paths_t import remove_paths_t
 
 
-class RemovePathAction(enum.Enum):
-    assert_exists = "assert_exists"
-    if_exists = "if_exists"
-
-
-@dataclass(init=False, frozen=True)
-class RemovePathItem(ImageItem):
-
-    path: str
-    action: RemovePathAction
-
-    @classmethod
-    def customize_fields(cls, kwargs):
-        super().customize_fields(kwargs)
-        coerce_path_field_normal_relative(kwargs, "path")
-        kwargs["action"] = RemovePathAction(kwargs["action"])
+class RemovePathItem(remove_paths_t, ImageItem):
+    @validator("path", pre=True)
+    def validate_path(cls, path):  # noqa B902
+        # Validators are classmethods but flake8 doesn't catch that.
+        return Path(make_path_normal_relative(path))
 
     def phase_order(self):
         return PhaseOrder.REMOVE_PATHS
 
     def __sort_key(self):
-        return (
-            self.path,
-            {
-                action: idx
-                for idx, action in enumerate(
-                    [
-                        # We sort in reverse order, so by putting "if" first we
-                        # allow conflicts between "if_exists" and
-                        # "assert_exists" items to be resolved naturally.
-                        RemovePathAction.if_exists,
-                        RemovePathAction.assert_exists,
-                    ]
-                )
-            }[self.action],
-        )
+        # We sort in reverse order when building so the natural
+        # sort order of must_exist will cause must_exist=True
+        # items to be processed first, allowing conflicts to be
+        # resolved naturally.
+        return (self.path, self.must_exist)
+
+    def __lt__(self, other):
+        return self.__sort_key() < other.__sort_key()
 
     @classmethod
     def get_phase_builder(
@@ -71,7 +53,7 @@ class RemovePathItem(ImageItem):
         # it explicitly is possible by peeking at `DependencyGraph.items`,
         # but the extra complexity doesn't seem worth the faster failure.
 
-        # NB: We could detect collisions between two `assert_exists` removes
+        # NB: We could detect collisions between two `must_exist` removes
         # early, but again, it doesn't seem worth the complexity.
 
         def builder(subvol: Subvol):
@@ -79,10 +61,8 @@ class RemovePathItem(ImageItem):
             # Reverse-lexicographic order deletes inner paths before
             # deleting the outer paths, thus minimizing conflicts between
             # `remove_paths` items.
-            for item in sorted(
-                items, reverse=True, key=lambda i: i.__sort_key()
-            ):
-                if is_path_protected(Path(item.path), protected_paths):
+            for item in sorted(items, reverse=True):
+                if is_path_protected(item.path, protected_paths):
                     # For META_DIR, this is never reached because of
                     # make_path_normal_relative's check, but for other
                     # protected paths, this is required.
@@ -95,12 +75,10 @@ class RemovePathItem(ImageItem):
                 # `item.path` is a symlink (or one of its sub-paths).
                 path = subvol.path(item.path, no_dereference_leaf=True)
                 if not os.path.lexists(path):
-                    if item.action == RemovePathAction.assert_exists:
-                        raise AssertionError(f"Path does not exist: {item}")
-                    elif item.action == RemovePathAction.if_exists:
+                    if not item.must_exist:
                         continue
-                    else:  # pragma: no cover
-                        raise AssertionError(f"Unknown {item.action}")
+                    raise AssertionError(f"Path does not exist: {item}")
+
                 subvol.run_as_root(
                     [
                         "rm",
@@ -114,6 +92,5 @@ class RemovePathItem(ImageItem):
                         path,
                     ]
                 )
-            pass
 
         return builder
