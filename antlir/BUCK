@@ -500,3 +500,14 @@ python_unittest(
         ":serialize-targets-and-outputs-library",
     ],
 )
+
+python_library(
+    name = "render_template",
+    srcs = ["render_template.py"],
+    deps = [
+        third_party.library(
+            "jinja2",
+            platform = "python",
+        ),
+    ],
+)

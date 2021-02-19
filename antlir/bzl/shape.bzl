@@ -112,6 +112,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "python_library", "target_utils", "third_party")
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
@@ -646,6 +647,26 @@ def _do_not_cache_me_json(instance, shape):
     instance = _translate_targets(instance, shape)
     return instance.to_json()
 
+def _render_template(name, instance, shape, template):  # pragma: no cover
+    """
+    Render the given Jinja2 template with the shape instance data to a file.
+
+    Warning: this will fail to serialize any shape type that contains a
+    reference to a target location, as that cannot be safely cached by buck.
+    """
+    if _type_has_location(shape):
+        fail(_SERIALIZING_LOCATION_MSG)
+
+    _json_file(name + "--data.json", instance, shape)
+
+    buck_genrule(
+        name = name,
+        out = "unused",
+        cmd = "$(exe {}) <$(location :{}--data.json) > $OUT".format(template, name),
+        antlir_rule = "user-internal",
+    )
+    return normalize_target(":" + name)
+
 shape = struct(
     shape = _shape,
     new = _new_shape,
@@ -664,4 +685,5 @@ shape = struct(
     python_data = _python_data,
     as_dict = structs.to_dict,
     do_not_cache_me_json = _do_not_cache_me_json,
+    render_template = _render_template,
 )
