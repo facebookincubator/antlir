@@ -1,0 +1,9 @@
+{% extends "unit.jinja2" %}
+
+{% block settings %}
+[Mount]
+What={{ what }}
+Where={{ where }}
+Type={{ type }}
+Options={{ options | join(",") }}
+{% endblock %}
