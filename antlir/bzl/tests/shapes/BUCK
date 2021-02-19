@@ -1,6 +1,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:template.bzl", "template")
 
 # There are a lot of shapes that are used in test cases.
 # This would rapidly clutter targets in antlir/bzl/tests, so define them all
@@ -213,6 +214,29 @@ python_unittest(
             ),
             shape = hashable_t,
         ): "data.json",
+        shape.render_template(
+            name = "template",
+            instance = shape.new(
+                hashable_t,
+                name = "Stormtrooper",
+                appears_in = [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                ],
+                friends = [
+                    "Vader",
+                    "Palpatine",
+                    "Tarkin",
+                ],
+                metadata = None,
+            ),
+            shape = hashable_t,
+            template = ":example-template",
+        ): "template.txt",
     },
     deps = [
         ":character_collection_t",
@@ -232,6 +256,11 @@ python_unittest(
             classname = "StormtrooperArgsType",
         ),
     ],
+)
+
+template(
+    name = "example-template",
+    main = "template.jinja2",
 )
 
 # construct a file with some shims to allow the python_unittest below to import
