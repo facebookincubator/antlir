@@ -144,6 +144,73 @@ def _set_default_target(
         paths.join(PROVIDER_ROOT, "default.target"),
     )
 
+_ALPHA = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+_NUM = "1234567890"
+_SPECIAL = ":_.\\"
+_PASSTHROUGH = _ALPHA + _NUM + _SPECIAL
+
+# The Starlark runtime in Buck does not provide `ord()`, so include an explicit map
+# Generated with:
+# ranges = itertools.chain(range(33, 48), range(58, 65), range(91, 97), range(123,127))
+# {chr(i): f"\\x{i:x}" for i in ranges}
+_ESCAPE_MAP = {
+    "!": "\\x21",
+    '"': "\\x22",
+    "#": "\\x23",
+    "$": "\\x24",
+    "%": "\\x25",
+    "&": "\\x26",
+    "'": "\\x27",
+    "(": "\\x28",
+    ")": "\\x29",
+    "*": "\\x2a",
+    "+": "\\x2b",
+    ",": "\\x2c",
+    "-": "\\x2d",
+    ".": "\\x2e",
+    "/": "\\x2f",
+    ":": "\\x3a",
+    ";": "\\x3b",
+    "<": "\\x3c",
+    "=": "\\x3d",
+    ">": "\\x3e",
+    "?": "\\x3f",
+    "@": "\\x40",
+    "[": "\\x5b",
+    "\\": "\\x5c",
+    "]": "\\x5d",
+    "^": "\\x5e",
+    "`": "\\x60",
+    "{": "\\x7b",
+    "|": "\\x7c",
+    "}": "\\x7d",
+    "~": "\\x7e",
+    "_": "\\x5f",
+}
+
+def _escape(unescaped, path = False):
+    escaped = ""
+    if path and unescaped == "/":
+        return "-"
+    if path:
+        unescaped = unescaped.lstrip("/")
+        unescaped = unescaped.replace("//", "/")
+
+    # strings in starlark are not iterable, but have an .elems() function to
+    # get a character iterator
+    if hasattr(unescaped, "elems"):
+        unescaped = unescaped.elems()
+    for char in unescaped:
+        if char in _PASSTHROUGH:
+            escaped += char
+        elif char == "/":
+            escaped += "-"
+        elif char in _ESCAPE_MAP:
+            escaped += _ESCAPE_MAP[char]
+        else:
+            fail("'{}' cannot be escaped".format(char))
+    return escaped
+
 systemd = struct(
     enable_unit = _enable_unit,
     install_unit = _install_unit,
@@ -151,4 +218,20 @@ systemd = struct(
     mask_units = _mask_units,
     set_default_target = _set_default_target,
     unmask_units = _unmask_units,
+    escape = _escape,
 )
+
+# verified with `systemd-escape`
+def _selftest():
+    inputs = [
+        ("/dev/sda", True, "dev-sda"),
+        ("/", True, "-"),
+        ("/some//path", True, "some-path"),
+        ("https://[face::booc]/path-dash", False, "https:--\\x5bface::booc\\x5d-path\\x2ddash"),
+    ]
+    for unescaped, path, expected in inputs:
+        actual = systemd.escape(unescaped, path)
+        if actual != expected:
+            fail("expected systemd.escape('{}', path={}) to return '{}' not '{}".format(unescaped, path, expected, actual))
+
+_selftest()
