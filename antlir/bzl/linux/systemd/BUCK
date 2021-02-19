@@ -1,0 +1,9 @@
+load("//antlir/bzl:template.bzl", "template")
+
+template(
+    name = "mount",
+    includes = [
+        "unit.jinja2",
+    ],
+    main = "mount.jinja2",
+)

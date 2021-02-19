@@ -229,6 +229,14 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "systemd",
+    srcs = ["systemd.bzl"],
+    deps = [
+        ":shape",
+    ],
+)
+
+fake_macro_library(
     name = "vm",
     srcs = ["vm/defs.bzl"],
     deps = [

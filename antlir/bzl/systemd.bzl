@@ -7,6 +7,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", "target_utils")
+load(":shape.bzl", "shape")
 
 PROVIDER_ROOT = "/usr/lib/systemd/system"
 ADMIN_ROOT = "/etc/systemd/system"
@@ -211,6 +212,33 @@ def _escape(unescaped, path = False):
             fail("'{}' cannot be escaped".format(char))
     return escaped
 
+# Define shapes for systemd units. This is not intended to be an exhaustive
+# list of every systemd unit setting from the start, but should be added to as
+# more use cases generate units with these shapes.
+unit_t = shape.shape(
+    description = str,
+    requires = shape.list(str, default = []),
+    after = shape.list(str, default = []),
+    before = shape.list(str, default = []),
+)
+
+mount_t = shape.shape(
+    unit = unit_t,
+    what = str,
+    where = shape.path(),
+    # add more filesystem types here as required
+    type = shape.enum("btrfs", "9p", optional = True),
+    options = shape.list(str, default = []),
+)
+
+def _mount_unit_file(name, mount):
+    return shape.render_template(
+        name = name,
+        shape = mount_t,
+        instance = mount,
+        template = "//antlir/bzl/linux/systemd:mount",
+    )
+
 systemd = struct(
     enable_unit = _enable_unit,
     install_unit = _install_unit,
@@ -219,6 +247,11 @@ systemd = struct(
     set_default_target = _set_default_target,
     unmask_units = _unmask_units,
     escape = _escape,
+    units = struct(
+        unit = unit_t,
+        mount = mount_t,
+        mount_file = _mount_unit_file,
+    ),
 )
 
 # verified with `systemd-escape`

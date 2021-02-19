@@ -1,0 +1,7 @@
+[Unit]
+Description={{ unit.description }}
+Requires={{ unit.requires|join(" ") }}
+After={{ unit.after|join(" ") }}
+Before={{ unit.before|join(" ") }}
+
+{% block settings %}{% endblock %}
