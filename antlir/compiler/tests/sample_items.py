@@ -11,7 +11,7 @@ from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.mount import MountItem
-from antlir.compiler.items.remove_path import RemovePathAction, RemovePathItem
+from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.rpm_action import RpmAction, RpmActionItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
@@ -259,17 +259,17 @@ ID_TO_ITEM = {
     ".remove_if_exists/path/to/remove": RemovePathItem(
         from_target=T_KITCHEN_SINK,
         path="/path/to/remove",
-        action=RemovePathAction.if_exists,
+        must_exist=False,
     ),
     ".remove_assert_exists/path/to/remove": RemovePathItem(
         from_target=T_KITCHEN_SINK,
         path="/path/to/remove",
-        action=RemovePathAction.assert_exists,
+        must_exist=True,
     ),
     ".remove_assert_exists/another/path/to/remove": RemovePathItem(
         from_target=T_KITCHEN_SINK,
         path="/another/path/to/remove",
-        action=RemovePathAction.assert_exists,
+        must_exist=True,
     ),
 }
 

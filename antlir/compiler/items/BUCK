@@ -4,6 +4,7 @@ load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_pa
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image_actions:clone.bzl", "clone_t")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "ensure_subdirs_exist_t")
+load("//antlir/bzl/image_actions:remove.bzl", "remove_paths_t")
 load("//antlir/bzl/image_actions:symlink.bzl", "symlink_t")
 load("//antlir/bzl/image_actions:tarball.bzl", "tarball_t")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -262,6 +263,12 @@ python_unittest(
     deps = [":stat_options"],
 )
 
+shape.loader(
+    name = "remove_paths_t",
+    shape = remove_paths_t,
+    classname = "remove_paths_t",
+)
+
 # Future: Finish splitting this library, and tests, by item.  The only
 # challenge is to make sure that `common.py` gets coverage -- coverage of
 # its functions is currently distributed across various items.
@@ -279,6 +286,7 @@ python_library(
         ":make_subvol",
         ":mount",
         ":mount_utils",
+        ":remove_paths_t",
         ":stat_options",
         ":symlink_t",
         ":tarball_t",

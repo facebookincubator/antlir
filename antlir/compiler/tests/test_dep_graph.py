@@ -231,9 +231,7 @@ class DependencyGraphTestCase(DepGraphTestBase):
             DependencyGraph(
                 [
                     foreign1,
-                    RemovePathItem(
-                        from_target="", path="x", action="if_exists"
-                    ),
+                    RemovePathItem(from_target="", path="x", must_exist=False),
                 ],
                 "layer_t",
             )

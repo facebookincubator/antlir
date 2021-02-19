@@ -14,7 +14,7 @@ from antlir.tests.temp_subvolumes import TempSubvolumes
 from ..common import PhaseOrder, protected_path_set
 from ..ensure_dirs_exist import ensure_subdirs_exist_factory
 from ..install_file import InstallFileItem
-from ..remove_path import RemovePathAction, RemovePathItem
+from ..remove_path import RemovePathItem
 from ..symlink import SymlinkToDirItem
 from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
 
@@ -95,8 +95,8 @@ class RemovePathItemTestCase(BaseItemTestCase):
             ]
             self.assertEqual(intact_subvol, render_subvol(subvol))
 
-            # We refuse to touch protected paths, even with "if_exists".  If
-            # the paths started with '.meta', they would trip the check in
+            # We refuse to touch protected paths, even with must_exist=False.
+            # If the paths started with '.meta', they would trip the check in
             # `_make_path_normal_relative`, so we mock-protect 'xyz'.
             for prot_path in ["xyz", "xyz/potato/carrot"]:
                 with unittest.mock.patch(
@@ -110,7 +110,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
                         [
                             RemovePathItem(
                                 from_target="t",
-                                action=RemovePathAction.if_exists,
+                                must_exist=False,
                                 path=prot_path,
                             )
                         ],
@@ -120,7 +120,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
             # Check handling of non-existent paths without removing anything
             remove = RemovePathItem(
                 from_target="t",
-                action=RemovePathAction.if_exists,
+                must_exist=False,
                 path="/does/not/exist",
             )
             self.assertEqual(PhaseOrder.REMOVE_PATHS, remove.phase_order())
@@ -132,7 +132,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
                     [
                         RemovePathItem(
                             from_target="t",
-                            action=RemovePathAction.assert_exists,
+                            must_exist=True,
                             path="/does/not/exist",
                         )
                     ],
@@ -148,36 +148,36 @@ class RemovePathItemTestCase(BaseItemTestCase):
                     # `f_sym` nor `i_sym` were followed during their deletion.
                     RemovePathItem(
                         from_target="t",
-                        action=RemovePathAction.assert_exists,
+                        must_exist=True,
                         path="/f/i_sym",
                     ),
                     RemovePathItem(
                         from_target="t",
-                        action=RemovePathAction.assert_exists,
+                        must_exist=True,
                         path="/f/h",
                     ),
                     RemovePathItem(
                         from_target="t",
-                        action=RemovePathAction.assert_exists,
+                        must_exist=True,
                         path="/f/g",
                     ),
                     # The next 3 items are intentionally sequenced so that if
                     # they were applied in the given order, they would fail.
                     RemovePathItem(
                         from_target="t",
-                        action=RemovePathAction.if_exists,
+                        must_exist=False,
                         path="/a/b/c/e",
                     ),
                     RemovePathItem(
                         from_target="t",
-                        action=RemovePathAction.assert_exists,
+                        must_exist=True,
                         # The surrounding items don't delete /a/b/c/d, e.g. so
                         # this recursive remove is still tested.
                         path="/a/b/",
                     ),
                     RemovePathItem(
                         from_target="t",
-                        action=RemovePathAction.assert_exists,
+                        must_exist=True,
                         path="/a/b/c/e",
                     ),
                 ],
@@ -193,3 +193,21 @@ class RemovePathItemTestCase(BaseItemTestCase):
                 ],
                 render_subvol(subvol),
             )
+
+    def test_remove_path_item_sort_order(self):
+        self.assertEqual(
+            [
+                RemovePathItem(path="a", must_exist=False),
+                RemovePathItem(path="a", must_exist=True),
+                RemovePathItem(path="a/b", must_exist=True),
+                RemovePathItem(path="a/b/c", must_exist=True),
+            ],
+            sorted(
+                [
+                    RemovePathItem(path="a/b", must_exist=True),
+                    RemovePathItem(path="a/b/c", must_exist=True),
+                    RemovePathItem(path="a", must_exist=True),
+                    RemovePathItem(path="a", must_exist=False),
+                ],
+            ),
+        )

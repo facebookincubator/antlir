@@ -49,7 +49,7 @@ class PhaseOrder(enum.Enum):
          - Path removals.  It is simplest to perform them in bulk, without
            interleaving with other operations.  Removals have a natural
            ordering with respect to each other -- child before parent, to
-           avoid tripping "assert_exists" unnecessarily.
+           avoid tripping "must_exist" unnecessarily.
 
     For the operations in (2), this class sets a justifiable deteriminstic
     ordering for black-box blocks of operations, and assumes that each
