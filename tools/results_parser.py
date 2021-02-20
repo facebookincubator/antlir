@@ -96,9 +96,9 @@ for case in results:
     print(f"\033[91m  {case.full_name}")
     if not args.no_details:
         details = (
-            case.message.splitlines()
+            (case.message or "").splitlines()
             + ["\n"]
-            + case.stacktrace.splitlines()
+            + (case.stacktrace or "").splitlines()
             + ["\n\n"]
         )
         details = "\n".join(["\033[91m    " + line for line in details])
