@@ -14,8 +14,10 @@ buck_genrule(
     bash = """
 set -ue
 mkdir `dirname ${OUT}`
-rpm2cpio $(location :busybox-download) | cpio -idv -D ${TMP} ./sbin/busybox
+pushd ${TMP}
+rpm2cpio $(location :busybox-download) | cpio -idv ./sbin/busybox
 mv ${TMP}/sbin/busybox ${OUT}
+popd
     """,
     visibility = ["PUBLIC"],
 )
