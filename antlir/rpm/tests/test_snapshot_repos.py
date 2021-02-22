@@ -296,10 +296,12 @@ class SnapshotReposTestCase(unittest.TestCase):
                     "snap0",
                     {
                         ("bunny", "bunny-pkgs/rpm-test-carrot-2-rc0"),
+                        ("bunny", "bunny-pkgs/rpm-test-veggie-2-rc0"),
                         ("cat", "cat-pkgs/rpm-test-carrot-1-lockme"),
                         ("cat", "cat-pkgs/rpm-test-mice-0.1-a"),
                         ("cat", "cat-pkgs/rpm-test-milk-2.71-8"),
                         ("cat", "cat-pkgs/rpm-test-milk-no-sh-v-r"),
+                        ("cat", "cat-pkgs/rpm-test-veggie-1-rc0"),
                         ("dog", "dog-pkgs/rpm-test-carrot-2-rc0"),
                         ("dog", "dog-pkgs/rpm-test-etc-dnf-macro-1-2"),
                         ("dog", "dog-pkgs/rpm-test-etc-yum-macro-1-2"),
@@ -310,6 +312,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                         ("kitteh", "cat-pkgs/rpm-test-mice-0.1-a"),
                         ("kitteh", "cat-pkgs/rpm-test-milk-2.71-8"),
                         ("kitteh", "cat-pkgs/rpm-test-milk-no-sh-v-r"),
+                        ("kitteh", "cat-pkgs/rpm-test-veggie-1-rc0"),
                     },
                 ),
                 # These are "bunny" & "cat" (as "kitteh") from
@@ -319,6 +322,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                     "snap1",
                     {
                         ("bunny", "bunny-pkgs/rpm-test-carrot-2-rc0"),
+                        ("bunny", "bunny-pkgs/rpm-test-veggie-2-rc0"),
                         ("cat", "cat-pkgs/rpm-test-milk-2.71-8"),  # may error
                         ("cat", "cat-pkgs/rpm-test-mice-0.2-rc0"),
                         # We'd have gotten a "mutable RPM" error if this
@@ -331,7 +335,12 @@ class SnapshotReposTestCase(unittest.TestCase):
                             "gonna_skip_for_0",
                             "bunny-pkgs/rpm-test-carrot-2-rc0",
                         ),
+                        (
+                            "gonna_skip_for_0",
+                            "bunny-pkgs/rpm-test-veggie-2-rc0",
+                        ),
                         ("kitteh", "cat-pkgs/rpm-test-carrot-1-lockme"),
+                        ("kitteh", "cat-pkgs/rpm-test-veggie-1-rc0"),
                         ("kitteh", "cat-pkgs/rpm-test-mice-0.1-a"),
                         (
                             "kitteh",
