@@ -29,6 +29,8 @@ python_binary(
         "extract.py",
     ],
     main_module = "antlir.bzl.foreign.extractor.extract",
+    # this runs in a layer, so should be self-contained to work in OSS
+    par_style = "xar",
     deps = [
         "//antlir:fs_utils",
         third_party.library(

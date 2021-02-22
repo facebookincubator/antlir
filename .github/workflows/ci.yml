@@ -77,6 +77,8 @@ jobs:
         # known-broken due to some missing infra.
         # TODO(lsalis): re-enable locale tests when there is a working
         # alternative to build-locale-archive for fedora
+        # WARNING: keep this query in sync with the internal one in antlir.td
+        # to ensure the same set of tests is run internally and externally
         run: |
             buck test --always-exclude $(buck query 'set(//...) - kind(cxx_test, //...) - set(//antlir/vm/...) - set(//antlir/bzl/foreign/locale/...)') --xml tests.xml > buck.log 2> buck.err || true
             echo Buck stderr
