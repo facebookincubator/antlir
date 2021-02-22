@@ -165,7 +165,7 @@ class YumDnfFromSnapshotTestImpl:
                 install_args=[
                     "install-n",
                     "--assumeyes",
-                    "virtual-carrot",
+                    "virtual-carrot-2",
                     "rpm-test-milk",
                 ],
             )

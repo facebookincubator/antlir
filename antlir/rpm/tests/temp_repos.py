@@ -53,6 +53,7 @@ class Rpm(NamedTuple):
     # If this is set, `test_post_install` and `override_contents` are
     # ignored. This is a finished spec body, not a `.format()` template.
     custom_body: Optional[str] = None
+    requires: Optional[str] = None
 
     def spec(self, busybox_path: Path) -> str:
         format_kwargs = {
@@ -63,6 +64,9 @@ class Rpm(NamedTuple):
                 else self.override_contents
             ),
             "quoted_busybox_path": busybox_path.shell_quote(),
+            "requires_line": f"Requires: {self.requires}"
+            if self.requires
+            else "",
         }
 
         spec = []
@@ -72,7 +76,8 @@ Summary: The "{name}" package.
 Name: rpm-test-{name}
 Version: {version}
 Release: {release}
-Provides: virtual-{name}
+Provides: virtual-{name}-{version}
+{requires_line}
 License: MIT
 Group: Facebook/Script
 Vendor: Facebook, Inc.
@@ -163,7 +168,12 @@ class Repo(NamedTuple):
 #    really dislikes symlinks in repos (i.e. something may break).
 SAMPLE_STEPS = [
     {
-        "bunny": Repo([Rpm("carrot", "2", "rc0")]),
+        "bunny": Repo(
+            [
+                Rpm("carrot", "2", "rc0"),
+                Rpm("veggie", "2", "rc0", requires="virtual-carrot-2"),
+            ]
+        ),
         "cat": Repo(
             [
                 Rpm(
@@ -193,6 +203,7 @@ echo lala > "$RPM_BUILD_ROOT"/rpm_test/milk-no-sh.txt
                 Rpm("mice", "0.1", "a"),
                 # Since this is older than version `2-rc0` it needs versionlock.
                 Rpm("carrot", "1", "lockme"),
+                Rpm("veggie", "1", "rc0", requires="virtual-carrot-1"),
             ]
         ),
         "dog": Repo(

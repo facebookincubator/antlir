@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import subprocess
 import sys
 from contextlib import contextmanager
 
@@ -149,6 +150,44 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 "carrot 1 lockme\n",
                 subvol.path("/rpm_test/carrot.txt").read_text(),
             )
+
+    def test_version_override_with_dependency(self):
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, temp_dir() as td:
+            with open(td / "vset", "w") as outfile:
+                outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
+
+            subvol = temp_subvolumes.create("rpm_ver_lock")
+            subvol.run_as_root(["mkdir", subvol.path(".meta")])
+
+            def _self_check():
+                self._check_rpm_action_item_subvol(
+                    subvol,
+                    RpmActionItem(
+                        from_target="t",
+                        name="rpm-test-veggie",
+                        action=RpmAction.install,
+                    ),
+                    {
+                        "rpm_test": [
+                            "(Dir)",
+                            {
+                                "carrot.txt": ["(File d16)"],
+                                "veggie.txt": ["(File d13)"],
+                            },
+                        ]
+                    },
+                    opts=self._opts(version_set_override=td / "vset"),
+                )
+
+            if self._YUM_DNF == YumDnf.yum:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    _self_check()
+            else:
+                _self_check()
+                self.assertEquals(
+                    "veggie 1 rc0\n",
+                    subvol.path("/rpm_test/veggie.txt").read_text(),
+                )
 
     def test_version_lock_and_override(self):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes, temp_dir() as td:
