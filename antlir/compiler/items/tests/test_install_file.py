@@ -49,7 +49,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 from_target="t", source={"source": tf.name}, dest="d/c"
             )
         ep = _InstallablePath(Path(tf.name), ProvidesFile(path="d/c"), "a+rx")
-        self.assertEqual((ep,), exe_item.paths)
+        self.assertEqual((ep,), exe_item._paths)
         self.assertEqual(tf.name.encode(), exe_item.source)
         self._check_item(exe_item, {ep.provides}, {require_directory("d")})
 
@@ -61,7 +61,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 from_target="t", source={"source": td, "path": "/b/q"}, dest="d"
             )
         dp = _InstallablePath(td / "b/q", ProvidesFile(path="d"), "a+r")
-        self.assertEqual((dp,), data_item.paths)
+        self.assertEqual((dp,), data_item._paths)
         self.assertEqual(td / "b/q", data_item.source)
         self._check_item(data_item, {dp.provides}, {require_directory("/")})
 
@@ -86,7 +86,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         )
         source_path = layer.path(path_in_layer)
         p = _InstallablePath(source_path, ProvidesFile(path="cheese2"), "a+r")
-        self.assertEqual((p,), item.paths)
+        self.assertEqual((p,), item._paths)
         self.assertEqual(source_path, item.source)
         self._check_item(item, {p.provides}, {require_directory("/")})
 
@@ -181,7 +181,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                         "a+rx",
                     ),
                 ]
-                self.assertEqual(sorted(ps), sorted(dir_item.paths))
+                self.assertEqual(sorted(ps), sorted(dir_item._paths))
                 self.assertEqual(td, dir_item.source)
                 self._check_item(
                     dir_item, {p.provides for p in ps}, {require_directory("d")}

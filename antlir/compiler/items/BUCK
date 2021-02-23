@@ -4,6 +4,7 @@ load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_pa
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image_actions:clone.bzl", "clone_t")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "ensure_subdirs_exist_t")
+load("//antlir/bzl/image_actions:install.bzl", "install_files_t")
 load("//antlir/bzl/image_actions:remove.bzl", "remove_paths_t")
 load("//antlir/bzl/image_actions:symlink.bzl", "symlink_t")
 load("//antlir/bzl/image_actions:tarball.bzl", "tarball_t")
@@ -264,6 +265,12 @@ python_unittest(
 )
 
 shape.loader(
+    name = "install_files_t",
+    shape = install_files_t,
+    classname = "install_files_t",
+)
+
+shape.loader(
     name = "remove_paths_t",
     shape = remove_paths_t,
     classname = "remove_paths_t",
@@ -283,6 +290,7 @@ python_library(
     ],
     deps = [
         ":common",
+        ":install_files_t",
         ":make_subvol",
         ":mount",
         ":mount_utils",
