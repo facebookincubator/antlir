@@ -10,7 +10,7 @@ import unittest
 from .shape_bzl import Fail, _check_type, _codegen_shape, shape, struct
 
 
-TestUnionType = shape.unionT(bool, int)
+TestUnionType = shape.union_t(bool, int)
 
 
 class TestShapeBzl(unittest.TestCase):
@@ -37,8 +37,8 @@ class TestShapeBzl(unittest.TestCase):
             (":rule", shape.layer()),
             (1, shape.union(str, int)),
             ("hello", shape.union(str, int)),
-            ("hello", shape.unionT(str, int)),
-            ("hello", shape.field(shape.unionT(str, int))),
+            ("hello", shape.union_t(str, int)),
+            ("hello", shape.field(shape.union_t(str, int))),
             ("hello", shape.union(str, int, optional=True)),
             (None, shape.union(str, int, optional=True)),
         ):
@@ -149,7 +149,7 @@ class TestShapeBzl(unittest.TestCase):
 
     def test_nested_union(self):
         t = shape.shape(
-            nested=shape.union(shape.unionT(str, int), shape.unionT(bool))
+            nested=shape.union_t(shape.union_t(str, int), shape.union_t(bool))
         )
         for v in ("hi", 1, True):
             shape.new(t, nested=v)

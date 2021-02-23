@@ -366,6 +366,19 @@ def _is_union(x):
     return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["union_types"])
 
 def _union_type(*union_types):
+    """
+    Define a new union type that can be used when defining a field. Most
+    useful when a union type is meant to be typedef'd and reused. To define
+    a shape field directly, see shape.union.
+
+    Example usage:
+    ```
+    mode_t = shape.union_t(int, str)  # could be 0o644 or "a+rw"
+
+    type_a = shape.shape(mode=mode_t)
+    type_b = shape.shape(mode=shape.field(mode_t, optional=True))
+    ```
+    """
     if len(union_types) == 0:
         fail("union must specify at one type")
     return struct(
@@ -675,7 +688,7 @@ shape = struct(
     list = _list,
     tuple = _tuple,
     union = _union,
-    unionT = _union_type,
+    union_t = _union_type,
     enum = _enum,
     path = _path,
     target = _target,

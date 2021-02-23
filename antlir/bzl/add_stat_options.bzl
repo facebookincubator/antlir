@@ -5,7 +5,7 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 
-mode_t = shape.unionT(int, str)
+mode_t = shape.union_t(int, str)
 
 def add_stat_options(d, mode, user, group):
     if mode != None:
