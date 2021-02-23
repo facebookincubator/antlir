@@ -26,8 +26,8 @@ pypi_package(
 
 pypi_package(
     name = "pydantic",
-    sha256 = "b5b3489cb303d0f41ad4a7390cf606a5f2c7a94dcba20c051cd1c653694cb14d",
-    url = "https://files.pythonhosted.org/packages/25/69/4be0f2caa2ae3424cd34c0f934b460a02f01aa6897b1d58fc056664b15b7/pydantic-1.6.1-py36.py37.py38-none-any.whl",
+    sha256 = "38be427ea01a78206bcaf9a56f835784afcba9e5b88fbdce33bbbfbcd7841229",
+    url = "https://files.pythonhosted.org/packages/35/47/7ce1c5dbcdc9dfa51cfc61db7bcccfc118c3cebe302971a5e34dda666c9d/pydantic-1.7.3-py3-none-any.whl",
 )
 
 pypi_package(
