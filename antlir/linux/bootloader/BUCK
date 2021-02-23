@@ -72,6 +72,7 @@ image.layer(
 # the BTRFS seed device on /
 image.package(
     name = "base.cpio.gz",
+    layer = ":base",
 )
 
 buck_sh_test(
