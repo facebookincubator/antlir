@@ -7,7 +7,6 @@
 import itertools
 import os
 import stat
-from dataclasses import dataclass
 from typing import Iterable, NamedTuple, Optional, Union
 
 from antlir.compiler.requires_provides import (
@@ -17,8 +16,10 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
+from pydantic import PrivateAttr
 
-from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
+from .common import ImageItem, LayerOpts, make_path_normal_relative
+from .install_files_t import install_files_t
 from .stat_options import (
     Mode,
     build_stat_options,
@@ -41,7 +42,7 @@ class _InstallablePath(NamedTuple):
 
 def _recurse_into_source(
     source_dir: Path,
-    dest_dir: str,
+    dest_dir: Path,
     *,
     dir_mode: Mode,
     exe_mode: Mode,
@@ -76,44 +77,36 @@ def _recurse_into_source(
                 raise RuntimeError(f"{source}: neither a file nor a directory")
 
 
-@dataclass(init=False, frozen=True)
-class InstallFileItem(ImageItem):
+# Future enhancement notes:
+#
+# (1) Although `install_buck_runnable` does not support handling
+#     directories at present, this is not explicitly checked here.  What
+#     I expect to happen if somebody does try installing a `buck
+#     run`nable directory is that it will build, but any in-place
+#     executables inside that directory will not work in @mode/dev.  If
+#     a need to fix this comes up, the fix would involve the `.bzl` code
+#     in @mode/dev passing to us (i) the source, as today, (ii) the
+#     wrapped source using a wrapper with `dynamic_path_in_output=True`.
+#     This code here would just need a branch to convert all the
+#     executable files to use the wrapper.  Hint 1: Review the long
+#     comment in D16042669 for a discussion of the details.  Hint 2:
+#     look at mentions of `is_buck_runnable_` in D18905604 for a list of
+#     locations, where you would need to add the "wrapper path" field.
+#
+#  (2) If we ever need to support layer sources, generalize
+#      `PhasesProvideItem` -- we would need to do the same traversal,
+#      but disallowing non-regular files.
+class InstallFileItem(install_files_t, ImageItem):
 
-    source: str
-    dest: str
+    source: Path
 
-    user_group: Optional[str] = None
+    _paths: Optional[Iterable[_InstallablePath]] = PrivateAttr()
 
-    # Populated by `customize_fields`
-    paths: Optional[Iterable[_InstallablePath]] = None
-
-    # Future enhancement notes:
-    #
-    # (1) Although `install_buck_runnable` does not support handling
-    #     directories at present, this is not explicitly checked here.  What
-    #     I expect to happen if somebody does try installing a `buck
-    #     run`nable directory is that it will build, but any in-place
-    #     executables inside that directory will not work in @mode/dev.  If
-    #     a need to fix this comes up, the fix would involve the `.bzl` code
-    #     in @mode/dev passing to us (i) the source, as today, (ii) the
-    #     wrapped source using a wrapper with `dynamic_path_in_output=True`.
-    #     This code here would just need a branch to convert all the
-    #     executable files to use the wrapper.  Hint 1: Review the long
-    #     comment in D16042669 for a discussion of the details.  Hint 2:
-    #     look at mentions of `is_buck_runnable_` in D18905604 for a list of
-    #     locations, where you would need to add the "wrapper path" field.
-    #
-    #  (2) If we ever need to support layer sources, generalize
-    #      `PhasesProvideItem` -- we would need to do the same traversal,
-    #      but disallowing non-regular files.
-    @classmethod
-    def customize_fields(cls, kwargs):
-        super().customize_fields(kwargs)
-        coerce_path_field_normal_relative(kwargs, "dest")
+    def __init__(self, **kwargs):
         customize_stat_options(kwargs, default_mode=None)  # Defaulted later
 
         source = kwargs["source"]
-        dest = kwargs["dest"]
+        dest = Path(make_path_normal_relative(kwargs.pop("dest")))
 
         # The 3 separate `*_mode` arguments must be set instead of `mode` for
         # directory sources.
@@ -125,10 +118,10 @@ class InstallFileItem(ImageItem):
         st_source = os.stat(source, follow_symlinks=False)
         if stat.S_ISDIR(st_source.st_mode):
             assert mode is None, "Cannot use `mode` for directory sources."
-            kwargs["paths"] = tuple(
+            self._paths = tuple(
                 _recurse_into_source(
-                    Path(source),
-                    Path(dest),
+                    source,
+                    dest,
                     dir_mode=dir_mode or _DIR_MODE,
                     exe_mode=exe_mode or _EXE_MODE,
                     data_mode=data_mode or _DATA_MODE,
@@ -145,9 +138,11 @@ class InstallFileItem(ImageItem):
                 # the ambient umask is pathological, which is why
                 # `compiler.py` checks the umask.
                 mode = _EXE_MODE if os.access(source, os.X_OK) else _DATA_MODE
-            kwargs["paths"] = (
+            self._paths = (
                 _InstallablePath(
-                    source=source, provides=ProvidesFile(path=dest), mode=mode
+                    source=source,
+                    provides=ProvidesFile(path=dest.decode()),
+                    mode=mode,
                 ),
             )
         else:
@@ -155,12 +150,14 @@ class InstallFileItem(ImageItem):
                 f"{source} must be a regular file or directory, got {st_source}"
             )
 
+        super().__init__(dest=dest, **kwargs)
+
     def provides(self):
-        for i in self.paths:
+        for i in self._paths:
             yield i.provides
 
     def requires(self):
-        yield require_directory(os.path.dirname(self.dest))
+        yield require_directory(self.dest.dirname().decode())
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         dest = subvol.path(self.dest)
@@ -189,7 +186,7 @@ class InstallFileItem(ImageItem):
         build_stat_options(self, subvol, dest, do_not_set_mode=True)
         # Group by mode to make as few shell calls as possible.
         for mode_str, modes_and_paths in itertools.groupby(
-            sorted((mode_to_str(i.mode), i.provides.path) for i in self.paths),
+            sorted((mode_to_str(i.mode), i.provides.path) for i in self._paths),
             lambda x: x[0],
         ):
             # Batching chmod calls has the unfortunate side effect of failing

@@ -55,9 +55,28 @@ directory output by a Buck-runnable target, then you should use
 `install`, even though the underlying rule is executable.
 """
 
-load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
+load("//antlir/bzl:add_stat_options.bzl", "add_stat_options", "mode_t")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:target_tagger.bzl", "extract_tagged_target", "image_source_as_target_tagged_dict", "new_target_tagger", "tag_and_maybe_wrap_executable_target", "target_tagger_to_feature")
+load("//antlir/bzl:shape.bzl", "shape")
+load(
+    "//antlir/bzl:target_tagger.bzl",
+    "extract_tagged_target",
+    "image_source_as_target_tagged_dict",
+    "new_target_tagger",
+    "tag_and_maybe_wrap_executable_target",
+    "target_tagged_image_source_shape",
+    "target_tagger_to_feature",
+)
+
+install_files_t = shape.shape(
+    dest = shape.path(),
+    source = target_tagged_image_source_shape,
+    mode = shape.union(mode_t, optional = True),
+    user_group = shape.field(str, optional = True),
+    dir_mode = shape.union(mode_t, optional = True),
+    exe_mode = shape.union(mode_t, optional = True),
+    data_mode = shape.union(mode_t, optional = True),
+)
 
 def _forbid_layer_source(source_dict):
     if source_dict["layer"] != None:
@@ -115,9 +134,10 @@ binary to be unusable in image tests in @mode/dev.
     install_spec = {"dest": dest, "source": tagged_source}
     add_stat_options(install_spec, mode, user, group)
 
+    install_files = shape.new(install_files_t, **install_spec)
     return target_tagger_to_feature(
         target_tagger,
-        items = struct(install_files = [install_spec]),
+        items = struct(install_files = [shape.as_dict(install_files)]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:install"],
     )
@@ -165,9 +185,10 @@ image) is used. The default for `user` and `group` is `root`.
     # bugs everywhere.  A possible reason NOT to do this is that it would
     # require fixes to `install` invocations that extract non-executable
     # contents out of a directory target that is executable.
+    install_files = shape.new(install_files_t, **install_spec)
     return target_tagger_to_feature(
         target_tagger,
-        items = struct(install_files = [install_spec]),
+        items = struct(install_files = [shape.as_dict(install_files)]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:install"],
     )
