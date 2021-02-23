@@ -76,6 +76,7 @@ image.layer(
 # build of the BA will do the right thing already).
 image.package(
     name = "bootstrap_build_appliance.sendstream.zst",
+    layer = ":bootstrap_build_appliance",
 )
 
 # Host build appliance should never have to be used outside of the original

@@ -17,6 +17,7 @@ image.layer(
 
 image.package(
     name = "fedora.btrfs",
+    layer = ":fedora",
     seed_device = True,
     writable_subvolume = True,
 )

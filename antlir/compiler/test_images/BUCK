@@ -712,9 +712,15 @@ image.layer(
     ),
 )
 
-image.package(name = "child/layer.sendstream")
+image.package(
+    name = "child/layer.sendstream",
+    layer = ":child/layer",
+)
 
-image.package(name = "child/layer.btrfs")
+image.package(
+    name = "child/layer.btrfs",
+    layer = ":child/layer",
+)
 
 # This will install /rpm_test/cheese2.txt.
 image.layer(
@@ -783,7 +789,10 @@ image.sendstream_layer(
     build_opts = image.opts(subvol_name = op),
 )
 
-image.package(name = op + ".sendstream")
+image.package(
+    name = op + ".sendstream",
+    layer = ":" + op,
+)
 
 ##
 ## Check other forms of `sendstream_layer`, also verified in `test-image-layer`
@@ -830,7 +839,10 @@ image.layer_alias(
 
 image.layer("empty")  # Just ensure this builds, not checking contents :)
 
-image.package(name = "create_ops.tar.gz")
+image.package(
+    name = "create_ops.tar.gz",
+    layer = ":create_ops",
+)
 
 image.layer(
     name = "create_ops-layer-via-tarball-package",
@@ -839,7 +851,10 @@ image.layer(
     ],
 )
 
-image.package(name = "create_ops.cpio.gz")
+image.package(
+    name = "create_ops.cpio.gz",
+    layer = ":create_ops",
+)
 
 # Test some explcit package formating
 image.package(
