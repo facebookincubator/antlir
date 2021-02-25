@@ -36,7 +36,7 @@ DEFAULT_APPLETS = [
     "uname",
 ]
 
-def _install(src, applets = None, install_dir = "/usr/bin"):
+def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/busybox"):
     """
     Generate features to install a statically linked `busybox` binary
     from the supplied `src` layer into an `install_dir` (default `/usr/bin`)
@@ -48,7 +48,7 @@ def _install(src, applets = None, install_dir = "/usr/bin"):
     return [
         image.clone(
             src,
-            "/busybox",
+            src_path,
             paths.join(install_dir, "busybox"),
         ),
     ] + [

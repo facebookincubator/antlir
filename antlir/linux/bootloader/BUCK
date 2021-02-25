@@ -1,7 +1,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_sh_test")
 load("//antlir/bzl:systemd.bzl", "systemd")
-load(":busybox.bzl", "clone_busybox")
+load("//antlir/bzl/linux:defs.bzl", "linux")
 load(":initrd_release.bzl", "initrd_release")
 load(":systemd.bzl", "clone_systemd")
 
@@ -21,31 +21,21 @@ initrd_release(
     name = "initrd-release",
 )
 
-filesystem = [
-    image.ensure_dirs_exist("/etc"),
-    image.ensure_dirs_exist("/run"),
-    image.ensure_dirs_exist("/tmp"),
-    image.ensure_dirs_exist("/usr/bin"),
-    image.ensure_dirs_exist("/usr/lib"),
-    image.ensure_dirs_exist("/var"),
-    image.symlink_dir("/usr/bin", "/bin"),
-    image.symlink_dir("/usr/bin", "/sbin"),
-    image.symlink_dir("/usr/lib", "/lib"),
-    image.symlink_dir("/run", "/var/run"),
-    image.ensure_dirs_exist("/sysroot"),  # rootfs mountpoint to switch-root into
-    image.ensure_dirs_exist("/usr/lib/systemd"),
-]
-
 # Kernel-agnostic base initrd
 image.layer(
     name = "base",
     features = [
-        filesystem,
+        linux.filesystem.install(),
         clone_systemd(":deps"),
-        # TODO: is there a reason to have busybox when not using
-        # rd.systemd.debug_shell? It would save 1.2M to only include it in a
-        # special "debug boot" mode that could be selected ahead of PXE
-        clone_busybox(":deps"),
+        # TODO(vmagro): AFAICT we only require busybox for /usr/bin/mount that
+        # systemd calls. Ideally, we could relegate busybox entirely to the
+        # debug initrd which would save ~1.5M (the future 'antlir' multicall
+        # binary could easily implement a wrapper over the mount syscall)
+        linux.busybox.install(
+            ":deps",
+            ["mount"],
+            src_path = "/usr/sbin/busybox",
+        ),
         image.symlink_file("/usr/lib/systemd/systemd", "/init"),
         # Systemd uses the presence of /etc/initrd-release to determine if it
         # is running in an initrd, however there are cases where it only parses
