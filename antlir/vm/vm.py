@@ -390,7 +390,6 @@ async def __vm_with_stack(
             " rootflags=subvol=volume"
             " rw"
             " rd.emergency=poweroff"
-            " rd.debug"
         ),
         # socket/serial device pair (for use by _wait_for_boot)
         "-chardev",

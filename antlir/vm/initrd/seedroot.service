@@ -1,0 +1,10 @@
+[Unit]
+Description=Remount /sysroot rw
+Requires=seedroot-device-add.service
+After=seedroot-device-add.service
+ConditionPathIsReadWrite=!/sysroot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/mount -o remount,rw /sysroot
+RemainAfterExit=yes

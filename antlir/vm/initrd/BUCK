@@ -1,45 +1,7 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
-load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get")
+load("//antlir/bzl:oss_shim.bzl", "export_file")
 
-export_file(
-    name = "init.sh",
-)
-
-# Use system gcc in a foreign layer to always force static linking and avoid
-# any possible FB deps being injected by cpp_binary macros
-image.layer(
-    name = "seedroot-glibc-static",
-    # this has a c compiler
-    parent_layer = REPO_CFG.build_appliance_default,
-    features = [
-        image.rpms_install(["glibc-static"]),
-    ],
-)
-
-image.layer(
-    name = "seedroot-foreign-setup",
-    # this has a c compiler
-    parent_layer = ":seedroot-glibc-static",
-    features = [
-        image.ensure_subdirs_exist("/", "build"),
-        image.install("seedroot.c", "/build/seedroot.c"),
-    ],
-)
-
-image_foreign_layer(
-    name = "seedroot",
-    antlir_rule = "user-internal",
-    cmd = [
-        "cc",
-        "-static",
-        "-o",
-        "/build/seedroot",
-        "/build/seedroot.c",
-    ],
-    parent_layer = ":seedroot-foreign-setup",
-    rule_type = "image_build_librename_shadowed",
-    # build as root so that it's owned by root when installed with image.clone
-    user = "root",
-)
+[export_file(name = f) for f in glob([
+    "*.service",
+    "*.mount",
+    "*.conf",
+])]
