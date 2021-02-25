@@ -28,7 +28,6 @@ TARGETS = [
 ]
 
 UNITS = [
-    "debug-shell.service",
     "initrd-cleanup.service",
     "initrd-switch-root.service",
     "systemd-journald-dev-log.socket",
@@ -52,11 +51,9 @@ BINARIES = [
     "/usr/bin/journalctl",
     "/usr/bin/networkctl",
     "/usr/bin/systemctl",
-    "/usr/bin/systemd-analyze",  # for debugging
     "/usr/bin/systemd-sysusers",
     "/usr/bin/systemd-tmpfiles",
     "/usr/bin/udevadm",
-    "/usr/lib/systemd/system-generators/systemd-debug-generator",
     "/usr/lib/systemd/systemd",
     "/usr/lib/systemd/systemd-journald",
     "/usr/lib/systemd/systemd-modules-load",
