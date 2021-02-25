@@ -13,7 +13,7 @@ from antlir.compiler.requires_provides import (
     require_directory,
     require_file,
 )
-from antlir.fs_utils import generate_work_dir
+from antlir.fs_utils import Path, generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
@@ -102,11 +102,11 @@ class SymlinkBase(symlink_t, ImageItem):
 
 class SymlinkToDirItem(SymlinkBase):
     def provides(self):
-        yield ProvidesDirectory(path=self.dest)
+        yield ProvidesDirectory(path=Path(self.dest))
 
     def requires(self):
-        yield require_directory(self.source)
-        yield require_directory(os.path.dirname(self.dest))
+        yield require_directory(Path(self.source))
+        yield require_directory(Path(self.dest).dirname())
 
 
 # We should allow symlinks to certain files that will be in the image
@@ -117,9 +117,9 @@ def _allowlisted_symlink_source(source: str) -> bool:
 
 class SymlinkToFileItem(SymlinkBase):
     def provides(self):
-        yield ProvidesFile(path=self.dest)
+        yield ProvidesFile(path=Path(self.dest))
 
     def requires(self):
         if not _allowlisted_symlink_source(self.source):
-            yield require_file(self.source)
-        yield require_directory(os.path.dirname(self.dest))
+            yield require_file(Path(self.source))
+        yield require_directory(Path(self.dest).dirname())

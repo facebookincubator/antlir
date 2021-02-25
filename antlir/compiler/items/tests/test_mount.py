@@ -291,8 +291,8 @@ class MountItemTestCase(BaseItemTestCase):
                     target=source_dir,
                     mount_config=mount_config,
                 ),
-                {ProvidesDoNotAccess(path="can/haz")},
-                {require_directory("can")},
+                {ProvidesDoNotAccess(path=Path("can/haz"))},
+                {require_directory(Path("can"))},
             )
 
             # Make a subvolume that would be mounted inside `mounter`
@@ -337,9 +337,9 @@ class MountItemTestCase(BaseItemTestCase):
             self._check_item(
                 PhasesProvideItem(from_target="t", subvol=mounter),
                 {
-                    ProvidesDirectory(path="/"),
-                    ProvidesDoNotAccess(path="/.meta"),
-                    ProvidesDoNotAccess(path="/meow"),
+                    ProvidesDirectory(path=Path("/")),
+                    ProvidesDoNotAccess(path=Path("/.meta")),
+                    ProvidesDoNotAccess(path=Path("/meow")),
                 },
                 set(),
             )

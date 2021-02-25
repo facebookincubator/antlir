@@ -51,7 +51,7 @@ def _recurse_into_source(
     "Yields paths in top-down order, making recursive copying easy."
     yield _InstallablePath(
         source=source_dir,
-        provides=ProvidesDirectory(path=dest_dir.decode()),
+        provides=ProvidesDirectory(path=dest_dir),
         mode=dir_mode,
     )
     with os.scandir(source_dir) as it:
@@ -69,7 +69,7 @@ def _recurse_into_source(
             elif e.is_file(follow_symlinks=False):
                 yield _InstallablePath(
                     source=source,
-                    provides=ProvidesFile(path=dest.decode()),
+                    provides=ProvidesFile(path=dest),
                     # Same `os.access` rationale as in `customize_fields`.
                     mode=exe_mode if os.access(source, os.X_OK) else data_mode,
                 )
@@ -140,9 +140,7 @@ class InstallFileItem(install_files_t, ImageItem):
                 mode = _EXE_MODE if os.access(source, os.X_OK) else _DATA_MODE
             self._paths = (
                 _InstallablePath(
-                    source=source,
-                    provides=ProvidesFile(path=dest.decode()),
-                    mode=mode,
+                    source=source, provides=ProvidesFile(path=dest), mode=mode
                 ),
             )
         else:
@@ -157,7 +155,7 @@ class InstallFileItem(install_files_t, ImageItem):
             yield i.provides
 
     def requires(self):
-        yield require_directory(self.dest.dirname().decode())
+        yield require_directory(self.dest.dirname())
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         dest = subvol.path(self.dest)

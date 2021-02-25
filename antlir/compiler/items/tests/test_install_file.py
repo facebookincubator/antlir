@@ -48,10 +48,14 @@ class InstallFileItemTestCase(BaseItemTestCase):
             exe_item = _install_file_item(
                 from_target="t", source={"source": tf.name}, dest="d/c"
             )
-        ep = _InstallablePath(Path(tf.name), ProvidesFile(path="d/c"), "a+rx")
+        ep = _InstallablePath(
+            Path(tf.name), ProvidesFile(path=Path("d/c")), "a+rx"
+        )
         self.assertEqual((ep,), exe_item._paths)
         self.assertEqual(tf.name.encode(), exe_item.source)
-        self._check_item(exe_item, {ep.provides}, {require_directory("d")})
+        self._check_item(
+            exe_item, {ep.provides}, {require_directory(Path("d"))}
+        )
 
         # Checks `image.source(path=...)`
         with temp_dir() as td:
@@ -60,10 +64,12 @@ class InstallFileItemTestCase(BaseItemTestCase):
             data_item = _install_file_item(
                 from_target="t", source={"source": td, "path": "/b/q"}, dest="d"
             )
-        dp = _InstallablePath(td / "b/q", ProvidesFile(path="d"), "a+r")
+        dp = _InstallablePath(td / "b/q", ProvidesFile(path=Path("d")), "a+r")
         self.assertEqual((dp,), data_item._paths)
         self.assertEqual(td / "b/q", data_item.source)
-        self._check_item(data_item, {dp.provides}, {require_directory("/")})
+        self._check_item(
+            data_item, {dp.provides}, {require_directory(Path("/"))}
+        )
 
         # NB: We don't need to get coverage for this check on ALL the items
         # because the presence of the ProvidesDoNotAccess items it the real
@@ -85,10 +91,12 @@ class InstallFileItemTestCase(BaseItemTestCase):
             dest="cheese2",
         )
         source_path = layer.path(path_in_layer)
-        p = _InstallablePath(source_path, ProvidesFile(path="cheese2"), "a+r")
+        p = _InstallablePath(
+            source_path, ProvidesFile(path=Path("cheese2")), "a+r"
+        )
         self.assertEqual((p,), item._paths)
         self.assertEqual(source_path, item.source)
-        self._check_item(item, {p.provides}, {require_directory("/")})
+        self._check_item(item, {p.provides}, {require_directory(Path("/"))})
 
     def test_install_file_command(self):
         with TempSubvolumes(
@@ -163,28 +171,30 @@ class InstallFileItemTestCase(BaseItemTestCase):
 
                 ps = [
                     _InstallablePath(
-                        td, ProvidesDirectory(path="d/a"), "u+rwx,og+rx"
+                        td, ProvidesDirectory(path=Path("d/a")), "u+rwx,og+rx"
                     ),
                     _InstallablePath(
                         td / "data.txt",
-                        ProvidesFile(path="d/a/data.txt"),
+                        ProvidesFile(path=Path("d/a/data.txt")),
                         "a+r",
                     ),
                     _InstallablePath(
                         td / "subdir",
-                        ProvidesDirectory(path="d/a/subdir"),
+                        ProvidesDirectory(path=Path("d/a/subdir")),
                         "u+rwx,og+rx",
                     ),
                     _InstallablePath(
                         td / "subdir/exe.sh",
-                        ProvidesFile(path="d/a/subdir/exe.sh"),
+                        ProvidesFile(path=Path("d/a/subdir/exe.sh")),
                         "a+rx",
                     ),
                 ]
                 self.assertEqual(sorted(ps), sorted(dir_item._paths))
                 self.assertEqual(td, dir_item.source)
                 self._check_item(
-                    dir_item, {p.provides for p in ps}, {require_directory("d")}
+                    dir_item,
+                    {p.provides for p in ps},
+                    {require_directory(Path("d"))},
                 )
 
                 # This implicitly checks that `a` precedes its contents.

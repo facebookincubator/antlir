@@ -314,6 +314,9 @@ class Path(bytes):
     def has_leading_dot_dot(self) -> bool:
         return self == b".." or self.startswith(b"../")
 
+    def strip_leading_slashes(self) -> "Path":
+        return Path(self.lstrip(b"/"))
+
     def touch(self) -> "Path":
         with self.open(mode="a"):
             pass

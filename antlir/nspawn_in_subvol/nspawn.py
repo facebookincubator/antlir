@@ -431,7 +431,7 @@ def _popen_nsenter_into_container(
         default_env["TERM"] = term_env
 
     with open(f"/proc/{container_proc_pid}/cgroup", "rb") as f:
-        cgroup = parse_cgroup2_path(f.read()).lstrip(b"/")
+        cgroup = parse_cgroup2_path(f.read()).strip_leading_slashes()
     cgroup_procs = find_cgroup2_mountpoint() / cgroup / "cgroup.procs"
     assert (
         cgroup_procs.exists()

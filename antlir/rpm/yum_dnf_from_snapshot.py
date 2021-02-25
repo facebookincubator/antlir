@@ -406,7 +406,9 @@ def _resolve_rpm_installer_binary(
     # private mount NS.  Caveat: we'd also need a "protective" RO bind mount
     # on top, because otherwise an `unlink` in the mount NS would remove the
     # bind mount in the parent NS.
-    shadowed_binary = SHADOWED_PATHS_ROOT / yum_dnf_binary.lstrip(b"/")
+    shadowed_binary = (
+        SHADOWED_PATHS_ROOT / yum_dnf_binary.strip_leading_slashes()
+    )
 
     # We can't cover both branches in the same `image_python_unittest`,
     # since either the binary will or won't be shadowed.  However, one can
@@ -514,7 +516,7 @@ def _set_up_yum_dnf_cache(
                                 "--no-target-directory",
                                 (
                                     cache_dest
-                                    / snapshot_dir.lstrip(b"/")
+                                    / snapshot_dir.strip_leading_slashes()
                                     / f"{prog}/var/cache/{prog}"
                                 ).shell_quote(),
                                 (cache_dest / cache_name).shell_quote(),

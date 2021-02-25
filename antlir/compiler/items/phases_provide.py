@@ -35,7 +35,7 @@ def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
     for prot_path in protected_paths:
         rel_to_subtree = (b"/" / prot_path).relpath(subtree)
         if not rel_to_subtree.has_leading_dot_dot():
-            yield ProvidesDoNotAccess(path=rel_to_subtree.decode())
+            yield ProvidesDoNotAccess(path=rel_to_subtree)
 
     subtree_full_path = subvol.path(subtree)
     subtree_exists = False
@@ -92,9 +92,9 @@ def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
         # directories to be consistent with SymlinkToDirItem.
         filetype = filetype_bytes.decode()
         if filetype in ["b", "c", "p", "f", "l", "s"]:
-            yield ProvidesFile(path=relpath.decode())
+            yield ProvidesFile(path=relpath)
         elif filetype == "d":
-            yield ProvidesDirectory(path=relpath.decode())
+            yield ProvidesDirectory(path=relpath)
         else:  # pragma: no cover
             raise AssertionError(f"Unknown {filetype} for {abspath}")
         if relpath == b".":

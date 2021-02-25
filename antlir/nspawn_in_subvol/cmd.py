@@ -77,7 +77,7 @@ def _inject_os_release_args(subvol):
 @contextmanager
 def _temp_cgroup(subvol: Subvol) -> Path:
     with open("/proc/self/cgroup", "rb") as cg_file:
-        my_cg = parse_cgroup2_path(cg_file.read()).lstrip(b"/")
+        my_cg = parse_cgroup2_path(cg_file.read()).strip_leading_slashes()
     # This runs on the host, so we use the cgroup2 mountpoint we found
     new_cg = find_cgroup2_mountpoint() / Path(
         my_cg

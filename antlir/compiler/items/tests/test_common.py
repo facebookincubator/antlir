@@ -61,8 +61,8 @@ class ItemsCommonTestCase(BaseItemTestCase):
                 mode=0o733,
                 user_group="cat:dog",
             ),
-            {ProvidesDirectory(path="x/y/z")},
-            {require_directory("x/y")},
+            {ProvidesDirectory(path=Path("x/y/z"))},
+            {require_directory(Path("x/y"))},
         )
 
     def test_image_non_default_after_default(self):

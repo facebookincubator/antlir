@@ -99,12 +99,10 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
         return values
 
     def provides(self):
-        yield ProvidesDirectory(
-            path=(Path(self.into_dir) / self.basename).decode()
-        )
+        yield ProvidesDirectory(path=Path(self.into_dir) / self.basename)
 
     def requires(self):
-        yield require_directory(self.into_dir)
+        yield require_directory(Path(self.into_dir))
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         # If path already exists ensure it has expected attrs, else make it.

@@ -12,6 +12,7 @@ from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     require_directory,
 )
+from antlir.fs_utils import Path
 from antlir.tests.temp_subvolumes import TempSubvolumes
 from pydantic import ValidationError
 
@@ -43,8 +44,8 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
         ):
             self._check_item(
                 item,
-                {ProvidesDirectory(path=expected_prov)},
-                {require_directory(expected_req)},
+                {ProvidesDirectory(path=Path(expected_prov))},
+                {require_directory(Path(expected_req))},
             )
         for item, (expected_req, expected_prov) in zip_longest(
             ensure_subdirs_exist_factory(
@@ -57,8 +58,8 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
         ):
             self._check_item(
                 item,
-                {ProvidesDirectory(path=expected_prov)},
-                {require_directory(expected_req)},
+                {ProvidesDirectory(path=Path(expected_prov))},
+                {require_directory(Path(expected_req))},
             )
 
     def test_ensure_subdirs_exist_invalid_into_dir(self):

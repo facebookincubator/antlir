@@ -10,6 +10,7 @@ import unittest
 from contextlib import contextmanager
 
 from antlir.compiler.requires_provides import ProvidesDirectory, ProvidesFile
+from antlir.fs_utils import Path
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path, render_subvol
 
@@ -71,13 +72,13 @@ def temp_filesystem_provides(p=""):
     "Captures what is provided by _temp_filesystem, if installed at `p` "
     "inside the image."
     return {
-        ProvidesDirectory(path=f"{p}/a"),
-        ProvidesDirectory(path=f"{p}/a/b"),
-        ProvidesDirectory(path=f"{p}/a/b/c"),
-        ProvidesDirectory(path=f"{p}/a/d"),
-        ProvidesFile(path=f"{p}/a/E"),
-        ProvidesFile(path=f"{p}/a/d/F"),
-        ProvidesFile(path=f"{p}/a/b/c/G"),
+        ProvidesDirectory(path=Path(f"{p}/a")),
+        ProvidesDirectory(path=Path(f"{p}/a/b")),
+        ProvidesDirectory(path=Path(f"{p}/a/b/c")),
+        ProvidesDirectory(path=Path(f"{p}/a/d")),
+        ProvidesFile(path=Path(f"{p}/a/E")),
+        ProvidesFile(path=Path(f"{p}/a/d/F")),
+        ProvidesFile(path=Path(f"{p}/a/b/c/G")),
     }
 
 

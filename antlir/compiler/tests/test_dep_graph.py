@@ -19,6 +19,7 @@ from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.symlink import SymlinkToDirItem
+from antlir.fs_utils import Path
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..dep_graph import (
@@ -49,8 +50,10 @@ def _fs_root_phases(item):
 def _build_req_prov(path, req_items, prov_items, prov_t=None):
     prov_t = ProvidesDirectory if prov_t is None else prov_t
     return ItemReqsProvs(
-        item_reqs={ItemReq(require_directory(path=path), i) for i in req_items},
-        item_provs={ItemProv(prov_t(path=path), i) for i in prov_items},
+        item_reqs={
+            ItemReq(require_directory(path=Path(path)), i) for i in req_items
+        },
+        item_provs={ItemProv(prov_t(path=Path(path)), i) for i in prov_items},
     )
 
 
@@ -104,17 +107,21 @@ class DepGraphTestBase(unittest.TestCase):
         }
         # [[items, requiring, it], [items, it, requires]]
         self.path_to_reqs_provs = {
-            "/.meta": _build_req_prov(
+            Path("/.meta"): _build_req_prov(
                 "/.meta", [], [self.provides_root], ProvidesDoNotAccess
             ),
-            "/": _build_req_prov("/", [a], [self.provides_root]),
-            "/a": _build_req_prov("/a", [ab, ad, a_ln], [a]),
-            "/a/b": _build_req_prov("/a/b", [abc], [ab]),
-            "/a/b/c": _build_req_prov("/a/b/c", [abcf], [abc]),
-            "/a/d": _build_req_prov("/a/d", [ade, a_ln], [ad]),
-            "/a/d/e": _build_req_prov("/a/d/e", [adeg], [ade, a_ln]),
-            "/a/d/e/G": _build_req_prov("/a/d/e/G", [], [adeg], ProvidesFile),
-            "/a/b/c/F": _build_req_prov("/a/b/c/F", [], [abcf], ProvidesFile),
+            Path("/"): _build_req_prov("/", [a], [self.provides_root]),
+            Path("/a"): _build_req_prov("/a", [ab, ad, a_ln], [a]),
+            Path("/a/b"): _build_req_prov("/a/b", [abc], [ab]),
+            Path("/a/b/c"): _build_req_prov("/a/b/c", [abcf], [abc]),
+            Path("/a/d"): _build_req_prov("/a/d", [ade, a_ln], [ad]),
+            Path("/a/d/e"): _build_req_prov("/a/d/e", [adeg], [ade, a_ln]),
+            Path("/a/d/e/G"): _build_req_prov(
+                "/a/d/e/G", [], [adeg], ProvidesFile
+            ),
+            Path("/a/b/c/F"): _build_req_prov(
+                "/a/b/c/F", [], [abcf], ProvidesFile
+            ),
         }
 
 
@@ -123,10 +130,10 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         @dataclass(init=False, frozen=True)
         class BadDuplicatePathItem(ImageItem):
             def requires(self):
-                yield require_directory("a")
+                yield require_directory(Path("a"))
 
             def provides(self):
-                yield ProvidesDirectory(path="a")
+                yield ProvidesDirectory(path=Path("a"))
 
         with self.assertRaisesRegex(AssertionError, "^Same path in "):
             ValidatedReqsProvs([BadDuplicatePathItem(from_target="t")])
@@ -161,7 +168,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         with self.assertRaises(
             RuntimeError,
             msg="^At /: nothing in set() matches the requirement "
-            f'{ItemReq(requires=require_directory("/"), item=item)}$',
+            f'{ItemReq(requires=require_directory(Path("/")), item=item)}$',
         ):
             ValidatedReqsProvs([item])
 
@@ -271,11 +278,11 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
             @dataclass(init=False, frozen=True)
             class RequiresProvidesDirectory(ImageItem):
                 def requires(self):
-                    yield require_directory(requires_dir)
+                    yield require_directory(Path(requires_dir))
 
                 def provides(self):
                     for d in provides_dirs:
-                        yield ProvidesDirectory(path=d)
+                        yield ProvidesDirectory(path=Path(d))
 
             return RequiresProvidesDirectory
 

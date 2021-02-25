@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import subprocess
 
 from antlir.compiler.requires_provides import require_directory
@@ -43,18 +42,16 @@ class CloneItem(clone_t, ImageItem):
             self.source_layer.path(),
         )
         for p in gen_subvolume_subtree_provides(self.source_layer, img_rel_src):
-            if self.omit_outer_dir and p.path == "/":
+            if self.omit_outer_dir and p.path == b"/":
                 continue
-            rel_to_src = p.path.lstrip("/")
+            rel_to_src = p.path.strip_leading_slashes()
             if not self.omit_outer_dir and self.pre_existing_dest:
-                rel_to_src = os.path.join(
-                    img_rel_src.basename().decode(), rel_to_src
-                )
-            yield p.with_new_path(os.path.join(self.dest, rel_to_src))
+                rel_to_src = img_rel_src.basename() / rel_to_src
+            yield p.with_new_path(self.dest / rel_to_src)
 
     def requires(self):
         yield require_directory(
-            self.dest if self.pre_existing_dest else os.path.dirname(self.dest)
+            self.dest if self.pre_existing_dest else self.dest.dirname()
         )
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):

@@ -179,7 +179,10 @@ printf '%s\\0%s\\0%s\\0' "$dst" {c.input_dest.shell_quote()} "$src"
 @contextmanager
 def _copy_to_shadowed_root(subvol: Subvol, container_paths: Iterable[Path]):
     originals_and_backups = [
-        (subvol.path(p), subvol.path(SHADOWED_PATHS_ROOT / p.lstrip(b"/")))
+        (
+            subvol.path(p),
+            subvol.path(SHADOWED_PATHS_ROOT / p.strip_leading_slashes()),
+        )
         for p in container_paths
     ]
     # This is redundant with our other "no ambiguity" and "no aliasing"
