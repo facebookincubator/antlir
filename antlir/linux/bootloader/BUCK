@@ -50,10 +50,7 @@ image.layer(
         systemd.set_default_target("initrd.target"),
         # explicitly enable systemd-networkd to configure the network links
         # early in boot
-        systemd.enable_unit(
-            "systemd-networkd.service",
-            target = "initrd.target",
-        ),
+        systemd.enable_unit("systemd-networkd.service"),
     ],
 )
 

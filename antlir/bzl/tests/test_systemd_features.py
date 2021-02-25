@@ -18,9 +18,9 @@ TMPFILES_ROOT = Path("/etc/tmpfiles.d")
 # tuple of the form:
 # ( <unit name>, <enabled target>, <masked bool> )
 unit_test_specs = [
-    ("cheese-file.service", "multi-user.target", False),
+    ("cheese-file.service", "default.target", False),
     ("cheese-export.service", "sysinit.target", False),
-    ("cheese-export-with-dest.service", "multi-user.target", False),
+    ("cheese-export-with-dest.service", "default.target", False),
     ("cheese-generated.service", None, False),
     ("cheese-source.service", None, True),
 ]
