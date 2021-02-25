@@ -1,0 +1,55 @@
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:systemd.bzl", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
+load("//antlir/bzl/foreign/extractor:extract.bzl", "extract")
+load("//antlir/bzl/linux:busybox.bzl", "busybox")
+
+DEPS_TARGET = "//antlir/linux/bootloader:deps"
+
+# Some systemd units and binaries that are only useful for debugging and not
+# during normal boots
+systemd_debug = [
+    extract.extract(
+        binaries = [
+            "/usr/bin/systemd-analyze",
+        ],
+        dest = "/",
+        source = DEPS_TARGET,
+    ),
+    image.ensure_dirs_exist(SYSTEMD_PROVIDER_ROOT),
+    image.clone(
+        DEPS_TARGET,
+        paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service"),
+        paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service"),
+    ),
+]
+
+image.layer(
+    name = "debug-append",
+    features = [
+        # NOTE: while busybox still exists for /usr/bin/mount in the base
+        # initrd, this is technically duplicated. However image.symlink_file
+        # does not allow dangling symlinks so just take the easy way out and
+        # clone the binary again
+        busybox.install(
+            DEPS_TARGET,
+            src_path = "/usr/sbin/busybox",
+        ),
+        systemd_debug,
+        image.ensure_dirs_exist(paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service.d")),
+        image.install(
+            "debug-shell.conf",
+            paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service.d", "debug-shell.conf"),
+        ),
+        image.ensure_dirs_exist(paths.join(SYSTEMD_PROVIDER_ROOT, "initrd-cleanup.service.d")),
+        image.install(
+            "initrd-cleanup.conf",
+            paths.join(SYSTEMD_PROVIDER_ROOT, "initrd-cleanup.service.d", "initrd-cleanup.conf"),
+        ),
+    ],
+)
+
+image.package(
+    name = "debug-append.cpio.gz",
+    layer = ":debug-append",
+)
