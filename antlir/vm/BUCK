@@ -1,4 +1,3 @@
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/vm:defs.bzl", "vm")
@@ -150,4 +149,40 @@ vm.run(
             package = vm.artifacts.rootfs.package.rc,
         ),
     ),
+)
+
+vm.run(
+    name = "default-stable-initrd-debug",
+    vm_opts = vm.types.opts.new(
+        kernel = kernel_get.default,
+        disk = vm.types.disk.new(
+            package = vm.artifacts.rootfs.package.stable,
+        ),
+        initrd = "{}:{}-initrd-debug".format(
+            kernel_get.base_target,
+            kernel_get.default.uname,
+        ),
+    ),
+    args = [
+        "--console",
+        "--shell=console",
+    ],
+)
+
+vm.run(
+    name = "default-rc-initrd-debug",
+    vm_opts = vm.types.opts.new(
+        kernel = kernel_get.default,
+        disk = vm.types.disk.new(
+            package = vm.artifacts.rootfs.package.rc,
+        ),
+        initrd = "{}:{}-initrd-debug".format(
+            kernel_get.base_target,
+            kernel_get.default.uname,
+        ),
+    ),
+    args = [
+        "--console",
+        "--shell=console",
+    ],
 )

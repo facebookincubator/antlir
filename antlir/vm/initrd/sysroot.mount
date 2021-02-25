@@ -1,0 +1,9 @@
+[Unit]
+Description=vmtest root
+Before=seedroot.service
+
+[Mount]
+Where=/sysroot
+What=/dev/vda
+Type=btrfs
+Options=subvol=volume
