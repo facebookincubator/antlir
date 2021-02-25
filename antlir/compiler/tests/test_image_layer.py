@@ -321,7 +321,7 @@ class ImageLayerTestCase(unittest.TestCase):
 
             # Clean other, less sketchy side effects of `nspawn_in_subvol`:
             # empty LFS directories.
-            for d in ("proc", "root", "run", "sys", "tmp"):
+            for d in ("proc", "run", "sys", "tmp"):
                 self.assertEqual(["(Dir)", {}], pop_path(r, d))
 
             # This nspawn-created symlink isn't great, but, again, it

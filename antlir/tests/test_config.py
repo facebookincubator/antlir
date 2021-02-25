@@ -3,12 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import unittest
 import unittest.mock
 
 from antlir.artifacts_dir import find_repo_root
 from antlir.config import load_repo_config, repo_config_t
-from antlir.fs_utils import Path
+from antlir.fs_utils import Path, temp_dir
 
 
 class RepoConfigTestCase(unittest.TestCase):
@@ -18,6 +19,7 @@ class RepoConfigTestCase(unittest.TestCase):
         defaults = {
             "artifacts_require_repo": True,
             "build_appliance_default": "//build/appliance:default",
+            "host_mounts_for_repo_artifacts": [],
             "rpm_installer_default": "yum",
             "rpm_installers_supported": [
                 "yum",
@@ -82,3 +84,27 @@ class RepoConfigTestCase(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             load_repo_config(path_in_repo=Path("/"))
+
+    @unittest.mock.patch("antlir.config.find_artifacts_dir")
+    @unittest.mock.patch("antlir.config._read_text")
+    def test_repo_config_host_mounts(self, _read_text, artifacts_dir_mock):
+        # Force the value of `artifacts_require_repo` to True so we can force
+        # looking for the artifacts_dir
+        _read_text.return_value = self._test_repo_config_json(
+            artifacts_require_repo=True,
+        )
+
+        with temp_dir() as td:
+            mock_backing_dir = td / "backing-dir"
+            mock_artifact_dir = Path(td / "buck-image-out")
+            os.symlink(mock_backing_dir, mock_artifact_dir)
+
+            artifacts_dir_mock.return_value = mock_artifact_dir
+
+            config = load_repo_config()
+
+            # Note: this has to be a string because the `config_t` shape doesn't
+            # understand the Path type yet
+            self.assertIn(
+                str(mock_backing_dir), config.host_mounts_for_repo_artifacts
+            )
