@@ -13,7 +13,7 @@ from unittest import mock
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import pipe
 from antlir.find_built_subvol import find_built_subvol
-from antlir.fs_utils import Path
+from antlir.fs_utils import temp_dir, Path
 from antlir.tests.layer_resource import layer_resource
 from antlir.tests.temp_subvolumes import with_temp_subvols
 
@@ -107,6 +107,40 @@ class NspawnTestCase(NspawnTestBase):
                 artifacts_require_repo=True,
             ),
         )
+
+    @mock.patch("antlir.config.find_repo_root")
+    @mock.patch("antlir.config.find_artifacts_dir")
+    def test_extra_nspawn_args_bind_repo_buck_image_out(
+        self, artifacts_dir_mock, root_mock
+    ):
+        root_mock.return_value = "/repo/root"
+
+        with temp_dir() as td:
+            mock_backing_dir = td / "backing-dir"
+            mock_artifact_dir = Path(td / "buck-image-out")
+            os.symlink(mock_backing_dir, mock_artifact_dir)
+
+            artifacts_dir_mock.return_value = mock_artifact_dir
+
+            # opts.bind_repo_ro
+            self.assertIn(
+                f"{mock_backing_dir}:{mock_backing_dir}",
+                self._wrapper_args_to_nspawn_args(
+                    [
+                        "--layer",
+                        layer_resource(__package__, "test-layer"),
+                        "--bind-repo-ro",
+                    ]
+                ),
+            )
+            # artifacts_require_repo
+            self.assertIn(
+                f"{mock_backing_dir}:{mock_backing_dir}",
+                self._wrapper_args_to_nspawn_args(
+                    ["--layer", layer_resource(__package__, "test-layer")],
+                    artifacts_require_repo=True,
+                ),
+            )
 
     def test_extra_nspawn_args_log_tmpfs_opts(self):
         base_argv = [
