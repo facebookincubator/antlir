@@ -9,6 +9,8 @@ Tests `requires_provides.py`.
 """
 import unittest
 
+from antlir.fs_utils import Path
+
 from ..requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
@@ -21,30 +23,34 @@ from ..requires_provides import (
 
 class RequiresProvidesTestCase(unittest.TestCase):
     def test_normalize_path(self):
-        self.assertEqual("/a", _normalize_path("a//."))
-        self.assertEqual("/b/d", _normalize_path("/b/c//../d"))
-        self.assertEqual("/x/y", _normalize_path("///x/./y/"))
+        self.assertEqual(Path("/a"), _normalize_path(Path("a//.")))
+        self.assertEqual(Path("/b/d"), _normalize_path(Path("/b/c//../d")))
+        self.assertEqual(Path("/x/y"), _normalize_path(Path("///x/./y/")))
 
     def test_path_normalization(self):
-        self.assertEqual("/a", require_directory("a//.").path)
-        self.assertEqual("/b/d", ProvidesDirectory(path="/b/c//../d").path)
-        self.assertEqual("/x/y", ProvidesFile(path="///x/./y/").path)
+        self.assertEqual(Path("/a"), require_directory(Path("a//.")).path)
+        self.assertEqual(
+            Path("/b/d"), ProvidesDirectory(path=Path("/b/c//../d")).path
+        )
+        self.assertEqual(
+            Path("/x/y"), ProvidesFile(path=Path("///x/./y/")).path
+        )
 
     def test_provides_requires(self):
-        pf1 = ProvidesFile(path="f")
-        pf2 = ProvidesFile(path="f/b")
-        pf3 = ProvidesFile(path="f/b/c")
-        pd1 = ProvidesDirectory(path="a")
-        pd2 = ProvidesDirectory(path="a/b")
-        pd3 = ProvidesDirectory(path="a/b/c")
+        pf1 = ProvidesFile(path=Path("f"))
+        pf2 = ProvidesFile(path=Path("f/b"))
+        pf3 = ProvidesFile(path=Path("f/b/c"))
+        pd1 = ProvidesDirectory(path=Path("a"))
+        pd2 = ProvidesDirectory(path=Path("a/b"))
+        pd3 = ProvidesDirectory(path=Path("a/b/c"))
         provides = [pf1, pf2, pf3, pd1, pd2, pd3]
 
-        rf1 = require_file("f")
-        rf2 = require_file("f/b")
-        rf3 = require_file("f/b/c")
-        rd1 = require_directory("a")
-        rd2 = require_directory("a/b")
-        rd3 = require_directory("a/b/c")
+        rf1 = require_file(Path("f"))
+        rf2 = require_file(Path("f/b"))
+        rf3 = require_file(Path("f/b/c"))
+        rd1 = require_directory(Path("a"))
+        rd2 = require_directory(Path("a/b"))
+        rd3 = require_directory(Path("a/b/c"))
         requires = [rf1, rf2, rf3, rd1, rd2, rd3]
 
         # Only these will match, everything else cannot.
@@ -84,11 +90,15 @@ class RequiresProvidesTestCase(unittest.TestCase):
         with self.assertRaisesRegex(
             AssertionError, "^predicate .* not implemented by .*$"
         ):
-            ProvidesDoNotAccess(path="//a/b").matches({}, require_file("/a/b"))
+            ProvidesDoNotAccess(path=Path("//a/b")).matches(
+                {}, require_file(Path("/a/b"))
+            )
 
     def test_with_new_path(self):
         for new_path in ["b", "b/", "/b", "/../a/../b/c/.."]:
             self.assertEqual(
-                ProvidesDirectory(path="unused").with_new_path(new_path),
-                ProvidesDirectory(path="b"),
+                ProvidesDirectory(path=Path("unused")).with_new_path(
+                    Path(new_path)
+                ),
+                ProvidesDirectory(path=Path("b")),
             )

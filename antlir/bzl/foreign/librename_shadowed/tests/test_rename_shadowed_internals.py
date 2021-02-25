@@ -116,7 +116,7 @@ class TestRenameShadowedInternals(unittest.TestCase):
 
     def test_get_shadowed_rename_dest(self):
         with temp_dir() as td:
-            shadow_td = self._shadow / td.lstrip(b"/")
+            shadow_td = self._shadow / td.strip_leading_slashes()
             os.makedirs(shadow_td)
 
             # These `real_*` things have no shadow counterparts.
@@ -200,7 +200,7 @@ class TestRenameShadowedInternals(unittest.TestCase):
 
     def test_interposed_rename(self):
         with temp_dir() as td:
-            shadow_td = self._shadow / td.lstrip(b"/")
+            shadow_td = self._shadow / td.strip_leading_slashes()
             os.makedirs(shadow_td)
 
             # Good case: a file gets renamed

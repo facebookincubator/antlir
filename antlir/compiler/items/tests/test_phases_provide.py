@@ -52,8 +52,8 @@ class PhaseProvidesItemTestCase(BaseItemTestCase):
                     PhasesProvideItem(from_target="t", subvol=parent),
                     temp_filesystem_provides()
                     | {
-                        ProvidesDirectory(path="/"),
-                        ProvidesDoNotAccess(path="/.meta"),
+                        ProvidesDirectory(path=Path("/")),
+                        ProvidesDoNotAccess(path=Path("/.meta")),
                     },
                     set(),
                 )

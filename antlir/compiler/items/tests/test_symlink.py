@@ -13,6 +13,7 @@ from antlir.compiler.requires_provides import (
     require_directory,
     require_file,
 )
+from antlir.fs_utils import Path
 from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..install_file import InstallFileItem
@@ -32,16 +33,16 @@ class SymlinkItemsTestCase(BaseItemTestCase):
     def test_symlink(self):
         self._check_item(
             SymlinkToDirItem(from_target="t", source="x", dest="y"),
-            {ProvidesDirectory(path="y")},
-            {require_directory("/"), require_directory("/x")},
+            {ProvidesDirectory(path=Path("y"))},
+            {require_directory(Path("/")), require_directory(Path("/x"))},
         )
 
         self._check_item(
             SymlinkToFileItem(
                 from_target="t", source="source_file", dest="dest_symlink"
             ),
-            {ProvidesFile(path="dest_symlink")},
-            {require_directory("/"), require_file("/source_file")},
+            {ProvidesFile(path=Path("dest_symlink"))},
+            {require_directory(Path("/")), require_file(Path("/source_file"))},
         )
 
     def _test_symlink_command(self, layer_opts):

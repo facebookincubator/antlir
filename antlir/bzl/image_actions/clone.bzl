@@ -15,7 +15,7 @@ load(
 )
 
 clone_t = shape.shape(
-    dest = str,
+    dest = shape.path(),
     omit_outer_dir = bool,
     pre_existing_dest = bool,
     source = target_tagged_image_source_shape,

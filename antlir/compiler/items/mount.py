@@ -142,12 +142,12 @@ class MountItem(ImageItem):
     def provides(self):
         # For now, nesting of mounts is not supported, and we certainly
         # cannot allow regular items to write inside a mount.
-        yield ProvidesDoNotAccess(path=self.mountpoint)
+        yield ProvidesDoNotAccess(path=Path(self.mountpoint))
 
     def requires(self):
         # We don't require the mountpoint itself since it will be shadowed,
         # so this item just makes it with default permissions.
-        yield require_directory(os.path.dirname(self.mountpoint))
+        yield require_directory(Path(self.mountpoint).dirname())
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         mount_dir = META_MOUNTS_DIR / self.mountpoint / MOUNT_MARKER

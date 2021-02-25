@@ -441,3 +441,14 @@ class TestFsUtils(unittest.TestCase):
         # A b64 encoded uuid is 22 chars. That plus the
         # '/work' prefix is 27 chars,
         self.assertTrue(len(work_dir) == 27)
+
+    def test_strip_leading_slashes(self):
+        for p, want in (
+            ("", ""),
+            ("/", ""),
+            ("//", ""),
+            ("///", ""),
+            ("/a/b/c", "a/b/c"),
+            ("//d/e", "d/e"),
+        ):
+            self.assertEqual(Path(p).strip_leading_slashes(), Path(want))

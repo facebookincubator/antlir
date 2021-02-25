@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import pwd
 
 from antlir.compiler.requires_provides import (
@@ -12,7 +11,7 @@ from antlir.compiler.requires_provides import (
     ProvidesFile,
     require_directory,
 )
-from antlir.fs_utils import generate_work_dir, open_for_read_decompress
+from antlir.fs_utils import Path, generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
@@ -37,24 +36,21 @@ class TarballItem(tarball_t, ImageItem):
             fileobj=tf, mode="r|"
         ) as f:
             for item in f:
-                path = os.path.join(
-                    self.into_dir, make_path_normal_relative(item.name)
+                path = Path(self.into_dir) / make_path_normal_relative(
+                    item.name
                 )
                 if item.isdir():
                     # We do NOT provide the installation directory, and the
                     # image build script tarball extractor takes pains (e.g.
                     # `tar --no-overwrite-dir`) not to touch the extraction
                     # directory.
-                    if (
-                        os.path.normpath(os.path.relpath(path, self.into_dir))
-                        != "."
-                    ):
+                    if path.relpath(self.into_dir).normpath() != b".":
                         yield ProvidesDirectory(path=path)
                 else:
                     yield ProvidesFile(path=path)
 
     def requires(self):
-        yield require_directory(self.into_dir)
+        yield require_directory(Path(self.into_dir))
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         build_appliance = layer_opts.requires_build_appliance()

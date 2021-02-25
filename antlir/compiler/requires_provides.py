@@ -44,18 +44,15 @@ with short-circuiting.  E.g. FollowsSymlinks(Pred) would expand to:
   )
 '''
 import dataclasses
-import os
 from enum import Enum, auto
 
+from antlir.fs_utils import Path
 
-def _normalize_path(path: str) -> str:
+
+def _normalize_path(path: Path) -> Path:
     # Normalize paths as image-absolute. This is crucial since we
     # will use `path` as a dictionary key.
-    return os.path.normpath(
-        # The `lstrip` is needed because `normpath does not
-        # normalize away leading slashes: //b/c
-        os.path.join("/", path.lstrip("/"))
-    )
+    return Path(b"/" / path.strip_leading_slashes()).normpath()
 
 
 class _Predicate(Enum):
@@ -65,28 +62,28 @@ class _Predicate(Enum):
 
 @dataclasses.dataclass(frozen=True)
 class PathRequiresPredicate:
-    path: str
+    path: Path
     predicate: _Predicate
 
-    def __init__(self, *, path: str, predicate: _Predicate) -> None:
+    def __init__(self, *, path: Path, predicate: _Predicate) -> None:
         object.__setattr__(self, "path", _normalize_path(path))
         object.__setattr__(self, "predicate", predicate)
 
 
-def require_directory(path: str):
+def require_directory(path: Path):
     return PathRequiresPredicate(path=path, predicate=_Predicate.IS_DIRECTORY)
 
 
-def require_file(path: str):
+def require_file(path: Path):
     return PathRequiresPredicate(path=path, predicate=_Predicate.IS_FILE)
 
 
 @dataclasses.dataclass(frozen=True)
 class ProvidesPathObject:
-    path: str
+    path: Path
     # In the future, we might add permissions, etc here.
 
-    def __init__(self, *, path: str) -> None:
+    def __init__(self, *, path: Path) -> None:
         object.__setattr__(self, "path", _normalize_path(path))
 
     def matches(
@@ -103,7 +100,7 @@ class ProvidesPathObject:
     def _matches_predicate(self, predicate):
         return False
 
-    def with_new_path(self, new_path):
+    def with_new_path(self, new_path: Path):
         return dataclasses.replace(self, path=_normalize_path(new_path))
 
 
