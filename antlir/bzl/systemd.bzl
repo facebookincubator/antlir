@@ -82,7 +82,7 @@ def _enable_unit(
         unit,
 
         # The systemd target to enable the unit in.
-        target = "multi-user.target"):
+        target = "default.target"):
     _fail_if_path(unit, "Enable Unit")
 
     return [
