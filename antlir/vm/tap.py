@@ -89,7 +89,7 @@ class VmTap(object):
                     "-c",
                     """
     mkdir -p /dev/net
-    mknod /dev/net/tun c 10 200
+    mknod --mode=666 /dev/net/tun c 10 200
     [ -c /dev/net/tun ]
                 """,
                 ],
