@@ -1,0 +1,11 @@
+[Unit]
+Description=Add /dev/vdb to /sysroot
+Requires=dev-vdb.device
+After=dev-vdb.device
+
+[Service]
+Type=oneshot
+RootDirectory=/sysroot
+MountAPIVFS=true
+ExecStart=/usr/sbin/btrfs device add /dev/vdb /
+RemainAfterExit=yes
