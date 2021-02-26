@@ -305,24 +305,50 @@ class ImageLayerTestCase(unittest.TestCase):
             ):
                 # Assume that the prefix of the repo (e.g. /home or /data)
                 # is not one of the normal FHS-type directories below.
-                d = os.path.abspath(str(find_repo_root()))
-                while d != "/":
-                    self.assertEqual(["(Dir)", {}], pop_path(r, d))
-                    d = os.path.dirname(d)
+                repo = os.path.abspath(str(find_repo_root()))
+                top = repo
+                while True:
+                    parent = os.path.dirname(top)
+                    if parent == "/":
+                        break
+                    top = parent
 
-                # Along with the repo root, we might have some runtime host
-                # mounts injected in the environment by config.  Let's verify
-                # them as well.
-                for mount in REPO_CFG.host_mounts_for_repo_artifacts:
-                    d = os.path.abspath(mount)
+                # Sometimes the artifacts dirs are under the same top-level
+                # directory, so we expect any of those and the repo to be
+                # present
+                paths_to_verify = [repo]
+                expected = {}
+                for d in REPO_CFG.host_mounts_for_repo_artifacts:
+                    d = os.path.abspath(d)
+                    if d.startswith(top):
+                        paths_to_verify.append(d)
+                    else:
+                        # pop any others so they don't affect future comparisons
+                        # I know this will make someone very frustrated again
+                        # in the future, but it's just too crazy to account for
+                        # all of the many cases in which this can break
+                        while d != "/":
+                            pop_path(r, d)
+                            d = os.path.dirname(d)
+
+                for d in paths_to_verify:
                     while d != "/":
-                        self.assertEqual(["(Dir)", {}], pop_path(r, d))
+                        nested = expected
+                        for part in d.split(os.path.sep)[2:]:
+                            if part not in nested:
+                                nested[part] = ["(Dir)", {}]
+                            nested = nested[part][1]
                         d = os.path.dirname(d)
+
+                self.assertEqual(["(Dir)", expected], pop_path(r, top))
 
             # Clean other, less sketchy side effects of `nspawn_in_subvol`:
             # empty LFS directories.
             for d in ("proc", "run", "sys", "tmp"):
                 self.assertEqual(["(Dir)", {}], pop_path(r, d))
+            # ignore /root if it is not present - when the repo is present and
+            # under /root it will be processed above
+            self.assertEqual(["(Dir)", {}], pop_path(r, "/root", ["(Dir)", {}]))
 
             # This nspawn-created symlink isn't great, but, again, it
             # shouldn't affect production use-cases.
