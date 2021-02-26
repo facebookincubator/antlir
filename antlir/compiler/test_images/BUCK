@@ -99,6 +99,7 @@ image.layer(
         ),
         "//antlir/features:build_artifact_cleanup",
     ],
+    enable_boot_target = True,
 )
 
 # Some tests require a bootable container. For now, these are the same as the

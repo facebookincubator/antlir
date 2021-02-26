@@ -162,18 +162,20 @@ class VMExecOpts(Shape):
         )
 
         parser.add_argument(
-            "--console",
+            "--append-console",
             # This is used when the bare option with no arg is used.
             const=None,
-            # This is used when no option is provided
+            # This is used when no swicth is provided
             default=subprocess.DEVNULL,
+            dest="console",
             nargs="?",
             # This is used only when an argument is provided
             type=Path.from_argparse,
-            help="Where to send console output. If --console=/path/to/file is "
-            "provided, append the console output to the file.  If just "
-            "--console is provided, send to stdout for easier debugging. "
-            "By default the console output is supressed.",
+            help="Where to send console output. If "
+            "--append-console=/path/to/file is "
+            "provided, append the console output to the supplied file.  If "
+            "just --append-console is provided, send to stdout for easier "
+            "debugging. By default the console output is supressed.",
         )
 
         parser.add_argument(

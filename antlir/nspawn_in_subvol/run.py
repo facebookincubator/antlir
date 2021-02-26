@@ -142,10 +142,11 @@ def _set_up_run_cli(argv: Iterable[Union[str, Path]]) -> _CliSetup:
     args = _parse_cli_args(argv, allow_debug_only_opts=True)
     init_logging(debug=args.opts.debug_only_opts.debug)
     with (
-        # By default, we send the `systemd-nspawn` console to `stderr`.
+        # By default, the console output is supressed or sent to
+        # stderr, otherwise we send it to a file.
         open(args.append_console, "a")
-        if args.append_console
-        else nullcontext()
+        if isinstance(args.append_console, Path)
+        else nullcontext(enter_result=args.append_console)
     ) as console:
         yield _CliSetup(
             console=console,

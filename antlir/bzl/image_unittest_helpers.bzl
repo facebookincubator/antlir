@@ -159,6 +159,7 @@ def nspawn_in_subvol_args():
         ],
         *[{shadow_paths_repr}],
         *{targets_and_outputs},
+        '--append-console',
         '--', {binary_path_repr},
     ]
 EOF

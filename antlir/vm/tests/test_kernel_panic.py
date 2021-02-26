@@ -22,7 +22,7 @@ class KernelPanicTest(unittest.TestCase):
             # This is the running the fully materialized =vmtest script
             # that buck built.
             proc = subprocess.run(
-                [Path(vmtest), "--console={}".format(console_f.name)],
+                [Path(vmtest), "--append-console={}".format(console_f.name)],
             )
 
             # This fails because ssh terminates, and ssh exits with 255 anytime

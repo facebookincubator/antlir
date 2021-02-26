@@ -139,12 +139,12 @@ class TestAntlirVM(unittest.TestCase):
             VMExecOpts.parse_cli(
                 [
                     opts_cli_arg,
-                    "--console",
+                    "--append-console",
                 ]
             ),
         )
 
-        # Test --console=/path/to/something
+        # Test --append-console=/path/to/something
         with tempfile.NamedTemporaryFile() as t:
             t = Path(t.name)
             self.assertEqual(
@@ -152,7 +152,9 @@ class TestAntlirVM(unittest.TestCase):
                     opts=opts_instance,
                     console=t,
                 ),
-                VMExecOpts.parse_cli([opts_cli_arg, "--console={}".format(t)]),
+                VMExecOpts.parse_cli(
+                    [opts_cli_arg, "--append-console={}".format(t)]
+                ),
             )
 
         # Test --shell=ssh
