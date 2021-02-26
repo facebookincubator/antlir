@@ -18,6 +18,7 @@ This file has two roles:
 """
 import argparse
 import pwd
+import subprocess
 from typing import (
     Any,
     AnyStr,
@@ -28,6 +29,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
 )
 
 from antlir.cli import add_targets_and_outputs_arg
@@ -480,7 +482,7 @@ class _NspawnCLIArgs(NamedTuple):
     Keep in sync with `_parse_cli_args`. That documents the options.
     """
 
-    append_console: Optional[str]
+    append_console: Union[int, Path, None]
     opts: _NspawnOpts
     plugin_args: NspawnPluginArgs
 
@@ -510,9 +512,18 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     )
     parser.add_argument(
         "--append-console",
-        default=None,
-        help="Redirect output from the `systemd-nspawn` console PTY into "
-        "a file. By default it goes to stdout for easy debugging.",
+        # This is used when the bare option with no arg is used.
+        const=None,
+        # This is used when no switch is provided
+        default=subprocess.DEVNULL,
+        nargs="?",
+        # This is used only when an argument is provided
+        type=Path.from_argparse,
+        help="Where to send console output. If "
+        "--append-console=/path/to/file is "
+        "provided, append the console output to the supplied file.  If "
+        "just --append-console is provided, send to stderr for easier "
+        "debugging. By default the console output is supressed.",
     )
     _parser_add_nspawn_opts(parser)
     _parser_add_plugin_args(parser)

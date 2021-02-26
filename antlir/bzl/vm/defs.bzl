@@ -197,7 +197,7 @@ def _vm_unittest(
             "--test-binary-image $(location {})".format(shell.quote(":" + actual_test_image)),
             # Always enable debug + console logging for better debugging
             "--debug",
-            "--console",
+            "--append-console",
         ] + [
             # Manually extract any environment variables set and format
             # them into `--setenv NAME=VALUE`. THese are passed during the call to

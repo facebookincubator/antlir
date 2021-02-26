@@ -175,7 +175,7 @@ def _image_layer_impl(
     )
     _add_run_in_subvol_target(_layer_name, "container")
     if enable_boot_target:
-        _add_run_in_subvol_target(_layer_name, "boot", extra_args = ["--boot"])
+        _add_run_in_subvol_target(_layer_name, "boot", extra_args = ["--boot", "--append-console"])
 
 image_layer_utils = struct(
     image_layer_impl = _image_layer_impl,
