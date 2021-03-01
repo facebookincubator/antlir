@@ -6,6 +6,7 @@
 
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
 import unittest.mock
@@ -15,11 +16,15 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
 
-from ..find_built_subvol import volume_dir
 from ..fs_utils import Path, temp_dir
-from ..subvol_utils import Subvol, SubvolOpts
+from ..subvol_utils import (
+    Subvol,
+    SubvolOpts,
+    TempSubvolumes,
+    volume_dir,
+    with_temp_subvols,
+)
 from .subvol_helpers import render_subvol
-from .temp_subvolumes import with_temp_subvols
 
 
 class SubvolTestCase(unittest.TestCase):
@@ -322,3 +327,60 @@ class SubvolTestCase(unittest.TestCase):
 
         self.assertEqual(sv, other_sv)
         self.assertEqual(sv.__hash__(), hash(sv._path))
+
+    def test_with_temp_subvols(self):
+        temp_dir_path = None
+
+        def fn(self, ts):
+            nonlocal temp_dir_path
+            prefix = volume_dir(sys.argv[0]) / "tmp" / "TempSubvolumes_"
+            self.assertTrue(ts._temp_dir.startswith(prefix))
+            self.assertTrue(os.path.exists(ts._temp_dir))
+            temp_dir_path = ts._temp_dir
+
+        with_temp_subvols(fn)(self)
+        self.assertIsNotNone(temp_dir_path)
+        self.assertFalse(os.path.exists(temp_dir_path))
+
+    def test_temp_subvolumes_create(self):
+        with TempSubvolumes() as ts:
+            td_path = ts._temp_dir
+            sv_path = ts._temp_dir / "test"
+            self.assertTrue(os.path.exists(td_path))
+            self.assertFalse(os.path.exists(sv_path))
+            sv = ts.create("test")
+            self.assertEqual(sv._path, sv_path)
+            self.assertTrue(os.path.exists(sv_path))
+            self.assertTrue(sv._exists)
+        self.assertIsNotNone(td_path)
+        self.assertIsNotNone(sv_path)
+        self.assertFalse(os.path.exists(td_path))
+        self.assertFalse(os.path.exists(sv_path))
+
+    def test_temp_subvolumes_snapshot(self):
+        with TempSubvolumes() as ts:
+            sv1 = ts.create("test1")
+            sv1.run_as_root(["touch", sv1.path("foo")])
+            sv2 = ts.snapshot(sv1, "test2")
+            sv1.run_as_root(["touch", sv1.path("bar")])
+            sv2.run_as_root(["touch", sv2.path("baz")])
+            self.assertTrue(os.path.exists(sv2.path("foo")))
+            self.assertFalse(os.path.exists(sv2.path("bar")))
+            self.assertFalse(os.path.exists(sv1.path("baz")))
+
+    def test_temp_subvolumes_caller_will_create(self):
+        with TempSubvolumes() as ts:
+            sv_path = ts._temp_dir / "test"
+            sv = ts.caller_will_create("test")
+            self.assertEqual(sv._path, sv_path)
+            # Path should not actually exist
+            self.assertFalse(os.path.exists(sv_path))
+            self.assertFalse(sv._exists)
+
+    def test_temp_subvolumes_external_command_will_create(self):
+        with TempSubvolumes() as ts:
+            sv = ts.external_command_will_create("test")
+            # Path should not actually exist
+            self.assertFalse(os.path.exists(ts._temp_dir / "test"))
+            # Exists should be overridden
+            self.assertTrue(sv._exists)

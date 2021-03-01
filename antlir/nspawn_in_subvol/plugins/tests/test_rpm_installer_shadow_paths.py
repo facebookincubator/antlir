@@ -7,8 +7,8 @@
 import functools
 
 from antlir.rpm.find_snapshot import snapshot_install_dir
+from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.layer_resource import layer_resource_subvol
-from antlir.tests.temp_subvolumes import with_temp_subvols
 
 from .rpm_base import RpmNspawnTestBase
 

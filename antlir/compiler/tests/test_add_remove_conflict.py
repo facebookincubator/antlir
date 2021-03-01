@@ -10,9 +10,9 @@ import tempfile
 import unittest
 
 from antlir.fs_utils import Path
+from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import render_subvol
-from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..compiler import build_image, parse_args
 

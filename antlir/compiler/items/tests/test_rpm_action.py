@@ -13,9 +13,9 @@ from antlir.config import load_repo_config
 from antlir.fs_utils import Path, temp_dir
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.rpm.yum_dnf_conf import YumDnf
+from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import check_common_rpm_render, pop_path
-from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
 from ..rpm_action import RpmAction, RpmActionItem

@@ -147,7 +147,7 @@ python_unittest(
         layer_resource(":shadow-paths-test-layer"): "tests/shadows",
     },
     deps = [
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
         "//antlir/nspawn_in_subvol:testlib_base",
     ],
 )
@@ -173,6 +173,6 @@ python_unittest(
     },
     deps = [
         ":testlib_rpm_base",
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
     ],
 )

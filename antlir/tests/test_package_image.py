@@ -20,13 +20,13 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
+from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path, render_sendstream
 
 from ..find_built_subvol import _get_subvolumes_dir
 from ..package_image import Format, package_image
 from ..unshare import Namespace, Unshare, nsenter_as_root
-from .temp_subvolumes import TempSubvolumes
 
 
 def _render_sendstream_path(path):

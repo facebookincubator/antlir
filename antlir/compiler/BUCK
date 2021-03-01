@@ -37,8 +37,8 @@ python_unittest(
     )],
     deps = [
         ":procfs_serde",
+        "//antlir:subvol_utils",
         "//antlir:testlib_subvol_helpers",
-        "//antlir:testlib_temp_subvolumes",
     ],
 )
 
@@ -78,7 +78,7 @@ python_unittest(
     )],
     deps = [
         ":dep_graph",
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
         "//antlir/compiler/items:ensure_dirs_exist",
         "//antlir/compiler/items:items",
     ],
@@ -132,7 +132,7 @@ image_feature_python_unittest(
     deps = [
         ":dep_graph",
         ":items_for_features",
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
     ],
 )
 
@@ -245,8 +245,8 @@ python_unittest(
     },
     deps = [
         ":compiler",
+        "//antlir:subvol_utils",
         "//antlir:testlib_layer_resource",
         "//antlir:testlib_subvol_helpers",
-        "//antlir:testlib_temp_subvolumes",
     ],
 )

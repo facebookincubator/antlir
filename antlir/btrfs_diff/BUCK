@@ -162,7 +162,7 @@ python_library(
         ":testlib_render_subvols",
         ":testlib_subvolume_utils",
         "//antlir:fs_utils",
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
     ],
 )
 

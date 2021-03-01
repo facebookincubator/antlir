@@ -14,8 +14,8 @@ from typing import AnyStr, Iterable
 
 from antlir.fs_utils import Path
 from antlir.rpm.find_snapshot import snapshot_install_dir
+from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
-from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..common import PhaseOrder
 from ..foreign_layer import ForeignLayerItem

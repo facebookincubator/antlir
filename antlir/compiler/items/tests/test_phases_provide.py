@@ -13,7 +13,7 @@ from antlir.compiler.requires_provides import (
     ProvidesDoNotAccess,
 )
 from antlir.fs_utils import Path
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes
 
 from ..phases_provide import PhasesProvideItem, gen_subvolume_subtree_provides
 from .common import (
