@@ -39,8 +39,8 @@ python_unittest(
         ":common_testlib",
         "//antlir:common",
         "//antlir:find_built_subvol",
+        "//antlir:subvol_utils",
         "//antlir:testlib_layer_resource",
-        "//antlir:testlib_temp_subvolumes",
     ],
 )
 
@@ -82,7 +82,6 @@ python_unittest(
     deps = [
         ":common_testlib",
         ":phases_provide",
-        "//antlir:testlib_temp_subvolumes",
     ],
 )
 
@@ -108,7 +107,7 @@ python_library(
         ":common_testlib",
         ":rpm_action",
         "//antlir:fs_utils",
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
     ],
 )
 
@@ -175,8 +174,8 @@ python_unittest(
         ":make_subvol",
         "//antlir:common",
         "//antlir:find_built_subvol",
+        "//antlir:subvol_utils",
         "//antlir:testlib_layer_resource",
-        "//antlir:testlib_temp_subvolumes",
         "//antlir/rpm:find_snapshot",
     ],
 )
@@ -214,7 +213,7 @@ python_unittest(
         ":common_testlib",
         "//antlir:common",
         "//antlir:find_built_subvol",
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
     ],
 )
 
@@ -232,7 +231,7 @@ python_library(
         ":common",
         ":mount_utils",
         "//antlir:find_built_subvol",
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
         "//antlir/compiler:requires_provides",
     ],
 )
@@ -348,7 +347,7 @@ python_unittest(
         ":phases_provide",  # test_mount.py uses this
         "//antlir:find_built_subvol",
         "//antlir:fs_utils",
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
     ],
 )

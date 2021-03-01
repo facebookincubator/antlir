@@ -6,15 +6,9 @@
 
 import sys
 
-from .artifacts_dir import find_artifacts_dir
 from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path
-from .subvol_utils import Subvol
-
-
-# NB: Memoizing this function would be pretty reasonable.
-def volume_dir(path_in_repo=None) -> Path:
-    return find_artifacts_dir(path_in_repo) / "volume"
+from .subvol_utils import Subvol, volume_dir
 
 
 def _get_subvolumes_dir(path_in_repo=None) -> Path:

@@ -14,8 +14,8 @@ from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import pipe
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import temp_dir, Path
+from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.layer_resource import layer_resource
-from antlir.tests.temp_subvolumes import with_temp_subvols
 
 from ..args import _parse_cli_args, _NOBODY_USER
 from ..cmd import _colon_quote_path, _extra_nspawn_args_and_env

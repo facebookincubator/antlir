@@ -12,7 +12,7 @@ from antlir.compiler.requires_provides import (
     require_directory,
 )
 from antlir.fs_utils import Path
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes
 
 from ..common import (
     META_DIR,

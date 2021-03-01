@@ -25,8 +25,8 @@ from antlir.find_built_subvol import _get_subvolumes_dir
 from antlir.fs_utils import Path, temp_dir
 from antlir.nspawn_in_subvol import ba_runner
 from antlir.rpm.yum_dnf_conf import YumDnf
+from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
-from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from .. import subvolume_on_disk as svod
 from ..compiler import LayerOpts, build_image, parse_args

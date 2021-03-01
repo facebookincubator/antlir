@@ -63,8 +63,7 @@ import time
 from typing import Tuple
 
 from antlir.fs_utils import Path
-from antlir.subvol_utils import Subvol
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import Subvol, TempSubvolumes
 
 
 def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:

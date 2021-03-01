@@ -27,7 +27,7 @@ from antlir.config import load_repo_config
 from antlir.find_built_subvol import Subvol, find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes
 from antlir.unshare import Namespace, Unshare
 
 from .args import PopenArgs, _NspawnOpts

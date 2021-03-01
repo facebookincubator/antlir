@@ -13,7 +13,7 @@ from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.rpm_action import RpmActionItem
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes
 
 from ..dep_graph import DependencyGraph
 from ..items_for_features import gen_items_for_features

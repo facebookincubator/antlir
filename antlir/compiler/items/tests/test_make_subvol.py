@@ -11,7 +11,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
 from antlir.fs_utils import Path
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes
 
 from ..common import PhaseOrder
 from ..ensure_dirs_exist import (

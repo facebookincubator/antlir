@@ -8,8 +8,8 @@ import os
 import subprocess
 
 from antlir.nspawn_in_subvol.tests.base import NspawnTestBase
+from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.layer_resource import layer_resource_subvol
-from antlir.tests.temp_subvolumes import with_temp_subvols
 
 from ..shadow_paths import SHADOWED_PATHS_ROOT
 

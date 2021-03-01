@@ -20,7 +20,7 @@ from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.symlink import SymlinkToDirItem
 from antlir.fs_utils import Path
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes
 
 from ..dep_graph import (
     DependencyGraph,

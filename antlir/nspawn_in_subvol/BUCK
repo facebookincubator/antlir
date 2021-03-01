@@ -37,7 +37,7 @@ python_library(
         "//antlir:config",
         "//antlir:find_built_subvol",
         "//antlir:send_fds_and_run",
-        "//antlir:testlib_temp_subvolumes",
+        "//antlir:subvol_utils",
         "//antlir/compiler:procfs_serde",
         "//antlir/compiler/items:common",
         "//antlir/compiler/items:mount",

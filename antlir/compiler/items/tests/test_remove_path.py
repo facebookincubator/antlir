@@ -9,7 +9,7 @@ import tempfile
 import unittest.mock
 
 from antlir.fs_utils import Path
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes
 
 from ..common import PhaseOrder, protected_path_set
 from ..ensure_dirs_exist import ensure_subdirs_exist_factory

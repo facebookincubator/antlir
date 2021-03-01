@@ -97,18 +97,6 @@ python_library(
 )
 
 python_library(
-    name = "testlib_temp_subvolumes",
-    srcs = [
-        "tests/temp_subvolumes.py",
-    ],
-    deps = [
-        ":find_built_subvol",
-        ":fs_utils",
-        ":subvol_utils",
-    ],
-)
-
-python_library(
     name = "unshare",
     srcs = ["unshare.py"],
 )
@@ -135,6 +123,7 @@ python_library(
     name = "subvol_utils",
     srcs = ["subvol_utils.py"],
     deps = [
+        ":artifacts_dir",
         ":btrfs_loopback",
         ":common",
         ":fs_utils",
@@ -157,7 +146,6 @@ python_unittest(
         ":subvol_utils",
         ":testlib_layer_resource",
         ":testlib_subvol_helpers",
-        ":testlib_temp_subvolumes",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
     ],
 )
@@ -364,7 +352,6 @@ python_binary(
     deps = [
         ":find_built_subvol",
         ":subvol_utils",
-        ":testlib_temp_subvolumes",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
     ],
@@ -389,9 +376,9 @@ python_unittest(
         ":find_built_subvol",
         ":fs_utils",
         ":package-image-library",
+        ":subvol_utils",
         ":testlib_layer_resource",
         ":testlib_subvol_helpers",
-        ":testlib_temp_subvolumes",
         ":unshare",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
         "//antlir/nspawn_in_subvol:args",

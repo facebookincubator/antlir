@@ -16,8 +16,8 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.fs_utils import Path, temp_dir
+from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
-from antlir.tests.temp_subvolumes import TempSubvolumes
 
 from ..make_subvol import FilesystemRootItem, ParentLayerItem
 from ..mount import (

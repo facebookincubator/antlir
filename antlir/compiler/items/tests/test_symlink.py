@@ -14,7 +14,7 @@ from antlir.compiler.requires_provides import (
     require_file,
 )
 from antlir.fs_utils import Path
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes
 
 from ..install_file import InstallFileItem
 from ..symlink import SymlinkToDirItem, SymlinkToFileItem

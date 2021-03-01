@@ -17,7 +17,7 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
-from antlir.tests.temp_subvolumes import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes
 
 from ..common import image_source_item
 from ..install_file import InstallFileItem, _InstallablePath
