@@ -1,0 +1,9 @@
+load("//antlir/bzl:oss_shim.bzl", "export_file")
+
+export_file(
+    name = "notify-host.rules",
+)
+
+export_file(
+    name = "notify-host.service",
+)

@@ -1,0 +1,6 @@
+[Match]
+Name=host0
+
+[Network]
+LinkLocalAddressing=ipv6
+IPv6LinkLocalAddressGenerationMode=eui64
