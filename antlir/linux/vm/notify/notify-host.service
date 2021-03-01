@@ -1,0 +1,10 @@
+[Unit]
+Description=Send a notification that the machine has booted
+After=sshd.service
+Requires=sshd.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/echo READY
+StandardOutput=file:/dev/virtio-ports/notify-host

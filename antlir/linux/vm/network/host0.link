@@ -1,0 +1,6 @@
+[Match]
+MACAddress=00:00:00:00:00:01
+
+[Link]
+NamePolicy=
+Name=host0
