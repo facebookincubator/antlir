@@ -143,9 +143,11 @@ python_unittest(
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
     },
     deps = [
+        ":artifacts_dir",
         ":subvol_utils",
         ":testlib_layer_resource",
         ":testlib_subvol_helpers",
+        ":volume_for_repo",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
     ],
 )
