@@ -185,7 +185,7 @@ def _raise(ex):  # pragma: no cover
     raise ex
 
 
-def mounts_from_meta(volume_path: Path) -> Iterator[Tuple[Path]]:
+def mounts_from_meta(volume_path: Path) -> Iterator[Mount]:
     """
     Returns a list of constructed `MountItem`s built from the a .meta/ dir
     directly under the provided path.
