@@ -16,6 +16,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
 
+from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
 from ..fs_utils import Path, temp_dir
 from ..subvol_utils import (
     Subvol,
@@ -24,6 +25,7 @@ from ..subvol_utils import (
     volume_dir,
     with_temp_subvols,
 )
+from ..volume_for_repo import get_volume_for_current_repo
 from .subvol_helpers import render_subvol
 
 
@@ -36,6 +38,11 @@ class SubvolTestCase(unittest.TestCase):
     def setUp(self):  # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
+
+        # Make sure we have a volume to work with
+        get_volume_for_current_repo(
+            ensure_per_repo_artifacts_dir_exists(sys.argv[0])
+        )
 
     @with_temp_subvols
     def test_create_and_snapshot_and_already_exists(self, temp_subvols):
@@ -384,3 +391,8 @@ class SubvolTestCase(unittest.TestCase):
             self.assertFalse(os.path.exists(ts._temp_dir / "test"))
             # Exists should be overridden
             self.assertTrue(sv._exists)
+
+    def test_temp_subvolumes_outside_volume(self):
+        with TempSubvolumes() as ts:
+            with self.assertRaises(AssertionError):
+                sv_path = ts.create("../breaking/the/law")
