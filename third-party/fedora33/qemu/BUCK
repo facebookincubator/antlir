@@ -1,8 +1,8 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file")
-# This currently is all fake in that we rely on a functional system qemu
-# installation, rather than packaging qemu in any kind of reproducible way as
-# part of this repo.
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file")
 
+# This is all here to provide pass through-logic to the host qemu
+# installation. Until we can get to the point of building qemu
+# in a clean way with this repo, we will use this mechanism.
 export_file(
     name = "qemu",
     visibility = [
@@ -12,9 +12,13 @@ export_file(
 )
 
 [
-    export_file(
+    buck_genrule(
         name = "share/qemu/{}".format(rom),
-        src = "empty",
+        out = rom,
+        # NOTE: This assumes that the host qemu installs roms
+        # to /usr/share/qemu.  That is the case for fedora33
+        # and Arch Linux as of March 2021.
+        cmd = "cp /usr/share/qemu/{} $OUT".format(rom),
         visibility = [
             "//antlir/vm/...",
             "//third-party/...",
