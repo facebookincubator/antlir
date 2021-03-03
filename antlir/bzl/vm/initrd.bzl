@@ -9,19 +9,14 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 
-VM_MODULE_LIST = [
+DEFAULT_MODULE_LIST = [
     "drivers/block/virtio_blk.ko",
     "fs/9p/9p.ko",
     "net/9p/9pnet.ko",
     "net/9p/9pnet_virtio.ko",
 ]
 
-VM_MODULE_NAMES = [
-    paths.replace_extension(paths.basename(ko), "")
-    for ko in VM_MODULE_LIST
-]
-
-def initrd(kernel):
+def initrd(kernel, module_list = None):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
     kernel in a virtual machine and setup the root disk as a btrfs seed device
@@ -32,6 +27,8 @@ def initrd(kernel):
     """
 
     name = "{}-initrd".format(kernel.uname)
+
+    module_list = module_list or DEFAULT_MODULE_LIST
 
     # This intermediate genrule is here to create a dir hierarchy
     # of kernel modules that are needed for the initrd.  This
@@ -61,7 +58,7 @@ def initrd(kernel):
             done
         """.format(
             module_layer = kernel.artifacts.modules,
-            module_list = " ".join(VM_MODULE_LIST),
+            module_list = " ".join(module_list),
         ),
         antlir_rule = "user-internal",
         visibility = [],
@@ -89,7 +86,10 @@ def initrd(kernel):
     buck_genrule(
         name = name + "--modules-load.conf",
         out = "unused",
-        cmd = "echo '{}' > $OUT".format("\n".join(VM_MODULE_NAMES)),
+        cmd = "echo '{}' > $OUT".format("\n".join([
+            paths.basename(module).rsplit(".")[0]
+            for module in module_list
+        ])),
         antlir_rule = "user-internal",
         visibility = [],
     )
