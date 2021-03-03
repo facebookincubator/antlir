@@ -11,7 +11,16 @@ kernel = fedora_kernel(
     kernel = "5.8.15-301.fc33.x86_64",
 )
 
-initrd(kernel = kernel)
+initrd(
+    kernel = kernel,
+    module_list = [
+        "drivers/block/virtio_blk.ko.xz",
+        "fs/fscache/fscache.ko.xz",
+        "fs/9p/9p.ko.xz",
+        "net/9p/9pnet.ko.xz",
+        "net/9p/9pnet_virtio.ko.xz",
+    ],
+)
 
 vm.run(
     name = "5.8.15-301.fc33.x86_64",
