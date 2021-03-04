@@ -1,4 +1,10 @@
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/linux/vm/console:defs.bzl", "console")
+load("//antlir/linux/vm/generator:defs.bzl", "generator")
+load("//antlir/linux/vm/network:defs.bzl", "network")
+load("//antlir/linux/vm/notify:defs.bzl", "notify")
+load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 
 image.layer(
     name = "fedora",
@@ -15,9 +21,40 @@ image.layer(
     ),
 )
 
+image.layer(
+    name = "fedora.vm",
+    parent_layer = ":fedora",
+    features = [
+        image.rpms_install([
+            "btrfs-progs",
+            "iproute",
+            "openssh-server",
+            "sudo",
+        ]),
+        console.autologin(),
+        network.host(),
+        generator.mounts(),
+        notify.install(),
+        ssh.test_only_login(),
+        # Set a default hostname
+        # NOTE: this will ultimately become dynamic, this is temporary
+        # to unblock work.
+        image.install("hostname", "/etc/hostname"),
+        # We want to allow logins before the system is finished booting
+        # up.
+        image.remove("/usr/lib/tmpfiles.d/systemd-nologin.conf"),
+        # systemd-networkd isn't enabled by default in fedora.
+        systemd.enable_unit("systemd-networkd.service"),
+    ],
+    build_opts = image.opts(
+        rpm_repo_snapshot = "//snapshot:fedora33",
+    ),
+    enable_boot_target = True,
+)
+
 image.package(
-    name = "fedora.btrfs",
-    layer = ":fedora",
+    name = "fedora.vm.btrfs",
+    layer = ":fedora.vm",
     seed_device = True,
     writable_subvolume = True,
 )

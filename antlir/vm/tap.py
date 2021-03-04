@@ -34,10 +34,11 @@ class VmTap(object):
     VmTap currently requires sudo for some operations. Root is only required
     to setup the interface, afterwards QEMU can use it as an unprivileged
     user.
-    TODO: on devservers this sudo requirement is fine, but the end goal is to
-    allow completely rootless operation, in which case we will expect some
-    kind of setup code (eg twagent, docker) to create a network namespace and
-    run vmtest with CAP_NET_ADMIN to be able to configure it.
+
+    NOTE: soon, a vm environment will be introduced that runs vms inside of
+    a booted systemd-nspawn container.  This 'runtime' container will provide
+    the necessary setup mechanism for this device, rendering the setup of
+    /dev/net/tun moot.
     """
 
     netns: Unshare
@@ -89,7 +90,7 @@ class VmTap(object):
                     "-c",
                     """
     mkdir -p /dev/net
-    mknod /dev/net/tun c 10 200
+    mknod --mode=666 /dev/net/tun c 10 200
     [ -c /dev/net/tun ]
                 """,
                 ],
