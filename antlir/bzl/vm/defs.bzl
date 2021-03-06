@@ -88,7 +88,7 @@ def _build_run_target(
         bash = """
 cat > "$TMP/out" << 'EOF'
 #!/bin/sh
-set -ue -o pipefail -o noclobber
+set -ue -o noclobber
 exec $(exe {exe_target}) \
 --opts {opts_quoted} \
 {extra_args} \

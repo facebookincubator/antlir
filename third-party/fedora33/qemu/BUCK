@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "http_file")
 
 # This is all here to provide pass through-logic to the host qemu
 # installation. Until we can get to the point of building qemu
@@ -11,14 +11,79 @@ export_file(
     ],
 )
 
+http_file(
+    name = "qemu-rpm",
+    sha256 = "e8d9dd4fae5e7bf7242fdd8fd671ae66e232aa57b6fbbd8301b39e180c1d57ad",
+    urls = [
+        "https://mirrors.kernel.org/fedora/releases/33/Everything/x86_64/os/Packages/q/qemu-system-x86-core-5.1.0-5.fc33.x86_64.rpm",
+    ],
+)
+
+http_file(
+    name = "qemu-common-rpm",
+    sha256 = "eb555967bf53db6184bbeedd333b069cb405a658c0bee9e70394508c0882acba",
+    urls = [
+        "https://mirrors.kernel.org/fedora/releases/33/Everything/x86_64/os/Packages/q/qemu-common-5.1.0-5.fc33.x86_64.rpm",
+    ],
+)
+
+http_file(
+    name = "seabios-rpm",
+    sha256 = "81aa5964126ff48657616a01141cc559af99ff7a5220bb31f50208e9b09d46c5",
+    urls = [
+        "https://mirrors.kernel.org/fedora/releases/33/Everything/x86_64/os/Packages/s/seabios-bin-1.13.0-3.fc33.noarch.rpm",
+    ],
+)
+
+http_file(
+    name = "sgabios-rpm",
+    sha256 = "40af59ac7229ba71e4611a068f8298fdcd485ee7a763b1e05f55ea7277938c57",
+    urls = [
+        "https://mirrors.kernel.org/fedora/releases/33/Everything/x86_64/os/Packages/s/sgabios-bin-0.20180715git-5.fc33.noarch.rpm",
+    ],
+)
+
+http_file(
+    name = "seavgabios-rpm",
+    sha256 = "a9956d2d51a8e0f3d81282e6302c22dbf8365789770ddd7d6acde42d85401be7",
+    urls = [
+        "https://mirrors.kernel.org/fedora/releases/33/Everything/x86_64/os/Packages/s/seavgabios-bin-1.13.0-3.fc33.noarch.rpm",
+    ],
+)
+
+http_file(
+    name = "ipxe-roms-rpm",
+    sha256 = "22eb521e2287314dc681aa4add51ffe33038bdf5f174395b76f2876e1a262011",
+    urls = [
+        "https://mirrors.kernel.org/fedora/releases/33/Everything/x86_64/os/Packages/i/ipxe-roms-qemu-20200823-1.git4bd064de.fc33.noarch.rpm",
+    ],
+)
+
+# Explode all of the various rpms that contain roms we might need.
+# Unfortunately for the current list of roms, we need all of these.
+buck_genrule(
+    name = "qemu-exploded",
+    out = ".",
+    cmd = """
+        cd $OUT
+        rpm2cpio $(location :ipxe-roms-rpm) | cpio -idm
+        rpm2cpio $(location :qemu-rpm) | cpio -idm
+        rpm2cpio $(location :qemu-common-rpm) | cpio -idm
+        rpm2cpio $(location :seabios-rpm) | cpio -idm
+        rpm2cpio $(location :seavgabios-rpm) | cpio -idm
+        rpm2cpio $(location :sgabios-rpm) | cpio -idm
+        # Apparently this one doesn't exist, it's a dangling symlink in an
+        # installed system.
+        rm -r usr/share/qemu/vgabios-ati.bin
+    """
+)
+
+
 [
     buck_genrule(
         name = "share/qemu/{}".format(rom),
         out = rom,
-        # NOTE: This assumes that the host qemu installs roms
-        # to /usr/share/qemu.  That is the case for fedora33
-        # and Arch Linux as of March 2021.
-        cmd = "cp /usr/share/qemu/{} $OUT".format(rom),
+        cmd = "cp $(location :qemu-exploded)/usr/share/qemu/{} $OUT".format(rom),
         visibility = [
             "//antlir/vm/...",
             "//third-party/...",
