@@ -1,7 +1,7 @@
 {{ name }} is a character that appears in episode(s) {{ appears_in|join(", ") }} of
 the Star Wars franchise and is friends with
 {%- for friend in friends %}
- {{friend -}}
+ {{friend.name -}}
     {% if loop.length > 2 and loop.revindex0 > 1 %},
     {%- elif not loop.last %} and{%endif%}
 {%- endfor %}.

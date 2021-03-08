@@ -16,8 +16,13 @@ class RepoConfigTestCase(unittest.TestCase):
     def _test_repo_config_json(self, **kwargs) -> str:
         # These are just hand constructed values that have no
         # real meaning outside of the context of this test case.
+        # NOTE: this is the config _after_ being parsed from .buckconfig, not
+        # the raw values
         defaults = {
             "artifacts_require_repo": True,
+            "artifact": {
+                "test.artifact": "//build:artifact",
+            },
             "build_appliance_default": "//build/appliance:default",
             "host_mounts_for_repo_artifacts": [],
             "rpm_installer_default": "yum",
