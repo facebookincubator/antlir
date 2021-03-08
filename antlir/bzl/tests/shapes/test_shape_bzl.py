@@ -78,6 +78,8 @@ class TestShapeBzl(unittest.TestCase):
             with self.subTest(answer=answer):
                 with self.assertRaises(Fail):
                     shape.new(t, answer=answer)
+        with self.assertRaises(Fail):
+            shape.new(t, answer=1, undefined_field="boo")
         self.assertEqual(shape.new(t, answer=42), struct(answer=42))
 
     def test_nested_simple_shape(self):

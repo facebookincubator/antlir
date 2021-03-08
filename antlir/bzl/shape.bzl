@@ -112,7 +112,6 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "python_library", "target_utils", "third_party")
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
@@ -465,6 +464,9 @@ def _new_shape(shape, **fields):
     """
     with_defaults = _shape_defaults_dict(shape)
     with_defaults.update(fields)
+    for field in fields:
+        if field not in shape.fields:
+            fail("field '{}' is not defined in the shape".format(field), attr = field)
     instance = struct(**with_defaults)
     type_error = _check_type(instance, shape)
     if type_error:

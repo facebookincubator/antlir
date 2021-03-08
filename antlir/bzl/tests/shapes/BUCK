@@ -209,15 +209,13 @@ python_unittest(
                 hashable_t,
                 name = "Stormtrooper",
                 appears_in = [1],
-                friends = [],
-                metadata = None,
             ),
             shape = hashable_t,
         ): "data.json",
         shape.render_template(
             name = "template",
             instance = shape.new(
-                hashable_t,
+                character_t,
                 name = "Stormtrooper",
                 appears_in = [
                     1,
@@ -228,11 +226,16 @@ python_unittest(
                     6,
                 ],
                 friends = [
-                    "Vader",
-                    "Palpatine",
-                    "Tarkin",
+                    shape.new(
+                        character_t.friends.item_type,
+                        name = name,
+                    )
+                    for name in [
+                        "Vader",
+                        "Palpatine",
+                        "Tarkin",
+                    ]
                 ],
-                metadata = None,
             ),
             shape = hashable_t,
             template = ":example-template",
@@ -248,8 +251,6 @@ python_unittest(
                 hashable_t,
                 name = "Stormtrooper",
                 appears_in = [1],
-                friends = [],
-                metadata = None,
             ),
             module = "data",
             shape = hashable_t,

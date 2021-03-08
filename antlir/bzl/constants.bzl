@@ -105,6 +105,7 @@ def _get_artifact_key_to_path():
 # Don't be careless.
 repo_config_t = shape.shape(
     artifacts_require_repo = bool,
+    artifact = shape.dict(str, str),
     build_appliance_default = str,
     host_mounts_allowed_in_targets = shape.field(shape.list(str), optional = True),
     host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
