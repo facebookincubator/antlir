@@ -1,6 +1,6 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:systemd.bzl", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
+load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/foreign/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:busybox.bzl", "busybox")
 
@@ -36,16 +36,7 @@ image.layer(
             src_path = "/usr/sbin/busybox",
         ),
         systemd_debug,
-        image.ensure_dirs_exist(paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service.d")),
-        image.install(
-            "debug-shell.conf",
-            paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service.d", "debug-shell.conf"),
-        ),
-        image.ensure_dirs_exist(paths.join(SYSTEMD_PROVIDER_ROOT, "initrd-cleanup.service.d")),
-        image.install(
-            "initrd-cleanup.conf",
-            paths.join(SYSTEMD_PROVIDER_ROOT, "initrd-cleanup.service.d", "initrd-cleanup.conf"),
-        ),
+        systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
     ],
 )
 

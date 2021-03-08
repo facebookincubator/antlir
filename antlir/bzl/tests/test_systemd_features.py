@@ -16,13 +16,18 @@ ADMIN_ROOT = Path("/etc/systemd/system")
 TMPFILES_ROOT = Path("/etc/tmpfiles.d")
 
 # tuple of the form:
-# ( <unit name>, <enabled target>, <masked bool> )
+# ( <unit name>, <enabled target>, <masked bool>, <dropin name>)
 unit_test_specs = [
-    ("cheese-file.service", "default.target", False),
-    ("cheese-export.service", "sysinit.target", False),
-    ("cheese-export-with-dest.service", "default.target", False),
-    ("cheese-generated.service", None, False),
-    ("cheese-source.service", None, True),
+    ("cheese-file.service", "default.target", False, "cheese-dropin.conf"),
+    ("cheese-export.service", "sysinit.target", False, "cheese-dropin.conf"),
+    (
+        "cheese-export-with-dest.service",
+        "default.target",
+        False,
+        "cheese-dropin-with-dest.conf",
+    ),
+    ("cheese-generated.service", None, False, "cheese-dropin.conf"),
+    ("cheese-source.service", None, True, "cheese-dropin.conf"),
 ]
 
 
@@ -70,7 +75,7 @@ class TestSystemdFeatures(unittest.TestCase):
                 )
 
     def test_units_masked(self):
-        for unit, _, masked in unit_test_specs:
+        for unit, _, masked, *_ in unit_test_specs:
             if masked:
                 masked_unit = ADMIN_ROOT / unit
 
@@ -80,3 +85,8 @@ class TestSystemdFeatures(unittest.TestCase):
         self.assertEqual(
             os.readlink(TMPFILES_ROOT / "testconfig.conf"), b"../../dev/null"
         )
+
+    def test_dropins(self):
+        for unit, _, _, dropin in unit_test_specs:
+            dropin_file = PROV_ROOT / (unit + ".d") / dropin
+            self.assertTrue(os.path.exists(dropin_file), dropin_file)

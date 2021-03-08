@@ -117,6 +117,17 @@ EOF
     """,
 )
 
+export_file(name = "cheese-dropin.conf")
+
+buck_genrule(
+    name = "cheese-dropin-generator",
+    out = "dir",
+    bash = """
+    mkdir -p ${OUT}
+    cp $(location :cheese-dropin.conf) $OUT/
+    """,
+)
+
 image.layer(
     name = "systemd_feature-layer",
     parent_layer = REPO_CFG.build_appliance_default,
@@ -127,6 +138,11 @@ image.layer(
             dest = "cheese-export-with-dest.service",
         ),
         systemd.enable_unit("cheese-export-with-dest.service"),
+        systemd.install_dropin(
+            "cheese-dropin.conf",
+            "cheese-export-with-dest.service",
+            dest = "cheese-dropin-with-dest.conf",
+        ),
 
         # A target with no dest and enabled in a non-default target
         systemd.install_unit(":cheese-export.service"),
@@ -134,21 +150,34 @@ image.layer(
             "cheese-export.service",
             target = "sysinit.target",
         ),
+        systemd.install_dropin(":cheese-dropin.conf", "cheese-export.service"),
 
         # Local file syntax sugar with no dest
         systemd.install_unit("cheese-file.service"),
         systemd.enable_unit("cheese-file.service"),
+        systemd.install_dropin("cheese-dropin.conf", "cheese-file.service"),
 
         # Image source from a genrule, with a path
         systemd.install_unit(image.source(
             ":cheese-generator",
             path = "cheese-generated.service",
         )),
+        systemd.install_dropin(
+            image.source(
+                ":cheese-dropin-generator",
+                path = "cheese-dropin.conf",
+            ),
+            "cheese-generated.service",
+        ),
 
         # Image source with no path
         systemd.install_unit(image.source(
             ":cheese-source.service",
         )),
+        systemd.install_dropin(
+            image.source(":cheese-dropin.conf"),
+            "cheese-source.service",
+        ),
         # Mask a unit
         systemd.mask_units(["cheese-source.service"]),
         # Mask a tmpfiles.d config
