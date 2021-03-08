@@ -3,6 +3,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/foreign/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:busybox.bzl", "busybox")
+load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 
 DEPS_TARGET = "//antlir/linux/bootloader:deps"
 
@@ -37,7 +38,9 @@ image.layer(
         ),
         systemd_debug,
         systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
+        systemd.enable_unit("debug-shell.service"),
     ],
+    build_opts = antlir_linux_build_opts(),
 )
 
 image.package(
