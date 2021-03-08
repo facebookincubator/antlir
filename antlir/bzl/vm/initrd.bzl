@@ -127,10 +127,8 @@ def initrd(kernel, module_list = None):
                 )
                 for f in ("dep", "symbols", "alias", "builtin")
             ],
-            image.ensure_dirs_exist("/usr/lib/systemd/system/systemd-tmpfiles-setup.service.d"),
-            image.install("//antlir/vm/initrd:vmtest-tmpfiles-fix.conf", "/usr/lib/systemd/system/systemd-tmpfiles-setup.service.d/vmtest-tmpfiles-fix.conf"),
-            image.ensure_dirs_exist("/usr/lib/systemd/system/systemd-tmpfiles-setup-dev.service.d"),
-            image.install("//antlir/vm/initrd:vmtest-tmpfiles-fix.conf", "/usr/lib/systemd/system/systemd-tmpfiles-setup-dev.service.d/vmtest-tmpfiles-fix.conf"),
+            systemd.install_dropin("//antlir/vm/initrd:vmtest-tmpfiles-fix.conf", "systemd-tmpfiles-setup.service"),
+            systemd.install_dropin("//antlir/vm/initrd:vmtest-tmpfiles-fix.conf", "systemd-tmpfiles-setup-dev.service"),
         ],
         visibility = [],
     )

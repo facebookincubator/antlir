@@ -13,6 +13,16 @@ PROVIDER_ROOT = "/usr/lib/systemd/system"
 ADMIN_ROOT = "/etc/systemd/system"
 TMPFILES_ROOT = "/etc/tmpfiles.d"
 
+# This is obviously not an exhaustive list, but are the only unit types that we
+# care about at the moment
+_ALLOWED_UNIT_SUFFIXES = (
+    ".mount",
+    ".path",
+    ".service",
+    ".target",
+    ".timer",
+)
+
 def _fail_if_path(thing, monkeymsg):
     """ If thing is a path do a big ole fail and prepend the monkey message for
         helping the human with some context in the fail message.
@@ -21,6 +31,11 @@ def _fail_if_path(thing, monkeymsg):
         fail(monkeymsg + "({}) is a path, that is not allowed".format(thing))
     else:
         return thing
+
+def _assert_unit_suffix(unit):
+    _, extension = paths.split_extension(unit)
+    if extension not in _ALLOWED_UNIT_SUFFIXES:
+        fail("{} is not a valid unit name (unsupported suffix)".format(unit))
 
 # Generate an image feature that masks the specified systemd units/configs
 def _mask_impl(
@@ -104,7 +119,7 @@ def _install_unit(
         # the `install_root` parameter.
         dest = None,
 
-        # The dir to install the sysemd unit into.  In most cases this doesn't need
+        # The dir to install the systemd unit into.  In most cases this doesn't need
         # to be changed.
         install_root = PROVIDER_ROOT):
     # We haven't been provided an explicit dest so let's try and derive one from the
@@ -131,11 +146,67 @@ def _install_unit(
             fail("Unable to derive `dest` from source: " + source)
 
     _fail_if_path(dest, "Install Unit Dest")
+    _assert_unit_suffix(dest)
 
     return image.install(
         source,
         paths.join(install_root, dest),
     )
+
+def _install_dropin(
+        # The source for the unit to be installed. This can be one of:
+        #   - A Buck target definition, ie: //some/dir:target or :local-target.
+        #   - A filename relative to the current TARGETS file.
+        source,
+        # The unit that this dropin should affect.
+        unit,
+        # The destination config name. This should only be a single filename, not a full path.
+        dest = None,
+        # The dir to install the dropin into. In most cases this doesn't need
+        # to be changed.
+        install_root = PROVIDER_ROOT):
+    _assert_unit_suffix(unit)
+
+    # We haven't been provided an explicit dest so let's try and derive one from the
+    # source
+    if dest == None:
+        if types.is_string(source):
+            if ":" in source:
+                # `source` appears to be a target, lets see if we can derive the base
+                # filename from it and use it as dest.
+                dest = target_utils.parse_target(source).name
+            else:
+                # If it's not a buck target name but it's a string, then we
+                # must assume it's a file path that will ulimately be exported
+                # as a target via `maybe_export_file`.
+                dest = paths.basename(source)
+
+        elif source.path != None:
+            # use the `path` part of what should be an `image.source`
+            dest = paths.basename(source.path)
+        elif source.source != None:
+            # use the `source` part of what should be an `image.source`
+            dest = target_utils.parse_target(source.source).name
+        else:
+            fail("Unable to derive `dest` from source: " + source)
+
+        # for the auto determined dest name, append the right suffix
+        if not dest.endswith(".conf"):
+            dest += ".conf"
+    else:
+        # if given explicitly, a user must give the right name
+        if not dest.endswith(".conf"):
+            fail("dropin files must have the suffix '.conf'")
+
+    _fail_if_path(dest, "Install Dropin Dest")
+
+    return [
+        image.ensure_subdirs_exist(install_root, unit + ".d"),
+        image.install(
+            source,
+            paths.join(install_root, unit + ".d", dest),
+        ),
+    ]
 
 def _set_default_target(
         # An existing systemd target to be set as the default
@@ -242,6 +313,7 @@ def _mount_unit_file(name, mount):
 systemd = struct(
     enable_unit = _enable_unit,
     install_unit = _install_unit,
+    install_dropin = _install_dropin,
     mask_tmpfiles = _mask_tmpfiles,
     mask_units = _mask_units,
     set_default_target = _set_default_target,
