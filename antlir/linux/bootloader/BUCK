@@ -2,6 +2,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_sh_test")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/linux:defs.bzl", "linux")
+load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 load(":initrd_release.bzl", "initrd_release")
 load(":systemd.bzl", "clone_systemd")
 
@@ -14,6 +15,7 @@ image.layer(
             "systemd-udev",
         ]),
     ],
+    build_opts = antlir_linux_build_opts(),
 )
 
 # Generate /etc/initrd-release based on scm/fbpkg revision info
@@ -51,7 +53,12 @@ image.layer(
         # explicitly enable systemd-networkd to configure the network links
         # early in boot
         systemd.enable_unit("systemd-networkd.service"),
+        systemd.install_dropin(
+            "dropins/udevd-before-trigger.conf",
+            unit = "systemd-udevd.service",
+        ),
     ],
+    build_opts = antlir_linux_build_opts(),
 )
 
 # CPIO archive to which environment specific overlays are appended. For
