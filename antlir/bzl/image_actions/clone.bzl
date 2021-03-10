@@ -92,7 +92,7 @@ metadata to a deterministic state, while the state of the on-disk metadata in
 
     return target_tagger_to_feature(
         target_tagger,
-        items = struct(clone = [shape.as_dict(clone)]),
+        items = struct(clone = [clone]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:clone"],
     )
