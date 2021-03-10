@@ -15,10 +15,12 @@ def _install():
         image.ensure_dirs_exist("/tmp"),
         image.ensure_dirs_exist("/usr/bin"),
         image.ensure_dirs_exist("/usr/lib"),
+        image.ensure_dirs_exist("/usr/lib64"),
         image.ensure_dirs_exist("/var"),
         image.symlink_dir("/usr/bin", "/bin"),
         image.symlink_dir("/usr/bin", "/sbin"),
         image.symlink_dir("/usr/lib", "/lib"),
+        image.symlink_dir("/usr/lib64", "/lib64"),
         image.symlink_dir("/run", "/var/run"),
     ]
 

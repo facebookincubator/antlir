@@ -21,6 +21,7 @@ python_unittest(
     srcs = ["test_extracted.py"],
     resources = {
         layer_resource(":extracted"): "layer",
+        layer_resource(REPO_CFG.build_appliance_default): "source",
     },
     deps = [
         "//antlir:fs_utils",
