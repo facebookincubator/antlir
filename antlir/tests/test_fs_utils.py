@@ -133,6 +133,14 @@ class TestFsUtils(unittest.TestCase):
             target.touch()
             self.assertTrue(link.islink())
 
+    def test_path_readlink(self):
+        with temp_dir() as td:
+            target = td / "target"
+            link = td / "link"
+            os.symlink(target, link)
+
+            self.assertEqual(target, link.readlink())
+
     def test_path_wait_for(self):
         with tempfile.TemporaryDirectory() as td:
             to_wait_for = Path(td) / "will_you_wait_for_me"

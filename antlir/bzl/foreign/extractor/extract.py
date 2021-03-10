@@ -35,10 +35,21 @@ def parse(path: Path, opts: ExtractorOpts) -> Set[str]:
         for segment in _elf.iter_segments():
             if isinstance(segment, InterpSegment):
                 # This is the interpreter
-                interp = opts.src_dir / Path(segment.get_interp_name()[1:])
+                interp = Path(segment.get_interp_name())
+                interpdir = interp.dirname()
+                # Resolve to the symlinks for the common case that the
+                # interpreter is in /lib64 which is actually a symlink to
+                # /usr/lib64
+                if interpdir.islink():
+                    interpdir = interpdir.realpath()
+                    interp = interpdir / interp.basename()
+                if os.path.isabs(interp):
+                    interp = interp[1:]
+                interp = opts.src_dir / interp
+                interpdir = opts.src_dir / interpdir[1:]
 
                 # Add the interp directory as a search path
-                opts.search.add(interp.dirname())
+                opts.search.add(interpdir)
                 # Add the interpreter as a dependency
                 deps.add(interp)
 
