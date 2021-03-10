@@ -158,3 +158,10 @@ vm.python_unittest(
         devel = True,
     ),
 )
+
+vm.rust_unittest(
+    name = "rust",
+    srcs = ["rust_test.rs"],
+    crate_root = "rust_test.rs",
+    env = test_env_vars,
+)

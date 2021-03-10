@@ -348,6 +348,10 @@ def _impl_python_unittest(
 def _python_unittest(*args, **kwargs):
     _wrap_internal(_impl_python_unittest, args, kwargs)
 
+def _rust_unittest(*args, tags = None, **kwargs):
+    kwargs["labels"] = tags
+    _wrap_internal(native.rust_test, args, kwargs)
+
 # Use = in the default filename to avoid clashing with RPM names.
 # The constant must match `update_allowed_versions.py`.
 # Omits `_wrap_internal` due to perf paranoia -- we have a callsite per RPM.
@@ -460,6 +464,7 @@ shim = struct(
     python_binary = _python_binary,
     python_library = _python_library,
     python_unittest = _python_unittest,
+    rust_unittest = _rust_unittest,
     rpm_vset = _rpm_vset,  # Not wrapped due to perf paranoia.
     target_utils = struct(
         parse_target = _parse_target,
