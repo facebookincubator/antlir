@@ -61,13 +61,14 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":types.bzl", "api")
 
 _RULE_TO_TEST_TYPE = {
     cpp_unittest: "gtest",
     python_unittest: "pyunit",
+    rust_unittest: "rust",
 }
 
 def _build_run_target(
@@ -168,6 +169,9 @@ def _vm_unittest(
 
     # Build the actual unit test binary/target here
     actual_test_binary = helpers.hidden_test_name(name)
+    if unittest_rule == rust_unittest:
+        # otherwise the linter complains that the crate is not snake_case
+        actual_test_binary = actual_test_binary.lower().replace("--", "-")
     unittest_rule(
         name = actual_test_binary,
         tags = actual_test_tags,
@@ -196,8 +200,10 @@ def _vm_unittest(
             "--test-binary $(location {})".format(shell.quote(":" + actual_test_binary)),
             "--test-binary-image $(location {})".format(shell.quote(":" + actual_test_image)),
             # Always enable debug + console logging for better debugging
-            "--debug",
+            # --append-console is a tricky one: it has to be before --debug so that any
+            # test case name is not interpreted as a file to path for the console
             "--append-console",
+            "--debug",
         ] + [
             # Manually extract any environment variables set and format
             # them into `--setenv NAME=VALUE`. THese are passed during the call to
@@ -286,6 +292,12 @@ def _vm_python_unittest(
         **kwargs
     )
 
+def _vm_rust_unittest(
+        name,
+        vm_opts = None,
+        **kwargs):
+    _vm_unittest(name, rust_unittest, vm_opts = vm_opts, **kwargs)
+
 def _vm_multi_kernel_unittest(
         name,
         vm_unittest,
@@ -351,6 +363,7 @@ vm = struct(
         python_unittest = _vm_multi_kernel_python_unittest,
     ),
     python_unittest = _vm_python_unittest,
+    rust_unittest = _vm_rust_unittest,
     # API export for building vm_opt_t and related types
     types = api,
     run = _build_run_target,
