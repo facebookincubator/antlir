@@ -137,7 +137,7 @@ binary to be unusable in image tests in @mode/dev.
     install_files = shape.new(install_files_t, **install_spec)
     return target_tagger_to_feature(
         target_tagger,
-        items = struct(install_files = [shape.as_dict(install_files)]),
+        items = struct(install_files = [install_files]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:install"],
     )
@@ -188,7 +188,7 @@ image) is used. The default for `user` and `group` is `root`.
     install_files = shape.new(install_files_t, **install_spec)
     return target_tagger_to_feature(
         target_tagger,
-        items = struct(install_files = [shape.as_dict(install_files)]),
+        items = struct(install_files = [install_files]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:install"],
     )

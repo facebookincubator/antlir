@@ -31,7 +31,7 @@ though this can be avoided by setting `must_exist` to `False`.
     )
     return target_tagger_to_feature(
         new_target_tagger(),
-        items = struct(remove_paths = [shape.as_dict(remove_spec)]),
+        items = struct(remove_paths = [remove_spec]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:remove"],
     )
