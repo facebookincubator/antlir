@@ -88,6 +88,7 @@ python_binary(
     name = "run",
     srcs = ["run.py"],
     main_module = "antlir.nspawn_in_subvol.run",
+    visibility = ["PUBLIC"],
     deps = [
         ":args",
         ":cmd",
@@ -159,6 +160,7 @@ python_binary(
     name = "run-test",
     srcs = ["run_test.py"],
     main_module = "antlir.nspawn_in_subvol.run_test",
+    visibility = ["PUBLIC"],
     deps = [
         ":args",
         ":cmd",

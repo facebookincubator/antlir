@@ -231,7 +231,15 @@ def _wrap_internal(fn, args, kwargs):
             "Bad value {}, must be one of {}".format(rule_type, _ALLOWED_RULES),
             _RULE_TYPE_KWARG,
         )
-    kwargs["visibility"] = _normalize_visibility(kwargs.pop("visibility", None))
+
+    # Antlir build outputs should not be visible outside of antlir by default. This
+    # helps prevent our abstractions from leaking into other codebases as Antlir
+    # becomes more widely adopted.
+    kwargs["visibility"] = _normalize_visibility(kwargs.pop("visibility", None)) + [
+        "//antlir/...",
+        "//bot_generated/antlir/...",
+    ]
+
     fn(*args, **kwargs)
 
 def _command_alias(*args, **kwargs):

@@ -22,6 +22,7 @@ buck_genrule(
         )
         for rom in roms
     ]),
+    visibility = ["PUBLIC"],
 )
 
 python_library(
@@ -76,6 +77,7 @@ python_binary(
         "run.py",
     ],
     main_module = "antlir.vm.run",
+    visibility = ["PUBLIC"],
     deps = [
         ":common",
         ":vm",
@@ -100,6 +102,10 @@ python_library(
 export_file(
     name = "mount-generator",
     src = "mount-generator",
+    visibility = [
+        "//images/base:",
+        "//tupperware/image/vmtest/impl:",
+    ],
 )
 
 python_binary(
@@ -108,6 +114,7 @@ python_binary(
         "vmtest.py",
     ],
     main_module = "antlir.vm.vmtest",
+    visibility = ["PUBLIC"],
     deps = [
         ":common",
         ":share",

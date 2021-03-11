@@ -13,7 +13,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
@@ -78,6 +78,7 @@ def private_image_rpmbuild_impl(
         setup_features = None,
         # A wrapper command to run rpmbuild instead of running it standalone
         wrapper_cmd = None,
+        visibility = None,
         **image_layer_kwargs):
     """
     Implementation of image_rpmbuild, see docs in `image_rpmbuild`.
@@ -94,7 +95,7 @@ def private_image_rpmbuild_impl(
             tar --sort=name --mtime=2018-01-01 --owner=0 --group=0 \
                 --numeric-owner -C $(location {source}) -czf "$OUT" .
         '''.format(source = maybe_export_file(source)),
-        visibility = [],
+        visibility = get_visibility(visibility, source_tarball),
         antlir_rule = "user-internal",
     )
 
@@ -115,7 +116,7 @@ def private_image_rpmbuild_impl(
             image_ensure_subdirs_exist("/rpmbuild", "SPECS"),
             image_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
         ] + (setup_features or []),
-        visibility = [],
+        visibility = get_visibility(visibility, setup_layer),
         antlir_rule = "user-internal",
     )
 
@@ -151,6 +152,7 @@ def private_image_rpmbuild_impl(
             shadow_proxied_binaries = True,
         ),
         antlir_rule = "user-internal",
+        visibility = get_visibility(visibility, install_deps_layer),
         **image_layer_kwargs
     )
 
@@ -173,6 +175,7 @@ def private_image_rpmbuild_impl(
             "{}/SPECS/specfile.spec".format(rpmbuild_dir),
         ],
         antlir_rule = "user-facing",
+        visibility = get_visibility(visibility, build_layer),
         **image_layer_kwargs
     )
 
@@ -212,6 +215,7 @@ def private_image_rpmbuild_impl(
             signer_target = signer,
         ),
         antlir_rule = "user-facing",
+        visibility = get_visibility(visibility, name),
     )
 
 # You typically don't need this if you're installing an RPM signed with a key

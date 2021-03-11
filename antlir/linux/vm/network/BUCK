@@ -2,8 +2,10 @@ load("//antlir/bzl:oss_shim.bzl", "export_file")
 
 export_file(
     name = "host0.link",
+    visibility = ["PUBLIC"],
 )
 
 export_file(
     name = "host0.network",
+    visibility = ["PUBLIC"],
 )

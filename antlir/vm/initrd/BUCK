@@ -1,6 +1,12 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get")
 
-[export_file(name = f) for f in glob([
+[export_file(
+    name = f,
+    visibility = [
+        kernel_get.base_target + "/...",
+        "//scripts/dschatzberg/vm:",
+    ],
+) for f in glob([
     "*.service",
     "*.mount",
     "*.conf",
