@@ -197,6 +197,7 @@ python_unittest(
 python_library(
     name = "artifacts_dir",
     srcs = ["artifacts_dir.py"],
+    visibility = ["PUBLIC"],
     deps = [":fs_utils"],
 )
 
@@ -458,6 +459,7 @@ python_library(
 python_library(
     name = "shape",
     srcs = ["shape.py"],
+    visibility = ["PUBLIC"],
     deps = [
         ":find_built_subvol",
         ":fs_utils",
