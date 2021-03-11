@@ -10,4 +10,5 @@ export_file(
 export_file(
     name = "pubkey",
     src = "id_ecdsa.pub",
+    visibility = ["PUBLIC"],
 )

@@ -3,4 +3,5 @@ load("//antlir/bzl:oss_shim.bzl", "export_file")
 export_file(
     name = "autologin-root.conf",
     src = "autologin-root.conf",
+    visibility = ["PUBLIC"],
 )

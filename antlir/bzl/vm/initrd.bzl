@@ -5,7 +5,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 
@@ -16,7 +16,7 @@ DEFAULT_MODULE_LIST = [
     "net/9p/9pnet_virtio.ko",
 ]
 
-def initrd(kernel, module_list = None):
+def initrd(kernel, module_list = None, visibility = None):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
     kernel in a virtual machine and setup the root disk as a btrfs seed device
@@ -35,8 +35,9 @@ def initrd(kernel, module_list = None):
     # provides a single dir that can be cloned into the initrd
     # layer and allows for kernel modules that might be missing
     # from different kernel builds.
+    kernel_modules = name + "--modules"
     buck_genrule(
-        name = name + "--modules",
+        name = kernel_modules,
         out = ".",
         cmd = """
             mkdir -p $OUT
@@ -61,7 +62,7 @@ def initrd(kernel, module_list = None):
             module_list = " ".join(module_list),
         ),
         antlir_rule = "user-internal",
-        visibility = [],
+        visibility = get_visibility(visibility, kernel_modules),
     )
 
     systemd.units.mount_file(
@@ -83,19 +84,21 @@ def initrd(kernel, module_list = None):
     )
     mount_unit_name = systemd.escape("/sysroot/usr/lib/modules/{}.mount".format(kernel.uname), path = True)
 
+    kernel_modules_load = name + "--modules-load.conf"
     buck_genrule(
-        name = name + "--modules-load.conf",
+        name = kernel_modules_load,
         out = "unused",
         cmd = "echo '{}' > $OUT".format("\n".join([
             paths.basename(module).rsplit(".")[0]
             for module in module_list
         ])),
         antlir_rule = "user-internal",
-        visibility = [],
+        visibility = get_visibility(visibility, kernel_modules_load),
     )
 
+    kernel_layer = name + "--layer"
     image.layer(
-        name = name + "--layer",
+        name = kernel_layer,
         features = [
             image.ensure_dirs_exist("/usr/lib/systemd/system"),
             # mount /dev/vda at /sysroot, followed by seedroot units to make it
@@ -130,14 +133,15 @@ def initrd(kernel, module_list = None):
             systemd.install_dropin("//antlir/vm/initrd:vmtest-tmpfiles-fix.conf", "systemd-tmpfiles-setup.service"),
             systemd.install_dropin("//antlir/vm/initrd:vmtest-tmpfiles-fix.conf", "systemd-tmpfiles-setup-dev.service"),
         ],
-        visibility = [],
+        visibility = get_visibility(visibility, kernel_layer),
     )
 
+    kernel_append = name + "--append.cpio.gz"
     image.package(
-        name = name + "--append.cpio.gz",
+        name = kernel_append,
         layer = ":" + name + "--layer",
         format = "cpio.gz",
-        visibility = [],
+        visibility = get_visibility(visibility, kernel_append),
     )
 
     # Form the vmtest initrd by concatenating vmtest features to the base
@@ -152,11 +156,14 @@ def initrd(kernel, module_list = None):
                 > $OUT
             """.format(name),
         antlir_rule = "user-internal",
+        visibility = get_visibility(visibility, name),
     )
 
+    kernel_debug = name + "-debug"
     buck_genrule(
-        name = name + "-debug",
+        name = kernel_debug,
         out = "initrd.cpio.gz",
         cmd = "cat $(location :{}) $(location //antlir/linux/bootloader/debug:debug-append.cpio.gz) > $OUT".format(name),
         antlir_rule = "user-internal",
+        visibility = get_visibility(visibility, kernel_debug),
     )

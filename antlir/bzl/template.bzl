@@ -5,12 +5,13 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:oss_shim.bzl", "python_binary")
+load("//antlir/bzl:oss_shim.bzl", "get_visibility", "python_binary")
 
 def template(
         name,
         main,
-        includes = None):
+        includes = None,
+        visibility = None):
     """
 Create a template target from jinaj2 template files.
 The named target is a python_binary that renders templates from JSON data
@@ -34,4 +35,5 @@ from / include any of the templates listed in `includes`.
         deps = ["//antlir:render_template"],
         base_module = "antlir.templates",
         resources = resources,
+        visibility = get_visibility(visibility, name),
     )
