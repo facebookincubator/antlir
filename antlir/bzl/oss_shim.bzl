@@ -115,3 +115,4 @@ rpm_vset = shim.rpm_vset
 rust_unittest = shim.rust_unittest
 target_utils = shim.target_utils
 third_party = shim.third_party
+vm_image_path = shim.vm_image_path

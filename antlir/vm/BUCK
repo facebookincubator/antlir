@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party", "vm_image_path")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/vm:defs.bzl", "vm")
 
@@ -102,10 +102,7 @@ python_library(
 export_file(
     name = "mount-generator",
     src = "mount-generator",
-    visibility = [
-        "//images/base:",
-        "//tupperware/image/vmtest/impl:",
-    ],
+    visibility = [vm_image_path],
 )
 
 python_binary(
