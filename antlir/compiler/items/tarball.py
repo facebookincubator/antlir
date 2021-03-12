@@ -15,18 +15,20 @@ from antlir.fs_utils import Path, generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
-from pydantic import validator
 
-from .common import ImageItem, LayerOpts, make_path_normal_relative
+from .common import (
+    ImageItem,
+    LayerOpts,
+    make_path_normal_relative,
+    validate_path_field_normal_relative,
+)
 from .tarball_t import tarball_t
 
 
 class TarballItem(tarball_t, ImageItem):
     from_target: str
 
-    _normalize_into_dir = validator("into_dir", allow_reuse=True)(
-        make_path_normal_relative
-    )
+    _normalize_into_dir = validate_path_field_normal_relative("into_dir")
 
     def provides(self):
         # We own ZST decompression, tarfile handles other gz, bz2, etc.
