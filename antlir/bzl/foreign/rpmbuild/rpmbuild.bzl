@@ -84,6 +84,8 @@ def private_image_rpmbuild_impl(
     Implementation of image_rpmbuild, see docs in `image_rpmbuild`.
     """
 
+    visibility = get_visibility(visibility, name)
+
     # Future: We tar the source directory and untar it inside the subvolume
     # before building because the "install_*_trees" feature does not yet
     # exist.
@@ -95,7 +97,7 @@ def private_image_rpmbuild_impl(
             tar --sort=name --mtime=2018-01-01 --owner=0 --group=0 \
                 --numeric-owner -C $(location {source}) -czf "$OUT" .
         '''.format(source = maybe_export_file(source)),
-        visibility = get_visibility(visibility, source_tarball),
+        visibility = [],
         antlir_rule = "user-internal",
     )
 
@@ -116,7 +118,7 @@ def private_image_rpmbuild_impl(
             image_ensure_subdirs_exist("/rpmbuild", "SPECS"),
             image_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
         ] + (setup_features or []),
-        visibility = get_visibility(visibility, setup_layer),
+        visibility = [],
         antlir_rule = "user-internal",
     )
 
@@ -152,7 +154,7 @@ def private_image_rpmbuild_impl(
             shadow_proxied_binaries = True,
         ),
         antlir_rule = "user-internal",
-        visibility = get_visibility(visibility, install_deps_layer),
+        visibility = [],
         **image_layer_kwargs
     )
 
@@ -175,7 +177,7 @@ def private_image_rpmbuild_impl(
             "{}/SPECS/specfile.spec".format(rpmbuild_dir),
         ],
         antlir_rule = "user-facing",
-        visibility = get_visibility(visibility, build_layer),
+        visibility = visibility,
         **image_layer_kwargs
     )
 
@@ -215,7 +217,7 @@ def private_image_rpmbuild_impl(
             signer_target = signer,
         ),
         antlir_rule = "user-facing",
-        visibility = get_visibility(visibility, name),
+        visibility = visibility,
     )
 
 # You typically don't need this if you're installing an RPM signed with a key
