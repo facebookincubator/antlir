@@ -13,7 +13,7 @@ already been installed.  This is known as dependency order or topological
 sort.
 """
 from collections import defaultdict
-from typing import Iterator, Union, NamedTuple, Dict, Callable, Set
+from typing import Hashable, Iterator, NamedTuple, Dict, Set
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
@@ -21,7 +21,7 @@ from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 
 from .requires_provides import (
-    ProvidesPathObject,
+    Provider,
     ProvidesDirectory,
     PathRequiresPredicate,
 )
@@ -39,7 +39,7 @@ from .requires_provides import (
 
 
 class ItemProv(NamedTuple):
-    provides: ProvidesPathObject
+    provides: Provider
     item: ImageItem
 
 
@@ -55,7 +55,6 @@ class ItemReqsProvs(NamedTuple):
     item_reqs: Set[ItemReq]
 
 
-ReqOrProv = Union[ProvidesPathObject, PathRequiresPredicate]
 # See the comments in _add_to_prov_map
 _ALLOWED_COLLISIONS = frozenset({EnsureDirsExistItem})
 
@@ -70,33 +69,43 @@ class ValidatedReqsProvs:
      - Every Requires is matched by a Provides at that path.
     """
 
+    path_to_reqs_provs: Dict[Hashable, ItemReqsProvs]
+
     def __init__(self, items: Set[ImageItem]):
         self.path_to_reqs_provs = {}
 
         for item in items:
-            path_to_req_or_prov = {}  # Checks req/prov are sane within an item
+            # One ImageItem should not emit provides / requires clauses that
+            # collide on the path.  Such duplication can always be avoided by
+            # the item not emitting the "requires" clause that it knows it
+            # provides.  Failing to enforce this invariant would make it easy to
+            # bloat dependency graphs unnecessarily.
+            req_keys = set()
+
             for req in item.requires():
-                self._add_to_map(
-                    path_to_req_or_prov,
-                    req,
-                    item,
-                    add_to_map_fn=self._add_to_req_map,
+                key = req.key()
+                assert (
+                    key not in req_keys
+                ), f"{item}: {req} collides in {req_keys}"
+                req_keys.add(key)
+
+                self._get_item_req_provs(key).item_reqs.add(
+                    ItemReq(requires=req, item=item)
                 )
             for prov in item.provides():
-                self._add_to_map(
-                    path_to_req_or_prov,
-                    prov,
-                    item,
-                    add_to_map_fn=self._add_to_prov_map,
-                )
+                key = prov.req.key()
+                assert (
+                    key not in req_keys
+                ), f"{item}: {req} collides in {req_keys}"
+                req_keys.add(key)
+
+                self._add_to_prov_map(prov, item)
 
         # Validate that all requirements are satisfied.
         for path, reqs_provs in self.path_to_reqs_provs.items():
             for item_req in reqs_provs.item_reqs:
                 for item_prov in reqs_provs.item_provs:
-                    if item_prov.provides.matches(
-                        self.path_to_reqs_provs, item_req.requires
-                    ):
+                    if item_prov.provides.provides(item_req.requires):
                         break
                 else:
                     raise RuntimeError(
@@ -104,16 +113,13 @@ class ValidatedReqsProvs:
                         f"matches the requirement {item_req}"
                     )
 
-    @staticmethod
-    def _add_to_req_map(
-        reqs_provs: ItemReqsProvs, req: PathRequiresPredicate, item: ImageItem
-    ):
-        reqs_provs.item_reqs.add(ItemReq(requires=req, item=item))
+    def _get_item_req_provs(self, key: str) -> ItemReqsProvs:
+        return self.path_to_reqs_provs.setdefault(
+            key,
+            ItemReqsProvs(item_provs=set(), item_reqs=set()),
+        )
 
-    @staticmethod
-    def _add_to_prov_map(
-        reqs_provs: ItemReqsProvs, prov: ProvidesPathObject, item: ImageItem
-    ):
+    def _add_to_prov_map(self, prov: Provider, item: ImageItem):
         """For the majority of cases, we do not allow two `provides` to collide
         on the same path.
 
@@ -129,6 +135,8 @@ class ValidatedReqsProvs:
         were certain an EnsureDirsExist also existed for the path, which the
         data model is not currently set up to support.
         """
+        reqs_provs = self._get_item_req_provs(prov.req.key())
+
         new_item_prov = ItemProv(provides=prov, item=item)
         if reqs_provs.item_provs:
             collision_provs = [
@@ -145,31 +153,6 @@ class ValidatedReqsProvs:
                     "provide the same path"
                 )
         reqs_provs.item_provs.add(new_item_prov)
-
-    def _add_to_map(
-        self,
-        path_to_req_or_prov: Dict[str, ReqOrProv],
-        req_or_prov: ReqOrProv,
-        item: ImageItem,
-        add_to_map_fn: Callable[[ItemReqsProvs, ReqOrProv, ImageItem], None],
-    ):
-        # One ImageItem should not emit provides / requires clauses that
-        # collide on the path.  Such duplication can always be avoided by
-        # the item not emitting the "requires" clause that it knows it
-        # provides.  Failing to enforce this invariant would make it easy to
-        # bloat dependency graphs unnecessarily.
-        other = path_to_req_or_prov.get(req_or_prov.path)
-        assert other is None, "Same path in {}, {}".format(req_or_prov, other)
-        path_to_req_or_prov[req_or_prov.path] = req_or_prov
-
-        add_to_map_fn(
-            self.path_to_reqs_provs.setdefault(
-                req_or_prov.path,
-                ItemReqsProvs(item_provs=set(), item_reqs=set()),
-            ),
-            req_or_prov,
-            item,
-        )
 
 
 class DependencyGraph:

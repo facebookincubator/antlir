@@ -184,7 +184,9 @@ class InstallFileItem(install_files_t, ImageItem):
         build_stat_options(self, subvol, dest, do_not_set_mode=True)
         # Group by mode to make as few shell calls as possible.
         for mode_str, modes_and_paths in itertools.groupby(
-            sorted((mode_to_str(i.mode), i.provides.path) for i in self._paths),
+            sorted(
+                (mode_to_str(i.mode), i.provides.path()) for i in self._paths
+            ),
             lambda x: x[0],
         ):
             # Batching chmod calls has the unfortunate side effect of failing
