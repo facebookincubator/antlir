@@ -15,6 +15,7 @@ from ..requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
+    Requirement,
     _normalize_path,
     require_directory,
     require_file,
@@ -30,10 +31,10 @@ class RequiresProvidesTestCase(unittest.TestCase):
     def test_path_normalization(self):
         self.assertEqual(Path("/a"), require_directory(Path("a//.")).path)
         self.assertEqual(
-            Path("/b/d"), ProvidesDirectory(path=Path("/b/c//../d")).path
+            Path("/b/d"), ProvidesDirectory(path=Path("/b/c//../d")).req.path
         )
         self.assertEqual(
-            Path("/x/y"), ProvidesFile(path=Path("///x/./y/")).path
+            Path("/x/y"), ProvidesFile(path=Path("///x/./y/")).req.path
         )
 
     def test_provides_requires(self):
@@ -53,46 +54,20 @@ class RequiresProvidesTestCase(unittest.TestCase):
         rd3 = require_directory(Path("a/b/c"))
         requires = [rf1, rf2, rf3, rd1, rd2, rd3]
 
-        # Only these will match, everything else cannot.
-        provides_matches_requires = {
-            (pf1, rf1),
-            (pf2, rf2),
-            (pf3, rf3),
-            (pd1, rd1),
-            (pd1, rd2),
-            (pd1, rd3),
-            (pd2, rd2),
-            (pd2, rd3),
-            (pd3, rd3),
-        }
-
-        # TODO: Use ValidateReqsProvs here once that's committed and tested?
-        path_to_reqs_provs = {}
-        for p_or_r in (*provides, *requires):
-            path_to_reqs_provs.setdefault(p_or_r.path, []).append(p_or_r)
-
         for p in provides:
             for r in requires:
-                # It is an error to match Provides/Requires with distinct paths
-                if p.path == r.path:
-                    self.assertEqual(
-                        (p, r) in provides_matches_requires,
-                        p.matches(path_to_reqs_provs, r),
-                        f"{p}.match({r})",
-                    )
-                else:
-                    with self.assertRaisesRegex(
-                        AssertionError, "^Tried to match .* against .*$"
-                    ):
-                        p.matches(path_to_reqs_provs, r)
+                self.assertEqual(
+                    p.req.path == r.path,
+                    p.provides(r),
+                    f"{p}.provides({r})",
+                )
 
     def test_provides_do_not_access(self):
-        with self.assertRaisesRegex(
-            AssertionError, "^predicate .* not implemented by .*$"
-        ):
-            ProvidesDoNotAccess(path=Path("//a/b")).matches(
-                {}, require_file(Path("/a/b"))
+        self.assertFalse(
+            ProvidesDoNotAccess(path=Path("//a/b")).provides(
+                require_file(Path("/a/b"))
             )
+        )
 
     def test_with_new_path(self):
         for new_path in ["b", "b/", "/b", "/../a/../b/c/.."]:
@@ -102,3 +77,17 @@ class RequiresProvidesTestCase(unittest.TestCase):
                 ),
                 ProvidesDirectory(path=Path("b")),
             )
+
+    def test_requirement_key(self):
+        with self.assertRaises(NotImplementedError):
+            Requirement(kind=None).key()
+
+    def test_path_requires_predicate_key(self):
+        p = Path("/a/b/c")
+        self.assertEquals(p, require_directory(p).key())
+        self.assertEquals(p, require_file(p).key())
+
+    def test_provides_path_object_path(self):
+        p = Path("/a/b/c")
+        self.assertEquals(p, ProvidesDirectory(p).path())
+        self.assertEquals(p, ProvidesDirectory(p).path())

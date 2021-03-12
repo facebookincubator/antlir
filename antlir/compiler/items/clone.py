@@ -44,9 +44,9 @@ class CloneItem(clone_t, ImageItem):
             self.source_layer.path(),
         )
         for p in gen_subvolume_subtree_provides(self.source_layer, img_rel_src):
-            if self.omit_outer_dir and p.path == b"/":
+            if self.omit_outer_dir and p.path() == b"/":
                 continue
-            rel_to_src = p.path.strip_leading_slashes()
+            rel_to_src = p.path().strip_leading_slashes()
             if not self.omit_outer_dir and self.pre_existing_dest:
                 rel_to_src = img_rel_src.basename() / rel_to_src
             yield p.with_new_path(self.dest / rel_to_src)

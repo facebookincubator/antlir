@@ -106,23 +106,26 @@ class DepGraphTestBase(unittest.TestCase):
             a_ln: {ade, adeg},
         }
         # [[items, requiring, it], [items, it, requires]]
-        self.path_to_reqs_provs = {
-            Path("/.meta"): _build_req_prov(
+        item_req_provs = [
+            _build_req_prov(
                 "/.meta", [], [self.provides_root], ProvidesDoNotAccess
             ),
-            Path("/"): _build_req_prov("/", [a], [self.provides_root]),
-            Path("/a"): _build_req_prov("/a", [ab, ad, a_ln], [a]),
-            Path("/a/b"): _build_req_prov("/a/b", [abc], [ab]),
-            Path("/a/b/c"): _build_req_prov("/a/b/c", [abcf], [abc]),
-            Path("/a/d"): _build_req_prov("/a/d", [ade, a_ln], [ad]),
-            Path("/a/d/e"): _build_req_prov("/a/d/e", [adeg], [ade, a_ln]),
-            Path("/a/d/e/G"): _build_req_prov(
-                "/a/d/e/G", [], [adeg], ProvidesFile
-            ),
-            Path("/a/b/c/F"): _build_req_prov(
-                "/a/b/c/F", [], [abcf], ProvidesFile
-            ),
-        }
+            _build_req_prov("/", [a], [self.provides_root]),
+            _build_req_prov("/a", [ab, ad, a_ln], [a]),
+            _build_req_prov("/a/b", [abc], [ab]),
+            _build_req_prov("/a/b/c", [abcf], [abc]),
+            _build_req_prov("/a/d", [ade, a_ln], [ad]),
+            _build_req_prov("/a/d/e", [adeg], [ade, a_ln]),
+            _build_req_prov("/a/d/e/G", [], [adeg], ProvidesFile),
+            _build_req_prov("/a/b/c/F", [], [abcf], ProvidesFile),
+        ]
+        self.path_to_reqs_provs = {}
+        for irp in item_req_provs:
+            req = {ir.requires for ir in irp.item_reqs}.union(
+                {ip.provides.req for ip in irp.item_provs}
+            )
+            assert len(req) == 1
+            self.path_to_reqs_provs[req.pop().key()] = irp
 
 
 class ValidateReqsProvsTestCase(DepGraphTestBase):
@@ -135,12 +138,15 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             def provides(self):
                 yield ProvidesDirectory(path=Path("a"))
 
-        with self.assertRaisesRegex(AssertionError, "^Same path in "):
+        with self.assertRaisesRegex(
+            AssertionError,
+            r"BadDuplicatePathItem.*PathRequiresPredicate.*collides in",
+        ):
             ValidatedReqsProvs([BadDuplicatePathItem(from_target="t")])
 
     def test_duplicate_paths_provided(self):
         with self.assertRaisesRegex(
-            RuntimeError, "^Both .* and .* from .* provide the same path$"
+            RuntimeError, r"^Both .* and .* from .* provide the same path$"
         ):
             ValidatedReqsProvs(
                 [
