@@ -17,12 +17,13 @@ from antlir.fs_utils import Path, generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
-from pydantic import root_validator, validator
+from pydantic import root_validator
 
 from .common import (
     ImageItem,
     LayerOpts,
     make_path_normal_relative,
+    validate_path_field_normal_relative,
 )
 from .symlink_t import symlink_t
 
@@ -44,9 +45,7 @@ def _make_rsync_style_dest_path(dest: str, source: str) -> str:
 
 
 class SymlinkBase(symlink_t, ImageItem):
-    _normalize_source = validator("source", allow_reuse=True, pre=True)(
-        make_path_normal_relative
-    )
+    _normalize_source = validate_path_field_normal_relative("source")
 
     @root_validator
     def dest_is_rsync_style(cls, values):  # noqa B902
