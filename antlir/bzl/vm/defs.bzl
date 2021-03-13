@@ -172,9 +172,11 @@ def _vm_unittest(
     if unittest_rule == rust_unittest:
         # otherwise the linter complains that the crate is not snake_case
         actual_test_binary = actual_test_binary.lower().replace("--", "-")
+        kwargs["labels"] = actual_test_tags  # no tags in `rust_unittest`
+    else:
+        kwargs["tags"] = actual_test_tags
     unittest_rule(
         name = actual_test_binary,
-        tags = actual_test_tags,
         visibility = [],
         antlir_rule = "user-internal",
         **kwargs
