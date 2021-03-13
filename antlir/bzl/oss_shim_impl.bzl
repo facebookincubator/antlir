@@ -356,8 +356,7 @@ def _impl_python_unittest(
 def _python_unittest(*args, **kwargs):
     _wrap_internal(_impl_python_unittest, args, kwargs)
 
-def _rust_unittest(*args, tags = None, **kwargs):
-    kwargs["labels"] = tags
+def _rust_unittest(*args, **kwargs):
     _wrap_internal(native.rust_test, args, kwargs)
 
 # Use = in the default filename to avoid clashing with RPM names.
