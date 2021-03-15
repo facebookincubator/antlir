@@ -51,6 +51,9 @@ Both arguments are mandatory:
     pre-existing directory in the image (e.g. created via
     `image.ensure_dirs_exist`), and the actual link will be placed at
     `link_name/(basename of link_target)`.
+
+This item is indempotent: it is a no-op if a symlink already exists that
+matches the spec.
     """
     return _build_symlink_feature(link_target, link_name, "symlinks_to_dirs")
 
@@ -81,5 +84,8 @@ Both arguments are mandatory:
     pre-existing directory in the image (e.g. created via
     `image.ensure_dirs_exist`), and the actual link will be placed at
     `link_name/(basename of link_target)`.
+
+This item is indempotent: it is a no-op if a symlink already exists that
+matches the spec.
     """
     return _build_symlink_feature(link_target, link_name, "symlinks_to_files")

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import (
+    EnsureDirsExistItem,
     ensure_subdirs_exist_factory,
 )
 from antlir.compiler.items.foreign_layer import ForeignLayerItem
@@ -18,7 +19,7 @@ from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
-from antlir.compiler.items.symlink import SymlinkToDirItem
+from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 
@@ -55,6 +56,144 @@ def _build_req_prov(path, req_items, prov_items, prov_t=None):
         },
         item_provs={ItemProv(prov_t(path=Path(path)), i) for i in prov_items},
     )
+
+
+class ItemProvTest(unittest.TestCase):
+    def test_no_conflict_with_dup_ensure_dirs(self):
+        self.assertFalse(
+            ItemProv(
+                provides=ProvidesDirectory(path=Path("/a/b")),
+                item=EnsureDirsExistItem(
+                    from_target="",
+                    into_dir="/a",
+                    basename="b",
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesDirectory(path=Path("/a/b")),
+                    item=EnsureDirsExistItem(
+                        from_target="",
+                        into_dir="/a",
+                        basename="b",
+                    ),
+                )
+            )
+        )
+
+    def test_no_conflict_with_dup_symlink(self):
+        self.assertFalse(
+            ItemProv(
+                provides=ProvidesDirectory(path=Path("/a/b")),
+                item=SymlinkToDirItem(
+                    from_target="", source="/x/y", dest="/a/b"
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesDirectory(path=Path("/a/b")),
+                    item=SymlinkToDirItem(
+                        from_target="", source="/x/y", dest="/a/b"
+                    ),
+                )
+            )
+        )
+        self.assertFalse(
+            ItemProv(
+                provides=ProvidesFile(path=Path("/a/b")),
+                item=SymlinkToFileItem(
+                    from_target="", source="/x/y", dest="/a/b"
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesFile(path=Path("/a/b")),
+                    item=SymlinkToFileItem(
+                        from_target="", source="/x/y", dest="/a/b"
+                    ),
+                )
+            )
+        )
+
+    def test_no_conflict_with_symlink_and_ensure_dirs(self):
+        self.assertFalse(
+            ItemProv(
+                provides=ProvidesDirectory(path=Path("/a/b")),
+                item=EnsureDirsExistItem(
+                    from_target="",
+                    into_dir="/a",
+                    basename="b",
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesDirectory(path=Path("/a/b")),
+                    item=SymlinkToDirItem(
+                        from_target="", source="/x/y", dest="/a/b"
+                    ),
+                )
+            )
+        )
+        self.assertFalse(
+            ItemProv(
+                provides=ProvidesDirectory(path=Path("/a/b")),
+                item=SymlinkToDirItem(
+                    from_target="", source="/x/y", dest="/a/b"
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesDirectory(path=Path("/a/b")),
+                    item=EnsureDirsExistItem(
+                        from_target="",
+                        into_dir="/a",
+                        basename="b",
+                    ),
+                )
+            )
+        )
+
+    def test_conflict_with_different_items(self):
+        self.assertTrue(
+            ItemProv(
+                provides=ProvidesFile(path=Path("/y/x")),
+                item=InstallFileItem(from_target="", source=_FILE1, dest="y/x"),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesFile(path=Path("/y/x")),
+                    item=SymlinkToFileItem(
+                        from_target="", source=_FILE1, dest="y/x"
+                    ),
+                )
+            )
+        )
+
+    def test_conflict_with_symlink_dest_mismatch(self):
+        self.assertTrue(
+            ItemProv(
+                provides=ProvidesFile(path=Path("/a/b")),
+                item=SymlinkToFileItem(
+                    from_target="", source="/x/y", dest="/a/b"
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesFile(path=Path("/a/b")),
+                    item=SymlinkToFileItem(
+                        from_target="", source="/x/y", dest="/d/c"
+                    ),
+                )
+            )
+        )
+        self.assertTrue(
+            ItemProv(
+                provides=ProvidesDirectory(path=Path("/a/b")),
+                item=SymlinkToDirItem(
+                    from_target="", source="/x/y", dest="/a/b"
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesDirectory(path=Path("/a/b")),
+                    item=SymlinkToDirItem(
+                        from_target="", source="/x/y", dest="/d/c"
+                    ),
+                )
+            )
+        )
 
 
 class DepGraphTestBase(unittest.TestCase):
@@ -144,9 +283,9 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         ):
             ValidatedReqsProvs([BadDuplicatePathItem(from_target="t")])
 
-    def test_duplicate_paths_provided(self):
+    def test_duplicate_paths_provided_different_types(self):
         with self.assertRaisesRegex(
-            RuntimeError, r"^Both .* and .* from .* provide the same path$"
+            AssertionError, r"^ItemProv.*should not be checked against ItemProv"
         ):
             ValidatedReqsProvs(
                 [
@@ -155,6 +294,64 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                     *ensure_subdirs_exist_factory(
                         from_target="", into_dir="/", subdirs_to_create="/y/x"
                     ),
+                ]
+            )
+
+    def test_duplicate_paths_provided(self):
+        with self.assertRaisesRegex(
+            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
+        ):
+            ValidatedReqsProvs(
+                [
+                    self.provides_root,
+                    InstallFileItem(from_target="", source=_FILE1, dest="y/x"),
+                    SymlinkToFileItem(from_target="", source="a", dest="y/x"),
+                ]
+            )
+
+    def test_path_provided_twice(self):
+        with self.assertRaisesRegex(
+            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
+        ):
+            ValidatedReqsProvs(
+                [
+                    self.provides_root,
+                    InstallFileItem(from_target="", source=_FILE1, dest="y"),
+                    InstallFileItem(from_target="", source=_FILE1, dest="y"),
+                ]
+            )
+
+    def test_duplicate_symlink_paths_provided(self):
+        ValidatedReqsProvs(
+            [
+                self.provides_root,
+                InstallFileItem(from_target="", source=_FILE1, dest="a"),
+                SymlinkToFileItem(from_target="", source="a", dest="x"),
+                SymlinkToFileItem(from_target="", source="a", dest="x"),
+            ]
+        )
+        ValidatedReqsProvs(
+            [
+                self.provides_root,
+                SymlinkToDirItem(from_target="", source="/y", dest="/y/x/z"),
+                SymlinkToDirItem(from_target="", source="/y", dest="/y/x/z"),
+                *ensure_subdirs_exist_factory(
+                    from_target="", into_dir="/", subdirs_to_create="y/x"
+                ),
+            ]
+        )
+
+    def test_duplicate_symlink_paths_different_sources(self):
+        with self.assertRaisesRegex(
+            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
+        ):
+            ValidatedReqsProvs(
+                [
+                    self.provides_root,
+                    InstallFileItem(from_target="", source=_FILE1, dest="a"),
+                    InstallFileItem(from_target="", source=_FILE1, dest="b"),
+                    SymlinkToFileItem(from_target="", source="a", dest="x"),
+                    SymlinkToFileItem(from_target="", source="b", dest="x"),
                 ]
             )
 
