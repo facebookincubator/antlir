@@ -4,7 +4,6 @@ prebuilt_cxx_library(
     name = "pthread",
     exported_linker_flags = ["-lpthread"],
     header_only = True,
-    supported_platforms_regex = "linux.*",
     visibility = [
         "PUBLIC",
     ],
@@ -14,7 +13,6 @@ prebuilt_cxx_library(
     name = "cap-ng",
     exported_linker_flags = ["-lcap-ng"],
     header_only = True,
-    supported_platforms_regex = "linux.*",
     visibility = [
         "PUBLIC",
     ],

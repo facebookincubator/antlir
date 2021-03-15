@@ -70,6 +70,7 @@ def image_layer_from_package(
             subvol_name = subvol_name,
         ),
         _flavor_config = flavor_config,
+        use_target_platform = False,
         antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

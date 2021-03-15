@@ -237,7 +237,9 @@ def _vm_unittest(
         # TPX is unaware of the inner test binary, so it must be informed of
         # its location for things that need to inspect the actual inner test
         # binary, like llvm-cov
-        env = {"BUCK_BASE_BINARY": "$(location :{})".format(actual_test_binary)},
+        # TODO(zeroxoneb): This causes the dep graph to short circuit and build
+        # the binary against the wrong platform
+        # env = {"BUCK_BASE_BINARY": "$(location :{})".format(actual_test_binary)},
         antlir_rule = "user-facing",
     )
 

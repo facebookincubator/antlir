@@ -53,3 +53,31 @@ do_not_use_repo_cfg = {
     #
     # "libcap_ng_compiler_flags": "-DCAPNG_SUPPORTS_AMBIENT=1",
 }
+
+# This defines the `platform` that is used when building
+# artifacts that should target the host that the build is
+# running on.  In most cases this matters in places where
+# an `$(exe ...)` resolves to a type that needs to know
+# to know what target plarform should be.  Since
+# Antlir only works on linux-x86_64 hosts that is the
+# default.
+DEFAULT_HOST_PLATFORM = "config//platform:linux-x86_64"
+
+# Define the mapping between a build appliance and the platform
+# that should be used.
+_PLATFORM_TO_BUILD_APPLIANCE_MAP = {
+    "fedora33-x86_64": "//images/appliance:stable-build-appliance",
+}
+_BUILD_APPLIANCE_TO_PLATFORM_MAP = {value: key for key, value in _PLATFORM_TO_BUILD_APPLIANCE_MAP.items()}
+
+
+def get_platform_for_build_appliance(build_appliance):
+    return "config//platform:{}".format(
+        _BUILD_APPLIANCE_TO_PLATFORM_MAP.get(build_appliance, "linux-x86_64")
+    )
+
+def get_build_appliance_for_platform(platform):
+    return _PLATFORM_TO_BUILD_APPLIANCE_MAP.get(platform, None)
+
+def get_all_platforms():
+    return _PLATFORM_TO_BUILD_APPLIANCE_MAP.keys()

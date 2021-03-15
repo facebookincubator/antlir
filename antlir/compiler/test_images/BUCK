@@ -69,7 +69,7 @@ defs.buck_genrule(
     name = "hello_world.tar",
     out = "hello_world.tar",
     bash = """
-    $(exe :hello_world_tar_generator.sh) "\\$(basename $OUT)" \
+    $(exe_target :hello_world_tar_generator.sh) "\\$(basename $OUT)" \
     "\\$(dirname $OUT)"
     """,
 )

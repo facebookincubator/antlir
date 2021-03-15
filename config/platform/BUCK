@@ -1,9 +1,24 @@
+load("//:config.bzl", "get_all_platforms")
+
 # This should always exist to define the default and host platform
 platform(
     name = "linux-x86_64",
     constraint_values = [
         "//cpu/constraints:x86_64",
+        "//distro/constraints:host",
         "//os/constraints:linux",
     ],
     visibility = ["PUBLIC"],
 )
+
+[
+    platform(
+        name = ident,
+        constraint_values = [
+            "//cpu/constraints:{}".format(ident.split("-")[1]),
+            "//distro/constraints:{}".format(ident.split("-")[0]),
+            "//os/constraints:linux",
+       ],
+        visibility = ["PUBLIC"],
+    ) for ident in get_all_platforms()
+]

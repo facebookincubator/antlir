@@ -1,0 +1,20 @@
+load("//:config.bzl", "get_all_platforms")
+
+constraint_setting(
+    name = "distro",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "host",
+    constraint_setting = ":distro",
+    visibility = ["PUBLIC"],
+)
+
+[
+    constraint_value(
+        name = ident.split("-")[0],
+        constraint_setting = ":distro",
+        visibility = ["PUBLIC"],
+    ) for ident in get_all_platforms()
+]

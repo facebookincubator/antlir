@@ -76,8 +76,6 @@ image.layer(
         image.ensure_dirs_exist("/etc/systemd/system"),
         # Some fixups for vmtest features in the limited initrd environment
         image.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
-        # Set a static IP when running in vmtest
-        image.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
         # We want to stay in the initrd, so mask out the units that switch-root
         # into the base os
         systemd.mask_units([
@@ -107,7 +105,16 @@ image.package(
 # as well as some basic setup for the vmtest VM environment
 TEST_KERNEL = kernel_get.default
 
-initrd(kernel = TEST_KERNEL)
+initrd(
+    kernel = TEST_KERNEL,
+    module_list = [
+        "drivers/block/virtio_blk.ko.xz",
+        "fs/fscache/fscache.ko.xz",
+        "fs/9p/9p.ko.xz",
+        "net/9p/9pnet.ko.xz",
+        "net/9p/9pnet_virtio.ko.xz",
+    ],
+)
 
 # This mimics how production will actually work, a base initrd package
 # concatenated with a kernel-specific cpio package containing modules followed
@@ -157,7 +164,7 @@ vm.rust_unittest(
         initrd = ":vmtest-initrd.cpio.gz",
         kernel = TEST_KERNEL,
         runtime = vm.types.runtime.new(
-            sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"],
+            sidecar_services = ["$(exe_target :images-sidecar) $(location :image_packages)"],
         ),
     ),
     srcs = ["test_images.rs"],

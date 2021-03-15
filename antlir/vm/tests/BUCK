@@ -184,7 +184,7 @@ vm.rust_unittest(
     srcs = ["test_with_sidecar.rs"],
     vm_opts = vm.types.opts.new(
         runtime = vm.types.runtime.new(
-            sidecar_services = ["$(exe :sidecar)"],
+            sidecar_services = ["$(location :sidecar)"],
         ),
     ),
     crate_root = "test_with_sidecar.rs",

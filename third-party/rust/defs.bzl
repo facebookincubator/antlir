@@ -52,7 +52,7 @@ def _make_preamble(
     # Work out what rustc to pass to the script
     rustc = native.read_config("rust", "compiler", "rustc")
     if "//" in rustc:
-        rustc = "$(exe %s)" % rustc
+        rustc = "$(exe_target %s)" % rustc
 
     # CWD of a genrule script is the source directory but use $SRCDIR to make it an absolute path
     return """
@@ -123,9 +123,10 @@ def rust_buildscript_genrule_filter(
         name = name,
         out = outfile,
         cmd = pre +
-              "$(exe {buildscript}) | $(location //third-party/rust:buildrs_rustc_flags.py) > $OUT".format(
+              "$(exe_target {buildscript}) | $(location //third-party/rust:buildrs_rustc_flags.py) > $OUT".format(
                   buildscript = buildscript_rule,
               ),
+        use_target_platform = False,
     )
 
 # Invoke a build script for its generated sources.
@@ -146,10 +147,10 @@ def rust_buildscript_genrule_srcs(
         name = name,
         out = name + "-outputs",
         srcs = srcs,
-        cmd = pre +
-              "$(exe {buildscript})".format(
-                  buildscript = buildscript_rule,
-              ),
+        cmd = pre + "$(exe_target {buildscript})".format(
+            buildscript = buildscript_rule,
+        ),
+        use_target_platform = False,
     )
     mainrule = ":" + name
     for file in files:
@@ -171,6 +172,7 @@ def platform_attrs(platformname, platformattrs, attrs):
     ):
         new = extend(attrs.get(attr), platformattrs.get(platformname, {}).get(attr))
         attrs[attr] = new
+
     return attrs
 
 def _archive_target_name(crate_root):
@@ -235,6 +237,7 @@ def third_party_rust_library(
         cmd = "$(exe //third-party/rust:download) $(location //third-party/rust:Cargo.lock) {} $OUT".format(
             shell.quote(crate_root),
         ),
+        use_target_platform = False,
     )
     source_targets = {_extract_from_archive(archive_target, src): src for src in srcs}
     for src, srcname in (mapped_srcs or {}).items():
@@ -243,7 +246,7 @@ def third_party_rust_library(
     # ignore licenses for simplicity, they can be added back later if it becomes desirable
     kwargs.pop("licenses", None)
 
-    rust_library(
+    native.rust_library(
         name = name,
         srcs = [],
         mapped_srcs = source_targets,

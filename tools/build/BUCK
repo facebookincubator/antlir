@@ -1,5 +1,6 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_command_alias")
+load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "buck_sh_binary", "export_file", "python_binary")
 load(":rust.bzl", "rustc_toolchain")
+load(":defs.bzl", "generate_toolchains")
 
 linux_x86_64_toolchain = rustc_toolchain(
     arch = "x86_64",
@@ -17,3 +18,20 @@ buck_command_alias(
         "DEFAULT": ":{}".format(linux_x86_64_toolchain),
     }),
 )
+
+python_binary(
+    name = "build",
+    main_module = "tools.build.build",
+    srcs = [
+        "build.py",
+    ],
+    deps = [
+        "//antlir:find_built_subvol",
+        "//antlir:fs_utils",
+        "//antlir:config",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:nspawn",
+    ],
+)
+
+generate_toolchains()

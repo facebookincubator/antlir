@@ -293,7 +293,7 @@ def add_rpm_repo_snapshots_layer(
             make_cache_for_s_i_pairs[s_i] = True
             features.append(install_rpm_repo_snapshot(s_i[0]))
 
-    name_without_caches = name + "precursor-without-caches-to-" + name
+    name_without_caches = name + "__precursor-without-caches-to-" + name
     image_layer(
         name = name_without_caches,
         parent_layer = parent_layer,

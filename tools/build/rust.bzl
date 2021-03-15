@@ -33,6 +33,7 @@ def rustc_toolchain(
             cd $OUT
             tar xvf $(location :{})
         """.format(download_name),
+        use_target_platform = False,
     )
 
     dir_name = "rust-{}-{}-{}".format(channel, arch, target)
@@ -56,6 +57,7 @@ mv "$TMP/out" "$OUT"
         ),
         executable = True,
         visibility = ["PUBLIC"],
+        use_target_platform = False,
     )
 
     return toolchain_name

@@ -5,9 +5,8 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("@config//:config.bzl", _do_not_use_repo_cfg = "do_not_use_repo_cfg")
+load("@config//:config.bzl", "DEFAULT_HOST_PLATFORM", "get_build_appliance_for_platform", "get_platform_for_build_appliance", "get_all_platforms", _do_not_use_repo_cfg = "do_not_use_repo_cfg")
 load("//third-party/fedora33/kernel:kernels.bzl", "kernels")
-# @lint-ignore-every BUCKLINT
 
 _RULE_TYPE_KWARG = "antlir_rule"
 
@@ -205,8 +204,36 @@ def _third_party_library(project, rule = None, platform = None):
         if not rule == project:
             fail("python projects must omit rule or be identical to project")
         return "//third-party/python:" + project
-
     return "//third-party/" + platform + "/" + project + ":" + rule
+
+def _build_configured_alias(name, target_platform = None):
+    if target_platform:
+        platform = target_platform
+    else:
+        platform_select = {
+            "config//runtime:linux-x86_64": "config//platform:linux-x86_64",
+            "DEFAULT": "config//platform:linux-x86_64",
+        }
+        for platform in get_all_platforms():
+            platform_select[
+                "config//runtime:{}".format(platform)
+            ] = "config//platform:{}".format(platform)
+
+        platform = select(platform_select)
+
+    native.configured_alias(
+        name = name,
+        actual = ":"+name+"-actual",
+        compatible_with = [
+            "config//runtime:linux-x86_64",
+        ] + [
+            "config//runtime:{}".format(platform) for platform in get_all_platforms()
+        ],
+        platform = platform,
+        visibility = ["PUBLIC"],
+    )
+
+    return name + "-actual"
 
 def _wrap_internal(fn, args, kwargs):
     """
@@ -239,6 +266,9 @@ def _wrap_internal(fn, args, kwargs):
             _RULE_TYPE_KWARG,
         )
 
+    kwargs["default_target_platform"] = DEFAULT_HOST_PLATFORM
+    kwargs["default_host_platform"] = DEFAULT_HOST_PLATFORM
+
     # Antlir build outputs should not be visible outside of antlir by default. This
     # helps prevent our abstractions from leaking into other codebases as Antlir
     # becomes more widely adopted.
@@ -247,7 +277,9 @@ def _wrap_internal(fn, args, kwargs):
         "//bot_generated/antlir/...",
     ]
 
-    fn(*args, **kwargs)
+    fn(
+        *args,
+        **kwargs)
 
 def _command_alias(*args, **kwargs):
     _wrap_internal(native.command_alias, args, kwargs)
@@ -255,9 +287,22 @@ def _command_alias(*args, **kwargs):
 def _filegroup(*args, **kwargs):
     _wrap_internal(native.filegroup, args, kwargs)
 
-def _genrule(*args, **kwargs):
-    # For future use to support target platforms
-    kwargs.pop("flavor_config", None)
+def _genrule(*args, flavor_config=None, use_target_platform=True, **kwargs):
+    if flavor_config and use_target_platform:
+        kwargs["name"] = _build_configured_alias(
+            kwargs["name"],
+            target_platform = get_platform_for_build_appliance(
+                flavor_config.build_appliance
+            ) if flavor_config and flavor_config.build_appliance else None,
+        )
+    elif not use_target_platform:
+        kwargs["name"] = _build_configured_alias(
+            kwargs["name"],
+            target_platform = DEFAULT_HOST_PLATFORM,
+        )
+    else: 
+        kwargs["name"] = _build_configured_alias(kwargs["name"])
+
     _wrap_internal(native.genrule, args, kwargs)
 
 def _http_file(*args, **kwargs):
@@ -279,40 +324,30 @@ def _cxx_external_deps(kwargs):
     external_deps = kwargs.pop("external_deps", [])
     return ["//third-party/cxx:" + lib for _project, _version, lib in external_deps]
 
-def _impl_cpp_binary(name, tags = None, **kwargs):
-    native.cxx_binary(
-        name = name,
-        labels = tags or [],
-        deps = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs)),
-        **kwargs
-    )
-
 def _cpp_binary(*args, **kwargs):
-    _wrap_internal(_impl_cpp_binary, args, kwargs)
+    kwargs["name"] = _build_configured_alias(kwargs["name"])
+    kwargs["deps"] = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs))
+    kwargs["labels"] = kwargs.pop("tags", [])
 
-def _impl_cpp_library(name, tags = None, **kwargs):
-    native.cxx_library(
-        name = name,
-        labels = tags or [],
-        deps = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs)),
-        **kwargs
-    )
+    _wrap_internal(native.cxx_binary, args, kwargs)
 
 def _cpp_library(*args, **kwargs):
-    _wrap_internal(_impl_cpp_library, args, kwargs)
+    kwargs["name"] = _build_configured_alias(kwargs["name"])
+    kwargs["deps"] = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs))
+    kwargs["labels"] = kwargs.pop("tags", [])
 
-def _impl_cpp_unittest(name, tags = None, **kwargs):
-    native.cxx_test(
-        name = name,
-        labels = tags or [],
-        deps = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs)),
-        **kwargs
-    )
+    _wrap_internal(native.cxx_library, args, kwargs)
 
 def _cpp_unittest(*args, **kwargs):
-    _wrap_internal(_impl_cpp_unittest, args, kwargs)
+    kwargs["name"] = _build_configured_alias(kwargs["name"])
+    kwargs["deps"] = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs))
+    kwargs["labels"] = kwargs.pop("tags", [])
+
+    _wrap_internal(native.cxx_test, args, kwargs)
 
 def _export_file(*args, **kwargs):
+    kwargs["src"] = kwargs.pop("src", None) or kwargs["name"]
+
     _wrap_internal(native.export_file, args, kwargs)
 
 def _impl_python_binary(
@@ -322,6 +357,7 @@ def _impl_python_binary(
         resources = None,
         visibility = None,
         **kwargs):
+
     _impl_python_library(
         name = name + "-library",
         resources = resources,
@@ -329,12 +365,21 @@ def _impl_python_binary(
         **kwargs
     )
 
+    # Note: this target type does not use a `configured_alias` for
+    # target platform selection. That is because python_binary doesn't
+    # actually have any target specific logic, it's simply a wrapper
+    # around a `pythion_library` to bundle all the dependencies into
+    # an executable type.
+    # We do have to insert the `default_*_platform` kwargs here because
+    # the kwargs mutated by _wrap_internal are used by the library target
     native.python_binary(
         name = name,
         main_module = main_module,
         package_style = _normalize_pkg_style(par_style),
         deps = [":" + name + "-library"],
         visibility = visibility,
+        default_host_platform = DEFAULT_HOST_PLATFORM,
+        default_target_platform = DEFAULT_HOST_PLATFORM,
     )
 
 def _python_binary(*args, **kwargs):
@@ -346,8 +391,9 @@ def _impl_python_library(
         resources = None,
         srcs = None,
         **kwargs):
+
     native.python_library(
-        name = name,
+        name = _build_configured_alias(name),
         deps = _normalize_deps(deps),
         resources = _normalize_resources(resources),
         srcs = _invert_dict(srcs),
@@ -358,6 +404,7 @@ def _python_library(*args, **kwargs):
     _wrap_internal(_impl_python_library, args, kwargs)
 
 def _impl_python_unittest(
+        name,
         cpp_deps = "ignored",
         deps = None,
         needed_coverage = None,
@@ -366,7 +413,9 @@ def _impl_python_unittest(
         resources = None,
         srcs = None,
         **kwargs):
+
     native.python_test(
+        name = _build_configured_alias(name),
         deps = _normalize_deps(deps),
         labels = tags or [],
         needed_coverage = _normalize_coverage(needed_coverage),
@@ -379,8 +428,15 @@ def _impl_python_unittest(
 def _python_unittest(*args, **kwargs):
     _wrap_internal(_impl_python_unittest, args, kwargs)
 
+def _impl_rust_test(name, *args, **kwargs):
+    native.rust_test(
+        name = _build_configured_alias(name),
+        *args,
+        **kwargs
+    )
+
 def _rust_unittest(*args, **kwargs):
-    _wrap_internal(native.rust_test, args, kwargs)
+    _wrap_internal(_impl_rust_test, args, kwargs)
 
 def _rust_binary(*args, **kwargs):
     # Inside FB, we are a little special and explicitly use `malloc` as our
@@ -391,8 +447,9 @@ def _rust_binary(*args, **kwargs):
     kwargs.pop("allocator", None)
     kwargs.pop("nodefaultlibs", None)
 
+    name = kwargs.get("name")
     if not kwargs.get("crate_root", None):
-        topsrc_options = (kwargs.get("name") + ".rs", "main.rs")
+        topsrc_options = (name + ".rs", "main.rs")
 
         topsrc = []
         for src in (kwargs.get("srcs", None) or []):
@@ -407,22 +464,25 @@ def _rust_binary(*args, **kwargs):
 
     unittests = kwargs.pop("unittests", True)
 
+    kwargs["name"] = _build_configured_alias(name)
     _wrap_internal(native.rust_binary, args, kwargs)
 
     # automatically generate a unittest target if the caller did not explicitly
     # opt out
     if unittests:
         _rust_unittest(
-            name = kwargs.get("name") + "-unittest",
+            name = _build_configured_alias(name + "-unittest"),
             srcs = kwargs.get("srcs", []),
             mapped_srcs = kwargs.get("mapped_srcs", {}),
             deps = kwargs.get("deps", []) + kwargs.get("test_deps", []),
             labels = kwargs.get("labels", []),
-            crate = kwargs.get("crate", kwargs.get("name").replace("-", "_")),
+            crate = kwargs.get("crate", name.replace("-", "_")),
             crate_root = kwargs.get("crate_root"),
         )
 
 def _rust_library(*args, **kwargs):
+    kwargs["name"] = _build_configured_alias(kwargs["name"])
+
     _wrap_internal(native.rust_library, args, kwargs)
 
 # Use = in the default filename to avoid clashing with RPM names.
@@ -498,6 +558,10 @@ shim = struct(
         # @lint-ignore BUCKLINT
         get_current_repo_name = native.repository_name,
         get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
+        # proper target platform support
+        get_platform_for_build_appliance = get_platform_for_build_appliance,
+        get_build_appliance_for_platform = get_build_appliance_for_platform,
+        get_all_platforms = get_all_platforms,
     ),
     cpp_binary = _cpp_binary,
     cpp_library = _cpp_library,
@@ -520,6 +584,7 @@ shim = struct(
         get = _kernel,
         versions = kernels,
     ),
+    platform = native.platform,
     platform_utils = None,
     python_binary = _python_binary,
     python_library = _python_library,

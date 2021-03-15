@@ -2,6 +2,17 @@ config_setting(
     name = "linux-x86_64",
     constraint_values = [
         "//cpu/constraints:x86_64",
+        "//distro/constraints:host",
+        "//os/constraints:linux",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+config_setting(
+    name = "fedora33-x86_64",
+    constraint_values = [
+        "//cpu/constraints:x86_64",
+        "//distro/constraints:fedora33",
         "//os/constraints:linux",
     ],
     visibility = ["PUBLIC"],

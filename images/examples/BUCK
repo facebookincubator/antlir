@@ -1,3 +1,4 @@
+load("//antlir/bzl:oss_shim.bzl", "cpp_binary", "rust_binary")
 load("//antlir/bzl:image.bzl", "image")
 
 image.layer(
@@ -7,5 +8,22 @@ image.layer(
         # this is provided in the base image, so must be removed first
         image.remove("/etc/motd"),
         image.install("motd", "/etc/motd"),
+        image.install_buck_runnable(":hello-cpp", "/usr/bin/hello-cpp"),
+        image.install_buck_runnable(":hello-rust", "/usr/bin/hello-rust"),
+    ],
+)
+
+# An example to be compiled inside the fedora33 build appliance
+cpp_binary(
+    name  = "hello-cpp",
+    srcs = [
+        "hello_world.cpp",
+    ],
+)
+
+rust_binary(
+    name = "hello-rust",
+    srcs = [
+        "hello-rust.rs",
     ],
 )

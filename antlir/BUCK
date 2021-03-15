@@ -45,6 +45,7 @@ python_library(
     srcs = ["fs_utils.py"],
     visibility = [
         "//antlir/...",
+        "//tools/build/...",
         "//scripts/jtru/tw:mixin-check",
         "//scripts/jtru/tw:mixin-check-library",
         "//tupperware/cm/antlir/...",

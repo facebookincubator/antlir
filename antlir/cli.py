@@ -15,11 +15,21 @@ from typing import AnyStr, Iterator, Mapping
 from antlir.common import init_logging
 from antlir.fs_utils import Path
 
+# python < 3.9 doesn't have `removesuffix`
+def _removesuffix(s, suffix):
+    if s.endswith(suffix):
+        return s[:-len(suffix)]
+    else:
+        return s
 
 # pyre-fixme[34]: `Variable[AnyStr <: [str, bytes]]` isn't present in the
 #  function's parameters.
 def _load_targets_and_outputs(arg: str) -> Mapping[AnyStr, Path]:
-    return json.loads(Path(arg).read_text())
+    # The targets names we will be looking up are the names of
+    # the configured_aliases, not the backing `-actual` target.
+    return {
+        _removesuffix(k, "-actual"): v for k,v in json.loads(Path(arg).read_text()).items()
+    }
 
 
 def add_targets_and_outputs_arg(parser: argparse.ArgumentParser):

@@ -9,9 +9,14 @@
   # force usage of oss_shim.bzl which applies all the correct visibility logic
   # and more closely mimics the internal macros
   disable_implicit_native_rules = true
+  # This enables buck to switch to the host platform for binaries
+  # that are used in $(exe) macros, since they are likely being executed
+  # against the host platform
+  host_configuration_switch_enabled = true
 
-  # This defines what the default target platform is.  Since we only support
-  # linux running on x86_64 architectures, that's what we set this to.
+  # The default target platform is the same as the host platform.
+  # This ensures that targets that aren't immediate dependendencies of an
+  # image_layer are built with the host platform
   target_platform_detector_spec = target://...->config//platform:linux-x86_64
 
   # The default host platform defines what the platform should be when
@@ -35,12 +40,16 @@
   gtest_dep = //third-party/cxx:gtest
   should_remap_host_platform = true
 
+[cxx#linux-x86_64]
+  toolchain_target = //tools/build:toolchain
+
 [rust]
   default_edition = 2018
   compiler = //tools/build:rustc
 
 [project]
   ignore = .git, .hg, buck-image-out
+
   # The separates built artifacts into a subdir for each target platform
   # they are built against.
   buck_out_include_target_config_hash = true
