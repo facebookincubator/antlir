@@ -355,7 +355,7 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
         create_archive_cmd = [
             "/bin/bash",
             "-c",
-            "set -ue -o pipefail;" f"pushd {work_dir} >/dev/null;"
+            "set -ue -o pipefail;" f"pushd {work_dir.decode()} >/dev/null;"
             # List all the files except sockets since cpio doesn't
             # support them and they don't really mean much outside
             # the context of the process that is using it.

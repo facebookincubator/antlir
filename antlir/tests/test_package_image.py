@@ -365,7 +365,8 @@ class PackageImageTestCase(unittest.TestCase):
                 cmd=[
                     "/bin/bash",
                     "-c",
-                    "set -ue -o pipefail;" f"pushd {work_dir} >/dev/null;"
+                    "set -ue -o pipefail;"
+                    f"pushd {work_dir.decode()} >/dev/null;"
                     # -S to properly handle sparse files on extract
                     "/bin/bsdtar --file - --extract -S;",
                 ],

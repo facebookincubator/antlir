@@ -444,7 +444,7 @@ class TestFsUtils(unittest.TestCase):
         work_dir = generate_work_dir()
 
         # make sure we stripped the = padding out
-        self.assertNotIn("=", work_dir)
+        self.assertNotIn(b"=", work_dir)
 
         # A b64 encoded uuid is 22 chars. That plus the
         # '/work' prefix is 27 chars,

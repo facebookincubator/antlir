@@ -381,10 +381,13 @@ def temp_dir(**kwargs) -> Generator[Path, None, None]:
         yield Path(td)
 
 
-def generate_work_dir():
-    return "/work" + base64.urlsafe_b64encode(
-        uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
-    ).decode().strip("=")
+def generate_work_dir() -> Path:
+    return Path(
+        b"/work"
+        + base64.urlsafe_b64encode(
+            uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
+        ).strip(b"=")
+    )
 
 
 @contextmanager

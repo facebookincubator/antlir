@@ -66,7 +66,7 @@ class TarballItem(tarball_t, ImageItem):
                 # hard to state that with complete confidence, especially if
                 # we start adding support for following directory symlinks.
                 "--directory",
-                work_dir + "/" + self.into_dir.decode(),
+                (work_dir / self.into_dir).decode(),
                 "--extract",
                 # preserving xattrs need to be specified on both sides (packing
                 # and unpacking)

@@ -107,7 +107,7 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         # If path already exists ensure it has expected attrs, else make it.
         work_dir = generate_work_dir()
-        full_path = Path(work_dir) / self.into_dir / self.basename
+        full_path = work_dir / self.into_dir / self.basename
         path_to_make = subvol.path() / self.into_dir / self.basename
         # Cannot postpone exists() check because _BUILD_SCRIPT will create the
         # directory `path_to_make`

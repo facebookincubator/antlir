@@ -21,7 +21,7 @@ class BuildAppliance:
     def __init__(self, subvol: Subvol, build_appliance: Subvol):
         self._subvol = subvol
         self._build_appliance = build_appliance
-        self._work_dir = Path(generate_work_dir())
+        self._work_dir = generate_work_dir()
 
     def path(self, rel_path: Path):
         return os.path.join(self._work_dir, rel_path)
