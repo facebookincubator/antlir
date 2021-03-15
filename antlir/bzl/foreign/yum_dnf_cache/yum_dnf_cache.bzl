@@ -24,7 +24,7 @@ covers that use-case adequately.
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:snapshot_install_dir.bzl", "snapshot_install_dir")
 
 def image_yum_dnf_make_snapshot_cache(
@@ -43,7 +43,7 @@ def image_yum_dnf_make_snapshot_cache(
                 # obvious performance benefit.
                 maybe_fast = "fast" if prog == "yum" else "",
             ))
-    image_foreign_layer(
+    image.genrule_layer(
         name = name,
         cmd = ["/bin/bash", "-uec", ";".join(cmds)],
         parent_layer = parent_layer,

@@ -10,7 +10,7 @@ available in a pre-determined location: `/rpmbuild/RPMS`.
 """
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
@@ -129,7 +129,7 @@ def private_image_rpmbuild_impl(
     installer = build_opts_dict.get("rpm_installer", REPO_CFG.rpm_installer_default)
 
     install_deps_layer = name + "-rpmbuild-install-deps"
-    image_foreign_layer(
+    image.genrule_layer(
         name = install_deps_layer,
         rule_type = "image_rpmbuild_install_deps_layer",
         parent_layer = ":" + setup_layer,
@@ -159,7 +159,7 @@ def private_image_rpmbuild_impl(
     )
 
     build_layer = name + "-rpmbuild-build"
-    image_foreign_layer(
+    image.genrule_layer(
         name = build_layer,
         rule_type = "image_rpmbuild_build_layer",
         parent_layer = ":" + install_deps_layer,
@@ -253,7 +253,7 @@ def image_import_rpm_public_key_layer(
     )
 
     import_layer = name + "-key-import"
-    image_foreign_layer(
+    image.genrule_layer(
         name = import_layer,
         rule_type = "image_import_rpm_public_key_layer",
         parent_layer = ":" + copy_layer,
