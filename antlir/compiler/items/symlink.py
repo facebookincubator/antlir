@@ -76,6 +76,20 @@ class SymlinkBase(symlink_t, ImageItem):
         assert os.path.normpath(dest / rel_source).startswith(
             subvol.path()
         ), f"{self}: A symlink to {rel_source} would point outside the image"
+        if os.path.exists(dest):
+            if not os.path.islink(dest):
+                raise RuntimeError(f"{self}: dest already exists")
+            # Should we check abs_source.relpath(os.path.realpath(dest))?
+            # If so, we may also need to check that os.readlink(dest) does
+            # not point outside subvol.path(). This currently errors if an
+            # existing symlink does not matches exactly this item would've
+            # created.
+            current_link = os.readlink(dest)
+            if current_link == rel_source:
+                return
+            raise RuntimeError(
+                f"{self}: {self.dest} -> {self.source} exists to {current_link}"
+            )
         if layer_opts.build_appliance:
             build_appliance = layer_opts.build_appliance
             work_dir = generate_work_dir()

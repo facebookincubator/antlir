@@ -19,6 +19,7 @@ from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
+from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 
 from .requires_provides import (
     Provider,
@@ -42,6 +43,52 @@ class ItemProv(NamedTuple):
     provides: Provider
     item: ImageItem
 
+    def conflicts(self, other: "ItemProv") -> bool:
+        """
+        Checks for conflicts between provided resource and item providing
+        the resource.
+
+        NB: This functionality is not on ImageItem and its subclasses because
+        conflicts must be symmetric by type(item) and it's easier to see/test
+        the rules in one place.
+
+        For the majority of cases, we do not allow two `provides` to collide
+        on the same path. The following cases are allowed:
+
+        1. There can be any number of EnsureDirsExist items, and at most one
+        other directory provider of a type other than EnsureDirsExist. This is
+        done because EnsureDirsExist are explicitly run last for a given path
+        (see comments in _add_dir_deps_for_item_provs), and check corresponding
+        attributes on the path they're about to create. As such, any number of
+        them may exist for a given path. We allow one other non-EnsureDirsExist
+        directory provider as its attributes will also be checked. More than one
+        is disallowed as it could result in non-determinism, as we could only
+        support that if we were certain an EnsureDirsExist also existed for the
+        path, which the data model is not currently set up to support.
+
+        2. Symlink dir and file items may duplicate, as long as they are the
+        same type (all dirs or all files) and have the same source.
+        """
+        assert (
+            self.provides == other.provides
+        ), f"{self} should not be checked against {other}"
+
+        for ip in (self, other):
+            if isinstance(ip.item, (EnsureDirsExistItem)):
+                assert isinstance(
+                    ip.provides, (ProvidesDirectory)
+                ), "EnsureDirsExistItem must provide a directory"
+                return False
+
+        for it in (SymlinkToDirItem, SymlinkToFileItem):
+            if isinstance(self.item, (it)) and isinstance(other.item, (it)):
+                return (
+                    self.item.dest != other.item.dest
+                    or self.item.source != other.item.source
+                )
+
+        return True
+
 
 # NB: since the item is part of the tuple, we'll store identical
 # requirements that come from multiple items multiple times.  This is OK.
@@ -55,17 +102,13 @@ class ItemReqsProvs(NamedTuple):
     item_reqs: Set[ItemReq]
 
 
-# See the comments in _add_to_prov_map
-_ALLOWED_COLLISIONS = frozenset({EnsureDirsExistItem})
-
-
 class ValidatedReqsProvs:
     """
     Given a set of Items (see the docblocks of `item.py` and `provides.py`),
     computes {'path': {ItemReqProv{}, ...}} so that we can build the
     DependencyGraph for these Items.  In the process validates that:
      - No one item provides or requires the same path twice,
-     - Each path is provided by at most one item (excl. _ALLOWED_COLLISIONS),
+     - Each path is provided by at least one item without conflicts,
      - Every Requires is matched by a Provides at that path.
     """
 
@@ -120,39 +163,17 @@ class ValidatedReqsProvs:
         )
 
     def _add_to_prov_map(self, prov: Provider, item: ImageItem):
-        """For the majority of cases, we do not allow two `provides` to collide
-        on the same path.
-
-        The sole case where this is supported is when there are any number of
-        EnsureDirsExist items, and at most one other directory provider of a
-        type other than EnsureDirsExist. This is done because EnsureDirsExist
-        are explicitly run last for a given path (see comments in
-        _add_dir_deps_for_item_provs), and check corresponding attributes on the
-        path they're about to create. As such, any number of them may exist for
-        a given path. We allow one other non-EnsureDirsExist directory provider
-        as its attributes will also be checked. More than one is disallowed as
-        it could result in non-determinism, as we could only support that if we
-        were certain an EnsureDirsExist also existed for the path, which the
-        data model is not currently set up to support.
+        """For the majority of cases, we do not allow two `Providers` to
+        provide the same `Requirement`. There are some cases that are allowed
+        (e.g. duplicate EnsureDirsExist). See `ItemProv.conflicts` for full
+        rules implementation.
         """
         reqs_provs = self._get_item_req_provs(prov.req.key())
-
-        new_item_prov = ItemProv(provides=prov, item=item)
-        if reqs_provs.item_provs:
-            collision_provs = [
-                ip.provides
-                for ip in [*reqs_provs.item_provs, new_item_prov]
-                if type(ip.item) not in _ALLOWED_COLLISIONS
-            ]
-            if collision_provs and (
-                len(collision_provs) > 1
-                or not isinstance(collision_provs[0], ProvidesDirectory)
-            ):
-                raise RuntimeError(
-                    f"Both {reqs_provs.item_provs} and {prov} from {item} "
-                    "provide the same path"
-                )
-        reqs_provs.item_provs.add(new_item_prov)
+        new_ip = ItemProv(provides=prov, item=item)
+        for ip in reqs_provs.item_provs:
+            if new_ip.conflicts(ip):
+                raise RuntimeError(f"{new_ip} conflicts with {ip}")
+        reqs_provs.item_provs.add(ItemProv(provides=prov, item=item))
 
 
 class DependencyGraph:

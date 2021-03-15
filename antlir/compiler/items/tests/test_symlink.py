@@ -45,6 +45,63 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             {require_directory(Path("/")), require_file(Path("/source_file"))},
         )
 
+    def test_symlink_idempotent(self):
+        with TempSubvolumes() as ts:
+            sv = ts.create("test")
+            sv.run_as_root(["touch", sv.path("a")])
+            sv.run_as_root(["mkdir", sv.path("x")])
+            SymlinkToFileItem(from_target="t", source="a", dest="b").build(
+                sv, DUMMY_LAYER_OPTS
+            )
+            SymlinkToDirItem(from_target="t", source="x", dest="y").build(
+                sv, DUMMY_LAYER_OPTS
+            )
+            sv.set_readonly(True)
+            SymlinkToFileItem(from_target="t", source="a", dest="b").build(
+                sv, DUMMY_LAYER_OPTS
+            )
+            SymlinkToDirItem(from_target="t", source="x", dest="y").build(
+                sv, DUMMY_LAYER_OPTS
+            )
+
+    def test_symlink_already_exists(self):
+        with TempSubvolumes() as ts:
+            sv = ts.create("test")
+            sv.run_as_root(["touch", sv.path("a")])
+            sv.run_as_root(["touch", sv.path("b")])
+            sv.set_readonly(True)
+            with self.assertRaises(
+                RuntimeError, msg="dest='b' source='c': dest already exists"
+            ):
+                SymlinkToFileItem(from_target="t", source="a", dest="b").build(
+                    sv, DUMMY_LAYER_OPTS
+                )
+
+    def test_symlink_already_matches(self):
+        with TempSubvolumes() as ts:
+            sv = ts.create("test")
+            sv.run_as_root(["touch", sv.path("a")])
+            sv.run_as_root(["ln", "-ns", "a", sv.path("b")])
+            sv.set_readonly(True)
+            SymlinkToFileItem(from_target="t", source="a", dest="b").build(
+                sv, DUMMY_LAYER_OPTS
+            )
+
+    def test_symlink_already_exists_different_source(self):
+        with TempSubvolumes() as ts:
+            sv = ts.create("test")
+            sv.run_as_root(["touch", sv.path("a")])
+            SymlinkToFileItem(from_target="t", source="a", dest="b").build(
+                sv, DUMMY_LAYER_OPTS
+            )
+            sv.set_readonly(True)
+            with self.assertRaises(
+                RuntimeError, msg="dest='b' source='c': b -> a exists to b'a'"
+            ):
+                SymlinkToFileItem(from_target="t", source="c", dest="b").build(
+                    sv, DUMMY_LAYER_OPTS
+                )
+
     def _test_symlink_command(self, layer_opts):
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             subvol = temp_subvolumes.create("tar-sv")
