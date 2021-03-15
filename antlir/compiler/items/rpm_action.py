@@ -363,7 +363,7 @@ def _yum_dnf_using_build_appliance(
                 '--debug' if layer_opts.debug else ''
             } \
             -- \
-            --installroot={work_dir} {
+            --installroot={work_dir.decode()} {
                 ' '.join(shlex.quote(arg) for arg in yum_dnf_args)
             }
             """,
