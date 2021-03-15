@@ -37,7 +37,6 @@ the commit message for D21390244.
 """
 
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 
 def image_build_librename_shadowed(name, parent_layer):
     "`parent_layer` must have a C compiler."
@@ -58,7 +57,7 @@ def image_build_librename_shadowed(name, parent_layer):
             ),
         ],
     )
-    image_foreign_layer(
+    image.genrule_layer(
         name = name,
         # Keep this in sync with the `cc` call in `TARGETS`.
         cmd = [

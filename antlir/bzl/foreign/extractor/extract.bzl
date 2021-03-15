@@ -19,7 +19,6 @@ a single call to `extract.extract`.
 """
 
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
@@ -50,7 +49,7 @@ def _extract(
     )
 
     work_layer = "image-extract-work--{}".format(layer_hash)
-    image_foreign_layer(
+    image.genrule_layer(
         name = work_layer,
         rule_type = "image_extract",
         parent_layer = ":" + base_extract_layer,
