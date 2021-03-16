@@ -38,14 +38,14 @@ image.layer(
             ["mount"],
             src_path = "/usr/sbin/busybox",
         ),
-        image.symlink_file("/usr/lib/systemd/systemd", "/init"),
+        image.ensure_file_symlink("/usr/lib/systemd/systemd", "/init"),
         # Systemd uses the presence of /etc/initrd-release to determine if it
         # is running in an initrd, however there are cases where it only parses
         # /{etc,usr/lib}/os-release, so just cover all our bases with symlinks
         image.install(":initrd-release", "/usr/lib/initrd-release"),
-        image.symlink_file("/usr/lib/initrd-release", "/etc/initrd-release"),
-        image.symlink_file("/usr/lib/initrd-release", "/usr/lib/os-release"),
-        image.symlink_file("/usr/lib/initrd-release", "/etc/os-release"),
+        image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/initrd-release"),
+        image.ensure_file_symlink("/usr/lib/initrd-release", "/usr/lib/os-release"),
+        image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/os-release"),
         # This is automatically the target that systemd tries to reach when it
         # detects /etc/initrd-release, but explicitly symlinking it makes
         # systemd-analyze work as expected too

@@ -220,12 +220,12 @@ image.feature(
     name = "feature_symlinks",
     features = [
         image.install(":hello_world.tar", "/foo/hello_world.tar"),
-        image.symlink_dir("/foo/bar", "/foo/fighter"),
-        image.symlink_dir("/foo/bar", "/foo/face"),
-        image.symlink_dir("/foo/bar", "/foo/bar/baz/"),  # / -> "bar" basename
-        image.symlink_file("/foo/hello_world.tar", "/foo/symlink_to_hello_world.tar"),
+        image.ensure_dir_symlink("/foo/bar", "/foo/fighter"),
+        image.ensure_dir_symlink("/foo/bar", "/foo/face"),
+        image.ensure_dir_symlink("/foo/bar", "/foo/bar/baz/"),  # / -> "bar" basename
+        image.ensure_file_symlink("/foo/hello_world.tar", "/foo/symlink_to_hello_world.tar"),
         # /dev/null is allowlisted to be a dangling symlink
-        image.symlink_file("/dev/null", "/foo/symlink_to_dev_null"),
+        image.ensure_file_symlink("/dev/null", "/foo/symlink_to_dev_null"),
     ],
 )
 

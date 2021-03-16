@@ -17,11 +17,11 @@ def _install():
         image.ensure_dirs_exist("/usr/lib"),
         image.ensure_dirs_exist("/usr/lib64"),
         image.ensure_dirs_exist("/var"),
-        image.symlink_dir("/usr/bin", "/bin"),
-        image.symlink_dir("/usr/bin", "/sbin"),
-        image.symlink_dir("/usr/lib", "/lib"),
-        image.symlink_dir("/usr/lib64", "/lib64"),
-        image.symlink_dir("/run", "/var/run"),
+        image.ensure_dir_symlink("/usr/bin", "/bin"),
+        image.ensure_dir_symlink("/usr/bin", "/sbin"),
+        image.ensure_dir_symlink("/usr/lib", "/lib"),
+        image.ensure_dir_symlink("/usr/lib64", "/lib64"),
+        image.ensure_dir_symlink("/run", "/var/run"),
     ]
 
 filesystem = struct(

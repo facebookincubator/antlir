@@ -52,7 +52,7 @@ def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/busybox
             paths.join(install_dir, "busybox"),
         ),
     ] + [
-        image.symlink_file(
+        image.ensure_file_symlink(
             paths.join(install_dir, "busybox"),
             paths.join(install_dir, applet),
         )
