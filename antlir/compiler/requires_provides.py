@@ -45,13 +45,14 @@ with short-circuiting.  E.g. FollowsSymlinks(Pred) would expand to:
 '''
 import dataclasses
 from enum import Enum, auto
-from typing import Hashable, Optional
+from typing import Hashable
 
 from antlir.fs_utils import Path
 
 
 class RequirementKind(Enum):
     PATH = auto()
+    GROUP = auto()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -76,7 +77,7 @@ def _normalize_path(path: Path) -> Path:
 @dataclasses.dataclass(frozen=True)
 class PathRequiresPredicate(Requirement):
     path: Path
-    predicate: Optional[_Predicate]
+    predicate: _Predicate
 
     def __init__(self, path: Path, predicate: _Predicate) -> None:
         super().__init__(kind=RequirementKind.PATH)
@@ -93,6 +94,18 @@ def require_directory(path: Path):
 
 def require_file(path: Path):
     return PathRequiresPredicate(path=path, predicate=_Predicate.IS_FILE)
+
+
+@dataclasses.dataclass(frozen=True)
+class RequireGroup(Requirement):
+    name: str
+
+    def __init__(self, name: str) -> None:
+        super().__init__(kind=RequirementKind.GROUP)
+        object.__setattr__(self, "name", name)
+
+    def key(self) -> Hashable:
+        return self.__hash__()
 
 
 @dataclasses.dataclass(frozen=True)

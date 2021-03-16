@@ -1,9 +1,11 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image_foreign_layer.bzl", "foreign_layer_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image_actions:clone.bzl", "clone_t")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "ensure_subdirs_exist_t")
+load("//antlir/bzl/image_actions:group.bzl", "group_t")
 load("//antlir/bzl/image_actions:install.bzl", "install_files_t")
 load("//antlir/bzl/image_actions:remove.bzl", "remove_paths_t")
 load("//antlir/bzl/image_actions:symlink.bzl", "symlink_t")
@@ -70,6 +72,49 @@ python_library(
         "//antlir:testlib_layer_resource",
         "//antlir:testlib_subvol_helpers",
         "//antlir/compiler:requires_provides",
+    ],
+)
+
+shape.loader(
+    name = "group_t",
+    shape = group_t,
+    classname = "group_t",
+)
+
+python_library(
+    name = "group",
+    srcs = ["group.py"],
+    deps = [
+        ":common",
+        ":group_t",
+    ],
+)
+
+python_unittest(
+    name = "test-group",
+    srcs = ["tests/test_group.py"],
+    needed_coverage = [(100, ":group")],
+    deps = [
+        ":common_testlib",
+        ":group",
+    ],
+)
+
+python_unittest(
+    name = "group-integration-test",
+    srcs = ["tests/group_integration_test.py"],
+    resources = {
+        REPO_CFG.build_appliance_default: "tests/base-layer",
+        TEST_IMAGE_PREFIX + "groups-added": "tests/groups-added",
+    },
+    tags = ["slow"],
+    deps = [
+        ":common_testlib",
+        ":group",
+        "//antlir:find_built_subvol",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
 
@@ -363,6 +408,7 @@ python_library(
         ":clone",
         ":ensure_dirs_exist",
         ":foreign_layer",
+        ":group",
         ":items",
         ":phases_provide",
         ":rpm_action",

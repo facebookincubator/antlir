@@ -880,3 +880,12 @@ add_rpm_repo_snapshots_layer(
     parent_layer = REPO_CFG.build_appliance_default,
     yum_snapshot = "//antlir/rpm:repo-snapshot-for-tests" if "yum" in REPO_CFG.rpm_installers_supported else None,
 )
+
+image.layer(
+    name = "groups-added",
+    parent_layer = REPO_CFG.build_appliance_default,
+    features = [
+        image.group_add("foo"),
+        image.group_add("leet", 1337),
+    ],
+)

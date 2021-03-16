@@ -15,7 +15,9 @@ from ..requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
+    RequireGroup,
     Requirement,
+    RequirementKind,
     _normalize_path,
     require_directory,
     require_file,
@@ -91,3 +93,11 @@ class RequiresProvidesTestCase(unittest.TestCase):
         p = Path("/a/b/c")
         self.assertEquals(p, ProvidesDirectory(p).path())
         self.assertEquals(p, ProvidesDirectory(p).path())
+
+    def test_require_group(self):
+        groupname = "foo"
+        g = RequireGroup(groupname)
+        self.assertEquals(g.name, groupname)
+        self.assertEquals(g.kind, RequirementKind.GROUP)
+        g2 = RequireGroup(groupname)
+        self.assertEquals(1, len({g.key(), g2.key()}))

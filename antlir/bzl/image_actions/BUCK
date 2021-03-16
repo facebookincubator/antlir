@@ -46,6 +46,14 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "group",
+    srcs = ["group.bzl"],
+    deps = [
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
     name = "remove",
     srcs = ["remove.bzl"],
     deps = [

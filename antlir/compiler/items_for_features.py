@@ -12,6 +12,7 @@ from antlir.compiler.items.clone import CloneItem
 from antlir.compiler.items.common import LayerOpts, image_source_item
 from antlir.compiler.items.ensure_dirs_exist import ensure_subdirs_exist_factory
 from antlir.compiler.items.foreign_layer import ForeignLayerItem
+from antlir.compiler.items.group import GroupItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import (
     ParentLayerItem,
@@ -118,16 +119,17 @@ def gen_items_for_features(
 
     key_to_item_factory = {
         "clone": image_sourcify(CloneItem),
+        "foreign_layer": ForeignLayerItem,
+        "groups": GroupItem,
         "install_files": image_sourcify(InstallFileItem),
         "mounts": lambda **kwargs: MountItem(**kwargs, layer_opts=layer_opts),
         "parent_layer": ParentLayerItem,
-        "rpms": image_sourcify(RpmActionItem),
+        "receive_sendstreams": image_sourcify(ReceiveSendstreamItem),
         "remove_paths": RemovePathItem,
+        "rpms": image_sourcify(RpmActionItem),
         "symlinks_to_dirs": SymlinkToDirItem,
         "symlinks_to_files": SymlinkToFileItem,
         "tarballs": image_sourcify(TarballItem),
-        "receive_sendstreams": image_sourcify(ReceiveSendstreamItem),
-        "foreign_layer": ForeignLayerItem,
     }
     key_to_items_factory = {
         "ensure_subdirs_exist": ensure_subdirs_exist_factory,
