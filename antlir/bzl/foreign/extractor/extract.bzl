@@ -48,6 +48,16 @@ def _extract(
         visibility = [],
     )
 
+    binaries_args = []
+    for binary in binaries:
+        binaries_args.extend([
+            "--binary",
+            "{}:{}".format(
+                binary,
+                binary,
+            ),
+        ])
+
     work_layer = "image-extract-work--{}".format(layer_hash)
     image.genrule_layer(
         name = work_layer,
@@ -58,9 +68,9 @@ def _extract(
             "/extract",
             "--src-dir",
             "/source",
-            "--dest-dir",
+            "--dst-dir",
             "/output",
-        ] + binaries,
+        ] + binaries_args,
         antlir_rule = "user-internal",
     )
 

@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import re
 import unittest
 
@@ -37,3 +38,8 @@ class TestExtracted(unittest.TestCase):
         subvol = layer_resource_subvol(__package__, "layer")
         self.assertFalse(subvol.path("/lib64").exists())
         self.assertTrue(subvol.path("/usr/lib64/libc.so.6"))
+
+    def test_permissions(self):
+        src = os.stat("/usr/lib")
+        dst = os.stat("/usr/lib")
+        self.assertEqual(dst, src)

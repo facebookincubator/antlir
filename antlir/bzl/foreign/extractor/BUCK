@@ -1,6 +1,6 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "python_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
 
 image.layer(
     name = "extract-tools-layer",
@@ -23,19 +23,18 @@ image.layer(
     antlir_rule = "user-internal",
 )
 
-python_binary(
+rust_binary(
     name = "extract",
-    srcs = [
-        "extract.py",
-    ],
-    main_module = "antlir.bzl.foreign.extractor.extract",
-    # this runs in a layer, so should be self-contained to work in OSS
-    par_style = "xar",
+    srcs = ["extract.rs"],
     deps = [
-        "//antlir:fs_utils",
         third_party.library(
-            "pyelftools",
-            platform = "python",
-        ),
+            lib,
+            platform = "rust",
+        )
+        for lib in [
+            "anyhow",
+            "goblin",
+            "structopt",
+        ]
     ],
 )
