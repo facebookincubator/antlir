@@ -4,14 +4,16 @@ load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
 
 image.layer(
     name = "extract-tools-layer",
-    # We use the default build appliance with the assumption
-    # that it has all the right tools we need (ie, bin-utils).
-    # Eventually the hope is that the extract binary from ths
-    # tool would end up being incliuded in the BA because
-    # it is so awesome and everyone wants to use it. Until
-    # then we will settle for this.
-    parent_layer = REPO_CFG.build_appliance_default,
+    # This parent layer must not have any host mounts providing any of the
+    # directories that extracted binaries might depend on, so as to not
+    # conflict with the "protected paths" check in the Antlir compiler.
+    parent_layer = REPO_CFG.artifact["extractor.common_deps"],
     features = [
+        image.rpms_install([
+            "basesystem",
+            "coreutils",
+            "util-linux",
+        ]),
         image.ensure_dirs_exist(
             "/output",
         ),

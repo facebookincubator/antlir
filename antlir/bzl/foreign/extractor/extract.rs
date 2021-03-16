@@ -110,7 +110,7 @@ impl ExtractBinary {
     }
 
     fn dependencies(&self, root: &Path) -> Result<Vec<Dependency>> {
-        let bytes = std::fs::read(root.force_join(&self.src))
+        let bytes = std::fs::read(&self.src)
             .with_context(|| format!("failed to load binary '{:?}'", &self.src))?;
         let elf = Elf::parse(&bytes).context("failed to parse elf")?;
         let search_paths = self.search_paths(&elf)?;
@@ -167,39 +167,68 @@ struct ExtractOpts {
     /// --src-dir/--dst-dir.
     #[structopt(long = "binary")]
     binaries: Vec<ExtractBinary>,
+
+    /// Buck-built binaries to extract. Same format as --binary, but src is
+    /// treated as an absolute path.
+    #[structopt(long = "buck-binary")]
+    buck_binaries: Vec<ExtractBinary>,
 }
 
 fn main() -> Result<()> {
     let opt = ExtractOpts::from_args();
     let src_dir = opt.src_dir;
     let dst_dir = opt.dst_dir;
-    // map dst -> src to dedupe copy operations
-    let copy_files: HashMap<_, _> = opt
+
+    let binaries: Vec<_> = opt
         .binaries
         .into_iter()
+        .map(|bin| ExtractBinary {
+            src: src_dir.force_join(bin.src),
+            dst: bin.dst,
+        })
+        .chain(opt.buck_binaries.into_iter().map(|bin| ExtractBinary {
+            src: bin.src,
+            dst: bin.dst,
+        }))
+        .collect();
+
+
+    // map dst -> src to dedupe copy operations
+    let copy_libs: HashMap<_, _> = binaries
+        .iter()
         .map(|binary| {
-            let binary_dst = binary.dst.clone();
-            let binary_src = binary.src.clone();
+            // The binary root used for library search paths is different for
+            // installed binaries and buck-built binaries. Unfortunately
+            // buck-built binaries cannot be installed under --src-dir and still
+            // have working RUNPATHs, so they escape and use the container root :(
+            let root = match binary.src.starts_with(&src_dir) {
+                true => src_dir.clone(),
+                false => "/".into(),
+            };
             binary
-                .dependencies(src_dir.as_path())
+                .dependencies(root.as_path())
                 .unwrap()
                 .into_iter()
                 .map(move |dep| {
                     match dep {
                         Dependency::Relative(dep) => (
                             binary.dst.parent().unwrap().join(&dep),
-                            binary.src.parent().unwrap().join(&dep),
+                            root.force_join(binary.src.parent().unwrap()).join(&dep),
                         ),
-                        Dependency::Absolute(dep) => (dep.clone(), dep),
+                        Dependency::Absolute(dep) => (dep.clone(), root.force_join(dep)),
                     }
                 })
-                .chain(vec![(binary_dst, binary_src)])
         })
         .flatten()
         .collect();
-    for (dst, src) in &copy_files {
+    for bin in &binaries {
+        let dst = dst_dir.force_join(&bin.dst);
+        fs::create_dir_all(dst.parent().unwrap()).context("failed to create dest dir")?;
+        fs::copy(&bin.src, &dst)
+            .with_context(|| format!("failed to copy {:?} -> {:?}", &bin.src, dst))?;
+    }
+    for (dst, src) in &copy_libs {
         let dst = dst_dir.force_join(dst);
-        let src = src_dir.force_join(src);
         eprintln!("copying {:?} -> {:?}", src, dst);
         fs::create_dir_all(dst.parent().unwrap()).context("failed to create dest dir")?;
         fs::copy(&src, &dst).with_context(|| format!("failed to copy {:?} -> {:?}", src, dst))?;
@@ -207,9 +236,13 @@ fn main() -> Result<()> {
 
     // do a bottom-up traversal of all the destination directories, copying the
     // permission bits from the source where possible
-    let mut dst_dirs: Vec<_> = copy_files.keys().collect();
+    let mut dst_dirs: Vec<_> = copy_libs
+        .keys()
+        .map(|k| k.to_owned())
+        .chain(binaries.into_iter().map(|bin| bin.dst))
+        .collect();
     dst_dirs.sort_unstable_by_key(|k| Reverse(k.components().count()));
-    for dst in dst_dirs {
+    for dst in &dst_dirs {
         let dst_abs = dst_dir.force_join(dst);
         let src = src_dir.force_join(dst);
         if let Ok(meta) = fs::metadata(src) {

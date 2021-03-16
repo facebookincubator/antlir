@@ -18,6 +18,7 @@ this point, and it is recommended to batch all binaries to be extracted into
 a single call to `extract.extract`.
 """
 
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
@@ -25,15 +26,24 @@ load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 DEFAULT_EXTRACT_TOOLS_LAYER = "//antlir/bzl/foreign/extractor:extract-tools-layer"
 
 def _extract(
-        # A list of binaries to extract from the source,
-        binaries,
         # The layer from which to extract the binary and deps
         source,
+        # A list of binaries to extract from the source,
+        binaries = None,
         # The root destination path to clone the extracted
         # files into.
         dest = "/",
+        # Buck binaries to extract. dict of target -> dest path
+        buck_binaries = None,
         # The tool layer
         tool_layer = DEFAULT_EXTRACT_TOOLS_LAYER):
+    if not binaries and not buck_binaries:
+        fail("at least one of 'binaries' and 'buck_binaries' must be given")
+    if not binaries:
+        binaries = []
+    if not buck_binaries:
+        buck_binaries = {}
+
     layer_hash = sha256_b64(normalize_target(source) + " ".join(binaries) + dest)
     base_extract_layer = "image-extract-setup--{}".format(layer_hash)
     image.layer(
@@ -52,10 +62,12 @@ def _extract(
     for binary in binaries:
         binaries_args.extend([
             "--binary",
-            "{}:{}".format(
-                binary,
-                binary,
-            ),
+            "{}:{}".format(binary, binary),
+        ])
+    for target, dst in buck_binaries.items():
+        binaries_args.extend([
+            "--buck-binary",
+            "$(exe {}):{}".format(target, dst),
         ])
 
     work_layer = "image-extract-work--{}".format(layer_hash)
@@ -82,9 +94,20 @@ def _extract(
         dest,
     )
 
+# Helper to create a layer to use as 'source' for 'extract.extract', that
+# already has dependencies likely to be required by the binaries being
+# extracted
+def _source_layer(name, features):
+    image.layer(
+        name = name,
+        parent_layer = REPO_CFG.artifact["extractor.common_deps"],
+        features = features,
+    )
+
 # Eventually this would (hopefully) be provided as a top-level
 # api within `//antlir/bzl:image.bzl`, so lets start namespacing
 # here.
 extract = struct(
     extract = _extract,
+    source_layer = _source_layer,
 )

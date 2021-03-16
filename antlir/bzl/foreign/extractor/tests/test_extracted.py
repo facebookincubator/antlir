@@ -43,3 +43,10 @@ class TestExtracted(unittest.TestCase):
         src = os.stat("/usr/lib")
         dst = os.stat("/usr/lib")
         self.assertEqual(dst, src)
+        src = os.stat("/usr/bin")
+        dst = os.stat("/usr/bin")
+        self.assertEqual(dst, src)
+
+    def test_repo_binary_runs(self):
+        subvol = layer_resource_subvol(__package__, "layer")
+        subvol.run_as_root([subvol.path("/usr/bin/example")], check=True)
