@@ -1,0 +1,10 @@
+[package]
+name = "antlir-deps"
+version = "0.0.1"
+edition = "2018"
+
+[[bin]]
+name = "empty"
+path = "empty.rs"
+
+[dependencies]

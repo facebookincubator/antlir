@@ -1,0 +1,19 @@
+# Ignore Cargo-related stuff
+.cargo/registry
+.cargo/git
+/registry
+/git
+.package-cache
+
+# Various cruft in vendored packages
+vendor/*/target
+vendor/*/Cargo.lock
+vendor/**/.buckconfig
+vendor/**/BUCK
+vendor/**/OWNERS
+vendor/**/*~
+vendor/**/*.bzl
+vendor/*/.github/**
+vendor/*/.appveyor.yml
+vendor/*/.travis.yml
+/target/**

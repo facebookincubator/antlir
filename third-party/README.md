@@ -18,3 +18,11 @@ add or change this list.
 This contains python3 libraries that are provided the default `pypi` repositories.  Only `python3`
 is supported.  Adding or updating libraries here is currently a manual process.  Talk to @zeroxoneb
 if you need to modify anything here.
+
+### `rust`
+
+This contains vendored sources of rust crates. It is managed by
+[reindeer](https://github.com/facebookincubator/reindeer/) which vendors the
+sources and generates buck targets. To add/remove/update a new crate make the
+necessary change in `Cargo.toml`, then run `reindeer vendor` followed by
+`reindeer buckify`.
