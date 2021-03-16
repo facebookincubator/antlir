@@ -8,3 +8,6 @@ name = "empty"
 path = "empty.rs"
 
 [dependencies]
+anyhow = "1.0.38"
+goblin = "0.3.4"
+structopt = "0.3.21"
