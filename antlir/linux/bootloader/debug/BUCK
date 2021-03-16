@@ -29,7 +29,7 @@ image.layer(
     name = "debug-append",
     features = [
         # NOTE: while busybox still exists for /usr/bin/mount in the base
-        # initrd, this is technically duplicated. However image.symlink_file
+        # initrd, this is technically duplicated. However image.ensure_file_symlink
         # does not allow dangling symlinks so just take the easy way out and
         # clone the binary again
         busybox.install(

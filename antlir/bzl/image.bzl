@@ -12,7 +12,7 @@ load("//antlir/bzl/image_actions:install.bzl", "image_install", "image_install_b
 load("//antlir/bzl/image_actions:mount.bzl", "image_host_dir_mount", "image_host_file_mount", "image_layer_mount")
 load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
 load("//antlir/bzl/image_actions:rpms.bzl", "image_rpms_install", "image_rpms_remove_if_exists")
-load("//antlir/bzl/image_actions:symlink.bzl", "image_symlink_dir", "image_symlink_file")
+load("//antlir/bzl/image_actions:symlink.bzl", "image_ensure_dir_symlink", "image_ensure_file_symlink")
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
 load(":image_foreign_layer.bzl", "image_foreign_layer")
@@ -29,29 +29,29 @@ load(":image_test_rpm_names.bzl", "image_test_rpm_names")
 image = struct(
     clone = image_clone,
     cpp_unittest = image_cpp_unittest,
-    feature = image_feature,
+    ensure_dir_symlink = image_ensure_dir_symlink,
     ensure_dirs_exist = image_ensure_dirs_exist,
+    ensure_file_symlink = image_ensure_file_symlink,
     ensure_subdirs_exist = image_ensure_subdirs_exist,
-    install = image_install,
-    install_buck_runnable = image_install_buck_runnable,
-    tarball = image_tarball,
-    remove = image_remove,
-    rpms_install = image_rpms_install,
-    rpms_remove_if_exists = image_rpms_remove_if_exists,
-    symlink_dir = image_symlink_dir,
-    symlink_file = image_symlink_file,
+    feature = image_feature,
+    genrule_layer = image_foreign_layer,
     host_dir_mount = image_host_dir_mount,
     host_file_mount = image_host_file_mount,
-    layer_mount = image_layer_mount,
+    install = image_install,
+    install_buck_runnable = image_install_buck_runnable,
     layer = image_layer,
     layer_alias = image_layer_alias,
+    layer_mount = image_layer_mount,
     opts = struct,
     package = image_package,
     packaged_layer = image_packaged_layer,
     python_unittest = image_python_unittest,
+    remove = image_remove,
+    rpm = image_rpm,
+    rpms_install = image_rpms_install,
+    rpms_remove_if_exists = image_rpms_remove_if_exists,
     sendstream_layer = image_sendstream_layer,
     source = image_source,
+    tarball = image_tarball,
     test_rpm_names = image_test_rpm_names,
-    rpm = image_rpm,
-    genrule_layer = image_foreign_layer,
 )

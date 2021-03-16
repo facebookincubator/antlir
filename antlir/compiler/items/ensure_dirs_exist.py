@@ -176,21 +176,22 @@ def ensure_subdirs_exist_factory(
 
     ```
         image.ensure_dirs_exist("/a/b/c/d"),
-        image.symlink_dir("/x/y", "/a/b/c/d"),
+        image.ensure_dir_symlink("/x/y", "/a/b/c/d"),
     ```
 
-    Here, `symlink_dir` requires dirs "/x/y" and "/a/b/c" and provides
+    Here, `ensure_dir_symlink` requires dirs "/x/y" and "/a/b/c" and provides
     "/a/b/c/d". If `ensure_dirs_exist` were a single item, it would provide
-    paths "/a", "/a/b", "/a/b/c", "/a/b/c/d". This means `symlinks_dir` requires
-    `ensure_dirs_exist` (e.g. for path "/a/b/c"), but `ensure_dirs_exist` also
-    requires `symlinks_dir` (for path "/a/b/c/d", because they both provide it,
-    and we need to ensure `ensure_dirs_exist` runs last, so we make an
-    artificial dep). Thus, we hit a cycle in the dep graph.
+    paths "/a", "/a/b", "/a/b/c", "/a/b/c/d". This means `ensure_dir_symlink`
+    requires `ensure_dirs_exist` (e.g. for path "/a/b/c"), but
+    `ensure_dirs_exist` also requires `ensure_dir_symlink` (for path
+    "/a/b/c/d", because they both provide it, and we need to ensure
+    `ensure_dirs_exist` runs last, so we make an artificial dep). Thus, we hit
+    a cycle in the dep graph.
 
     Now, if we instead denormalize the EDE declaration into a separate item for
     each path component, we do not need to worry about the cycle, because the
-    EDE providing "/a/b/c" and the EDE requiring `symlink_dir` for "/a/b/c/d"
-    are separate items.
+    EDE providing "/a/b/c" and the EDE requiring `ensure_dir_symlink` for
+    "/a/b/c/d" are separate items.
     """
     into_dir = Path(make_path_normal_relative(_validate_into_dir(into_dir)))
     subdirs_to_create = make_path_normal_relative(subdirs_to_create)

@@ -285,7 +285,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_paths_provided_different_types(self):
         with self.assertRaisesRegex(
-            AssertionError, r"^ItemProv.*should not be checked against ItemProv"
+            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 [
@@ -352,6 +352,22 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                     InstallFileItem(from_target="", source=_FILE1, dest="b"),
                     SymlinkToFileItem(from_target="", source="a", dest="x"),
                     SymlinkToFileItem(from_target="", source="b", dest="x"),
+                ]
+            )
+
+    def test_duplicate_symlink_file_and_dir_conflict(self):
+        with self.assertRaisesRegex(
+            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
+        ):
+            ValidatedReqsProvs(
+                [
+                    self.provides_root,
+                    *ensure_subdirs_exist_factory(
+                        from_target="", into_dir="/", subdirs_to_create="y/x"
+                    ),
+                    SymlinkToDirItem(from_target="", source="/y", dest="z"),
+                    InstallFileItem(from_target="", source=_FILE1, dest="b"),
+                    SymlinkToFileItem(from_target="", source="b", dest="z"),
                 ]
             )
 

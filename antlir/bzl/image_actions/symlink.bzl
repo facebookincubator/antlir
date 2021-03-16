@@ -24,14 +24,14 @@ def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
         extra_deps = ["//antlir/bzl/image_actions:symlink"],
     )
 
-def image_symlink_dir(link_target, link_name):
+def image_ensure_dir_symlink(link_target, link_name):
     """
 The operation follows rsync convention for a destination (`link_name`):
 `ends/in/slash/` means "write into this directory", `does/not/end/with/slash`
 means "write with the specified filename":
 
-- `image.symlink_dir("/d", "/e/")` symlinks directory `/d` to `/e/d`
-- `image.symlink_dir("/a", "/b/c")` symlinks directory `/a` to `/b/c`
+- `image.ensure_dir_symlink("/d", "/e/")` symlinks directory `/d` to `/e/d`
+- `image.ensure_dir_symlink("/a", "/b/c")` symlinks directory `/a` to `/b/c`
 
 Both arguments are mandatory:
 
@@ -57,14 +57,14 @@ matches the spec.
     """
     return _build_symlink_feature(link_target, link_name, "symlinks_to_dirs")
 
-def image_symlink_file(link_target, link_name):
+def image_ensure_file_symlink(link_target, link_name):
     """
 The operation follows rsync convention for a destination (`link_name`):
 `ends/in/slash/` means "write into this directory", `does/not/end/with/slash`
 means "write with the specified filename":
 
-- `image.symlink_file("/d", "/e/")` symlinks file `/d` to `/e/d`
-- `image.symlink_file("/a", "/b/c")` symlinks file `/a` to `/b/c`
+- `image.ensure_file_symlink("/d", "/e/")` symlinks file `/d` to `/e/d`
+- `image.ensure_file_symlink("/a", "/b/c")` symlinks file `/a` to `/b/c`
 
 Both arguments are mandatory:
 

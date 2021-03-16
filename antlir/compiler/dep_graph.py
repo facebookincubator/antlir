@@ -69,10 +69,6 @@ class ItemProv(NamedTuple):
         2. Symlink dir and file items may duplicate, as long as they are the
         same type (all dirs or all files) and have the same source.
         """
-        assert (
-            self.provides == other.provides
-        ), f"{self} should not be checked against {other}"
-
         for ip in (self, other):
             if isinstance(ip.item, (EnsureDirsExistItem)):
                 assert isinstance(
@@ -171,7 +167,7 @@ class ValidatedReqsProvs:
         reqs_provs = self._get_item_req_provs(prov.req.key())
         new_ip = ItemProv(provides=prov, item=item)
         for ip in reqs_provs.item_provs:
-            if new_ip.conflicts(ip):
+            if ip.provides != new_ip.provides or new_ip.conflicts(ip):
                 raise RuntimeError(f"{new_ip} conflicts with {ip}")
         reqs_provs.item_provs.add(ItemProv(provides=prov, item=item))
 
