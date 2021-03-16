@@ -272,7 +272,7 @@ echo {contents} > "$RPM_BUILD_ROOT"/etc/rpm/macros.test-{prog}
 
 def sign_rpm(rpm_path: Path, gpg_signing_key: str) -> None:
     "Signs an RPM with the provided key data"
-    package_dir = Path(generate_work_dir())  # Bind-mount `rpm_path` here
+    package_dir = generate_work_dir()  # Bind-mount `rpm_path` here
     opts = new_nspawn_opts(
         cmd=[
             # IMPORTANT: Stay gpg-2.0 compatible through 2024 for CentOS7.
@@ -307,7 +307,7 @@ def build_rpm(
         tf.write(rpm.spec(busybox_path).encode())
         tf.flush()
 
-        work_dir = Path(generate_work_dir())
+        work_dir = generate_work_dir()
 
         format_kwargs = {
             "quoted_arch": shlex.quote(arch),

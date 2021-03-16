@@ -231,7 +231,15 @@ def _wrap_internal(fn, args, kwargs):
             "Bad value {}, must be one of {}".format(rule_type, _ALLOWED_RULES),
             _RULE_TYPE_KWARG,
         )
-    kwargs["visibility"] = _normalize_visibility(kwargs.pop("visibility", None))
+
+    # Antlir build outputs should not be visible outside of antlir by default. This
+    # helps prevent our abstractions from leaking into other codebases as Antlir
+    # becomes more widely adopted.
+    kwargs["visibility"] = _normalize_visibility(kwargs.pop("visibility", None)) + [
+        "//antlir/...",
+        "//bot_generated/antlir/...",
+    ]
+
     fn(*args, **kwargs)
 
 def _command_alias(*args, **kwargs):
@@ -348,6 +356,9 @@ def _impl_python_unittest(
 def _python_unittest(*args, **kwargs):
     _wrap_internal(_impl_python_unittest, args, kwargs)
 
+def _rust_unittest(*args, **kwargs):
+    _wrap_internal(native.rust_test, args, kwargs)
+
 # Use = in the default filename to avoid clashing with RPM names.
 # The constant must match `update_allowed_versions.py`.
 # Omits `_wrap_internal` due to perf paranoia -- we have a callsite per RPM.
@@ -460,6 +471,7 @@ shim = struct(
     python_binary = _python_binary,
     python_library = _python_library,
     python_unittest = _python_unittest,
+    rust_unittest = _rust_unittest,
     rpm_vset = _rpm_vset,  # Not wrapped due to perf paranoia.
     target_utils = struct(
         parse_target = _parse_target,
@@ -468,4 +480,5 @@ shim = struct(
     third_party = struct(
         library = _third_party_library,
     ),
+    vm_image_path = "//images/base:",
 )

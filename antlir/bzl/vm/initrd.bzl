@@ -5,7 +5,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 
@@ -16,7 +16,7 @@ DEFAULT_MODULE_LIST = [
     "net/9p/9pnet_virtio.ko",
 ]
 
-def initrd(kernel, module_list = None):
+def initrd(kernel, module_list = None, visibility = None):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
     kernel in a virtual machine and setup the root disk as a btrfs seed device
@@ -27,8 +27,8 @@ def initrd(kernel, module_list = None):
     """
 
     name = "{}-initrd".format(kernel.uname)
-
     module_list = module_list or DEFAULT_MODULE_LIST
+    visibility = get_visibility(visibility, name)
 
     # This intermediate genrule is here to create a dir hierarchy
     # of kernel modules that are needed for the initrd.  This
@@ -152,11 +152,14 @@ def initrd(kernel, module_list = None):
                 > $OUT
             """.format(name),
         antlir_rule = "user-internal",
+        visibility = visibility,
     )
 
+    kernel_debug = name + "-debug"
     buck_genrule(
-        name = name + "-debug",
+        name = kernel_debug,
         out = "initrd.cpio.gz",
         cmd = "cat $(location :{}) $(location //antlir/linux/bootloader/debug:debug-append.cpio.gz) > $OUT".format(name),
         antlir_rule = "user-internal",
+        visibility = visibility,
     )

@@ -17,12 +17,13 @@ from antlir.fs_utils import Path, generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
-from pydantic import root_validator, validator
+from pydantic import root_validator
 
 from .common import (
     ImageItem,
     LayerOpts,
     make_path_normal_relative,
+    validate_path_field_normal_relative,
 )
 from .symlink_t import symlink_t
 
@@ -44,11 +45,9 @@ def _make_rsync_style_dest_path(dest: str, source: str) -> str:
 
 
 class SymlinkBase(symlink_t, ImageItem):
-    _normalize_source = validator("source", allow_reuse=True, pre=True)(
-        make_path_normal_relative
-    )
+    _normalize_source = validate_path_field_normal_relative("source")
 
-    @root_validator
+    @root_validator(pre=True)
     def dest_is_rsync_style(cls, values):  # noqa B902
         # Validators are classmethods but flake8 doesn't catch that.
         values["dest"] = _make_rsync_style_dest_path(
@@ -77,10 +76,24 @@ class SymlinkBase(symlink_t, ImageItem):
         assert os.path.normpath(dest / rel_source).startswith(
             subvol.path()
         ), f"{self}: A symlink to {rel_source} would point outside the image"
+        if os.path.exists(dest):
+            if not os.path.islink(dest):
+                raise RuntimeError(f"{self}: dest already exists")
+            # Should we check abs_source.relpath(os.path.realpath(dest))?
+            # If so, we may also need to check that os.readlink(dest) does
+            # not point outside subvol.path(). This currently errors if an
+            # existing symlink does not matches exactly this item would've
+            # created.
+            current_link = os.readlink(dest)
+            if current_link == rel_source:
+                return
+            raise RuntimeError(
+                f"{self}: {self.dest} -> {self.source} exists to {current_link}"
+            )
         if layer_opts.build_appliance:
             build_appliance = layer_opts.build_appliance
             work_dir = generate_work_dir()
-            rel_dest = work_dir + "/" + self.dest
+            rel_dest = work_dir / self.dest
             opts = new_nspawn_opts(
                 cmd=[
                     "ln",
@@ -102,24 +115,24 @@ class SymlinkBase(symlink_t, ImageItem):
 
 class SymlinkToDirItem(SymlinkBase):
     def provides(self):
-        yield ProvidesDirectory(path=Path(self.dest))
+        yield ProvidesDirectory(path=self.dest)
 
     def requires(self):
-        yield require_directory(Path(self.source))
-        yield require_directory(Path(self.dest).dirname())
+        yield require_directory(self.source)
+        yield require_directory(self.dest.dirname())
 
 
 # We should allow symlinks to certain files that will be in the image
 # at runtime but may not be at build time.
-def _allowlisted_symlink_source(source: str) -> bool:
-    return source in ["dev/null"]
+def _allowlisted_symlink_source(source: Path) -> bool:
+    return source in [b"dev/null"]
 
 
 class SymlinkToFileItem(SymlinkBase):
     def provides(self):
-        yield ProvidesFile(path=Path(self.dest))
+        yield ProvidesFile(path=self.dest)
 
     def requires(self):
         if not _allowlisted_symlink_source(self.source):
-            yield require_file(Path(self.source))
-        yield require_directory(Path(self.dest).dirname())
+            yield require_file(self.source)
+        yield require_directory(self.dest.dirname())

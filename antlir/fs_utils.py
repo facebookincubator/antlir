@@ -154,6 +154,9 @@ class Path(bytes):
     def realpath(self) -> "Path":
         return Path(os.path.realpath(self))
 
+    def readlink(self) -> "Path":
+        return Path(os.readlink(self))
+
     # `start` does NOT default to the current directory because code relying
     # on $PWD tends to be fragile, and we don't want to make it implicit.
     def relpath(self, start: AnyStr) -> "Path":
@@ -378,10 +381,13 @@ def temp_dir(**kwargs) -> Generator[Path, None, None]:
         yield Path(td)
 
 
-def generate_work_dir():
-    return "/work" + base64.urlsafe_b64encode(
-        uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
-    ).decode().strip("=")
+def generate_work_dir() -> Path:
+    return Path(
+        b"/work"
+        + base64.urlsafe_b64encode(
+            uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
+        ).strip(b"=")
+    )
 
 
 @contextmanager

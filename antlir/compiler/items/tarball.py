@@ -15,18 +15,20 @@ from antlir.fs_utils import Path, generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
-from pydantic import validator
 
-from .common import ImageItem, LayerOpts, make_path_normal_relative
+from .common import (
+    ImageItem,
+    LayerOpts,
+    make_path_normal_relative,
+    validate_path_field_normal_relative,
+)
 from .tarball_t import tarball_t
 
 
 class TarballItem(tarball_t, ImageItem):
-    from_target: str
+    source: Path
 
-    _normalize_into_dir = validator("into_dir", allow_reuse=True)(
-        make_path_normal_relative
-    )
+    _normalize_into_dir = validate_path_field_normal_relative("into_dir")
 
     def provides(self):
         # We own ZST decompression, tarfile handles other gz, bz2, etc.
@@ -36,9 +38,7 @@ class TarballItem(tarball_t, ImageItem):
             fileobj=tf, mode="r|"
         ) as f:
             for item in f:
-                path = Path(self.into_dir) / make_path_normal_relative(
-                    item.name
-                )
+                path = self.into_dir / make_path_normal_relative(item.name)
                 if item.isdir():
                     # We do NOT provide the installation directory, and the
                     # image build script tarball extractor takes pains (e.g.
@@ -50,7 +50,7 @@ class TarballItem(tarball_t, ImageItem):
                     yield ProvidesFile(path=path)
 
     def requires(self):
-        yield require_directory(Path(self.into_dir))
+        yield require_directory(self.into_dir)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         build_appliance = layer_opts.requires_build_appliance()
@@ -66,7 +66,7 @@ class TarballItem(tarball_t, ImageItem):
                 # hard to state that with complete confidence, especially if
                 # we start adding support for following directory symlinks.
                 "--directory",
-                work_dir + "/" + self.into_dir,
+                (work_dir / self.into_dir).decode(),
                 "--extract",
                 # preserving xattrs need to be specified on both sides (packing
                 # and unpacking)

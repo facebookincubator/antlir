@@ -6,7 +6,6 @@
 load("//antlir/bzl/image_actions:install.bzl", "image_install_buck_runnable")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
-load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
 load(":query.bzl", "layer_deps_query")

@@ -42,6 +42,7 @@ class VMTestExecOpts(VMExecOpts):
     test_binary_image: Path
     gtest_list_tests: bool
     list_tests: Optional[str]
+    list_rust: bool
 
     @classmethod
     def setup_cli(cls, parser):
@@ -82,13 +83,17 @@ class VMTestExecOpts(VMExecOpts):
             "to run",
             required=True,
         )
-        parser.add_argument(
+        list_group = parser.add_mutually_exclusive_group()
+        list_group.add_argument(
             "--gtest_list_tests",
             action="store_true",
         )  # For c++ gtest
-        parser.add_argument(
+        list_group.add_argument(
             "--list-tests",
         )  # Python pyunit with the new TestPilot adapter
+        list_group.add_argument(
+            "--list", action="store_true", dest="list_rust"
+        )  # Rust
 
 
 async def run(
@@ -104,6 +109,7 @@ async def run(
     devel_layer: bool,
     gtest_list_tests: bool,
     list_tests: Optional[str],
+    list_rust: bool,
     setenv: List[str],
     sync_file: List[str],
     test_binary: Path,
@@ -116,22 +122,22 @@ async def run(
     # sandboxed, and may run untrusted code as part of listing tests.
     # TODO(vmagro): the long-term goal should be to make vm boots as
     # fast as possible to avoid unintuitive tricks like this
-    if gtest_list_tests or list_tests:
-        assert not (
-            gtest_list_tests and list_tests
-        ), "Cannot provide both --gtest_list_tests and --list-tests"
-        proc = await asyncio.create_subprocess_exec(
-            str(test_binary),
-            *(
-                ["--gtest_list_tests"]
-                if gtest_list_tests
-                # NB: Unlike for the VM, we don't explicitly have to
-                # pass the magic `TEST_PILOT` environment var to allow
-                # triggering the new TestPilotAdapter. The environment
-                # is inherited.
-                else ["--list-tests", list_tests]
-            ),
-        )
+    if gtest_list_tests or list_tests or list_rust:
+        assert (
+            int(gtest_list_tests) + int(bool(list_tests)) + int(list_rust)
+        ) == 1, "Got mutually exclusive test listing arguments"
+        args = []
+        if gtest_list_tests:
+            args = ["--gtest_list_tests"]
+        elif list_tests:
+            # NB: Unlike for the VM, we don't explicitly have to
+            # pass the magic `TEST_PILOT` environment var to allow
+            # triggering the new TestPilotAdapter. The environment
+            # is inherited.
+            args = ["--list-tests", list_tests]
+        elif list_rust:
+            args = ["--list"]
+        proc = await asyncio.create_subprocess_exec(str(test_binary), *args)
         await proc.wait()
         sys.exit(proc.returncode)
 

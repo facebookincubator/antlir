@@ -9,14 +9,14 @@ far smaller and stripped down size.  Since most services do not require more tha
 one locale, we can save a lot of space by only building what we need.
 """
 
-load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
+load("//antlir/bzl:image.bzl", "image")
 
 def image_build_locale_archive(name, parent_layer, locales):
     """
     `parent_layer` must have both the locale desired and the
     `build-locale-archive` binary to rebuild the archive.
     """
-    image_foreign_layer(
+    image.genrule_layer(
         name = name,
         cmd = [
             "bash",

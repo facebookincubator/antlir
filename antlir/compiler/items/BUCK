@@ -54,6 +54,10 @@ python_library(
         "//antlir:subvol_utils",
         "//antlir/compiler:procfs_serde",
         "//antlir/rpm:yum_dnf_conf",
+        third_party.library(
+            "pydantic",
+            platform = "python",
+        ),
     ],
 )
 
@@ -227,6 +231,7 @@ python_library(
 python_library(
     name = "mount",
     srcs = ["mount.py"],
+    visibility = ["//tupperware/image/cm:container_manifest_impl"],
     deps = [
         ":common",
         ":mount_utils",
@@ -281,7 +286,6 @@ shape.loader(
 python_library(
     name = "items",
     srcs = [
-        "common.py",
         "install_file.py",
         "remove_path.py",
         "symlink.py",

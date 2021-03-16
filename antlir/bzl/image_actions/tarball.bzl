@@ -13,17 +13,10 @@ load(
     "target_tagger_to_feature",
 )
 
-tagged_tarball = shape.shape(
-    force_root_ownership = shape.field(bool, optional = True),
-    into_dir = str,
-    source = target_tagged_image_source_shape,
-)
-
 tarball_t = shape.shape(
-    from_target = shape.field(str, optional = True),
     force_root_ownership = shape.field(bool, optional = True),
-    into_dir = str,
-    source = str,
+    into_dir = shape.path(),
+    source = target_tagged_image_source_shape,
 )
 
 def image_tarball(source, dest, force_root_ownership = False):
@@ -39,7 +32,7 @@ def image_tarball(source, dest, force_root_ownership = False):
     """
     target_tagger = new_target_tagger()
     tarball = shape.new(
-        tagged_tarball,
+        tarball_t,
         force_root_ownership = force_root_ownership,
         into_dir = dest,
         source = image_source_as_target_tagged_shape(
@@ -50,7 +43,7 @@ def image_tarball(source, dest, force_root_ownership = False):
 
     return target_tagger_to_feature(
         target_tagger,
-        items = struct(tarballs = [shape.as_dict(tarball)]),
+        items = struct(tarballs = [tarball]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:tarball"],
     )

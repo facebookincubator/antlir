@@ -9,10 +9,14 @@ import subprocess
 from antlir.compiler.requires_provides import require_directory
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
-from pydantic import root_validator, validator
+from pydantic import root_validator
 
 from .clone_t import clone_t
-from .common import ImageItem, LayerOpts, make_path_normal_relative
+from .common import (
+    ImageItem,
+    LayerOpts,
+    validate_path_field_normal_relative,
+)
 from .phases_provide import gen_subvolume_subtree_provides
 
 
@@ -23,9 +27,7 @@ class CloneItem(clone_t, ImageItem):
     source: Path
     source_layer: Subvol
 
-    _normalize_dest = validator("dest", allow_reuse=True, pre=True)(
-        make_path_normal_relative
-    )
+    _normalize_dest = validate_path_field_normal_relative("dest")
 
     @root_validator
     def check_flags(cls, values):  # noqa B902
@@ -42,9 +44,9 @@ class CloneItem(clone_t, ImageItem):
             self.source_layer.path(),
         )
         for p in gen_subvolume_subtree_provides(self.source_layer, img_rel_src):
-            if self.omit_outer_dir and p.path == b"/":
+            if self.omit_outer_dir and p.path() == b"/":
                 continue
-            rel_to_src = p.path.strip_leading_slashes()
+            rel_to_src = p.path().strip_leading_slashes()
             if not self.omit_outer_dir and self.pre_existing_dest:
                 rel_to_src = img_rel_src.basename() / rel_to_src
             yield p.with_new_path(self.dest / rel_to_src)

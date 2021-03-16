@@ -51,7 +51,7 @@ def image_ensure_subdirs_exist(into_dir, subdirs_to_create, mode = None, user = 
     ensure_subdirs_exist = shape.new(ensure_subdirs_exist_t, **dir_spec)
     return target_tagger_to_feature(
         new_target_tagger(),
-        items = struct(ensure_subdirs_exist = [shape.as_dict(ensure_subdirs_exist)]),
+        items = struct(ensure_subdirs_exist = [ensure_subdirs_exist]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image_actions:ensure_dirs_exist"],
     )

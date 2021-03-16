@@ -7,6 +7,11 @@ load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 python_library(
     name = "common",
     srcs = ["common.py"],
+    visibility = [
+        "//tupperware/image/cm:container_manifest_impl",
+        "//tupperware/image/cm:extract_nested_features",
+        "//tupperware/image/scripts:tw_image_stats-library",
+    ],
 )
 
 python_unittest(
@@ -22,6 +27,9 @@ python_unittest(
 python_library(
     name = "cli",
     srcs = ["cli.py"],
+    visibility = [
+        "//tupperware/image/cm:container_manifest_impl",
+    ],
     deps = [
         ":common",
         ":fs_utils",
@@ -31,6 +39,14 @@ python_library(
 python_library(
     name = "fs_utils",
     srcs = ["fs_utils.py"],
+    visibility = [
+        "//scripts/jtru/tw:mixin-check",
+        "//scripts/jtru/tw:mixin-check-library",
+        "//tupperware/image/cm:container_manifest_impl",
+        "//tupperware/image/cm:extract_nested_features",
+        "//tupperware/image/composable_services/tests:systemd_test_framework",
+        "//tupperware/image/scripts:make-base-chroot-update-diff-library",
+    ],
     deps = [":common"],
 )
 
@@ -84,12 +100,20 @@ export_file(
 python_library(
     name = "testlib_layer_resource",
     srcs = ["tests/layer_resource.py"],
+    visibility = [
+        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
+        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
+    ],
     deps = [":find_built_subvol"],
 )
 
 python_library(
     name = "testlib_subvol_helpers",
     srcs = ["tests/subvol_helpers.py"],
+    visibility = [
+        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
+        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
+    ],
     deps = [
         ":subvol_utils",
         "//antlir/btrfs_diff:testlib_render_subvols",
@@ -173,6 +197,7 @@ python_unittest(
 python_library(
     name = "artifacts_dir",
     srcs = ["artifacts_dir.py"],
+    visibility = ["PUBLIC"],
     deps = [":fs_utils"],
 )
 
@@ -204,6 +229,7 @@ python_library(
 python_binary(
     name = "find-built-subvol",
     main_module = "antlir.find_built_subvol",
+    visibility = ["PUBLIC"],
     deps = [":find_built_subvol"],
 )
 
@@ -224,6 +250,7 @@ python_binary(
     name = "layer-mount-config",
     srcs = ["layer_mount_config.py"],
     main_module = "antlir.layer_mount_config",
+    visibility = ["PUBLIC"],
 )
 
 python_unittest(
@@ -304,30 +331,35 @@ python_binary(
 python_binary(
     name = "artifacts-dir",
     main_module = "antlir.artifacts_dir",
+    visibility = ["PUBLIC"],
     deps = [":artifacts_dir"],
 )
 
 python_binary(
     name = "compiler",
     main_module = "antlir.compiler.compiler",
+    visibility = ["PUBLIC"],
     deps = ["//antlir/compiler:compiler"],
 )
 
 python_binary(
     name = "subvolume-garbage-collector",
     main_module = "antlir.subvolume_garbage_collector",
+    visibility = ["PUBLIC"],
     deps = [":subvolume_garbage_collector"],
 )
 
 python_binary(
     name = "subvolume-version",
     main_module = "antlir.subvolume_version",
+    visibility = ["PUBLIC"],
     deps = [":subvolume_version"],
 )
 
 python_binary(
     name = "volume-for-repo",
     main_module = "antlir.volume_for_repo",
+    visibility = ["PUBLIC"],
     deps = [":volume_for_repo"],
 )
 
@@ -351,6 +383,7 @@ python_binary(
     name = "package-image",
     srcs = ["package_image.py"],
     main_module = "antlir.package_image",
+    visibility = ["PUBLIC"],
     deps = [
         ":find_built_subvol",
         ":subvol_utils",
@@ -426,6 +459,7 @@ python_library(
 python_library(
     name = "shape",
     srcs = ["shape.py"],
+    visibility = ["PUBLIC"],
     deps = [
         ":find_built_subvol",
         ":fs_utils",
@@ -477,6 +511,7 @@ python_binary(
     name = "serialize-targets-and-outputs",
     srcs = ["serialize_targets_and_outputs.py"],
     main_module = "antlir.serialize_targets_and_outputs",
+    visibility = ["PUBLIC"],
 )
 
 python_unittest(

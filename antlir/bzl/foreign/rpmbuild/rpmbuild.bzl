@@ -10,10 +10,10 @@ available in a pre-determined location: `/rpmbuild/RPMS`.
 """
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
@@ -78,10 +78,13 @@ def private_image_rpmbuild_impl(
         setup_features = None,
         # A wrapper command to run rpmbuild instead of running it standalone
         wrapper_cmd = None,
+        visibility = None,
         **image_layer_kwargs):
     """
     Implementation of image_rpmbuild, see docs in `image_rpmbuild`.
     """
+
+    visibility = get_visibility(visibility, name)
 
     # Future: We tar the source directory and untar it inside the subvolume
     # before building because the "install_*_trees" feature does not yet
@@ -126,7 +129,7 @@ def private_image_rpmbuild_impl(
     installer = build_opts_dict.get("rpm_installer", REPO_CFG.rpm_installer_default)
 
     install_deps_layer = name + "-rpmbuild-install-deps"
-    image_foreign_layer(
+    image.genrule_layer(
         name = install_deps_layer,
         rule_type = "image_rpmbuild_install_deps_layer",
         parent_layer = ":" + setup_layer,
@@ -151,11 +154,12 @@ def private_image_rpmbuild_impl(
             shadow_proxied_binaries = True,
         ),
         antlir_rule = "user-internal",
+        visibility = [],
         **image_layer_kwargs
     )
 
     build_layer = name + "-rpmbuild-build"
-    image_foreign_layer(
+    image.genrule_layer(
         name = build_layer,
         rule_type = "image_rpmbuild_build_layer",
         parent_layer = ":" + install_deps_layer,
@@ -173,6 +177,7 @@ def private_image_rpmbuild_impl(
             "{}/SPECS/specfile.spec".format(rpmbuild_dir),
         ],
         antlir_rule = "user-facing",
+        visibility = visibility,
         **image_layer_kwargs
     )
 
@@ -212,6 +217,7 @@ def private_image_rpmbuild_impl(
             signer_target = signer,
         ),
         antlir_rule = "user-facing",
+        visibility = visibility,
     )
 
 # You typically don't need this if you're installing an RPM signed with a key
@@ -247,7 +253,7 @@ def image_import_rpm_public_key_layer(
     )
 
     import_layer = name + "-key-import"
-    image_foreign_layer(
+    image.genrule_layer(
         name = import_layer,
         rule_type = "image_import_rpm_public_key_layer",
         parent_layer = ":" + copy_layer,

@@ -7,26 +7,21 @@
 import os
 from typing import Iterable
 
-from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
-from pydantic import validator
 
 from .common import (
     ImageItem,
     LayerOpts,
     PhaseOrder,
-    make_path_normal_relative,
     is_path_protected,
     protected_path_set,
+    validate_path_field_normal_relative,
 )
 from .remove_paths_t import remove_paths_t
 
 
 class RemovePathItem(remove_paths_t, ImageItem):
-    @validator("path", pre=True)
-    def validate_path(cls, path):  # noqa B902
-        # Validators are classmethods but flake8 doesn't catch that.
-        return Path(make_path_normal_relative(path))
+    _normalize_path = validate_path_field_normal_relative("path")
 
     def phase_order(self):
         return PhaseOrder.REMOVE_PATHS

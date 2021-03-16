@@ -45,8 +45,26 @@ with short-circuiting.  E.g. FollowsSymlinks(Pred) would expand to:
 '''
 import dataclasses
 from enum import Enum, auto
+from typing import Hashable, Optional
 
 from antlir.fs_utils import Path
+
+
+class RequirementKind(Enum):
+    PATH = auto()
+
+
+@dataclasses.dataclass(frozen=True)
+class Requirement:
+    kind: RequirementKind
+
+    def key(self) -> Hashable:
+        raise NotImplementedError("Requirements must implement key")
+
+
+class _Predicate(Enum):
+    IS_DIRECTORY = auto()
+    IS_FILE = auto()
 
 
 def _normalize_path(path: Path) -> Path:
@@ -55,19 +73,18 @@ def _normalize_path(path: Path) -> Path:
     return Path(b"/" / path.strip_leading_slashes()).normpath()
 
 
-class _Predicate(Enum):
-    IS_DIRECTORY = auto()
-    IS_FILE = auto()
-
-
 @dataclasses.dataclass(frozen=True)
-class PathRequiresPredicate:
+class PathRequiresPredicate(Requirement):
     path: Path
-    predicate: _Predicate
+    predicate: Optional[_Predicate]
 
-    def __init__(self, *, path: Path, predicate: _Predicate) -> None:
+    def __init__(self, path: Path, predicate: _Predicate) -> None:
+        super().__init__(kind=RequirementKind.PATH)
         object.__setattr__(self, "path", _normalize_path(path))
         object.__setattr__(self, "predicate", predicate)
+
+    def key(self) -> Hashable:
+        return self.path
 
 
 def require_directory(path: Path):
@@ -79,44 +96,37 @@ def require_file(path: Path):
 
 
 @dataclasses.dataclass(frozen=True)
-class ProvidesPathObject:
-    path: Path
-    # In the future, we might add permissions, etc here.
+class Provider:
+    req: Requirement
 
-    def __init__(self, *, path: Path) -> None:
-        object.__setattr__(self, "path", _normalize_path(path))
+    def provides(self, req: Requirement) -> bool:
+        return self.req == req
 
-    def matches(
-        self, path_to_reqs_provs, path_predicate: PathRequiresPredicate
-    ) -> bool:
-        assert (
-            path_predicate.path == self.path
-        ), "Tried to match {} against {}".format(path_predicate, self)
-        assert self._matches_predicate(
-            path_predicate.predicate
-        ), "predicate {} not implemented by {}".format(path_predicate, self)
-        return True
 
-    def _matches_predicate(self, predicate):
-        return False
+@dataclasses.dataclass(frozen=True)
+class ProvidesPathObject(Provider):
+    def path(self) -> Path:
+        return self.req.path
 
     def with_new_path(self, new_path: Path):
-        return dataclasses.replace(self, path=_normalize_path(new_path))
+        return self.__class__(new_path)
 
 
 class ProvidesDirectory(ProvidesPathObject):
-    def _matches_predicate(self, predicate):
-        return predicate == _Predicate.IS_DIRECTORY
+    def __init__(self, path: Path):
+        super().__init__(req=require_directory(path))
 
 
 class ProvidesFile(ProvidesPathObject):
     "Does not have to be a regular file, just any leaf in the FS tree"
 
-    def _matches_predicate(self, predicate):
-        return predicate == _Predicate.IS_FILE
+    def __init__(self, path: Path):
+        super().__init__(req=require_file(path))
 
 
 class ProvidesDoNotAccess(ProvidesPathObject):
     # Deliberately matches no predicates -- this used to mark paths as "off
     # limits" to further writes.
-    pass
+
+    def __init__(self, path: Path):
+        super().__init__(req=PathRequiresPredicate(path, None))
