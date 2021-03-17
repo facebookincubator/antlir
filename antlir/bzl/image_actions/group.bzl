@@ -27,4 +27,6 @@ are auto-assigned, they may change if underlying layers add/remove groups.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(groups = [shape.new(group_t, name = groupname, id = gid)]),
+        # The `fake_macro_library` docblock explains this self-dependency
+        extra_deps = ["//antlir/bzl/image_actions:group"],
     )
