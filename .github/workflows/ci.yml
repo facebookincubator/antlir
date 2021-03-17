@@ -80,7 +80,7 @@ jobs:
         # WARNING: keep this query in sync with the internal one in antlir.td
         # to ensure the same set of tests is run internally and externally
         run: |
-            buck test --always-exclude $(buck query 'set(//...) - kind(cxx_test, //...) - set(//antlir/vm/...) - set(//antlir/bzl/genrule/locale/...)') --xml tests.xml > buck.log 2> buck.err || true
+            buck test --always-exclude $(buck query @tools/ci_tests_query) --xml tests.xml > buck.log 2> buck.err || true
             echo Buck stderr
             cat buck.err
             echo Test results
