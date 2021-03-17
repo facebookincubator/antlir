@@ -29,7 +29,7 @@ jobs:
         run: buck --version
 
       - name: Build appliance sendstream
-        run: buck build -c python.package_style=standalone --out stable_build_appliance.sendstream.zst //images/appliance:bootstrap_build_appliance.sendstream.zst
+        run: buck build -c python.package_style=standalone --out stable-build-appliance.sendstream.zst //images/appliance:bootstrap-build-appliance.sendstream.zst
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -41,9 +41,9 @@ jobs:
       - name: Upload to S3
         run: |
           set -euo pipefail
-          sha="$(sha256sum stable_build_appliance.sendstream.zst | awk '{ print $1 }')"
-          aws s3 cp stable_build_appliance.sendstream.zst "s3://antlir/images/appliance/stable_build_appliance.sendstream.zst.$sha"
-          rm stable_build_appliance.sendstream.zst
+          sha="$(sha256sum stable-build-appliance.sendstream.zst | awk '{ print $1 }')"
+          aws s3 cp stable-build-appliance.sendstream.zst "s3://antlir/images/appliance/stable-build-appliance.sendstream.zst.$sha"
+          rm stable-build-appliance.sendstream.zst
           echo "stable_build_appliance_sha = \"$sha\"" > images/appliance/stable_appliance.bzl
 
       - name: Commit new hash

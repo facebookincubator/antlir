@@ -45,8 +45,8 @@
   excluded_labels = exclude_test_if_transitive_dep, disabled
 
 [antlir]
-  build_appliance_default = //images/appliance:stable_build_appliance
+  build_appliance_default = //images/appliance:stable-build-appliance
   rpm_installer_default = dnf
   rpm_installers_supported = dnf
-  host_mounts_allowed_in_targets = //images/appliance:host_build_appliance //images/appliance:features-for-layer-host_build_appliance
-  artifact_key_to_path = build_appliance.newest //images/appliance:stable_build_appliance vm.rootfs.layer.rc //images/base:fedora.vm vm.rootfs.layer.stable //images/base:fedora.vm vm.rootfs.btrfs.rc //images/base:fedora.vm.btrfs vm.rootfs.btrfs.stable //images/base:fedora.vm.btrfs
+  host_mounts_allowed_in_targets = //images/appliance:host-build-appliance //images/appliance:features-for-layer-host-build-appliance
+  artifact_key_to_path = build_appliance.newest //images/appliance:stable-build-appliance vm.rootfs.layer.rc //images/base:fedora.vm vm.rootfs.layer.stable //images/base:fedora.vm vm.rootfs.btrfs.rc //images/base:fedora.vm.btrfs vm.rootfs.btrfs.stable //images/base:fedora.vm.btrfs
