@@ -6,7 +6,7 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl/foreign/yum_dnf_cache:yum_dnf_cache.bzl", "image_yum_dnf_make_snapshot_cache")
+load("//antlir/bzl/genrule/yum_dnf_cache:yum_dnf_cache.bzl", "image_yum_dnf_make_snapshot_cache")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:install.bzl", "image_install")
 load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
@@ -60,7 +60,7 @@ def rpm_repo_snapshot(
     Takes a bare in-repo snapshot, enriches it with `storage.sql3` from
     storage, and injects some auxiliary binaries & data.  This prepares the
     snapshot for installation into a build appliance (or
-    `image_foreign_layer`) via `install_rpm_repo_snapshot`.
+    `image_genrule_layer`) via `install_rpm_repo_snapshot`.
 
       - `storage`: JSON config for an `antlir.rpm.storage` class.
 

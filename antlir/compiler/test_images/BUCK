@@ -2,10 +2,10 @@
 # the shim in `defs.bzl`.
 load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:image_foreign_layer.bzl", "image_foreign_layer")
+load("//antlir/bzl:image_genrule_layer.bzl", "image_genrule_layer")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
-load("//antlir/bzl/foreign/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
+load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
 load(":defs.bzl", "defs")
 
 # While the reproducible-builds.org instructions (see below) ensure that a
@@ -137,7 +137,7 @@ defs.export_file(name = "shadow_me")
 ]
 
 # Since `rpm-test-milk` provides `/bin/sh`, use it to exercise foreign layers.
-image_foreign_layer(
+image_genrule_layer(
     name = "foreign-layer",
     antlir_rule = "user-internal",
     cmd = [
@@ -156,7 +156,7 @@ image_foreign_layer(
     user = "root",
 )
 
-image_foreign_layer(
+image_genrule_layer(
     name = "foreign-layer-with-mounts",
     antlir_rule = "user-internal",
     cmd = [

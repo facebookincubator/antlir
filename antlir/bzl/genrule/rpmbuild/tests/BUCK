@@ -1,7 +1,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
-load("//antlir/bzl/foreign/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
+load("//antlir/bzl/genrule/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
 
 export_file(name = "toy_srcs")
 
@@ -25,13 +25,13 @@ export_file(name = "toy.spec")
 python_binary(
     name = "rpm-sign-with-test-key",
     srcs = ["rpm_sign_with_test_key.py"],
-    main_module = "antlir.bzl.foreign.rpmbuild.tests.rpm_sign_with_test_key",
+    main_module = "antlir.bzl.genrule.rpmbuild.tests.rpm_sign_with_test_key",
     resources = {
         "//antlir/rpm:gpg-test-signing-key": "gpg-test-signing-key",
     },
     visibility = [
-        "//antlir/bzl/foreign/rpmbuild/facebook/...",
-        "//antlir/bzl/foreign/rpmbuild/tests/...",
+        "//antlir/bzl/genrule/rpmbuild/facebook/...",
+        "//antlir/bzl/genrule/rpmbuild/tests/...",
     ],
 )
 

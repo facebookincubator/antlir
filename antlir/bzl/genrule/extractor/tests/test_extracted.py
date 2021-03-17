@@ -27,7 +27,8 @@ class TestExtracted(unittest.TestCase):
     # when /lib64 is a symlink (which should be always for the cases that we
     # care about)
     def test_cloned_to_usr(self):
-        # ensure that the source for the extractor actually has the symlink setup
+        # ensure that the source for the extractor actually has the symlink
+        # setup
         source_subvol = layer_resource_subvol(__package__, "source")
         self.assertTrue(source_subvol.path("/lib64").islink())
         self.assertEqual(

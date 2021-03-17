@@ -22,7 +22,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
-DEFAULT_EXTRACT_TOOLS_LAYER = "//antlir/bzl/foreign/extractor:extract-tools-layer"
+DEFAULT_EXTRACT_TOOLS_LAYER = "//antlir/bzl/genrule/extractor:extract-tools-layer"
 
 def _extract(
         # A list of binaries to extract from the source,

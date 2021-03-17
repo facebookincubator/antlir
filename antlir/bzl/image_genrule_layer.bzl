@@ -47,7 +47,7 @@ image.layer(
     ],
 )
 
-image_foreign_layer(
+image_genrule_layer(
     name = '_translate_foo',
     parent_layer = ':setup',
     user = 'root',
@@ -61,14 +61,14 @@ image.layer(
     features = [image.remove_path('/output/_temp_foo')],
 )
 
-Customers should not use `image_foreign_layer` directly, both because using
+Customers should not use `image_genrule_layer` directly, both because using
 arbitrary commands in builds is error-prone (per the above), and because the
 goal is that image build declarations be as intent-oriented as possible.
 
 Instead, we envision library authors creating self-contained, robust,
-deterministic, intent-oriented abstractions on top of `image_foreign_layer`,
-and placing them in a subdirectory of `bzl/foreign/`.  For a reasonable
-example, take a look at `bzl/foreign/rpmbuild`.
+deterministic, intent-oriented abstractions on top of `image_genrule_layer`,
+and placing them in a subdirectory of `bzl/genrule/`.  For a reasonable
+example, take a look at `bzl/genrule/rpmbuild`.
 
 The general idea should be to create a layer per logical image build step,
 though the macro may also create intermediate layers that are not visible to
@@ -83,7 +83,7 @@ best practice for developing `Dockerfile`s).
 In some cases, you are not interested in the entirety of the foreign layer,
 but only in a few artifacts that were built inside of it.  The example of
 `rpmbuild` works this way.  Follow that same pattern to get your files:
-  - Have `image_foreign_layer` leave the desired output(s) at a known path
+  - Have `image_genrule_layer` leave the desired output(s) at a known path
     in the image.
   - To use the output(s) in another image, just use regular image actions
     together with `image.source(layer=':foreign-layer', path='/out')`.
@@ -91,16 +91,16 @@ but only in a few artifacts that were built inside of it.  The example of
     macro, ping `antlir` devs, and we'll provide an `image.source`
     analog that copies files out of the image via `find_built_subvol`.
 
-## Rules of `image_foreign_layer` usage:
+## Rules of `image_genrule_layer` usage:
 
   - Always get a code / design review from an `antlir` maintainer.
   - Do not use in `TARGETS` / `BUCK` files directly.  Instead, define a
     `.bzl` macro named `image_<intended_action>_layer`.
-  - Place your macro in `antlir/bzl/foreign/<intended_action>`.
+  - Place your macro in `antlir/bzl/genrule/<intended_action>`.
   - Do not change any core `antlir` code when adding a foreign layer.  If
     your foreign layer requires changes outside of `antlir/bzl/foreign`,
     discuss them with `antlir` maintainers first.
-  - Tests are mandatory, see `antlir/bzl/foreign/rpmbuild` for a good
+  - Tests are mandatory, see `antlir/bzl/genrule/rpmbuild` for a good
     example.
   - Keep your macro deterministic.  The Buck linters and runtime try to
     catch the very shallow issues, but here are some other things to think
@@ -115,7 +115,7 @@ but only in a few artifacts that were built inside of it.  The example of
         user / group IDs, or other things that can be different between your
         dev host, and another host.
 
-# Deliberate limitations of the `image_foreign_layer` implementation
+# Deliberate limitations of the `image_genrule_layer` implementation
 
   - No network access. This is the gateway to non-deterministic hell.
     If you're sure your use-case is "safe", talk to `antlir` maintainers
@@ -156,7 +156,7 @@ foreign_layer_t = shape.shape(
     container_opts = container_opts_t,
 )
 
-def image_foreign_layer(
+def image_genrule_layer(
         name,
         # Allows looking up this specific kind of foreign layer rule in the
         # Buck target graph.
@@ -181,7 +181,7 @@ def image_foreign_layer(
         **image_layer_kwargs):
     # This is not strictly needed since `image_layer_impl` lacks this kwarg.
     if "features" in image_layer_kwargs:
-        fail("\"features\" are not supported in image_foreign_layer")
+        fail("\"features\" are not supported in image_genrule_layer")
 
     container_opts = normalize_container_opts(container_opts)
     if container_opts.internal_only_logs_tmpfs:
@@ -191,7 +191,7 @@ def image_foreign_layer(
 
     target_tagger = new_target_tagger()
     image_layer_utils.image_layer_impl(
-        _rule_type = "image_foreign_layer_" + rule_type,
+        _rule_type = "image_genrule_layer_" + rule_type,
         _layer_name = name,
         # Build a new layer. It may be empty.
         _make_subvol_cmd = compile_image_features(
@@ -209,7 +209,7 @@ def image_foreign_layer(
                         container_opts = container_opts,
                     )),
                 ]),
-                extra_deps = ["//antlir/bzl:image_foreign_layer"],
+                extra_deps = ["//antlir/bzl:image_genrule_layer"],
             )],
             build_opts = build_opts,
         ),

@@ -359,7 +359,7 @@ export_file(
 export_file(
     name = "gpg-test-signing-key",
     src = "tests/gpg_test_keypair/private.key",
-    visibility = ["//antlir/bzl/foreign/rpmbuild/..."],
+    visibility = ["//antlir/bzl/genrule/rpmbuild/..."],
 )
 
 export_file(
