@@ -16,7 +16,7 @@ image.layer(
             "/output",
         ),
         image.install_buck_runnable(
-            "//antlir/bzl/foreign/extractor:extract",
+            "//antlir/bzl/genrule/extractor:extract",
             "/extract",
         ),
     ],
@@ -28,7 +28,7 @@ python_binary(
     srcs = [
         "extract.py",
     ],
-    main_module = "antlir.bzl.foreign.extractor.extract",
+    main_module = "antlir.bzl.genrule.extractor.extract",
     # this runs in a layer, so should be self-contained to work in OSS
     par_style = "xar",
     deps = [

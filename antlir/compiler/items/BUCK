@@ -1,5 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image_foreign_layer.bzl", "foreign_layer_t")
+load("//antlir/bzl:image_genrule_layer.bzl", "foreign_layer_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")

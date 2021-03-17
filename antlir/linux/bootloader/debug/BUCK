@@ -1,7 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
-load("//antlir/bzl/foreign/extractor:extract.bzl", "extract")
+load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:busybox.bzl", "busybox")
 load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 

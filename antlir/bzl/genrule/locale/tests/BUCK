@@ -1,5 +1,5 @@
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/foreign/locale:locale.bzl", "image_build_locale_archive")
+load("//antlir/bzl/genrule/locale:locale.bzl", "image_build_locale_archive")
 
 image_build_locale_archive(
     name = "build-multiple-locales",

@@ -151,7 +151,7 @@ def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
 
         wrapper_content = set(wrapper_path.listdir())
         # We may have run `systemd-nspawn` against the subvolume, e.g.
-        # as part of `image_foreign_layer`, which creates this lockfile.
+        # as part of `image_genrule_layer`, which creates this lockfile.
         maybe_lockfile = [f for f in wrapper_content if f.startswith(b".#")]
         if maybe_lockfile:
             assert len(maybe_lockfile) == 1, maybe_lockfile

@@ -52,7 +52,7 @@ def image_build_librename_shadowed(name, parent_layer):
         features = [
             image.ensure_subdirs_exist("/", "build", user = user),
             image.install(
-                "//antlir/bzl/foreign/librename_shadowed:rename_shadowed.c",
+                "//antlir/bzl/genrule/librename_shadowed:rename_shadowed.c",
                 "/build/rename_shadowed.c",
             ),
         ],

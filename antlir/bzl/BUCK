@@ -128,8 +128,8 @@ fake_macro_library(
 )
 
 fake_macro_library(
-    name = "image_foreign_layer",
-    srcs = ["image_foreign_layer.bzl"],
+    name = "image_genrule_layer",
+    srcs = ["image_genrule_layer.bzl"],
     deps = [
         ":compile_image_features",
         ":container_opts",

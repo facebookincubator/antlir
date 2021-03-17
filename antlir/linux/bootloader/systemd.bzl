@@ -7,7 +7,7 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
-load("//antlir/bzl/foreign/extractor:extract.bzl", "extract")
+load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 
 TARGETS = [
     "basic.target",

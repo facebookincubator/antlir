@@ -16,7 +16,7 @@ load("//antlir/bzl/image_actions:rpms.bzl", "image_rpms_install", "image_rpms_re
 load("//antlir/bzl/image_actions:symlink.bzl", "image_ensure_dir_symlink", "image_ensure_file_symlink")
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
-load(":image_foreign_layer.bzl", "image_foreign_layer")
+load(":image_genrule_layer.bzl", "image_genrule_layer")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_package.bzl", "image_package")
@@ -35,7 +35,7 @@ image = struct(
     ensure_file_symlink = image_ensure_file_symlink,
     ensure_subdirs_exist = image_ensure_subdirs_exist,
     feature = image_feature,
-    genrule_layer = image_foreign_layer,
+    genrule_layer = image_genrule_layer,
     group_add = image_group_add,
     host_dir_mount = image_host_dir_mount,
     host_file_mount = image_host_file_mount,
