@@ -85,3 +85,12 @@ fake_macro_library(
         "//antlir/bzl:target_tagger",
     ],
 )
+
+fake_macro_library(
+    name = "user",
+    srcs = ["user.bzl"],
+    deps = [
+        "//antlir/bzl:shape",
+        "//antlir/bzl:target_tagger",
+    ],
+)
