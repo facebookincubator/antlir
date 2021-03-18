@@ -157,7 +157,7 @@ indefinitely.
   - **Build sandbox:** The Antlir runtime provides a build-time sandbox for
     making other build systems reproducible.  Conceptually: you build an
     image with all your build dependencies, and then use
-    `image_foreign_layer` to run a build step inside it.  For a working
+    `image.genrule_layer` to run a build step inside it.  For a working
     example, check out `image_rpmbuild_layer`, which is a light analog of
     [`mock`](https://github.com/rpm-software-management/mock/wiki), with the
     added benefit that *both* the build image, and the build dependencies
