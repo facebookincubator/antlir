@@ -219,7 +219,7 @@ class ImageLayerTestCase(unittest.TestCase):
                     render_subvol(sv),
                 )
 
-    # This is reused by `test_foreign_layer` because we currently lack
+    # This is reused by `test_genrule_layer` because we currently lack
     # rendering for incremental sendstreams.
     @contextmanager
     def _check_build_appliance(self, rsrc_name, yum_dnf):
@@ -278,7 +278,7 @@ class ImageLayerTestCase(unittest.TestCase):
         ) as (_, r):
             self.assertEqual(["(Dir)", {}], pop_path(r, "usr/lib"))
 
-    def test_foreign_layer(self):
+    def test_genrule_layer(self):
         # This checks that `shadow_paths` worked as expected.
         shadowed = "milk 2.71 8\n"
         assert len(shadowed) != len(SHADOW_ME), (shadowed, SHADOW_ME)
@@ -354,8 +354,8 @@ class ImageLayerTestCase(unittest.TestCase):
             # shouldn't affect production use-cases.
             self.assertEqual(["(Symlink usr/lib)"], pop_path(r, "lib"))
 
-    def test_foreign_layer_mounts(self):
-        # test_foreign_layer checks the actual image contents
+    def test_genrule_layer_mounts(self):
+        # test_genrule_layer checks the actual image contents
         with self.target_subvol("foreign-layer-with-mounts") as sv:
             # Check that the `layer_mount` was mounted when the foreign
             # layer ran

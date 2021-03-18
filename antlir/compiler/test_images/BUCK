@@ -152,7 +152,7 @@ image_genrule_layer(
         # The `internal_only_*` things are covered by the stuff that uses them.
     ),
     parent_layer = ":validates-dnf-build-appliance",
-    rule_type = "image_test_foreign_layer",
+    rule_type = "image_test_genrule_layer",
     user = "root",
 )
 
@@ -165,7 +165,7 @@ image_genrule_layer(
         "/bin/mount > /FOREIGN_LAYER_MOUNTS",
     ],
     parent_layer = ":test-layer-with-mounts",
-    rule_type = "image_test_foreign_layer",
+    rule_type = "image_test_genrule_layer",
     user = "root",
 )
 

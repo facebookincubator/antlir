@@ -144,7 +144,7 @@ load(":image_utils.bzl", "image_utils")
 load(":shape.bzl", "shape")
 load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 
-foreign_layer_t = shape.shape(
+genrule_layer_t = shape.shape(
     # IMPORTANT: Be very cautious about adding keys here, specifically
     # rejecting any options that might compromise determinism / hermeticity.
     # Foreign layers effectively run arbitrary code, so we should never
@@ -200,10 +200,10 @@ def image_genrule_layer(
             parent_layer = parent_layer,
             features = [target_tagger_to_feature(
                 target_tagger,
-                struct(foreign_layer = [
+                struct(genrule_layer = [
                     # TODO: use the `shape.to_dict()` helper from Arnav's diff.
                     shape.as_dict(shape.new(
-                        foreign_layer_t,
+                        genrule_layer_t,
                         cmd = cmd,
                         user = user,
                         container_opts = container_opts,

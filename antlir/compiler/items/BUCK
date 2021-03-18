@@ -1,5 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image_genrule_layer.bzl", "foreign_layer_t")
+load("//antlir/bzl:image_genrule_layer.bzl", "genrule_layer_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -185,17 +185,17 @@ python_unittest(
 )
 
 shape.loader(
-    name = "foreign_layer_t",
-    shape = foreign_layer_t,
-    classname = "foreign_layer_t",
+    name = "genrule_layer_t",
+    shape = genrule_layer_t,
+    classname = "genrule_layer_t",
 )
 
 python_library(
-    name = "foreign_layer",
-    srcs = ["foreign_layer.py"],
+    name = "genrule_layer",
+    srcs = ["genrule_layer.py"],
     deps = [
         ":common",
-        ":foreign_layer_t",
+        ":genrule_layer_t",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:rpm",
     ],
@@ -203,8 +203,8 @@ python_library(
 
 python_unittest(
     name = "test-foreign-layer",
-    srcs = ["tests/test_foreign_layer.py"],
-    needed_coverage = [(100, ":foreign_layer")],
+    srcs = ["tests/test_genrule_layer.py"],
+    needed_coverage = [(100, ":genrule_layer")],
     resources = {
         layer_resource(
             # We need something with the test RPM snapshot, with a working
@@ -407,7 +407,7 @@ python_library(
     deps = [
         ":clone",
         ":ensure_dirs_exist",
-        ":foreign_layer",
+        ":genrule_layer",
         ":group",
         ":items",
         ":phases_provide",
