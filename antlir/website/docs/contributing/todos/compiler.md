@@ -22,7 +22,7 @@ title: compiler/
   `/etc/passwd` without creating filesystem conflicts.  Upside: we get to
   use `useradd` and `systemctl` etc to manipulate the filesystem.
 
-  This is roughly like `image_foreign_layer` for adding externally managed
+  This is roughly like `image.genrule_layer` for adding externally managed
   phased compiler items.
 
   It's probably a good idea because it would e.g. let us significantly
