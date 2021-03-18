@@ -25,7 +25,7 @@ blocklist = [
     # These tests pass locally on my Arch Desktop, but fail on GH Actions
     "//antlir/compiler/items:test-items - test_receive_sendstream",
     "//antlir/compiler/items:test-rpm-action - test_rpm_action_item_auto_downgrade",
-    "//antlir/compiler:test-image-layer - test_foreign_layer",
+    "//antlir/compiler:test-image-layer - test_genrule_layer",
     "//antlir/compiler:test-image-layer - test_layer_from_demo_sendstreams",
     "//antlir/rpm:test-rpm-metadata - test_rpm_metadata_from_subvol",
     "//antlir:test-subvol-utils - test_receive",

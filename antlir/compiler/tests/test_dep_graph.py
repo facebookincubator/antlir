@@ -13,8 +13,8 @@ from antlir.compiler.items.ensure_dirs_exist import (
     EnsureDirsExistItem,
     ensure_subdirs_exist_factory,
 )
-from antlir.compiler.items.foreign_layer import ForeignLayerItem
-from antlir.compiler.items.foreign_layer_t import foreign_layer_t
+from antlir.compiler.items.genrule_layer import GenruleLayerItem
+from antlir.compiler.items.genrule_layer_t import genrule_layer_t
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
@@ -419,18 +419,18 @@ class DependencyGraphTestCase(DepGraphTestBase):
         )
         self.assertEqual(ns.items_without_predecessors, {self.provides_root})
 
-    def test_foreign_layer_assert(self):
-        foreign1 = ForeignLayerItem(
+    def test_genrule_layer_assert(self):
+        foreign1 = GenruleLayerItem(
             from_target="t1",
             cmd=["x"],
             user="y",
-            container_opts=foreign_layer_t.types.container_opts(),
+            container_opts=genrule_layer_t.types.container_opts(),
         )
-        foreign2 = ForeignLayerItem(
+        foreign2 = GenruleLayerItem(
             from_target="t2",
             cmd=["a"],
             user="b",
-            container_opts=foreign_layer_t.types.container_opts(),
+            container_opts=genrule_layer_t.types.container_opts(),
         )
 
         # Good path: one FOREIGN_LAYER & default MAKE_SUBVOL

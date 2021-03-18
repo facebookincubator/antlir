@@ -11,7 +11,7 @@ from typing import Any, Iterable, Union, Mapping, Optional, NamedTuple
 from antlir.compiler.items.clone import CloneItem
 from antlir.compiler.items.common import LayerOpts, image_source_item
 from antlir.compiler.items.ensure_dirs_exist import ensure_subdirs_exist_factory
-from antlir.compiler.items.foreign_layer import ForeignLayerItem
+from antlir.compiler.items.genrule_layer import GenruleLayerItem
 from antlir.compiler.items.group import GroupItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import (
@@ -119,7 +119,7 @@ def gen_items_for_features(
 
     key_to_item_factory = {
         "clone": image_sourcify(CloneItem),
-        "foreign_layer": ForeignLayerItem,
+        "genrule_layer": GenruleLayerItem,
         "groups": GroupItem,
         "install_files": image_sourcify(InstallFileItem),
         "mounts": lambda **kwargs: MountItem(**kwargs, layer_opts=layer_opts),

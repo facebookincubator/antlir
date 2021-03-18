@@ -20,19 +20,19 @@ from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder
-from .foreign_layer_t import foreign_layer_t
+from .genrule_layer_t import genrule_layer_t
 
 
-class ForeignLayerItem(foreign_layer_t):
+class GenruleLayerItem(genrule_layer_t):
     def phase_order(self):
         return PhaseOrder.FOREIGN_LAYER
 
     @classmethod
     def get_phase_builder(
-        cls, items: Iterable["ForeignLayerItem"], layer_opts: LayerOpts
+        cls, items: Iterable["GenruleLayerItem"], layer_opts: LayerOpts
     ):
         (item,) = items
-        assert isinstance(item, ForeignLayerItem), item
+        assert isinstance(item, GenruleLayerItem), item
 
         def builder(subvol: Subvol):
             c_opts = item.container_opts

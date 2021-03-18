@@ -18,8 +18,8 @@ from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..common import PhaseOrder
-from ..foreign_layer import ForeignLayerItem
-from ..foreign_layer_t import foreign_layer_t
+from ..genrule_layer import GenruleLayerItem
+from ..genrule_layer_t import genrule_layer_t
 from ..make_subvol import ParentLayerItem
 from .common import DUMMY_LAYER_OPTS
 
@@ -28,20 +28,20 @@ def _touch_cmd(path: str):
     return ("/bin/touch", path)
 
 
-def _item(cmd: Iterable[AnyStr]) -> ForeignLayerItem:
-    return ForeignLayerItem(
+def _item(cmd: Iterable[AnyStr]) -> GenruleLayerItem:
+    return GenruleLayerItem(
         from_target="t",
         user="root",
         cmd=cmd,
-        container_opts=foreign_layer_t.types.container_opts(),
+        container_opts=genrule_layer_t.types.container_opts(),
     )
 
 
 def _builder(cmd: Iterable[AnyStr]):
-    return ForeignLayerItem.get_phase_builder([_item(cmd)], DUMMY_LAYER_OPTS)
+    return GenruleLayerItem.get_phase_builder([_item(cmd)], DUMMY_LAYER_OPTS)
 
 
-class ForeignLayerItemTestCase(unittest.TestCase):
+class GenruleLayerItemTestCase(unittest.TestCase):
     def test_phase_order(self):
         self.assertEqual(_item([]).phase_order(), PhaseOrder.FOREIGN_LAYER)
 
@@ -65,7 +65,7 @@ class ForeignLayerItemTestCase(unittest.TestCase):
             )(child_sv)
             yield child_sv
 
-    def test_foreign_layer_basics(self):
+    def test_genrule_layer_basics(self):
         with self._temp_resource_subvol("foreign-layer-base") as subvol:
             _builder(_touch_cmd("/HELLO_ALIEN"))(subvol)
 
@@ -80,9 +80,9 @@ class ForeignLayerItemTestCase(unittest.TestCase):
             snapshot_dir = snapshot_install_dir(
                 "//antlir/rpm:repo-snapshot-for-tests"
             )
-            ForeignLayerItem.get_phase_builder(
+            GenruleLayerItem.get_phase_builder(
                 [
-                    ForeignLayerItem(
+                    GenruleLayerItem(
                         from_target="t",
                         user="root",
                         cmd=[
@@ -97,7 +97,7 @@ class ForeignLayerItemTestCase(unittest.TestCase):
                 """
                             ),
                         ],
-                        container_opts=foreign_layer_t.types.container_opts(
+                        container_opts=genrule_layer_t.types.container_opts(
                             serve_rpm_snapshots=[snapshot_dir]
                         ),
                     )
@@ -111,7 +111,7 @@ class ForeignLayerItemTestCase(unittest.TestCase):
             )
 
     # Checks that __antlir__ proctection handles a non-existent dir
-    def test_foreign_layer_no_antlir_dir(self):
+    def test_genrule_layer_no_antlir_dir(self):
         with self._temp_resource_subvol("foreign-layer-busybox-base") as sv:
             _builder(["/bin/sh", "-c", "echo ohai"])(sv)
             self.assertFalse(os.path.exists(sv.path("/__antlir__")))

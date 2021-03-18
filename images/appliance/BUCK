@@ -45,7 +45,7 @@ image.layer(
             "dnf",  # For installing rpms
             "dnf-command(versionlock)",
             "dnf-utils",
-            "gcc",  # build code in foreign_layers
+            "gcc",  # build code in genrule_layers
             "iproute",
             "net-tools",
             "python3",
