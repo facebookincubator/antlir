@@ -15,6 +15,7 @@ load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
 load("//antlir/bzl/image_actions:rpms.bzl", "image_rpms_install", "image_rpms_remove_if_exists")
 load("//antlir/bzl/image_actions:symlink.bzl", "image_ensure_dir_symlink", "image_ensure_file_symlink")
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
+load("//antlir/bzl/image_actions:user.bzl", "image_user_add")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
 load(":image_genrule_layer.bzl", "image_genrule_layer")
 load(":image_layer.bzl", "image_layer")
@@ -56,4 +57,5 @@ image = struct(
     source = image_source,
     tarball = image_tarball,
     test_rpm_names = image_test_rpm_names,
+    user_add = image_user_add,
 )
