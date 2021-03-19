@@ -2,7 +2,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library
 
 export_file(
     name = "rename_shadowed.c",
-    # This file has to be visible to anything that uses the foreign
+    # This file has to be visible to anything that uses the genrule
     # `image_build_librename_shadowed` layer.  Since we don't know
     # what those uses could be, we have to just make it public.
     visibility = ["PUBLIC"],

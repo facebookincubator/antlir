@@ -203,7 +203,7 @@ python_library(
 )
 
 python_unittest(
-    name = "test-foreign-layer",
+    name = "test-genrule-layer",
     srcs = ["tests/test_genrule_layer.py"],
     needed_coverage = [(100, ":genrule_layer")],
     resources = {
@@ -213,11 +213,11 @@ python_unittest(
             # provided through a busybox binary, but `dnf` pretty much
             # presupposes a full OS, so use the test BA for now.
             TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/foreign-layer-base",
+        ): "tests/genrule-layer-base",
         layer_resource(
             # Must have a `busybox` binary as `/bin/sh`.
             TEST_IMAGE_PREFIX + "validates-dnf-build-appliance",
-        ): "tests/foreign-layer-busybox-base",
+        ): "tests/genrule-layer-busybox-base",
     },
     deps = [
         ":common_testlib",

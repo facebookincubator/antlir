@@ -199,14 +199,14 @@ class DependencyGraph:
             [FilesystemRootItem(from_target=layer_target)],
         )
         assert len(make_subvol_items) == 1, make_subvol_items
-        # If we have a foreign layer, it must be the only item, besides the
+        # If we have a genrule layer, it must be the only item, besides the
         # mandatory `MAKE_SUBVOL` added above.
-        foreign = self.order_to_phase_items.get(PhaseOrder.FOREIGN_LAYER)
-        if foreign:
-            assert len(foreign) == 1, foreign
+        genrule = self.order_to_phase_items.get(PhaseOrder.GENRULE_LAYER)
+        if genrule:
+            assert len(genrule) == 1, genrule
             assert not self.items, self.items
             assert set(self.order_to_phase_items.keys()) == {
-                PhaseOrder.FOREIGN_LAYER,
+                PhaseOrder.GENRULE_LAYER,
                 PhaseOrder.MAKE_SUBVOL,
             }, self.order_to_phase_items
 

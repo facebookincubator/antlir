@@ -43,7 +43,7 @@ def _builder(cmd: Iterable[AnyStr]):
 
 class GenruleLayerItemTestCase(unittest.TestCase):
     def test_phase_order(self):
-        self.assertEqual(_item([]).phase_order(), PhaseOrder.FOREIGN_LAYER)
+        self.assertEqual(_item([]).phase_order(), PhaseOrder.GENRULE_LAYER)
 
     def _check_protected_dir(self, subvol, protected_dir):
         protected_dir = Path(protected_dir)
@@ -66,7 +66,7 @@ class GenruleLayerItemTestCase(unittest.TestCase):
             yield child_sv
 
     def test_genrule_layer_basics(self):
-        with self._temp_resource_subvol("foreign-layer-base") as subvol:
+        with self._temp_resource_subvol("genrule-layer-base") as subvol:
             _builder(_touch_cmd("/HELLO_ALIEN"))(subvol)
 
             alien_path = subvol.path("/HELLO_ALIEN")
@@ -112,6 +112,6 @@ class GenruleLayerItemTestCase(unittest.TestCase):
 
     # Checks that __antlir__ proctection handles a non-existent dir
     def test_genrule_layer_no_antlir_dir(self):
-        with self._temp_resource_subvol("foreign-layer-busybox-base") as sv:
+        with self._temp_resource_subvol("genrule-layer-busybox-base") as sv:
             _builder(["/bin/sh", "-c", "echo ohai"])(sv)
             self.assertFalse(os.path.exists(sv.path("/__antlir__")))

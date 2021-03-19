@@ -71,7 +71,7 @@ The consequences of this information hiding are:
     the dependencies of the ancestor layers' features. Doing that would be
     wasteful, since those bits are redundant with what's in the parent.
 
-  - Ability to use foreign image layers / apply non-pure post-processing to
+  - Ability to use genrule image layers / apply non-pure post-processing to
     a layer.  In terms of engineering, both of these non-pure approaches are
     a terrible idea and a maintainability headache, but they do provide a
     useful bridge for transitioning to Buck image builds from legacy

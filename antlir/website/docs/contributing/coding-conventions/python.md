@@ -219,7 +219,7 @@ log.info(f'foo {var}')
 
 #### `.decode()` on `Path` is a code smell
 
-We need this to interface with foreign modules (e.g. `requests`), but in most
+We need this to interface with genrule modules (e.g. `requests`), but in most
 other circumstances, we have primitives for avoiding explicit `.decode()` calls
 and the associated waste of time fighting with `str` vs `bytes` issues.
 Specifically, be aware that:

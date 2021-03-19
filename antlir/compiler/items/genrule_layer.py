@@ -22,7 +22,7 @@ from .genrule_layer_t import genrule_layer_t
 
 class GenruleLayerItem(genrule_layer_t):
     def phase_order(self):
-        return PhaseOrder.FOREIGN_LAYER
+        return PhaseOrder.GENRULE_LAYER
 
     @classmethod
     def get_phase_builder(
@@ -33,7 +33,7 @@ class GenruleLayerItem(genrule_layer_t):
 
         def builder(subvol: Subvol):
             c_opts = item.container_opts
-            # We should not auto-create /logs in foreign layers.
+            # We should not auto-create /logs in genrule layers.
             assert not c_opts.internal_only_logs_tmpfs
 
             maybe_protect_antlir = ()

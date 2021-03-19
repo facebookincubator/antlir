@@ -194,7 +194,7 @@ indefinitely.
     that the setup differences are negligible.
   - Building images with tools besides Buck — though you can certainly
     ingest binaries from other build systems by wrapping them with Buck
-    [`genrule`](https://buck.build/rule/genrule.html)s, or `foreign_layer`s,
+    [`genrule`](https://buck.build/rule/genrule.html)s, or `genrule_layer`s,
     see e.g. `rpmbuild_layer` (**TODO**: link).  We can also imagine a
     partnership to integrate similar build systems, especially Bazel, whose
     macro layer leverages Starlark with a more powerful composition model.

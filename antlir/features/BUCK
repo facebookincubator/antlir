@@ -25,7 +25,7 @@ image.feature(
 # have leaked into an image at build-time due to bugs.  If an image is
 # constructed only using supported `image.feature` and `image.layer`
 # operations, this clean-up should not be be necessary.  However, this can
-# be useful for assimilating foreign-built images.
+# be useful for assimilating genrule-built images.
 image.feature(
     name = "build_artifact_cleanup",
     # Since we generally build images for containers, we should make sure

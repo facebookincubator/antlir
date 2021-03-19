@@ -30,9 +30,9 @@ arbitrary commands as part of the image build.  There are many reasons:
 
 On the other hand, we neither can, nor should support every possible
 filesystem operation as part of `antlir/compiler` core.  This is where the
-"foreign layer" abstraction comes in.
+"genrule layer" abstraction comes in.
 
-A foreign layer runs a command inside the snapshot of a parent image, and
+A genrule layer runs a command inside the snapshot of a parent image, and
 captures the resulting filesystem as its output.  It is the `antlir`
 analog of a Buck `genrule`.  To encourage determinism, the command has no
 network access.  You can make other build artifacts available to your build
@@ -80,13 +80,13 @@ re-build of the parent.  To take best advantage of caching, try to put the
 steps that change most frequently later in the sequence (this parallels the
 best practice for developing `Dockerfile`s).
 
-In some cases, you are not interested in the entirety of the foreign layer,
+In some cases, you are not interested in the entirety of the genrule layer,
 but only in a few artifacts that were built inside of it.  The example of
 `rpmbuild` works this way.  Follow that same pattern to get your files:
   - Have `image_genrule_layer` leave the desired output(s) at a known path
     in the image.
   - To use the output(s) in another image, just use regular image actions
-    together with `image.source(layer=':foreign-layer', path='/out')`.
+    together with `image.source(layer=':genrule-layer', path='/out')`.
   - The moment you need to use such outputs as inputs to a regular Buck
     macro, ping `antlir` devs, and we'll provide an `image.source`
     analog that copies files out of the image via `find_built_subvol`.
@@ -97,8 +97,8 @@ but only in a few artifacts that were built inside of it.  The example of
   - Do not use in `TARGETS` / `BUCK` files directly.  Instead, define a
     `.bzl` macro named `image_<intended_action>_layer`.
   - Place your macro in `antlir/bzl/genrule/<intended_action>`.
-  - Do not change any core `antlir` code when adding a foreign layer.  If
-    your foreign layer requires changes outside of `antlir/bzl/foreign`,
+  - Do not change any core `antlir` code when adding a genrule layer.  If
+    your genrule layer requires changes outside of `antlir/bzl/genrule`,
     discuss them with `antlir` maintainers first.
   - Tests are mandatory, see `antlir/bzl/genrule/rpmbuild` for a good
     example.
@@ -147,9 +147,9 @@ load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 genrule_layer_t = shape.shape(
     # IMPORTANT: Be very cautious about adding keys here, specifically
     # rejecting any options that might compromise determinism / hermeticity.
-    # Foreign layers effectively run arbitrary code, so we should never
+    # Genrule layers effectively run arbitrary code, so we should never
     # allow access to the network, nor read-write access to files outside of
-    # the layer.  If you need something from the foreign layer, build it,
+    # the layer.  If you need something from the genrule layer, build it,
     # then reach into it with `image.source`.
     cmd = shape.list(str),
     user = str,
@@ -158,7 +158,7 @@ genrule_layer_t = shape.shape(
 
 def image_genrule_layer(
         name,
-        # Allows looking up this specific kind of foreign layer rule in the
+        # Allows looking up this specific kind of genrule layer rule in the
         # Buck target graph.
         rule_type,
         # The command to execute inside the layer. See the docblock for
@@ -186,8 +186,8 @@ def image_genrule_layer(
     container_opts = normalize_container_opts(container_opts)
     if container_opts.internal_only_logs_tmpfs:
         # The mountpoint directory would leak into the built images, and it
-        # doesn't even make sense for foreign layer construction.
-        fail("Foreign layers do not allow setting up a `/logs` tmpfs")
+        # doesn't even make sense for genrule layer construction.
+        fail("Genrule layers do not allow setting up a `/logs` tmpfs")
 
     target_tagger = new_target_tagger()
     image_layer_utils.image_layer_impl(
