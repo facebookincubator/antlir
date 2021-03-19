@@ -10,6 +10,7 @@ load("//antlir/bzl/image_actions:install.bzl", "install_files_t")
 load("//antlir/bzl/image_actions:remove.bzl", "remove_paths_t")
 load("//antlir/bzl/image_actions:symlink.bzl", "symlink_t")
 load("//antlir/bzl/image_actions:tarball.bzl", "tarball_t")
+load("//antlir/bzl/image_actions:user.bzl", "user_t")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 shape.loader(
@@ -425,4 +426,29 @@ shape.loader(
     name = "symlink_t",
     shape = symlink_t,
     classname = "symlink_t",
+)
+
+shape.loader(
+    name = "user_t",
+    shape = user_t,
+    classname = "user_t",
+)
+
+python_library(
+    name = "user",
+    srcs = ["user.py"],
+    deps = [
+        ":common",
+        ":user_t",
+    ],
+)
+
+python_unittest(
+    name = "test-user",
+    srcs = ["tests/test_user.py"],
+    needed_coverage = [(100, ":user")],
+    deps = [
+        ":common_testlib",
+        ":user",
+    ],
 )
