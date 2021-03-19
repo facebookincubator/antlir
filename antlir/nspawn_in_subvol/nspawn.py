@@ -163,7 +163,7 @@ def _post_setup_popen_nspawn(
 
 # We run the PID exfiltration scripts using a busybox that's provided as
 # part of `_TMP_MOUNT` so as not to depend on having a shell binary in the
-# target layer.  E.g. `compiler/test_images:foreign-layer` depends on this.
+# target layer.  E.g. `compiler/test_images:genrule-layer` depends on this.
 _RUN_BUSYBOX_SCRIPT = [
     f"{_TMP_MOUNT}/busybox",
     "sh",

@@ -169,8 +169,8 @@ image_feature_python_unittest(
 )
 
 IMAGE_LAYER_DEPS = [
-    "foreign-layer",
-    "foreign-layer-with-mounts",
+    "genrule-layer",
+    "genrule-layer-with-mounts",
     "layer-with-non-default-snapshot-rpm",
     "installed-files",
     "cloned-files",

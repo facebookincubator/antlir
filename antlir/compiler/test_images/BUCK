@@ -136,14 +136,14 @@ defs.export_file(name = "shadow_me")
     for rpm_installer in REPO_CFG.rpm_installers_supported
 ]
 
-# Since `rpm-test-milk` provides `/bin/sh`, use it to exercise foreign layers.
+# Since `rpm-test-milk` provides `/bin/sh`, use it to exercise genrule layers.
 image_genrule_layer(
-    name = "foreign-layer",
+    name = "genrule-layer",
     antlir_rule = "user-internal",
     cmd = [
         "/bin/sh",
         "-c",
-        "exec -a cp /bin/sh /shadow_me /I_AM_FOREIGN_LAYER",
+        "exec -a cp /bin/sh /shadow_me /I_AM_GENRULE_LAYER",
     ],
     container_opts = image.opts(
         # `shadow_proxied_binaries` and `serve_rpm_snapshots` are covered by
@@ -157,12 +157,12 @@ image_genrule_layer(
 )
 
 image_genrule_layer(
-    name = "foreign-layer-with-mounts",
+    name = "genrule-layer-with-mounts",
     antlir_rule = "user-internal",
     cmd = [
         "/bin/sh",
         "-c",
-        "/bin/mount > /FOREIGN_LAYER_MOUNTS",
+        "/bin/mount > /GENRULE_LAYER_MOUNTS",
     ],
     parent_layer = ":test-layer-with-mounts",
     rule_type = "image_test_genrule_layer",

@@ -420,31 +420,31 @@ class DependencyGraphTestCase(DepGraphTestBase):
         self.assertEqual(ns.items_without_predecessors, {self.provides_root})
 
     def test_genrule_layer_assert(self):
-        foreign1 = GenruleLayerItem(
+        genrule1 = GenruleLayerItem(
             from_target="t1",
             cmd=["x"],
             user="y",
             container_opts=genrule_layer_t.types.container_opts(),
         )
-        foreign2 = GenruleLayerItem(
+        genrule2 = GenruleLayerItem(
             from_target="t2",
             cmd=["a"],
             user="b",
             container_opts=genrule_layer_t.types.container_opts(),
         )
 
-        # Good path: one FOREIGN_LAYER & default MAKE_SUBVOL
-        DependencyGraph([foreign1], "layer_t")
+        # Good path: one GENRULE_LAYER & default MAKE_SUBVOL
+        DependencyGraph([genrule1], "layer_t")
 
-        # Too many foreign layers
+        # Too many genrule layers
         with self.assertRaises(AssertionError):
-            DependencyGraph([foreign1, foreign2], "layer_t")
+            DependencyGraph([genrule1, genrule2], "layer_t")
 
-        # Cannot mix foreign layer & depedency-sortable item
+        # Cannot mix genrule layer & depedency-sortable item
         with self.assertRaises(AssertionError):
             DependencyGraph(
                 [
-                    foreign1,
+                    genrule1,
                     *ensure_subdirs_exist_factory(
                         from_target="", into_dir="/", subdirs_to_create="a/b"
                     ),
@@ -456,7 +456,7 @@ class DependencyGraphTestCase(DepGraphTestBase):
         with self.assertRaises(AssertionError):
             DependencyGraph(
                 [
-                    foreign1,
+                    genrule1,
                     RemovePathItem(from_target="", path="x", must_exist=False),
                 ],
                 "layer_t",

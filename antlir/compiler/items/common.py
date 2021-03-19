@@ -78,10 +78,10 @@ class PhaseOrder(enum.Enum):
     # This phase creates the subvolume, so it must precede all others.
     # There can only ever be one item in this phase.
     MAKE_SUBVOL = enum.auto()
-    # Foreign layers cannot be combined with any item besides a single
+    # Genrule layers cannot be combined with any item besides a single
     # `MAKE_SUBVOL`, so the ordering with respect to other items is
     # unimportant.
-    FOREIGN_LAYER = enum.auto()
+    GENRULE_LAYER = enum.auto()
     # Precedes REMOVE_PATHS because RPM removes **might** be conditional on
     # the presence or absence of files, and we don't want that extra entropy
     # -- whereas file removes fail or succeed predictably.  Precedes

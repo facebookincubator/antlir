@@ -469,7 +469,7 @@ def _set_up_yum_dnf_cache(
     # `RpmActionItem`).  This is why we copy to `/cache_name`, and then
     # bind-mount into the install root.
     #
-    # Second, foreign layers do `mount -o bind /__antlir__ /__antlir__` to
+    # Second, genrule layers do `mount -o bind /__antlir__ /__antlir__` to
     # prevent accidental changes to `/__antlir__`.  However, this breaks
     # reflink copies from the snapshot cache (in its own bind-mount) to the
     # container root.
@@ -641,7 +641,7 @@ def yum_dnf_from_snapshot(
             # is a more uniform implementation of `rpmbuild.bzl`, but a more
             # important one is that need the ephemeral cache behavior
             # provided by `_set_up_yum_dnf_cache`, since `/__antlir__` is
-            # read-only in foreign layers. Calling `yum-builddep` directly
+            # read-only in genrule layers. Calling `yum-builddep` directly
             # would not fail with "Read-only filesystem", but a confusing:
             #     Error: No Package found for <RPM name>
             yum_dnf_binary = "yum-builddep"

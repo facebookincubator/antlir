@@ -349,7 +349,7 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
         #   - Setting uid/gid to 0
         # Those 2 operations mutate the filesystem.  Packaging
         # should be transparent and not cause mutations, as such
-        # those operations should be added as foreign layers (or
+        # those operations should be added as genrule layers (or
         # something similar) that mutates the filesystem being
         # packaged *before* reaching this point.
         create_archive_cmd = [
