@@ -4,12 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import pwd
-from dataclasses import dataclass
 from typing import Iterable
 
-from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import (
     NspawnPluginArgs,
     PopenArgs,
@@ -19,7 +16,7 @@ from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.subvol_utils import Subvol
 
-from .common import ImageItem, LayerOpts, PhaseOrder
+from .common import LayerOpts, PhaseOrder
 from .genrule_layer_t import genrule_layer_t
 
 
