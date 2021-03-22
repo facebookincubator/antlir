@@ -3,6 +3,7 @@ use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
+use syn::token::Brace;
 use syn::visit_mut::{self, VisitMut};
 use syn::ItemMod;
 
@@ -14,9 +15,18 @@ impl VisitMut for ModVisitor {
     fn visit_item_mod_mut(&mut self, node: &mut ItemMod) {
         println!("Module with name={}", node.ident);
 
-        match &node.content {
-            Some(c) => (),
-            None => println!("external file: {}.rs", node.ident),
+        if node.content.is_none() {
+            // TODO: this only handles one level of nesting, but I think that is
+            // good enough
+            let mut include =
+                File::open("/home/vmagro/antlir-git/third-party/rust/combine/src/ext.rs").unwrap();
+            let mut content = String::new();
+            include.read_to_string(&mut content).unwrap();
+            let tree = syn::parse_file(&mut content).unwrap();
+            node.content = Some((Brace::default(), tree.items));
+            node.semi = None;
+            println!("{:#?}", node);
+            return;
         }
 
         // Delegate to the default impl to visit any nested modules.
@@ -34,13 +44,13 @@ fn main() -> Result<()> {
     src_file.read_to_string(&mut src)?;
 
     let mut syntax = syn::parse_file(&src)?;
-    let ts = syntax.to_token_stream();
-    println!("{}", ts);
 
     ModVisitor.visit_file_mut(&mut syntax);
+    let ts = syntax.to_token_stream();
 
     let mut out = File::create(out_file)?;
     write!(out, "{}\n", ts)?;
+    println!("{}", ts);
 
     Ok(())
 }

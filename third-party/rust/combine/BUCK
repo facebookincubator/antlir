@@ -1,0 +1,12 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+
+# Yeah, this isn't great since cargo is not very hermetic, but this requires
+# some third party dependencies, and would otherwise contain a circular
+# dependency on itself
+buck_genrule(
+    name = "combine",
+    srcs = ["src/combine.rs", "Cargo.toml", "Cargo.lock"],
+    executable = True,
+    out = "combine",
+    cmd = "cargo build && cp target/debug/combine $OUT",
+)
