@@ -3,15 +3,15 @@ use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
-use syn::visit::{self, Visit};
+use syn::visit_mut::{self, VisitMut};
 use syn::ItemMod;
 
 use anyhow::Result;
 
 struct ModVisitor;
 
-impl<'ast> Visit<'ast> for ModVisitor {
-    fn visit_item_mod(&mut self, node: &'ast ItemMod) {
+impl VisitMut for ModVisitor {
+    fn visit_item_mod_mut(&mut self, node: &mut ItemMod) {
         println!("Module with name={}", node.ident);
 
         match &node.content {
@@ -20,7 +20,7 @@ impl<'ast> Visit<'ast> for ModVisitor {
         }
 
         // Delegate to the default impl to visit any nested modules.
-        visit::visit_item_mod(self, node);
+        visit_mut::visit_item_mod_mut(self, node);
     }
 }
 
@@ -33,11 +33,11 @@ fn main() -> Result<()> {
     let mut src = String::new();
     src_file.read_to_string(&mut src)?;
 
-    let syntax = syn::parse_file(&src)?;
+    let mut syntax = syn::parse_file(&src)?;
     let ts = syntax.to_token_stream();
     println!("{}", ts);
 
-    ModVisitor.visit_file(&syntax);
+    ModVisitor.visit_file_mut(&mut syntax);
 
     let mut out = File::create(out_file)?;
     write!(out, "{}\n", ts)?;
