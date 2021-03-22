@@ -131,7 +131,7 @@ def private_image_rpmbuild_impl(
     install_deps_layer = name + "-rpmbuild-install-deps"
     image.genrule_layer(
         name = install_deps_layer,
-        rule_type = "image_rpmbuild_install_deps_layer",
+        rule_type = "rpmbuild_install_deps_layer",
         parent_layer = ":" + setup_layer,
         # Auto-installing RPM dependencies requires `root`.
         user = "root",
@@ -161,7 +161,7 @@ def private_image_rpmbuild_impl(
     build_layer = name + "-rpmbuild-build"
     image.genrule_layer(
         name = build_layer,
-        rule_type = "image_rpmbuild_build_layer",
+        rule_type = "rpmbuild_build_layer",
         parent_layer = ":" + install_deps_layer,
         # While it's possible to want to support unprivileged builds, the
         # typical case will want to auto-install dependencies, which
@@ -255,7 +255,7 @@ def image_import_rpm_public_key_layer(
     import_layer = name + "-key-import"
     image.genrule_layer(
         name = import_layer,
-        rule_type = "image_import_rpm_public_key_layer",
+        rule_type = "import_rpm_public_key_layer",
         parent_layer = ":" + copy_layer,
         # Need to be root to modify the RPM DB.
         user = "root",

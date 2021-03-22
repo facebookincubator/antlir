@@ -60,7 +60,7 @@ def rpm_repo_snapshot(
     Takes a bare in-repo snapshot, enriches it with `storage.sql3` from
     storage, and injects some auxiliary binaries & data.  This prepares the
     snapshot for installation into a build appliance (or
-    `image_genrule_layer`) via `install_rpm_repo_snapshot`.
+    `image.genrule_layer`) via `install_rpm_repo_snapshot`.
 
       - `storage`: JSON config for an `antlir.rpm.storage` class.
 

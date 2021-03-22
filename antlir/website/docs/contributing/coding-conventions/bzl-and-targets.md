@@ -48,10 +48,31 @@ function nor a macro, but a mix.
 
 ## No mutable state outside of functions
 
-If you define a module-level `a = []`, and mutate it from your macros, this is a
-sure-fire way to get non-deterministic builds. This kind of thing has actually
-caused subtle breakages in the FBCode Target determinator before, requiring
-multiple human-days to find and fix.
+If you define a module-level `a = []`, and mutate it from your macros, this
+is a sure-fire way to get non-deterministic builds.
+
+The precise reason is that Buck doesn't guarantee order of evaluation of
+your macros across files, so a macro that updates order-sensitive mutable
+globals can create non-determinism that breaks target determinators for the
+entire repo, potentially costing many human-days to triage & fix.
+
+## Be careful with traversal ordering
+
+If you're not sure whether some container or traversal is guaranteed to be
+deterministically ordered in Buck, sort it (or check).
+
+## Stay Starlark-compatible
+
+Keep in mind that Buck currently supports at least two frontends for `.bzl`
+files: python3 and Starlark (and the default differs between FB-internal and
+open-source).  You must write code that is compatible with both.
+
+To check both back-ends, run:
+
+```
+buck targets -c parser.default_build_file_syntax=skylark //your/proj:
+buck targets -c parser.default_build_file_syntax=python_dsl //your/proj:
+```
 
 ## Do not expose magic target names to the user
 

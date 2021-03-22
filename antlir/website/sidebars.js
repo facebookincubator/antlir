@@ -73,6 +73,7 @@ module.exports = {
       collapsed: false,
       items: [
         'api/image',
+        'genrule-layer',
         {
           'nspawn Runtime': ['runtime/nspawn-runtime/image-unittest'],
           'VM Runtime': ['runtime/vm-runtime/vm-unittest'],

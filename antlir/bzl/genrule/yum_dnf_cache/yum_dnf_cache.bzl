@@ -47,7 +47,7 @@ def image_yum_dnf_make_snapshot_cache(
         name = name,
         cmd = ["/bin/bash", "-uec", ";".join(cmds)],
         parent_layer = parent_layer,
-        rule_type = "image_yum_dnf_makecache_for_snapshot",
+        rule_type = "yum_dnf_makecache_for_snapshot",
         user = "root",
         container_opts = struct(
             serve_rpm_snapshots = snapshot_to_installers.keys(),

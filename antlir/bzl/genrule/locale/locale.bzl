@@ -30,7 +30,7 @@ cp /usr/lib/locale/locale-archive /
         """.format(":".join(locales)),
         ],
         parent_layer = parent_layer,
-        rule_type = "image_build_locale_archive",
+        rule_type = "build_locale_archive",
         user = "root",
         antlir_rule = "user-internal",
     )

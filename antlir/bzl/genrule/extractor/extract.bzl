@@ -51,7 +51,7 @@ def _extract(
     work_layer = "image-extract-work--{}".format(layer_hash)
     image.genrule_layer(
         name = work_layer,
-        rule_type = "image_extract",
+        rule_type = "extract",
         parent_layer = ":" + base_extract_layer,
         user = "root",
         cmd = [
