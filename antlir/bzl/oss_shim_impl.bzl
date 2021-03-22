@@ -194,6 +194,11 @@ def _third_party_library(project, rule = None, platform = None):
     if not platform:
         platform = _DEFAULT_NATIVE_PLATFORM
 
+    if platform == "rust":
+        if not rule == project:
+            fail("rust dependencies must omit rule or be identical to project")
+        return "//third-party/rust:" + project
+
     if platform == "python":
         if not rule == project:
             fail("python projects must omit rule or be identical to project")
@@ -359,6 +364,9 @@ def _python_unittest(*args, **kwargs):
 def _rust_unittest(*args, **kwargs):
     _wrap_internal(native.rust_test, args, kwargs)
 
+def _rust_binary(*args, **kwargs):
+    _wrap_internal(native.rust_binary, args, kwargs)
+
 # Use = in the default filename to avoid clashing with RPM names.
 # The constant must match `update_allowed_versions.py`.
 # Omits `_wrap_internal` due to perf paranoia -- we have a callsite per RPM.
@@ -471,6 +479,7 @@ shim = struct(
     python_binary = _python_binary,
     python_library = _python_library,
     python_unittest = _python_unittest,
+    rust_binary = _rust_binary,
     rust_unittest = _rust_unittest,
     rpm_vset = _rpm_vset,  # Not wrapped due to perf paranoia.
     target_utils = struct(
