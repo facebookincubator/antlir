@@ -30,6 +30,10 @@ def _write_json_db(json_path, dct):
         json.dump(dct, outfile)
 
 
+async def _base_get_db_info_fn(pkg, tag, opts):
+    return pkg, tag, opts if opts else {"x": "z"}
+
+
 # CLI has only minor parsing on top of the library function, so it's valuable to
 # test both to ensure behaviour doesn't diverge. We thus use a base class to
 # define most shared test cases.
@@ -38,7 +42,7 @@ class UpdatePackageDbTestBase:
         with open(path) as infile:
             self.assertEqual(content, infile.read())
 
-    def _update(
+    async def _update(
         self,
         db,
         pkg_updates=None,
@@ -48,7 +52,7 @@ class UpdatePackageDbTestBase:
     ):
         raise NotImplementedError
 
-    def test_default_update(self):
+    async def test_default_update(self):
         with temp_dir() as td:
             in_db = td / "idb"
             _write_json_db(in_db / "pkg" / "tag.json", {"foo": "bar"})
@@ -60,8 +64,8 @@ class UpdatePackageDbTestBase:
             out_db = td / "odb"
             p1_out_path = out_db / "pkg" / "tag.json"
             p2_out_path = out_db / "pkg2" / "tag2.json"
-            self._update(db=in_db, out_db=out_db)
-            self.assertEqual([b"pkg", b"pkg2"], (out_db).listdir())
+            await self._update(db=in_db, out_db=out_db)
+            self.assertCountEqual([b"pkg", b"pkg2"], (out_db).listdir())
             self.assertEqual([b"tag.json"], p1_out_path.dirname().listdir())
             self.assertEqual([b"tag2.json"], p2_out_path.dirname().listdir())
             # Note the x/z dict is returned for `opts` in `_main` above
@@ -74,14 +78,14 @@ class UpdatePackageDbTestBase:
                 _get_js_content("e8b8ab0d998b5fe5429777af98579c12", {"x": "z"}),
             )
 
-    def test_explicit_update(self):
+    async def test_explicit_update(self):
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(
                 db_path / "p1" / "tik.json", {"foo": "bar"}  # replaced
             )
             _write_json_db(db_path / "p2" / "tok.json", {"a": "b"})  # preserved
-            self._update(
+            await self._update(
                 db=db_path,
                 pkg_updates={
                     "p1": {
@@ -125,7 +129,7 @@ class UpdatePackageDbTestBase:
                 ),
             )
 
-    def test_explicit_update_conflicts(self):
+    async def test_explicit_update_conflicts(self):
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "a.json", {})
@@ -133,7 +137,7 @@ class UpdatePackageDbTestBase:
             with self.assertRaisesRegex(
                 updb.PackageExistsError, r".*create.*p1:a"
             ):
-                self._update(
+                await self._update(
                     db=db_path,
                     pkg_updates={
                         "p1": {
@@ -146,7 +150,7 @@ class UpdatePackageDbTestBase:
             with self.assertRaisesRegex(
                 updb.PackageDoesNotExistError, r".*replace.*p2:c"
             ):
-                self._update(
+                await self._update(
                     db=db_path,
                     pkg_updates={
                         "p2": {
@@ -157,14 +161,17 @@ class UpdatePackageDbTestBase:
                     },
                 )
 
-    def test_tag_deletion(self):
+    async def test_tag_deletion(self):
+        async def _get_db_info_fn_none(pkg, tag, opts):
+            return pkg, tag, opts if opts else None
+
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "tik.json", {"a": "b"})
             _write_json_db(
                 db_path / "p2" / "tok.json", {"y": "z"}
             )  # Will be deleted
-            self._update(
+            await self._update(
                 db=db_path,
                 pkg_updates={
                     "p1": {
@@ -179,9 +186,7 @@ class UpdatePackageDbTestBase:
                     },
                 },
                 # None will cause a deletion
-                get_db_info_fn=nullcontext(
-                    lambda _pkg, _tag, opts: opts if opts else None
-                ),
+                get_db_info_fn=nullcontext(_get_db_info_fn_none),
             )
             self._check_file(
                 db_path / "p1" / "tik.json",
@@ -195,8 +200,10 @@ class UpdatePackageDbTestBase:
             self.assertFalse((db_path / "p2" / "tok.json").exists())
 
 
-class UpdatePackageDbCliTestCase(UpdatePackageDbTestBase, unittest.TestCase):
-    def _update(
+class UpdatePackageDbCliTestCase(
+    UpdatePackageDbTestBase, unittest.IsolatedAsyncioTestCase
+):
+    async def _update(
         self,
         db,
         pkg_updates=None,
@@ -220,10 +227,8 @@ class UpdatePackageDbCliTestCase(UpdatePackageDbTestBase, unittest.TestCase):
                     ]
                 )
         if get_db_info_fn is None:
-            get_db_info_fn = nullcontext(
-                lambda _pkg, _tag, opts: opts if opts else {"x": "z"}
-            )
-        updb.main_cli(
+            get_db_info_fn = nullcontext(_base_get_db_info_fn)
+        await updb.main_cli(
             args,
             get_db_info_fn,
             how_to_generate="how",
@@ -231,18 +236,16 @@ class UpdatePackageDbCliTestCase(UpdatePackageDbTestBase, unittest.TestCase):
             options_doc="opts doc",
         )
 
-    def test_cli_option_conflicts(self):
+    async def test_cli_option_conflicts(self):
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "a.json", {})
             _write_json_db(db_path / "p2" / "b.json", {})
-            get_info_fn = nullcontext(
-                lambda _pkg, _tag, opts: opts if opts else {"x": "z"}
-            )
+            get_info_fn = nullcontext(_base_get_db_info_fn)
             with self.assertRaisesRegex(
                 RuntimeError, r'Multiple updates.*p2:b.*"replace" with {}'
             ):
-                updb.main_cli(
+                await updb.main_cli(
                     [
                         f"--db={db_path}",
                         *("--replace", "p2", "b", "{}"),
@@ -259,7 +262,7 @@ class UpdatePackageDbCliTestCase(UpdatePackageDbTestBase, unittest.TestCase):
                 r"(\{'c': 'd'\}.*\{'a': 'b'\})"
                 r"|(\{'a': 'b'\} .*\{'c': 'd'\})",
             ):
-                updb.main_cli(
+                await updb.main_cli(
                     [
                         f"--db={db_path}",
                         *("--replace", "p2", "b", '{"a": "b"}'),
@@ -273,9 +276,9 @@ class UpdatePackageDbCliTestCase(UpdatePackageDbTestBase, unittest.TestCase):
 
 
 class UpdatePackageDbLibraryTestCase(
-    UpdatePackageDbTestBase, unittest.TestCase
+    UpdatePackageDbTestBase, unittest.IsolatedAsyncioTestCase
 ):
-    def _update(
+    async def _update(
         self,
         db,
         pkg_updates=None,
@@ -284,10 +287,8 @@ class UpdatePackageDbLibraryTestCase(
         get_db_info_fn=None,
     ):
         if get_db_info_fn is None:
-            get_db_info_fn = nullcontext(
-                lambda _pkg, _tag, opts: opts if opts else {"x": "z"}
-            )
-        updb.update_package_db(
+            get_db_info_fn = nullcontext(_base_get_db_info_fn)
+        await updb.update_package_db(
             db_path=db,
             how_to_generate="how",
             get_db_info_factory=get_db_info_fn,

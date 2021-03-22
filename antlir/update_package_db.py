@@ -29,12 +29,15 @@ Pay careful attention to the description of their `OPTIONS` parameter.
 
 """
 import argparse
+import asyncio
 import copy
 import hashlib
 import json
 import os
+from collections import defaultdict
 from enum import Enum
 from typing import (
+    Awaitable,
     Callable,
     ContextManager,
     Dict,
@@ -90,7 +93,8 @@ DbUpdateOptions = Dict[str, str]
 #     updater --db path
 #
 # Note if None is returned, the given package:tag pair will be deleted
-GetDbInfoFn = Callable[[Package, Tag, DbUpdateOptions], Optional[DbInfo]]
+GetDbInfoRet = Awaitable[Tuple[Package, Tag, Optional[DbInfo]]]
+GetDbInfoFn = Callable[[Package, Tag, DbUpdateOptions], GetDbInfoRet]
 # The in-memory representation of the package DB.
 PackageTagDb = Dict[Package, Dict[Tag, DbInfo]]
 
@@ -207,7 +211,7 @@ def _validate_updates(existing_db: PackageTagDb, pkg_updates: ExplicitUpdates):
                 raise PackageDoesNotExistError(pkg, tag)
 
 
-def _get_updated_db(
+async def _get_updated_db(
     *,
     existing_db: PackageTagDb,
     get_db_info_fn: GetDbInfoFn,
@@ -223,7 +227,7 @@ def _get_updated_db(
     }
     if update_existing:
         # We're updating the entire DB so we start with a clean slate
-        db_to_update = {}
+        db_to_update = defaultdict(dict)
         updates_to_apply = {
             # These are existing DB entries for which we have to fetch and
             # resolve new values.
@@ -236,26 +240,29 @@ def _get_updated_db(
     else:
         # If we are not updating the existing DB (i.e. explicit updates only),
         # start with a copy of the existing DB, and replace info as we go.
-        db_to_update = copy.deepcopy(existing_db)
+        db_to_update = defaultdict(dict, copy.deepcopy(existing_db))
         updates_to_apply = pkg_to_update_dcts
 
-    for pkg, tag_to_update in updates_to_apply.items():
-        new_tag_to_info = db_to_update.setdefault(pkg, {})
-        for tag, update_opts in tag_to_update.items():
-            log.info(f"Querying {pkg}:{tag} with options {update_opts}")
-            info = get_db_info_fn(pkg, tag, update_opts)
-            if info is None:
-                log.info(
-                    f"Empty info returned for {pkg}:{tag} - not including in DB"
-                )
-                new_tag_to_info.pop(tag, None)
-            else:
-                new_tag_to_info[tag] = info
-                log.info(f"New info for {pkg}:{tag} -> {info}")
+    futures = [
+        get_db_info_fn(pkg, tag, update_opts)
+        for pkg, tag_to_update in updates_to_apply.items()
+        for tag, update_opts in tag_to_update.items()
+    ]
+    for f in asyncio.as_completed(futures):
+        pkg, tag, maybe_info = await f
+        if maybe_info is None:
+            log.info(
+                f"Empty info returned for {pkg}:{tag} - not including in DB"
+            )
+
+            db_to_update[pkg].pop(tag, None)
+        else:
+            log.info(f"New info for {pkg}:{tag} -> {maybe_info}")
+            db_to_update[pkg][tag] = maybe_info
     return db_to_update
 
 
-def update_package_db(
+async def update_package_db(
     *,
     db_path: Path,
     how_to_generate: str,
@@ -266,7 +273,7 @@ def update_package_db(
 ):
     with get_db_info_factory as get_db_info:
         _write_json_dir_db(
-            db=_get_updated_db(
+            db=await _get_updated_db(
                 existing_db=_read_json_dir_db(db_path),
                 get_db_info_fn=get_db_info,
                 update_existing=update_existing,
@@ -360,7 +367,7 @@ def _parse_args(argv, *, overview_doc, options_doc):
     return Path.parse_args(parser, argv)
 
 
-def main_cli(
+async def main_cli(
     argv: List[str],
     get_db_info_factory: ContextManager[Iterator[GetDbInfoFn]],
     *,
@@ -393,7 +400,7 @@ def main_cli(
     """
     args = _parse_args(argv, overview_doc=overview_doc, options_doc=options_doc)
     init_logging(debug=args.debug)
-    update_package_db(
+    await update_package_db(
         db_path=args.db,
         how_to_generate=how_to_generate,
         get_db_info_factory=get_db_info_factory,
