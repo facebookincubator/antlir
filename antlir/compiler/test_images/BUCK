@@ -2,7 +2,6 @@
 # the shim in `defs.bzl`.
 load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:image_genrule_layer.bzl", "image_genrule_layer")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
@@ -137,7 +136,7 @@ defs.export_file(name = "shadow_me")
 ]
 
 # Since `rpm-test-milk` provides `/bin/sh`, use it to exercise genrule layers.
-image_genrule_layer(
+image.genrule_layer(
     name = "genrule-layer",
     antlir_rule = "user-internal",
     cmd = [
@@ -152,11 +151,11 @@ image_genrule_layer(
         # The `internal_only_*` things are covered by the stuff that uses them.
     ),
     parent_layer = ":validates-dnf-build-appliance",
-    rule_type = "image_test_genrule_layer",
+    rule_type = "test_genrule_layer",
     user = "root",
 )
 
-image_genrule_layer(
+image.genrule_layer(
     name = "genrule-layer-with-mounts",
     antlir_rule = "user-internal",
     cmd = [
@@ -165,7 +164,7 @@ image_genrule_layer(
         "/bin/mount > /GENRULE_LAYER_MOUNTS",
     ],
     parent_layer = ":test-layer-with-mounts",
-    rule_type = "image_test_genrule_layer",
+    rule_type = "test_genrule_layer",
     user = "root",
 )
 

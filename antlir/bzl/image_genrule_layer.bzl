@@ -3,139 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""
-The core `image.layer` abstraction deliberately prevents execution of
-arbitrary commands as part of the image build.  There are many reasons:
-
-  - Arbitrary commands, even with no network, can easily be
-    non-deterministic (e.g.  something that queries time or an RNG, or
-    something that depends on the inherent entropy of the process execution
-    model).  Eventually, it would be nice to integrate something like
-    DetTrace, but this is out of scope for now.
-
-  - Arbitrary commands typically use shell syntax, which is both fragile, and
-    is not adequately covered by `.bzl` linters. Adding more powerful linters
-    is possible (e.g. ShellCheck for shell fields), but does not make shell
-    scripts as obvious to the reader as intention-oriented `.bzl` programs.
-
-  - We value `image.feature`s, which permit order-independent composition of
-    independent parts of the filesystem.  For this declarative style of
-    programming to work, the compiler needs to know the exact side effects
-    of evaluating a feature.
-
-  - When executing an arbitrary command, the modified filesystem can
-    arbitrarily depend on the pre-existing filesystem.  So, in order to be
-    deterministic, arbitrary commands must be explicitly ordered by the
-    programmer.
-
-On the other hand, we neither can, nor should support every possible
-filesystem operation as part of `antlir/compiler` core.  This is where the
-"genrule layer" abstraction comes in.
-
-A genrule layer runs a command inside the snapshot of a parent image, and
-captures the resulting filesystem as its output.  It is the `antlir`
-analog of a Buck `genrule`.  To encourage determinism, the command has no
-network access.  You can make other build artifacts available to your build
-as follows:
-
-image.layer(
-    name = '_setup_foo',
-    parent_layer = '...',
-    features = [
-        image.ensure_subdirs_exist('/', 'output'),
-        image.install(':foo', '/output/_temp_foo'),
-    ],
-)
-
-image_genrule_layer(
-    name = '_translate_foo',
-    parent_layer = ':setup',
-    user = 'root',
-    cmd = ['/bin/sh', '-c', 'tr a-z a-Z < /output/_temp_foo > /output/FOO'],
-)
-
-image.layer(
-    name = 'foo',
-    parent_layer = ':_translate_foo',
-    # Clean up temporary state
-    features = [image.remove_path('/output/_temp_foo')],
-)
-
-Customers should not use `image_genrule_layer` directly, both because using
-arbitrary commands in builds is error-prone (per the above), and because the
-goal is that image build declarations be as intent-oriented as possible.
-
-Instead, we envision library authors creating self-contained, robust,
-deterministic, intent-oriented abstractions on top of `image_genrule_layer`,
-and placing them in a subdirectory of `bzl/genrule/`.  For a reasonable
-example, take a look at `bzl/genrule/rpmbuild`.
-
-The general idea should be to create a layer per logical image build step,
-though the macro may also create intermediate layers that are not visible to
-the end user.
-
-Layering explicitly sequences the steps, and also avails us of Buck's
-caching of build outputs, so that iterating on child layers does not cost a
-re-build of the parent.  To take best advantage of caching, try to put the
-steps that change most frequently later in the sequence (this parallels the
-best practice for developing `Dockerfile`s).
-
-In some cases, you are not interested in the entirety of the genrule layer,
-but only in a few artifacts that were built inside of it.  The example of
-`rpmbuild` works this way.  Follow that same pattern to get your files:
-  - Have `image_genrule_layer` leave the desired output(s) at a known path
-    in the image.
-  - To use the output(s) in another image, just use regular image actions
-    together with `image.source(layer=':genrule-layer', path='/out')`.
-  - The moment you need to use such outputs as inputs to a regular Buck
-    macro, ping `antlir` devs, and we'll provide an `image.source`
-    analog that copies files out of the image via `find_built_subvol`.
-
-## Rules of `image_genrule_layer` usage:
-
-  - Always get a code / design review from an `antlir` maintainer.
-  - Do not use in `TARGETS` / `BUCK` files directly.  Instead, define a
-    `.bzl` macro named `image_<intended_action>_layer`.
-  - Place your macro in `antlir/bzl/genrule/<intended_action>`.
-  - Do not change any core `antlir` code when adding a genrule layer.  If
-    your genrule layer requires changes outside of `antlir/bzl/genrule`,
-    discuss them with `antlir` maintainers first.
-  - Tests are mandatory, see `antlir/bzl/genrule/rpmbuild` for a good
-    example.
-  - Keep your macro deterministic.  The Buck linters and runtime try to
-    catch the very shallow issues, but here are some other things to think
-    about:
-      - Avoid mutable globals. Buck doesn't guarantee order of evaluation
-        of your macros across files, so a macro that updates order-sensitive
-        mutable globals can create non-determinism that breaks target
-        determinators for the entire repo.
-      - If you're not sure whether some container or traversal is guaranteed
-        to be deterministically ordered in Buck, sort it (or check).
-      - Avoid reading clocks or timestamps from the filesystem, or local
-        user / group IDs, or other things that can be different between your
-        dev host, and another host.
-
-# Deliberate limitations of the `image_genrule_layer` implementation
-
-  - No network access. This is the gateway to non-deterministic hell.
-    If you're sure your use-case is "safe", talk to `antlir` maintainers
-    for how to implement it correctly.
-
-  - We will not add `--bindmount-{ro,rw}` to the container invocation.
-    Normal `image.layer_mount`s in the parent will, of course, work as
-    intended, but these are not meant to let you bind-mount arbitrary host
-    paths, and so ought not to lead to non-determinism. As in the example
-    above, `image.install` is another good way to get data into your image.
-
-    Details on the rationale: The only paths that are safe to bind-mount
-    into a container are `buck-out` build artifacts. Previously mentioned
-    `image.{install,layer_mount}` should adequately address this. Doing
-    runtime mounts would be less deterministic because:
-      - the tree being bind-mounted will have nondeterministic `stat` metadata.
-      - `nspawn` bind-mounts leave behind in the image an implicitly created
-         set of dirs and files for the mountpoint, and the `stat` metadata
-         for these won't be deterministic either.
-"""
+"See the docs in antlir/website/docs/genrule-layer.md"
 
 load(":compile_image_features.bzl", "compile_image_features")
 load(":container_opts.bzl", "container_opts_t", "normalize_container_opts")
@@ -158,30 +26,47 @@ genrule_layer_t = shape.shape(
 
 def image_genrule_layer(
         name,
-        # Allows looking up this specific kind of genrule layer rule in the
-        # Buck target graph.
         rule_type,
-        # The command to execute inside the layer. See the docblock for
-        # details on the constraints. PLEASE BE DETERMINISTIC HERE.
         cmd,
-        # Run `cmd` as this user inside the image.
         user = "nobody",
-        # The name of another `image_layer` target, on top of which the
-        # current layer will install its features.
         parent_layer = None,
-        # A struct containing fields accepted by `_build_opts` from
-        # `compile_image_features.bzl`.
         build_opts = None,
-        # An `image.opts` containing keys from `container_opts_t`.
-        # If you want to install packages, you will usually want to
-        # set `shadow_proxied_binaries`.
         container_opts = None,
-        # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
-        # for all other supported kwargs.
         **image_layer_kwargs):
+    """
+### Danger! Danger! Danger!
+
+The resulting layer captures the result of executing a command inside
+another `image.layer`.  This is a power tool intended for extending Antlir
+with new macros.  It must be used with *extreme caution*.  Please
+**carefully read [the full docs](/docs/genrule-layer)** before using.
+
+Mandatory arguments:
+  - `cmd`: The command to execute inside the layer.  See the [full
+    docs](/docs/genrule-layer) for details on the constraints.  **PLEASE
+    KEEP THIS DETERMINISTIC.**
+  - `rule_type`: The resulting Buck target node will have type
+    `image_genrule_layer_{rule_type}`, which allows `buck query`ing for this
+    specific kind of genrule layer.  Required because the intended usage for
+    genrule layers is the creation of new macros, and type-tagging lets
+    Antlir maintainers survey this ecosystem without resorting to `grep`.
+
+Optional arguments:
+  - `user` (defaults to `nobody`): Run `cmd` as this user inside the image.
+  - `parent_layer`: The name of another layer target, inside of which
+    `cmd` will be executed.
+  - `build_opts`: An `image.opts` containing fields accepted by
+    `_build_opts` from `compile_image_features.bzl`.
+  - `container_opts`: An `image.opts` containing keys from `container_opts_t`.
+    If you want to install packages, you will usually want to set
+    `shadow_proxied_binaries` here.
+  - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
+    for supported, but less commonly used, kwargs.
+    """
+
     # This is not strictly needed since `image_layer_impl` lacks this kwarg.
     if "features" in image_layer_kwargs:
-        fail("\"features\" are not supported in image_genrule_layer")
+        fail("\"features\" are not supported in image.genrule_layer")
 
     container_opts = normalize_container_opts(container_opts)
     if container_opts.internal_only_logs_tmpfs:
