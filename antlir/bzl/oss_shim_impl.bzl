@@ -256,6 +256,9 @@ def _filegroup(*args, **kwargs):
 def _genrule(*args, **kwargs):
     _wrap_internal(native.genrule, args, kwargs)
 
+def _http_archive(*args, **kwargs):
+    _wrap_internal(native.http_archive, args, kwargs)
+
 def _http_file(*args, **kwargs):
     _wrap_internal(native.http_file, args, kwargs)
 
@@ -367,6 +370,9 @@ def _rust_unittest(*args, **kwargs):
 def _rust_binary(*args, **kwargs):
     _wrap_internal(native.rust_binary, args, kwargs)
 
+def _rust_library(*args, **kwargs):
+    _wrap_internal(native.rust_library, args, kwargs)
+
 # Use = in the default filename to avoid clashing with RPM names.
 # The constant must match `update_allowed_versions.py`.
 # Omits `_wrap_internal` due to perf paranoia -- we have a callsite per RPM.
@@ -468,6 +474,7 @@ shim = struct(
     },
     export_file = _export_file,
     get_visibility = _normalize_visibility,
+    http_archive = _http_archive,
     http_file = _http_file,
     kernel_get = struct(
         base_target = "//third-party/fedora33/kernel",
@@ -480,6 +487,7 @@ shim = struct(
     python_library = _python_library,
     python_unittest = _python_unittest,
     rust_binary = _rust_binary,
+    rust_library = _rust_library,
     rust_unittest = _rust_unittest,
     rpm_vset = _rpm_vset,  # Not wrapped due to perf paranoia.
     target_utils = struct(

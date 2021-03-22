@@ -1,0 +1,15 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+load(":defs.bzl", "third_party_rust_library")
+
+rust_binary(
+    name = "combine",
+    srcs = ["combine.rs"],
+    deps = [
+    ],
+)
+
+third_party_rust_library(
+    name = "anyhow",
+    version = "1.0.39",
+    sha256 = "81cddc5f91628367664cc7c69714ff08deee8a3efc54623011c772544d7b2767",
+)
