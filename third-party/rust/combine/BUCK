@@ -1,20 +1,14 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 
-# Yeah, this isn't great since cargo is not very hermetic, but this requires
-# some third party dependencies, and would otherwise contain a circular
-# dependency on itself
-# buck_genrule(
-#     name = "combine",
-#     srcs = ["src/combine.rs", "Cargo.toml", "Cargo.lock"],
-#     executable = True,
-#     out = "combine",
-#     cmd = "cargo build && cp target/debug/combine $OUT",
-# )
-
+# This isn't great since cargo is not very hermetic, but this requires some
+# third party dependencies, and would otherwise contain a circular dependency
+# on itself. There are only four crates that this depends on (including
+# transitive dependencies), so it might make sense to special case them at some
+# point to avoid having to build with cargo in a genrule, but it's ok for now.
 buck_genrule(
     name = "combine",
-    srcs = ["target/debug/combine"],
-    cmd = "cp --reflink=auto target/debug/combine $OUT",
+    srcs = ["src/combine.rs", "Cargo.toml", "Cargo.lock"],
     executable = True,
     out = "combine",
+    cmd = "cargo build && cp target/debug/combine $OUT",
 )
