@@ -9,5 +9,6 @@ path = "src/combine.rs"
 
 [dependencies]
 anyhow = "1.0.38"
+cargo_toml = "0.8.1"
 quote = "1.0.9"
 syn = {version = "1.0.64", features = ["full", "visit-mut"]}

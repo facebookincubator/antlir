@@ -4,7 +4,6 @@ def third_party_rust_library(
         name,
         version,
         sha256,
-        crate_root = "src/lib.rs",
         deps = None):
     http_archive(
         name = name + "--archive",
@@ -23,7 +22,7 @@ def third_party_rust_library(
     # in a rust_library target's srcs
     buck_genrule(
         name = name + "--combined.rs",
-        cmd = "$(exe //third-party/rust/combine:combine) $(location :{}--archive)/{} $OUT".format(name, crate_root),
+        cmd = "$(exe //third-party/rust/combine:combine) $(location :{}--archive) $OUT".format(name),
         out = "out.rs",
     )
     rust_library(
