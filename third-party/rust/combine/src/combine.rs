@@ -3,12 +3,14 @@ use quote::ToTokens;
 use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use syn::token::Brace;
 use syn::visit_mut::{self, VisitMut};
 use syn::ItemMod;
 
-struct ModVisitor;
+struct ModVisitor {
+    root_dir: PathBuf,
+}
 
 impl VisitMut for ModVisitor {
     fn visit_item_mod_mut(&mut self, node: &mut ItemMod) {
@@ -17,9 +19,8 @@ impl VisitMut for ModVisitor {
         if node.content.is_none() {
             // TODO: this only handles one level of nesting, but I think that is
             // good enough
-            let mut include =
-                File::open("/home/vmagro/antlir-git/third-party/rust/combine/src/ext.rs")
-                    .expect("could not open module file");
+            let mut include = File::open(self.root_dir.join(format!("{}.rs", node.ident)))
+                .expect("could not open module file");
             let mut content = String::new();
             include.read_to_string(&mut content).unwrap();
             let tree = syn::parse_file(&mut content).unwrap();
@@ -45,18 +46,15 @@ fn main() -> Result<()> {
 
     let mut syntax = syn::parse_file(&src)?;
 
-    ModVisitor.visit_file_mut(&mut syntax);
+    let mut visitor = ModVisitor {
+        root_dir: src_root.parent().unwrap().to_path_buf(),
+    };
+
+    visitor.visit_file_mut(&mut syntax);
     let ts = syntax.to_token_stream();
 
     let mut out = File::create(out_file)?;
-    // let (summary, _, _) = rustfmt::format_input(
-    //     rustfmt::Input::Text(ts.to_string()),
-    //     &Default::default(),
-    //     Some(&mut out),
-    // )
-    // .expect("rustfmt failed");
-    // println!("{:?}", summary);
-    write!(out, "{}\n", ts.to_string());
+    write!(out, "{}\n", ts.to_string())?;
 
     Ok(())
 }
