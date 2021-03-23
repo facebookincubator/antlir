@@ -21,8 +21,5 @@ if you need to modify anything here.
 
 ### `rust`
 
-This contains vendored sources of rust crates. It is managed by
-[reindeer](https://github.com/facebookincubator/reindeer/) which vendors the
-sources and generates buck targets. To add/remove/update a new crate make the
-necessary change in `Cargo.toml`, then run `reindeer vendor` followed by
-`reindeer buckify`.
+`rust` is currently the most complicated of our third-party dependency sets.
+See README.md in that directory for more details.

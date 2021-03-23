@@ -9,3 +9,4 @@ path = "empty.rs"
 
 [dependencies]
 anyhow = "1.0.38"
+cargo-lock = "6.0.1"
