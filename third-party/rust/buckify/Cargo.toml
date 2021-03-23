@@ -1,0 +1,12 @@
+[package]
+edition = "2018"
+name = "buckify"
+version = "0.0.1"
+
+[[bin]]
+name = "buckify"
+path = "src/buckify.rs"
+
+[dependencies]
+anyhow = "1.0.38"
+cargo-lock = "6.0.1"

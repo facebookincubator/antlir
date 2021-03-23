@@ -4,7 +4,8 @@ def third_party_rust_library(
         name,
         version,
         sha256,
-        crate_root = "src/lib.rs"):
+        crate_root = "src/lib.rs",
+        deps = None):
     http_archive(
         name = name + "--archive",
         urls = ["https://static.crates.io/crates/{name}/{name}-{version}.crate".format(
@@ -30,4 +31,5 @@ def third_party_rust_library(
         mapped_srcs = {
             ":{}--combined.rs".format(name): "lib.rs",
         },
+        deps = deps,
     )

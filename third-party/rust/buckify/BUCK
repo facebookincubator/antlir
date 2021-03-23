@@ -1,0 +1,16 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+
+rust_binary(
+    name = "buckify",
+    srcs = ["src/buckify.rs"],
+    deps = [
+        third_party.library(
+            name,
+            platform = "rust",
+        )
+        for name in [
+            "anyhow",
+            "cargo-lock",
+        ]
+    ],
+)
