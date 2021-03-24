@@ -181,7 +181,10 @@ python_library(
     srcs = ["volume_for_repo.py"],
     # `get_volume_for_current_repo()` needs this to be our sibling in the PAR.
     resources = {"set_up_volume.sh": "set_up_volume.sh"},
-    deps = [":fs_utils"],
+    deps = [
+        ":fs_utils",
+        "//antlir/facebook:sudo_error",
+    ],
 )
 
 python_unittest(
