@@ -6,3 +6,7 @@
   path = third-party/cxx/googletest
   url = https://github.com/google/googletest.git
   ignore = untracked
+[submodule "third-party/rust"]
+  path = third-party/rust
+  url = https://github.com/facebookincubator/antlir.git
+  ignore = untracked
