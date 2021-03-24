@@ -19,6 +19,7 @@ image.feature(
             must_exist = False,
         ),
     ],
+    visibility = ["PUBLIC"],
 )
 
 # Remove filesystem items that should ONLY be created at runtime, but might
@@ -43,4 +44,5 @@ image.feature(
         ),
         image.install("empty-machine-id", "/etc/machine-id"),
     ],
+    visibility = ["PUBLIC"],
 )

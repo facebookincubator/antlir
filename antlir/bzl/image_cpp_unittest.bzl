@@ -15,7 +15,7 @@ def image_cpp_unittest(
         hostname = None,
         container_opts = None,
         **cpp_unittest_kwargs):
-    visibility = get_visibility(visibility, name)
+    visibility = visibility or []
 
     wrapper_props = helpers.nspawn_wrapper_properties(
         name = name,

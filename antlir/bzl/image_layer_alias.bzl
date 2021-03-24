@@ -30,6 +30,8 @@ view of Buck:
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 
 def image_layer_alias(name, layer, visibility = None):
+    visibility = visibility or []
+
     # IMPORTANT: If you touch this genrule, update `_image_layer_impl`.
     buck_genrule(
         name = name,
@@ -48,7 +50,7 @@ def image_layer_alias(name, layer, visibility = None):
         '''.format(layer = layer),
         cacheable = False,
         type = "image_layer_alias",
-        visibility = get_visibility(visibility, name),
+        visibility = visibility,
         # This should definitely not count towards CI dependency distance
         # between sources & build nodes.
         antlir_rule = "user-internal",

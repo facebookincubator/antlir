@@ -73,7 +73,7 @@ def _image_layer_impl(
         # `systemd` inside the image.
         enable_boot_target = False,
         visibility = None):
-    visibility = get_visibility(visibility, _layer_name)
+    visibility = visibility or []
     if mount_config == None:
         mount_config = {}
 

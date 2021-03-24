@@ -73,6 +73,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, extra_modules = None,
                 "./",
             ),
         ],
+        visibility = ["PUBLIC"],
     )
 
     # This will extract all of the modules from the `{uname}-rpm-exploded` target as
@@ -157,6 +158,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, extra_modules = None,
             # to support that.
             image.ensure_subdirs_exist("/", "build"),
         ],
+        visibility = ["PUBLIC"],
     )
 
     # Return a new kernel_t instance

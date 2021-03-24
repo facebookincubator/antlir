@@ -1,4 +1,5 @@
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
@@ -19,6 +20,7 @@ image.layer(
         # named fedora
         rpm_repo_snapshot = "//snapshot:fedora33",
     ),
+    visibility = ["//images/..."],
 )
 
 image.layer(
@@ -57,4 +59,8 @@ image.package(
     layer = ":fedora.vm",
     seed_device = True,
     writable_subvolume = True,
+    visibility = [
+        "//antlir/vm/...",
+        kernel_get.base_target + "/...",
+    ],
 )

@@ -18,6 +18,7 @@ image.sendstream_layer(
     build_opts = image.opts(
         build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
     ),
+    visibility = ["PUBLIC"],
 )
 
 # Below are images used for rebuilding the stable build appliance
