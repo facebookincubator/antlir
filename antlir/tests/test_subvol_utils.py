@@ -197,24 +197,86 @@ class SubvolTestCase(unittest.TestCase):
         )
         sv.run_as_root(["mkdir", sv.path("0")])
         sv.run_as_root(["tee", sv.path("0/0")], input=b"0123456789")
+
+        # The default waste factor succeeds in 1 try, but a too-low
+        # factor results in 2 tries.
+        waste_too_low = 1.00015
+
+        # This wrapper is used for mocking the `Subvol._run_btrfs_receive`
+        # method that actually performs the `btrfs receive` of a sendstream
+        # into the loopback.  We still perform the actual operation because
+        # we want to exercise the code path, we just want to force a certain
+        # outcome to avoid flakiness due to slight variations of the CI infra.
+        def _wrap_original(orig, results):
+            results = iter(results)
+
+            def wrapper(*args, **kwargs):
+                orig(*args, **kwargs)
+                return next(results)
+
+            return wrapper
+
+        def _new_mock_completed_process(returncode=0, stderr=b""):
+            return subprocess.CompletedProcess(
+                args=[],
+                returncode=returncode,
+                stderr=stderr,
+            )
+
         with tempfile.NamedTemporaryFile() as loop_path:
-            # The default waste factor succeeds in 1 try, but a too-low
-            # factor results in 2 tries.
-            waste_too_low = 1.00015
-            self.assertEqual(
-                2,
-                sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name,
-                    subvol_opts=subvol_opts,
-                    waste_factor=waste_too_low,
+            # Ensure that we think we've run out of space in the
+            # first pass by mocking the first return as a failure
+            mock_results = [
+                _new_mock_completed_process(
+                    returncode=1,
+                    stderr=b": No space left on device\n",
                 ),
-            )
-            self.assertEqual(
-                1,
-                sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name, subvol_opts=subvol_opts
+                _new_mock_completed_process(),
+            ]
+
+            # If we are doing a multi-pass test, we will end up with
+            # twice the calls, so we need to duplicate the mocked
+            # results.
+            if multi_pass_size_minimization:
+                mock_results += mock_results
+            with unittest.mock.patch.object(
+                sv,
+                "_run_btrfs_receive",
+                side_effect=_wrap_original(
+                    sv._run_btrfs_receive, results=mock_results
                 ),
-            )
+            ):
+                self.assertEqual(
+                    2,
+                    sv.mark_readonly_and_send_to_new_loopback(
+                        loop_path.name,
+                        subvol_opts=subvol_opts,
+                        waste_factor=waste_too_low,
+                    ),
+                )
+
+            # Reset the mock results to ensure that the single pass version
+            # works by forcing a positive outcome
+            mock_results = [
+                _new_mock_completed_process(),
+            ]
+            if multi_pass_size_minimization:
+                mock_results += mock_results
+
+            with unittest.mock.patch.object(
+                sv,
+                "_run_btrfs_receive",
+                side_effect=_wrap_original(
+                    sv._run_btrfs_receive, results=mock_results
+                ),
+            ):
+                self.assertEqual(
+                    1,
+                    sv.mark_readonly_and_send_to_new_loopback(
+                        loop_path.name, subvol_opts=subvol_opts
+                    ),
+                )
+
             # Same 2-try run, but this time, exercise the free space check
             # instead of relying on parsing `btrfs receive` output.
             with unittest.mock.patch.object(
