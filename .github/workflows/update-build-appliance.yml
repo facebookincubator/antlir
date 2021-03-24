@@ -16,7 +16,9 @@ jobs:
         run: git submodule update --init
 
       - name: Install system dependencies
-        run: sudo apt-get install -y attr libcap-ng-dev systemd-container
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr libcap-ng-dev systemd-container
 
       - name: Set up $PATH
         run: echo $(pwd)/tools > $GITHUB_PATH
