@@ -177,6 +177,7 @@ def rewrite_tpx_gtest_cmd(
 _TEST_TYPE_TO_REWRITE_CMD = {
     "pyunit": rewrite_testpilot_python_cmd,
     "gtest": rewrite_tpx_gtest_cmd,
+    "rust": do_not_rewrite_cmd,
 }
 
 # Integration coverage is provided by `image.python_unittest` targets, which

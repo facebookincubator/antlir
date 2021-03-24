@@ -106,7 +106,7 @@ def _nspawn_wrapper_properties(
         fail("`internal_only_unprotect_antlir_dir` is not allowed in tests")
 
     # These args must be on the outer wrapper test, regardless of language.
-    outer_kwarg_names = ["tags", "env"]
+    outer_kwarg_names = ["tags", "labels", "env"]
     outer_kwarg_names.extend(extra_outer_kwarg_names)
 
     outer_test_kwargs = {k: v for k, v in inner_test_kwargs.items() if k in outer_kwarg_names}
@@ -118,6 +118,9 @@ def _nspawn_wrapper_properties(
     # Make a test-specific image containing the test binary.
     binary_path = "/layer-test-binary.par"
     inner_test_target = ":" + _hidden_test_name(name)
+    if test_type == "rust":
+        # for the rust linter warning that the crate is not snake_case
+        inner_test_target = inner_test_target.lower().replace("--", "-")
     image_layer(
         name = test_layer,
         parent_layer = layer,

@@ -199,6 +199,12 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "image_rust_unittest",
+    srcs = ["image_rust_unittest.bzl"],
+    deps = [":image_unittest_helpers"],
+)
+
+fake_macro_library(
     name = "image_test_rpm_names",
     srcs = ["image_test_rpm_names.bzl"],
     deps = [":image_python_unittest"],
