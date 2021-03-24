@@ -99,6 +99,17 @@ python_unittest(
     env = {"kitteh": "meow"},
 )
 
+image.rust_unittest(
+    name = "test-image-rust-unittest",
+    srcs = ["image_rust_unittest.rs"],
+    layer = TEST_IMAGE_PREFIX + "test-layer",
+    env = {
+        "dogsgo": "woof",
+        "kitteh": "meow",
+    },
+    crate_root = "image_rust_unittest.rs",
+)
+
 # systemd unit features
 export_file(name = "cheese-export.service")
 
