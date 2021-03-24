@@ -7,7 +7,7 @@
 from contextlib import contextmanager
 
 
-class FsImageTestUtilsMixin:
+class TestUtilsMixin:
     """Use as a mixin with a class inheriting unittest.TestCase to provide some
     useful helpers.
     """
