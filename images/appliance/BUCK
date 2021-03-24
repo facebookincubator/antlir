@@ -40,6 +40,7 @@ image.layer(
         image.ensure_subdirs_exist("/etc", "yum"),
         image.rpms_install([
             "attr",
+            "bsdtar",
             "btrfs-progs",
             "coreutils",
             "dnf",  # For installing rpms
