@@ -712,6 +712,15 @@ class Subvol:
     # Mocking this allows tests to exercise the fallback "out of space" path.
     _OUT_OF_SPACE_SUFFIX = b": No space left on device\n"
 
+    def _run_btrfs_receive(
+        self, ns: Unshare, loop_vol: LoopbackVolume, r_send: int
+    ):
+        return run_stdout_to_err(
+            nsenter_as_root(ns, "btrfs", "receive", loop_vol.dir()),
+            stdin=r_send,
+            stderr=subprocess.PIPE,
+        )
+
     def _send_to_loopback_if_fits(
         self, output_path, fs_size_bytes, subvol_opts: SubvolOpts
     ) -> (int, int):
@@ -731,11 +740,7 @@ class Subvol:
         ):
             w_send.close()  # This end is now fully owned by `btrfs send`.
             with r_send:
-                recv_ret = run_stdout_to_err(
-                    nsenter_as_root(ns, "btrfs", "receive", loop_vol.dir()),
-                    stdin=r_send,
-                    stderr=subprocess.PIPE,
-                )
+                recv_ret = self._run_btrfs_receive(ns, loop_vol, r_send)
                 if recv_ret.returncode != 0:
                     if recv_ret.stderr.endswith(self._OUT_OF_SPACE_SUFFIX):
                         log.info("Will retry receive, did not fit")
@@ -780,6 +785,14 @@ class Subvol:
                         "Unhandled receive stderr:\n\n"
                         + recv_ret.stderr.decode(errors="surrogateescape")
                     )
+                else:
+                    # Drain the pipe even though we got a positive
+                    # outcome.  This is mostly for testing so that
+                    # we don't have to deal with SIGPIPE errors
+                    # from btrfs send when we mock out the actual
+                    # receive.
+                    _drain_pipe_return_byte_count(r_send)
+
                 recv_ret.check_returncode()
                 if not subvol_opts.readonly:
                     sub_name = os.path.basename(self.path())
