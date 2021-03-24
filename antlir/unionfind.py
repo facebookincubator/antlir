@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# hi
+
 """
 This is used by RepoSizer, which is part of our OSS for buck images. We've
 duplicated it here given that it's a simple library unlikely to be updated, and
@@ -62,9 +64,7 @@ class UnionFind(object):
             return id
 
         root = self.find(parent)
-        self._representative_dict[
-            id
-        ] = root  # imperative, path compression heuristic !
+        self._representative_dict[id] = root  # imperative, path compression heuristic !
         return root
 
     def flatten(self):
