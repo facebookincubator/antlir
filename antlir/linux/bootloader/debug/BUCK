@@ -1,5 +1,6 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:busybox.bzl", "busybox")
@@ -46,4 +47,8 @@ image.layer(
 image.package(
     name = "debug-append.cpio.gz",
     layer = ":debug-append",
+    visibility = [
+        kernel_get.base_target + "/...",
+        "//scripts/dschatzberg/vm/...",
+    ],
 )

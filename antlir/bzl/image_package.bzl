@@ -31,7 +31,7 @@ def image_package(
         # For supported formats, see `--format` here:
         #     buck run :package-image -- --help
         format = None):
-    visibility = get_visibility(visibility, name)
+    visibility = visibility or []
 
     if not format:
         local_layer_rule, format = paths.split_extension(name)

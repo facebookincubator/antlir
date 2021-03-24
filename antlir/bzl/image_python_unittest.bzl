@@ -20,7 +20,7 @@ def image_python_unittest(
         hostname = None,
         container_opts = None,
         **python_unittest_kwargs):
-    visibility = get_visibility(visibility, name)
+    visibility = visibility or []
 
     wrapper_props = helpers.nspawn_wrapper_properties(
         name = name,

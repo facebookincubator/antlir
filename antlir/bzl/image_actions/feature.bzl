@@ -236,6 +236,8 @@ def image_feature(
         features,
         visibility = None,
         _internal_only_version_sets = REPO_CFG.version_set_to_path):
+    visibility = visibility or []
+
     """
     Turns a group of image actions into a Buck target, so it can be
     referenced from outside the current project via `//path/to:name`.
@@ -252,7 +254,7 @@ def image_feature(
         _image_feature_impl(
             name = name,
             features = features,
-            visibility = get_visibility(visibility, name),
+            visibility = visibility,
             version_set = version_set,
         )
 

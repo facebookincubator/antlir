@@ -1,5 +1,5 @@
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_sh_test")
+load("//antlir/bzl:oss_shim.bzl", "buck_sh_test", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
@@ -59,6 +59,7 @@ image.layer(
         ),
     ],
     build_opts = antlir_linux_build_opts(),
+    visibility = [kernel_get.base_target + "/..."],
 )
 
 # CPIO archive to which environment specific overlays are appended. For
@@ -67,6 +68,7 @@ image.layer(
 image.package(
     name = "base.cpio.gz",
     layer = ":base",
+    visibility = ["PUBLIC"],
 )
 
 buck_sh_test(
