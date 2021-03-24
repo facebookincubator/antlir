@@ -11,6 +11,11 @@ import sys
 
 from antlir.fs_utils import Path
 
+try:
+    from antlir.facebook.sudo_error import FB_SUDO_ERROR
+except ImportError:  # pragma: no cover
+    FB_SUDO_ERROR = ""
+
 
 # Exposed for tests
 IMAGE_FILE = "image.btrfs"
@@ -85,10 +90,10 @@ if __name__ == "__main__":  # pragma: no cover
     except subprocess.CalledProcessError:
         print(
             "image builds require sudo. "
-            f"Ensure that {getpass.getuser()} is allowed to use sudo.",
+            + f"Ensure that {getpass.getuser()} is allowed to use sudo."
+            + FB_SUDO_ERROR,
             file=sys.stderr,
         )
-        print("https://fburl.com/vmtest-root", file=sys.stderr)
         sys.exit(1)
 
     second_arg = [] if sys.argv[2] == "None" else [float(sys.argv[2])]
