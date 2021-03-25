@@ -4,7 +4,8 @@ on:
     paths:
       - 'images/appliance/BUCK'
       - '.github/workflows/update-build-appliance.yml'
-
+  workflow_dispatch:
+  
 jobs:
   build-and-upload:
     runs-on: ubuntu-20.04
