@@ -15,10 +15,10 @@ resolve_path() {
   popd > /dev/null
 }
 
-buck_root_dir() {
+repo_root_dir() {
   CWD="$(resolve_path "$(pwd)")"
   while [[ "$CWD" != "/" ]]; do
-    if [[ -r "$CWD"/.buckconfig ]]; then
+    if [[ -r "$CWD"/.git ]]; then
       echo "$CWD"
       return
     fi
@@ -27,24 +27,21 @@ buck_root_dir() {
 }
 
 # Derive the actual buck binary location
-_buck_root="$(buck_root_dir)"
+_repo_root="$(repo_root_dir)"
 # Keep the buck binary under .tools/ so it is moderately hidden, but not liable
 # to be wiped out by the buckd lifecycle
-_buck_bin_dir="${_buck_root}/.tools"
+_buck_bin_dir="${_repo_root}/.tools"
 
 expected_buck_version() {
-  cat "${_buck_root}/.buckversion"
+  cat "${_repo_root}/.buckversion"
   return
 }
 
 BUCK="${_buck_bin_dir}/buck-$(expected_buck_version)-java11.pex"
 
 run_buck() {
-  pushd "${_buck_root}" > /dev/null
   "${BUCK}" "${@}"
-  code=$?
-  popd > /dev/null
-  exit $code
+  exit $?
 }
 
 BUCK_JITPACK_BASE_URL=https://jitpack.io/com/github/facebook/buck
