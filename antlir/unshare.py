@@ -126,18 +126,15 @@ class Unshare:
                 # methods would NOT be visible to the current process.
                 "sudo",
                 "unshare",
+                "--fork",
                 *(ns.value for ns in self._namespaces),
-                # Without the additional `sudo` to the parent's euid, the parent
-                # would not be able to open the keepalive's namespaces below.
-                #
-                # This extra `sudo` also means that we don't need to pass
-                # `--fork` to `unshare` for the keepalive `cat` to end up in a
-                # new PID namespace.
-                "sudo",
-                "-u",
-                f"#{os.geteuid()}",
-                "-g",
-                f"#{os.getegid()}",
+                # Without switching to the parent's euid, the parent would
+                # not be able to open the keepalive's namespaces below.
+                "nsenter",
+                "--setuid",
+                f"{os.geteuid()}",
+                "--setgid",
+                f"{os.getegid()}",
                 "bash",
                 "-euc",
                 "exec 3< /proc/self/status ; grep ^NSpid <&3 ; exec cat 1>&2",
