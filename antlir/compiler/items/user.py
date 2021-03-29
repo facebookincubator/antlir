@@ -5,14 +5,21 @@
 # LICENSE file in the root directory of this source tree.
 
 from collections import OrderedDict
-from typing import Dict, NamedTuple
+from typing import Dict, Generator, NamedTuple
 
+from antlir.compiler.requires_provides import (
+    Provider,
+    ProvidesUser,
+)
 from antlir.fs_utils import Path
 
 
 # Default values from /etc/login.defs
 _UID_MIN = 1000
 _UID_MAX = 60000
+
+
+PASSWD_FILE_PATH = Path("/etc/passwd")
 
 
 class PasswdFileLine(NamedTuple):
@@ -109,6 +116,10 @@ class PasswdFile:
             raise ValueError(f"user {pfl.name} already exists")
         self.lines[pfl.uid] = pfl
         self.nameToUID[pfl.name] = pfl.uid
+
+    def provides(self) -> Generator[Provider, None, None]:
+        for name in self.nameToUID:
+            yield ProvidesUser(name)
 
     def __str__(self):
         return "\n".join((str(pfl) for pfl in self.lines.values())) + "\n"

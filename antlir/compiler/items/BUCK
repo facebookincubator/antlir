@@ -125,6 +125,7 @@ python_library(
     deps = [
         ":common",
         ":group",
+        ":user",
     ],
 )
 

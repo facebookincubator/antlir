@@ -16,7 +16,9 @@ from ..requires_provides import (
     ProvidesDoNotAccess,
     ProvidesFile,
     ProvidesGroup,
+    ProvidesUser,
     RequireGroup,
+    RequireUser,
     Requirement,
     RequirementKind,
     _normalize_path,
@@ -109,3 +111,20 @@ class RequiresProvidesTestCase(unittest.TestCase):
         self.assertEqual(pg.req.name, groupname)
         self.assertEqual(pg.req.kind, RequirementKind.GROUP)
         self.assertTrue(pg.provides(RequireGroup(groupname)))
+
+    def test_require_user(self):
+        username = "user"
+        ru = RequireUser(username)
+        self.assertEqual(ru.name, username)
+        self.assertEqual(ru.kind, RequirementKind.USER)
+        ru2 = RequireUser(username)
+        self.assertEqual(ru, ru2)
+        self.assertEqual(1, len({ru.key(), ru2.key()}))
+
+    def test_provides_user(self):
+        username = "user"
+        pu = ProvidesUser(username)
+        self.assertEqual(pu.req.name, username)
+        self.assertEqual(pu.req.kind, RequirementKind.USER)
+        self.assertTrue(pu.provides(RequireUser(username)))
+        self.assertFalse(pu.provides(RequireUser("user2")))

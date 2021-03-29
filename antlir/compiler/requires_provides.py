@@ -53,6 +53,7 @@ from antlir.fs_utils import Path
 class RequirementKind(Enum):
     PATH = auto()
     GROUP = auto()
+    USER = auto()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -109,6 +110,18 @@ class RequireGroup(Requirement):
 
 
 @dataclasses.dataclass(frozen=True)
+class RequireUser(Requirement):
+    name: str
+
+    def __init__(self, name: str) -> None:
+        super().__init__(kind=RequirementKind.USER)
+        object.__setattr__(self, "name", name)
+
+    def key(self) -> Hashable:
+        return self.__hash__()
+
+
+@dataclasses.dataclass(frozen=True)
 class Provider:
     req: Requirement
 
@@ -148,3 +161,8 @@ class ProvidesDoNotAccess(ProvidesPathObject):
 class ProvidesGroup(Provider):
     def __init__(self, groupname: str):
         super().__init__(req=RequireGroup(groupname))
+
+
+class ProvidesUser(Provider):
+    def __init__(self, username: str):
+        super().__init__(req=RequireUser(username))
