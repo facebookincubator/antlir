@@ -6,6 +6,7 @@
 
 import unittest
 
+from antlir.compiler.requires_provides import ProvidesUser
 from antlir.fs_utils import Path
 
 from ..user import PasswdFile, PasswdFileLine, new_passwd_file_line
@@ -169,4 +170,25 @@ root:x:1:1:bin:/bin:/sbin/nologin
     def test_str(self):
         self.assertEqual(
             str(PasswdFile(_SAMPLE_ETC_PASSWD)), _SAMPLE_ETC_PASSWD
+        )
+
+    def test_provides(self):
+        pf = PasswdFile(_SAMPLE_ETC_PASSWD)
+        self.assertEqual(
+            set(pf.provides()),
+            {
+                ProvidesUser("root"),
+                ProvidesUser("bin"),
+                ProvidesUser("daemon"),
+                ProvidesUser("adm"),
+                ProvidesUser("lp"),
+                ProvidesUser("sync"),
+                ProvidesUser("shutdown"),
+                ProvidesUser("halt"),
+                ProvidesUser("mail"),
+                ProvidesUser("operator"),
+                ProvidesUser("games"),
+                ProvidesUser("ftp"),
+                ProvidesUser("nobody"),
+            },
         )

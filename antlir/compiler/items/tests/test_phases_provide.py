@@ -9,11 +9,11 @@ import subprocess
 import sys
 
 from antlir.compiler.requires_provides import (
-    RequireGroup,
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
     ProvidesGroup,
+    ProvidesUser,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
@@ -87,5 +87,34 @@ adm:x:4:
                     ProvidesGroup("daemon"),
                     ProvidesGroup("sys"),
                     ProvidesGroup("adm"),
+                },
+            )
+
+    def test_phases_provide_users(self):
+        with TempSubvolumes() as ts:
+            sv = ts.create("test_phases_provide_users")
+            sv.run_as_root(["mkdir", "-p", sv.path("/etc")]).check_returncode()
+            sv.run_as_root(
+                ["tee", sv.path("/etc/passwd")],
+                input=b"""root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+adm:x:3:4:adm:/var/adm:/sbin/nologin
+lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+""",
+            ).check_returncode()
+
+            self.assertEqual(
+                set(PhasesProvideItem(from_target="t", subvol=sv).provides()),
+                {
+                    ProvidesDirectory(path=Path("/")),
+                    ProvidesDoNotAccess(path=Path("/.meta")),
+                    ProvidesDirectory(path=Path("/etc")),
+                    ProvidesFile(path=Path("/etc/passwd")),
+                    ProvidesUser("root"),
+                    ProvidesUser("bin"),
+                    ProvidesUser("daemon"),
+                    ProvidesUser("adm"),
+                    ProvidesUser("lp"),
                 },
             )

@@ -24,6 +24,7 @@ from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, is_path_protected, protected_path_set
 from .group import GROUP_FILE_PATH, GroupFile
+from .user import PASSWD_FILE_PATH, PasswdFile
 
 
 def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
@@ -115,6 +116,10 @@ class PhasesProvideItem(ImageItem):
         group_file_path = self.subvol.path(GROUP_FILE_PATH)
         if group_file_path.exists():
             for provide in GroupFile(group_file_path.read_text()).provides():
+                yield provide
+        passwd_file_path = self.subvol.path(PASSWD_FILE_PATH)
+        if passwd_file_path.exists():
+            for provide in PasswdFile(passwd_file_path.read_text()).provides():
                 yield provide
 
     def requires(self):
