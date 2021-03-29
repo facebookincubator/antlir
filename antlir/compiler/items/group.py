@@ -9,7 +9,7 @@ from typing import Dict, Generator, List, NamedTuple
 
 from antlir.compiler.requires_provides import (
     Provider,
-    RequireGroup,
+    ProvidesGroup,
     Requirement,
     require_file,
 )
@@ -24,6 +24,9 @@ from .group_t import group_t
 # Used to calculate next available group ID.
 _GID_MIN = 1000
 _GID_MAX = 60000
+
+
+GROUP_FILE_PATH = Path("/etc/group")
 
 
 class GroupFileLine(NamedTuple):
@@ -92,19 +95,23 @@ class GroupFile:
         gfl = self.lines[gid]
         gfl.members.append(username)
 
+    def provides(self) -> Generator[Provider, None, None]:
+        for name in self.nameToGID:
+            yield ProvidesGroup(name)
+
     def __str__(self):
         return "\n".join((str(gfl) for gfl in self.lines.values())) + "\n"
 
 
 class GroupItem(group_t, ImageItem):
     def requires(self) -> Generator[Requirement, None, None]:
-        yield require_file(Path("/etc/group"))
+        yield require_file(GROUP_FILE_PATH)
 
     def provides(self) -> Generator[Provider, None, None]:
-        yield Provider(RequireGroup(self.name))
+        yield ProvidesGroup(self.name)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
-        group_path = subvol.path("/etc/group")
+        group_path = subvol.path(GROUP_FILE_PATH)
         group_file = GroupFile(group_path.read_text())
         gid = self.id or group_file.next_group_id()
         group_file.add(self.name, gid)

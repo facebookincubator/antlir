@@ -122,7 +122,10 @@ python_unittest(
 python_library(
     name = "phases_provide",
     srcs = ["phases_provide.py"],
-    deps = [":common"],
+    deps = [
+        ":common",
+        ":group",
+    ],
 )
 
 python_unittest(

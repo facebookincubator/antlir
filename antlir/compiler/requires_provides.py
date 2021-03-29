@@ -143,3 +143,8 @@ class ProvidesDoNotAccess(ProvidesPathObject):
 
     def __init__(self, path: Path):
         super().__init__(req=PathRequiresPredicate(path, None))
+
+
+class ProvidesGroup(Provider):
+    def __init__(self, groupname: str):
+        super().__init__(req=RequireGroup(groupname))

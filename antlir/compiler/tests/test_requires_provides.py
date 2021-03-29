@@ -15,6 +15,7 @@ from ..requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
+    ProvidesGroup,
     RequireGroup,
     Requirement,
     RequirementKind,
@@ -86,18 +87,25 @@ class RequiresProvidesTestCase(unittest.TestCase):
 
     def test_path_requires_predicate_key(self):
         p = Path("/a/b/c")
-        self.assertEquals(p, require_directory(p).key())
-        self.assertEquals(p, require_file(p).key())
+        self.assertEqual(p, require_directory(p).key())
+        self.assertEqual(p, require_file(p).key())
 
     def test_provides_path_object_path(self):
         p = Path("/a/b/c")
-        self.assertEquals(p, ProvidesDirectory(p).path())
-        self.assertEquals(p, ProvidesDirectory(p).path())
+        self.assertEqual(p, ProvidesDirectory(p).path())
+        self.assertEqual(p, ProvidesDirectory(p).path())
 
     def test_require_group(self):
         groupname = "foo"
         g = RequireGroup(groupname)
-        self.assertEquals(g.name, groupname)
-        self.assertEquals(g.kind, RequirementKind.GROUP)
+        self.assertEqual(g.name, groupname)
+        self.assertEqual(g.kind, RequirementKind.GROUP)
         g2 = RequireGroup(groupname)
-        self.assertEquals(1, len({g.key(), g2.key()}))
+        self.assertEqual(1, len({g.key(), g2.key()}))
+
+    def test_provides_group(self):
+        groupname = "foo"
+        pg = ProvidesGroup(groupname)
+        self.assertEqual(pg.req.name, groupname)
+        self.assertEqual(pg.req.kind, RequirementKind.GROUP)
+        self.assertTrue(pg.provides(RequireGroup(groupname)))

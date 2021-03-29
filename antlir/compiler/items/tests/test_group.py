@@ -9,6 +9,7 @@ import unittest
 
 from antlir.compiler.requires_provides import (
     Provider,
+    ProvidesGroup,
     RequireGroup,
     require_file,
 )
@@ -77,7 +78,7 @@ class GroupItemTest(BaseItemTestCase):
     def test_group_item(self):
         self._check_item(
             GroupItem(from_target="t", name="foo"),
-            {Provider(RequireGroup("foo"))},
+            {ProvidesGroup("foo")},
             {require_file(Path("/etc/group"))},
         )
 
@@ -225,3 +226,14 @@ class GroupFileTest(unittest.TestCase):
         gf.add("a", 1)
         with self.assertRaisesRegex(ValueError, r"^group a already exists"):
             gf.add("a", 2)
+
+    def test_provides(self):
+        gf = GroupFile("root:x:0:td-agent\nbin:x:1:a,b\n\ndaemon:x:2:\n\n")
+        self.assertEqual(
+            {
+                ProvidesGroup("root"),
+                ProvidesGroup("bin"),
+                ProvidesGroup("daemon"),
+            },
+            set(gf.provides()),
+        )

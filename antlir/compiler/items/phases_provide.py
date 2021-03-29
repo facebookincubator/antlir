@@ -23,6 +23,7 @@ from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, is_path_protected, protected_path_set
+from .group import GROUP_FILE_PATH, GroupFile
 
 
 def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
@@ -109,7 +110,12 @@ class PhasesProvideItem(ImageItem):
     subvol: Subvol
 
     def provides(self):
-        return gen_subvolume_subtree_provides(self.subvol, Path("/"))
+        for path in gen_subvolume_subtree_provides(self.subvol, Path("/")):
+            yield path
+        group_file_path = self.subvol.path(GROUP_FILE_PATH)
+        if group_file_path.exists():
+            for provide in GroupFile(group_file_path.read_text()).provides():
+                yield provide
 
     def requires(self):
         return ()
