@@ -50,3 +50,34 @@ image.layer(
         ),
     ],
 )
+
+# Time tests
+image.layer(
+    name = "test-layer-timezone-utc",
+    parent_layer = REPO_CFG.build_appliance_default,
+    features = [linux.time.timezone(zone = "UTC")],
+)
+
+image.python_unittest(
+    name = "test-timezone-utc",
+    env = {
+        "ANTLIR_TEST_EXPECTED_TIMEZONES": "UTC",
+    },
+    srcs = ["test_time.py"],
+    layer = ":test-layer-timezone-utc",
+)
+
+image.layer(
+    name = "test-layer-timezone-us-pacific",
+    parent_layer = REPO_CFG.build_appliance_default,
+    features = [linux.time.timezone(zone = "US/Pacific")],
+)
+
+image.python_unittest(
+    name = "test-timezone-us-pacific",
+    env = {
+        "ANTLIR_TEST_EXPECTED_TIMEZONES": "PDT PST",
+    },
+    srcs = ["test_time.py"],
+    layer = ":test-layer-timezone-us-pacific",
+)
