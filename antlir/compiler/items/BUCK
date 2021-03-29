@@ -277,7 +277,7 @@ python_library(
 python_library(
     name = "mount",
     srcs = ["mount.py"],
-    visibility = ["//tupperware/image/cm:container_manifest_impl"],
+    visibility = ["//tupperware/cm/antlir:container_manifest_impl"],
     deps = [
         ":common",
         ":mount_utils",
