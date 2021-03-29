@@ -5,10 +5,12 @@
 
 load(":busybox.bzl", "busybox")
 load(":filesystem.bzl", "filesystem")
+load(":time.bzl", "time")
 
 # This exposed struct provides a clean API for clients
 # to use.
 linux = struct(
     busybox = busybox,
     filesystem = filesystem,
+    time = time,
 )
