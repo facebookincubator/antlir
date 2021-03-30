@@ -19,6 +19,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 from antlir.compiler.items.mount import mounts_from_meta
 from antlir.config import load_repo_config
 from antlir.find_built_subvol import find_built_subvol
+from antlir.fs_utils import Path
 from antlir.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
 from antlir.tests.subvol_helpers import (
     check_common_rpm_render,
@@ -71,8 +72,7 @@ class ImageLayerTestCase(unittest.TestCase):
             yield find_built_subvol(TARGET_TO_PATH[target])
 
     def _check_hello(self, subvol_path):
-        with open(os.path.join(subvol_path, b"hello_world")) as hello:
-            self.assertEqual("", hello.read())
+        self.assertEqual("", (subvol_path / "hello_world").read_text())
 
     def _check_parent(self, subvol):
         subvol_path = subvol.path()
@@ -359,10 +359,9 @@ class ImageLayerTestCase(unittest.TestCase):
         with self.target_subvol("genrule-layer-with-mounts") as sv:
             # Check that the `layer_mount` was mounted when the genrule
             # layer ran
-            with open(sv.path("/GENRULE_LAYER_MOUNTS"), "r") as f:
-                mounts = f.read()
-                self.assertIn("/meownt", mounts)
-                self.assertIn("/sendstream_meownt", mounts)
+            mounts = sv.read_path_text(Path("/GENRULE_LAYER_MOUNTS"))
+            self.assertIn("/meownt", mounts)
+            self.assertIn("/sendstream_meownt", mounts)
 
     def test_non_default_rpm_snapshot(self):
         with self.target_subvol("layer-with-non-default-snapshot-rpm") as sv:

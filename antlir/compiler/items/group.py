@@ -111,10 +111,7 @@ class GroupItem(group_t, ImageItem):
         yield ProvidesGroup(self.name)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
-        group_path = subvol.path(GROUP_FILE_PATH)
-        group_file = GroupFile(group_path.read_text())
+        group_file = GroupFile(subvol.read_path_text(GROUP_FILE_PATH))
         gid = self.id or group_file.next_group_id()
         group_file.add(self.name, gid)
-        subvol.run_as_root(
-            ["tee", group_path], input=str(group_file).encode()
-        ).check_returncode()
+        subvol.overwrite_path_as_root(GROUP_FILE_PATH, str(group_file))

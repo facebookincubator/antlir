@@ -123,12 +123,12 @@ class MountItemTestCase(BaseItemTestCase):
                 ("build_source/type", "host\n"),
                 ("build_source/source", "/dev/null\n"),
             ):
-                with open(
-                    subvol.path(
-                        os.path.join(".meta/private/mount/lala/MOUNT", filename)
-                    )
-                ) as f:
-                    self.assertEqual(contents, f.read())
+                self.assertEqual(
+                    contents,
+                    subvol.read_path_text(
+                        Path(".meta/private/mount/lala/MOUNT") / filename
+                    ),
+                )
 
     def _make_mount_item(
         self, *, mountpoint, target, mount_config, from_target="t"
@@ -256,12 +256,12 @@ class MountItemTestCase(BaseItemTestCase):
             ("runtime_source/so", "me\n"),
             ("runtime_source/arbitrary/j", "son\n"),
         ):
-            with open(
-                subvol.path(
-                    os.path.join(".meta/private/mount/meow/MOUNT", filename)
-                )
-            ) as f:
-                self.assertEqual(contents, f.read())
+            self.assertEqual(
+                contents,
+                subvol.read_path_text(
+                    Path(".meta/private/mount/meow/MOUNT") / filename
+                ),
+            )
 
     def _write_layer_json_into(self, subvol, out_dir):
         subvol_path = subvol.path()

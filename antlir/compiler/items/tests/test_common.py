@@ -104,22 +104,16 @@ class ItemsCommonTestCase(BaseItemTestCase):
             subvol.run_as_root(
                 ["mkdir", "-p", subvol.path(".meta/private/mount/a/b/c/MOUNT")]
             )
-            subvol.run_as_root(
-                [
-                    "tee",
-                    subvol.path(".meta/private/mount/a/b/c/MOUNT/is_directory"),
-                ],
-                input=b"true",
+            subvol.overwrite_path_as_root(
+                Path(".meta/private/mount/a/b/c/MOUNT/is_directory"),
+                contents=b"true",
             )
             subvol.run_as_root(
                 ["mkdir", "-p", subvol.path(".meta/private/mount/d/e/f/MOUNT")]
             )
-            subvol.run_as_root(
-                [
-                    "tee",
-                    subvol.path(".meta/private/mount/d/e/f/MOUNT/is_directory"),
-                ],
-                input=b"false",
+            subvol.overwrite_path_as_root(
+                Path(".meta/private/mount/d/e/f/MOUNT/is_directory"),
+                contents=b"false",
             )
             self.assertEqual(
                 {META_DIR, Path("a/b/c/"), Path("d/e/f")},
