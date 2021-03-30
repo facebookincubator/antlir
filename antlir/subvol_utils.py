@@ -882,6 +882,17 @@ class Subvol:
                     # GC code delete it later.
                     self._exists = True
 
+    def read_path_text(self, relpath: Path) -> str:
+        return self.path(relpath).read_text()
+
+    def overwrite_path_as_root(self, relpath: Path, contents: AnyStr):
+        # Future: support setting user, group, and mode
+        if isinstance(contents, str):
+            contents = contents.encode()
+        self.run_as_root(
+            ["tee", self.path(relpath)], input=contents
+        ).check_returncode()
+
 
 def with_temp_subvols(method):
     """

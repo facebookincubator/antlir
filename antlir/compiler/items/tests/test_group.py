@@ -16,11 +16,11 @@ from antlir.compiler.requires_provides import (
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 
-from ..group import GroupFile, GroupFileLine, GroupItem
+from ..group import GROUP_FILE_PATH, GroupFile, GroupFileLine, GroupItem
 from .common import BaseItemTestCase
 
 
-_SAMPLE_ETC_GROUP = b"""root:x:0:
+_SAMPLE_ETC_GROUP = """root:x:0:
 bin:x:1:
 daemon:x:2:
 sys:x:3:
@@ -61,15 +61,8 @@ sshd:x:74:
 """
 
 
-def augment_group_file(contents: bytes, groupname: str, gid: int) -> bytes:
-    return (
-        contents.strip()
-        + b"\n"
-        + groupname.encode()
-        + b":x:"
-        + str(gid).encode()
-        + b":\n"
-    )
+def augment_group_file(contents: str, groupname: str, gid: int) -> str:
+    return contents.strip() + "\n" + groupname + ":x:" + str(gid) + ":\n"
 
 
 class GroupItemTest(BaseItemTestCase):
@@ -86,50 +79,38 @@ class GroupItemTest(BaseItemTestCase):
         with TempSubvolumes(sys.argv[0]) as ts:
             sv = ts.create("root")
             sv.run_as_root(["mkdir", sv.path("/etc")]).check_returncode()
-            sv.run_as_root(
-                ["tee", sv.path("/etc/group")], input=_SAMPLE_ETC_GROUP
-            ).check_returncode()
+            sv.overwrite_path_as_root(GROUP_FILE_PATH, _SAMPLE_ETC_GROUP)
             GroupItem(from_target="t", name="foo").build(sv)
-            with open(sv.path("/etc/group")) as f:
-                have = f.read()
             self.assertEqual(
-                augment_group_file(_SAMPLE_ETC_GROUP, "foo", 1000).decode(),
-                have,
+                augment_group_file(_SAMPLE_ETC_GROUP, "foo", 1000),
+                sv.path("/etc/group").read_text(),
             )
 
     def test_build_twice(self):
         with TempSubvolumes(sys.argv[0]) as ts:
             sv = ts.create("root")
             sv.run_as_root(["mkdir", sv.path("/etc")]).check_returncode()
-            sv.run_as_root(
-                ["tee", sv.path("/etc/group")], input=_SAMPLE_ETC_GROUP
-            ).check_returncode()
+            sv.overwrite_path_as_root(GROUP_FILE_PATH, _SAMPLE_ETC_GROUP)
             GroupItem(from_target="t", name="foo").build(sv)
             GroupItem(from_target="t", name="bar").build(sv)
-            with open(sv.path("/etc/group")) as f:
-                have = f.read()
             self.assertEqual(
                 augment_group_file(
                     augment_group_file(_SAMPLE_ETC_GROUP, "foo", 1000),
                     "bar",
                     1001,
-                ).decode(),
-                have,
+                ),
+                sv.path("/etc/group").read_text(),
             )
 
     def test_build_with_gid(self):
         with TempSubvolumes(sys.argv[0]) as ts:
             sv = ts.create("root")
             sv.run_as_root(["mkdir", sv.path("/etc")]).check_returncode()
-            sv.run_as_root(
-                ["tee", sv.path("/etc/group")], input=_SAMPLE_ETC_GROUP
-            ).check_returncode()
+            sv.overwrite_path_as_root(GROUP_FILE_PATH, _SAMPLE_ETC_GROUP)
             GroupItem(from_target="t", name="foo", id=2000).build(sv)
-            with open(sv.path("/etc/group")) as f:
-                have = f.read()
             self.assertEqual(
-                augment_group_file(_SAMPLE_ETC_GROUP, "foo", 2000).decode(),
-                have,
+                augment_group_file(_SAMPLE_ETC_GROUP, "foo", 2000),
+                sv.path("/etc/group").read_text(),
             )
 
 

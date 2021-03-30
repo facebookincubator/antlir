@@ -397,6 +397,20 @@ class SubvolTestCase(unittest.TestCase):
         self.assertEqual(sv, other_sv)
         self.assertEqual(sv.__hash__(), hash(sv._path))
 
+    def test_read_file(self):
+        with temp_dir() as td:
+            with open(td / "test_file", "w") as f:
+                f.write("foo")
+            self.assertEqual(
+                Subvol(td).read_path_text(Path("test_file")), "foo"
+            )
+
+    @with_temp_subvols
+    def test_write_file(self, ts: TempSubvolumes):
+        sv = ts.create("test_write_file")
+        sv.overwrite_path_as_root(Path("test_file"), contents=b"foo")
+        self.assertEqual(sv.path("test_file").read_text(), "foo")
+
     def test_with_temp_subvols(self):
         temp_dir_path = None
 

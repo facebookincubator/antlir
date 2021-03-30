@@ -18,7 +18,9 @@ from antlir.compiler.requires_provides import (
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 
+from ..group import GROUP_FILE_PATH
 from ..phases_provide import PhasesProvideItem, gen_subvolume_subtree_provides
+from ..user import PASSWD_FILE_PATH
 from .common import (
     BaseItemTestCase,
     populate_temp_filesystem,
@@ -65,15 +67,15 @@ class PhaseProvidesItemTestCase(BaseItemTestCase):
         with TempSubvolumes() as ts:
             sv = ts.create("test_phases_provide_groups")
             sv.run_as_root(["mkdir", "-p", sv.path("/etc")]).check_returncode()
-            sv.run_as_root(
-                ["tee", sv.path("/etc/group")],
-                input=b"""root:x:0:
+            sv.overwrite_path_as_root(
+                GROUP_FILE_PATH,
+                """root:x:0:
 bin:x:1:
 daemon:x:2:
 sys:x:3:
 adm:x:4:
 """,
-            ).check_returncode()
+            )
 
             self.assertEqual(
                 set(PhasesProvideItem(from_target="t", subvol=sv).provides()),
@@ -94,15 +96,15 @@ adm:x:4:
         with TempSubvolumes() as ts:
             sv = ts.create("test_phases_provide_users")
             sv.run_as_root(["mkdir", "-p", sv.path("/etc")]).check_returncode()
-            sv.run_as_root(
-                ["tee", sv.path("/etc/passwd")],
-                input=b"""root:x:0:0:root:/root:/bin/bash
+            sv.overwrite_path_as_root(
+                PASSWD_FILE_PATH,
+                """root:x:0:0:root:/root:/bin/bash
 bin:x:1:1:bin:/bin:/sbin/nologin
 daemon:x:2:2:daemon:/sbin:/sbin/nologin
 adm:x:3:4:adm:/var/adm:/sbin/nologin
 lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
 """,
-            ).check_returncode()
+            )
 
             self.assertEqual(
                 set(PhasesProvideItem(from_target="t", subvol=sv).provides()),
