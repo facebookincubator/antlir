@@ -5,12 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import subprocess
 import tempfile
 import unittest
 from contextlib import contextmanager
 
 from antlir.compiler.requires_provides import ProvidesDirectory, ProvidesFile
 from antlir.fs_utils import Path
+from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
+from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path, render_subvol
 
@@ -80,6 +84,19 @@ def temp_filesystem_provides(p=""):
         ProvidesFile(path=Path(f"{p}/a/d/F")),
         ProvidesFile(path=Path(f"{p}/a/b/c/G")),
     }
+
+
+def getent(layer: Subvol, type: str, name: str):
+    cp, _ = run_nspawn(
+        new_nspawn_opts(
+            cmd=["getent", type, name],
+            layer=layer,
+        ),
+        PopenArgs(
+            stdout=subprocess.PIPE,
+        ),
+    )
+    return cp.stdout
 
 
 class BaseItemTestCase(unittest.TestCase):

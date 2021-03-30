@@ -70,9 +70,12 @@ python_library(
     srcs = ["tests/common.py"],
     deps = [
         ":common",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
         "//antlir:testlib_layer_resource",
         "//antlir:testlib_subvol_helpers",
         "//antlir/compiler:requires_provides",
+        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
 
@@ -115,7 +118,6 @@ python_unittest(
         "//antlir:find_built_subvol",
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
-        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
 
