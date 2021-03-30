@@ -8,7 +8,7 @@ http_file(
     name = "stable-build-appliance.sendstream.zst",
     sha256 = stable_build_appliance_sha,
     urls = [
-        "https://antlir.s3.us-east-2.amazonaws.com/images/appliance/stable_build_appliance.sendstream.zst." + stable_build_appliance_sha,
+        "https://antlir.s3.us-east-2.amazonaws.com/images/appliance/stable-build-appliance.sendstream.zst." + stable_build_appliance_sha,
     ],
 )
 
