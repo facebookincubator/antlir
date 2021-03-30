@@ -47,7 +47,7 @@ jobs:
           sha="$(sha256sum stable-build-appliance.sendstream.zst | awk '{ print $1 }')"
           aws s3 cp stable-build-appliance.sendstream.zst "s3://antlir/images/appliance/stable-build-appliance.sendstream.zst.$sha"
           rm stable-build-appliance.sendstream.zst
-          echo "stable_build_appliance_sha = \"$sha\"" > images/appliance/stable_appliance.bzl
+          sed -ri "s/[a-z0-9]{64}/$sha/" images/appliance/stable_appliance.bzl
 
       - name: Commit new hash
         run: |
