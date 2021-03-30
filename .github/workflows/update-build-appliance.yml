@@ -1,3 +1,5 @@
+name: Build and Update Stable Build Appliance
+
 on:
   push:
     branches: [main]
