@@ -419,6 +419,7 @@ python_library(
         ":items",
         ":phases_provide",
         ":rpm_action",
+        ":user",
     ],
 )
 
@@ -445,6 +446,7 @@ python_library(
     srcs = ["user.py"],
     deps = [
         ":common",
+        ":group",
         ":user_t",
     ],
 )
@@ -456,5 +458,26 @@ python_unittest(
     deps = [
         ":common_testlib",
         ":user",
+    ],
+)
+
+python_unittest(
+    name = "user-integration-test",
+    srcs = ["tests/user_integration_test.py"],
+    resources = {
+        REPO_CFG.build_appliance_default: "tests/base-layer",
+        TEST_IMAGE_PREFIX + "users-added": "tests/users-added",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
+    },
+    tags = ["slow"],
+    deps = [
+        ":common_testlib",
+        ":user",
+        "//antlir:find_built_subvol",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )

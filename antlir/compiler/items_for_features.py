@@ -23,6 +23,7 @@ from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.rpm_action import RpmActionItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
+from antlir.compiler.items.user import UserItem
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 
@@ -130,6 +131,7 @@ def gen_items_for_features(
         "symlinks_to_dirs": SymlinkToDirItem,
         "symlinks_to_files": SymlinkToFileItem,
         "tarballs": image_sourcify(TarballItem),
+        "users": UserItem,
     }
     key_to_items_factory = {
         "ensure_subdirs_exist": ensure_subdirs_exist_factory,

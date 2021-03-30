@@ -4,14 +4,25 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import re
 from collections import OrderedDict
 from typing import Dict, Generator, NamedTuple
 
 from antlir.compiler.requires_provides import (
     Provider,
+    RequireGroup,
+    Requirement,
     ProvidesUser,
+    require_directory,
+    require_file,
 )
 from antlir.fs_utils import Path
+from antlir.subvol_utils import Subvol
+from pydantic import validator
+
+from .common import ImageItem, LayerOpts
+from .group import GROUP_FILE_PATH, GroupFile
+from .user_t import user_t
 
 
 # Default values from /etc/login.defs
@@ -53,7 +64,7 @@ class PasswdFileLine(NamedTuple):
                 "x",
                 str(self.uid),
                 str(self.gid),
-                self.comment,
+                self.comment or "",
                 self.directory.decode(),
                 self.shell.decode(),
             )
@@ -123,3 +134,58 @@ class PasswdFile:
 
     def __str__(self):
         return "\n".join((str(pfl) for pfl in self.lines.values())) + "\n"
+
+
+_VALID_USERNAME_RE = re.compile(
+    r"^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)$"
+)
+
+
+class UserItem(user_t, ImageItem):
+    @validator("name")
+    def _validate_name(cls, name):  # noqa B902
+        # Validators are classmethods but flake8 doesn't catch that.
+        if len(name) < 1 or len(name) > 32:
+            raise ValueError(f"username `{name}` must be 1-32 characters")
+        if not _VALID_USERNAME_RE.match(name):
+            raise ValueError(f"username `{name}` invalid")
+        return name
+
+    def requires(self) -> Generator[Requirement, None, None]:
+        # Future: Once symlinked dirs can satisfy requirements (T87467446),
+        # we can add `yield require_file(self.shell)`
+        yield require_file(GROUP_FILE_PATH)
+        yield RequireGroup(self.primary_group)
+        for groupname in self.supplementary_groups:
+            yield RequireGroup(groupname)
+        yield require_file(PASSWD_FILE_PATH)
+        yield require_directory(self.home_dir)
+
+    def provides(self) -> Generator[Provider, None, None]:
+        yield ProvidesUser(self.name)
+
+    def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
+        group_file = GroupFile(subvol.read_path_text(GROUP_FILE_PATH))
+
+        # this should already be checked by requires/provides
+        assert (
+            self.primary_group in group_file.nameToGID
+        ), f"primary_group `{self.primary_group}` missing from /etc/group"
+
+        for groupname in self.supplementary_groups:
+            group_file.join(groupname, self.name)
+        subvol.overwrite_path_as_root(GROUP_FILE_PATH, str(group_file))
+
+        passwd_file = PasswdFile(subvol.read_path_text(PASSWD_FILE_PATH))
+        uid = self.id or passwd_file.next_user_id()
+        passwd_file.add(
+            PasswdFileLine(
+                name=self.name,
+                uid=uid,
+                gid=group_file.nameToGID[self.primary_group],
+                comment=self.comment,
+                directory=self.home_dir,
+                shell=self.shell,
+            )
+        )
+        subvol.overwrite_path_as_root(PASSWD_FILE_PATH, str(passwd_file))

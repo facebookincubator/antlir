@@ -6,10 +6,24 @@
 
 import unittest
 
-from antlir.compiler.requires_provides import ProvidesUser
+from antlir.compiler.requires_provides import (
+    ProvidesUser,
+    RequireGroup,
+    require_directory,
+    require_file,
+)
 from antlir.fs_utils import Path
+from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
 
-from ..user import PasswdFile, PasswdFileLine, new_passwd_file_line
+from ..group import GROUP_FILE_PATH
+from ..user import (
+    PASSWD_FILE_PATH,
+    PasswdFile,
+    PasswdFileLine,
+    UserItem,
+    new_passwd_file_line,
+)
+from .common import BaseItemTestCase
 
 
 class PasswdFileLineTest(unittest.TestCase):
@@ -191,4 +205,128 @@ root:x:1:1:bin:/bin:/sbin/nologin
                 ProvidesUser("ftp"),
                 ProvidesUser("nobody"),
             },
+        )
+
+
+class UserItemTest(BaseItemTestCase):
+    def test_user(self):
+        self._check_item(
+            UserItem(
+                from_target="t",
+                name="newuser",
+                primary_group="newuser",
+                supplementary_groups=[],
+                shell="/bin/bash",
+                home_dir="/home/newuser",
+            ),
+            {ProvidesUser("newuser")},
+            {
+                RequireGroup("newuser"),
+                require_directory(Path("/home/newuser")),
+                require_file(Path("/etc/group")),
+                require_file(Path("/etc/passwd")),
+            },
+        )
+
+        self._check_item(
+            UserItem(
+                from_target="t",
+                name="foo",
+                primary_group="bar",
+                supplementary_groups=["a", "b", "c"],
+                shell="/sbin/nologin",
+                home_dir="/",
+            ),
+            {ProvidesUser("foo")},
+            {
+                RequireGroup("a"),
+                RequireGroup("b"),
+                RequireGroup("c"),
+                RequireGroup("bar"),
+                require_directory(Path("/")),
+                require_file(Path("/etc/group")),
+                require_file(Path("/etc/passwd")),
+            },
+        )
+
+    def test_validate_name(self):
+        for valid_name in [
+            "root",
+            "fbuser",
+            "user123",
+            "foo$",
+            "_a1b2c3",
+        ]:
+            self.assertEqual(UserItem._validate_name(valid_name), valid_name)
+
+        for bad_len in [
+            "",
+            "123456789012345678901234567890123",
+        ]:
+            with self.assertRaisesRegex(
+                ValueError, r"username `.*` must be 1-32 characters"
+            ):
+                UserItem._validate_name(bad_len)
+
+        for bad in [
+            "A",
+            "ABC",
+            "foo$bar",
+            "1abc",
+        ]:
+            with self.assertRaisesRegex(ValueError, r"username `.*` invalid"):
+                UserItem._validate_name(bad)
+
+    @with_temp_subvols
+    def test_build(self, ts: TempSubvolumes):
+        sv = ts.create("test_build")
+        sv.run_as_root(["mkdir", "-p", sv.path("/etc")]).check_returncode()
+        sv.overwrite_path_as_root(
+            GROUP_FILE_PATH,
+            """root:x:0:
+bin:x:1:root,daemon
+daemon:x:2:root,bin
+sys:x:3:root,bin,adm
+adm:x:4:
+""",
+        )
+        sv.overwrite_path_as_root(
+            PASSWD_FILE_PATH,
+            """root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+adm:x:3:4:adm:/var/adm:/sbin/nologin
+lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+""",
+        )
+        UserItem(
+            from_target="t",
+            name="new_user",
+            primary_group="sys",
+            supplementary_groups=["adm"],
+            comment="a new user",
+            home_dir="/home/new_user",
+            shell="/bin/bash",
+        ).build(sv)
+
+        # NB: new_user should only be added to supplementary groups
+        self.assertEqual(
+            sv.read_path_text(GROUP_FILE_PATH),
+            """root:x:0:
+bin:x:1:root,daemon
+daemon:x:2:root,bin
+sys:x:3:root,bin,adm
+adm:x:4:new_user
+""",
+        )
+        # NB: new_user's login group ID should be its primary group
+        self.assertEqual(
+            sv.read_path_text(PASSWD_FILE_PATH),
+            """root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+adm:x:3:4:adm:/var/adm:/sbin/nologin
+lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+new_user:x:1000:3:a new user:/home/new_user:/bin/bash
+""",
         )
