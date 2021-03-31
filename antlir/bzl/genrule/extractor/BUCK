@@ -21,6 +21,7 @@ image.layer(
         ),
     ],
     antlir_rule = "user-internal",
+    visibility = ["//antlir/..."],
 )
 
 python_binary(
