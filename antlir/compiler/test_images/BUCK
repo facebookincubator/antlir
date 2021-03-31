@@ -99,6 +99,7 @@ image.layer(
         "//antlir/features:build_artifact_cleanup",
     ],
     enable_boot_target = True,
+    visibility = ["//antlir/..."],
 )
 
 # Some tests require a bootable container. For now, these are the same as the
@@ -107,6 +108,7 @@ image.layer(
 image.layer_alias(
     name = "bootable-systemd-os",
     layer = ":test-layer",
+    visibility = ["//antlir/nspawn_in_subvol/..."],
 )
 
 # This assumes that the host provides `cc`, since we cannot install packages
@@ -131,6 +133,7 @@ defs.export_file(name = "shadow_me")
             build_appliance = ":build_appliance_testing",
             version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
         ),
+        visibility = ["//antlir/compiler/..."],
     )
     for rpm_installer in REPO_CFG.rpm_installers_supported
 ]
@@ -153,6 +156,7 @@ image.genrule_layer(
     parent_layer = ":validates-dnf-build-appliance",
     rule_type = "test_genrule_layer",
     user = "root",
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.genrule_layer(
@@ -166,6 +170,7 @@ image.genrule_layer(
     parent_layer = ":test-layer-with-mounts",
     rule_type = "test_genrule_layer",
     user = "root",
+    visibility = ["//antlir/compiler/..."],
 )
 
 # The next two targets exercise:
@@ -187,6 +192,7 @@ image.feature(
             mode = "a+rwx",
         ),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.feature(
@@ -197,6 +203,7 @@ image.feature(
             mode = "a+rwx",
         ),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 # The permissions are bad, so any attempt to add this into a layer will fail.
@@ -211,6 +218,7 @@ image.feature(
             group = "ggg",
         ),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 # Exercises:
@@ -226,6 +234,7 @@ image.feature(
         # /dev/null is allowlisted to be a dangling symlink
         image.ensure_file_symlink("/dev/null", "/foo/symlink_to_dev_null"),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 # These RPMs were generated as follows:
@@ -268,6 +277,7 @@ image.layer(
         ]),
     ],
     build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    visibility = ["//antlir/compiler/items/..."],
 )
 
 # Our repo snapshotting code forces GPG checks on all RPMs installed.
@@ -294,6 +304,7 @@ image.layer(
         ]),
     ],
     build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    visibility = ["//antlir/compiler/..."],
 )
 
 # Checks installing from a non-default snapshot
@@ -310,6 +321,7 @@ image.layer(
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
         version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
+    visibility = ["//antlir/compiler/..."],
 )
 
 # Exercises:
@@ -346,6 +358,7 @@ image.feature(
     # `rpm-test-*` RPMs may not be mentioned by all of the allowed version
     # sets, so just emit this feature for one.
     _internal_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.feature(
@@ -355,6 +368,7 @@ image.feature(
         image.host_file_mount("/dev/null", "/dev_null"),
         image.layer_mount(":hello_world_base", "/meownt"),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.layer(
@@ -367,6 +381,7 @@ image.layer(
             "/sendstream_meownt",
         ),
     ],
+    visibility = ["//antlir/..."],
 )
 
 image.layer(
@@ -374,12 +389,14 @@ image.layer(
     features = [
         ":feature_mount",
     ],
+    visibility = ["//antlir/compiler/items/..."],
 )
 
 image.package(
     name = "small-layer-with-mounts.btrfs",
     format = "btrfs",
     layer = ":small-layer-with-mounts",
+    visibility = ["//antlir/compiler/..."],
 )
 
 defs.python_binary(
@@ -477,17 +494,20 @@ image.feature(
             "/foo/bar/installed/solo-exe.sh",
         ),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.layer(
     name = "installed-executables",
     parent_layer = ":test-layer",
     features = [":feature_install_files"],
+    visibility = ["//antlir/..."],
 )
 
 image.layer(
     name = "installed-files",
     features = [":feature_install_files"],
+    visibility = ["//antlir/compiler/..."],
 )
 
 # Exercises `image.clone`, covering the 3 supported trailings / patterns.
@@ -499,6 +519,7 @@ image.layer(
         image.ensure_subdirs_exist("/", "bar2"),
         image.clone(":installed-files", "/foo/bar/", "/bar2/"),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 # Omnibus feature for test-compiler and test-image-feature.  It currently cannot
@@ -534,6 +555,7 @@ image.feature(
     # We can only build for "no version set" because our child
     # `feature_tar_and_rpms` provides no other version sets.
     _internal_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
+    visibility = ["//antlir/compiler/..."],
 )
 
 ##
@@ -549,6 +571,7 @@ image.feature(
     features = [
         image.ensure_subdirs_exist("/", "a/b"),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.feature(
@@ -556,6 +579,7 @@ image.feature(
     features = [
         image.remove("/a"),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.feature(
@@ -584,6 +608,7 @@ image.feature(
         ":feature_addremove_conflict_add",
         ":feature_addremove_conflict_remove",
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.layer(
@@ -592,6 +617,7 @@ image.layer(
         ":feature_addremove_conflict_add",
         ":feature_repeated_removal",
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.layer(
@@ -601,6 +627,7 @@ image.layer(
         ":feature_addremove_conflict_remove",
         ":feature_repeated_removal",
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 ##
@@ -632,6 +659,7 @@ image.layer(
     # it must invoke the "chicken" mount source (which might just download
     # and unpack a serialized versions of this layer).
     mount_config = {"runtime_source": {"type": "chicken"}},
+    visibility = ["//antlir/..."],
 )
 
 defs.buck_genrule(
@@ -669,6 +697,7 @@ image.layer(
     ),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.layer(
@@ -710,6 +739,7 @@ image.layer(
         build_appliance = ":build_appliance_testing",
         version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
+    visibility = ["//antlir/..."],
 )
 
 image.package(
@@ -730,6 +760,7 @@ image.layer(
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],
     build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    visibility = ["//antlir/compiler/..."],
 )
 
 # This downgrades and installs /rpm_test/cheese1.txt.
@@ -740,6 +771,7 @@ image.layer(
         image.rpms_install([":rpm-test-cheese-1-1.rpm"]),
     ],
     build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    visibility = ["//antlir/compiler/..."],
 )
 
 # This upgrades and installs /rpm_test/cheese3.txt.
@@ -750,6 +782,7 @@ image.layer(
         image.rpms_install([":rpm-test-cheese-3-1.rpm"]),
     ],
     build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    visibility = ["//antlir/compiler/..."],
 )
 
 # This re-installs the same version of /rpm_test/cheese2.txt.
@@ -760,6 +793,7 @@ image.layer(
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],
     build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    visibility = ["//antlir/compiler/..."],
 )
 
 ##
@@ -787,11 +821,13 @@ image.sendstream_layer(
     name = op,
     source = ":" + op + "-original.sendstream",
     build_opts = image.opts(subvol_name = op),
+    visibility = ["//antlir/..."],
 )
 
 image.package(
     name = op + ".sendstream",
     layer = ":" + op,
+    visibility = ["//antlir/..."],
 )
 
 ##
@@ -814,6 +850,7 @@ image.sendstream_layer(
         path = "sendstream",
     ),
     build_opts = image.opts(subvol_name = "create_ops"),
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.layer(
@@ -830,11 +867,13 @@ image.sendstream_layer(
         path = "sendstream",
     ),
     build_opts = image.opts(subvol_name = "create_ops"),
+    visibility = ["//antlir/..."],
 )
 
 image.layer_alias(
     name = "create_ops-alias",
     layer = ":create_ops",
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.layer("empty")  # Just ensure this builds, not checking contents :)
@@ -849,6 +888,7 @@ image.layer(
     features = [
         image.tarball(":create_ops.tar.gz", "/"),
     ],
+    visibility = ["//antlir/..."],
 )
 
 image.package(
@@ -861,12 +901,14 @@ image.package(
     name = "create_ops_cpio_gz",
     layer = ":create_ops",
     format = "cpio.gz",
+    visibility = ["//antlir/..."],
 )
 
 image.package(
     name = "create_ops_squashfs",
     layer = ":create_ops",
     format = "squashfs",
+    visibility = ["//antlir/..."],
 )
 
 add_rpm_repo_snapshots_layer(
@@ -891,6 +933,7 @@ image.layer(
         image.group_add("foo"),
         image.group_add("leet", 1337),
     ],
+    visibility = ["//antlir/compiler/..."],
 )
 
 image.layer(
@@ -905,4 +948,5 @@ image.layer(
             home_dir = "/home/newuser",
         ),
     ],
+    visibility = ["//antlir/compiler/..."],
 )

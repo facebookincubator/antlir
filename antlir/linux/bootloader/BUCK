@@ -16,6 +16,9 @@ image.layer(
         ]),
     ],
     build_opts = antlir_linux_build_opts(),
+    visibility = [
+        "//antlir/linux/bootloader/debug/...",
+    ],
 )
 
 # Generate /etc/initrd-release based on scm/fbpkg revision info

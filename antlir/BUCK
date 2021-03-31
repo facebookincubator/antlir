@@ -8,6 +8,7 @@ python_library(
     name = "common",
     srcs = ["common.py"],
     visibility = [
+        "//antlir/...",
         "//tupperware/cm/antlir:container_manifest_impl",
         "//tupperware/cm/antlir:extract_nested_features",
         "//tupperware/image/scripts:tw_image_stats-library",
@@ -28,6 +29,7 @@ python_library(
     name = "cli",
     srcs = ["cli.py"],
     visibility = [
+        "//antlir/...",
         "//tupperware/cm/antlir:container_manifest_impl",
     ],
     deps = [
@@ -40,6 +42,7 @@ python_library(
     name = "fs_utils",
     srcs = ["fs_utils.py"],
     visibility = [
+        "//antlir/...",
         "//scripts/jtru/tw:mixin-check",
         "//scripts/jtru/tw:mixin-check-library",
         "//tupperware/cm/antlir:container_manifest_impl",
@@ -101,6 +104,7 @@ python_library(
     name = "testlib_layer_resource",
     srcs = ["tests/layer_resource.py"],
     visibility = [
+        "//antlir/...",
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
     ],
@@ -111,6 +115,7 @@ python_library(
     name = "testlib_subvol_helpers",
     srcs = ["tests/subvol_helpers.py"],
     visibility = [
+        "//antlir/...",
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
     ],
