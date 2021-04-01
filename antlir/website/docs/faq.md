@@ -65,8 +65,9 @@ buck run //antlir:find-built-subvol -- "$(
 Troubleshooting steps:
 
   - Did you specify your RPM name correctly? Remember that `foo-project` is OK,
-    but `foo-project-1.12` is not supported. We will eventually support version
-    locking, but it will never use the RPM string syntax.
+    but `foo-project-1.12` is not supported. You can specify the version of RPM
+    via `rpm_version_set_overrides` argument of `image.opts`. See docs for
+    `rpms_install` in the [API page](/docs/api/image).
 
   - [Inspect the repo snapshot](#how-do-i-inspect-the-rpm-snapshot-db) and run
     this SQL statement, replacing `pv` with your RPM name:
