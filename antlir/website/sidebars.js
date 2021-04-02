@@ -48,6 +48,7 @@ module.exports = {
       items: [
         {
           RPMs: [
+            'concepts/rpms/overview',
             ...fbInternalOnly(['concepts/rpms/fb/how-rpms-are-updated']),
             'concepts/rpms/how-rpms-are-updated',
             'concepts/rpms/using-rpms-in-images',

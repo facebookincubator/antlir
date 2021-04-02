@@ -31,13 +31,11 @@ explaining this rule.
 
 ## Concepts
 
-### Package group
+### Package group, Universe, etc.
 
-A list of related packages, all of which must always have the same installed
-version (and ought to be installed in one transaction). For example, `systemd`,
-`systemd-libs`, and `systemd-devel` must be in sync. Each package may be in at
-most one package group. Package groups can be defined: manually, or via
-slowroll:
+Start by reading [the overview](/docs/concepts/rpms/overview).
+
+Package groups can be defined: manually, or via slowroll:
 
 - `"packages": ["a", "b", "c"]`
 - `"packages": {"source": "slowroll", "name": "systemd-packages"}` — this only
