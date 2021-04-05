@@ -245,7 +245,7 @@ class DepGraphTestBase(unittest.TestCase):
             a_ln: {ade, adeg},
         }
         # [[items, requiring, it], [items, it, requires]]
-        item_req_provs = [
+        item_reqs_provs = [
             _build_req_prov(
                 "/.meta", [], [self.provides_root], ProvidesDoNotAccess
             ),
@@ -258,13 +258,13 @@ class DepGraphTestBase(unittest.TestCase):
             _build_req_prov("/a/d/e/G", [], [adeg], ProvidesFile),
             _build_req_prov("/a/b/c/F", [], [abcf], ProvidesFile),
         ]
-        self.path_to_reqs_provs = {}
-        for irp in item_req_provs:
+        self.item_reqs_provs = {}
+        for irp in item_reqs_provs:
             req = {ir.requires for ir in irp.item_reqs}.union(
                 {ip.provides.req for ip in irp.item_provs}
             )
             assert len(req) == 1
-            self.path_to_reqs_provs[req.pop().key()] = irp
+            self.item_reqs_provs[req.pop().key()] = irp
 
 
 class ValidateReqsProvsTestCase(DepGraphTestBase):
@@ -395,8 +395,8 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         self.assertDictEqual(
             ValidatedReqsProvs(
                 {self.provides_root, *self.items}
-            ).path_to_reqs_provs,
-            self.path_to_reqs_provs,
+            ).item_reqs_provs,
+            self.item_reqs_provs,
         )
 
 
