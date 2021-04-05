@@ -45,6 +45,11 @@ jobs:
         with:
           python-version: '~3.9'
 
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            override: true
+
       - name: Fetch buck
         run: buck --version
 
