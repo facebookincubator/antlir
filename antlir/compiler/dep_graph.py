@@ -24,7 +24,7 @@ from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from .requires_provides import (
     Provider,
     ProvidesDirectory,
-    PathRequiresPredicate,
+    Requirement,
 )
 
 
@@ -89,7 +89,7 @@ class ItemProv(NamedTuple):
 # NB: since the item is part of the tuple, we'll store identical
 # requirements that come from multiple items multiple times.  This is OK.
 class ItemReq(NamedTuple):
-    requires: PathRequiresPredicate
+    requires: Requirement
     item: ImageItem
 
 

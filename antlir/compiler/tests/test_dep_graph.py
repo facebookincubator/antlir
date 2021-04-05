@@ -279,7 +279,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
         with self.assertRaisesRegex(
             AssertionError,
-            r"BadDuplicatePathItem.*PathRequiresPredicate.*collides in",
+            r"BadDuplicatePathItem.*RequirePath.*collides in",
         ):
             ValidatedReqsProvs([BadDuplicatePathItem(from_target="t")])
 
