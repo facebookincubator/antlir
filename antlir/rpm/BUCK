@@ -459,6 +459,7 @@ python_library(
         "//antlir/rpm/downloader:common",
         "//antlir/rpm/downloader:logger",
         "//antlir/rpm/downloader:repo_downloader",
+        "//antlir/rpm/facebook:validate_universe_name",
     ],
 )
 
