@@ -130,7 +130,9 @@ class Provider:
 
 
 @dataclasses.dataclass(frozen=True)
-class ProvidesPathObject(Provider):
+class ProvidesPath(Provider):
+    req: PathRequiresPredicate
+
     def path(self) -> Path:
         return self.req.path
 
@@ -138,19 +140,19 @@ class ProvidesPathObject(Provider):
         return self.__class__(new_path)
 
 
-class ProvidesDirectory(ProvidesPathObject):
+class ProvidesDirectory(ProvidesPath):
     def __init__(self, path: Path):
         super().__init__(req=require_directory(path))
 
 
-class ProvidesFile(ProvidesPathObject):
+class ProvidesFile(ProvidesPath):
     "Does not have to be a regular file, just any leaf in the FS tree"
 
     def __init__(self, path: Path):
         super().__init__(req=require_file(path))
 
 
-class ProvidesDoNotAccess(ProvidesPathObject):
+class ProvidesDoNotAccess(ProvidesPath):
     # Deliberately matches no predicates -- this used to mark paths as "off
     # limits" to further writes.
 
