@@ -76,7 +76,7 @@ def _normalize_path(path: Path) -> Path:
 
 
 @dataclasses.dataclass(frozen=True)
-class PathRequiresPredicate(Requirement):
+class RequirePath(Requirement):
     path: Path
     predicate: _Predicate
 
@@ -90,11 +90,11 @@ class PathRequiresPredicate(Requirement):
 
 
 def require_directory(path: Path):
-    return PathRequiresPredicate(path=path, predicate=_Predicate.IS_DIRECTORY)
+    return RequirePath(path=path, predicate=_Predicate.IS_DIRECTORY)
 
 
 def require_file(path: Path):
-    return PathRequiresPredicate(path=path, predicate=_Predicate.IS_FILE)
+    return RequirePath(path=path, predicate=_Predicate.IS_FILE)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -131,7 +131,7 @@ class Provider:
 
 @dataclasses.dataclass(frozen=True)
 class ProvidesPath(Provider):
-    req: PathRequiresPredicate
+    req: RequirePath
 
     def path(self) -> Path:
         return self.req.path
@@ -157,7 +157,7 @@ class ProvidesDoNotAccess(ProvidesPath):
     # limits" to further writes.
 
     def __init__(self, path: Path):
-        super().__init__(req=PathRequiresPredicate(path, None))
+        super().__init__(req=RequirePath(path, None))
 
 
 class ProvidesGroup(Provider):
