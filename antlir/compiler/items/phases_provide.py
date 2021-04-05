@@ -13,11 +13,13 @@ subvolume after all the phases have finished executing, in order to
 import itertools
 import subprocess
 from dataclasses import dataclass
+from typing import Generator
 
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
+    ProvidesPath,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -27,7 +29,9 @@ from .group import GROUP_FILE_PATH, GroupFile
 from .user import PASSWD_FILE_PATH, PasswdFile
 
 
-def gen_subvolume_subtree_provides(subvol: Subvol, subtree: Path):
+def gen_subvolume_subtree_provides(
+    subvol: Subvol, subtree: Path
+) -> Generator[ProvidesPath, None, None]:
     'Yields "Provides" instances for a path `subtree` in `subvol`.'
     # "Provides" classes use image-absolute paths that are `str` (for now).
     # Accept any string type to ease future migrations.
