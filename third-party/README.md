@@ -18,3 +18,20 @@ add or change this list.
 This contains python3 libraries that are provided the default `pypi` repositories.  Only `python3`
 is supported.  Adding or updating libraries here is currently a manual process.  Talk to @zeroxoneb
 if you need to modify anything here.
+
+### `rust`
+
+Rust crates are (mostly) managed by
+[reindeer](https://github.com/facebookincubator/reindeer/), but instead of
+vendoring sources, crate source tarballs are downloaded from crates.io at
+build time.
+
+To add/remove/update a crate:
+1) make the necessary change in `Cargo.toml`
+2) run `reindeer vendor && reindeer buckify` (`fbcode/common/rust/tools/reindeer` if inside FB)
+3) setup any `fixups` if required for your crates (see reindeer docs or existing crates)
+4) commit the changes to `Cargo.{toml,lock}` and any fixups
+
+NOTE: running `reindeer vendor && reindeer buckify` will vendor a copy of all
+sources into your local checkout, but these are ignored in `.gitignore` and
+are not used in the actual build.

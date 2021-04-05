@@ -1,0 +1,5 @@
+# anyhow will determine if the 'backtrace' feature can be used based on the
+# channel of rust being used. We don't ultimately care, it's just a nice to
+# have - so let it do what it wants
+[[buildscript]]
+[buildscript.rustc_flags]

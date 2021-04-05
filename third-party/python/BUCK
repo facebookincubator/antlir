@@ -130,3 +130,9 @@ pypi_package(
     sha256 = "6f1e273a344928347c1290119b493a1f0303c52f5a5eae5f16d74f48c15d4a85",
     url = "https://files.pythonhosted.org/packages/be/2e/ad118ca191e44dc6f87182310e5be51da71d4b81ac659e5f8d5f18251806/MarkupSafe-1.1.1-cp39-cp39-manylinux2010_x86_64.whl",
 )
+
+pypi_package(
+    name = "toml",
+    sha256 = "806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b",
+    url = "https://files.pythonhosted.org/packages/44/6f/7120676b6d73228c96e17f1f794d8ab046fc910d781c8d151120c3f1569e/toml-0.10.2-py2.py3-none-any.whl",
+)
