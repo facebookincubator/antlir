@@ -101,17 +101,21 @@ class ItemReqsProvs(NamedTuple):
 class ValidatedReqsProvs:
     """
     Given a set of Items (see the docblocks of `item.py` and `provides.py`),
-    computes {'path': {ItemReqProv{}, ...}} so that we can build the
+    computes {key: {ItemReqProv{}, ...}} so that we can build the
     DependencyGraph for these Items.  In the process validates that:
-     - No one item provides or requires the same path twice,
-     - Each path is provided by at least one item without conflicts,
-     - Every Requires is matched by a Provides at that path.
+     - No one ImageItems provides or requires the same path twice,
+     - Each Requirement is Provided by one or more ImageItems without
+       conflicts.
     """
 
-    path_to_reqs_provs: Dict[Hashable, ItemReqsProvs]
+    # Collection of ItemReqsProvs keyed by Requirement.key(), which are
+    # available via ItemReq.requires.key() or ItemProv.provides.req.key().
+    # NB: We cannot key by Requirement objects directly because Symlinks can
+    # satisfy files or directories.
+    item_reqs_provs: Dict[Hashable, ItemReqsProvs]
 
     def __init__(self, items: Set[ImageItem]):
-        self.path_to_reqs_provs = {}
+        self.item_reqs_provs = {}
 
         for item in items:
             # One ImageItem should not emit provides / requires clauses that
@@ -141,7 +145,7 @@ class ValidatedReqsProvs:
                 self._add_to_prov_map(prov, item)
 
         # Validate that all requirements are satisfied.
-        for path, reqs_provs in self.path_to_reqs_provs.items():
+        for path, reqs_provs in self.item_reqs_provs.items():
             for item_req in reqs_provs.item_reqs:
                 for item_prov in reqs_provs.item_provs:
                     if item_prov.provides.provides(item_req.requires):
@@ -153,7 +157,7 @@ class ValidatedReqsProvs:
                     )
 
     def _get_item_req_provs(self, key: str) -> ItemReqsProvs:
-        return self.path_to_reqs_provs.setdefault(
+        return self.item_reqs_provs.setdefault(
             key,
             ItemReqsProvs(item_provs=set(), item_reqs=set()),
         )
@@ -268,9 +272,7 @@ class DependencyGraph:
 
         # For each path, treat items that provide something at that path as
         # predecessors of items that require something at the path.
-        for _path, rp in ValidatedReqsProvs(
-            self.items
-        ).path_to_reqs_provs.items():
+        for rp in ValidatedReqsProvs(self.items).item_reqs_provs.values():
             self._add_dir_deps_for_item_provs(ns, rp.item_provs)
             for item_prov in rp.item_provs:
                 for item_req in rp.item_reqs:
