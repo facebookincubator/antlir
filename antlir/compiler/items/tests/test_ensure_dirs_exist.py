@@ -18,6 +18,7 @@ from pydantic import ValidationError
 
 from ..ensure_dirs_exist import (
     EnsureDirsExistItem,
+    MismatchError,
     ensure_subdirs_exist_factory,
 )
 from .common import (
@@ -117,15 +118,15 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 subvol, DUMMY_LAYER_OPTS_BA
             )
             # Fail on different attributes
-            with self.assertRaises(subprocess.CalledProcessError):
+            with self.assertRaises(MismatchError):
                 EnsureDirsExistItem(**{**good, "mode": 0o775}).build(
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
-            with self.assertRaises(subprocess.CalledProcessError):
+            with self.assertRaises(MismatchError):
                 EnsureDirsExistItem(**{**good, "mode": "u+rwx"}).build(
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
-            with self.assertRaises(subprocess.CalledProcessError):
+            with self.assertRaises(MismatchError):
                 EnsureDirsExistItem(**{**good, "user_group": "77:88"}).build(
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
@@ -152,7 +153,7 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                     subvol.path("/alpha"),
                 ]
             )
-            with self.assertRaises(subprocess.CalledProcessError):
+            with self.assertRaises(MismatchError):
                 ede_item.build(subvol, DUMMY_LAYER_OPTS_BA)
 
     def test_ensure_other_files_and_dirs_are_kept_intact(self):

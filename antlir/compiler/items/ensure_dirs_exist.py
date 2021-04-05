@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pwd
+import subprocess
 from typing import Iterator, Optional
 
 from antlir.compiler.requires_provides import (
@@ -29,6 +30,11 @@ from .stat_options import (
     customize_stat_options,
     mode_to_octal_str,
 )
+
+
+class MismatchError(Exception):
+    pass
+
 
 _BUILD_SCRIPT = r"""
 path_to_make="$1"
@@ -128,7 +134,14 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
             bindmount_rw=[(subvol.path(), work_dir)],
             user=pwd.getpwnam("root"),
         )
-        run_nspawn(opts, PopenArgs())
+        try:
+            run_nspawn(opts, PopenArgs())
+        except subprocess.CalledProcessError as e:
+            raise MismatchError(
+                f"Failed to ensure_subdirs_exist for path '{full_path}' with"
+                f" stat {mode_to_octal_str(self.mode)}"
+                ": see bash error above for more details",
+            ) from e
         if not path_to_make_exists:
             build_stat_options(
                 self,
