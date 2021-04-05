@@ -54,8 +54,14 @@ class ImagePythonUnittestTest(unittest.TestCase):
             "LC_CTYPE",
             # FB test runner
             "TEST_PILOT",
-            # FB "tcc coverage" mode seems to set this?
+            # FB "tcc coverage" mode seems to set these, mostly via
+            # testinfra/testpilot/integration/python/adapters/coverage.py
+            "COVERAGE_RCFILE",
             "PLATFORM",
+            "PYTHON_SUBPROCESS_COVERAGE",
+            "PY_IMPL",
+            "PY_MAJOR",
+            "PY_MINOR",
         }
         for var in os.environ:
             if var.startswith("FB_PAR_"):  # Set for non-in-place build modes
