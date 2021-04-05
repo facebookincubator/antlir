@@ -11,7 +11,7 @@ from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
-    require_directory,
+    RequireDirectory,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
@@ -57,7 +57,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         ci = self._clone_item("/no_such_path", "/none_such")
         self.assertEqual(Path("none_such"), ci.dest)
         with self.assertRaises(subprocess.CalledProcessError):
-            self._check_item(ci, set(), {require_directory(Path("/"))})
+            self._check_item(ci, set(), {RequireDirectory(path=Path("/"))})
         with TempSubvolumes(sys.argv[0]) as temp_subvols:
             subvol = temp_subvols.create("test_clone_nonexistent_source")
             with self.assertRaises(subprocess.CalledProcessError):
@@ -69,7 +69,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         self._check_item(
             ci,
             {ProvidesFile(path=Path("cloned_hello.tar"))},
-            {require_directory(Path("/"))},
+            {RequireDirectory(path=Path("/"))},
         )
         with TempSubvolumes(sys.argv[0]) as temp_subvols:
             subvol = temp_subvols.create("test_clone_file")
@@ -109,7 +109,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 ProvidesFile(path=Path("bar/baz/bar")),
                 ProvidesFile(path=Path("bar/even_more_hello_world.tar")),
             },
-            {require_directory(Path("/bar"))},
+            {RequireDirectory(path=Path("/bar"))},
         )
         with TempSubvolumes(sys.argv[0]) as temp_subvols:
             subvol = temp_subvols.create("test_clone_omit_outer_dir")
@@ -127,7 +127,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 ProvidesFile(path=Path("bar/baz/bar")),
                 ProvidesFile(path=Path("bar/even_more_hello_world.tar")),
             },
-            {require_directory(Path("/"))},
+            {RequireDirectory(path=Path("/"))},
         )
         with TempSubvolumes(sys.argv[0]) as temp_subvols:
             subvol = temp_subvols.create("test_clone_pre_existing_dest")
@@ -149,7 +149,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 self._check_item(
                     ci,
                     {ProvidesFile(path=Path(name))},
-                    {require_directory(Path("/"))},
+                    {RequireDirectory(path=Path("/"))},
                 )
                 ci.build(dest_subvol, DUMMY_LAYER_OPTS)
 
@@ -188,7 +188,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                     # protected.  Read: This Is Fine (TM).
                     ProvidesDoNotAccess(path=Path("/.meta")),
                 },
-                {require_directory(Path("/"))},
+                {RequireDirectory(path=Path("/"))},
             )
             ci.build(dest_subvol, DUMMY_LAYER_OPTS)
 
@@ -223,7 +223,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             pre_existing_dest=True,
             subvol=src_subvol,
         )
-        self.assertEqual({require_directory(Path("/"))}, set(ci.requires()))
+        self.assertEqual({RequireDirectory(path=Path("/"))}, set(ci.requires()))
         self.assertGreater(len(set(ci.provides())), 1)
         with TempSubvolumes(sys.argv[0]) as temp_subvols:
             dest_subvol = temp_subvols.create("create_ops")

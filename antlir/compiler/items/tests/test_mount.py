@@ -12,7 +12,7 @@ import tempfile
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
-    require_directory,
+    RequireDirectory,
 )
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.fs_utils import Path, temp_dir
@@ -292,7 +292,7 @@ class MountItemTestCase(BaseItemTestCase):
                     mount_config=mount_config,
                 ),
                 {ProvidesDoNotAccess(path=Path("can/haz"))},
-                {require_directory(Path("can"))},
+                {RequireDirectory(path=Path("can"))},
             )
 
             # Make a subvolume that would be mounted inside `mounter`

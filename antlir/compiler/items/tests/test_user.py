@@ -9,8 +9,8 @@ import unittest
 from antlir.compiler.requires_provides import (
     ProvidesUser,
     RequireGroup,
-    require_directory,
-    require_file,
+    RequireDirectory,
+    RequireFile,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
@@ -222,9 +222,9 @@ class UserItemTest(BaseItemTestCase):
             {ProvidesUser("newuser")},
             {
                 RequireGroup("newuser"),
-                require_directory(Path("/home/newuser")),
-                require_file(Path("/etc/group")),
-                require_file(Path("/etc/passwd")),
+                RequireDirectory(path=Path("/home/newuser")),
+                RequireFile(path=Path("/etc/group")),
+                RequireFile(path=Path("/etc/passwd")),
             },
         )
 
@@ -243,9 +243,9 @@ class UserItemTest(BaseItemTestCase):
                 RequireGroup("b"),
                 RequireGroup("c"),
                 RequireGroup("bar"),
-                require_directory(Path("/")),
-                require_file(Path("/etc/group")),
-                require_file(Path("/etc/passwd")),
+                RequireDirectory(path=Path("/")),
+                RequireFile(path=Path("/etc/group")),
+                RequireFile(path=Path("/etc/passwd")),
             },
         )
 

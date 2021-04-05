@@ -11,7 +11,7 @@ from antlir.compiler.requires_provides import (
     Provider,
     ProvidesGroup,
     RequireGroup,
-    require_file,
+    RequireFile,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
@@ -72,7 +72,7 @@ class GroupItemTest(BaseItemTestCase):
         self._check_item(
             GroupItem(from_target="t", name="foo"),
             {ProvidesGroup("foo")},
-            {require_file(Path("/etc/group"))},
+            {RequireFile(path=Path("/etc/group"))},
         )
 
     def test_build(self):

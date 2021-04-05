@@ -13,8 +13,8 @@ from antlir.compiler.requires_provides import (
     RequireGroup,
     Requirement,
     ProvidesUser,
-    require_directory,
-    require_file,
+    RequireDirectory,
+    RequireFile,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -153,13 +153,13 @@ class UserItem(user_t, ImageItem):
 
     def requires(self) -> Generator[Requirement, None, None]:
         # Future: Once symlinked dirs can satisfy requirements (T87467446),
-        # we can add `yield require_file(self.shell)`
-        yield require_file(GROUP_FILE_PATH)
+        # we can add `yield RequireFile(path=self.shell)`
+        yield RequireFile(path=GROUP_FILE_PATH)
         yield RequireGroup(self.primary_group)
         for groupname in self.supplementary_groups:
             yield RequireGroup(groupname)
-        yield require_file(PASSWD_FILE_PATH)
-        yield require_directory(self.home_dir)
+        yield RequireFile(path=PASSWD_FILE_PATH)
+        yield RequireDirectory(path=self.home_dir)
 
     def provides(self) -> Generator[Provider, None, None]:
         yield ProvidesUser(self.name)
