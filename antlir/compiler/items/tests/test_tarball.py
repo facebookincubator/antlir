@@ -12,7 +12,7 @@ import tarfile
 import tempfile
 from contextlib import ExitStack
 
-from antlir.compiler.requires_provides import require_directory
+from antlir.compiler.requires_provides import RequireDirectory
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 
@@ -78,7 +78,7 @@ class TarballItemTestCase(BaseItemTestCase):
                 self._check_item(
                     _tarball_item(path, "y"),
                     temp_filesystem_provides("y"),
-                    {require_directory(Path("y"))},
+                    {RequireDirectory(path=Path("y"))},
                 )
 
             # Test a hash validation failure, follows the item above
@@ -124,7 +124,7 @@ class TarballItemTestCase(BaseItemTestCase):
                     force_root_ownership=False,
                 ),
                 temp_filesystem_provides("y"),
-                {require_directory(Path("y"))},
+                {RequireDirectory(path=Path("y"))},
             )
 
     def test_tarball_command(self):

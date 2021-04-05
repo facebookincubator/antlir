@@ -9,7 +9,7 @@ from typing import Iterator, Optional
 
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
-    require_directory,
+    RequireDirectory,
 )
 from antlir.fs_utils import Path, generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
@@ -102,7 +102,7 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
         yield ProvidesDirectory(path=Path(self.into_dir) / self.basename)
 
     def requires(self):
-        yield require_directory(Path(self.into_dir))
+        yield RequireDirectory(path=Path(self.into_dir))
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         # If path already exists ensure it has expected attrs, else make it.

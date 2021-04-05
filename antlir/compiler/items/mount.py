@@ -19,7 +19,7 @@ from typing import Iterator, Mapping, NamedTuple, Optional, Tuple
 from antlir.compiler import procfs_serde
 from antlir.compiler.requires_provides import (
     ProvidesDoNotAccess,
-    require_directory,
+    RequireDirectory,
 )
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
@@ -147,7 +147,7 @@ class MountItem(ImageItem):
     def requires(self):
         # We don't require the mountpoint itself since it will be shadowed,
         # so this item just makes it with default permissions.
-        yield require_directory(Path(self.mountpoint).dirname())
+        yield RequireDirectory(path=Path(self.mountpoint).dirname())
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         mount_dir = META_MOUNTS_DIR / self.mountpoint / MOUNT_MARKER

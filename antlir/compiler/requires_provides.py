@@ -64,11 +64,6 @@ class Requirement:
         raise NotImplementedError("Requirements must implement key")
 
 
-class _Predicate(Enum):
-    IS_DIRECTORY = auto()
-    IS_FILE = auto()
-
-
 def _normalize_path(path: Path) -> Path:
     # Normalize paths as image-absolute. This is crucial since we
     # will use `path` as a dictionary key.
@@ -78,23 +73,28 @@ def _normalize_path(path: Path) -> Path:
 @dataclasses.dataclass(frozen=True)
 class RequirePath(Requirement):
     path: Path
-    predicate: _Predicate
 
-    def __init__(self, path: Path, predicate: _Predicate) -> None:
+    def __init__(self, path: Path) -> None:
         super().__init__(kind=RequirementKind.PATH)
         object.__setattr__(self, "path", _normalize_path(path))
-        object.__setattr__(self, "predicate", predicate)
 
     def key(self) -> Hashable:
         return self.path
 
 
-def require_directory(path: Path):
-    return RequirePath(path=path, predicate=_Predicate.IS_DIRECTORY)
+class RequireDirectory(RequirePath):
+    pass
 
 
-def require_file(path: Path):
-    return RequirePath(path=path, predicate=_Predicate.IS_FILE)
+class RequireFile(RequirePath):
+    pass
+
+
+class _RequireDoNotAccess(RequirePath):
+    # Only ProvidesDoNotAccess should instantiate this type of RequirePath and
+    # it is meant to fail compilation if a RequireDirectory or RequireFile is
+    # requested at this path.
+    pass
 
 
 @dataclasses.dataclass(frozen=True)
@@ -142,22 +142,19 @@ class ProvidesPath(Provider):
 
 class ProvidesDirectory(ProvidesPath):
     def __init__(self, path: Path):
-        super().__init__(req=require_directory(path))
+        super().__init__(req=RequireDirectory(path=path))
 
 
 class ProvidesFile(ProvidesPath):
     "Does not have to be a regular file, just any leaf in the FS tree"
 
     def __init__(self, path: Path):
-        super().__init__(req=require_file(path))
+        super().__init__(req=RequireFile(path=path))
 
 
 class ProvidesDoNotAccess(ProvidesPath):
-    # Deliberately matches no predicates -- this used to mark paths as "off
-    # limits" to further writes.
-
     def __init__(self, path: Path):
-        super().__init__(req=RequirePath(path, None))
+        super().__init__(req=_RequireDoNotAccess(path=path))
 
 
 class ProvidesGroup(Provider):

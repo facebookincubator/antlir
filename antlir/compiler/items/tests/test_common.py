@@ -9,7 +9,7 @@ from typing import List
 
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
-    require_directory,
+    RequireDirectory,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
@@ -62,7 +62,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
                 user_group="cat:dog",
             ),
             {ProvidesDirectory(path=Path("x/y/z"))},
-            {require_directory(Path("x/y"))},
+            {RequireDirectory(path=Path("x/y"))},
         )
 
     def test_image_non_default_after_default(self):

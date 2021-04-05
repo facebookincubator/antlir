@@ -34,7 +34,7 @@ from ..requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
-    require_directory,
+    RequireDirectory,
 )
 
 
@@ -52,7 +52,7 @@ def _build_req_prov(path, req_items, prov_items, prov_t=None):
     prov_t = ProvidesDirectory if prov_t is None else prov_t
     return ItemReqsProvs(
         item_reqs={
-            ItemReq(require_directory(path=Path(path)), i) for i in req_items
+            ItemReq(RequireDirectory(path=Path(path)), i) for i in req_items
         },
         item_provs={ItemProv(prov_t(path=Path(path)), i) for i in prov_items},
     )
@@ -272,14 +272,14 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         @dataclass(init=False, frozen=True)
         class BadDuplicatePathItem(ImageItem):
             def requires(self):
-                yield require_directory(Path("a"))
+                yield RequireDirectory(path=Path("a"))
 
             def provides(self):
                 yield ProvidesDirectory(path=Path("a"))
 
         with self.assertRaisesRegex(
             AssertionError,
-            r"BadDuplicatePathItem.*RequirePath.*collides in",
+            r"BadDuplicatePathItem.*RequireDirectory.*collides in",
         ):
             ValidatedReqsProvs([BadDuplicatePathItem(from_target="t")])
 
@@ -387,7 +387,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         with self.assertRaises(
             RuntimeError,
             msg="^At /: nothing in set() matches the requirement "
-            f'{ItemReq(requires=require_directory(Path("/")), item=item)}$',
+            f'{ItemReq(requires=RequireDirectory(path=Path("/")), item=item)}$',
         ):
             ValidatedReqsProvs([item])
 
@@ -497,7 +497,7 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
             @dataclass(init=False, frozen=True)
             class RequiresProvidesDirectory(ImageItem):
                 def requires(self):
-                    yield require_directory(Path(requires_dir))
+                    yield RequireDirectory(path=Path(requires_dir))
 
                 def provides(self):
                     for d in provides_dirs:

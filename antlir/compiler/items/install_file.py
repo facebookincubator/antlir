@@ -12,7 +12,7 @@ from typing import Iterable, NamedTuple, Optional, Union
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
-    require_directory,
+    RequireDirectory,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -155,7 +155,7 @@ class InstallFileItem(install_files_t, ImageItem):
             yield i.provides
 
     def requires(self):
-        yield require_directory(self.dest.dirname())
+        yield RequireDirectory(path=self.dest.dirname())
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         dest = subvol.path(self.dest)

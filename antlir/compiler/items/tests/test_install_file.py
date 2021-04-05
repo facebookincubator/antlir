@@ -13,7 +13,7 @@ import tempfile
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
-    require_directory,
+    RequireDirectory,
 )
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
@@ -54,7 +54,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         self.assertEqual((ep,), exe_item._paths)
         self.assertEqual(tf.name.encode(), exe_item.source)
         self._check_item(
-            exe_item, {ep.provides}, {require_directory(Path("d"))}
+            exe_item, {ep.provides}, {RequireDirectory(path=Path("d"))}
         )
 
         # Checks `image.source(path=...)`
@@ -68,7 +68,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         self.assertEqual((dp,), data_item._paths)
         self.assertEqual(td / "b/q", data_item.source)
         self._check_item(
-            data_item, {dp.provides}, {require_directory(Path("/"))}
+            data_item, {dp.provides}, {RequireDirectory(path=Path("/"))}
         )
 
         # NB: We don't need to get coverage for this check on ALL the items
@@ -96,7 +96,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         )
         self.assertEqual((p,), item._paths)
         self.assertEqual(source_path, item.source)
-        self._check_item(item, {p.provides}, {require_directory(Path("/"))})
+        self._check_item(item, {p.provides}, {RequireDirectory(path=Path("/"))})
 
     def test_install_file_command(self):
         with TempSubvolumes(
@@ -194,7 +194,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 self._check_item(
                     dir_item,
                     {p.provides for p in ps},
-                    {require_directory(Path("d"))},
+                    {RequireDirectory(path=Path("d"))},
                 )
 
                 # This implicitly checks that `a` precedes its contents.

@@ -9,7 +9,7 @@ import pwd
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
-    require_directory,
+    RequireDirectory,
 )
 from antlir.fs_utils import Path, generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
@@ -50,7 +50,7 @@ class TarballItem(tarball_t, ImageItem):
                     yield ProvidesFile(path=path)
 
     def requires(self):
-        yield require_directory(self.into_dir)
+        yield RequireDirectory(path=self.into_dir)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         build_appliance = layer_opts.requires_build_appliance()

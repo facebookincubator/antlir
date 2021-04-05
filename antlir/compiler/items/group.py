@@ -11,7 +11,7 @@ from antlir.compiler.requires_provides import (
     Provider,
     ProvidesGroup,
     Requirement,
-    require_file,
+    RequireFile,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -105,7 +105,7 @@ class GroupFile:
 
 class GroupItem(group_t, ImageItem):
     def requires(self) -> Generator[Requirement, None, None]:
-        yield require_file(GROUP_FILE_PATH)
+        yield RequireFile(path=GROUP_FILE_PATH)
 
     def provides(self) -> Generator[Provider, None, None]:
         yield ProvidesGroup(self.name)

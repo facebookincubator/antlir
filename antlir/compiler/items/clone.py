@@ -6,7 +6,7 @@
 
 import subprocess
 
-from antlir.compiler.requires_provides import require_directory
+from antlir.compiler.requires_provides import RequireDirectory
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
@@ -52,8 +52,8 @@ class CloneItem(clone_t, ImageItem):
             yield p.with_new_path(self.dest / rel_to_src)
 
     def requires(self):
-        yield require_directory(
-            self.dest if self.pre_existing_dest else self.dest.dirname()
+        yield RequireDirectory(
+            path=self.dest if self.pre_existing_dest else self.dest.dirname()
         )
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):

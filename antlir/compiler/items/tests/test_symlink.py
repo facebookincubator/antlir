@@ -10,8 +10,8 @@ import tempfile
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
-    require_directory,
-    require_file,
+    RequireDirectory,
+    RequireFile,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
@@ -34,7 +34,10 @@ class SymlinkItemsTestCase(BaseItemTestCase):
         self._check_item(
             SymlinkToDirItem(from_target="t", source="x", dest="y"),
             {ProvidesDirectory(path=Path("y"))},
-            {require_directory(Path("/")), require_directory(Path("/x"))},
+            {
+                RequireDirectory(path=Path("/")),
+                RequireDirectory(path=Path("/x")),
+            },
         )
 
         self._check_item(
@@ -42,7 +45,10 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 from_target="t", source="source_file", dest="dest_symlink"
             ),
             {ProvidesFile(path=Path("dest_symlink"))},
-            {require_directory(Path("/")), require_file(Path("/source_file"))},
+            {
+                RequireDirectory(path=Path("/")),
+                RequireFile(path=Path("/source_file")),
+            },
         )
 
     def test_symlink_idempotent(self):

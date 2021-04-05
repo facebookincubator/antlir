@@ -22,8 +22,8 @@ from ..requires_provides import (
     Requirement,
     RequirementKind,
     _normalize_path,
-    require_directory,
-    require_file,
+    RequireDirectory,
+    RequireFile,
 )
 
 
@@ -34,7 +34,7 @@ class RequiresProvidesTestCase(unittest.TestCase):
         self.assertEqual(Path("/x/y"), _normalize_path(Path("///x/./y/")))
 
     def test_path_normalization(self):
-        self.assertEqual(Path("/a"), require_directory(Path("a//.")).path)
+        self.assertEqual(Path("/a"), RequireDirectory(path=Path("a//.")).path)
         self.assertEqual(
             Path("/b/d"), ProvidesDirectory(path=Path("/b/c//../d")).req.path
         )
@@ -51,12 +51,12 @@ class RequiresProvidesTestCase(unittest.TestCase):
         pd3 = ProvidesDirectory(path=Path("a/b/c"))
         provides = [pf1, pf2, pf3, pd1, pd2, pd3]
 
-        rf1 = require_file(Path("f"))
-        rf2 = require_file(Path("f/b"))
-        rf3 = require_file(Path("f/b/c"))
-        rd1 = require_directory(Path("a"))
-        rd2 = require_directory(Path("a/b"))
-        rd3 = require_directory(Path("a/b/c"))
+        rf1 = RequireFile(path=Path("f"))
+        rf2 = RequireFile(path=Path("f/b"))
+        rf3 = RequireFile(path=Path("f/b/c"))
+        rd1 = RequireDirectory(path=Path("a"))
+        rd2 = RequireDirectory(path=Path("a/b"))
+        rd3 = RequireDirectory(path=Path("a/b/c"))
         requires = [rf1, rf2, rf3, rd1, rd2, rd3]
 
         for p in provides:
@@ -70,7 +70,7 @@ class RequiresProvidesTestCase(unittest.TestCase):
     def test_provides_do_not_access(self):
         self.assertFalse(
             ProvidesDoNotAccess(path=Path("//a/b")).provides(
-                require_file(Path("/a/b"))
+                RequireFile(path=Path("/a/b"))
             )
         )
 
@@ -89,8 +89,8 @@ class RequiresProvidesTestCase(unittest.TestCase):
 
     def test_path_requires_predicate_key(self):
         p = Path("/a/b/c")
-        self.assertEqual(p, require_directory(p).key())
-        self.assertEqual(p, require_file(p).key())
+        self.assertEqual(p, RequireDirectory(path=p).key())
+        self.assertEqual(p, RequireFile(path=p).key())
 
     def test_provides_path_object_path(self):
         p = Path("/a/b/c")
