@@ -50,6 +50,13 @@ from .repo_snapshot import RepoSnapshot
 from .storage import Storage
 from .yum_dnf_conf import YumDnf, YumDnfConfParser, YumDnfConfRepo
 
+try:
+    from .facebook.validate_universe_name import fb_validate_universe_name
+except ImportError:  # pragma: no cover
+
+    def fb_validate_universe_name(repo: YumDnfConfRepo, name: str):
+        return name
+
 
 log = get_logger()
 
@@ -128,7 +135,12 @@ def snapshot_repos(
     repos_and_universes = [
         # Evaluated eagerly for `all_snapshot_universes`.  Bonus: this also
         # fails fast if some repos cannot be resolved.
-        (repo, validate_universe_name(repo_to_universe(repo)))
+        (
+            repo,
+            fb_validate_universe_name(
+                repo, validate_universe_name(repo_to_universe(repo))
+            ),
+        )
         for repo in repos
         if repo.name not in exclude
     ]

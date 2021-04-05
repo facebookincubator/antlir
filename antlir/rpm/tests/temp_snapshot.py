@@ -61,7 +61,7 @@ def make_temp_snapshot(
         snapshot_repos(
             dest=snapshot_dir,
             # `SnapshotReposTestCase` covers multi-universe handling
-            repo_to_universe=lambda _repo: "generic",
+            repo_to_universe=lambda _repo: "mammal",
             # Snapshot the 0th step only, since only that is defined
             yum_conf_content=_make_test_yum_dnf_conf(
                 "yum", repos_root / "0", gpg_key_path
