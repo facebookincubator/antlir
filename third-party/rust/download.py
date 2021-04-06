@@ -28,7 +28,6 @@ def main():
 
     match = CRATE_VERSION_RE.match(args.crate_root)
     assert match is not None
-    assert match.group("crate") == args.crate, f"expected crate parsed from {args.crate_root} to be {args.crate}"
     crate = args.crate
     version = match.group("ver")
 

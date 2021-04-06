@@ -1,7 +1,6 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "python_unittest", "rust_binary")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 
 image.layer(
@@ -11,9 +10,26 @@ image.layer(
             binaries = [
                 "/usr/lib/systemd/systemd",
             ],
-            source = REPO_CFG.build_appliance_default,
+            buck_binaries = {
+                ":repo-built-binary": "/usr/bin/repo-built-binary",
+            },
+            source = ":source",
         ),
     ],
+    visibility = ["//antlir/bzl/genrule/extractor/tests/..."],
+)
+
+extract.source_layer(
+    name = "source",
+    features = [
+        image.rpms_install(["systemd"]),
+    ],
+)
+
+rust_binary(
+    name = "repo-built-binary",
+    srcs = ["repo_built_binary.rs"],
+    crate_root = "repo_built_binary.rs",
 )
 
 python_unittest(
@@ -21,7 +37,7 @@ python_unittest(
     srcs = ["test_extracted.py"],
     resources = {
         layer_resource(":extracted"): "layer",
-        layer_resource(REPO_CFG.build_appliance_default): "source",
+        layer_resource(":source"): "source",
     },
     deps = [
         "//antlir:fs_utils",
