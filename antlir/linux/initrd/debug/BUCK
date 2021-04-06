@@ -6,7 +6,7 @@ load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:busybox.bzl", "busybox")
 load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 
-DEPS_TARGET = "//antlir/linux/bootloader:deps"
+DEPS_TARGET = "//antlir/linux/initrd:deps"
 
 # Some systemd units and binaries that are only useful for debugging and not
 # during normal boots
@@ -49,6 +49,7 @@ image.package(
     layer = ":debug-append",
     visibility = [
         kernel_get.base_target + "/...",
+        "//antlir/linux/...",
         "//scripts/dschatzberg/vm/...",
     ],
 )

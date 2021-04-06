@@ -24,10 +24,10 @@ def initrd_release(name):
             echo "NAME='Antlir Linux'" > $OUT
             echo "ID='antlir-linux'" >> $OUT
             echo "VERSION='{version}'" >> $OUT
-            echo "PRETTY_NAME='Antlir Linux Bootloader ({version})'" >> $OUT
+            echo "PRETTY_NAME='Antlir Linux Initrd ({version})'" >> $OUT
             echo "BUILD_ID='{build_id}'" >> $OUT
-            echo "VARIANT='Bootloader'" >> $OUT
-            echo "VARIANT_ID='bootloader'" >> $OUT
+            echo "VARIANT='Initrd'" >> $OUT
+            echo "VARIANT_ID='initrd'" >> $OUT
             echo "ANSI_COLOR='0;34'" >> $OUT
         """.format(
             version = version,

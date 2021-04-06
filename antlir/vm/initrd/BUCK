@@ -4,6 +4,7 @@ load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get")
     name = f,
     visibility = [
         kernel_get.base_target + "/...",
+        "//antlir/linux/...",
         "//scripts/dschatzberg/vm:",
     ],
 ) for f in glob([
