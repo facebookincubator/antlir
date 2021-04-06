@@ -285,7 +285,7 @@ python_library(
     srcs = ["mount.py"],
     visibility = [
         "//antlir/...",
-        "//tupperware/cm/antlir:container_manifest_impl",
+        "//tupperware/cm/antlir/...",
     ],
     deps = [
         ":common",

@@ -30,7 +30,7 @@ python_library(
     srcs = ["cli.py"],
     visibility = [
         "//antlir/...",
-        "//tupperware/cm/antlir:container_manifest_impl",
+        "//tupperware/cm/antlir/...",
     ],
     deps = [
         ":common",
