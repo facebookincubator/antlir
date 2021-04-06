@@ -32,7 +32,7 @@ blocklist = [
     "//antlir:test-unshare - test_pid_namespace",
     # This is heavily dependent on build settings, and we only care about the
     # internal build size (for now anyway)
-    "//antlir/linux/bootloader:base-size - sh_test",
+    "//antlir/linux/initrd:base-size - sh_test",
 ]
 
 blocklist = [re.compile(b) for b in blocklist]

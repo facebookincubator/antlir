@@ -17,7 +17,7 @@ image.layer(
     ],
     build_opts = antlir_linux_build_opts(),
     visibility = [
-        "//antlir/linux/bootloader/debug/...",
+        "//antlir/linux/initrd/debug/...",
     ],
 )
 

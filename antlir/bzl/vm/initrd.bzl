@@ -147,7 +147,7 @@ def initrd(kernel, module_list = None, visibility = None):
         out = "initrd.cpio.gz",
         cmd = """
             cat \
-                $(location //antlir/linux/bootloader:base.cpio.gz) \
+                $(location //antlir/linux/initrd:base.cpio.gz) \
                 $(location :{}--append.cpio.gz) \
                 > $OUT
             """.format(name),
@@ -159,7 +159,7 @@ def initrd(kernel, module_list = None, visibility = None):
     buck_genrule(
         name = kernel_debug,
         out = "initrd.cpio.gz",
-        cmd = "cat $(location :{}) $(location //antlir/linux/bootloader/debug:debug-append.cpio.gz) > $OUT".format(name),
+        cmd = "cat $(location :{}) $(location //antlir/linux/initrd/debug:debug-append.cpio.gz) > $OUT".format(name),
         antlir_rule = "user-internal",
         visibility = visibility,
     )
