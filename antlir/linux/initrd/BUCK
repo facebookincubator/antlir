@@ -1,5 +1,5 @@
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_sh_test", "kernel_get")
+load("//antlir/bzl:oss_shim.bzl", "kernel_get", "python_unittest")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
@@ -74,8 +74,9 @@ image.package(
     visibility = ["PUBLIC"],
 )
 
-buck_sh_test(
+python_unittest(
     name = "base-size",
-    args = ["$(location :base.cpio.gz)"],
-    test = "tests/check_size.sh",
+    srcs = ["tests/check_size.py"],
+    env = {"BASE_PACKAGE": "$(location :base.cpio.gz)"},
+    deps = ["//antlir:config"],
 )
