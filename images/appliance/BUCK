@@ -56,6 +56,8 @@ image.layer(
             "rpm-sign",  # For signing rpms
             "sudo",
             "tar",
+            "dosfstools",  # For vfat image package support
+            "mtools",  # For vfat image package support
         ]),
     ] + install_snapshots,
     build_opts = image.opts(
