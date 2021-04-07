@@ -30,9 +30,6 @@ blocklist = [
     "//antlir/rpm:test-rpm-metadata - test_rpm_metadata_from_subvol",
     "//antlir:test-subvol-utils - test_receive",
     "//antlir:test-unshare - test_pid_namespace",
-    # This is heavily dependent on build settings, and we only care about the
-    # internal build size (for now anyway)
-    "//antlir/linux/initrd:base-size - sh_test",
 ]
 
 blocklist = [re.compile(b) for b in blocklist]
