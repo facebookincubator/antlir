@@ -24,4 +24,4 @@ class CheckSize(unittest.TestCase):
         # ensure package does not unexpectedly grow
         self.assertLessEqual(package_size, 9.5 * 1024 * 1024)
         # incentive to make sure this test gets updated with any size wins
-        self.assertGreaterEqual(package_size, 9 * 1024 * 1024)
+        self.assertGreaterEqual(package_size, 8.5 * 1024 * 1024)
