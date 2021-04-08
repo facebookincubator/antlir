@@ -12,7 +12,7 @@ import sys
 import tempfile
 import unittest
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Iterator, Optional
 
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_gnu_tar,
@@ -22,7 +22,11 @@ from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
-from antlir.tests.subvol_helpers import pop_path, render_sendstream
+from antlir.tests.subvol_helpers import (
+    pop_path,
+    render_sendstream,
+    render_subvol,
+)
 
 from ..find_built_subvol import _get_subvolumes_dir
 from ..package_image import Format, package_image
@@ -56,6 +60,8 @@ class PackageImageTestCase(unittest.TestCase):
         format: str,
         writable_subvolume: bool = False,
         seed_device: bool = False,
+        size_mb: Optional[int] = None,
+        volume_label: Optional[str] = None,
     ) -> Iterator[str]:
         with tempfile.TemporaryDirectory() as td:
             out_path = os.path.join(td, format)
@@ -73,6 +79,8 @@ class PackageImageTestCase(unittest.TestCase):
                     out_path,
                     *(["--writable-subvolume"] if writable_subvolume else []),
                     *(["--seed-device"] if seed_device else []),
+                    *(["--size-mb", str(size_mb)] if size_mb else []),
+                    *(["--volume-label", volume_label] if volume_label else []),
                 ]
             )
             yield out_path
@@ -413,3 +421,85 @@ class PackageImageTestCase(unittest.TestCase):
 
         # Verify the explicit format version from the bzl
         self._verify_package_as_cpio(self._sibling_path("create_ops_cpio_gz"))
+
+    def _verify_package_as_vfat(self, pkg_path, label=""):
+
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "mount",
+                    "-t",
+                    "vfat",
+                    "-o",
+                    "loop",
+                    pkg_path,
+                    mount_dir,
+                )
+            )
+            # Verify filesystem label
+            self.assertEqual(
+                subprocess.check_output(
+                    nsenter_as_root(
+                        unshare,
+                        "findmnt",
+                        "--mountpoint",
+                        mount_dir,
+                        "--noheadings",
+                        "-o",
+                        "LABEL",
+                    )
+                )
+                .decode()
+                .strip(),
+                label,
+            )
+            subvol = temp_subvolumes.create("subvol")
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "cp",
+                    "-a",
+                    mount_dir + "/.",
+                    subvol.path(),
+                )
+            )
+            self.assertEqual(
+                render_subvol(subvol),
+                [
+                    "(Dir)",
+                    {
+                        "EFI": [
+                            "(Dir)",
+                            {
+                                "BOOT": [
+                                    "(Dir)",
+                                    {"shadow_me": ["(File m755 d9)"]},
+                                ]
+                            },
+                        ]
+                    },
+                ],
+            )
+
+    def test_package_image_as_vfat(self):
+        with self._package_image(
+            self._sibling_path("vfat-test.layer"),
+            "vfat",
+            size_mb=32,
+        ) as pkg_path:
+            self._verify_package_as_vfat(pkg_path)
+
+        # Verify the explicit format version from the bzl
+        self._verify_package_as_vfat(
+            self._sibling_path("vfat-test.vfat"), label="cats"
+        )
+
+        # Verify size_mb is required
+        with self.assertRaisesRegex(ValueError, "size_mb is required"):
+            with self._package_image(
+                self._sibling_path("vfat-test.layer"), "vfat"
+            ) as pkg_path:
+                pass

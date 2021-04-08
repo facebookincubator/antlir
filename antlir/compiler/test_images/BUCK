@@ -950,3 +950,24 @@ image.layer(
     ],
     visibility = ["//antlir/compiler/..."],
 )
+
+image.layer(
+    name = "vfat-test.layer",
+    features = [
+        image.ensure_dirs_exist("/EFI/BOOT"),
+        image.install(
+            ":shadow_me",
+            "/EFI/BOOT/shadow_me",
+            mode = "a+rx",
+        ),
+    ],
+    visibility = ["//antlir/..."],
+)
+
+image.package(
+    name = "vfat-test.vfat",
+    layer = ":vfat-test.layer",
+    size_mb = 32,
+    label = "cats",
+    visibility = ["//antlir/..."],
+)

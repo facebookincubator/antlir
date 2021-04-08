@@ -223,17 +223,19 @@ import subprocess
 from typing import Mapping, NamedTuple, Optional
 
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from antlir.nspawn_in_subvol.nspawn import popen_nspawn
+from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
 
 from .common import check_popen_returncode, init_logging
 from .find_built_subvol import find_built_subvol
 from .fs_utils import Path, create_ro, generate_work_dir
-from .subvol_utils import Subvol, SubvolOpts
+from .subvol_utils import Subvol, SubvolOpts, KiB
 
 
 class _Opts(NamedTuple):
     subvol_opts: SubvolOpts
     build_appliance: Optional[Subvol]
+    size_mb: Optional[int]
+    volume_label: Optional[str]
 
 
 class Format:
@@ -381,6 +383,51 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
             pass
 
 
+class VfatImage(Format, format_name="vfat"):
+    """
+    Packages the subvolume as a vfat-formatted disk image, usage:
+      mount -t vfat image.vfat dest/ -o loop
+    NB: vfat is very limited on supported file types, thus we only support
+    packaging regular files/dirs into a vfat image.
+    """
+
+    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+        if opts.size_mb is None:
+            raise ValueError("size_mb is required when packaging a vfat image")
+        work_dir = generate_work_dir()
+        output_dir = "/output"
+        o_basepath, o_file = os.path.split(output_path)
+        o_nspawn_path = os.path.join(output_dir, o_file)
+        create_vfat_cmd = [
+            "/bin/bash",
+            "-eux",
+            "-o",
+            "pipefail",
+            "-c",
+            "/usr/sbin/mkfs.vfat {maybe_label} -C {image_path} {image_size}; "
+            "/usr/bin/mcopy -v -i {image_path} -sp {work_dir}/* ::".format(
+                maybe_label=f"-n {opts.volume_label}"
+                if opts.volume_label
+                else "",
+                image_path=o_nspawn_path,
+                # mkfs.vfat takes the size as BLOCK_COUNT (1K Bytes)
+                # thus passing in "size_mb * KiB" results in "size_mb" MiB
+                image_size=opts.size_mb * KiB,
+                work_dir=work_dir.decode(),
+            ),
+        ]
+        opts = new_nspawn_opts(
+            cmd=create_vfat_cmd,
+            layer=opts.build_appliance,
+            bindmount_rw=[
+                (subvol.path(), work_dir),
+                (o_basepath, output_dir),
+            ],
+            user=pwd.getpwuid(os.getuid()),
+        )
+        run_nspawn(opts, PopenArgs())
+
+
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -429,6 +476,17 @@ def parse_args(argv):
         action="store_true",
         default=False,
         help="Pass this flag to make the resulting image a btrfs seed device",
+    )
+
+    parser.add_argument(
+        "--size-mb",
+        type=int,
+        help="Size of the target filesystem image",
+    )
+
+    parser.add_argument(
+        "--volume-label",
+        help="Label for the target filesystem image",
     )
 
     parser.add_argument(
@@ -501,6 +559,8 @@ def package_image(argv):
             build_appliance=find_built_subvol(args.build_appliance)
             if args.build_appliance
             else None,
+            size_mb=args.size_mb,
+            volume_label=args.volume_label,
         ),
     )
     # Paranoia: images are read-only after being built
