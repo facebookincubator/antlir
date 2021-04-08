@@ -2,6 +2,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
+load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/bzl/vm:defs.bzl", "vm")
 load("//antlir/bzl/vm:initrd.bzl", "initrd")
 load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
@@ -40,7 +41,7 @@ ssh_server = [
     image.clone(":deps", "/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/dropbear.service"),
     # vmtest synchronizes on sshd.service, so alias it to dropbear
     image.ensure_file_symlink("/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/sshd.service"),
-    image.ensure_dirs_exist("/usr/lib/tmpfiles.d"),
+    image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
     image.install("dropbear.tempfiles.conf", "/usr/lib/tmpfiles.d/dropbear.conf"),
     image.ensure_dirs_exist("/etc/sysconfig"),
     image.install("dropbear", "/etc/sysconfig/dropbear"),
@@ -64,6 +65,7 @@ par_support = image.install(
 image.layer(
     name = "initrd-vmtest",
     features = [
+        linux.filesystem.install(),
         # shared features straight from vmtest
         console.autologin(),
         generator.mounts(),
@@ -103,6 +105,7 @@ image.package(
     layer = ":initrd-vmtest",
     format = "cpio.gz",
     visibility = [],
+    build_appliance = antlir_linux_build_opts().build_appliance,
 )
 
 # Create the default Antlir Linux initrd for this test kernel.

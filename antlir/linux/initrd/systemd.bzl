@@ -79,7 +79,7 @@ CONFIG_FILES = [
 
 def clone_systemd_configs(src):
     units = [
-        image.ensure_dirs_exist(SYSTEMD_PROVIDER_ROOT),
+        image.ensure_subdirs_exist("/usr/lib", paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib")),
     ] + [
         image.clone(
             src,
@@ -93,7 +93,7 @@ def clone_systemd_configs(src):
     dirs = collections.uniq(dirs)
 
     configs = [
-        image.ensure_dirs_exist(d)
+        image.ensure_subdirs_exist("/usr/lib", paths.relativize(d, "/usr/lib"))
         for d in dirs
     ] + [
         image.clone(

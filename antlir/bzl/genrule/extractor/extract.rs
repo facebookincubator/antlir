@@ -7,8 +7,9 @@
 
 #![deny(warnings)]
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::fs;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -30,11 +31,19 @@ trait PathExt {
     /// Joining absolute paths is annoying, so add an extension trait for
     /// `force_join` which makes it easy.
     fn force_join<P: AsRef<Path>>(&self, path: P) -> PathBuf;
+
+    /// Iterator of all parent paths. Different from components() in that each
+    /// item is a full path
+    fn parents(&self) -> Vec<&Path>;
 }
 
 impl PathExt for PathBuf {
     fn force_join<P: AsRef<Path>>(&self, path: P) -> PathBuf {
         self.as_path().force_join(path)
+    }
+
+    fn parents(&self) -> Vec<&Path> {
+        self.as_path().parents()
     }
 }
 
@@ -48,6 +57,16 @@ impl PathExt for Path {
                     .expect("absolute paths will always start with /"),
             ),
         }
+    }
+
+    fn parents(&self) -> Vec<&Path> {
+        let mut parents = vec![];
+        let mut last = self;
+        while let Some(p) = last.parent() {
+            parents.push(p);
+            last = p;
+        }
+        parents
     }
 }
 
@@ -227,6 +246,41 @@ fn main() -> Result<()> {
         debug!(LOGGER, "copying {:?} -> {:?}", src, dst);
         fs::create_dir_all(dst.parent().unwrap()).context("failed to create dest dir")?;
         fs::copy(src, dst)?;
+    }
+    // do a bottom-up traversal of all the destination directories, copying the
+    // permission bits from the source where possible
+    let copied_dirs: BTreeSet<_> = copy_files
+        .keys()
+        .flat_map(|k| k.parents())
+        // if not under top_dst_dir, then ignore it (ex: it is the parent of top_dst_dir)
+        .filter_map(|k| k.strip_prefix(&top_dst_dir).ok().map(|p| p.to_path_buf()))
+        .map(|k| (k.components().count(), k))
+        .collect();
+    for (_, dst_rel) in copied_dirs.iter().rev() {
+        let dst_dir = top_dst_dir.force_join(&dst_rel);
+        let maybe_src_dir = top_src_dir.force_join(dst_rel);
+        // Only copy mode bits from directories that match the source directory
+        // This prevents incorrect modes when a single file is copied into a
+        // directory from a directory with "bad" permissions
+        if maybe_src_dir.exists() {
+            let meta = fs::metadata(&maybe_src_dir).with_context(|| {
+                format!("failed to get permissions from src {:?}", &maybe_src_dir)
+            })?;
+            debug!(
+                LOGGER,
+                "setting mode of {:?} to {:o} (copied from {:?})",
+                dst_dir,
+                meta.permissions().mode(),
+                maybe_src_dir,
+            );
+            fs::set_permissions(&dst_dir, meta.permissions())
+                .with_context(|| format!("failed to set permissions on {:?}", dst_dir))?;
+        } else {
+            warn!(
+                LOGGER,
+                "leaving default mode for {:?}, because {:?} did not exist", dst_dir, maybe_src_dir
+            );
+        }
     }
 
     Ok(())

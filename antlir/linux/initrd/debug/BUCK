@@ -16,7 +16,10 @@ systemd_debug = [
     # the systemd binaries that we want will already be present in the base
     # initrd.
     image.clone(DEPS_TARGET, "/usr/bin/systemd-analyze", "/usr/bin/systemd-analyze"),
-    image.ensure_dirs_exist(SYSTEMD_PROVIDER_ROOT),
+    image.ensure_subdirs_exist(
+        "/usr/lib",
+        paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib"),
+    ),
     image.clone(
         DEPS_TARGET,
         paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service"),
@@ -54,4 +57,5 @@ image.package(
         "//antlir/linux/...",
         "//scripts/dschatzberg/vm/...",
     ],
+    build_appliance = antlir_linux_build_opts().build_appliance,
 )

@@ -81,6 +81,7 @@ image.package(
     name = "base.cpio.gz",
     layer = ":base",
     visibility = ["PUBLIC"],
+    build_appliance = antlir_linux_build_opts().build_appliance,
 )
 
 python_unittest(
