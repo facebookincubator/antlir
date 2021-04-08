@@ -1,12 +1,13 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get", "python_unittest")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 load(":initrd_release.bzl", "initrd_release")
 load(":systemd.bzl", "clone_systemd")
 
-image.layer(
+extract.source_layer(
     name = "deps",
     features = [
         image.rpms_install([

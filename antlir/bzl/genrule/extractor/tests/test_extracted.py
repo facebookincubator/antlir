@@ -38,3 +38,9 @@ class TestExtracted(unittest.TestCase):
         subvol = layer_resource_subvol(__package__, "layer")
         self.assertFalse(subvol.path("/lib64").exists())
         self.assertTrue(subvol.path("/usr/lib64/libc.so.6"))
+
+    def test_repo_built_binary_runs(self):
+        subvol = layer_resource_subvol(__package__, "layer")
+        subvol.run_as_root(
+            [subvol.path("/usr/bin/repo-built-binary")], check=True
+        )

@@ -2,8 +2,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
-load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
-load("//antlir/bzl/linux:busybox.bzl", "busybox")
+load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 
 DEPS_TARGET = "//antlir/linux/initrd:deps"
@@ -11,13 +10,10 @@ DEPS_TARGET = "//antlir/linux/initrd:deps"
 # Some systemd units and binaries that are only useful for debugging and not
 # during normal boots
 systemd_debug = [
-    extract.extract(
-        binaries = [
-            "/usr/bin/systemd-analyze",
-        ],
-        dest = "/",
-        source = DEPS_TARGET,
-    ),
+    # We don't have to use the extractor here, since the libraries loaded by
+    # the systemd binaries that we want will already be present in the base
+    # initrd.
+    image.clone(DEPS_TARGET, "/usr/bin/systemd-analyze", "/usr/bin/systemd-analyze"),
     image.ensure_dirs_exist(SYSTEMD_PROVIDER_ROOT),
     image.clone(
         DEPS_TARGET,
@@ -29,11 +25,12 @@ systemd_debug = [
 image.layer(
     name = "debug-append",
     features = [
+        linux.filesystem.install(),
         # NOTE: while busybox still exists for /usr/bin/mount in the base
         # initrd, this is technically duplicated. However image.ensure_file_symlink
         # does not allow dangling symlinks so just take the easy way out and
         # clone the binary again
-        busybox.install(
+        linux.busybox.install(
             DEPS_TARGET,
             src_path = "/usr/sbin/busybox",
         ),

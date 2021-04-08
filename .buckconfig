@@ -52,4 +52,4 @@
   rpm_installer_default = dnf
   rpm_installers_supported = dnf
   host_mounts_allowed_in_targets = //images/appliance:host-build-appliance //images/appliance:features-for-layer-host-build-appliance
-  artifact_key_to_path = build_appliance.newest //images/appliance:stable-build-appliance vm.rootfs.layer.rc //images/base:fedora.vm vm.rootfs.layer.stable //images/base:fedora.vm vm.rootfs.btrfs.rc //images/base:fedora.vm.btrfs vm.rootfs.btrfs.stable //images/base:fedora.vm.btrfs
+  artifact_key_to_path = build_appliance.newest //images/appliance:stable-build-appliance extractor.common_deps //images/appliance:stable-build-appliance vm.rootfs.layer.rc //images/base:fedora.vm vm.rootfs.layer.stable //images/base:fedora.vm vm.rootfs.btrfs.rc //images/base:fedora.vm.btrfs vm.rootfs.btrfs.stable //images/base:fedora.vm.btrfs

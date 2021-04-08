@@ -156,7 +156,7 @@ def third_party_rust_library(name, srcs, crate, crate_root, platform = {}, dlope
     native.genrule(
         name = archive_target,
         out = ".",
-        cmd = "$(exe //third-party/rust:download) $(location //third-party/rust:Cargo.lock) {} {} $OUT".format(shell.quote(crate), shell.quote(crate_root)),
+        cmd = "$(exe //third-party/rust:download) $(location //third-party/rust:Cargo.lock) {} $OUT".format(shell.quote(crate_root)),
     )
     source_targets = {_extract_from_archive(archive_target, src): src for src in srcs}
 
