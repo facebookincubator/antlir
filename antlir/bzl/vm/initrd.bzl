@@ -11,9 +11,12 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 
 DEFAULT_MODULE_LIST = [
     "drivers/block/virtio_blk.ko",
+    "drivers/net/net_failover.ko",
+    "drivers/net/virtio_net.ko",
     "fs/9p/9p.ko",
     "net/9p/9pnet.ko",
     "net/9p/9pnet_virtio.ko",
+    "net/core/failover.ko",
 ]
 
 def initrd(kernel, module_list = None, visibility = None):
@@ -120,11 +123,18 @@ def initrd(kernel, module_list = None, visibility = None):
                 paths.join("/usr/lib/modules", kernel.uname, "kernel"),
             ),
             [
-                image.clone(
-                    kernel.artifacts.modules,
-                    paths.join("/modules.{}.bin".format(f)),
-                    paths.join("/usr/lib/modules", kernel.uname, "modules.{}.bin".format(f)),
-                )
+                [
+                    image.clone(
+                        kernel.artifacts.modules,
+                        paths.join("/modules.{}".format(f)),
+                        paths.join("/usr/lib/modules", kernel.uname, "modules.{}".format(f)),
+                    ),
+                    image.clone(
+                        kernel.artifacts.modules,
+                        paths.join("/modules.{}.bin".format(f)),
+                        paths.join("/usr/lib/modules", kernel.uname, "modules.{}.bin".format(f)),
+                    ),
+                ]
                 for f in ("dep", "symbols", "alias", "builtin")
             ],
             systemd.install_dropin("//antlir/vm/initrd:vmtest-tmpfiles-fix.conf", "systemd-tmpfiles-setup.service"),

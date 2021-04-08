@@ -27,6 +27,13 @@ initrd_release(
     name = "initrd-release",
 )
 
+networking = [
+    # Explicitly enable systemd-networkd to configure the network links
+    # early in boot
+    systemd.enable_unit("systemd-networkd.service"),
+    image.install("units/eth.network", "/usr/lib/systemd/network/10-eth.network"),
+]
+
 # Kernel-agnostic base initrd
 image.layer(
     name = "base",
@@ -54,13 +61,11 @@ image.layer(
         # detects /etc/initrd-release, but explicitly symlinking it makes
         # systemd-analyze work as expected too
         systemd.set_default_target("initrd.target"),
-        # explicitly enable systemd-networkd to configure the network links
-        # early in boot
-        systemd.enable_unit("systemd-networkd.service"),
         systemd.install_dropin(
             "dropins/udevd-before-trigger.conf",
             unit = "systemd-udevd.service",
         ),
+        networking,
     ],
     build_opts = antlir_linux_build_opts(),
     visibility = [kernel_get.base_target + "/..."],

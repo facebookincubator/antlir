@@ -35,8 +35,10 @@ image.layer(
             src_path = "/usr/sbin/busybox",
         ),
         systemd_debug,
+        systemd.enable_unit("debug-shell.service"),
         systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
         systemd.enable_unit("debug-shell.service"),
+        systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
     ],
     build_opts = antlir_linux_build_opts(),
 )
