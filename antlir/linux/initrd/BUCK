@@ -5,7 +5,7 @@ load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 load(":initrd_release.bzl", "initrd_release")
-load(":systemd.bzl", "clone_systemd")
+load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
 
 extract.source_layer(
     name = "deps",
@@ -39,16 +39,7 @@ image.layer(
     name = "base",
     features = [
         linux.filesystem.install(),
-        clone_systemd(":deps"),
-        # TODO(vmagro): AFAICT we only require busybox for /usr/bin/mount that
-        # systemd calls. Ideally, we could relegate busybox entirely to the
-        # debug initrd which would save ~1.5M (the future 'antlir' multicall
-        # binary could easily implement a wrapper over the mount syscall)
-        linux.busybox.install(
-            ":deps",
-            ["mount"],
-            src_path = "/usr/sbin/busybox",
-        ),
+        clone_systemd_configs(":deps"),
         image.ensure_file_symlink("/usr/lib/systemd/systemd", "/init"),
         # Systemd uses the presence of /etc/initrd-release to determine if it
         # is running in an initrd, however there are cases where it only parses
@@ -66,6 +57,18 @@ image.layer(
             unit = "systemd-udevd.service",
         ),
         networking,
+        # Due to limitations in the current extractor implementation, we have to
+        # extract systemd at the same time as antlirctl.
+        extract.extract(
+            binaries = SYSTEMD_BINARIES,
+            buck_binaries = {
+                "//antlir/linux/antlirctl:antlirctl": "/usr/bin/antlirctl",
+            },
+            dest = "/",
+            source = ":deps",
+        ),
+        # antlirctl provides /usr/bin/mount so we can avoid importing busybox
+        image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mount"),
     ],
     build_opts = antlir_linux_build_opts(),
     visibility = [kernel_get.base_target + "/..."],

@@ -7,7 +7,6 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
-load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 
 TARGETS = [
     "basic.target",
@@ -78,13 +77,7 @@ CONFIG_FILES = [
     "/usr/lib/sysusers.d/systemd.conf",
 ]
 
-def clone_systemd(src):
-    binaries = extract.extract(
-        binaries = BINARIES,
-        dest = "/",
-        source = src,
-    )
-
+def clone_systemd_configs(src):
     units = [
         image.ensure_dirs_exist(SYSTEMD_PROVIDER_ROOT),
     ] + [
@@ -112,7 +105,6 @@ def clone_systemd(src):
     ]
 
     return [
-        binaries,
         units,
         configs,
     ]

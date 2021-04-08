@@ -6,4 +6,4 @@ Before=seedroot.service
 Where=/sysroot
 What=/dev/vda
 Type=btrfs
-Options=subvol=volume
+Options=subvol=volume,ro
