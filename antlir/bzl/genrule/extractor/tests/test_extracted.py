@@ -4,7 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import re
+import stat
 import unittest
 
 from antlir.fs_utils import Path
@@ -38,6 +40,17 @@ class TestExtracted(unittest.TestCase):
         subvol = layer_resource_subvol(__package__, "layer")
         self.assertFalse(subvol.path("/lib64").exists())
         self.assertTrue(subvol.path("/usr/lib64/libc.so.6"))
+
+    def test_permissions(self):
+        src_subvol = layer_resource_subvol(__package__, "source")
+        dst_subvol = layer_resource_subvol(__package__, "layer")
+        for path in ("/usr/lib", "/usr/bin"):
+            with self.subTest(path):
+                src = os.stat(src_subvol.path(path))
+                dst = os.stat(dst_subvol.path(path))
+                self.assertEqual(
+                    stat.filemode(src.st_mode), stat.filemode(dst.st_mode)
+                )
 
     def test_repo_built_binary_runs(self):
         subvol = layer_resource_subvol(__package__, "layer")
