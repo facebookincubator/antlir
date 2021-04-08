@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Generate mount units for all exported 9pfs shares.
 # This mounts all the filesystems at boot time in the location indicated by the
 # mount tag, rather than mounting them with (explicit) static systemd units or
@@ -13,7 +13,12 @@ normal_dir="$1"
 exportsdir="$EXPORTS_DIR"
 
 if [ -z "$exportsdir" ]; then
-    exportsdir="$(mktemp -d)"
+    # Usually these are already loaded, but in Antlir Linux this generator runs in
+    # the initrd before systemd-modules-load.service
+    modprobe -a 9p 9pnet 9pnet_virtio
+
+    exportsdir="/run/vmtest-exports"
+    mkdir -p "$exportsdir"
     mount -t 9p -oversion=9p2000.L,posixacl,cache=loose exports "$exportsdir"
     trap 'umount $exportsdir && rm -rf $exportsdir' EXIT
 fi

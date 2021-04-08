@@ -9,6 +9,7 @@ template(
     main = "mount.jinja2",
     visibility = [
         kernel_get.base_target + "/...",
+        "//antlir/linux/...",
         "//scripts/dschatzberg/vm:",
     ],
 )

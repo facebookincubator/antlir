@@ -6,6 +6,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file")
 export_file(
     name = "qemu",
     visibility = [
+        "//antlir/linux/...",
         "//antlir/vm/...",
         "//third-party/...",
     ],
@@ -20,6 +21,7 @@ export_file(
         # and Arch Linux as of March 2021.
         cmd = "cp /usr/share/qemu/{} $OUT".format(rom),
         visibility = [
+            "//antlir/linux/...",
             "//antlir/vm/...",
             "//third-party/...",
         ],
