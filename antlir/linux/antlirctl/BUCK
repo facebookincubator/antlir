@@ -1,0 +1,41 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+
+# TODO: for release builds of this, we probably want to build with `--config
+# fbcode.default_binary_link_deps= --config fbcode.default_allocator=malloc` to
+# minimize size and dependencies
+rust_binary(
+    name = "antlirctl",
+    srcs = [
+        "src/antlirctl.rs",
+        "src/mount.rs",
+    ],
+    link_style = "static",
+    linker_flags = [
+        "-Wl,--strip-all",
+    ],
+    # some flags to minimize size
+    rustc_flags = [
+        "-C",
+        "opt-level=z",
+    ],
+    deps = [
+        # WARNING: adding any dependencies can significantly increase the size of
+        # the resulting binary.
+        # STRONGLY lean towards re-implementing something if it is a small
+        # amount of code. Be prepared to justify any new dependencies with a
+        # comparison of stripped binary size (`cargo bloat --release --crates`
+        # might be useful to evaluate changes).
+        # For example, when parsing the kernel cmdline, just adding a
+        # dependency on `regex` bloats the end binary by 1.1M, compared to
+        # almost nothing for 50 lines of code to parse it manually.
+        third_party.library(
+            name,
+            platform = "rust",
+        )
+        for name in [
+            "anyhow",  # ~9.5k, very helpful for error handling
+            "nix",  # ~5k: access to syscalls (mount, etc)
+            "structopt",  # ~300k, but makes iterating development much easier
+        ]
+    ],
+)

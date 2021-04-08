@@ -3,10 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 
-DEFAULT_APPLETS = [
+DEFAULT_APPLETS = sets.make([
     "basename",
     "cat",
     "clear",
@@ -34,7 +35,7 @@ DEFAULT_APPLETS = [
     "true",
     "umount",
     "uname",
-]
+])
 
 def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/busybox"):
     """
@@ -44,7 +45,7 @@ def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/busybox
 
     The `src` layer must have the `busybox` binary installed at the path `/busybox`.
     """
-    applets = applets or DEFAULT_APPLETS
+    applets = sets.to_list(applets or DEFAULT_APPLETS)
     return [
         image.clone(
             src,

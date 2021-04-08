@@ -1,7 +1,9 @@
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
+load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 
@@ -26,12 +28,13 @@ image.layer(
     name = "debug-append",
     features = [
         linux.filesystem.install(),
-        # NOTE: while busybox still exists for /usr/bin/mount in the base
-        # initrd, this is technically duplicated. However image.ensure_file_symlink
-        # does not allow dangling symlinks so just take the easy way out and
-        # clone the binary again
         linux.busybox.install(
             DEPS_TARGET,
+            # /usr/bin/mount is implemented in antlirctl
+            sets.difference(
+                DEFAULT_APPLETS,
+                sets.make(["mount"]),
+            ),
             src_path = "/usr/sbin/busybox",
         ),
         systemd_debug,

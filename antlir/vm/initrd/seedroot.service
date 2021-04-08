@@ -6,5 +6,5 @@ ConditionPathIsReadWrite=!/sysroot
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/mount -o remount,rw /sysroot
+ExecStart=/usr/bin/mount -o remount,rw -t btrfs /dev/vda /sysroot
 RemainAfterExit=yes
