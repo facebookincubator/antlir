@@ -11,7 +11,7 @@ files, as described by the specified `format`.
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
 load(":image_utils.bzl", "image_utils")
-load(":oss_shim.bzl", "buck_genrule", "get_visibility")
+load(":oss_shim.bzl", "buck_genrule")
 
 _IMAGE_PACKAGE = "image_package"
 
@@ -30,7 +30,12 @@ def image_package(
         # The explicit format to use
         # For supported formats, see `--format` here:
         #     buck run :package-image -- --help
-        format = None):
+        format = None,
+        # Size of the target image in MiB
+        # This is required when format is vfat
+        size_mb = None,
+        # Also for vfat, but optional
+        label = None):
     visibility = visibility or []
 
     if not format:
@@ -77,6 +82,8 @@ def image_package(
               --subvolumes-dir "$subvolumes_dir" \
               --layer-path $(query_outputs {layer}) \
               --format {format} \
+              {maybe_size_mb} \
+              {maybe_label} \
               --output-path "$OUT" \
               {maybe_build_appliance} \
               {rw} \
@@ -84,6 +91,8 @@ def image_package(
               {multi_pass_size_minimization}
             '''.format(
                 format = format,
+                maybe_size_mb = "--size-mb {}".format(size_mb) if size_mb else "",
+                maybe_label = "--volume-label {}".format(label) if label else "",
                 layer = layer,
                 maybe_build_appliance = "--build-appliance $(query_outputs {})".format(
                     build_appliance,
