@@ -159,7 +159,7 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
 cat >> "$TMP/out" <<'EOF'
 #!/bin/bash
 {set_dynamic_path_in_output}\
-exec $(exe {target_to_wrap}){quoted_path_in_output}{dynamic_path_in_output} "$@"
+exec $(exe_target {target_to_wrap}){quoted_path_in_output}{dynamic_path_in_output} "$@"
 EOF
 echo "# New output each build: \\$(date) $$ $PID $RANDOM $RANDOM" >> "$TMP/out"
 chmod a+rx "$TMP/out"
