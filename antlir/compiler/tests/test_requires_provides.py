@@ -12,18 +12,17 @@ import unittest
 from antlir.fs_utils import Path
 
 from ..requires_provides import (
+    _normalize_path,
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
     ProvidesGroup,
     ProvidesUser,
-    RequireGroup,
-    RequireUser,
-    Requirement,
-    RequirementKind,
-    _normalize_path,
     RequireDirectory,
     RequireFile,
+    RequireGroup,
+    RequirementKind,
+    RequireUser,
 )
 
 
@@ -83,15 +82,6 @@ class RequiresProvidesTestCase(unittest.TestCase):
                 ProvidesDirectory(path=Path("b")),
             )
 
-    def test_requirement_key(self):
-        with self.assertRaises(NotImplementedError):
-            Requirement(kind=None).key()
-
-    def test_path_requires_predicate_key(self):
-        p = Path("/a/b/c")
-        self.assertEqual(p, RequireDirectory(path=p).key())
-        self.assertEqual(p, RequireFile(path=p).key())
-
     def test_provides_path_object_path(self):
         p = Path("/a/b/c")
         self.assertEqual(p, ProvidesDirectory(p).path())
@@ -102,8 +92,6 @@ class RequiresProvidesTestCase(unittest.TestCase):
         g = RequireGroup(groupname)
         self.assertEqual(g.name, groupname)
         self.assertEqual(g.kind, RequirementKind.GROUP)
-        g2 = RequireGroup(groupname)
-        self.assertEqual(1, len({g.key(), g2.key()}))
 
     def test_provides_group(self):
         groupname = "foo"
@@ -119,7 +107,6 @@ class RequiresProvidesTestCase(unittest.TestCase):
         self.assertEqual(ru.kind, RequirementKind.USER)
         ru2 = RequireUser(username)
         self.assertEqual(ru, ru2)
-        self.assertEqual(1, len({ru.key(), ru2.key()}))
 
     def test_provides_user(self):
         username = "user"

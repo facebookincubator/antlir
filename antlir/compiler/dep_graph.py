@@ -13,18 +13,27 @@ already been installed.  This is known as dependency order or topological
 sort.
 """
 from collections import defaultdict
-from typing import Hashable, Iterator, NamedTuple, Dict, Set
+from typing import (
+    Dict,
+    Generator,
+    Iterator,
+    NamedTuple,
+    Set,
+)
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
+from antlir.fs_utils import Path
 
 from .requires_provides import (
     Provider,
     ProvidesDirectory,
+    ProvidesPath,
     Requirement,
+    RequirePath,
 )
 
 
@@ -97,6 +106,95 @@ class ItemReqsProvs(NamedTuple):
     item_provs: Set[ItemProv]
     item_reqs: Set[ItemReq]
 
+    def _item_self_conflict(self, item: ImageItem):
+        """
+        One ImageItem should not emit provides or requires clauses that
+        collide on the path. Such duplication can always be avoided by
+        the item 1. not emitting the requires clause that it knows it
+        provides, and 2. not emitting multiple requires or provides clauses
+        that map to the same `ItemReqsProvs`. Failing to enforce this
+        invariant would make it easy to bloat dependency graphs unnecessarily.
+
+        NB: Two equivalent (i.e. where __eq__ returns True) `ImageItem`s may
+        emit colliding provides or requires. This check is only to ensure that
+        the exact same `ImageItem` does not conflict with itself.
+        """
+        return any(ip.item is item for ip in self.item_provs) or any(
+            ir.item is item for ir in self.item_reqs
+        )
+
+    def add_item_req(self, req: Requirement, item: ImageItem):
+        if self._item_self_conflict(item):
+            raise RuntimeError(f"{req} from {item} conflicts in {self}")
+        self.item_reqs.add(ItemReq(requires=req, item=item))
+
+    def add_item_prov(self, prov: Provider, item: ImageItem):
+        if self._item_self_conflict(item):
+            raise RuntimeError(f"{prov} from {item} conflicts in {self}")
+
+        # For the majority of cases, we do not allow two `Providers` to
+        # provide the same `Requirement`. There are some cases that are allowed
+        # (e.g. duplicate EnsureDirsExist). See `ItemProv.conflicts` for full
+        # rules implementation.
+        new_ip = ItemProv(provides=prov, item=item)
+        for ip in self.item_provs:
+            if ip.provides != new_ip.provides or new_ip.conflicts(ip):
+                raise RuntimeError(f"{new_ip} conflicts with {ip}")
+        self.item_provs.add(new_ip)
+
+    def item_req_fulfilled(self, item_req: ItemReq) -> bool:
+        return any(
+            item_prov.provides.provides(item_req.requires)
+            for item_prov in self.item_provs
+        )
+
+    def unfulfilled_item_provs(self) -> Generator[ItemReq, None, None]:
+        for item_req in self.item_reqs:
+            if not self.item_req_fulfilled(item_req):
+                yield item_req
+
+
+class PathItemReqsProvs:
+    """
+    PathItemReqsProvs validates RequirePath and ProvidesPath from ImageItems.
+
+    Logic for path-specific Requirements and Providers is split out here since:
+
+    1. a single path can only satisfy one type of Requirement (e.g. directory,
+      file, or symlink).
+    2. multiple Providers of the same path may be supported (see
+      ItemProv.conflicts).
+    3. FUTURE: a more extensive path search when one or more symlinked
+      directories are on a required path.
+    """
+
+    path_to_item_reqs_provs: Dict[Path, ItemReqsProvs]
+
+    def __init__(self):
+        self.path_to_item_reqs_provs = {}
+
+    def _get_item_reqs_provs(self, path: Path) -> ItemReqsProvs:
+        return self.path_to_item_reqs_provs.setdefault(
+            path,
+            ItemReqsProvs(item_provs=set(), item_reqs=set()),
+        )
+
+    def add_requirement(self, req: RequirePath, item: ImageItem):
+        self._get_item_reqs_provs(req.path).add_item_req(req, item)
+
+    def add_provider(self, prov: ProvidesPath, item: ImageItem):
+        self._get_item_reqs_provs(prov.req.path).add_item_prov(prov, item)
+
+    def validate(self):
+        for path, irps in self.path_to_item_reqs_provs.items():
+            for ir in irps.unfulfilled_item_provs():
+                raise RuntimeError(
+                    f"{path}: {irps.item_provs} does not provide {ir}"
+                )
+
+    def item_reqs_provs(self) -> Generator[ItemReqsProvs, None, None]:
+        yield from self.path_to_item_reqs_provs.values()
+
 
 class ValidatedReqsProvs:
     """
@@ -108,72 +206,45 @@ class ValidatedReqsProvs:
        conflicts.
     """
 
-    # Collection of ItemReqsProvs keyed by Requirement.key(), which are
-    # available via ItemReq.requires.key() or ItemProv.provides.req.key().
-    # NB: We cannot key by Requirement objects directly because Symlinks can
-    # satisfy files or directories.
-    item_reqs_provs: Dict[Hashable, ItemReqsProvs]
+    _item_reqs_provs: Dict[Requirement, ItemReqsProvs]
+    # _path_item_reqs_provs maps path requires/provides and includes special
+    # handling for collisions. See `PathItemReqsProvs` for more info.
+    _path_item_reqs_provs: PathItemReqsProvs
 
     def __init__(self, items: Set[ImageItem]):
-        self.item_reqs_provs = {}
+        self._item_reqs_provs = {}
+        self._path_item_reqs_provs = PathItemReqsProvs()
 
         for item in items:
-            # One ImageItem should not emit provides / requires clauses that
-            # collide on the path.  Such duplication can always be avoided by
-            # the item not emitting the "requires" clause that it knows it
-            # provides.  Failing to enforce this invariant would make it easy to
-            # bloat dependency graphs unnecessarily.
-            req_keys = set()
-
             for req in item.requires():
-                key = req.key()
-                assert (
-                    key not in req_keys
-                ), f"{item}: {req} collides in {req_keys}"
-                req_keys.add(key)
+                if isinstance(req, RequirePath):
+                    self._path_item_reqs_provs.add_requirement(req, item)
+                    continue
+                self._get_item_reqs_provs(req).add_item_req(req, item)
 
-                self._get_item_req_provs(key).item_reqs.add(
-                    ItemReq(requires=req, item=item)
-                )
             for prov in item.provides():
-                key = prov.req.key()
-                assert (
-                    key not in req_keys
-                ), f"{item}: {req} collides in {req_keys}"
-                req_keys.add(key)
-
-                self._add_to_prov_map(prov, item)
+                if isinstance(prov, ProvidesPath):
+                    self._path_item_reqs_provs.add_provider(prov, item)
+                    continue
+                self._get_item_reqs_provs(prov.req).add_item_prov(prov, item)
 
         # Validate that all requirements are satisfied.
-        for path, reqs_provs in self.item_reqs_provs.items():
-            for item_req in reqs_provs.item_reqs:
-                for item_prov in reqs_provs.item_provs:
-                    if item_prov.provides.provides(item_req.requires):
-                        break
-                else:
-                    raise RuntimeError(
-                        f"At {path}: nothing in {reqs_provs.item_provs} "
-                        f"matches the requirement {item_req}"
-                    )
+        self._path_item_reqs_provs.validate()
+        for irps in self._item_reqs_provs.values():
+            for item_req in irps.unfulfilled_item_provs():
+                raise RuntimeError(
+                    f"{irps.item_provs} does not provide {item_req}"
+                )
 
-    def _get_item_req_provs(self, key: str) -> ItemReqsProvs:
-        return self.item_reqs_provs.setdefault(
-            key,
+    def _get_item_reqs_provs(self, req: Requirement) -> ItemReqsProvs:
+        return self._item_reqs_provs.setdefault(
+            req,
             ItemReqsProvs(item_provs=set(), item_reqs=set()),
         )
 
-    def _add_to_prov_map(self, prov: Provider, item: ImageItem):
-        """For the majority of cases, we do not allow two `Providers` to
-        provide the same `Requirement`. There are some cases that are allowed
-        (e.g. duplicate EnsureDirsExist). See `ItemProv.conflicts` for full
-        rules implementation.
-        """
-        reqs_provs = self._get_item_req_provs(prov.req.key())
-        new_ip = ItemProv(provides=prov, item=item)
-        for ip in reqs_provs.item_provs:
-            if ip.provides != new_ip.provides or new_ip.conflicts(ip):
-                raise RuntimeError(f"{new_ip} conflicts with {ip}")
-        reqs_provs.item_provs.add(ItemProv(provides=prov, item=item))
+    def item_reqs_provs(self) -> Generator[ItemReqsProvs, None, None]:
+        yield from self._item_reqs_provs.values()
+        yield from self._path_item_reqs_provs.item_reqs_provs()
 
 
 class DependencyGraph:
@@ -241,7 +312,7 @@ class DependencyGraph:
             x for x in item_provs if isinstance(x.item, EnsureDirsExistItem)
         }
         non_ede_item_provs = item_provs - ede_item_provs
-        # Guaranteed by checks in _add_to_prov_map
+        # Guaranteed by checks in ItemReqsProvs.add_item_prov
         assert len(non_ede_item_provs) <= 1
         for item_prov in non_ede_item_provs:
             for ede_item_prov in ede_item_provs:
@@ -272,7 +343,7 @@ class DependencyGraph:
 
         # For each path, treat items that provide something at that path as
         # predecessors of items that require something at the path.
-        for rp in ValidatedReqsProvs(self.items).item_reqs_provs.values():
+        for rp in ValidatedReqsProvs(self.items).item_reqs_provs():
             self._add_dir_deps_for_item_provs(ns, rp.item_provs)
             for item_prov in rp.item_provs:
                 for item_req in rp.item_reqs:
