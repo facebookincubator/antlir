@@ -47,6 +47,7 @@ image.layer(
             "dnf-command(versionlock)",
             "dnf-utils",
             "gcc",  # build code in genrule_layers
+            "g++",  # For c++ compilation
             "iproute",
             "net-tools",
             "python3",
@@ -54,6 +55,7 @@ image.layer(
             "rpm",  # For manipulating rpms
             "rpm-build",  # For building rpms
             "rpm-sign",  # For signing rpms
+            "rust",  # For rust compilation
             "sudo",
             "tar",
             "dosfstools",  # For vfat image package support
