@@ -3,4 +3,4 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-stable_build_appliance_sha = "cdbbee3ca1e0f2473cb53583220d6c61a6bb18edf853ca6554d972b56a490b24"
+stable_build_appliance_sha = "b6dd861f9bbf7d24a07a00280390857dd29c76ecffaf2541c37070ce33278286"
