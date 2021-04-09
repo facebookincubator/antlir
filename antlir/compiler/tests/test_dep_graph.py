@@ -7,6 +7,7 @@
 import sys
 import unittest
 from dataclasses import dataclass
+from typing import Iterator, Tuple
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import (
@@ -34,7 +35,10 @@ from ..requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
+    ProvidesGroup,
     RequireDirectory,
+    RequireFile,
+    RequireGroup,
 )
 
 
@@ -196,6 +200,127 @@ class ItemProvTest(unittest.TestCase):
         )
 
 
+@dataclass(frozen=True)
+class TestImageItem(ImageItem):
+    provs: Tuple[ItemProv]
+    reqs: Tuple[ItemReq]
+
+    def __init__(
+        self,
+        provs: Iterator[ItemProv] = None,
+        reqs: Iterator[ItemReq] = None,
+    ):
+        provs = tuple(provs) if provs else ()
+        reqs = tuple(reqs) if reqs else ()
+        super().__init__(from_target="t", provs=provs, reqs=reqs)
+
+    def provides(self):
+        yield from self.provs
+
+    def requires(self):
+        yield from self.reqs
+
+
+class ItemReqsProvsTest(unittest.TestCase):
+    def test_item_self_conflict(self):
+        @dataclass
+        class TestCase:
+            item_reqs_provs: ItemReqsProvs
+            item: ImageItem
+            want: bool
+
+        req = RequireFile(path=Path("foo"))
+        prov = ProvidesFile(path=Path("foo"))
+        item_with_both = TestImageItem(reqs=[req], provs=[prov])
+        item_with_duplicate_req = TestImageItem(reqs=[req, req])
+        item_with_duplicate_prov = TestImageItem(provs=[prov, prov])
+
+        tests = [
+            TestCase(
+                item_reqs_provs=ItemReqsProvs(item_provs=[], item_reqs=[]),
+                item=TestImageItem(),
+                want=False,
+            ),
+            TestCase(
+                item_reqs_provs=ItemReqsProvs(item_provs=[], item_reqs=[]),
+                item=TestImageItem(reqs=[RequireFile(path=Path("foo"))]),
+                want=False,
+            ),
+            TestCase(
+                item_reqs_provs=ItemReqsProvs(item_provs=[], item_reqs=[]),
+                item=TestImageItem(provs=[RequireFile(path=Path("foo"))]),
+                want=False,
+            ),
+            TestCase(
+                item_reqs_provs=ItemReqsProvs(
+                    item_provs=[ItemProv(provides=prov, item=item_with_both)],
+                    item_reqs=[],
+                ),
+                item=item_with_both,
+                want=True,
+            ),
+            TestCase(
+                item_reqs_provs=ItemReqsProvs(
+                    item_provs=[],
+                    item_reqs=[ItemReq(requires=req, item=item_with_both)],
+                ),
+                item=item_with_both,
+                want=True,
+            ),
+            TestCase(
+                item_reqs_provs=ItemReqsProvs(
+                    item_provs=[],
+                    item_reqs=[
+                        ItemReq(requires=req, item=item_with_duplicate_req)
+                    ],
+                ),
+                item=item_with_duplicate_req,
+                want=True,
+            ),
+            TestCase(
+                item_reqs_provs=ItemReqsProvs(
+                    item_provs=[
+                        ItemProv(provides=prov, item=item_with_duplicate_prov)
+                    ],
+                    item_reqs=[],
+                ),
+                item=item_with_duplicate_prov,
+                want=True,
+            ),
+            # In the next two cases, even though `TestImageItem` are `__eq__`,
+            # this is *not* a "self conflict" because it's two different
+            # `ImageItem` instances.
+            TestCase(
+                item_reqs_provs=ItemReqsProvs(
+                    item_provs=[],
+                    item_reqs=[
+                        ItemReq(requires=req, item=TestImageItem(reqs=[req])),
+                    ],
+                ),
+                item=TestImageItem(reqs=[req]),
+                want=False,
+            ),
+            TestCase(
+                item_reqs_provs=ItemReqsProvs(
+                    item_provs=[
+                        ItemProv(
+                            provides=prov, item=TestImageItem(provs=[prov])
+                        ),
+                    ],
+                    item_reqs=[],
+                ),
+                item=TestImageItem(provs=[prov]),
+                want=False,
+            ),
+        ]
+
+        for i, test in enumerate(tests):
+            have = test.item_reqs_provs._item_self_conflict(test.item)
+            self.assertEqual(
+                test.want, have, f"{i}: {test}, want={test.want} have={have}"
+            )
+
+
 class DepGraphTestBase(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
@@ -264,24 +389,39 @@ class DepGraphTestBase(unittest.TestCase):
                 {ip.provides.req for ip in irp.item_provs}
             )
             assert len(req) == 1
-            self.item_reqs_provs[req.pop().key()] = irp
+            self.item_reqs_provs[req.pop().path] = irp
 
 
 class ValidateReqsProvsTestCase(DepGraphTestBase):
     def test_duplicate_paths_in_same_item(self):
-        @dataclass(init=False, frozen=True)
-        class BadDuplicatePathItem(ImageItem):
-            def requires(self):
-                yield RequireDirectory(path=Path("a"))
-
-            def provides(self):
-                yield ProvidesDirectory(path=Path("a"))
-
         with self.assertRaisesRegex(
-            AssertionError,
-            r"BadDuplicatePathItem.*RequireDirectory.*collides in",
+            RuntimeError,
+            r"ProvidesDirectory.*TestImageItem.*conflicts in",
         ):
-            ValidatedReqsProvs([BadDuplicatePathItem(from_target="t")])
+            ValidatedReqsProvs(
+                [
+                    TestImageItem(
+                        reqs=[RequireDirectory(path=Path("a"))],
+                        provs=[ProvidesDirectory(path=Path("a"))],
+                    ),
+                ],
+            )
+
+    def test_duplicate_requires_in_same_item(self):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"RequireDirectory.*TestImageItem.*conflicts in",
+        ):
+            ValidatedReqsProvs(
+                [
+                    TestImageItem(
+                        reqs=[
+                            RequireDirectory(path=Path("a")),
+                            RequireDirectory(path=Path("a")),
+                        ],
+                    ),
+                ],
+            )
 
     def test_duplicate_paths_provided_different_types(self):
         with self.assertRaisesRegex(
@@ -382,6 +522,20 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             ]
         )
 
+    def test_non_path_requirements(self):
+        ValidatedReqsProvs(
+            [
+                TestImageItem(provs=[ProvidesGroup(groupname="adm")]),
+                TestImageItem(reqs=[RequireGroup(name="adm")]),
+            ],
+        )
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"set\(\) does not provide ItemReq\(requires=RequireGroup",
+        ):
+            ValidatedReqsProvs([TestImageItem(reqs=[RequireGroup(name="adm")])])
+
     def test_unmatched_requirement(self):
         item = InstallFileItem(from_target="", source=_FILE1, dest="y")
         with self.assertRaises(
@@ -395,7 +549,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         self.assertDictEqual(
             ValidatedReqsProvs(
                 {self.provides_root, *self.items}
-            ).item_reqs_provs,
+            )._path_item_reqs_provs.path_to_item_reqs_provs,
             self.item_reqs_provs,
         )
 
@@ -494,30 +648,22 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
 
     def test_cycle_detection(self):
         def requires_provides_directory_class(requires_dir, provides_dirs):
-            @dataclass(init=False, frozen=True)
-            class RequiresProvidesDirectory(ImageItem):
-                def requires(self):
-                    yield RequireDirectory(path=Path(requires_dir))
-
-                def provides(self):
-                    for d in provides_dirs:
-                        yield ProvidesDirectory(path=Path(d))
-
-            return RequiresProvidesDirectory
+            return TestImageItem(
+                reqs=[RequireDirectory(path=Path(requires_dir))],
+                provs=[ProvidesDirectory(path=Path(d)) for d in provides_dirs],
+            )
 
         # `dg_ok`: dependency-sorting will work without a cycle
         first = FilesystemRootItem(from_target="")
-        second = requires_provides_directory_class("/", ["a"])(from_target="")
-        third = requires_provides_directory_class("/a", ["/a/b", "/a/b/c"])(
-            from_target=""
-        )
+        second = requires_provides_directory_class("/", ["a"])
+        third = requires_provides_directory_class("/a", ["/a/b", "/a/b/c"])
         dg_ok = DependencyGraph([second, first, third], layer_target="t")
         self.assertEqual(_fs_root_phases(first), list(dg_ok.ordered_phases()))
 
         # `dg_bad`: changes `second` to get a cycle
         dg_bad = DependencyGraph(
             [
-                requires_provides_directory_class("a/b", ["a"])(from_target=""),
+                requires_provides_directory_class("a/b", ["a"]),
                 first,
                 third,
             ],
