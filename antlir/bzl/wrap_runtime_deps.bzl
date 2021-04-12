@@ -152,6 +152,25 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
             antlir_rule = "user-internal",
         )
         return False, target
+
+    # Note:  Notice here that we are using the `$(exe_target ...)` macro
+    # instead of just plain old `$(exe ...)`.  The behavior difference is
+    # that buck will compile the resolved target path against the
+    # `target platform` when using `$(exe_target ...)` vs using the
+    # `host platform` when using `$(exe ...)`.  This matters here
+    # because the execution environment for this wrapper will almost always
+    # be within a runtime that matches the `target platform`.  A simple example
+    # is, if we are using a `target platform` of `Fedora33`, which has a glibc
+    # version of 2.32, we want the binary being invoked by this wrapper
+    # to be compiled against glibc 2.32.
+    # It should be noted that inside Facebook, this doesn't matter so much
+    # because there is generally no difference between the `host platform`
+    # and the `target platform` due to how the runtimes are managed and
+    # available as part of the aether.
+    # Also note: This feature of Buck is pretty much undocumented since
+    # this is part of a yet to be described "new" behavior.  There are
+    # test cases that cover this though:
+    # https://github.com/facebook/buck/tree/master/test/com/facebook/buck/cli/configurations/testdata/exe_target
     buck_genrule(
         name = name,
         out = "wrapper.sh",
