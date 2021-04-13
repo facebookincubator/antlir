@@ -1,18 +1,17 @@
 load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
 
-# TODO: for release builds of this, we probably want to build with `--config
-# fbcode.default_binary_link_deps= --config fbcode.default_allocator=malloc` to
-# minimize size and dependencies
 rust_binary(
     name = "antlirctl",
     srcs = [
         "src/antlirctl.rs",
         "src/mount.rs",
     ],
+    allocator = "malloc",
     link_style = "static",
     linker_flags = [
         "-Wl,--strip-all",
     ],
+    nodefaultlibs = True,
     # some flags to minimize size
     rustc_flags = [
         "-C",

@@ -365,6 +365,13 @@ def _rust_unittest(*args, **kwargs):
     _wrap_internal(native.rust_test, args, kwargs)
 
 def _rust_binary(*args, **kwargs):
+    # Inside FB, we are a little special and explicitly use `malloc` as our
+    # allocator, and avoid linking to some always-present FB libraries in order
+    # to keep our environment simple and produce small binaries. In OSS, this
+    # isn't required (yet), since the default platforms will be close to this
+    # goal already.
+    kwargs.pop("allocator", None)
+    kwargs.pop("nodefaultlibs", None)
     _wrap_internal(native.rust_binary, args, kwargs)
 
 # Use = in the default filename to avoid clashing with RPM names.
