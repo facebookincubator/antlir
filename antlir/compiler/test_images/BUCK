@@ -131,7 +131,6 @@ defs.export_file(name = "shadow_me")
         build_opts = image.opts(
             rpm_installer = rpm_installer,
             build_appliance = ":build_appliance_testing",
-            version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
         ),
         visibility = ["//antlir/compiler/..."],
     )
@@ -319,7 +318,6 @@ image.layer(
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
-        version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
     visibility = ["//antlir/compiler/..."],
 )
@@ -357,7 +355,6 @@ image.feature(
     ],
     # `rpm-test-*` RPMs may not be mentioned by all of the allowed version
     # sets, so just emit this feature for one.
-    _internal_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -554,7 +551,6 @@ image.feature(
     ],
     # We can only build for "no version set" because our child
     # `feature_tar_and_rpms` provides no other version sets.
-    _internal_only_version_sets = [VERSION_SET_ALLOW_ALL_VERSIONS],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -693,7 +689,6 @@ image.layer(
     ],
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
-        version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
@@ -711,7 +706,6 @@ image.layer(
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
-        version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
 )
 
@@ -737,7 +731,6 @@ image.layer(
     ],
     build_opts = image.opts(
         build_appliance = ":build_appliance_testing",
-        version_set = VERSION_SET_ALLOW_ALL_VERSIONS,
     ),
     visibility = ["//antlir/..."],
 )

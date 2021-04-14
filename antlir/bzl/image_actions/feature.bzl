@@ -49,8 +49,9 @@ Read that target's docblock for more info, but in essence, that will:
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:check_flavor_exists.bzl", "check_flavor_exists")
 load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -95,25 +96,23 @@ DO_NOT_USE_FEATURES_SUFFIX = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_
 # have direct access to the `image.feature` JSON outputs in any case.  Most
 # users will want to depend on build artifacts that are downstream of
 # `image.feature`, like `image.layer`.
-def PRIVATE_DO_NOT_USE_feature_target_name(name, version_set):
+def PRIVATE_DO_NOT_USE_feature_target_name(name, flavor):
     name += DO_NOT_USE_FEATURES_SUFFIX
-    if version_set not in REPO_CFG.version_set_to_path:
-        fail(
-            "Must be in {}".format(list(REPO_CFG.version_set_to_path)),
-            "version_set",
-        )
+    check_flavor_exists(flavor)
 
     # When a feature is declared, it doesn't know the version set of the
     # layer that will use it, so we normally declare all possible variants.
     # This is only None when there are no version sets in use.
-    if version_set != VERSION_SET_ALLOW_ALL_VERSIONS:
-        name += "__rpm_verset__" + version_set
+    version_set_path = REPO_CFG.flavor_to_config[flavor] \
+        .get("version_set_path", VERSION_SET_ALLOW_ALL_VERSIONS)
+    if version_set_path != VERSION_SET_ALLOW_ALL_VERSIONS:
+        name += "__rpm_verset__" + flavor
     return name
 
-def PRIVATE_DO_NOT_USE_features_for_layer(layer_name, version_set):
+def PRIVATE_DO_NOT_USE_features_for_layer(layer_name, flavor):
     return FEATURES_FOR_LAYER_PREFIX + PRIVATE_DO_NOT_USE_feature_target_name(
         layer_name,
-        version_set,
+        flavor,
     )
 
 def _flatten_nested_lists(lst):
@@ -135,7 +134,7 @@ def _flatten_nested_lists(lst):
             flat_lst.append(v)
     return flat_lst
 
-def _normalize_feature_and_get_deps(feature, version_set):
+def _normalize_feature_and_get_deps(feature, flavor):
     "Returns a ready-to-serialize feature dictionary and its direct deps."
     target_tagger = new_target_tagger()
     feature_dict = structs.to_dict(feature.items)
@@ -151,9 +150,9 @@ def _normalize_feature_and_get_deps(feature, version_set):
         # only mutate the `version_set` key.
         feature_dict["rpms"] = [dict(**r) for r in aliased_rpms]
 
-    if version_set != VERSION_SET_ALLOW_ALL_VERSIONS:
-        vs_path = REPO_CFG.version_set_to_path[version_set]
-
+    vs_path = REPO_CFG.flavor_to_config[flavor] \
+        .get("version_set_path", VERSION_SET_ALLOW_ALL_VERSIONS)
+    if vs_path != VERSION_SET_ALLOW_ALL_VERSIONS:
         # Resolve RPM names to version set targets.  We cannot avoid this
         # coupling with `rpm.bzl` because the same `image.rpms_install` may
         # be normalized against multiple version set names.
@@ -176,7 +175,7 @@ def _normalize_feature_and_get_deps(feature, version_set):
 def normalize_features(
         porcelain_targets_or_structs,
         human_readable_target,
-        version_set):
+        flavor):
     porcelain_targets_or_structs = _flatten_nested_lists(
         porcelain_targets_or_structs,
     )
@@ -186,12 +185,12 @@ def normalize_features(
     for f in porcelain_targets_or_structs:
         if types.is_string(f):
             targets.append(
-                PRIVATE_DO_NOT_USE_feature_target_name(f, version_set),
+                PRIVATE_DO_NOT_USE_feature_target_name(f, flavor),
             )
         else:
             feature_dict, more_deps = _normalize_feature_and_get_deps(
                 feature = f,
-                version_set = version_set,
+                flavor = flavor,
             )
             direct_deps.extend(more_deps)
             feature_dict["target"] = human_readable_target
@@ -208,8 +207,8 @@ def private_do_not_use_feature_json_genrule(
         deps,
         output_feature_cmd,
         visibility,
-        version_set):
-    name = PRIVATE_DO_NOT_USE_feature_target_name(name, version_set)
+        flavor):
+    name = PRIVATE_DO_NOT_USE_feature_target_name(name, flavor)
     buck_genrule(
         name = name,
         out = "feature.json",
@@ -235,7 +234,7 @@ def image_feature(
         name,
         features,
         visibility = None,
-        _internal_only_version_sets = REPO_CFG.version_set_to_path):
+        flavors = [REPO_CFG.flavor_default]):
     visibility = visibility or []
 
     """
@@ -250,15 +249,15 @@ def image_feature(
     the container (install RPMs, remove files/directories, create symlinks
     or directories, copy executable or data files, declare mounts).
     """
-    for version_set in _internal_only_version_sets:
+    for flavor in flavors:
         _image_feature_impl(
             name = name,
             features = features,
             visibility = visibility,
-            version_set = version_set,
+            flavor = flavor,
         )
 
-def _image_feature_impl(name, features, visibility, version_set):
+def _image_feature_impl(name, features, visibility, flavor):
     # (1) Normalizes & annotates Buck target names so that they can be
     #     automatically enumerated from our JSON output.
     # (2) Builds a list of targets so that this converter can tell Buck
@@ -271,7 +270,7 @@ def _image_feature_impl(name, features, visibility, version_set):
     normalized_features = normalize_features(
         features,
         human_readable_target,
-        version_set,
+        flavor,
     )
 
     feature = target_tagger_to_feature(
@@ -305,5 +304,5 @@ def _image_feature_impl(name, features, visibility, version_set):
             out = shell.quote(feature.items.to_json()),
         ),
         visibility = visibility,
-        version_set = version_set,
+        flavor = flavor,
     )

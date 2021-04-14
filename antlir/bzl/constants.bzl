@@ -14,15 +14,36 @@ load("//antlir/bzl:shape.bzl", "shape")
 
 DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
 VERSION_SET_ALLOW_ALL_VERSIONS = "__VERSION_SET_ALLOW_ALL_VERSIONS__"
+CONFIG_KEY = "antlir"
 
 # This needs to be kept in sync with
 # `antlir.nspawn_in_subvol.args._QUERY_TARGETS_AND_OUTPUTS_SEP`
 QUERY_TARGETS_AND_OUTPUTS_SEP = "|"
 
+# This is used as standard demiliter in .buckconfig while using
+# flavor names under a specific config group
+BUCK_CONFIG_FLAVOR_NAME_DELIMITER = "#"
+
+def _get_flavor_default():
+    cfg_name = "flavor_default"
+    val = native.read_config(CONFIG_KEY, cfg_name)
+    return val or do_not_use_repo_cfg.get(cfg_name) or "default"
+
+def _get_flavor_config(flavor_name = None):
+    flavor_to_config = do_not_use_repo_cfg.get("flavor_to_config", {})
+    for flavor, flavor_config in flavor_to_config.items():
+        config_key = CONFIG_KEY + BUCK_CONFIG_FLAVOR_NAME_DELIMITER + flavor
+        for key, v in flavor_config.items():
+            val = native.read_config(config_key, key, None)
+            if val != None:
+                flavor_config[key] = val
+
+    return flavor_to_config
+
 # Use `_get_optional_str_cfg` or `_get_str_list_cfg` instead.
 def _do_not_use_directly_get_cfg(name, default = None):
     # Allow `buck -c` overrides from the command-line
-    val = native.read_config("antlir", name)
+    val = native.read_config(CONFIG_KEY, name)
     if val != None:
         return val
 
@@ -69,6 +90,14 @@ def _get_artifact_key_to_path():
 
     return key_to_path
 
+# These are configuration keys that can be grouped under a specific
+# common name called flavor. This way, during run-time, we can choose
+# default values for set of configuration keys based on selected flavor
+# name
+flavor_config_t = shape.shape(
+    version_set_path = shape.field(str, optional = True),
+)
+
 #
 # These are repo-specific configuration keys, which can be overridden via
 # the Buck CLI for debugging / development purposes.
@@ -111,8 +140,8 @@ repo_config_t = shape.shape(
     host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
     rpm_installer_default = str,
     rpm_installers_supported = shape.list(str),
-    version_set_to_path = shape.dict(str, str),
-    version_set_default = str,
+    flavor_to_config = shape.dict(str, flavor_config_t),
+    flavor_default = str,
 )
 
 REPO_CFG = shape.new(
@@ -167,9 +196,6 @@ REPO_CFG = shape.new(
     # elements in this list, because we do not know the version set that the
     # including `image.layer` will use.  This would be fixable if Buck
     # supported providers like Bazel does.
-    version_set_to_path = _get_version_set_to_path(),
-    version_set_default = _get_optional_str_cfg(
-        "version_set_default",
-        default = VERSION_SET_ALLOW_ALL_VERSIONS,
-    ),
+    flavor_to_config = _get_flavor_config(),
+    flavor_default = _get_flavor_default(),
 )
