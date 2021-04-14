@@ -41,12 +41,12 @@ def compile_image_features(
                 )}]),
             )] if parent_layer else []
         ),
-        _internal_only_version_sets = [build_opts.version_set],
+        flavors = [build_opts.flavor],
     )
     normalized_features = normalize_features(
         [":" + features_for_layer],
         current_target,
-        version_set = build_opts.version_set,
+        flavor = build_opts.flavor,
     )
 
     vset_override_name = None

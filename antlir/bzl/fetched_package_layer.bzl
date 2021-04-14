@@ -200,7 +200,7 @@ def _fetched_package_layer(
         ),
         visibility = visibility,
         # We don't touch the layer's `build_opts`, so it'll use the default.
-        version_set = REPO_CFG.version_set_default,
+        flavor = REPO_CFG.flavor_default,
     )
 
     mount_config = name + "-fetched-package-mount-config"

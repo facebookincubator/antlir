@@ -24,16 +24,21 @@ class RepoConfigTestCase(unittest.TestCase):
                 "test.artifact": "//build:artifact",
             },
             "build_appliance_default": "//build/appliance:default",
+            "flavor_default": "default",
+            "flavor_to_config": {
+                "default": {
+                    "version_set_path": "__VERSION_SET_ALLOW_ALL_VERSIONS__"
+                },
+                "all_jobs": {
+                    "version_set_to_path": "//all/jobs/version/set:path",
+                },
+            },
             "host_mounts_for_repo_artifacts": [],
             "rpm_installer_default": "yum",
             "rpm_installers_supported": [
                 "yum",
                 "dnf",
             ],
-            "version_set_to_path": {
-                "all_jobs": "//all/jobs/version/set:path",
-            },
-            "version_set_default": "all_jobs",
         }
         defaults.update(kwargs)
         return repo_config_t(**defaults).json(exclude={"repo_root": ...})

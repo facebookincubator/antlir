@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":check_flavor_exists.bzl", "check_flavor_exists")
 load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
@@ -14,11 +15,11 @@ def _build_opts(
         # installed `rpm_repo_snapshot()`, plus an OS image with other
         # image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
         build_appliance = REPO_CFG.build_appliance_default,
-        # A "version set" name, see `bzl/constants.bzl`.
-        # Currently used for RPM version locking.
+        # A "flavor" name, see `bzl/constants.bzl`.
+        # Currently used for RPM flavor selection.
         #
-        # Future: refer to the OSS "version selection" doc once ready.
-        version_set = REPO_CFG.version_set_default,
+        # Future: refer to the OSS "flavor selection" doc once ready.
+        flavor = REPO_CFG.flavor_default,
         # The build appliance currently does not set a default package
         # manager -- in non-default settings, this has to be chosen per
         # image, since a BA can support multiple package managers.  In the
@@ -51,14 +52,11 @@ def _build_opts(
     if build_appliance == DO_NOT_USE_BUILD_APPLIANCE:
         build_appliance = None
 
-    if version_set not in REPO_CFG.version_set_to_path:
-        fail(
-            "Must be in {}".format(list(REPO_CFG.version_set_to_path)),
-            "version_set",
-        )
+    check_flavor_exists(flavor)
+
     return struct(
         build_appliance = build_appliance,
-        version_set = version_set,
+        flavor = flavor,
         rpm_installer = rpm_installer,
         rpm_repo_snapshot = (
             snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else None
