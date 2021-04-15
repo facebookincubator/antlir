@@ -61,6 +61,7 @@ image.layer(
             "dosfstools",  # For vfat image package support
             "mtools",  # For vfat image package support
             "gdisk",  # For GPT image support
+            "e2fsprogs",  # For ext3 image package support
         ]),
     ] + install_snapshots,
     build_opts = image.opts(
