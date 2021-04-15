@@ -73,6 +73,7 @@ python_unittest(
         ":fs_utils",
     )],
     resources = {":test-helper-binary": "tests/helper-binary"},
+    deps = [":fs_utils"],
 )
 
 export_file(
