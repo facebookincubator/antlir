@@ -129,13 +129,16 @@ def build_image(args):
     ), f"Refusing to run with pathological umask 0o{cur_umask:o}"
 
     subvol = Subvol(args.subvolumes_dir / args.subvolume_rel_path)
-    layer_opts = LayerOpts(
-        layer_target=args.child_layer_target,
-        build_appliance=find_built_subvol(
+
+    build_appliance = None
+    if args.build_appliance_buck_out:
+        build_appliance = find_built_subvol(
             args.build_appliance_buck_out, subvolumes_dir=args.subvolumes_dir
         )
-        if args.build_appliance_buck_out
-        else None,
+
+    layer_opts = LayerOpts(
+        layer_target=args.child_layer_target,
+        build_appliance=build_appliance,
         rpm_installer=args.rpm_installer,
         rpm_repo_snapshot=args.rpm_repo_snapshot,
         artifacts_may_require_repo=args.artifacts_may_require_repo,
@@ -180,6 +183,7 @@ def build_image(args):
             # class shouldn't have a reason to follow symlinks in the subvol.
             subvol.path(),
             args.subvolumes_dir,
+            build_appliance.path() if build_appliance else None,
         )
     # The complexity of covering this is high, but the only thing that can
     # go wrong is a typo in the f-string.

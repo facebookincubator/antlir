@@ -52,6 +52,7 @@ _FIND_ARGS = [
     "-printf",
     "%y %p\\0",
 ]
+_TEST_BUILD_APPLIANCE = "test-build-appliance"
 
 
 def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
@@ -135,6 +136,9 @@ def mock_layer_dir_access(test_case, subvolume_path):
                 def subvolume_path(self):
                     return subvolume_path.decode()
 
+                def build_appliance_path(self):
+                    return None
+
             return FakeSubvolumeOnDisk()
 
         from_json_file.side_effect = check_call
@@ -146,6 +150,12 @@ class CompilerTestCase(unittest.TestCase):
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
+
+    def _get_build_appliance(self):
+        return layer_resource_subvol(
+            __package__,
+            _TEST_BUILD_APPLIANCE,
+        )
 
     @_subvol_mock_lexists_is_btrfs_and_run_as_root
     @unittest.mock.patch.object(svod, "_btrfs_get_volume_props")
@@ -222,6 +232,9 @@ class CompilerTestCase(unittest.TestCase):
                         svod._HOSTNAME: "fake host",
                         svod._SUBVOLUMES_BASE_DIR: _SUBVOLS_DIR,
                         svod._SUBVOLUME_REL_PATH: _FAKE_SUBVOL,
+                        svod._BUILD_APPLIANCE_PATH: (
+                            self._get_build_appliance().path()
+                        ),
                     }
                 ),
                 res._replace(**{svod._HOSTNAME: "fake host"}),
@@ -244,9 +257,7 @@ class CompilerTestCase(unittest.TestCase):
         )
         layer_opts = LayerOpts(
             layer_target="fake-target",
-            build_appliance=layer_resource_subvol(
-                __package__, "test-build-appliance"
-            ),
+            build_appliance=self._get_build_appliance(),
             artifacts_may_require_repo=True,  # Must match CLI arg in `_compile`
             target_to_path=si.TARGET_TO_PATH,
             subvolumes_dir=_SUBVOLS_DIR,

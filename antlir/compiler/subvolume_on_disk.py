@@ -10,6 +10,7 @@ import logging
 import socket
 import subprocess
 from collections import namedtuple
+from typing import Optional
 
 from antlir.fs_utils import Path
 
@@ -27,6 +28,7 @@ _HOSTNAME = "hostname"  # (1-3)
 _SUBVOLUMES_BASE_DIR = "subvolumes_base_dir"  # (1)
 _SUBVOLUME_REL_PATH = "subvolume_rel_path"  # (1-3)
 _DANGER = "DANGER"  # (2)
+_BUILD_APPLIANCE_PATH = "build_appliance_path"  # (1-3)
 
 
 def _btrfs_get_volume_props(subvolume_path: Path):
@@ -75,7 +77,12 @@ class SubvolumeOnDisk(
             _HOSTNAME,
             _SUBVOLUMES_BASE_DIR,
             _SUBVOLUME_REL_PATH,
+            _BUILD_APPLIANCE_PATH,
         ],
+        # This assigns default values to the namedtuple starting from
+        # the last most argument. This is because it turns arguments
+        # in args into kwarg arguments.
+        defaults=(None,),
     )
 ):
     """
@@ -89,7 +96,12 @@ class SubvolumeOnDisk(
         return self.subvolumes_base_dir / self.subvolume_rel_path
 
     @classmethod
-    def from_subvolume_path(cls, subvol_path: Path, subvolumes_dir: Path):
+    def from_subvolume_path(
+        cls,
+        subvol_path: Path,
+        subvolumes_dir: Path,
+        build_appliance_path: Optional[Path] = None,
+    ):
         subvol_rel_path = subvol_path.relpath(subvolumes_dir)
         pieces = subvol_rel_path.split(b"/")
         if pieces[:1] == [b""] or b".." in pieces:
@@ -110,6 +122,7 @@ class SubvolumeOnDisk(
                 _HOSTNAME: socket.gethostname(),
                 _SUBVOLUMES_BASE_DIR: subvolumes_dir,
                 _SUBVOLUME_REL_PATH: subvol_rel_path,
+                _BUILD_APPLIANCE_PATH: build_appliance_path,
             }
         )
         return self
@@ -129,6 +142,9 @@ class SubvolumeOnDisk(
                 _HOSTNAME: d[_HOSTNAME],
                 _SUBVOLUMES_BASE_DIR: subvolumes_dir,
                 _SUBVOLUME_REL_PATH: subvol_rel_path,
+                _BUILD_APPLIANCE_PATH: Path(d[_BUILD_APPLIANCE_PATH])
+                if _BUILD_APPLIANCE_PATH in d
+                else None,
             }
         )
         assert subvol_path == self.subvolume_path(), (d, subvolumes_dir)
@@ -174,6 +190,11 @@ class SubvolumeOnDisk(
             _DANGER: "Do NOT edit manually: this can break future builds, or "
             "break refcounting, causing us to leak or prematurely destroy "
             "subvolumes.",
+            **(
+                {_BUILD_APPLIANCE_PATH: self.build_appliance_path.decode()}
+                if self.build_appliance_path
+                else {}
+            ),
         }
         # Self-test -- there should be no way for this assertion to fail
         new_self = self.from_serializable_dict(d, self.subvolumes_base_dir)
