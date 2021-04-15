@@ -17,11 +17,13 @@ from ..requires_provides import (
     ProvidesDoNotAccess,
     ProvidesFile,
     ProvidesGroup,
+    ProvidesSymlink,
     ProvidesUser,
     RequireDirectory,
     RequireFile,
     RequireGroup,
     RequirementKind,
+    RequireSymlink,
     RequireUser,
 )
 
@@ -115,3 +117,30 @@ class RequiresProvidesTestCase(unittest.TestCase):
         self.assertEqual(pu.req.kind, RequirementKind.USER)
         self.assertTrue(pu.provides(RequireUser(username)))
         self.assertFalse(pu.provides(RequireUser("user2")))
+
+    def test_require_symlink(self):
+        path = Path("/foo")
+        target = Path("/bar")
+        rs = RequireSymlink(path=path, target=target)
+        self.assertEqual(rs.kind, RequirementKind.PATH)
+        self.assertEqual(rs.path, path)
+        self.assertEqual(rs.target, target)
+
+    def test_provides_symlink(self):
+        path = Path("/foo")
+        target = Path("/bar")
+        ps = ProvidesSymlink(path=path, target=target)
+        rs = RequireSymlink(path=path, target=target)
+        self.assertEqual(ps.req, rs)
+        self.assertTrue(ps.provides(rs))
+
+        # Symlinks and files/dirs are different now
+        self.assertFalse(ps.provides(RequireFile(path)))
+        self.assertFalse(ps.provides(RequireDirectory(path)))
+
+        new_path = Path("/baz")
+        ps2 = ps.with_new_path(new_path)
+        rs2 = RequireSymlink(path=new_path, target=target)
+        self.assertEqual(ps2.req, rs2)
+        self.assertFalse(ps2.provides(rs))
+        self.assertTrue(ps2.provides(rs2))
