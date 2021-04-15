@@ -91,6 +91,15 @@ class _RequireDoNotAccess(RequirePath):
 
 
 @dataclasses.dataclass(frozen=True)
+class RequireSymlink(RequirePath):
+    target: Path
+
+    def __init__(self, path: Path, target: Path) -> None:
+        super().__init__(path=path)
+        object.__setattr__(self, "target", target)
+
+
+@dataclasses.dataclass(frozen=True)
 class RequireGroup(Requirement):
     name: str
 
@@ -123,7 +132,7 @@ class ProvidesPath(Provider):
     def path(self) -> Path:
         return self.req.path
 
-    def with_new_path(self, new_path: Path):
+    def with_new_path(self, new_path: Path) -> "ProvidesPath":
         return self.__class__(new_path)
 
 
@@ -137,6 +146,14 @@ class ProvidesFile(ProvidesPath):
 
     def __init__(self, path: Path):
         super().__init__(req=RequireFile(path=path))
+
+
+class ProvidesSymlink(ProvidesPath):
+    def __init__(self, path: Path, target: Path):
+        super().__init__(req=RequireSymlink(path, target))
+
+    def with_new_path(self, new_path: Path) -> "ProvidesSymlink":
+        return self.__class__(new_path, self.req.target)
 
 
 class ProvidesDoNotAccess(ProvidesPath):
