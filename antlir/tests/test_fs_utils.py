@@ -14,7 +14,9 @@ import sys
 import tempfile
 import threading
 import unittest
+from dataclasses import dataclass
 from io import StringIO
+from typing import AnyStr, Dict, Iterator, Optional
 
 from ..common import byteme, check_popen_returncode
 from ..fs_utils import (
@@ -460,3 +462,27 @@ class TestFsUtils(unittest.TestCase):
             ("//d/e", "d/e"),
         ):
             self.assertEqual(Path(p).strip_leading_slashes(), Path(want))
+
+    def test_join(self):
+        @dataclass
+        class Test:
+            paths: Iterator[AnyStr]
+            want: Optional[Path]
+
+        tests: Dict[str, Test] = {
+            "empty args": Test(paths=[], want=None),
+            "single str": Test(paths=["foo"], want=Path("foo")),
+            "single bytes": Test(paths=[b"foo"], want=Path("foo")),
+            "mix str/bytes": Test(paths=("foo", b"bar"), want=Path("foo/bar")),
+            "incl leading slash": Test(
+                paths=(b"/foo", "bar"), want=Path("/foo/bar")
+            ),
+            "mix path/str/bytes": Test(
+                paths=(Path("foo"), "bar", b"baz"), want=Path("foo/bar/baz")
+            ),
+        }
+        for desc, test in tests.items():
+            have = Path.join(*test.paths)
+            self.assertEqual(
+                have, test.want, f"{desc}: have={have}, want={test.want}"
+            )

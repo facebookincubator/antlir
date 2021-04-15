@@ -95,6 +95,14 @@ class Path(bytes):
             return None
         return cls(arg, *args, **kwargs)
 
+    @classmethod
+    def join(cls, *paths) -> "Path":
+        if not paths:
+            return None
+        return Path(
+            os.path.join(byteme(paths[0]), *(byteme(p) for p in paths[1:]))
+        )
+
     def __truediv__(self, right: AnyStr) -> "Path":
         return Path(os.path.join(self, byteme(right)))
 
