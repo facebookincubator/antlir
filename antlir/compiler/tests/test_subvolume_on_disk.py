@@ -160,9 +160,12 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
             rel_path = Path("test_rule:vvv/test:subvol")
             subvol_path = subvols / rel_path
             os.makedirs(subvol_path)  # `from_serializable_dict` checks this
+            build_appliance_path = Path("build_appliance")
 
             subvol = subvolume_on_disk.SubvolumeOnDisk.from_subvolume_path(
-                subvol_path=subvol_path, subvolumes_dir=subvols
+                subvol_path=subvol_path,
+                subvolumes_dir=subvols,
+                build_appliance_path=build_appliance_path,
             )
             with unittest.mock.patch("os.listdir") as listdir:
                 listdir.return_value = ["test:subvol"]
@@ -178,6 +181,9 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                             subvolume_on_disk._HOSTNAME: _MY_HOST,
                             subvolume_on_disk._SUBVOLUME_REL_PATH: rel_path,
                             subvolume_on_disk._SUBVOLUMES_BASE_DIR: subvols,
+                            subvolume_on_disk._BUILD_APPLIANCE_PATH: (
+                                build_appliance_path
+                            ),
                         }
                     ),
                 )
@@ -190,7 +196,8 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                 RuntimeError, "must be located inside the subvolumes directory"
             ):
                 subvolume_on_disk.SubvolumeOnDisk.from_subvolume_path(
-                    subvol_path=subvol_path, subvolumes_dir=subvols / "bad"
+                    subvol_path=subvol_path,
+                    subvolumes_dir=subvols / "bad",
                 )
 
 
