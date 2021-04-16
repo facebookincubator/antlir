@@ -7,7 +7,7 @@ on:
       - 'images/appliance/BUCK'
       - '.github/workflows/update-build-appliance.yml'
   workflow_dispatch:
-
+  
 jobs:
   build-and-upload:
     runs-on: ubuntu-20.04
@@ -58,7 +58,24 @@ jobs:
           git add images/appliance/stable_appliance.bzl
           git config user.name GitHub
           git config user.email noreply@github.com
-          git commit -m "antlir oss: update stable build appliance"
+          git commit -F- <<EOF
+          antlir oss: update stable build appliance
+
+          Summary:
+          Update the stable build appliance using the most recent changes on
+          the 'main' branch (specifically the commit ${{ github.sha }}).
+          Currently the image artifacts referenced here are permanent,
+          however at some point automation may delete images that are older
+          than 6 months, which is our reproducibility target.
+
+          This version of the build appliance has already been validated by
+          building the base image(s) shipped with Antlir.
+
+          antlir_oss oncall: please import and land this PR internally, it
+          will then automatically be closed.
+
+          https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
 
       # Validate the appliance after committing the new stable hash. This
       # avoids inplace python shenanigans as well as actually exercising the
@@ -89,23 +106,7 @@ jobs:
               await github.pulls.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: 'antlir oss: update stable build appliance',
-                body: `antlir oss: update stable build appliance
-Summary:
-Update the stable build appliance using the most recent changes on
-the 'main' branch (specifically the commit ${{ github.sha }}).
-Currently the image artifacts referenced here are permanent,
-however at some point automation may delete images that are older
-than 6 months, which is our reproducibility target.
-
-This version of the build appliance has already been validated by
-building the base image(s) shipped with Antlir.
-
-antlir_oss oncall: please import and land this PR internally, it
-will then automatically be closed.
-
-https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-`,
+                title: 'Update stable build appliance',
                 head: 'upload-stable-build-appliance',
                 base: 'main',
               });
