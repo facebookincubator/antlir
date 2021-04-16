@@ -1,7 +1,7 @@
 load("//antlir/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "http_file")
-load("//antlir/bzl:rpm_repo_snapshot.bzl", "default_rpm_repo_snapshot_for", "install_rpm_repo_snapshot")
+load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
 load(":stable_appliance.bzl", "stable_build_appliance_sha")
 
 http_file(
@@ -26,44 +26,40 @@ image.sendstream_layer(
 # 1) building the stable BA is a ~2 minute performance hit on every cache miss
 # 2) using stable BA from S3 allows non-rpm-based hosts to build images
 
-install_snapshots = [
-    install_rpm_repo_snapshot("//snapshot:fedora33"),
-    default_rpm_repo_snapshot_for("dnf", "//snapshot:fedora33"),
+ba_features = [
+    # Note: need this because the yum_dnf_from_snapshot code can't deal
+    # with this directory not existing.
+    image.ensure_subdirs_exist("/etc", "yum"),
+    image.rpms_install([
+        "attr",
+        "bsdtar",
+        "btrfs-progs",
+        "coreutils",
+        "dnf",  # For installing rpms
+        "dnf-command(versionlock)",
+        "dnf-utils",
+        "gcc",  # build code in genrule_layers
+        "g++",  # For c++ compilation
+        "iproute",
+        "net-tools",
+        "python3",
+        "redhat-rpm-config",  # For building rpms
+        "rpm",  # For manipulating rpms
+        "rpm-build",  # For building rpms
+        "rpm-sign",  # For signing rpms
+        "rust",  # For rust compilation
+        "sudo",
+        "tar",
+        "dosfstools",  # For vfat image package support
+        "mtools",  # For vfat image package support
+        "gdisk",  # For GPT image support
+        "e2fsprogs",  # For ext3 image package support
+    ]),
 ]
 
-# This is the origin of the stable_build_appliance artifact uploaded to S3.
 image.layer(
-    name = "bootstrap-build-appliance",
-    features = [
-        # Note: need this because the yum_dnf_from_snapshot code can't deal
-        # with this directory not existing.
-        image.ensure_subdirs_exist("/etc", "yum"),
-        image.rpms_install([
-            "attr",
-            "bsdtar",
-            "btrfs-progs",
-            "coreutils",
-            "dnf",  # For installing rpms
-            "dnf-command(versionlock)",
-            "dnf-utils",
-            "gcc",  # build code in genrule_layers
-            "g++",  # For c++ compilation
-            "iproute",
-            "net-tools",
-            "python3",
-            "redhat-rpm-config",  # For building rpms
-            "rpm",  # For manipulating rpms
-            "rpm-build",  # For building rpms
-            "rpm-sign",  # For signing rpms
-            "rust",  # For rust compilation
-            "sudo",
-            "tar",
-            "dosfstools",  # For vfat image package support
-            "mtools",  # For vfat image package support
-            "gdisk",  # For GPT image support
-            "e2fsprogs",  # For ext3 image package support
-        ]),
-    ] + install_snapshots,
+    name = "rc-build-appliance.no-snapshot.bootstrap",
+    features = ba_features,
     build_opts = image.opts(
         # Uncomment to rebuild using the current host (must have dnf and other
         # rpm tools) - this should (probably) never be necessary, as the stable
@@ -73,7 +69,37 @@ image.layer(
         build_appliance = ":stable-build-appliance",
         rpm_repo_snapshot = "//snapshot:fedora33",
     ),
-    enable_boot_target = True,
+    visibility = [],
+)
+
+add_rpm_repo_snapshots_layer(
+    name = "rc-build-appliance.bootstrap",
+    build_opts = image.opts(
+        build_appliance = ":stable-build-appliance",
+        rpm_repo_snapshot = "//snapshot:fedora33",
+    ),
+    dnf_snapshot = "//snapshot:fedora33",
+    parent_layer = ":rc-build-appliance.no-snapshot.bootstrap",
+    visibility = [],
+)
+
+image.layer(
+    name = "rc-build-appliance.no-snapshot",
+    build_opts = image.opts(
+        build_appliance = ":rc-build-appliance.bootstrap",
+    ),
+    features = ba_features,
+    visibility = [],
+)
+
+add_rpm_repo_snapshots_layer(
+    name = "rc-build-appliance",
+    build_opts = image.opts(
+        build_appliance = ":rc-build-appliance.bootstrap",
+    ),
+    dnf_snapshot = "//snapshot:fedora33",
+    parent_layer = ":rc-build-appliance.no-snapshot",
+    visibility = [],
 )
 
 # IMPORTANT: This should always be built with the config option
@@ -82,8 +108,8 @@ image.layer(
 # at build time, but any breakage will be surfaced by CI (and any automated
 # build of the BA will do the right thing already).
 image.package(
-    name = "bootstrap-build-appliance.sendstream.zst",
-    layer = ":bootstrap-build-appliance",
+    name = "rc-build-appliance.sendstream.zst",
+    layer = ":rc-build-appliance",
 )
 
 # Host build appliance should never have to be used outside of the original
@@ -111,7 +137,7 @@ image.layer(
             "/sbin",
             "/usr",
         ]
-    ] + install_snapshots,
+    ],
     build_opts = image.opts(
         build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
     ),
