@@ -22,13 +22,13 @@ build host, and likely other dependencies that are not yet explicitly
 enumerated.
 
 A new version of the appliance can easily be tested on image builds by passsing
-`-c antlir.build-appliance-default=//images/appliance:bootstrap-build-appliance`
+`-c antlir.build-appliance-default=//images/appliance:rc-build-appliance`
 to `buck build`.
 
 Once satisfied, build a sendstream package and upload it to S3
 ```
-$ buck build --show-output //images/appliance:bootstrap-build-appliance.sendstream.zst
-$ sendstream="buck-out/gen/images/appliance/bootstrap-build-appliance.sendstream.zst/layer.sendstream.zst"
+$ buck build --show-output //images/appliance:ap-build-appliance.sendstream.zst
+$ sendstream="buck-out/gen/images/appliance/rc-build-appliance.sendstream.zst/layer.sendstream.zst"
 $ aws s3 cp "$sendstream" "s3://antlir/images/appliance/stable-build-appliance.sendstream.zst.$(sha256sum $sendstream)"
 ```
 Finally, update the URL and `sha256` in `images/appliance/BUCK` to start

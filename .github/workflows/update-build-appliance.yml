@@ -34,7 +34,7 @@ jobs:
         run: buck --version
 
       - name: Build appliance sendstream
-        run: buck build -c python.package_style=standalone --out stable-build-appliance.sendstream.zst //images/appliance:bootstrap-build-appliance.sendstream.zst
+        run: buck build -c python.package_style=standalone --out stable-build-appliance.sendstream.zst //images/appliance:rc-build-appliance.sendstream.zst
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
