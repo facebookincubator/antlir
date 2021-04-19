@@ -131,6 +131,10 @@ def _build_test_tags(unittest_rule, tags):
     # behavior of the inner target.
     if unittest_rule == python_unittest:
         wrapper_tags.append("use-testpilot-adapter")
+
+        # this tag gets added to the inner test automatically, but we must
+        # inform tpx that the wrapper observes the same behavior
+        wrapper_tags.append("tpx:list-format-migration:json")
         inner_tags.append("use-testpilot-adapter")
     if unittest_rule == cpp_unittest:
         wrapper_tags.append("tpx-test-type:vmtest_gtest")

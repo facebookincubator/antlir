@@ -8,7 +8,6 @@ import asyncio
 import io
 import os.path
 import sys
-import time
 from typing import List, Optional
 
 from antlir.artifacts_dir import find_buck_cell_root
@@ -137,6 +136,7 @@ async def run(
             args = ["--list-tests", list_tests]
         elif list_rust:
             args = ["--list"]
+        logger.debug(f"executing {[test_binary, *args]} to list tests")
         proc = await asyncio.create_subprocess_exec(str(test_binary), *args)
         await proc.wait()
         sys.exit(proc.returncode)
