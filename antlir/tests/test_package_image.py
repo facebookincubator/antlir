@@ -20,7 +20,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.subvol_utils import TempSubvolumes
+from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.subvol_helpers import (
     pop_path,
@@ -92,6 +92,53 @@ class PackageImageTestCase(unittest.TestCase):
         self.assertEqual(
             _render_sendstream_path(path1), _render_sendstream_path(path2)
         )
+
+    def _assert_filesystem_label(
+        self, unshare: Unshare, mount_dir: str, label: str
+    ):
+        self.assertEqual(
+            subprocess.check_output(
+                nsenter_as_root(
+                    unshare,
+                    "findmnt",
+                    "--mountpoint",
+                    mount_dir,
+                    "--noheadings",
+                    "-o",
+                    "LABEL",
+                )
+            )
+            .decode()
+            .strip(),
+            label,
+        )
+
+    def _assert_ignore_original_extents(self, original_render):
+        """
+        Some filesystem formats do not preserve the original's cloned extents
+        of zeros, nor the zero-hole-zero patter.
+        """
+        self.assertEqual(
+            original_render[1].pop("56KB_nuls"),
+            [
+                "(File d57344(create_ops@56KB_nuls_clone:0+49152@0/"
+                + "create_ops@56KB_nuls_clone:49152+8192@49152))"
+            ],
+        )
+        original_render[1]["56KB_nuls"] = ["(File h57344)"]
+        self.assertEqual(
+            original_render[1].pop("56KB_nuls_clone"),
+            [
+                "(File d57344(create_ops@56KB_nuls:0+49152@0/"
+                + "create_ops@56KB_nuls:49152+8192@49152))"
+            ],
+        )
+        original_render[1]["56KB_nuls_clone"] = ["(File h57344)"]
+        self.assertEqual(
+            original_render[1].pop("zeros_hole_zeros"),
+            ["(File d16384h16384d16384)"],
+        )
+        original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
 
     # This tests `image_package.bzl` by consuming its output.
     def test_packaged_sendstream_matches_original(self):
@@ -229,52 +276,52 @@ class PackageImageTestCase(unittest.TestCase):
                 ),
             )
 
-    def test_image_layer_composed_with_tarball_package(self):
+    @with_temp_subvols
+    def test_image_layer_composed_with_tarball_package(self, temp_subvolumes):
         # check that an image layer composed out of a tar-packaged create_ops
         # layer is equivalent to the original create_ops layer.
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
-            demo_sv_name = "demo_sv"
-            demo_sv = temp_subvolumes.caller_will_create(demo_sv_name)
-            with open(
-                self._sibling_path("create_ops.sendstream")
-            ) as f, demo_sv.receive(f):
-                pass
+        demo_sv_name = "demo_sv"
+        demo_sv = temp_subvolumes.caller_will_create(demo_sv_name)
+        with open(
+            self._sibling_path("create_ops.sendstream")
+        ) as f, demo_sv.receive(f):
+            pass
 
-            demo_render = render_demo_as_corrupted_by_gnu_tar(
-                create_ops=demo_sv_name
+        demo_render = render_demo_as_corrupted_by_gnu_tar(
+            create_ops=demo_sv_name
+        )
+
+        with self._package_image(
+            self._sibling_path("create_ops-layer-via-tarball-package"),
+            "sendstream",
+        ) as out_path:
+            rendered_tarball_image = _render_sendstream_path(out_path)
+            # This is metadata generated during the buck image build process
+            # and is not useful for purposes of comparing the subvolume
+            # contents.  However, it's useful to verify that the meta dir
+            # we popped is what we expect.
+            self.assertEqual(
+                [
+                    "(Dir)",
+                    {
+                        "private": [
+                            "(Dir)",
+                            {
+                                "opts": [
+                                    "(Dir)",
+                                    {
+                                        "artifacts_may_require_repo": [
+                                            "(File d2)"
+                                        ]
+                                    },
+                                ]
+                            },
+                        ]
+                    },
+                ],
+                pop_path(rendered_tarball_image, ".meta"),
             )
-
-            with self._package_image(
-                self._sibling_path("create_ops-layer-via-tarball-package"),
-                "sendstream",
-            ) as out_path:
-                rendered_tarball_image = _render_sendstream_path(out_path)
-                # This is metadata generated during the buck image build process
-                # and is not useful for purposes of comparing the subvolume
-                # contents.  However, it's useful to verify that the meta dir
-                # we popped is what we expect.
-                self.assertEqual(
-                    [
-                        "(Dir)",
-                        {
-                            "private": [
-                                "(Dir)",
-                                {
-                                    "opts": [
-                                        "(Dir)",
-                                        {
-                                            "artifacts_may_require_repo": [
-                                                "(File d2)"
-                                            ]
-                                        },
-                                    ]
-                                },
-                            ]
-                        },
-                    ],
-                    pop_path(rendered_tarball_image, ".meta"),
-                )
-                self.assertEqual(demo_render, rendered_tarball_image)
+            self.assertEqual(demo_render, rendered_tarball_image)
 
     def test_format_name_collision(self):
         with self.assertRaisesRegex(AssertionError, "share format_name"):
@@ -282,41 +329,40 @@ class PackageImageTestCase(unittest.TestCase):
             class BadFormat(Format, format_name="sendstream"):
                 pass
 
-    def _verify_package_as_squashfs(self, pkg_path):
-        with TempSubvolumes(
-            sys.argv[0]
-        ) as temp_subvolumes, tempfile.NamedTemporaryFile() as temp_sendstream:
-            subvol = temp_subvolumes.create("subvol")
-            with Unshare(
-                [Namespace.MOUNT, Namespace.PID]
-            ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
-                subprocess.check_call(
-                    nsenter_as_root(
-                        unshare,
-                        "mount",
-                        "-t",
-                        "squashfs",
-                        "-o",
-                        "loop",
-                        pkg_path,
-                        mount_dir,
-                    )
+    @with_temp_subvols
+    def _verify_package_as_squashfs(self, temp_subvolumes, pkg_path):
+        subvol = temp_subvolumes.create("subvol")
+        with Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "mount",
+                    "-t",
+                    "squashfs",
+                    "-o",
+                    "loop",
+                    pkg_path,
+                    mount_dir,
                 )
-                # `unsquashfs` would have been cleaner than `mount` +
-                # `rsync`, and faster too, but unfortunately it corrupts
-                # device nodes as of v4.3.
-                subprocess.check_call(
-                    nsenter_as_root(
-                        unshare,
-                        "rsync",
-                        "--archive",
-                        "--hard-links",
-                        "--sparse",
-                        "--xattrs",
-                        mount_dir + "/",
-                        subvol.path(),
-                    )
+            )
+            # `unsquashfs` would have been cleaner than `mount` +
+            # `rsync`, and faster too, but unfortunately it corrupts
+            # device nodes as of v4.3.
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "rsync",
+                    "--archive",
+                    "--hard-links",
+                    "--sparse",
+                    "--xattrs",
+                    mount_dir + "/",
+                    subvol.path(),
                 )
+            )
+        with tempfile.NamedTemporaryFile() as temp_sendstream:
             with subvol.mark_readonly_and_write_sendstream_to_file(
                 temp_sendstream
             ):
@@ -327,27 +373,7 @@ class PackageImageTestCase(unittest.TestCase):
             # SquashFS does not preserve the original's cloned extents of
             # zeros, nor the zero-hole-zero patter.  In all cases, it
             # (efficiently) transmutes the whole file into 1 sparse hole.
-            self.assertEqual(
-                original_render[1].pop("56KB_nuls"),
-                [
-                    "(File d57344(create_ops@56KB_nuls_clone:0+49152@0/"
-                    + "create_ops@56KB_nuls_clone:49152+8192@49152))"
-                ],
-            )
-            original_render[1]["56KB_nuls"] = ["(File h57344)"]
-            self.assertEqual(
-                original_render[1].pop("56KB_nuls_clone"),
-                [
-                    "(File d57344(create_ops@56KB_nuls:0+49152@0/"
-                    + "create_ops@56KB_nuls:49152+8192@49152))"
-                ],
-            )
-            original_render[1]["56KB_nuls_clone"] = ["(File h57344)"]
-            self.assertEqual(
-                original_render[1].pop("zeros_hole_zeros"),
-                ["(File d16384h16384d16384)"],
-            )
-            original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
+            self._assert_ignore_original_extents(original_render)
             self.assertEqual(
                 original_render, _render_sendstream_path(temp_sendstream.name)
             )
@@ -362,10 +388,9 @@ class PackageImageTestCase(unittest.TestCase):
             self._sibling_path("create_ops_squashfs")
         )
 
-    def _verify_package_as_cpio(self, pkg_path):
-        with TempSubvolumes(
-            sys.argv[0]
-        ) as temp_subvolumes, tempfile.NamedTemporaryFile() as temp_sendstream:
+    @with_temp_subvols
+    def _verify_package_as_cpio(self, temp_subvolumes, pkg_path):
+        with tempfile.NamedTemporaryFile() as temp_sendstream:
             extract_sv = temp_subvolumes.create("extract")
             work_dir = generate_work_dir()
 
@@ -399,10 +424,7 @@ class PackageImageTestCase(unittest.TestCase):
             # CPIO does not preserve the original's cloned extents, there's
             # really not much point in validating these so we'll just
             # set them to what they should be.
-            original_render[1]["56KB_nuls"] = ["(File h57344)"]
-            original_render[1]["56KB_nuls_clone"] = ["(File h57344)"]
-            original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
-
+            self._assert_ignore_original_extents(original_render)
             # CPIO does not support xattrs
             original_render[1]["hello"][0] = "(Dir)"
 
@@ -422,9 +444,9 @@ class PackageImageTestCase(unittest.TestCase):
         # Verify the explicit format version from the bzl
         self._verify_package_as_cpio(self._sibling_path("create_ops_cpio_gz"))
 
-    def _verify_package_as_vfat(self, pkg_path, label=""):
-
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, Unshare(
+    @with_temp_subvols
+    def _verify_package_as_vfat(self, temp_subvolumes, pkg_path, label=""):
+        with Unshare(
             [Namespace.MOUNT, Namespace.PID]
         ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
             subprocess.check_call(
@@ -439,23 +461,7 @@ class PackageImageTestCase(unittest.TestCase):
                     mount_dir,
                 )
             )
-            # Verify filesystem label
-            self.assertEqual(
-                subprocess.check_output(
-                    nsenter_as_root(
-                        unshare,
-                        "findmnt",
-                        "--mountpoint",
-                        mount_dir,
-                        "--noheadings",
-                        "-o",
-                        "LABEL",
-                    )
-                )
-                .decode()
-                .strip(),
-                label,
-            )
+            self._assert_filesystem_label(unshare, mount_dir, label)
             subvol = temp_subvolumes.create("subvol")
             subprocess.check_call(
                 nsenter_as_root(
@@ -501,5 +507,69 @@ class PackageImageTestCase(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "size_mb is required"):
             with self._package_image(
                 self._sibling_path("vfat-test.layer"), "vfat"
+            ) as pkg_path:
+                pass
+
+    @with_temp_subvols
+    def _verify_package_as_ext3(self, temp_subvolumes, pkg_path, label=""):
+        subvol = temp_subvolumes.create("subvol")
+        with Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "mount",
+                    "-t",
+                    "ext3",
+                    "-o",
+                    "loop",
+                    pkg_path,
+                    mount_dir,
+                )
+            )
+            self._assert_filesystem_label(unshare, mount_dir, label)
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "rsync",
+                    "--archive",
+                    "--hard-links",
+                    "--sparse",
+                    "--xattrs",
+                    mount_dir + "/",
+                    subvol.path(),
+                )
+            )
+        with tempfile.NamedTemporaryFile() as temp_sendstream:
+            with subvol.mark_readonly_and_write_sendstream_to_file(
+                temp_sendstream
+            ):
+                pass
+            original_render = _render_sendstream_path(
+                self._sibling_path("create_ops-original.sendstream")
+            )
+            self._assert_ignore_original_extents(original_render)
+            # lost+found is an ext3 thing
+            original_render[1]["lost+found"] = ["(Dir m700)", {}]
+            self.assertEqual(
+                original_render, _render_sendstream_path(temp_sendstream.name)
+            )
+
+    def test_package_image_as_ext3(self):
+        with self._package_image(
+            self._sibling_path("create_ops.layer"),
+            "ext3",
+            size_mb=256,
+        ) as pkg_path:
+            self._verify_package_as_ext3(pkg_path)
+
+        self._verify_package_as_ext3(
+            self._sibling_path("create_ops_ext3"), label="cats"
+        )
+        # Verify size_mb is required
+        with self.assertRaisesRegex(ValueError, "size_mb is required"):
+            with self._package_image(
+                self._sibling_path("create_ops.layer"), "ext3"
             ) as pkg_path:
                 pass
