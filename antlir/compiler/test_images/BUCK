@@ -1,6 +1,6 @@
 # IMPORTANT: Do NOT use `oss_shim.bzl` here, instead load fbcode macros via
 # the shim in `defs.bzl`.
-load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
@@ -961,6 +961,15 @@ image.package(
     name = "vfat-test.vfat",
     layer = ":vfat-test.layer",
     size_mb = 32,
+    label = "cats",
+    visibility = ["//antlir/..."],
+)
+
+image.package(
+    name = "create_ops_ext3",
+    layer = ":create_ops",
+    format = "ext3",
+    size_mb = 256,
     label = "cats",
     visibility = ["//antlir/..."],
 )

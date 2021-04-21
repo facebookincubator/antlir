@@ -32,9 +32,9 @@ def image_package(
         #     buck run :package-image -- --help
         format = None,
         # Size of the target image in MiB
-        # This is required when format is vfat
+        # This is required when format is vfat/ext3
         size_mb = None,
-        # Also for vfat, but optional
+        # Also for vfat/ext3, but optional
         label = None):
     visibility = visibility or []
 

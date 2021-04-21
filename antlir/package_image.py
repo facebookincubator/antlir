@@ -220,7 +220,7 @@ import os
 import pwd
 import stat
 import subprocess
-from typing import Mapping, NamedTuple, Optional
+from typing import Mapping, NamedTuple, Optional, Callable
 
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
@@ -357,7 +357,7 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
         create_archive_cmd = [
             "/bin/bash",
             "-c",
-            "set -ue -o pipefail;" f"pushd {work_dir.decode()} >/dev/null;"
+            "set -ue -o pipefail;" f"pushd {work_dir} >/dev/null;"
             # List all the files except sockets since cpio doesn't
             # support them and they don't really mean much outside
             # the context of the process that is using it.
@@ -383,6 +383,42 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
             pass
 
 
+def _bash_cmd_in_build_appliance(
+    output_path: str,
+    opts: _Opts,
+    subvol: Subvol,
+    get_bash: Callable[[str, str], str],
+):
+    """
+    Spin up a new nspawn build appliance with bind mounts
+    and run cmd provided by get_bash.
+    """
+    work_dir = generate_work_dir()
+    output_dir = "/output"
+    o_basepath, o_file = os.path.split(output_path)
+    image_path = os.path.join(output_dir, o_file)
+    cmd = [
+        "/bin/bash",
+        "-eux",
+        "-o",
+        "pipefail",
+        "-c",
+        get_bash(image_path=image_path, work_dir=work_dir),
+    ]
+    run_nspawn(
+        new_nspawn_opts(
+            cmd=cmd,
+            layer=opts.build_appliance,
+            bindmount_rw=[
+                (subvol.path(), work_dir),
+                (o_basepath, output_dir),
+            ],
+            user=pwd.getpwuid(os.getuid()),
+        ),
+        PopenArgs(),
+    )
+
+
 class VfatImage(Format, format_name="vfat"):
     """
     Packages the subvolume as a vfat-formatted disk image, usage:
@@ -394,38 +430,53 @@ class VfatImage(Format, format_name="vfat"):
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
         if opts.size_mb is None:
             raise ValueError("size_mb is required when packaging a vfat image")
-        work_dir = generate_work_dir()
-        output_dir = "/output"
-        o_basepath, o_file = os.path.split(output_path)
-        o_nspawn_path = os.path.join(output_dir, o_file)
-        create_vfat_cmd = [
-            "/bin/bash",
-            "-eux",
-            "-o",
-            "pipefail",
-            "-c",
-            "/usr/sbin/mkfs.vfat {maybe_label} -C {image_path} {image_size}; "
-            "/usr/bin/mcopy -v -i {image_path} -sp {work_dir}/* ::".format(
+        _bash_cmd_in_build_appliance(
+            output_path,
+            opts,
+            subvol,
+            lambda *, image_path, work_dir: (
+                "/usr/sbin/mkfs.vfat {maybe_label} "
+                "-C {image_path} {image_size}; "
+                "/usr/bin/mcopy -v -i {image_path} -sp {work_dir}/* ::"
+            ).format(
                 maybe_label=f"-n {opts.volume_label}"
                 if opts.volume_label
                 else "",
-                image_path=o_nspawn_path,
+                image_path=image_path,
                 # mkfs.vfat takes the size as BLOCK_COUNT (1K Bytes)
                 # thus passing in "size_mb * KiB" results in "size_mb" MiB
                 image_size=opts.size_mb * KiB,
-                work_dir=work_dir.decode(),
+                work_dir=work_dir,
             ),
-        ]
-        opts = new_nspawn_opts(
-            cmd=create_vfat_cmd,
-            layer=opts.build_appliance,
-            bindmount_rw=[
-                (subvol.path(), work_dir),
-                (o_basepath, output_dir),
-            ],
-            user=pwd.getpwuid(os.getuid()),
         )
-        run_nspawn(opts, PopenArgs())
+
+
+class Ext3Image(Format, format_name="ext3"):
+    """
+    Packages the subvolume as an ext3-formatted disk image, usage:
+      mount -t ext3 image.ext3 dest/ -o loop
+    """
+
+    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+        if opts.size_mb is None:
+            raise ValueError("size_mb is required when packaging an ext3 image")
+        _bash_cmd_in_build_appliance(
+            output_path,
+            opts,
+            subvol,
+            lambda *, image_path, work_dir: (
+                "/usr/bin/truncate -s {image_size}M {image_path}; "
+                "/usr/sbin/mkfs.ext3 {maybe_label} {image_path}"
+                " -d {work_dir}"
+            ).format(
+                maybe_label=f"-L {opts.volume_label}"
+                if opts.volume_label
+                else "",
+                image_path=image_path,
+                image_size=opts.size_mb,
+                work_dir=work_dir,
+            ),
+        )
 
 
 def parse_args(argv):
