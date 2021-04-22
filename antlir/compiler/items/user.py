@@ -152,14 +152,13 @@ class UserItem(user_t, ImageItem):
         return name
 
     def requires(self) -> Generator[Requirement, None, None]:
-        # Future: Once symlinked dirs can satisfy requirements (T87467446),
-        # we can add `yield RequireFile(path=self.shell)`
         yield RequireFile(path=GROUP_FILE_PATH)
         yield RequireGroup(self.primary_group)
         for groupname in self.supplementary_groups:
             yield RequireGroup(groupname)
         yield RequireFile(path=PASSWD_FILE_PATH)
         yield RequireDirectory(path=self.home_dir)
+        yield RequireFile(path=self.shell)
 
     def provides(self) -> Generator[Provider, None, None]:
         yield ProvidesUser(self.name)
