@@ -8,8 +8,7 @@ import os
 import pwd
 
 from antlir.compiler.requires_provides import (
-    ProvidesDirectory,
-    ProvidesFile,
+    ProvidesSymlink,
     RequireDirectory,
     RequireFile,
 )
@@ -50,10 +49,15 @@ class SymlinkBase(symlink_t, ImageItem):
     @root_validator(pre=True)
     def dest_is_rsync_style(cls, values):  # noqa B902
         # Validators are classmethods but flake8 doesn't catch that.
-        values["dest"] = _make_rsync_style_dest_path(
-            values["dest"], values["source"]
+        values["dest"] = _make_rsync_style_dest_path(  # def provides(self):
+            #     yield ProvidesFile(path=self.dest)
+            values["dest"],
+            values["source"],
         )
         return values
+
+    def provides(self):
+        yield ProvidesSymlink(path=self.dest, target=self.source)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         dest = subvol.path(self.dest)
@@ -114,9 +118,6 @@ class SymlinkBase(symlink_t, ImageItem):
 
 
 class SymlinkToDirItem(SymlinkBase):
-    def provides(self):
-        yield ProvidesDirectory(path=self.dest)
-
     def requires(self):
         yield RequireDirectory(path=self.source)
         yield RequireDirectory(path=self.dest.dirname())
@@ -129,9 +130,6 @@ def _allowlisted_symlink_source(source: Path) -> bool:
 
 
 class SymlinkToFileItem(SymlinkBase):
-    def provides(self):
-        yield ProvidesFile(path=self.dest)
-
     def requires(self):
         if not _allowlisted_symlink_source(self.source):
             yield RequireFile(path=self.source)

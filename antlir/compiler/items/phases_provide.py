@@ -20,6 +20,7 @@ from antlir.compiler.requires_provides import (
     ProvidesDoNotAccess,
     ProvidesFile,
     ProvidesPath,
+    ProvidesSymlink,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -93,14 +94,19 @@ def gen_subvolume_subtree_provides(
         # filtered out by `find`.
         assert not is_path_protected(relpath, protected_paths), relpath
 
-        # Future: This provides all symlinks as files, while we should
-        # probably provide symlinks to valid directories inside the image as
-        # directories to be consistent with SymlinkToDirItem.
         filetype = filetype_bytes.decode()
-        if filetype in ["b", "c", "p", "f", "l", "s"]:
+        if filetype in ["b", "c", "p", "f", "s"]:
             yield ProvidesFile(path=relpath)
         elif filetype == "d":
             yield ProvidesDirectory(path=relpath)
+        elif filetype == "l":
+            target = Path(
+                subvol.run_as_root(
+                    ["readlink", subtree_full_path / relpath],
+                    stdout=subprocess.PIPE,
+                ).stdout.strip()
+            )
+            yield ProvidesSymlink(path=relpath, target=target)
         else:  # pragma: no cover
             raise AssertionError(f"Unknown {filetype} for {abspath}")
         if relpath == b".":

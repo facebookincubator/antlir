@@ -8,8 +8,7 @@ import sys
 import tempfile
 
 from antlir.compiler.requires_provides import (
-    ProvidesDirectory,
-    ProvidesFile,
+    ProvidesSymlink,
     RequireDirectory,
     RequireFile,
 )
@@ -33,7 +32,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
     def test_symlink(self):
         self._check_item(
             SymlinkToDirItem(from_target="t", source="x", dest="y"),
-            {ProvidesDirectory(path=Path("y"))},
+            {ProvidesSymlink(path=Path("y"), target=Path("x"))},
             {
                 RequireDirectory(path=Path("/")),
                 RequireDirectory(path=Path("/x")),
@@ -44,7 +43,11 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             SymlinkToFileItem(
                 from_target="t", source="source_file", dest="dest_symlink"
             ),
-            {ProvidesFile(path=Path("dest_symlink"))},
+            {
+                ProvidesSymlink(
+                    path=Path("dest_symlink"), target=Path("source_file")
+                )
+            },
             {
                 RequireDirectory(path=Path("/")),
                 RequireFile(path=Path("/source_file")),

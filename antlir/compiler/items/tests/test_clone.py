@@ -11,6 +11,7 @@ from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
+    ProvidesSymlink,
     RequireDirectory,
 )
 from antlir.fs_utils import Path
@@ -106,8 +107,8 @@ class InstallFileItemTestCase(BaseItemTestCase):
             ci,
             {
                 ProvidesDirectory(path=Path("bar/baz")),
-                ProvidesFile(path=Path("bar/baz/bar")),
                 ProvidesFile(path=Path("bar/even_more_hello_world.tar")),
+                ProvidesSymlink(path=Path("bar/baz/bar"), target=Path("..")),
             },
             {RequireDirectory(path=Path("/bar"))},
         )
@@ -124,8 +125,8 @@ class InstallFileItemTestCase(BaseItemTestCase):
             {
                 ProvidesDirectory(path=Path("bar")),
                 ProvidesDirectory(path=Path("bar/baz")),
-                ProvidesFile(path=Path("bar/baz/bar")),
                 ProvidesFile(path=Path("bar/even_more_hello_world.tar")),
+                ProvidesSymlink(path=Path("bar/baz/bar"), target=Path("..")),
             },
             {RequireDirectory(path=Path("/"))},
         )
