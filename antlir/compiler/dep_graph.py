@@ -17,7 +17,9 @@ from typing import (
     Dict,
     Generator,
     Iterator,
+    List,
     NamedTuple,
+    Optional,
     Set,
 )
 
@@ -32,6 +34,7 @@ from .requires_provides import (
     Provider,
     ProvidesDirectory,
     ProvidesPath,
+    ProvidesSymlink,
     Requirement,
     RequirePath,
 )
@@ -78,15 +81,17 @@ class ItemProv(NamedTuple):
         2. Symlink dir and file items may duplicate, as long as they are the
         same type (all dirs or all files) and have the same source.
         """
-        for ip in (self, other):
-            if isinstance(ip.item, (EnsureDirsExistItem)):
+        for a, b in ((self, other), (other, self)):
+            if isinstance(a.item, EnsureDirsExistItem):
                 assert isinstance(
-                    ip.provides, (ProvidesDirectory)
+                    a.provides, ProvidesDirectory
                 ), "EnsureDirsExistItem must provide a directory"
-                return False
+                return not isinstance(
+                    b.provides, (ProvidesDirectory, ProvidesSymlink)
+                )
 
         for it in (SymlinkToDirItem, SymlinkToFileItem):
-            if isinstance(self.item, (it)) and isinstance(other.item, (it)):
+            if isinstance(self.item, it) and isinstance(other.item, it):
                 return (
                     self.item.dest != other.item.dest
                     or self.item.source != other.item.source
@@ -138,7 +143,7 @@ class ItemReqsProvs(NamedTuple):
         # rules implementation.
         new_ip = ItemProv(provides=prov, item=item)
         for ip in self.item_provs:
-            if ip.provides != new_ip.provides or new_ip.conflicts(ip):
+            if new_ip.conflicts(ip):
                 raise RuntimeError(f"{new_ip} conflicts with {ip}")
         self.item_provs.add(new_ip)
 
@@ -148,10 +153,32 @@ class ItemReqsProvs(NamedTuple):
             for item_prov in self.item_provs
         )
 
-    def unfulfilled_item_provs(self) -> Generator[ItemReq, None, None]:
-        for item_req in self.item_reqs:
-            if not self.item_req_fulfilled(item_req):
-                yield item_req
+    def unfulfilled_item_reqs(self) -> List[ItemReq]:
+        return [ir for ir in self.item_reqs if not self.item_req_fulfilled(ir)]
+
+    def symlink_item_prov(self) -> Optional[ItemProv]:
+        for ip in self.item_provs:
+            if isinstance(ip.provides, ProvidesSymlink):
+                return ip
+        return None
+
+
+def _symlink_target_normpath(symlink: Path, target: Path) -> Path:
+    """
+    Returns a normpath of a symlink's target based on the symlink's dir.
+
+    In most cases, `Path.realpath` can and should be used when resolving
+    symlinks. `realpath` will follow all symlinks until a final, concrete
+    path is found which is desired in a large majority of cases. However, it
+    requires that the symlinks/files actually exist.
+
+    This function is for doing a single symlink resolve when paths have not
+    been committed to a filesystem.
+
+    Symlink targets can be absolute paths (starts with `/`) or relative to
+    the containing directory.
+    """
+    return (symlink.dirname() / target).normpath()
 
 
 class PathItemReqsProvs:
@@ -164,8 +191,9 @@ class PathItemReqsProvs:
       file, or symlink).
     2. multiple Providers of the same path may be supported (see
       ItemProv.conflicts).
-    3. FUTURE: a more extensive path search when one or more symlinked
-      directories are on a required path.
+    3. when one or more symlinked directories are on a required path, a
+      recursive search must be performed to validate whether the requirement
+      is fulfilled. See _realpath_item_provs
     """
 
     path_to_item_reqs_provs: Dict[Path, ItemReqsProvs]
@@ -187,13 +215,70 @@ class PathItemReqsProvs:
 
     def validate(self):
         for path, irps in self.path_to_item_reqs_provs.items():
-            for ir in irps.unfulfilled_item_provs():
+            irs = irps.unfulfilled_item_reqs()
+            if not irs:
+                continue
+
+            symlink_item_provs = self._realpath_item_provs(path)
+            if not symlink_item_provs:
                 raise RuntimeError(
-                    f"{path}: {irps.item_provs} does not provide {ir}"
+                    f"{path}: {irps.item_provs} does not provide {irs}"
                 )
+
+            # Add ItemProvs that provide the symlink path so that
+            # DependencyGraph knows those ImageItems are prequisites.
+            irps.item_provs.update(symlink_item_provs)
 
     def item_reqs_provs(self) -> Generator[ItemReqsProvs, None, None]:
         yield from self.path_to_item_reqs_provs.values()
+
+    def _realpath_item_provs(
+        self, path: Path, history: Set[Path] = None
+    ) -> Optional[Set[ItemProv]]:
+        """Recursively walk subsections of path to see if symlinks provide
+        the full path. Returns ItemProvs that provide the symlinks and
+        underlying target if (and only if) traversal succeeds.
+        """
+        if history is None:
+            history = set()
+
+        if path in history:
+            raise RuntimeError(
+                f"Circular realpath, revisiting {path} in {history}"
+            )
+        else:
+            history.add(path)
+
+        assert path.startswith(b"/"), f"{path} must be absolute"
+        path_parts = path.split(b"/")[1:]
+
+        search_path = Path("/")
+        while path_parts:
+            path_part = path_parts[0]
+            path_parts = path_parts[1:]
+            search_path = search_path / path_part
+
+            irps = self.path_to_item_reqs_provs.get(search_path)
+            if not irps:
+                return None
+
+            symlink_item_prov = irps.symlink_item_prov()
+            if not symlink_item_prov:
+                continue
+
+            symlink_target = symlink_item_prov.provides.req.target
+            search_path_realpath = _symlink_target_normpath(
+                search_path, symlink_target
+            )
+            if path_parts:
+                search_path_realpath /= Path.join(*path_parts)
+            nested_provs = self._realpath_item_provs(
+                search_path_realpath, history
+            )
+            if nested_provs is None:
+                return None
+            return {symlink_item_prov} | nested_provs
+        return self.path_to_item_reqs_provs[search_path].item_provs
 
 
 class ValidatedReqsProvs:
@@ -231,7 +316,7 @@ class ValidatedReqsProvs:
         # Validate that all requirements are satisfied.
         self._path_item_reqs_provs.validate()
         for irps in self._item_reqs_provs.values():
-            for item_req in irps.unfulfilled_item_provs():
+            for item_req in irps.unfulfilled_item_reqs():
                 raise RuntimeError(
                     f"{irps.item_provs} does not provide {item_req}"
                 )
@@ -312,8 +397,15 @@ class DependencyGraph:
             x for x in item_provs if isinstance(x.item, EnsureDirsExistItem)
         }
         non_ede_item_provs = item_provs - ede_item_provs
+
         # Guaranteed by checks in ItemReqsProvs.add_item_prov
-        assert len(non_ede_item_provs) <= 1
+        symlink_item_provs = {
+            x for x in item_provs if isinstance(x.provides, ProvidesSymlink)
+        }
+        assert (
+            len(non_ede_item_provs - symlink_item_provs) <= 1
+        ), f"{item_provs}"
+
         for item_prov in non_ede_item_provs:
             for ede_item_prov in ede_item_provs:
                 ns.item_to_predecessors[ede_item_prov.item].add(item_prov.item)

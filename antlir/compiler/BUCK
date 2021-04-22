@@ -63,6 +63,7 @@ python_library(
     srcs = ["dep_graph.py"],
     # NB: Don't use `all-items` here, just use the ones we need.
     deps = [
+        "//antlir:fs_utils",
         "//antlir/compiler/items:genrule_layer",
         "//antlir/compiler/items:make_subvol",
         "//antlir/compiler/items:phases_provide",

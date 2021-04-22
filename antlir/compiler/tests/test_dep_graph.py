@@ -7,7 +7,7 @@
 import sys
 import unittest
 from dataclasses import dataclass
-from typing import Iterator, Tuple
+from typing import Dict, Iterator, Optional, Set, Tuple
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import (
@@ -25,10 +25,12 @@ from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 
 from ..dep_graph import (
+    _symlink_target_normpath,
     DependencyGraph,
     ItemProv,
     ItemReq,
     ItemReqsProvs,
+    PathItemReqsProvs,
     ValidatedReqsProvs,
 )
 from ..requires_provides import (
@@ -36,6 +38,7 @@ from ..requires_provides import (
     ProvidesDoNotAccess,
     ProvidesFile,
     ProvidesGroup,
+    ProvidesSymlink,
     RequireDirectory,
     RequireFile,
     RequireGroup,
@@ -318,6 +321,255 @@ class ItemReqsProvsTest(unittest.TestCase):
             have = test.item_reqs_provs._item_self_conflict(test.item)
             self.assertEqual(
                 test.want, have, f"{i}: {test}, want={test.want} have={have}"
+            )
+
+    def test_symlink_item_prov(self):
+        @dataclass
+        class Test:
+            item_provs: Set[ItemProv]
+            want: Optional[ItemProv]
+
+        symlink_item_prov = ItemProv(
+            provides=ProvidesSymlink(path=Path("/foo"), target=Path("/bar")),
+            item=None,
+        )
+
+        tests: Dict[Test] = {
+            "empty": Test(item_provs=set(), want=None),
+            "no symlink": Test(
+                item_provs={
+                    ItemProv(
+                        provides=ProvidesFile(path=Path("/foo")), item=None
+                    ),
+                    ItemProv(
+                        provides=ProvidesDirectory(path=Path("/bar")), item=None
+                    ),
+                },
+                want=None,
+            ),
+            "has symlink": Test(
+                item_provs={
+                    ItemProv(
+                        provides=ProvidesFile(path=Path("/foo")), item=None
+                    ),
+                    symlink_item_prov,
+                    ItemProv(
+                        provides=ProvidesDirectory(path=Path("/bar")), item=None
+                    ),
+                },
+                want=symlink_item_prov,
+            ),
+        }
+
+        for desc, test in tests.items():
+            irps = ItemReqsProvs(item_provs=test.item_provs, item_reqs=set())
+            have = irps.symlink_item_prov()
+            self.assertEqual(
+                have, test.want, f"{desc}: have={have}, want={test.want}"
+            )
+
+
+class PathItemReqsProvsTestCase(unittest.TestCase):
+    def test_symlinked_dir(self):
+        pirp = PathItemReqsProvs()
+
+        prov_usr = ProvidesDirectory(path=Path("/usr"))
+        prov_usr_item = TestImageItem(provs=[prov_usr])
+        pirp.add_provider(prov_usr, prov_usr_item)
+
+        prov_usr_bin = ProvidesDirectory(path=Path("/usr/bin"))
+        prov_usr_bin_item = TestImageItem(provs=[prov_usr_bin])
+        pirp.add_provider(prov_usr_bin, prov_usr_bin_item)
+
+        prov_usr_bin_bash = ProvidesFile(path=Path("/usr/bin/bash"))
+        prov_usr_bin_bash_item = TestImageItem(provs=[prov_usr_bin])
+        pirp.add_provider(prov_usr_bin_bash, prov_usr_bin_bash_item)
+
+        req_usr_bin = RequireDirectory(path=Path("/usr/bin"))
+        prov_symlink = ProvidesSymlink(
+            path=Path("/bin"), target=Path("/usr/bin")
+        )
+        prov_symlink_item = TestImageItem(
+            reqs=[req_usr_bin],
+            provs=[prov_symlink],
+        )
+        pirp.add_requirement(req_usr_bin, prov_symlink_item)
+        pirp.add_provider(prov_symlink, prov_symlink_item)
+
+        # this requirement needs to be fulfilled via /bin -> /usr/bin
+        req_bin_bash = RequireFile(path=Path("/bin/bash"))
+        req_bin_bash_item = TestImageItem(reqs=[req_bin_bash])
+        pirp.add_requirement(req_bin_bash, req_bin_bash_item)
+
+        pirp.validate()
+
+    def test_realpath_item_provs(self):
+        @dataclass
+        class Test:
+            path_to_item_reqs_provs: Dict[Path, ItemReqsProvs]
+            path: Path
+            want: Optional[Set[ItemProv]]
+
+        foo_bar_symlink_prov = ItemProv(
+            provides=ProvidesSymlink(path=Path("/foo"), target=Path("/bar")),
+            item=None,
+        )
+        bar_prov = ItemProv(
+            provides=ProvidesFile(path=Path("/bar")),
+            item=None,
+        )
+        bar_baz_symlink_prov = ItemProv(
+            provides=ProvidesSymlink(path=Path("/bar"), target=Path("baz")),
+            item=None,
+        )
+        baz_prov = ItemProv(
+            provides=ProvidesDirectory(path=Path("/baz")),
+            item=None,
+        )
+
+        tests: Dict[Test] = {
+            "no paths": Test(
+                path_to_item_reqs_provs={}, path=Path("/foo"), want=None
+            ),
+            "busted symlink": Test(
+                path_to_item_reqs_provs={
+                    Path("/foo"): ItemReqsProvs(
+                        item_provs={
+                            ItemProv(
+                                provides=ProvidesSymlink(
+                                    path=Path("/foo"), target=Path("/missing")
+                                ),
+                                item=None,
+                            ),
+                        },
+                        item_reqs=set(),
+                    ),
+                },
+                path=Path("/foo"),
+                want=None,
+            ),
+            "single link": Test(
+                path_to_item_reqs_provs={
+                    Path("/foo"): ItemReqsProvs(
+                        item_provs={foo_bar_symlink_prov},
+                        item_reqs=set(),
+                    ),
+                    Path("/bar"): ItemReqsProvs(
+                        item_provs={bar_prov},
+                        item_reqs=set(),
+                    ),
+                },
+                path=Path("/foo"),
+                want={foo_bar_symlink_prov, bar_prov},
+            ),
+            "double link": Test(
+                path_to_item_reqs_provs={
+                    Path("/foo"): ItemReqsProvs(
+                        item_provs={foo_bar_symlink_prov},
+                        item_reqs=set(),
+                    ),
+                    Path("/bar"): ItemReqsProvs(
+                        item_provs={bar_baz_symlink_prov},
+                        item_reqs=set(),
+                    ),
+                    Path("/baz"): ItemReqsProvs(
+                        item_provs={baz_prov},
+                        item_reqs=set(),
+                    ),
+                },
+                path=Path("/foo"),
+                want={foo_bar_symlink_prov, bar_baz_symlink_prov, baz_prov},
+            ),
+        }
+        for desc, test in tests.items():
+            pirp = PathItemReqsProvs()
+            pirp.path_to_item_reqs_provs = test.path_to_item_reqs_provs
+            have = pirp._realpath_item_provs(test.path)
+            self.assertEqual(
+                have, test.want, f"{desc}: have={have}, want={test.want}"
+            )
+
+    def test_realpath_item_provs_absolute(self):
+        pirp = PathItemReqsProvs()
+        with self.assertRaisesRegex(AssertionError, r"foo must be absolute"):
+            pirp._realpath_item_provs(Path("foo"))
+
+    def test_circular_realpath_item_provs(self):
+        pirp = PathItemReqsProvs()
+        pirp.path_to_item_reqs_provs = {
+            Path("/a"): ItemReqsProvs(
+                item_provs={
+                    ItemProv(
+                        provides=ProvidesSymlink(
+                            path=Path("/a"),
+                            target=Path("/b"),
+                        ),
+                        item=None,
+                    ),
+                },
+                item_reqs={
+                    ItemReq(
+                        requires=RequireDirectory(path=Path("/a")),
+                        item=None,
+                    )
+                },
+            ),
+            Path("/b"): ItemReqsProvs(
+                item_provs={
+                    ItemProv(
+                        provides=ProvidesSymlink(
+                            path=Path("/b"),
+                            target=Path("/a"),
+                        ),
+                        item=None,
+                    ),
+                },
+                item_reqs=set(),
+            ),
+        }
+        with self.assertRaisesRegex(RuntimeError, r"^Circular realpath"):
+            pirp._realpath_item_provs(Path("/a"))
+
+    def test_symlink_target_normpath(self):
+        @dataclass
+        class Test:
+            path: Path
+            target: Path
+            want: Path
+
+        tests: Dict[str, Test] = {
+            "abs target": Test(
+                path=Path("/bin"),
+                target=Path("/usr/bin"),
+                want=Path("/usr/bin"),
+            ),
+            "relative target": Test(
+                path=Path("/bin"),
+                target=Path("../usr/bin"),
+                want=Path("/usr/bin"),
+            ),
+            "deep abs target": Test(
+                path=Path("/a/b/c"),
+                target=Path("/usr/bin"),
+                want=Path("/usr/bin"),
+            ),
+            "deep rel target": Test(
+                path=Path("/a/b/c/d"), target=Path("../../e"), want=Path("/a/e")
+            ),
+            "same dir target": Test(
+                path=Path("/a/b"), target=Path("c"), want=Path("/a/c")
+            ),
+            "multiple relatives": Test(
+                path=Path("/a/b/c/d"),
+                target=Path("../c/../../b/e"),
+                want=Path("/a/b/e"),
+            ),
+        }
+        assert len(tests) == 6
+        for desc, test in tests.items():
+            have = _symlink_target_normpath(test.path, test.target)
+            self.assertEqual(
+                have, test.want, f"{desc}: have={have}, want={test.want}"
             )
 
 
