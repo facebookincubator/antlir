@@ -631,7 +631,7 @@ class DepGraphTestBase(unittest.TestCase):
             _build_req_prov("/a/b", [abc], [ab]),
             _build_req_prov("/a/b/c", [abcf], [abc]),
             _build_req_prov("/a/d", [ade, a_ln], [ad]),
-            _build_req_prov("/a/d/e", [adeg], [ade, a_ln]),
+            _build_req_prov("/a/d/e", [adeg], [ade]),
             _build_req_prov("/a/d/e/G", [], [adeg], ProvidesFile),
             _build_req_prov("/a/b/c/F", [], [abcf], ProvidesFile),
         ]
@@ -642,6 +642,10 @@ class DepGraphTestBase(unittest.TestCase):
             )
             assert len(req) == 1
             self.item_reqs_provs[req.pop().path] = irp
+        self.item_reqs_provs[b"/a/d/e"].add_item_prov(
+            ProvidesSymlink(path=Path(a_ln.dest), target=Path(a_ln.source)),
+            a_ln,
+        )
 
 
 class ValidateReqsProvsTestCase(DepGraphTestBase):
@@ -796,6 +800,24 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             f'{ItemReq(requires=RequireDirectory(path=Path("/")), item=item)}$',
         ):
             ValidatedReqsProvs([item])
+
+    def test_symlinked_dir(self):
+        usrbin, usr = list(
+            ensure_subdirs_exist_factory(
+                from_target="t", into_dir="/", subdirs_to_create="usr/bin"
+            )
+        )
+        bash = InstallFileItem(
+            from_target="t", source=_FILE1, dest="usr/bin/bash"
+        )
+        symlink = SymlinkToDirItem(
+            from_target="t", source="/usr/bin", dest="/bin"
+        )
+        test_item = TestImageItem(reqs=[RequireFile(path=Path("/bin/bash"))])
+
+        ValidatedReqsProvs(
+            [self.provides_root, usrbin, usr, bash, symlink, test_item]
+        )
 
     def test_paths_to_reqs_provs(self):
         self.assertDictEqual(

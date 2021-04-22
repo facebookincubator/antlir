@@ -10,7 +10,11 @@ import tempfile
 import unittest
 from contextlib import contextmanager
 
-from antlir.compiler.requires_provides import ProvidesDirectory, ProvidesFile
+from antlir.compiler.requires_provides import (
+    ProvidesDirectory,
+    ProvidesFile,
+    ProvidesSymlink,
+)
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
@@ -64,6 +68,13 @@ def populate_temp_filesystem(img_path):
         with open(p(filepath), "w") as f:
             f.write("Hello, " + filepath)
 
+    os.symlink("a", p("h"))
+    os.symlink("a/E", p("i"))
+    os.symlink("./a/b", p("j"))
+    os.symlink("../a", p("h/k"))
+    os.symlink("/a", p("l"))
+    os.symlink("/a/E", p("m"))
+
 
 @contextmanager
 def temp_filesystem():
@@ -83,6 +94,12 @@ def temp_filesystem_provides(p=""):
         ProvidesFile(path=Path(f"{p}/a/E")),
         ProvidesFile(path=Path(f"{p}/a/d/F")),
         ProvidesFile(path=Path(f"{p}/a/b/c/G")),
+        ProvidesSymlink(path=Path(f"{p}/h"), target=(Path("a"))),
+        ProvidesSymlink(path=Path(f"{p}/i"), target=(Path("a/E"))),
+        ProvidesSymlink(path=Path(f"{p}/j"), target=(Path("./a/b"))),
+        ProvidesSymlink(path=Path(f"{p}/a/k"), target=(Path("../a"))),
+        ProvidesSymlink(path=Path(f"{p}/l"), target=(Path("/a"))),
+        ProvidesSymlink(path=Path(f"{p}/m"), target=(Path("/a/E"))),
     }
 
 

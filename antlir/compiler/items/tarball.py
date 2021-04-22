@@ -9,6 +9,7 @@ import pwd
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
+    ProvidesSymlink,
     RequireDirectory,
 )
 from antlir.fs_utils import Path, generate_work_dir, open_for_read_decompress
@@ -46,6 +47,8 @@ class TarballItem(tarball_t, ImageItem):
                     # directory.
                     if path.relpath(self.into_dir).normpath() != b".":
                         yield ProvidesDirectory(path=path)
+                elif item.issym():
+                    yield ProvidesSymlink(path=path, target=Path(item.linkname))
                 else:
                     yield ProvidesFile(path=path)
 
