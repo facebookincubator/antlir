@@ -225,6 +225,7 @@ class UserItemTest(BaseItemTestCase):
                 RequireDirectory(path=Path("/home/newuser")),
                 RequireFile(path=Path("/etc/group")),
                 RequireFile(path=Path("/etc/passwd")),
+                RequireFile(path=Path("/bin/bash")),
             },
         )
 
@@ -246,6 +247,7 @@ class UserItemTest(BaseItemTestCase):
                 RequireDirectory(path=Path("/")),
                 RequireFile(path=Path("/etc/group")),
                 RequireFile(path=Path("/etc/passwd")),
+                RequireFile(path=Path("/sbin/nologin")),
             },
         )
 
