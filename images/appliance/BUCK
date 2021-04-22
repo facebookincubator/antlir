@@ -3,6 +3,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "http_file")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
 load(":stable_appliance.bzl", "stable_build_appliance_sha")
+load(":rust.bzl", "rustc")
 
 http_file(
     name = "stable-build-appliance.sendstream.zst",
@@ -47,7 +48,6 @@ ba_features = [
         "rpm",  # For manipulating rpms
         "rpm-build",  # For building rpms
         "rpm-sign",  # For signing rpms
-        "rust",  # For rust compilation
         "sudo",
         "tar",
         "dosfstools",  # For vfat image package support
@@ -84,11 +84,30 @@ add_rpm_repo_snapshots_layer(
 )
 
 image.layer(
-    name = "rc-build-appliance.no-snapshot",
+    name = "rc-build-appliance.base-features",
     build_opts = image.opts(
         build_appliance = ":rc-build-appliance.bootstrap",
     ),
     features = ba_features,
+    visibility = [],
+)
+
+# Note: This `rustc.install` macro is only used on the
+# non-bootstrap build appliance because it does not
+# rely on the snapshot for installation.  So while
+# we *could* install this into the bootstrap version,
+# it doesn't provide any value.
+rustc.install(
+    name = "rc-build-appliance.no-snapshot",
+    parent_layer = ":rc-build-appliance.base-features",
+    channel = "nightly",
+    # This version is used because it works, there is
+    # no deep reason why this is better than some other
+    # version it was just the day I set this up.
+    version = "2021-04-20",
+    build_opts = image.opts(
+        build_appliance = ":rc-build-appliance.bootstrap",
+    ),
     visibility = [],
 )
 
@@ -99,7 +118,15 @@ add_rpm_repo_snapshots_layer(
     ),
     dnf_snapshot = "//snapshot:fedora33",
     parent_layer = ":rc-build-appliance.no-snapshot",
-    visibility = [],
+    visibility = ["PUBLIC"],
+)
+
+image.python_unittest(
+    name = "test-rc-build-appliance",
+    srcs = [
+        "test_rust.py",
+    ],
+    layer = ":rc-build-appliance",
 )
 
 # IMPORTANT: This should always be built with the config option
