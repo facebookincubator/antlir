@@ -42,6 +42,7 @@ from ..requires_provides import (
     RequireDirectory,
     RequireFile,
     RequireGroup,
+    RequireSymlink,
 )
 
 
@@ -400,8 +401,91 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         req_bin_bash = RequireFile(path=Path("/bin/bash"))
         req_bin_bash_item = TestImageItem(reqs=[req_bin_bash])
         pirp.add_requirement(req_bin_bash, req_bin_bash_item)
-
         pirp.validate()
+
+        # also make sure directly requiring the symlink works
+        req_symlink = RequireSymlink(path=Path("/bin"), target=Path("/usr/bin"))
+        req_symlink_item = TestImageItem(reqs=[req_symlink])
+        pirp.add_requirement(req_symlink, req_symlink_item)
+        pirp.validate()
+
+    def test_symlinked_dir_does_not_satisfy_require_file(self):
+        pirp = PathItemReqsProvs()
+
+        prov_a = ProvidesDirectory(path=Path("/a"))
+        prov_a_item = TestImageItem(provs=[prov_a])
+        pirp.add_provider(prov_a, prov_a_item)
+
+        req_a = RequireDirectory(path=Path("/a"))
+        prov_symlink = ProvidesSymlink(path=Path("/b"), target=Path("/a"))
+        prov_symlink_item = TestImageItem(
+            reqs=[req_a],
+            provs=[prov_symlink],
+        )
+        pirp.add_requirement(req_a, prov_symlink_item)
+        pirp.add_provider(prov_symlink, prov_symlink_item)
+
+        # this requires a file, but the symlink is pointing to a dir
+        req_b = RequireFile(path=Path("/b"))
+        req_b_item = TestImageItem(reqs=[req_b])
+        pirp.add_requirement(req_b, req_b_item)
+
+        with self.assertRaisesRegex(
+            RuntimeError, r"/b: .* does not provide .*$"
+        ):
+            pirp.validate()
+
+    def test_symlinked_file_does_not_satisfy_require_dir(self):
+        pirp = PathItemReqsProvs()
+
+        prov_a = ProvidesFile(path=Path("/a"))
+        prov_a_item = TestImageItem(provs=[prov_a])
+        pirp.add_provider(prov_a, prov_a_item)
+
+        req_a = RequireFile(path=Path("/a"))
+        prov_symlink = ProvidesSymlink(path=Path("/b"), target=Path("/a"))
+        prov_symlink_item = TestImageItem(
+            reqs=[req_a],
+            provs=[prov_symlink],
+        )
+        pirp.add_requirement(req_a, prov_symlink_item)
+        pirp.add_provider(prov_symlink, prov_symlink_item)
+
+        # this requires a dir, but the symlink is pointing to a file
+        req_b = RequireDirectory(path=Path("/b"))
+        req_b_item = TestImageItem(reqs=[req_b])
+        pirp.add_requirement(req_b, req_b_item)
+
+        with self.assertRaisesRegex(
+            RuntimeError, r"/b: .* does not provide .*$"
+        ):
+            pirp.validate()
+
+    def test_requires_symlink_explicitly_satisfied(self):
+        pirp = PathItemReqsProvs()
+
+        prov_a = ProvidesFile(path=Path("/a"))
+        prov_a_item = TestImageItem(provs=[prov_a])
+        pirp.add_provider(prov_a, prov_a_item)
+
+        prov_symlink = ProvidesSymlink(path=Path("/b"), target=Path("/foo"))
+        prov_symlink_item = TestImageItem(
+            reqs=[],
+            provs=[prov_symlink],
+        )
+        pirp.add_provider(prov_symlink, prov_symlink_item)
+
+        # this requires a dir, but the symlink is pointing to a file
+        req_b = RequireSymlink(path=Path("/b"), target=Path("/bar"))
+        req_b_item = TestImageItem(reqs=[req_b])
+        pirp.add_requirement(req_b, req_b_item)
+
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"^/b: .* does not provide .*; "
+            r"RequireSymlink must be explicitly fulfilled$",
+        ):
+            pirp.validate()
 
     def test_realpath_item_provs(self):
         @dataclass
