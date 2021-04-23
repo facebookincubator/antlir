@@ -37,6 +37,7 @@ from .requires_provides import (
     ProvidesSymlink,
     Requirement,
     RequirePath,
+    RequireSymlink,
 )
 
 
@@ -219,15 +220,31 @@ class PathItemReqsProvs:
             if not irs:
                 continue
 
-            symlink_item_provs = self._realpath_item_provs(path)
-            if not symlink_item_provs:
-                raise RuntimeError(
-                    f"{path}: {irps.item_provs} does not provide {irs}"
-                )
+            for ir in irs:
+                if isinstance(ir.requires, RequireSymlink):
+                    raise RuntimeError(
+                        f"{path}: {irps.item_provs} does not provide {ir}; "
+                        "RequireSymlink must be explicitly fulfilled"
+                    )
 
-            # Add ItemProvs that provide the symlink path so that
-            # DependencyGraph knows those ImageItems are prequisites.
-            irps.item_provs.update(symlink_item_provs)
+            symlink_item_provs = self._realpath_item_provs(path)
+            if symlink_item_provs:
+                # make sure a symlink prov fulfills the requirement
+                if all(
+                    any(
+                        isinstance(ir.requires, type(ip.provides.req))
+                        for ip in symlink_item_provs
+                    )
+                    for ir in irs
+                ):
+                    # Add ItemProvs that provide the symlink path so that
+                    # DependencyGraph knows those ImageItems are prequisites.
+                    irps.item_provs.update(symlink_item_provs)
+                    continue
+
+            raise RuntimeError(
+                f"{path}: {irps.item_provs} does not provide {irs}"
+            )
 
     def item_reqs_provs(self) -> Generator[ItemReqsProvs, None, None]:
         yield from self.path_to_item_reqs_provs.values()
