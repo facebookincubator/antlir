@@ -8,6 +8,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 def check_flavor_exists(flavor):
     if flavor not in REPO_CFG.flavor_to_config:
         fail(
-            "Must be in {}".format(list(REPO_CFG.flavor_to_config)),
+            "{} must be in {}"
+                .format(flavor, list(REPO_CFG.flavor_to_config)),
             "flavor",
         )

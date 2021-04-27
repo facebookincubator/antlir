@@ -22,7 +22,7 @@ extract.source_layer(
             "systemd",
         ]),
     ],
-    build_opts = antlir_linux_build_opts(),
+    flavor_config_override = antlir_linux_build_opts(),
 )
 
 binaries = extract.extract(

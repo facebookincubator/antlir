@@ -6,6 +6,7 @@
 "See the docs in antlir/website/docs/genrule-layer.md"
 
 load(":compile_image_features.bzl", "compile_image_features")
+load(":constants.bzl", "REPO_CFG")
 load(":container_opts.bzl", "container_opts_t", "normalize_container_opts")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
@@ -30,7 +31,8 @@ def image_genrule_layer(
         cmd,
         user = "nobody",
         parent_layer = None,
-        build_opts = None,
+        flavor = REPO_CFG.flavor_default,
+        flavor_config_override = None,
         container_opts = None,
         **image_layer_kwargs):
     """
@@ -55,8 +57,10 @@ Optional arguments:
   - `user` (defaults to `nobody`): Run `cmd` as this user inside the image.
   - `parent_layer`: The name of another layer target, inside of which
     `cmd` will be executed.
-  - `build_opts`: An `image.opts` containing fields accepted by
-    `_build_opts` from `compile_image_features.bzl`.
+  - `flavor`: The build flavor that will be used to load the config from
+    REPO_CFG.flavor_to_config
+  - `flavor_config_overrde`: A struct that contains fields that override
+    the default values specific by `flavor`.
   - `container_opts`: An `image.opts` containing keys from `container_opts_t`.
     If you want to install packages, you will usually want to set
     `shadow_proxied_binaries` here.
@@ -96,7 +100,8 @@ Optional arguments:
                 ]),
                 extra_deps = ["//antlir/bzl:image_genrule_layer"],
             )],
-            build_opts = build_opts,
+            flavor = flavor,
+            flavor_config_override = flavor_config_override,
         ),
         **image_layer_kwargs
     )

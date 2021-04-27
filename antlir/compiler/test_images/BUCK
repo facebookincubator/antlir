@@ -42,6 +42,9 @@ hello_tar_hash = (
     "dd83365abc69fe39990096a9396d9d2d6fbf75f849ab1640a10fdf9614d8d03d"
 )
 
+# The default flavor override that is commonly used in this test.
+use_build_appliance_testing = image.opts(build_appliance = ":build_appliance_testing")
+
 defs.buck_genrule(
     name = "hello_world_tar_generator.sh",
     out = "run",
@@ -128,7 +131,7 @@ defs.export_file(name = "shadow_me")
             image.install(":shadow_me", "/shadow_me"),
             image.rpms_install(["rpm-test-milk"]),
         ],
-        build_opts = image.opts(
+        flavor_config_override = image.opts(
             rpm_installer = rpm_installer,
             build_appliance = ":build_appliance_testing",
         ),
@@ -275,7 +278,7 @@ image.layer(
             "rpm-test-cheese",
         ]),
     ],
-    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    flavor_config_override = use_build_appliance_testing,
     visibility = ["//antlir/compiler/items/..."],
 )
 
@@ -302,7 +305,7 @@ image.layer(
             image.source(":rpm-test-cheese-2-1.rpm"),
         ]),
     ],
-    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    flavor_config_override = use_build_appliance_testing,
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -315,7 +318,7 @@ image.layer(
         "rpm-test-cake",
         "rpm-test-cheese",
     ])],
-    build_opts = image.opts(
+    flavor_config_override = image.opts(
         build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
     ),
@@ -650,7 +653,7 @@ image.layer(
             "//",  # Double-slash tests path normalization
         ),
     ],
-    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    flavor_config_override = use_build_appliance_testing,
     # This tells our hypothetical runtime that in order to mount this layer,
     # it must invoke the "chicken" mount source (which might just download
     # and unpack a serialized versions of this layer).
@@ -687,9 +690,7 @@ image.layer(
         image.layer_mount(":hello_world_base", "/mounted_hello"),
         image.rpms_install(["rpm-test-carrot"]),  # Compact syntax for RPM installation.
     ],
-    build_opts = image.opts(
-        build_appliance = ":build_appliance_testing",
-    ),
+    flavor_config_override = use_build_appliance_testing,
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
     visibility = ["//antlir/compiler/..."],
@@ -703,7 +704,7 @@ image.layer(
         # install in the child layer (via `feature_tar_and_rpms`).
         image.rpms_install(["rpm-test-cheese"]),
     ],
-    build_opts = image.opts(
+    flavor_config_override = image.opts(
         build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
     ),
@@ -729,9 +730,7 @@ image.layer(
         image.tarball(":hello_world.tar", "/foo/extracted_hello"),
         image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
     ],
-    build_opts = image.opts(
-        build_appliance = ":build_appliance_testing",
-    ),
+    flavor_config_override = use_build_appliance_testing,
     visibility = ["//antlir/..."],
 )
 
@@ -752,7 +751,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],
-    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    flavor_config_override = use_build_appliance_testing,
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -763,7 +762,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-1-1.rpm"]),
     ],
-    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    flavor_config_override = use_build_appliance_testing,
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -774,7 +773,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-3-1.rpm"]),
     ],
-    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    flavor_config_override = use_build_appliance_testing,
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -785,7 +784,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],
-    build_opts = image.opts(build_appliance = ":build_appliance_testing"),
+    flavor_config_override = use_build_appliance_testing,
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -813,7 +812,7 @@ defs.buck_genrule(
 image.sendstream_layer(
     name = op,
     source = ":" + op + "-original.sendstream",
-    build_opts = image.opts(subvol_name = op),
+    subvol_name = op,
     visibility = ["//antlir/..."],
 )
 
@@ -842,7 +841,7 @@ image.sendstream_layer(
         ":create_ops-dir",
         path = "sendstream",
     ),
-    build_opts = image.opts(subvol_name = "create_ops"),
+    subvol_name = "create_ops",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -859,7 +858,7 @@ image.sendstream_layer(
         layer = ":create_ops-layer",
         path = "sendstream",
     ),
-    build_opts = image.opts(subvol_name = "create_ops"),
+    subvol_name = "create_ops",
     visibility = ["//antlir/..."],
 )
 

@@ -95,6 +95,9 @@ def _get_artifact_key_to_path():
 # default values for set of configuration keys based on selected flavor
 # name
 flavor_config_t = shape.shape(
+    build_appliance = shape.field(str, optional = True),
+    rpm_installer = shape.field(str, optional = True),
+    rpm_repo_snapshot = shape.field(str, optional = True),
     version_set_path = shape.field(str, optional = True),
 )
 

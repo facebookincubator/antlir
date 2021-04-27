@@ -46,7 +46,7 @@ image.layer(
         systemd.enable_unit("debug-shell.service"),
         systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
     ],
-    build_opts = antlir_linux_build_opts(),
+    flavor_config_override = antlir_linux_build_opts(),
 )
 
 image.package(

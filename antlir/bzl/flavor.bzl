@@ -8,18 +8,11 @@ load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 
-def _build_opts(
-        # The name of the btrfs subvolume to create.
-        subvol_name = "volume",
+def _validate_flavor_config(
         # Path to a layer target of a build appliance, containing an
         # installed `rpm_repo_snapshot()`, plus an OS image with other
         # image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
         build_appliance = REPO_CFG.build_appliance_default,
-        # A "flavor" name, see `bzl/constants.bzl`.
-        # Currently used for RPM flavor selection.
-        #
-        # Future: refer to the OSS "flavor selection" doc once ready.
-        flavor = REPO_CFG.flavor_default,
         # The build appliance currently does not set a default package
         # manager -- in non-default settings, this has to be chosen per
         # image, since a BA can support multiple package managers.  In the
@@ -52,18 +45,21 @@ def _build_opts(
     if build_appliance == DO_NOT_USE_BUILD_APPLIANCE:
         build_appliance = None
 
-    check_flavor_exists(flavor)
-
     return struct(
         build_appliance = build_appliance,
-        flavor = flavor,
         rpm_installer = rpm_installer,
         rpm_repo_snapshot = (
             snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else None
         ),
-        subvol_name = subvol_name,
         rpm_version_set_overrides = rpm_version_set_overrides,
     )
 
-def normalize_build_opts(build_opts):
-    return _build_opts(**(structs.to_dict(build_opts) if build_opts else {}))
+def get_flavor_config(flavor, flavor_config_override):
+    check_flavor_exists(flavor)
+
+    flavor_config = dict(REPO_CFG.flavor_to_config[flavor])
+
+    override_dict = structs.to_dict(flavor_config_override) if flavor_config_override else {}
+    flavor_config.update(override_dict)
+
+    return _validate_flavor_config(**flavor_config)

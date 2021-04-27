@@ -16,7 +16,7 @@ http_file(
 image.sendstream_layer(
     name = "stable-build-appliance",
     source = ":stable-build-appliance.sendstream.zst",
-    build_opts = image.opts(
+    flavor_config_override = image.opts(
         build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
     ),
     visibility = ["PUBLIC"],
@@ -57,37 +57,38 @@ ba_features = [
     ]),
 ]
 
+stable_fedora_opts = image.opts(
+    # Uncomment to rebuild using the current host (must have dnf and other
+    # rpm tools) - this should (probably) never be necessary, as the stable
+    # build appliance should be able to rebuild itself or any changes that
+    # might have been introduced since publishing.
+    # build_appliance = ":host_build_appliance",
+    build_appliance = ":stable-build-appliance",
+    rpm_repo_snapshot = "//snapshot:fedora33",
+)
+
+rc_opts = image.opts(
+    build_appliance = ":rc-build-appliance.bootstrap",
+)
+
 image.layer(
     name = "rc-build-appliance.no-snapshot.bootstrap",
     features = ba_features,
-    build_opts = image.opts(
-        # Uncomment to rebuild using the current host (must have dnf and other
-        # rpm tools) - this should (probably) never be necessary, as the stable
-        # build appliance should be able to rebuild itself or any changes that
-        # might have been introduced since publishing.
-        # build_appliance = ":host_build_appliance",
-        build_appliance = ":stable-build-appliance",
-        rpm_repo_snapshot = "//snapshot:fedora33",
-    ),
+    flavor_config_override = stable_fedora_opts,
     visibility = [],
 )
 
 add_rpm_repo_snapshots_layer(
     name = "rc-build-appliance.bootstrap",
-    build_opts = image.opts(
-        build_appliance = ":stable-build-appliance",
-        rpm_repo_snapshot = "//snapshot:fedora33",
-    ),
     dnf_snapshot = "//snapshot:fedora33",
+    flavor_config_override = stable_fedora_opts,
     parent_layer = ":rc-build-appliance.no-snapshot.bootstrap",
     visibility = [],
 )
 
 image.layer(
     name = "rc-build-appliance.base-features",
-    build_opts = image.opts(
-        build_appliance = ":rc-build-appliance.bootstrap",
-    ),
+    flavor_config_override = rc_opts,
     features = ba_features,
     visibility = [],
 )
@@ -110,18 +111,14 @@ rustc.install(
     # no deep reason why this is better than some other
     # version it was just the day I set this up.
     version = "2021-04-20",
-    build_opts = image.opts(
-        build_appliance = ":rc-build-appliance.bootstrap",
-    ),
+    flavor_config_override = rc_opts,
     visibility = [],
 )
 
 add_rpm_repo_snapshots_layer(
     name = "rc-build-appliance",
-    build_opts = image.opts(
-        build_appliance = ":rc-build-appliance.bootstrap",
-    ),
     dnf_snapshot = "//snapshot:fedora33",
+    flavor_config_override = rc_opts,
     parent_layer = ":rc-build-appliance.no-snapshot",
     visibility = ["PUBLIC"],
 )
@@ -170,7 +167,7 @@ image.layer(
             "/usr",
         ]
     ],
-    build_opts = image.opts(
+    flavor_config_override = image.opts(
         build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
     ),
     visibility = [],
