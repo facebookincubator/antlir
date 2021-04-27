@@ -90,6 +90,7 @@ The consequences of this information hiding are:
 """
 
 load(":compile_image_features.bzl", "compile_image_features")
+load(":constants.bzl", "REPO_CFG")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 
@@ -101,9 +102,13 @@ def image_layer(
         # List of `image.feature` target paths and/or nameless structs from
         # `image.feature`.
         features = None,
-        # A struct containing fields accepted by `_build_opts` from
-        # `compile_image_features.bzl`.
-        build_opts = None,
+        # The flavor of the of the target. It contains information
+        # about which build appliance to use that is passed into
+        # `flavor.bzl`.
+        flavor = REPO_CFG.flavor_default,
+        # A struct that can override the default values fetched from
+        # REPO_CFG[flavor].flavor_to_config.
+        flavor_config_override = None,
         # `image_layer`s are marked as internal as at build time they can
         # essentially be thought of as transparent conduits between other
         # concrete, user visible targets.
@@ -120,7 +125,8 @@ def image_layer(
             current_target = image_utils.current_target(name),
             parent_layer = parent_layer,
             features = features,
-            build_opts = build_opts,
+            flavor = flavor,
+            flavor_config_override = flavor_config_override,
         ),
         antlir_rule = antlir_rule,
         **image_layer_kwargs

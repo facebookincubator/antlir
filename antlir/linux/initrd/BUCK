@@ -16,7 +16,7 @@ extract.source_layer(
             "systemd-udev",
         ]),
     ],
-    build_opts = antlir_linux_build_opts(),
+    flavor_config_override = antlir_linux_build_opts(),
     visibility = [
         "//antlir/linux/initrd/debug/...",
     ],
@@ -70,7 +70,7 @@ image.layer(
         # antlirctl provides /usr/bin/mount so we can avoid importing busybox
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mount"),
     ],
-    build_opts = antlir_linux_build_opts(),
+    flavor_config_override = antlir_linux_build_opts(),
     visibility = [kernel_get.base_target + "/..."],
 )
 

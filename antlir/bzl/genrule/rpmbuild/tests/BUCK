@@ -86,7 +86,7 @@ image.layer(
     ],
     # The test BA has yum/dnf conf with gpgcheck=1 and localpkg_gpgcheck=1 so
     # installing an unsigned RPM will fail.
-    build_opts = image.opts(
+    flavor_config_override = image.opts(
         build_appliance = "//antlir/compiler/test_images:build_appliance_testing",
     ),
 )

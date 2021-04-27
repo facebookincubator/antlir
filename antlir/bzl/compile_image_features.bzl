@@ -8,8 +8,8 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl/image_actions:feature.bzl", "FEATURES_FOR_LAYER_PREFIX", "image_feature", "normalize_features")
-load(":build_opts.bzl", "normalize_build_opts")
 load(":constants.bzl", "REPO_CFG")
+load(":flavor.bzl", "get_flavor_config")
 load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -19,11 +19,16 @@ def compile_image_features(
         current_target,
         parent_layer,
         features,
-        build_opts):
+        flavor,
+        flavor_config_override,
+        # Future: eliminate this argument so that the build-time hardcodes this to "volume".
+        # Move this setting into btrfs-specific `image.package` options. See this post for more details
+        # https://www.internalfb.com/diff/D27163192?dst_version_fbid=363793664958542&transaction_fbid=501969597475736
+        subvol_name = None):
     if features == None:
         features = []
 
-    build_opts = normalize_build_opts(build_opts)
+    flavor_config = get_flavor_config(flavor, flavor_config_override)
     target_tagger = new_target_tagger()
 
     # Outputs the feature JSON for the given layer to disk so that it can be
@@ -41,16 +46,16 @@ def compile_image_features(
                 )}]),
             )] if parent_layer else []
         ),
-        flavors = [build_opts.flavor],
+        flavors = [flavor],
     )
     normalized_features = normalize_features(
         [":" + features_for_layer],
         current_target,
-        flavor = build_opts.flavor,
+        flavor = flavor,
     )
 
     vset_override_name = None
-    if build_opts.rpm_version_set_overrides:
+    if flavor_config.rpm_version_set_overrides:
         vset_override_name = "vset-override-" + sha256_b64(current_target)
         buck_genrule(
             name = vset_override_name,
@@ -60,7 +65,7 @@ cat > "$OUT" << 'EOF'
 {envra_file_contents}
 EOF
             """.format(
-                envra_file_contents = "\n".join(["\t".join(envra._private_envra) for envra in build_opts.rpm_version_set_overrides]),
+                envra_file_contents = "\n".join(["\t".join(envra._private_envra) for envra in flavor_config.rpm_version_set_overrides]),
             ),
             antlir_rule = "user-internal",
         )
@@ -117,7 +122,7 @@ EOF
         # rule.
         # $(query_outputs '{deps_query}')
     '''.format(
-        subvol_name_quoted = shell.quote(build_opts.subvol_name),
+        subvol_name_quoted = shell.quote(subvol_name or "volume"),
         current_target_quoted = shell.quote(current_target),
         quoted_child_feature_json_args = " ".join([
             "--child-feature-json $(location {})".format(t)
@@ -161,18 +166,18 @@ EOF
         ),
         maybe_quoted_build_appliance_args = (
             "--build-appliance-buck-out $(location {})".format(
-                build_opts.build_appliance,
-            ) if build_opts.build_appliance else ""
+                flavor_config.build_appliance,
+            ) if flavor_config.build_appliance else ""
         ),
         maybe_quoted_rpm_installer_args = (
             "--rpm-installer {}".format(
-                shell.quote(build_opts.rpm_installer),
-            ) if build_opts.rpm_installer else ""
+                shell.quote(flavor_config.rpm_installer),
+            ) if flavor_config.rpm_installer else ""
         ),
         maybe_quoted_rpm_repo_snapshot_args = (
             "--rpm-repo-snapshot {}".format(
-                shell.quote(build_opts.rpm_repo_snapshot),
-            ) if build_opts.rpm_repo_snapshot else ""
+                shell.quote(flavor_config.rpm_repo_snapshot),
+            ) if flavor_config.rpm_repo_snapshot else ""
         ),
         maybe_version_set_override = (
             "--version-set-override $(location :{})".format(vset_override_name) if vset_override_name else ""

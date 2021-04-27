@@ -72,7 +72,7 @@ image.layer(
             "foo",
         ]),
     ],
-    build_opts = image.opts(
+    flavor_config_override = image.opts(
         rpm_version_set_overrides = [
             image.rpm.nevra(
                 name = "foo",

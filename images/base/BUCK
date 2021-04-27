@@ -7,6 +7,12 @@ load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 
+snapshot_fedora_override = image.opts(
+    # This is the default, but I am making it explicit since the target is
+    # named fedora
+    rpm_repo_snapshot = "//snapshot:fedora33",
+)
+
 image.layer(
     name = "fedora",
     features = [
@@ -15,11 +21,7 @@ image.layer(
             "coreutils",
         ]),
     ],
-    build_opts = image.opts(
-        # This is the default, but I am making it explicit since the target is
-        # named fedora
-        rpm_repo_snapshot = "//snapshot:fedora33",
-    ),
+    flavor_config_override = snapshot_fedora_override,
     visibility = ["//images/..."],
 )
 
@@ -48,9 +50,7 @@ image.layer(
         # systemd-networkd isn't enabled by default in fedora.
         systemd.enable_unit("systemd-networkd.service"),
     ],
-    build_opts = image.opts(
-        rpm_repo_snapshot = "//snapshot:fedora33",
-    ),
+    flavor_config_override = snapshot_fedora_override,
     enable_boot_target = True,
 )
 
