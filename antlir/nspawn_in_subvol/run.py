@@ -24,7 +24,7 @@ arguments from those of the container runtime.  The second separates the
 container args from the in-container command.
 
 Note: If no command is passed to systemd-nspawn to execute, then the
-defualt behavior is to invoke a shell. `/bin/bash` is tried first and if
+default behavior is to invoke a shell. `/bin/bash` is tried first and if
 that is not found then `/bin/sh` is used.  We use this default behavior
 to provide a shell as the default when `buck run` is used as in the
 example above.
