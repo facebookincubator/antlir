@@ -175,6 +175,21 @@ image.genrule_layer(
     visibility = ["//antlir/compiler/..."],
 )
 
+# Test that we can properly access to the bind mounted repo
+# from a genrule layer
+image.genrule_layer(
+    name = "genrule-layer-validate-bind-repo-ro",
+    antlir_rule = "user-internal",
+    cmd = [
+        "/bin/sh",
+        "-c",
+        "test -e $(location :shadow_me)",
+    ],
+    parent_layer = ":test-layer",
+    rule_type = "test_genrule_layer",
+    visibility = ["//antlir/compiler/..."],
+)
+
 # The next two targets exercise:
 #  - all forms of constructing a directory creation request
 #  - specifying `stat` options, like user:group & mode
