@@ -108,15 +108,20 @@ _vm_runtime_t = shape.shape(
 
     # Details of the emulator being used to run the VM
     emulator = shape.field(_vm_emulator_t),
+
+    # Shell commands to run before booting the VM
+    sidecar_services = shape.list(str),
 )
 
 def _new_vm_runtime(
         connection = None,
-        emulator = None):
+        emulator = None,
+        sidecar_services = None):
     return shape.new(
         _vm_runtime_t,
         connection = connection or _new_vm_connection(),
         emulator = emulator or _new_vm_emulator(),
+        sidecar_services = sidecar_services or [],
     )
 
 _vm_runtime_api = struct(

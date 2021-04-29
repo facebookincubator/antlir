@@ -1,6 +1,6 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/vm:defs.bzl", "vm")
 
@@ -151,10 +151,45 @@ vm.cpp_unittest(
     env = test_env_vars,
 )
 
+vm.rust_unittest(
+    name = "rust",
+    srcs = ["rust_test.rs"],
+    env = test_env_vars,
+    crate_root = "rust_test.rs",
+)
+
 vm.python_unittest(
     name = "test-with-kernel-devel",
     srcs = ["test_kernel_devel.py"],
     vm_opts = vm.types.opts.new(
         devel = True,
     ),
+)
+
+rust_binary(
+    name = "sidecar",
+    srcs = ["sidecar.rs"],
+    deps = [
+        third_party.library(
+            "tokio",
+            platform = "rust",
+        ),
+    ],
+)
+
+vm.rust_unittest(
+    name = "with-sidecar",
+    srcs = ["test_with_sidecar.rs"],
+    vm_opts = vm.types.opts.new(
+        runtime = vm.types.runtime.new(
+            sidecar_services = ["$(exe :sidecar)"],
+        ),
+    ),
+    crate_root = "test_with_sidecar.rs",
+    deps = [
+        third_party.library(
+            "tokio",
+            platform = "rust",
+        ),
+    ],
 )

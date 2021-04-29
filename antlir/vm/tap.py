@@ -75,8 +75,17 @@ class VmTap(object):
                 text=True,
                 stdin=subprocess.DEVNULL,
             )
+            subprocess.run(
+                self.netns.nsenter_as_root(
+                    "ip", "addr", "add", self.host_ipv6_ll, "dev", TAPDEV
+                ),
+                check=True,
+                capture_output=True,
+                text=True,
+                stdin=subprocess.DEVNULL,
+            )
         except subprocess.CalledProcessError as e:
-            raise TapError(f"Failed to create tap device: {e.stderr}")
+            raise TapError(f"Failed to setup tap device: {e.stderr}")
 
     def _ensure_dev_net_tun(self) -> None:
         # See class docblock, this should eventually be handled by the
@@ -113,6 +122,10 @@ class VmTap(object):
     @property
     def guest_ipv6_ll(self) -> str:
         return f"fe80::200:0ff:fe00:1%{TAPDEV}"
+
+    @property
+    def host_ipv6_ll(self) -> str:
+        return "fe80::200:0ff:fe00:2"
 
     @property
     def qemu_args(self) -> Iterable[str]:
