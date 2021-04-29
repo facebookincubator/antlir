@@ -8,9 +8,7 @@ import os
 import pwd
 import stat
 import subprocess
-import sys
 import tempfile
-import unittest
 from contextlib import contextmanager
 from typing import Iterator, Optional
 
@@ -21,38 +19,16 @@ from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import with_temp_subvols
+from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
-from antlir.tests.subvol_helpers import (
-    pop_path,
-    render_sendstream,
-    render_subvol,
-)
+from antlir.tests.subvol_helpers import pop_path
 
 from ..find_built_subvol import _get_subvolumes_dir
 from ..package_image import Format, package_image
 from ..unshare import Namespace, Unshare, nsenter_as_root
 
 
-def _render_sendstream_path(path):
-    if path.endswith(".zst"):
-        data = subprocess.check_output(
-            ["zstd", "--decompress", "--stdout", path]
-        )
-    else:
-        with open(path, "rb") as infile:
-            data = infile.read()
-    return render_sendstream(data)
-
-
-class PackageImageTestCase(unittest.TestCase):
-    def setUp(self):
-        # More output for easier debugging
-        unittest.util._MAX_LENGTH = 12345
-        self.maxDiff = 12345
-
-        # Works in @mode/opt since the files of interest are baked into the XAR
-        self.my_dir = os.path.dirname(__file__)
-
+class PackageImageTestCase(ImagePackageTestCaseBase):
     @contextmanager
     def _package_image(
         self,
@@ -85,60 +61,11 @@ class PackageImageTestCase(unittest.TestCase):
             )
             yield out_path
 
-    def _sibling_path(self, rel_path: str):
-        return os.path.join(self.my_dir, rel_path)
-
     def _assert_sendstream_files_equal(self, path1: str, path2: str):
         self.assertEqual(
-            _render_sendstream_path(path1), _render_sendstream_path(path2)
+            self._render_sendstream_path(path1),
+            self._render_sendstream_path(path2),
         )
-
-    def _assert_filesystem_label(
-        self, unshare: Unshare, mount_dir: str, label: str
-    ):
-        self.assertEqual(
-            subprocess.check_output(
-                nsenter_as_root(
-                    unshare,
-                    "findmnt",
-                    "--mountpoint",
-                    mount_dir,
-                    "--noheadings",
-                    "-o",
-                    "LABEL",
-                )
-            )
-            .decode()
-            .strip(),
-            label,
-        )
-
-    def _assert_ignore_original_extents(self, original_render):
-        """
-        Some filesystem formats do not preserve the original's cloned extents
-        of zeros, nor the zero-hole-zero patter.
-        """
-        self.assertEqual(
-            original_render[1].pop("56KB_nuls"),
-            [
-                "(File d57344(create_ops@56KB_nuls_clone:0+49152@0/"
-                + "create_ops@56KB_nuls_clone:49152+8192@49152))"
-            ],
-        )
-        original_render[1]["56KB_nuls"] = ["(File h57344)"]
-        self.assertEqual(
-            original_render[1].pop("56KB_nuls_clone"),
-            [
-                "(File d57344(create_ops@56KB_nuls:0+49152@0/"
-                + "create_ops@56KB_nuls:49152+8192@49152))"
-            ],
-        )
-        original_render[1]["56KB_nuls_clone"] = ["(File h57344)"]
-        self.assertEqual(
-            original_render[1].pop("zeros_hole_zeros"),
-            ["(File d16384h16384d16384)"],
-        )
-        original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
 
     # This tests `image_package.bzl` by consuming its output.
     def test_packaged_sendstream_matches_original(self):
@@ -295,7 +222,7 @@ class PackageImageTestCase(unittest.TestCase):
             self._sibling_path("create_ops-layer-via-tarball-package"),
             "sendstream",
         ) as out_path:
-            rendered_tarball_image = _render_sendstream_path(out_path)
+            rendered_tarball_image = self._render_sendstream_path(out_path)
             # This is metadata generated during the buck image build process
             # and is not useful for purposes of comparing the subvolume
             # contents.  However, it's useful to verify that the meta dir
@@ -367,7 +294,7 @@ class PackageImageTestCase(unittest.TestCase):
                 temp_sendstream
             ):
                 pass
-            original_render = _render_sendstream_path(
+            original_render = self._render_sendstream_path(
                 self._sibling_path("create_ops-original.sendstream")
             )
             # SquashFS does not preserve the original's cloned extents of
@@ -375,7 +302,8 @@ class PackageImageTestCase(unittest.TestCase):
             # (efficiently) transmutes the whole file into 1 sparse hole.
             self._assert_ignore_original_extents(original_render)
             self.assertEqual(
-                original_render, _render_sendstream_path(temp_sendstream.name)
+                original_render,
+                self._render_sendstream_path(temp_sendstream.name),
             )
 
     def test_package_image_as_squashfs(self):
@@ -417,7 +345,7 @@ class PackageImageTestCase(unittest.TestCase):
             ):
                 pass
 
-            original_render = _render_sendstream_path(
+            original_render = self._render_sendstream_path(
                 self._sibling_path("create_ops-original.sendstream")
             )
 
@@ -432,7 +360,8 @@ class PackageImageTestCase(unittest.TestCase):
             original_render[1].pop("unix_sock")
 
             self.assertEqual(
-                original_render, _render_sendstream_path(temp_sendstream.name)
+                original_render,
+                self._render_sendstream_path(temp_sendstream.name),
             )
 
     def test_package_image_as_cpio(self):
@@ -444,8 +373,7 @@ class PackageImageTestCase(unittest.TestCase):
         # Verify the explicit format version from the bzl
         self._verify_package_as_cpio(self._sibling_path("create_ops_cpio_gz"))
 
-    @with_temp_subvols
-    def _verify_package_as_vfat(self, temp_subvolumes, pkg_path, label=""):
+    def _verify_package_as_vfat(self, pkg_path, label=""):
         with Unshare(
             [Namespace.MOUNT, Namespace.PID]
         ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
@@ -461,34 +389,7 @@ class PackageImageTestCase(unittest.TestCase):
                     mount_dir,
                 )
             )
-            self._assert_filesystem_label(unshare, mount_dir, label)
-            subvol = temp_subvolumes.create("subvol")
-            subprocess.check_call(
-                nsenter_as_root(
-                    unshare,
-                    "cp",
-                    "-a",
-                    mount_dir + "/.",
-                    subvol.path(),
-                )
-            )
-            self.assertEqual(
-                render_subvol(subvol),
-                [
-                    "(Dir)",
-                    {
-                        "EFI": [
-                            "(Dir)",
-                            {
-                                "BOOT": [
-                                    "(Dir)",
-                                    {"shadow_me": ["(File m755 d9)"]},
-                                ]
-                            },
-                        ]
-                    },
-                ],
-            )
+            self._verify_vfat_mount(unshare, mount_dir, label)
 
     def test_package_image_as_vfat(self):
         with self._package_image(
@@ -510,9 +411,7 @@ class PackageImageTestCase(unittest.TestCase):
             ) as pkg_path:
                 pass
 
-    @with_temp_subvols
-    def _verify_package_as_ext3(self, temp_subvolumes, pkg_path, label=""):
-        subvol = temp_subvolumes.create("subvol")
+    def _verify_package_as_ext3(self, pkg_path, label=""):
         with Unshare(
             [Namespace.MOUNT, Namespace.PID]
         ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
@@ -528,33 +427,7 @@ class PackageImageTestCase(unittest.TestCase):
                     mount_dir,
                 )
             )
-            self._assert_filesystem_label(unshare, mount_dir, label)
-            subprocess.check_call(
-                nsenter_as_root(
-                    unshare,
-                    "rsync",
-                    "--archive",
-                    "--hard-links",
-                    "--sparse",
-                    "--xattrs",
-                    mount_dir + "/",
-                    subvol.path(),
-                )
-            )
-        with tempfile.NamedTemporaryFile() as temp_sendstream:
-            with subvol.mark_readonly_and_write_sendstream_to_file(
-                temp_sendstream
-            ):
-                pass
-            original_render = _render_sendstream_path(
-                self._sibling_path("create_ops-original.sendstream")
-            )
-            self._assert_ignore_original_extents(original_render)
-            # lost+found is an ext3 thing
-            original_render[1]["lost+found"] = ["(Dir m700)", {}]
-            self.assertEqual(
-                original_render, _render_sendstream_path(temp_sendstream.name)
-            )
+            self._verify_ext3_mount(unshare, mount_dir, label)
 
     def test_package_image_as_ext3(self):
         with self._package_image(

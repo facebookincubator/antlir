@@ -173,6 +173,12 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "image_gpt",
+    srcs = ["image_gpt.bzl"],
+    deps = [":image_utils"],
+)
+
+fake_macro_library(
     name = "image_unittest_helpers",
     srcs = ["image_unittest_helpers.bzl"],
     deps = [
