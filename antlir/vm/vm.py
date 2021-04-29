@@ -358,6 +358,22 @@ async def __vm_with_stack(
         f"{' '.join(ns.nsenter_as_user('/bin/bash'))}"
     )
 
+    logger.debug(
+        f"Starting sidecars {opts.runtime.sidecar_services} before QEMU"
+    )
+    sidecar_procs = await asyncio.gather(
+        # Execing in the shell is not the safest thing, but it makes it easy to
+        # pass extra arguments from the TARGETS files that define tests which
+        # require sidecars as well as easily handling the `$(exe)` expansion of
+        # `python_binary` rules into `python3 -Es $par`
+        *(
+            asyncio.create_subprocess_exec(
+                *ns.nsenter_as_user("/bin/sh", "-c", sidecar)
+            )
+            for sidecar in opts.runtime.sidecar_services
+        )
+    )
+
     tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
     args = [
         "-no-reboot",
@@ -511,7 +527,6 @@ async def __vm_with_stack(
         logger.error(f"VM failed: {e}")
         raise RuntimeError(f"VM failed: {e}")
     finally:
-
         # Future: unless we are running in `--shell=console` mode, the VM
         # hasn't been told to shutdown yet.  So this is the 'default'
         # behavior for termination, but really this should be a last resort
@@ -549,6 +564,8 @@ async def __vm_with_stack(
             )
 
         logger.debug(f"VM exited with: {proc.returncode}")
+
+        subprocess.run(["sudo", "kill", "-KILL", "--", *[str(proc.pid) for proc in sidecar_procs]])
 
 
 @asynccontextmanager
