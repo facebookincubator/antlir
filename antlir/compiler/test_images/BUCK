@@ -987,3 +987,17 @@ image.package(
     label = "cats",
     visibility = ["//antlir/..."],
 )
+
+image.gpt(
+    name = "gpt_test",
+    table = [
+        image.gpt_partition(
+            package = ":vfat-test.vfat",
+            is_esp = True,
+        ),
+        image.gpt_partition(
+            package = ":create_ops_ext3",
+        ),
+    ],
+    visibility = ["//antlir/..."],
+)

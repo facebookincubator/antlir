@@ -17,14 +17,15 @@ load("//antlir/bzl/image_actions:symlink.bzl", "image_ensure_dir_symlink", "imag
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
 load("//antlir/bzl/image_actions:user.bzl", "image_user_add")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
-load(":image_rust_unittest.bzl", "image_rust_unittest")
 load(":image_genrule_layer.bzl", "image_genrule_layer")
+load(":image_gpt.bzl", "image_gpt", "image_gpt_partition")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_package.bzl", "image_package")
 load(":image_packaged_layer.bzl", "image_packaged_layer")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":image_rpm.bzl", "image_rpm")
+load(":image_rust_unittest.bzl", "image_rust_unittest")
 load(":image_sendstream_layer.bzl", "image_sendstream_layer")
 load(":image_source.bzl", "image_source")
 load(":image_test_rpm_names.bzl", "image_test_rpm_names")
@@ -60,4 +61,6 @@ image = struct(
     tarball = image_tarball,
     test_rpm_names = image_test_rpm_names,
     user_add = image_user_add,
+    gpt = image_gpt,
+    gpt_partition = image_gpt_partition,
 )

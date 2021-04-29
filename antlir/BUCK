@@ -1,4 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG", "repo_config_t")
+load("//antlir/bzl:image_gpt.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -123,6 +124,17 @@ python_library(
     deps = [
         ":subvol_utils",
         "//antlir/btrfs_diff:testlib_render_subvols",
+    ],
+)
+
+python_library(
+    name = "testlib_image_package_testbase",
+    srcs = ["tests/image_package_testbase.py"],
+    visibility = ["//antlir/..."],
+    deps = [
+        ":subvol_utils",
+        ":testlib_subvol_helpers",
+        ":unshare",
     ],
 )
 
@@ -424,12 +436,53 @@ python_unittest(
         ":fs_utils",
         ":package-image-library",
         ":subvol_utils",
+        ":testlib_image_package_testbase",
         ":testlib_layer_resource",
         ":testlib_subvol_helpers",
         ":unshare",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
+    ],
+)
+
+python_unittest(
+    name = "test-gpt",
+    srcs = ["tests/test_gpt.py"],
+    env = {
+        "test-gpt-json": shape.do_not_cache_me_json(
+            instance = shape.new(
+                gpt_t,
+                name = "gpt_test",
+                table = [
+                    shape.new(
+                        gpt_partition_t,
+                        package = TEST_IMAGE_PREFIX + "vfat-test.vfat",
+                        is_esp = True,
+                    ),
+                    shape.new(
+                        gpt_partition_t,
+                        package = TEST_IMAGE_PREFIX + "create_ops_ext3",
+                        is_esp = False,
+                    ),
+                ],
+            ),
+            shape = gpt_t,
+        ),
+    },
+    needed_coverage = [(100, ":gpt-library")],
+    resources = {
+        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
+        TEST_IMAGE_PREFIX + "vfat-test.vfat": "tests/vfat-test.vfat",
+        TEST_IMAGE_PREFIX + "create_ops_ext3": "tests/create_ops_ext3",
+        TEST_IMAGE_PREFIX + "gpt_test": "tests/gpt_test",
+        layer_resource(REPO_CFG.build_appliance_default): "tests/build-appliance",
+    },
+    deps = [
+        ":gpt-library",
+        ":testlib_image_package_testbase",
+        ":testlib_layer_resource",
+        ":unshare",
     ],
 )
 
@@ -546,4 +599,25 @@ python_library(
             platform = "python",
         ),
     ],
+)
+
+python_binary(
+    name = "gpt",
+    srcs = ["gpt.py"],
+    main_module = "antlir.gpt",
+    visibility = ["PUBLIC"],
+    deps = [
+        ":common",
+        ":find_built_subvol",
+        ":gpt_t",
+        ":subvol_utils",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:nspawn",
+    ],
+)
+
+shape.loader(
+    name = "gpt_t",
+    classname = "gpt_t",
+    shape = gpt_t,
 )
