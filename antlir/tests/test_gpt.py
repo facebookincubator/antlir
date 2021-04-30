@@ -41,7 +41,7 @@ class GptTestCase(ImagePackageTestCaseBase):
                         unshare,
                         "partx",
                         "-o",
-                        "START",
+                        "START,SECTORS",
                         "-g",
                         "--raw",
                         image_path,
@@ -49,11 +49,12 @@ class GptTestCase(ImagePackageTestCaseBase):
                 )
                 .decode()
                 .strip()
-                .split()
+                .split("\n")
             )
             # partx offset units are in sectors
             sector_size = 512
-            part_offsets = [int(o) * sector_size for o in res]
+            part_offsets = [int(o.split()[0]) * sector_size for o in res]
+            part_sizes = [int(o.split()[1]) * sector_size for o in res]
             with tempfile.TemporaryDirectory() as mount_dir:
                 subprocess.check_call(
                     nsenter_as_root(
@@ -62,7 +63,9 @@ class GptTestCase(ImagePackageTestCaseBase):
                         "-t",
                         "vfat",
                         "-o",
-                        f"loop,offset={part_offsets[0]}",
+                        "loop,"
+                        f"offset={part_offsets[0]},"
+                        f"sizelimit={part_sizes[0]}",
                         image_path,
                         mount_dir,
                     )
@@ -77,7 +80,9 @@ class GptTestCase(ImagePackageTestCaseBase):
                         "-t",
                         "ext3",
                         "-o",
-                        f"loop,offset={part_offsets[1]}",
+                        f"loop,"
+                        f"offset={part_offsets[1]},"
+                        f"sizelimit={part_sizes[1]}",
                         image_path,
                         mount_dir,
                     )
