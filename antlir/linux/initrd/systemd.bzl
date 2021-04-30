@@ -61,9 +61,12 @@ BINARIES = [
     "/usr/lib/systemd/systemd-shutdown",
     "/usr/lib/systemd/systemd-sysctl",
     "/usr/lib/systemd/systemd-udevd",
-    # for (system) user lookups
-    # this is not a part of systemd, so should not _really_ be here, but due to
-    # current extractor limitations has to be included in the same image feature
+    # Make NSS play nice with systemd user features
+    "/usr/lib64/libnss_systemd.so.2",
+    # libnss_files is not a part of systemd, so should not _really_ be here,
+    # but due to current extractor limitations has to be included in the same
+    # image feature and it is closely related to the systemd nss libraries
+    # imported above
     "/usr/lib64/libnss_files.so.2",
 ]
 
