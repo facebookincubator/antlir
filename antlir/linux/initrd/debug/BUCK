@@ -27,24 +27,27 @@ systemd_debug = [
     ),
 ]
 
+debug_features = [
+    linux.busybox.install(
+        DEPS_TARGET,
+        # /usr/bin/mount is implemented in antlirctl
+        sets.difference(
+            DEFAULT_APPLETS,
+            sets.make(["mount"]),
+        ),
+        src_path = "/usr/sbin/busybox",
+    ),
+    systemd_debug,
+    systemd.enable_unit("debug-shell.service"),
+    systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
+    systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
+]
+
 image.layer(
     name = "debug-append",
     features = [
         linux.filesystem.install(),
-        linux.busybox.install(
-            DEPS_TARGET,
-            # /usr/bin/mount is implemented in antlirctl
-            sets.difference(
-                DEFAULT_APPLETS,
-                sets.make(["mount"]),
-            ),
-            src_path = "/usr/sbin/busybox",
-        ),
-        systemd_debug,
-        systemd.enable_unit("debug-shell.service"),
-        systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
-        systemd.enable_unit("debug-shell.service"),
-        systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
+        debug_features,
     ],
     flavor_config_override = antlir_linux_build_opts(),
 )
@@ -58,4 +61,15 @@ image.package(
         "//scripts/dschatzberg/vm/...",
     ],
     build_appliance = antlir_linux_build_opts().build_appliance,
+)
+
+# A full layer that is the combined set of debug features and the base initrd.
+# This is useful for manually getting a shell with the -container target
+# without having to boot up a full vm.
+image.layer(
+    name = "debug",
+    parent_layer = "//antlir/linux/initrd:base",
+    features = debug_features,
+    visibility = ["//antlir/linux/initrd/..."],
+    flavor_config_override = antlir_linux_build_opts(),
 )
