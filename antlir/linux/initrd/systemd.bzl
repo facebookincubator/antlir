@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
@@ -72,12 +71,13 @@ BINARIES = [
 
 # Configs to take unmodified from upstream systemd
 CONFIG_FILES = [
-    "/usr/lib/tmpfiles.d/systemd.conf",
-    "/usr/lib/tmpfiles.d/tmp.conf",
-    "/usr/lib/udev/rules.d/99-systemd.rules",
-    "/usr/lib/systemd/network/99-default.link",
-    "/usr/lib/sysusers.d/basic.conf",
-    "/usr/lib/sysusers.d/systemd.conf",
+    # parent      create dirs   file
+    ("/usr/lib", "tmpfiles.d", "systemd.conf"),
+    ("/usr/lib", "tmpfiles.d", "tmp.conf"),
+    ("/usr/lib", "udev/rules.d", "99-systemd.rules"),
+    ("/usr/lib", "systemd/network", "99-default.link"),
+    ("/usr/lib", "sysusers.d", "basic.conf"),
+    ("/usr/lib", "sysusers.d", "systemd.conf"),
 ]
 
 def clone_systemd_configs(src):
@@ -92,19 +92,12 @@ def clone_systemd_configs(src):
         for unit in UNITS + TARGETS
     ]
 
-    dirs = [paths.dirname(cfg) for cfg in CONFIG_FILES]
-    dirs = collections.uniq(dirs)
-
     configs = [
-        image.ensure_subdirs_exist("/usr/lib", paths.relativize(d, "/usr/lib"))
-        for d in dirs
-    ] + [
-        image.clone(
-            src,
-            cfg,
-            cfg,
-        )
-        for cfg in CONFIG_FILES
+        [
+            image.ensure_subdirs_exist(parent, dirs),
+            image.clone(src, paths.join(parent, dirs, cfg), paths.join(parent, dirs, cfg)),
+        ]
+        for parent, dirs, cfg in CONFIG_FILES
     ]
 
     return [
