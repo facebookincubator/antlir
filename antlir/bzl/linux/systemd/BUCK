@@ -2,14 +2,20 @@ load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:template.bzl", "template")
 
 template(
+    name = "unit",
+    srcs = ["unit.jinja2"],
+    visibility = [],
+)
+
+template(
     name = "mount",
-    includes = [
-        "unit.jinja2",
+    srcs = [
+        "mount.jinja2",
     ],
-    main = "mount.jinja2",
     visibility = [
         kernel_get.base_target + "/...",
         "//antlir/linux/...",
         "//scripts/dschatzberg/vm:",
     ],
+    deps = [":unit"],
 )

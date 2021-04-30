@@ -261,7 +261,7 @@ python_unittest(
 
 template(
     name = "example-template",
-    main = "template.jinja2",
+    srcs = ["template.jinja2"],
 )
 
 # construct a file with some shims to allow the python_unittest below to import

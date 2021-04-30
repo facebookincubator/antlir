@@ -4,36 +4,84 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:oss_shim.bzl", "get_visibility", "python_binary")
+load("@bazel_skylib//lib:shell.bzl", "shell")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "get_visibility", "python_binary", "python_library")
 
 def template(
         name,
-        main,
-        includes = None,
+        srcs,
+        root = None,
+        deps = None,
         visibility = None):
     """
-Create a template target from jinaj2 template files.
-The named target is a python_binary that renders templates from JSON data
-provided on stdin.
-The `main` template is rendered with the input data, and has access to inherit
-from / include any of the templates listed in `includes`.
+Compile a set of jinja2 template files to a library that can be imported by
+other templates, as well as a `$name-render` binary that can render the given
+root template from JSON data provided on stdin.
 """
-    if not includes:
-        includes = {}
-    if types.is_list(includes):
-        includes = {inc: paths.basename(inc) for inc in includes}
 
-    resources = {
-        main: "main.jinja2",
-    }
-    resources.update(includes)
+    # attempt to determine a root template in some common cases
+    if not root:
+        if len(srcs) == 1:
+            root = srcs[0]
+        else:
+            for src in srcs:
+                if src == name or src == name + ".jinja2":
+                    root = src
+        if not root:
+            fail("could not infer 'root' template, please set `root` kwarg", attr = "root")
+    if not deps:
+        deps = []
+
+    compiled_srcs = {}
+
+    for src in srcs:
+        raw_src = "{}__{}".format(name, src)
+        export_file(
+            name = raw_src,
+            src = src,
+        )
+        compiled_src = "{}__{}.py".format(name, src)
+        python_file_name = "tmpl_{}".format(paths.replace_extension(src, ".py"))
+
+        buck_genrule(
+            name = compiled_src,
+            out = python_file_name,
+            cmd = "$(exe //antlir:compile-template) $(location :{}) {} > $OUT".format(raw_src, src),
+        )
+        compiled_srcs[":" + compiled_src] = python_file_name
+
+    # The named output target of template() is a python_library so that it can
+    # be easily used in `deps` of other templates.
+    python_library(
+        name = name,
+        srcs = compiled_srcs,
+        base_module = "antlir.__compiled_templates__",
+        deps = deps,
+        visibility = get_visibility(visibility, name),
+    )
+
+    # Compile the name of the root template into the python_binary for
+    # rendering, so that it can be easily imported. It cannot be included in
+    # the python_library target above, or there would be collisions with any
+    # templates included in `deps`.
+    root_template_target = name + "__root_template_name"
+    buck_genrule(
+        name = root_template_target,
+        out = "unused",
+        cmd = "printf {} > $OUT".format(shell.quote(paths.replace_extension(root, ""))),
+        visibility = [],
+    )
 
     python_binary(
-        name = name,
+        name = name + "-render",
         main_module = "antlir.render_template",
-        deps = ["//antlir:render_template"],
-        base_module = "antlir.templates",
-        resources = resources,
+        deps = [
+            ":" + name,
+            "//antlir:render_template",
+        ],
+        base_module = "antlir",
+        resources = {
+            ":" + root_template_target: "__root_template_name__",
+        },
         visibility = get_visibility(visibility, name),
     )
