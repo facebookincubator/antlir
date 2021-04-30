@@ -565,7 +565,15 @@ async def __vm_with_stack(
 
         logger.debug(f"VM exited with: {proc.returncode}")
 
-        subprocess.run(["sudo", "kill", "-KILL", "--", *[str(proc.pid) for proc in sidecar_procs]])
+        subprocess.run(
+            [
+                "sudo",
+                "kill",
+                "-KILL",
+                "--",
+                *[str(proc.pid) for proc in sidecar_procs],
+            ]
+        )
 
 
 @asynccontextmanager
