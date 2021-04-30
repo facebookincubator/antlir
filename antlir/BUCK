@@ -592,7 +592,23 @@ python_unittest(
 
 python_library(
     name = "render_template",
-    srcs = ["render_template.py"],
+    srcs = [
+        "render_template.py",
+    ],
+    deps = [
+        third_party.library(
+            "jinja2",
+            platform = "python",
+        ),
+    ],
+)
+
+python_binary(
+    name = "compile-template",
+    srcs = [
+        "compile_template.py",
+    ],
+    main_module = "antlir.compile_template",
     deps = [
         third_party.library(
             "jinja2",

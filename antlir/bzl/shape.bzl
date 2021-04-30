@@ -677,7 +677,7 @@ def _render_template(name, instance, shape, template):  # pragma: no cover
     buck_genrule(
         name = name,
         out = "unused",
-        cmd = "$(exe {}) <$(location :{}--data.json) > $OUT".format(template, name),
+        cmd = "$(exe {}-render) <$(location :{}--data.json) > $OUT".format(template, name),
         antlir_rule = "user-internal",
     )
     return normalize_target(":" + name)

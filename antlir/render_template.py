@@ -4,21 +4,49 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import importlib
+import importlib.resources
 import json
 import sys
 
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, BaseLoader, TemplateNotFound
+
+
+class PrecompiledLoader(BaseLoader):
+    has_source_access = False
+
+    def __init__(self, base: str):
+        self.base = base
+
+    @staticmethod
+    def get_template_key(name):
+        if name.endswith(".jinja2"):
+            name = name[: -len(".jinja2")]
+        return "tmpl_" + name
+
+    def load(self, environment, name, globals=None):
+        key = self.get_template_key(name)
+        try:
+            mod = importlib.import_module(self.base + "." + key)
+        except ImportError:
+            raise TemplateNotFound(name)
+
+        return environment.template_class.from_module_dict(
+            environment, mod.__dict__, globals
+        )
 
 
 def main():
     env = Environment(
-        loader=PackageLoader(__package__, "templates"),
+        loader=PrecompiledLoader("antlir.__compiled_templates__"),
         trim_blocks=True,
         lstrip_blocks=True,
     )
     data = json.load(sys.stdin)
 
-    template = env.get_template("main.jinja2")
+    root = importlib.resources.read_text("antlir", "__root_template_name__")
+
+    template = env.get_template(root)
     print(template.render(**data), end="")
 
 
