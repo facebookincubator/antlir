@@ -374,6 +374,18 @@ def _rust_binary(*args, **kwargs):
     kwargs.pop("nodefaultlibs", None)
     _wrap_internal(native.rust_binary, args, kwargs)
 
+    # automatically generate a unittest target if the caller did not explicitly
+    # opt out
+    if kwargs.get("unittests", True):
+        _rust_unittest(
+            name = kwargs.get("name") + "-unittest",
+            srcs = kwargs.get("srcs", []),
+            mapped_srcs = kwargs.get("mapped_srcs", {}),
+            deps = kwargs.get("deps", []) + kwargs.get("test_deps", []),
+            labels = kwargs.get("labels", []),
+            crate = kwargs.get("crate", kwargs.get("name").replace("-", "_")),
+        )
+
 # Use = in the default filename to avoid clashing with RPM names.
 # The constant must match `update_allowed_versions.py`.
 # Omits `_wrap_internal` due to perf paranoia -- we have a callsite per RPM.
