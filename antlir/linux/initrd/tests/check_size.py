@@ -22,6 +22,6 @@ class CheckSize(unittest.TestCase):
         package = os.environ["BASE_PACKAGE"]
         package_size = os.path.getsize(package)
         # ensure package does not unexpectedly grow
-        self.assertLessEqual(package_size, 9.5 * 1024 * 1024)
+        self.assertLessEqual(package_size, 10 * 1024 * 1024)
         # incentive to make sure this test gets updated with any size wins
         self.assertGreaterEqual(package_size, 8.5 * 1024 * 1024)
