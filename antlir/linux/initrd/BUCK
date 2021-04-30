@@ -34,6 +34,8 @@ networking = [
     image.install("units/eth.network", "/usr/lib/systemd/network/10-eth.network"),
 ]
 
+nss = linux.config.glibc.nsswitch.install(linux.config.glibc.nsswitch.default)
+
 # Kernel-agnostic base initrd
 image.layer(
     name = "base",
@@ -57,6 +59,7 @@ image.layer(
             unit = "systemd-udevd.service",
         ),
         networking,
+        nss,
         # Due to limitations in the current extractor implementation, we have to
         # extract systemd at the same time as antlirctl.
         extract.extract(
@@ -71,7 +74,10 @@ image.layer(
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mount"),
     ],
     flavor_config_override = antlir_linux_build_opts(),
-    visibility = [kernel_get.base_target + "/..."],
+    visibility = [
+        kernel_get.base_target + "/...",
+        "//antlir/linux/...",
+    ],
 )
 
 # CPIO archive to which environment specific overlays are appended. For

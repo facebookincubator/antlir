@@ -701,4 +701,5 @@ shape = struct(
     as_dict = structs.to_dict,
     do_not_cache_me_json = _do_not_cache_me_json,
     render_template = _render_template,
+    struct = struct,
 )
