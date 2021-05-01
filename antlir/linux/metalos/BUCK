@@ -1,0 +1,60 @@
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
+load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
+
+image.layer(
+    name = "basesystem",
+    features = [
+        image.rpms_install([
+            "basesystem",
+            "systemd",
+            "systemd-udev",
+            "iproute",
+        ]),
+    ],
+    visibility = [],
+    flavor_config_override = antlir_linux_build_opts(),
+)
+
+image.layer(
+    name = "basesystem-strip",
+    parent_layer = ":basesystem",
+    features = [
+        image.rpms_remove_if_exists([
+            # dracut installs a bunch of systemd units that log warnings, and
+            # we don't even use it anyway
+            "dracut",
+        ]),
+    ],
+    flavor_config_override = antlir_linux_build_opts(),
+)
+
+# TODO: this should eventually be put into a stable fbpkg layer if it is
+# depended on more broadly
+image.layer(
+    name = "metalos",
+    parent_layer = ":basesystem-strip",
+    features = [
+        image.install(
+            "//antlir/linux/antlirctl:antlirctl",
+            "/usr/bin/antlirctl",
+            mode = "a+rx",
+        ),
+        systemd.install_unit("workload-pre.target"),
+        systemd.install_unit("workload.target"),
+        # in the default CentOS packages, this points to graphical.target which makes no sense in our context
+        image.remove(paths.join(SYSTEMD_PROVIDER_ROOT, "default.target")),
+        systemd.set_default_target("workload.target"),
+        # networking config to use DHCP is a generic workload-pre.target
+        # dependency
+        image.install("eth.network", "/usr/lib/systemd/network/10-eth.network"),
+        systemd.enable_unit("systemd-networkd.service", "workload-pre.target"),
+        systemd.enable_unit("systemd-resolved.service", "workload-pre.target"),
+    ],
+    enable_boot_target = True,
+    flavor_config_override = antlir_linux_build_opts(),
+    visibility = [
+        "//antlir/...",
+    ],
+)
