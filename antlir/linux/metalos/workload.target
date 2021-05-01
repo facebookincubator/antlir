@@ -1,0 +1,5 @@
+# Host workload services should be synchronized as Before=workload.target
+# workload-pre.target will ensure basic host configs are setup
+[Unit]
+Description=Host workload
+Requires=workload-pre.target
