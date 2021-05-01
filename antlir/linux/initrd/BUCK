@@ -72,6 +72,8 @@ image.layer(
         ),
         # antlirctl provides /usr/bin/mount so we can avoid importing busybox
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mount"),
+        image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
+        image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/lib/systemd/system-generators/antlir-generator"),
     ],
     flavor_config_override = antlir_linux_build_opts(),
     visibility = [
