@@ -70,6 +70,8 @@ image.layer(
             dest = "/",
             source = ":deps",
         ),
+        image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
+        image.install("udev.rules", "/usr/lib/udev/rules.d/10-antlir.rules"),
         # antlirctl provides /usr/bin/mount so we can avoid importing busybox
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mount"),
         image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
