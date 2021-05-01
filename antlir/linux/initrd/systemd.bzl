@@ -12,6 +12,7 @@ TARGETS = [
     "final.target",
     "initrd-fs.target",
     "initrd-root-device.target",
+    "initrd-root-fs.target",
     "initrd-switch-root.target",
     "initrd.target",
     "local-fs-pre.target",

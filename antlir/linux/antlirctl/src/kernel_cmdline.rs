@@ -18,6 +18,13 @@ pub struct AntlirCmdline {
     opts: Vec<KernelCmdlineOpt>,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Root<'a> {
+    pub root: &'a str,
+    pub flags: Option<String>,
+    pub fstype: Option<&'a str>,
+}
+
 impl AntlirCmdline {
     pub fn from_kernel() -> Result<AntlirCmdline> {
         fs::read_to_string("/proc/cmdline")
@@ -33,10 +40,43 @@ impl AntlirCmdline {
     }
 
     pub fn control_os_uri(&self) -> Option<&str> {
-        self.arg("antlir.control_os_uri").and_then(|opt| match opt {
-            KernelCmdlineOpt::Kv(_, uri) => Some(uri.as_str()),
-            _ => None,
-        })
+        self.arg("antlir.control_os_uri")
+            .and_then(|opt| opt.as_value())
+    }
+
+    pub fn root(&self) -> Option<Root> {
+        self.arg("root")
+            .and_then(|root| root.as_value())
+            .map(|root| {
+                let mut flags = self
+                    .arg("rootflags")
+                    .and_then(|opt| opt.as_value())
+                    .map_or(vec![], |flags| flags.split(',').collect());
+                if self
+                    .arg("ro")
+                    .and_then(|opt| opt.as_bool())
+                    .unwrap_or(false)
+                {
+                    flags.push("ro");
+                }
+                if self
+                    .arg("rw")
+                    .and_then(|opt| opt.as_bool())
+                    .unwrap_or(false)
+                {
+                    flags.push("rw");
+                }
+                let flags = flags.join(",");
+                let flags = match flags.is_empty() {
+                    true => None,
+                    false => Some(flags),
+                };
+                Root {
+                    root,
+                    flags,
+                    fstype: self.arg("rootfstype").and_then(|opt| opt.as_value()),
+                }
+            })
     }
 }
 
@@ -44,6 +84,21 @@ impl AntlirCmdline {
 enum KernelCmdlineOpt {
     OnOff(String, bool),
     Kv(String, String),
+}
+
+impl KernelCmdlineOpt {
+    fn as_value(&self) -> Option<&str> {
+        match self {
+            Self::Kv(_, val) => Some(val),
+            _ => None,
+        }
+    }
+    fn as_bool(&self) -> Option<bool> {
+        match self {
+            Self::OnOff(_, val) => Some(*val),
+            _ => None,
+        }
+    }
 }
 
 fn parse_opt(src: &str) -> KernelCmdlineOpt {
@@ -107,7 +162,7 @@ impl std::str::FromStr for AntlirCmdline {
 
 #[cfg(test)]
 mod tests {
-    use super::AntlirCmdline;
+    use super::{AntlirCmdline, Root};
     use anyhow::Result;
 
     #[test]
@@ -150,10 +205,33 @@ mod tests {
                     kv("hugetlb_cma", "6G"),
                     kv("console", "tty0"),
                     kv("console", "ttyS0,115200")
-                ]
+                ],
             },
             cmdline
         );
+        assert_eq!(
+            Some(Root {
+                root: "LABEL=/",
+                flags: Some("ro".into()),
+                fstype: None,
+            }),
+            cmdline.root()
+        );
         Ok(())
+    }
+
+    #[test]
+    fn cmdline_root() {
+        assert_eq!(
+            Some(Root {
+                root: "LABEL=/",
+                flags: Some("subvol=volume,ro".to_string()),
+                fstype: Some("btrfs"),
+            }),
+            "root=LABEL=/ ro rootflags=subvol=volume rootfstype=btrfs"
+                .parse::<AntlirCmdline>()
+                .unwrap()
+                .root(),
+        );
     }
 }

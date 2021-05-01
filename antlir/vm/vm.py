@@ -401,12 +401,12 @@ async def __vm_with_stack(
         (
             "console=ttyS0,115200"
             " root=/dev/vda"
+            " rootflags=subvol=volume,ro"
+            " rootfstype=btrfs"
             " noapic"
             " panic=-1"
             " cgroup_no_v1=all"
             " systemd.unified_cgroup_hierarchy=1"
-            " rootflags=subvol=volume"
-            " rw"
             " rd.emergency=poweroff"
         ),
         # socket/serial device pair (for use by _wait_for_boot)

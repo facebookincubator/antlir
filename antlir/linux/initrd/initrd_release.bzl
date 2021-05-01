@@ -9,13 +9,15 @@ def _get_build_info():
     return struct(
         package_name = native.read_config("build_info", "package_name"),
         package_version = native.read_config("build_info", "package_version"),
+        revision = native.read_config("build_info", "revision"),
     )
 
 def initrd_release(name):
     info = _get_build_info()
 
-    version = info.package_version if info.package_version else "local"
-    build_id = "{}:{}".format(info.package_name, info.package_version) if info.package_version else "local"
+    version = info.package_version or "local"
+    build_id = "{}:{}".format(info.package_name, info.package_version) or "local"
+    rev = info.revision or "local"
 
     buck_genrule(
         name = name,
@@ -29,8 +31,10 @@ def initrd_release(name):
             echo "VARIANT='Initrd'" >> $OUT
             echo "VARIANT_ID='initrd'" >> $OUT
             echo "ANSI_COLOR='0;34'" >> $OUT
+            echo "ANTLIR_VCS_REV={rev}" >> $OUT
         """.format(
             version = version,
             build_id = build_id,
+            rev = rev,
         ),
     )
