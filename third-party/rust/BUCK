@@ -518,6 +518,114 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "crossbeam-channel-0.5.1",
+    srcs = [
+        "vendor/crossbeam-channel-0.5.1/src/channel.rs",
+        "vendor/crossbeam-channel-0.5.1/src/context.rs",
+        "vendor/crossbeam-channel-0.5.1/src/counter.rs",
+        "vendor/crossbeam-channel-0.5.1/src/err.rs",
+        "vendor/crossbeam-channel-0.5.1/src/flavors/array.rs",
+        "vendor/crossbeam-channel-0.5.1/src/flavors/at.rs",
+        "vendor/crossbeam-channel-0.5.1/src/flavors/list.rs",
+        "vendor/crossbeam-channel-0.5.1/src/flavors/mod.rs",
+        "vendor/crossbeam-channel-0.5.1/src/flavors/never.rs",
+        "vendor/crossbeam-channel-0.5.1/src/flavors/tick.rs",
+        "vendor/crossbeam-channel-0.5.1/src/flavors/zero.rs",
+        "vendor/crossbeam-channel-0.5.1/src/lib.rs",
+        "vendor/crossbeam-channel-0.5.1/src/select.rs",
+        "vendor/crossbeam-channel-0.5.1/src/select_macro.rs",
+        "vendor/crossbeam-channel-0.5.1/src/utils.rs",
+        "vendor/crossbeam-channel-0.5.1/src/waker.rs",
+    ],
+    crate = "crossbeam_channel",
+    crate_root = "vendor/crossbeam-channel-0.5.1/src/lib.rs",
+    edition = "2018",
+    features = [
+        "crossbeam-utils",
+        "default",
+        "std",
+    ],
+    licenses = [
+        "vendor/crossbeam-channel-0.5.1/LICENSE-APACHE",
+        "vendor/crossbeam-channel-0.5.1/LICENSE-MIT",
+        "vendor/crossbeam-channel-0.5.1/LICENSE-THIRD-PARTY",
+    ],
+    rustc_flags = ["--cap-lints=allow"],
+    visibility = [],
+    deps = [
+        ":cfg-if-1.0.0",
+        ":crossbeam-utils-0.8.3",
+    ],
+)
+
+third_party_rust_library(
+    name = "crossbeam-utils-0.8.3",
+    srcs = [
+        "vendor/crossbeam-utils-0.8.3/src/atomic/atomic_cell.rs",
+        "vendor/crossbeam-utils-0.8.3/src/atomic/consume.rs",
+        "vendor/crossbeam-utils-0.8.3/src/atomic/mod.rs",
+        "vendor/crossbeam-utils-0.8.3/src/atomic/seq_lock.rs",
+        "vendor/crossbeam-utils-0.8.3/src/atomic/seq_lock_wide.rs",
+        "vendor/crossbeam-utils-0.8.3/src/backoff.rs",
+        "vendor/crossbeam-utils-0.8.3/src/cache_padded.rs",
+        "vendor/crossbeam-utils-0.8.3/src/lib.rs",
+        "vendor/crossbeam-utils-0.8.3/src/sync/mod.rs",
+        "vendor/crossbeam-utils-0.8.3/src/sync/parker.rs",
+        "vendor/crossbeam-utils-0.8.3/src/sync/sharded_lock.rs",
+        "vendor/crossbeam-utils-0.8.3/src/sync/wait_group.rs",
+        "vendor/crossbeam-utils-0.8.3/src/thread.rs",
+    ],
+    crate = "crossbeam_utils",
+    crate_root = "vendor/crossbeam-utils-0.8.3/src/lib.rs",
+    edition = "2018",
+    features = [
+        "lazy_static",
+        "std",
+    ],
+    licenses = [
+        "vendor/crossbeam-utils-0.8.3/LICENSE-APACHE",
+        "vendor/crossbeam-utils-0.8.3/LICENSE-MIT",
+    ],
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :crossbeam-utils-0.8.3-build-script-build-args)",
+    ],
+    visibility = [],
+    deps = [
+        ":cfg-if-1.0.0",
+        ":lazy_static-1.4.0",
+    ],
+)
+
+third_party_rust_binary(
+    name = "crossbeam-utils-0.8.3-build-script-build",
+    srcs = ["vendor/crossbeam-utils-0.8.3/build.rs"],
+    crate = "build_script_build",
+    crate_root = "vendor/crossbeam-utils-0.8.3/build.rs",
+    edition = "2018",
+    features = [
+        "lazy_static",
+        "std",
+    ],
+    rustc_flags = ["--cap-lints=allow"],
+    visibility = [],
+    deps = [":autocfg-1.0.1"],
+)
+
+rust_buildscript_genrule_filter(
+    name = "crossbeam-utils-0.8.3-build-script-build-args",
+    package_name = "crossbeam-utils",
+    buildscript_rule = ":crossbeam-utils-0.8.3-build-script-build",
+    cfgs = [],
+    features = [
+        "lazy_static",
+        "std",
+    ],
+    outfile = "args.txt",
+    version = "0.8.3",
+)
+
+third_party_rust_library(
     name = "dirs-next-2.0.0",
     srcs = [
         "vendor/dirs-next-2.0.0/src/lib.rs",
@@ -2849,7 +2957,29 @@ rust_buildscript_genrule_filter(
 )
 
 third_party_rust_library(
-    name = "slog-term-2.8.0",
+    name = "slog-async",
+    srcs = ["vendor/slog-async-2.6.0/lib.rs"],
+    crate = "slog_async",
+    crate_root = "vendor/slog-async-2.6.0/lib.rs",
+    edition = "2015",
+    features = ["default"],
+    licenses = [
+        "vendor/slog-async-2.6.0/LICENSE-APACHE",
+        "vendor/slog-async-2.6.0/LICENSE-MIT",
+        "vendor/slog-async-2.6.0/LICENSE-MPL2",
+    ],
+    rustc_flags = ["--cap-lints=allow"],
+    visibility = ["PUBLIC"],
+    deps = [
+        ":crossbeam-channel-0.5.1",
+        ":slog",
+        ":take_mut-0.2.2",
+        ":thread_local-1.1.3",
+    ],
+)
+
+third_party_rust_library(
+    name = "slog-term",
     srcs = ["vendor/slog-term-2.8.0/src/lib.rs"],
     crate = "slog_term",
     crate_root = "vendor/slog-term-2.8.0/src/lib.rs",
@@ -2860,7 +2990,7 @@ third_party_rust_library(
         "vendor/slog-term-2.8.0/LICENSE-MPL2",
     ],
     rustc_flags = ["--cap-lints=allow"],
-    visibility = [],
+    visibility = ["PUBLIC"],
     deps = [
         ":atty-0.2.14",
         ":chrono-0.4.19",
@@ -2896,7 +3026,7 @@ third_party_rust_library(
         ":itertools-0.8.2",
         ":nix-0.17.0",
         ":slog",
-        ":slog-term-2.8.0",
+        ":slog-term",
     ],
 )
 
@@ -2920,7 +3050,7 @@ third_party_rust_binary(
         ":itertools-0.8.2",
         ":nix-0.17.0",
         ":slog",
-        ":slog-term-2.8.0",
+        ":slog-term",
         ":slog_glog_fmt",
     ],
 )
@@ -3154,6 +3284,20 @@ third_party_rust_library(
         ":syn-1.0.67",
         ":unicode-xid-0.2.1",
     ],
+)
+
+third_party_rust_library(
+    name = "take_mut-0.2.2",
+    srcs = [
+        "vendor/take_mut-0.2.2/src/lib.rs",
+        "vendor/take_mut-0.2.2/src/scoped.rs",
+    ],
+    crate = "take_mut",
+    crate_root = "vendor/take_mut-0.2.2/src/lib.rs",
+    edition = "2015",
+    licenses = ["vendor/take_mut-0.2.2/LICENSE"],
+    rustc_flags = ["--cap-lints=allow"],
+    visibility = [],
 )
 
 third_party_rust_library(

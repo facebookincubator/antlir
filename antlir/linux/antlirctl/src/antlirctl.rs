@@ -5,17 +5,27 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::Result;
+#![deny(warnings)]
+#![feature(str_split_once)]
+
 use std::collections::VecDeque;
 use std::path::PathBuf;
+
+use anyhow::Result;
+use slog::o;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
+mod generator;
+mod kernel_cmdline;
 mod mount;
+mod systemd;
 
 #[derive(StructOpt)]
 #[structopt(name = "antlirctl", setting(AppSettings::NoBinaryName))]
 enum AntlirCtl {
+    /// Systemd unit generator
+    AntlirGenerator(generator::Opts),
     /// Simplistic method to mount filesystems
     Mount(mount::Opts),
 }
@@ -38,7 +48,11 @@ fn main() -> Result<()> {
     }
 
     let options = AntlirCtl::from_iter(args);
+
+    let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
+
     match options {
+        AntlirCtl::AntlirGenerator(opts) => generator::generator(log, opts),
         AntlirCtl::Mount(opts) => mount::mount(opts),
     }
 }

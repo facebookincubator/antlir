@@ -4,7 +4,10 @@ rust_binary(
     name = "antlirctl",
     srcs = [
         "src/antlirctl.rs",
+        "src/generator.rs",
+        "src/kernel_cmdline.rs",
         "src/mount.rs",
+        "src/systemd.rs",
     ],
     allocator = "malloc",
     link_style = "static",
@@ -35,6 +38,11 @@ rust_binary(
             "anyhow",  # ~9.5k, very helpful for error handling
             "nix",  # ~5k: access to syscalls (mount, etc)
             "structopt",  # ~300k, but makes iterating development much easier
+            # all the slog crates together add about 50k
+            "slog",
+            "slog-async",
+            "slog-term",
+            "slog_glog_fmt",
         ]
     ],
 )

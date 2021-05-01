@@ -50,6 +50,7 @@ BINARIES = [
     "/usr/bin/journalctl",
     "/usr/bin/networkctl",
     "/usr/bin/systemctl",
+    "/usr/bin/systemd-escape",
     "/usr/bin/systemd-sysusers",
     "/usr/bin/systemd-tmpfiles",
     "/usr/bin/udevadm",
