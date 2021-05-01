@@ -19,6 +19,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
 from ..fs_utils import Path, temp_dir
 from ..subvol_utils import (
+    find_subvolume_on_disk,
     Subvol,
     SubvolOpts,
     TempSubvolumes,
@@ -472,3 +473,12 @@ class SubvolTestCase(unittest.TestCase):
         with TempSubvolumes() as ts:
             with self.assertRaises(AssertionError):
                 sv_path = ts.create("../breaking/the/law")
+
+    def test_find_subvolume_on_disk(self):
+        self.assertTrue(
+            find_subvolume_on_disk(
+                os.path.join(os.path.dirname(__file__), "hello_world_base")
+            )
+            .subvolume_path()
+            .exists()
+        )

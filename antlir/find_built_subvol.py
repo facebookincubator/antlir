@@ -8,11 +8,7 @@ import sys
 
 from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path
-from .subvol_utils import Subvol, volume_dir
-
-
-def _get_subvolumes_dir(path_in_repo=None) -> Path:
-    return volume_dir(path_in_repo) / "targets"
+from .subvol_utils import get_subvolumes_dir, Subvol
 
 
 def find_built_subvol(
@@ -24,7 +20,7 @@ def find_built_subvol(
     with open(Path(layer_output) / "layer.json") as infile:
         return Subvol(
             SubvolumeOnDisk.from_json_file(
-                infile, subvolumes_dir or _get_subvolumes_dir(path_in_repo)
+                infile, subvolumes_dir or get_subvolumes_dir(path_in_repo)
             ).subvolume_path(),
             already_exists=True,
         )

@@ -183,6 +183,7 @@ python_unittest(
     )],
     resources = {
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
+        TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello_world_base",
     },
     deps = [
         ":artifacts_dir",

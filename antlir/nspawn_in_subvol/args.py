@@ -33,8 +33,13 @@ from typing import (
 )
 
 from antlir.cli import add_targets_and_outputs_arg
-from antlir.find_built_subvol import Subvol, find_built_subvol
+from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
+from antlir.find_built_subvol import (
+    Subvol,
+    find_built_subvol,
+)
 from antlir.fs_utils import Path
+from antlir.subvol_utils import find_subvolume_on_disk
 
 
 _DEFAULT_SHELL = "/bin/bash"
@@ -186,6 +191,7 @@ class _NspawnOpts(NamedTuple):
 
     cmd: Iterable[str]
     layer: Subvol
+    subvolume_on_disk: Optional[SubvolumeOnDisk] = None
     boot: bool = False
     bind_repo_ro: bool = False  # to support @mode/dev
     # Future: maybe make these `Path`?
@@ -234,7 +240,7 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--layer",
         required=True,
-        type=find_built_subvol,
+        dest="layer_path",
         help="An `image.layer` output path (`buck targets --show-output`)",
     )
     parser.add_argument(
@@ -531,6 +537,11 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     if allow_debug_only_opts:
         _parser_add_debug_only_not_for_prod_opts(parser)
     args = Path.parse_args(parser, argv)
+
+    layer_path = args.layer_path
+    del args.layer_path
+    args.layer = find_built_subvol(layer_path)
+    args.subvolume_on_disk = find_subvolume_on_disk(layer_path)
 
     return _extract_opts_from_dict(
         _new_nspawn_cli_args,

@@ -18,12 +18,11 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.subvol_utils import with_temp_subvols
+from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path
 
-from ..find_built_subvol import _get_subvolumes_dir
 from ..package_image import Format, package_image
 from ..unshare import Namespace, Unshare, nsenter_as_root
 
@@ -46,7 +45,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     "--build-appliance",
                     layer_resource(__package__, "build-appliance"),
                     "--subvolumes-dir",
-                    _get_subvolumes_dir(),
+                    get_subvolumes_dir(),
                     "--layer-path",
                     layer_path,
                     "--format",

@@ -19,6 +19,7 @@ from typing import AnyStr, BinaryIO, Iterable, Iterator, NamedTuple, TypeVar
 from .artifacts_dir import find_artifacts_dir
 from .btrfs_loopback import LoopbackVolume, run_stdout_to_err
 from .common import check_popen_returncode, get_logger, open_fd, pipe
+from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path, temp_dir
 from .unshare import Namespace, Unshare, nsenter_as_root, nsenter_as_user
 
@@ -1019,3 +1020,19 @@ class TempSubvolumes(contextlib.AbstractContextManager):
             except BaseException:  # Ctrl-C does not interrupt cleanup
                 logging.exception(f"Deleting volume {subvol.path()} failed.")
         return self._temp_dir_ctx.__exit__(exc_type, exc_val, exc_tb)
+
+
+def get_subvolumes_dir(path_in_repo=None) -> Path:
+    return volume_dir(path_in_repo) / "targets"
+
+
+def find_subvolume_on_disk(
+    layer_output: str, path_in_repo: Path = None, subvolumes_dir: Path = None
+) -> SubvolumeOnDisk:
+    # It's OK for both to be None (uses the current file to find repo), but
+    # it's not OK to set both.
+    assert (path_in_repo is None) or (subvolumes_dir is None)
+    with open(Path(layer_output) / "layer.json") as infile:
+        return SubvolumeOnDisk.from_json_file(
+            infile, subvolumes_dir or get_subvolumes_dir(path_in_repo)
+        )
