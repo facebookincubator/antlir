@@ -21,11 +21,10 @@ from antlir.compiler.items import (
     symlink,
     tarball,
 )
-from antlir.find_built_subvol import _get_subvolumes_dir
 from antlir.fs_utils import Path, temp_dir
 from antlir.nspawn_in_subvol import ba_runner
 from antlir.rpm.yum_dnf_conf import YumDnf
-from antlir.subvol_utils import TempSubvolumes
+from antlir.subvol_utils import get_subvolumes_dir, TempSubvolumes
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 
 from .. import subvolume_on_disk as svod
@@ -37,7 +36,7 @@ _orig_btrfs_get_volume_props = svod._btrfs_get_volume_props
 # We need the actual subvolume directory for this mock because the
 # `MountItem` build process in `test_compiler.py` loads a real subvolume
 # through this path (`:hello_world_base`).
-_SUBVOLS_DIR = _get_subvolumes_dir()
+_SUBVOLS_DIR = get_subvolumes_dir()
 _FAKE_SUBVOL = Path("FAKE_SUBVOL")
 _FIND_ARGS = [
     "find",
