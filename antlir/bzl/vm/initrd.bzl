@@ -101,9 +101,8 @@ def initrd(kernel, module_list = None, visibility = None):
         name = name + "--layer",
         features = [
             image.ensure_dirs_exist("/usr/lib/systemd/system"),
-            # mount /dev/vda at /sysroot, followed by seedroot units to make it
-            # rw with /dev/vdb as a scratch device
-            systemd.install_unit("//antlir/vm/initrd:sysroot.mount"),
+            # the initrd will mount /dev/vda at /sysroot - follow it up with
+            # seedroot units to make it rw with /dev/vdb as a scratch device
             systemd.install_unit("//antlir/vm/initrd:seedroot-device-add.service"),
             systemd.install_unit("//antlir/vm/initrd:seedroot.service"),
             systemd.enable_unit("seedroot.service", target = "initrd-fs.target"),

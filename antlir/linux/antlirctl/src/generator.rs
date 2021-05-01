@@ -6,7 +6,7 @@
  */
 
 use std::fs;
-use std::io::BufWriter;
+use std::io::{BufWriter, Write};
 use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
@@ -68,12 +68,32 @@ fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
             "Instantiating antlir-fetch-image@.service";
         );
         instantiate_and_enable_template(
-            opts.normal_dir,
+            opts.normal_dir.clone(),
             "antlir-fetch-image@.service",
             control_os_uri,
             "initrd.target",
         )?;
     }
+
+    if let Some(root) = cmdline.root() {
+        let sysroot_unit_path = opts.normal_dir.join("sysroot.mount");
+        let mut unit = fs::File::create(&sysroot_unit_path)
+            .with_context(|| format!("failed to open {:?} for writing", sysroot_unit_path))?;
+        let root_src = crate::mount::source_to_device_path(&root.root)
+            .with_context(|| format!("unable to understand root={}", root.root))?;
+        write!(
+            unit,
+            "[Unit]\nBefore=initrd-root-fs.target\n[Mount]\nWhat={}\nWhere=/sysroot\nOptions={}\nType={}\n",
+            root_src.to_string_lossy(),
+            root.flags.unwrap_or_else(|| "".to_string()),
+            root.fstype.unwrap_or(""),
+        )
+        .context("failed to write sysroot.mount")?;
+        let requires_dir = opts.normal_dir.join("initrd-root-fs.target.requires");
+        fs::create_dir(&requires_dir)?;
+        symlink(&sysroot_unit_path, requires_dir.join("sysroot.mount"))?;
+    }
+
     Ok(())
 }
 
