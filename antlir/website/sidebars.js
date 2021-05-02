@@ -81,6 +81,7 @@ module.exports = {
         },
         'api/shape',
         'api/genrule/facebook/chef_solo/chef_solo',
+        'api/flavor',
       ],
     },
     {

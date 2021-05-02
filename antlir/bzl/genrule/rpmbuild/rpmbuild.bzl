@@ -10,7 +10,7 @@ available in a pre-determined location: `/rpmbuild/RPMS`.
 """
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:flavor.bzl", "get_flavor_config")
+load("//antlir/bzl:flavor.bzl", "flavor")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
@@ -126,7 +126,7 @@ def private_image_rpmbuild_impl(
     # Figure out which build command to use to install dependencies in the
     # <name>-rpmbuild-install-deps layer.
     installer = getattr(
-        get_flavor_config(
+        flavor.get_flavor_config(
             image_layer_kwargs.get("flavor", REPO_CFG.flavor_default),
             image_layer_kwargs.get("flavor_config_override"),
         ),
