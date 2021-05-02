@@ -484,7 +484,10 @@ shim = struct(
         #   https://github.com/stevegrubb/libcap-ng/issues/20
         #
         # "libcap_ng_compiler_flags": "-DCAPNG_SUPPORTS_AMBIENT=1",
-        "flavor_to_config": {"default": {}},
+        "flavor_to_config": {"default": {
+            "build_appliance": "//images/appliance:stable-build-appliance",
+            "rpm_installer": "dnf",
+        }},
     },
     export_file = _export_file,
     get_visibility = _normalize_visibility,
