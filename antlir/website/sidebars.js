@@ -80,6 +80,7 @@ module.exports = {
           'VM Runtime': ['runtime/vm-runtime/vm-unittest'],
         },
         'api/shape',
+        'api/genrule/facebook/chef_solo/chef_solo',
       ],
     },
     {

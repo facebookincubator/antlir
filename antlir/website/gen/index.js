@@ -17,7 +17,11 @@ const exec = util.promisify(require('child_process').exec);
 // eslint-disable-next-line no-unused-vars
 module.exports = (context, options) => {
   const bzlDir = path.resolve(context.siteDir, '../bzl');
-  const bzlGlobs = [`${bzlDir}/*.bzl`, `${bzlDir}/**/*.bzl`];
+  const bzlGlobs = [
+    `${bzlDir}/*.bzl`,
+    `${bzlDir}/**/*.bzl`,
+    `${bzlDir}/genrule/facebook/chef_solo/*.bzl`,
+  ];
   return {
     name: 'bzldoc',
     async loadContent() {
