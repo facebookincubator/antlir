@@ -9,7 +9,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl/image_actions:feature.bzl", "FEATURES_FOR_LAYER_PREFIX", "image_feature", "normalize_features")
 load(":constants.bzl", "REPO_CFG")
-load(":flavor.bzl", "get_flavor_config")
+load(":flavor.bzl", flavor_helpers = "flavor")
 load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -28,7 +28,7 @@ def compile_image_features(
     if features == None:
         features = []
 
-    flavor_config = get_flavor_config(flavor, flavor_config_override)
+    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
     target_tagger = new_target_tagger()
 
     # Outputs the feature JSON for the given layer to disk so that it can be
