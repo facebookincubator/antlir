@@ -12,14 +12,14 @@ def _validate_flavor_config(
         # Path to a layer target of a build appliance, containing an
         # installed `rpm_repo_snapshot()`, plus an OS image with other
         # image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
-        build_appliance = REPO_CFG.build_appliance_default,
+        build_appliance,
         # The build appliance currently does not set a default package
         # manager -- in non-default settings, this has to be chosen per
         # image, since a BA can support multiple package managers.  In the
         # future, if specifying a non-default installer per image proves
         # onerous when using non-default BAs, we could support a `default`
         # symlink under `RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR`.
-        rpm_installer = REPO_CFG.rpm_installer_default,
+        rpm_installer,
         # List of target or /__antlir__ paths, see `snapshot_install_dir` doc.
         #
         # `None` uses the default determined by looking up `rpm_installer`
