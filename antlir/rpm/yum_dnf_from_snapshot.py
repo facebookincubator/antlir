@@ -616,7 +616,7 @@ def yum_dnf_from_snapshot(
         #
         # But, don't **require** META_DIR to be present, to permit the
         # following normal usage of Antlir containers:
-        #    buck run :ba-container -- --user=root
+        #    buck run :ba=container -- --user=root
         #    mkdir /i1
         #    dnf install -y --installroot=/i1 jq
         optional_protected_paths.append(META_DIR.decode())
@@ -695,7 +695,7 @@ def yum_dnf_from_snapshot(
             "--disableplugin=*",
             # `versionlock` is used by Antlir's version selection.
             # `download` is nice so that folks can easily get snapshot RPMs:
-            #    buck run :x-container -- --user=root -- dnf download ...
+            #    buck run :x=container -- --user=root -- dnf download ...
             "--enableplugin=versionlock,download"
             + (
                 # `dnf builddep` powers `rpmbuild`.

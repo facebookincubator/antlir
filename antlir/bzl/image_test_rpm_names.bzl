@@ -24,7 +24,7 @@ _VALID_PYTHON_IDENTIFIER = _str_set(
 #
 # To populate the initial RPM list, just commit this to source control in
 # the directory that invokes the `image_test_rpm_names` rule:
-#   buck run :layer-container -- -- rpm -qa --queryformat '%{NAME}\n' |
+#   buck run :layer=container -- -- rpm -qa --queryformat '%{NAME}\n' |
 #     sort > rpm_list
 def image_test_rpm_names(name, layer, rpm_list):
     fn_name = name  # Future: if we must allow dashes, replace them here.

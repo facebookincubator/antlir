@@ -67,8 +67,8 @@ def targets_and_outputs_arg_list(name, query):
     provided at the last possible step. The only reasonable place this can be
     done is when the arguments passed to a buck runnable CLI are generated or
     when the target that is being `run` is actually built. ie:, when
-    `buck run //path/to/some/layer-container` is invoked, only when the
-    `//path/to/some/layer-container` target is *actually* built should this
+    `buck run //path/to/some/layer=container` is invoked, only when the
+    `//path/to/some/layer=container` target is *actually* built should this
     mapping be constructed. Any other time is a recipe for potential caching
     problems that are hard to debug.
 

@@ -167,7 +167,7 @@ def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
     # Socket activation: allow requests to queue up, which means that
     # we don't have to explicitly wait for the repo servers to start --
     # any in-container clients will do so if/when needed. This reduces
-    # interactive `-container` boot time by hundreds of ms.
+    # interactive `=container` boot time by hundreds of ms.
     rs.sock.listen()  # leave the request queue size at default
     with rs.sock, _mockable_popen_for_repo_server(
         [

@@ -82,7 +82,7 @@ class PopenArgs(NamedTuple):
     stderr: SubprocessRedirect = None
 
 
-# For interactive experimentation with `-container` and `-boot` targets,
+# For interactive experimentation with `=container` and `=systemd` targets,
 # it's nice to expose some additional knobs that let us do more with the
 # container.
 #
@@ -117,7 +117,7 @@ class _NspawnDebugOnlyNotForProdOpts(NamedTuple):
     cap_net_admin: bool = False
     # We must never allow prod containers access to the host network,
     # because this is a surefire to get nondeterministic tests or builds.
-    # However, for `buck run :foo-container` experimentats, network access
+    # However, for `buck run :foo=container` experimentats, network access
     # can be handy.
     private_network: bool = True
     # Currently controls logging for the CLI, and also for the `repo-server`

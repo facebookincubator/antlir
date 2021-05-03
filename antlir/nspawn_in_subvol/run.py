@@ -14,10 +14,10 @@ image.  This target lets you do just that, for example, here is a shell:
                 cut -f 2- -d ' ')"
 
 The above is a handful to remember, so each layer gets a corresponding
-`-container` target.  To be used like so:
+`=container` target.  To be used like so:
 
-    buck run //PATH/TO:SOME_LAYER-container  # Runs `bash` by default
-    buck run //PATH/TO:SOME_LAYER-container -- -- printenv
+    buck run //PATH/TO:SOME_LAYER=container  # Runs `bash` by default
+    buck run //PATH/TO:SOME_LAYER=container -- -- printenv
 
 Note that there are two sets of `--`.  The first separates `buck run`
 arguments from those of the container runtime.  The second separates the

@@ -273,7 +273,7 @@ def _make_nspawn_cmd(
         # Why don't we just have `opts.cmd` here?
         #
         # One reason is that `systemd-nspawn` causes a host of issues for
-        # our interactive use-case (i.e.  `buck run :foo-container`).  For
+        # our interactive use-case (i.e.  `buck run :foo=container`).  For
         # details, see https://github.com/systemd/systemd/pull/17070
         #
         # Another reason is consistency of API -- by `nsenter`ing the

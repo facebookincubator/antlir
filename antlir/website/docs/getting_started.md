@@ -27,7 +27,7 @@ A common Antlir workflow is:
 
   - Define layer, test, and package targets in a build file (`BUCK` in
     open-source, `TARGETS` at FB).
-  - `buck run :YOUR-LAYER-container` — build your image and launch a shell
+  - `buck run :YOUR-LAYER=container` — build your image and launch a shell
     inside for manual inspection.
   - `buck test :YOUR-TEST` — run a test inside your layer, or to get a debug
     shell: `buck run :YOUR-TEST--test-lay.
