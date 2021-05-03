@@ -8,7 +8,7 @@ title: FAQ
 
 ### How do I inspect the contents of an `image.layer`?
 
-For a real OS image, just run `buck run :LAYER-NAME-container`.
+For a real OS image, just run `buck run :LAYER-NAME=container`.
 
 For an image that lacks a shell, you can do something like this:
 
@@ -25,7 +25,7 @@ image.layer(
 )
 ```
 
-And then `buck run :inspect-my-image-container`.
+And then `buck run :inspect-my-image=container`.
 
 **DO NOT RELY ON THIS, this is subject to change without warning:** In the
 current implementation, you can find the layer's btrfs subvolume (but not
@@ -112,7 +112,7 @@ is `//BUILD:APPLIANCE`, and it uses `dnf`, then the following code will
 put any RPMs matching `jq` into your current directory:
 
 ```bash
-(set -o pipefail && buck run //BUILD:APPLIANCE-container \
+(set -o pipefail && buck run //BUILD:APPLIANCE=container \
   -- --user=root -- /bin/bash -uexc '
     cd $(mktemp -d)
     dnf download jq >&2
@@ -123,7 +123,7 @@ put any RPMs matching `jq` into your current directory:
 For `yum`, this is a bit harder, since Antlir does not yet wrap `yumdownloader`.
 
 ```bash
-(set -o pipefail && buck run //BUILD:APPLIANCE-container \
+(set -o pipefail && buck run //BUILD:APPLIANCE=container \
   -- --user=root -- /bin/bash -uexc '
     cd $(mktemp -d)
     yumdownloader \

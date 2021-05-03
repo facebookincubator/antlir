@@ -76,7 +76,7 @@ buck targets -c parser.default_build_file_syntax=python_dsl //your/proj:
 
 ## Do not expose magic target names to the user
 
-If your macro defines an purely internal target, make sure it's namespaced so
+If your macro defines a purely internal target, make sure it's namespaced so
 that, ideally: - It does not show up in `buck` TAB-completion (put your magic in
 the prefix, not suffix) - The magic prefix should discourages people from typing
 it manually into their TARGETS files or `.bzl` files -- provide an accessor
@@ -89,7 +89,7 @@ method when this is necessary, see e.g.  the FB-internal `fetched_layer` in
 
 There are exceptions to this, which are magic target names that we expect users
 to type as part of a `buck` command-line on a regular basis, e.g.:
-  - `-container` and `-boot` for `image.layer`s
+  - `=container` and `=systemd` for `image.layer`s
   - `--test-layer` for `image.*_unittest`s
 
 ## Get expert review when writing genrules

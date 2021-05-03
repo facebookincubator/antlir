@@ -167,7 +167,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def log_error(self, format, *args):
         # `repo-server` errors should be visible when e.g.  `yum` or `dnf`
-        # are running in a default `buck run :foo-container`.
+        # are running in a default `buck run :foo=container`.
         self.log_message(format, *args, _antlir_logger=log.warning)
 
     def do_GET(self) -> None:

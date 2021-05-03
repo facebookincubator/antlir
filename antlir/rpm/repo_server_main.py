@@ -10,7 +10,7 @@ handle SIGTERM as early as possible. This is our "graceful termination"
 signal -- and not `SIGINT` -- because everything in the Python stack
 interprets `SIGINT` as "dump a stack trace". If we run a fast program like:
 
-    buck run :foo-container -- --user=root -- echo hi
+    buck run :foo=container -- --user=root -- echo hi
 
 Then, we often end up shutting down the repo server before it finished
 starting.  By sending `SIGTERM` we avoid dumping a stack trace in this case.

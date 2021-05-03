@@ -16,7 +16,6 @@ load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:install.bzl", "image_install")
 load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
@@ -45,7 +44,7 @@ def image_rpmbuild(
         # test TARGETS for "toy-rpm" to see how the sources target is set up
         # so that there is no "toy_srcs" top directory.
         # It can be helpful to do
-        # `buck run //<project>:<name>-rpmbuild-setup-container` to inspect the
+        # `buck run //<project>:<name>-rpmbuild-setup=container` to inspect the
         # setup layer and experiment with building, but do not depend on it for
         # production targets.
         source,

@@ -83,7 +83,7 @@ def parse_args(args) -> argparse.Namespace:
         "self-contained image. To allow execution of in-place binaries, "
         "antlir runtimes will automatically mount the repo into any "
         "`--artifacts-may-require-repo` image at runtime (e.g. when "
-        "running image unit-tests, when using `-container` or `-boot` "
+        "running image unit-tests, when using `=container` or `=systemd` "
         "targets, when using the image as a build appliance).",
     )
     parser.add_argument(
