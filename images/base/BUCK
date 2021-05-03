@@ -51,7 +51,7 @@ image.layer(
         systemd.enable_unit("systemd-networkd.service"),
     ],
     flavor_config_override = snapshot_fedora_override,
-    enable_boot_target = True,
+    runtime = ["systemd"],
 )
 
 image.package(
