@@ -1,7 +1,0 @@
-{% if search_domains %}
-search {{ search_domains | join(" ") }}
-{% endif %}
-
-{% for nameserver in nameservers %}
-nameserver {{ nameserver }}
-{% endfor %}

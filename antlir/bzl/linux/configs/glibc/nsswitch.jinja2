@@ -1,8 +1,0 @@
-{% for db in databases %}
-{{ (db.name + ":").ljust(10) }}
-{%- for svc in db.services %}
- {{svc.name}}
-{%-if svc.action%} [{{svc.action.status | upper}}={{svc.action.action}}]{%endif%}
-{%endfor%}
-
-{% endfor %}
