@@ -1,9 +1,0 @@
-load("//antlir/bzl:template.bzl", "template")
-
-template(
-    name = "resolv",
-    srcs = ["resolv.jinja2"],
-    visibility = [
-        "//antlir/linux/...",
-    ],
-)
