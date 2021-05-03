@@ -52,7 +52,7 @@ image.layer(
         systemd.enable_unit("systemd-networkd.service", "workload-pre.target"),
         systemd.enable_unit("systemd-resolved.service", "workload-pre.target"),
     ],
-    enable_boot_target = True,
+    runtime = ["systemd"],
     flavor_config_override = antlir_linux_build_opts(),
     visibility = [
         "//antlir/...",

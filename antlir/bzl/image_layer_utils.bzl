@@ -7,12 +7,12 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":image_utils.bzl", "image_utils")
-load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config", "get_visibility")
+load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config")
 load(":query.bzl", "layer_deps_query")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 
 def _add_run_in_subvol_target(name, kind, extra_args = None):
-    target = name + "-" + kind
+    target = name + "=" + kind
     buck_command_alias(
         name = target,
         exe = "//antlir/nspawn_in_subvol:run",
@@ -69,9 +69,13 @@ def _image_layer_impl(
         # `antlir/volume_for_repo.py`. Setting this here would introduce an
         # issue. See an explanation above definition.
         layer_size_bytes = None,
-        # Set this to emit a `-boot` target, running which will boot
-        # `systemd` inside the image.
-        enable_boot_target = False,
+        # For each element set within runtime, an additional target labelled with the suffix `=<runtime>` will be emitted.
+        # Running each emitted target will invoke different behaviour.
+        # - `=container` will launch an interactive shell inside the image.
+        #    A target with this runtime suffix is always emitted by default.
+        # - `=systemd` will boot `systemd` inside the image.
+        # - `=vm` will TODO.
+        runtime = [],
         visibility = None):
     visibility = visibility or []
     if mount_config == None:
@@ -173,9 +177,10 @@ def _image_layer_impl(
         visibility = visibility,
         antlir_rule = antlir_rule,
     )
+
     _add_run_in_subvol_target(_layer_name, "container")
-    if enable_boot_target:
-        _add_run_in_subvol_target(_layer_name, "boot", extra_args = ["--boot", "--append-console"])
+    if "systemd" in runtime:
+        _add_run_in_subvol_target(_layer_name, "systemd", extra_args = ["--boot", "--append-console"])
 
 image_layer_utils = struct(
     image_layer_impl = _image_layer_impl,
