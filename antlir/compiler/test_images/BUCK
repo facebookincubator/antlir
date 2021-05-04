@@ -187,6 +187,7 @@ image.genrule_layer(
     ],
     parent_layer = ":test-layer",
     rule_type = "test_genrule_layer",
+    bind_repo_ro = True,
     visibility = ["//antlir/compiler/..."],
 )
 
