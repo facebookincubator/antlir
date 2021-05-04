@@ -59,7 +59,7 @@ class GenruleLayerItem(genrule_layer_t):
                 user=pwd.getpwnam(item.user),
                 # Make sure we give nspawn the target -> outputs mapping
                 targets_and_outputs=layer_opts.target_to_path,
-                bind_repo_ro=True,
+                bind_repo_ro=item.bind_repo_ro,
             )
             run_nspawn(  # NB: stdout redirects to stderr by default
                 opts,
