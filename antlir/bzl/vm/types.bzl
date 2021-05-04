@@ -50,11 +50,14 @@ _vm_disk_t = shape.shape(
 )
 
 def _new_vm_disk(
-        seed = False,
+        seed = True,
         package = None,
         layer = None):
     if package and layer:
-        fail("seed_disk_t requires `package` OR `layer`, not both")
+        fail("disk.new() accepts `package` OR `layer`, not both")
+
+    if not seed and not package:
+        fail("disk.new(seed=False, ...) requires `package`")
 
     if layer:
         # Convert the provided layer name into something that we can safely use
@@ -66,7 +69,7 @@ def _new_vm_disk(
             image.package(
                 name = package_target,
                 layer = layer,
-                seed_device = seed,
+                seed_device = True,
                 writable_subvolume = True,
                 visibility = [],
                 antlir_rule = "user-internal",
@@ -78,6 +81,7 @@ def _new_vm_disk(
 
     return shape.new(
         _vm_disk_t,
+        seed = seed,
         package = package,
     )
 

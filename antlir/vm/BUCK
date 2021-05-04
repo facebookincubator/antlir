@@ -131,9 +131,7 @@ vm.run(
     name = "default-stable",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
-        disk = vm.types.disk.new(
-            package = vm.artifacts.rootfs.package.stable,
-        ),
+        disk = vm.artifacts.rootfs.disk.stable(),
     ),
 )
 
@@ -141,9 +139,7 @@ vm.run(
     name = "default-rc",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
-        disk = vm.types.disk.new(
-            package = vm.artifacts.rootfs.package.rc,
-        ),
+        disk = vm.artifacts.rootfs.disk.rc(),
     ),
 )
 
@@ -151,9 +147,7 @@ vm.run(
     name = "default-stable-initrd-debug",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
-        disk = vm.types.disk.new(
-            package = vm.artifacts.rootfs.package.stable,
-        ),
+        disk = vm.artifacts.rootfs.disk.stable(),
         initrd = "{}:{}-initrd-debug".format(
             kernel_get.base_target,
             kernel_get.default.uname,
@@ -169,9 +163,7 @@ vm.run(
     name = "default-rc-initrd-debug",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
-        disk = vm.types.disk.new(
-            package = vm.artifacts.rootfs.package.rc,
-        ),
+        disk = vm.artifacts.rootfs.disk.rc(),
         initrd = "{}:{}-initrd-debug".format(
             kernel_get.base_target,
             kernel_get.default.uname,
