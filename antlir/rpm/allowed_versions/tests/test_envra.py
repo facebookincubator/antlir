@@ -39,6 +39,10 @@ class EnvraTestCase(TestCase):
             epoch=0, name=None, version="v", release="r", arch="a"
         )
         self.assertEqual(str(name_none), "0:*-v-r-a")
+        arch_none = SortableENVRA(
+            epoch=0, name="n", version="v", release="r", arch=None
+        )
+        self.assertEqual(str(arch_none), "0:n-v-r-*")
 
     def test_to_versionlock_line_raise(self):
         epoch_none = SortableENVRA(
@@ -51,6 +55,11 @@ class EnvraTestCase(TestCase):
         )
         with self.assertRaises(ValueError):
             name_none.to_versionlock_line()
+        arch_none = SortableENVRA(
+            epoch=0, name="n", version="v", release="r", arch=None
+        )
+        with self.assertRaises(ValueError):
+            arch_none.to_versionlock_line()
 
     def test_to_versionlock_line_returns(self):
         e = SortableENVRA(epoch=0, name="n", version="v", release="r", arch="a")
@@ -133,8 +142,13 @@ class EnvraTestCase(TestCase):
         self.assertEqual(e.as_rpm_metadata(), rpm_metadata)
 
     def test_as_rpm_metadata_raise(self):
-        e = SortableENVRA(
+        epoch_none = SortableENVRA(
             epoch=None, name="n", version="v", release="r", arch="a"
         )
         with self.assertRaises(TypeError):
-            e.as_rpm_metadata()
+            epoch_none.as_rpm_metadata()
+        arch_none = SortableENVRA(
+            epoch=0, name="n", version="v", release="r", arch=None
+        )
+        with self.assertRaises(TypeError):
+            arch_none.as_rpm_metadata()

@@ -57,9 +57,10 @@ class SortableENVRA(NamedTuple):
         #
         # Future: move the check for these comparisons out of this class
         # and into `compare_rpm_versions`.
-        if self.epoch is None:
+        if self.epoch is None or self.arch is None:
             raise TypeError(
-                f"Cannot use `as_rpm_metadata()` with wildcard epoch: {self}"
+                "Cannot use `as_rpm_metadata()` with wildcard epoch or arch: "
+                f"{self}"
             )
         return self._as_rpm_metadata()
 
@@ -100,8 +101,10 @@ class SortableENVRA(NamedTuple):
         return self._compare(other) < 0
 
     def to_versionlock_line(self) -> str:
-        if self.epoch is None or self.name is None:
-            raise ValueError(f"Versionlock needs concrete name & epoch: {self}")
+        if self.epoch is None or self.name is None or self.arch is None:
+            raise ValueError(
+                f"Versionlock needs concrete name & epoch & arch: {self}"
+            )
         # Our `yum_dnf_versionlock.py` expects TAB-separated ENVRAs.
         return "\t".join(
             [str(self.epoch), self.name, self.version, self.release, self.arch]
@@ -110,7 +113,8 @@ class SortableENVRA(NamedTuple):
     def __repr__(self) -> str:
         epoch = "*" if self.epoch is None else self.epoch
         name = "*" if self.name is None else self.name
-        return f"{epoch}:{name}-{self.version}-{self.release}-{self.arch}"
+        arch = "*" if self.arch is None else self.arch
+        return f"{epoch}:{name}-{self.version}-{self.release}-{arch}"
 
 
 # As a type-hint, this alias represents the fact that the `name` must be
