@@ -13,26 +13,29 @@ load(":target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tag
 # other supported kwargs.
 def image_sendstream_layer(
         name,
-        # `image.source` (see `image_source.bzl`) or path to a target
-        # outputting a btrfs send-stream of a subvolume.
         source = None,
-        # A flavor that is use to load the config in `flavor.bzl`.
         flavor = REPO_CFG.flavor_default,
-        # Struct that can override the values specified by flavor.
         flavor_config_override = None,
         # A sendstream layer does not add any build logic on top of the
         # input, so we treat it as internal to improve CI coverage.
         antlir_rule = "user-internal",
-        # An optional name for the subvolume. This is mainly used
-        # for testing sendstreams to make sure that are created
-        # and mutated correctly.
         subvol_name = None,
-        # Future: Support `parent_layer`.  Mechanistically, applying a
-        # send-stream on top of an existing layer is just a regular `btrfs
-        # receive`.  However, the rules in the current `receive`
-        # implementation for matching the parent to the stream are kind of
-        # awkward, and it's not clear whether they are right for us in Buck.
+        # Mechanistically, applying a send-stream on top of an existing layer
+        # is just a regular `btrfs receive`.  However, the rules in the
+        # current `receive` implementation for matching the parent to the
+        # stream are kind of awkward, and it's not clear whether they are
+        # right for us in Buck.
         **image_layer_kwargs):
+    """
+    Arguments `name`, `source`, etc: same as on `image_layer.bzl`.
+    The only unsupported kwargs are `parent_layer`
+    (we'll support incremental sendstreams eventually) and
+    `features` (make your changes in a child layer).
+    """
+    for bad_kwarg in ["parent_layer", "features"]:
+        if bad_kwarg in image_layer_kwargs:
+            fail("Unsupported with sendstream_layer", bad_kwarg)
+
     target_tagger = new_target_tagger()
     image_layer_utils.image_layer_impl(
         _rule_type = "image_sendstream_layer",

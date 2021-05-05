@@ -96,26 +96,30 @@ load(":image_utils.bzl", "image_utils")
 
 def image_layer(
         name,
-        # The name of another `image_layer` target, on top of which the
-        # current layer will install its features.
         parent_layer = None,
-        # List of `image.feature` target paths and/or nameless structs from
-        # `image.feature`.
         features = None,
-        # The flavor of the of the target. It contains information
-        # about which build appliance to use that is passed into
-        # `flavor.bzl`.
         flavor = REPO_CFG.flavor_default,
-        # A struct that can override the default values fetched from
-        # REPO_CFG[flavor].flavor_to_config.
         flavor_config_override = None,
-        # `image_layer`s are marked as internal as at build time they can
-        # essentially be thought of as transparent conduits between other
-        # concrete, user visible targets.
         antlir_rule = "user-internal",
-        # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
-        # for all other supported kwargs.
         **image_layer_kwargs):
+    """
+    Arguments
+
+    - `parent_layer`: The name of another `image_layer` target, on
+    top of which the current layer will install its features.
+    - `features`: List of `image.feature` target paths and/or
+    nameless structs from `image.feature`.
+    - `flavor`: Picks default build options for the layer, including
+    `build_appliance`, RPM installer, and others. See `flavor.bzl` for
+    details.
+    - `flavor_config_override`: A struct that can override the default
+    values fetched from `REPO_CFG[flavor].flavor_to_config`.
+    - `mount_config`: Specifies how this layer is mounted in the
+    `mounts` field of an `image.feature` of a parent layer. See
+    the field in `_image_layer_impl` in `image_layer_utils.bzl`
+    - `enable_boot_target`: When true, the image to emits a `=systemd`
+    target, which will boot `systemd` inside the image.
+    """
     image_layer_utils.image_layer_impl(
         _rule_type = "image_layer",
         _layer_name = name,

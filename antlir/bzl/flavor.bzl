@@ -69,25 +69,29 @@ load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 
 def _validate_flavor_config(
-        # Path to a layer target of a build appliance, containing an
-        # installed `rpm_repo_snapshot()`, plus an OS image with other
-        # image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
         build_appliance,
-        # The build appliance currently does not set a default package
-        # manager -- in non-default settings, this has to be chosen per
-        # image, since a BA can support multiple package managers.  In the
-        # future, if specifying a non-default installer per image proves
-        # onerous when using non-default BAs, we could support a `default`
-        # symlink under `RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR`.
         rpm_installer,
-        # List of target or /__antlir__ paths, see `snapshot_install_dir` doc.
-        #
-        # `None` uses the default determined by looking up `rpm_installer`
-        # in `RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR`.
         rpm_repo_snapshot = None,
-        # List of nevra objects (see antlir/bzl/image_rpm.bzl for definition).
-        # If rpm with given name to be installed, the nevra defines its version.
         rpm_version_set_overrides = None):
+    """
+    Arguments
+
+    - `build_appliance`: Path to a layer target of a build appliance,
+    containing an installed `rpm_repo_snapshot()`, plus an OS image
+    with other image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
+    - `rpm_installer`: The build appliance currently does not set
+    a default package manager -- in non-default settings, this
+    has to be chosen per image, since a BA can support multiple
+    package managers.  In the future, if specifying a non-default
+    installer per image proves onerous when using non-default BAs, we
+    could support a `default` symlink under `RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR`.
+    - `rpm_repo_snapshot`: List of target or `/__antlir__` paths,
+    see `snapshot_install_dir` doc. `None` uses the default determined
+    by looking up `rpm_installer` in `RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR`.
+    - `rpm_version_set_overrides`: List of `nevra` objects
+    (see antlir/bzl/image_rpm.bzl for definition). If rpm with given name to
+    be installed, the `nevra` defines its version.
+    """
     if build_appliance == None:
         fail(
             "Must be a target path, or a value from `constants.bzl`",
