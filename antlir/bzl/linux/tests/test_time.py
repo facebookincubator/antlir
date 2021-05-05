@@ -11,7 +11,7 @@ import unittest
 
 class TimeTest(unittest.TestCase):
     def test_timezome(self) -> None:
-        """ Verify that the timezone is set properly. """
+        """Verify that the timezone is set properly."""
         out = subprocess.run(
             ["/usr/bin/date", "+%Z"], check=True, stdout=subprocess.PIPE
         )

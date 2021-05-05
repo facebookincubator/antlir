@@ -84,7 +84,7 @@ def temp_filesystem():
 
 
 def temp_filesystem_provides(p=""):
-    "Captures what is provided by _temp_filesystem, if installed at `p` "
+    "Captures what is provided by _temp_filesystem, if installed at `p`"
     "inside the image."
     return {
         ProvidesDirectory(path=Path(f"{p}/a")),
