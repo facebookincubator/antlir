@@ -11,7 +11,7 @@ from .enriched_namedtuple import metaclass_new_enriched_namedtuple
 
 
 class PathObject(type):
-    "Base metaclass for the Requires & Provides hierarchies. Both are "
+    "Base metaclass for the Requires & Provides hierarchies. Both are"
     "enriched namedtuples that have an image-absolute path."
 
     def __new__(metacls, classname, bases, dct):

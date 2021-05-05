@@ -31,7 +31,7 @@ MiB = 2 ** 20
 
 # Exposed as a helper so that test_compiler.py can mock it.
 def _path_is_btrfs_subvol(path: Path) -> bool:
-    "Ensure that there is a btrfs subvolume at this path. As per @kdave at "
+    "Ensure that there is a btrfs subvolume at this path. As per @kdave at"
     "https://stackoverflow.com/a/32865333"
     # You'd think I could just `os.statvfs`, but no, not until Py3.7
     # https://bugs.python.org/issue32143

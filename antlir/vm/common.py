@@ -8,7 +8,7 @@ from functools import wraps
 
 
 def async_wrapper(f):
-    """ Decorate a function to run in an async event loop. """
+    """Decorate a function to run in an async event loop."""
 
     @wraps(f)
     def wrapper(*args, **kwargs):

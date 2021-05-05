@@ -32,7 +32,7 @@ unit_test_specs = [
 
 
 def _twant(target):
-    """ Make a target name into a '.wants' dir as a Path type."""
+    """Make a target name into a '.wants' dir as a Path type."""
     return Path(target + ".wants")
 
 

@@ -584,7 +584,7 @@ class DownloadReposTestCase(unittest.TestCase):
             )
 
     def test_lose_repodata_commit_race(self):
-        "We downloaded & stored a repodata, but in the meantime some other "
+        "We downloaded & stored a repodata, but in the meantime some other"
         "writer committed the same repodata."
 
         original_maybe_store = RepoDBContext.maybe_store
@@ -611,7 +611,7 @@ class DownloadReposTestCase(unittest.TestCase):
             )
 
     def test_lose_rpm_commit_race(self):
-        "We downloaded & stored an RPM, but in the meantime some other "
+        "We downloaded & stored an RPM, but in the meantime some other"
         "writer committed the same RPM."
         original_get_canonical = (
             RepoDBContext.get_rpm_canonical_checksums_per_universe
