@@ -89,8 +89,11 @@ def _image_layer_impl(
         #    A target with this runtime suffix is always emitted by default.
         # - `=systemd` will boot `systemd` inside the image.
         # - `=vm` will TODO.
-        runtime = [],
+        runtime = None,
         visibility = None):
+    runtime = runtime or []
+    if "container" not in runtime:
+        runtime.append("container")
     visibility = visibility or []
     if mount_config == None:
         mount_config = {}
@@ -192,19 +195,23 @@ def _image_layer_impl(
         antlir_rule = antlir_rule,
     )
 
-    _add_run_in_subvol_target(_layer_name, "container")
-    _add_fail_with_message_target(
-        _layer_name,
-        "container",
-        "The '-container' helper target is deprecated, use '=container' instead.",
-    )
-    if "systemd" in runtime:
-        _add_run_in_subvol_target(_layer_name, "systemd", extra_args = ["--boot", "--append-console"])
-        _add_fail_with_message_target(
-            _layer_name,
-            "boot",
-            "The '-boot' helper target is deprecated, use '=systemd' instead.",
-        )
+    for elem in runtime:
+        if elem == "container":
+            _add_run_in_subvol_target(_layer_name, "container")
+            _add_fail_with_message_target(
+                _layer_name,
+                "container",
+                "The '-container' helper target is deprecated, use '=container' instead.",
+            )
+        elif elem == "systemd":
+            _add_run_in_subvol_target(_layer_name, "systemd", extra_args = ["--boot", "--append-console"])
+            _add_fail_with_message_target(
+                _layer_name,
+                "boot",
+                "The '-boot' helper target is deprecated, use '=systemd' instead.",
+            )
+        else:
+            fail("Unsupported runtime encountered: {}".format(elem))
 
 image_layer_utils = struct(
     image_layer_impl = _image_layer_impl,
