@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
 load(":defs.bzl", "fake_macro_library")
 
 # IMPORTANT: If you add new `.bzl` files or dependencies in `antlir/`,
@@ -278,4 +278,12 @@ fake_macro_library(
     srcs = [
         "linux/filesystem.bzl",
     ],
+)
+
+python_binary(
+    name = "fail-with-message",
+    srcs = ["fail_with_message.py"],
+    main_module = "antlir.bzl.fail_with_message",
+    visibility = ["PUBLIC"],
+    deps = ["//antlir:cli"],
 )
