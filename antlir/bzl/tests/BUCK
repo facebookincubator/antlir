@@ -204,3 +204,15 @@ image.python_unittest(
     srcs = ["test_systemd_features.py"],
     deps = ["//antlir:fs_utils"],
 )
+
+python_unittest(
+    name = "test-fail-with-message",
+    srcs = ["test_fail_with_message.py"],
+    needed_coverage = [
+        (100, "//antlir/bzl:fail-with-message-library"),
+    ],
+    resources = {"//antlir/bzl:fail-with-message": "fail-with-message"},
+    deps = [
+        "//antlir/bzl:fail-with-message-library",
+    ],
+)

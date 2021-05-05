@@ -28,6 +28,20 @@ def _add_run_in_subvol_target(name, kind, extra_args = None):
         antlir_rule = "user-internal",
     )
 
+# In an attempt to preserve some form of backwards compatibility,
+# create targets that will be invoked when users use deprecated
+# helper targets (eg. -boot) for a more pleasant and informative failure.
+# These targets are intended to exist temporarily, and should be deleted
+# once all deprecated helper targets are deemed archaic enough.
+def _add_fail_with_message_target(name, kind, message):
+    target = name + "-" + kind
+    buck_command_alias(
+        name = target,
+        exe = "//antlir/bzl:fail-with-message",
+        args = ["--message", message],
+        antlir_rule = "user-internal",
+    )
+
 def _image_layer_impl(
         _rule_type,
         _layer_name,
@@ -179,8 +193,18 @@ def _image_layer_impl(
     )
 
     _add_run_in_subvol_target(_layer_name, "container")
+    _add_fail_with_message_target(
+        _layer_name,
+        "container",
+        "The '-container' helper target is deprecated, use '=container' instead.",
+    )
     if "systemd" in runtime:
         _add_run_in_subvol_target(_layer_name, "systemd", extra_args = ["--boot", "--append-console"])
+        _add_fail_with_message_target(
+            _layer_name,
+            "boot",
+            "The '-boot' helper target is deprecated, use '=systemd' instead.",
+        )
 
 image_layer_utils = struct(
     image_layer_impl = _image_layer_impl,
