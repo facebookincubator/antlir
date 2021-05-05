@@ -21,10 +21,15 @@ def compile_image_features(
         features,
         flavor,
         flavor_config_override,
-        # Future: eliminate this argument so that the build-time hardcodes this to "volume".
-        # Move this setting into btrfs-specific `image.package` options. See this post for more details
-        # https://www.internalfb.com/diff/D27163192?dst_version_fbid=363793664958542&transaction_fbid=501969597475736
         subvol_name = None):
+    '''
+    Arguments
+
+    - `subvol_name`: Future: eliminate this argument so that the build-time
+    hardcodes this to "volume". Move this setting into btrfs-specific
+    `image.package` options. See this post for more details
+    https://fburl.com/diff/3050aw26
+    '''
     if features == None:
         features = []
 
