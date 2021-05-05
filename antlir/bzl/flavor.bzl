@@ -5,7 +5,7 @@
 
 """
 A flavor is a string identifier that controls build configurations.
-Optinos contained in a flavor can include `build_appliance` as well
+Options contained in a flavor can include `build_appliance` as well
 as `rpm_installer`.
 
 This allows us to specify compability between
