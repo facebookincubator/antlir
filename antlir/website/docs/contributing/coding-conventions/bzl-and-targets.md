@@ -90,7 +90,7 @@ method when this is necessary, see e.g.  the FB-internal `fetched_layer` in
 There are exceptions to this, which are magic target names that we expect users
 to type as part of a `buck` command-line on a regular basis, e.g.:
   - `=container` and `=systemd` for `image.layer`s
-  - `--test-layer` for `image.*_unittest`s
+  - `=container` for `image.*_unittest`s
 
 ## Get expert review when writing genrules
 
