@@ -3,9 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:oss_shim.bzl", "buck_command_alias")
 load("//antlir/bzl/image_actions:install.bzl", "image_install_buck_runnable")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
+load(":image_layer_utils.bzl", "container_target_name")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
 load(":query.bzl", "layer_deps_query")
@@ -113,7 +115,7 @@ def _nspawn_wrapper_properties(
     inner_test_kwargs = {k: v for k, v in inner_test_kwargs.items() if k not in outer_test_kwargs}
 
     # This target name gets a suffix to keep it discoverable via tab-completion
-    test_layer = name + "--test-layer"
+    test_layer = name + "__test_layer"
 
     # Make a test-specific image containing the test binary.
     binary_path = "/layer-test-binary.par"
@@ -126,6 +128,11 @@ def _nspawn_wrapper_properties(
         parent_layer = layer,
         features = [image_install_buck_runnable(inner_test_target, binary_path)],
         visibility = visibility,
+    )
+    buck_command_alias(
+        name = container_target_name(name),
+        antlir_rule = "user-internal",
+        exe = ":" + container_target_name(test_layer),
     )
 
     # Generate a `.py` file that sets some of the key container options.

@@ -42,6 +42,9 @@ def _add_fail_with_message_target(name, kind, message):
         antlir_rule = "user-internal",
     )
 
+def container_target_name(name):
+    return name + "=container"
+
 def _image_layer_impl(
         _rule_type,
         _layer_name,
