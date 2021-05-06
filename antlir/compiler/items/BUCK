@@ -108,10 +108,13 @@ python_unittest(
     name = "group-integration-test",
     srcs = ["tests/group_integration_test.py"],
     resources = {
-        REPO_CFG.build_appliance_default: "tests/base-layer",
-        TEST_IMAGE_PREFIX + "groups-added": "tests/groups-added",
+        layer_resource(
+            REPO_CFG.build_appliance_default,
+        ): "tests/base-layer",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "groups-added",
+        ): "tests/groups-added",
     },
-    tags = ["slow"],
     deps = [
         ":common_testlib",
         ":group",
@@ -468,13 +471,13 @@ python_unittest(
     name = "user-integration-test",
     srcs = ["tests/user_integration_test.py"],
     resources = {
-        REPO_CFG.build_appliance_default: "tests/base-layer",
-        TEST_IMAGE_PREFIX + "users-added": "tests/users-added",
         layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/test-build-appliance",
+            REPO_CFG.build_appliance_default,
+        ): "tests/base-layer",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "users-added",
+        ): "tests/users-added",
     },
-    tags = ["slow"],
     deps = [
         ":common_testlib",
         ":user",

@@ -7,6 +7,7 @@
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
+from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..group import GroupItem
 from ..user import UserItem
@@ -15,7 +16,7 @@ from .common import BaseItemTestCase, getent
 
 class UserItemIntegrationTestCase(BaseItemTestCase):
     def test_user_item_in_subvol(self):
-        layer = find_built_subvol(Path(__file__).dirname() / "base-layer")
+        layer = layer_resource_subvol(__package__, "base-layer")
         items = [
             GroupItem(from_target="t", name="foo"),
             UserItem(
@@ -41,7 +42,7 @@ class UserItemIntegrationTestCase(BaseItemTestCase):
             )
 
     def test_check_groups_added_layer(self):
-        layer = find_built_subvol(Path(__file__).dirname() / "users-added")
+        layer = layer_resource_subvol(__package__, "users-added")
         self.assertRegex(
             getent(layer, "group", "newuser"), rb"^newuser:x:\d+:\n$"
         )
