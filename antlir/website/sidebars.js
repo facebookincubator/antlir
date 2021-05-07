@@ -39,7 +39,7 @@ module.exports = {
       type: 'category',
       label: 'Tutorials',
       collapsed: false,
-      items: ['tutorials/defining-an-image'],
+      items: ['tutorials/defining-an-image', 'tutorials/helper-buck-targets'],
     },
     {
       type: 'category',

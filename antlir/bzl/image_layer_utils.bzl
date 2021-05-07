@@ -87,11 +87,8 @@ def _image_layer_impl(
         # issue. See an explanation above definition.
         layer_size_bytes = None,
         # For each element set within runtime, an additional target labelled with the suffix `=<runtime>` will be emitted.
-        # Running each emitted target will invoke different behaviour.
-        # - `=container` will launch an interactive shell inside the image.
-        #    A target with this runtime suffix is always emitted by default.
-        # - `=systemd` will boot `systemd` inside the image.
-        # - `=vm` will TODO.
+        # A target with runtime suffix `container` is always emitted by default.
+        # See [docs](/docs/tutorials/helper-buck-targets#imagelayer).
         runtime = None,
         visibility = None):
     runtime = runtime or []
