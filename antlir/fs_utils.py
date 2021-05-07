@@ -369,6 +369,9 @@ RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR = Path(
     "/__antlir__/rpm/default-snapshot-for-installer/"
 )
 
+# Contains data needed to run the package manager in images.
+ANTLIR_DIR = Path("/__antlir__")
+
 
 # Future: If it becomes necessary to serialize dict keys that are `Path`,
 # the `json` module currently does not support custom key serialization.  In
@@ -539,3 +542,16 @@ def populate_temp_file_and_rename(
         except BaseException:  # Clean up even on Ctrl-C
             os.unlink(tf.name)
             raise
+
+
+# This list contains the arguments needed to make
+# a btrfs reflink from a different file.
+CP_CLONE_CMD = [
+    "cp",
+    "--recursive",
+    "--no-clobber",
+    "--no-dereference",
+    "--reflink=always",
+    "--sparse=auto",
+    "--preserve=all",
+]

@@ -33,13 +33,46 @@ from types import MappingProxyType
 from typing import Iterable
 
 from antlir.common import set_new_key
-from antlir.fs_utils import RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
-from antlir.nspawn_in_subvol.args import NspawnPluginArgs, _NspawnOpts
+from antlir.fs_utils import ANTLIR_DIR, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
+from antlir.nspawn_in_subvol.args import (
+    AttachAntlirDirMode,
+    NspawnPluginArgs,
+    _NspawnOpts,
+)
+from antlir.nspawn_in_subvol.common import AttachAntlirDirError
 
 from . import NspawnPlugin
+from .attach_antlir_dir import AttachAntlirDir
 from .repo_servers import RepoServers
 from .shadow_paths import ShadowPaths
 from .yum_dnf_versionlock import YumDnfVersionlock
+
+
+def _get_snapshot_dir(opts: _NspawnOpts, plugin_args: NspawnPluginArgs):
+    # Shadow RPM installers by default, when running as "root".  It is ugly
+    # to condition this on "root", but in practice, it is a significant
+    # costs savings for non-root runs -- no need to start repo servers and
+    # shadow bind mounts that (`sudo` aside) would not get used.
+    if (
+        plugin_args.attach_antlir_dir != AttachAntlirDirMode.OFF
+        and not opts.layer.path(ANTLIR_DIR).exists()
+        and opts.subvolume_on_disk
+        and opts.subvolume_on_disk.build_appliance_path
+    ):
+        return (
+            opts.subvolume_on_disk.build_appliance_path
+            / RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR.strip_leading_slashes()
+        )
+
+    if plugin_args.attach_antlir_dir == AttachAntlirDirMode.EXPLICIT_ON:
+        raise AttachAntlirDirError(
+            "ERROR: Could not attach antlir dir. Please"
+            "check to make sure that you do not have an existing antlir "
+            "directory in your image and that the image has a "
+            "discoverable build appliance (usually through its flavor)."
+        )
+
+    return opts.layer.path(RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR)
 
 
 def rpm_nspawn_plugins(
@@ -48,13 +81,8 @@ def rpm_nspawn_plugins(
     serve_rpm_snapshots = set(plugin_args.serve_rpm_snapshots)
     shadow_paths = [*plugin_args.shadow_paths]
 
-    # Shadow RPM installers by default, when running as "root".  It is ugly
-    # to condition this on "root", but in practice, it is a significant
-    # costs savings for non-root runs -- no need to start repo servers and
-    # shadow bind mounts that (`sudo` aside) would not get used.
-    default_snapshot_dir = opts.layer.path(
-        RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
-    )
+    default_snapshot_dir = _get_snapshot_dir(opts, plugin_args)
+
     if (
         plugin_args.shadow_proxied_binaries
         and opts.user.pw_name == "root"
@@ -87,6 +115,11 @@ def rpm_nspawn_plugins(
     snapshot_to_versionlock = MappingProxyType(s_to_vl)
 
     return (
+        *(
+            [AttachAntlirDir()]
+            if plugin_args.attach_antlir_dir != AttachAntlirDirMode.OFF
+            else []
+        ),
         # This handles `ShadowPaths` even though it's not RPM-specific
         # because the two integrate -- a stacked diff will add a default
         # behavior to shadow the OS `yum` / `dnf` binaries with wrappers

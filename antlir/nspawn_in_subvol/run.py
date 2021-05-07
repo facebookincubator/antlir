@@ -161,14 +161,17 @@ def _set_up_run_cli(argv: Iterable[Union[str, Path]]) -> _CliSetup:
 if __name__ == "__main__":  # pragma: no cover
     import sys
 
-    with _set_up_run_cli(sys.argv[1:]) as cli_setup:
-        ret, _boot_ret = cli_setup._run_nspawn(
-            PopenArgs(
-                check=False,  # We forward the return code below
-                # By default, our internal `Popen` analogs redirect `stdout`
-                # to `stderr` to protect stdout from subprocess spam.  Undo
-                # that, since we want this CLI to be usable in pipelines.
-                stdout=1,
+    try:
+        with _set_up_run_cli(sys.argv[1:]) as cli_setup:
+            ret, _boot_ret = cli_setup._run_nspawn(
+                PopenArgs(
+                    check=False,  # We forward the return code below
+                    # By default, our internal `Popen` analogs redirect `stdout`
+                    # to `stderr` to protect stdout from subprocess spam.  Undo
+                    # that, since we want this CLI to be usable in pipelines.
+                    stdout=1,
+                )
             )
-        )
+    except Exception as e:
+        sys.exit(e)
     sys.exit(ret.returncode)

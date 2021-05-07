@@ -81,3 +81,7 @@ def parse_cgroup2_path(proc_cgroup: bytes) -> Path:
             my_cg = line
     assert my_cg is not None, f"cgroup2 is required: {proc_cgroup}"
     return Path(my_cg[len(cg2_prefix) :])
+
+
+class AttachAntlirDirError(Exception):
+    pass
