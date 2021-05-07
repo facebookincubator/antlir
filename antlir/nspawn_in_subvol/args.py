@@ -19,6 +19,7 @@ This file has two roles:
 import argparse
 import pwd
 import subprocess
+from enum import Enum
 from typing import (
     Any,
     AnyStr,
@@ -48,6 +49,12 @@ T = TypeVar("T")
 # This typehint marks values that accept the types that are allowed by
 # `subprocess`'s `std{in,out,err}` redirects.
 SubprocessRedirect = Any
+
+
+class AttachAntlirDirMode(Enum):
+    OFF = "off"
+    DEFAULT_ON = "default_on"  # Fails silently when ANTLIR_DIR is not available
+    EXPLICIT_ON = "explicit_on"  # Errors out when ANTLIR_DIR is not available
 
 
 class PopenArgs(NamedTuple):
@@ -414,6 +421,7 @@ class NspawnPluginArgs(NamedTuple):
     serve_rpm_snapshots: Iterable[Path] = ()
     shadow_paths: Iterable[Tuple[Path, Path]] = ()
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
+    attach_antlir_dir: AttachAntlirDirMode = AttachAntlirDirMode.OFF
 
 
 def _parser_add_plugin_args(parser: argparse.ArgumentParser):
@@ -477,6 +485,26 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
         "RPM versions, one per line, in the following TAB-separated "
         "format: N\\tE\\tV\\tR\\tA. Snapshot is a container path, while "
         "versionlock is a host path.",
+    )
+    parser.add_argument(
+        "--attach-antlir-dir",
+        choices=list(AttachAntlirDirMode),
+        type=AttachAntlirDirMode,
+        # Future: `DEFAULT_ON`, also has `EXPLICIT_ON`
+        default=AttachAntlirDirMode.OFF,
+        dest="attach_antlir_dir",
+        help="Enabling this option will copy the `__antlir__` directory "
+        "from the build_appliance used to build the layer into "
+        "the volume created by nspawn_in_subvol. "
+        "This includes an rpm snapshot and will allow dnf and yum "
+        "to be run in non build appliance containers. For now this option "
+        "only works for non-sendstream objects. The directory will be removed "
+        "when the container exits. Enabling this requires that (a) the image "
+        "does not contain `/__antlir__`, and (b) that the image's BA is "
+        "discoverable (normally via the `flavor`). The option "
+        '"explicit_on" throws an error if it cannot find the `__antlir__` '
+        'directory in the build appliance while "default_on" fails '
+        "silently.",
     )
 
 

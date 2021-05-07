@@ -7,7 +7,7 @@
 import subprocess
 
 from antlir.compiler.requires_provides import RequireDirectory
-from antlir.fs_utils import Path
+from antlir.fs_utils import CP_CLONE_CMD, Path
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
 
@@ -99,13 +99,7 @@ class CloneItem(clone_t, ImageItem):
         #     including hardlinks.
         subvol.run_as_root(
             [
-                "cp",
-                "--recursive",
-                "--no-clobber",
-                "--no-dereference",
-                "--reflink=always",
-                "--sparse=auto",
-                "--preserve=all",
+                *CP_CLONE_CMD,
                 *sources,
                 subvol.path(self.dest),
             ]

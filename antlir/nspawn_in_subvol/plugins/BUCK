@@ -1,6 +1,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//antlir/bzl:snapshot_install_dir.bzl", "ANTLIR_DIR")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 # No test coverage because it has no logic.
@@ -84,6 +85,7 @@ python_library(
     name = "rpm",
     srcs = ["rpm.py"],
     deps = [
+        ":attach_antlir_dir",
         ":plugins",
         ":repo_servers",
         ":shadow_paths",
@@ -175,4 +177,33 @@ python_unittest(
         ":testlib_rpm_base",
         "//antlir:subvol_utils",
     ],
+)
+
+python_library(
+    name = "attach_antlir_dir",
+    srcs = ["attach_antlir_dir.py"],
+    deps = [
+        "//antlir:find_built_subvol",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:plugin_hooks",
+    ],
+)
+
+python_unittest(
+    name = "test-attach-antlir-dir",
+    srcs = ["tests/test_attach_antlir_dir.py"],
+    needed_coverage = [(100, ":attach_antlir_dir")],
+    resources = {
+        layer_resource(":attach-antlir-dir-test-layer"): "tests/attach_antlir_dir",
+    },
+    deps = [
+        "//antlir:subvol_utils",
+        "//antlir/nspawn_in_subvol:testlib_base",
+    ],
+)
+
+image.layer(
+    name = "attach-antlir-dir-test-layer",
+    parent_layer = TEST_IMAGE_PREFIX + "test-layer",
+    features = [image.remove(ANTLIR_DIR)],
 )
