@@ -117,8 +117,11 @@ def image_layer(
     - `mount_config`: Specifies how this layer is mounted in the
     `mounts` field of an `image.feature` of a parent layer. See
     the field in `_image_layer_impl` in `image_layer_utils.bzl`
-    - `enable_boot_target`: When true, the image to emits a `=systemd`
-    target, which will boot `systemd` inside the image.
+    - `runtime`: A list of desired helper buck targets to be emitted.
+    `container` is always included in the list by default.
+    See the field in `_image_layer_impl` in `image_layer_utils.bzl` and the
+    [docs](/docs/tutorials/helper-buck-targets#imagelayer) for the list of
+    possible helpers, their respective behaviours, and how to invoke them.
     """
     image_layer_utils.image_layer_impl(
         _rule_type = "image_layer",
