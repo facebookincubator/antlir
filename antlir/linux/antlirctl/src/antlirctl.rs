@@ -6,6 +6,7 @@
  */
 
 #![deny(warnings)]
+#![allow(stable_features)]
 #![feature(str_split_once)]
 
 use std::collections::VecDeque;

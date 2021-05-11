@@ -47,7 +47,7 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly
+            toolchain: nightly-2021-03-25
             override: true
 
       - name: Fetch buck
