@@ -49,6 +49,7 @@ python_library(
         "//tupperware/cm/antlir/...",
         "//tupperware/image/composable_services/tests:systemd_test_framework",
         "//tupperware/image/scripts:make-base-chroot-update-diff-library",
+        "//tupperware/image/scripts/cm/...",
     ],
     deps = [":common"],
 )
