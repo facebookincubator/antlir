@@ -19,7 +19,7 @@ user_t = shape.shape(
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
 
-def image_user_add(
+def feature_user_add(
         username,
         primary_group,
         home_dir,
@@ -28,13 +28,13 @@ def image_user_add(
         supplementary_groups = None,
         comment = None):
     """
-`image.user_add` adds a user entry to /etc/passwd.
+`feature.user_add` adds a user entry to /etc/passwd.
 
 Example usage:
 
 ```
-image.group_add("myuser")
-image.user_add(
+feature.group_add("myuser")
+feature.user_add(
     "myuser",
     primary_group = "myuser",
     home_dir = "/home/myuser",
@@ -72,5 +72,30 @@ user's initial login group or home directory.
         new_target_tagger(),
         items = struct(users = [user]),
         # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image_actions:user"],
+        extra_deps = ["//antlir/bzl/image/feature:usergroup"],
+    )
+
+group_t = shape.shape(
+    name = str,
+    id = shape.field(int, optional = True),
+)
+
+def feature_group_add(groupname, gid = None):
+    """
+`feature.group_add("leet")` adds a group `leet` with an auto-assigned group ID.
+`feature.group_add("leet", 1337)` adds a group `leet` with GID 1337.
+
+Group add semantics generally follow `groupadd`. If groupname or GID conflicts
+with existing entries, image build will fail. It is recommended to avoid
+specifying GID unless absolutely necessary.
+
+It is also recommended to always reference groupnames and not GIDs; since GIDs
+are auto-assigned, they may change if underlying layers add/remove groups.
+    """
+
+    return target_tagger_to_feature(
+        new_target_tagger(),
+        items = struct(groups = [shape.new(group_t, name = groupname, id = gid)]),
+        # The `fake_macro_library` docblock explains this self-dependency
+        extra_deps = ["//antlir/bzl/image/feature:usergroup"],
     )

@@ -46,14 +46,6 @@ fake_macro_library(
 )
 
 fake_macro_library(
-    name = "group",
-    srcs = ["group.bzl"],
-    deps = [
-        "//antlir/bzl:target_tagger",
-    ],
-)
-
-fake_macro_library(
     name = "remove",
     srcs = ["remove.bzl"],
     deps = [
@@ -82,15 +74,6 @@ fake_macro_library(
     srcs = ["tarball.bzl"],
     deps = [
         "//antlir/bzl:maybe_export_file",
-        "//antlir/bzl:target_tagger",
-    ],
-)
-
-fake_macro_library(
-    name = "user",
-    srcs = ["user.bzl"],
-    deps = [
-        "//antlir/bzl:shape",
         "//antlir/bzl:target_tagger",
     ],
 )
