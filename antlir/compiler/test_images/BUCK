@@ -949,7 +949,6 @@ image.layer(
     parent_layer = REPO_CFG.build_appliance_default,
     features = [
         image.group_add("newuser"),
-        image.ensure_dirs_exist("/home/newuser"),
         image.user_add(
             "newuser",
             primary_group = "newuser",

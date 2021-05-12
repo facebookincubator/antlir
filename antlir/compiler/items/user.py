@@ -157,7 +157,6 @@ class UserItem(user_t, ImageItem):
         for groupname in self.supplementary_groups:
             yield RequireGroup(groupname)
         yield RequireFile(path=PASSWD_FILE_PATH)
-        yield RequireDirectory(path=self.home_dir)
         yield RequireFile(path=self.shell)
 
     def provides(self) -> Generator[Provider, None, None]:
