@@ -8,14 +8,12 @@
 load("//antlir/bzl/image_actions:clone.bzl", "image_clone")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_dirs_exist", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:feature.bzl", "image_feature")
-load("//antlir/bzl/image_actions:group.bzl", "image_group_add")
 load("//antlir/bzl/image_actions:install.bzl", "image_install", "image_install_buck_runnable")
 load("//antlir/bzl/image_actions:mount.bzl", "image_host_dir_mount", "image_host_file_mount", "image_layer_mount")
 load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
 load("//antlir/bzl/image_actions:rpms.bzl", "image_rpms_install", "image_rpms_remove_if_exists")
 load("//antlir/bzl/image_actions:symlink.bzl", "image_ensure_dir_symlink", "image_ensure_file_symlink")
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
-load("//antlir/bzl/image_actions:user.bzl", "image_user_add")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
 load(":image_genrule_layer.bzl", "image_genrule_layer")
 load(":image_gpt.bzl", "image_gpt", "image_gpt_partition")
@@ -40,7 +38,6 @@ image = struct(
     ensure_subdirs_exist = image_ensure_subdirs_exist,
     feature = image_feature,
     genrule_layer = image_genrule_layer,
-    group_add = image_group_add,
     host_dir_mount = image_host_dir_mount,
     host_file_mount = image_host_file_mount,
     install = image_install,
@@ -60,7 +57,6 @@ image = struct(
     source = image_source,
     tarball = image_tarball,
     test_rpm_names = image_test_rpm_names,
-    user_add = image_user_add,
     gpt = image_gpt,
     gpt_partition = image_gpt_partition,
 )

@@ -2,6 +2,7 @@
 # the shim in `defs.bzl`.
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
@@ -938,8 +939,8 @@ image.layer(
     name = "groups-added",
     parent_layer = REPO_CFG.build_appliance_default,
     features = [
-        image.group_add("foo"),
-        image.group_add("leet", 1337),
+        feature.group_add("foo"),
+        feature.group_add("leet", 1337),
     ],
     visibility = ["//antlir/compiler/..."],
 )
@@ -948,8 +949,8 @@ image.layer(
     name = "users-added",
     parent_layer = REPO_CFG.build_appliance_default,
     features = [
-        image.group_add("newuser"),
-        image.user_add(
+        feature.group_add("newuser"),
+        feature.user_add(
             "newuser",
             primary_group = "newuser",
             home_dir = "/home/newuser",
