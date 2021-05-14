@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:image_package.bzl", "image_package")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":kernel.bzl", "kernel_t", "normalize_kernel")
@@ -66,7 +66,7 @@ def _new_vm_disk(
         layer_name = layer.lstrip(":").lstrip("//").replace("/", "_").replace(":", "__")
         package_target = "{}=image.btrfs".format(layer_name)
         if not native.rule_exists(package_target):
-            image.package(
+            image_package(
                 name = package_target,
                 layer = layer,
                 seed_device = True,

@@ -61,8 +61,9 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
+load(":build_vm_run_target.bzl", "build_vm_run_target")
 load(":types.bzl", "api")
 
 _RULE_TO_TEST_TYPE = {
@@ -70,47 +71,6 @@ _RULE_TO_TEST_TYPE = {
     python_unittest: "pyunit",
     rust_unittest: "rust",
 }
-
-def _build_run_target(
-        # The name of the runnable target
-        name,
-        # An instance of a vm_opts_t shape.
-        vm_opts,
-        # A list of additional cli args to pass to the provided exe_target.
-        # This is passed directly to the `exe_target` so they should already be
-        # properly formatted.
-        args = None,
-        # The exe target to execute.
-        exe_target = "//antlir/vm:run"):
-    buck_genrule(
-        name = name,
-        out = "run",
-        bash = """
-cat > "$TMP/out" << 'EOF'
-#!/bin/sh
-set -ue -o pipefail -o noclobber
-exec $(exe {exe_target}) \
---opts {opts_quoted} \
-{extra_args} \
-"$@"
-EOF
-chmod +x "$TMP/out"
-mv "$TMP/out" "$OUT"
-        """.format(
-            exe_target = exe_target,
-            extra_args = " ".join(args) if args else "",
-            opts_quoted = shell.quote(shape.do_not_cache_me_json(
-                instance = vm_opts,
-                shape = api.opts.t,
-            )),
-        ),
-        cacheable = False,
-        executable = True,
-        visibility = [],
-        antlir_rule = "user-internal",
-    )
-
-    return name
 
 def _build_test_tags(unittest_rule, tags):
     """
@@ -200,7 +160,7 @@ def _vm_unittest(
         layer = ":" + actual_test_layer,
     )
 
-    run_target = _build_run_target(
+    run_target = build_vm_run_target(
         name = "{}=vmtest".format(name),
         args = [
             "--test-binary $(location {})".format(shell.quote(":" + actual_test_binary)),
@@ -382,5 +342,5 @@ vm = struct(
     rust_unittest = _vm_rust_unittest,
     # API export for building vm_opt_t and related types
     types = api,
-    run = _build_run_target,
+    run = build_vm_run_target,
 )
