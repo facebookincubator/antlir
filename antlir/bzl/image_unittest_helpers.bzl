@@ -5,6 +5,7 @@
 
 load("//antlir/bzl:oss_shim.bzl", "buck_command_alias")
 load("//antlir/bzl/image_actions:install.bzl", "image_install_buck_runnable")
+load(":constants.bzl", "REPO_CFG")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_utils.bzl", "container_target_name")
@@ -65,7 +66,8 @@ def _nspawn_wrapper_properties(
         # An `image.opts` containing keys from `container_opts_t`.
         # If you want to install packages, you will usually want to
         # set `shadow_proxied_binaries`.
-        container_opts):
+        container_opts,
+        flavor = REPO_CFG.flavor_default):
     container_opts = normalize_container_opts(container_opts)
 
     # Fail early, so the user doesn't have to wait for the test to build.
@@ -128,6 +130,7 @@ def _nspawn_wrapper_properties(
         parent_layer = layer,
         features = [image_install_buck_runnable(inner_test_target, binary_path)],
         visibility = visibility,
+        flavor = flavor,
     )
     buck_command_alias(
         name = container_target_name(name),

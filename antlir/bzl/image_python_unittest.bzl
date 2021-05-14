@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":constants.bzl", "REPO_CFG")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load(":oss_shim.bzl", "get_visibility", "python_unittest")
 
@@ -19,6 +20,7 @@ def image_python_unittest(
         par_style = None,
         hostname = None,
         container_opts = None,
+        flavor = REPO_CFG.flavor_default,
         **python_unittest_kwargs):
     visibility = visibility or []
 
@@ -36,6 +38,7 @@ def image_python_unittest(
         visibility = visibility,
         hostname = hostname,
         container_opts = container_opts,
+        flavor = flavor,
     )
 
     # `par_style` only applies to the inner test that runs the actual user

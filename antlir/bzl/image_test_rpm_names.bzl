@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load(":constants.bzl", "REPO_CFG")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule")
@@ -26,7 +27,11 @@ _VALID_PYTHON_IDENTIFIER = _str_set(
 # the directory that invokes the `image_test_rpm_names` rule:
 #   buck run :layer=container -- -- rpm -qa --queryformat '%{NAME}\n' |
 #     sort > rpm_list
-def image_test_rpm_names(name, layer, rpm_list):
+def image_test_rpm_names(
+        name,
+        layer,
+        rpm_list,
+        flavor = REPO_CFG.flavor_default):
     fn_name = name  # Future: if we must allow dashes, replace them here.
     if not fn_name.startswith("test_") or not sets.is_subset(
         _str_set(fn_name),
@@ -61,4 +66,5 @@ A Hilariously Unlikely Yet Cheeky Sigil
         srcs = {":" + py_name: py_name},
         resources = {maybe_export_file(rpm_list): "expected_rpm_names"},
         deps = ["//antlir/bzl/tests:check_rpm_names"],
+        flavor = flavor,
     )
