@@ -9,9 +9,14 @@ far smaller and stripped down size.  Since most services do not require more tha
 one locale, we can save a lot of space by only building what we need.
 """
 
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 
-def image_build_locale_archive(name, parent_layer, locales):
+def image_build_locale_archive(
+        name,
+        parent_layer,
+        locales,
+        flavor = REPO_CFG.flavor_default):
     """
     `parent_layer` must have both the locale desired and the
     `build-locale-archive` binary to rebuild the archive.
@@ -33,4 +38,5 @@ cp /usr/lib/locale/locale-archive /
         rule_type = "build_locale_archive",
         user = "root",
         antlir_rule = "user-internal",
+        flavor = flavor,
     )
