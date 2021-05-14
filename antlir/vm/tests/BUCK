@@ -1,3 +1,4 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary", "third_party")
@@ -191,5 +192,16 @@ vm.rust_unittest(
             "tokio",
             platform = "rust",
         ),
+    ],
+)
+
+# This test image should be buildable and is runnable with
+# `buck run :test-layer-with-vm-runtime=vm`
+image.layer(
+    name = "test-layer-with-vm-runtime",
+    parent_layer = REPO_CFG.build_appliance_default,
+    runtime = [
+        "systemd",
+        "vm",
     ],
 )

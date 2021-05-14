@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl/vm:build_vm_run_target.bzl", "build_vm_run_target")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config")
 load(":query.bzl", "layer_deps_query")
@@ -209,6 +210,10 @@ def _image_layer_impl(
                 _layer_name,
                 "boot",
                 "The '-boot' helper target is deprecated, use '=systemd' instead.",
+            )
+        elif elem == "vm":
+            build_vm_run_target(
+                name = _layer_name + "=vm",
             )
         else:
             fail("Unsupported runtime encountered: {}".format(elem))
