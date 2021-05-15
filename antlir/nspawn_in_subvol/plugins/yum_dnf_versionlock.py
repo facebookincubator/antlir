@@ -27,6 +27,7 @@ from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
 from antlir.nspawn_in_subvol.plugin_hooks import (
     _NspawnSetup,
     _NspawnSetupCtxMgr,
+    _SetupSubvolCtxMgr,
 )
 from antlir.subvol_utils import Subvol
 
@@ -75,14 +76,11 @@ class YumDnfVersionlock(NspawnPlugin):
         self._snapshot_to_versionlock = snapshot_to_versionlock
 
     @contextmanager
-    def wrap_setup(
-        self,
-        setup_ctx: _NspawnSetupCtxMgr,
-        opts: _NspawnOpts,
-        popen_args: PopenArgs,
-    ) -> _NspawnSetup:
+    def wrap_setup_subvol(
+        self, setup_subvol_ctx: _SetupSubvolCtxMgr, opts: _NspawnOpts
+    ) -> Subvol:
         with ExitStack() as stack:
-            dest_to_src = {}
+            self.dest_to_src = {}
             for snapshot, versionlock in self._snapshot_to_versionlock.items():
                 for dest, (src, vl_size) in stack.enter_context(
                     _prepare_versionlock_lists(
@@ -94,15 +92,25 @@ class YumDnfVersionlock(NspawnPlugin):
                     )
                 ).items():
                     log.info(f"Locking {vl_size} RPM versions via {dest}")
-                    set_new_key(dest_to_src, dest, src)
-            yield stack.enter_context(
-                setup_ctx(
-                    opts._replace(
-                        bindmount_ro=(
-                            *opts.bindmount_ro,
-                            *((s, d) for d, s in dest_to_src.items()),
-                        )
-                    ),
-                    popen_args,
+                    set_new_key(self.dest_to_src, dest, src)
+            yield stack.enter_context(setup_subvol_ctx(opts))
+
+    @contextmanager
+    def wrap_setup(
+        self,
+        setup_ctx: _NspawnSetupCtxMgr,
+        subvol: Subvol,
+        opts: _NspawnOpts,
+        popen_args: PopenArgs,
+    ) -> _NspawnSetup:
+        with setup_ctx(
+            subvol,
+            opts._replace(
+                bindmount_ro=(
+                    *opts.bindmount_ro,
+                    *((s, d) for d, s in self.dest_to_src.items()),
                 )
-            )
+            ),
+            popen_args,
+        ) as nspawn_setup:
+            yield nspawn_setup

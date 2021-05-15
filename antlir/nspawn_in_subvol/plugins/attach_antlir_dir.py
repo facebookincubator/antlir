@@ -10,6 +10,7 @@ from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
 from antlir.nspawn_in_subvol.plugin_hooks import (
     _NspawnSetup,
     _NspawnSetupCtxMgr,
+    _SetupSubvolCtxMgr,
 )
 
 from . import NspawnPlugin
@@ -17,14 +18,12 @@ from . import NspawnPlugin
 
 class AttachAntlirDir(NspawnPlugin):
     @contextmanager
-    def wrap_setup(
+    def wrap_setup_subvol(
         self,
-        setup_ctx: _NspawnSetupCtxMgr,
+        setup_subvol_ctx: _SetupSubvolCtxMgr,
         opts: _NspawnOpts,
-        popen_args: PopenArgs,
     ) -> _NspawnSetup:
-        with setup_ctx(opts, popen_args) as setup:
-            subvol = setup.subvol
+        with setup_subvol_ctx(opts) as subvol:
             subvol_antlir_dir = subvol.path(ANTLIR_DIR)
             build_appliance_antlir_dir = (
                 opts.subvolume_on_disk.build_appliance_path
@@ -40,6 +39,6 @@ class AttachAntlirDir(NspawnPlugin):
                 ]
             )
 
-            yield setup
+            yield subvol
 
             subvol.run_as_root(["rm", "-rf", subvol_antlir_dir])

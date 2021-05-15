@@ -29,6 +29,7 @@ from antlir.nspawn_in_subvol.plugin_hooks import (
     _PopenResult,
     _PostSetupPopenCtxMgr,
 )
+from antlir.subvol_utils import Subvol
 
 from . import NspawnPlugin
 from .launch_repo_servers import launch_repo_servers_for_netns
@@ -158,6 +159,7 @@ class RepoServers(NspawnPlugin):
     def wrap_setup(
         self,
         setup_ctx: _NspawnSetupCtxMgr,
+        subvol: Subvol,
         opts: _NspawnOpts,
         popen_args: PopenArgs,
     ) -> _NspawnSetup:
@@ -186,7 +188,7 @@ class RepoServers(NspawnPlugin):
         with _wrap_opts_with_container_pid_exfiltrator(opts) as (
             opts,
             cpe,
-        ), setup_ctx(opts, popen_args) as setup:
+        ), setup_ctx(subvol, opts, popen_args) as setup:
             self._container_pid_exfiltrator = cpe
             yield setup
 
