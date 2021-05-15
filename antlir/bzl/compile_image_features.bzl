@@ -36,6 +36,13 @@ def compile_image_features(
     flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
     target_tagger = new_target_tagger()
 
+    if flavor_config.build_appliance:
+        features.append(target_tagger_to_feature(
+            target_tagger,
+            struct(),
+            extra_deps = [flavor_config.build_appliance],
+        ))
+
     # Outputs the feature JSON for the given layer to disk so that it can be
     # parsed by other tooling.
     features_for_layer = FEATURES_FOR_LAYER_PREFIX + name
