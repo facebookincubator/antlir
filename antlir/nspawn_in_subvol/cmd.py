@@ -391,21 +391,27 @@ class _NspawnSetup(NamedTuple):
 
 
 @contextmanager
-def _nspawn_setup(opts: _NspawnOpts, popen_args: PopenArgs) -> _NspawnSetup:
+def _nspawn_subvol_setup(opts: _NspawnOpts) -> Subvol:
     with (
         _snapshot_subvol(opts.layer, opts.debug_only_opts.snapshot_into)
         if opts.snapshot
         else nullcontext(opts.layer)
-    ) as nspawn_subvol, _temp_cgroup(opts.layer) as temp_cgroup, temp_dir(
+    ) as nspawn_subvol:
+        yield nspawn_subvol
+
+
+@contextmanager
+def _nspawn_setup(
+    nspawn_subvol: Subvol, opts: _NspawnOpts, popen_args: PopenArgs
+) -> _NspawnSetup:
+    with _temp_cgroup(opts.layer) as temp_cgroup, temp_dir(
         # Hardcoding /tmp is ugly, but buck will often set TMP to a path in
         # buck-out that ends up being underneath the repository and we need to
         # ensure that this bind location is separate from the repository dir.
         dir="/tmp",
         # Use a prefix that helps aids mere humans in debugging.
         prefix=f"antlir-{os.getpid()}-{nspawn_subvol.path().basename()}",
-    ) as temp_bind_rootfs, Unshare(
-        [Namespace.MOUNT]
-    ) as ns:
+    ) as temp_bind_rootfs, Unshare([Namespace.MOUNT]) as ns:
         nspawn_args, cmd_env = _extra_nspawn_args_and_env(opts)
         nspawn_subvol.run_as_root(
             ns.nsenter_without_sudo(

@@ -6,5 +6,6 @@
 
 
 class NspawnPlugin:
+    wrap_setup_subvol = None
     wrap_setup = None
     wrap_post_setup_popen = None

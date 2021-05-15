@@ -290,17 +290,19 @@ class ShadowPaths(NspawnPlugin):
     def wrap_setup(
         self,
         setup_ctx: _NspawnSetupCtxMgr,
+        subvol: Subvol,
         opts: _NspawnOpts,
         popen_args: PopenArgs,
     ) -> _NspawnSetup:
         container_dest_to_real_src = _resolve_to_canonical_shadow_paths(
             shadow_paths=self._shadow_paths,
-            subvol=opts.layer,
+            subvol=subvol,
             search_dirs=tuple(_shadow_search_dirs(opts.setenv)),
         )
         for cdest, src in container_dest_to_real_src.items():
             log.debug(f"{src} will shadow {cdest}")
         with setup_ctx(
+            subvol,
             # The bind-mounts are only applied later, at popen time, so
             # they do not interfere with the copying we do below.
             opts._replace(
