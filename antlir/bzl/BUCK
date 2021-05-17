@@ -128,6 +128,38 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "image",
+    srcs = ["image.bzl"],
+    deps = [
+        ":compile_image_features",
+        ":image_cpp_unittest",
+        ":image_genrule_layer",
+        ":image_gpt",
+        ":image_layer",
+        ":image_layer_alias",
+        ":image_layer_utils",
+        ":image_package",
+        ":image_packaged_layer",
+        ":image_python_unittest",
+        ":image_rpm",
+        ":image_rust_unittest",
+        ":image_sendstream_layer",
+        ":image_source",
+        ":image_test_rpm_names",
+        ":image_utils",
+        "//antlir/bzl/image_actions:clone",
+        "//antlir/bzl/image_actions:ensure_dirs_exist",
+        "//antlir/bzl/image_actions:feature",
+        "//antlir/bzl/image_actions:install",
+        "//antlir/bzl/image_actions:mount",
+        "//antlir/bzl/image_actions:remove",
+        "//antlir/bzl/image_actions:rpms",
+        "//antlir/bzl/image_actions:symlink",
+        "//antlir/bzl/image_actions:tarball",
+    ],
+)
+
+fake_macro_library(
     name = "image_genrule_layer",
     srcs = ["image_genrule_layer.bzl"],
     deps = [
@@ -148,6 +180,32 @@ fake_macro_library(
         ":compile_image_features",
         ":image_layer_utils",
         ":image_utils",
+    ],
+)
+
+fake_macro_library(
+    name = "image_packaged_layer",
+    srcs = ["image_packaged_layer.bzl"],
+    deps = [
+        ":image_package",
+    ],
+)
+
+fake_macro_library(
+    name = "image_rpm",
+    srcs = ["image_rpm.bzl"],
+    deps = [],
+)
+
+fake_macro_library(
+    name = "image_sendstream_layer",
+    srcs = ["image_sendstream_layer.bzl"],
+    deps = [
+        ":compile_image_features",
+        ":constants",
+        ":image_layer_utils",
+        ":image_utils",
+        ":target_tagger",
     ],
 )
 
