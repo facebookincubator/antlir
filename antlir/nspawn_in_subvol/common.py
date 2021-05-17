@@ -83,5 +83,9 @@ def parse_cgroup2_path(proc_cgroup: bytes) -> Path:
     return Path(my_cg[len(cg2_prefix) :])
 
 
-class AttachAntlirDirError(Exception):
+class UserFacingError(Exception):
+    pass
+
+
+class AttachAntlirDirError(UserFacingError):
     pass
