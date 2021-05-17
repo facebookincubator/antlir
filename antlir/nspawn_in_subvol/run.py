@@ -113,6 +113,7 @@ from antlir.common import init_logging
 from antlir.fs_utils import Path
 
 from .args import PopenArgs, _NspawnOpts, _parse_cli_args
+from .common import UserFacingError
 from .nspawn import run_nspawn
 from .plugins import NspawnPlugin
 from .plugins.rpm import rpm_nspawn_plugins
@@ -172,6 +173,6 @@ if __name__ == "__main__":  # pragma: no cover
                     stdout=1,
                 )
             )
-    except Exception as e:
+    except UserFacingError as e:
         sys.exit(e)
     sys.exit(ret.returncode)
