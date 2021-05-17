@@ -40,4 +40,5 @@ def fake_macro_library(name, srcs, deps = None, visibility = None):
         ),
         type = "fake_macro_library",
         visibility = get_visibility(visibility, name),
+        antlir_rule = "user-internal",
     )
