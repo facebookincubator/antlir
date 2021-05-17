@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("@config//:config.bzl", _do_not_use_repo_cfg = "do_not_use_repo_cfg")
 load("//third-party/fedora33/kernel:kernels.bzl", "kernels")
 # @lint-ignore-every BUCKFBCODENATIVE
 
@@ -469,26 +470,7 @@ shim = struct(
         layer = "//antlir/vm:default-image",
         package = "//antlir/vm:default-image.btrfs",
     ),
-    # Future: We could conceivably add OSS support for a `.bzl`-based
-    # deployment-specific customizations, but for now we expect non-FB
-    # customers to use the `[antlir]` section in `.buckconfig`.
-    # Look at `bzl/constants.bzl` for the available options.
-    do_not_use_repo_cfg = {
-        # Future: Once we can guarantee `libcap-ng` to be at least 0.8, add
-        # this in.
-        #
-        # Also check this issue to see if this can be detected from
-        # `cap-ng.h` instead -- once both OSS and FB builds can be
-        # guaranteed to have this issue fixed, we can move the conditonal
-        # compilation into the `.c` file and remove this config.
-        #   https://github.com/stevegrubb/libcap-ng/issues/20
-        #
-        # "libcap_ng_compiler_flags": "-DCAPNG_SUPPORTS_AMBIENT=1",
-        "flavor_to_config": {"default": {
-            "build_appliance": "//images/appliance:stable-build-appliance",
-            "rpm_installer": "dnf",
-        }},
-    },
+    do_not_use_repo_cfg = _do_not_use_repo_cfg,
     export_file = _export_file,
     get_visibility = _normalize_visibility,
     http_file = _http_file,
