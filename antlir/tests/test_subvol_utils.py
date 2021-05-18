@@ -121,45 +121,6 @@ class SubvolTestCase(unittest.TestCase):
             )
             self.assertEqual(b"/", sv.canonicalize_path("./."))
 
-    def test_delete_inner_subvols(self):
-        volume_tmp_dir = volume_dir() / "tmp"
-        try:
-            os.mkdir(volume_tmp_dir)
-        except FileExistsError:
-            pass
-        with temp_dir(
-            dir=volume_tmp_dir.decode(), prefix="delete_recursive"
-        ) as td:
-            try:
-                outer = Subvol(td / "outer")
-                outer.create()
-                inner1 = Subvol(td / "outer/inner1")
-                inner1.create()
-                inner2 = Subvol(td / "outer/inner1/inner2")
-                inner2.create()
-                inner3 = Subvol(td / "outer/inner3")
-                inner3.create()
-
-                with self.assertRaises(subprocess.CalledProcessError):
-                    outer.delete()
-
-                outer._delete_inner_subvols()
-                self.assertEqual([], outer.path().listdir())
-                outer.delete()
-                self.assertEqual([], td.listdir())
-            except BaseException:  # Clean up even on Ctrl-C
-                try:
-                    inner2.delete()
-                finally:
-                    try:
-                        inner1.delete()
-                    finally:
-                        try:
-                            inner3.delete()
-                        finally:
-                            outer.delete()
-                raise
-
     @with_temp_subvols
     def test_run_as_root_input(self, temp_subvols):
         sv = temp_subvols.create("subvol")
@@ -436,6 +397,7 @@ class SubvolTestCase(unittest.TestCase):
             self.assertEqual(sv._path, sv_path)
             self.assertTrue(os.path.exists(sv_path))
             self.assertTrue(sv._exists)
+
         self.assertIsNotNone(td_path)
         self.assertIsNotNone(sv_path)
         self.assertFalse(os.path.exists(td_path))
