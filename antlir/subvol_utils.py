@@ -285,34 +285,33 @@ class Subvol:
         self._exists = True
 
     def delete(self):
-        self.run_as_root(["btrfs", "subvolume", "delete", self.path()])
-        self._exists = False
-
-    def _delete_inner_subvols(self):
         """
-        This is currently a private call, separate from `delete` because
-        it's only used by `TempSubvolumes` for cleanup of container-created
-        subvolumes, which are owned by neither `TempSubvolumes` nor `Subvol`.
-        Adding a "production-ready" variant of this would require more
-        attention to the API and usage. Likely TODOs:
+        This will delete the subvol + all nested/inner subvolumes that exist
+        underneath this subvol.  here are a few things that we should consider
+        addressing to ensure that this is as robust as possible:
           - Future / fix me: We currently will fail to delete read-only
             inner subvolumes.  Fixing this requires first walking the
             subvols in the **opposite** order (parent to child), and marking
             them read-write (and adding tests).  This is not done because we
             currently have no use-case.
-          - If used outside of its current application, it could delete an
-            inner subvolume that is already managed by another `Subvol`
-            object wihout updating its `_exists`.
+          - It is possible that that this could delete an inner subvolume
+            that is already managed by another `Subvol` object wihout
+            updating its `_exists`.  Currently, because we have no official
+            nested subvol usecase, we don't address this problem.  One possible
+            approach might be to require any nested subvol creation to be
+            managed by an instance of this class.
         """
         # Delete from the innermost to the outermost
         for inner_path in sorted(self._gen_inner_subvol_paths(), reverse=True):
             assert _path_is_btrfs_subvol(inner_path), inner_path
             self.run_as_root(["btrfs", "subvolume", "delete", inner_path])
 
+        self.run_as_root(["btrfs", "subvolume", "delete", self.path()])
+        self._exists = False
+
     def _gen_inner_subvol_paths(self) -> Iterable[Path]:
         """
-        Implementation detail for `_delete_inner_subvols`, do not use
-        otherwise without strengthening the API contract & tests.
+        Implementation detail for `delete`.
 
         The intent of the code below is to make as many assertions as
         possible to avoid accidentally deleting a subvolume that's not a
@@ -327,21 +326,132 @@ class Subvol:
         """
         # `btrfs subvol {show,list}` both use the subvolume's path relative
         # to the volume root.
-        my_rel, _ = self.run_as_root(
+        my_rel_to_vol_root, _ = self.run_as_root(
             ["btrfs", "subvolume", "show", self.path()], stdout=subprocess.PIPE
         ).stdout.split(b"\n", 1)
-
         my_path = self.path()
+
         # NB: The below will fire if `Subvol` is the root subvol, since its
         # relative path is `/`.  However, that's not a case we need to
         # support in any foreseeable future, and it would also require
         # special-casing in the prefix search logic.
-        assert not my_rel.startswith(b"/"), my_rel
-        assert my_path.endswith(b"/" + my_rel), (my_path, my_rel)
-        vol_dir = my_path[: -len(my_rel)]
+        assert not my_rel_to_vol_root.startswith(b"/"), my_rel_to_vol_root
+
+        # Depending on how this subvolume has been mounted and is being used
+        # the interaction between the `btrfs subvolume show` path (the first
+        # line of `btrfs subvolume show` is what we care about) and this
+        # subvolume path (`self.path()`) is different. The cases we have to
+        # solve for are as it relates to inner subvolumes are:
+        #  - This subvolume is used as the "root" subvol for a container
+        #    and inner subvols are created within that container.
+        #    This is what happens with `nspawn_in_subvol`, ie: as part of an
+        #    `image_*_unittest`, `image.genrule`, or via a `=container`
+        #    `buck run` target.  In this case the btrfs volume is mounted
+        #    using a `subvol=` mount option, resulting in the mount "seeing"
+        #    only the contents of the selected subvol.
+        #  - This subvol is used on the *host* machine (where `buck` runs)
+        #    and inner subvols are created.  This is the standard case for
+        #    `*_unittest` targets since those are executed in the host context.
+        #    In this case the btrfs volume is mounted such that the `FS_TREE`
+        #    subvol (id=5) is used resulting in the mount "seeing" *all*
+        #    of the subvols contained within the volume.
+
+        # In this case the output of `btrfs subvolume show` looks something
+        # like this (taken from running the `:test-subvol-utils` test):
+        #
+        #  tmp/delete_recursiveo7x56sn2/outer
+        #      Name:                outer
+        #      UUID:                aa2d8590-ba00-8a45-aee2-c1553f3dd292
+        #      Parent UUID:         -
+        #      Received UUID:       -
+        #      Creation time:       2021-05-18 08:07:17 -0700
+        #      Subvolume ID:        323
+        #      Generation:     92
+        #      Gen at creation:     89
+        #      Parent ID:      5
+        #      Top level ID:        5
+        #      Flags:               -
+        #      Snapshot(s):
+        # and `my_path` looks something like this:
+        #  /data/users/lsalis/fbsource/fbcode/buck-image-out/volume/tmp/delete_recursiveo7x56sn2/outer # noqa: E501
+        vol_mounted_at_fstree = my_path.endswith(b"/" + my_rel_to_vol_root)
+
+        # In this case the output of `btrfs subvolume show` looks something
+        # like this (taken from running the `:test-subvol-utils-inner` test):
+        #
+        #
+        #  tmp/TempSubvolumes_wk81xmx0/test-subvol-utils-inner__test_layer:Jb__IyU.HzvZ.p73f/delete_recursiveotwxda64/outer # noqa: E501
+        #      Name:                outer
+        #      UUID:                76866b7c-c4cc-1d4b-bafa-6aa6f898de16
+        #      Parent UUID:         -
+        #      Received UUID:       -
+        #      Creation time:       2021-05-18 08:04:01 -0700
+        #      Subvolume ID:        319
+        #      Generation:     87
+        #      Gen at creation:     84
+        #      Parent ID:      318
+        #      Top level ID:        318
+        #      Flags:               -
+        #      Snapshot(s):
+        #
+        # and `my_path` looks something like this:
+        #  /delete_recursiveotwxda64/outer
+        vol_mounted_at_subvol = my_rel_to_vol_root.endswith(my_path)
+
+        assert vol_mounted_at_fstree ^ vol_mounted_at_subvol, (
+            "Unexpected paths calculated from btrfs subvolume show: "
+            f"{my_rel_to_vol_root}, {my_path}"
+        )
+
+        # In either case we need to calculate what the proper vol_dir is, this
+        # is used below to list all the subvolumes that the volume contains
+        # and filter out subvolumes that are "inside" this subvol.
+
+        # If the volume has been mounted as an fstree (see the comments above)
+        # then we want to list subvols below the "root" of the volume, which is
+        # right above the path returned by `btrfs subvolume show`.
+        # Example `btrfs subvolume list` (taken from `:test-subvol-utils`):
+        #
+        # ]# btrfs subvolume list /data/users/lsalis/fbsource/fbcode/buck-image-out/volume/ # noqa: E501
+        # ID 260 gen 20 top level 5 path targets/test-layer:Jb__FIQ.HyZR.fkyU/volume # noqa: E501
+        # ID 266 gen 83 top level 5 path targets/test-subvol-utils-inner__test_layer:Jb__IyU.HzvZ.p73f/volume # noqa: E501
+        # ID 272 gen 64 top level 5 path targets/build-appliance.c7:Jb__hV4.H42o.pR_O/volume # noqa: E501
+        # ID 300 gen 66 top level 5 path targets/build_appliance_testingprecursor-without-caches-to-build_appliance_testing:Jb__o1c.H8Bc.ASOl/volume # noqa: E501
+        # ID 307 gen 70 top level 5 path targets/build_appliance_testing:Jb__rtA.H89Z.j0z3/volume # noqa: E501
+        # ID 308 gen 72 top level 5 path targets/hello_world_base:Jb__u0g.H9yB.t9oN/volume # noqa: E501
+        # ID 323 gen 92 top level 5 path tmp/delete_recursiveo7x56sn2/outer
+        # ID 324 gen 91 top level 323 path tmp/delete_recursiveo7x56sn2/outer/inner1 # noqa: E501
+        # ID 325 gen 91 top level 324 path tmp/delete_recursiveo7x56sn2/outer/inner1/inner2 # noqa: E501
+        # ID 326 gen 92 top level 323 path tmp/delete_recursiveo7x56sn2/outer/inner3 # noqa: E501
+        # ]#
+        if vol_mounted_at_fstree:
+            vol_dir = my_path[: -len(my_rel_to_vol_root)]
+            my_prefix = my_rel_to_vol_root
+
+        # If the volume has been mounted at a specific subvol (see the comments
+        # above).  Then we want to list subvols below `/` since that is seen
+        # to be the "root" of the volume.
+        # Example `btrfs subvolume list` taken from `:test-subvol-utils-inner`:
+        #
+        # ]# btrfs subvolume list /
+        # ID 260 gen 20 top level 5 path targets/test-layer:Jb__FIQ.HyZR.fkyU/volume # noqa: E501
+        # ID 266 gen 83 top level 5 path targets/test-subvol-utils-inner__test_layer:Jb__IyU.HzvZ.p73f/volume # noqa: E501
+        # ID 272 gen 64 top level 5 path targets/build-appliance.c7:Jb__hV4.H42o.pR_O/volume # noqa: E501
+        # ID 300 gen 66 top level 5 path targets/build_appliance_testingprecursor-without-caches-to-build_appliance_testing:Jb__o1c.H8Bc.ASOl/volume # noqa: E501
+        # ID 307 gen 70 top level 5 path targets/build_appliance_testing:Jb__rtA.H89Z.j0z3/volume # noqa: E501
+        # ID 308 gen 72 top level 5 path targets/hello_world_base:Jb__u0g.H9yB.t9oN/volume # noqa: E501
+        # ID 318 gen 84 top level 5 path tmp/TempSubvolumes_wk81xmx0/test-subvol-utils-inner__test_layer:Jb__IyU.HzvZ.p73f # noqa: E501
+        # ID 319 gen 87 top level 318 path delete_recursiveotwxda64/outer
+        # ID 320 gen 86 top level 319 path delete_recursiveotwxda64/outer/inner1 # noqa: E501
+        # ID 321 gen 86 top level 320 path delete_recursiveotwxda64/outer/inner1/inner2 # noqa: E501
+        # ID 322 gen 87 top level 319 path delete_recursiveotwxda64/outer/inner3 # noqa: E501
+        # ]#
+        elif vol_mounted_at_subvol:
+            vol_dir = b"/"
+            my_prefix = my_path[1:]
 
         # We need a trailing slash to chop off this path prefix below.
-        my_prefix = my_rel + (b"" if my_rel.endswith(b"/") else b"/")
+        my_prefix = my_prefix + (b"" if my_prefix.endswith(b"/") else b"/")
 
         # NB: The `-o` option does not work correctly, don't even bother.
         for inner_line in self.run_as_root(
@@ -349,7 +459,6 @@ class Subvol:
         ).stdout.split(b"\n"):
             if not inner_line:  # Handle the trailing newline
                 continue
-
             l = {}  # Used to check that the labels are as expected
             (
                 l["ID"],
@@ -1015,7 +1124,6 @@ class TempSubvolumes(contextlib.AbstractContextManager):
                 pass
         for subvol in reversed(self.subvols):
             try:
-                subvol._delete_inner_subvols()
                 subvol.delete()
             except BaseException:  # Ctrl-C does not interrupt cleanup
                 logging.exception(f"Deleting volume {subvol.path()} failed.")
