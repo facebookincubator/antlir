@@ -196,7 +196,7 @@ image.genrule_layer(
 #  - all forms of constructing a directory creation request
 #  - specifying `stat` options, like user:group & mode
 
-image.feature(
+feature.new(
     name = "feature_dirs",
     features = [
         image.ensure_subdirs_exist("/", "foo/bar"),
@@ -214,7 +214,7 @@ image.feature(
     visibility = ["//antlir/compiler/..."],
 )
 
-image.feature(
+feature.new(
     name = "feature_bad_dir_mode_mismatch",
     features = [
         image.ensure_dirs_exist(
@@ -226,7 +226,7 @@ image.feature(
 )
 
 # The permissions are bad, so any attempt to add this into a layer will fail.
-image.feature(
+feature.new(
     name = "feature_bad_dir",
     features = [
         image.ensure_subdirs_exist(
@@ -242,7 +242,7 @@ image.feature(
 
 # Exercises:
 #   - all forms of specifying symlinks
-image.feature(
+feature.new(
     name = "feature_symlinks",
     features = [
         image.install(":hello_world.tar", "/foo/hello_world.tar"),
@@ -347,7 +347,7 @@ image.layer(
 #  - installing and removing RPMs
 # NB: Unlike `feature_install_files`, this **implicitly** depends on some
 # feature to provide directories `/foo/borf/`.
-image.feature(
+feature.new(
     name = "feature_tar_and_rpms",
     features = [
         image.rpms_install([
@@ -378,7 +378,7 @@ image.feature(
     visibility = ["//antlir/compiler/..."],
 )
 
-image.feature(
+feature.new(
     name = "feature_mount",
     features = [
         image.host_dir_mount("/etc", "/host_etc"),
@@ -472,7 +472,7 @@ defs.buck_genrule(
 # NB: Unlike `feature_tar_and_rpms`, this **explicitly** depends on
 # `feature_dirs` to provide directories `/foo/bar/`.  This exercises the
 # case where the same feature is pulled in via several dependency paths.
-image.feature(
+feature.new(
     name = "feature_install_files",
     features = [
         ":feature_dirs",  # We use /foo/bar for a couple of installs.
@@ -552,7 +552,7 @@ image.layer(
 #  - removing paths (NB: much of this logic is at build-time, so this is an
 #    incomplete test, see also `test-items` and `test-add-remove-conflict`)
 #    something installed by an RPM, add T_REMOVE_PATHS to sample_items, etc
-image.feature(
+feature.new(
     name = "feature_kitchen_sink",
     features = [
         image.remove("/path/to/remove"),
@@ -582,7 +582,7 @@ image.feature(
 ##     - Removing something added in the same layer is not (`both` feature).
 ##
 
-image.feature(
+feature.new(
     name = "feature_addremove_conflict_add",
     features = [
         image.ensure_subdirs_exist("/", "a/b"),
@@ -590,7 +590,7 @@ image.feature(
     visibility = ["//antlir/compiler/..."],
 )
 
-image.feature(
+feature.new(
     name = "feature_addremove_conflict_remove",
     features = [
         image.remove("/a"),
@@ -598,7 +598,7 @@ image.feature(
     visibility = ["//antlir/compiler/..."],
 )
 
-image.feature(
+feature.new(
     name = "feature_remove_nonexistent",
     features = [
         image.remove(
@@ -612,13 +612,13 @@ image.feature(
 # can handle an idempotent feature being installed twice.  The layers do not
 # directly repeat `feature_remove_nonexistent` because that would not
 # reproduce a now-fixed bug with repeated features.
-image.feature(
+feature.new(
     name = "feature_repeated_removal",
     features = [":feature_remove_nonexistent"],
 )
 
 # `test-add-remove-conflict` compiles this feature to produce a failure
-image.feature(
+feature.new(
     name = "feature_addremove_conflict_both",
     features = [
         ":feature_addremove_conflict_add",
@@ -648,7 +648,7 @@ image.layer(
 
 ##
 ## The following layers are the basis of an integration test for
-## `image.layer`.  Unlike the `image.feature`s above, they must be actually
+## `image.layer`.  Unlike the `feature`s above, they must be actually
 ## be buildable, not just amenable to dependency analysis -- for this
 ## reason, we cannot e.g. depend on the broken `:feature_bad_dir` target.
 ##

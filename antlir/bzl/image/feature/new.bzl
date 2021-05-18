@@ -5,10 +5,10 @@
 
 """
 DO NOT DEPEND ON THIS TARGET DIRECTLY, except through the `features=` field of
-`image.feature` or `image.layer`.  A direct dependency will not work the way
+`feature.new` or `image.layer`.  A direct dependency will not work the way
 you expect, and you will end up with incorrect behavior.
 
-## Composing images using `image.feature`
+## Composing images using `feature.new`
 
 When building regular binaries, one will often link multiple independent
 libraries that know nothing about one another. Each of those libraries may
@@ -17,7 +17,7 @@ depend on other libraries, and so forth.
 This ability to **compose** largely uncoupled pieces of functionality is an
 essential tool of a software engineer.
 
-`image.feature` is a way of bringing the same sort of compositionality to
+`feature`s are a way of bringing the same sort of compositionality to
 building filesystem images.
 
 A feature specifies a set of **items**, each of which describes some aspect
@@ -25,13 +25,13 @@ A feature specifies a set of **items**, each of which describes some aspect
  - A directory must exist.
  - A tarball must be extracted at this location.
  - An RPM must be installed, or must be **ABSENT** from the filesystem.
- - Other `image.feature` that must be installed.
+ - Other `feature`s that must be installed.
 
-Importantly, the specifications of an `image.feature` are not ordered. They are
+Importantly, the specifications of `feature`s are not ordered. They are
 not commands or instructions.  Rather, they are a declaration of what should be
 true. You can think of a feature as a thunk or callback.
 
-Note that you do **not** need `image.feature` to compose features within
+Note that you do **not** need `feature.new` to compose features within
 a single project. Instead, avoid creating a Buck target and do this:
 
     feature_group1 = [f1, f2]
@@ -61,10 +61,10 @@ FEATURES_FOR_LAYER_PREFIX = "features-for-layer-"
 # See the comment below to understand why you should not use this
 DO_NOT_USE_FEATURES_SUFFIX = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
 
-# ## Why are `image.feature`s forbidden as dependencies?
+# ## Why are `feature`s forbidden as dependencies?
 #
 # The long target suffix below exists to discourage people from directly
-# depending on `image.feature`s.  They are not real targets, but rather a
+# depending on `feature.new` targets.  They are not real targets, but rather a
 # language feature to make it easy to compose independent features of container
 # images.
 #
@@ -73,29 +73,29 @@ DO_NOT_USE_FEATURES_SUFFIX = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_
 # so in deciding whether to build a file or use a cached output, Buck will only
 # consider direct dependencies, not transitive ones.
 #
-# In contrast, `image.feature` simply serializes its keyword arguments to JSON.
+# In contrast, `feature.new` simply serializes its keyword arguments to JSON.
 # It does not consume the outputs of its dependencies -- it reads neither
-# regular target outputs, nor the JSONs of the `image_feature`s, on which it
+# regular target outputs, nor the JSONs of the `feature`s, on which it
 # depends.
 #
-# By violating Buck semantics, `image_features` creates two problems for
+# By violating Buck semantics, `feature.new` creates two problems for
 # targets that might depend on them:
 #
-# 1) Buck will build any target depending on an `image_feature` immediately
+# 1) Buck will build any target depending on an `feature` immediately
 #    upon ensuring that its JSON output exists in the output tree.  It is
 #    possible that the output tree lacks, or contains stale versions of, the
-#    outputs of the targets, on which the `image_feature` itself depends.
+#    outputs of the targets, on which the `feature` itself depends.
 #
-# 2) If the output of a dependency of an `image.feature` changes, this will
-#    cause the feature to rebuild.  However, the output of the `image.feature`
-#    will remain unchanged, and so any target depending on the `image.feature`
+# 2) If the output of a dependency of a `feature.new` target changes, this will
+#    cause the feature to rebuild.  However, the output of the `feature.new`
+#    will remain unchanged, and so any target depending on the `feature.new`
 #    will **NOT** get rebuilt.
 #
 # For these reasons, special logic is required to correctly depend on
-# `image.feature` targets.  At the moment, we are not aware of any reason to
-# have direct access to the `image.feature` JSON outputs in any case.  Most
+# `feature.new` targets.  At the moment, we are not aware of any reason to
+# have direct access to the `feature.new` JSON outputs in any case.  Most
 # users will want to depend on build artifacts that are downstream of
-# `image.feature`, like `image.layer`.
+# `feature.new`, like `image.layer`.
 def PRIVATE_DO_NOT_USE_feature_target_name(name, flavor):
     name += DO_NOT_USE_FEATURES_SUFFIX
     check_flavor_exists(flavor)
@@ -230,13 +230,11 @@ def private_do_not_use_feature_json_genrule(
         antlir_rule = "user-internal",
     )
 
-def image_feature(
+def feature_new(
         name,
         features,
         visibility = None,
         flavors = [REPO_CFG.flavor_default]):
-    visibility = visibility or []
-
     """
     Turns a group of image actions into a Buck target, so it can be
     referenced from outside the current project via `//path/to:name`.
@@ -249,23 +247,25 @@ def image_feature(
     the container (install RPMs, remove files/directories, create symlinks
     or directories, copy executable or data files, declare mounts).
     """
+    visibility = visibility or []
+
     for flavor in flavors:
-        _image_feature_impl(
+        _feature_new_impl(
             name = name,
             features = features,
             visibility = visibility,
             flavor = flavor,
         )
 
-def _image_feature_impl(name, features, visibility, flavor):
+def _feature_new_impl(name, features, visibility, flavor):
     # (1) Normalizes & annotates Buck target names so that they can be
     #     automatically enumerated from our JSON output.
     # (2) Builds a list of targets so that this converter can tell Buck
-    #     that the `image_feature` depends on it.
+    #     that the `feature` target depends on it.
     target_tagger = new_target_tagger()
 
     # Omit the ugly suffix here since this is meant only for humans to read while debugging.
-    # For inline targets, `image_layer.bzl` sets this to the layer target path.
+    # For inline targets, `image/layer/layer.bzl` sets this to the layer target path.
     human_readable_target = normalize_target(":" + name)
     normalized_features = normalize_features(
         features,
@@ -284,7 +284,7 @@ def _image_feature_impl(name, features, visibility, flavor):
         ),
         extra_deps = normalized_features.direct_deps + [
             # The `fake_macro_library` docblock explains this self-dependency
-            "//antlir/bzl/image_actions:feature",
+            "//antlir/bzl/image/feature:new",
         ],
     )
 

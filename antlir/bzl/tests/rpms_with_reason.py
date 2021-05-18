@@ -47,7 +47,7 @@ dependencies.  Caveat: this assumes the removal of the dependencies you
 marked as WANTED.
 
 Future: It would be pretty easy to let this derive wanted RPMs from
-`image.feature` targets.
+`feature` targets.
 """
 
 import re

@@ -42,7 +42,7 @@ class RpmAction(enum.Enum):
 # The values are valid `yum` / `dnf` commands.
 class YumDnfCommand(enum.Enum):
     # We do NOT want people specifying package versions, releases, or
-    # architectures via `image_feature`s.  That would be a sure-fire way to
+    # architectures via `feature`s.  That would be a sure-fire way to
     # get version conflicts.  For the cases where we need version pinning,
     # we'll add a per-layer "version picker" concept.
     install_name = "install-n"

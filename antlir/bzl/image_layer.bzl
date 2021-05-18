@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-An `image.layer` is an `image.feature` with some additional parameters.  Its
-purpose to materialize that `image.feature` as a btrfs subvolume in the
+An `image.layer` is a set of `feature` with some additional parameters.  Its
+purpose to materialize those `feature`s as a btrfs subvolume in the
 per-repo `buck-image/out/volume/targets`.
 
 We call the subvolume a "layer" because it can be built on top of a snapshot
@@ -51,15 +51,15 @@ the user renames their repo, or similar.  These practices include:
 
 ### Dependency resolution
 
-An `image.layer` consumes `image.feature` outputs to decide what to put into
+An `image.layer` consumes a set of `feature` outputs to decide what to put into
 the btrfs subvolume.  These outputs are actually just JSON files that
 reference other targets, and do not contain the data to be written into the
 image.
 
 Therefore, `image.layer` has to explicitly tell buck that it needs all
-direct dependencies of its `image.feature`s to be present on disk -- see our
+direct dependencies of its `feature`s to be present on disk -- see our
 `attrfilter` queries below.  Without this, Buck would merrily fetch the just
-the `image.feature` JSONs from its cache, and not provide us with any of the
+the `feature` JSONs from its cache, and not provide us with any of the
 buid artifacts that comprise the image.
 
 We do NOT need the direct dependencies of the parent layer's features,
@@ -107,15 +107,15 @@ def image_layer(
 
     - `parent_layer`: The name of another `image_layer` target, on
     top of which the current layer will install its features.
-    - `features`: List of `image.feature` target paths and/or
-    nameless structs from `image.feature`.
+    - `features`: List of `feature` target paths and/or
+    nameless structs from `feature.new`.
     - `flavor`: Picks default build options for the layer, including
     `build_appliance`, RPM installer, and others. See `flavor.bzl` for
     details.
     - `flavor_config_override`: A struct that can override the default
     values fetched from `REPO_CFG[flavor].flavor_to_config`.
     - `mount_config`: Specifies how this layer is mounted in the
-    `mounts` field of an `image.feature` of a parent layer. See
+    `mounts` field of a `feature` of a parent layer. See
     the field in `_image_layer_impl` in `image_layer_utils.bzl`
     - `runtime`: A list of desired helper buck targets to be emitted.
     `container` is always included in the list by default.

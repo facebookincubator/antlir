@@ -5,7 +5,7 @@
 
 """
 Our continuous integration system might run different build steps in
-different sandboxes, so the intermediate outputs of `image_feature`s
+different sandboxes, so the intermediate outputs of `feature`s
 must be cacheable by Buck.  In particular, they must not contain
 absolute paths to targets.
 
@@ -18,7 +18,7 @@ compiler will need absolute paths, and (b) resolve them only in the
 build step that invokes the compiler.
 
 This tagging scheme makes it possible to find ALL such targets in the
-output of `image_feature` by simply traversing the JSON structure.  This
+output of `feature` targets by simply traversing the JSON structure.  This
 seems more flexible and less messy than maintaining a look-aside list of
 targets whose paths the `image_layer` converter would need to resolve.
 """

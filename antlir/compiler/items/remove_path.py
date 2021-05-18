@@ -42,7 +42,7 @@ class RemovePathItem(remove_paths_t, ImageItem):
     ):
         # NB: We want `remove_paths` not to be able to remove additions by
         # regular (non-phase) items in the same layer -- that indicates
-        # poorly designed `image.feature`s, which should be refactored.  At
+        # poorly designed `feature`s, which should be refactored.  At
         # present, this is only enforced implicitly, because all removes are
         # done before regular items are even validated or sorted.  Enforcing
         # it explicitly is possible by peeking at `DependencyGraph.items`,

@@ -5,17 +5,17 @@
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
 load("//antlir/bzl:oss_shim.bzl", "python_unittest")
-load("//antlir/bzl/image_actions:feature.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
+load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 
 TEST_IMAGE_PREFIX = "//antlir/compiler/test_images:"
 
 def READ_MY_DOC_image_feature_target(name):
     """
     DANGER: If you depend on a feature target for testing, you MUST manually
-    add any `image_feature` targets that it depends on to your `deps = []`.
+    add any `feature` targets that it depends on to your `deps = []`.
     If you fail to do this, Buck will not know to rebuild the the test if
-    one of its indirect `image_feature` dependencies changes.  See
-    `image_feature.py` for an explanation.
+    one of its indirect `feature` dependencies changes.  See
+    `feature/new.bzl` for an explanation.
     """
     return PRIVATE_DO_NOT_USE_feature_target_name(
         name = name,

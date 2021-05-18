@@ -1,13 +1,14 @@
 # This file is intended to become a collection of utility features commonly
 # used in constructing images.
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 # To remove a path in this feature it should match these criteria:
 #  - its absence should makes the running image operate no less correctly
 #    than before,
 #  - the image does not become less human-understandable once it's gone, or
 #    the considerable space savings justifies the loss of debuggability.
-image.feature(
+feature.new(
     name = "rpm_cleanup",
     features = [
         image.remove(
@@ -24,10 +25,10 @@ image.feature(
 
 # Remove filesystem items that should ONLY be created at runtime, but might
 # have leaked into an image at build-time due to bugs.  If an image is
-# constructed only using supported `image.feature` and `image.layer`
+# constructed only using supported `feature`s and `image.layer`
 # operations, this clean-up should not be be necessary.  However, this can
 # be useful for assimilating genrule-built images.
-image.feature(
+feature.new(
     name = "build_artifact_cleanup",
     # Since we generally build images for containers, we should make sure
     # that they do contain an empty machine-id. The system manager (PID 1)

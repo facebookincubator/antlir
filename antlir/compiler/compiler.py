@@ -95,7 +95,7 @@ def parse_args(args) -> argparse.Namespace:
         "--child-feature-json",
         action="append",
         default=[],
-        help="The path of the JSON output of any `image.feature`s that are"
+        help="The path of the JSON output of any `feature`s that are"
         "directly included by the layer being built",
     )
     parser.add_argument("--debug", action="store_true", help="Log more")

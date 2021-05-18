@@ -23,7 +23,7 @@ _NONPORTABLE_ARTIFACTS = int(
 )
 
 T_BASE = "//antlir/compiler/test_images"
-# Use the "debug", human-readable forms of the image_feature targets here,
+# Use the "debug", human-readable forms of the `feature`s targets here,
 # since that's what we are testing.
 T_DIRS = f"{T_BASE}:feature_dirs"
 T_BAD_DIR = f"{T_BASE}:feature_bad_dir"
@@ -80,7 +80,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     allowed_host_mount_targets=[],
 )
 
-# This should be a faithful transcription of the `image_feature`
+# This should be a faithful transcription of the `feature`
 # specifications in `test_images/TARGETS`.  The IDs currently have no
 # semantics, existing only to give names to specific items.
 ID_TO_ITEM = {

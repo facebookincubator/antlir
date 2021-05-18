@@ -293,7 +293,7 @@ def _extra_nspawn_args_and_env(
 
     # Future: This is definitely not the way to go for providing device
     # nodes, but we need `/dev/fuse` right now to run XARs.  Let's invent a
-    # systematic story later.  This cannot be an `image.feature` because of
+    # systematic story later.  This cannot be a `feature` because of
     # the way that `nspawn` sets up `/dev`.
     #
     # Don't require coverage in case any weird test hosts lack FUSE.

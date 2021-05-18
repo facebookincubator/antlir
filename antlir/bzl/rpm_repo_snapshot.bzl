@@ -229,7 +229,7 @@ def _set_up_rpm_repo_snapshots():
 
 def install_rpm_repo_snapshot(snapshot):
     """
-    Returns an `image.feature`, which installs the `rpm_repo_snapshot`
+    Returns an `feature.new`, which installs the `rpm_repo_snapshot`
     target in `snapshot` in its canonical location.
 
     A layer that installs snapshots should be followed by a

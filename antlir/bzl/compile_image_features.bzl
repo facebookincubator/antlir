@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# Implementation detail for `image_layer.bzl`, see its docs.
+# Implementation detail for `image/layer/layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load("//antlir/bzl/image_actions:feature.bzl", "FEATURES_FOR_LAYER_PREFIX", "image_feature", "normalize_features")
+load("//antlir/bzl/image/feature:new.bzl", "FEATURES_FOR_LAYER_PREFIX", "feature_new", "normalize_features")
 load(":constants.bzl", "REPO_CFG")
 load(":flavor.bzl", flavor_helpers = "flavor")
 load(":query.bzl", "layer_deps_query", "query")
@@ -46,7 +46,7 @@ def compile_image_features(
     # Outputs the feature JSON for the given layer to disk so that it can be
     # parsed by other tooling.
     features_for_layer = FEATURES_FOR_LAYER_PREFIX + name
-    image_feature(
+    feature_new(
         name = features_for_layer,
         features = features + (
             [target_tagger_to_feature(
@@ -84,7 +84,7 @@ EOF
 
     deps_query = query.union(
         [
-            # For inline `image.feature`s, we already know the direct deps.
+            # For inline `feature`s, we already know the direct deps.
             query.set(normalized_features.direct_deps),
             # We will query the deps of the features that are targets.
             query.deps(
@@ -106,7 +106,7 @@ EOF
     return '''
         # Take note of `targets_and_outputs` below -- this enables the
         # compiler to map the `target_tagger` target sigils in the outputs
-        # of `image_feature` to those targets' outputs.
+        # of `feature`s to those targets' outputs.
         #
         # `exe` vs `location` is explained in `image_package.py`.
         #
@@ -152,7 +152,7 @@ EOF
             ])
         ),
         # We will ask Buck to ensure that the outputs of the direct
-        # dependencies of our `image_feature`s are available on local disk.
+        # dependencies of our `feature`s are available on local disk.
         #
         # See `Implementation notes: Dependency resolution` in `__doc__`.
         # Note that we need no special logic to exclude parent-layer
