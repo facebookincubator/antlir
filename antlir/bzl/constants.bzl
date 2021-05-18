@@ -195,7 +195,7 @@ REPO_CFG = shape.new(
     #
     # KEEP THIS DICTIONARY SMALL.
     #
-    # For each `image.feature`, we have to emit as many targets as there are
+    # For each `feature`, we have to emit as many targets as there are
     # elements in this list, because we do not know the version set that the
     # including `image.layer` will use.  This would be fixable if Buck
     # supported providers like Bazel does.

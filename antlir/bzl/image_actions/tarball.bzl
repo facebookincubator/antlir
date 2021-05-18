@@ -28,7 +28,7 @@ def image_tarball(source, dest, force_root_ownership = False):
     e.g. an `export_file` or a `genrule`
 - `dest` is the destination of the unpacked tarball in the image.
     This is an image-absolute path to a directory that must be created
-    by another `image_feature` item.
+    by another `feature_new` item.
     """
     target_tagger = new_target_tagger()
     tarball = shape.new(

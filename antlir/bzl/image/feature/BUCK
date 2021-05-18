@@ -1,6 +1,15 @@
 load("//antlir/bzl:defs.bzl", "fake_macro_library")
 
 fake_macro_library(
+    name = "new",
+    srcs = ["new.bzl"],
+    deps = [
+        "//antlir/bzl:target_helpers",
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
     name = "usergroup",
     srcs = ["usergroup.bzl"],
     deps = [

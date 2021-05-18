@@ -15,7 +15,7 @@ arbitrary commands as part of the image build.  There are many reasons:
     [DetTrace](https://github.com/dettrace/dettrace), but this is out of
     scope for now.
 
-  - We value `image.feature`s, which permit order-independent composition of
+  - We value `feature`s, which permit order-independent composition of
     independent parts of the filesystem.  For this declarative style of
     programming to work, the compiler needs to fully understand the side
     effects of evaluating a feature.

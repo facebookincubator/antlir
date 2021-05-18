@@ -98,8 +98,8 @@ class PhaseOrder(enum.Enum):
     #
     # By having this phase be last, we also allow removing files added by
     # RPM_INSTALL.  The downside is that this is a footgun.  The upside is
-    # that e.g.  cleaning up yum log & caches can be done as an
-    # `image_feature` instead of being code.  We might also use this to
+    # that e.g.  cleaning up yum log & caches can be done as a
+    # `feature` instead of being code.  We might also use this to
     # remove e.g.  unnecessary parts of excessively monolithic RPMs.
     REMOVE_PATHS = enum.auto()
 

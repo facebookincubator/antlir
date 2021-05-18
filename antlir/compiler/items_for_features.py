@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"Makes Items from the JSON that was produced by the Buck target image_feature"
+"Makes Items from the JSON that was produced by a Buck `feature` target"
 import json
 from typing import Any, Iterable, Union, Mapping, Optional, NamedTuple
 

@@ -53,7 +53,7 @@ def _image_layer_impl(
         # For now, layer implementations mark this explicitly.  I doubt that
         # "antlir-private" is a sensible default here.
         antlir_rule,
-        # Layers can be used in the `mounts` field of an `image.feature`.
+        # Layers can be used in the `mounts` field of an `feature`.
         # This setting affects how **this** layer may be mounted inside
         # others.
         #

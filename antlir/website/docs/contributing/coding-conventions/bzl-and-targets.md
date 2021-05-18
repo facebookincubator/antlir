@@ -161,7 +161,7 @@ corresponds to the value of the `antlir_rule` kwarg:
    a Buck package outside of `//antlir`), and whose output is directly
    consumed by the user.  Specifically, the rule's `name` must be the `name`
    provided by the end-user, and the artifact must be user-exposed.  For
-   example, `image.package` is user-facing, whereas `image.feature` or
+   example, `image.package` is user-facing, whereas `feature`s or
    `image.layer` are considered implementation plumbing, even though users
    declare them directly.
 

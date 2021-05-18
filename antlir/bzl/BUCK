@@ -31,7 +31,7 @@ fake_macro_library(
         ":constants",
         ":flavor",
         ":target_tagger",
-        "//antlir/bzl/image_actions:feature",
+        "//antlir/bzl/image/feature:new",
     ],
 )
 
@@ -149,7 +149,6 @@ fake_macro_library(
         ":image_utils",
         "//antlir/bzl/image_actions:clone",
         "//antlir/bzl/image_actions:ensure_dirs_exist",
-        "//antlir/bzl/image_actions:feature",
         "//antlir/bzl/image_actions:install",
         "//antlir/bzl/image_actions:mount",
         "//antlir/bzl/image_actions:remove",
@@ -220,7 +219,7 @@ fake_macro_library(
     deps = [
         ":image_layer",
         ":target_helpers",
-        "//antlir/bzl/image_actions:feature",
+        "//antlir/bzl/image/feature:new",
     ],
 )
 
