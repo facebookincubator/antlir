@@ -218,6 +218,7 @@ python_unittest(
         "//antlir:artifacts_dir",
         "//antlir:config",
         "//antlir:find_built_subvol",
+        "//antlir:testlib_flavor_helpers",
         "//antlir:testlib_layer_resource",
         "//antlir:testlib_subvol_helpers",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
@@ -248,6 +249,7 @@ python_unittest(
     deps = [
         ":compiler",
         "//antlir:subvol_utils",
+        "//antlir:testlib_flavor_helpers",
         "//antlir:testlib_layer_resource",
         "//antlir:testlib_subvol_helpers",
     ],

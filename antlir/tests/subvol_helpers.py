@@ -8,6 +8,7 @@ import copy
 import subprocess
 
 from antlir.btrfs_diff.tests.render_subvols import render_sendstream
+from antlir.tests.flavor_helpers import render_flavor_default
 
 from ..subvol_utils import Subvol
 
@@ -83,6 +84,7 @@ def check_common_rpm_render(
         ".meta": [
             "(Dir)",
             {
+                "flavor": [render_flavor_default()],
                 "private": [
                     "(Dir)",
                     {
@@ -91,7 +93,7 @@ def check_common_rpm_render(
                             {"artifacts_may_require_repo": ["(File d2)"]},
                         ]
                     },
-                ]
+                ],
             },
         ]
     }

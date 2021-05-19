@@ -19,6 +19,7 @@ from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir
+from antlir.tests.flavor_helpers import render_flavor_default
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path
@@ -230,6 +231,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 [
                     "(Dir)",
                     {
+                        "flavor": [render_flavor_default()],
                         "private": [
                             "(Dir)",
                             {
@@ -242,7 +244,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                                     },
                                 ]
                             },
-                        ]
+                        ],
                     },
                 ],
                 pop_path(rendered_tarball_image, ".meta"),

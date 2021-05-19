@@ -117,6 +117,7 @@ EOF
           --subvolumes-dir "$subvolumes_dir" \
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \
+          --flavor {flavor_quoted} \
           {maybe_quoted_build_appliance_args} \
           {maybe_quoted_rpm_installer_args} \
           {maybe_quoted_rpm_repo_snapshot_args} \
@@ -136,6 +137,7 @@ EOF
     '''.format(
         subvol_name_quoted = shell.quote(subvol_name or "volume"),
         current_target_quoted = shell.quote(current_target),
+        flavor_quoted = shell.quote(flavor),
         quoted_child_feature_json_args = " ".join([
             "--child-feature-json $(location {})".format(t)
             for t in normalized_features.targets
