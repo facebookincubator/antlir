@@ -20,6 +20,7 @@ from antlir.compiler.items.mount import mounts_from_meta
 from antlir.config import load_repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
+from antlir.tests.flavor_helpers import render_flavor_default
 from antlir.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
 from antlir.tests.subvol_helpers import (
     check_common_rpm_render,
@@ -439,6 +440,7 @@ class ImageLayerTestCase(unittest.TestCase):
                         ".meta": [
                             "(Dir)",
                             {
+                                "flavor": [render_flavor_default()],
                                 "private": [
                                     "(Dir)",
                                     {
@@ -451,7 +453,7 @@ class ImageLayerTestCase(unittest.TestCase):
                                             },
                                         ]
                                     },
-                                ]
+                                ],
                             },
                         ],
                     },
@@ -475,6 +477,7 @@ class ImageLayerTestCase(unittest.TestCase):
                         ".meta": [
                             "(Dir)",
                             {
+                                "flavor": [render_flavor_default()],
                                 "private": [
                                     "(Dir)",
                                     {
@@ -487,7 +490,7 @@ class ImageLayerTestCase(unittest.TestCase):
                                             },
                                         ]
                                     },
-                                ]
+                                ],
                             },
                         ]
                     },

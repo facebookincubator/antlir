@@ -14,21 +14,26 @@ import unittest
 import unittest.mock
 from contextlib import contextmanager
 
-from antlir import subvol_utils
+from antlir import fs_utils, subvol_utils
 from antlir.compiler.items import (
     ensure_dirs_exist,
     rpm_action,
     symlink,
     tarball,
 )
-from antlir.fs_utils import Path, temp_dir
+from antlir.config import load_repo_config
+from antlir.fs_utils import META_FLAVOR_FILE, Path, temp_dir
 from antlir.nspawn_in_subvol import ba_runner
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import get_subvolumes_dir, TempSubvolumes
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 
 from .. import subvolume_on_disk as svod
-from ..compiler import LayerOpts, build_image, parse_args
+from ..compiler import (
+    LayerOpts,
+    build_image,
+    parse_args,
+)
 from . import sample_items as si
 
 
@@ -52,6 +57,8 @@ _FIND_ARGS = [
     "%y %p\\0",
 ]
 _TEST_BUILD_APPLIANCE = "test-build-appliance"
+_FAKE_SUBVOL_META_FLAVOR_FILE = _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE
+REPO_CFG = load_repo_config()
 
 
 def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
@@ -83,6 +90,11 @@ def _run_as_root(args, **kwargs):
         assert args == _FIND_ARGS, args
         ret = unittest.mock.Mock()
         ret.stdout = f"d {_SUBVOLS_DIR/_FAKE_SUBVOL}\0".encode()
+        return ret
+
+    if args[0] == "tee":
+        ret = unittest.mock.Mock()
+        ret.check_returncode = unittest.mock.Mock()
         return ret
 
 
@@ -144,6 +156,28 @@ def mock_layer_dir_access(test_case, subvolume_path):
         yield parent_layer_file.dirname()
 
 
+# Compare unittest.mock call lists (which are tuple subclasses) with
+# tuples.  We need to compare `repr` because direct comparisons
+# would end up comparing `str` and `bytes` and fail.
+def tuple_repr(a):
+    return repr(tuple(a))
+
+
+def fix_stdin(c):
+    if isinstance(c[-1], dict):
+        other = c[:-1]
+        kwargs = c[-1].copy()
+        if "stdin" in kwargs:
+            kwargs["stdin"] = (
+                "this makes redirected stdins comparable",
+                kwargs.pop("stdin").name,
+            )
+    else:
+        other = c
+        kwargs = {}
+    return other + (kwargs,)
+
+
 class CompilerTestCase(unittest.TestCase):
     def setUp(self):
         # More output for easier debugging
@@ -166,9 +200,10 @@ class CompilerTestCase(unittest.TestCase):
         is_btrfs,
         run_as_root,
         *_run_nspawns,
+        run_as_root_side_effect=None,
     ):
         lexists.side_effect = _os_path_lexists
-        run_as_root.side_effect = _run_as_root
+        run_as_root.side_effect = run_as_root_side_effect or _run_as_root
         btrfs_get_volume_props.side_effect = _btrfs_get_volume_props
         # Since we're not making subvolumes, we need this so that
         # `Subvolume(..., already_exists=True)` will work.
@@ -190,6 +225,8 @@ class CompilerTestCase(unittest.TestCase):
                         "CHILD_TARGET",
                         "--child-feature-json",
                         si.TARGET_TO_PATH[si.mangle(si.T_KITCHEN_SINK)],
+                        "--flavor",
+                        REPO_CFG.flavor_default,
                     ]
                     + args
                 )
@@ -197,7 +234,13 @@ class CompilerTestCase(unittest.TestCase):
             run_as_root.call_args_list,
         )
 
-    def _compiler_run_as_root_calls(self, *, parent_feature_json, parent_dep):
+    def _compiler_run_as_root_calls(
+        self,
+        *,
+        parent_feature_json,
+        parent_dep,
+        run_as_root_side_effect=None,
+    ):
         """
         Invoke the compiler on the targets from the "sample_items" test
         example, and ensure that the commands that the compiler would run
@@ -221,7 +264,8 @@ class CompilerTestCase(unittest.TestCase):
                     *parent_feature_json,
                     "--targets-and-outputs",
                     tf.name,
-                ]
+                ],
+                run_as_root_side_effect=run_as_root_side_effect,
             )
             self.assertEqual(
                 svod.SubvolumeOnDisk(
@@ -296,31 +340,18 @@ class CompilerTestCase(unittest.TestCase):
         Check that the expected & actual sets of commands are identical.
         Mock `call` objects are unhashable, so we sort.
         """
-
-        # Compare unittest.mock call lists (which are tuple subclasses) with
-        # tuples.  We need to compare `repr` because direct comparisons
-        # would end up comparing `str` and `bytes` and fail.
-        def tuple_repr(a):
-            return repr(tuple(a))
-
-        def fix_stdin(c):
-            if isinstance(c[-1], dict):
-                other = c[:-1]
-                kwargs = c[-1].copy()
-                if "stdin" in kwargs:
-                    kwargs["stdin"] = (
-                        "this makes redirected stdins comparable",
-                        kwargs.pop("stdin").name,
-                    )
-            else:
-                other = c
-                kwargs = {}
-            return other + (kwargs,)
-
         for e, a in zip(
             sorted(expected, key=tuple_repr), sorted(actual, key=tuple_repr)
         ):
             self.assertEqual(fix_stdin(e), fix_stdin(a))
+
+    # Checks to make sure that every call in expected occurs in actual.
+    def _assert_call_subset(self, expected_subset, actual):
+        fix_stdin_expected = [fix_stdin(e) for e in expected_subset]
+        fix_stdin_actual = [fix_stdin(a) for a in actual]
+
+        for e in fix_stdin_expected:
+            self.assertIn(e, fix_stdin_actual)
 
     def test_compile(self):
         # First, test compilation with no parent layer.
@@ -400,6 +431,88 @@ class CompilerTestCase(unittest.TestCase):
                         parent_dep={"//fake:parent": parent_dir.decode()},
                     ),
                 )
+
+    @unittest.mock.patch.object(subvol_utils.Subvol, "read_path_text")
+    def test_build_appliance_flavor_mismatch_error(self, mock_read_path_text):
+        def read_path_text_side_effect(self, relpath):
+            if (
+                self.path(relpath)
+                == layer_resource(__package__, _TEST_BUILD_APPLIANCE)
+                / META_FLAVOR_FILE
+            ):
+                return "badflavor"
+            return REPO_CFG.flavor_default
+
+        with self.assertRaisesRegex(AssertionError, "of the build appliance"):
+            self._compiler_run_as_root_calls(
+                parent_feature_json=[], parent_dep={}
+            )
+
+    @contextmanager
+    def _setup_path_exists(self, existing_paths):
+        old_mock_path_exists = fs_utils.Path.exists
+        with unittest.mock.patch.object(
+            fs_utils.Path, "exists", autospec=True
+        ) as mock_path_exists:
+
+            def path_exists_side_effect(self, **kwargs):
+                if self in existing_paths:
+                    return True
+                return old_mock_path_exists(self, **kwargs)
+
+            mock_path_exists.side_effect = path_exists_side_effect
+            yield mock_path_exists
+
+    @unittest.mock.patch.object(
+        subvol_utils.Subvol, "read_path_text", autospec=True
+    )
+    def test_flavor_file_exists_do_nothing(self, mock_read_path_text):
+        mock_read_path_text.side_effect = lambda x, y: REPO_CFG.flavor_default
+
+        with self._setup_path_exists(_FAKE_SUBVOL_META_FLAVOR_FILE):
+            run_as_root_calls = self._compiler_run_as_root_calls(
+                parent_feature_json=[], parent_dep={}
+            )
+
+            # Check that we never call `tee` to write a flavor file.
+            for call in run_as_root_calls:
+                self.assertNotEqual(call[0][0][0], "tee")
+
+    @unittest.mock.patch.object(
+        subvol_utils.Subvol, "read_path_text", autospec=True
+    )
+    def test_flavor_file_exists_mismatch_error(self, mock_read_path_text):
+        def read_path_text_side_effect(self, relpath):
+            if self.path(relpath) == _FAKE_SUBVOL_META_FLAVOR_FILE:
+                return "badflavor"
+            return REPO_CFG.flavor_default
+
+        with self._setup_path_exists(_FAKE_SUBVOL_META_FLAVOR_FILE):
+            with self.assertRaisesRegex(AssertionError, "given differs"):
+                self._compiler_run_as_root_calls(
+                    parent_feature_json=[], parent_dep={}
+                )
+
+    def test_write_flavor(self):
+        calls = [
+            (
+                (
+                    [
+                        "tee",
+                        _FAKE_SUBVOL_META_FLAVOR_FILE,
+                    ],
+                ),
+                {"input": REPO_CFG.flavor_default.encode()},
+            ),
+        ]
+
+        with self._setup_path_exists(
+            _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE.dirname()
+        ):
+            run_as_root_calls = self._compiler_run_as_root_calls(
+                parent_feature_json=[], parent_dep={}
+            )
+            self._assert_call_subset(calls, run_as_root_calls)
 
 
 if __name__ == "__main__":

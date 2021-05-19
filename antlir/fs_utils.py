@@ -372,6 +372,8 @@ RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR = Path(
 # Contains data needed to run the package manager in images.
 ANTLIR_DIR = Path("/__antlir__")
 
+# The name of the flavor file in the meta directory
+META_FLAVOR_FILE = META_DIR / "flavor"
 
 # Future: If it becomes necessary to serialize dict keys that are `Path`,
 # the `json` module currently does not support custom key serialization.  In

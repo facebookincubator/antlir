@@ -124,6 +124,7 @@ python_library(
     ],
     deps = [
         ":subvol_utils",
+        ":testlib_flavor_helpers",
         "//antlir/btrfs_diff:testlib_render_subvols",
     ],
 )
@@ -454,6 +455,7 @@ python_unittest(
         ":fs_utils",
         ":package-image-library",
         ":subvol_utils",
+        ":testlib_flavor_helpers",
         ":testlib_image_package_testbase",
         ":testlib_layer_resource",
         ":testlib_subvol_helpers",
@@ -654,4 +656,15 @@ shape.loader(
     name = "gpt_t",
     classname = "gpt_t",
     shape = gpt_t,
+)
+
+python_library(
+    name = "testlib_flavor_helpers",
+    srcs = ["tests/flavor_helpers.py"],
+    visibility = [
+        "//antlir/...",
+        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
+        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
+    ],
+    deps = [":config"],
 )

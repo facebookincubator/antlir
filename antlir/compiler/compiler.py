@@ -26,7 +26,7 @@ from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
 from antlir.find_built_subvol import find_built_subvol
-from antlir.fs_utils import Path
+from antlir.fs_utils import META_FLAVOR_FILE, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 
@@ -111,6 +111,12 @@ def parse_args(args) -> argparse.Namespace:
         help="Path to a file containing TAB-separated ENVRAs, one per line."
         "Also refer to `build_opts.bzl`.",
     )
+    parser.add_argument(
+        "--flavor",
+        required=True,
+        help="The flavor of the image that will be written into `/.meta` "
+        "directory.",
+    )
 
     add_targets_and_outputs_arg(parser)
     return Path.parse_args(parser, args)
@@ -173,6 +179,38 @@ def build_image(args):
             )
         ):
             item.build(subvol, layer_opts)
+
+        # Write the flavor into the subvol meta. This is
+        # so we can know what build appliance to use for sendstreams
+        # from older revisions.
+        # TODO: Remove the existence check once the flavor has been written
+        # in all built sendstreams.
+        if build_appliance and build_appliance.path(META_FLAVOR_FILE).exists():
+            build_appliance_flavor = build_appliance.read_path_text(
+                META_FLAVOR_FILE
+            )
+            assert args.flavor == build_appliance_flavor, (
+                f"The flavor `{args.flavor}` given differs from "
+                f"the flavor `{build_appliance_flavor}` of the "
+                "build appliance`."
+            )
+
+        if subvol.path(META_FLAVOR_FILE).exists():
+            flavor = subvol.read_path_text(META_FLAVOR_FILE)
+            assert args.flavor == flavor, (
+                f"The flavor `{args.flavor}` given differs from the "
+                f"flavor `{flavor}` already written in the subvol`."
+            )
+        elif subvol.path(META_FLAVOR_FILE.dirname()).exists():
+            # We only write the flavor if the META_DIR exists as
+            # otherwise it's a test image that doesn't need flavor.
+
+            # We have to allow writing to this image as sendstreams
+            # use `btrfs receive` which sets the image as readonly
+            # by default.
+            subvol.set_readonly(False)
+            subvol.overwrite_path_as_root(META_FLAVOR_FILE, args.flavor)
+
         # Build artifacts should never change. Run this BEFORE the exit_stack
         # cleanup to enforce that the cleanup does not touch the image.
         subvol.set_readonly(True)
