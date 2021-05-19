@@ -1,3 +1,4 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_unittest", "rust_binary")
@@ -7,6 +8,7 @@ image.layer(
     name = "extracted",
     features = [
         extract.extract(
+            flavor = REPO_CFG.flavor_latest,
             binaries = [
                 "/usr/lib/systemd/systemd",
             ],

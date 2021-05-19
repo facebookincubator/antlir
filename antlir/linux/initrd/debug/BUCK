@@ -1,11 +1,11 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
-load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 
 DEPS_TARGET = "//antlir/linux/initrd:deps"
 
@@ -49,7 +49,7 @@ image.layer(
         linux.filesystem.install(),
         debug_features,
     ],
-    flavor_config_override = antlir_linux_build_opts(),
+    flavor = REPO_CFG.flavor_latest,
 )
 
 image.package(
@@ -60,7 +60,7 @@ image.package(
         "//antlir/linux/...",
         "//scripts/dschatzberg/vm/...",
     ],
-    build_appliance = antlir_linux_build_opts().build_appliance,
+    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.flavor_latest]["build_appliance"],
 )
 
 # A full layer that is the combined set of debug features and the base initrd.
@@ -71,5 +71,5 @@ image.layer(
     parent_layer = "//antlir/linux/initrd:base",
     features = debug_features,
     visibility = ["//antlir/linux/initrd/..."],
-    flavor_config_override = antlir_linux_build_opts(),
+    flavor = REPO_CFG.flavor_latest,
 )

@@ -1,7 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
-load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 
 image.layer(
     name = "basesystem",
@@ -14,7 +14,7 @@ image.layer(
         ]),
     ],
     visibility = [],
-    flavor_config_override = antlir_linux_build_opts(),
+    flavor = REPO_CFG.flavor_latest,
 )
 
 image.layer(
@@ -27,7 +27,7 @@ image.layer(
             "dracut",
         ]),
     ],
-    flavor_config_override = antlir_linux_build_opts(),
+    flavor = REPO_CFG.flavor_latest,
 )
 
 # TODO: this should eventually be put into a stable fbpkg layer if it is
@@ -53,7 +53,7 @@ image.layer(
         systemd.enable_unit("systemd-resolved.service", "workload-pre.target"),
     ],
     runtime = ["systemd"],
-    flavor_config_override = antlir_linux_build_opts(),
+    flavor = REPO_CFG.flavor_latest,
     visibility = [
         "//antlir/...",
     ],
