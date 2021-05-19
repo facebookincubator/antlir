@@ -32,6 +32,8 @@ def _buck_binary_tmp_dst(real_dst):
 def _extract(
         # The layer from which to extract the binary and deps
         source,
+        # The flavor of the extracted layer
+        flavor,
         # A list of binaries to extract from the source,
         binaries = None,
         # The root destination path to clone the extracted
@@ -60,6 +62,7 @@ def _extract(
             for target, dst in buck_binaries.items()
         ],
         visibility = [],
+        flavor = flavor,
     )
     extract_parent_layer = ":" + base_extract_layer
 
@@ -101,6 +104,7 @@ def _extract(
             "/output",
         ] + binaries_args,
         antlir_rule = "user-internal",
+        flavor = flavor,
     )
 
     # The output is an image.clone feature that clones

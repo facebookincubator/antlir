@@ -1,3 +1,4 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -5,7 +6,6 @@ load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/bzl/vm:defs.bzl", "vm")
 load("//antlir/bzl/vm:initrd.bzl", "initrd")
-load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
@@ -22,10 +22,11 @@ extract.source_layer(
             "systemd",
         ]),
     ],
-    flavor_config_override = antlir_linux_build_opts(),
+    flavor = REPO_CFG.flavor_latest,
 )
 
 binaries = extract.extract(
+    flavor = REPO_CFG.flavor_latest,
     binaries = [
         "/usr/sbin/dropbear",
         "/usr/bin/dropbearkey",
@@ -105,7 +106,7 @@ image.package(
     layer = ":initrd-vmtest",
     format = "cpio.gz",
     visibility = [],
-    build_appliance = antlir_linux_build_opts().build_appliance,
+    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.flavor_latest]["build_appliance"],
 )
 
 # Create the default Antlir Linux initrd for this test kernel.

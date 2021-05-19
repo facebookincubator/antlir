@@ -25,6 +25,7 @@ class RepoConfigTestCase(unittest.TestCase):
             },
             "build_appliance_default": "//build/appliance:default",
             "flavor_default": "default",
+            "flavor_latest": "default",
             "flavor_to_config": {
                 "default": {
                     "version_set_path": "__VERSION_SET_ALLOW_ALL_VERSIONS__"

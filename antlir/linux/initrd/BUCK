@@ -1,9 +1,9 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get", "python_unittest")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:defs.bzl", "linux")
-load("//antlir/linux:defs.bzl", "antlir_linux_build_opts")
 load(":initrd_release.bzl", "initrd_release")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
 
@@ -16,7 +16,7 @@ extract.source_layer(
             "systemd-udev",
         ]),
     ],
-    flavor_config_override = antlir_linux_build_opts(),
+    flavor = REPO_CFG.flavor_latest,
     visibility = [
         "//antlir/linux/initrd/debug/...",
     ],
@@ -63,6 +63,7 @@ image.layer(
         # Due to limitations in the current extractor implementation, we have to
         # extract systemd at the same time as antlirctl.
         extract.extract(
+            flavor = REPO_CFG.flavor_latest,
             binaries = SYSTEMD_BINARIES,
             buck_binaries = {
                 "//antlir/linux/antlirctl:antlirctl": "/usr/bin/antlirctl",
@@ -77,7 +78,7 @@ image.layer(
         image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/lib/systemd/system-generators/antlir-generator"),
     ],
-    flavor_config_override = antlir_linux_build_opts(),
+    flavor = REPO_CFG.flavor_latest,
     visibility = [
         kernel_get.base_target + "/...",
         "//antlir/linux/...",
@@ -91,7 +92,7 @@ image.package(
     name = "base.cpio.gz",
     layer = ":base",
     visibility = ["PUBLIC"],
-    build_appliance = antlir_linux_build_opts().build_appliance,
+    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.flavor_latest]["build_appliance"],
 )
 
 python_unittest(

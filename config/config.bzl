@@ -29,6 +29,7 @@ do_not_use_repo_cfg = {
     #
     # "libcap_ng_compiler_flags": "-DCAPNG_SUPPORTS_AMBIENT=1",
     "flavor_default": "fedora33",
+    "flavor_latest": "fedora33",
     "flavor_to_config": {
         "fedora33": {
             "build_appliance": "//images/appliance:stable-build-appliance",

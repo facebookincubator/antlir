@@ -145,6 +145,7 @@ repo_config_t = shape.shape(
     rpm_installers_supported = shape.list(str),
     flavor_to_config = shape.dict(str, flavor_config_t),
     flavor_default = str,
+    flavor_latest = str,
 )
 
 REPO_CFG = shape.new(
@@ -201,4 +202,5 @@ REPO_CFG = shape.new(
     # supported providers like Bazel does.
     flavor_to_config = _get_flavor_config(),
     flavor_default = _get_flavor_default(),
+    flavor_latest = _get_optional_str_cfg("flavor_latest"),
 )
