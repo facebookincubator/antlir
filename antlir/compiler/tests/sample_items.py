@@ -8,6 +8,7 @@ import os
 
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
+from antlir.compiler.items.group import GroupItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.mount import MountItem
@@ -15,6 +16,7 @@ from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.rpm_action import RpmAction, RpmActionItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
+from antlir.compiler.items.user import UserItem
 from antlir.fs_utils import Path
 
 
@@ -47,6 +49,7 @@ T_KITCHEN_SINK = f"{T_BASE}:feature_kitchen_sink"
 T_HELLO_WORLD_BASE = f"{T_BASE}:hello_world_base"
 T_HELLO_WORLD_TAR = f"{T_BASE}:hello_world.tar"
 T_RPM_TEST_CHEESE = f"{T_BASE}:rpm-test-cheese-2-1.rpm"
+T_SHADOW_ME = f"{T_BASE}:shadow_me"
 
 TARGET_ENV_VAR_PREFIX = "test_image_feature_path_to_"
 TARGET_TO_PATH = {
@@ -217,7 +220,7 @@ ID_TO_ITEM = {
         from_target=T_INSTALL_FILES,
         source=Path(TARGET_TO_PATH[T_HELLO_WORLD_TAR]),
         dest="/foo/bar/hello_world_again.tar",
-        user_group="nobody:nobody",
+        user_group="root:root",
     ),
     "foo/bar/installed": EnsureDirsExistItem(
         from_target=T_INSTALL_FILES,
@@ -270,6 +273,31 @@ ID_TO_ITEM = {
         from_target=T_KITCHEN_SINK,
         path="/another/path/to/remove",
         must_exist=True,
+    ),
+    "etc": EnsureDirsExistItem(
+        from_target=T_BAD_DIR, into_dir="/", basename="etc"
+    ),
+    "etc/passwd": InstallFileItem(
+        from_target=T_BAD_DIR,
+        source=Path(TARGET_TO_PATH[T_SHADOW_ME]),
+        dest="/etc/passwd",
+    ),
+    "etc/group": InstallFileItem(
+        from_target=T_BAD_DIR,
+        source=Path(TARGET_TO_PATH[T_SHADOW_ME]),
+        dest="/etc/group",
+    ),
+    ".group/ggg": GroupItem(
+        from_target=T_BAD_DIR,
+        name="ggg",
+    ),
+    ".user/uuu": UserItem(
+        from_target=T_BAD_DIR,
+        name="uuu",
+        primary_group="ggg",
+        supplementary_groups=[],
+        shell="/foo/bar/installed/print-ok",
+        home_dir="/foo/bar",
     ),
 }
 

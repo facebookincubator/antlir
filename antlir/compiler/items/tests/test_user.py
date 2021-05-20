@@ -222,8 +222,8 @@ class UserItemTest(BaseItemTestCase):
             {ProvidesUser("newuser")},
             {
                 RequireGroup("newuser"),
-                RequireFile(path=Path("/etc/group")),
                 RequireFile(path=Path("/etc/passwd")),
+                RequireFile(path=Path("/etc/group")),
                 RequireFile(path=Path("/bin/bash")),
             },
         )
@@ -243,8 +243,8 @@ class UserItemTest(BaseItemTestCase):
                 RequireGroup("b"),
                 RequireGroup("c"),
                 RequireGroup("bar"),
-                RequireFile(path=Path("/etc/group")),
                 RequireFile(path=Path("/etc/passwd")),
+                RequireFile(path=Path("/etc/group")),
                 RequireFile(path=Path("/sbin/nologin")),
             },
         )

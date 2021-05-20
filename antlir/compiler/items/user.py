@@ -6,7 +6,12 @@
 
 import re
 from collections import OrderedDict
-from typing import Dict, Generator, NamedTuple
+from typing import (
+    AnyStr,
+    Dict,
+    Generator,
+    NamedTuple,
+)
 
 from antlir.compiler.requires_provides import (
     Provider,
@@ -21,7 +26,12 @@ from antlir.subvol_utils import Subvol
 from pydantic import validator
 
 from .common import ImageItem, LayerOpts
-from .group import GROUP_FILE_PATH, GroupFile
+from .group import (
+    _read_group_file,
+    _write_group_file,
+    GROUP_FILE_PATH,
+    GroupFile,
+)
 from .user_t import user_t
 
 
@@ -141,6 +151,15 @@ _VALID_USERNAME_RE = re.compile(
 )
 
 
+# These provide mocking capabilities for testing
+def _read_passwd_file(subvol: Subvol) -> str:
+    return subvol.read_path_text(PASSWD_FILE_PATH)
+
+
+def _write_passwd_file(subvol: Subvol, contents: AnyStr):
+    subvol.overwrite_path_as_root(PASSWD_FILE_PATH, str(contents))
+
+
 class UserItem(user_t, ImageItem):
     @validator("name")
     def _validate_name(cls, name):  # noqa B902
@@ -152,18 +171,23 @@ class UserItem(user_t, ImageItem):
         return name
 
     def requires(self) -> Generator[Requirement, None, None]:
-        yield RequireFile(path=GROUP_FILE_PATH)
         yield RequireGroup(self.primary_group)
         for groupname in self.supplementary_groups:
             yield RequireGroup(groupname)
-        yield RequireFile(path=PASSWD_FILE_PATH)
+
+        # The root user is *always* available, even without a
+        # passwd db
+        if self.name != "root":
+            yield RequireFile(path=GROUP_FILE_PATH)
+            yield RequireFile(path=PASSWD_FILE_PATH)
+
         yield RequireFile(path=self.shell)
 
     def provides(self) -> Generator[Provider, None, None]:
         yield ProvidesUser(self.name)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
-        group_file = GroupFile(subvol.read_path_text(GROUP_FILE_PATH))
+        group_file = GroupFile(_read_group_file(subvol))
 
         # this should already be checked by requires/provides
         assert (
@@ -172,9 +196,9 @@ class UserItem(user_t, ImageItem):
 
         for groupname in self.supplementary_groups:
             group_file.join(groupname, self.name)
-        subvol.overwrite_path_as_root(GROUP_FILE_PATH, str(group_file))
+        _write_group_file(subvol, group_file)
 
-        passwd_file = PasswdFile(subvol.read_path_text(PASSWD_FILE_PATH))
+        passwd_file = PasswdFile(_read_passwd_file(subvol))
         uid = self.id or passwd_file.next_user_id()
         passwd_file.add(
             PasswdFileLine(
@@ -186,4 +210,4 @@ class UserItem(user_t, ImageItem):
                 shell=self.shell,
             )
         )
-        subvol.overwrite_path_as_root(PASSWD_FILE_PATH, str(passwd_file))
+        _write_passwd_file(subvol, passwd_file)

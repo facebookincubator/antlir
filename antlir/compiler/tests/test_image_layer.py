@@ -395,16 +395,12 @@ class ImageLayerTestCase(unittest.TestCase):
             raise AssertionError(f"Bad hello_world.tar: {hello_ino}")
         self.assertEqual(f"(File m444 {hello_suffix}", hello_ino)
 
-        uid = getpwnam("nobody").pw_uid
-        gid = getgrnam("nobody").gr_gid
         self.assertEqual(
             [
                 "(Dir)",
                 {
                     "baz": ["(Dir)", {}],
-                    "hello_world_again.tar": [
-                        f"(File m444 o{uid}:{gid} {hello_suffix}"
-                    ],
+                    "hello_world_again.tar": [f"(File m444 {hello_suffix}"],
                     "installed": [
                         "(Dir)",
                         {

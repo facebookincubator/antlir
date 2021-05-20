@@ -11,6 +11,8 @@ from typing import Iterator, Optional
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     RequireDirectory,
+    RequireUser,
+    RequireGroup,
 )
 from antlir.fs_utils import Path, generate_work_dir
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
@@ -109,6 +111,9 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
 
     def requires(self):
         yield RequireDirectory(path=Path(self.into_dir))
+        user, group = self.user_group.split(":")
+        yield RequireUser(user)
+        yield RequireGroup(group)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         # If path already exists ensure it has expected attrs, else make it.

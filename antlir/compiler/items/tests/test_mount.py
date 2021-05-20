@@ -12,6 +12,8 @@ import tempfile
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
+    ProvidesUser,
+    ProvidesGroup,
     RequireDirectory,
 )
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
@@ -340,6 +342,8 @@ class MountItemTestCase(BaseItemTestCase):
                     ProvidesDirectory(path=Path("/")),
                     ProvidesDoNotAccess(path=Path("/.meta")),
                     ProvidesDoNotAccess(path=Path("/meow")),
+                    ProvidesUser("root"),
+                    ProvidesGroup("root"),
                 },
                 set(),
             )

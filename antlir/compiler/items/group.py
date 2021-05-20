@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from collections import OrderedDict
-from typing import Dict, Generator, List, NamedTuple
+from typing import AnyStr, Dict, Generator, List, NamedTuple
 
 from antlir.compiler.requires_provides import (
     Provider,
@@ -103,15 +103,27 @@ class GroupFile:
         return "\n".join((str(gfl) for gfl in self.lines.values())) + "\n"
 
 
+# These provide mocking capabilities for testing
+def _read_group_file(subvol: Subvol) -> str:
+    return subvol.read_path_text(GROUP_FILE_PATH)
+
+
+def _write_group_file(subvol: Subvol, contents: AnyStr):
+    subvol.overwrite_path_as_root(GROUP_FILE_PATH, str(contents))
+
+
 class GroupItem(group_t, ImageItem):
     def requires(self) -> Generator[Requirement, None, None]:
-        yield RequireFile(path=GROUP_FILE_PATH)
+        # The root group is *always* available, even without a
+        # group db file
+        if self.name != "root":
+            yield RequireFile(path=GROUP_FILE_PATH)
 
     def provides(self) -> Generator[Provider, None, None]:
         yield ProvidesGroup(self.name)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
-        group_file = GroupFile(subvol.read_path_text(GROUP_FILE_PATH))
+        group_file = GroupFile(_read_group_file(subvol))
         gid = self.id or group_file.next_group_id()
         group_file.add(self.name, gid)
-        subvol.overwrite_path_as_root(GROUP_FILE_PATH, str(group_file))
+        _write_group_file(subvol, group_file)

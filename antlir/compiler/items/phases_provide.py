@@ -21,6 +21,8 @@ from antlir.compiler.requires_provides import (
     ProvidesFile,
     ProvidesPath,
     ProvidesSymlink,
+    ProvidesUser,
+    ProvidesGroup,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -123,14 +125,27 @@ class PhasesProvideItem(ImageItem):
     def provides(self):
         for path in gen_subvolume_subtree_provides(self.subvol, Path("/")):
             yield path
+
+        # Note: Here we evaluate if the passwd/group file is available
+        # in the subvol to emit users and groups.  If the db files are not
+        # available we default to emitting a "root" user/group because that
+        # is by default always available.  This is useful for image layers
+        # that are not full OS images, but instead a "data only" layer.  The
+        # limitation is that "data only" layer files must always be owned by
+        # "root:root".
         group_file_path = self.subvol.path(GROUP_FILE_PATH)
         if group_file_path.exists():
             for provide in GroupFile(group_file_path.read_text()).provides():
                 yield provide
+        else:
+            yield ProvidesGroup("root")
+
         passwd_file_path = self.subvol.path(PASSWD_FILE_PATH)
         if passwd_file_path.exists():
             for provide in PasswdFile(passwd_file_path.read_text()).provides():
                 yield provide
+        else:
+            yield ProvidesUser("root")
 
     def requires(self):
         return ()

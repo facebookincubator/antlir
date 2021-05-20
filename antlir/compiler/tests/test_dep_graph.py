@@ -16,12 +16,14 @@ from antlir.compiler.items.ensure_dirs_exist import (
 )
 from antlir.compiler.items.genrule_layer import GenruleLayerItem
 from antlir.compiler.items.genrule_layer_t import genrule_layer_t
+from antlir.compiler.items.group import GroupItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
-from antlir.fs_utils import Path
+from antlir.compiler.items.user import UserItem
+from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import TempSubvolumes
 
 from ..dep_graph import (
@@ -664,9 +666,21 @@ class DepGraphTestBase(unittest.TestCase):
         self._temp_svs_ctx = TempSubvolumes(sys.argv[0])
         temp_svs = self._temp_svs_ctx.__enter__()
         self.addCleanup(self._temp_svs_ctx.__exit__, None, None, None)
+        self._temp_dir_ctx = temp_dir()
+        tmp_dir = self._temp_dir_ctx.__enter__()
+        self.addCleanup(self._temp_dir_ctx.__exit__, None, None, None)
         self.provides_root = PhasesProvideItem(
-            from_target="t", subvol=temp_svs.create("subvol")
+            from_target="", subvol=temp_svs.create("subvol")
         )
+        self.root_u = UserItem(
+            from_target="",
+            name="root",
+            primary_group="root",
+            supplementary_groups=[],
+            shell="",
+            home_dir="",
+        )
+        self.root_g = GroupItem(from_target="", name="root")
         abc, ab, a = list(
             ensure_subdirs_exist_factory(
                 from_target="", into_dir="/", subdirs_to_create="/a/b/c"
@@ -677,8 +691,13 @@ class DepGraphTestBase(unittest.TestCase):
                 from_target="", into_dir="a", subdirs_to_create="d/e"
             )
         )
-        abcf = InstallFileItem(from_target="", source=_FILE1, dest="a/b/c/F")
-        adeg = InstallFileItem(from_target="", source=_FILE2, dest="a/d/e/G")
+        abcf_src = tmp_dir / "abcf"
+        abcf_src.touch()
+        abcf = InstallFileItem(from_target="", source=abcf_src, dest="a/b/c/F")
+        abeg_src = tmp_dir / "abeg"
+        abeg_src.touch()
+
+        adeg = InstallFileItem(from_target="", source=abeg_src, dest="a/d/e/G")
         a_ln = SymlinkToDirItem(from_target="", source="/a", dest="/a/d/e")
         # There is a bit of duplication here but it's clearer to explicitly
         # define our expectations around these rather than derive them from one
@@ -687,17 +706,17 @@ class DepGraphTestBase(unittest.TestCase):
         # and define the maps in various test functions.
         self.item_to_items_it_reqs = {
             a: {self.provides_root},
-            ab: {a},
-            abc: {ab},
-            ad: {a},
-            ade: {ad, a_ln},
-            abcf: {abc},
-            adeg: {ade, a_ln},
+            ab: {self.provides_root, a},
+            abc: {self.provides_root, ab},
+            ad: {a, self.provides_root},
+            ade: {ad, a_ln, self.provides_root},
+            abcf: {abc, self.provides_root},
+            adeg: {ade, a_ln, self.provides_root},
             a_ln: {a, ad},
         }
         self.items = self.item_to_items_it_reqs.keys()
         self.item_to_items_it_provs = {
-            self.provides_root: {a},
+            self.provides_root: {a, ab, abc, abcf, ad, ade, adeg},
             a: {ab, ad, a_ln},
             ab: {abc},
             abc: {abcf},
@@ -925,6 +944,7 @@ class DependencyGraphTestCase(DepGraphTestBase):
             ns.item_to_predecessors,
             self.item_to_items_it_reqs,
         )
+
         self.assertDictEqual(
             ns.predecessor_to_items,
             self.item_to_items_it_provs,
@@ -987,7 +1007,8 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         )
         res = tuple(dg.gen_dependency_order_items(self.provides_root))
         self.assertNotIn(self.provides_root, res)
-        res = (self.provides_root, *res)
+        res = (self.provides_root, self.root_u, self.root_g, *res)
+
         for item, items_it_requires in self.item_to_items_it_reqs.items():
             for item_it_requires in items_it_requires:
                 self.assertLess(
