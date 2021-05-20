@@ -4,14 +4,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..group import GroupItem
 from ..user import UserItem
-from .common import BaseItemTestCase, getent
+from .common import BaseItemTestCase, getent, run_in_ba
 
 
 class UserItemIntegrationTestCase(BaseItemTestCase):
@@ -49,4 +48,22 @@ class UserItemIntegrationTestCase(BaseItemTestCase):
         self.assertRegex(
             getent(layer, "passwd", "newuser"),
             rb"^newuser:x:\d+:\d+::/home/newuser:/bin/bash\n$",
+        )
+
+    def test_install_chown_as_user(self):
+        layer = layer_resource_subvol(
+            __package__,
+            "users-chown",
+        )
+
+        self.assertEqual(
+            b"newuser:newuser",
+            run_in_ba(
+                layer=layer,
+                cmd=[
+                    "stat",
+                    "--printf=%U:%G",
+                    "/shadow_me_chown",
+                ],
+            ).stdout,
         )

@@ -153,7 +153,10 @@ def build_stat_options(
                     full_target_path,
                 ]
             )
+
     if build_appliance:
+        use_subvol_passwd = subvol.path("/etc/passwd").exists()
+
         ba.run(
             [
                 "chown",
@@ -162,9 +165,21 @@ def build_stat_options(
                 item.user_group,
                 ba.path(rel_path),
             ],
+            # This will fall back to using the host passwd
+            # if the subvol doesn't have one.
             bindmount_ro=[
-                ("/etc/passwd", "/etc/passwd"),
-                ("/etc/group", "/etc/group"),
+                (
+                    subvol.path("/etc/passwd")
+                    if use_subvol_passwd
+                    else "/etc/passwd",
+                    "/etc/passwd",
+                ),
+                (
+                    subvol.path("/etc/group")
+                    if use_subvol_passwd
+                    else "/etc/group",
+                    "/etc/group",
+                ),
             ],
         )
     else:
