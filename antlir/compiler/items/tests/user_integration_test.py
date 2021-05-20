@@ -53,7 +53,7 @@ class UserItemIntegrationTestCase(BaseItemTestCase):
     def test_install_chown_as_user(self):
         layer = layer_resource_subvol(
             __package__,
-            "users-chown",
+            "users-added",
         )
 
         self.assertEqual(

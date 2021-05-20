@@ -59,6 +59,8 @@ class PhaseProvidesItemTestCase(BaseItemTestCase):
                     | {
                         ProvidesDirectory(path=Path("/")),
                         ProvidesDoNotAccess(path=Path("/.meta")),
+                        ProvidesUser("root"),
+                        ProvidesGroup("root"),
                     },
                     set(),
                 )
@@ -89,6 +91,7 @@ adm:x:4:
                     ProvidesGroup("daemon"),
                     ProvidesGroup("sys"),
                     ProvidesGroup("adm"),
+                    ProvidesUser("root"),
                 },
             )
 
@@ -118,5 +121,6 @@ lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
                     ProvidesUser("daemon"),
                     ProvidesUser("adm"),
                     ProvidesUser("lp"),
+                    ProvidesGroup("root"),
                 },
             )

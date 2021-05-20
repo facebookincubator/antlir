@@ -13,6 +13,8 @@ from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
     RequireDirectory,
+    RequireUser,
+    RequireGroup,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -156,6 +158,9 @@ class InstallFileItem(install_files_t, ImageItem):
 
     def requires(self):
         yield RequireDirectory(path=self.dest.dirname())
+        user, group = self.user_group.split(":")
+        yield RequireUser(user)
+        yield RequireGroup(group)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         dest = subvol.path(self.dest)

@@ -11,6 +11,8 @@ from itertools import zip_longest
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     RequireDirectory,
+    RequireUser,
+    RequireGroup,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
@@ -46,7 +48,11 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
             self._check_item(
                 item,
                 {ProvidesDirectory(path=Path(expected_prov))},
-                {RequireDirectory(path=Path(expected_req))},
+                {
+                    RequireDirectory(path=Path(expected_req)),
+                    RequireUser("root"),
+                    RequireGroup("root"),
+                },
             )
         for item, (expected_req, expected_prov) in zip_longest(
             ensure_subdirs_exist_factory(
@@ -60,7 +66,11 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
             self._check_item(
                 item,
                 {ProvidesDirectory(path=Path(expected_prov))},
-                {RequireDirectory(path=Path(expected_req))},
+                {
+                    RequireDirectory(path=Path(expected_req)),
+                    RequireUser("root"),
+                    RequireGroup("root"),
+                },
             )
 
     def test_ensure_subdirs_exist_invalid_into_dir(self):

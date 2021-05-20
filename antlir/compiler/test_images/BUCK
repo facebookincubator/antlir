@@ -236,6 +236,27 @@ feature.new(
             user = "uuu",
             group = "ggg",
         ),
+        # /etc/passwd and /etc/group are needed
+        # because the {User,Group}Items require them
+        # explicitly.
+        image.ensure_subdirs_exist("/", "etc"),
+        image.install(
+            ":shadow_me",
+            "/etc/passwd",
+        ),
+        image.install(
+            ":shadow_me",
+            "/etc/group",
+        ),
+        feature.user_add(
+            username = "uuu",
+            primary_group = "ggg",
+            home_dir = "/foo/bar",
+            shell = "/foo/bar/installed/print-ok",
+        ),
+        feature.group_add(
+            groupname = "ggg",
+        ),
     ],
     visibility = ["//antlir/compiler/..."],
 )
@@ -481,8 +502,6 @@ feature.new(
         image.install(
             ":hello_world.tar",
             "/foo/bar/hello_world_again.tar",
-            user = "nobody",
-            group = "nobody",
         ),
         image.install(
             image.source(
@@ -741,8 +760,6 @@ image.layer(
             "/foo",
             "more_extracted_hello",
             mode = 0o711,
-            user = "nobody",
-            group = "nobody",
         ),
         image.tarball(":hello_world.tar", "/foo/extracted_hello"),
         image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
@@ -945,6 +962,10 @@ image.layer(
     visibility = ["//antlir/compiler/..."],
 )
 
+# This layer requires a parent ancestry that has a
+# /etc/passwd and /etc/group because the
+# "newuser" user/group is likely not going to exist
+# on a host.
 image.layer(
     name = "users-added",
     parent_layer = REPO_CFG.build_appliance_default,
@@ -955,19 +976,6 @@ image.layer(
             primary_group = "newuser",
             home_dir = "/home/newuser",
         ),
-    ],
-    visibility = ["//antlir/compiler/..."],
-)
-
-# This layer requires a parent ancestry that has a
-# /etc/passwd and /etc/group because the
-# "newuser" user/group is likely not going to exist
-# on a host.  Also note, that the user/group are
-# added in the :users-added image defined above.
-image.layer(
-    name = "users-chown",
-    parent_layer = ":users-added",
-    features = [
         image.install(
             ":shadow_me",
             "/shadow_me_chown",

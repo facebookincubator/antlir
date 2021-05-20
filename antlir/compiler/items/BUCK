@@ -476,7 +476,6 @@ python_unittest(
         layer_resource(
             TEST_IMAGE_PREFIX + "users-added",
         ): "tests/users-added",
-        layer_resource(TEST_IMAGE_PREFIX + "users-chown"): "tests/users-chown",
     },
     deps = [
         ":common_testlib",

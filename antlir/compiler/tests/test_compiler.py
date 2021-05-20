@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import io
 import itertools
 import json
 import os
@@ -113,6 +114,52 @@ def _btrfs_get_volume_props(subvol_path):
         # We don't have an actual btrfs subvolume, so make up a UUID.
         return {"UUID": "fake uuid", "Parent UUID": None}
     return _orig_btrfs_get_volume_props(subvol_path)
+
+
+@contextmanager
+def mock_user_group_read_write():
+    def _build_mock_read_write(buff):
+        def _mock_read(*args, **kwargs):
+            return buff.getvalue()
+
+        def _mock_write(subvol, new_contents):
+            buff.seek(0)
+            buff.write(str(new_contents))
+
+        return (
+            _mock_read,
+            _mock_write,
+        )
+
+    _passwd_file = io.StringIO()
+    _passwd_file_mocks = _build_mock_read_write(_passwd_file)
+
+    _group_file = io.StringIO()
+    _group_file_mocks = _build_mock_read_write(_group_file)
+
+    with unittest.mock.patch(
+        "antlir.compiler.items.user._read_passwd_file",
+        side_effect=_passwd_file_mocks[0],
+    ), unittest.mock.patch(
+        "antlir.compiler.items.user._write_passwd_file",
+        side_effect=_passwd_file_mocks[1],
+    ), unittest.mock.patch(
+        "antlir.compiler.items.user._read_group_file",
+        side_effect=_group_file_mocks[0],
+    ), unittest.mock.patch(
+        "antlir.compiler.items.user._write_group_file",
+        side_effect=_group_file_mocks[1],
+    ), unittest.mock.patch(
+        "antlir.compiler.items.group._read_group_file",
+        side_effect=_group_file_mocks[0],
+    ), unittest.mock.patch(
+        "antlir.compiler.items.group._write_group_file",
+        side_effect=_group_file_mocks[1],
+    ):
+        yield
+
+    _passwd_file.close()
+    _group_file.close()
 
 
 @contextmanager
@@ -253,7 +300,7 @@ class CompilerTestCase(unittest.TestCase):
         `test_image_layer.py` does an end-to-end test that validates the
         final state of a compiled, live subvolume.
         """
-        with tempfile.NamedTemporaryFile() as tf:
+        with tempfile.NamedTemporaryFile() as tf, mock_user_group_read_write():
             deps = parent_dep.copy() or {}
             deps.update(si.TARGET_TO_PATH)
             tf.write(Path.json_dumps(deps).encode())
@@ -354,17 +401,19 @@ class CompilerTestCase(unittest.TestCase):
             self.assertIn(e, fix_stdin_actual)
 
     def test_compile(self):
-        # First, test compilation with no parent layer.
-        expected_calls = self._expected_run_as_root_calls()
-        self.assertGreater(  # Sanity check: at least one command per item
-            len(expected_calls), len(si.ID_TO_ITEM)
-        )
-        self._assert_equal_call_sets(
-            expected_calls,
-            self._compiler_run_as_root_calls(
-                parent_feature_json=[], parent_dep={}
-            ),
-        )
+        with mock_user_group_read_write():
+            # First, test compilation with no parent layer.
+            expected_calls = self._expected_run_as_root_calls()
+            self.assertGreater(  # Sanity check: at least one command per item
+                len(expected_calls), len(si.ID_TO_ITEM)
+            )
+
+            self._assert_equal_call_sets(
+                expected_calls,
+                self._compiler_run_as_root_calls(
+                    parent_feature_json=[], parent_dep={}
+                ),
+            )
 
         # Now, add an empty parent layer
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
