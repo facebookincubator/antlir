@@ -33,6 +33,14 @@ Currently, it simply adds `tools/` to your `$PATH` when entering the
 `buck` that Antlir is distributed with. In the future this may be expanded to
 offer more aliases.
 
+## Git submodules
+
+After initial `git clone` the repo lacks submodule contents. You need to fetch
+them (after `cd` to repo root) with:
+```
+$ git submodule update --init
+```
+
 ## Fetch remote artifacts
 Antlir downloads some dependencies from the internet. It is advised to
 download these with `buck` before attempting to build any images:
