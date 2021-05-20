@@ -181,7 +181,13 @@ class InstallFileItem(install_files_t, ImageItem):
                 dest,
             ]
         )
-        build_stat_options(self, subvol, dest, do_not_set_mode=True)
+        build_stat_options(
+            self,
+            subvol,
+            dest,
+            do_not_set_mode=True,
+            build_appliance=layer_opts.build_appliance,
+        )
         # Group by mode to make as few shell calls as possible.
         for mode_str, modes_and_paths in itertools.groupby(
             sorted(

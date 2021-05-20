@@ -959,6 +959,25 @@ image.layer(
     visibility = ["//antlir/compiler/..."],
 )
 
+# This layer requires a parent ancestry that has a
+# /etc/passwd and /etc/group because the
+# "newuser" user/group is likely not going to exist
+# on a host.  Also note, that the user/group are
+# added in the :users-added image defined above.
+image.layer(
+    name = "users-chown",
+    parent_layer = ":users-added",
+    features = [
+        image.install(
+            ":shadow_me",
+            "/shadow_me_chown",
+            user = "newuser",
+            group = "newuser",
+        ),
+    ],
+    visibility = ["//antlir/compiler/..."],
+)
+
 image.layer(
     name = "vfat-test.layer",
     features = [

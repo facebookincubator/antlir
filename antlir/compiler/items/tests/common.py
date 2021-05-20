@@ -103,17 +103,24 @@ def temp_filesystem_provides(p=""):
     }
 
 
-def getent(layer: Subvol, type: str, name: str):
-    cp, _ = run_nspawn(
+def run_in_ba(layer: Subvol, cmd) -> subprocess.CompletedProcess:
+    res, _ = run_nspawn(
         new_nspawn_opts(
-            cmd=["getent", type, name],
+            cmd=cmd,
             layer=layer,
         ),
         PopenArgs(
             stdout=subprocess.PIPE,
         ),
     )
-    return cp.stdout
+    return res
+
+
+def getent(layer: Subvol, dbtype: str, name: str) -> bytes:
+    return run_in_ba(
+        cmd=["getent", dbtype, name],
+        layer=layer,
+    ).stdout
 
 
 class BaseItemTestCase(unittest.TestCase):
