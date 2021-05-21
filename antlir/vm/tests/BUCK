@@ -41,6 +41,14 @@ python_unittest(
             ),
             vm.types.opts.t,
         ),
+        "test-vm-sidecar-json": shape.do_not_cache_me_json(
+            vm.types.opts.new(
+                runtime = vm.types.runtime.new(
+                    sidecar_services = ["/bin/sleep 3600"],
+                ),
+            ),
+            vm.types.opts.t,
+        ),
         "test-vm-ssh-json": shape.do_not_cache_me_json(
             vm.types.opts.new(
                 runtime = vm.types.runtime.new(

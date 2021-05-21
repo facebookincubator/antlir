@@ -269,3 +269,14 @@ class AsyncTestAntlirVm(unittest.TestCase):
                 self.assertEqual(retcode, 255)
 
         self.event_loop.run_until_complete(_test())
+
+    def test_api_sidecar(self):
+        opts_instance = vm_opts_t.from_env("test-vm-sidecar-json")
+
+        async def _test():
+            async with vm(
+                opts=opts_instance,
+            ) as (instance, boottime_ms, timeout_ms):
+                pass
+
+        self.event_loop.run_until_complete(_test())
