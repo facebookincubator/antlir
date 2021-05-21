@@ -16,11 +16,14 @@ _vm_emulator_t = shape.shape(
     bios = shape.target(),
     # Directory from where the emulator can load firmware roms
     roms_dir = shape.target(default = "//antlir/vm:roms"),
+    # Utility to manage disk images
+    img_util = shape.target(),
 )
 
 def _new_vm_emulator(
         binary = None,
         bios = None,
+        img_util = None,
         **kwargs):
     # These defaults have to be set here due to the use of the
     # `third_party.library` function.  It must be invoked inside of
@@ -28,11 +31,13 @@ def _new_vm_emulator(
     # at the top-level of an included .bzl file (where the type def is).
     bios = bios or third_party.library("qemu", "share/qemu/bios-256k.bin")
     binary = binary or third_party.library("qemu")
+    img_util = img_util or third_party.library("qemu", "qemu-img")
 
     return shape.new(
         _vm_emulator_t,
         binary = binary,
         bios = bios,
+        img_util = img_util,
         **kwargs
     )
 
