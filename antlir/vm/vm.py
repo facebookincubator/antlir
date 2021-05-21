@@ -486,7 +486,7 @@ async def __vm_with_stack(
 
         if shell == ShellMode.console:  # pragma: no cover
             logger.debug("Waiting for VM console to terminate")
-            proc.wait()
+            yield (None, boot_elapsed_ms, timeout_ms)
         # Note: this is not covered in test cases because the API does
         # not yet provide a good way to expose this.
         elif shell == ShellMode.ssh:  # pragma: no cover
@@ -565,15 +565,16 @@ async def __vm_with_stack(
 
         logger.debug(f"VM exited with: {proc.returncode}")
 
-        subprocess.run(
-            [
-                "sudo",
-                "kill",
-                "-KILL",
-                "--",
-                *[str(proc.pid) for proc in sidecar_procs],
-            ]
-        )
+        if sidecar_procs:
+            subprocess.run(
+                [
+                    "sudo",
+                    "kill",
+                    "-KILL",
+                    "--",
+                    *[str(proc.pid) for proc in sidecar_procs],
+                ]
+            )
 
 
 @asynccontextmanager

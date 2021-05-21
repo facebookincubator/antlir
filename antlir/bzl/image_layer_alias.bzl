@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+
 """
 USE WITH CARE -- this was added to aid in implementing `released_layer`.
 Most people should avoid aliases, and should instead use an absolute target
@@ -27,8 +29,6 @@ view of Buck:
   - Their "type" attribute will differ.
 """
 
-load(":oss_shim.bzl", "buck_genrule", "get_visibility")
-
 def image_layer_alias(name, layer, visibility = None):
     visibility = visibility or []
 
@@ -36,6 +36,9 @@ def image_layer_alias(name, layer, visibility = None):
     buck_genrule(
         name = name,
         out = "layer",
+        # This should definitely not count towards CI dependency distance
+        # between sources & build nodes.
+        antlir_rule = "user-internal",
         # Caveats:
         #   - This lacks a "self-dependency" on the `fake_macro_library`
         #     because hardlinks have the property of always being in sync.
@@ -51,7 +54,4 @@ def image_layer_alias(name, layer, visibility = None):
         cacheable = False,
         type = "image_layer_alias",
         visibility = visibility,
-        # This should definitely not count towards CI dependency distance
-        # between sources & build nodes.
-        antlir_rule = "user-internal",
     )
