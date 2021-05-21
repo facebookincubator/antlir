@@ -12,6 +12,15 @@ export_file(
     ],
 )
 
+export_file(
+    name = "qemu-img",
+    visibility = [
+        "//antlir/linux/...",
+        "//antlir/vm/...",
+        "//third-party/...",
+    ],
+)
+
 [
     buck_genrule(
         name = "share/qemu/{}".format(rom),
