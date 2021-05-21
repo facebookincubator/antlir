@@ -44,7 +44,18 @@ python_binary(
     main_module = "antlir.rpm.allowed_versions.update_allowed_versions",
     deps = [
         ":envra",
-        "//antlir/rpm/allowed_versions/facebook:package_group",
-        "//antlir/rpm/allowed_versions/facebook:version_policy",
+        "//antlir/rpm/allowed_versions:package_group",
+        "//antlir/rpm/allowed_versions:version_policy",
+    ],
+)
+
+python_unittest(
+    name = "test-update-allowed-versions",
+    srcs = ["tests/test_update_allowed_versions.py"],
+    needed_coverage = [(100, ":update-allowed-versions-library")],
+    deps = [
+        ":update-allowed-versions-library",
+        "//antlir/rpm:repo_snapshot",
+        "//antlir/rpm/allowed_versions/facebook/tests:mock_snapshots",
     ],
 )

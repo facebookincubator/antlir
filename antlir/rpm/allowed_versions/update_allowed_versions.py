@@ -29,6 +29,7 @@ from typing import (
     Tuple,
     Union,
 )
+from typing import Literal  # This is a 3.8+ feature
 
 from antlir.common import get_logger, init_logging, set_new_key
 from antlir.fs_utils import Path, create_ro, populate_temp_dir_and_rename
@@ -38,18 +39,10 @@ from .package_group import PackageGroup
 from .version_policy import VersionPolicy
 
 
-try:
-    from typing import Literal  # This is a 3.8+ feature
-except ImportError:
-    from typing import Type  # A lame substitute
-
-    pass
-
-
 # XXX just accept Pluggable in place of a Union?
 # Dirty hack... fix this later?
 def Literalish(x):
-    return Literal[x] if sys.hexversion >= 0x030800F0 else Type[x]
+    return Literal[x]
 
 
 log = get_logger()
@@ -526,7 +519,7 @@ def parse_args(argv: List[str]):
         help="XXX for faster iteration",
     )
     parser.add_argument("--debug", action="store_true", help="Log more?")
-    return parser.parse_args(argv)
+    return Path.parse_args(parser, argv)
 
 
 # XXX: Do the source-only package group source
