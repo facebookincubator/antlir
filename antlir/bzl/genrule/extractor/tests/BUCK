@@ -26,6 +26,7 @@ extract.source_layer(
     features = [
         image.rpms_install(["systemd"]),
     ],
+    flavor = REPO_CFG.flavor_latest,
 )
 
 rust_binary(
