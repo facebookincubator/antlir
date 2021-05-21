@@ -5,15 +5,6 @@ load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/vm:defs.bzl", "vm")
 
-python_unittest(
-    name = "test-share-generator",
-    srcs = ["test_share_generator.py"],
-    resources = {
-        "//antlir/vm:mount-generator": "mount-generator",
-    },
-    deps = ["//antlir/vm:share"],
-)
-
 # Future: when we run a VM the tap device is actually created
 # on the host, but this test runs inside a VM, which needs
 # a tap device...  Yes, this is circular, since tap devices
@@ -29,7 +20,10 @@ vm.python_unittest(
 
 python_unittest(
     name = "test-vm",
-    srcs = ["test_vm.py"],
+    srcs = [
+        "test_share_generator.py",
+        "test_vm.py",
+    ],
     env = {
         "test-vm-agent-json": shape.do_not_cache_me_json(
             vm.types.opts.new(
@@ -67,10 +61,15 @@ python_unittest(
     },
     needed_coverage = [
         (100, "//antlir/vm:vm"),
+        (100, "//antlir/vm:share"),
         (100, "//antlir/vm:guest-ssh"),
     ],
+    resources = {
+        "//antlir/vm:mount-generator": "mount-generator",
+    },
     deps = [
         "//antlir:fs_utils",
+        "//antlir/vm:share",
         "//antlir/vm:vm",
     ],
 )
