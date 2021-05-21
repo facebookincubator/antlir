@@ -37,19 +37,19 @@ def _next_drive() -> str:
 class Share(ABC):
     @property
     @abstractmethod
-    def generator(self) -> bool:
+    def generator(self) -> bool:  # pragma: no cover
         """Should this share have a systemd mount unit generated for it"""
         pass
 
     @property
     @abstractmethod
-    def mount_unit(self) -> Tuple[str, str]:
+    def mount_unit(self) -> Tuple[str, str]:  # pragma: no cover
         """Return the name of the mount unit file, and its contents"""
         pass
 
     @property
     @abstractmethod
-    def qemu_args(self) -> Iterable[str]:
+    def qemu_args(self) -> Iterable[str]:  # pragma: no cover
         """QEMU cmdline args to attach this share"""
         pass
 
