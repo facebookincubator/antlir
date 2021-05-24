@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from typing import AnyStr, BinaryIO, Iterable, Iterator, NamedTuple, TypeVar
 
 from .artifacts_dir import find_artifacts_dir
-from .btrfs_loopback import LoopbackVolume, run_stdout_to_err
+from .btrfs_loopback import LoopbackVolume, run_stdout_to_err, MIN_CREATE_BYTES
 from .common import check_popen_returncode, get_logger, open_fd, pipe
 from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path, temp_dir
@@ -944,6 +944,19 @@ class Subvol:
                     f"{leftover_bytes} sendstream bytes were left over, "
                     f"attempts {attempts}"
                 )
+
+                # The new size might be larger than `size_bytes_to_try` because
+                # there is a minimum size for a loopback image.  That is
+                # defined by MIN_CREATE_BYTES.  Lets be paranoid
+                # and check to make sure that we either had to use the
+                # min size, or we got back the size we were trying.
+                assert (
+                    int(size_bytes_to_try) < MIN_CREATE_BYTES
+                    or int(size_bytes_to_try) == new_size
+                )
+
+                size_bytes_to_try = new_size
+
             if leftover_bytes == 0 or last_effort:
                 return (leftover_bytes, new_size)
             assert (
