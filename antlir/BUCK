@@ -546,9 +546,7 @@ python_library(
     srcs = ["shape.py"],
     visibility = ["PUBLIC"],
     deps = [
-        ":find_built_subvol",
         ":fs_utils",
-        ":subvol_utils",
         third_party.library(
             "pydantic",
             platform = "python",

@@ -64,6 +64,7 @@ python_library(
         ":vm_opts_t",
         "//antlir:common",
         "//antlir:config",
+        "//antlir:find_built_subvol",
         "//antlir:shape",
         "//antlir:testlib_layer_resource",
         "//antlir:unshare",
@@ -122,7 +123,6 @@ python_binary(
         ":vm",
         "//antlir:artifacts_dir",
         "//antlir:common",
-        "//antlir:find_built_subvol",
         "//antlir:fs_utils",
     ],
 )

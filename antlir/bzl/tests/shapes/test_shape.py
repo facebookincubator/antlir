@@ -56,7 +56,6 @@ class TestShape(unittest.TestCase):
                     name=":luke-lightsaber",
                     path=b"/static/target/path",
                 ),
-                layer_target=c.lightsaber.layer_target,
             ),
         )
         self.assertEqual(c.callsign, ("Red", 5))
@@ -128,17 +127,10 @@ class TestShape(unittest.TestCase):
         lightsaber_target_fixed = characters[0].lightsaber.target.copy(
             update={"path": b"/static/target/path"}
         )
-        lightsaber_layer_fixed = characters[0].lightsaber.layer_target.copy(
-            update={
-                "path": b"/static/layer/path",
-                "subvol": None,
-            }
-        )
         lightsaber_fixed = characters[0].lightsaber.copy(
             deep=True,
             update={
                 "target": lightsaber_target_fixed,
-                "layer_target": lightsaber_layer_fixed,
             },
         )
 
@@ -162,11 +154,6 @@ class TestShape(unittest.TestCase):
                 "color=GREEN, "
                 "target=Target("
                 "name=':luke-lightsaber', path=b'/static/target/path'"
-                "), "
-                "layer_target=LayerTarget("
-                "name=':luke-lightsaber-layer', "
-                "path=b'/static/layer/path', "
-                "subvol=None"
                 ")"
             )
             + "), "
@@ -187,13 +174,7 @@ class TestShape(unittest.TestCase):
             "appears_in=Tuple[int, ...], "
             "friends=Tuple[shape(name=str), ...], "
             "lightsaber=Optional["
-            + (
-                "shape("
-                "color=enum, "
-                "target=Optional[Target], "
-                "layer_target=Optional[LayerTarget]"
-                ")"
-            )
+            + ("shape(" "color=enum, " "target=Optional[Target]" ")")
             + "], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
@@ -245,7 +226,7 @@ class TestShape(unittest.TestCase):
             "name='Obi-Wan Kenobi', "
             "appears_in=(1, 2, 3, 4, 5, 6), "
             "friends=(shape(name='Yoda'), shape(name='Padme Amidala')), "
-            "lightsaber=shape(color=BLUE, target=None, layer_target=None), "
+            "lightsaber=shape(color=BLUE, target=None), "
             "callsign=None, "
             "metadata={'species': 'human'}, "
             "affiliations=shape(faction='Jedi Temple'), "
@@ -261,11 +242,7 @@ class TestShape(unittest.TestCase):
             "appears_in=Tuple[int, ...], "
             "friends=Tuple[shape(name=str), ...], "
             "lightsaber=Optional[shape("
-            + (
-                "color=enum, "
-                "target=Optional[Target], "
-                "layer_target=Optional[LayerTarget]"
-            )
+            + ("color=enum, " "target=Optional[Target]")
             + ")], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "

@@ -196,7 +196,7 @@ def _check_type(x, t):
         return "expected one of {}, got {}".format(t.enum, x)
     if t == "Path":
         return _check_type(x, str)
-    if t == "Target" or t == "LayerTarget":
+    if t == "Target":
         type_error = _check_type(x, str)
         if not type_error:
             # If parsing the target works, we don't have an error
@@ -414,9 +414,6 @@ def _path(**field_kwargs):
 def _target(**field_kwargs):
     return _field(type = "Target", **field_kwargs)
 
-def _layer(**field_kwargs):
-    return _field(type = "LayerTarget", **field_kwargs)
-
 def _shape(**fields):
     """
     Define a new shape type with the fields as given by the kwargs.
@@ -528,7 +525,7 @@ def _translate_targets(val, t):  # pragma: no cover
             ]
         else:
             return None
-    elif t in ("Target", "LayerTarget"):
+    elif t == "Target":
         return struct(
             name = val,
             path = "$(location {})".format(val),
@@ -538,7 +535,7 @@ def _translate_targets(val, t):  # pragma: no cover
 
 def _type_has_location(t):
     if _is_field(t):
-        if t.type in ("Target", "LayerTarget"):
+        if t.type == "Target":
             return True
         return _type_has_location(t.type)
     if _is_collection(t):
@@ -694,7 +691,6 @@ shape = struct(
     enum = _enum,
     path = _path,
     target = _target,
-    layer = _layer,
     loader = _loader,
     json_file = _json_file,
     python_data = _python_data,

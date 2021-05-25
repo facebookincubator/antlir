@@ -30,6 +30,7 @@ from typing import (
 from antlir.common import init_logging, get_logger
 from antlir.compiler.items.mount import mounts_from_image_meta
 from antlir.config import load_repo_config
+from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.shape import Shape
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -437,7 +438,7 @@ async def __vm_with_stack(
     if opts.kernel.artifacts.modules is not None:
         shares += [
             Plan9Export(
-                opts.kernel.artifacts.modules.subvol.path(),
+                find_built_subvol(opts.kernel.artifacts.modules.path).path(),
                 mount_tag="kernel-modules",
                 generator=False,
             )
