@@ -19,7 +19,7 @@ import sys
 import tempfile
 from typing import Optional, Tuple
 
-from .common import byteme, get_logger, run_stdout_to_err
+from .common import byteme, get_logger, kernel_version, run_stdout_to_err
 from .unshare import Unshare, nsenter_as_root, nsenter_as_user
 
 
@@ -36,15 +36,6 @@ MIN_CREATE_BYTES = 109 * MiB
 # When a filesystem's `min-dev-size` is small, `btrfs resize` below this
 # limit will fail to shrink with `Invalid argument`.
 MIN_SHRINK_BYTES = 256 * MiB
-
-
-def _kernel_version() -> Tuple[int, int]:
-    m = re.match(r"(\d+)\.(\d+)\.\d+.*", platform.release())
-    if not m or len(m.groups()) != 2:
-        raise ValueError(
-            f"Invalid kernel version format '{platform.release()}'"
-        )
-    return int(m.group(1)), int(m.group(2))
 
 
 def _round_to_loop_block_size(num_bytes: int, log_level: int) -> int:
@@ -117,7 +108,7 @@ def _mount_image_file(
     log.info(f"Mounting btrfs {file_path} at {mount_path}")
     compress = "zstd:19"
     # kernel versions pre-5.1 did not support compression level tuning
-    if _kernel_version() < (5, 1):
+    if kernel_version() < (5, 1):
         compress = "zstd"
     # Explicitly set filesystem type to detect shenanigans.
     run_stdout_to_err(
@@ -165,56 +156,6 @@ def _mount_image_file(
             "performance."
         )
     return loop_dev
-
-
-def _minimize_image_size(
-    *,
-    unshare: Optional[Unshare],
-    cur_size: int,
-    image_path: bytes,
-    mount_path: bytes,
-    loop_dev: bytes,
-) -> int:
-    "Returns the new filesystem size."
-    min_size_out = subprocess.check_output(
-        nsenter_as_root(
-            unshare, "btrfs", "inspect-internal", "min-dev-size", mount_path
-        )
-    ).split(b" ")
-    assert min_size_out[1] == b"bytes"
-    min_size = _fix_up_fs_size(int(min_size_out[0]), MIN_SHRINK_BYTES)
-    if min_size >= cur_size:
-        log.info(
-            f"Nothing to do: the minimum resize limit {min_size} is no less "
-            f"than the current filesystem size of {cur_size} bytes."
-        )
-        return cur_size
-    log.info(f"Shrinking {image_path} to the btrfs minimum, {min_size} bytes")
-    run_stdout_to_err(
-        nsenter_as_root(
-            unshare, "btrfs", "filesystem", "resize", str(min_size), mount_path
-        ),
-        check=True,
-    )
-    fs_bytes = int(
-        subprocess.check_output(
-            nsenter_as_user(
-                unshare,
-                "findmnt",
-                "--bytes",
-                "--noheadings",
-                "--output",
-                "SIZE",
-                mount_path,
-            )
-        )
-    )
-    # Log an error on size rounding since this is not expected to need it.
-    _create_or_resize_image_file(image_path, fs_bytes, log_level=logging.ERROR)
-    run_stdout_to_err(
-        ["sudo", "losetup", "--set-capacity", loop_dev], check=True
-    )
-    return min_size
 
 
 class LoopbackVolume:
@@ -271,14 +212,67 @@ class LoopbackVolume:
         return self._mount_dir
 
     def minimize_size(self) -> int:
-        "Returns the new image size."
-        self._size_bytes = _minimize_image_size(
-            unshare=self._unshare,
-            cur_size=self._size_bytes,
-            image_path=self._image_path,
-            mount_path=self._mount_dir,
-            loop_dev=self._loop_dev,
+        """
+        Minimizes the loopback as much as possibly by inspecting
+        the btrfs internals and resizing the filesystem explicitly.
+
+        Returns the new size of the loopback in bytes.
+        """
+        min_size_out = subprocess.check_output(
+            nsenter_as_root(
+                self._unshare,
+                "btrfs",
+                "inspect-internal",
+                "min-dev-size",
+                self._mount_dir,
+            )
+        ).split(b" ")
+        assert min_size_out[1] == b"bytes"
+        min_size = _fix_up_fs_size(int(min_size_out[0]), MIN_SHRINK_BYTES)
+        if min_size >= self._size_bytes:
+            log.info(
+                f"Nothing to do: the minimum resize limit {min_size} is no "
+                f"less than the current filesystem size of {self._size_bytes} "
+                "bytes."
+            )
+            return self._size_bytes
+        log.info(
+            f"Shrinking {self._image_path} to the btrfs minimum, {min_size} "
+            "bytes"
         )
+        run_stdout_to_err(
+            nsenter_as_root(
+                self._unshare,
+                "btrfs",
+                "filesystem",
+                "resize",
+                str(min_size),
+                self._mount_dir,
+            ),
+            check=True,
+        )
+        fs_bytes = int(
+            subprocess.check_output(
+                nsenter_as_user(
+                    self._unshare,
+                    "findmnt",
+                    "--bytes",
+                    "--noheadings",
+                    "--output",
+                    "SIZE",
+                    self._mount_dir,
+                )
+            )
+        )
+        # Log an error on size rounding since this is not expected to need it.
+        _create_or_resize_image_file(
+            self._image_path, fs_bytes, log_level=logging.ERROR
+        )
+        run_stdout_to_err(
+            ["sudo", "losetup", "--set-capacity", self._loop_dev], check=True
+        )
+
+        self._size_bytes = min_size
         return self._size_bytes
 
     def get_size(self) -> int:

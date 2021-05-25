@@ -9,7 +9,9 @@ import array
 import inspect
 import logging
 import os
+import platform
 import random
+import re
 import socket
 import subprocess
 import tempfile
@@ -30,6 +32,7 @@ from typing import (
 
 T = TypeVar("T")
 _mockable_retry_fn_sleep = time.sleep
+_mockable_platform_release = platform.release
 
 
 # Bite me, Python3.
@@ -349,3 +352,16 @@ def async_retryable(
         return decorated
 
     return wrapper
+
+
+def kernel_version() -> Tuple[int, int]:
+    """
+    Parse the current running kernel version and return a tuple representing
+    the (MAJOR, MINOR) version.
+    """
+    m = re.match(r"(\d+)\.(\d+)\.\d+.*", _mockable_platform_release())
+    if not m or len(m.groups()) != 2:
+        raise ValueError(
+            f"Invalid kernel version format '{platform.release()}'"
+        )
+    return int(m.group(1)), int(m.group(2))
