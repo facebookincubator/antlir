@@ -14,9 +14,7 @@ import os
 from typing import Type, TypeVar
 
 import pydantic
-from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
-from antlir.subvol_utils import Subvol
 
 
 S = TypeVar("S")
@@ -107,19 +105,6 @@ class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
 class Target(Shape):
     name: str
     path: Path
-
-
-# A LayerTarget is a specialization of `Target` that adds the resolution
-# of the on-disk target to a Subvol
-class LayerTarget(Target):
-    subvol: Subvol = None
-
-    class Config:
-        arbitrary_types_allowed = True
-
-    @pydantic.validator("subvol", always=True, pre=True)
-    def find_layer_as_subvol(cls, v, *, values):  # noqa B902
-        return find_built_subvol(values["path"])
 
 
 class Enum(enum.Enum):

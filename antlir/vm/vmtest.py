@@ -12,6 +12,7 @@ from typing import List, Optional
 
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import get_logger
+from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.vm.share import BtrfsDisk, Plan9Export
 from antlir.vm.vm import ConsoleRedirect, ShellMode, vm, VMExecOpts
@@ -155,13 +156,13 @@ async def run(
     if devel_layer:
         shares += [
             Plan9Export(
-                path=opts.kernel.artifacts.devel.subvol.path(),
+                path=find_built_subvol(opts.kernel.artifacts.devel.path).path(),
                 mountpoint="/usr/src/kernels/{}".format(opts.kernel.uname),
                 mount_tag="kernel-devel-src",
                 generator=True,
             ),
             Plan9Export(
-                path=opts.kernel.artifacts.devel.subvol.path(),
+                path=find_built_subvol(opts.kernel.artifacts.devel.path).path(),
                 mountpoint="/usr/lib/modules/{}/build".format(
                     opts.kernel.uname
                 ),

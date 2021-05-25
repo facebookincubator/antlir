@@ -9,8 +9,8 @@ kernel_artifacts_t = shape.shape(
     vmlinuz = shape.target(),
     # devel and modules may not exist, such as in the case of a vmlinuz with
     # all necessary features compiled with =y
-    devel = shape.layer(optional = True),
-    modules = shape.layer(optional = True),
+    devel = shape.target(optional = True),
+    modules = shape.target(optional = True),
 )
 
 kernel_t = shape.shape(

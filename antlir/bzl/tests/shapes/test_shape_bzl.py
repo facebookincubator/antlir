@@ -34,7 +34,6 @@ class TestShapeBzl(unittest.TestCase):
             ("/hello/world", shape.path()),
             ("@cell//project/path:rule", shape.target()),
             (":rule", shape.target()),
-            (":rule", shape.layer()),
             (1, shape.union(str, int)),
             ("hello", shape.union(str, int)),
             ("hello", shape.union_t(str, int)),
@@ -60,7 +59,6 @@ class TestShapeBzl(unittest.TestCase):
             (2, shape.target()),
             ("invalid_target", shape.target()),
             ("also:invalid_target", shape.target()),
-            ("invalid_layer", shape.layer()),
             ("nope", shape.union(bool, int)),
         ):
             with self.subTest(x=x, t=t):
@@ -233,14 +231,12 @@ class TestShapeBzl(unittest.TestCase):
 
     def test_location_serialization(self):
         target_t = shape.shape(target=shape.target())
-        layer_t = shape.shape(layer=shape.layer())
         nested_target_t = shape.shape(nested=target_t)
         list_with_targets_t = shape.shape(lst=shape.list(target_t))
         dict_with_targets_t = shape.shape(dct=shape.dict(str, target_t))
         tuple_with_targets_t = shape.shape(tup=shape.tuple(str, target_t))
         shapes = [
             (target_t, shape.new(target_t, target="//example:target")),
-            (layer_t, shape.new(layer_t, layer="//example:layer")),
             (
                 nested_target_t,
                 shape.new(
