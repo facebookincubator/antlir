@@ -8,10 +8,12 @@ import asyncio
 import logging
 import time
 import unittest
+import unittest.mock
 
 from ..common import (
     async_retry_fn,
     async_retryable,
+    kernel_version,
     log as common_log,
     retry_fn,
     retryable,
@@ -246,3 +248,16 @@ class TestCommon(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             to_be_retried(1, b=2)
         self.assertEqual(1, iters)
+
+    @unittest.mock.patch("antlir.common._mockable_platform_release")
+    def test_kernel_version(self, platform_release):
+        uname_to_tuples = {
+            "5.2.9-129_fbk13_hardened_3948_ga3d2430737fa": (5, 2),
+            "5.11.4-arch1-1": (5, 11),
+            "4.16.9-old-busted": (4, 16),
+        }
+
+        for uname, parsed in uname_to_tuples.items():
+            platform_release.return_value = uname
+
+            self.assertEqual(kernel_version(), parsed)
