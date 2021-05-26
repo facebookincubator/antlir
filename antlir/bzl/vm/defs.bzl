@@ -158,6 +158,8 @@ def _vm_unittest(
     image.package(
         name = actual_test_image,
         layer = ":" + actual_test_layer,
+        # Do not try and optimize this when building in mode/opt
+        optimization = False,
     )
 
     run_target = build_vm_run_target(

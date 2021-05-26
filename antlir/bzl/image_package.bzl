@@ -36,7 +36,14 @@ def image_package(
         # This is required when format is vfat/ext3
         size_mb = None,
         # Also for vfat/ext3, but optional
-        label = None):
+        label = None,
+        # This flag will ensure that the resulting btrfs loopback image
+        # is optimized in opt mode.  This is provided to toggle this
+        # behavior in certain cases where it's not desired, such as the
+        # building of the vmtest test binary image.
+        # This will get rolled up into the `loopback_opts` changes that
+        # are coming on D28591961
+        optimization = True):
     visibility = visibility or []
 
     if not format:
@@ -102,7 +109,9 @@ def image_package(
                 rw = "--writable-subvolume" if writable_subvolume else "",
                 seed = "--seed-device" if seed_device else "",
                 set_default = "--set-default-subvol" if set_default_subvol else "",
-                multi_pass_size_minimization = "" if REPO_CFG.artifacts_require_repo else "--multi-pass-size-minimization",
+                multi_pass_size_minimization = "--multi-pass-size-minimization" if (
+                    not REPO_CFG.artifacts_require_repo and optimization
+                ) else "",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,
                 # so that the packager can verify that the specified
