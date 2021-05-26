@@ -49,6 +49,8 @@ class SubvolOpts(NamedTuple):
     # Make the resulting subvolume a seed device, where another disk can be
     # provided for writes
     seed_device: bool = False
+    # Set the default subvol in the loopback
+    set_default_subvol: bool = False
     # Apply time-costly optimization to minimize the size of loopback image
     multi_pass_size_minimization: bool = False
 
@@ -905,8 +907,6 @@ class Subvol:
 
                 recv_ret.check_returncode()
                 if not subvol_opts.readonly:
-                    sub_name = os.path.basename(self.path())
-                    subvol_path = os.path.join(loop_vol.dir(), sub_name)
                     run_stdout_to_err(
                         nsenter_as_root(
                             ns,
@@ -914,11 +914,43 @@ class Subvol:
                             "property",
                             "set",
                             "-ts",
-                            subvol_path,
+                            Path(loop_vol.dir()) / self.path().basename(),
                             "ro",
                             "false",
                         )
                     ).check_returncode()
+
+                if subvol_opts.set_default_subvol:
+                    # Get the subvolume ID by just listing the specific
+                    # subvol and getting the 2nd element.
+                    # The output of this command looks like:
+                    #
+                    # b'ID 256 gen 7 top level 5 path volume\n'
+                    #
+                    subvol_id = self.run_as_root(
+                        ns.nsenter_without_sudo(
+                            "btrfs",
+                            "subvolume",
+                            "list",
+                            Path(loop_vol.dir()) / self.path().basename(),
+                        ),
+                        stdout=subprocess.PIPE,
+                    ).stdout.split(b" ")[1]
+
+                    log.debug(f"subvol_id to set as default: {subvol_id}")
+
+                    # Actually set the default
+                    self.run_as_root(
+                        ns.nsenter_without_sudo(
+                            "btrfs",
+                            "subvolume",
+                            "set-default",
+                            subvol_id,
+                            loop_vol.dir(),
+                        ),
+                        stderr=subprocess.STDOUT,
+                    )
+
             return (0, loop_vol.minimize_size())
 
     def _send_to_loopback_second_pass(

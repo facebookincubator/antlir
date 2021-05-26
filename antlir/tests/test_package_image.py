@@ -36,6 +36,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         format: str,
         writable_subvolume: bool = False,
         seed_device: bool = False,
+        set_default_subvol: bool = False,
         size_mb: Optional[int] = None,
         volume_label: Optional[str] = None,
     ) -> Iterator[str]:
@@ -55,6 +56,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     out_path,
                     *(["--writable-subvolume"] if writable_subvolume else []),
                     *(["--seed-device"] if seed_device else []),
+                    *(["--set-default-subvol"] if set_default_subvol else []),
                     *(["--size-mb", str(size_mb)] if size_mb else []),
                     *(["--volume-label", volume_label] if volume_label else []),
                 ]
@@ -187,6 +189,57 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 stdout=subprocess.PIPE,
             )
             self.assertNotIn(b"SEEDING", proc.stdout)
+
+    def test_package_image_as_btrfs_default_subvol(self):
+        # The test layer `create_ops.layer` is constructed
+        # with a subvol_name of "create_ops" instead of
+        # "volume".
+        subvol_name = b"create_ops"
+        with self._package_image(
+            self._sibling_path("create_ops.layer"),
+            "btrfs",
+            set_default_subvol=True,
+        ) as out_path, Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "mount",
+                    "-t",
+                    "btrfs",
+                    "-o",
+                    "loop,discard,nobarrier",
+                    out_path,
+                    mount_dir,
+                )
+            )
+            try:
+                # The output of this command looks something like:
+                #
+                # b'ID 256 gen 9 top level 5 path create_ops\n'
+                #
+                # The last element is the name of the subvol.
+                default_subvol_name = (
+                    subprocess.run(
+                        nsenter_as_root(
+                            unshare,
+                            "btrfs",
+                            "subvolume",
+                            "get-default",
+                            mount_dir,
+                        ),
+                        check=True,
+                        stdout=subprocess.PIPE,
+                    )
+                    .stdout.strip(b"\n")
+                    .split(b" ")[-1]
+                )
+
+                self.assertEqual(subvol_name, default_subvol_name)
+
+            finally:
+                nsenter_as_root(unshare, "umount", mount_dir)
 
     def test_package_image_as_tarball(self):
         with self._package_image(

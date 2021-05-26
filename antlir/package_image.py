@@ -548,6 +548,13 @@ def parse_args(argv):
         " size of loopback image",
     )
     parser.add_argument(
+        "--set-default-subvol",
+        action="store_true",
+        default=False,
+        help="Set the default subvol of the loopback image to be the volume:"
+        " subvol",
+    )
+    parser.add_argument(
         "--build-appliance", help="Build appliance layer to use when packaging"
     )
     # Future: To add support for incremental send-streams, we'd want to
@@ -605,6 +612,7 @@ def package_image(argv):
             subvol_opts=SubvolOpts(
                 readonly=not args.writable_subvolume,
                 seed_device=args.seed_device,
+                set_default_subvol=args.set_default_subvol,
                 multi_pass_size_minimization=args.multi_pass_size_minimization,
             ),
             build_appliance=find_built_subvol(args.build_appliance)

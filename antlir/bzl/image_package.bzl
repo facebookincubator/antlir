@@ -21,6 +21,7 @@ def image_package(
         visibility = None,
         writable_subvolume = False,
         seed_device = False,
+        set_default_subvol = False,
         # Since `image.package` produces a real Buck-visible build artifact,
         # "user-facing" is the only sane default.  See comments in
         # `oss_shim.bzl` for how this works.
@@ -88,6 +89,7 @@ def image_package(
               {maybe_build_appliance} \
               {rw} \
               {seed} \
+              {set_default} \
               {multi_pass_size_minimization}
             '''.format(
                 format = format,
@@ -99,6 +101,7 @@ def image_package(
                 ) if build_appliance != DO_NOT_USE_BUILD_APPLIANCE else "",
                 rw = "--writable-subvolume" if writable_subvolume else "",
                 seed = "--seed-device" if seed_device else "",
+                set_default = "--set-default-subvol" if set_default_subvol else "",
                 multi_pass_size_minimization = "" if REPO_CFG.artifacts_require_repo else "--multi-pass-size-minimization",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,
