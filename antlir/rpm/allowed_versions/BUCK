@@ -47,7 +47,6 @@ python_binary(
         "//antlir/rpm/allowed_versions:package_group",
         "//antlir/rpm/allowed_versions:version_policy",
         "//antlir/rpm/allowed_versions/facebook:package_group",
-        "//antlir/rpm/allowed_versions/facebook:version_policy",
     ],
 )
 
