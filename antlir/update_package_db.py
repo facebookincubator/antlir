@@ -252,7 +252,7 @@ async def _get_updated_db(
     for f in asyncio.as_completed(futures):
         pkg, tag, maybe_info = await f
         if maybe_info is None:
-            log.info(
+            log.warning(
                 f"Empty info returned for {pkg}:{tag} - not including in DB"
             )
 
