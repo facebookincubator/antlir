@@ -20,7 +20,7 @@ that contains your DB.
 Routine package updates are done automatically by a periodic job that
 commits to the repo the results of running this with just `--db path/to/db`.
 
-Absent `--no-update-existing`, this CLI updates the "how to fetch" info
+With `--update-all` set, this CLI updates the "how to fetch" info
 dicts for all package/tag pairs in the specified `--db`.  This is equivalent
 to passing `--replace package tag '{}'` for each item in the DB.
 
@@ -37,6 +37,7 @@ import os
 from collections import defaultdict
 from enum import Enum
 from typing import (
+    Any,
     Awaitable,
     Callable,
     ContextManager,
@@ -73,7 +74,7 @@ DbUpdateOptions = Dict[str, str]
 #
 # In this set-up, all DB maintenance will be done in this fashion:
 #
-#     updater --db path --create package tag '{...}' --no-update-existing
+#     updater --db path --create package tag '{...}' --no-update-all
 #
 # In other words, the repo is the sole source of truth for what package
 # instances a given tag refers to.
@@ -215,7 +216,7 @@ async def _get_updated_db(
     *,
     existing_db: PackageTagDb,
     get_db_info_fn: GetDbInfoFn,
-    update_existing: bool,
+    update_all: bool,
     pkg_updates: ExplicitUpdates,
 ) -> PackageTagDb:
     _validate_updates(existing_db, pkg_updates)
@@ -225,7 +226,7 @@ async def _get_updated_db(
         pkg: {tag: update.options for tag, update in tag_to_update.items()}
         for pkg, tag_to_update in pkg_updates.items()
     }
-    if update_existing:
+    if update_all:
         # We're updating the entire DB so we start with a clean slate
         db_to_update = defaultdict(dict)
         updates_to_apply = {
@@ -268,7 +269,7 @@ async def update_package_db(
     how_to_generate: str,
     get_db_info_factory: ContextManager[GetDbInfoFn],
     out_db_path: Optional[Path] = None,
-    update_existing: bool = True,
+    update_all: bool = True,
     pkg_updates: Optional[ExplicitUpdates] = None,
 ):
     with get_db_info_factory as get_db_info:
@@ -276,7 +277,7 @@ async def update_package_db(
             db=await _get_updated_db(
                 existing_db=_read_json_dir_db(db_path),
                 get_db_info_fn=get_db_info,
-                update_existing=update_existing,
+                update_all=update_all,
                 pkg_updates=pkg_updates or {},
             ),
             path=out_db_path or db_path,
@@ -302,8 +303,13 @@ def _parse_update_args(
     for action_updates, action in zip(
         (creates, replaces), (UpdateAction.CREATE, UpdateAction.REPLACE)
     ):
-        for package, tag, opts_json in action_updates:
-            opts = json.loads(opts_json)
+        for package, tag, *opts_json in action_updates:
+            if len(opts_json) > 1:
+                raise RuntimeError(
+                    f"Invalid options specified for action {action}: "
+                    f"{opts_json}"
+                )
+            opts = json.loads(opts_json[0]) if opts_json else {}
             if tag in pkg_updates.setdefault(package, {}):
                 existing_up = pkg_updates[package][tag]
                 raise RuntimeError(
@@ -317,52 +323,66 @@ def _parse_update_args(
     return pkg_updates
 
 
-def _parse_args(argv, *, overview_doc, options_doc):
+def _parse_args(
+    argv: List[str],
+    *,
+    overview_doc: str,
+    options_doc: str,
+    defaults: Dict[str, Any],
+    show_oss_overview_doc: bool = True,
+):
     parser = argparse.ArgumentParser(
-        description=__doc__ + overview_doc,
+        description=(__doc__ + overview_doc)
+        if show_oss_overview_doc
+        else overview_doc,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--db",
         type=Path.from_argparse,
-        required=True,
+        required="db" not in defaults,
         help="Path to the database to update",
+        default=defaults.get("db"),
     )
     parser.add_argument(
         "--out-db",
         type=Path.from_argparse,
         help="Path for the updated database (defaults to `--db`)",
+        default=defaults.get("out_db"),
     )
     parser.add_argument(
-        "--no-update-existing",
-        action="store_false",
-        dest="update_existing",
-        help="Only update package / tag pairs set via --create or --replace",
+        "--update-all",
+        action="store_true",
+        help="Update all packages in the DB regardless of whether an explicit "
+        "action was provided.",
+        default=defaults.get("update_all"),
     )
 
     for action, doc in [
         (
             "create",
-            "Ensures this PACKAGE/TAG pair will be updated in the DB, "
-            f"even if `--no-update-existing` was passed. {options_doc} "
-            "Asserts that the PACKAGE/TAG pair was NOT already in the DB. ",
+            "Adds the specified 'PACKAGE TAG' pair to the DB, and fails if an "
+            f"entry already exists. {options_doc}",
         ),
         (
             "replace",
-            "Just like `--create`, but asserts that the PACKAGE/TAG pair "
+            "Just like `--create`, but asserts that the 'PACKAGE TAG' pair "
             "already exists in the DB.",
         ),
     ]:
         parser.add_argument(
             "--" + action,
             action="append",
-            default=[],
-            nargs=3,
-            metavar=("PACKAGE", "TAG", "OPTIONS"),
+            default=defaults.get(action, []),
+            nargs="+",
+            metavar="PACKAGE TAG [OPTIONS]",
             help=doc,
         )
     parser.add_argument(  # Pass this to `init_logging`
-        "--debug", action="store_true", help="Enable verbose logging"
+        "--debug",
+        action="store_true",
+        help="Enable verbose logging",
+        default=defaults.get("debug"),
     )
     return Path.parse_args(parser, argv)
 
@@ -374,9 +394,11 @@ async def main_cli(
     how_to_generate: str,
     overview_doc: str,
     options_doc: str,
+    defaults: Optional[Dict[str, Any]] = None,
+    show_oss_overview_doc: bool = True,
 ):
     """
-    Implements the "update DB" CLI using your custom logic for obtaiing
+    Implements the "update DB" CLI using your custom logic for obtaining
     `DbInfo` objects for package:tag pairs.
 
     `get_db_info_factory` is a context manager so that it can establish a
@@ -398,13 +420,25 @@ async def main_cli(
     validation, and to check that the "how to fetch" info does actually
     refer to a valid package in your package store.
     """
-    args = _parse_args(argv, overview_doc=overview_doc, options_doc=options_doc)
+    args = _parse_args(
+        argv,
+        overview_doc=overview_doc,
+        options_doc=options_doc,
+        defaults=defaults or {},
+        show_oss_overview_doc=show_oss_overview_doc,
+    )
+    explicit_updates = _parse_update_args(args.create, args.replace)
+    if not (explicit_updates or args.update_all):  # pragma: no cover
+        log.warning(
+            "No explicit actions provided and --update-all not set; no "
+            "work to be done."
+        )
     init_logging(debug=args.debug)
     await update_package_db(
         db_path=args.db,
         how_to_generate=how_to_generate,
         get_db_info_factory=get_db_info_factory,
         out_db_path=args.out_db,
-        update_existing=args.update_existing,
-        pkg_updates=_parse_update_args(args.create, args.replace),
+        update_all=args.update_all,
+        pkg_updates=explicit_updates,
     )
