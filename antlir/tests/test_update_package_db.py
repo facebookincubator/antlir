@@ -47,7 +47,7 @@ class UpdatePackageDbTestBase:
         db,
         pkg_updates=None,
         out_db=None,
-        no_update_existing=False,
+        update_all=True,
         get_db_info_fn=None,
     ):
         raise NotImplementedError
@@ -104,7 +104,7 @@ class UpdatePackageDbTestBase:
                         )
                     },
                 },
-                no_update_existing=True,
+                update_all=False,
             )
             self._check_file(
                 db_path / "p1" / "tik.json",
@@ -208,13 +208,13 @@ class UpdatePackageDbCliTestCase(
         db,
         pkg_updates=None,
         out_db=None,
-        no_update_existing=False,
+        update_all=True,
         get_db_info_fn=None,
     ):
         args = [
             f"--db={db}",
             *([f"--out-db={out_db}"] if out_db else []),
-            *(["--no-update-existing"] if no_update_existing else []),
+            *(["--update-all"] if update_all else []),
         ]
         for pkg, tag_to_update in (pkg_updates or {}).items():
             for tag, update in tag_to_update.items():
@@ -274,6 +274,25 @@ class UpdatePackageDbCliTestCase(
                     options_doc="opts doc",
                 )
 
+    async def test_cli_invalid_options_count(self):
+        with temp_dir() as td:
+            db_path = td / "idb"
+            _write_json_db(db_path / "p1" / "a.json", {})
+            get_info_fn = nullcontext(_base_get_db_info_fn)
+            with self.assertRaisesRegex(
+                RuntimeError, "Invalid options specified"
+            ):
+                await updb.main_cli(
+                    [
+                        f"--db={db_path}",
+                        *("--create", "p1", "yo", "{}", "toomany"),
+                    ],
+                    get_info_fn,
+                    how_to_generate="how",
+                    overview_doc="overview doc",
+                    options_doc="opts doc",
+                )
+
 
 class UpdatePackageDbLibraryTestCase(
     UpdatePackageDbTestBase, unittest.IsolatedAsyncioTestCase
@@ -283,7 +302,7 @@ class UpdatePackageDbLibraryTestCase(
         db,
         pkg_updates=None,
         out_db=None,
-        no_update_existing=False,
+        update_all=True,
         get_db_info_fn=None,
     ):
         if get_db_info_fn is None:
@@ -293,6 +312,6 @@ class UpdatePackageDbLibraryTestCase(
             how_to_generate="how",
             get_db_info_factory=get_db_info_fn,
             out_db_path=out_db,
-            update_existing=not no_update_existing,
+            update_all=update_all,
             pkg_updates=pkg_updates,
         )
