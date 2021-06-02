@@ -1162,16 +1162,19 @@ class TempSubvolumes(contextlib.AbstractContextManager):
     def __exit__(self, exc_type, exc_val, exc_tb):
         # If any of subvolumes are nested, and the parents were made
         # read-only, we won't be able to delete them.
+        log.debug(f"Marking temp subvols read-write in {self._temp_dir}")
         for subvol in self.subvols:
             try:
                 subvol.set_readonly(False)
             except BaseException:  # Ctrl-C does not interrupt cleanup
                 pass
+        log.debug(f"Deleting temp subvols in {self._temp_dir}")
         for subvol in reversed(self.subvols):
             try:
                 subvol.delete()
             except BaseException:  # Ctrl-C does not interrupt cleanup
                 logging.exception(f"Deleting volume {subvol.path()} failed.")
+        log.debug(f"Done deleting temp subvols in {self._temp_dir}")
         return self._temp_dir_ctx.__exit__(exc_type, exc_val, exc_tb)
 
 
