@@ -51,8 +51,11 @@ class SubvolOpts(NamedTuple):
     seed_device: bool = False
     # Set the default subvol in the loopback
     set_default_subvol: bool = False
-    # Apply time-costly optimization to minimize the size of loopback image
+    # Apply time-costly optimization to minimize the size of loopback image.
+    # This is ignored if `size_bytes` is provided
     multi_pass_size_minimization: bool = False
+    # The explicit requested output size of the loopback image
+    size_bytes: int = None
 
 
 _default_subvol_opts = SubvolOpts()
@@ -655,45 +658,62 @@ class Subvol:
             filesystem may end up being more out-of-tune than if we had
             started with a large enough size from the beginning.
         """
-        # In my experiments, btrfs needs at least 81 MB of overhead in all
-        # circumstances, and this initial overhead is not multiplicative.
-        # To be specific, I tried single-file subvolumes with files of size
-        # 27, 69, 94, 129, 175, 220MiB.
-        fs_bytes = self._estimate_content_bytes() + 81 * MiB
-        attempts = 0
-        while True:
-            attempts += 1
-            fs_bytes *= waste_factor
+        if subvol_opts.size_bytes:
             leftover_bytes, image_size = self._send_to_loopback_if_fits(
-                output_path, int(fs_bytes), subvol_opts
+                output_path, subvol_opts.size_bytes, subvol_opts
             )
-            if leftover_bytes == 0:
-                if not subvol_opts.multi_pass_size_minimization:
-                    break
-                # The following simple trick saves about 30% of image size. The
-                # reason is that btrfs auto-allocates more metadata blocks for
-                # larger filesystems, but `resize` does not release them. For
-                # many practical use-cases the compression ratio is close to 2,
-                # hence initial `fs_bytes` estimate is too high.
-                leftover_bytes, new_size = self._send_to_loopback_second_pass(
-                    output_path, image_size, subvol_opts
+
+            assert image_size == subvol_opts.size_bytes, (
+                f"{self._path} is {image_size} instead of the requested "
+                f"{subvol_opts.size}"
+            )
+            attempts = 1
+        else:
+            # In my experiments, btrfs needs at least 81 MB of overhead in all
+            # circumstances, and this initial overhead is not multiplicative.
+            # To be specific, I tried single-file subvolumes with files of size
+            # 27, 69, 94, 129, 175, 220MiB.
+            fs_bytes = self._estimate_content_bytes() + 81 * MiB
+            attempts = 0
+            while True:
+                attempts += 1
+                fs_bytes *= waste_factor
+                leftover_bytes, image_size = self._send_to_loopback_if_fits(
+                    output_path, int(fs_bytes), subvol_opts
                 )
-                assert leftover_bytes == 0, (
-                    f"Cannot fit {self._path} in {image_size} bytes, "
+                if leftover_bytes == 0:
+                    if not subvol_opts.multi_pass_size_minimization:
+                        break
+                    # The following simple trick saves about 30% of image size.
+                    # The reason is that btrfs auto-allocates more metadata
+                    # blocks for larger filesystems, but `resize` does not
+                    # release them. For many practical use-cases the compression
+                    # ratio is close to 2, hence initial `fs_bytes` estimate is
+                    # too high.
+                    (
+                        leftover_bytes,
+                        new_size,
+                    ) = self._send_to_loopback_second_pass(
+                        output_path, image_size, subvol_opts
+                    )
+                    assert leftover_bytes == 0, (
+                        f"Cannot fit {self._path} in {image_size} bytes, "
+                        f"{leftover_bytes} sendstream bytes were left over"
+                    )
+                    assert new_size <= image_size, (
+                        "The second pass of btrfs send-receive produced worse"
+                        f"results that the first: {new_size} vs. {image_size}"
+                    )
+                    break  # pragma: no cover
+                fs_bytes += leftover_bytes
+                log.warning(
+                    f"{self._path} did not fit in {fs_bytes} bytes, "
                     f"{leftover_bytes} sendstream bytes were left over"
                 )
-                assert new_size <= image_size, (
-                    "The second pass of btrfs send-receive produced worse"
-                    f"results that the first: {new_size} vs. {image_size}"
-                )
-                break  # pragma: no cover
-            fs_bytes += leftover_bytes
-            log.warning(
-                f"{self._path} did not fit in {fs_bytes} bytes, "
-                f"{leftover_bytes} sendstream bytes were left over"
-            )
+
         if subvol_opts.seed_device:
             self.set_seed_device(output_path)
+
         # Future: It would not be unreasonable to run some sanity checks on
         # the resulting filesystem here. Ideas:
         #  - See if we have an unexpectedly large amount of unused metadata
@@ -951,7 +971,12 @@ class Subvol:
                         stderr=subprocess.STDOUT,
                     )
 
-            return (0, loop_vol.minimize_size())
+            return (
+                0,
+                loop_vol.minimize_size()
+                if not subvol_opts.size_bytes
+                else loop_vol.get_size(),
+            )
 
     def _send_to_loopback_second_pass(
         self, output_path, initial_size_bytes, subvol_opts: SubvolOpts

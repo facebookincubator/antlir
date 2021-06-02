@@ -778,6 +778,14 @@ image.package(
     layer = ":child/layer",
 )
 
+image.package(
+    name = "child-sized/layer.btrfs",
+    layer = ":child/layer",
+    format = "btrfs",
+    size_mb = 225,
+    visibility = ["//antlir/..."],
+)
+
 # This will install /rpm_test/cheese2.txt.
 image.layer(
     name = "base_cheese_layer",

@@ -447,6 +447,7 @@ python_unittest(
         TEST_IMAGE_PREFIX + "create_ops-layer-via-tarball-package": "tests/create_ops-layer-via-tarball-package",
         TEST_IMAGE_PREFIX + "vfat-test.layer": "tests/vfat-test.layer",
         TEST_IMAGE_PREFIX + "vfat-test.vfat": "tests/vfat-test.vfat",
+        TEST_IMAGE_PREFIX + "child-sized/layer.btrfs": "tests/fixed-size.btrfs",
         layer_resource(REPO_CFG.build_appliance_default): "tests/build-appliance",
     },
     deps = [
