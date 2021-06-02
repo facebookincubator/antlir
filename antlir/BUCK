@@ -11,8 +11,7 @@ python_library(
     srcs = ["common.py"],
     visibility = [
         "//antlir/...",
-        "//tupperware/cm/antlir:container_manifest_impl",
-        "//tupperware/cm/antlir:extract_nested_features",
+        "//tupperware/cm/antlir/...",
         "//tupperware/image/scripts:tw_image_stats-library",
     ],
 )

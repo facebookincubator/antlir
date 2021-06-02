@@ -88,7 +88,7 @@ python_unittest(
 python_library(
     name = "items_for_features",
     srcs = ["items_for_features.py"],
-    visibility = ["//tupperware/cm/antlir:extract_nested_features"],
+    visibility = ["//tupperware/cm/antlir/..."],
     deps = ["//antlir/compiler/items:all-items"],
 )
 
