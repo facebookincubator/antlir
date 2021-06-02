@@ -276,6 +276,9 @@ def retryable(
     `is_exception_retryable` and `log_exception` are forwarded to `retry_fn`,
     see its docblock.
     """
+    # Prevent aliasing, iterator exhaustion, and other weirdness.
+    # Indeterminate retry would require changing the API anyway.
+    delays = list(delays)
 
     def wrapper(fn):
         @wraps(fn)
@@ -336,6 +339,9 @@ def async_retryable(
     retries, in seconds. `is_exception_retryable` and `log_exception` are
     forwarded to `async_retry_fn`, see its docblock.
     """
+    # Prevent aliasing, iterator exhaustion, and other weirdness.
+    # Indeterminate retry would require changing the API anyway.
+    delays = list(delays)
 
     def wrapper(fn):
         @wraps(fn)
