@@ -13,6 +13,10 @@ python_library(
 python_library(
     name = "common",
     srcs = ["common.py"],
+    visibility = [
+        "//antlir/...",
+        "//tupperware/cm/antlir/...",
+    ],
     deps = [
         ":yum_dnf_conf",
         "//antlir:common",
