@@ -20,6 +20,7 @@ import os
 import stat
 import sys
 from contextlib import ExitStack
+from typing import Iterator
 
 from antlir.cli import add_targets_and_outputs_arg
 from antlir.compiler.items.common import LayerOpts
@@ -30,7 +31,7 @@ from antlir.fs_utils import META_FLAVOR_FILE, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 
-from .dep_graph import DependencyGraph
+from .dep_graph import DependencyGraph, ImageItem
 from .subvolume_on_disk import SubvolumeOnDisk
 
 
@@ -122,6 +123,70 @@ def parse_args(args) -> argparse.Namespace:
     return Path.parse_args(parser, args)
 
 
+def _check_or_write_meta_flavor(
+    *,
+    flavor: str,
+    subvol: Subvol,
+    build_appliance: Subvol,
+) -> None:
+    """
+    Write the flavor into the subvol meta.  This is so we can know what
+    build appliance to use for sendstreams from older revisions.
+    """
+    # TODO: Remove the existence check once the flavor has been written
+    # in all built sendstreams.
+    if build_appliance and build_appliance.path(META_FLAVOR_FILE).exists():
+        build_appliance_flavor = build_appliance.read_path_text(
+            META_FLAVOR_FILE
+        )
+        assert flavor == build_appliance_flavor, (
+            f"The flavor `{flavor}` given differs from "
+            f"the flavor `{build_appliance_flavor}` of the "
+            "build appliance`."
+        )
+
+    if subvol.path(META_FLAVOR_FILE).exists():
+        subvol_flavor = subvol.read_path_text(META_FLAVOR_FILE)
+        assert flavor == subvol_flavor, (
+            f"The flavor `{flavor}` given differs from the "
+            f"flavor `{subvol_flavor}` already written in the subvol`."
+        )
+    elif subvol.path(META_FLAVOR_FILE.dirname()).exists():
+        # We only write the flavor if the META_DIR exists as
+        # otherwise it's a test image that doesn't need flavor.
+
+        # We have to allow writing to this image as sendstreams
+        # use `btrfs receive` which sets the image as readonly
+        # by default.
+        subvol.set_readonly(False)
+        subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
+
+
+def compile_items_to_subvol(
+    *,
+    exit_stack: ExitStack,
+    subvol: Subvol,
+    layer_opts: LayerOpts,
+    iter_items: Iterator[ImageItem],
+) -> None:
+    dep_graph = DependencyGraph(
+        iter_items=iter_items,
+        layer_target=layer_opts.layer_target,
+    )
+    # Creating all the builders up-front lets phases validate their input
+    for builder in [
+        builder_maker(items, layer_opts)
+        for builder_maker, items in dep_graph.ordered_phases()
+    ]:
+        builder(subvol)
+    # We cannot validate or sort `ImageItem`s until the phases are
+    # materialized since the items may depend on the output of the phases.
+    for item in dep_graph.gen_dependency_order_items(
+        PhasesProvideItem(from_target=layer_opts.layer_target, subvol=subvol)
+    ):
+        item.build(subvol, layer_opts)
+
+
 def build_image(args):
     # We want check the umask since it can affect the result of the
     # `os.access` check for `image.install*` items.  That said, having a
@@ -157,60 +222,21 @@ def build_image(args):
 
     # This stack allows build items to hold temporary state on disk.
     with ExitStack() as exit_stack:
-        dep_graph = DependencyGraph(
-            gen_items_for_features(
+        compile_items_to_subvol(
+            exit_stack=exit_stack,
+            subvol=subvol,
+            layer_opts=layer_opts,
+            iter_items=gen_items_for_features(
                 exit_stack=exit_stack,
                 features_or_paths=args.child_feature_json,
                 layer_opts=layer_opts,
             ),
-            layer_target=args.child_layer_target,
         )
-        # Creating all the builders up-front lets phases validate their input
-        for builder in [
-            builder_maker(items, layer_opts)
-            for builder_maker, items in dep_graph.ordered_phases()
-        ]:
-            builder(subvol)
-        # We cannot validate or sort `ImageItem`s until the phases are
-        # materialized since the items may depend on the output of the phases.
-        for item in dep_graph.gen_dependency_order_items(
-            PhasesProvideItem(
-                from_target=args.child_layer_target, subvol=subvol
-            )
-        ):
-            item.build(subvol, layer_opts)
-
-        # Write the flavor into the subvol meta. This is
-        # so we can know what build appliance to use for sendstreams
-        # from older revisions.
-        # TODO: Remove the existence check once the flavor has been written
-        # in all built sendstreams.
-        if build_appliance and build_appliance.path(META_FLAVOR_FILE).exists():
-            build_appliance_flavor = build_appliance.read_path_text(
-                META_FLAVOR_FILE
-            )
-            assert args.flavor == build_appliance_flavor, (
-                f"The flavor `{args.flavor}` given differs from "
-                f"the flavor `{build_appliance_flavor}` of the "
-                "build appliance`."
-            )
-
-        if subvol.path(META_FLAVOR_FILE).exists():
-            flavor = subvol.read_path_text(META_FLAVOR_FILE)
-            assert args.flavor == flavor, (
-                f"The flavor `{args.flavor}` given differs from the "
-                f"flavor `{flavor}` already written in the subvol`."
-            )
-        elif subvol.path(META_FLAVOR_FILE.dirname()).exists():
-            # We only write the flavor if the META_DIR exists as
-            # otherwise it's a test image that doesn't need flavor.
-
-            # We have to allow writing to this image as sendstreams
-            # use `btrfs receive` which sets the image as readonly
-            # by default.
-            subvol.set_readonly(False)
-            subvol.overwrite_path_as_root(META_FLAVOR_FILE, args.flavor)
-
+        _check_or_write_meta_flavor(
+            flavor=args.flavor,
+            subvol=subvol,
+            build_appliance=layer_opts.build_appliance,
+        )
         # Build artifacts should never change. Run this BEFORE the exit_stack
         # cleanup to enforce that the cleanup does not touch the image.
         subvol.set_readonly(True)
