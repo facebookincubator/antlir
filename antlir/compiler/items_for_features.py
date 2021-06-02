@@ -6,6 +6,7 @@
 
 "Makes Items from the JSON that was produced by a Buck `feature` target"
 import json
+from contextlib import ExitStack
 from typing import Any, Iterable, Union, Mapping, Optional, NamedTuple
 
 from antlir.compiler.items.clone import CloneItem
@@ -107,37 +108,57 @@ def gen_included_features(
                 yield (feature_key, target, cfg)
 
 
+class ItemFactory:
+    def __init__(self, exit_stack: ExitStack, layer_opts: LayerOpts):
+        self._exit_stack = exit_stack
+        self._layer_opts = layer_opts
+        self._key_to_item_factory = {
+            "clone": self._image_sourcify(CloneItem),
+            "genrule_layer": GenruleLayerItem,
+            "groups": GroupItem,
+            "install_files": self._image_sourcify(InstallFileItem),
+            "mounts": lambda **kwargs: MountItem(
+                **kwargs, layer_opts=layer_opts
+            ),
+            "parent_layer": ParentLayerItem,
+            "receive_sendstreams": self._image_sourcify(ReceiveSendstreamItem),
+            "remove_paths": RemovePathItem,
+            "rpms": self._image_sourcify(RpmActionItem),
+            "symlinks_to_dirs": SymlinkToDirItem,
+            "symlinks_to_files": SymlinkToFileItem,
+            "tarballs": self._image_sourcify(TarballItem),
+            "users": UserItem,
+        }
+        self._key_to_items_factory = {
+            "ensure_subdirs_exist": ensure_subdirs_exist_factory,
+        }
+
+    def _image_sourcify(self, item_cls):
+        return image_source_item(
+            item_cls, exit_stack=self._exit_stack, layer_opts=self._layer_opts
+        )
+
+    def gen_items_for_feature(self, feature_key: str, target: str, config):
+        if feature_key in self._key_to_item_factory:
+            yield self._key_to_item_factory[feature_key](
+                from_target=target, **config
+            )
+        elif feature_key in self._key_to_items_factory:
+            yield from self._key_to_items_factory[feature_key](
+                from_target=target, **config
+            )
+        else:  # pragma: no cover
+            raise AssertionError(f"Unsupported item: {feature_key}")
+
+
 def gen_items_for_features(
     *,
     exit_stack,
     features_or_paths: Iterable[Union[str, dict]],
     layer_opts: LayerOpts,
 ):
-    def image_sourcify(item_cls):
-        return image_source_item(
-            item_cls, exit_stack=exit_stack, layer_opts=layer_opts
-        )
-
-    key_to_item_factory = {
-        "clone": image_sourcify(CloneItem),
-        "genrule_layer": GenruleLayerItem,
-        "groups": GroupItem,
-        "install_files": image_sourcify(InstallFileItem),
-        "mounts": lambda **kwargs: MountItem(**kwargs, layer_opts=layer_opts),
-        "parent_layer": ParentLayerItem,
-        "receive_sendstreams": image_sourcify(ReceiveSendstreamItem),
-        "remove_paths": RemovePathItem,
-        "rpms": image_sourcify(RpmActionItem),
-        "symlinks_to_dirs": SymlinkToDirItem,
-        "symlinks_to_files": SymlinkToFileItem,
-        "tarballs": image_sourcify(TarballItem),
-        "users": UserItem,
-    }
-    key_to_items_factory = {
-        "ensure_subdirs_exist": ensure_subdirs_exist_factory,
-    }
-
-    for (feature_key, target, config) in gen_included_features(
+    factory = ItemFactory(exit_stack, layer_opts)
+    for key_target_config in gen_included_features(
         features_or_paths=features_or_paths,
         features_ctx=GenFeaturesContext(
             target_to_path=layer_opts.target_to_path,
@@ -145,11 +166,4 @@ def gen_items_for_features(
             ignore_missing_paths=False,
         ),
     ):
-        if feature_key in key_to_item_factory:
-            yield key_to_item_factory[feature_key](from_target=target, **config)
-        elif feature_key in key_to_items_factory:
-            yield from key_to_items_factory[feature_key](
-                from_target=target, **config
-            )
-        else:  # pragma: no cover
-            raise AssertionError(f"Unsupported item: {feature_key}")
+        yield from factory.gen_items_for_feature(*key_target_config)
