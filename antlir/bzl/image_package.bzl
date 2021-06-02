@@ -33,7 +33,7 @@ def image_package(
         #     buck run :package-image -- --help
         format = None,
         # Size of the target image in MiB
-        # This is required when format is vfat/ext3
+        # This is required when format is vfat/ext3 and optional for btrfs
         size_mb = None,
         # Also for vfat/ext3, but optional
         label = None,
@@ -110,7 +110,7 @@ def image_package(
                 seed = "--seed-device" if seed_device else "",
                 set_default = "--set-default-subvol" if set_default_subvol else "",
                 multi_pass_size_minimization = "--multi-pass-size-minimization" if (
-                    not REPO_CFG.artifacts_require_repo and optimization
+                    (not REPO_CFG.artifacts_require_repo and optimization) and not size_mb
                 ) else "",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,

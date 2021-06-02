@@ -18,7 +18,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir
+from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir, MiB
 from antlir.tests.flavor_helpers import render_flavor_default
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
@@ -127,6 +127,22 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 )
             finally:
                 nsenter_as_root(unshare, "umount", mount_dir)
+
+    def test_package_image_as_btrfs_loopback_fixed_size(self):
+        with self._package_image(
+            self._sibling_path("create_ops.layer"),
+            "btrfs",
+            size_mb=225,
+        ) as out_path:
+            self.assertEqual(
+                os.stat(out_path).st_size,
+                225 * MiB,
+            )
+
+        # Verify the size of the package created via the bzl
+        self.assertEqual(
+            os.stat(self._sibling_path("fixed-size.btrfs")).st_size, 225 * MiB
+        )
 
     def test_package_image_as_btrfs_loopback_writable(self):
         with self._package_image(

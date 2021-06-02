@@ -20,6 +20,7 @@ from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
 from ..fs_utils import Path, temp_dir
 from ..subvol_utils import (
     find_subvolume_on_disk,
+    MiB,
     Subvol,
     SubvolOpts,
     TempSubvolumes,
@@ -307,6 +308,34 @@ class SubvolTestCase(unittest.TestCase):
             )
 
     @with_temp_subvols
+    def test_mark_readonly_and_send_to_new_loopback_explicit_size(
+        self, temp_subvols
+    ):
+        sv = temp_subvols.create("subvol")
+        sv.run_as_root(
+            ["dd", "if=/dev/zero", b"of=" + sv.path("d"), "bs=1M", "count=200"]
+        )
+        sv.run_as_root(["mkdir", sv.path("0")])
+        sv.run_as_root(["tee", sv.path("0/0")], input=b"0123456789")
+        with tempfile.NamedTemporaryFile() as loop_path:
+            self.assertEqual(
+                1,
+                sv.mark_readonly_and_send_to_new_loopback(
+                    loop_path.name,
+                    subvol_opts=SubvolOpts(
+                        # Make this size slightly larger than the subvol
+                        size_bytes=225
+                        * MiB,
+                    ),
+                ),
+            )
+
+            self.assertEqual(
+                os.stat(loop_path.name).st_size,
+                225 * MiB,
+            )
+
+    @with_temp_subvols
     def test_receive(self, temp_subvols):
         new_subvol_name = "differs_from_create_ops"
         sv = temp_subvols.caller_will_create(new_subvol_name)
@@ -370,8 +399,11 @@ class SubvolTestCase(unittest.TestCase):
     @with_temp_subvols
     def test_write_file(self, ts: TempSubvolumes):
         sv = ts.create("test_write_file")
-        sv.overwrite_path_as_root(Path("test_file"), contents=b"foo")
-        self.assertEqual(sv.path("test_file").read_text(), "foo")
+        sv.overwrite_path_as_root(Path("test_file"), contents=b"foobytes")
+        self.assertEqual(sv.path("test_file").read_text(), "foobytes")
+
+        sv.overwrite_path_as_root(Path("test_file"), contents="foostr")
+        self.assertEqual(sv.path("test_file").read_text(), "foostr")
 
     def test_with_temp_subvols(self):
         temp_dir_path = None

@@ -228,7 +228,7 @@ from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
 from .common import check_popen_returncode, init_logging
 from .find_built_subvol import find_built_subvol
 from .fs_utils import Path, create_ro, generate_work_dir
-from .subvol_utils import Subvol, SubvolOpts, KiB
+from .subvol_utils import Subvol, SubvolOpts, KiB, MiB
 
 
 class _Opts(NamedTuple):
@@ -513,7 +513,6 @@ def parse_args(argv):
         required=True,
         help="Write the image package file(s) to this path -- must not exist",
     )
-
     parser.add_argument(
         "--writable-subvolume",
         action="store_true",
@@ -521,25 +520,21 @@ def parse_args(argv):
         help="By default, the subvolume inside a loopback is marked read-only."
         " Pass this flag to mark it writable.",
     )
-
     parser.add_argument(
         "--seed-device",
         action="store_true",
         default=False,
         help="Pass this flag to make the resulting image a btrfs seed device",
     )
-
     parser.add_argument(
         "--size-mb",
         type=int,
         help="Size of the target filesystem image",
     )
-
     parser.add_argument(
         "--volume-label",
         help="Label for the target filesystem image",
     )
-
     parser.add_argument(
         "--multi-pass-size-minimization",
         action="store_true",
@@ -614,6 +609,7 @@ def package_image(argv):
                 seed_device=args.seed_device,
                 set_default_subvol=args.set_default_subvol,
                 multi_pass_size_minimization=args.multi_pass_size_minimization,
+                size_bytes=args.size_mb * MiB if args.size_mb else None,
             ),
             build_appliance=find_built_subvol(args.build_appliance)
             if args.build_appliance
