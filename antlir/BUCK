@@ -13,7 +13,7 @@ python_library(
         "//antlir/...",
         "//tupperware/cm/antlir:container_manifest_impl",
         "//tupperware/cm/antlir:extract_nested_features",
-        "//tupperware/image/scripts/...",
+        "//tupperware/image/scripts:tw_image_stats-library",
     ],
 )
 
@@ -49,7 +49,8 @@ python_library(
         "//scripts/jtru/tw:mixin-check-library",
         "//tupperware/cm/antlir/...",
         "//tupperware/image/composable_services/tests:systemd_test_framework",
-        "//tupperware/image/scripts/...",
+        "//tupperware/image/scripts:make-base-chroot-update-diff-library",
+        "//tupperware/image/scripts/cm/...",
     ],
     deps = [":common"],
 )
