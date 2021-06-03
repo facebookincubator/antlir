@@ -14,7 +14,7 @@ image.layer(
         ]),
     ],
     visibility = [],
-    flavor = REPO_CFG.flavor_latest,
+    flavor = REPO_CFG.antlir_linux_flavor,
 )
 
 image.layer(
@@ -27,7 +27,7 @@ image.layer(
             "dracut",
         ]),
     ],
-    flavor = REPO_CFG.flavor_latest,
+    flavor = REPO_CFG.antlir_linux_flavor,
 )
 
 # TODO: this should eventually be put into a stable fbpkg layer if it is
@@ -53,7 +53,7 @@ image.layer(
         systemd.enable_unit("systemd-resolved.service", "workload-pre.target"),
     ],
     runtime = ["systemd"],
-    flavor = REPO_CFG.flavor_latest,
+    flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
         "//antlir/...",
     ],

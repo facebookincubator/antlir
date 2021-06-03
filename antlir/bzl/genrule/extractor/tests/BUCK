@@ -8,7 +8,7 @@ image.layer(
     name = "extracted",
     features = [
         extract.extract(
-            flavor = REPO_CFG.flavor_latest,
+            flavor = REPO_CFG.antlir_linux_flavor,
             binaries = [
                 "/usr/lib/systemd/systemd",
             ],
@@ -26,7 +26,7 @@ extract.source_layer(
     features = [
         image.rpms_install(["systemd"]),
     ],
-    flavor = REPO_CFG.flavor_latest,
+    flavor = REPO_CFG.antlir_linux_flavor,
 )
 
 rust_binary(

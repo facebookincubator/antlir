@@ -22,11 +22,11 @@ extract.source_layer(
             "systemd",
         ]),
     ],
-    flavor = REPO_CFG.flavor_latest,
+    flavor = REPO_CFG.antlir_linux_flavor,
 )
 
 binaries = extract.extract(
-    flavor = REPO_CFG.flavor_latest,
+    flavor = REPO_CFG.antlir_linux_flavor,
     binaries = [
         "/usr/sbin/dropbear",
         "/usr/bin/dropbearkey",
@@ -106,7 +106,7 @@ image.package(
     layer = ":initrd-vmtest",
     format = "cpio.gz",
     visibility = [],
-    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.flavor_latest]["build_appliance"],
+    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor]["build_appliance"],
 )
 
 # Create the default Antlir Linux initrd for this test kernel.

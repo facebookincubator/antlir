@@ -6,6 +6,7 @@
 # This dict is imported into `//antlir/bzl:constants.bzl` to provide per
 # repository configuration.
 do_not_use_repo_cfg = {
+    "antlir_linux_flavor": "fedora33",
     "artifact_key_to_path": " ".join([
         (k + " " + v)
         for k, v in {
@@ -29,7 +30,6 @@ do_not_use_repo_cfg = {
     #
     # "libcap_ng_compiler_flags": "-DCAPNG_SUPPORTS_AMBIENT=1",
     "flavor_default": "fedora33",
-    "flavor_latest": "fedora33",
     "flavor_to_config": {
         "fedora33": {
             "build_appliance": "//images/appliance:stable-build-appliance",
