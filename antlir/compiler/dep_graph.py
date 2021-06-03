@@ -468,6 +468,11 @@ class DependencyGraph:
     def gen_dependency_order_items(
         self, phases_provide: PhasesProvideItem
     ) -> Iterator[ImageItem]:
+        if not self.items:
+            # Skip evaluating `PhasesProvideItem` if there's no work to be
+            # done in the final phase.  This is useful because otherwise
+            # `PhasesProvideItem` would `stat` the entire layer FS.
+            return
         ns = self._prep_item_predecessors(phases_provide)
         yield_idx = 0
         while ns.items_without_predecessors:
