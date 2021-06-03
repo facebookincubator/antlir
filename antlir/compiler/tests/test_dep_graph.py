@@ -6,6 +6,7 @@
 
 import sys
 import unittest
+import unittest.mock
 from dataclasses import dataclass
 from typing import Dict, Iterator, Optional, Set, Tuple
 
@@ -998,6 +999,14 @@ class DependencyGraphTestCase(DepGraphTestBase):
 class DependencyOrderItemsTestCase(DepGraphTestBase):
     def assert_before(self, res, x, y):
         self.assertLess(res.index(x), res.index(y))
+
+    def test_skip_phases_provide(self):
+        dg = DependencyGraph(
+            [FilesystemRootItem(from_target="t-55")], layer_target="t-34"
+        )
+        mock_pp = unittest.mock.MagicMock()
+        self.assertEqual([], list(dg.gen_dependency_order_items(mock_pp)))
+        mock_pp.provides.assert_not_called()
 
     def test_gen_dependency_graph(self):
         dg = DependencyGraph(self.items, layer_target="t-72")
