@@ -16,7 +16,7 @@ extract.source_layer(
             "systemd-udev",
         ]),
     ],
-    flavor = REPO_CFG.flavor_latest,
+    flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
         "//antlir/linux/initrd/debug/...",
     ],
@@ -63,7 +63,7 @@ image.layer(
         # Due to limitations in the current extractor implementation, we have to
         # extract systemd at the same time as antlirctl.
         extract.extract(
-            flavor = REPO_CFG.flavor_latest,
+            flavor = REPO_CFG.antlir_linux_flavor,
             binaries = SYSTEMD_BINARIES,
             buck_binaries = {
                 "//antlir/linux/antlirctl:antlirctl": "/usr/bin/antlirctl",
@@ -78,7 +78,7 @@ image.layer(
         image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/lib/systemd/system-generators/antlir-generator"),
     ],
-    flavor = REPO_CFG.flavor_latest,
+    flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
         kernel_get.base_target + "/...",
         "//antlir/linux/...",
@@ -92,7 +92,7 @@ image.package(
     name = "base.cpio.gz",
     layer = ":base",
     visibility = ["PUBLIC"],
-    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.flavor_latest]["build_appliance"],
+    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor]["build_appliance"],
 )
 
 python_unittest(

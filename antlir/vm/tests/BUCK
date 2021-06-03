@@ -119,7 +119,7 @@ test_env_vars = {
 image.layer(
     name = "vmtest-custom-layer",
     parent_layer = vm.artifacts.rootfs.layer.stable,
-    flavor = REPO_CFG.flavor_latest,
+    flavor = REPO_CFG.antlir_linux_flavor,
     features = [
         image.install(
             ":resource.txt",
