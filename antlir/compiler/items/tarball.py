@@ -39,7 +39,17 @@ class TarballItem(tarball_t, ImageItem):
             fileobj=tf, mode="r|"
         ) as f:
             for item in f:
-                path = self.into_dir / make_path_normal_relative(item.name)
+                path = self.into_dir / make_path_normal_relative(
+                    # This checks that the tarball doesn't write outside
+                    # of `into_dir`, but `meta_check` doesn't make sense
+                    # since it would prevent user tarballs from writing e.g.
+                    # to `/my_tarball/.meta`, which is not protected.
+                    #
+                    # If `into_dir` is `/` and you have `/.meta`, you
+                    # probably want to be using `image.layer_from_package`.
+                    item.name,
+                    meta_check=False,
+                )
                 if item.isdir():
                     # We do NOT provide the installation directory, and the
                     # image build script tarball extractor takes pains (e.g.

@@ -195,7 +195,7 @@ def _validate_artifacts_require_repo(
     )
 
 
-def make_path_normal_relative(orig_d: str) -> str:
+def make_path_normal_relative(orig_d: str, *, meta_check: bool = True) -> str:
     """
     In image-building, we want relative paths that do not start with `..`,
     so that the effects of ImageItems are confined to their destination
@@ -209,7 +209,7 @@ def make_path_normal_relative(orig_d: str) -> str:
     # regular items from writing to it. `d` is never absolute here.
     # NB: This check is redundant with `ProvidesDoNotAccess(path=META_DIR)`,
     # this is just here as a fail-fast backup.
-    if (d + "/").startswith(META_DIR.decode()):
+    if meta_check and (d + "/").startswith(META_DIR.decode()):
         raise AssertionError(f"path {orig_d} cannot start with {META_DIR}")
     return d
 
@@ -222,7 +222,7 @@ def coerce_path_field_normal_relative(kwargs, field: str):
 
 def validate_path_field_normal_relative(field: str):
     return validator(field, allow_reuse=True, pre=True)(
-        make_path_normal_relative
+        lambda value: make_path_normal_relative(value)
     )
 
 
