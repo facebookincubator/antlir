@@ -1,4 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG", "repo_config_t")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image_gpt.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
@@ -448,7 +449,7 @@ python_unittest(
         TEST_IMAGE_PREFIX + "vfat-test.layer": "tests/vfat-test.layer",
         TEST_IMAGE_PREFIX + "vfat-test.vfat": "tests/vfat-test.vfat",
         TEST_IMAGE_PREFIX + "child-sized/layer.btrfs": "tests/fixed-size.btrfs",
-        layer_resource(REPO_CFG.build_appliance_default): "tests/build-appliance",
+        layer_resource(flavor_helpers.default_flavor_build_appliance): "tests/build-appliance",
     },
     deps = [
         ":find_built_subvol",
@@ -496,7 +497,7 @@ python_unittest(
         TEST_IMAGE_PREFIX + "vfat-test.vfat": "tests/vfat-test.vfat",
         TEST_IMAGE_PREFIX + "create_ops_ext3": "tests/create_ops_ext3",
         TEST_IMAGE_PREFIX + "gpt_test": "tests/gpt_test",
-        layer_resource(REPO_CFG.build_appliance_default): "tests/build-appliance",
+        layer_resource(flavor_helpers.default_flavor_build_appliance): "tests/build-appliance",
     },
     deps = [
         ":gpt-library",

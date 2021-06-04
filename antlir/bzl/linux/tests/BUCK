@@ -1,4 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "third_party")
 load("//antlir/bzl/linux:defs.bzl", "linux")
@@ -12,7 +13,7 @@ image.layer(
     name = "busybox-src-from-ba",
     features = [
         image.clone(
-            REPO_CFG.build_appliance_default,
+            flavor_helpers.default_flavor_build_appliance,
             "/usr/sbin/busybox",
             "/busybox",
         ),
@@ -54,7 +55,7 @@ image.layer(
 # Time tests
 image.layer(
     name = "test-layer-timezone-utc",
-    parent_layer = REPO_CFG.build_appliance_default,
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
     features = [linux.time.timezone(zone = "UTC")],
 )
 
@@ -69,7 +70,7 @@ image.python_unittest(
 
 image.layer(
     name = "test-layer-timezone-us-pacific",
-    parent_layer = REPO_CFG.build_appliance_default,
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
     features = [linux.time.timezone(zone = "US/Pacific")],
 )
 

@@ -18,7 +18,6 @@ do_not_use_repo_cfg = {
             "vm.rootfs.layer.stable": "//images/base:fedora.vm",
         }.items()
     ]),
-    "build_appliance_default": "//images/appliance:stable-build-appliance",
     # Future: Once we can guarantee `libcap-ng` to be at least 0.8, add
     # this in.
     #

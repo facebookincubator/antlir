@@ -1,4 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary", "third_party")
@@ -207,7 +208,7 @@ vm.rust_unittest(
 # `buck run :test-layer-with-vm-runtime=vm`
 image.layer(
     name = "test-layer-with-vm-runtime",
-    parent_layer = REPO_CFG.build_appliance_default,
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
     runtime = [
         "systemd",
         "vm",

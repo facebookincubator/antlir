@@ -110,8 +110,8 @@ def image_layer(
     - `features`: List of `feature` target paths and/or
     nameless structs from `feature.new`.
     - `flavor`: Picks default build options for the layer, including
-    `build_appliance`, RPM installer, and others. See `flavor.bzl` for
-    details.
+    `build_appliance`, RPM installer, and others. See `flavor_helpers.bzl`
+    for details.
     - `flavor_config_override`: A struct that can override the default
     values fetched from `REPO_CFG[flavor].flavor_to_config`.
     - `mount_config`: Specifies how this layer is mounted in the

@@ -1,4 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -143,7 +144,7 @@ buck_genrule(
 
 image.layer(
     name = "systemd_feature-layer",
-    parent_layer = REPO_CFG.build_appliance_default,
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
     features = [
         # A target with a dest
         systemd.install_unit(

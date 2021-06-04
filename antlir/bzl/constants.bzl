@@ -138,7 +138,6 @@ flavor_config_t = shape.shape(
 repo_config_t = shape.shape(
     artifacts_require_repo = bool,
     artifact = shape.dict(str, str),
-    build_appliance_default = str,
     host_mounts_allowed_in_targets = shape.field(shape.list(str), optional = True),
     host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
     rpm_installer_default = str,
@@ -163,10 +162,6 @@ REPO_CFG = shape.new(
     # This is a dictionary that allow for looking up configurable artifact
     # targets by a key.
     artifact = _get_artifact_key_to_path(),
-
-    # The target path of the build appliance used for `image.layer`s that do
-    # not specify one via `build_opts`.
-    build_appliance_default = _get_optional_str_cfg("build_appliance_default"),
 
     # At FB, the Antlir team tightly controls the usage of host mounts,
     # since they are a huge footgun, and are a terrible idea for almost

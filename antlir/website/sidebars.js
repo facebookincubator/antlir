@@ -81,7 +81,7 @@ module.exports = {
         },
         'api/shape',
         'api/genrule/facebook/chef_solo/chef_solo',
-        'api/flavor',
+        'api/flavor_helpers',
       ],
     },
     {
@@ -110,8 +110,8 @@ module.exports = {
       id: 'installing',
     },
     ...fbInternalOnly([{
-      type: 'doc',
-      id: 'fb/vision-containers-as-build-artifacts',
+        type: 'doc',
+        id: 'fb/vision-containers-as-build-artifacts',
     }]),
   ],
 };
