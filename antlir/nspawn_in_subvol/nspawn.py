@@ -135,6 +135,7 @@ def popen_nspawn(
     *,
     plugins: Iterable[NspawnPlugin] = (),
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
+    log.debug(f"popen_nspawn {opts.cmd}")
     return _popen_plugin_driver(
         opts=opts,
         popen_args=popen_args,

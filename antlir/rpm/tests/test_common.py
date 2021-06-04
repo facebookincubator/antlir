@@ -15,6 +15,7 @@ from antlir.fs_utils import Path, temp_dir
 from ..common import (
     Checksum,
     DecorateContextEntry,
+    readonly_snapshot_db,
     RpmShard,
     has_yum,
     read_chunks,
@@ -23,6 +24,13 @@ from ..common import (
 
 
 class TestCommon(unittest.TestCase):
+    def test_readonly_snapshot_db(self):
+        with self.assertRaises(FileNotFoundError):
+            readonly_snapshot_db("/DoEs/nOt/eXiSt")
+        with readonly_snapshot_db(os.environ["antlir_test_snapshot"]) as db:
+            ((rows,),) = db.execute("SELECT COUNT(1) FROM `rpm`").fetchall()
+            self.assertGreaterEqual(rows, 1)
+
     def test_rpm_shard(self):
         self.assertEqual(
             RpmShard(shard=3, modulo=7), RpmShard.from_string("3:7")

@@ -104,14 +104,20 @@ def add_snapshot_db_objs(db):
 
 
 def read_snapshot_dir(path: Path):
-    db_path = path / "snapshot.sql3"
+    # TODO: Once all BAs include a repo-server with the new code to
+    # "snapshot/snapshot.sql3", remove the fallback to "snapshot.sql3";
+    # switch to using `readonly_snapshot_db()`; tidy `launch_repo_servers.py`.
+    subdir = (path / "snapshot") if os.path.exists(path / "snapshot") else path
+    db_path = subdir / "snapshot.sql3"
     assert os.path.exists(db_path), f"no {db_path}, use rpm_repo_snapshot()"
-    with sqlite3.connect(db_path) as db:
+    with sqlite3.connect(
+        f"file:{subdir}/snapshot.sql3?mode=ro", uri=True
+    ) as db:
         location_to_obj = add_snapshot_db_objs(db)
     db.close()
-    for repo in (path / "repos").listdir():
+    for repo in (subdir / "repos").listdir():
         # Make JSON metadata for the repo's GPG keys.
-        key_dir = path / "repos" / repo / "gpg_keys"
+        key_dir = subdir / "repos" / repo / "gpg_keys"
         for key_filename in key_dir.listdir():
             with open(key_dir / key_filename, "rb") as infile:
                 key_content = infile.read()

@@ -144,14 +144,14 @@ def _create_sockets_inside_netns(
 
 
 class RepoServer(NamedTuple):
-    snapshot_dir: Path
+    rpm_repo_snapshot: Path
     port: int
     # The socket & server are invalid after the `_launch_repo_server` context
     sock: socket.socket
     proc: Optional[subprocess.Popen] = None
 
     def __format__(self, _spec):
-        return f"RepoServer({self.snapshot_dir}, port={self.port})"
+        return f"RepoServer({self.rpm_repo_snapshot}, port={self.port})"
 
 
 @contextmanager
@@ -175,7 +175,10 @@ def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
             "--socket-fd",
             str(rs.sock.fileno()),
             "--snapshot-dir",
-            rs.snapshot_dir,
+            # TODO: Once the committed BAs all have a `repo-server` that
+            # knows to append `/snapshot` to the path, remove it here, and
+            # tidy up the snapshot resolution code in `repo_server.py`.
+            rs.rpm_repo_snapshot / "snapshot",
             *(["--debug"] if log.isEnabledFor(logging.DEBUG) else []),
         ],
         pass_fds=[rs.sock.fileno()],
@@ -231,7 +234,7 @@ def launch_repo_servers_for_netns(
                 _launch_repo_server(
                     repo_server_bin,
                     RepoServer(
-                        snapshot_dir=snapshot_dir / "snapshot",
+                        rpm_repo_snapshot=snapshot_dir,
                         port=port,
                         sock=sock,
                     ),

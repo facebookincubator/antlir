@@ -39,25 +39,18 @@ _VSET_NAME = "test_vset"
 
 def prepare_rpm_repo_snapshot_dir(dir_path, foo_epoch=0):
     os.makedirs(dir_path / "snapshot")
-    db = sqlite3.connect(
-        "file:" + (dir_path / "snapshot/snapshot.sql3").decode(),
-        uri=True,
-    )
-    RepoSnapshot._create_sqlite_tables(db)
-    db.execute(
-        "INSERT INTO 'rpm' "
-        "('name', 'epoch', 'version', 'release', 'arch', 'repo', "
-        "'path', 'build_timestamp', 'checksum', 'size') "
-        "VALUES"
-        " (?, ?, ?, ?, ?, '_repo', '_foo_path', 0, '_chksum', 0),"
-        " (?, ?, ?, ?, ?, '_repo', '_bar_path', 0, '_chksum', 0)",
-        (
-            *(_FOO_RPM, foo_epoch, _FOO_BAR_VER, _FOO_BAR_REL, _FOO_BAR_ARCH),
-            *(_BAR_RPM, 0, _FOO_BAR_VER, _FOO_BAR_REL, _FOO_BAR_ARCH),
-        ),
-    )
-    db.commit()
-    db.close()
+    with sqlite3.connect(dir_path / "snapshot/snapshot.sql3") as db:
+        RepoSnapshot._create_sqlite_tables(db)
+        db.execute(
+            "INSERT INTO 'rpm' "
+            "('name', 'epoch', 'version', 'release', 'arch', 'repo', "
+            "'path', 'build_timestamp', 'checksum', 'size') "
+            "VALUES"
+            " (?, ?, ?, ?, ?, '_repo', '_foo_path', 0, '_chksum', 0),"
+            " (?, ?, ?, ?, ?, '_repo', '_bar_path', 0, '_chksum', 0)",
+            (_FOO_RPM, foo_epoch, _FOO_BAR_VER, _FOO_BAR_REL, _FOO_BAR_ARCH)
+            + (_BAR_RPM, 0, _FOO_BAR_VER, _FOO_BAR_REL, _FOO_BAR_ARCH),
+        )
 
 
 def prepare_version_sets_dir(dir_path):
