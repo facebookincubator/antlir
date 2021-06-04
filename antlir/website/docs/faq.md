@@ -14,13 +14,14 @@ For an image that lacks a shell, you can do something like this:
 
 ```py
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 
 image.layer(name = "my-image", ...)
 
 image.layer(
   name = "inspect-my-image",
-  parent_layer = REPO_CFG.build_appliance_default,
+  parent_layer = flavor_helpers.default_flavor_build_appliance,
   features = [image.layer_mount(":my-image", "/my")]
 )
 ```
@@ -106,8 +107,8 @@ SELECT * from "rpm" WHERE "name" IS "netperf";
 
 ### How do I download RPMs from a particular snapshot?
 
-First, you need a build appliance target path.  Grep the code for
-`build_appliance_default.*//` to find the default one.  If its target path
+First, you need a build appliance target path. By default, the build appliance
+is specified by `REPO_CFG.default_flavor_build_appliance`.  If its target path
 is `//BUILD:APPLIANCE`, and it uses `dnf`, then the following code will
 put any RPMs matching `jq` into your current directory:
 

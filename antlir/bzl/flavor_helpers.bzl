@@ -127,7 +127,7 @@ def _get_flavor_config(flavor, flavor_config_override):
 
     Example usage:
     ```
-    load("//antlir/bzl:flavors.bzl", flavor_helpers = "flavor")
+    load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 
     flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
     build_appliance = flavor_config["build_appliance"]
@@ -142,6 +142,11 @@ def _get_flavor_config(flavor, flavor_config_override):
 
     return _validate_flavor_config(**flavor_config)
 
-flavor = struct(
+def _get_build_appliance(flavor):
+    return REPO_CFG.flavor_to_config[flavor]["build_appliance"]
+
+flavor_helpers = struct(
+    default_flavor_build_appliance = _get_build_appliance(REPO_CFG.flavor_default),
+    get_build_appliance = _get_build_appliance,
     get_flavor_config = _get_flavor_config,
 )

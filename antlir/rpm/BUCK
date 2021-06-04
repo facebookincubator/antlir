@@ -1,4 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
@@ -90,7 +91,7 @@ python_library(
     srcs = ["tests/temp_repos.py"],
     resources = {
         third_party.library("busybox", "bin/busybox"): "tests/busybox",
-        layer_resource(REPO_CFG.build_appliance_default): "tests/build-appliance",
+        layer_resource(flavor_helpers.default_flavor_build_appliance): "tests/build-appliance",
         ":gpg-test-signing-key": "tests/signing_key",
     },
     deps = [

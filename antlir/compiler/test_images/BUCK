@@ -1,6 +1,7 @@
 # IMPORTANT: Do NOT use `oss_shim.bzl` here, instead load fbcode macros via
 # the shim in `defs.bzl`.
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
@@ -84,7 +85,7 @@ defs.buck_genrule(
 # that does not impose a circular dependency.  But for now, this works.
 image.layer(
     name = "test-layer",
-    parent_layer = REPO_CFG.build_appliance_default,
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
     features = [
         # `test_non_ephemeral_snapshot` needs a place to write as `nobody`.
         image.ensure_subdirs_exist(
@@ -952,7 +953,7 @@ add_rpm_repo_snapshots_layer(
         ("//antlir/rpm:non-default-repo-snapshot-for-tests", installer)
         for installer in REPO_CFG.rpm_installers_supported
     ],
-    parent_layer = REPO_CFG.build_appliance_default,
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
     visibility = [
         "//antlir/...",
         "//hermetic_infra/hermit/integration/...",
@@ -962,7 +963,7 @@ add_rpm_repo_snapshots_layer(
 
 image.layer(
     name = "groups-added",
-    parent_layer = REPO_CFG.build_appliance_default,
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
     features = [
         feature.group_add("foo"),
         feature.group_add("leet", 1337),
@@ -976,7 +977,7 @@ image.layer(
 # on a host.
 image.layer(
     name = "users-added",
-    parent_layer = REPO_CFG.build_appliance_default,
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
     features = [
         feature.group_add("newuser"),
         feature.user_add(

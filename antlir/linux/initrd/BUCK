@@ -1,4 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get", "python_unittest")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -92,7 +93,7 @@ image.package(
     name = "base.cpio.gz",
     layer = ":base",
     visibility = ["PUBLIC"],
-    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor]["build_appliance"],
+    build_appliance = flavor_helpers.default_flavor_build_appliance,
 )
 
 python_unittest(

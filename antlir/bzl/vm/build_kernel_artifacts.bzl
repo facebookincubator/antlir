@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -29,7 +30,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, extra_modules = None,
         name = "{uname}--devel-installed".format(uname = uname),
         # This is used because we need the gpg keys that this rpm is signed
         # by and the build appliance should have it.
-        parent_layer = REPO_CFG.build_appliance_default,
+        parent_layer = flavor_helpers.default_flavor_build_appliance,
         features = [
             image.rpms_install([devel_rpm]),
         ],

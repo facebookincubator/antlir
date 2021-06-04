@@ -15,8 +15,8 @@ load(":defs.bzl", "fake_macro_library")
 # This should eventually become unnecessary, follow Q10141.
 
 fake_macro_library(
-    name = "flavor",
-    srcs = ["flavor.bzl"],
+    name = "flavor_helpers",
+    srcs = ["flavor_helpers.bzl"],
     deps = [
         ":constants",
         ":snapshot_install_dir",
@@ -29,7 +29,7 @@ fake_macro_library(
     srcs = ["compile_image_features.bzl"],
     deps = [
         ":constants",
-        ":flavor",
+        ":flavor_helpers",
         ":target_tagger",
         "//antlir/bzl/image/feature:new",
     ],

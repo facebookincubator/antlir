@@ -23,7 +23,6 @@ class RepoConfigTestCase(unittest.TestCase):
             "artifact": {
                 "test.artifact": "//build:artifact",
             },
-            "build_appliance_default": "//build/appliance:default",
             "flavor_default": "default",
             "antlir_linux_flavor": "default",
             "flavor_to_config": {
@@ -48,17 +47,6 @@ class RepoConfigTestCase(unittest.TestCase):
         config = load_repo_config()
 
         self.assertIsInstance(config, repo_config_t)
-        # The build_appliance_default config attribute
-        # really needs to exist and be set to something
-        # other than empty string.  While we don't explicitly
-        # *require* this field to be provided many things in
-        # this tool will blow up if it's not set, so it is, for
-        # all intents and purposes, required.  So, we use that
-        # fact as a simple unit test to ensure the repo_config_t
-        # can load properly.
-        self.assertIsNotNone(config.build_appliance_default)
-        self.assertNotEqual(config.build_appliance_default, "")
-
         self.assertEqual(config.repo_root, find_repo_root())
 
     @unittest.mock.patch("antlir.config._read_text")

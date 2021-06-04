@@ -1,6 +1,7 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
@@ -60,7 +61,7 @@ image.package(
         "//antlir/linux/...",
         "//scripts/dschatzberg/vm/...",
     ],
-    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor]["build_appliance"],
+    build_appliance = flavor_helpers.default_flavor_build_appliance,
 )
 
 # A full layer that is the combined set of debug features and the base initrd.

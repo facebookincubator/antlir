@@ -10,6 +10,7 @@ files, as described by the specified `format`.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule")
 
@@ -27,7 +28,7 @@ def image_package(
         # `oss_shim.bzl` for how this works.
         antlir_rule = "user-facing",
         # Build appliance to use when creating packages
-        build_appliance = REPO_CFG.build_appliance_default,
+        build_appliance = None,
         # The explicit format to use
         # For supported formats, see `--format` here:
         #     buck run :package-image -- --help
@@ -45,6 +46,7 @@ def image_package(
         # are coming on D28591961
         optimization = True):
     visibility = visibility or []
+    build_appliance = build_appliance or flavor_helpers.default_flavor_build_appliance
 
     if not format:
         local_layer_rule, format = paths.split_extension(name)

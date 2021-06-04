@@ -7,6 +7,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":constants.bzl", "REPO_CFG")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_utils.bzl", "image_utils")
 
 gpt_partition_t = shape.shape(
@@ -26,8 +27,9 @@ def image_gpt(
         name,
         table,
         visibility = None,
-        build_appliance = REPO_CFG.build_appliance_default):
+        build_appliance = None):
     visibility = visibility or []
+    build_appliance = build_appliance or flavor_helpers.default_flavor_build_appliance
 
     gpt = shape.new(gpt_t, name = name, table = table)
     buck_genrule(
