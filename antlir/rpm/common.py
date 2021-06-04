@@ -7,17 +7,34 @@
 import hashlib
 import os
 import shutil
+import sqlite3
 import struct
 from contextlib import AbstractContextManager
 from io import BytesIO
-from typing import ContextManager, Generic, Iterable, NamedTuple, TypeVar
+from typing import (
+    ContextManager,
+    Generic,
+    Iterable,
+    Iterator,
+    NamedTuple,
+    TypeVar,
+)
 
 from antlir.common import byteme, get_logger
+from antlir.fs_utils import MehStr, Path
 
 
 log = get_logger()
 _UINT64_STRUCT = struct.Struct("=Q")
 T = TypeVar("T")
+
+
+def readonly_snapshot_db(snapshot_dir: MehStr) -> Iterator[sqlite3.Connection]:
+    "Context manager for a read-only snapshot DB connection"
+    db_path = Path(snapshot_dir) / "snapshot/snapshot.sql3"
+    if not db_path.exists():  # The SQLite error lacks the path.
+        raise FileNotFoundError(db_path, "RPM snapshot lacks SQL3 DB")
+    return sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
 
 
 class DecorateContextEntry(Generic[T], AbstractContextManager):

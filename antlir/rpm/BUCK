@@ -20,12 +20,14 @@ python_library(
     deps = [
         ":yum_dnf_conf",
         "//antlir:common",
+        "//antlir:fs_utils",
     ],
 )
 
 python_unittest(
     name = "test-common",
     srcs = ["tests/test_common.py"],
+    env = {"antlir_test_snapshot": "$(location :repo-snapshot-for-tests)"},
     needed_coverage = [(100, ":common")],
     deps = [
         ":common",

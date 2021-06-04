@@ -33,6 +33,7 @@ from typing import Literal  # This is a 3.8+ feature
 
 from antlir.common import get_logger, init_logging, set_new_key
 from antlir.fs_utils import Path, create_ro, populate_temp_dir_and_rename
+from antlir.rpm.common import readonly_snapshot_db
 
 from .envra import SortableENVRA, SortableEVRA
 from .package_group import PackageGroup
@@ -356,10 +357,8 @@ def _save_allowed_versions(
 ) -> None:
     os.makedirs(dest_dir, exist_ok=True)
 
-    snapshot_dbs = [
-        sqlite3.connect(f"file:{d}/snapshot/snapshot.sql3?mode=ro", uri=True)
-        for d in rpm_snapshot_dirs
-    ]
+    # FIXME: Next time this is refactored, use the DBs as context managers.
+    snapshot_dbs = [readonly_snapshot_db(d) for d in rpm_snapshot_dirs]
     snapshot_paths_and_dbs = list(zip(rpm_snapshot_dirs, snapshot_dbs))
 
     # Default every known package to use "empty vset".

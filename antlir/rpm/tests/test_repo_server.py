@@ -242,10 +242,12 @@ class RepoServerTestCase(unittest.TestCase):
         )
 
         with temp_dir() as td:
-            os.mkdir(td / "yum.conf")  # yum.conf is ignored
-            repo_dir = td / "repos/mine"
+            sd = td / "snapshot"
+            os.makedirs(sd)
+            os.mkdir(sd / "yum.conf")  # yum.conf is ignored
+            repo_dir = sd / "repos/mine"
             os.makedirs(repo_dir)
-            with sqlite3.connect(td / "snapshot.sql3") as db:
+            with sqlite3.connect(sd / "snapshot.sql3") as db:
                 RepoSnapshot._create_sqlite_tables(db)
                 RepoSnapshot(
                     repomd=repomd,
