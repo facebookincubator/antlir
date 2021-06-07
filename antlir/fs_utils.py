@@ -333,6 +333,9 @@ class Path(bytes):
             pass
         return self
 
+    def unlink(self) -> None:
+        return os.unlink(self)
+
     @classmethod
     def json_dumps(cls, *args, **kwargs) -> str:
         "Use instead of `json.dumps` to serializing `Path` values."

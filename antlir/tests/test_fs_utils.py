@@ -442,6 +442,21 @@ class TestFsUtils(unittest.TestCase):
             # the original file is untouched
             self.assertEqual(path.read_text(), "woof")
 
+    def test_unlink(self):
+        with temp_dir() as td:
+            path = td / "dog"
+            with open(path, "w") as outfile:
+                outfile.write("woof")
+            # check file is there
+            self.assertTrue(os.path.exists(path))
+            # check unlink() returns None
+            self.assertIsNone(path.unlink())
+            # check file no longer there
+            self.assertFalse(os.path.exists(path))
+            # check that correct exception is thrown
+            with self.assertRaises(FileNotFoundError):
+                path.unlink()
+
     def test_generate_work_dir(self):
         work_dir = generate_work_dir()
 

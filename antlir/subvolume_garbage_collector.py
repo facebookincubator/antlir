@@ -48,7 +48,7 @@ import re
 import stat
 import subprocess
 import sys
-from typing import Iterator, Tuple
+from typing import Iterator, List, Tuple
 
 from .fs_utils import Path
 
@@ -74,7 +74,7 @@ def nonblocking_flock(path) -> Iterator[bool]:
         os.close(fd)  # Don't hold the lock any longer than we have to!
 
 
-def list_subvolume_wrappers(subvolumes_dir):
+def list_subvolume_wrappers(subvolumes_dir: str) -> List[str]:
     # Ignore directories that don't match the <subvol name>:<id> pattern.
     subvolumes = [
         os.path.relpath(p, subvolumes_dir)
@@ -103,7 +103,7 @@ def list_refcounts(refcounts_dir) -> Iterator[Tuple[str, int]]:
         yield (f"{m.group('name')}:{m.group('version')}", st.st_nlink)
 
 
-def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
+def garbage_collect_subvolumes(refcounts_dir: str, subvolumes_dir: str) -> None:
     # IMPORTANT: We must list subvolumes BEFORE refcounts. The risk is that
     # this runs concurrently with another build, which will create a new
     # refcount & subvolume (in that order).  If we read refcounts first, we
@@ -122,7 +122,7 @@ def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
                 # Not sure how this might happen, but it seems non-fatal...
                 log.error(f"{nlink} > 2 links to subvolume {subvol_wrapper}")
             continue
-        refcount_path = os.path.join(refcounts_dir, f"{subvol_wrapper}.json")
+        refcount_path = Path(refcounts_dir) / f"{subvol_wrapper}.json"
         log.warning(
             f"Deleting {subvol_wrapper} since its refcount has {nlink} links"
         )
@@ -143,7 +143,7 @@ def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
         # complexity is far too ugly compared to the slim risk or leaving
         # some unused refcount files on disk.
         if nlink:
-            os.unlink(refcount_path)
+            refcount_path.unlink()
 
         # Subvols are wrapped in a user-owned temporary directory, following
         # the convention `{rule name}:{version}/{subvol}`.
@@ -167,21 +167,21 @@ def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
             expected_lock_path = wrapper_path / f".#{subvol}.lck"
             assert (
                 # The output of `.listdir()` should match our `.exists()`
-                bool(maybe_lockfile) == os.path.exists(expected_lock_path)
+                bool(maybe_lockfile) == expected_lock_path.exists()
                 and (
                     not maybe_lockfile
                     or maybe_lockfile == expected_lock_path.basename()
                 )
             ), (maybe_lockfile, expected_lock_path)
             if maybe_lockfile:
-                os.unlink(expected_lock_path)
+                expected_lock_path.unlink()
             subprocess.check_call(
                 ["sudo", "btrfs", "subvolume", "delete", wrapper_path / subvol]
             )
         else:  # No subvolume in wrapper
             # We don't expect to see a stray lockfile here because we delete
             # the lockfile before the subvol.
-            assert not maybe_lockfile, maybe_lockfile
+            assert not maybe_lockfile, f"Stray lockfile found: {maybe_lockfile}"
 
         os.rmdir(wrapper_path)
 
