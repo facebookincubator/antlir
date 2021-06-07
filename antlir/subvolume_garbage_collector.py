@@ -48,7 +48,7 @@ import re
 import stat
 import subprocess
 import sys
-from typing import Iterator
+from typing import Iterator, Tuple
 
 from .fs_utils import Path
 
@@ -86,9 +86,9 @@ def list_subvolume_wrappers(subvolumes_dir):
     return subvolumes
 
 
-def list_refcounts(refcounts_dir):
+def list_refcounts(refcounts_dir) -> Iterator[Tuple[str, int]]:
     # The the first part of the name may contain 0 or more colons.
-    reg = re.compile("^(.+):([^:]+).json$")
+    reg = re.compile("^(?P<name>.+):(?P<version>[^:]+).json$")
     for p in glob.glob(f"{refcounts_dir}/*:*.json"):
         m = reg.match(os.path.basename(p))
         # Only fails if glob does not work.
@@ -100,7 +100,7 @@ def list_refcounts(refcounts_dir):
         # `SubvolumeOnDisk.from_json_file`, but we cannot do that because
         # our GC pass might be running concurrently with another build, and
         # the refcount file might be empty or half-written.
-        yield (f"{m.group(1)}:{m.group(2)}", st.st_nlink)
+        yield (f"{m.group('name')}:{m.group('version')}", st.st_nlink)
 
 
 def garbage_collect_subvolumes(refcounts_dir, subvolumes_dir):
