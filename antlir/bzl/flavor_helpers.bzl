@@ -148,9 +148,17 @@ def _get_build_appliance(flavor):
 def _get_rpm_installer(flavor):
     return REPO_CFG.flavor_to_config[flavor]["rpm_installer"]
 
+def _get_rpm_installers_supported():
+    rpm_installers = []
+    for _, config in REPO_CFG.flavor_to_config.items():
+        if "rpm_installer" in config:
+            rpm_installers.append(config["rpm_installer"])
+    return rpm_installers
+
 flavor_helpers = struct(
     default_flavor_build_appliance = _get_build_appliance(REPO_CFG.flavor_default),
     get_build_appliance = _get_build_appliance,
     get_flavor_config = _get_flavor_config,
     get_rpm_installer = _get_rpm_installer,
+    get_rpm_installers_supported = _get_rpm_installers_supported,
 )

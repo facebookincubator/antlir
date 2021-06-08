@@ -20,7 +20,10 @@ from antlir.compiler.items.mount import mounts_from_meta
 from antlir.config import load_repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
-from antlir.tests.flavor_helpers import render_flavor_default
+from antlir.tests.flavor_helpers import (
+    get_rpm_installers_supported,
+    render_flavor_default,
+)
 from antlir.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
 from antlir.tests.subvol_helpers import (
     check_common_rpm_render,
@@ -262,7 +265,8 @@ class ImageLayerTestCase(unittest.TestCase):
             check_common_rpm_render(self, r, yum_dnf)
 
     @unittest.skipUnless(
-        "dnf" in REPO_CFG.rpm_installers_supported, "dnf not supported"
+        "dnf" in get_rpm_installers_supported(),
+        "dnf not supported",
     )
     def test_dnf_build_appliance(self):
         with self._check_build_appliance(
@@ -271,7 +275,8 @@ class ImageLayerTestCase(unittest.TestCase):
             self.assertEqual(["(Dir)", {}], pop_path(r, "usr/lib"))
 
     @unittest.skipUnless(
-        "yum" in REPO_CFG.rpm_installers_supported, "yum not supported"
+        "yum" in get_rpm_installers_supported(),
+        "yum not supported",
     )
     def test_yum_build_appliance(self):
         with self._check_build_appliance(

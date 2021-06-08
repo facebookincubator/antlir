@@ -2,6 +2,7 @@
 # by Buck, it is executed in-place using the system Python.
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:layer_resource.bzl", "LAYER_SLASH_ENCODE", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load(":defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_IMAGE_PREFIX", "image_feature_python_unittest")
@@ -189,7 +190,7 @@ IMAGE_LAYER_DEPS = [
     "create_ops-alias",
 ] + [
     "validates-{}-build-appliance".format(i)
-    for i in REPO_CFG.rpm_installers_supported
+    for i in flavor_helpers.get_rpm_installers_supported()
 ]
 
 python_unittest(
