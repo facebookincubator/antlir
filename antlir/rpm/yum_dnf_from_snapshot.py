@@ -360,8 +360,14 @@ def _ensure_private_network():
     }
     net = Path("/sys/class/net")
     for iface in net.listdir():
-        with open(net / iface / "type") as infile:
-            iface_type = int(infile.read())
+        # Not *every* directory in /sys/class/net is
+        # a symlink to an interface device directory
+        # A specific case is /sys/class/net/bonding_masters
+        # which is present if the bonding module is loaded
+        iface_dir = net / iface
+        iface_type = Path(iface_dir / "type")
+        if os.path.isdir(iface_dir) and iface_type.exists():
+            iface_type = int(iface_type.read_text())
             # Not covered because we don't want to rely on the CI container
             # having a network interface.
             if iface_type not in allowed_types:  # pragma: no cover
