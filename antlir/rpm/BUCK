@@ -398,7 +398,8 @@ test_rpm_repo_snapshot(
     # `test-image-layer` checks `validates-{yum,dnf}-build-appliance`.
     #
     # All other RPM installations via one of the few build appliances that
-    # install this snapshot use `REPO_CFG.rpm_installer_default`.
+    # install this snapshot use
+    # `flavor_helpers.get_rpm_installer(REPO_CFG.flavor_default)`.
     rpm_installers = ("dnf", "yum"),
 )
 

@@ -27,14 +27,15 @@ class RepoConfigTestCase(unittest.TestCase):
             "antlir_linux_flavor": "default",
             "flavor_to_config": {
                 "default": {
-                    "version_set_path": "__VERSION_SET_ALLOW_ALL_VERSIONS__"
+                    "version_set_path": "__VERSION_SET_ALLOW_ALL_VERSIONS__",
+                    "rpm_installer": "yum",
                 },
                 "all_jobs": {
                     "version_set_to_path": "//all/jobs/version/set:path",
+                    "rpm_installer": "yum",
                 },
             },
             "host_mounts_for_repo_artifacts": [],
-            "rpm_installer_default": "yum",
             "rpm_installers_supported": [
                 "yum",
                 "dnf",

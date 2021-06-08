@@ -145,8 +145,12 @@ def _get_flavor_config(flavor, flavor_config_override):
 def _get_build_appliance(flavor):
     return REPO_CFG.flavor_to_config[flavor]["build_appliance"]
 
+def _get_rpm_installer(flavor):
+    return REPO_CFG.flavor_to_config[flavor]["rpm_installer"]
+
 flavor_helpers = struct(
     default_flavor_build_appliance = _get_build_appliance(REPO_CFG.flavor_default),
     get_build_appliance = _get_build_appliance,
     get_flavor_config = _get_flavor_config,
+    get_rpm_installer = _get_rpm_installer,
 )
