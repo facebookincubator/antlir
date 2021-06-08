@@ -40,7 +40,4 @@ do_not_use_repo_cfg = {
         "//images/appliance:features-for-layer-host-build-appliance",
     ]),
     "host_mounts_for_repo_artifacts": [],
-    "rpm_installers_supported": " ".join([
-        "dnf",
-    ]),
 }

@@ -36,10 +36,6 @@ class RepoConfigTestCase(unittest.TestCase):
                 },
             },
             "host_mounts_for_repo_artifacts": [],
-            "rpm_installers_supported": [
-                "yum",
-                "dnf",
-            ],
         }
         defaults.update(kwargs)
         return repo_config_t(**defaults).json(exclude={"repo_root": ...})

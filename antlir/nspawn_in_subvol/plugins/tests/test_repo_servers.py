@@ -14,6 +14,7 @@ from contextlib import contextmanager
 
 from antlir.common import check_popen_returncode
 from antlir.config import load_repo_config
+from antlir.tests.flavor_helpers import get_rpm_installers_supported
 
 from .. import launch_repo_servers
 from .rpm_base import RpmNspawnTestBase
@@ -64,9 +65,9 @@ class TestImpl:
         check_popen_returncode(tee)
 
     def setUp(self):
-        if self._PROG not in REPO_CFG.rpm_installers_supported:
+        if self._PROG not in get_rpm_installers_supported():
             self.skipTest(
-                f"'{self._PROG}'' not in '{REPO_CFG.rpm_installers_supported}'"
+                f"'{self._PROG}'' not in '{get_rpm_installers_supported()}'"
             )
 
     def test_repo_servers(self):

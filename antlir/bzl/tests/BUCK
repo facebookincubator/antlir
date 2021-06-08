@@ -58,6 +58,7 @@ image.python_unittest(
     deps = [
         "//antlir:config",
         "//antlir:fs_utils",
+        "//antlir:testlib_flavor_helpers",
         "//antlir/rpm:find_snapshot",
     ],
 )

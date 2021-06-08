@@ -139,7 +139,7 @@ defs.export_file(name = "shadow_me")
         ),
         visibility = ["//antlir/compiler/..."],
     )
-    for rpm_installer in REPO_CFG.rpm_installers_supported
+    for rpm_installer in flavor_helpers.get_rpm_installers_supported()
 ]
 
 # Since `rpm-test-milk` provides `/bin/sh`, use it to exercise genrule layers.
@@ -948,17 +948,17 @@ image.package(
 
 add_rpm_repo_snapshots_layer(
     name = "build_appliance_testing",
-    dnf_snapshot = "//antlir/rpm:repo-snapshot-for-tests" if "dnf" in REPO_CFG.rpm_installers_supported else None,
+    dnf_snapshot = "//antlir/rpm:repo-snapshot-for-tests" if "dnf" in flavor_helpers.get_rpm_installers_supported() else None,
     make_caches_for_other_snapshot_installers = [
         ("//antlir/rpm:non-default-repo-snapshot-for-tests", installer)
-        for installer in REPO_CFG.rpm_installers_supported
+        for installer in flavor_helpers.get_rpm_installers_supported()
     ],
     parent_layer = flavor_helpers.default_flavor_build_appliance,
     visibility = [
         "//antlir/...",
         "//hermetic_infra/hermit/integration/...",
     ],
-    yum_snapshot = "//antlir/rpm:repo-snapshot-for-tests" if "yum" in REPO_CFG.rpm_installers_supported else None,
+    yum_snapshot = "//antlir/rpm:repo-snapshot-for-tests" if "yum" in flavor_helpers.get_rpm_installers_supported() else None,
 )
 
 image.layer(

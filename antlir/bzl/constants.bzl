@@ -140,7 +140,6 @@ repo_config_t = shape.shape(
     artifact = shape.dict(str, str),
     host_mounts_allowed_in_targets = shape.field(shape.list(str), optional = True),
     host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
-    rpm_installers_supported = shape.list(str),
     flavor_to_config = shape.dict(str, flavor_config_t),
     flavor_default = str,
     antlir_linux_flavor = str,
@@ -176,10 +175,6 @@ REPO_CFG = shape.new(
     host_mounts_for_repo_artifacts = _get_str_list_cfg(
         "host_mounts_for_repo_artifacts",
     ),
-
-    # Which RPM installers are supported. Internally antlir supports both dnf
-    # and yum, but the OSS appliance(s) are more modern and only support dnf.
-    rpm_installers_supported = _get_str_list_cfg("rpm_installers_supported", default = ["dnf", "yum"]),
 
     # TODO(mpatlasov,lesha): add docs.  This feature is in development, and
     # should not be used yet.

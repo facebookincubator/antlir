@@ -14,6 +14,7 @@ from antlir.fs_utils import Path, temp_dir
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import TempSubvolumes
+from antlir.tests.flavor_helpers import get_rpm_installers_supported
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import check_common_rpm_render, pop_path
 
@@ -51,9 +52,9 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
     "Subclasses run these tests with concrete values of `self._YUM_DNF`."
 
     def setUp(self):
-        if self._YUM_DNF.value not in REPO_CFG.rpm_installers_supported:
+        if self._YUM_DNF.value not in get_rpm_installers_supported():
             self.skipTest(
-                f"'{self._YUM_DNF}' not in '{REPO_CFG.rpm_installers_supported}'"
+                f"'{self._YUM_DNF}' not in '{get_rpm_installers_supported()}'"
             )
 
     def test_rpm_action_item_build_appliance(self):

@@ -54,7 +54,10 @@ python_unittest(
         (100, ":launch_repo_servers"),
         (100, ":repo_servers"),
     ],
-    deps = [":testlib_rpm_base"],
+    deps = [
+        ":testlib_rpm_base",
+        "//antlir:testlib_flavor_helpers",
+    ],
 )
 
 python_library(
