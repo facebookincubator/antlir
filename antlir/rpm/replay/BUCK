@@ -1,0 +1,18 @@
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_library")
+
+export_file(name = "fake_pty.py")
+
+python_library(
+    name = "subvol_rpm_compare",
+    srcs = ["subvol_rpm_compare.py"],
+    resources = {":fake_pty.py": "fake_pty"},
+    visibility = ["//tupperware/cm/antlir/..."],
+    deps = [
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:nspawn",
+        "//antlir/nspawn_in_subvol/plugins:rpm",
+    ],
+)
