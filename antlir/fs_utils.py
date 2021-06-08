@@ -549,8 +549,21 @@ def populate_temp_file_and_rename(
             raise
 
 
-# This list contains the arguments needed to make
-# a btrfs reflink from a different file.
+# This list contains the arguments needed to make a btrfs reflink from a
+# different file.
+#
+# Option rationales:
+#   - The compiler should have detected any collisons on the destination, so
+#     `--no-clobber` is just a failsafe.
+#   - `--no-dereference` is needed since our contract is to copy each
+#     symlink's destination text verbatim.  Not doing this would also risk
+#     following absolute symlinks, reaching OUTSIDE of the source subvolume!
+#   - `--reflink=always` aids efficiency and, more importantly, preserves
+#     "cloned extent" relationships that existed within the source subtree.
+#   - `--sparse=auto` is implied by `--reflink=always`.  The two together
+#     ought to preserve the original sparseness layout,
+#   - `--preserve=all` keeps as much original metadata as possible,
+#     including hardlinks.
 CP_CLONE_CMD = [
     "cp",
     "--recursive",
