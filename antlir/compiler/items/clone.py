@@ -83,24 +83,4 @@ class CloneItem(clone_t, ImageItem):
             ]
         else:
             sources = [self.source]
-        # Option rationales:
-        #   - The compiler should have detected any collisons on the
-        #     destination, so `--no-clobber` is just a failsafe.
-        #   - `--no-dereference` is needed since our contract is to copy
-        #     each symlink's destination text verbatim.  Not doing this
-        #     would also risk following absolute symlinks, reaching OUTSIDE
-        #     of the source subvolume!
-        #   - `--reflink=always` aids efficiency and, more importantly,
-        #     preserves "cloned extent" relationships that existed within
-        #     the source subtree.
-        #   - `--sparse=auto` is implied by `--reflink=always`. The two
-        #     together ought to preserve the original sparseness layout,
-        #   - `--preserve=all` keeps as much original metadata as possible,
-        #     including hardlinks.
-        subvol.run_as_root(
-            [
-                *CP_CLONE_CMD,
-                *sources,
-                subvol.path(self.dest),
-            ]
-        )
+        subvol.run_as_root([*CP_CLONE_CMD, *sources, subvol.path(self.dest)])
