@@ -1,0 +1,10 @@
+load("//antlir/bzl:oss_shim.bzl", "python_unittest")
+
+python_unittest(
+    name = "test-fake-pty",
+    srcs = ["test_fake_pty.py"],
+    resources = {"//antlir/rpm/replay:fake_pty.py": "fake_pty"},
+    deps = [
+        "//antlir:fs_utils",
+    ],
+)
