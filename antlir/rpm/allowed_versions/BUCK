@@ -44,6 +44,7 @@ python_binary(
     main_module = "antlir.rpm.allowed_versions.update_allowed_versions",
     deps = [
         ":envra",
+        "//antlir/rpm:common",
         "//antlir/rpm/allowed_versions:package_group",
         "//antlir/rpm/allowed_versions:version_policy",
         "//antlir/rpm/allowed_versions/facebook:package_group",
