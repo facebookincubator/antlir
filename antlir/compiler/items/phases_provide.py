@@ -12,6 +12,7 @@ subvolume after all the phases have finished executing, in order to
 """
 import itertools
 import subprocess
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Generator
 
@@ -48,6 +49,8 @@ def gen_subvolume_subtree_provides(
 
     subtree_full_path = subvol.path(subtree)
     subtree_exists = False
+
+    filetype_to_relpaths = defaultdict(list)
     # Traverse the subvolume as root, so that we have permission to access
     # everything.
     for type_and_path in subvol.run_as_root(
@@ -96,23 +99,28 @@ def gen_subvolume_subtree_provides(
         # filtered out by `find`.
         assert not is_path_protected(relpath, protected_paths), relpath
 
-        filetype = filetype_bytes.decode()
-        if filetype in ["b", "c", "p", "f", "s"]:
-            yield ProvidesFile(path=relpath)
-        elif filetype == "d":
-            yield ProvidesDirectory(path=relpath)
-        elif filetype == "l":
-            target = Path(
-                subvol.run_as_root(
-                    ["readlink", subtree_full_path / relpath],
-                    stdout=subprocess.PIPE,
-                ).stdout.strip()
-            )
-            yield ProvidesSymlink(path=relpath, target=target)
-        else:  # pragma: no cover
-            raise AssertionError(f"Unknown {filetype} for {abspath}")
         if relpath == b".":
             subtree_exists = True
+
+        filetype = filetype_bytes.decode()
+        filetype_to_relpaths[filetype].append(relpath)
+
+    for filetype, relpaths in filetype_to_relpaths.items():
+        if filetype in ["b", "c", "p", "f", "s"]:
+            yield from [ProvidesFile(path=r) for r in relpaths]
+        elif filetype == "d":
+            yield from [ProvidesDirectory(path=r) for r in relpaths]
+        elif filetype == "l":
+            for relpath in relpaths:
+                target = Path(
+                    subvol.run_as_root(
+                        ["readlink", subtree_full_path / relpath],
+                        stdout=subprocess.PIPE,
+                    ).stdout.strip()
+                )
+                yield ProvidesSymlink(path=relpath, target=target)
+        else:  # pragma: no cover
+            raise AssertionError(f"Unknown {filetype} for {abspath}")
 
     # We should've gotten a CalledProcessError from `find`.
     assert subtree_exists, f"{subtree} does not exist in {subvol.path()}"
