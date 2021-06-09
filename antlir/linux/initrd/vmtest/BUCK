@@ -104,8 +104,8 @@ image.layer(
 
 image.package(
     name = "initrd-vmtest--append.cpio.gz",
-    layer = ":initrd-vmtest",
     format = "cpio.gz",
+    layer = ":initrd-vmtest",
     visibility = [],
     build_appliance = flavor_helpers.default_flavor_build_appliance,
 )

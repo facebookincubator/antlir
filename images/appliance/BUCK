@@ -138,6 +138,7 @@ image.python_unittest(
 # build of the BA will do the right thing already).
 image.package(
     name = "rc-build-appliance.sendstream.zst",
+    format = "sendstream.zst",
     layer = ":rc-build-appliance",
 )
 

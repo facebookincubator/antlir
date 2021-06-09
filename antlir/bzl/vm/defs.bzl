@@ -157,6 +157,7 @@ def _vm_unittest(
     )
     image.package(
         name = actual_test_image,
+        format = "btrfs",
         layer = ":" + actual_test_layer,
         # Do not try and optimize this when building in mode/opt
         optimization = False,

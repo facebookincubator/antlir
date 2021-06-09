@@ -55,6 +55,7 @@ image.layer(
 
 image.package(
     name = "debug-append.cpio.gz",
+    format = "cpio.gz",
     layer = ":debug-append",
     visibility = [
         kernel_get.base_target + "/...",

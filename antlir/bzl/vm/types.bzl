@@ -74,6 +74,7 @@ def _new_vm_disk(
             image_package(
                 name = package_target,
                 layer = layer,
+                format = "btrfs",
                 seed_device = True,
                 writable_subvolume = True,
                 visibility = [],

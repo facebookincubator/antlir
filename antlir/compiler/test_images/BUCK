@@ -771,11 +771,13 @@ image.layer(
 
 image.package(
     name = "child/layer.sendstream",
+    format = "sendstream",
     layer = ":child/layer",
 )
 
 image.package(
     name = "child/layer.btrfs",
+    format = "btrfs",
     layer = ":child/layer",
 )
 
@@ -862,6 +864,7 @@ image.sendstream_layer(
 image.package(
     name = op + ".sendstream",
     layer = ":" + op,
+    format = "sendstream",
     visibility = ["//antlir/..."],
 )
 
@@ -915,6 +918,7 @@ image.layer("empty")  # Just ensure this builds, not checking contents :)
 
 image.package(
     name = "create_ops.tar.gz",
+    format = "tar.gz",
     layer = ":create_ops",
 )
 
@@ -926,12 +930,6 @@ image.layer(
     visibility = ["//antlir/..."],
 )
 
-image.package(
-    name = "create_ops.cpio.gz",
-    layer = ":create_ops",
-)
-
-# Test some explcit package formating
 image.package(
     name = "create_ops_cpio_gz",
     layer = ":create_ops",
@@ -1011,6 +1009,7 @@ image.layer(
 image.package(
     name = "vfat-test.vfat",
     layer = ":vfat-test.layer",
+    format = "vfat",
     size_mb = 32,
     label = "cats",
     visibility = ["//antlir/..."],
