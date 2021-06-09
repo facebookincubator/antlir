@@ -91,6 +91,7 @@ image.layer(
 # the BTRFS seed device on /
 image.package(
     name = "base.cpio.gz",
+    format = "cpio.gz",
     layer = ":base",
     visibility = ["PUBLIC"],
     build_appliance = flavor_helpers.default_flavor_build_appliance,

@@ -29,9 +29,9 @@ def image_package(
         antlir_rule = "user-facing",
         # Build appliance to use when creating packages
         build_appliance = None,
-        # The explicit format to use
+        # The format to use
         # For supported formats, see `--format` here:
-        #     buck run :package-image -- --help
+        #     buck run //antlir:package-image -- --help
         format = None,
         # Size of the target image in MiB
         # This is required when format is vfat/ext3 and optional for btrfs
@@ -49,24 +49,7 @@ def image_package(
     build_appliance = build_appliance or flavor_helpers.default_flavor_build_appliance
 
     if not format:
-        local_layer_rule, format = paths.split_extension(name)
-        compound_format_specifiers = (
-            ".sendstream.zst",
-            ".cpio.gz",
-            ".tar.gz",
-        )
-        for compound_fmt in compound_format_specifiers:
-            if name.endswith(compound_fmt):
-                local_layer_rule = name[:-len(compound_fmt)]
-                format = compound_fmt
-                break
-
-        if not format.startswith("."):
-            fail(name)
-        format = format[1:]
-
-    if "\000" in format or "/" in format:
-        fail(repr(name))
+        fail("`format` is required for image.package")
 
     buck_genrule(
         name = name,
