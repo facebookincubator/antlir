@@ -111,14 +111,25 @@ def gen_subvolume_subtree_provides(
         elif filetype == "d":
             yield from [ProvidesDirectory(path=r) for r in relpaths]
         elif filetype == "l":
-            for relpath in relpaths:
-                target = Path(
-                    subvol.run_as_root(
-                        ["readlink", subtree_full_path / relpath],
-                        stdout=subprocess.PIPE,
-                    ).stdout.strip()
-                )
-                yield ProvidesSymlink(path=relpath, target=target)
+            symlink_paths = [str(subtree_full_path / r) for r in relpaths]
+
+            # xargs --null means each input line needs to be delimited by \0
+            # readlink --zero means each output line ends with \0 instead of \n
+            readlink_vals = subvol.run_as_root(
+                ["xargs", "--null", "readlink", "--zero"],
+                stdout=subprocess.PIPE,
+                input="\0".join(symlink_paths),
+                text=True,
+            ).stdout.split("\0")[:-1]
+
+            assert len(relpaths) == len(readlink_vals), (
+                relpaths,
+                readlink_vals,
+            )
+            yield from [
+                ProvidesSymlink(path=relpath, target=Path(readlink_val))
+                for relpath, readlink_val in zip(relpaths, readlink_vals)
+            ]
         else:  # pragma: no cover
             raise AssertionError(f"Unknown {filetype} for {abspath}")
 
