@@ -286,10 +286,15 @@ def _resolve_envras_for_package_group(
         else:
             maybe_epoch_and = "epoch = ? AND "
             evra_subs.append(evra.epoch)
+        if evra.arch is None:
+            maybe_arch_and = ""
+        else:
+            maybe_arch_and = "arch = ? AND "
+            evra_subs.append(evra.arch)
         evra_queries.append(
-            f"({maybe_epoch_and}version = ? AND release = ? AND arch = ?)"
+            f"({maybe_epoch_and}{maybe_arch_and}version = ? AND release = ?)"
         )
-        evra_subs.extend([evra.version, evra.release, evra.arch])
+        evra_subs.extend([evra.version, evra.release])
 
     n_to_vra_to_e = {}
     query_sql = (

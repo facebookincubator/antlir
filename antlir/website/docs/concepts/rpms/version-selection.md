@@ -47,11 +47,6 @@ For a package group, a policy examines the versions available in the RPM
 snapshot, and looks at some other data source to pick the versions (possibly
 plural!) to allow installing into images. Available policies:
 
-- `"significant_fraction_of_hosts"`: Picks versions, which are on at least 20%
-  of the hosts installing this RPM. It is an error if none of the versions are
-  installed on enough hosts, or if less than 1 million hosts install this
-  package (in the given architecture). Exact thresholds are subject to change,
-  consult the code.
 - A manual version spec: :
 
       {
@@ -68,6 +63,10 @@ plural!) to allow installing into images. Available policies:
   shorthand, we try to will resolve the epoch from the RPM snapshot, and error
   if more than one package matches. You can specify additional architectures,
   e.g. `i686` is how we handle 32-bit binary support on CentOS7.
+
+  The architecture can be the wildcard (`"*"`). Then RPMs of any architecture
+  will pass version-selection criterion if epoch-version-release (or
+  version-release shorthand if any) matches.
 
 It is an error if none of the versions suggested by a policy are available in
 the snapshot.

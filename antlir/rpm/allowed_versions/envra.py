@@ -73,6 +73,10 @@ class SortableENVRA(NamedTuple):
             raise TypeError(
                 f"Cannot compare concrete name with wildcard: {self} {other}"
             )
+        if (self.arch is None) ^ (other.arch is None):
+            raise TypeError(
+                f"Cannot compare concrete arch with wildcard: {self} {other}"
+            )
 
         # Sort lexicographically by name, then architecture
         self_key = (self.name, self.arch)

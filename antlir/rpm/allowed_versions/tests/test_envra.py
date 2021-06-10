@@ -111,6 +111,22 @@ class EnvraTestCase(TestCase):
         with self.assertRaises(TypeError):
             self.assertEqual(e0, e1)
 
+    def test_compare_both_archs_wildcard(self):
+        e = SortableENVRA(
+            epoch=0, name="n", version="v", release="r", arch=None
+        )
+        self.assertEqual(e, e)
+
+    def test_compare_one_arch_wildcard(self):
+        e0 = SortableENVRA(
+            epoch=0, name="n", version="v", release="r", arch=None
+        )
+        e1 = SortableENVRA(
+            epoch=0, name="n", version="v", release="r", arch="a"
+        )
+        with self.assertRaises(TypeError):
+            self.assertEqual(e0, e1)
+
     def test_compare_self_greater_than_other(self):
         e0 = SortableENVRA(
             epoch=0, name="n", version="v", release="r", arch="a"
