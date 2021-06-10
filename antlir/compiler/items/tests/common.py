@@ -15,6 +15,7 @@ from antlir.compiler.requires_provides import (
     ProvidesFile,
     ProvidesSymlink,
 )
+from antlir.config import load_repo_config
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
@@ -42,6 +43,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     version_set_override=None,
     rpm_repo_snapshot=None,
     allowed_host_mount_targets=[],
+    flavor=load_repo_config().flavor_default,
 )
 
 

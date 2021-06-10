@@ -12,6 +12,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
+from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..common import PhaseOrder
 from ..ensure_dirs_exist import (
@@ -19,6 +20,7 @@ from ..ensure_dirs_exist import (
     ensure_subdirs_exist_factory,
 )
 from ..make_subvol import (
+    _check_parent_flavor,
     FilesystemRootItem,
     ParentLayerItem,
     ReceiveSendstreamItem,
@@ -108,6 +110,20 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                 },
             ]
             self.assertEqual(child_content, render_subvol(child))
+
+    def test_parent_layer_flavor_error(self):
+        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+            parent = layer_resource_subvol(__package__, "test-build-appliance")
+            item = ParentLayerItem(from_target="t", subvol=parent)
+
+            child = temp_subvolumes.caller_will_create("child")
+            with self.assertRaisesRegex(
+                AssertionError, "does not match provided flavor"
+            ):
+                item.get_phase_builder(
+                    [item],
+                    DUMMY_LAYER_OPTS_BA._replace(flavor="different flavor"),
+                )(child)
 
     def test_receive_sendstream(self):
         item = ReceiveSendstreamItem(

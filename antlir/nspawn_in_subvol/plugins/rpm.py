@@ -120,10 +120,11 @@ def rpm_nspawn_plugins(
             if plugin_args.attach_antlir_dir != AttachAntlirDirMode.OFF
             else []
         ),
-        # This handles `ShadowPaths` even though it's not RPM-specific
-        # because the two integrate -- a stacked diff will add a default
-        # behavior to shadow the OS `yum` / `dnf` binaries with wrappers
-        # that talk to our repo servers in `nspawn_in_subvol` containers.
+        # This handles `ShadowPaths` even though it's not
+        # RPM-specific because the two integrate -- a stacked diff
+        # will add a default behavior to shadow the OS
+        # `yum` / `dnf` binaries with wrappers that talk to our
+        # repo servers in `nspawn_in_subvol` containers.
         *([ShadowPaths(shadow_paths)] if shadow_paths else []),
         *(
             [
