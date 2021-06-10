@@ -306,24 +306,6 @@ fake_macro_library(
 )
 
 fake_macro_library(
-    name = "vm",
-    srcs = ["vm/defs.bzl"],
-    deps = [
-        ":vm_types",
-    ],
-)
-
-fake_macro_library(
-    name = "vm_types",
-    srcs = [
-        "vm/types.bzl",
-    ],
-    deps = [
-        "//antlir/bzl:shape",
-    ],
-)
-
-fake_macro_library(
     name = "linux_busybox",
     srcs = [
         "linux/busybox.bzl",
