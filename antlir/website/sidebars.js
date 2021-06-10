@@ -80,7 +80,7 @@ module.exports = {
           'VM Runtime': ['runtime/vm-runtime/vm-unittest'],
         },
         'api/shape',
-        'api/genrule/facebook/chef_solo/chef_solo',
+        ...fbInternalOnly(['api/genrule/facebook/chef_solo/chef_solo']),
         'api/flavor_helpers',
       ],
     },
@@ -109,9 +109,11 @@ module.exports = {
       type: 'doc',
       id: 'installing',
     },
-    ...fbInternalOnly([{
+    ...fbInternalOnly([
+      {
         type: 'doc',
         id: 'fb/vision-containers-as-build-artifacts',
-    }]),
+      },
+    ]),
   ],
 };
