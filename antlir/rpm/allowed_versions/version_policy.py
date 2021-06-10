@@ -25,7 +25,13 @@ def _deserialize_evra(
 ) -> SortableEVRA:
     def evr_to_evra(e, v, r):
         # Fixme: this EVRA is implemented as an ENVRA
-        return SortableEVRA(name=None, epoch=e, version=v, release=r, arch=arch)
+        return SortableEVRA(
+            name=None,
+            epoch=e,
+            version=v,
+            release=r,
+            arch=None if arch == "*" else arch,
+        )
 
     if isinstance(evr, str):
         # We support `V-R` (and not yet `E:V-R`) because this is by far the
@@ -72,7 +78,8 @@ class ManualVersionPolicy(VersionPolicy, plugin_kind="manual"):
     ) -> Iterable[Callable[..., FrozenSet[SortableEVRA]]]:
         """
         Returns a config-loader, which parses a user-specified version set
-        in the form XXX (insert docs from wiki).
+        in the form described
+        [here](/docs/concepts/rpms/version-selection/#version-policy).
         """
 
         def load_config(*, packages, versions):

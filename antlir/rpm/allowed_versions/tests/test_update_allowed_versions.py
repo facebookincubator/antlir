@@ -32,6 +32,7 @@ _BAR_RPM = "bar"
 _FOO_BAR_VER = "some_ver"
 _FOO_BAR_REL = "some_rel"
 _FOO_BAR_ARCH = "some_arch"
+_FOO_BAR_NO_ARCH = "*"
 _FOO_JSON = "foo_json"
 _DUP_JSON = "dup_json"
 _VSET_NAME = "test_vset"
@@ -58,7 +59,7 @@ def prepare_version_sets_dir(dir_path):
 
 
 _EMPTY_VERSIONS = {}
-_STR_VERSIONS = {_FOO_BAR_ARCH: [f"{_FOO_BAR_VER}-{_FOO_BAR_REL}"]}
+_STR_VERSIONS = {_FOO_BAR_NO_ARCH: [f"{_FOO_BAR_VER}-{_FOO_BAR_REL}"]}
 _DICT_VERSIONS = {
     _FOO_BAR_ARCH: [
         {
