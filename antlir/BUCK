@@ -13,7 +13,7 @@ python_library(
     visibility = [
         "//antlir/...",
         "//tupperware/cm/antlir/...",
-        "//tupperware/image/scripts:tw_image_stats-library",
+        "//tupperware/image/scripts/...",
     ],
 )
 
@@ -49,8 +49,7 @@ python_library(
         "//scripts/jtru/tw:mixin-check-library",
         "//tupperware/cm/antlir/...",
         "//tupperware/image/composable_services/tests:systemd_test_framework",
-        "//tupperware/image/scripts:make-base-chroot-update-diff-library",
-        "//tupperware/image/scripts/cm/...",
+        "//tupperware/image/scripts/...",
     ],
     deps = [":common"],
 )
