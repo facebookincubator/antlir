@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("@config//:config.bzl", _do_not_use_repo_cfg = "do_not_use_repo_cfg")
 load("//third-party/fedora33/kernel:kernels.bzl", "kernels")
@@ -373,6 +374,21 @@ def _rust_binary(*args, **kwargs):
     # goal already.
     kwargs.pop("allocator", None)
     kwargs.pop("nodefaultlibs", None)
+
+    if not kwargs.get("crate_root", None):
+        topsrc_options = (kwargs.get("name") + ".rs", "main.rs")
+
+        topsrc = []
+        for src in (kwargs.get("srcs", None) or []):
+            if src.startswith(":"):
+                continue
+
+            if paths.basename(src) in topsrc_options:
+                topsrc.append(src)
+
+        if len(topsrc) == 1:
+            kwargs["crate_root"] = topsrc[0]
+
     _wrap_internal(native.rust_binary, args, kwargs)
 
     # automatically generate a unittest target if the caller did not explicitly
