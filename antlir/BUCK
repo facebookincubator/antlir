@@ -405,6 +405,10 @@ python_binary(
 python_library(
     name = "update_package_db",
     srcs = ["update_package_db.py"],
+    visibility = [
+        "//antlir/...",
+        "//tupperware/image/scripts/...",
+    ],
     deps = [
         "//antlir:common",
         "//antlir:fs_utils",
