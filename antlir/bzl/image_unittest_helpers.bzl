@@ -172,6 +172,7 @@ def nspawn_in_subvol_args():
         *[{shadow_paths_repr}],
         *{targets_and_outputs},
         '--append-console',
+        '--attach-antlir-dir=off',
         '--', {binary_path_repr},
     ]
 EOF

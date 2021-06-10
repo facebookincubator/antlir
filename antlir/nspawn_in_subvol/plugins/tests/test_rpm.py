@@ -19,6 +19,7 @@ from antlir.nspawn_in_subvol.args import (
     new_nspawn_opts,
 )
 from antlir.nspawn_in_subvol.common import AttachAntlirDirError
+from antlir.tests.layer_resource import layer_resource_subvol
 
 from .. import rpm as rpm_plugins
 
@@ -208,7 +209,7 @@ class RpmPluginsTestCase(unittest.TestCase):
                 True,
                 pwd.getpwnam("nobody"),
                 [False, True],
-                [1, 0],
+                [2, 0],
             ),  # attach_antlir_dir
             (
                 AttachAntlirDirMode.OFF,
@@ -288,3 +289,18 @@ class RpmPluginsTestCase(unittest.TestCase):
         )
         mock_path.exists.assert_called_once_with()
         mock_path.listdir.assert_called_once_with()
+
+    def test_nspawn_antlir_exists(self):
+        subvol = layer_resource_subvol(__package__, "build-appliance")
+        self.assertEqual(
+            (),
+            rpm_plugins.rpm_nspawn_plugins(
+                opts=new_nspawn_opts(
+                    cmd=[], layer=subvol, user=pwd.getpwnam("root")
+                ),
+                plugin_args=NspawnPluginArgs(
+                    shadow_proxied_binaries=False,
+                    attach_antlir_dir=AttachAntlirDirMode.DEFAULT_ON,
+                ),
+            ),
+        )
