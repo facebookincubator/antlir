@@ -1,5 +1,5 @@
-load("//antlir/bzl/vm:defs.bzl", "vm")
-load("//antlir/bzl/vm:initrd.bzl", "initrd")
+load("//antlir/vm/bzl:defs.bzl", "vm")
+load("//antlir/vm/bzl:initrd.bzl", "initrd")
 load(":defs.bzl", "fedora_kernel")
 
 kernel = fedora_kernel(

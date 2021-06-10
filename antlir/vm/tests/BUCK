@@ -4,7 +4,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl/vm:defs.bzl", "vm")
+load("//antlir/vm/bzl:defs.bzl", "vm")
 
 # Future: when we run a VM the tap device is actually created
 # on the host, but this test runs inside a VM, which needs
