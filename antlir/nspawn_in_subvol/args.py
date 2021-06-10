@@ -490,8 +490,7 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
         "--attach-antlir-dir",
         choices=list(AttachAntlirDirMode),
         type=AttachAntlirDirMode,
-        # Future: `DEFAULT_ON`, also has `EXPLICIT_ON`
-        default=AttachAntlirDirMode.OFF,
+        default=AttachAntlirDirMode.DEFAULT_ON,
         dest="attach_antlir_dir",
         help="Enabling this option will copy the `__antlir__` directory "
         "from the build_appliance used to build the layer into "

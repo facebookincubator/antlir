@@ -117,7 +117,15 @@ def rpm_nspawn_plugins(
     return (
         *(
             [AttachAntlirDir()]
-            if plugin_args.attach_antlir_dir != AttachAntlirDirMode.OFF
+            # In default-on mode, do NOT try to attach the BA's `ANTLIR_DIR`
+            # when the layer itself also has a `ANTLIR_DIR` -- first, this
+            # would fail an assert in `AttachAntlirDir`, and second the
+            # user likely wants to use the layer's `/__antlir__` anyway.
+            if (
+                plugin_args.attach_antlir_dir == AttachAntlirDirMode.DEFAULT_ON
+                and not opts.layer.path(ANTLIR_DIR).exists()
+            )
+            or plugin_args.attach_antlir_dir == AttachAntlirDirMode.EXPLICIT_ON
             else []
         ),
         # This handles `ShadowPaths` even though it's not

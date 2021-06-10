@@ -102,6 +102,10 @@ python_unittest(
     name = "test-rpm",
     srcs = ["tests/test_rpm.py"],
     needed_coverage = [(100, ":rpm")],
+    resources = {
+        layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance",
+    },
+    deps = ["//antlir/nspawn_in_subvol:testlib_base"],
 )
 
 python_library(
