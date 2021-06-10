@@ -354,6 +354,7 @@ class CompilerTestCase(unittest.TestCase):
             version_set_override=None,
             rpm_installer=YumDnf.dnf,
             rpm_repo_snapshot=None,
+            flavor="flavor",
         )
         phase_item_ids = set()
         for builder_maker, item_ids in si.ORDERED_PHASES:

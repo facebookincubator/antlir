@@ -218,6 +218,7 @@ def build_image(args):
         version_set_override=args.version_set_override,
         debug=args.debug,
         allowed_host_mount_targets=frozenset(args.allowed_host_mount_target),
+        flavor=args.flavor,
     )
 
     # This stack allows build items to hold temporary state on disk.

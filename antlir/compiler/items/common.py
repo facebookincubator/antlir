@@ -109,6 +109,7 @@ class LayerOpts(NamedTuple):
     build_appliance: Optional[Subvol]
     layer_target: str
     rpm_installer: YumDnf
+    flavor: str
     # If set, overrides the package manager's default snapshot from the BA.
     rpm_repo_snapshot: Optional[Path]
     target_to_path: Mapping[str, str]

@@ -81,6 +81,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     rpm_installer=None,
     rpm_repo_snapshot=None,
     allowed_host_mount_targets=[],
+    flavor="flavor",
 )
 
 # This should be a faithful transcription of the `feature`
