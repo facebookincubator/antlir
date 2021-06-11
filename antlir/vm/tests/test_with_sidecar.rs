@@ -11,7 +11,7 @@ use tokio::net::TcpStream;
 
 #[tokio::test]
 async fn sidecar() {
-    let sock = SocketAddrV6::new("fe80::200:0ff:fe00:2".parse().unwrap(), 8080, 0, 2);
+    let sock = SocketAddrV6::new("fd00::1".parse().unwrap(), 8080, 0, 2);
     let mut stream = TcpStream::connect(sock).await.unwrap();
 
     // Write some data.

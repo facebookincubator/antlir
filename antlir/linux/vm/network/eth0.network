@@ -1,0 +1,5 @@
+[Match]
+Name=eth0
+
+[Network]
+Address=fd00::2/64

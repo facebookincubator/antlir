@@ -4,14 +4,22 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/linux:defs.bzl", "linux")
 
 def _host():
     """
     Configure the Guest -> Host networking inside the guest vm.
     """
     return [
-        image.install("//antlir/linux/vm/network:host0.link", "/usr/lib/systemd/network/10-host0.link"),
-        image.install("//antlir/linux/vm/network:host0.network", "/usr/lib/systemd/network/10-host0.network"),
+        image.install("//antlir/linux/vm/network:eth0.network", "/usr/lib/systemd/network/10-eth0.network"),
+        image.install("//antlir/linux/vm/network:eth0.link", "/usr/lib/systemd/network/10-eth0.link"),
+        # empty resolv.conf since the only mechanism to refer to the host (by name) is via /etc/hosts
+        linux.config.network.resolv.install(
+            nameservers = [],
+            search_domains = [],
+        ),
+        image.remove("/etc/hosts", must_exist = False),
+        image.install("//antlir/linux/vm/network:etc-hosts", "/etc/hosts"),
     ]
 
 network = struct(
