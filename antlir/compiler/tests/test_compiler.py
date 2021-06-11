@@ -552,7 +552,10 @@ class CompilerTestCase(unittest.TestCase):
                         _FAKE_SUBVOL_META_FLAVOR_FILE,
                     ],
                 ),
-                {"input": REPO_CFG.flavor_default.encode()},
+                {
+                    "input": REPO_CFG.flavor_default.encode(),
+                    "stdout": -3,
+                },
             ),
         ]
 
