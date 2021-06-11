@@ -8,6 +8,7 @@
 load(":compile_image_features.bzl", "compile_image_features")
 load(":constants.bzl", "REPO_CFG")
 load(":container_opts.bzl", "container_opts_t", "normalize_container_opts")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":shape.bzl", "shape")
@@ -73,6 +74,7 @@ Optional arguments:
   - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
     for supported, but less commonly used, kwargs.
     """
+    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
 
     # This is not strictly needed since `image_layer_impl` lacks this kwarg.
     if "features" in image_layer_kwargs:
@@ -107,8 +109,8 @@ Optional arguments:
                 ]),
                 extra_deps = ["//antlir/bzl:image_genrule_layer"],
             )],
-            flavor = flavor,
-            flavor_config_override = flavor_config_override,
+            flavor_config = flavor_config,
         ),
+        _flavor_config = flavor_config,
         **image_layer_kwargs
     )

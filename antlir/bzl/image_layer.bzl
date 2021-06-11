@@ -91,6 +91,7 @@ The consequences of this information hiding are:
 
 load(":compile_image_features.bzl", "compile_image_features")
 load(":constants.bzl", "REPO_CFG")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 
@@ -123,6 +124,8 @@ def image_layer(
     [docs](/docs/tutorials/helper-buck-targets#imagelayer) for the list of
     possible helpers, their respective behaviours, and how to invoke them.
     """
+    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
+
     image_layer_utils.image_layer_impl(
         _rule_type = "image_layer",
         _layer_name = name,
@@ -132,9 +135,9 @@ def image_layer(
             current_target = image_utils.current_target(name),
             parent_layer = parent_layer,
             features = features,
-            flavor = flavor,
-            flavor_config_override = flavor_config_override,
+            flavor_config = flavor_config,
         ),
+        _flavor_config = flavor_config,
         antlir_rule = antlir_rule,
         **image_layer_kwargs
     )
