@@ -77,7 +77,7 @@ class VmTap(object):
             )
             subprocess.run(
                 self.netns.nsenter_as_root(
-                    "ip", "addr", "add", self.host_ipv6_ll, "dev", TAPDEV
+                    "ip", "addr", "add", self.host_ipv6, "dev", TAPDEV
                 ),
                 check=True,
                 capture_output=True,
@@ -124,8 +124,12 @@ class VmTap(object):
         return f"fe80::200:0ff:fe00:1%{TAPDEV}"
 
     @property
-    def host_ipv6_ll(self) -> str:
-        return "fe80::200:0ff:fe00:2"
+    def guest_ipv6(self) -> str:
+        return "fd00::2"
+
+    @property
+    def host_ipv6(self) -> str:
+        return "fd00::1/64"
 
     @property
     def qemu_args(self) -> Iterable[str]:

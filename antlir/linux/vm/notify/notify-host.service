@@ -1,6 +1,6 @@
 [Unit]
 Description=Send a notification that the machine has booted
-After=sshd.service
+After=sshd.service systemd-networkd-wait-online.service
 Requires=sshd.service
 
 [Service]

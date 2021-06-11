@@ -1,11 +1,16 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 
 export_file(
-    name = "host0.link",
+    name = "eth0.link",
     visibility = ["PUBLIC"],
 )
 
 export_file(
-    name = "host0.network",
+    name = "eth0.network",
+    visibility = ["PUBLIC"],
+)
+
+export_file(
+    name = "etc-hosts",
     visibility = ["PUBLIC"],
 )
