@@ -40,19 +40,7 @@ binaries = extract.extract(
 )
 
 ssh_server = [
-    image.clone(":deps", "/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/dropbear.service"),
-    # vmtest synchronizes on sshd.service, so alias it to dropbear
-    image.ensure_file_symlink("/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/sshd.service"),
-    image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
-    image.install("dropbear.tempfiles.conf", "/usr/lib/tmpfiles.d/dropbear.conf"),
-    image.ensure_dirs_exist("/etc/sysconfig"),
-    image.install("dropbear", "/etc/sysconfig/dropbear"),
-    image.ensure_dirs_exist("/root/.ssh"),
-    systemd.install_unit("dropbear-keygen.service"),
-    systemd.enable_unit(
-        "dropbear.service",
-        target = "initrd.target",
-    ),
+    image.ensure_dirs_exist("/root"),
     ssh.test_only_login(),
 ]
 
