@@ -1070,7 +1070,9 @@ class Subvol:
         if isinstance(contents, str):
             contents = contents.encode()
         self.run_as_root(
-            ["tee", self.path(relpath)], input=contents
+            ["tee", self.path(relpath)],
+            input=contents,
+            stdout=subprocess.DEVNULL,
         ).check_returncode()
 
 
