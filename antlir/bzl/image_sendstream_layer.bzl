@@ -5,6 +5,7 @@
 
 load(":constants.bzl", "REPO_CFG")
 load(":compile_image_features.bzl", "compile_image_features")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
@@ -32,6 +33,8 @@ def image_sendstream_layer(
     (we'll support incremental sendstreams eventually) and
     `features` (make your changes in a child layer).
     """
+    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
+
     for bad_kwarg in ["parent_layer", "features"]:
         if bad_kwarg in image_layer_kwargs:
             fail("Unsupported with sendstream_layer", bad_kwarg)
@@ -55,10 +58,10 @@ def image_sendstream_layer(
                     }],
                 ),
             )],
-            flavor = flavor,
-            flavor_config_override = flavor_config_override,
+            flavor_config = flavor_config,
             subvol_name = subvol_name,
         ),
+        _flavor_config = flavor_config,
         antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

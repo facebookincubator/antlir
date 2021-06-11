@@ -50,6 +50,7 @@ def _image_layer_impl(
         _rule_type,
         _layer_name,
         _make_subvol_cmd,
+        _flavor_config,
         # For now, layer implementations mark this explicitly.  I doubt that
         # "antlir-private" is a sensible default here.
         antlir_rule,
@@ -191,6 +192,7 @@ def _image_layer_impl(
         # keep our output JSON out of the distributed Buck cache.  See
         # the docs for BuildRule::isCacheable.
         cacheable = False,
+        flavor_config = _flavor_config,
         type = _rule_type,  # For queries
         visibility = visibility,
         antlir_rule = antlir_rule,

@@ -9,7 +9,6 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl/image/feature:new.bzl", "FEATURES_FOR_LAYER_PREFIX", "feature_new", "normalize_features")
 load(":constants.bzl", "REPO_CFG")
-load(":flavor_helpers.bzl", "flavor_helpers")
 load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -19,8 +18,7 @@ def compile_image_features(
         current_target,
         parent_layer,
         features,
-        flavor,
-        flavor_config_override,
+        flavor_config,
         subvol_name = None):
     '''
     Arguments
@@ -33,7 +31,6 @@ def compile_image_features(
     if features == None:
         features = []
 
-    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
     target_tagger = new_target_tagger()
 
     if flavor_config.build_appliance:
@@ -58,12 +55,12 @@ def compile_image_features(
                 )}]),
             )] if parent_layer else []
         ),
-        flavors = [flavor],
+        flavors = [flavor_config.name],
     )
     normalized_features = normalize_features(
         [":" + features_for_layer],
         current_target,
-        flavor = flavor,
+        flavor = flavor_config.name,
     )
 
     vset_override_name = None
@@ -137,7 +134,7 @@ EOF
     '''.format(
         subvol_name_quoted = shell.quote(subvol_name or "volume"),
         current_target_quoted = shell.quote(current_target),
-        flavor_quoted = shell.quote(flavor),
+        flavor_quoted = shell.quote(flavor_config.name),
         quoted_child_feature_json_args = " ".join([
             "--child-feature-json $(location {})".format(t)
             for t in normalized_features.targets

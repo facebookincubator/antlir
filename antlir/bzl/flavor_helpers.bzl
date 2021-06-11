@@ -69,6 +69,7 @@ load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 
 def _validate_flavor_config(
+        name,
         build_appliance,
         rpm_installer,
         rpm_repo_snapshot = None,
@@ -76,6 +77,7 @@ def _validate_flavor_config(
     """
     Arguments
 
+    - `name`: The name of the flavor
     - `build_appliance`: Path to a layer target of a build appliance,
     containing an installed `rpm_repo_snapshot()`, plus an OS image
     with other image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
@@ -110,6 +112,7 @@ def _validate_flavor_config(
         build_appliance = None
 
     return struct(
+        name = name,
         build_appliance = build_appliance,
         rpm_installer = rpm_installer,
         rpm_repo_snapshot = (
@@ -136,6 +139,7 @@ def _get_flavor_config(flavor, flavor_config_override):
     check_flavor_exists(flavor)
 
     flavor_config = dict(REPO_CFG.flavor_to_config[flavor])
+    flavor_config["name"] = flavor
 
     override_dict = structs.to_dict(flavor_config_override) if flavor_config_override else {}
     flavor_config.update(override_dict)
