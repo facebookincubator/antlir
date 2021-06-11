@@ -79,9 +79,13 @@ class _PluginRef(NamedTuple):
     plugin: KnownPluggable
 
     def dir(self, snapshot_root: Path) -> Path:
-        return (
-            snapshot_root / _PLUGGABLE_TO_DIR_NAME[self.pluggable] / self.kind()
-        )
+        if hasattr(self.plugin, "SNAPSHOT_DIR"):
+            snapshot_dir = self.plugin.SNAPSHOT_DIR
+        else:
+            snapshot_dir = (
+                Path(_PLUGGABLE_TO_DIR_NAME[self.pluggable]) / self.kind()
+            )
+        return snapshot_root / snapshot_dir
 
     def kind(self) -> str:
         return self.plugin._pluggable_kind
@@ -108,10 +112,11 @@ class _PluginDriver:
         ]
 
     async def _update_snapshot(self, plugin):
-        plugin_dir = plugin.dir(self._snapshot_root)
-        os.makedirs(plugin_dir.dirname(), exist_ok=True)
-        with populate_temp_dir_and_rename(plugin_dir, overwrite=True) as td:
-            await plugin.plugin.snapshot(td)
+        if hasattr(plugin.plugin, "snapshot"):
+            plugin_dir = plugin.dir(self._snapshot_root)
+            os.makedirs(plugin_dir.dirname(), exist_ok=True)
+            with populate_temp_dir_and_rename(plugin_dir, overwrite=True) as td:
+                await plugin.plugin.snapshot(td)
 
     async def update_snapshots(self):
         "Runs the snapshots in parallel for a modest speedup"
