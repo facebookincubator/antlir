@@ -9,7 +9,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":kernel.bzl", "kernel_artifacts_t", "kernel_t")
 
-def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, extra_modules = None, include_vmlinux = True):
+def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = True):
     """
     Build the set of kernel artifact targets needed for `antlir.vm`.  This returns an instance
     of the `kernel_t` shape.
@@ -61,8 +61,6 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, extra_modules = None,
 
             cp --reflink=auto -R "$(location {rpm_exploded})/lib/modules/{uname}"/* "lib/modules/{uname}/"
 
-            {cp_extra_modules}
-
             # run depmod here so that we can include the results in the layer we build
             # from this.
             depmod --basedir="$OUT" {uname}
@@ -74,15 +72,6 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, extra_modules = None,
         """.format(
             uname = uname,
             rpm_exploded = rpm_exploded,
-            # some older kernels were never built with the 9p fs module, so copy in
-            # any modules that are checked in to fbcode that might be missing from
-            # the rpm but are necessary for vmtest
-            cp_extra_modules = """
-                extra_mod_dir="$(location {extra_modules})/modules/{uname}"
-                if [[ -d  "$extra_mod_dir" ]]; then
-                    cp -R "$extra_mod_dir"/* "lib/modules/{uname}/kernel/"
-                fi
-            """.format(extra_modules = extra_modules, uname = uname) if extra_modules else "",
         ),
         visibility = [],
         antlir_rule = "user-internal",
