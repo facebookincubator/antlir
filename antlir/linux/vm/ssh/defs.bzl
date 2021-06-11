@@ -11,8 +11,20 @@ def _test_only_login():
     only for testing and should never be installed into a production image.
     """
     return [
-        image.ensure_subdirs_exist("/root", ".ssh"),
-        image.install("//antlir/linux/vm/ssh:pubkey", "/root/.ssh/authorized_keys"),
+        image.ensure_subdirs_exist(
+            "/root",
+            ".ssh",
+            user = "root",
+            group = "root",
+            mode = "u+rx",
+        ),
+        image.install(
+            "//antlir/linux/vm/ssh:pubkey",
+            "/root/.ssh/authorized_keys",
+            user = "root",
+            group = "root",
+            mode = "u+r",
+        ),
     ]
 
 ssh = struct(

@@ -5,6 +5,7 @@ load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
+load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
@@ -28,6 +29,38 @@ systemd_debug = [
     ),
 ]
 
+extract.source_layer(
+    name = "debug-deps",
+    features = [
+        image.rpms_install([
+            "dropbear",
+            "systemd",
+        ]),
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+)
+
+ssh_server = [
+    image.clone(":debug-deps", "/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/dropbear.service"),
+    image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
+    image.install("dropbear.tmpfiles.conf", "/usr/lib/tmpfiles.d/dropbear.conf"),
+    image.ensure_dirs_exist("/etc/sysconfig"),
+    image.install("dropbear", "/etc/sysconfig/dropbear"),
+    systemd.install_unit("dropbear-keygen.service"),
+    systemd.enable_unit(
+        "dropbear.service",
+        target = "initrd.target",
+    ),
+    # vmtest synchronizes on sshd.service, so alias it to dropbear
+    image.ensure_file_symlink("/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/sshd.service"),
+    image.ensure_dirs_exist(
+        "/root/.ssh",
+        user = "root",
+        group = "root",
+        mode = "u+rx",
+    ),
+]
+
 debug_features = [
     linux.busybox.install(
         DEPS_TARGET,
@@ -42,6 +75,16 @@ debug_features = [
     systemd.enable_unit("debug-shell.service"),
     systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
     systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
+    ssh_server,
+    extract.extract(
+        binaries = [
+            "/usr/sbin/dropbear",
+            "/usr/bin/dropbearkey",
+        ],
+        dest = "/",
+        source = ":debug-deps",
+        flavor = REPO_CFG.antlir_linux_flavor,
+    ),
 ]
 
 image.layer(
@@ -63,15 +106,4 @@ image.package(
         "//scripts/dschatzberg/vm/...",
     ],
     build_appliance = flavor_helpers.default_flavor_build_appliance,
-)
-
-# A full layer that is the combined set of debug features and the base initrd.
-# This is useful for manually getting a shell with the -container target
-# without having to boot up a full vm.
-image.layer(
-    name = "debug",
-    parent_layer = "//antlir/linux/initrd:base",
-    features = debug_features,
-    visibility = ["//antlir/linux/initrd/..."],
-    flavor = REPO_CFG.antlir_linux_flavor,
 )
