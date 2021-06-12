@@ -420,6 +420,7 @@ export_file(name = "tests/needs-carrot.spec")
         name = "test-yum-dnf-from-snapshot-{}".format(variant),
         srcs = ["tests/test_yum_dnf_from_snapshot.py"],
         container_opts = container_opts,
+        flavor = "antlir_test",
         # This is necessary because our CI environment does not guarantee that
         # `/var/lib/dnf` is installed.
         layer = TEST_IMAGE_PREFIX + "build_appliance_testing",

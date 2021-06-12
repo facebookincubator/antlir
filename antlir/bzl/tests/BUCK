@@ -52,6 +52,7 @@ image.python_unittest(
 image.python_unittest(
     name = "test-image-unittest-repo-server",
     srcs = ["test_image_unittest_repo_server.py"],
+    flavor = "antlir_test",
     layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     container_opts = image.opts(shadow_proxied_binaries = True),
     run_as_user = "root",

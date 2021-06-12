@@ -22,7 +22,7 @@ from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.tests.flavor_helpers import (
     get_rpm_installers_supported,
-    render_flavor_default,
+    render_flavor,
 )
 from antlir.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
 from antlir.tests.subvol_helpers import (
@@ -447,7 +447,7 @@ class ImageLayerTestCase(unittest.TestCase):
                         ".meta": [
                             "(Dir)",
                             {
-                                "flavor": [render_flavor_default()],
+                                "flavor": [render_flavor()],
                                 "private": [
                                     "(Dir)",
                                     {
@@ -484,7 +484,7 @@ class ImageLayerTestCase(unittest.TestCase):
                         ".meta": [
                             "(Dir)",
                             {
-                                "flavor": [render_flavor_default()],
+                                "flavor": [render_flavor()],
                                 "private": [
                                     "(Dir)",
                                     {

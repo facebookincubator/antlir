@@ -24,11 +24,6 @@ QUERY_TARGETS_AND_OUTPUTS_SEP = "|"
 # flavor names under a specific config group
 BUCK_CONFIG_FLAVOR_NAME_DELIMITER = "#"
 
-def _get_flavor_default():
-    cfg_name = "flavor_default"
-    val = native.read_config(CONFIG_KEY, cfg_name)
-    return val or do_not_use_repo_cfg.get(cfg_name) or "default"
-
 def _get_flavor_config(flavor_name = None):
     flavor_to_config = do_not_use_repo_cfg.get("flavor_to_config", {})
     for flavor, flavor_config in flavor_to_config.items():
@@ -40,7 +35,7 @@ def _get_flavor_config(flavor_name = None):
 
     return flavor_to_config
 
-# Use `_get_optional_str_cfg` or `_get_str_list_cfg` instead.
+# Use `_get_str_cfg` or `_get_str_list_cfg` instead.
 def _do_not_use_directly_get_cfg(name, default = None):
     # Allow `buck -c` overrides from the command-line
     val = native.read_config(CONFIG_KEY, name)
@@ -55,8 +50,11 @@ def _do_not_use_directly_get_cfg(name, default = None):
 
 # We don't have "globally required" configs because code that requires a
 # config will generally loudly fail on a config value that is None.
-def _get_optional_str_cfg(name, default = None):
-    return _do_not_use_directly_get_cfg(name, default = default)
+def _get_str_cfg(name, default = None, allow_none = False):
+    ret = _do_not_use_directly_get_cfg(name, default = default)
+    if not allow_none and ret == None:
+        fail("Repo config must set key {}".format(name))
+    return ret
 
 # Defaults to the empty list if the config is not set.
 #
@@ -140,8 +138,9 @@ repo_config_t = shape.shape(
     artifact = shape.dict(str, str),
     host_mounts_allowed_in_targets = shape.field(shape.list(str), optional = True),
     host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
-    flavor_to_config = shape.dict(str, flavor_config_t),
+    flavor_available = shape.list(str),
     flavor_default = str,
+    flavor_to_config = shape.dict(str, flavor_config_t),
     antlir_linux_flavor = str,
 )
 
@@ -175,17 +174,14 @@ REPO_CFG = shape.new(
     host_mounts_for_repo_artifacts = _get_str_list_cfg(
         "host_mounts_for_repo_artifacts",
     ),
-
-    # TODO(mpatlasov,lesha): add docs.  This feature is in development, and
-    # should not be used yet.
-    #
+    flavor_available = _get_str_list_cfg("flavor_available"),
+    flavor_default = _get_str_cfg("flavor_default"),
+    flavor_to_config = _get_flavor_config(),
     # KEEP THIS DICTIONARY SMALL.
     #
     # For each `feature`, we have to emit as many targets as there are
     # elements in this list, because we do not know the version set that the
     # including `image.layer` will use.  This would be fixable if Buck
     # supported providers like Bazel does.
-    flavor_to_config = _get_flavor_config(),
-    flavor_default = _get_flavor_default(),
-    antlir_linux_flavor = _get_optional_str_cfg("antlir_linux_flavor"),
+    antlir_linux_flavor = _get_str_cfg("antlir_linux_flavor", allow_none = True),
 )

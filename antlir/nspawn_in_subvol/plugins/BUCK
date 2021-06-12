@@ -170,6 +170,7 @@ image.layer(
         image.install("tests/shadow_me", "rpm_test/carrot.txt"),
         image.install("tests/i_will_shadow", "i_will_shadow"),
     ],
+    flavor = "antlir_test",
 )
 
 # This test isn't here for line coverage, but to cover the integration

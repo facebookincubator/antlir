@@ -118,9 +118,21 @@ def parse_args(args) -> argparse.Namespace:
         help="The flavor of the image that will be written into `/.meta` "
         "directory.",
     )
+    parser.add_argument(
+        "--unsafe-bypass-flavor-check",
+        action="store_true",
+        help="Do NOT use this",
+    )
 
     add_targets_and_outputs_arg(parser)
     return Path.parse_args(parser, args)
+
+
+def _overwrite_meta_flavor(*, flavor: str, subvol: Subvol):
+    # We only write the flavor if the META_DIR exists, as otherwise it's a
+    # test image that doesn't need a flavor.
+    if subvol.path(META_FLAVOR_FILE.dirname()).exists():
+        subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
 
 
 def _check_or_write_meta_flavor(
@@ -151,15 +163,8 @@ def _check_or_write_meta_flavor(
             f"The flavor `{flavor}` given differs from the "
             f"flavor `{subvol_flavor}` already written in the subvol`."
         )
-    elif subvol.path(META_FLAVOR_FILE.dirname()).exists():
-        # We only write the flavor if the META_DIR exists as
-        # otherwise it's a test image that doesn't need flavor.
-
-        # We have to allow writing to this image as sendstreams
-        # use `btrfs receive` which sets the image as readonly
-        # by default.
-        subvol.set_readonly(False)
-        subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
+    else:
+        _overwrite_meta_flavor(flavor=flavor, subvol=subvol)
 
 
 def compile_items_to_subvol(
@@ -219,6 +224,7 @@ def build_image(args):
         debug=args.debug,
         allowed_host_mount_targets=frozenset(args.allowed_host_mount_target),
         flavor=args.flavor,
+        unsafe_bypass_flavor_check=args.unsafe_bypass_flavor_check,
     )
 
     # This stack allows build items to hold temporary state on disk.
@@ -233,11 +239,14 @@ def build_image(args):
                 layer_opts=layer_opts,
             ),
         )
-        _check_or_write_meta_flavor(
-            flavor=args.flavor,
-            subvol=subvol,
-            build_appliance=layer_opts.build_appliance,
-        )
+        if layer_opts.unsafe_bypass_flavor_check:
+            _overwrite_meta_flavor(flavor=args.flavor, subvol=subvol)
+        else:
+            _check_or_write_meta_flavor(
+                flavor=args.flavor,
+                subvol=subvol,
+                build_appliance=layer_opts.build_appliance,
+            )
         # Build artifacts should never change. Run this BEFORE the exit_stack
         # cleanup to enforce that the cleanup does not touch the image.
         subvol.set_readonly(True)
