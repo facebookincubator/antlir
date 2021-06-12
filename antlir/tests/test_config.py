@@ -23,6 +23,7 @@ class RepoConfigTestCase(unittest.TestCase):
             "artifact": {
                 "test.artifact": "//build:artifact",
             },
+            "flavor_available": ["default", "all_jobs"],
             "flavor_default": "default",
             "antlir_linux_flavor": "default",
             "flavor_to_config": {

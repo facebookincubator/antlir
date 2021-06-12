@@ -1,6 +1,5 @@
 # IMPORTANT: Do NOT use `oss_shim.bzl` here, instead load fbcode macros via
 # the shim in `defs.bzl`.
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -43,9 +42,6 @@ hello_tar_hash = (
     "sha256:" +
     "dd83365abc69fe39990096a9396d9d2d6fbf75f849ab1640a10fdf9614d8d03d"
 )
-
-# The default flavor override that is commonly used in this test.
-use_build_appliance_testing = image.opts(build_appliance = ":build_appliance_testing")
 
 defs.buck_genrule(
     name = "hello_world_tar_generator.sh",
@@ -133,10 +129,8 @@ defs.export_file(name = "shadow_me")
             image.install(":shadow_me", "/shadow_me"),
             image.rpms_install(["rpm-test-milk"]),
         ],
-        flavor_config_override = image.opts(
-            rpm_installer = rpm_installer,
-            build_appliance = ":build_appliance_testing",
-        ),
+        flavor = "antlir_test",
+        flavor_config_override = image.opts(rpm_installer = rpm_installer),
         visibility = ["//antlir/compiler/..."],
     )
     for rpm_installer in flavor_helpers.get_rpm_installers_supported()
@@ -157,6 +151,7 @@ image.genrule_layer(
         shadow_paths = [("/shadow_me", "/rpm_test/milk.txt")],
         # The `internal_only_*` things are covered by the stuff that uses them.
     ),
+    flavor = "antlir_test",
     parent_layer = ":validates-dnf-build-appliance",
     rule_type = "test_genrule_layer",
     user = "root",
@@ -212,6 +207,7 @@ feature.new(
             mode = "a+rwx",
         ),
     ],
+    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -223,6 +219,7 @@ feature.new(
             mode = "a+rwx",
         ),
     ],
+    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -259,6 +256,7 @@ feature.new(
             groupname = "ggg",
         ),
     ],
+    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -275,6 +273,7 @@ feature.new(
         # /dev/null is allowlisted to be a dangling symlink
         image.ensure_file_symlink("/dev/null", "/foo/symlink_to_dev_null"),
     ],
+    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -317,7 +316,7 @@ image.layer(
             "rpm-test-cheese",
         ]),
     ],
-    flavor_config_override = use_build_appliance_testing,
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/items/..."],
 )
 
@@ -344,7 +343,7 @@ image.layer(
             image.source(":rpm-test-cheese-2-1.rpm"),
         ]),
     ],
-    flavor_config_override = use_build_appliance_testing,
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -357,8 +356,8 @@ image.layer(
         "rpm-test-cake",
         "rpm-test-cheese",
     ])],
+    flavor = "antlir_test",
     flavor_config_override = image.opts(
-        build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
     ),
     visibility = ["//antlir/compiler/..."],
@@ -395,6 +394,7 @@ feature.new(
             "foo",
         ),
     ],
+    flavors = ["antlir_test"],
     # `rpm-test-*` RPMs may not be mentioned by all of the allowed version
     # sets, so just emit this feature for one.
     visibility = ["//antlir/compiler/..."],
@@ -407,6 +407,7 @@ feature.new(
         image.host_file_mount("/dev/null", "/dev_null"),
         image.layer_mount(":hello_world_base", "/meownt"),
     ],
+    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -531,6 +532,7 @@ feature.new(
             "/foo/bar/installed/solo-exe.sh",
         ),
     ],
+    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -589,6 +591,7 @@ feature.new(
         ":feature_tar_and_rpms",
         ":feature_symlinks",
     ],
+    flavors = ["antlir_test"],
     # We can only build for "no version set" because our child
     # `feature_tar_and_rpms` provides no other version sets.
     visibility = ["//antlir/compiler/..."],
@@ -607,6 +610,7 @@ feature.new(
     features = [
         image.ensure_subdirs_exist("/", "a/b"),
     ],
+    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -615,6 +619,7 @@ feature.new(
     features = [
         image.remove("/a"),
     ],
+    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -626,6 +631,7 @@ feature.new(
             must_exist = False,
         ),
     ],
+    flavors = ["antlir_test"],
 )
 
 # This feature is added to both layers, which validates that `image.layer`
@@ -635,6 +641,7 @@ feature.new(
 feature.new(
     name = "feature_repeated_removal",
     features = [":feature_remove_nonexistent"],
+    flavors = ["antlir_test"],
 )
 
 # `test-add-remove-conflict` compiles this feature to produce a failure
@@ -644,6 +651,7 @@ feature.new(
         ":feature_addremove_conflict_add",
         ":feature_addremove_conflict_remove",
     ],
+    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -690,7 +698,7 @@ image.layer(
             "//",  # Double-slash tests path normalization
         ),
     ],
-    flavor_config_override = use_build_appliance_testing,
+    flavor = "antlir_test",
     # This tells our hypothetical runtime that in order to mount this layer,
     # it must invoke the "chicken" mount source (which might just download
     # and unpack a serialized versions of this layer).
@@ -727,7 +735,7 @@ image.layer(
         image.layer_mount(":hello_world_base", "/mounted_hello"),
         image.rpms_install(["rpm-test-carrot"]),  # Compact syntax for RPM installation.
     ],
-    flavor_config_override = use_build_appliance_testing,
+    flavor = "antlir_test",
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
     visibility = ["//antlir/compiler/..."],
@@ -741,8 +749,8 @@ image.layer(
         # install in the child layer (via `feature_tar_and_rpms`).
         image.rpms_install(["rpm-test-cheese"]),
     ],
+    flavor = "antlir_test",
     flavor_config_override = image.opts(
-        build_appliance = ":build_appliance_testing",
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
     ),
 )
@@ -765,7 +773,7 @@ image.layer(
         image.tarball(":hello_world.tar", "/foo/extracted_hello"),
         image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
     ],
-    flavor_config_override = use_build_appliance_testing,
+    flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )
 
@@ -796,7 +804,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],
-    flavor_config_override = use_build_appliance_testing,
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -807,7 +815,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-1-1.rpm"]),
     ],
-    flavor_config_override = use_build_appliance_testing,
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -818,7 +826,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-3-1.rpm"]),
     ],
-    flavor_config_override = use_build_appliance_testing,
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -829,7 +837,7 @@ image.layer(
     features = [
         image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
     ],
-    flavor_config_override = use_build_appliance_testing,
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -944,9 +952,22 @@ image.package(
     visibility = ["//antlir/..."],
 )
 
+# This is referenced by many images in this project via "flavor_to_config"
 add_rpm_repo_snapshots_layer(
     name = "build_appliance_testing",
     dnf_snapshot = "//antlir/rpm:repo-snapshot-for-tests" if "dnf" in flavor_helpers.get_rpm_installers_supported() else None,
+    # HERE BE DRAGONS: We need this BA to have flavor `antlir_test`, since
+    # its default RPM snapshots are specific to these tests. At the same
+    # time, it has to derive from a real, working, production BA, whose
+    # flavor is surely different.
+    flavor = "antlir_test",
+    flavor_config_override = image.opts(
+        # We must set `build_appliance` since the default would cause
+        # a circular dependency -- this very target **IS** the flavor's BA.
+        build_appliance = flavor_helpers.default_flavor_build_appliance,
+        # `parent_layer`'s flavor does not match ours, and this is OK here.
+        unsafe_bypass_flavor_check = True,
+    ),
     make_caches_for_other_snapshot_installers = [
         ("//antlir/rpm:non-default-repo-snapshot-for-tests", installer)
         for installer in flavor_helpers.get_rpm_installers_supported()

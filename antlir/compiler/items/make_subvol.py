@@ -45,7 +45,8 @@ class ParentLayerItem(ImageItem):
 
         def builder(subvol: Subvol):
             subvol.snapshot(parent.subvol)
-            _check_parent_flavor(parent.subvol, layer_opts.flavor)
+            if not layer_opts.unsafe_bypass_flavor_check:
+                _check_parent_flavor(parent.subvol, layer_opts.flavor)
             # This assumes that the parent has everything mounted already.
             ensure_meta_dir_exists(subvol, layer_opts)
 
@@ -95,5 +96,9 @@ class ReceiveSendstreamItem(ImageItem):
                 item.source
             ) as sendstream, subvol.receive(sendstream):
                 pass
+            # The normal item contract is "leave the SV read-write" -- the
+            # compiler will mark it RO at the end.  This is important e.g.
+            # for setting `/.meta/flavor`.
+            subvol.set_readonly(False)
 
         return builder

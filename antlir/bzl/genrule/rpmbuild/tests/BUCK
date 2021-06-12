@@ -55,9 +55,10 @@ image.python_unittest(
 # parent_layer, we need to import it before we install the RPM (below).
 image_import_rpm_public_key_layer(
     name = "install-rpm-pubkey",
-    # We use the default BA here so that we have users and utilities set up
-    # for the unit test below.
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    flavor = "antlir_test",
+    # Inherit from the BA so that we have users and utilities set up for the
+    # unit test below.
+    parent_layer = "//antlir/compiler/test_images:build_appliance_testing",
     pubkeys = [
         image.source(
             "//antlir/rpm:gpg-test-public-key",
@@ -87,9 +88,7 @@ image.layer(
     ],
     # The test BA has yum/dnf conf with gpgcheck=1 and localpkg_gpgcheck=1 so
     # installing an unsigned RPM will fail.
-    flavor_config_override = image.opts(
-        build_appliance = "//antlir/compiler/test_images:build_appliance_testing",
-    ),
+    flavor = "antlir_test",
 )
 
 # Check the result of installing the RPM we built.
@@ -97,4 +96,5 @@ image.python_unittest(
     name = "test-install-signed-toy-rpm",
     srcs = ["test_install_signed_toy_rpm.py"],
     layer = ":install-signed-toy-rpm",
+    flavor = "antlir_test",
 )

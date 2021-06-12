@@ -12,7 +12,7 @@ import unittest
 from antlir.config import load_repo_config
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
-from antlir.tests.flavor_helpers import render_flavor_default
+from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import render_subvol
 
@@ -38,7 +38,7 @@ class AddRemoveConflictTestCase(unittest.TestCase):
             ".meta": [
                 "(Dir)",
                 {
-                    "flavor": [render_flavor_default()],
+                    "flavor": [render_flavor()],
                     "private": [
                         "(Dir)",
                         {

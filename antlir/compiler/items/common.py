@@ -117,6 +117,7 @@ class LayerOpts(NamedTuple):
     version_set_override: Optional[str]
     debug: bool = False
     allowed_host_mount_targets: FrozenSet[str] = frozenset()
+    unsafe_bypass_flavor_check: bool = False
 
     def requires_build_appliance(self) -> Subvol:
         assert self.build_appliance is not None, (

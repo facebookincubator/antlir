@@ -22,7 +22,6 @@ from antlir.compiler.items import (
     symlink,
     tarball,
 )
-from antlir.config import load_repo_config
 from antlir.fs_utils import META_FLAVOR_FILE, Path, temp_dir
 from antlir.nspawn_in_subvol import ba_runner
 from antlir.rpm.yum_dnf_conf import YumDnf
@@ -59,7 +58,6 @@ _FIND_ARGS = [
 ]
 _TEST_BUILD_APPLIANCE = "test-build-appliance"
 _FAKE_SUBVOL_META_FLAVOR_FILE = _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE
-REPO_CFG = load_repo_config()
 
 
 def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
@@ -273,7 +271,7 @@ class CompilerTestCase(unittest.TestCase):
                         "--child-feature-json",
                         si.TARGET_TO_PATH[si.mangle(si.T_KITCHEN_SINK)],
                         "--flavor",
-                        REPO_CFG.flavor_default,
+                        "antlir_test",
                     ]
                     + args
                 )
@@ -287,6 +285,7 @@ class CompilerTestCase(unittest.TestCase):
         parent_feature_json,
         parent_dep,
         run_as_root_side_effect=None,
+        extra_args=None,
     ):
         """
         Invoke the compiler on the targets from the "sample_items" test
@@ -311,7 +310,8 @@ class CompilerTestCase(unittest.TestCase):
                     *parent_feature_json,
                     "--targets-and-outputs",
                     tf.name,
-                ],
+                ]
+                + (extra_args or []),
                 run_as_root_side_effect=run_as_root_side_effect,
             )
             self.assertEqual(
@@ -491,7 +491,7 @@ class CompilerTestCase(unittest.TestCase):
                 / META_FLAVOR_FILE
             ):
                 return "badflavor"
-            return REPO_CFG.flavor_default
+            return "antlir_test"
 
         with self.assertRaisesRegex(AssertionError, "of the build appliance"):
             self._compiler_run_as_root_calls(
@@ -517,7 +517,7 @@ class CompilerTestCase(unittest.TestCase):
         subvol_utils.Subvol, "read_path_text", autospec=True
     )
     def test_flavor_file_exists_do_nothing(self, mock_read_path_text):
-        mock_read_path_text.side_effect = lambda x, y: REPO_CFG.flavor_default
+        mock_read_path_text.side_effect = lambda x, y: "antlir_test"
 
         with self._setup_path_exists(_FAKE_SUBVOL_META_FLAVOR_FILE):
             run_as_root_calls = self._compiler_run_as_root_calls(
@@ -535,7 +535,7 @@ class CompilerTestCase(unittest.TestCase):
         def read_path_text_side_effect(self, relpath):
             if self.path(relpath) == _FAKE_SUBVOL_META_FLAVOR_FILE:
                 return "badflavor"
-            return REPO_CFG.flavor_default
+            return "antlir_test"
 
         with self._setup_path_exists(_FAKE_SUBVOL_META_FLAVOR_FILE):
             with self.assertRaisesRegex(AssertionError, "given differs"):
@@ -543,29 +543,32 @@ class CompilerTestCase(unittest.TestCase):
                     parent_feature_json=[], parent_dep={}
                 )
 
-    def test_write_flavor(self):
-        calls = [
-            (
-                (
-                    [
-                        "tee",
-                        _FAKE_SUBVOL_META_FLAVOR_FILE,
-                    ],
-                ),
-                {
-                    "input": REPO_CFG.flavor_default.encode(),
-                    "stdout": -3,
-                },
-            ),
-        ]
+    _WRITE_FLAVOR_CALLS = [
+        (
+            (["tee", _FAKE_SUBVOL_META_FLAVOR_FILE],),
+            {"input": b"antlir_test", "stdout": -3},
+        ),
+    ]
 
+    def test_write_flavor(self):
         with self._setup_path_exists(
             _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE.dirname()
         ):
-            run_as_root_calls = self._compiler_run_as_root_calls(
+            actual_calls = self._compiler_run_as_root_calls(
                 parent_feature_json=[], parent_dep={}
             )
-            self._assert_call_subset(calls, run_as_root_calls)
+            self._assert_call_subset(self._WRITE_FLAVOR_CALLS, actual_calls)
+
+    def test_overwrite_flavor(self):
+        with self._setup_path_exists(
+            _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE
+        ):
+            actual_calls = self._compiler_run_as_root_calls(
+                parent_feature_json=[],
+                parent_dep={},
+                extra_args=["--unsafe-bypass-flavor-check"],
+            )
+            self._assert_call_subset(self._WRITE_FLAVOR_CALLS, actual_calls)
 
 
 if __name__ == "__main__":

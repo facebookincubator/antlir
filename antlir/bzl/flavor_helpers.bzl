@@ -73,7 +73,9 @@ def _validate_flavor_config(
         build_appliance,
         rpm_installer,
         rpm_repo_snapshot = None,
-        rpm_version_set_overrides = None):
+        rpm_version_set_overrides = None,
+        version_set_path = None,
+        unsafe_bypass_flavor_check = False):
     """
     Arguments
 
@@ -93,6 +95,7 @@ def _validate_flavor_config(
     - `rpm_version_set_overrides`: List of `nevra` objects
     (see antlir/bzl/image_rpm.bzl for definition). If rpm with given name to
     be installed, the `nevra` defines its version.
+    - `unsafe_bypass_flavor_check`: Do NOT use.
     """
     if build_appliance == None:
         fail(
@@ -119,6 +122,7 @@ def _validate_flavor_config(
             snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else None
         ),
         rpm_version_set_overrides = rpm_version_set_overrides,
+        unsafe_bypass_flavor_check = unsafe_bypass_flavor_check,
     )
 
 def _get_flavor_config(flavor, flavor_config_override):
@@ -153,11 +157,11 @@ def _get_rpm_installer(flavor):
     return REPO_CFG.flavor_to_config[flavor]["rpm_installer"]
 
 def _get_rpm_installers_supported():
-    rpm_installers = []
+    rpm_installers = {}
     for _, config in REPO_CFG.flavor_to_config.items():
         if "rpm_installer" in config:
-            rpm_installers.append(config["rpm_installer"])
-    return rpm_installers
+            rpm_installers[config["rpm_installer"]] = 1
+    return rpm_installers.keys()
 
 flavor_helpers = struct(
     default_flavor_build_appliance = _get_build_appliance(REPO_CFG.flavor_default),

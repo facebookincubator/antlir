@@ -106,7 +106,7 @@ def PRIVATE_DO_NOT_USE_feature_target_name(name, flavor):
     version_set_path = REPO_CFG.flavor_to_config[flavor] \
         .get("version_set_path", VERSION_SET_ALLOW_ALL_VERSIONS)
     if version_set_path != VERSION_SET_ALLOW_ALL_VERSIONS:
-        name += "__rpm_verset__" + flavor
+        name += "__flavor__" + flavor
     return name
 
 def PRIVATE_DO_NOT_USE_features_for_layer(layer_name, flavor):
@@ -234,7 +234,7 @@ def feature_new(
         name,
         features,
         visibility = None,
-        flavors = [REPO_CFG.flavor_default]):
+        flavors = None):
     """
     Turns a group of image actions into a Buck target, so it can be
     referenced from outside the current project via `//path/to:name`.
@@ -248,6 +248,7 @@ def feature_new(
     or directories, copy executable or data files, declare mounts).
     """
     visibility = visibility or []
+    flavors = flavors or REPO_CFG.flavor_available
 
     for flavor in flavors:
         _feature_new_impl(
