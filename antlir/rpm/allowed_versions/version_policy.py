@@ -20,6 +20,14 @@ class VersionPolicy(Pluggable):
     pass
 
 
+# Import FB-specific implementations if available.  This must come after
+# VersionPolicy to resolve the circular dependency.
+try:
+    from .facebook import version_policy as _fb_version_policy  # noqa: F401
+except ImportError:  # pragma: no cover
+    pass
+
+
 def _deserialize_evra(
     arch: str, evr: Union[str, Mapping[str, Any]]
 ) -> SortableEVRA:
