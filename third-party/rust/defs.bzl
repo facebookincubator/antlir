@@ -1,6 +1,7 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "cpp_binary", "rust_binary", "rust_library")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
 # Get current target platform - hard-coded for example, matches one of the platforms
@@ -125,7 +126,7 @@ def _extract_from_archive(archive, src):
     # some srcs are duplicated in the rust_library and rust_binary, so make
     # sure to only define it once
     if not native.rule_exists(src):
-        native.genrule(
+        buck_genrule(
             name = src,
             out = "name-unused",
             cmd = "cp --reflink=auto $(location :{})/{} $OUT".format(archive, src),
@@ -145,7 +146,7 @@ def third_party_rust_library(name, srcs, crate, crate_root, platform = {}, dlope
         if python_ext:
             linker_flags.append("-uPyInit_{}".format(python_ext))
             kwargs["preferred_linkage"] = "static"
-        native.cxx_binary(name = name + "-so", deps = [":" + name], link_style = "static_pic", linker_flags = linker_flags)
+        cpp_binary(name = name + "-so", deps = [":" + name], link_style = "static_pic", linker_flags = linker_flags)
 
     # Download and extract the source tarball from crates.io with a genrule.
     # The python binary this is calling parses Cargo.lock to validate the
@@ -153,7 +154,7 @@ def third_party_rust_library(name, srcs, crate, crate_root, platform = {}, dlope
     # second pass in buckification.
 
     archive_target = _archive_target_name(crate_root)
-    native.genrule(
+    buck_genrule(
         name = archive_target,
         out = ".",
         cmd = "$(exe //third-party/rust:download) $(location //third-party/rust:Cargo.lock) {} $OUT".format(shell.quote(crate_root)),
@@ -163,7 +164,7 @@ def third_party_rust_library(name, srcs, crate, crate_root, platform = {}, dlope
     # ignore licenses for simplicity, they can be added back later if it becomes desirable
     kwargs.pop("licenses", None)
 
-    native.rust_library(
+    rust_library(
         name = name,
         srcs = [],
         mapped_srcs = source_targets,
@@ -186,7 +187,7 @@ def third_party_rust_binary(name, crate_root, srcs, platform = {}, mapped_srcs =
     # ignore licenses for simplicity, they can be added back later if it becomes desirable
     kwargs.pop("licenses", None)
 
-    native.rust_binary(
+    rust_binary(
         name = name,
         crate_root = crate_root,
         mapped_srcs = source_targets,
@@ -194,7 +195,7 @@ def third_party_rust_binary(name, crate_root, srcs, platform = {}, mapped_srcs =
     )
 
 def third_party_rust_cxx_library(name, **kwargs):
-    native.cxx_library(name = name, **kwargs)
+    fail("cxx_library is not yet supported in `oss_shim.bzl`, please consider adding support for it")
 
 def third_party_rust_prebuilt_cxx_library(name, **kwargs):
-    native.prebuilt_cxx_library(name = name, **kwargs)
+    fail("prebuilt_cxx_library is not yet supported in `oss_shim.bzl`, please consider adding support for it")
