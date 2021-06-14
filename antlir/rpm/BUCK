@@ -1,4 +1,3 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
@@ -407,6 +406,13 @@ test_rpm_repo_snapshot(
     name = "non-default-repo-snapshot-for-tests",
     kind = "non-default",
     repo_server_ports = (28891, 28892),  # Coexists w/ `repo-snapshot-for-tests`
+    rpm_installers = ("dnf", "yum"),
+)
+
+test_rpm_repo_snapshot(
+    name = "subvol-rpm-compare-repo-snapshot-for-tests",
+    kind = "subvol-rpm-compare",
+    repo_server_ports = (28893, 28894),
     rpm_installers = ("dnf", "yum"),
 )
 

@@ -46,6 +46,7 @@ class Rpm(NamedTuple):
     name: str
     version: str
     release: str
+    epoch: Optional[str] = None
     override_contents: Optional[str] = None
     # Be careful with enabling this broadly since it make the RPM
     # dramatically bigger and likely makes the test slower.
@@ -67,6 +68,7 @@ class Rpm(NamedTuple):
             "requires_line": f"Requires: {self.requires}"
             if self.requires
             else "",
+            "epoch_line": f"Epoch: {self.epoch}" if self.epoch else "",
         }
 
         spec = []
@@ -76,6 +78,7 @@ Summary: The "{name}" package.
 Name: rpm-test-{name}
 Version: {version}
 Release: {release}
+{epoch_line}
 Provides: virtual-{name}-{version}
 {requires_line}
 License: MIT

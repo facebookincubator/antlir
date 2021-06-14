@@ -1,4 +1,55 @@
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_unittest")
+
+image.layer(
+    name = "root",
+    features = [image.rpms_install([
+        "rpm-test-cake",
+    ])],
+    flavor = "antlir_test",
+    flavor_config_override = image.opts(
+        rpm_repo_snapshot = "//antlir/rpm:subvol-rpm-compare-repo-snapshot-for-tests",
+    ),
+)
+
+image.layer(
+    name = "leaf",
+    parent_layer = ":root",
+    features = [
+        image.rpms_install([
+            "rpm-test-has-epoch",
+            "rpm-test-second",
+            "rpm-test-fifth",
+        ]),
+        image.rpms_remove_if_exists([
+            "rpm-test-cake",
+        ]),
+    ],
+    flavor = "antlir_test",
+    flavor_config_override = image.opts(
+        rpm_repo_snapshot = "//antlir/rpm:subvol-rpm-compare-repo-snapshot-for-tests",
+    ),
+)
+
+python_unittest(
+    name = "test-subvol-rpm-compare",
+    srcs = ["test_subvol_rpm_compare.py"],
+    needed_coverage = [
+        (100, "//antlir/rpm/replay:subvol_rpm_compare"),
+    ],
+    resources = {
+        layer_resource(":root"): "root_subvol",
+        layer_resource("//antlir/compiler/test_images:build_appliance_testing"): "ba_subvol",
+        layer_resource(":leaf"): "leaf_subvol",
+    },
+    deps = [
+        "//antlir:subvol_utils",
+        "//antlir:testlib_layer_resource",
+        "//antlir/rpm:find_snapshot",
+        "//antlir/rpm/replay:subvol_rpm_compare",
+    ],
+)
 
 python_unittest(
     name = "test-fake-pty",

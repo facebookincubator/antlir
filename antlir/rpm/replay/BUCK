@@ -12,7 +12,10 @@ python_library(
 python_library(
     name = "subvol_rpm_compare",
     srcs = ["subvol_rpm_compare.py"],
-    visibility = ["//tupperware/cm/antlir/..."],
+    visibility = [
+        "//antlir/rpm/replay/tests/...",
+        "//tupperware/cm/antlir/...",
+    ],
     deps = [
         ":fake_pty",
         "//antlir:common",

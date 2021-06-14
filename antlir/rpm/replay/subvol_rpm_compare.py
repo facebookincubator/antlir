@@ -132,7 +132,7 @@ def _gen_nevras_from_installer_output(
             nevra = NEVRA(
                 m.group(2), m.group(1), m.group(3), m.group(4), m.group(5)
             )
-        else:
+        else:  # pragma: no cover
             raise NotImplementedError(rpm_installer)
 
         # The installer can print multiple "Installing" lines per NEVRA
