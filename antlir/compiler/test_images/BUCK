@@ -2,10 +2,10 @@
 # the shim in `defs.bzl`.
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":defs.bzl", "defs")
 
 # While the reproducible-builds.org instructions (see below) ensure that a
@@ -970,6 +970,9 @@ add_rpm_repo_snapshots_layer(
     ),
     make_caches_for_other_snapshot_installers = [
         ("//antlir/rpm:non-default-repo-snapshot-for-tests", installer)
+        for installer in flavor_helpers.get_rpm_installers_supported()
+    ] + [
+        ("//antlir/rpm:subvol-rpm-compare-repo-snapshot-for-tests", installer)
         for installer in flavor_helpers.get_rpm_installers_supported()
     ],
     parent_layer = flavor_helpers.default_flavor_build_appliance,

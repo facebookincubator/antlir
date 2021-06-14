@@ -102,6 +102,24 @@ if __name__ == "__main__":
                 [Rpm("cake", "non", "default"), Rpm("cheese", "0", "0")]
             )
         },
+        "subvol-rpm-compare": {
+            "cheese": Repo(
+                [
+                    Rpm("cake", "0", "0"),
+                    # Epoch affects rpm installer output;
+                    # so we use "has-epoch" rpm to exercise that parsing case.
+                    Rpm("has-epoch", "0", "0", epoch="1"),
+                    # Note: the dependency ordering below is intentionally
+                    # not the same as the lexigrophical order as to stregthen
+                    # the testing of rpm install ordering.
+                    Rpm("first", "0", "0"),
+                    Rpm("second", "0", "0", requires="virtual-first-0"),
+                    Rpm("third", "0", "0", requires="virtual-second-0"),
+                    Rpm("fourth", "0", "0", requires="virtual-third-0"),
+                    Rpm("fifth", "0", "0", requires="virtual-fourth-0"),
+                ]
+            )
+        },
     }
 
     parser = argparse.ArgumentParser(
