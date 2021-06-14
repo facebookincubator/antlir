@@ -1,13 +1,20 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_library")
 
-export_file(name = "fake_pty.py")
+export_file(name = "fake_pty_real.py")
+
+python_library(
+    name = "fake_pty",
+    srcs = ["fake_pty_wrapper.py"],
+    # Not a source file, we put it into the target OS as a system Python binary
+    resources = {":fake_pty_real.py": "fake_pty_real.py"},
+)
 
 python_library(
     name = "subvol_rpm_compare",
     srcs = ["subvol_rpm_compare.py"],
-    resources = {":fake_pty.py": "fake_pty"},
     visibility = ["//tupperware/cm/antlir/..."],
     deps = [
+        ":fake_pty",
         "//antlir:common",
         "//antlir:fs_utils",
         "//antlir:subvol_utils",

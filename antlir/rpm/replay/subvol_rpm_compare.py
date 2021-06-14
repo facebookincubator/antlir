@@ -25,6 +25,8 @@ from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol, TempSubvolumes
 
+from .fake_pty_wrapper import fake_pty_cmd, fake_pty_resource
+
 log = get_logger()
 
 
@@ -188,9 +190,8 @@ def _gen_yum_dnf_install_order(
     prog_name = subvols.rpm_installer.value
     # Future(per @malmond): Provide a custom `yum/dnf.conf` to avoid the
     # fact that `--setopt` is known to be buggy.
-
     common_cmd_prefix = [
-        "/fake_pty",
+        *fake_pty_cmd(subvols.ba.path(), "/fake_pty.py"),
         subvols.rpm_repo_snapshot / prog_name / "bin" / prog_name,
         "install",
         "--installroot=/i",
@@ -233,7 +234,7 @@ def _gen_yum_dnf_install_order(
         # NB: The last word should NOT be quoted, and is therefore added below.
     ]
     opts = new_nspawn_opts(
-        bindmount_ro=[(fake_pty, "/fake_pty")],
+        bindmount_ro=[(fake_pty, "/fake_pty.py")],
         bindmount_rw=[
             (install_subvol.path(), "/i"),
             (rpm_download_subvol.path(), "/d"),
@@ -314,9 +315,7 @@ def subvol_rpm_compare(
     # `fake_pty` is a separate binary because handling PTY signals in the
     # same process would be insanity, and I don't want to risk `fork()` in a
     # process that's liable to have random FB infra threads.
-    with Path.resource(
-        __package__, "fake_pty", exe=True
-    ) as fake_pty, TempSubvolumes() as tmp_subvols:
+    with fake_pty_resource() as fake_pty, TempSubvolumes() as tmp_subvols:
         if not rpm_download_subvol:
             rpm_download_subvol = tmp_subvols.create("rpm_compare_download")
         added_in_order = list(

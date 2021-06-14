@@ -1,11 +1,13 @@
-#!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
 ###
-### IMPORTANT: This is NOT a Buck binary, it runs using the system python3
+### IMPORTANT: This is NOT a Buck binary, it runs using either:
+###   - The system Python2 (for CentOS7 et al)
+###   - The system Python3 (CentOS8, Fedora, etc)
+### The precise Python is selected by `fake_pty_wrapper.py`.
 ###
 import ctypes
 import fcntl
