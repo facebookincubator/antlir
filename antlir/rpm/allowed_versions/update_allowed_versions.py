@@ -426,6 +426,11 @@ def _populate_vset_buck_file(
     buckfile.write(
         f"""\
 # {'@'}generated via //antlir/rpm/allowed_versions:update-allowed-versions
+#
+# This file was generated automatically, in course of automatic update of RPM
+# snapshot and build_appliance. You can see an RPM mentioned below even if you
+# removed it from repos. If this is the case, please wait for the next update
+# (no need to clean up it from this file manually).
 
 load("//antlir/bzl:oss_shim.bzl", "rpm_vset")
 
