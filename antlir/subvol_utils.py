@@ -1065,6 +1065,20 @@ class Subvol:
     def read_path_text(self, relpath: Path) -> str:
         return self.path(relpath).read_text()
 
+    def read_path_text_as_root(self, relpath: Path) -> str:
+        # To duplicate the effects of read_path_text(), we need to first check
+        # for the existence of the file and maybe return FileNotFoundError.
+        # Otherwise we will end up with a CalledProcessError propagating up.
+        if not self.path(relpath).exists():
+            raise FileNotFoundError(relpath)
+        res = self.run_as_root(
+            ["cat", self.path(relpath)],
+            text=True,
+            stdout=subprocess.PIPE,
+        )
+        res.check_returncode()
+        return res.stdout
+
     def overwrite_path_as_root(self, relpath: Path, contents: AnyStr):
         # Future: support setting user, group, and mode
         if isinstance(contents, str):
