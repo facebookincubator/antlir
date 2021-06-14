@@ -12,7 +12,7 @@ import tempfile
 import unittest
 
 from .. import subvolume_garbage_collector as sgc
-from ..fs_utils import temp_dir
+from ..fs_utils import temp_dir, Path
 
 
 class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
@@ -44,19 +44,21 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
 
     def test_list_subvolume_wrappers(self):
         with tempfile.TemporaryDirectory() as td:
-            self.assertEqual([], sgc.list_subvolume_wrappers(td))
+            tdp = Path(td)
+            self.assertEqual([], sgc.list_subvolume_wrappers(tdp))
 
-            self._touch(td, "ba:nana")  # Not a directory
-            self.assertEqual([], sgc.list_subvolume_wrappers(td))
+            self._touch(Path(tdp / "ba:nana"))  # Not a directory
+            self.assertEqual([], sgc.list_subvolume_wrappers(tdp))
 
-            os.mkdir(os.path.join(td, "apple"))  # No colon
-            self.assertEqual([], sgc.list_subvolume_wrappers(td))
+            os.mkdir(Path(tdp / "apple"))  # No colon
+            self.assertEqual([], sgc.list_subvolume_wrappers(tdp))
 
-            os.mkdir(os.path.join(td, "p:i"))
-            os.mkdir(os.path.join(td, "e:"))
-            os.mkdir(os.path.join(td, ":x"))
+            os.mkdir(Path(tdp / "p:i"))
+            os.mkdir(Path(tdp / "e:"))
+            os.mkdir(Path(tdp / ":x"))
             self.assertEqual(
-                {"p:i", "e:", ":x"}, set(sgc.list_subvolume_wrappers(td))
+                {Path("p:i"), Path("e:"), Path(":x")},
+                set(sgc.list_subvolume_wrappers(tdp)),
             )
 
     def test_list_refcounts(self):
@@ -67,23 +69,24 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             self._touch(td, "borf.json")  # No :
             self.assertEqual({}, dict(sgc.list_refcounts(td)))
 
-            banana_json = os.path.join(td, "ba:nana.json")
+            banana_json = Path(td) / "ba:nana.json"
             os.mkdir(banana_json)  # Not a file
             with self.assertRaisesRegex(RuntimeError, "not a regular file"):
                 dict(sgc.list_refcounts(td))
             os.rmdir(banana_json)
 
             self._touch(banana_json)  # This is a real refcount file now
-            self.assertEqual({"ba:nana": 1}, dict(sgc.list_refcounts(td)))
+            self.assertEqual({Path("ba:nana"): 1}, dict(sgc.list_refcounts(td)))
 
             # The linking is pathological, but it doesn't seem worth detecting.
-            os.link(banana_json, os.path.join(td, "ap:ple.json"))
+            os.link(banana_json, Path(td) / "ap:ple.json")
             self.assertEqual(
-                {"ba:nana": 2, "ap:ple": 2}, dict(sgc.list_refcounts(td))
+                {Path("ba:nana"): 2, Path("ap:ple"): 2},
+                dict(sgc.list_refcounts(td)),
             )
 
             os.unlink(banana_json)
-            self.assertEqual({"ap:ple": 1}, dict(sgc.list_refcounts(td)))
+            self.assertEqual({Path("ap:ple"): 1}, dict(sgc.list_refcounts(td)))
 
     # Not bothering with a direct test for `parse_args` because (a) it is
     # entirely argparse declarations, and that module has decent validation,
@@ -116,7 +119,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 sgc.has_new_subvolume(dir_json(*bad_example))
 
         with tempfile.TemporaryDirectory() as td:
-            os.mkdir(os.path.join(td, "x:y"))
+            os.mkdir(Path(td) / "x:y")
             with self.assertRaisesRegex(RuntimeError, "wrapper-dir exists"):
                 sgc.has_new_subvolume(
                     sgc.parse_args(
@@ -131,8 +134,8 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
 
     def test_gc_fails_when_wrapper_has_more_than_one(self):
         with tempfile.TemporaryDirectory() as refs_dir, tempfile.TemporaryDirectory() as subs_dir:  # noqa: E501
-            os.makedirs(os.path.join(subs_dir, "no:refs/subvol1"))
-            os.makedirs(os.path.join(subs_dir, "no:refs/subvol2"))
+            os.makedirs(Path(subs_dir) / "no:refs/subvol1")
+            os.makedirs(Path(subs_dir) / "no:refs/subvol2")
             with self.assertRaisesRegex(
                 RuntimeError, "must contain just 1 subvol"
             ):
@@ -159,6 +162,8 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
         # NB: I'm too lazy to test that `refs_dir` is created if missing.
         with tempfile.TemporaryDirectory() as refs_dir, tempfile.TemporaryDirectory() as subs_dir:  # noqa: E501
 
+            refs_dir_p = Path(refs_dir)
+            subs_dir_p = Path(subs_dir)
             # Track subvolumes + refcounts that will get garbage-collected
             # separately from those that won't.
             gcd_subs = set()
@@ -167,49 +172,49 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             kept_refs = set()
 
             # Subvolume without a refcount -- tests "rule name != subvol"
-            os.makedirs(os.path.join(subs_dir, "no:refs/subvol_name"))
-            gcd_subs.add("no:refs")
+            os.makedirs(subs_dir_p / "no:refs/subvol_name")
+            gcd_subs.add(Path("no:refs"))
 
             # Wrapper without a refcount and without a subvolume
-            os.makedirs(os.path.join(subs_dir, "no_refs:nor_subvol"))
-            gcd_subs.add("no_refs:nor_subvol")
+            os.makedirs((subs_dir_p / "no_refs:nor_subvol"))
+            gcd_subs.add(Path("no_refs:nor_subvol"))
 
             # Subvolume, whose refcount is 1
-            self._touch(refs_dir, "1:link.json")
-            os.makedirs(os.path.join(subs_dir, "1:link/1"))
-            gcd_refs.add("1:link.json")
-            gcd_subs.add("1:link")
+            self._touch(refs_dir_p / "1:link.json")
+            os.makedirs(subs_dir_p / "1:link/1")
+            gcd_refs.add(Path("1:link.json"))
+            gcd_subs.add(Path("1:link"))
 
             # Some refcount files with a link count of 2
-            self._touch(refs_dir, "2link:1.json")
+            self._touch(refs_dir_p / "2link:1.json")
             os.link(
-                os.path.join(refs_dir, "2link:1.json"),
-                os.path.join(refs_dir, "2link:2.json"),
+                refs_dir_p / "2link:1.json",
+                refs_dir_p / "2link:2.json",
             )
-            kept_refs.add("2link:1.json")
-            kept_refs.add("2link:2.json")
+            kept_refs.add(Path("2link:1.json"))
+            kept_refs.add(Path("2link:2.json"))
 
             # Subvolumes for both of the 2-link refcount files
-            os.makedirs(os.path.join(subs_dir, "2link:1/2link"))
-            os.makedirs(os.path.join(subs_dir, "2link:2/2link"))
-            kept_subs.add("2link:1")
-            kept_subs.add("2link:2")
+            os.makedirs(subs_dir_p / "2link:1/2link")
+            os.makedirs(subs_dir_p / "2link:2/2link")
+            kept_subs.add(Path("2link:1"))
+            kept_subs.add(Path("2link:2"))
 
             # Some refcount files with a link count of 3
-            three_link = os.path.join(refs_dir, "3link:1.json")
+            three_link = refs_dir_p / "3link:1.json"
             self._touch(three_link)
-            os.link(three_link, os.path.join(refs_dir, "3link:2.json"))
-            os.link(three_link, os.path.join(refs_dir, "3link:3.json"))
-            kept_refs.add("3link:1.json")
-            kept_refs.add("3link:2.json")
-            kept_refs.add("3link:3.json")
+            os.link(three_link, refs_dir_p / "3link:2.json")
+            os.link(three_link, refs_dir_p / "3link:3.json")
+            kept_refs.add(Path("3link:1.json"))
+            kept_refs.add(Path("3link:2.json"))
+            kept_refs.add(Path("3link:3.json"))
 
             # Make a subvolume for 1 of them, it won't get GC'd
-            os.makedirs(os.path.join(subs_dir, "3link:2/3link"))
-            kept_subs.add("3link:2")
+            os.makedirs(subs_dir_p / "3link:2/3link")
+            kept_subs.add(Path("3link:2"))
 
-            self.assertEqual(kept_refs | gcd_refs, set(os.listdir(refs_dir)))
-            self.assertEqual(kept_subs | gcd_subs, set(os.listdir(subs_dir)))
+            self.assertEqual(kept_refs | gcd_refs, set(refs_dir_p.listdir()))
+            self.assertEqual(kept_subs | gcd_subs, set(subs_dir_p.listdir()))
 
             yield sgc.argparse.Namespace(
                 gcd_subs=gcd_subs,
@@ -232,8 +237,8 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
         ]:
             with self._gc_test_case() as n:
                 fn(n)
-                self.assertEqual(n.kept_refs, set(os.listdir(n.refs_dir)))
-                self.assertEqual(n.kept_subs, set(os.listdir(n.subs_dir)))
+                self.assertEqual(n.kept_refs, set(Path(n.refs_dir).listdir()))
+                self.assertEqual(n.kept_subs, set(Path(n.subs_dir).listdir()))
 
     def test_no_gc_due_to_lock(self):
         with self._gc_test_case() as n:
@@ -261,10 +266,10 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 os.close(fd)
 
             self.assertEqual(
-                n.kept_refs | n.gcd_refs, set(os.listdir(n.refs_dir))
+                n.kept_refs | n.gcd_refs, set(Path(n.refs_dir).listdir())
             )
             self.assertEqual(
-                n.kept_subs | n.gcd_subs, set(os.listdir(n.subs_dir))
+                n.kept_subs | n.gcd_subs, set(Path(n.subs_dir).listdir())
             )
 
     def test_garbage_collect_and_make_new_subvolume(self):
@@ -277,12 +282,14 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                     f'--new-subvolume-json={json_dir / "OUT"}',
                 ]
             )
-            self.assertEqual([b"OUT"], os.listdir(json_dir))
+            self.assertEqual([b"OUT"], json_dir.listdir())
             self.assertEqual(
-                n.kept_refs | {"new:subvol.json"}, set(os.listdir(n.refs_dir))
+                n.kept_refs | {Path("new:subvol.json")},
+                set(Path(n.refs_dir).listdir()),
             )
             self.assertEqual(
-                n.kept_subs | {"new:subvol"}, set(os.listdir(n.subs_dir))
+                n.kept_subs | {Path("new:subvol")},
+                set(Path(n.subs_dir).listdir()),
             )
 
 
