@@ -132,6 +132,9 @@ def mock_user_group_read_write():
     _passwd_file = io.StringIO()
     _passwd_file_mocks = _build_mock_read_write(_passwd_file)
 
+    _shadow_file = io.StringIO()
+    _shadow_file_mocks = _build_mock_read_write(_shadow_file)
+
     _group_file = io.StringIO()
     _group_file_mocks = _build_mock_read_write(_group_file)
 
@@ -141,6 +144,12 @@ def mock_user_group_read_write():
     ), unittest.mock.patch(
         "antlir.compiler.items.user._write_passwd_file",
         side_effect=_passwd_file_mocks[1],
+    ), unittest.mock.patch(
+        "antlir.compiler.items.user._read_shadow_file",
+        side_effect=_shadow_file_mocks[0],
+    ), unittest.mock.patch(
+        "antlir.compiler.items.user._write_shadow_file",
+        side_effect=_shadow_file_mocks[1],
     ), unittest.mock.patch(
         "antlir.compiler.items.user._read_group_file",
         side_effect=_group_file_mocks[0],
@@ -157,6 +166,7 @@ def mock_user_group_read_write():
         yield
 
     _passwd_file.close()
+    _shadow_file.close()
     _group_file.close()
 
 
