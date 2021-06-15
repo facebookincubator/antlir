@@ -1,0 +1,5 @@
+cargo_env = true
+extra_srcs = ["src/**/*.rs"]
+
+[[buildscript]]
+[buildscript.rustc_flags]

@@ -1,6 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 
 image.layer(
@@ -30,6 +31,8 @@ image.layer(
     flavor = REPO_CFG.antlir_linux_flavor,
 )
 
+export_file(name = "eth.network")
+
 # TODO: this should eventually be put into a stable fbpkg layer if it is
 # depended on more broadly
 image.layer(
@@ -48,12 +51,21 @@ image.layer(
         systemd.set_default_target("workload.target"),
         # networking config to use DHCP is a generic workload-pre.target
         # dependency
-        image.install("eth.network", "/usr/lib/systemd/network/10-eth.network"),
+        image.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
         systemd.enable_unit("systemd-networkd.service", "workload-pre.target"),
         systemd.enable_unit("systemd-resolved.service", "workload-pre.target"),
     ],
     runtime = ["systemd"],
     flavor = REPO_CFG.antlir_linux_flavor,
+    visibility = [
+        "//antlir/...",
+    ],
+)
+
+image.package(
+    name = "metalos.sendstream.zst",
+    layer = ":metalos",
+    format = "sendstream.zst",
     visibility = [
         "//antlir/...",
     ],

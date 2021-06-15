@@ -9,7 +9,18 @@ load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
-DEPS_TARGET = "//antlir/linux/initrd:deps"
+image.layer(
+    name = "debug-deps",
+    parent_layer = "//antlir/linux/initrd:deps",
+    flavor = REPO_CFG.antlir_linux_flavor,
+    features = [
+        image.rpms_install([
+            "busybox",
+            "strace",
+            "dropbear",
+        ]),
+    ],
+)
 
 # Some systemd units and binaries that are only useful for debugging and not
 # during normal boots
@@ -17,28 +28,17 @@ systemd_debug = [
     # We don't have to use the extractor here, since the libraries loaded by
     # the systemd binaries that we want will already be present in the base
     # initrd.
-    image.clone(DEPS_TARGET, "/usr/bin/systemd-analyze", "/usr/bin/systemd-analyze"),
+    image.clone(":debug-deps", "/usr/bin/systemd-analyze", "/usr/bin/systemd-analyze"),
     image.ensure_subdirs_exist(
         "/usr/lib",
         paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib"),
     ),
     image.clone(
-        DEPS_TARGET,
+        ":debug-deps",
         paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service"),
         paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service"),
     ),
 ]
-
-extract.source_layer(
-    name = "debug-deps",
-    features = [
-        image.rpms_install([
-            "dropbear",
-            "systemd",
-        ]),
-    ],
-    flavor = REPO_CFG.antlir_linux_flavor,
-)
 
 ssh_server = [
     image.clone(":debug-deps", "/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/dropbear.service"),
@@ -63,11 +63,14 @@ ssh_server = [
 
 debug_features = [
     linux.busybox.install(
-        DEPS_TARGET,
-        # /usr/bin/mount is implemented in antlirctl
+        ":debug-deps",
         sets.difference(
             DEFAULT_APPLETS,
-            sets.make(["mount"]),
+            # these are implemented in antlirctl
+            sets.make([
+                "mkdir",
+                "mount",
+            ]),
         ),
         src_path = "/usr/sbin/busybox",
     ),
@@ -80,6 +83,7 @@ debug_features = [
         binaries = [
             "/usr/sbin/dropbear",
             "/usr/bin/dropbearkey",
+            "/usr/bin/strace",
         ],
         dest = "/",
         source = ":debug-deps",

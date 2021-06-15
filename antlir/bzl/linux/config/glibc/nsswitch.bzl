@@ -88,6 +88,13 @@ nsswitch = struct(
                     shape.struct(name = "files"),
                 ],
             ),
+            shape.struct(
+                name = "hosts",
+                services = [
+                    shape.struct(name = "files"),
+                    shape.struct(name = "dns"),
+                ],
+            ),
         ],
     ),
 )

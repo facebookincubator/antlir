@@ -1,0 +1,17 @@
+# Template service unit to download a btrfs sendstream image from the given
+# URI. This is used in the initrd to download an OS based on a kernel cmdline
+# arg, but can also be used by other units in the future.
+[Unit]
+Description=Fetch image from %I
+Requires=network-online.target
+After=network-online.target
+RequiresMountsFor=/sysroot
+# Only download an image version once
+ConditionDirectoryNotEmpty=!/sysroot/var/lib/antlir/image/%i
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStartPre=mkdir -p /sysroot/var/lib/antlir/image
+ExecStartPre=btrfs subvolume create /sysroot/var/lib/antlir/image/%i
+ExecStart=antlirctl fetch-image %I /sysroot/var/lib/antlir/image/%i

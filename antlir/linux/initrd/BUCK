@@ -12,7 +12,7 @@ extract.source_layer(
     name = "deps",
     features = [
         image.rpms_install([
-            "busybox",
+            "btrfs-progs",
             "systemd",
             "systemd-udev",
         ]),
@@ -32,7 +32,7 @@ networking = [
     # Explicitly enable systemd-networkd to configure the network links
     # early in boot
     systemd.enable_unit("systemd-networkd.service"),
-    image.install("units/eth.network", "/usr/lib/systemd/network/10-eth.network"),
+    image.install("//antlir/linux/metalos:eth.network", "/usr/lib/systemd/network/20-eth.network"),
 ]
 
 nss = linux.config.glibc.nsswitch.install(linux.config.glibc.nsswitch.default)
@@ -55,6 +55,12 @@ image.layer(
         # detects /etc/initrd-release, but explicitly symlinking it makes
         # systemd-analyze work as expected too
         systemd.set_default_target("initrd.target"),
+        # With our custom setup, just enable initrd-cleanup.service directly in
+        # initrd.target instead of going through initrd-parse-etc.service as normal
+        systemd.enable_unit(
+            "initrd-cleanup.service",
+            target = "initrd.target",
+        ),
         systemd.install_dropin(
             "dropins/udevd-before-trigger.conf",
             unit = "systemd-udevd.service",
@@ -65,7 +71,9 @@ image.layer(
         # extract systemd at the same time as antlirctl.
         extract.extract(
             flavor = REPO_CFG.antlir_linux_flavor,
-            binaries = SYSTEMD_BINARIES,
+            binaries = SYSTEMD_BINARIES + [
+                "/usr/sbin/btrfs",
+            ],
             buck_binaries = {
                 "//antlir/linux/antlirctl:antlirctl": "/usr/bin/antlirctl",
             },
@@ -74,8 +82,11 @@ image.layer(
         ),
         image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
         image.install("udev.rules", "/usr/lib/udev/rules.d/10-antlir.rules"),
-        # antlirctl provides /usr/bin/mount so we can avoid importing busybox
+        # antlirctl provides /usr/bin/{mkdir, mount} so we can avoid importing
+        # busybox for just a few tiny commands
+        image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mkdir"),
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mount"),
+        systemd.install_unit("units/antlir-fetch-image@.service"),
         image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/lib/systemd/system-generators/antlir-generator"),
     ],

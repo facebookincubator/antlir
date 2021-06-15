@@ -11,6 +11,7 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 
 DEFAULT_MODULE_LIST = [
     "drivers/block/virtio_blk.ko",
+    "drivers/char/hw_random/virtio-rng.ko",
     "drivers/net/net_failover.ko",
     "drivers/net/virtio_net.ko",
     "fs/9p/9p.ko",

@@ -1,7 +1,13 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "cpp_binary", "rust_binary", "rust_library")
+load(
+    "//antlir/bzl:oss_shim.bzl",
+    "buck_genrule",
+    "cpp_binary",
+    "rust_binary",
+    "rust_library",
+)
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
 # Get current target platform - hard-coded for example, matches one of the platforms
@@ -34,7 +40,14 @@ def extend(orig, new):
 # Invoke something with a default cargo-like environment. This is used to invoke buildscripts
 # from within a Buck rule to get it to do whatever it does (typically, either emit command-line
 # options for rustc, or generate some source).
-def _make_preamble(out_dir, package_name, version, features, cfgs, env, target_override):
+def _make_preamble(
+        out_dir,
+        package_name,
+        version,
+        features,
+        cfgs,
+        env,
+        target_override):
     # Work out what rustc to pass to the script
     rustc = native.read_config("rust", "compiler", "rustc")
     if "//" in rustc:
@@ -62,38 +75,79 @@ def _make_preamble(out_dir, package_name, version, features, cfgs, env, target_o
         out_dir = out_dir,
         package_name = package_name,
         version = version,
-        features = " ".join(["CARGO_FEATURE_{}=1".format(feature.upper().replace("-", "_")) for feature in features or []]),
-        cfgs = " ".join(["CARGO_CFG_{}=1".format(cfg.upper().replace("-", "_")) for cfg in cfgs or []]),
+        features = " ".join(
+            [
+                "CARGO_FEATURE_{}=1".format(feature.upper().replace("-", "_"))
+                for feature in features or []
+            ],
+        ),
+        cfgs = " ".join(
+            [
+                "CARGO_CFG_{}=1".format(cfg.upper().replace("-", "_"))
+                for cfg in cfgs or []
+            ],
+        ),
         target = target_override or _get_native_host_triple(),
         host = _get_native_host_triple(),
         rustc = rustc,
-        env = "\\\n".join(["'{}'='{}'".format(var, val) for var, val in (env or {}).items()]),
+        env = "\\\n".join(
+            ["'{}'='{}'".format(var, val) for var, val in (env or {}).items()],
+        ),
     )
 
 # Invoke a Rust buildscript binary with the right surrounding
 # environment variables. `filters` is a shell command which takes the
 # output of the build script and filters appropriately. It is given the
 # final output file path on its commandline.
-def rust_buildscript_genrule_filter(name, buildscript_rule, outfile, package_name, version, features = None, cfgs = None, env = None, target = None):
-    pre = _make_preamble("\\$(dirname $OUT)", package_name, version, features, cfgs, env, target)
+def rust_buildscript_genrule_filter(
+        name,
+        buildscript_rule,
+        outfile,
+        package_name,
+        version,
+        features = None,
+        cfgs = None,
+        env = None,
+        target = None):
+    pre = _make_preamble(
+        "\\$(dirname $OUT)",
+        package_name,
+        version,
+        features,
+        cfgs,
+        env,
+        target,
+    )
     native.cxx_genrule(
         name = name,
         out = outfile,
-        cmd = pre + "$(exe {buildscript}) | $(location //third-party/rust:buildrs_rustc_flags.py) > $OUT".format(
-            buildscript = buildscript_rule,
-        ),
+        cmd = pre +
+              "$(exe {buildscript}) | $(location //third-party/rust:buildrs_rustc_flags.py) > $OUT".format(
+                  buildscript = buildscript_rule,
+              ),
     )
 
 # Invoke a build script for its generated sources.
-def rust_buildscript_genrule_srcs(name, buildscript_rule, files, package_name, version, features = None, cfgs = None, env = None, target = None, srcs = None):
+def rust_buildscript_genrule_srcs(
+        name,
+        buildscript_rule,
+        files,
+        package_name,
+        version,
+        features = None,
+        cfgs = None,
+        env = None,
+        target = None,
+        srcs = None):
     pre = _make_preamble("$OUT", package_name, version, features, cfgs, env, target)
     native.cxx_genrule(
         name = name,
         out = name + "-outputs",
         srcs = srcs,
-        cmd = pre + "$(exe {buildscript})".format(
-            buildscript = buildscript_rule,
-        ),
+        cmd = pre +
+              "$(exe {buildscript})".format(
+                  buildscript = buildscript_rule,
+              ),
     )
     mainrule = ":" + name
     for file in files:
@@ -110,14 +164,19 @@ def rust_buildscript_genrule_srcs(name, buildscript_rule, files, package_name, v
 # for target platform (_get_plat) which isn't very flexible. A better approach would be to construct
 # srcs/deps/etc with `select` to conditionally configure each target, but that's out of scope for this.
 def platform_attrs(platformname, platformattrs, attrs):
-    for attr in sets.to_list(sets.make(concat(attrs.keys(), platformattrs.get(platformname, {}).keys()))):
+    for attr in sets.to_list(
+        sets.make(concat(attrs.keys(), platformattrs.get(platformname, {}).keys())),
+    ):
         new = extend(attrs.get(attr), platformattrs.get(platformname, {}).get(attr))
         attrs[attr] = new
     return attrs
 
 def _archive_target_name(crate_root):
     if not crate_root.startswith("vendor/"):
-        fail("expected '{}' to start with vendor/".format(crate_root), attr = "crate_root")
+        fail(
+            "expected '{}' to start with vendor/".format(crate_root),
+            attr = "crate_root",
+        )
     crate_and_ver = crate_root[len("vendor/"):]
     crate_and_ver = crate_and_ver.split("/")[0]
     return crate_and_ver + "--archive"
@@ -128,15 +187,24 @@ def _extract_from_archive(archive, src):
     if not native.rule_exists(src):
         buck_genrule(
             name = src,
-            out = "name-unused",
-            cmd = "cp --reflink=auto $(location :{})/{} $OUT".format(archive, src),
+            out = src,
+            cmd = "mkdir -p `dirname $OUT` && cp --reflink=auto $(location :{})/{} $OUT".format(
+                archive,
+                src,
+            ),
         )
     return normalize_target(":" + src)
 
-def third_party_rust_library(name, srcs, crate, crate_root, platform = {}, dlopen_enable = False, python_ext = None, mapped_srcs = None, **kwargs):
-    if mapped_srcs:
-        fail("mapped_srcs not yet supported", attr = "mapped_srcs")
-
+def third_party_rust_library(
+        name,
+        srcs,
+        crate,
+        crate_root,
+        platform = {},
+        dlopen_enable = False,
+        python_ext = None,
+        mapped_srcs = None,
+        **kwargs):
     # Rust crates which are python extensions need special handling to make sure they get linked
     # properly. This is not enough on its own - it still assumes there's a dependency on the python
     # library.
@@ -146,7 +214,12 @@ def third_party_rust_library(name, srcs, crate, crate_root, platform = {}, dlope
         if python_ext:
             linker_flags.append("-uPyInit_{}".format(python_ext))
             kwargs["preferred_linkage"] = "static"
-        cpp_binary(name = name + "-so", deps = [":" + name], link_style = "static_pic", linker_flags = linker_flags)
+        cpp_binary(
+            name = name + "-so",
+            deps = [":" + name],
+            link_style = "static_pic",
+            linker_flags = linker_flags,
+        )
 
     # Download and extract the source tarball from crates.io with a genrule.
     # The python binary this is calling parses Cargo.lock to validate the
@@ -157,9 +230,13 @@ def third_party_rust_library(name, srcs, crate, crate_root, platform = {}, dlope
     buck_genrule(
         name = archive_target,
         out = ".",
-        cmd = "$(exe //third-party/rust:download) $(location //third-party/rust:Cargo.lock) {} $OUT".format(shell.quote(crate_root)),
+        cmd = "$(exe //third-party/rust:download) $(location //third-party/rust:Cargo.lock) {} $OUT".format(
+            shell.quote(crate_root),
+        ),
     )
     source_targets = {_extract_from_archive(archive_target, src): src for src in srcs}
+    for src, srcname in (mapped_srcs or {}).items():
+        source_targets[src] = srcname
 
     # ignore licenses for simplicity, they can be added back later if it becomes desirable
     kwargs.pop("licenses", None)
@@ -175,7 +252,13 @@ def third_party_rust_library(name, srcs, crate, crate_root, platform = {}, dlope
 
 # `platform` is a map from a platform (defined in reindeer.toml) to the attributes
 # specific to that platform.
-def third_party_rust_binary(name, crate_root, srcs, platform = {}, mapped_srcs = None, **kwargs):
+def third_party_rust_binary(
+        name,
+        crate_root,
+        srcs,
+        platform = {},
+        mapped_srcs = None,
+        **kwargs):
     if mapped_srcs:
         fail("mapped_srcs not yet supported", attr = "mapped_srcs")
 
@@ -191,11 +274,17 @@ def third_party_rust_binary(name, crate_root, srcs, platform = {}, mapped_srcs =
         name = name,
         crate_root = crate_root,
         mapped_srcs = source_targets,
+        unittests = False,
         **platform_attrs(_get_plat(), platform, kwargs)
     )
 
 def third_party_rust_cxx_library(name, **kwargs):
-    fail("cxx_library is not yet supported in `oss_shim.bzl`, please consider adding support for it")
+    # cxx_library rules do not play nicely with the vendoring hack we employ for
+    # rust, so just pass the sources unmodified and rely on antlir vendoring the
+    # C files necessary, but we can still avoid vendoring any rust code.
+    native.cxx_library(name = name, **kwargs)
 
 def third_party_rust_prebuilt_cxx_library(name, **kwargs):
-    fail("prebuilt_cxx_library is not yet supported in `oss_shim.bzl`, please consider adding support for it")
+    fail(
+        "prebuilt_cxx_library is not yet supported in `oss_shim.bzl`, please consider adding support for it",
+    )
