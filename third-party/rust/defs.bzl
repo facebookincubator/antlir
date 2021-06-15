@@ -51,7 +51,7 @@ def _make_preamble(
     # Work out what rustc to pass to the script
     rustc = native.read_config("rust", "compiler", "rustc")
     if "//" in rustc:
-        rustc = "(exe %s)" % rustc
+        rustc = "$(exe %s)" % rustc
 
     # CWD of a genrule script is the source directory but use $SRCDIR to make it an absolute path
     return """
