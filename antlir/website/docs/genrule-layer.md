@@ -56,7 +56,7 @@ image.layer(
 image.genrule_layer(
     name = '_translate_foo',
     parent_layer = ':setup',
-    cmd = ['/bin/sh', '-c', 'tr a-z a-Z < /output/_temp_foo > /output/FOO'],
+    cmd = ['/bin/sh', '-c', 'tr a-z A-Z < /output/_temp_foo > /output/FOO'],
 )
 
 image.layer(
