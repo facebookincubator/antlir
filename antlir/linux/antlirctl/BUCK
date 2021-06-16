@@ -4,8 +4,10 @@ rust_binary(
     name = "antlirctl",
     srcs = [
         "src/antlirctl.rs",
+        "src/fetch_image.rs",
         "src/generator.rs",
         "src/kernel_cmdline.rs",
+        "src/mkdir.rs",
         "src/mount.rs",
         "src/systemd.rs",
     ],
@@ -43,6 +45,18 @@ rust_binary(
             "slog-async",
             "slog-term",
             "slog_glog_fmt",
+            "zstd",  # os images are zstd-compressed btrfs sendstreams
+            # Needed for HTTPS requests to download images
+            "bytes",
+            "futures-core",
+            "futures-util",
+            "hyper",
+            "hyper-rustls",
+            "rustls",
+            "rustls-native-certs",
+            "tokio",  # async runtime for http client
+            "tower",
+            "trust-dns-resolver",
         ]
     ],
 )

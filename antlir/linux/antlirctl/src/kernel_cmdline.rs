@@ -39,9 +39,8 @@ impl AntlirCmdline {
         })
     }
 
-    pub fn control_os_uri(&self) -> Option<&str> {
-        self.arg("antlir.control_os_uri")
-            .and_then(|opt| opt.as_value())
+    pub fn os_uri(&self) -> Option<&str> {
+        self.arg("antlir.os_uri").and_then(|opt| opt.as_value())
     }
 
     pub fn root(&self) -> Option<Root> {
@@ -127,7 +126,7 @@ impl std::str::FromStr for AntlirCmdline {
 
     /// Parse /proc/cmdline to get values from the booted kernel cmdline. Some
     /// selected options are available when they have significance for Antlir
-    /// code, for example 'antlir.control_os_uri'.
+    /// code, for example 'antlir.os_uri'.
     fn from_str(s: &str) -> Result<Self> {
         // strip leading and trailing whitespace
         let s = s.trim();
@@ -168,13 +167,13 @@ mod tests {
     #[test]
     fn basic_cmdlines() -> Result<()> {
         for cmdline in &[
-            "rd.systemd.debug_shell=1 quiet antlir.control_os_uri=https://some/url",
-            "rd.systemd.debug_shell=1 quiet antlir.control-os-uri=https://some/url",
-            "rd.systemd.debug_shell=1 quiet antlir.control_os_uri=\"https://some/url\"",
+            "rd.systemd.debug_shell=1 quiet antlir.os_uri=https://some/url",
+            "rd.systemd.debug_shell=1 quiet antlir.os-uri=https://some/url",
+            "rd.systemd.debug_shell=1 quiet antlir.os_uri=\"https://some/url\"",
         ] {
             let cmdline: AntlirCmdline = cmdline.parse()?;
             eprintln!("{:?}", cmdline);
-            assert_eq!(Some("https://some/url"), cmdline.control_os_uri(),);
+            assert_eq!(Some("https://some/url"), cmdline.os_uri(),);
         }
         Ok(())
     }

@@ -1,7 +1,0 @@
-[Match]
-Name=eth*
-
-[Network]
-DHCP=yes
-UseHostname=true
-RequestOptions=39

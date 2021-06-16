@@ -16,8 +16,10 @@ use slog::o;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
+mod fetch_image;
 mod generator;
 mod kernel_cmdline;
+mod mkdir;
 mod mount;
 mod systemd;
 
@@ -26,11 +28,16 @@ mod systemd;
 enum AntlirCtl {
     /// Systemd unit generator
     AntlirGenerator(generator::Opts),
+    /// Download an image over HTTPS
+    FetchImage(fetch_image::Opts),
     /// Simplistic method to mount filesystems
     Mount(mount::Opts),
+    /// Simple implementation of /bin/mkdir
+    Mkdir(mkdir::Opts),
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let mut args: VecDeque<_> = std::env::args_os().collect();
     // Yeah, expect() is not the best thing to do, but really what else can we
     // do besides panic?
@@ -53,6 +60,8 @@ fn main() -> Result<()> {
 
     match options {
         AntlirCtl::AntlirGenerator(opts) => generator::generator(log, opts),
+        AntlirCtl::FetchImage(opts) => fetch_image::fetch_image(log, opts).await,
+        AntlirCtl::Mkdir(opts) => mkdir::mkdir(opts),
         AntlirCtl::Mount(opts) => mount::mount(opts),
     }
 }

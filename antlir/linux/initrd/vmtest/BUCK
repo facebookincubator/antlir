@@ -1,7 +1,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "rust_binary", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:defs.bzl", "linux")
@@ -75,6 +75,8 @@ image.layer(
         image.ensure_dirs_exist("/etc/systemd/system"),
         # Some fixups for vmtest features in the limited initrd environment
         image.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
+        # Set a static IP when running in vmtest
+        image.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
         # We want to stay in the initrd, so mask out the units that switch-root
         # into the base os
         systemd.mask_units([
@@ -88,6 +90,7 @@ image.layer(
             "initrd-switch-root.service",
         ]),
     ],
+    flavor = REPO_CFG.antlir_linux_flavor,
 )
 
 image.package(
@@ -122,4 +125,42 @@ vm.rust_unittest(
     ),
     srcs = ["test_boots.rs"],
     crate_root = "test_boots.rs",
+)
+
+rust_binary(
+    name = "images-sidecar",
+    srcs = ["images_sidecar.rs"],
+    crate_root = "images_sidecar.rs",
+    deps = [
+        third_party.library(
+            name,
+            platform = "rust",
+        )
+        for name in [
+            "anyhow",
+            "tokio",
+            "warp",
+        ]
+    ],
+)
+
+buck_genrule(
+    name = "image_packages",
+    out = ".",
+    cmd = """
+        cp --reflink=auto $(location //antlir/linux/metalos:metalos.sendstream.zst) $OUT/metalos.sendstream.zst
+    """,
+)
+
+vm.rust_unittest(
+    name = "images",
+    vm_opts = vm.types.opts.new(
+        initrd = ":vmtest-initrd.cpio.gz",
+        kernel = TEST_KERNEL,
+        runtime = vm.types.runtime.new(
+            sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"],
+        ),
+    ),
+    srcs = ["test_images.rs"],
+    crate_root = "test_images.rs",
 )
