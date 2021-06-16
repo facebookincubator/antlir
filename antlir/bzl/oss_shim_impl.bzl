@@ -391,11 +391,13 @@ def _rust_binary(*args, **kwargs):
         if len(topsrc) == 1:
             kwargs["crate_root"] = topsrc[0]
 
+    unittests = kwargs.pop("unittests", True)
+
     _wrap_internal(native.rust_binary, args, kwargs)
 
     # automatically generate a unittest target if the caller did not explicitly
     # opt out
-    if kwargs.get("unittests", True):
+    if unittests:
         _rust_unittest(
             name = kwargs.get("name") + "-unittest",
             srcs = kwargs.get("srcs", []),

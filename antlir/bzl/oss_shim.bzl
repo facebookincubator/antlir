@@ -26,7 +26,7 @@ def _make_rule_kwargs_dict(lst):
     return {k: 1 for k in lst + ["antlir_rule"]}
 
 _CPP_BINARY_KWARGS = _make_rule_kwargs_dict(
-    ["name", "srcs", "compiler_flags", "visibility", "external_deps"],
+    ["name", "srcs", "deps", "compiler_flags", "linker_flags", "link_style", "visibility", "external_deps"],
 )
 
 def cpp_binary(*args, **kwargs):

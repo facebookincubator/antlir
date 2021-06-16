@@ -1,0 +1,3 @@
+rustc_flags = ["-lzstd"]
+
+buildscript = []
