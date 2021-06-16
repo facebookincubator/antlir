@@ -196,12 +196,7 @@ class RepoServers(NspawnPlugin):
     def wrap_post_setup_popen(
         self, post_setup_popen_ctx: _PostSetupPopenCtxMgr, setup: _NspawnSetup
     ) -> _PopenResult:
-        # NB: `opts.layer` is not the container's ephemeral subvol, but its
-        # read-only predecessor.  This effectively means that in the
-        # "normal" case of `opts.layer` being a build artifact, the
-        # container cannot affect the contents of the snapshot.  If this
-        # were found to be bad, we could use `setup.subvol` instead.
-        snap_subvol = setup.opts.layer
+        snap_subvol = setup.subvol
 
         with ExitStack() as stack:
             popen_res = stack.enter_context(post_setup_popen_ctx(setup))
