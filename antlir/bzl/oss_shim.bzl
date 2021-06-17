@@ -33,6 +33,25 @@ def cpp_binary(*args, **kwargs):
     _check_args("cpp_binary", args, kwargs, _CPP_BINARY_KWARGS)
     shim.cpp_binary(**kwargs)
 
+_CPP_LIBRARY_KWARGS = _make_rule_kwargs_dict(
+    [
+        "name",
+        "srcs",
+        "deps",
+        "compiler_flags",
+        "headers",
+        "include_directories",
+        "linker_flags",
+        "preferred_linkage",
+        "visibility",
+        "external_deps"
+    ],
+)
+
+def cpp_library(*args, **kwargs):
+    _check_args("cpp_library", args, kwargs, _CPP_LIBRARY_KWARGS)
+    shim.cpp_library(**kwargs)
+
 _CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
     ["name", "deps", "env", "headers", "srcs", "tags", "use_default_test_main", "visibility", "external_deps"],
 )

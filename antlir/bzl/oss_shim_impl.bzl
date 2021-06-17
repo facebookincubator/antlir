@@ -287,6 +287,17 @@ def _impl_cpp_binary(name, tags = [], **kwargs):
 def _cpp_binary(*args, **kwargs):
     _wrap_internal(_impl_cpp_binary, args, kwargs)
 
+def _impl_cpp_library(name, tags = [], **kwargs):
+    native.cxx_library(
+        name = name,
+        labels = tags,
+        deps = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs)),
+        **kwargs
+    )
+
+def _cpp_library(*args, **kwargs):
+    _wrap_internal(_impl_cpp_library, args, kwargs)
+
 def _impl_cpp_unittest(name, tags = [], **kwargs):
     native.cxx_test(
         name = name,
@@ -486,6 +497,7 @@ shim = struct(
         get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
     ),
     cpp_binary = _cpp_binary,
+    cpp_library = _cpp_library,
     cpp_unittest = _cpp_unittest,
     #
     # Constants
