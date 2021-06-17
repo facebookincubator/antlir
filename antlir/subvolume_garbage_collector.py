@@ -119,10 +119,14 @@ def garbage_collect_subvolumes(
     # Delete subvolumes (& their wrappers) with insufficient refcounts.
     for subvol_wrapper in subvol_wrappers:
         nlink = subvol_wrapper_to_nlink.get(subvol_wrapper, 0)
-        if nlink >= 2:
-            if nlink > 2:
-                # Not sure how this might happen, but it seems non-fatal...
-                log.error(f"{nlink} > 2 links to subvolume {subvol_wrapper}")
+        if nlink == 2:
+            continue  # expected case, this is a hardlink with 2 refs
+        elif nlink > 2:
+            # An actual real way for us to end up with nlink > 2 is if
+            # something else hardlinks the "subvol JSON" inside buck-out.
+            # This can be done via antlir/bzl/image_layer_alias.bzl.
+            # It is an unusual case, but not fatal.
+            log.info(f"{nlink} > 2 links to subvolume {subvol_wrapper}")
             continue
         refcount_path = Path(refcounts_dir) / f"{subvol_wrapper}.json"
         log.warning(
