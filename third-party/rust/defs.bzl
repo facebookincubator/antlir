@@ -118,7 +118,7 @@ def rust_buildscript_genrule_filter(
         env,
         target,
     )
-    native.cxx_genrule(
+    buck_genrule(
         name = name,
         out = outfile,
         cmd = pre +
@@ -139,8 +139,9 @@ def rust_buildscript_genrule_srcs(
         env = None,
         target = None,
         srcs = None):
+
     pre = _make_preamble("$OUT", package_name, version, features, cfgs, env, target)
-    native.cxx_genrule(
+    buck_genrule(
         name = name,
         out = name + "-outputs",
         srcs = srcs,
@@ -151,7 +152,7 @@ def rust_buildscript_genrule_srcs(
     )
     mainrule = ":" + name
     for file in files:
-        native.cxx_genrule(
+        buck_genrule(
             name = "{}={}".format(name, file),
             out = file,
             cmd = "mkdir -p \\$(dirname $OUT) && cp $(location {main})/{file} $OUT".format(
