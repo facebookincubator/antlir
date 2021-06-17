@@ -2,7 +2,6 @@ load("//antlir/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "http_file")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
-load(":rust.bzl", "rustc")
 load(":stable_appliance.bzl", "stable_build_appliance_sha")
 
 http_file(
@@ -87,31 +86,9 @@ add_rpm_repo_snapshots_layer(
 )
 
 image.layer(
-    name = "rc-build-appliance.base-features",
+    name = "rc-build-appliance.no-snapshot",
     flavor_config_override = rc_opts,
     features = ba_features,
-    visibility = [],
-)
-
-# Note: This `rustc.install` macro is only used on the
-# non-bootstrap build appliance because it does not
-# rely on the snapshot for installation.  So while
-# we *could* install this into the bootstrap version,
-# it doesn't provide any value.
-rustc.install(
-    name = "rc-build-appliance.no-snapshot",
-    parent_layer = ":rc-build-appliance.base-features",
-    # We use the nightly channel because some crates we
-    # depend on require features that are only available in
-    # this channel.  If we could, we'd use stable or beta
-    # and not be so apparently cavalier.  At least we are
-    # pinning the version to mitigate surprises.
-    channel = "nightly",
-    # This version is used because it works, there is
-    # no deep reason why this is better than some other
-    # version it was just the day I set this up.
-    version = "2021-04-20",
-    flavor_config_override = rc_opts,
     visibility = [],
 )
 
@@ -121,14 +98,6 @@ add_rpm_repo_snapshots_layer(
     flavor_config_override = rc_opts,
     parent_layer = ":rc-build-appliance.no-snapshot",
     visibility = ["PUBLIC"],
-)
-
-image.python_unittest(
-    name = "test-rc-build-appliance",
-    srcs = [
-        "test_rust.py",
-    ],
-    layer = ":rc-build-appliance",
 )
 
 # IMPORTANT: This should always be built with the config option

@@ -1,0 +1,19 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_command_alias")
+load(":rust.bzl", "rustc_toolchain")
+
+linux_x86_64_toolchain = rustc_toolchain(
+    arch = "x86_64",
+    channel = "nightly",
+    # The sha256 of the artifact is available via a URL of this form:
+    # https://static.rust-lang.org/dist/{version}/rust-{channel}-{arch}-{target}.tar.gz.sha256
+    sha256 = "89effca4bf6420446cd55ce46c384ad4f8496f7ad6e96108255fbad0d37f036b",
+    target = "unknown-linux-gnu",
+    version = "2021-04-20",
+)
+
+buck_command_alias(
+    name = "rustc",
+    exe = select({
+        "DEFAULT": ":{}".format(linux_x86_64_toolchain),
+    }),
+)
