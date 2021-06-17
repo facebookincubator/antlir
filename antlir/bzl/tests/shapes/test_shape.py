@@ -174,7 +174,7 @@ class TestShape(unittest.TestCase):
             "appears_in=Tuple[int, ...], "
             "friends=Tuple[shape(name=str), ...], "
             "lightsaber=Optional["
-            + ("shape(" "color=enum, " "target=Optional[Target]" ")")
+            + ("shape(" "color=Red_Green_Blue, " "target=Optional[Target]" ")")
             + "], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "
@@ -242,7 +242,7 @@ class TestShape(unittest.TestCase):
             "appears_in=Tuple[int, ...], "
             "friends=Tuple[shape(name=str), ...], "
             "lightsaber=Optional[shape("
-            + ("color=enum, " "target=Optional[Target]")
+            + ("color=Red_Green_Blue, " "target=Optional[Target]")
             + ")], "
             "callsign=Optional[Tuple[str, int]], "
             "metadata=Mapping[str, str], "

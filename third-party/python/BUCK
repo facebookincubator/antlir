@@ -26,8 +26,18 @@ pypi_package(
 
 pypi_package(
     name = "pydantic",
-    sha256 = "38be427ea01a78206bcaf9a56f835784afcba9e5b88fbdce33bbbfbcd7841229",
-    url = "https://files.pythonhosted.org/packages/35/47/7ce1c5dbcdc9dfa51cfc61db7bcccfc118c3cebe302971a5e34dda666c9d/pydantic-1.7.3-py3-none-any.whl",
+    sha256 = "fec866a0b59f372b7e776f2d7308511784dace622e0992a0b59ea3ccee0ae833",
+    url = "https://files.pythonhosted.org/packages/ff/74/54e030641601112309f6d2af620774e9080f99c7a15742fc6a0b170c4076/pydantic-1.8.2-py3-none-any.whl",
+    deps = [
+        ":typing_extensions",
+    ],
+)
+
+# TODO: remove typing_extensions when we are 100% on Python 3.9
+pypi_package(
+    name = "typing_extensions",
+    sha256 = "779383f6086d90c99ae41cf0ff39aac8a7937a9283ce0a414e5dd782f4c94a84",
+    url = "https://files.pythonhosted.org/packages/2e/35/6c4fff5ab443b57116cb1aad46421fb719bed2825664e8fe77d66d99bcbc/typing_extensions-3.10.0.0-py3-none-any.whl",
 )
 
 pypi_package(
