@@ -9,9 +9,9 @@
 send-stream data, this records the send-stream we would expect to see from
 these operations.
 
-Any time you run `demo_sendstreams` with `--update-gold`, you need to update
-the constants below.  The actual send-stream may need to change if the
-`btrfs send` implementation changes.
+Any time you `buck run antlir/btrfs_diff:make-demo-sendstreams` with
+`--write-gold-to-dir`, you need to update the constants below.  The actual
+send-stream may need to change if the `btrfs send` implementation changes.
 """
 import itertools
 import logging
@@ -30,12 +30,12 @@ from .subvolume_utils import InodeRepr
 
 # Update these constants to make the tests pass again after running
 # `demo_sendstreams` with `--update-gold`.
-UUID_CREATE = b"481757f7-6c61-2942-9bea-ee222b120c81"
-TRANSID_CREATE = 93993
-UUID_MUTATE = b"b5db3896-faf8-b44e-a952-c02f903ab445"
-TRANSID_MUTATE = 93996
+UUID_CREATE = b"fd7e73e5-7d58-3f49-a7de-c6e7083380e3"
+TRANSID_CREATE = 468
+UUID_MUTATE = b"e5272506-8a35-094a-95e7-046569043ec1"
+TRANSID_MUTATE = 471
 # Take a `oNUM-NUM-NUM` file from the send-stream, and use the middle number.
-TEMP_PATH_MIDDLES = {"create_ops": 93991, "mutate_ops": 93995}
+TEMP_PATH_MIDDLES = {"create_ops": 466, "mutate_ops": 470}
 # I have never seen this initial value change. First number in `oN-N-N`.
 TEMP_PATH_COUNTER_START = 257
 
@@ -203,6 +203,10 @@ def get_filtered_and_expected_items(
             write("hello_big_hole", offset=0, data=b"hello\n" + b"\0" * 4090),
             di.truncate(path=p("hello_big_hole"), size=2 ** 30),
             *base_metadata("hello_big_hole", mode=0o644),
+            *and_rename(
+                di.mkfile(path=temp_path("create_ops")), b"selinux_xattrs"
+            ),
+            *base_metadata("selinux_xattrs"),
             di.snapshot(
                 path=p("mutate_ops"),
                 uuid=UUID_MUTATE,
@@ -274,6 +278,7 @@ def render_demo_subvols(*, create_ops=None, mutate_ops=None):
                     "zeros_hole_zeros": [f"(File {zeros_holes_zeros})"],
                     # We have 6 bytes of data, but holes are block-aligned
                     "hello_big_hole": [f"(File d4096{big_hole}h1073737728)"],
+                    "selinux_xattrs": ["(File)"],
                 },
             ]
         )
@@ -295,6 +300,7 @@ def render_demo_subvols(*, create_ops=None, mutate_ops=None):
                     "zeros_hole_zeros": [f"(File {zeros_holes_zeros})"],
                     # This got truncated to 2 bytes.
                     "hello_big_hole": [f"(File d2{big_hole})"],
+                    "selinux_xattrs": ["(File)"],
                 },
             ]
         )

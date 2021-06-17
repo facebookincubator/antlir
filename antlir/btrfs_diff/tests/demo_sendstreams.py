@@ -21,8 +21,8 @@ For usage, `buck run antlir/btrfs_diff:make-demo-sendstreams -- --help`.
 
 Run this:
 
-  buck run antlir/btrfs_diff:make-demo-sendstreams* -- \\
-    --write-gold-to-dir btrfs_diff/tests/
+  buck run antlir/btrfs_diff:make-demo-sendstreams -- \\
+    --write-gold-to-dir antlir/btrfs_diff/tests/
 
 You will then need to manually update `uuid_create` and related fields in
 the "expected" section of the test.
@@ -156,6 +156,22 @@ def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:
     # A trailing hole exercises the `truncate` sendstream command.
     run(["bash", "-c", "echo hello > " + shlex.quote(p("hello_big_hole"))])
     run(["truncate", "-s", "1G", p("hello_big_hole")])
+
+    # We expect our create_ops image to have selinux attributes set. On
+    # some systems there are created by default, but not always. So set
+    # some explicitly here to guarantee we always have at least one.
+    run(["touch", p("selinux_xattrs")])
+    run(
+        [  # set_xattr
+            "sudo",
+            "setfattr",
+            "-n",
+            "security.selinux",
+            "-v",
+            "user_u:object_r:base_t",
+            p("selinux_xattrs"),
+        ]
+    )
 
     # This just serves to show that `btrfs send` ignores nested subvolumes.
     # There is no mention of `nested_subvol` in the send-stream.
