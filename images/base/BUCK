@@ -58,8 +58,10 @@ image.package(
     name = "fedora.vm.btrfs",
     format = "btrfs",
     layer = ":fedora.vm",
-    seed_device = True,
-    writable_subvolume = True,
+    loopback_opts = image.opts(
+        seed_device = True,
+        writable_subvolume = True,
+    ),
     visibility = [
         "//antlir/vm/...",
         kernel_get.base_target + "/...",

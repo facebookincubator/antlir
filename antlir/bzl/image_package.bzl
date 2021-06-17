@@ -9,10 +9,13 @@ files, as described by the specified `format`.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:shell.bzl", "shell")
+load(":loopback_opts.bzl", "loopback_opts_t", "normalize_loopback_opts")
 load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule")
+load(":shape.bzl", "shape")
 
 _IMAGE_PACKAGE = "image_package"
 
@@ -20,9 +23,6 @@ def image_package(
         name,
         layer,
         visibility = None,
-        writable_subvolume = False,
-        seed_device = False,
-        set_default_subvol = False,
         # Since `image.package` produces a real Buck-visible build artifact,
         # "user-facing" is the only sane default.  See comments in
         # `oss_shim.bzl` for how this works.
@@ -33,23 +33,18 @@ def image_package(
         # For supported formats, see `--format` here:
         #     buck run //antlir:package-image -- --help
         format = None,
-        # Size of the target image in MiB
-        # This is required when format is vfat/ext3 and optional for btrfs
-        size_mb = None,
-        # Also for vfat/ext3, but optional
-        label = None,
-        # This flag will ensure that the resulting btrfs loopback image
-        # is optimized in opt mode.  This is provided to toggle this
-        # behavior in certain cases where it's not desired, such as the
-        # building of the vmtest test binary image.
-        # This will get rolled up into the `loopback_opts` changes that
-        # are coming on D28591961
-        optimization = True):
+        # Opts are required when format == ext3 | vfat | btrfs
+        loopback_opts = None):
     visibility = visibility or []
     build_appliance = build_appliance or flavor_helpers.default_flavor_build_appliance
 
     if not format:
         fail("`format` is required for image.package")
+
+    if format in ("ext3", "vfat") and not loopback_opts:
+        fail("loopback_opts are required when using format: {}".format(format))
+
+    loopback_opts = normalize_loopback_opts(loopback_opts)
 
     buck_genrule(
         name = name,
@@ -75,28 +70,21 @@ def image_package(
               --subvolumes-dir "$subvolumes_dir" \
               --layer-path $(query_outputs {layer}) \
               --format {format} \
-              {maybe_size_mb} \
-              {maybe_label} \
               --output-path "$OUT" \
               {maybe_build_appliance} \
-              {rw} \
-              {seed} \
-              {set_default} \
-              {multi_pass_size_minimization}
+              {maybe_loopback_opts} 
             '''.format(
                 format = format,
-                maybe_size_mb = "--size-mb {}".format(size_mb) if size_mb else "",
-                maybe_label = "--volume-label {}".format(label) if label else "",
                 layer = layer,
                 maybe_build_appliance = "--build-appliance $(query_outputs {})".format(
                     build_appliance,
                 ) if build_appliance != DO_NOT_USE_BUILD_APPLIANCE else "",
-                rw = "--writable-subvolume" if writable_subvolume else "",
-                seed = "--seed-device" if seed_device else "",
-                set_default = "--set-default-subvol" if set_default_subvol else "",
-                multi_pass_size_minimization = "--multi-pass-size-minimization" if (
-                    (not REPO_CFG.artifacts_require_repo and optimization) and not size_mb
-                ) else "",
+                maybe_loopback_opts = "--loopback-opts {}".format(
+                    shell.quote(shape.do_not_cache_me_json(
+                        instance = loopback_opts,
+                        shape = loopback_opts_t,
+                    )),
+                ) if loopback_opts else "",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,
                 # so that the packager can verify that the specified

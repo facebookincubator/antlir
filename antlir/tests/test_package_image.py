@@ -24,6 +24,7 @@ from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path
 
+from ..loopback_opts_t import loopback_opts_t
 from ..package_image import Format, package_image
 from ..unshare import Namespace, Unshare, nsenter_as_root
 
@@ -34,11 +35,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         self,
         layer_path: str,
         format: str,
-        writable_subvolume: bool = False,
-        seed_device: bool = False,
-        set_default_subvol: bool = False,
-        size_mb: Optional[int] = None,
-        volume_label: Optional[str] = None,
+        loopback_opts: loopback_opts_t = None,
     ) -> Iterator[str]:
         with tempfile.TemporaryDirectory() as td:
             out_path = os.path.join(td, format)
@@ -54,11 +51,11 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     format,
                     "--output-path",
                     out_path,
-                    *(["--writable-subvolume"] if writable_subvolume else []),
-                    *(["--seed-device"] if seed_device else []),
-                    *(["--set-default-subvol"] if set_default_subvol else []),
-                    *(["--size-mb", str(size_mb)] if size_mb else []),
-                    *(["--volume-label", volume_label] if volume_label else []),
+                    *(
+                        ["--loopback-opts", loopback_opts.json()]
+                        if loopback_opts
+                        else []
+                    ),
                 ]
             )
             yield out_path
@@ -132,7 +129,9 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "btrfs",
-            size_mb=225,
+            loopback_opts=loopback_opts_t(
+                size_mb=225,
+            ),
         ) as out_path:
             self.assertEqual(
                 os.stat(out_path).st_size,
@@ -148,7 +147,9 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "btrfs",
-            writable_subvolume=True,
+            loopback_opts=loopback_opts_t(
+                writable_subvolume=True,
+            ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
         ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
@@ -184,8 +185,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "btrfs",
-            writable_subvolume=True,
-            seed_device=True,
+            loopback_opts=loopback_opts_t(
+                writable_subvolume=True,
+                seed_device=True,
+            ),
         ) as out_path:
             proc = subprocess.run(
                 ["btrfs", "inspect-internal", "dump-super", out_path],
@@ -196,8 +199,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "btrfs",
-            writable_subvolume=True,
-            seed_device=False,
+            loopback_opts=loopback_opts_t(
+                writable_subvolume=True,
+                seed_device=False,
+            ),
         ) as out_path:
             proc = subprocess.run(
                 ["btrfs", "inspect-internal", "dump-super", out_path],
@@ -214,7 +219,9 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "btrfs",
-            set_default_subvol=True,
+            loopback_opts=loopback_opts_t(
+                default_subvolume=True,
+            ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
         ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
@@ -464,8 +471,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
     def test_package_image_as_vfat(self):
         with self._package_image(
             self._sibling_path("vfat-test.layer"),
-            "vfat",
-            size_mb=32,
+            format="vfat",
+            loopback_opts=loopback_opts_t(
+                size_mb=32,
+            ),
         ) as pkg_path:
             self._verify_package_as_vfat(pkg_path)
 
@@ -502,8 +511,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
     def test_package_image_as_ext3(self):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
-            "ext3",
-            size_mb=256,
+            format="ext3",
+            loopback_opts=loopback_opts_t(
+                size_mb=256,
+            ),
         ) as pkg_path:
             self._verify_package_as_ext3(pkg_path)
 

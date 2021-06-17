@@ -793,7 +793,9 @@ image.package(
     name = "child-sized/layer.btrfs",
     layer = ":child/layer",
     format = "btrfs",
-    size_mb = 225,
+    loopback_opts = image.opts(
+        size_mb = 225,
+    ),
     visibility = ["//antlir/..."],
 )
 
@@ -1034,8 +1036,10 @@ image.package(
     name = "vfat-test.vfat",
     layer = ":vfat-test.layer",
     format = "vfat",
-    size_mb = 32,
-    label = "cats",
+    loopback_opts = image.opts(
+        size_mb = 32,
+        label = "cats",
+    ),
     visibility = ["//antlir/..."],
 )
 
@@ -1043,8 +1047,10 @@ image.package(
     name = "create_ops_ext3",
     layer = ":create_ops",
     format = "ext3",
-    size_mb = 256,
-    label = "cats",
+    loopback_opts = image.opts(
+        size_mb = 256,
+        label = "cats",
+    ),
     visibility = ["//antlir/..."],
 )
 
