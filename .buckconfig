@@ -10,6 +10,14 @@
   # and more closely mimics the internal macros
   disable_implicit_native_rules = true
 
+  # This defines what the default target platform is.  Since we only support
+  # linux running on x86_64 architectures, that's what we set this to.
+  target_platform_detector_spec = target://...->config//platform:linux-x86_64
+
+  # The default host platform defines what the platform should be when
+  # compiling targets that should run on the host.
+  default_host_platform = config//platform:linux-x86_64
+
 # There is only one python platform we support, and that is python3 with
 # standalone packages.  This will be expanded in the future to support
 # inplace python binaries in local dev mode, but it will always be python3.
@@ -29,9 +37,13 @@
 
 [rust]
   default_edition = 2018
+  compiler = //tools/build:rustc
 
 [project]
   ignore = .git, .hg, buck-image-out
+  # The separates built artifacts into a subdir for each target platform
+  # they are built against.
+  buck_out_include_target_config_hash = true
 
 [download]
   in_build = true
