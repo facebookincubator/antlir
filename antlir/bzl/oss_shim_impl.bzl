@@ -276,10 +276,10 @@ def _cxx_external_deps(kwargs):
     external_deps = kwargs.pop("external_deps", [])
     return ["//third-party/cxx:" + lib for _project, _version, lib in external_deps]
 
-def _impl_cpp_binary(name, tags = [], **kwargs):
+def _impl_cpp_binary(name, tags = None, **kwargs):
     native.cxx_binary(
         name = name,
-        labels = tags,
+        labels = tags or [],
         deps = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs)),
         **kwargs
     )
@@ -287,10 +287,21 @@ def _impl_cpp_binary(name, tags = [], **kwargs):
 def _cpp_binary(*args, **kwargs):
     _wrap_internal(_impl_cpp_binary, args, kwargs)
 
-def _impl_cpp_unittest(name, tags = [], **kwargs):
+def _impl_cpp_library(name, tags = None, **kwargs):
+    native.cxx_library(
+        name = name,
+        labels = tags or [],
+        deps = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs)),
+        **kwargs
+    )
+
+def _cpp_library(*args, **kwargs):
+    _wrap_internal(_impl_cpp_library, args, kwargs)
+
+def _impl_cpp_unittest(name, tags = None, **kwargs):
     native.cxx_test(
         name = name,
-        labels = tags,
+        labels = tags or [],
         deps = _normalize_deps(kwargs.pop("deps", []), _cxx_external_deps(kwargs)),
         **kwargs
     )
@@ -354,7 +365,7 @@ def _impl_python_unittest(
         **kwargs):
     native.python_test(
         deps = _normalize_deps(deps),
-        labels = tags if tags else [],
+        labels = tags or [],
         needed_coverage = _normalize_coverage(needed_coverage),
         package_style = _normalize_pkg_style(par_style),
         resources = _normalize_resources(resources),
@@ -486,6 +497,7 @@ shim = struct(
         get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
     ),
     cpp_binary = _cpp_binary,
+    cpp_library = _cpp_library,
     cpp_unittest = _cpp_unittest,
     #
     # Constants

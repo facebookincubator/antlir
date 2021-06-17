@@ -5,6 +5,7 @@ load(
     "//antlir/bzl:oss_shim.bzl",
     "buck_genrule",
     "cpp_binary",
+    "cpp_library",
     "rust_binary",
     "rust_library",
 )
@@ -283,7 +284,7 @@ def third_party_rust_cxx_library(name, **kwargs):
     # cxx_library rules do not play nicely with the vendoring hack we employ for
     # rust, so just pass the sources unmodified and rely on antlir vendoring the
     # C files necessary, but we can still avoid vendoring any rust code.
-    native.cxx_library(name = name, **kwargs)
+    cpp_library(name = name, **kwargs)
 
 def third_party_rust_prebuilt_cxx_library(name, **kwargs):
     fail(
