@@ -228,14 +228,13 @@ from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
 from .common import check_popen_returncode, init_logging
 from .find_built_subvol import find_built_subvol
 from .fs_utils import Path, create_ro, generate_work_dir
-from .subvol_utils import Subvol, SubvolOpts, KiB, MiB
+from .loopback_opts_t import loopback_opts_t
+from .subvol_utils import Subvol, KiB
 
 
 class _Opts(NamedTuple):
-    subvol_opts: SubvolOpts
     build_appliance: Optional[Subvol]
-    size_mb: Optional[int]
-    volume_label: Optional[str]
+    loopback_opts: loopback_opts_t
 
 
 class Format:
@@ -315,7 +314,7 @@ class BtrfsImage(Format, format_name="btrfs"):
 
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
         subvol.mark_readonly_and_send_to_new_loopback(
-            output_path, subvol_opts=opts.subvol_opts
+            output_path, loopback_opts=opts.loopback_opts
         )
 
 
@@ -428,24 +427,26 @@ class VfatImage(Format, format_name="vfat"):
     """
 
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
-        if opts.size_mb is None:
-            raise ValueError("size_mb is required when packaging a vfat image")
+        if opts.loopback_opts.size_mb is None:
+            raise ValueError(
+                "loopback_opts.size_mb is required when packaging a vfat image"
+            )
         _bash_cmd_in_build_appliance(
             output_path,
             opts,
             subvol,
             lambda *, image_path, work_dir: (
                 "/usr/sbin/mkfs.vfat {maybe_label} "
-                "-C {image_path} {image_size}; "
+                "-C {image_path} {image_size_kb}; "
                 "/usr/bin/mcopy -v -i {image_path} -sp {work_dir}/* ::"
             ).format(
-                maybe_label=f"-n {opts.volume_label}"
-                if opts.volume_label
+                maybe_label=f"-n {opts.loopback_opts.label}"
+                if opts.loopback_opts.label
                 else "",
                 image_path=image_path,
                 # mkfs.vfat takes the size as BLOCK_COUNT (1K Bytes)
                 # thus passing in "size_mb * KiB" results in "size_mb" MiB
-                image_size=opts.size_mb * KiB,
+                image_size_kb=opts.loopback_opts.size_mb * KiB,
                 work_dir=work_dir,
             ),
         )
@@ -458,22 +459,24 @@ class Ext3Image(Format, format_name="ext3"):
     """
 
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
-        if opts.size_mb is None:
-            raise ValueError("size_mb is required when packaging an ext3 image")
+        if opts.loopback_opts.size_mb is None:
+            raise ValueError(
+                "loopback_opts.size_mb is required when packaging an ext3 image"
+            )
         _bash_cmd_in_build_appliance(
             output_path,
             opts,
             subvol,
             lambda *, image_path, work_dir: (
-                "/usr/bin/truncate -s {image_size}M {image_path}; "
+                "/usr/bin/truncate -s {image_size_mb}M {image_path}; "
                 "/usr/sbin/mkfs.ext3 {maybe_label} {image_path}"
                 " -d {work_dir}"
             ).format(
-                maybe_label=f"-L {opts.volume_label}"
-                if opts.volume_label
+                maybe_label=f"-L {opts.loopback_opts.label}"
+                if opts.loopback_opts.label
                 else "",
                 image_path=image_path,
-                image_size=opts.size_mb,
+                image_size_mb=opts.loopback_opts.size_mb,
                 work_dir=work_dir,
             ),
         )
@@ -514,40 +517,10 @@ def parse_args(argv):
         help="Write the image package file(s) to this path -- must not exist",
     )
     parser.add_argument(
-        "--writable-subvolume",
-        action="store_true",
-        default=False,
-        help="By default, the subvolume inside a loopback is marked read-only."
-        " Pass this flag to mark it writable.",
-    )
-    parser.add_argument(
-        "--seed-device",
-        action="store_true",
-        default=False,
-        help="Pass this flag to make the resulting image a btrfs seed device",
-    )
-    parser.add_argument(
-        "--size-mb",
-        type=int,
-        help="Size of the target filesystem image",
-    )
-    parser.add_argument(
-        "--volume-label",
-        help="Label for the target filesystem image",
-    )
-    parser.add_argument(
-        "--multi-pass-size-minimization",
-        action="store_true",
-        default=False,
-        help="By default, we do not apply time-costly efforts to minimize the"
-        " size of loopback image",
-    )
-    parser.add_argument(
-        "--set-default-subvol",
-        action="store_true",
-        default=False,
-        help="Set the default subvol of the loopback image to be the volume:"
-        " subvol",
+        "--loopback-opts",
+        type=loopback_opts_t.parse_raw,
+        help="Inline serialized loopback_opts_t instance containing "
+        "configuration options for loopback formats",
     )
     parser.add_argument(
         "--build-appliance", help="Build appliance layer to use when packaging"
@@ -604,18 +577,12 @@ def package_image(argv):
         find_built_subvol(args.layer_path, subvolumes_dir=args.subvolumes_dir),
         output_path=args.output_path,
         opts=_Opts(
-            subvol_opts=SubvolOpts(
-                readonly=not args.writable_subvolume,
-                seed_device=args.seed_device,
-                set_default_subvol=args.set_default_subvol,
-                multi_pass_size_minimization=args.multi_pass_size_minimization,
-                size_bytes=args.size_mb * MiB if args.size_mb else None,
-            ),
             build_appliance=find_built_subvol(args.build_appliance)
             if args.build_appliance
             else None,
-            size_mb=args.size_mb,
-            volume_label=args.volume_label,
+            loopback_opts=args.loopback_opts
+            if args.loopback_opts
+            else loopback_opts_t(),
         ),
     )
     # Paranoia: images are read-only after being built

@@ -21,6 +21,7 @@ from .btrfs_loopback import LoopbackVolume, run_stdout_to_err, MIN_CREATE_BYTES
 from .common import check_popen_returncode, get_logger, open_fd, pipe
 from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path, temp_dir
+from .loopback_opts_t import loopback_opts_t
 from .unshare import Namespace, Unshare, nsenter_as_root, nsenter_as_user
 
 
@@ -42,23 +43,6 @@ def _path_is_btrfs_subvol(path: Path) -> bool:
     return fs_type == "btrfs" and ino == 256
 
 
-class SubvolOpts(NamedTuple):
-    # For sending subvolumes to an image, whether to leave the
-    # subvolume read only
-    readonly: bool = True
-    # Make the resulting subvolume a seed device, where another disk can be
-    # provided for writes
-    seed_device: bool = False
-    # Set the default subvol in the loopback
-    set_default_subvol: bool = False
-    # Apply time-costly optimization to minimize the size of loopback image.
-    # This is ignored if `size_bytes` is provided
-    multi_pass_size_minimization: bool = False
-    # The explicit requested output size of the loopback image
-    size_bytes: int = None
-
-
-_default_subvol_opts = SubvolOpts()
 T = TypeVar
 
 
@@ -570,7 +554,7 @@ class Subvol:
     def mark_readonly_and_send_to_new_loopback(
         self,
         output_path,
-        subvol_opts: SubvolOpts = _default_subvol_opts,
+        loopback_opts: loopback_opts_t,
         waste_factor=1.15,
     ) -> int:
         """
@@ -658,14 +642,14 @@ class Subvol:
             filesystem may end up being more out-of-tune than if we had
             started with a large enough size from the beginning.
         """
-        if subvol_opts.size_bytes:
+        if loopback_opts.size_mb:
             leftover_bytes, image_size = self._send_to_loopback_if_fits(
-                output_path, subvol_opts.size_bytes, subvol_opts
+                output_path, loopback_opts.size_mb * MiB, loopback_opts
             )
 
-            assert image_size == subvol_opts.size_bytes, (
+            assert image_size == loopback_opts.size_mb * MiB, (
                 f"{self._path} is {image_size} instead of the requested "
-                f"{subvol_opts.size}"
+                f"{loopback_opts.size_mb * MiB}"
             )
             attempts = 1
         else:
@@ -679,10 +663,11 @@ class Subvol:
                 attempts += 1
                 fs_bytes *= waste_factor
                 leftover_bytes, image_size = self._send_to_loopback_if_fits(
-                    output_path, int(fs_bytes), subvol_opts
+                    output_path, int(fs_bytes), loopback_opts
                 )
+
                 if leftover_bytes == 0:
-                    if not subvol_opts.multi_pass_size_minimization:
+                    if not loopback_opts.minimize_size:
                         break
                     # The following simple trick saves about 30% of image size.
                     # The reason is that btrfs auto-allocates more metadata
@@ -694,7 +679,7 @@ class Subvol:
                         leftover_bytes,
                         new_size,
                     ) = self._send_to_loopback_second_pass(
-                        output_path, image_size, subvol_opts
+                        output_path, image_size, loopback_opts
                     )
                     assert leftover_bytes == 0, (
                         f"Cannot fit {self._path} in {image_size} bytes, "
@@ -711,7 +696,7 @@ class Subvol:
                     f"{leftover_bytes} sendstream bytes were left over"
                 )
 
-        if subvol_opts.seed_device:
+        if loopback_opts.seed_device:
             self.set_seed_device(output_path)
 
         # Future: It would not be unreasonable to run some sanity checks on
@@ -854,7 +839,7 @@ class Subvol:
         )
 
     def _send_to_loopback_if_fits(
-        self, output_path, fs_size_bytes, subvol_opts: SubvolOpts
+        self, output_path, fs_size_bytes, loopback_opts: loopback_opts_t
     ) -> (int, int):
         """
         Creates a loopback of the specified size, and sends the current
@@ -926,7 +911,7 @@ class Subvol:
                     _drain_pipe_return_byte_count(r_send)
 
                 recv_ret.check_returncode()
-                if not subvol_opts.readonly:
+                if loopback_opts.writable_subvolume:
                     run_stdout_to_err(
                         nsenter_as_root(
                             ns,
@@ -940,7 +925,7 @@ class Subvol:
                         )
                     ).check_returncode()
 
-                if subvol_opts.set_default_subvol:
+                if loopback_opts.default_subvolume:
                     # Get the subvolume ID by just listing the specific
                     # subvol and getting the 2nd element.
                     # The output of this command looks like:
@@ -974,12 +959,12 @@ class Subvol:
             return (
                 0,
                 loop_vol.minimize_size()
-                if not subvol_opts.size_bytes
+                if not loopback_opts.size_mb
                 else loop_vol.get_size(),
             )
 
     def _send_to_loopback_second_pass(
-        self, output_path, initial_size_bytes, subvol_opts: SubvolOpts
+        self, output_path, initial_size_bytes, loopback_opts: loopback_opts_t
     ) -> (int, int):
         size_bytes_to_try = 512 * os.stat(output_path).st_blocks
         attempts = 0
@@ -993,7 +978,7 @@ class Subvol:
                 size_bytes_to_try = initial_size_bytes
                 last_effort = True
             leftover_bytes, new_size = self._send_to_loopback_if_fits(
-                output_path, int(size_bytes_to_try), subvol_opts
+                output_path, int(size_bytes_to_try), loopback_opts
             )
             if leftover_bytes != 0:
                 log.warning(

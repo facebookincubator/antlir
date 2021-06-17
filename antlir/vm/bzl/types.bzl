@@ -75,8 +75,10 @@ def _new_vm_disk(
                 name = package_target,
                 layer = layer,
                 format = "btrfs",
-                seed_device = True,
-                writable_subvolume = True,
+                loopback_opts = struct(
+                    seed_device = True,
+                    writable_subvolume = True,
+                ),
                 visibility = [],
                 antlir_rule = "user-internal",
             )

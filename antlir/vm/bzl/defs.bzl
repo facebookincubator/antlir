@@ -159,8 +159,10 @@ def _vm_unittest(
         name = actual_test_image,
         format = "btrfs",
         layer = ":" + actual_test_layer,
-        # Do not try and optimize this when building in mode/opt
-        optimization = False,
+        loopback_opts = image.opts(
+            # Do not try and optimize this when building in mode/opt
+            minimize_size = False,
+        ),
     )
 
     run_target = build_vm_run_target(

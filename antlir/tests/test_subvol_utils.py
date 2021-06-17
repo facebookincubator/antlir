@@ -18,11 +18,11 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 
 from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
 from ..fs_utils import Path, temp_dir
+from ..loopback_opts_t import loopback_opts_t
 from ..subvol_utils import (
     find_subvolume_on_disk,
     MiB,
     Subvol,
-    SubvolOpts,
     TempSubvolumes,
     volume_dir,
     with_temp_subvols,
@@ -145,7 +145,7 @@ class SubvolTestCase(unittest.TestCase):
     def _test_mark_readonly_and_send_to_new_loopback(
         self, temp_subvols, multi_pass_size_minimization
     ):
-        subvol_opts = SubvolOpts(
+        loopback_opts = loopback_opts_t(
             multi_pass_size_minimization=multi_pass_size_minimization
         )
         sv = temp_subvols.create("subvol")
@@ -213,7 +213,7 @@ class SubvolTestCase(unittest.TestCase):
                     2,
                     sv.mark_readonly_and_send_to_new_loopback(
                         loop_path.name,
-                        subvol_opts=subvol_opts,
+                        loopback_opts=loopback_opts,
                         waste_factor=waste_too_low,
                     ),
                 )
@@ -236,7 +236,7 @@ class SubvolTestCase(unittest.TestCase):
                 self.assertEqual(
                     1,
                     sv.mark_readonly_and_send_to_new_loopback(
-                        loop_path.name, subvol_opts=subvol_opts
+                        loop_path.name, loopback_opts=loopback_opts
                     ),
                 )
 
@@ -249,7 +249,7 @@ class SubvolTestCase(unittest.TestCase):
                     2,
                     sv.mark_readonly_and_send_to_new_loopback(
                         loop_path.name,
-                        subvol_opts=subvol_opts,
+                        loopback_opts=loopback_opts,
                         waste_factor=waste_too_low,
                     ),
                 )
@@ -281,7 +281,8 @@ class SubvolTestCase(unittest.TestCase):
             self.assertEqual(
                 1,
                 sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name, subvol_opts=SubvolOpts(readonly=False)
+                    loop_path.name,
+                    loopback_opts=loopback_opts_t(writeable_subvolume=True),
                 ),
             )
 
@@ -303,7 +304,9 @@ class SubvolTestCase(unittest.TestCase):
                 1,
                 sv.mark_readonly_and_send_to_new_loopback(
                     loop_path.name,
-                    subvol_opts=SubvolOpts(readonly=False, seed_device=True),
+                    loopback_opts=loopback_opts_t(
+                        writable_subvolume=True, seed_device=True
+                    ),
                 ),
             )
 
@@ -322,10 +325,9 @@ class SubvolTestCase(unittest.TestCase):
                 1,
                 sv.mark_readonly_and_send_to_new_loopback(
                     loop_path.name,
-                    subvol_opts=SubvolOpts(
+                    loopback_opts=loopback_opts_t(
                         # Make this size slightly larger than the subvol
-                        size_bytes=225
-                        * MiB,
+                        size_mb=225,
                     ),
                 ),
             )
