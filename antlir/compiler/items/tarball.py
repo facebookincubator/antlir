@@ -26,6 +26,103 @@ from .common import (
 from .tarball_t import tarball_t
 
 
+def load_from_tarball(
+    source: str,
+    subvol: Subvol,
+    layer_opts: LayerOpts,
+    into_dir=None,
+    force_root_ownership=False,
+) -> None:
+    into_dir = into_dir or Path("")
+
+    build_appliance = layer_opts.requires_build_appliance()
+    work_dir = generate_work_dir()
+    tar_cmd = " ".join(
+        [
+            "tar",
+            # Future: Bug: `tar` unfortunately FOLLOWS existing symlinks
+            # when unpacking.  This isn't dire because the compiler's
+            # conflict prevention SHOULD prevent us from going out of
+            # the subvolume since this TarballItem's provides would
+            # collide with whatever is already present.  However, it's
+            # hard to state that with complete confidence, especially if
+            # we start adding support for following directory symlinks.
+            "--directory",
+            (work_dir / into_dir).decode(),
+            "--extract",
+            # preserving xattrs need to be specified on both sides (packing
+            # and unpacking)
+            "--xattrs",
+            # Block tar's weird handling of paths containing colons.
+            "--force-local",
+            # The uid:gid doing the extraction is root:root, so by default
+            # tar would try to restore the file ownership from the archive.
+            # In some cases, we just want all the files to be root-owned.
+            *(["--no-same-owner"] if force_root_ownership else []),
+            # The next option is an extra safeguard that is redundant
+            # with the compiler's prevention of `provides` conflicts.
+            # It has two consequences:
+            #
+            #  (1) If a file already exists, `tar` will fail with an error.
+            #      It is **not** an error if a directory already exists --
+            #      otherwise, one would never be able to safely untar
+            #      something into e.g. `/usr/local/bin`.
+            #
+            #  (2) Less obviously, the option prevents `tar` from
+            #      overwriting the permissions of `directory`, as it
+            #      otherwise would.
+            #
+            #      Thanks to the compiler's conflict detection, this should
+            #      not come up, but now you know.  Observe us clobber the
+            #      permissions without it:
+            #
+            #        $ mkdir IN OUT
+            #        $ touch IN/file
+            #        $ chmod og-rwx IN
+            #        $ ls -ld IN OUT
+            #        drwx------. 2 lesha users 17 Sep 11 21:50 IN
+            #        drwxr-xr-x. 2 lesha users  6 Sep 11 21:50 OUT
+            #        $ tar -C IN -czf file.tgz .
+            #        $ tar -C OUT -xvf file.tgz
+            #        ./
+            #        ./file
+            #        $ ls -ld IN OUT
+            #        drwx------. 2 lesha users 17 Sep 11 21:50 IN
+            #        drwx------. 2 lesha users 17 Sep 11 21:50 OUT
+            #
+            #      Adding `--keep-old-files` preserves `OUT`'s metadata:
+            #
+            #        $ rm -rf OUT ; mkdir out ; ls -ld OUT
+            #        drwxr-xr-x. 2 lesha users 6 Sep 11 21:53 OUT
+            #        $ tar -C OUT --keep-old-files -xvf file.tgz
+            #        ./
+            #        ./file
+            #        $ ls -ld IN OUT
+            #        drwx------. 2 lesha users 17 Sep 11 21:50 IN
+            #        drwxr-xr-x. 2 lesha users 17 Sep 11 21:54 OUT
+            "--keep-old-files",
+            "--file",
+            "-",
+        ]
+    )
+    with open_for_read_decompress(source) as tf:
+        opts = new_nspawn_opts(
+            # '0<&3' below redirects fd=3 to stdin, so 'tar ... -f -' will
+            # read and unpack whatever we represent as fd=3. We pass `tf` as
+            # fd=3 into container by 'forward_fd=...' below. See help
+            # string in antlir/nspawn_in_subvol/args.py where
+            # _parser_add_nspawn_opts() calls
+            # parser.add_argument('--forward-fd')
+            cmd=["sh", "-uec", f"{tar_cmd} 0<&3"],
+            layer=build_appliance,
+            bindmount_rw=[(subvol.path(), work_dir)],
+            user=pwd.getpwnam("root"),
+            forward_fd=[tf.fileno()],
+            allow_mknod=True,
+        )
+        run_nspawn(opts, PopenArgs())
+
+
 class TarballItem(tarball_t, ImageItem):
     source: Path
 
@@ -66,89 +163,10 @@ class TarballItem(tarball_t, ImageItem):
         yield RequireDirectory(path=self.into_dir)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
-        build_appliance = layer_opts.requires_build_appliance()
-        work_dir = generate_work_dir()
-        tar_cmd = " ".join(
-            [
-                "tar",
-                # Future: Bug: `tar` unfortunately FOLLOWS existing symlinks
-                # when unpacking.  This isn't dire because the compiler's
-                # conflict prevention SHOULD prevent us from going out of
-                # the subvolume since this TarballItem's provides would
-                # collide with whatever is already present.  However, it's
-                # hard to state that with complete confidence, especially if
-                # we start adding support for following directory symlinks.
-                "--directory",
-                (work_dir / self.into_dir).decode(),
-                "--extract",
-                # preserving xattrs need to be specified on both sides (packing
-                # and unpacking)
-                "--xattrs",
-                # Block tar's weird handling of paths containing colons.
-                "--force-local",
-                # The uid:gid doing the extraction is root:root, so by default
-                # tar would try to restore the file ownership from the archive.
-                # In some cases, we just want all the files to be root-owned.
-                *(["--no-same-owner"] if self.force_root_ownership else []),
-                # The next option is an extra safeguard that is redundant
-                # with the compiler's prevention of `provides` conflicts.
-                # It has two consequences:
-                #
-                #  (1) If a file already exists, `tar` will fail with an error.
-                #      It is **not** an error if a directory already exists --
-                #      otherwise, one would never be able to safely untar
-                #      something into e.g. `/usr/local/bin`.
-                #
-                #  (2) Less obviously, the option prevents `tar` from
-                #      overwriting the permissions of `directory`, as it
-                #      otherwise would.
-                #
-                #      Thanks to the compiler's conflict detection, this should
-                #      not come up, but now you know.  Observe us clobber the
-                #      permissions without it:
-                #
-                #        $ mkdir IN OUT
-                #        $ touch IN/file
-                #        $ chmod og-rwx IN
-                #        $ ls -ld IN OUT
-                #        drwx------. 2 lesha users 17 Sep 11 21:50 IN
-                #        drwxr-xr-x. 2 lesha users  6 Sep 11 21:50 OUT
-                #        $ tar -C IN -czf file.tgz .
-                #        $ tar -C OUT -xvf file.tgz
-                #        ./
-                #        ./file
-                #        $ ls -ld IN OUT
-                #        drwx------. 2 lesha users 17 Sep 11 21:50 IN
-                #        drwx------. 2 lesha users 17 Sep 11 21:50 OUT
-                #
-                #      Adding `--keep-old-files` preserves `OUT`'s metadata:
-                #
-                #        $ rm -rf OUT ; mkdir out ; ls -ld OUT
-                #        drwxr-xr-x. 2 lesha users 6 Sep 11 21:53 OUT
-                #        $ tar -C OUT --keep-old-files -xvf file.tgz
-                #        ./
-                #        ./file
-                #        $ ls -ld IN OUT
-                #        drwx------. 2 lesha users 17 Sep 11 21:50 IN
-                #        drwxr-xr-x. 2 lesha users 17 Sep 11 21:54 OUT
-                "--keep-old-files",
-                "--file",
-                "-",
-            ]
+        load_from_tarball(
+            self.source,
+            subvol,
+            layer_opts,
+            into_dir=self.into_dir,
+            force_root_ownership=self.force_root_ownership,
         )
-        with open_for_read_decompress(self.source) as tf:
-            opts = new_nspawn_opts(
-                # '0<&3' below redirects fd=3 to stdin, so 'tar ... -f -' will
-                # read and unpack whatever we represent as fd=3. We pass `tf` as
-                # fd=3 into container by 'forward_fd=...' below. See help
-                # string in antlir/nspawn_in_subvol/args.py where
-                # _parser_add_nspawn_opts() calls
-                # parser.add_argument('--forward-fd')
-                cmd=["sh", "-uec", f"{tar_cmd} 0<&3"],
-                layer=build_appliance,
-                bindmount_rw=[(subvol.path(), work_dir)],
-                user=pwd.getpwnam("root"),
-                forward_fd=[tf.fileno()],
-                allow_mknod=True,
-            )
-            run_nspawn(opts, PopenArgs())

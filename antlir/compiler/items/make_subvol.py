@@ -15,6 +15,7 @@ from antlir.fs_utils import META_FLAVOR_FILE, open_for_read_decompress
 from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder, ensure_meta_dir_exists
+from .tarball import load_from_tarball
 
 
 # This checks to make sure that the parent layer of an layer has the same flavor
@@ -98,6 +99,9 @@ class LayerFromPackageItem(ImageItem):
                     item.source
                 ) as sendstream, subvol.receive(sendstream):
                     pass
+            elif item.format == "tar":
+                subvol.create()
+                load_from_tarball(item.source, subvol, layer_opts)
             else:
                 raise Exception(
                     f"Unsupported format {item.format} for layer from package."

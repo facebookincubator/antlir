@@ -306,6 +306,7 @@ python_library(
     deps = [
         ":common",
         ":mount_utils",
+        ":tarball",
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
     ],
@@ -338,6 +339,14 @@ shape.loader(
     classname = "remove_paths_t",
 )
 
+python_library(
+    name = "tarball",
+    srcs = ["tarball.py"],
+    deps = [
+        ":tarball_t",
+    ],
+)
+
 # Future: Finish splitting this library, and tests, by item.  The only
 # challenge is to make sure that `common.py` gets coverage -- coverage of
 # its functions is currently distributed across various items.
@@ -347,7 +356,6 @@ python_library(
         "install_file.py",
         "remove_path.py",
         "symlink.py",
-        "tarball.py",
     ],
     deps = [
         ":common",
@@ -358,7 +366,7 @@ python_library(
         ":remove_paths_t",
         ":stat_options",
         ":symlink_t",
-        ":tarball_t",
+        ":tarball",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:ba_runner",
@@ -387,6 +395,7 @@ python_unittest(
         (100, ":make_subvol"),
         (100, ":mount_utils"),
         (100, ":mount"),
+        (100, ":tarball"),
     ],
     resources = {
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
@@ -401,6 +410,7 @@ python_unittest(
             TEST_IMAGE_PREFIX + "hello_world_base",
         ): "tests/test-layer-without-mounts",
         TEST_IMAGE_PREFIX + "small-layer-with-mounts.btrfs": "tests/small-layer-with-mounts.btrfs",
+        TEST_IMAGE_PREFIX + "create_ops.tar.gz": "tests/create_ops.tar.gz",
     },
     deps = [
         ":common_testlib",

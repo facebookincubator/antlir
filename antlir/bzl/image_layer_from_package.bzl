@@ -31,7 +31,7 @@ def image_layer_from_package(
     """
     Arguments
     - `format`: The format of the package the layer is created from. Supported
-    formats include `sendstream`.
+    formats include `sendstream` and `tar`.
     - `name`, `source`, etc: same as on `image_layer.bzl`.
     The only unsupported kwargs are `parent_layer`
     (we'll support incremental sendstreams eventually) and
@@ -43,7 +43,7 @@ def image_layer_from_package(
         if bad_kwarg in image_layer_kwargs:
             fail("Unsupported with layer_from_package", bad_kwarg)
 
-    if format not in ["sendstream"]:
+    if format not in ["sendstream", "tar"]:
         fail("Unsupported format for layer_from_package", format)
 
     target_tagger = new_target_tagger()
