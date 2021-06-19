@@ -844,7 +844,7 @@ image.layer(
 )
 
 ##
-## These few rules help test `image.sendstream_layer`.
+## These few rules help test `image.layer_from_package`.
 ##
 
 defs.python_binary(
@@ -864,8 +864,9 @@ defs.buck_genrule(
     bash = "$(exe :save-demo-sendstream) \"$OUT\" " + op,
 )
 
-image.sendstream_layer(
+image.layer_from_package(
     name = op,
+    format = "sendstream",
     source = ":" + op + "-original.sendstream",
     subvol_name = op,
     visibility = ["//antlir/..."],
@@ -879,7 +880,7 @@ image.package(
 )
 
 ##
-## Check other forms of `sendstream_layer`, also verified in `test-image-layer`
+## Check other forms of `layer_from_package`, also verified in `test-image-layer`
 ##
 
 defs.buck_genrule(
@@ -891,8 +892,9 @@ defs.buck_genrule(
     """,
 )
 
-image.sendstream_layer(
+image.layer_from_package(
     name = "create_ops-from-dir",
+    format = "sendstream",
     source = image.source(
         ":create_ops-dir",
         path = "sendstream",
@@ -908,8 +910,9 @@ image.layer(
     ],
 )
 
-image.sendstream_layer(
+image.layer_from_package(
     name = "create_ops-from-layer",
+    format = "sendstream",
     source = image.source(
         layer = ":create_ops-layer",
         path = "sendstream",

@@ -119,5 +119,5 @@ def layer_deps_query(layer):
             depth = query.UNBOUNDED,
         ),
         label = "type",
-        pattern = "(image_layer|image_sendstream_layer)",
+        pattern = "(image_layer|image_layer_from_package)",
     )

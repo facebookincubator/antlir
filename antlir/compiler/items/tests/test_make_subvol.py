@@ -22,8 +22,8 @@ from ..ensure_dirs_exist import (
 from ..make_subvol import (
     _check_parent_flavor,
     FilesystemRootItem,
+    LayerFromPackageItem,
     ParentLayerItem,
-    ReceiveSendstreamItem,
 )
 from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
 
@@ -125,11 +125,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                     DUMMY_LAYER_OPTS_BA._replace(flavor="different flavor"),
                 )(child)
 
-    def test_receive_sendstream(self):
-        item = ReceiveSendstreamItem(
-            from_target="t",
-            source=Path(__file__).dirname() / "create_ops.sendstream",
-        )
+    def _check_receive_package(self, item):
         self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             new_subvol_name = "differs_from_create_ops"
@@ -138,4 +134,23 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             self.assertEqual(
                 render_demo_subvols(create_ops=new_subvol_name),
                 render_subvol(subvol),
+            )
+
+    def test_receive_sendstream(self):
+        self._check_receive_package(
+            LayerFromPackageItem(
+                format="sendstream",
+                from_target="t",
+                source=Path(__file__).dirname() / "create_ops.sendstream",
+            )
+        )
+
+    def test_unsupported_format(self):
+        with self.assertRaisesRegex(Exception, "Unsupported format"):
+            self._check_receive_package(
+                LayerFromPackageItem(
+                    format="test",
+                    from_target="t",
+                    source=Path(__file__).dirname() / "create_ops.tar.gz",
+                ),
             )

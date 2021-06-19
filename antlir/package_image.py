@@ -178,8 +178,9 @@ buck_genrule(
     bash='... fetch the sendstream from some blob store ...',
 )
 
-image_sendstream_layer(
+image_layer_from_package(
     name='parent',
+    format='sendstream',
     source=':parent.sendstream',
     # The presence of this hash assures us that the filesystem contents are
     # fixed, which makes it safe to build incremental snapshots against it.

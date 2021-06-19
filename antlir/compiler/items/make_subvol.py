@@ -79,7 +79,8 @@ class FilesystemRootItem(ImageItem):
 
 
 @dataclass(init=False, frozen=True)
-class ReceiveSendstreamItem(ImageItem):
+class LayerFromPackageItem(ImageItem):
+    format: str
     source: str
 
     def phase_order(self):
@@ -87,15 +88,20 @@ class ReceiveSendstreamItem(ImageItem):
 
     @classmethod
     def get_phase_builder(
-        cls, items: Iterable["ReceiveSendstreamItem"], layer_opts: LayerOpts
+        cls, items: Iterable["LayerFromPackageItem"], layer_opts: LayerOpts
     ):
         (item,) = items
 
         def builder(subvol: Subvol):
-            with open_for_read_decompress(
-                item.source
-            ) as sendstream, subvol.receive(sendstream):
-                pass
+            if item.format == "sendstream":
+                with open_for_read_decompress(
+                    item.source
+                ) as sendstream, subvol.receive(sendstream):
+                    pass
+            else:
+                raise Exception(
+                    f"Unsupported format {item.format} for layer from package."
+                )
             # The normal item contract is "leave the SV read-write" -- the
             # compiler will mark it RO at the end.  This is important e.g.
             # for setting `/.meta/flavor`.

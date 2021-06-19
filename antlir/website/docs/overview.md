@@ -137,7 +137,7 @@ Antlir comes with first-class support for pre-built images, including:
     link to impl)
   - using them in builds — just import your downloaded blob to present an
     `image.layer`-like build-time interface, see e.g.
-    `image.sendstream_layer`
+    `image.layer_from_package`
   - packaging them via `image.package`
   - publishing them to a blob store via `buck run` (**TODO** link to impl)
 
