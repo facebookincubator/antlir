@@ -12,8 +12,9 @@ http_file(
     ],
 )
 
-image.sendstream_layer(
+image.layer_from_package(
     name = "stable-build-appliance",
+    format = "sendstream",
     source = ":stable-build-appliance.sendstream.zst",
     flavor_config_override = image.opts(
         build_appliance = DO_NOT_USE_BUILD_APPLIANCE,

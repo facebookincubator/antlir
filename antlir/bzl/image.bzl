@@ -18,12 +18,12 @@ load(":image_genrule_layer.bzl", "image_genrule_layer")
 load(":image_gpt.bzl", "image_gpt", "image_gpt_partition")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
+load(":image_layer_from_package.bzl", "image_layer_from_package")
 load(":image_package.bzl", "image_package")
 load(":image_packaged_layer.bzl", "image_packaged_layer")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":image_rpm.bzl", "image_rpm")
 load(":image_rust_unittest.bzl", "image_rust_unittest")
-load(":image_sendstream_layer.bzl", "image_sendstream_layer")
 load(":image_source.bzl", "image_source")
 load(":image_test_rpm_names.bzl", "image_test_rpm_names")
 
@@ -42,6 +42,7 @@ image = struct(
     install_buck_runnable = image_install_buck_runnable,
     layer = image_layer,
     layer_alias = image_layer_alias,
+    layer_from_package = image_layer_from_package,
     layer_mount = image_layer_mount,
     opts = struct,
     package = image_package,
@@ -51,7 +52,6 @@ image = struct(
     rpm = image_rpm,
     rpms_install = image_rpms_install,
     rpms_remove_if_exists = image_rpms_remove_if_exists,
-    sendstream_layer = image_sendstream_layer,
     source = image_source,
     tarball = image_tarball,
     test_rpm_names = image_test_rpm_names,

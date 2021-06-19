@@ -16,8 +16,8 @@ from antlir.compiler.items.genrule_layer import GenruleLayerItem
 from antlir.compiler.items.group import GroupItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import (
+    LayerFromPackageItem,
     ParentLayerItem,
-    ReceiveSendstreamItem,
 )
 from antlir.compiler.items.mount import MountItem
 from antlir.compiler.items.remove_path import RemovePathItem
@@ -117,11 +117,11 @@ class ItemFactory:
             "genrule_layer": GenruleLayerItem,
             "groups": GroupItem,
             "install_files": self._image_sourcify(InstallFileItem),
+            "layer_from_package": self._image_sourcify(LayerFromPackageItem),
             "mounts": lambda **kwargs: MountItem(
                 **kwargs, layer_opts=layer_opts
             ),
             "parent_layer": ParentLayerItem,
-            "receive_sendstreams": self._image_sourcify(ReceiveSendstreamItem),
             "remove_paths": RemovePathItem,
             "rpms": self._image_sourcify(RpmActionItem),
             "symlinks_to_dirs": SymlinkToDirItem,

@@ -137,13 +137,13 @@ fake_macro_library(
         ":image_gpt",
         ":image_layer",
         ":image_layer_alias",
+        ":image_layer_from_package",
         ":image_layer_utils",
         ":image_package",
         ":image_packaged_layer",
         ":image_python_unittest",
         ":image_rpm",
         ":image_rust_unittest",
-        ":image_sendstream_layer",
         ":image_source",
         ":image_test_rpm_names",
         ":image_utils",
@@ -197,8 +197,8 @@ fake_macro_library(
 )
 
 fake_macro_library(
-    name = "image_sendstream_layer",
-    srcs = ["image_sendstream_layer.bzl"],
+    name = "image_layer_from_package",
+    srcs = ["image_layer_from_package.bzl"],
     deps = [
         ":compile_image_features",
         ":constants",
