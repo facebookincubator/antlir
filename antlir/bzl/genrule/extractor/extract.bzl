@@ -16,6 +16,43 @@ It then clones the binaries and any .so's they depend on from the source
 layer into the destination layer. The actual clone is very unergonomic at
 this point, and it is recommended to batch all binaries to be extracted into
 a single call to `extract.extract`.
+
+An important note: If you are using buck compiled binaries, you *must*
+use `image.install(...)` to insert them into your `source` layer and *not*
+`image.install_buck_runnable(...)`. This is the exact opposite of the
+suggested usage in the rest of the API, and here's why:
+
+If `image.install_buck_runnable(...)` is built in the case where
+`REPO_CFG.artifacts_require_repo == True`, then what is *actually*
+installed into the target `image.layer` is a shell script that exec's
+the *actual* binary from the `buck-out` path contained somewhere in the
+repo. Since this is a shell script, we can't easily do ELF extraction
+without doing some nasty file parsing, and right now we'd rather not
+do that because it's possible that we can fix it correctly and `image.install`
+is good enough.
+
+The caveat to using `image.install` is that the compiled binary must be
+*mostly* static (meaning it only depends on the glibc it is compiled against)
+__or__ it must *not* use relative references to shared objects that cannot
+be resolved in the `source`. These restrictions, especially the last one, are
+pretty difficult to reason about in advance of just trying to perform an
+extraction.  As a result, the best advice we can give at this point is to
+only use `rust_binary` with the `link_style = "static"` option for any
+binary target you want to use via the extractor.
+
+Future: Fixing the main problem with `image.install_buck_runnable` could involve:
+  - Parsing the generated bash script and extracting the "real" path of the
+    binary.
+  - Modify `image.install_buck_runnable` to install a symlink that points back
+    to the real binary. That symlink would dangle into the buck-out paths at 
+    build time, but resolve at runtime. This would require a bit more work in
+    the compiler to support dangling symlinks.
+  - Do a hybrid of both and here in the extractor have a pre-processing step
+    that finds the `install_buck_runnable` paths and replaces the bash wrapper
+    with a symlink. 
+
+I think the 3rd option is most preferrable, since the problem that the bash
+wrapper presents is really only an issue here.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
@@ -35,16 +72,11 @@ def _extract(
         # The flavor of the extracted layer
         flavor,
         # A list of binaries to extract from the source,
-        binaries = None,
+        binaries,
         # The root destination path to clone the extracted
         # files into.
-        dest = "/",
-        # Buck binaries to extract. dict of target -> dest path
-        buck_binaries = None):
-    if not binaries and not buck_binaries:
-        fail("at least one of 'binaries' and 'buck_binaries' must be given")
+        dest = "/"):
     binaries = binaries or []
-    buck_binaries = buck_binaries or {}
 
     layer_hash = sha256_b64(normalize_target(source) + " ".join(binaries) + dest)
     base_extract_layer = "image-extract-setup--{}".format(layer_hash)
@@ -54,12 +86,6 @@ def _extract(
         features = [
             image.ensure_dirs_exist("/output"),
             image.install_buck_runnable("//antlir/bzl/genrule/extractor:extract", "/extract"),
-            image.ensure_dirs_exist("/buck-binaries"),
-        ] + [
-            # when artifacts_require_repos = False, these are not used and are
-            # instead replaced with the absolute path as given by `$(exe)`
-            image.install(target, _buck_binary_tmp_dst(dst), mode = "a+rx")
-            for target, dst in buck_binaries.items()
         ],
         visibility = [],
         flavor = flavor,
@@ -72,23 +98,6 @@ def _extract(
             "--binary",
             binary,
         ])
-
-    for target, dst in buck_binaries.items():
-        if REPO_CFG.artifacts_require_repo:
-            # If buck built binaries require repo artifacts (ie @mode/dev),
-            # then give the extractor the full path to executable so it can
-            # properly parse it.
-            binaries_args.extend([
-                "--buck-binary",
-                "$(exe {}):{}".format(target, dst),
-            ])
-        else:
-            # Otherwise, the binaries as installed above should be sufficient to
-            # extract by themselves.
-            binaries_args.extend([
-                "--buck-binary",
-                "{}:{}".format(_buck_binary_tmp_dst(dst), dst),
-            ])
 
     work_layer = "image-extract-work--{}".format(layer_hash)
     image.genrule_layer(
