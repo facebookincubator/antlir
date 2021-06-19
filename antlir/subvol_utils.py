@@ -17,10 +17,16 @@ from contextlib import contextmanager
 from typing import AnyStr, BinaryIO, Iterable, Iterator, NamedTuple, TypeVar
 
 from .artifacts_dir import find_artifacts_dir
-from .btrfs_loopback import LoopbackVolume, run_stdout_to_err, MIN_CREATE_BYTES
-from .common import check_popen_returncode, get_logger, open_fd, pipe
+from .common import (
+    check_popen_returncode,
+    get_logger,
+    open_fd,
+    pipe,
+    run_stdout_to_err,
+)
 from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path, temp_dir
+from .loopback import BtrfsLoopbackVolume, MIN_CREATE_BYTES
 from .loopback_opts_t import loopback_opts_t
 from .unshare import Namespace, Unshare, nsenter_as_root, nsenter_as_user
 
@@ -658,6 +664,11 @@ class Subvol:
             # To be specific, I tried single-file subvolumes with files of size
             # 27, 69, 94, 129, 175, 220MiB.
             fs_bytes = self._estimate_content_bytes() + 81 * MiB
+            # We also need to build an image of at least the MIN_CREATE_BYTES
+            # size required by btrfs.
+            fs_bytes = (
+                fs_bytes if fs_bytes >= MIN_CREATE_BYTES else MIN_CREATE_BYTES
+            )
             attempts = 0
             while True:
                 attempts += 1
@@ -830,7 +841,7 @@ class Subvol:
     _OUT_OF_SPACE_SUFFIX = b": No space left on device\n"
 
     def _run_btrfs_receive(
-        self, ns: Unshare, loop_vol: LoopbackVolume, r_send: int
+        self, ns: Unshare, loop_vol: BtrfsLoopbackVolume, r_send: int
     ):
         return run_stdout_to_err(
             nsenter_as_root(ns, "btrfs", "receive", loop_vol.dir()),
@@ -839,7 +850,7 @@ class Subvol:
         )
 
     def _send_to_loopback_if_fits(
-        self, output_path, fs_size_bytes, loopback_opts: loopback_opts_t
+        self, output_path, fs_size_bytes: int, loopback_opts: loopback_opts_t
     ) -> (int, int):
         """
         Creates a loopback of the specified size, and sends the current
@@ -850,8 +861,8 @@ class Subvol:
         open(output_path, "wb").close()
         with pipe() as (r_send, w_send), Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as ns, LoopbackVolume(
-            ns, output_path, fs_size_bytes
+        ) as ns, BtrfsLoopbackVolume(
+            unshare=ns, image_path=output_path, size_bytes=fs_size_bytes
         ) as loop_vol, self.mark_readonly_and_write_sendstream_to_file(
             w_send
         ):
@@ -967,6 +978,13 @@ class Subvol:
         self, output_path, initial_size_bytes, loopback_opts: loopback_opts_t
     ) -> (int, int):
         size_bytes_to_try = 512 * os.stat(output_path).st_blocks
+
+        # we cannot make a loopback that is smaller than MIN_CREATE_BYTES
+        size_bytes_to_try = (
+            size_bytes_to_try
+            if size_bytes_to_try >= MIN_CREATE_BYTES
+            else MIN_CREATE_BYTES
+        )
         attempts = 0
         last_effort = False
         while True:
@@ -1113,7 +1131,7 @@ class TempSubvolumes(contextlib.AbstractContextManager):
             rmdir buck-image-out/volume/tmp/TempSubvolumes_*
 
     Instead of polluting `buck-image-out/volume`, it  would be possible to
-    put these on a separate `LoopbackVolume`, to rely on `Unshare` to
+    put these on a separate `BtrfsLoopbackVolume`, to rely on `Unshare` to
     guarantee unmounting it, and to rely on `tmpwatch` to delete the stale
     loopbacks from `/tmp/`.  At present, this doesn't seem worthwhile since
     it would require using an `Unshare` object throughout `Subvol`.
