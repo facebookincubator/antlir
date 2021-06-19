@@ -13,7 +13,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use goblin::elf::Elf;
 use once_cell::sync::Lazy;
 use slog::{debug, o, warn};
@@ -122,14 +122,6 @@ impl Binary {
         })
     }
 
-    pub fn try_parse_buck(s: &str) -> Result<Self> {
-        let parts: Vec<_> = s.splitn(2, ':').collect();
-        if parts.len() != 2 {
-            bail!("expected two colon-separated paths");
-        }
-        Self::new("/".into(), parts[0].into(), parts[1].into())
-    }
-
     /// Find all transitive dependencies of this binary. Return ExtractFile
     /// structs for this binary, its interpreter and all dependencies.
     fn extracts(&self) -> Result<Vec<ExtractFile>> {
@@ -201,11 +193,6 @@ struct ExtractOpts {
     /// into the same location in --dst-dir.
     #[structopt(long = "binary")]
     binaries: Vec<String>,
-
-    /// Buck-built binaries to extract. Same format as --binary, but src is
-    /// treated as an absolute path.
-    #[structopt(long = "buck-binary")]
-    buck_binaries: Vec<String>,
 }
 
 fn main() -> Result<()> {
@@ -217,11 +204,6 @@ fn main() -> Result<()> {
         .binaries
         .into_iter()
         .map(|s| Binary::new(top_src_dir.clone(), top_src_dir.force_join(&s), s.into()))
-        .chain(
-            opt.buck_binaries
-                .into_iter()
-                .map(|s| Binary::try_parse_buck(&s)),
-        )
         .collect::<Result<_>>()?;
 
     let extract_files: Vec<_> = binaries

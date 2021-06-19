@@ -11,10 +11,8 @@ image.layer(
             flavor = REPO_CFG.antlir_linux_flavor,
             binaries = [
                 "/usr/lib/systemd/systemd",
+                "/usr/bin/repo-built-binary",
             ],
-            buck_binaries = {
-                ":repo-built-binary": "/usr/bin/repo-built-binary",
-            },
             source = ":source",
         ),
     ],
@@ -25,6 +23,10 @@ extract.source_layer(
     name = "source",
     features = [
         image.rpms_install(["systemd"]),
+        image.install(
+            ":repo-built-binary",
+            "/usr/bin/repo-built-binary",
+        ),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
 )
@@ -33,6 +35,7 @@ rust_binary(
     name = "repo-built-binary",
     srcs = ["repo_built_binary.rs"],
     crate_root = "repo_built_binary.rs",
+    link_style = "static",
 )
 
 python_unittest(

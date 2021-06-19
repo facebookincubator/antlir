@@ -16,6 +16,10 @@ extract.source_layer(
             "systemd",
             "systemd-udev",
         ]),
+        image.install(
+            "//antlir/linux/antlirctl:antlirctl",
+            "/usr/bin/antlirctl",
+        ),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
@@ -73,10 +77,8 @@ image.layer(
             flavor = REPO_CFG.antlir_linux_flavor,
             binaries = SYSTEMD_BINARIES + [
                 "/usr/sbin/btrfs",
+                "/usr/bin/antlirctl",
             ],
-            buck_binaries = {
-                "//antlir/linux/antlirctl:antlirctl": "/usr/bin/antlirctl",
-            },
             dest = "/",
             source = ":deps",
         ),
