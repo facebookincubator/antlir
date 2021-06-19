@@ -125,14 +125,16 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                     DUMMY_LAYER_OPTS_BA._replace(flavor="different flavor"),
                 )(child)
 
-    def _check_receive_package(self, item):
+    def _check_receive_package(self, item, lossy_packaging=None):
         self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             new_subvol_name = "differs_from_create_ops"
             subvol = temp_subvolumes.caller_will_create(new_subvol_name)
             item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(subvol)
             self.assertEqual(
-                render_demo_subvols(create_ops=new_subvol_name),
+                render_demo_subvols(
+                    create_ops=new_subvol_name, lossy_packaging=lossy_packaging
+                ),
                 render_subvol(subvol),
             )
 
@@ -143,6 +145,16 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                 from_target="t",
                 source=Path(__file__).dirname() / "create_ops.sendstream",
             )
+        )
+
+    def test_receive_tarball(self):
+        self._check_receive_package(
+            LayerFromPackageItem(
+                format="tar",
+                from_target="t",
+                source=Path(__file__).dirname() / "create_ops.tar.gz",
+            ),
+            lossy_packaging="tar",
         )
 
     def test_unsupported_format(self):

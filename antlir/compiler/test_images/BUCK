@@ -933,6 +933,7 @@ image.package(
     name = "create_ops.tar.gz",
     format = "tar.gz",
     layer = ":create_ops",
+    visibility = ["//antlir/..."],
 )
 
 image.layer(

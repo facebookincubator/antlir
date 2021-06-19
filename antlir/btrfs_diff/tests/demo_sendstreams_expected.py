@@ -241,7 +241,9 @@ def get_filtered_and_expected_items(
     )
 
 
-def render_demo_subvols(*, create_ops=None, mutate_ops=None):
+def render_demo_subvols(
+    *, create_ops=None, mutate_ops=None, lossy_packaging=None
+):
     """
     Test-friendly renderings of the subvolume contents that should be
     produced by the commands in `demo_sendstreams.py`.
@@ -251,13 +253,19 @@ def render_demo_subvols(*, create_ops=None, mutate_ops=None):
 
     Read carefully: the return type depends on the args!
     """
+    assert lossy_packaging in [None, "tar"], lossy_packaging
 
     # For ease of maintenance, keep the subsequent filesystem views in
     # the order that `demo_sendstreams.py` performs the operations.
 
     goodbye_world = InodeRepr("(File)")  # This empty file gets hardlinked
 
+    def render_reflink(s: str) -> str:
+        return "" if lossy_packaging else f"({s})"
+
     def render_create_ops(kb_nuls, kb_nuls_clone, zeros_holes_zeros, big_hole):
+        kb_nuls = render_reflink(kb_nuls)
+        kb_nuls_clone = render_reflink(kb_nuls_clone)
         return render_subvols.expected_rendering(
             [
                 "(Dir)",
@@ -270,11 +278,15 @@ def render_demo_subvols(*, create_ops=None, mutate_ops=None):
                     "buffered": [f"(Block m600 {os.makedev(1337, 31415):x})"],
                     "unbuffered": [f"(Char {os.makedev(1337, 31415):x})"],
                     "fifo": ["(FIFO)"],
-                    "unix_sock": ["(Sock m755)"],  # default mode for sockets
+                    **(
+                        {"unix_sock": ["(Sock m755)"]}
+                        if not lossy_packaging
+                        else {}
+                    ),  # default mode for sockets
                     "goodbye": [goodbye_world],
                     "bye_symlink": ["(Symlink hello/world)"],
-                    "56KB_nuls": [f"(File d{FILE_SZ}({kb_nuls}))"],
-                    "56KB_nuls_clone": [f"(File d{FILE_SZ}({kb_nuls_clone}))"],
+                    "56KB_nuls": [f"(File d{FILE_SZ}{kb_nuls})"],
+                    "56KB_nuls_clone": [f"(File d{FILE_SZ}{kb_nuls_clone})"],
                     "zeros_hole_zeros": [f"(File {zeros_holes_zeros})"],
                     # We have 6 bytes of data, but holes are block-aligned
                     "hello_big_hole": [f"(File d4096{big_hole}h1073737728)"],
@@ -284,6 +296,8 @@ def render_demo_subvols(*, create_ops=None, mutate_ops=None):
         )
 
     def render_mutate_ops(kb_nuls, kb_nuls_clone, zeros_holes_zeros, big_hole):
+        kb_nuls = render_reflink(kb_nuls)
+        kb_nuls_clone = render_reflink(kb_nuls_clone)
         return render_subvols.expected_rendering(
             [
                 "(Dir)",
@@ -292,11 +306,15 @@ def render_demo_subvols(*, create_ops=None, mutate_ops=None):
                     "buffered": [f"(Block m600 {os.makedev(1337, 31415):x})"],
                     "unbuffered": [f"(Char {os.makedev(1337, 31415):x})"],
                     "fifo": ["(FIFO)"],
-                    "unix_sock": ["(Sock m755)"],  # default mode for sockets
+                    **(
+                        {"unix_sock": ["(Sock m755)"]}
+                        if not lossy_packaging
+                        else {}
+                    ),  # default mode for sockets
                     "farewell": [goodbye_world],
                     "bye_symlink": ["(Symlink hello/world)"],
-                    "56KB_nuls": [f"(File d{FILE_SZ}({kb_nuls}))"],
-                    "56KB_nuls_clone": [f"(File d{FILE_SZ}({kb_nuls_clone}))"],
+                    "56KB_nuls": [f"(File d{FILE_SZ}{kb_nuls})"],
+                    "56KB_nuls_clone": [f"(File d{FILE_SZ}{kb_nuls_clone})"],
                     "zeros_hole_zeros": [f"(File {zeros_holes_zeros})"],
                     # This got truncated to 2 bytes.
                     "hello_big_hole": [f"(File d2{big_hole})"],
