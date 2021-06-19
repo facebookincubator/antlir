@@ -155,11 +155,25 @@ python_unittest(
 )
 
 python_library(
-    name = "btrfs_loopback",
-    srcs = ["btrfs_loopback.py"],
+    name = "loopback",
+    srcs = ["loopback.py"],
     deps = [
         ":common",
         ":unshare",
+    ],
+)
+
+python_unittest(
+    name = "test-loopback",
+    srcs = ["tests/test_loopback.py"],
+    needed_coverage = [(
+        100,
+        ":loopback",
+    )],
+    deps = [
+        ":common",
+        ":fs_utils",
+        ":loopback",
     ],
 )
 
@@ -168,9 +182,9 @@ python_library(
     srcs = ["subvol_utils.py"],
     deps = [
         ":artifacts_dir",
-        ":btrfs_loopback",
         ":common",
         ":fs_utils",
+        ":loopback",
         ":loopback_opts_t",
         ":unshare",
         "//antlir/compiler:subvolume_on_disk",
