@@ -351,7 +351,10 @@ NAME_TO_ITEM_TYPE = {
 assert set(NAME_TO_PARSER_TYPE.keys()) == set(NAME_TO_ITEM_TYPE.keys())
 
 
-def parse_btrfs_dump(binary_infile: BinaryIO) -> Iterable[SendStreamItem]:
+def parse_btrfs_dump(
+    binary_infile: BinaryIO,
+    fix_fields: Optional[Dict[bytes, Dict[str, bytes]]] = None,
+) -> Iterable[SendStreamItem]:
     reg = re.compile(br"([^ ]+) +((\\ |[^ ])+) *(.*)\n")
     subvol_name = None
     for l in binary_infile:
@@ -395,7 +398,11 @@ def parse_btrfs_dump(binary_infile: BinaryIO) -> Iterable[SendStreamItem]:
                 unnormalized_path, subvol_name=subvol_name
             )
 
-        fields = item_parser.parse_details(subvol_name, details)
+        if fix_fields and details in fix_fields.keys():
+            fields = fix_fields[details]
+        else:
+            fields = item_parser.parse_details(subvol_name, details)
+
         if fields is None:
             raise RuntimeError(f"unexpected format in line details: {repr(l)}")
 

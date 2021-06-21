@@ -361,6 +361,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     "--archive",
                     "--hard-links",
                     "--sparse",
+                    "--acls",
                     "--xattrs",
                     mount_dir + "/",
                     subvol.path(),
@@ -374,10 +375,15 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             original_render = self._render_sendstream_path(
                 self._sibling_path("create_ops-original.sendstream")
             )
+
             # SquashFS does not preserve the original's cloned extents of
             # zeros, nor the zero-hole-zero patter.  In all cases, it
             # (efficiently) transmutes the whole file into 1 sparse hole.
             self._assert_ignore_original_extents(original_render)
+
+            # squashfs does not support ACLs
+            original_render[1]["dir_with_acls"][0] = "(Dir)"
+
             self.assertEqual(
                 original_render,
                 self._render_sendstream_path(temp_sendstream.name),
@@ -430,6 +436,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             # really not much point in validating these so we'll just
             # set them to what they should be.
             self._assert_ignore_original_extents(original_render)
+
+            # CPIO does not support ACLs
+            original_render[1]["dir_with_acls"][0] = "(Dir)"
+
             # CPIO does not support xattrs
             original_render[1]["hello"][0] = "(Dir)"
 

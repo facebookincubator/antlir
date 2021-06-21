@@ -230,7 +230,7 @@ from .common import check_popen_returncode, init_logging
 from .find_built_subvol import find_built_subvol
 from .fs_utils import Path, create_ro, generate_work_dir
 from .loopback_opts_t import loopback_opts_t
-from .subvol_utils import Subvol, KiB
+from .subvol_utils import Subvol
 
 
 class _Opts(NamedTuple):
@@ -393,6 +393,10 @@ def _bash_cmd_in_build_appliance(
     Spin up a new nspawn build appliance with bind mounts
     and run cmd provided by get_bash.
     """
+
+    # create the output file first so it's owned by the current user.
+    create_ro(output_path, "wb").close()  # Ensure non-root ownership
+
     work_dir = generate_work_dir()
     output_dir = "/output"
     o_basepath, o_file = os.path.split(output_path)
@@ -413,7 +417,8 @@ def _bash_cmd_in_build_appliance(
                 (subvol.path(), work_dir),
                 (o_basepath, output_dir),
             ],
-            user=pwd.getpwuid(os.getuid()),
+            # Run as root so we can access files owned by different users.
+            user=pwd.getpwnam("root"),
         ),
         PopenArgs(),
     )
@@ -437,17 +442,15 @@ class VfatImage(Format, format_name="vfat"):
             opts,
             subvol,
             lambda *, image_path, work_dir: (
-                "/usr/sbin/mkfs.vfat {maybe_label} "
-                "-C {image_path} {image_size_kb}; "
+                "/usr/bin/truncate -s {image_size_mb}M {image_path}; "
+                "/usr/sbin/mkfs.vfat {maybe_label} {image_path}; "
                 "/usr/bin/mcopy -v -i {image_path} -sp {work_dir}/* ::"
             ).format(
                 maybe_label=f"-n {opts.loopback_opts.label}"
                 if opts.loopback_opts.label
                 else "",
                 image_path=image_path,
-                # mkfs.vfat takes the size as BLOCK_COUNT (1K Bytes)
-                # thus passing in "size_mb * KiB" results in "size_mb" MiB
-                image_size_kb=opts.loopback_opts.size_mb * KiB,
+                image_size_mb=opts.loopback_opts.size_mb,
                 work_dir=work_dir,
             ),
         )

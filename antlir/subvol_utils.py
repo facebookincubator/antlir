@@ -788,6 +788,7 @@ class Subvol:
                 "tar c "
                 "--sparse "
                 "--one-file-system "  # Keep this just in case
+                "--acls "
                 "--xattrs "
                 "--to-stdout "
                 "-C "

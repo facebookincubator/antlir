@@ -7,14 +7,17 @@
 import copy
 import subprocess
 
-from antlir.btrfs_diff.tests.render_subvols import render_sendstream
+from antlir.btrfs_diff.tests.render_subvols import (
+    RenderedTree,
+    render_sendstream,
+)
 from antlir.tests.flavor_helpers import render_flavor
 
 from ..subvol_utils import Subvol
 
 
 # The easiest way to render a subvolume in a test.
-def render_subvol(subvol: Subvol):
+def render_subvol(subvol: Subvol) -> RenderedTree:
     # Determine the original ro/rw state of the subvol so we can put it back
     # the way it was after rendering.
     was_readonly = (
