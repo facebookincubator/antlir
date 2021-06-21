@@ -70,6 +70,7 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     """
     fn = unittest.mock.patch.object(os.path, "lexists")(fn)
     fn = unittest.mock.patch.object(subvol_utils, "_path_is_btrfs_subvol")(fn)
+    fn = unittest.mock.patch.object(subvol_utils.Subvol, "get_uuid")(fn)
     fn = unittest.mock.patch.object(subvol_utils.Subvol, "run_as_root")(fn)
     fn = unittest.mock.patch.object(rpm_action, "run_nspawn")(fn)
     fn = unittest.mock.patch.object(tarball, "run_nspawn")(fn)
@@ -95,6 +96,10 @@ def _run_as_root(args, **kwargs):
         ret = unittest.mock.Mock()
         ret.check_returncode = unittest.mock.Mock()
         return ret
+
+
+def _btrfs_get_uuid(path=None):
+    return "FAKE-UUID-000"
 
 
 def _os_path_lexists(path):
@@ -253,11 +258,13 @@ class CompilerTestCase(unittest.TestCase):
         btrfs_get_volume_props,
         lexists,
         is_btrfs,
+        get_uuid,
         run_as_root,
         *_run_nspawns,
         run_as_root_side_effect=None,
     ):
         lexists.side_effect = _os_path_lexists
+        get_uuid.side_effect = _btrfs_get_uuid
         run_as_root.side_effect = run_as_root_side_effect or _run_as_root
         btrfs_get_volume_props.side_effect = _btrfs_get_volume_props
         # Since we're not making subvolumes, we need this so that
@@ -346,12 +353,14 @@ class CompilerTestCase(unittest.TestCase):
         self,
         lexists,
         is_btrfs,
+        get_uuid,
         run_as_root,
         *_run_nspawns,
     ):
         "Get the commands that each of the *expected* sample items would run"
         lexists.side_effect = _os_path_lexists
         is_btrfs.return_value = True
+        get_uuid.side_effect = _btrfs_get_uuid
         subvol = subvol_utils.Subvol(
             f"{_SUBVOLS_DIR}/{_FAKE_SUBVOL}", already_exists=True
         )

@@ -110,6 +110,9 @@ class SubvolTestCase(unittest.TestCase):
             with unittest.mock.patch(
                 "antlir.subvol_utils._path_is_btrfs_subvol",
                 unittest.mock.Mock(side_effect=[True]),
+            ), unittest.mock.patch(
+                "antlir.subvol_utils.Subvol.get_uuid",
+                unittest.mock.Mock(side_effect=["FAKE-UUID-000"]),
             ):
                 sv = Subvol(td, already_exists=True)
             os.mkdir(td / "real")

@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-
 import contextlib
 import functools
 import logging
@@ -14,7 +13,7 @@ import subprocess
 import sys
 import time
 from contextlib import contextmanager
-from typing import AnyStr, BinaryIO, Iterable, Iterator, NamedTuple, TypeVar
+from typing import AnyStr, BinaryIO, Iterable, Iterator, TypeVar
 
 from .artifacts_dir import find_artifacts_dir
 from .common import (
@@ -34,7 +33,6 @@ from .unshare import Namespace, Unshare, nsenter_as_root, nsenter_as_user
 log = get_logger()
 KiB = 2 ** 10
 MiB = 2 ** 20
-
 
 # Exposed as a helper so that test_compiler.py can mock it.
 def _path_is_btrfs_subvol(path: Path) -> bool:
@@ -64,6 +62,15 @@ def _drain_pipe_return_byte_count(f: BinaryIO) -> int:
         if not num_read:
             return total
         total += num_read
+
+
+class Subvols_Singleton(dict):
+    __instance = None
+
+    def __new__(cls, *args):
+        if cls.__instance is None:
+            cls.__instance = dict.__new__(cls, *args)
+        return cls.__instance
 
 
 class Subvol:
@@ -113,8 +120,10 @@ class Subvol:
         """
         self._path = Path(path).abspath()
         self._exists = already_exists
+        self._subvols_dict = Subvols_Singleton()
         if self._exists and not _path_is_btrfs_subvol(self._path):
             raise AssertionError(f"No btrfs subvol at {self._path}")
+            self._subvols_dict[self.get_uuid()] = self
 
     def __eq__(self, other: "Subvol") -> bool:
         assert self._exists == other._exists, self.path()
@@ -139,6 +148,30 @@ class Subvol:
         return self._path.normalized_subpath(
             path_in_subvol, no_dereference_leaf=no_dereference_leaf
         )
+
+    def get_uuid(self, path=None) -> str:
+        if path is None:
+            path = self.path()
+        res = self.run_as_root(
+            ["btrfs", "subvolume", "show", path], stdout=subprocess.PIPE
+        )
+        res.check_returncode()
+        subvol_metadata = res.stdout.split(b"\n", 3)
+        # /
+        # Name:                   <FS_TREE>
+        # UUID:                   15a88f92-4185-47c9-8048-f065a159f119
+        # Parent UUID:            -
+        # Received UUID:          -
+        # Creation time:          2020-09-30 09:36:02 -0700
+        # Subvolume ID:           5
+        # Generation:             2045967
+        # Gen at creation:        0
+        # Parent ID:              0
+        # Top level ID:           0
+        # Flags:                  -
+        # Snapshot(s):
+
+        return subvol_metadata[2].split(b":")[1].lstrip(b" ").decode()
 
     def canonicalize_path(self, path: AnyStr) -> Path:
         """
@@ -266,6 +299,7 @@ class Subvol:
             ["btrfs", "subvolume", "create", self.path()], _subvol_exists=False
         )
         self._exists = True
+        self._subvols_dict[self.get_uuid()] = self
 
     def snapshot(self, source: "Subvol"):
         # Since `snapshot` has awkward semantics around the `dest`,
@@ -284,11 +318,6 @@ class Subvol:
         This will delete the subvol + all nested/inner subvolumes that exist
         underneath this subvol.  here are a few things that we should consider
         addressing to ensure that this is as robust as possible:
-          - Future / fix me: We currently will fail to delete read-only
-            inner subvolumes.  Fixing this requires first walking the
-            subvols in the **opposite** order (parent to child), and marking
-            them read-write (and adding tests).  This is not done because we
-            currently have no use-case.
           - It is possible that that this could delete an inner subvolume
             that is already managed by another `Subvol` object wihout
             updating its `_exists`.  Currently, because we have no official
@@ -296,10 +325,19 @@ class Subvol:
             approach might be to require any nested subvol creation to be
             managed by an instance of this class.
         """
-        # Delete from the innermost to the outermost
-        for inner_path in sorted(self._gen_inner_subvol_paths(), reverse=True):
+        # Set RW from the outermost to the innermost
+        subvols = list(self._gen_inner_subvol_paths())
+        self.set_readonly(False)
+        for inner_path in sorted(subvols):
             assert _path_is_btrfs_subvol(inner_path), inner_path
+            self.run_as_root(
+                ["btrfs", "property", "set", "-ts", inner_path, "ro", "false"]
+            )
+        # Delete from the innermost to the outermost
+        for inner_path in sorted(subvols, reverse=True):
+            uuid = self.get_uuid(inner_path)
             self.run_as_root(["btrfs", "subvolume", "delete", inner_path])
+            self._subvols_dict[uuid]._exists = False
 
         self.run_as_root(["btrfs", "subvolume", "delete", self.path()])
         self._exists = False
