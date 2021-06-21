@@ -22,14 +22,15 @@ module.exports = (context, options) => {
     async loadContent() {
       const out = `${context.siteDir}/docs/api/`;
       await exec(
-        `shopt -s globstar && buck run //antlir/website/gen:bzldoc -- ${bzlDir}/**/*.bzl ${out}`, {
-          shell: "/bin/bash",
-        }
+        `shopt -s globstar && buck run //antlir/website/gen:bzldoc -- ${bzlDir}/**/*.bzl ${out}`,
+        {
+          shell: '/bin/bash',
+        },
       );
       return null;
     },
     getPathsToWatch() {
-      return bzlGlobs;
+      return [`${bzlDir}/**/*.bzl`];
     },
   };
 };
