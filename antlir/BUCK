@@ -170,6 +170,9 @@ python_unittest(
         100,
         ":loopback",
     )],
+    resources = {
+        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
+    },
     deps = [
         ":common",
         ":fs_utils",

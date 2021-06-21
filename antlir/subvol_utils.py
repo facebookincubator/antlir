@@ -840,15 +840,6 @@ class Subvol:
     # Mocking this allows tests to exercise the fallback "out of space" path.
     _OUT_OF_SPACE_SUFFIX = b": No space left on device\n"
 
-    def _run_btrfs_receive(
-        self, ns: Unshare, loop_vol: BtrfsLoopbackVolume, r_send: int
-    ):
-        return run_stdout_to_err(
-            nsenter_as_root(ns, "btrfs", "receive", loop_vol.dir()),
-            stdin=r_send,
-            stderr=subprocess.PIPE,
-        )
-
     def _send_to_loopback_if_fits(
         self, output_path, fs_size_bytes: int, loopback_opts: loopback_opts_t
     ) -> (int, int):
@@ -868,7 +859,7 @@ class Subvol:
         ):
             w_send.close()  # This end is now fully owned by `btrfs send`.
             with r_send:
-                recv_ret = self._run_btrfs_receive(ns, loop_vol, r_send)
+                recv_ret = loop_vol.receive(r_send)
                 if recv_ret.returncode != 0:
                     if recv_ret.stderr.endswith(self._OUT_OF_SPACE_SUFFIX):
                         log.info("Will retry receive, did not fit")
@@ -876,6 +867,7 @@ class Subvol:
                             _drain_pipe_return_byte_count(r_send),
                             loop_vol.get_size(),
                         )
+
                     log.info("Receive failed: {}")
                     # It's pretty lame to rely on `btrfs receive` continuing
                     # to be unlocalized, and emitting that particular error
@@ -908,6 +900,7 @@ class Subvol:
                             _drain_pipe_return_byte_count(r_send),
                             loop_vol.get_size(),
                         )
+
                     # Covering this is hard, so the test plan is "inspection".
                     log.error(  # pragma: no cover
                         "Unhandled receive stderr:\n\n"

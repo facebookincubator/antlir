@@ -10,7 +10,7 @@ import unittest
 import unittest.mock
 
 from antlir.common import run_stdout_to_err
-from antlir.fs_utils import temp_dir
+from antlir.fs_utils import Path, temp_dir
 from antlir.loopback import (
     BtrfsLoopbackVolume,
     LoopbackVolume,
@@ -132,3 +132,18 @@ class LoopbackTestCases(unittest.TestCase):
             ) as vol:
                 self.assertEqual(size, vol.get_size())
                 self.assertEqual(MIN_SHRINK_BYTES, vol.minimize_size())
+
+    def test_btrfs_loopback_receive(self):
+        with Unshare([Namespace.MOUNT, Namespace.PID]) as ns, temp_dir() as td:
+            image_path = td / "image.btrfs"
+
+            with BtrfsLoopbackVolume(
+                unshare=ns,
+                image_path=image_path,
+                size_bytes=MIN_CREATE_BYTES,
+            ) as vol, open(
+                Path(__file__).dirname() / "create_ops.sendstream"
+            ) as f:
+                ret = vol.receive(f)
+                self.assertEqual(0, ret.returncode)
+                self.assertIn(b"At subvol create_ops", ret.stderr)
