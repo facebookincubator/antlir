@@ -218,6 +218,20 @@ class BtrfsLoopbackVolume(LoopbackVolume):
 
         return size_bytes
 
+    def receive(self, send: int) -> subprocess.CompletedProcess:
+        """
+        Receive a btrfs sendstream from the `send` fd
+        """
+        return run_stdout_to_err(
+            self._unshare.nsenter_as_root(
+                "btrfs",
+                "receive",
+                self.dir(),
+            ),
+            stdin=send,
+            stderr=subprocess.PIPE,
+        )
+
     def _format(self):
         """
         Format the loopback image with a btrfs filesystem of size
