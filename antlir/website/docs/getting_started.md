@@ -32,7 +32,7 @@ A common Antlir workflow is:
   - `buck test :YOUR-TEST` — run a test inside your layer, or to get a debug
     shell: `buck run :YOUR-TEST--test-lay.
   - Finally, `buck build :YOUR-PACKAGE` (either directly or by `buck run`ning
-    a publisher target **TODO link**), and deploy it.
+    a publisher target **TODO OSS link**), and deploy it.
 
 To get started with building images, you may want to study the pages under
 Concepts & Designs, or take the plunge and try the tutorial on [Defining an
