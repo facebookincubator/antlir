@@ -52,6 +52,7 @@ def load_from_tarball(
             "--extract",
             # preserving xattrs need to be specified on both sides (packing
             # and unpacking)
+            "--acls",
             "--xattrs",
             # Block tar's weird handling of paths containing colons.
             "--force-local",

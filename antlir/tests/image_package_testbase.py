@@ -97,6 +97,7 @@ class ImagePackageTestCaseBase(unittest.TestCase):
                 "--hard-links",
                 "--sparse",
                 "--xattrs",
+                "--acls",
                 mount_dir + "/",
                 subvol.path(),
             )
@@ -110,8 +111,18 @@ class ImagePackageTestCaseBase(unittest.TestCase):
                 self._sibling_path("create_ops-original.sendstream")
             )
             self._assert_ignore_original_extents(original_render)
+
             # lost+found is an ext3 thing
             original_render[1]["lost+found"] = ["(Dir m700)", {}]
+
+            # mkfs.ext3 on CentOS 7 broken and changes directories with m500
+            # perms to m700
+            self.assertEqual(
+                original_render[1]["dir_perms_0500"],
+                ["(Dir m500)", {}],
+            )
+            original_render[1]["dir_perms_0500"] = ["(Dir m700)", {}]
+
             self.assertEqual(
                 original_render,
                 self._render_sendstream_path(temp_sendstream.name),

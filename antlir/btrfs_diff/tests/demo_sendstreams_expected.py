@@ -16,8 +16,9 @@ send-stream may need to change if the `btrfs send` implementation changes.
 import itertools
 import logging
 import os
-from typing import List, Sequence, Tuple
+from typing import BinaryIO, Dict, Iterable, List, Sequence, Tuple
 
+from ..parse_dump import parse_btrfs_dump
 from ..send_stream import (
     ItemFilters,
     SendStreamItem,
@@ -30,12 +31,12 @@ from .subvolume_utils import InodeRepr
 
 # Update these constants to make the tests pass again after running
 # `demo_sendstreams` with `--update-gold`.
-UUID_CREATE = b"fd7e73e5-7d58-3f49-a7de-c6e7083380e3"
-TRANSID_CREATE = 468
-UUID_MUTATE = b"e5272506-8a35-094a-95e7-046569043ec1"
-TRANSID_MUTATE = 471
+UUID_CREATE = b"ea0ab6c0-e3a7-e940-9b91-ed266a77bd3b"
+TRANSID_CREATE = 2101
+UUID_MUTATE = b"5b874cb1-f480-3849-afba-4b4422eed625"
+TRANSID_MUTATE = 2104
 # Take a `oNUM-NUM-NUM` file from the send-stream, and use the middle number.
-TEMP_PATH_MIDDLES = {"create_ops": 466, "mutate_ops": 470}
+TEMP_PATH_MIDDLES = {"create_ops": 2099, "mutate_ops": 2103}
 # I have never seen this initial value change. First number in `oN-N-N`.
 TEMP_PATH_COUNTER_START = 257
 
@@ -43,6 +44,13 @@ TEMP_PATH_COUNTER_START = 257
 FILE_SZ1 = 48 * 1024
 FILE_SZ2 = 8 * 1024
 FILE_SZ = FILE_SZ1 + FILE_SZ2
+
+
+_dir_with_acls_system_posix_acl = (
+    b"\x02\x00\x00\x00\x01\x00\x07\x00\xff\xff\xff\xff\x04\x00\x05\x00\xff"
+    b"\xff\xff\xff\x08\x00\x05\x00\x04\x00\x00\x00\x08\x00\x05\x00\n\x00"
+    b"\x00\x00\x10\x00\x05\x00\xff\xff\xff\xff \x00\x05\x00\xff\xff\xff\xff"
+)
 
 
 def get_filtered_and_expected_items(
@@ -84,8 +92,8 @@ def get_filtered_and_expected_items(
         # forgive missing `b`s, it's a test
         return os.path.normpath(p.encode() if isinstance(p, str) else p)
 
-    def chown(path):
-        return di.chown(path=p(path), gid=0, uid=0)
+    def chown(path, gid=0, uid=0):
+        return di.chown(path=p(path), gid=gid, uid=uid)
 
     def chmod(path, mode=0o644):
         return di.chmod(path=p(path), mode=mode)
@@ -98,8 +106,8 @@ def get_filtered_and_expected_items(
             ctime=build_start_time,
         )
 
-    def base_metadata(path, mode=0o644):
-        return [chown(path), chmod(path, mode), utimes(path)]
+    def base_metadata(path, mode=0o644, gid=0, uid=0):
+        return [chown(path, gid, uid), chmod(path, mode), utimes(path)]
 
     # Future: if we end up doing a lot of mid-list insertions, we can
     # autogenerate the temporary names to match what btrfs does.
@@ -207,6 +215,28 @@ def get_filtered_and_expected_items(
                 di.mkfile(path=temp_path("create_ops")), b"selinux_xattrs"
             ),
             *base_metadata("selinux_xattrs"),
+            *and_rename(
+                di.mkdir(path=temp_path("create_ops")), b"dir_perms_0500"
+            ),
+            *base_metadata("dir_perms_0500", mode=0o500),
+            *and_rename(di.mkdir(path=temp_path("create_ops")), b"user1"),
+            *base_metadata("user1", mode=0o700, gid=1, uid=1),
+            *and_rename(di.mkfile(path=temp_path("create_ops")), b"user1/data"),
+            *base_metadata("user1/data", mode=0o400, gid=1, uid=1),
+            *and_rename(
+                di.mkdir(path=temp_path("create_ops")), b"dir_with_acls"
+            ),
+            di.set_xattr(
+                path=p("dir_with_acls"),
+                name=b"system.posix_acl_default",
+                data=_dir_with_acls_system_posix_acl,
+            ),
+            di.set_xattr(
+                path=p("dir_with_acls"),
+                name=b"system.posix_acl_access",
+                data=_dir_with_acls_system_posix_acl,
+            ),
+            *base_metadata("dir_with_acls", mode=0o755),
             di.snapshot(
                 path=p("mutate_ops"),
                 uuid=UUID_MUTATE,
@@ -283,8 +313,28 @@ def render_demo_subvols(
                         if not lossy_packaging
                         else {}
                     ),  # default mode for sockets
+                    "user1": [
+                        "(Dir m700 o1:1)",
+                        {"data": ["(File m400 o1:1)"]},
+                    ],
+                    "dir_with_acls": [
+                        (
+                            "(Dir x"
+                            "'system.posix_acl_default'='{acl}',"
+                            "'system.posix_acl_access'='{acl}'"
+                            ")"
+                        ).format(
+                            acl=_dir_with_acls_system_posix_acl.decode(
+                                "ASCII", "surrogateescape"
+                            )
+                            .encode("unicode-escape")
+                            .decode("ISO-8859-1")
+                        ),
+                        {},
+                    ],
                     "goodbye": [goodbye_world],
                     "bye_symlink": ["(Symlink hello/world)"],
+                    "dir_perms_0500": ["(Dir m500)", {}],
                     "56KB_nuls": [f"(File d{FILE_SZ}{kb_nuls})"],
                     "56KB_nuls_clone": [f"(File d{FILE_SZ}{kb_nuls_clone})"],
                     "zeros_hole_zeros": [f"(File {zeros_holes_zeros})"],
@@ -311,8 +361,28 @@ def render_demo_subvols(
                         if not lossy_packaging
                         else {}
                     ),  # default mode for sockets
+                    "user1": [
+                        "(Dir m700 o1:1)",
+                        {"data": ["(File m400 o1:1)"]},
+                    ],
+                    "dir_with_acls": [
+                        (
+                            "(Dir x"
+                            "'system.posix_acl_default'='{acl}',"
+                            "'system.posix_acl_access'='{acl}'"
+                            ")"
+                        ).format(
+                            acl=_dir_with_acls_system_posix_acl.decode(
+                                "ASCII", "surrogateescape"
+                            )
+                            .encode("unicode-escape")
+                            .decode("ISO-8859-1")
+                        ),
+                        {},
+                    ],
                     "farewell": [goodbye_world],
                     "bye_symlink": ["(Symlink hello/world)"],
+                    "dir_perms_0500": ["(Dir m500)", {}],
                     "56KB_nuls": [f"(File d{FILE_SZ}{kb_nuls})"],
                     "56KB_nuls_clone": [f"(File d{FILE_SZ}{kb_nuls_clone})"],
                     "zeros_hole_zeros": [f"(File {zeros_holes_zeros})"],
@@ -402,3 +472,30 @@ def render_demo_as_corrupted_by_gnu_tar(*, create_ops=None, mutate_ops=None):
     # ignore.
     demo_render[1].pop("unix_sock")
     return demo_render
+
+
+def parse_demo_sendstreams_btrfs_dump(
+    binary_infile: BinaryIO,
+) -> Iterable[SendStreamItem]:
+    """
+    The 'create_ops' demo sendstream contains xattrs that are unparsable from
+    `btrfs receive --dump` output. The reasons for are is documented in:
+        antlir/btrfs_diff/parse_dump.py: set_xattr.parse_details()
+
+    So to allow tests to verify btrfs dumped content from this sendstream, we
+    provide this wrapper around parse_btrfs_dump() which skips the parsing of
+    those fields and substitutes in the expected values.
+    """
+
+    create_ops_fix_fields: Dict[bytes, Dict[str, bytes]] = {
+        b"name=system.posix_acl_default data=\x02 len=52": {
+            "name": b"system.posix_acl_default",
+            "data": _dir_with_acls_system_posix_acl,
+        },
+        b"name=system.posix_acl_access data=\x02 len=52": {
+            "name": b"system.posix_acl_access",
+            "data": _dir_with_acls_system_posix_acl,
+        },
+    }
+
+    return parse_btrfs_dump(binary_infile, create_ops_fix_fields)

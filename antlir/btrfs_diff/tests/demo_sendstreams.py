@@ -173,6 +173,46 @@ def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:
         ]
     )
 
+    # Create a directory with perms 0500
+    run(["mkdir", p("dir_perms_0500")])
+    run(["chmod", "0500", p("dir_perms_0500")])
+
+    # Create a directory and file owned and only accessible by another user
+    run(["mkdir", p("user1")])
+    run(["chown", "1:1", p("user1")])
+    run(["chmod", "0700", p("user1")])
+    run(["touch", p("user1/data")])
+    run(["chown", "1:1", p("user1/data")])
+    run(["chmod", "0400", p("user1/data")])
+
+    # Create a directory with ACLs
+    # ACLs copied from /run/log/journal on CentOS 8
+    run(["mkdir", p("dir_with_acls")])
+    run(
+        [
+            "setfacl",
+            "-m",
+            "group:adm:r-x",
+            "-m",
+            "group:wheel:r-x",
+            "-m",
+            "mask::r-x",
+            "-m",
+            "default:user::rwx",
+            "-m",
+            "default:group::r-x",
+            "-m",
+            "default:group:adm:r-x",
+            "-m",
+            "default:group:wheel:r-x",
+            "-m",
+            "default:mask::r-x",
+            "-m",
+            "default:other::r-x",
+            p("dir_with_acls"),
+        ]
+    )
+
     # This just serves to show that `btrfs send` ignores nested subvolumes.
     # There is no mention of `nested_subvol` in the send-stream.
     nested_subvol = subvols.create(p("nested_subvol"))

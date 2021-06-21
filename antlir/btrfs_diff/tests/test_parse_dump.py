@@ -16,11 +16,20 @@ from ..parse_dump import (
 )
 from ..send_stream import SendStreamItem, SendStreamItems
 from .demo_sendstreams import gold_demo_sendstreams, make_demo_sendstreams
-from .demo_sendstreams_expected import get_filtered_and_expected_items
+from .demo_sendstreams_expected import (
+    get_filtered_and_expected_items,
+    parse_demo_sendstreams_btrfs_dump,
+)
 
 
 # `unittest`'s output shortening makes tests much harder to debug.
 unittest.util._MAX_LENGTH = 12345
+
+
+def _parse_demo_lines_to_list(s: Sequence[bytes]) -> List[SendStreamItem]:
+    return list(
+        parse_demo_sendstreams_btrfs_dump(io.BytesIO(b"\n".join(s) + b"\n"))
+    )
 
 
 def _parse_lines_to_list(s: Sequence[bytes]) -> List[SendStreamItem]:
@@ -89,8 +98,8 @@ class ParseBtrfsDumpTestCase(unittest.TestCase):
             },
         )
         items = [
-            *_parse_lines_to_list(stream_dict["create_ops"]["dump"]),
-            *_parse_lines_to_list(stream_dict["mutate_ops"]["dump"]),
+            *_parse_demo_lines_to_list(stream_dict["create_ops"]["dump"]),
+            *_parse_demo_lines_to_list(stream_dict["mutate_ops"]["dump"]),
         ]
         # We an item per line, and the items cover the expected operations.
         self.assertEqual(len(items), len(out_lines))
@@ -104,8 +113,8 @@ class ParseBtrfsDumpTestCase(unittest.TestCase):
     def test_verify_gold_parse(self):
         stream_dict = gold_demo_sendstreams()
         filtered_items, expected_items = get_filtered_and_expected_items(
-            items=_parse_lines_to_list(stream_dict["create_ops"]["dump"])
-            + _parse_lines_to_list(stream_dict["mutate_ops"]["dump"]),
+            items=_parse_demo_lines_to_list(stream_dict["create_ops"]["dump"])
+            + _parse_demo_lines_to_list(stream_dict["mutate_ops"]["dump"]),
             # `--dump` does not show fractional seconds at present.
             build_start_time=(
                 stream_dict["create_ops"]["build_start_time"][0],

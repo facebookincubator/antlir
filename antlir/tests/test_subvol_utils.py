@@ -373,6 +373,7 @@ class SubvolTestCase(unittest.TestCase):
                     "tar",
                     "xf",
                     tar_file.name,
+                    "--acls",
                     "--xattrs",
                     "-C",
                     unpacked_sv.path(),
