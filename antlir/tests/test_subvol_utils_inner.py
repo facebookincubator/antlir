@@ -6,12 +6,24 @@
 import os
 import platform
 import unittest
+from contextlib import contextmanager
 
 from ..fs_utils import temp_dir
 from ..subvol_utils import (
     Subvol,
     volume_dir,
 )
+
+
+@contextmanager
+def _create_temp_subvol(path):
+    try:
+        sv = Subvol(path)
+        sv.create()
+        yield sv
+    finally:
+        if sv._exists:
+            sv.delete()
 
 
 class InnerSubvolTestCase(unittest.TestCase):
@@ -32,28 +44,17 @@ class InnerSubvolTestCase(unittest.TestCase):
 
         with temp_dir(
             dir=volume_tmp_dir.decode(), prefix="delete_recursive"
-        ) as td:
-            try:
-                outer = Subvol(td / "outer")
-                outer.create()
-                inner1 = Subvol(td / "outer/inner1")
-                inner1.create()
-                inner2 = Subvol(td / "outer/inner1/inner2")
-                inner2.create()
-                inner3 = Subvol(td / "outer/inner3")
-                inner3.create()
+        ) as td, _create_temp_subvol(
+            td / "outer"
+        ) as outer, _create_temp_subvol(
+            td / "outer/inner1"
+        ) as inner1, _create_temp_subvol(
+            td / "outer/inner1/inner2"
+        ) as inner2, _create_temp_subvol(
+            td / "outer/inner3"
+        ):
 
-                outer.delete()
-                self.assertEqual([], td.listdir())
-            except BaseException:  # Clean up even on Ctrl-C
-                try:
-                    inner2.delete()
-                finally:
-                    try:
-                        inner1.delete()
-                    finally:
-                        try:
-                            inner3.delete()
-                        finally:
-                            outer.delete()
-                raise
+            inner2.set_readonly(True)
+            inner1.set_readonly(True)
+            outer.delete()
+            self.assertEqual([], td.listdir())
