@@ -270,7 +270,10 @@ python_unittest(
 python_library(
     name = "subvolume_garbage_collector",
     srcs = ["subvolume_garbage_collector.py"],
-    deps = [":fs_utils"],
+    deps = [
+        ":fs_utils",
+        ":subvol_utils",
+    ],
 )
 
 python_library(
@@ -317,17 +320,6 @@ python_unittest(
     needed_coverage = [(100, ":layer-mount-config-library")],
 )
 
-export_file(
-    name = "fake_sudo.sh",
-    src = "tests/fake_sudo.sh",
-)
-
-python_library(
-    # Separate so we can put `sudo` alone in its own directory
-    name = "fake_sudo",
-    resources = {":fake_sudo.sh": "fake_sudo/sudo"},
-)
-
 python_unittest(
     name = "test-subvolume-garbage-collector",
     srcs = ["tests/test_subvolume_garbage_collector.py"],
@@ -336,7 +328,6 @@ python_unittest(
         ":subvolume_garbage_collector",
     )],
     deps = [
-        ":fake_sudo",
         ":subvolume_garbage_collector",
     ],
 )

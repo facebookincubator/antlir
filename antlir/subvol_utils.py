@@ -1189,6 +1189,10 @@ class TempSubvolumes(contextlib.AbstractContextManager):
         self._temp_dir = self._temp_dir_ctx.__enter__()
         return self
 
+    @property
+    def temp_dir(self):
+        return self._temp_dir
+
     def _prep_rel_path(self, rel_path: AnyStr) -> Path:
         """
         Ensures subvolumes live under our temporary directory, which
