@@ -42,6 +42,7 @@ ba_features = [
         "gcc",  # build code in genrule_layers
         "g++",  # For c++ compilation
         "iproute",
+        "libzstd-devel",  # Needed for antlirctl
         "net-tools",
         "python3",
         "redhat-rpm-config",  # For building rpms
