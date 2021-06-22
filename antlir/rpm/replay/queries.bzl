@@ -27,7 +27,12 @@ def layer_included_features_query(layer):
     return "$(query_targets_and_outputs '{query}')".format(
         query = query.attrregexfilter(
             label = "type",
-            pattern = "image_(layer|feature|sendstream_layer)|fetched_package_with_nondeterministic_fs_metadata",
+            pattern = "|".join([
+                "image_layer",
+                "image_feature",
+                "image_layer_from_package",
+                "fetched_package_with_nondeterministic_fs_metadata",
+            ]),
             expr = query.deps(
                 expr = query.set(layer),
                 depth = query.UNBOUNDED,

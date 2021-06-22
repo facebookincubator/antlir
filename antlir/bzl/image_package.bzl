@@ -33,6 +33,8 @@ def image_package(
         # For supported formats, see `--format` here:
         #     buck run //antlir:package-image -- --help
         format = None,
+        # Buck `labels` to add to the resulting target; aka `tags` in fbcode.
+        labels = None,
         # Opts are required when format == ext3 | vfat | btrfs
         loopback_opts = None):
     visibility = visibility or []
@@ -101,5 +103,6 @@ def image_package(
             volume_min_free_bytes = 0,  # We are not writing to the volume.
         ),
         visibility = visibility,
+        labels = labels or [],
         antlir_rule = antlir_rule,
     )
