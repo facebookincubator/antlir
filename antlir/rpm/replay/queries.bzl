@@ -48,25 +48,13 @@ ANTLIR_BUILD_PKG_LABEL = "antlir_build_pkg"
 # parents).  We use these to package the mounts when we package the layer.
 def layer_included_builders_query(layer):
     return "$(query_targets_and_outputs '{query}')".format(
-        query = query.diff(
-            queries = [
-                query.attrfilter(
-                    label = "labels",
-                    value = ANTLIR_BUILD_PKG_LABEL,
-                    expr = query.deps(
-                        expr = query.set(layer),
-                        depth = query.UNBOUNDED,
-                    ),
-                ),
-                query.attrfilter(
-                    label = "labels",
-                    value = "generated",
-                    expr = query.deps(
-                        expr = query.set(layer),
-                        depth = query.UNBOUNDED,
-                    ),
-                ),
-            ],
+        query = query.attrfilter(
+            label = "labels",
+            value = ANTLIR_BUILD_PKG_LABEL,
+            expr = query.deps(
+                expr = query.set(layer),
+                depth = query.UNBOUNDED,
+            ),
         ),
     )
 
