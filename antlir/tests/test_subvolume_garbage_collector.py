@@ -7,37 +7,15 @@
 import contextlib
 import fcntl
 import os
-import subprocess
 import tempfile
 import unittest
 
 from .. import subvolume_garbage_collector as sgc
 from ..fs_utils import temp_dir, Path
+from ..subvol_utils import with_temp_subvols
 
 
 class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
-    def _restore_path(self):
-        os.environ["PATH"] = self._old_path
-
-    def setUp(self):
-        # Mock out `sudo btrfs subvolume delete` for the garbage-collector,
-        # so that the test doesn't require us to set up & clean up btrfs
-        # volumes.  Everything else is easily tested in a tempdir.
-        self._old_path = os.environ.pop("PATH", None)
-        self.addCleanup(self._restore_path)
-        fake_sudo_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "fake_sudo/"
-        )
-        os.environ["PATH"] = f"{fake_sudo_path}:{self._old_path}"
-
-        # Ensure the sudo override worked, so we don't mysteriously fail later.
-        fake_sudo_file = os.path.join(fake_sudo_path, "sudo")
-        self.assertTrue(os.path.exists(fake_sudo_file), fake_sudo_file)
-        self.assertEqual(
-            b"MAGIC_SENTINEL",
-            subprocess.check_output(["sudo", "MAGIC_SENTINEL"]),
-        )
-
     def _touch(self, *path):
         with open(os.path.join(*path), "a"):
             pass
@@ -146,24 +124,30 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                     ]
                 )
 
-    def test_gc_clean_nspawn_lockfile(self):
-        with temp_dir() as refs_dir, temp_dir() as subs_dir:
-            os.makedirs(subs_dir / "no:refs/subvol")
+    @with_temp_subvols
+    def test_gc_clean_nspawn_lockfile(self, tmp_subvols):
+        with temp_dir() as refs_dir:
+            subs_dir = tmp_subvols.temp_dir
+            os.makedirs(subs_dir / "no:refs")
+            tmp_subvols.create("no:refs/subvol")
             (subs_dir / "no:refs/.#subvol.lck").touch()
             self.assertEqual([b"no:refs"], subs_dir.listdir())
             sgc.subvolume_garbage_collector(
-                [f"--refcounts-dir={refs_dir}", f"--subvolumes-dir={subs_dir}"]
+                [
+                    f"--refcounts-dir={refs_dir}",
+                    f"--subvolumes-dir={subs_dir}",
+                ]
             )
             self.assertEqual([], subs_dir.listdir())
             self.assertEqual([], refs_dir.listdir())
 
     @contextlib.contextmanager
-    def _gc_test_case(self):
+    @with_temp_subvols
+    def _gc_test_case(self, tmp_subvols):
         # NB: I'm too lazy to test that `refs_dir` is created if missing.
-        with tempfile.TemporaryDirectory() as refs_dir, tempfile.TemporaryDirectory() as subs_dir:  # noqa: E501
-
+        with tempfile.TemporaryDirectory() as refs_dir:
             refs_dir_p = Path(refs_dir)
-            subs_dir_p = Path(subs_dir)
+            subs_dir_p = tmp_subvols.temp_dir
             # Track subvolumes + refcounts that will get garbage-collected
             # separately from those that won't.
             gcd_subs = set()
@@ -172,16 +156,18 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             kept_refs = set()
 
             # Subvolume without a refcount -- tests "rule name != subvol"
-            os.makedirs(subs_dir_p / "no:refs/subvol_name")
+            os.makedirs(subs_dir_p / "no:refs")
+            tmp_subvols.create("no:refs/subvol_name")
             gcd_subs.add(Path("no:refs"))
 
-            # Wrapper without a refcount and without a subvolume
-            os.makedirs((subs_dir_p / "no_refs:nor_subvol"))
+            tmp_subvols.create("no_refs:nor_subvol")
             gcd_subs.add(Path("no_refs:nor_subvol"))
 
             # Subvolume, whose refcount is 1
-            self._touch(refs_dir_p / "1:link.json")
-            os.makedirs(subs_dir_p / "1:link/1")
+            self._touch(refs_dir, "1:link.json")
+            os.makedirs(subs_dir_p / "1:link")
+            tmp_subvols.create("1:link/1")
+
             gcd_refs.add(Path("1:link.json"))
             gcd_subs.add(Path("1:link"))
 
@@ -195,8 +181,10 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             kept_refs.add(Path("2link:2.json"))
 
             # Subvolumes for both of the 2-link refcount files
-            os.makedirs(subs_dir_p / "2link:1/2link")
-            os.makedirs(subs_dir_p / "2link:2/2link")
+            os.makedirs(subs_dir_p / "2link:1")
+            tmp_subvols.create("2link:1/2link")
+            os.makedirs(subs_dir_p / "2link:2")
+            tmp_subvols.create("2link:2/2link")
             kept_subs.add(Path("2link:1"))
             kept_subs.add(Path("2link:2"))
 
@@ -210,7 +198,8 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             kept_refs.add(Path("3link:3.json"))
 
             # Make a subvolume for 1 of them, it won't get GC'd
-            os.makedirs(subs_dir_p / "3link:2/3link")
+            os.makedirs(subs_dir_p / "3link:2")
+            tmp_subvols.create("3link:2/3link")
             kept_subs.add(Path("3link:2"))
 
             self.assertEqual(kept_refs | gcd_refs, set(refs_dir_p.listdir()))
@@ -222,7 +211,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 gcd_refs=gcd_refs,
                 kept_refs=kept_refs,
                 refs_dir=refs_dir,
-                subs_dir=subs_dir,
+                subs_dir=str(subs_dir_p),
             )
 
     def _gc_only(self, n):

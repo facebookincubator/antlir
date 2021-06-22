@@ -46,11 +46,11 @@ import logging
 import os
 import re
 import stat
-import subprocess
 import sys
 from typing import Iterator, List, Tuple
 
 from .fs_utils import Path
+from .subvol_utils import Subvol
 
 
 log = logging.Logger(os.path.basename(__file__))  # __name__ is __main__
@@ -181,9 +181,7 @@ def garbage_collect_subvolumes(
             ), (maybe_lockfile, expected_lock_path)
             if maybe_lockfile:
                 expected_lock_path.unlink()
-            subprocess.check_call(
-                ["sudo", "btrfs", "subvolume", "delete", wrapper_path / subvol]
-            )
+            Subvol(wrapper_path / subvol, already_exists=True).delete()
         else:  # No subvolume in wrapper
             # We don't expect to see a stray lockfile here because we delete
             # the lockfile before the subvol.
