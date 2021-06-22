@@ -63,13 +63,10 @@ def _location(target):
 
 # A convenient way to access the results of the above queries in Python
 # unit tests. Use the Python function `build_env_map` to deserialize.
-def test_env_map(non_custom_layer, custom_layer):
+def test_env_map(infix_to_layer):
     return {
-        "{}{}".format(maybe_custom, env_name): query_fn(target)
-        for maybe_custom, target in [
-            ("antlir_test_non_custom__", non_custom_layer),
-            ("antlir_test_custom__", custom_layer),
-        ]
+        "antlir_test__{}__{}".format(infix, env_name): query_fn(target)
+        for infix, target in infix_to_layer
         for env_name, query_fn in [
             ("builders", layer_included_builders_query),
             ("layer_feature_json", layer_features_json_query),
