@@ -124,7 +124,6 @@ python_unittest(
         ":args",
         ":nspawn",
         ":cmd",
-        ":common",
         ":run-library",
     ]],
     resources = {

@@ -61,11 +61,25 @@ def nspawn_version() -> NSpawnVersion:
 
 
 def find_cgroup2_mountpoint() -> Path:
+    """
+    Parse `/proc/self/mounts` to find the cgroup2 mount point.
+
+    Read `man fstab` for a description of this format.
+
+    We have to look at the fs_vfstype directly (3rd field). The first field
+    is the `fs_spec` and it can be anything, so we can't rely on it.
+    """
     with _open_mounts() as mounts:
         for mount in mounts.readlines():
-            if mount.startswith(b"cgroup2 "):
-                return Path(mount.split()[1])
-    raise RuntimeError("No cgroupv2 mountpoint found")  # pragma: no cover
+            mount_parts = mount.split()
+            assert (
+                len(mount_parts) == 6
+            ), f"Unexpected number of mount fields: {mount_parts}"
+            # 3rd field is the fstype
+            if mount_parts[2] == b"cgroup2":
+                # 2nd field is the path
+                return Path(mount_parts[1])
+    raise RuntimeError("No cgroupv2 mountpoint found")
 
 
 def parse_cgroup2_path(proc_cgroup: bytes) -> Path:
