@@ -1,6 +1,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_unittest")
+load("//antlir/rpm/replay:queries.bzl", "ANTLIR_BUILD_PKG_LABEL")
 
 image.layer(
     name = "root",
@@ -62,4 +63,68 @@ python_unittest(
         "//antlir:fs_utils",
         "//antlir/rpm/replay:fake_pty",
     ],
+)
+
+##
+## Test layers for `extract_nested_features`
+##
+
+image.layer(
+    name = "potato",
+    features = [image.ensure_dirs_exist("/i_am_potato")],
+    flavor = "antlir_test",
+)
+
+image.layer(
+    name = "base-original",
+    features = [image.ensure_dirs_exist("/from/test_base/")],
+    flavor = "antlir_test",
+)
+
+image.package(
+    name = "base.sendstream",
+    format = "sendstream",
+    layer = ":base-original",
+    labels = [ANTLIR_BUILD_PKG_LABEL],
+)
+
+image.layer_from_package(
+    name = "base",
+    format = "sendstream",
+    source = ":base.sendstream",
+    flavor = "antlir_test",
+)
+
+image.layer(
+    name = "base-plus-one",
+    parent_layer = ":base",
+    flavor = "antlir_test",
+    features = [
+        # All of these are "non-custom" as far as `extract_nested_features`
+        # is concerned.
+        image.ensure_dirs_exist("/new/dir/"),
+        # TODO(lesha): image.rpms_install(["rpm-test-milk"]),
+        image.layer_mount(":potato", "/vegetable"),
+    ],
+)
+
+image.layer(
+    name = "custom",
+    parent_layer = ":base-plus-one",
+    flavor = "antlir_test",
+    # Removal triggers the "custom image" code path.
+    features = [image.remove("/new/dir/")],
+    # TODO(naveedgol): Remove on stack.
+    visibility = ["//tupperware/cm/antlir/..."],
+)
+
+image.layer(
+    name = "non-custom",
+    parent_layer = ":base-plus-one",
+    flavor = "antlir_test",
+    # Another non-custom feature.  This is a sibling of `custom` to show
+    # that the depth does not trigger custom vs non-custom behavior.
+    features = [image.ensure_dirs_exist("/another/dir/")],
+    # TODO(naveedgol): Remove on stack.
+    visibility = ["//tupperware/cm/antlir/..."],
 )
