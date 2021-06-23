@@ -77,6 +77,33 @@ class CommonTestCase(unittest.TestCase):
                 b"/sys/fs/cgroup/unified", find_cgroup2_mountpoint()
             )
 
+    def test_cgroup2_custom_fs_spec(self):
+        with patch(
+            "antlir.nspawn_in_subvol.common._open_mounts",
+            mock_open(
+                read_data=b"your_mamas_cgroup /sys/fs/cgroup cgroup2 "
+                b"rw,nosuid,nodev,noexec,relatime 0 0\n"
+                b"/dev/mapper/ssd-ssdstripe / btrfs "
+                b"rw,relatime,compress=zstd:3,ssd,space_cache,subvolid=5,"
+                b"subvol=/ 0 0\n"
+            ),
+        ):
+            self.assertEqual(b"/sys/fs/cgroup", find_cgroup2_mountpoint())
+
+    def test_cgroup2_no_mountpoint_found(self):
+        with patch(
+            "antlir.nspawn_in_subvol.common._open_mounts",
+            mock_open(
+                read_data=b"devtmpfs /dev devtmpfs "
+                b"rw,nosuid,size=4096k,nr_inodes=65536,mode=755 0 0\n"
+                b"/dev/mapper/ssd-ssdstripe / btrfs "
+                b"rw,relatime,compress=zstd:3,ssd,space_cache,subvolid=5,"
+                b"subvol=/ 0 0\n"
+            ),
+        ):
+            with self.assertRaises(RuntimeError):
+                find_cgroup2_mountpoint()
+
     def test_parse_cgroup_path(self):
         # usually there is only this one line
         proc_self_cgroup = b"0::/user.slice/foo.slice/bar.scope\n"
