@@ -121,8 +121,9 @@ class Subvol:
         self._path = Path(path).abspath()
         self._exists = already_exists
         self._subvols_dict = Subvols_Singleton()
-        if self._exists and not _path_is_btrfs_subvol(self._path):
-            raise AssertionError(f"No btrfs subvol at {self._path}")
+        if self._exists:
+            if not _path_is_btrfs_subvol(self._path):
+                raise AssertionError(f"No btrfs subvol at {self._path}")
             self._subvols_dict[self.get_uuid()] = self
 
     def __eq__(self, other: "Subvol") -> bool:
