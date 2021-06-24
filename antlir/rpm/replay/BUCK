@@ -74,3 +74,19 @@ python_library(
         "//tupperware/cm/antlir:container_manifest_impl",
     ],
 )
+
+python_library(
+    name = "rpm_replay",
+    srcs = ["rpm_replay.py"],
+    visibility = ["//tupperware/cm/antlir/..."],
+    deps = [
+        ":subvol_rpm_compare",
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir/compiler:compiler",
+        "//antlir/compiler/items:make_subvol",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:nspawn",
+    ],
+)
