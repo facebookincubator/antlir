@@ -103,7 +103,7 @@ image.layer(
         # All of these are "non-custom" as far as `extract_nested_features`
         # is concerned.
         image.ensure_dirs_exist("/new/dir/"),
-        # TODO(lesha): image.rpms_install(["rpm-test-milk"]),
+        image.rpms_install(["rpm-test-milk"]),
         image.layer_mount(":potato", "/vegetable"),
     ],
 )
@@ -114,6 +114,27 @@ image.layer(
     flavor = "antlir_test",
     # Removal triggers the "custom image" code path.
     features = [image.remove("/new/dir/")],
+    # TODO(naveedgol): Remove on stack.
+    visibility = ["//tupperware/cm/antlir/..."],
+)
+
+image.layer(
+    name = "custom-remove-rpm",
+    parent_layer = ":base-plus-one",
+    flavor = "antlir_test",
+    features = [image.rpms_remove_if_exists(["rpm-test-milk"])],
+    # TODO(naveedgol): Remove on stack.
+    visibility = ["//tupperware/cm/antlir/..."],
+)
+
+# TODO(lesha): Fold this into `non-custom` soon
+image.layer(
+    name = "custom-local-rpm",
+    parent_layer = ":base-plus-one",
+    flavor = "antlir_test",
+    features = [image.rpms_install([
+        "//antlir/compiler/test_images:rpm-test-cheese-2-1.rpm",
+    ])],
     # TODO(naveedgol): Remove on stack.
     visibility = ["//tupperware/cm/antlir/..."],
 )
