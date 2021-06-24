@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+from typing import Any, Dict
+
+from ..replay_util import make_target_path_map
+
+
+def build_env_map(environ: Dict[str, str], infix: str) -> Dict[str, Any]:
+    prefix = f"antlir_test__{infix}__"
+    layer_output = environ[prefix + "layer_output"]
+    _, layer_feature_json = environ[prefix + "layer_feature_json"].split()
+    target_map = {
+        **make_target_path_map(environ[prefix + "target_path_pairs"].split()),
+        **make_target_path_map(environ[prefix + "builders"].split()),
+    }
+    return {
+        "layer_output": layer_output,
+        "layer_feature_json": layer_feature_json,
+        "target_map": target_map,
+    }

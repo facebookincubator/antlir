@@ -89,7 +89,7 @@ python_unittest(
 python_library(
     name = "items_for_features",
     srcs = ["items_for_features.py"],
-    visibility = ["//tupperware/cm/antlir/..."],
+    visibility = ["//antlir/rpm/replay/..."],
     deps = ["//antlir/compiler/items:all-items"],
 )
 

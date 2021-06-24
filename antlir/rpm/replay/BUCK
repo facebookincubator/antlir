@@ -1,4 +1,6 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_library")
+load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image/feature:new.bzl", "DO_NOT_USE_FEATURES_SUFFIX", "FEATURES_FOR_LAYER_PREFIX")
 
 export_file(name = "fake_pty_real.py")
 
@@ -24,5 +26,51 @@ python_library(
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:rpm",
+    ],
+)
+
+_constants_t = shape.shape(
+    features_prefix = str,
+    features_suffix = str,
+)
+
+python_library(
+    name = "constants",
+    srcs = ["constants.py"],
+    deps = [
+        shape.python_data(
+            name = "constants-bzl-args",
+            instance = shape.new(
+                _constants_t,
+                features_prefix = FEATURES_FOR_LAYER_PREFIX,
+                features_suffix = DO_NOT_USE_FEATURES_SUFFIX,
+            ),
+            shape = _constants_t,
+            module = "constants_bzl_args",
+        ),
+    ],
+)
+
+python_library(
+    name = "extract_nested_features",
+    srcs = ["extract_nested_features.py"],
+    visibility = [
+        "//antlir/rpm/replay/tests/...",
+        "//tupperware/cm/antlir:container_manifest_impl",
+    ],
+    deps = [
+        ":constants",
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir/compiler:items_for_features",
+    ],
+)
+
+python_library(
+    name = "replay_util",
+    srcs = ["replay_util.py"],
+    visibility = [
+        "//antlir/rpm/replay/tests/...",
+        "//tupperware/cm/antlir:container_manifest_impl",
     ],
 )
