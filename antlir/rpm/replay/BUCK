@@ -90,3 +90,14 @@ python_library(
         "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
+
+python_library(
+    name = "subvol_diff",
+    srcs = ["subvol_diff.py"],
+    visibility = ["//tupperware/cm/antlir/..."],
+    deps = [
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+    ],
+)
