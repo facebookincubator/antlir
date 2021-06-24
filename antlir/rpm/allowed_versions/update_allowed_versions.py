@@ -331,6 +331,9 @@ def _resolve_envras_for_package_group(
     # should be OK, but if it's not, we may have to revisit this heuristic.
     evr_to_a_to_pkgs = None
     for pkg in vpgroup.packages:
+        # Skip packages that does not exist in snapshot
+        if pkg not in n_to_vra_to_e:
+            continue
         cur_evr_to_a_to_pkgs = {
             (e, v, r): {a: {pkg}}
             for (v, r, a), e in n_to_vra_to_e.get(pkg, {}).items()
@@ -407,10 +410,15 @@ def _save_allowed_versions(
                 print(envra.to_versionlock_line(), file=outfile)
 
         for pkg in vpgroup.packages:
-            # XXX this can happen if a snapshot starts to omit a package
+            # This can happen if a snapshot starts to omit a package
             # that previously needed version-pinning.  we shouldn't fail
             # hard, but just emit an error in the diff description.
-            assert pkg in pkg_to_src_path, (pkg, vpgroup)
+            if pkg not in pkg_to_src_path:
+                log.info(
+                    f"The package {pkg} from vpgroup {vpgroup.group_id}"
+                    " does not exist in snapshot"
+                )
+                continue
             assert pkg_to_src_path[pkg] == _EMPTY_VSET_PATH, pkg  # impossible
             pkg_to_src_path[pkg] = src_path
 
