@@ -29,6 +29,7 @@ from ..update_allowed_versions import parse_args, update_allowed_versions
 
 _FOO_RPM = "foo"
 _BAR_RPM = "bar"
+_NON_RPM = "non"
 _FOO_BAR_VER = "some_ver"
 _FOO_BAR_REL = "some_rel"
 _FOO_BAR_ARCH = "some_arch"
@@ -83,7 +84,7 @@ def get_vset_to_policy(version_set, policy, versions):
 def get_packages(packages_source):
     return {
         "source": packages_source,
-        "names": [_FOO_RPM, _BAR_RPM],
+        "names": [_FOO_RPM, _BAR_RPM, _NON_RPM],
     }
 
 
@@ -160,9 +161,18 @@ class UpdateAllowedVersionsTestCase(TestCase):
     @patch_snapshots
     def test_versions_str(self):
         with _test_args() as (args, output_dir):
-            update_allowed_versions(parse_args(args))
-            with open(output_dir / _RESULT_VSET_JSON) as f:
-                self.assertEqual(f.read().strip(), _FOO_BAR_OUTPUT)
+            with self.assertLogs(log) as log_ctx:
+                update_allowed_versions(parse_args(args))
+                with open(output_dir / _RESULT_VSET_JSON) as f:
+                    self.assertEqual(f.read().strip(), _FOO_BAR_OUTPUT)
+            self.assertTrue(
+                any(
+                    f"INFO:antlir.update_allowed_versions:The package "
+                    f"{_NON_RPM} from vpgroup {_FOO_JSON} does not exist in "
+                    "snapshot" in o
+                    for o in log_ctx.output
+                )
+            )
 
     # evra.epoch is not None in _resolve_envras_for_package_group()
     @patch_snapshots
