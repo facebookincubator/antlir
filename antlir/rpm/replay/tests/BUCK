@@ -1,7 +1,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "python_unittest")
-load("//antlir/rpm/replay:queries.bzl", "ANTLIR_BUILD_PKG_LABEL")
+load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//antlir/rpm/replay:queries.bzl", "ANTLIR_BUILD_PKG_LABEL", "test_env_map")
 
 image.layer(
     name = "root",
@@ -114,8 +114,6 @@ image.layer(
     flavor = "antlir_test",
     # Removal triggers the "custom image" code path.
     features = [image.remove("/new/dir/")],
-    # TODO(naveedgol): Remove on stack.
-    visibility = ["//tupperware/cm/antlir/..."],
 )
 
 image.layer(
@@ -123,8 +121,6 @@ image.layer(
     parent_layer = ":base-plus-one",
     flavor = "antlir_test",
     features = [image.rpms_remove_if_exists(["rpm-test-milk"])],
-    # TODO(naveedgol): Remove on stack.
-    visibility = ["//tupperware/cm/antlir/..."],
 )
 
 # TODO(lesha): Fold this into `non-custom` soon
@@ -135,8 +131,6 @@ image.layer(
     features = [image.rpms_install([
         "//antlir/compiler/test_images:rpm-test-cheese-2-1.rpm",
     ])],
-    # TODO(naveedgol): Remove on stack.
-    visibility = ["//tupperware/cm/antlir/..."],
 )
 
 image.layer(
@@ -146,6 +140,29 @@ image.layer(
     # Another non-custom feature.  This is a sibling of `custom` to show
     # that the depth does not trigger custom vs non-custom behavior.
     features = [image.ensure_dirs_exist("/another/dir/")],
-    # TODO(naveedgol): Remove on stack.
-    visibility = ["//tupperware/cm/antlir/..."],
+)
+
+python_unittest(
+    name = "test-extract-nested-features",
+    srcs = ["test_extract_nested_features.py"],
+    env = test_env_map([
+        ("custom", "//antlir/rpm/replay/tests:custom"),
+        ("custom-remove-rpm", "//antlir/rpm/replay/tests:custom-remove-rpm"),
+        ("custom-local-rpm", "//antlir/rpm/replay/tests:custom-local-rpm"),
+        ("non-custom", "//antlir/rpm/replay/tests:non-custom"),
+    ]),
+    needed_coverage = [
+        (100, "//antlir/rpm/replay:extract_nested_features"),
+    ],
+    deps = [
+        ":test_utils",
+        "//antlir/rpm/replay:extract_nested_features",
+    ],
+)
+
+python_library(
+    name = "test_utils",
+    srcs = ["test_utils.py"],
+    visibility = ["//tupperware/cm/antlir/tests/..."],
+    deps = ["//antlir/rpm/replay:replay_util"],
 )
