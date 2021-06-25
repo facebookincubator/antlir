@@ -12,7 +12,6 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load(":loopback_opts.bzl", "loopback_opts_t", "normalize_loopback_opts")
 load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
-load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule")
 load(":shape.bzl", "shape")
@@ -38,7 +37,7 @@ def image_package(
         # Opts are required when format == ext3 | vfat | btrfs
         loopback_opts = None):
     visibility = visibility or []
-    build_appliance = build_appliance or flavor_helpers.default_flavor_build_appliance
+    build_appliance = build_appliance or REPO_CFG.artifact["build_appliance.newest"]
 
     if not format:
         fail("`format` is required for image.package")
