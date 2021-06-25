@@ -1,0 +1,49 @@
+load('//antlir/bzl:oss_shim.bzl', 'http_file')
+load('//antlir/bzl:image.bzl', 'image')
+
+# these need to be updated manually based on the downloaded version
+version = '6.0.0'
+sha256sum = '87bc1a471ca24b97e7005711066007d443423d19aacda3d442558ae032fa30b9'
+
+http_file(
+    name = 'source',
+    urls = ['https://download.qemu.org/qemu-{}.tar.xz'.format(version)],
+    sha256 = sha256sum,
+)
+
+image.layer(
+    name = '_setup_qemu',
+    parent_layer = '//images/appliance:stable-build-appliance',
+    features = [
+        # genrule_layer runs as user 'nobody'
+        image.ensure_subdirs_exist('/', '_temp_qemu', user='nobody'),
+
+        # put sources and build script in the base layer
+        image.install(':source', '/_temp_qemu/source.tar.xz'),
+        image.install('build.sh', '/_temp_qemu/build.sh'),
+
+        # dependencies listed at https://wiki.qemu.org/Hosts/Linux
+        image.rpms_install([
+            'git', 'glib2-devel', 'libfdt-devel', 'pixman-devel', 'zlib-devel',
+            'bzip2', 'ninja-build', 'python3',
+            'libaio-devel', 'libcap-devel', 'libiscsi-devel',  # <- optional
+        ]),
+    ],
+)
+
+image.genrule_layer(
+    name = '_build_qemu',
+    parent_layer = ':_setup_qemu',
+    rule_type = 'build',
+    antlir_rule = 'user-internal',
+    cmd = [
+        '/bin/sh', '-c',
+        'cd /_temp_qemu && bash build.sh source.tar.xz {}'.format(version),
+    ],
+)
+
+image.layer(
+    name = 'image',
+    parent_layer = ':_build_qemu',
+    # features = [image.remove('/_temp_qemu')],  # TODO: only after make install
+)
