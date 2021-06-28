@@ -40,19 +40,16 @@ extraction.  As a result, the best advice we can give at this point is to
 only use `rust_binary` with the `link_style = "static"` option for any
 binary target you want to use via the extractor.
 
-Future: Fixing the main problem with `image.install_buck_runnable` could involve:
-  - Parsing the generated bash script and extracting the "real" path of the
-    binary.
-  - Modify `image.install_buck_runnable` to install a symlink that points back
-    to the real binary. That symlink would dangle into the buck-out paths at 
-    build time, but resolve at runtime. This would require a bit more work in
-    the compiler to support dangling symlinks.
-  - Do a hybrid of both and here in the extractor have a pre-processing step
-    that finds the `install_buck_runnable` paths and replaces the bash wrapper
-    with a symlink. 
+Future: Fixing the main problem with `image.install_buck_runnable` would likely
+involve parsing the generated bash script and extracting the "real" path of the
+binary.
 
-I think the 3rd option is most preferrable, since the problem that the bash
-wrapper presents is really only an issue here.
+We examined using symlinks to make parsing not required, but we can't
+really use a symlink because many/most binaries that are built with buck using
+this symlink farm structure rely on the fact that $0 resolves to a path within
+`buck-out`.  So if we use a symlink it would break this assumption.  This
+doesn't mean that parsing is the only option, but the most obvious alternative
+(symlinks) won't work with the current way buck builds these binaries.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
