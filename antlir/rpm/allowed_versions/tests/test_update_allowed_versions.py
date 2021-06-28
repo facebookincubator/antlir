@@ -146,6 +146,8 @@ def _test_args(
             version_sets_dir,
             "--rpm-repo-snapshot",
             rpm_repo_snaphot_dir,
+            "--flavor",
+            "some_flavor",
         ]
         yield (args, version_sets_dir)
 

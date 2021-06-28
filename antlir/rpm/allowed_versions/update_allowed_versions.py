@@ -92,8 +92,9 @@ class _PluginRef(NamedTuple):
 
 
 class _PluginDriver:
-    def __init__(self, snapshot_root: Path):
+    def __init__(self, snapshot_root: Path, flavor: str):
         self._snapshot_root = snapshot_root
+        self._flavor = flavor
 
         # Our plugins don't take arguments, yet. If we needed to take
         # arguments, we could optionally take plugin overrides on the
@@ -139,7 +140,8 @@ class _PluginDriver:
                     plugin.kind(),
                     stack.enter_context(
                         plugin.plugin.load_config_fn(
-                            plugin.dir(self._snapshot_root)
+                            plugin.dir(self._snapshot_root),
+                            self._flavor,
                         )
                     ),
                 )
@@ -468,14 +470,17 @@ load("//antlir/bzl:oss_shim.bzl", "rpm_vset")
 
 
 def update_allowed_versions(args: argparse.Namespace) -> None:
-    plugin_driver = _PluginDriver(args.data_snapshot_dir)
+    plugin_driver = _PluginDriver(args.data_snapshot_dir, args.flavor)
 
     if args.update_data_snapshot:
         asyncio.run(plugin_driver.update_snapshots())
 
     with plugin_driver.prepare_load_config_fns() as load_config_fns:
         vset_to_vpgroups = _load_version_sets(
-            glob.glob(args.package_groups_dir / "*.json"),
+            sum(
+                [glob.glob(dir / "*.json") for dir in args.package_groups_dir],
+                [],
+            ),
             load_config_fns,
             {vs.decode() for vs in os.listdir(args.version_sets_dir)},
         )
@@ -517,8 +522,13 @@ def parse_args(argv: List[str]):
     parser.add_argument(
         "--package-groups-dir",
         required=True,
+        action="append",
         type=Path.from_argparse,
-        help="XXX",
+        help="Directories with package group definitions. It can be helpful for"
+        " each flavor to combine multiple sets of package groups, one per RPM "
+        "universe (https://facebookincubator.github.io/antlir/docs/concepts/"
+        "rpms/overview/). For example, one dir might contain OS-release "
+        "specific groups, and another might have OS-independent packages.",
     )
     parser.add_argument(
         "--version-sets-dir",
@@ -533,6 +543,12 @@ def parse_args(argv: List[str]):
         type=Path.from_argparse,
         help="Path to `rpm_repo_snapshot` build output. Can be repeated if "
         "your allowable version sets need to span multiple snapshots.",
+    )
+    parser.add_argument(
+        "--flavor",
+        required=True,
+        type=str,
+        help="The flavor for version selection.",
     )
     parser.add_argument(
         "--no-update-data-snapshot",
