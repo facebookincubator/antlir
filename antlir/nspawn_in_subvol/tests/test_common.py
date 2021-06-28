@@ -101,7 +101,9 @@ class CommonTestCase(unittest.TestCase):
                 b"subvol=/ 0 0\n"
             ),
         ):
-            with self.assertRaises(RuntimeError):
+            with self.assertRaisesRegex(
+                RuntimeError, "No cgroupv2 mountpoint found"
+            ):
                 find_cgroup2_mountpoint()
 
     def test_parse_cgroup_path(self):
