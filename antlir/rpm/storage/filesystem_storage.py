@@ -15,6 +15,7 @@ from antlir.fs_utils import Path
 from .storage import Storage, StorageInput, StorageOutput, _CommitCallback
 
 
+# pyre-fixme[11]: Annotation `filesystem` is not defined as a type.
 class FilesystemStorage(Storage, plugin_kind="filesystem"):
     """
     Stores blobs on the local filesystem. This is great if you initially
@@ -42,6 +43,7 @@ class FilesystemStorage(Storage, plugin_kind="filesystem"):
         sid = str(uuid.uuid4()).replace("-", "")
         sid_path = self._path_for_storage_id(sid)
         try:
+            # pyre-fixme[16]: `str` has no attribute `dirname`.
             os.makedirs(sid_path.dirname())
         except FileExistsError:  # pragma: no cover
             pass
@@ -66,12 +68,18 @@ class FilesystemStorage(Storage, plugin_kind="filesystem"):
 
             # `_CommitCallback` has a `try` to clean up on error. This
             # placement of the context assumes that `os.fdopen` cannot fail.
+            # pyre-fixme[6]: Expected `ContextManager[typing.Any]` for 2nd
+            # param but got `() -> Any`.
             with _CommitCallback(self, get_id_and_release_resources) as commit:
+                # pyre-fixme[7]: Expected `ContextManager[StorageOutput]` but
+                # got `Generator[StorageOutput, None, None]`.
                 yield StorageOutput(output=outfile, commit_callback=commit)
 
     @contextmanager
     def reader(self, sid: str) -> ContextManager[StorageInput]:
         with open(self._path_for_storage_id(self.strip_key(sid)), "rb") as inp:
+            # pyre-fixme[7]: Expected `ContextManager[StorageInput]` but got
+            #  `Generator[StorageInput, None, None]`.
             yield StorageInput(input=inp)
 
     def remove(self, sid: str) -> None:
@@ -79,6 +87,7 @@ class FilesystemStorage(Storage, plugin_kind="filesystem"):
         assert sid_path.startswith(self.base_dir + b"/")
         os.remove(sid_path)
         # Remove any empty directories up to `self.filesystem_path`.
+        # pyre-fixme[16]: `str` has no attribute `dirname`.
         dir_path = sid_path.dirname()
         while dir_path != self.base_dir:
             try:

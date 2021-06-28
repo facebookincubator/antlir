@@ -67,6 +67,7 @@ def _normalize_path(path: Path) -> Path:
 
 
 @dataclasses.dataclass(frozen=True)
+# pyre-fixme[13]: Attribute `path` is never initialized.
 class RequirePath(Requirement):
     path: Path
 
@@ -91,6 +92,7 @@ class _RequireDoNotAccess(RequirePath):
 
 
 @dataclasses.dataclass(frozen=True)
+# pyre-fixme[13]: Attribute `target` is never initialized.
 class RequireSymlink(RequirePath):
     target: Path
 
@@ -100,6 +102,7 @@ class RequireSymlink(RequirePath):
 
 
 @dataclasses.dataclass(frozen=True)
+# pyre-fixme[13]: Attribute `name` is never initialized.
 class RequireGroup(Requirement):
     name: str
 
@@ -109,6 +112,7 @@ class RequireGroup(Requirement):
 
 
 @dataclasses.dataclass(frozen=True)
+# pyre-fixme[13]: Attribute `name` is never initialized.
 class RequireUser(Requirement):
     name: str
 
@@ -133,6 +137,7 @@ class ProvidesPath(Provider):
         return self.req.path
 
     def with_new_path(self, new_path: Path) -> "ProvidesPath":
+        # pyre-fixme[6]: Expected `RequirePath` for 1st param but got `Path`.
         return self.__class__(new_path)
 
 
@@ -153,6 +158,7 @@ class ProvidesSymlink(ProvidesPath):
         super().__init__(req=RequireSymlink(path, target))
 
     def with_new_path(self, new_path: Path) -> "ProvidesSymlink":
+        # pyre-fixme[16]: `RequirePath` has no attribute `target`.
         return self.__class__(new_path, self.req.target)
 
 

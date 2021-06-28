@@ -82,6 +82,7 @@ class SubvolumeOnDisk(
         # This assigns default values to the namedtuple starting from
         # the last most argument. This is because it turns arguments
         # in args into kwarg arguments.
+        # pyre-fixme[31]: Expression `(None)` is not a valid type.
         defaults=(None,),
     )
 ):
@@ -93,6 +94,10 @@ class SubvolumeOnDisk(
     """
 
     def subvolume_path(self) -> Path:
+        # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute
+        # `subvolumes_base_dir`.
+        # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute
+        # `subvolume_rel_path`.
         return self.subvolumes_base_dir / self.subvolume_rel_path
 
     @classmethod
@@ -166,10 +171,12 @@ class SubvolumeOnDisk(
             )
         # Check that the subvolume matches the description.
         cur_host = socket.gethostname()
+        # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute `hostname`.
         if cur_host != self.hostname:
             raise RuntimeError(
                 f"Subvolume {self} did not come from current host {cur_host}"
             )
+        # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute `btrfs_uuid`.
         if volume_props["UUID"] != self.btrfs_uuid:
             raise RuntimeError(
                 f"UUID in subvolume JSON {self} does not match that of the "

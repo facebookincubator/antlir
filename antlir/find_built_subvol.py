@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import sys
+from typing import Optional
 
 from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path
@@ -12,7 +13,7 @@ from .subvol_utils import get_subvolumes_dir, Subvol
 
 
 def find_built_subvol(
-    layer_output, *, path_in_repo=None, subvolumes_dir: Path = None
+    layer_output, *, path_in_repo=None, subvolumes_dir: Optional[Path] = None
 ) -> Subvol:
     # It's OK for both to be None (uses the current file to find repo), but
     # it's not OK to set both.

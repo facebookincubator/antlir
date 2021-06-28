@@ -34,6 +34,8 @@ def readonly_snapshot_db(snapshot_dir: MehStr) -> Iterator[sqlite3.Connection]:
     db_path = Path(snapshot_dir) / "snapshot/snapshot.sql3"
     if not db_path.exists():  # The SQLite error lacks the path.
         raise FileNotFoundError(db_path, "RPM snapshot lacks SQL3 DB")
+    # pyre-fixme[7]: Expected `Iterator[sqlite3.dbapi2.Connection]` but got
+    #  `Connection`.
     return sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
 
 

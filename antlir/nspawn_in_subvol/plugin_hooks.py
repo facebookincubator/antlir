@@ -28,6 +28,7 @@ _PostSetupPopenCtxMgr = Callable[[_NspawnSetup], ContextManager[_PopenResult]]
 
 @contextmanager
 def _setup_subvol(opts: _NspawnOpts) -> Iterable[Subvol]:
+    # pyre-fixme[16]: `Subvol` has no attribute `__enter__`.
     with _nspawn_subvol_setup(opts) as subvol:
         yield subvol
 
@@ -36,6 +37,7 @@ def _setup_subvol(opts: _NspawnOpts) -> Iterable[Subvol]:
 def _setup(
     subvol: Subvol, opts: _NspawnOpts, popen_args: PopenArgs
 ) -> Iterable[_NspawnSetup]:
+    # pyre-fixme[16]: `_NspawnSetup` has no attribute `__enter__`.
     with _nspawn_setup(subvol, opts, popen_args) as setup:
         yield setup
 
@@ -63,4 +65,7 @@ def _popen_plugin_driver(
     with setup_subvol(opts) as subvol, setup(
         subvol, opts, popen_args
     ) as setup, post_setup_popen(setup) as popen_res:
+        # pyre-fixme[7]: Expected `Tuple[subprocess.Popen[typing.Any],
+        # subprocess.Popen[typing.Any]]` but got `Generator[typing.Any,
+        # None, None]`.
         yield popen_res

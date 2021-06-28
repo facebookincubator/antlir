@@ -72,15 +72,18 @@ class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
     @classmethod
     def read_resource(cls: Type[S], package: str, name: str) -> S:
         with importlib.resources.open_text(package, name) as r:
+            # pyre-fixme[16]: `S` has no attribute `parse_raw`.
             return cls.parse_raw(r.read())
 
     @classmethod
     def load(cls: Type[S], path: Path) -> S:
         with open(path, "r") as r:
+            # pyre-fixme[16]: `S` has no attribute `parse_raw`.
             return cls.parse_raw(r.read())
 
     @classmethod
     def from_env(cls: Type[S], envvar: str) -> S:
+        # pyre-fixme[16]: `S` has no attribute `parse_raw`.
         return cls.parse_raw(os.environ[envvar])
 
     def __hash__(self):
@@ -102,6 +105,8 @@ class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
 
 # A Target is special mapping of a buck target name -> on disk path to the
 # constructed artifact
+# pyre-fixme[13]: Attribute `name` is never initialized.
+# pyre-fixme[13]: Attribute `path` is never initialized.
 class Target(Shape):
     name: str
     path: Path

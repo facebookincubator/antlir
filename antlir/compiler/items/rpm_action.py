@@ -122,7 +122,11 @@ def _get_action_to_names_or_rpms(
         if item.source is not None:
             rpm_path = item.source
             name_or_rpm = _LocalRpm(
-                path=rpm_path, metadata=RpmMetadata.from_file(rpm_path)
+                # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
+                path=rpm_path,
+                # pyre-fixme[6]: Expected `Path` for 1st positional only
+                # parameter to call `RpmMetadata.from_file` but got `str`
+                metadata=RpmMetadata.from_file(rpm_path),
             )
             conflict_detector.add(name_or_rpm.metadata.name, item)
         else:
@@ -130,6 +134,8 @@ def _get_action_to_names_or_rpms(
             conflict_detector.add(item.name, item)
 
         action_to_names_or_rpms[item.action].add(name_or_rpm)
+    # pyre-fixme[7]: Expected `Mapping[RpmAction, Union[_LocalRpm, str]]` but
+    # got `Dict[RpmAction, typing.Set[typing.Any]]`.
     return action_to_names_or_rpms
 
 
@@ -162,6 +168,8 @@ def _action_to_command(
         # remove` does not accept RPM paths.
         return YumDnfCommand.remove_name_if_exists, nor.metadata.name
     # Bad RpmAction?
+    # pyre-fixme[7]: Expected `Tuple[YumDnfCommand, Union[_LocalRpm, str]]` but
+    # got `Tuple[None, None]`.
     return None, None  # pragma: no cover
 
 
@@ -235,12 +243,14 @@ def _prepare_versionlock(
                         if not l.endswith(b"\n"):
                             outfile.write(b"\n")
         outfile.flush()
+        # pyre-fixme[7]: Expected `Path` but got `Generator[str, None, None]`.
         yield outfile.name
 
 
 # These items are part of a phase, so they don't get dependency-sorted, so
 # there is no `requires()` or `provides()` or `build()` method.
 @dataclass(init=False, frozen=True)
+# pyre-fixme[13]: Attribute `action` is never initialized.
 class RpmActionItem(ImageItem):
     action: RpmAction
     name: Optional[str] = None
@@ -281,6 +291,7 @@ class RpmActionItem(ImageItem):
             version_sets.add(item.version_set)
 
         def builder(subvol: Subvol) -> None:
+            # pyre-fixme[16]: `Path` has no attribute `__enter__`.
             with _prepare_versionlock(
                 version_sets, layer_opts.version_set_override
             ) as versionlock_path:
@@ -294,9 +305,13 @@ class RpmActionItem(ImageItem):
                     ).items(),
                     key=lambda cn: YUM_DNF_COMMAND_ORDER[cn[0]],
                 ):
+                    # pyre-fixme[6]: Expected `List[Union[_LocalRpm, str]]` for
+                    #  1st param but got `Union[_LocalRpm, str]`.
                     rpms, bind_ros = _rpms_and_bind_ros(nors)
                     _yum_dnf_using_build_appliance(
                         build_appliance=build_appliance,
+                        # pyre-fixme[6]: Expected `List[Tuple[str, str]]` for
+                        #  2nd param but got `List[str]`.
                         bind_ros=bind_ros,
                         install_root=subvol.path(),
                         protected_paths=protected_path_set(subvol),
@@ -331,7 +346,7 @@ def _yum_dnf_using_build_appliance(
     build_appliance: Subvol,
     bind_ros: List[Tuple[str, str]],
     install_root: Path,
-    protected_paths: Iterable[str],
+    protected_paths: Iterable[Path],
     versionlock_list: Path,
     yum_dnf_args: List[str],
     layer_opts: LayerOpts,

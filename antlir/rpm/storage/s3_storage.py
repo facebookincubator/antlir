@@ -22,6 +22,7 @@ from ..storage import Storage, StorageInput, StorageOutput
 log = get_logger()
 
 
+# pyre-fixme[11]: Annotation `s3` is not defined as a type.
 class S3Storage(Storage, plugin_kind="s3"):
     def __init__(
         self,
@@ -49,6 +50,9 @@ class S3Storage(Storage, plugin_kind="s3"):
         key = self._object_key(sid)
         url = f"https://{self.bucket}.s3-{self.region}.amazonaws.com/{key}"
         with open_url(url) as f:
+            # pyre-fixme[7]: Expected
+            #  `ContextManager[antlir.rpm.storage.storage.StorageInput]` but got
+            #  `Generator[antlir.rpm.storage.storage.StorageInput, None, None]`.
             yield StorageInput(input=f)
 
     @property
@@ -89,7 +93,13 @@ class S3Storage(Storage, plugin_kind="s3"):
             # there is read-after-write guarantees
             yield key
 
+        # pyre-fixme[6]: Expected `ContextManager[typing.Any]` for 2nd param
+        # but got `() -> Any`.
         with _CommitCallback(self, get_id_and_release_resources) as commit:
+            # pyre-fixme[7]: Expected
+            # `ContextManager[antlir.rpm.storage.storage.StorageOutput]` but
+            # got `Generator[antlir.rpm.storage.storage.StorageOutput, None,
+            # None]`.
             yield StorageOutput(output=buf, commit_callback=commit)
 
     def remove(self, sid: str) -> None:

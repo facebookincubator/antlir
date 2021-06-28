@@ -57,6 +57,8 @@ def _get_snapshot_dir(opts: _NspawnOpts, plugin_args: NspawnPluginArgs):
         plugin_args.attach_antlir_dir != AttachAntlirDirMode.OFF
         and not opts.layer.path(ANTLIR_DIR).exists()
         and opts.subvolume_on_disk
+        # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute
+        # `build_appliance_path`.
         and opts.subvolume_on_disk.build_appliance_path
     ):
         return (
@@ -115,6 +117,8 @@ def rpm_nspawn_plugins(
     snapshot_to_versionlock = MappingProxyType(s_to_vl)
 
     return (
+        # pyre-fixme[60]: Concatenation not yet support for multiple variadic
+        # tuples:...
         *(
             [AttachAntlirDir()]
             # In default-on mode, do NOT try to attach the BA's `ANTLIR_DIR`

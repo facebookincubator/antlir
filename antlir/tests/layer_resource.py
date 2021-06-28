@@ -24,6 +24,10 @@ def layer_resource(package: AnyStr, name: AnyStr) -> Path:
     "Like `layer_resource_subvol`, but for the `buck-out` layer artifact."
     return Path(
         importlib.resources.read_text(
-            package, name.replace("/", LAYER_SLASH_ENCODE)
+            # pyre-fixme[6]: Expected `Union[str, types.ModuleType]` for 1st
+            # param but got `AnyStr`.
+            package,
+            # pyre-fixme[6]: Expected `bytes` for 1st param but got `str`.
+            name.replace("/", LAYER_SLASH_ENCODE),
         )
     )

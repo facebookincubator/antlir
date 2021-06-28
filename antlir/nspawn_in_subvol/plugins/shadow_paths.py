@@ -297,16 +297,23 @@ class ShadowPaths(NspawnPlugin):
         container_dest_to_real_src = _resolve_to_canonical_shadow_paths(
             shadow_paths=self._shadow_paths,
             subvol=subvol,
+            # pyre-fixme[6]: Expected `List[Path]` for 3rd param but got
+            #  `Tuple[Path, ...]`.
             search_dirs=tuple(_shadow_search_dirs(opts.setenv)),
         )
         for cdest, src in container_dest_to_real_src.items():
             log.debug(f"{src} will shadow {cdest}")
+        # pyre-fixme[19]: Expected 2 positional arguments.
         with setup_ctx(
             subvol,
             # The bind-mounts are only applied later, at popen time, so
             # they do not interfere with the copying we do below.
             opts._replace(
                 bindmount_ro=(
+                    # pyre-fixme[60]: Concatenation not yet support for multiple
+                    #  variadic tuples: `*opts.bindmount_ro, *comprehension((s,
+                    #  d) generators(generator((d, s) in
+                    #  container_dest_to_real_src.items() if )))`.
                     *opts.bindmount_ro,
                     *((s, d) for d, s in container_dest_to_real_src.items()),
                 )
@@ -315,4 +322,6 @@ class ShadowPaths(NspawnPlugin):
         ) as setup, _copy_to_shadowed_root(
             setup.subvol, container_dest_to_real_src.keys()
         ):
+            # pyre-fixme[7]: Expected `_NspawnSetup` but got
+            # `Generator[antlir.nspawn_in_subvol.cmd._NspawnSetup, None, None]`.
             yield setup

@@ -16,6 +16,8 @@ from antlir.common import init_logging
 from antlir.fs_utils import Path
 
 
+# pyre-fixme[34]: `Variable[AnyStr <: [str, bytes]]` isn't present in the
+#  function's parameters.
 def _load_targets_and_outputs(arg: str) -> Mapping[AnyStr, Path]:
     return json.loads(Path(arg).read_text())
 
@@ -38,6 +40,8 @@ def add_antlir_debug_arg(parser: argparse.ArgumentParser):
     )
 
 
+# pyre-fixme[13]: Attribute `args` is never initialized.
+# pyre-fixme[13]: Attribute `parser` is never initialized.
 class CLI:
     parser: argparse.ArgumentParser
     args: argparse.Namespace

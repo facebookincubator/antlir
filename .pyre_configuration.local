@@ -1,0 +1,6 @@
+{
+  "targets": [
+    "//antlir/btrfs_diff/...",
+    "//antlir/rpm/downloader/..."
+  ]
+}

@@ -79,6 +79,11 @@ class Mount:
 
 
 @dataclass(init=False, frozen=True)
+# pyre-fixme[13]: Attribute `build_source` is never initialized.
+# pyre-fixme[13]: Attribute `is_directory` is never initialized.
+# pyre-fixme[13]: Attribute `layer_publisher` is never initialized.
+# pyre-fixme[13]: Attribute `mountpoint` is never initialized.
+# pyre-fixme[13]: Attribute `runtime_source` is never initialized.
 class MountItem(ImageItem):
     mountpoint: str
     build_source: BuildSource
@@ -253,4 +258,6 @@ def mounts_from_image_meta(image: Path) -> Iterator[Tuple[Path]]:
         )
 
         for mount in mounts_from_meta(td / "volume"):
+            # pyre-fixme[7]: Expected `Iterator[Tuple[Path]]` but got
+            #  `Generator[Mount, None, None]`.
             yield mount

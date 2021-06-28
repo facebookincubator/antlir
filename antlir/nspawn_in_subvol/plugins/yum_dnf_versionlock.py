@@ -68,6 +68,8 @@ def _prepare_versionlock_lists(
                 snapshot_dir / f"{prog}/etc/{prog}/plugins/versionlock.list",
                 (src, len(envra_set)),
             )
+        # pyre-fixme[7]: Expected `Dict[str, Tuple[str, int]]` but got
+        #  `Generator[Dict[typing.Any, typing.Any], None, None]`.
         yield dest_to_src_and_size
 
 
@@ -80,9 +82,13 @@ class YumDnfVersionlock(NspawnPlugin):
         self, setup_subvol_ctx: _SetupSubvolCtxMgr, opts: _NspawnOpts
     ) -> Subvol:
         with ExitStack() as stack:
+            # pyre-fixme[16]: `YumDnfVersionlock` has no attribute `dest_to_src`
             self.dest_to_src = {}
             for snapshot, versionlock in self._snapshot_to_versionlock.items():
                 for dest, (src, vl_size) in stack.enter_context(
+                    # pyre-fixme[6]: Expected
+                    # `ContextManager[Variable[contextlib._T]]` for 1st param
+                    # but got `Dict[str, Tuple[str, int]]`.
                     _prepare_versionlock_lists(
                         # Same note as in `repo_servers.py` regarding the
                         # usage of the pre-snapshot subvolume.
@@ -93,6 +99,8 @@ class YumDnfVersionlock(NspawnPlugin):
                 ).items():
                     log.info(f"Locking {vl_size} RPM versions via {dest}")
                     set_new_key(self.dest_to_src, dest, src)
+            # pyre-fixme[7]: Expected `Subvol` but got `Generator[Subvol, None,
+            # None]`.
             yield stack.enter_context(setup_subvol_ctx(opts))
 
     @contextmanager
@@ -103,14 +111,24 @@ class YumDnfVersionlock(NspawnPlugin):
         opts: _NspawnOpts,
         popen_args: PopenArgs,
     ) -> _NspawnSetup:
+        # pyre-fixme[19]: Expected 2 positional arguments.
         with setup_ctx(
             subvol,
             opts._replace(
                 bindmount_ro=(
+                    # pyre-fixme[60]: Concatenation not yet support for multiple
+                    #  variadic tuples: `*opts.bindmount_ro, *comprehension((s,
+                    #  d) for generators(generator((d, s) in
+                    #  self.dest_to_src.items() if )))`.
                     *opts.bindmount_ro,
+                    # pyre-fixme[16]: `YumDnfVersionlock` has no attribute
+                    #  `dest_to_src`.
                     *((s, d) for d, s in self.dest_to_src.items()),
                 )
             ),
             popen_args,
         ) as nspawn_setup:
+            # pyre-fixme[7]: Expected `_NspawnSetup` but got
+            #  `Generator[antlir.nspawn_in_subvol.cmd._NspawnSetup, None,
+            #  None]`.
             yield nspawn_setup

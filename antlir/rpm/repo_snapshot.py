@@ -186,7 +186,10 @@ class RepoSnapshot(NamedTuple):
                 RepoSnapshot._create_sqlite_tables(db)
                 yield db
             db.close()
+            # pyre-fixme[16]: `Storage` has no attribute `writer`.
             with storage.writer() as db_out:
+                # pyre-fixme[6]: Expected `BytesIO` for 1st param but got
+                #  `_TemporaryFileWrapper[bytes]`.
                 for chunk in read_chunks(db_tf, cls._STORAGE_CHUNK_SIZE):
                     db_out.write(chunk)
                 with create_ro(dest_dir / cls._STORAGE_ID_FILE, "w") as sidf:
@@ -206,6 +209,7 @@ class RepoSnapshot(NamedTuple):
             sid = sid_in.read()
             assert sid[-1] == "\n", repr(sid)
             sid = sid[:-1]
+        # pyre-fixme[16]: `Storage` has no attribute `reader`.
         with storage.reader(sid) as db_in, create_ro(dest, "wb") as db_out:
             for chunk in read_chunks(db_in, cls._STORAGE_CHUNK_SIZE):
                 db_out.write(chunk)
@@ -244,6 +248,8 @@ class RepoSnapshot(NamedTuple):
                 "size": obj.size,
                 "storage_id": sid,
             }
+            # pyre-fixme[6]: Expected `Repodata` for 1st param but got
+            #  `Union[Repodata, Rpm]`.
             other_d = get_other_cols_fn(obj)
             assert not (set(d) & set(other_d)), (d, other_d)
             d.update(other_d)

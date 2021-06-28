@@ -13,6 +13,7 @@ def render_flavor(flavor=None) -> str:
     return f"(File d{len(flavor)})"
 
 
+# pyre-fixme[31]: Expression `set(str)` is not a valid type.
 def get_rpm_installers_supported() -> {str}:
     return {
         config.rpm_installer

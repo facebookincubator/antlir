@@ -96,8 +96,10 @@ class Path(bytes):
         return cls(arg, *args, **kwargs)
 
     @classmethod
+    # pyre-fixme[14]: `join` overrides method defined in `bytes` inconsistently.
     def join(cls, *paths) -> "Path":
         if not paths:
+            # pyre-fixme[7]: Expected `Path` but got `None`.
             return None
         return Path(
             os.path.join(byteme(paths[0]), *(byteme(p) for p in paths[1:]))
@@ -261,6 +263,8 @@ class Path(bytes):
     @contextmanager
     def open(self, mode="r") -> IO:
         with open(self, mode=mode) as f:
+            # pyre-fixme[7]: Expected `IO[typing.Any]` but got
+            #  `Generator[io.TextIOWrapper, None, None]`.
             yield f
 
     @classmethod
@@ -346,8 +350,11 @@ class Path(bytes):
     def json_dump(cls, *args, **kwargs) -> str:
         "Use instead of `json.dump` to allow serializing `Path` values."
         assert "cls" not in kwargs
+        # pyre-fixme[7]: Expected `str` but got `None`.
         return json.dump(*args, **kwargs, cls=_PathJSONEncoder)
 
+    # pyre-fixme[14]: `__format__` overrides method defined in `object`
+    # inconsistently.
     def __format__(self, spec) -> str:
         "Allow usage of `Path` in f-strings."
         return self.decode(errors="surrogateescape").__format__(spec)
@@ -377,6 +384,7 @@ ANTLIR_DIR = Path("/__antlir__")
 
 # The name of the flavor file in the meta directory
 META_FLAVOR_FILE = META_DIR / "flavor"
+
 
 # Future: If it becomes necessary to serialize dict keys that are `Path`,
 # the `json` module currently does not support custom key serialization.  In
@@ -472,6 +480,7 @@ def populate_temp_dir_and_rename(dest_path, *, overwrite=False) -> Path:
     base_dir = os.path.dirname(dest_path)
     td = tempfile.mkdtemp(dir=base_dir)
     try:
+        # pyre-fixme[7]: Expected `Path` but got `Generator[Path, None, None]`.
         yield Path(td)
 
         # Delete+rename is racy, but EdenFS lacks RENAME_EXCHANGE (t34057927)

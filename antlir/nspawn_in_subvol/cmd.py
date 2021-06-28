@@ -89,6 +89,7 @@ def _temp_cgroup(subvol: Subvol) -> Path:
         + base64.urlsafe_b64encode(uuid.uuid4().bytes).strip(b"=")
     )
     try:
+        # pyre-fixme[7]: Expected `Path` but got `Generator[Path, None, None]`.
         yield new_cg
     finally:
         # Best-effort recursive cleanup of our cgroup.  This will only
@@ -162,6 +163,8 @@ def _nspawn_cmd(
         "env",
         "UNIFIED_CGROUP_HIERARCHY=yes",
         *ns.nsenter_without_sudo(
+            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str, bytes]]]`
+            # for 1st param but got `str`.
             "systemd-nspawn",
             # These are needed since we do not want to require a working `dbus`
             # on the host.
@@ -200,6 +203,8 @@ def _artifacts_require_repo(src_subvol: Subvol):
 
 def _extra_nspawn_args_and_env(
     opts: _NspawnOpts,
+    # pyre-fixme[34]: `Variable[AnyStr <: [str, bytes]]` isn't present in the
+    #  function's parameters.
 ) -> Tuple[
     List[AnyStr],  # Arguments to `systemd-nspawn`
     List[AnyStr],  # Environment variables to set when running `opts.cmd`
@@ -383,9 +388,13 @@ def maybe_popen_and_inject_fds(
 
 class _NspawnSetup(NamedTuple):
     subvol: Subvol
+    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
+    #  bytes]]`.
     nspawn_cmd: Iterable[AnyStr]  # How to invoke `systemd-nspawn`
     nspawn_env: Mapping[str, str]  # `{K: V}` env vars for `systemd-nspawn`
     opts: _NspawnOpts
+    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
+    #  bytes]]`.
     cmd_env: Iterable[AnyStr]  # `K=V` env vars for `opts.cmd`
     popen_args: PopenArgs
 
@@ -393,10 +402,13 @@ class _NspawnSetup(NamedTuple):
 @contextmanager
 def _nspawn_subvol_setup(opts: _NspawnOpts) -> Subvol:
     with (
+        # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
         _snapshot_subvol(opts.layer, opts.debug_only_opts.snapshot_into)
         if opts.snapshot
         else nullcontext(opts.layer)
     ) as nspawn_subvol:
+        # pyre-fixme[7]: Expected `Subvol` but got `Generator[typing.Any, None,
+        # None]`.
         yield nspawn_subvol
 
 
@@ -404,6 +416,7 @@ def _nspawn_subvol_setup(opts: _NspawnOpts) -> Subvol:
 def _nspawn_setup(
     nspawn_subvol: Subvol, opts: _NspawnOpts, popen_args: PopenArgs
 ) -> _NspawnSetup:
+    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with _temp_cgroup(opts.layer) as temp_cgroup, temp_dir(
         # Hardcoding /tmp is ugly, but buck will often set TMP to a path in
         # buck-out that ends up being underneath the repository and we need to
@@ -415,6 +428,8 @@ def _nspawn_setup(
         nspawn_args, cmd_env = _extra_nspawn_args_and_env(opts)
         nspawn_subvol.run_as_root(
             ns.nsenter_without_sudo(
+                # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
+                # bytes]]]` for 1st param but got `str`.
                 "mount",
                 "--bind",
                 nspawn_subvol.path(),
@@ -422,9 +437,15 @@ def _nspawn_setup(
             )
         )
 
+        # pyre-fixme[7]: Expected `_NspawnSetup` but got `Generator[
+        # _NspawnSetup, None, None]`.
         yield _NspawnSetup(
             subvol=nspawn_subvol,
             nspawn_cmd=(
+                # pyre-fixme[60]: Concatenation not yet support for multiple
+                #  variadic tuples:
+                #  `*antlir.nspawn_in_subvol.cmd._nspawn_cmd(nspawn_subvol,
+                #  temp_cgroup, temp_bind_rootfs, ns), *nspawn_args`.
                 *_nspawn_cmd(nspawn_subvol, temp_cgroup, temp_bind_rootfs, ns),
                 *nspawn_args,
             ),

@@ -134,11 +134,14 @@ class RepoMetadata(NamedTuple):
     @classmethod
     def new(cls, *, xml: bytes) -> "RepoMetadata":
         repodatas = frozenset(_parse_repomd(xml))
+        # pyre-fixme[7]: Expected `RepoMetadata` but got `NamedTuple`.
         return cls.__new__(
             cls,
             xml=xml,
             fetch_timestamp=int(time.time()),
             build_timestamp=max(r.build_timestamp for r in repodatas),
+            # pyre-fixme[6]: Expected `List[Repodata]` for 5th param but got
+            #  `frozenset[Repodata]`.
             repodatas=repodatas,
             checksum=Checksum(
                 algorithm=CANONICAL_HASH,

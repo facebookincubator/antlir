@@ -22,20 +22,26 @@ class Pluggable:
     accept only plain-old-data kwargs.
     """
 
+    # pyre-fixme[9]: plugin_kind has type `str`; used as `None`.
     def __init_subclass__(cls, plugin_kind: str = None, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         # We're in the base of this family of plugins, set it up.
         if Pluggable in cls.__bases__:
             assert plugin_kind is None
+            # pyre-fixme[16]: `Type` has no attribute `_pluggable_kind_to_cls`.
+            # pyre-fixme[11]: Annotation `cls` is not defined as a type.
             cls._pluggable_kind_to_cls: Mapping[str, cls] = {}
+            # pyre-fixme[16]: `Type` has no attribute `_pluggable_base`.
             cls._pluggable_base = cls
         else:  # Register plugin class on its base
+            # pyre-fixme[16]: `Pluggable` has no attribute `_pluggable_base`.
             d = cls._pluggable_base._pluggable_kind_to_cls
             if plugin_kind in d:
                 raise AssertionError(
                     f"{cls} and {d[plugin_kind]} have the same plugin kind"
                 )
             d[plugin_kind] = cls
+            # pyre-fixme[16]: `Type` has no attribute `_pluggable_kind`.
             cls._pluggable_kind = plugin_kind
 
     @classmethod
@@ -46,12 +52,14 @@ class Pluggable:
 
     @classmethod
     def make(cls, kind: str, **kwargs) -> "Pluggable":
+        # pyre-fixme[16]: `Pluggable` has no attribute `_pluggable_base`.
         return cls._pluggable_base._pluggable_kind_to_cls[kind](**kwargs)
 
     @classmethod
     def argparse_json(cls, arg_json: str) -> Dict[str, str]:
         # Make bad JSON fail at argument parse-time
         json_cfg = json.loads(arg_json)
+        # pyre-fixme[16]: `Pluggable` has no attribute `_pluggable_base`.
         cls._pluggable_base.from_json(json_cfg)
         return json_cfg
 
