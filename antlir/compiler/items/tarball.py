@@ -124,7 +124,10 @@ def load_from_tarball(
         run_nspawn(opts, PopenArgs())
 
 
+# pyre-fixme[13]: Attribute `source` is never initialized.
 class TarballItem(tarball_t, ImageItem):
+    # pyre-fixme[15]: `source` overrides attribute defined in `tarball_t`
+    #  inconsistently.
     source: Path
 
     _normalize_into_dir = validate_path_field_normal_relative("into_dir")
@@ -165,6 +168,7 @@ class TarballItem(tarball_t, ImageItem):
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts):
         load_from_tarball(
+            # pyre-fixme[6]: Expected `str` for 1st param but got `Path`.
             self.source,
             subvol,
             layer_opts,

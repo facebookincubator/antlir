@@ -55,6 +55,7 @@ class ExtractedFeatures:
         )
         # `other` gets populated by recursive `extract_nested_features`
         # calls, e.g. for `parent_layer`.
+        # pyre-fixme[16]: `Optional` has no attribute `extend`.
         self.features_to_replay.extend(other.features_to_replay or [])
         return self
 
@@ -109,6 +110,7 @@ class _FeatureHandlers:
                 'RPM actions besides "install" need a custom image, got '
                 f"{self.config}"
             )
+            # pyre-fixme[7]: Expected `ExtractedFeatures` but got `None`.
             return None
         name = self.config.get("name")
         if name:
@@ -124,6 +126,7 @@ class _FeatureHandlers:
                 "Installing an in-repo RPM requires a custom image (for now), "
                 " got {self.config}"
             )
+            # pyre-fixme[7]: Expected `ExtractedFeatures` but got `None`.
             return None
         return ExtractedFeatures(install_rpm_names=names)
 
@@ -175,6 +178,7 @@ def extract_nested_features(
             extracted_features += ExtractedFeatures(
                 features_needing_custom_image={feature_key}
             )
+        # pyre-fixme[16]: `Optional` has no attribute `append`.
         extracted_features.features_to_replay.append(
             (feature_key, target, config)
         )

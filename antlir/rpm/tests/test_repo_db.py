@@ -23,6 +23,7 @@ _FAKE_RPM = Rpm(
     release="3b",
     arch="aarch64",
     build_timestamp=37,
+    # pyre-fixme[6]: Expected `Checksum` for 7th param but got `None`.
     checksum=None,  # populated separately by each test
     canonical_checksum=None,  # populated separately by each test
     location=None,  # not used by repo_db code

@@ -31,6 +31,7 @@ def _check_parent_flavor(parent_subvol, flavor):
 
 
 @dataclass(init=False, frozen=True)
+# pyre-fixme[13]: Attribute `subvol` is never initialized.
 class ParentLayerItem(ImageItem):
     subvol: Subvol
 
@@ -80,6 +81,8 @@ class FilesystemRootItem(ImageItem):
 
 
 @dataclass(init=False, frozen=True)
+# pyre-fixme[13]: Attribute `format` is never initialized.
+# pyre-fixme[13]: Attribute `source` is never initialized.
 class LayerFromPackageItem(ImageItem):
     format: str
     source: str

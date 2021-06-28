@@ -32,15 +32,22 @@ class UnshareTestCase(unittest.TestCase):
         # still at `nsenter`.
         proc = subprocess.Popen(
             nsenter_as_user(
-                unshare, "bash", "-uec", "echo ready $$ ; exec sleep infinity"
+                unshare,
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 2nd param but got `str`.
+                "bash",
+                "-uec",
+                "echo ready $$ ; exec sleep infinity",
             ),
             stdout=subprocess.PIPE,
         )
 
         # Wait for the child to start
+        # pyre-fixme[16]: Optional type has no attribute `readline`.
         ready_and_pid = proc.stdout.readline().split(b" ")
         self.assertEqual(b"ready", ready_and_pid[0])
 
+        # pyre-fixme[16]: Optional type has no attribute `close`.
         proc.stdout.close()  # `sudo` keeps stdout open, but will not write.
         # Returning the PID lets us clean up the `sleep infinity` when it is
         # not inside a PID namespace.
@@ -53,12 +60,17 @@ class UnshareTestCase(unittest.TestCase):
         ]
         in_ns, out_ns = [
             dict(
+                # pyre-fixme[6]: Expected `SupportsKeysAndGetItem[Variable[_KT],
+                #  Variable[_VT]]` for 1st param but got
+                #  `Generator[typing.List[str], None, None]`.
                 ns_ino.split(":")
                 for ns_ino in subprocess.check_output(cmd)
                 .decode()
                 .strip()
                 .split("\n")
             )
+            # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+            #  bytes]]]` for 2nd param but got `str`.
             for cmd in [list_ns_cmd, nsenter_as_root(unshare, *list_ns_cmd)]
         ]
         for ns in ns_diff:
@@ -69,6 +81,7 @@ class UnshareTestCase(unittest.TestCase):
         # We can kill the inner keepalive `cat` since it runs w/ our UID
         # Since it's an `init` of a PID namespace, we must use SIGKILL.
         cat_pid = int(
+            # pyre-fixme[16]: Optional type has no attribute `group`.
             re.match(
                 "^/proc/([0-9]+)/ns/",
                 next(iter(unshare._namespace_to_file.values())).name,
@@ -158,6 +171,9 @@ class UnshareTestCase(unittest.TestCase):
                     self.assertEqual(
                         b"kvoh",
                         subprocess.check_output(
+                            # pyre-fixme[6]: Expected
+                            #  `List[Variable[typing.AnyStr <: [str, bytes]]]`
+                            #  for 2nd param but got `str`.
                             nsenter_as_user(unshare, "cat", cypa)
                         ),
                     )

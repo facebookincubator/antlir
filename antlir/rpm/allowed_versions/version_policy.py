@@ -72,6 +72,7 @@ def _deserialize_evra(
     raise RuntimeError(f"Bad EVR spec {evr}")
 
 
+# pyre-fixme[11]: Annotation `manual` is not defined as a type.
 class ManualVersionPolicy(VersionPolicy, plugin_kind="manual"):
     def __init__(self):
         pass  # This tells `add_argparse_arg` we take no args.

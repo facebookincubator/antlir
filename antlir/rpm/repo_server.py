@@ -32,6 +32,8 @@ import socket
 import sqlite3
 import time
 import urllib.parse
+
+# pyre-fixme[21]: Could not find name `HTTPStatus` in `http.server`.
 from http.server import BaseHTTPRequestHandler, HTTPStatus
 from socketserver import BaseServer
 from typing import Mapping, Tuple
@@ -189,6 +191,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         # sending the entire blob back to the client.
         bytes_left = obj["size"]
         checksum = Checksum.from_string(obj["checksum"])
+        # pyre-fixme[16]: `Storage` has no attribute `reader`.
         with self.storage.reader(obj["storage_id"]) as input:
             log.debug(f"Got storage for {location}")
             hash = checksum.hasher()
@@ -270,7 +273,10 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         log.debug(f"HEAD {location}")
         obj = self.location_to_obj.get(location)
         if obj is None:
+            # pyre-fixme[16]: Module `server` has no attribute `HTTPStatus`.
             self.send_error(HTTPStatus.NOT_FOUND, "File not found")
+            # pyre-fixme[7]: Expected `Tuple[str, typing.Dict[typing.Any,
+            #  typing.Any]]` but got `Tuple[None, None]`.
             return None, None
         if (
             ("storage_id" not in obj and "content_bytes" not in obj)
@@ -279,6 +285,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             or ("error" in obj)
         ):
             self.send_error(
+                # pyre-fixme[16]: Module `server` has no attribute `HTTPStatus`.
                 HTTPStatus.INTERNAL_SERVER_ERROR,
                 f'Repo snapshot error: {obj.get("error")}',
             )
@@ -286,7 +293,10 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             # 'mutable_rpm' errors, if appropriate.  Note that
             # `_memoize_error` hacks other errors to include a `storage_id`
             # in our in-memory representation -- do check the error type!
+            # pyre-fixme[7]: Expected `Tuple[str, typing.Dict[typing.Any,
+            #  typing.Any]]` but got `Tuple[None, None]`.
             return None, None
+        # pyre-fixme[16]: Module `server` has no attribute `HTTPStatus`.
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-type", self.type_for_path(location))
         self.send_header("Content-Length", str(obj["size"]))

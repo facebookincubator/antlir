@@ -68,4 +68,5 @@ def main(argv, from_file: BytesIO, to_file: BytesIO):
 if __name__ == "__main__":  # pragma: no cover
     import sys
 
+    # pyre-fixme[6]: Expected `BytesIO` for 2nd param but got `BinaryIO`.
     main(sys.argv[1:], sys.stdin.buffer, sys.stdout.buffer)

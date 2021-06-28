@@ -60,6 +60,9 @@ LiteralKnownPluggable = Union[
     Literalish(PackageGroup), Literalish(VersionPolicy)
 ]
 KnownPluggable = Union[PackageGroup, VersionPolicy]
+# pyre-fixme[6]: Expected `Tuple[typing.Any,
+#  typing.Type[Variable[$synthetic_attribute_resolution_variable]]]` for 1st
+#  param but got `Tuple[typing.Any, object]`.
 LoadConfigFns = Mapping[LiteralKnownPluggable, Mapping[str, Callable[..., Any]]]
 
 
@@ -75,11 +78,14 @@ def _drepr(s):
 
 class _PluginRef(NamedTuple):
     # NB: This could be inferred from plugin, but being explicit is cleaner
+    # pyre-fixme[11]: Annotation `LiteralKnownPluggable` is not defined as a
+    # type.
     pluggable: LiteralKnownPluggable
     plugin: KnownPluggable
 
     def dir(self, snapshot_root: Path) -> Path:
         if hasattr(self.plugin, "SNAPSHOT_DIR"):
+            # pyre-fixme[16]: `PackageGroup` has no attribute `SNAPSHOT_DIR`.
             snapshot_dir = self.plugin.SNAPSHOT_DIR
         else:
             snapshot_dir = (
@@ -88,6 +94,7 @@ class _PluginRef(NamedTuple):
         return snapshot_root / snapshot_dir
 
     def kind(self) -> str:
+        # pyre-fixme[16]: `PackageGroup` has no attribute `_pluggable_kind`.
         return self.plugin._pluggable_kind
 
 
@@ -109,6 +116,8 @@ class _PluginDriver:
         self._plugins = [
             _PluginRef(pluggable=pluggable, plugin=cls())
             for pluggable in _PLUGGABLE_TO_DIR_NAME
+            # pyre-fixme[16]: `PackageGroup` has no attribute
+            # `_pluggable_kind_to_cls`.
             for cls in pluggable._pluggable_kind_to_cls.values()
         ]
 
@@ -128,6 +137,7 @@ class _PluginDriver:
     # XXX abstraction lets each plugin precompute some stuff before quickly
     # serving point queries for its configs.
     @contextmanager
+    # pyre-fixme[11]: Annotation `LoadConfigFns` is not defined as a type.
     def prepare_load_config_fns(self) -> LoadConfigFns:
         with ExitStack() as stack:
             pluggable_to_kind_to_load_config = {}
@@ -156,6 +166,7 @@ def _load_package_names(
     cfg = (
         {"source": "manual", "names": cfg}
         if isinstance(cfg, list)
+        # pyre-fixme[16]: `Mapping` has no attribute `copy`.
         else cfg.copy()
     )
     pg_src = cfg.pop("source")
@@ -173,6 +184,7 @@ def _load_policy_versions_for_packages(
     policy_cfg = (
         {"policy": policy_cfg}
         if isinstance(policy_cfg, str)
+        # pyre-fixme[16]: `Mapping` has no attribute `copy`.
         else policy_cfg.copy()
     )
     policy = policy_cfg.pop("policy")
@@ -309,6 +321,8 @@ def _resolve_envras_for_package_group(
         f"(name IN ({', '.join('?' for _ in vpgroup.packages)}))"
         f" AND ({' OR '.join(evra_queries)})"
     )
+    # pyre-fixme[60]: Concatenation not yet support for multiple variadic
+    #  tuples: `*vpgroup.packages, *evra_subs`.
     query_args = (*vpgroup.packages, *evra_subs)
     log.debug(f"Running SQL query {query_sql} with args {query_args}")
     for n, e, v, r, a in snapshot_db.execute(query_sql, query_args):
@@ -357,8 +371,11 @@ def _resolve_envras_for_package_group(
             f"After merging {pkg} with EVRAs {cur_evr_to_a_to_pkgs}, the "
             f"group was left with {evr_to_a_to_pkgs}."
         )
+    # pyre-fixme[7]: Expected `Set[Tuple[str, str, str, str, str]]` but got
+    #  `Set[SortableENVRA]`.
     return {
         SortableENVRA(e, n, v, r, a)
+        # pyre-fixme[16]: Optional type has no attribute `items`.
         for (e, v, r), a_to_pkgs in evr_to_a_to_pkgs.items()
         for a, pkgs in a_to_pkgs.items()
         for n in pkgs
@@ -381,6 +398,7 @@ def _save_allowed_versions(
         pass
     pkg_to_src_path = {}
     for db in snapshot_dbs:
+        # pyre-fixme[16]: `Iterator` has no attribute `execute`.
         (pkgs,) = zip(*db.execute("select distinct name from rpm;").fetchall())
         for pkg in pkgs:
             pkg_to_src_path[pkg] = _EMPTY_VSET_PATH
@@ -392,6 +410,8 @@ def _save_allowed_versions(
         envras = set()
         for snapshot_path, snapshot_db in snapshot_paths_and_dbs:
             log.debug(f"Resolving {vpgroup} via snapshot {snapshot_path}")
+            # pyre-fixme[6]: Expected `Connection` for 1st param but got
+            #  `Iterator[sqlite3.dbapi2.Connection]`.
             envras |= _resolve_envras_for_package_group(snapshot_db, vpgroup)
         # XXX It can happen that the package group has no lock in any
         # snapshot -- make this a diff description error.
@@ -482,9 +502,11 @@ def update_allowed_versions(args: argparse.Namespace) -> None:
                 [],
             ),
             load_config_fns,
+            # pyre-fixme[16]: `str` has no attribute `decode`.
             {vs.decode() for vs in os.listdir(args.version_sets_dir)},
         )
     log.info(f"XXXvsets {vset_to_vpgroups}")
+    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(
         args.version_sets_dir, overwrite=True
     ) as td:

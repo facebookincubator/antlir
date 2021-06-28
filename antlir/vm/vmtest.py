@@ -22,6 +22,7 @@ from antlir.vm.vm_opts_t import vm_opts_t
 logger = get_logger()
 
 
+# pyre-fixme[9]: file has type `IOBase`; used as `TextIO`.
 def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     blocking = os.get_blocking(file.fileno())
     os.set_blocking(file.fileno(), True)
@@ -30,6 +31,11 @@ def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
     os.set_blocking(file.fileno(), blocking)
 
 
+# pyre-fixme[13]: Attribute `gtest_list_tests` is never initialized.
+# pyre-fixme[13]: Attribute `list_rust` is never initialized.
+# pyre-fixme[13]: Attribute `list_tests` is never initialized.
+# pyre-fixme[13]: Attribute `test_binary` is never initialized.
+# pyre-fixme[13]: Attribute `test_binary_image` is never initialized.
 class VMTestExecOpts(VMExecOpts):
     """
     Custom execution options for this VM entry point.
@@ -145,24 +151,36 @@ async def run(
     # If we've made it this far we are executing the actual test, not just
     # listing tests
     returncode = -1
+    # pyre-fixme[6]: Expected `SupportsKeysAndGetItem[Variable[_KT],
+    #  Variable[_VT]]` for 1st param but got `Generator[List[str], None, None]`.
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
     # Build shares to provide to the vm
+    #
+    # pyre-fixme[6]: Expected `PathLike[typing.Any]` for 1st param but got
+    # `Path`.
     shares = [BtrfsDisk(test_binary_image, "/vmtest")]
     if devel_layer and opts.kernel.artifacts.devel is None:
         raise Exception(
             "--devel-layer requires kernel.artifacts.devel set in vm_opts"
         )
     if devel_layer:
+        # pyre-fixme[6]: Expected `Iterable[BtrfsDisk]` for 1st param but got
+        #  `Iterable[Plan9Export]`.
         shares += [
             Plan9Export(
+                # pyre-fixme[16]: `Optional` has no attribute `path`.
                 path=find_built_subvol(opts.kernel.artifacts.devel.path).path(),
+                # pyre-fixme[6]: Expected `Optional[Path]` for 2nd param but got
+                # `str`.
                 mountpoint="/usr/src/kernels/{}".format(opts.kernel.uname),
                 mount_tag="kernel-devel-src",
                 generator=True,
             ),
             Plan9Export(
                 path=find_built_subvol(opts.kernel.artifacts.devel.path).path(),
+                # pyre-fixme[6]: Expected `Optional[Path]` for 2nd param but got
+                # `str`.
                 mountpoint="/usr/lib/modules/{}/build".format(
                     opts.kernel.uname
                 ),
@@ -178,6 +196,7 @@ async def run(
         shares=shares,
         shell=shell,
         timeout_ms=timeout_ms,
+        # pyre-fixme[23]: Unable to unpack `GuestSSHConnection` into 3 values.
     ) as (instance, boot_elapsed_ms, timeout_ms):
 
         # If we are run with `--shell` mode, we don't get an instance since
@@ -238,6 +257,8 @@ async def run(
                 blocking_print(stdout.decode("utf-8"), end="")
 
             if stderr:
+                # pyre-fixme[6]: Expected `IOBase` for 2nd param but got
+                # `TextIO`.
                 blocking_print(stderr.decode("utf-8"), file=sys.stderr, end="")
 
             for path in file_arguments:

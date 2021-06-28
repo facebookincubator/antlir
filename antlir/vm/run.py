@@ -55,6 +55,7 @@ async def run(
         console=console,
         timeout_ms=timeout_ms,
         shell=shell,
+        # pyre-fixme[23]: Unable to unpack `GuestSSHConnection` into 3 values.
     ) as (instance, boot_ms, timeout_ms):
         # If we are run with `--shell` mode, we don't get an instance since
         # the --shell mode takes over.  This is a bit of a wart that exists

@@ -17,6 +17,8 @@ class TestTap(unittest.TestCase):
     def get_links(self, ns: Unshare) -> Set[str]:
         links = (
             subprocess.run(
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 1st param but got `str`.
                 ns.nsenter_as_user("ip", "link"),
                 check=True,
                 stdout=subprocess.PIPE,

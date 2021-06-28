@@ -13,15 +13,21 @@ from .storage_base_test import Storage, StorageBaseTestCase
 
 class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
     def _test_write_and_read_back(self, storage_type: Storage):
+        # pyre-fixme[16]: `Storage` has no attribute `_make_storage_id`.
         old_make_storage_id = storage_type._make_storage_id
         with unittest.mock.patch.object(
             storage_type,
             "_make_storage_id",
+            # pyre-fixme[16]: `CLIObjectStorageBaseTestCase` has no attribute
+            #  `_decorate_id`.
             side_effect=lambda: self._decorate_id(old_make_storage_id()),
         ):
-            # Since our current implementation doesn't support the removal
-            # of multiple keys in one command, eagerly start each remove
-            # and let it run in the background while the test proceeds.
+            # Since our current implementation doesn't support the removal of
+            # multiple keys in one command, eagerly start each remove and let it
+            # run in the background while the test proceeds.
+            #
+            # pyre-fixme[16]: `CLIObjectStorageBaseTestCase` has no attribute
+            # `storage`.
             with self.storage.remover() as rm:
                 # CLI startup can take a while to start (~0.8 seconds in the
                 # case of manifold), so the network time to upload a bunch of
@@ -34,11 +40,16 @@ class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
                     rm.remove(sid)
 
     def _test_uncommited(self, storage_type: Storage):
+        # pyre-fixme[16]: `CLIObjectStorageBaseTestCase` has no attribute
+        #  `_decorate_id`.
+        # pyre-fixme[16]: `Storage` has no attribute `_make_storage_id`.
         fixed_sid = self._decorate_id(storage_type._make_storage_id())
         with unittest.mock.patch.object(
             storage_type, "_make_storage_id", return_value=fixed_sid
         ) as mock:
             with self.assertRaisesRegex(RuntimeError, "^abracadabra$"):
+                # pyre-fixme[16]: `CLIObjectStorageBaseTestCase` has no
+                #  attribute `storage`.
                 with self.storage.writer() as out:
                     out.write(b"boohoo")
                     # Test our exception-before-commit handling
@@ -66,6 +77,7 @@ class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
         # scenes", and even though it errors and logs, it does not raise
         # an externally visible exception:
         with self.assertLogs(storage.__name__, level="ERROR") as cm:
+            # pyre-fixme[16]: `Pluggable` has no attribute `writer`.
             with Storage.make(key="test", kind=storage_kind).writer() as out:
                 out.write(b"triggers error cleanup via commit-to-delete")
         (msg,) = cm.output

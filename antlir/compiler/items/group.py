@@ -122,8 +122,10 @@ class GroupItem(group_t, ImageItem):
     def provides(self) -> Generator[Provider, None, None]:
         yield ProvidesGroup(self.name)
 
+    # pyre-fixme[9]: layer_opts has type `LayerOpts`; used as `None`.
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
         group_file = GroupFile(_read_group_file(subvol))
         gid = self.id or group_file.next_group_id()
         group_file.add(self.name, gid)
+        # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got `GroupFile`.
         _write_group_file(subvol, group_file)

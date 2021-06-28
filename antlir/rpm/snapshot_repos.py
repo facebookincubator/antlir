@@ -144,8 +144,11 @@ def snapshot_repos(
         for repo in repos
         if repo.name not in exclude
     ]
+    # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
     with RepoSnapshot.add_sqlite_to_storage(
-        Storage.from_json(storage_cfg), dest
+        # pyre-fixme[6]: Expected `Storage` for 1st param but got `Pluggable`.
+        Storage.from_json(storage_cfg),
+        dest,
     ) as db:
         for repo, snapshot in download_repos(
             repos_and_universes=repos_and_universes,
@@ -161,17 +164,22 @@ def snapshot_repos(
             # This is done outside of the repo snapshot as we only want to
             # perform it upon successful snapshot. It's also a quick operation
             # and thus doesn't benefit from the added complexity of threading
+            # pyre-fixme[16]: `Path` has no attribute `__enter__`.
             with populate_temp_dir_and_rename(
                 dest / "repos" / repo.name, overwrite=True
             ) as td:
                 snapshot_gpg_keys(
                     key_urls=repo.gpg_key_urls,
+                    # pyre-fixme[6]: Expected `Path` for 2nd param but got
+                    # `str`.
                     allowlist_dir=gpg_key_allowlist_dir,
                     snapshot_dir=td,
                 )
 
     log.info(
         all_repos_sizer.get_report(
+            # pyre-fixme[6]: Expected `Sized` for 1st param but got
+            #  `Iterable[YumDnfConfRepo]`.
             f"According to their repodata, these {len(repos)} repos weigh"
         )
     )
@@ -239,6 +247,7 @@ def snapshot_repos_from_args(argv: List[str]):
     else:  # pragma: no cover
         raise AssertionError(args)
 
+    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(args.snapshot_dir, overwrite=True) as td:
         snapshot_repos(
             dest=td,

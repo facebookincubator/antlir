@@ -19,6 +19,7 @@ from .character_t import character_t
 from .hashable_t import hashable_t
 
 
+# pyre-fixme[16]: `character_t` has no attribute `types`.
 lightsaber_t = character_t.types.lightsaber
 characters = character_collection_t.from_env("characters").characters
 

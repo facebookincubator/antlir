@@ -102,6 +102,7 @@ def replay_rpms_and_compiler_items(
         build_appliance=subvols.ba,
         layer_target="unimportant",
         rpm_installer=subvols.rpm_installer,
+        # pyre-fixme[16]: `SubvolsToCompare` has no attribute `flavor`.
         flavor=subvols.flavor,
         rpm_repo_snapshot=subvols.rpm_repo_snapshot,
         target_to_path=target_to_path,

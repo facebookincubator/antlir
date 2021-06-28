@@ -13,6 +13,7 @@ from ..repo_objects import Repodata, Rpm
 from ..repo_sizer import RepoSizer
 
 
+# pyre-fixme[6]: Expected `str` for 1st param but got `None`.
 _FAKE_RPM = Rpm(*([None] * len(Rpm._fields)))
 
 
@@ -37,22 +38,35 @@ class RepoSizerTestCase(unittest.TestCase):
     ) -> Tuple[RepoSizer, List[int]]:
         sizer = RepoSizer()
         for syns in syn_sets:
+            # pyre-fixme[6]: Expected `Sized` for 1st param but got
+            #  `Iterable[Set[str]]`.
             assert len(syns) > 0
             # Use random object as canonical
+            # pyre-fixme[16]: `Iterable` has no attribute `pop`.
             canonical = syns.pop()
             for chk in syns:
                 assert chk in self.sizes
                 rpm = _FAKE_RPM._replace(
+                    # pyre-fixme[6]: Expected `str` for 1st param but got
+                    # `Set[str]`.
+                    #
+                    # pyre-fixme[58]: `+` is not supported for operand types
+                    # `Set[str]` and `str`.
                     checksum=Checksum(chk, chk + "v"),
                     canonical_checksum=Checksum(canonical, canonical + "v"),
                     size=self.sizes[chk],
                 )
                 sizer.visit_rpm(rpm)
+        # pyre-fixme[7]: Expected `Tuple[RepoSizer, List[int]]` but got
+        # `RepoSizer`.
         return sizer
 
     def _expected_chk_size_map(
         self, *ids: Iterable[str]
     ) -> Mapping[Checksum, int]:
+        # pyre-fixme[6]: Expected `str` for 1st param but got `Iterable[str]`.
+        # pyre-fixme[58]: `+` is not supported for operand types `Iterable[str]`
+        # and `str`.
         return {Checksum(k, k + "v"): self.sizes[k] for k in ids}
 
     def test_sizer(self):

@@ -114,6 +114,7 @@ DEFAULT_CONSOLE = subprocess.DEVNULL
 DEFAULT_TIMEOUT_MS = 300 * 1000
 
 
+# pyre-fixme[13]: Attribute `opts` is never initialized.
 class VMExecOpts(Shape):
     """
     This is the common set of arguments that can be passed to an `antlir.vm`
@@ -285,10 +286,13 @@ async def __vm_with_stack(
     mounts = mounts_from_image_meta(opts.disk.package.path)
 
     for mount in mounts:
+        # pyre-fixme[16]: `Tuple` has no attribute `build_source`.
         if mount.build_source.type == "host":
+            # pyre-fixme[16]: `Iterable` has no attribute `append`.
             shares.append(
                 Plan9Export(
                     path=mount.build_source.source,
+                    # pyre-fixme[16]: `Tuple` has no attribute `mountpoint`.
                     mountpoint=Path("/") / mount.mountpoint,
                     mount_tag=mount.build_source.source.replace("/", "-")[1:],
                 )
@@ -324,15 +328,20 @@ async def __vm_with_stack(
     # be able to mount them. In the future, it might be possible to remove this
     # requirement in a systemd-based initrd that is a little more intelligent,
     # but is very low-pri now
+    # pyre-fixme[16]: `Iterable` has no attribute `extend`.
     shares.extend(
         [
             BtrfsDisk(
+                # pyre-fixme[6]: Expected `PathLike[typing.Any]` for 1st param
+                #  but got `str`.
                 path=str(opts.disk.package.path),
                 dev="vda",
                 generator=False,
                 mountpoint="/",
             ),
             BtrfsDisk(
+                # pyre-fixme[6]: Expected `PathLike[typing.Any]` for 1st param
+                #  but got `str`.
                 path=rwdevice.name,
                 dev="vdb",
                 generator=False,
@@ -356,6 +365,8 @@ async def __vm_with_stack(
 
     logger.debug(
         "Namespace has been created. Enter with: "
+        # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+        #  bytes]]]` for 1st param but got `str`.
         f"{' '.join(ns.nsenter_as_user('/bin/bash'))}"
     )
 
@@ -369,6 +380,8 @@ async def __vm_with_stack(
         # `python_binary` rules into `python3 -Es $par`
         *(
             asyncio.create_subprocess_exec(
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 1st param but got `str`.
                 *ns.nsenter_as_user("/bin/sh", "-c", sidecar)
             )
             for sidecar in opts.runtime.sidecar_services
@@ -436,8 +449,10 @@ async def __vm_with_stack(
     # to install kernels in the root fs and avoid expensive copying of
     # ~400M worth of modules during boot
     if opts.kernel.artifacts.modules is not None:
+        # pyre-fixme[16]: `Iterable` has no attribute `__iadd__`.
         shares += [
             Plan9Export(
+                # pyre-fixme[16]: `Optional` has no attribute `path`.
                 find_built_subvol(opts.kernel.artifacts.modules.path).path(),
                 mount_tag="kernel-modules",
                 generator=False,
@@ -449,6 +464,8 @@ async def __vm_with_stack(
 
     args += __qemu_share_args(shares)
 
+    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str, bytes]]]`
+    #  for 1st param but got `str`.
     qemu_cmd = ns.nsenter_as_user(str(opts.runtime.emulator.binary.path), *args)
 
     # Special console handling here.
@@ -493,7 +510,10 @@ async def __vm_with_stack(
         elif shell == ShellMode.ssh:  # pragma: no cover
             logger.debug("Using ShellMode == ShellMode.ssh")
             with GuestSSHConnection(
-                tapdev=tapdev, options=opts.runtime.connection.options
+                tapdev=tapdev,
+                # pyre-fixme[6]: Expected `Mapping[str, str]` for 2nd param but
+                #  got `Optional[typing.Mapping[str, str]]`.
+                options=opts.runtime.connection.options,
             ) as ssh:
                 ssh_cmd = ssh.ssh_cmd(timeout_ms=timeout_ms)
                 logger.debug(f"cmd: {' '.join(ssh_cmd)}")
@@ -511,7 +531,10 @@ async def __vm_with_stack(
         else:
             if opts.runtime.connection.scheme == "ssh":
                 with GuestSSHConnection(
-                    tapdev=tapdev, options=opts.runtime.connection.options
+                    tapdev=tapdev,
+                    # pyre-fixme[6]: Expected `Mapping[str, str]` for 2nd param
+                    #  but got `Optional[typing.Mapping[str, str]]`.
+                    options=opts.runtime.connection.options,
                 ) as ssh:
                     yield (ssh, boot_elapsed_ms, timeout_ms)
             else:
@@ -579,9 +602,13 @@ async def __vm_with_stack(
 
 
 @asynccontextmanager
+# pyre-fixme[57]: Expected return annotation to be AsyncGenerator or a
+#  superclass but got `AsyncContextManager[GuestSSHConnection]`.
 async def vm(*args, **kwargs) -> AsyncContextManager[GuestSSHConnection]:
     async with AsyncExitStack() as stack:
         async with __vm_with_stack(*args, **kwargs, stack=stack) as vm:
+            # pyre-fixme[7]: Expected `AsyncContextManager[GuestSSHConnection]`
+            #  but got `AsyncGenerator[typing.Any, None]`.
             yield vm
 
 

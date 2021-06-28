@@ -28,7 +28,9 @@ logger = get_logger()
 @dataclass()
 class GuestSSHConnection:
     tapdev: VmTap
+    # pyre-fixme[8]: Attribute has type `Mapping[str, str]`; used as `None`.
     options: Mapping[str, str] = None
+    # pyre-fixme[8]: Attribute has type `Path`; used as `None`.
     privkey: Path = None
 
     def __enter__(self):
@@ -103,6 +105,8 @@ class GuestSSHConnection:
             chain.from_iterable(["-o", f"{k}={v}"] for k, v in options.items())
         )
         return self.tapdev.netns.nsenter_as_user(
+            # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+            #  bytes]]]` for 1st param but got `str`.
             "ssh",
             *options,
             "-i",

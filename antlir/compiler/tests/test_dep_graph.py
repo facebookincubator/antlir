@@ -208,16 +208,24 @@ class ItemProvTest(unittest.TestCase):
 
 
 @dataclass(frozen=True)
+# pyre-fixme[13]: Attribute `provs` is never initialized.
+# pyre-fixme[13]: Attribute `reqs` is never initialized.
 class TestImageItem(ImageItem):
     provs: Tuple[ItemProv]
     reqs: Tuple[ItemReq]
 
     def __init__(
         self,
+        # pyre-fixme[9]: provs has type `Iterator[ItemProv]`; used as `None`.
         provs: Iterator[ItemProv] = None,
+        # pyre-fixme[9]: reqs has type `Iterator[ItemReq]`; used as `None`.
         reqs: Iterator[ItemReq] = None,
     ):
+        # pyre-fixme[9]: provs has type `Iterator[ItemProv]`; used as
+        #  `Union[Tuple[], typing.Tuple[ItemProv, ...]]`.
         provs = tuple(provs) if provs else ()
+        # pyre-fixme[9]: reqs has type `Iterator[ItemReq]`; used as
+        #  `Union[Tuple[], typing.Tuple[ItemReq, ...]]`.
         reqs = tuple(reqs) if reqs else ()
         super().__init__(from_target="t", provs=provs, reqs=reqs)
 

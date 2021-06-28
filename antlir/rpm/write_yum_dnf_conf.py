@@ -134,6 +134,7 @@ def main(argv: List[str]):
     )
     args = Path.parse_args(parser, argv)
 
+    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(args.output_dir) as td, open(
         args.input_conf, "r"
     ) as infile:

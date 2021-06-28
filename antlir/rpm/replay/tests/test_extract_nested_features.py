@@ -13,6 +13,8 @@ from ..extract_nested_features import extract_nested_features, log as enf_log
 
 
 def _extract_features(infix: str):
+    # pyre-fixme[6]: Expected `Dict[str, str]` for 1st param but got
+    # `_Environ[str]`.
     env = build_env_map(os.environ, infix)
     return extract_nested_features(
         layer_features_out=env["layer_feature_json"],

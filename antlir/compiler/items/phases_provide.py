@@ -39,6 +39,7 @@ def gen_subvolume_subtree_provides(
     'Yields "Provides" instances for a path `subtree` in `subvol`.'
     # "Provides" classes use image-absolute paths that are `str` (for now).
     # Accept any string type to ease future migrations.
+    # pyre-fixme[9]: subtree has type `Path`; used as `bytes`.
     subtree = b"/" + subtree
 
     protected_paths = protected_path_set(subvol)
@@ -138,6 +139,7 @@ def gen_subvolume_subtree_provides(
 
 
 @dataclass(init=False, frozen=True)
+# pyre-fixme[13]: Attribute `subvol` is never initialized.
 class PhasesProvideItem(ImageItem):
     subvol: Subvol
 
