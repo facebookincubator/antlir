@@ -82,7 +82,7 @@ class ManualVersionPolicy(VersionPolicy, plugin_kind="manual"):
 
     @contextmanager
     def load_config_fn(
-        self, snapshot_dir: Path
+        self, snapshot_dir: Path, _flavor: str
     ) -> Iterable[Callable[..., FrozenSet[SortableEVRA]]]:
         """
         Returns a config-loader, which parses a user-specified version set

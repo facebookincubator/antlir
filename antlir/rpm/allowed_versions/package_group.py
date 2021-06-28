@@ -42,7 +42,7 @@ class ManualPackageGroup(PackageGroup, plugin_kind="manual"):
 
     @contextmanager
     def load_config_fn(
-        self, snapshot_dir: Path
+        self, snapshot_dir: Path, _flavor: str
     ) -> Iterable[Callable[..., Iterable[str]]]:
         """
         The context function takes config kwargs: names = ["a", "b", "c"]
