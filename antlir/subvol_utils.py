@@ -480,7 +480,11 @@ class Subvol:
         # ID 321 gen 86 top level 320 path delete_recursiveotwxda64/outer/inner1/inner2 # noqa: E501
         # ID 322 gen 87 top level 319 path delete_recursiveotwxda64/outer/inner3 # noqa: E501
         # ]#
-        elif vol_mounted_at_subvol:
+        # Note: code coverage for this branch is in the
+        # :test-subvol-utils-inner test, but because of the way
+        # coverage works I can't properly cover this in the larger
+        # :test-subvol-utils test.
+        elif vol_mounted_at_subvol:  # pragma: nocover
             vol_dir = b"/"
             my_prefix = my_path[1:]
 
@@ -1107,6 +1111,7 @@ class Subvol:
         # Otherwise we will end up with a CalledProcessError propagating up.
         if not self.path(relpath).exists():
             raise FileNotFoundError(relpath)
+
         res = self.run_as_root(
             ["cat", self.path(relpath)],
             text=True,

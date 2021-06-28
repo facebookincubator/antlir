@@ -149,7 +149,7 @@ class SubvolTestCase(unittest.TestCase):
         self, temp_subvols, multi_pass_size_minimization
     ):
         loopback_opts = loopback_opts_t(
-            multi_pass_size_minimization=multi_pass_size_minimization
+            minimize_size=multi_pass_size_minimization
         )
         sv = temp_subvols.create("subvol")
         sv.run_as_root(
@@ -168,80 +168,24 @@ class SubvolTestCase(unittest.TestCase):
         # factor results in 2 tries.
         waste_too_low = 1.00015
 
-        # This wrapper is used for mocking the `Subvol._run_btrfs_receive`
-        # method that actually performs the `btrfs receive` of a sendstream
-        # into the loopback.  We still perform the actual operation because
-        # we want to exercise the code path, we just want to force a certain
-        # outcome to avoid flakiness due to slight variations of the CI infra.
-        def _wrap_original(orig, results):
-            results = iter(results)
-
-            def wrapper(*args, **kwargs):
-                orig(*args, **kwargs)
-                return next(results)
-
-            return wrapper
-
-        def _new_mock_completed_process(returncode=0, stderr=b""):
-            return subprocess.CompletedProcess(
-                args=[],
-                returncode=returncode,
-                stderr=stderr,
+        with tempfile.NamedTemporaryFile() as loop_path:
+            self.assertEqual(
+                2,
+                sv.mark_readonly_and_send_to_new_loopback(
+                    loop_path.name,
+                    loopback_opts=loopback_opts,
+                    waste_factor=waste_too_low,
+                ),
             )
 
-        with tempfile.NamedTemporaryFile() as loop_path:
-            # Ensure that we think we've run out of space in the
-            # first pass by mocking the first return as a failure
-            mock_results = [
-                _new_mock_completed_process(
-                    returncode=1,
-                    stderr=b": No space left on device\n",
+            # Now do it again without the waste factor so that
+            # it only takes one pass
+            self.assertEqual(
+                1,
+                sv.mark_readonly_and_send_to_new_loopback(
+                    loop_path.name, loopback_opts=loopback_opts
                 ),
-                _new_mock_completed_process(),
-            ]
-
-            # If we are doing a multi-pass test, we will end up with
-            # twice the calls, so we need to duplicate the mocked
-            # results.
-            if multi_pass_size_minimization:
-                mock_results += mock_results
-            with unittest.mock.patch.object(
-                sv,
-                "_run_btrfs_receive",
-                side_effect=_wrap_original(
-                    sv._run_btrfs_receive, results=mock_results
-                ),
-            ):
-                self.assertEqual(
-                    2,
-                    sv.mark_readonly_and_send_to_new_loopback(
-                        loop_path.name,
-                        loopback_opts=loopback_opts,
-                        waste_factor=waste_too_low,
-                    ),
-                )
-
-            # Reset the mock results to ensure that the single pass version
-            # works by forcing a positive outcome
-            mock_results = [
-                _new_mock_completed_process(),
-            ]
-            if multi_pass_size_minimization:
-                mock_results += mock_results
-
-            with unittest.mock.patch.object(
-                sv,
-                "_run_btrfs_receive",
-                side_effect=_wrap_original(
-                    sv._run_btrfs_receive, results=mock_results
-                ),
-            ):
-                self.assertEqual(
-                    1,
-                    sv.mark_readonly_and_send_to_new_loopback(
-                        loop_path.name, loopback_opts=loopback_opts
-                    ),
-                )
+            )
 
             # Same 2-try run, but this time, exercise the free space check
             # instead of relying on parsing `btrfs receive` output.
@@ -249,11 +193,10 @@ class SubvolTestCase(unittest.TestCase):
                 Subvol, "_OUT_OF_SPACE_SUFFIX", b"cypa"
             ):
                 self.assertEqual(
-                    2,
+                    1,
                     sv.mark_readonly_and_send_to_new_loopback(
                         loop_path.name,
                         loopback_opts=loopback_opts,
-                        waste_factor=waste_too_low,
                     ),
                 )
 
@@ -341,6 +284,27 @@ class SubvolTestCase(unittest.TestCase):
             )
 
     @with_temp_subvols
+    def test_mark_readonly_and_send_to_new_loopback_default_subvol(
+        self, temp_subvols
+    ):
+        sv = temp_subvols.create("subvol")
+        sv.run_as_root(
+            ["dd", "if=/dev/zero", b"of=" + sv.path("d"), "bs=1M", "count=200"]
+        )
+        sv.run_as_root(["mkdir", sv.path("0")])
+        sv.run_as_root(["tee", sv.path("0/0")], input=b"0123456789")
+        with tempfile.NamedTemporaryFile() as loop_path:
+            self.assertEqual(
+                1,
+                sv.mark_readonly_and_send_to_new_loopback(
+                    loop_path.name,
+                    loopback_opts=loopback_opts_t(
+                        default_subvolume=True,
+                    ),
+                ),
+            )
+
+    @with_temp_subvols
     def test_receive(self, temp_subvols):
         new_subvol_name = "differs_from_create_ops"
         sv = temp_subvols.caller_will_create(new_subvol_name)
@@ -414,6 +378,9 @@ class SubvolTestCase(unittest.TestCase):
         sv.run_as_root(["chmod", "0000", sv.path(rootfile)])
         # Should still be able to read it even though 0000
         self.assertEqual(sv.read_path_text_as_root(Path(rootfile)), contents)
+        # Confirm that we fail if the file isn't there
+        with self.assertRaises(FileNotFoundError):
+            sv.read_path_text_as_root(Path("/nonsense"))
 
     @with_temp_subvols
     def test_write_file(self, ts: TempSubvolumes):
@@ -430,9 +397,9 @@ class SubvolTestCase(unittest.TestCase):
         def fn(self, ts):
             nonlocal temp_dir_path
             prefix = volume_dir(sys.argv[0]) / "tmp" / "TempSubvolumes_"
-            self.assertTrue(ts._temp_dir.startswith(prefix))
-            self.assertTrue(os.path.exists(ts._temp_dir))
-            temp_dir_path = ts._temp_dir
+            self.assertTrue(ts.temp_dir.startswith(prefix))
+            self.assertTrue(os.path.exists(ts.temp_dir))
+            temp_dir_path = ts.temp_dir
 
         with_temp_subvols(fn)(self)
         self.assertIsNotNone(temp_dir_path)
