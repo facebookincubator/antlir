@@ -98,8 +98,11 @@ def _recurse_into_source(
 #  (2) If we ever need to support layer sources, generalize
 #      `PhasesProvideItem` -- we would need to do the same traversal,
 #      but disallowing non-regular files.
+# pyre-fixme[13]: Attribute `source` is never initialized.
 class InstallFileItem(install_files_t, ImageItem):
 
+    # pyre-fixme[15]: `source` overrides attribute defined in `install_files_t`
+    #  inconsistently.
     source: Path
 
     _paths: Optional[Iterable[_InstallablePath]] = PrivateAttr()
@@ -189,6 +192,7 @@ class InstallFileItem(install_files_t, ImageItem):
         build_stat_options(
             self,
             subvol,
+            # pyre-fixme[6]: Expected `str` for 3rd param but got `Path`.
             dest,
             do_not_set_mode=True,
             build_appliance=layer_opts.build_appliance,
@@ -196,7 +200,9 @@ class InstallFileItem(install_files_t, ImageItem):
         # Group by mode to make as few shell calls as possible.
         for mode_str, modes_and_paths in itertools.groupby(
             sorted(
-                (mode_to_str(i.mode), i.provides.path()) for i in self._paths
+                (mode_to_str(i.mode), i.provides.path())
+                # pyre-fixme[16]: `Optional` has no attribute `__iter__`.
+                for i in self._paths
             ),
             lambda x: x[0],
         ):

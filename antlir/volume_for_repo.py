@@ -97,5 +97,7 @@ if __name__ == "__main__":  # pragma: no cover
         sys.exit(1)
 
     second_arg = [] if sys.argv[2] == "None" else [float(sys.argv[2])]
+    # pyre-fixme[58]: `+` is not supported for operand types `List[Path]` and
+    #  `Union[typing.List[typing.Any], typing.List[float]]`.
     args = [Path(sys.argv[1])] + second_arg
     print(get_volume_for_current_repo(*args))

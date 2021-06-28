@@ -20,11 +20,17 @@ from .common import (
 from .phases_provide import gen_subvolume_subtree_provides
 
 
+# pyre-fixme[13]: Attribute `source` is never initialized.
+# pyre-fixme[13]: Attribute `source_layer` is never initialized.
 class CloneItem(clone_t, ImageItem):
     class Config:
         arbitrary_types_allowed = True
 
+    # pyre-fixme[15]: `source` overrides attribute defined in `clone_t`
+    # inconsistently.
     source: Path
+    # pyre-fixme[15]: `source_layer` overrides attribute defined in `clone_t`
+    #  inconsistently.
     source_layer: Subvol
 
     _normalize_dest = validate_path_field_normal_relative("dest")

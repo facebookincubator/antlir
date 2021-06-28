@@ -15,10 +15,12 @@ class StorageBaseTestCase(unittest.TestCase):
     "A tiny test suite that can be used to check any Storage implementation."
 
     def _check_write_and_read(self, storage: Storage, writes: List[bytes]):
+        # pyre-fixme[16]: `Storage` has no attribute `writer`.
         with storage.writer() as output:
             for piece in writes:
                 output.write(piece)
             sid = output.commit()
+        # pyre-fixme[16]: `Storage` has no attribute `reader`.
         with storage.reader(sid) as input:
             written = b"".join(writes)
             partial_read = input.read(3)
@@ -46,6 +48,7 @@ class StorageBaseTestCase(unittest.TestCase):
         # commit.  Since we don't have an ID, we can't really test that the
         # partial write got discarded.
         with self.assertRaisesRegex(RuntimeError, "^humbug$"):
+            # pyre-fixme[16]: `Storage` has no attribute `writer`.
             with storage.writer() as output:
                 output.write(b"bah")
                 raise RuntimeError("humbug")

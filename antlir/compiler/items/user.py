@@ -312,6 +312,7 @@ class UserItem(user_t, ImageItem):
     def provides(self) -> Generator[Provider, None, None]:
         yield ProvidesUser(self.name)
 
+    # pyre-fixme[9]: layer_opts has type `LayerOpts`; used as `None`.
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
         group_file = GroupFile(_read_group_file(subvol))
 
@@ -322,6 +323,7 @@ class UserItem(user_t, ImageItem):
 
         for groupname in self.supplementary_groups:
             group_file.join(groupname, self.name)
+        # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got `GroupFile`.
         _write_group_file(subvol, group_file)
 
         passwd_file = PasswdFile(_read_passwd_file(subvol))
@@ -331,11 +333,14 @@ class UserItem(user_t, ImageItem):
                 name=self.name,
                 uid=uid,
                 gid=group_file.nameToGID[self.primary_group],
+                # pyre-fixme[6]: Expected `str` for 4th param but got
+                # `Optional[str]`.
                 comment=self.comment,
                 directory=self.home_dir,
                 shell=self.shell,
             )
         )
+        # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got `PasswdFile`.
         _write_passwd_file(subvol, passwd_file)
         # Read in our current shadow file
         # If we don't already have a shadow file, make one from passwd
@@ -348,4 +353,6 @@ class UserItem(user_t, ImageItem):
             )
         else:
             shadow_file = pwconv(passwd_file)
+        # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got
+        #  `Union[ShadowFile, str]`.
         _write_shadow_file(subvol, shadow_file)

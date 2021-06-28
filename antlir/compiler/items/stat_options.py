@@ -118,6 +118,8 @@ def build_stat_options(
     build_appliance=None,
 ):
     assert full_target_path.startswith(
+        # pyre-fixme[6]: Expected `Union[str, typing.Tuple[str, ...]]` for 1st
+        #  param but got `Path`.
         subvol.path()
     ), "{self}: A symlink to {full_target_path} would point outside the image"
     rel_path = os.path.relpath(full_target_path, subvol.path())

@@ -248,13 +248,16 @@ class Format:
         prev_cls = cls.NAME_TO_CLASS.get(format_name)
         if prev_cls:
             raise AssertionError(f"{cls} and {prev_cls} share format_name")
+        # pyre-fixme[16]: `Mapping` has no attribute `__setitem__`.
         cls.NAME_TO_CLASS[format_name] = cls
 
     @classmethod
     def make(cls, format_name) -> "Format":
+        # pyre-fixme[29]: `Format` is not a function.
         return cls.NAME_TO_CLASS[format_name]()
 
 
+# pyre-fixme[11]: Annotation `sendstream` is not defined as a type.
 class Sendstream(Format, format_name="sendstream"):
     """
     Packages the subvolume as a stand-alone (non-incremental) send-stream.
@@ -270,6 +273,7 @@ class Sendstream(Format, format_name="sendstream"):
             pass
 
 
+# pyre-fixme[11]: Annotation `zst` is not defined as a type.
 class SendstreamZst(Format, format_name="sendstream.zst"):
     """
     Packages the subvolume as a stand-alone (non-incremental) zstd-compressed
@@ -281,12 +285,17 @@ class SendstreamZst(Format, format_name="sendstream.zst"):
 
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
         with create_ro(output_path, "wb") as outfile, subprocess.Popen(
-            ["zstd", "--stdout"], stdin=subprocess.PIPE, stdout=outfile
+            ["zstd", "--stdout"],
+            stdin=subprocess.PIPE,
+            stdout=outfile
+            # pyre-fixme[6]: Expected `BinaryIO` for 1st param but got
+            #  `Optional[typing.IO[typing.Any]]`.
         ) as zst, subvol.mark_readonly_and_write_sendstream_to_file(zst.stdin):
             pass
         check_popen_returncode(zst)
 
 
+# pyre-fixme[11]: Annotation `squashfs` is not defined as a type.
 class SquashfsImage(Format, format_name="squashfs"):
     """
     Packages the subvolume as a squashfs-formatted disk image, usage:
@@ -307,6 +316,7 @@ class SquashfsImage(Format, format_name="squashfs"):
         )
 
 
+# pyre-fixme[11]: Annotation `btrfs` is not defined as a type.
 class BtrfsImage(Format, format_name="btrfs"):
     """
     Packages the subvolume as a btrfs-formatted disk image, usage:
@@ -319,6 +329,7 @@ class BtrfsImage(Format, format_name="btrfs"):
         )
 
 
+# pyre-fixme[11]: Annotation `gz` is not defined as a type.
 class TarballGzipImage(Format, format_name="tar.gz"):
     """
     Packages the subvolume as a gzip-compressed tarball, usage:
@@ -327,13 +338,18 @@ class TarballGzipImage(Format, format_name="tar.gz"):
 
     def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
         with create_ro(output_path, "wb") as outfile, subprocess.Popen(
-            ["gzip", "--stdout"], stdin=subprocess.PIPE, stdout=outfile
+            ["gzip", "--stdout"],
+            stdin=subprocess.PIPE,
+            stdout=outfile
+            # pyre-fixme[6]: Expected `BinaryIO` for 1st param but got
+            #  `Optional[typing.IO[typing.Any]]`.
         ) as gz, subvol.write_tarball_to_file(gz.stdin):
             pass
 
         check_popen_returncode(gz)
 
 
+# pyre-fixme[11]: Annotation `gz` is not defined as a type.
 class CPIOGzipImage(Format, format_name="cpio.gz"):
     """
     Packages the subvol as a gzip-compressed cpio.
@@ -377,6 +393,7 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
             user=pwd.getpwnam("root"),
         )
 
+        # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
         with create_ro(output_path, "wb") as outfile, popen_nspawn(
             opts, PopenArgs(stdout=outfile)
         ):
@@ -407,6 +424,7 @@ def _bash_cmd_in_build_appliance(
         "-o",
         "pipefail",
         "-c",
+        # pyre-fixme[28]: Unexpected keyword argument `image_path`.
         get_bash(image_path=image_path, work_dir=work_dir),
     ]
     run_nspawn(
@@ -424,6 +442,7 @@ def _bash_cmd_in_build_appliance(
     )
 
 
+# pyre-fixme[11]: Annotation `vfat` is not defined as a type.
 class VfatImage(Format, format_name="vfat"):
     """
     Packages the subvolume as a vfat-formatted disk image, usage:
@@ -441,6 +460,8 @@ class VfatImage(Format, format_name="vfat"):
             output_path,
             opts,
             subvol,
+            # pyre-fixme[6]: Expected `(str, str) -> str` for 4th param but got
+            #  `(image_path: Any, work_dir: Any) -> str`.
             lambda *, image_path, work_dir: (
                 "/usr/bin/truncate -s {image_size_mb}M {image_path}; "
                 "/usr/sbin/mkfs.vfat {maybe_label} {image_path}; "
@@ -456,6 +477,7 @@ class VfatImage(Format, format_name="vfat"):
         )
 
 
+# pyre-fixme[11]: Annotation `ext3` is not defined as a type.
 class Ext3Image(Format, format_name="ext3"):
     """
     Packages the subvolume as an ext3-formatted disk image, usage:
@@ -471,6 +493,8 @@ class Ext3Image(Format, format_name="ext3"):
             output_path,
             opts,
             subvol,
+            # pyre-fixme[6]: Expected `(str, str) -> str` for 4th param but got
+            #  `(image_path: Any, work_dir: Any) -> str`.
             lambda *, image_path, work_dir: (
                 "/usr/bin/truncate -s {image_size_mb}M {image_path}; "
                 "/usr/sbin/mkfs.ext3 {maybe_label} {image_path}"

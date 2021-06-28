@@ -286,6 +286,7 @@ def _dummy_dev() -> Path:
         subprocess.check_call(["sudo", "chown", "root:root", dummy_dev])
         subprocess.check_call(["sudo", "chmod", "0755", dummy_dev])
         subprocess.check_call(["sudo", "touch", dummy_dev / "null"])
+        # pyre-fixme[7]: Expected `Path` but got `Generator[Path, None, None]`.
         yield dummy_dev
     finally:
         # We cannot use `temp_dir` for cleanup since the directory and
@@ -320,6 +321,8 @@ def _dummies_for_protected_paths(
         # If the duplicates include both a file and a directory, this picks
         # one arbitrarily, and if the type on disk is different, we will
         # fail at mount time.  This doesn't seem worth an explicit check.
+        # pyre-fixme[7]: Expected `Mapping[Path, Path]` but got
+        #  `Generator[typing.Dict[Path, Path], None, None]`.
         yield {
             Path(p).normpath(): (td if p.endswith("/") else Path(tf.name))
             for p in protected_paths
@@ -381,6 +384,8 @@ def _install_root(conf_path: Path, yum_dnf_args: Iterable[str]) -> Path:
     # Peek at the `yum` / `dnf` args, which take precedence over the config.
     p = argparse.ArgumentParser(allow_abbrev=False, add_help=False)
     p.add_argument("--installroot", type=Path.from_argparse)
+    # pyre-fixme[6]: Expected `Optional[typing.Sequence[str]]` for 1st param but
+    #  got `Iterable[str]`.
     args, _ = p.parse_known_args(yum_dnf_args)
     if args.installroot:
         return args.installroot
@@ -532,6 +537,7 @@ def _set_up_yum_dnf_cache(
                 ),
             ]
         )
+        # pyre-fixme[7]: Expected `Path` but got `Generator[Path, None, None]`.
         yield cache_dest
     finally:
         if not install_to_cur_root:
@@ -643,16 +649,21 @@ def yum_dnf_from_snapshot(
     if yum_dnf_args[:1] == ["builddep"]:
         if yum_dnf == YumDnf.yum:
             # In `yum`, this is not a verb but a separate command.  But our
-            # wrapper makes it work like it does in `dnf`.  One motivation
-            # is a more uniform implementation of `rpmbuild.bzl`, but a more
-            # important one is that need the ephemeral cache behavior
-            # provided by `_set_up_yum_dnf_cache`, since `/__antlir__` is
-            # read-only in genrule layers. Calling `yum-builddep` directly
-            # would not fail with "Read-only filesystem", but a confusing:
+            # wrapper makes it work like it does in `dnf`.  One motivation is a
+            # more uniform implementation of `rpmbuild.bzl`, but a more
+            # important one is that need the ephemeral cache behavior provided
+            # by `_set_up_yum_dnf_cache`, since `/__antlir__` is read-only in
+            # genrule layers. Calling `yum-builddep` directly would not fail
+            # with "Read-only filesystem", but a confusing:
             #     Error: No Package found for <RPM name>
+            #
+            # pyre-fixme[9]: yum_dnf_binary has type `Optional[Path]`; used as
+            # `str`.
             yum_dnf_binary = "yum-builddep"
             yum_dnf_args = yum_dnf_args[1:]
 
+    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
+    # pyre-fixme[16]: `Mapping` has no attribute `__enter__`.
     with _dummy_dev() as dummy_dev, _dummies_for_protected_paths(
         install_root=install_root,
         must_exist=protected_paths,

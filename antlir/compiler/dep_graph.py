@@ -94,7 +94,9 @@ class ItemProv(NamedTuple):
         for it in (SymlinkToDirItem, SymlinkToFileItem):
             if isinstance(self.item, it) and isinstance(other.item, it):
                 return (
+                    # pyre-fixme[16]: `ImageItem` has no attribute `dest`.
                     self.item.dest != other.item.dest
+                    # pyre-fixme[16]: `ImageItem` has no attribute `source`.
                     or self.item.source != other.item.source
                 )
 
@@ -250,7 +252,10 @@ class PathItemReqsProvs:
         yield from self.path_to_item_reqs_provs.values()
 
     def _realpath_item_provs(
-        self, path: Path, history: Set[Path] = None
+        self,
+        path: Path,
+        # pyre-fixme[9]: history has type `Set[Path]`; used as `None`.
+        history: Set[Path] = None,
     ) -> Optional[Set[ItemProv]]:
         """Recursively walk subsections of path to see if symlinks provide
         the full path. Returns ItemProvs that provide the symlinks and
@@ -283,6 +288,7 @@ class PathItemReqsProvs:
             if not symlink_item_prov:
                 continue
 
+            # pyre-fixme[16]: `Requirement` has no attribute `target`.
             symlink_target = symlink_item_prov.provides.req.target
             search_path_realpath = _symlink_target_normpath(
                 search_path, symlink_target
@@ -318,12 +324,14 @@ class ValidatedReqsProvs:
         self._path_item_reqs_provs = PathItemReqsProvs()
 
         for item in items:
+            # pyre-fixme[16]: `ImageItem` has no attribute `requires`.
             for req in item.requires():
                 if isinstance(req, RequirePath):
                     self._path_item_reqs_provs.add_requirement(req, item)
                     continue
                 self._get_item_reqs_provs(req).add_item_req(req, item)
 
+            # pyre-fixme[16]: `ImageItem` has no attribute `provides`.
             for prov in item.provides():
                 if isinstance(prov, ProvidesPath):
                     self._path_item_reqs_provs.add_provider(prov, item)
@@ -446,8 +454,10 @@ class DependencyGraph:
         # otherwise it goes in `.items_without_predecessors`.
         ns = Namespace()
         # {item: {items, it, requires}}
+        # pyre-fixme[16]: `Namespace` has no attribute `item_to_predecessors`.
         ns.item_to_predecessors = defaultdict(set)
         # {item: {items, requiring, it}}
+        # pyre-fixme[16]: `Namespace` has no attribute `predecessor_to_items`.
         ns.predecessor_to_items = defaultdict(set)
 
         # For each path, treat items that provide something at that path as
@@ -459,6 +469,8 @@ class DependencyGraph:
                     ns.predecessor_to_items[item_prov.item].add(item_req.item)
                     ns.item_to_predecessors[item_req.item].add(item_prov.item)
 
+        # pyre-fixme[16]: `Namespace` has no attribute
+        # `items_without_predecessors`.
         ns.items_without_predecessors = (
             self.items - ns.item_to_predecessors.keys()
         )

@@ -189,6 +189,7 @@ def compile_items_to_subvol(
     for item in dep_graph.gen_dependency_order_items(
         PhasesProvideItem(from_target=layer_opts.layer_target, subvol=subvol)
     ):
+        # pyre-fixme[16]: `ImageItem` has no attribute `build`.
         item.build(subvol, layer_opts)
 
 

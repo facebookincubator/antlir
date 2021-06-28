@@ -141,19 +141,25 @@ class _CliSetup(NamedTuple):
 @contextmanager
 def _set_up_run_cli(argv: Iterable[Union[str, Path]]) -> _CliSetup:
     args = _parse_cli_args(argv, allow_debug_only_opts=True)
+    # pyre-fixme[16]: `_NspawnOpts` has no attribute `opts`.
     init_logging(debug=args.opts.debug_only_opts.debug)
     with (
         # By default, the console output is supressed or sent to
         # stderr, otherwise we send it to a file.
+        # pyre-fixme[16]: `_NspawnOpts` has no attribute `append_console`.
         open(args.append_console, "a")
         if isinstance(args.append_console, Path)
         else nullcontext(enter_result=args.append_console)
     ) as console:
+        # pyre-fixme[7]: Expected `_CliSetup` but got `Generator[_CliSetup,
+        #  None, None]`.
         yield _CliSetup(
             console=console,
             opts=args.opts,
             plugins=rpm_nspawn_plugins(
-                opts=args.opts, plugin_args=args.plugin_args
+                opts=args.opts,
+                # pyre-fixme[16]: `_NspawnOpts` has no attribute `plugin_args`.
+                plugin_args=args.plugin_args,
             ),
         )
 
@@ -163,6 +169,7 @@ if __name__ == "__main__":  # pragma: no cover
     import sys
 
     try:
+        # pyre-fixme[16]: `_CliSetup` has no attribute `__enter__`.
         with _set_up_run_cli(sys.argv[1:]) as cli_setup:
             ret, _boot_ret = cli_setup._run_nspawn(
                 PopenArgs(

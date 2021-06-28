@@ -45,6 +45,8 @@ class ImagePackageTestCaseBase(unittest.TestCase):
             subprocess.check_output(
                 nsenter_as_root(
                     unshare,
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <:
+                    #  [str, bytes]]]` for 2nd param but got `str`.
                     "findmnt",
                     "--mountpoint",
                     mount_dir,

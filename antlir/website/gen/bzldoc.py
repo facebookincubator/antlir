@@ -61,7 +61,9 @@ class BzlFile(object):
         for e in reversed(assignments):
             # For easy matching, it is assumed that the name of the struct
             # matches the module name
+            # pyre-fixme[16]: `expr` has no attribute `id`.
             if len(e.targets) == 1 and e.targets[0].id == self.name:
+                # pyre-fixme[16]: `expr` has no attribute `keywords`.
                 return {kw.arg: kw.value for kw in e.value.keywords}
         return None
 
@@ -79,13 +81,14 @@ class BzlFile(object):
         loads = [
             node.value
             for node in self.body
-            if isinstance(node, ast.Expr)
-            and isinstance(node.value, ast.Call)
+            if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
+            # pyre-fixme[16]: `expr` has no attribute `func`.
             and isinstance(node.value.func, ast.Name)
             and node.value.func.id == "load"
         ]
         symbols = {}
         for load in loads:
+            # pyre-fixme[16]: `expr` has no attribute `args`.
             file = load.args[0].s.lstrip("/").encode()
             if file.startswith(b":"):
                 file = self.path.dirname() / file.lstrip(b":")
@@ -111,6 +114,7 @@ class BzlFile(object):
                     f"{name} is loaded from {src}, which was not parsed"
                 )
                 return None
+            # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
             return all_modules[src].resolve_function(name)
         log.warning(f"{self.path}: '{name}' not defined locally or loaded")
         return None
@@ -142,6 +146,7 @@ generated: """
         md += self.docblock or ""
         md += "\n\n"
         md += "API\n===\n"
+        # pyre-fixme[16]: `Optional` has no attribute `items`.
         for name, node in self.export_struct.items():
             if not isinstance(node, ast.Name):
                 log.warning(f"not documenting non-name '{name}: {node}'")
@@ -153,6 +158,7 @@ generated: """
 
             args = [a.arg for a in func.args.args]
             if func.args.vararg:
+                # pyre-fixme[16]: `Optional` has no attribute `arg`.
                 args.append("*" + func.args.vararg.arg)
             if func.args.kwarg:
                 args.append("**" + func.args.kwarg.arg)

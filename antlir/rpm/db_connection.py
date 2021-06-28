@@ -97,7 +97,6 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
 try:
     # Import FB-specific implementations if available. Do this last in the
     # file so that DBConnectionContext is already available to them.
-    # pyre-fixme[21]: Could not find module `antlir.rpm.facebook`.
     from .facebook import db_connection as _fb_db_connection  # noqa: F401
 except ImportError:  # pragma: no cover
     pass

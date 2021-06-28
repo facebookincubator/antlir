@@ -1,6 +1,5 @@
 {
   "targets": [
-    "//antlir/btrfs_diff/...",
-    "//antlir/rpm/downloader/..."
-  ]
+    "'//antlir/...' - attrfilter(labels, 'image_layer', '//antlir/...') - rdeps('//antlir/...', attrfilter(labels, 'image_layer', '//antlir/...'))"
+  ],
 }

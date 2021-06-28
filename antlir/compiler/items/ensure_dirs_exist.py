@@ -61,10 +61,13 @@ fi
 def _validate_into_dir(into_dir: Optional[str]) -> str:
     if into_dir == "":
         raise ValueError('`into_dir` was the empty string; for root, use "/"')
+    # pyre-fixme[7]: Expected `str` but got `Optional[str]`.
     return into_dir
 
 
 # `ensure_subdirs_exist_factory` below should be used to construct this
+# pyre-fixme[13]: Attribute `basename` is never initialized.
+# pyre-fixme[13]: Attribute `subdirs_to_create` is never initialized.
 class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
     basename: str
     mode: Optional[Mode]
@@ -80,6 +83,8 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
     # NB: `ensure_subdirs_exist_factory` breaks up the incoming item config
     # to resolve cicular dependencies and allow for a cleaner dependency
     # graph. More info available in the factory function's docstring.
+    # pyre-fixme[15]: `subdirs_to_create` overrides attribute defined in
+    #  `ensure_subdirs_exist_t` inconsistently.
     subdirs_to_create: Optional[str]
 
     @validator("subdirs_to_create")
@@ -133,6 +138,8 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
                 _BUILD_SCRIPT,
                 "bash",
                 full_path,
+                # pyre-fixme[6]: Expected `Union[int, str]` for 1st param but
+                #  got `Union[None, int, str]`.
                 f"{mode_to_octal_str(self.mode)} {self.user_group}",
             ],
             layer=layer_opts.build_appliance,
@@ -144,6 +151,8 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
         except subprocess.CalledProcessError as e:
             raise MismatchError(
                 f"Failed to ensure_subdirs_exist for path '{full_path}' with"
+                # pyre-fixme[6]: Expected `Union[int, str]` for 1st param but
+                #  got `Union[None, int, str]`.
                 f" stat {mode_to_octal_str(self.mode)}"
                 ": see bash error above for more details",
             ) from e
@@ -151,6 +160,7 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
             build_stat_options(
                 self,
                 subvol,
+                # pyre-fixme[6]: Expected `str` for 3rd param but got `Path`.
                 path_to_make,
                 build_appliance=layer_opts.build_appliance,
             )
@@ -211,8 +221,10 @@ def ensure_subdirs_exist_factory(
     EDE providing "/a/b/c" and the EDE requiring `ensure_dir_symlink` for
     "/a/b/c/d" are separate items.
     """
+    # pyre-fixme[9]: into_dir has type `str`; used as `Path`.
     into_dir = Path(make_path_normal_relative(_validate_into_dir(into_dir)))
     subdirs_to_create = make_path_normal_relative(subdirs_to_create)
+    # pyre-fixme[58]: `/` is not supported for operand types `str` and `str`.
     path = into_dir / subdirs_to_create
     while True:
         parent = path.dirname()

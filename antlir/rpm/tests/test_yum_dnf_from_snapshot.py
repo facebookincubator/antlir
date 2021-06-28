@@ -36,6 +36,8 @@ def _temp_subvol(name: str) -> Subvol:
     sv = Subvol(Path("/") / f"{name}-{uuid.uuid4().hex}")
     try:
         sv.create()
+        # pyre-fixme[7]: Expected `Subvol` but got `Generator[Subvol, None,
+        # None]`.
         yield sv
     finally:
         sv.delete()
@@ -290,10 +292,14 @@ class YumDnfFromSnapshotTestImpl:
                 self.assertEqual("carrot 2 rc0\n", shadowed.read_text())
 
     def _check_test_macro_contents(self, install_root: Path, prog):
+        # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+        # `assertEqual`.
         self.assertEqual(
             {
                 YumDnf.dnf: "does not function\n",
                 YumDnf.yum: "young urban male?\n",
+                # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+                # `_YUM_DNF`.
             }[self._YUM_DNF],
             Path(install_root / f"etc/rpm/macros.test-{prog}").read_text(),
         )

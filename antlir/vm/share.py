@@ -77,6 +77,9 @@ class Share(ABC):
                 unit_path = os.path.join(exportdir, unit_name)
                 with open(unit_path, "w") as f:
                     f.write(unit_contents)
+            # pyre-fixme[7]: Expected `ContextManager[Share]` but got
+            #  `Generator[Plan9Export, None, None]`.
+            # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
             yield Plan9Export(exportdir, mount_tag="exports")
 
 
@@ -100,6 +103,8 @@ class Plan9Export(Share):
         cache = "loose" if self.readonly else "none"
         ro_rw = "ro" if self.readonly else "rw"
         return (
+            # pyre-fixme[6]: Expected `str` for 1st param but got
+            # `Optional[Path]`.
             self._systemd_escape_mount(self.mountpoint),
             f"""[Unit]
 Description=Mount {self.mount_tag} at {self.mountpoint}
@@ -141,6 +146,7 @@ class BtrfsDisk(Share):
     @property
     def mount_unit(self) -> str:
         ro_rw = "ro" if self.readonly else "rw"
+        # pyre-fixme[7]: Expected `str` but got `Tuple[str, str]`.
         return (
             self._systemd_escape_mount(self.mountpoint),
             f"""[Unit]

@@ -54,6 +54,8 @@ def forward_env_vars(environ: Dict[str, str]) -> Iterable[str]:
 def do_not_rewrite_cmd(
     cmd: List[str], next_fd: int
 ) -> Tuple[List[str], List[int]]:
+    # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
+    #  `Generator[Tuple[List[str], List[Variable[_T]]], None, None]`.
     yield cmd, []
 
 
@@ -93,6 +95,8 @@ def rewrite_testpilot_python_cmd(
     test_opts, unparsed_args = parser.parse_known_args(cmd[1:])
 
     if test_opts.output is None and test_opts.list_tests is None:
+        # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
+        #  `Generator[Tuple[List[str], List[Variable[_T]]], None, None]`.
         yield cmd, []
         return
 
@@ -111,6 +115,8 @@ def rewrite_testpilot_python_cmd(
         # It's not great to assume that the container has a `/bin/bash`, but
         # eliminating this dependency is low-priority since current test
         # binaries will depend on it, too (PAR).
+        # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
+        #  `Generator[Tuple[List[str], List[int]], None, None]`.
         yield [
             "/bin/bash",
             "-c",
@@ -143,6 +149,8 @@ def rewrite_tpx_gtest_cmd(
     """
     gtest_output = os.environ.get("GTEST_OUTPUT")
     if gtest_output is None:
+        # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
+        #  `Generator[Tuple[List[str], List[Variable[_T]]], None, None]`.
         yield cmd, []
         return
 
@@ -155,6 +163,8 @@ def rewrite_tpx_gtest_cmd(
         # It's not great to assume that the container has a `/bin/bash`, but
         # eliminating this dependency is low-priority since current test
         # binaries will depend on it, too (PAR).
+        # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
+        #  `Generator[Tuple[List[str], List[int]], None, None]`.
         yield [
             "/bin/bash",
             "-c",
@@ -195,6 +205,8 @@ _TEST_TYPE_TO_REWRITE_CMD = {
 if __name__ == "__main__":  # pragma: no cover
     argv = []
 
+    # pyre-fixme[6]: Expected `Dict[str, str]` for 1st param but got
+    # `_Environ[str]`.
     argv.extend(forward_env_vars(os.environ))
 
     # When used as part of the `image.python_unittest` implementation, there
@@ -207,15 +219,23 @@ if __name__ == "__main__":  # pragma: no cover
     )
     if os.path.exists(packaged_layer):
         argv.extend(["--layer", packaged_layer])
+        # pyre-fixme[21]: Could not find name `__image_python_unittest_spec__`
+        #  in `antlir.nspawn_in_subvol`.
         from antlir.nspawn_in_subvol import __image_python_unittest_spec__
 
+        # pyre-fixme[16]: Module `nspawn_in_subvol` has no attribute
+        #  `__image_python_unittest_spec__`.
         argv.extend(__image_python_unittest_spec__.nspawn_in_subvol_args())
         rewrite_cmd = _TEST_TYPE_TO_REWRITE_CMD[
+            # pyre-fixme[16]: Module `nspawn_in_subvol` has no attribute
+            #  `__image_python_unittest_spec__`.
             __image_python_unittest_spec__.TEST_TYPE
         ]
     else:
         rewrite_cmd = do_not_rewrite_cmd  # Used only for the manual test
 
+    # pyre-fixme[16]: `_CliSetup` has no attribute `__enter__`.
+    # pyre-fixme[16]: `Tuple` has no attribute `__enter__`.
     with _set_up_run_cli(argv + sys.argv[1:]) as cli_setup, rewrite_cmd(
         cli_setup.opts.cmd, next_fd=3 + len(cli_setup.opts.forward_fd)
     ) as (new_cmd, fds_to_forward):
@@ -227,6 +247,10 @@ if __name__ == "__main__":  # pragma: no cover
         ret, _boot_ret = cli_setup._replace(
             opts=cli_setup.opts._replace(
                 cmd=new_cmd,
+                # pyre-fixme[60]: Concatenation not yet support for multiple
+                #  variadic tuples: `*cli_setup.opts.forward_fd,
+                #  *fds_to_forward`. pyre-fixme[60]: Expected to unpack an
+                #  iterable, but got `unknown`.
                 forward_fd=(*cli_setup.opts.forward_fd, *fds_to_forward),
             )
         )._run_nspawn(

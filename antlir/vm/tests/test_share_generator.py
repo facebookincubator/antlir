@@ -23,6 +23,7 @@ class TestShare(object):
 
 TEST_SHARES = [
     TestShare(
+        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
         Plan9Export(path="/tmp/hello"),
         "tmp-hello.mount",
         """[Unit]
@@ -39,6 +40,7 @@ Options=version=9p2000.L,posixacl,cache=loose,ro
 """,
     ),
     TestShare(
+        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
         Plan9Export(path="/usr/tag", mount_tag="explicit_tag"),
         "usr-tag.mount",
         """[Unit]
@@ -55,9 +57,15 @@ Options=version=9p2000.L,posixacl,cache=loose,ro
 """,
     ),
     TestShare(
-        Plan9Export(path="/tmp/not-included", generator=False), None, None
+        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
+        # pyre-fixme[6]: Expected `str` for 2nd param but got `None`.
+        Plan9Export(path="/tmp/not-included", generator=False),
+        # pyre-fixme[6]: Expected `str` for 2nd param but got `None`.
+        None,
+        None,
     ),
     TestShare(
+        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
         Plan9Export(path="/some/host/path", mountpoint="/guest/other"),
         "guest-other.mount",
         """[Unit]
@@ -74,6 +82,7 @@ Options=version=9p2000.L,posixacl,cache=loose,ro
 """,
     ),
     TestShare(
+        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
         Plan9Export(path="/tmp/hello_rw", readonly=False),
         "tmp-hello_rw.mount",
         """[Unit]
@@ -90,6 +99,8 @@ Options=version=9p2000.L,posixacl,cache=none,rw
 """,
     ),
     TestShare(
+        # pyre-fixme[6]: Expected `PathLike[typing.Any]` for 1st param but got
+        # `str`.
         BtrfsDisk(path="/tmp/image.btrfs", mountpoint="/mnt/guest"),
         "mnt-guest.mount",
         """[Unit]

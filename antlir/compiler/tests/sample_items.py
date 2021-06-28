@@ -21,6 +21,9 @@ from antlir.fs_utils import Path
 
 
 _NONPORTABLE_ARTIFACTS = int(
+    # pyre-fixme[6]: Expected `Union[_SupportsTrunc, bytes, str,
+    #  typing.SupportsInt, typing_extensions.SupportsIndex]` for 1st param but
+    #  got `Optional[str]`.
     os.environ.get("test_image_feature_built_artifacts_require_repo")
 )
 
@@ -75,6 +78,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     # For a handful of tests, this must be a boolean value so the layer
     # emits it it into /.meta, but the value is not important.
     artifacts_may_require_repo=True,
+    # pyre-fixme[6]: Expected `Mapping[str, str]` for 4th param but got `None`.
     target_to_path=None,
     subvolumes_dir=None,
     version_set_override=None,

@@ -41,8 +41,11 @@ class SortableENVRA(NamedTuple):
     def _as_rpm_metadata(self) -> RpmMetadata:
         return RpmMetadata(
             # Not used for sorting here, `compare_rpm_versions` refuses to
-            # compare different names.  As a side-effect, `None` vs
-            # non-`None` comparisons are also prohibited.
+            # compare different names.  As a side-effect, `None` vs non-`None`
+            # comparisons are also prohibited.
+            #
+            # pyre-fixme[6]: Expected `str` for 1st param but got
+            # `Optional[str]`.
             name=self.name,
             # We check this is not `None` in `as_rpm_metadata`, and check
             # for heterogeneous comparisons in `_compare`.
@@ -101,6 +104,8 @@ class SortableENVRA(NamedTuple):
     def __eq__(self, other: "SortableENVRA") -> bool:
         return self._compare(other) == 0
 
+    # pyre-fixme[14]: `__lt__` overrides method defined in `tuple`
+    # inconsistently.
     def __lt__(self, other: "SortableENVRA") -> bool:
         return self._compare(other) < 0
 

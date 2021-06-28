@@ -32,6 +32,7 @@ except ImportError:  # pragma: no cover
 # over-matches a bit, but is probably fine.
 
 
+# pyre-fixme[11]: Annotation `manual` is not defined as a type.
 class ManualPackageGroup(PackageGroup, plugin_kind="manual"):
     def __init__(self):
         pass  # This tells `add_argparse_arg` we take no args.
