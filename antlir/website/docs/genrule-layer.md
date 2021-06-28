@@ -43,27 +43,30 @@ determinism, the command has no network access.  You can make other build
 artifacts available to your build as follows:
 
 ```py
+export_file(name='untranslated-foo')  # or a real build rule
+
 image.layer(
     name = '_setup_foo',
     parent_layer = '...',
     features = [
         # `genrule_layer` runs as `nobody` by default
         image.ensure_subdirs_exist('/', 'output', user='nobody'),
-        image.install(':foo', '/output/_temp_foo'),
+        image.install(':untranslated-foo', '/output/_temp_foo'),
     ],
 )
 
 image.genrule_layer(
     name = '_translate_foo',
-    parent_layer = ':setup',
+    parent_layer = ':_setup_foo',
+    rule_type = 'describe_what_your_rule_does',
+    antlir_rule = 'user-facing',
     cmd = ['/bin/sh', '-c', 'tr a-z A-Z < /output/_temp_foo > /output/FOO'],
 )
 
 image.layer(
     name = 'foo',
-    parent_layer = ':_translate_foo',
-    # Clean up temporary state
-    features = [image.remove_path('/output/_temp_foo')],
+    parent_layer = ':_translate_foo',  # provides '/output/FOO'
+    features = [image.remove('/output/_temp_foo')],  # clean up temporary state
 )
 ```
 
