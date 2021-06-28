@@ -546,7 +546,12 @@ class Subvol:
 
     @contextmanager
     def _mark_readonly_and_send(
-        self, *, stdout, no_data: bool = False, parent: "Subvol" = None
+        self,
+        *,
+        stdout,
+        no_data: bool = False,
+        # pyre-fixme[9]: parent has type `Subvol`; used as `None`.
+        parent: "Subvol" = None,
     ) -> Iterator[subprocess.Popen]:
         self.set_readonly(True)
 
@@ -591,6 +596,7 @@ class Subvol:
         with self._mark_readonly_and_send(
             stdout=subprocess.PIPE, **kwargs
         ) as proc:
+            # pyre-fixme[16]: Optional type has no attribute `read`.
             return proc.stdout.read()
 
     @contextmanager
@@ -693,9 +699,15 @@ class Subvol:
         """
         if loopback_opts.size_mb:
             leftover_bytes, image_size = self._send_to_loopback_if_fits(
-                output_path, loopback_opts.size_mb * MiB, loopback_opts
+                output_path,
+                # pyre-fixme[58]: `*` is not supported for operand types
+                #  `Optional[int]` and `Any`.
+                loopback_opts.size_mb * MiB,
+                loopback_opts,
             )
 
+            # pyre-fixme[58]: `*` is not supported for operand types
+            # `Optional[int]` and `Any`.
             assert image_size == loopback_opts.size_mb * MiB, (
                 f"{self._path} is {image_size} instead of the requested "
                 f"{loopback_opts.size_mb * MiB}"
@@ -885,7 +897,11 @@ class Subvol:
     _OUT_OF_SPACE_SUFFIX = b": No space left on device\n"
 
     def _send_to_loopback_if_fits(
-        self, output_path, fs_size_bytes: int, loopback_opts: loopback_opts_t
+        self,
+        output_path,
+        fs_size_bytes: int,
+        loopback_opts: loopback_opts_t
+        # pyre-fixme[31]: Expression `(int, int)` is not a valid type.
     ) -> (int, int):
         """
         Creates a loopback of the specified size, and sends the current
@@ -919,6 +935,8 @@ class Subvol:
                     size_ret = subprocess.run(
                         nsenter_as_user(
                             ns,
+                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <:
+                            # [str, bytes]]]` for 2nd param but got `str`.
                             "findmnt",
                             "--noheadings",
                             "--bytes",
@@ -963,6 +981,8 @@ class Subvol:
                     run_stdout_to_err(
                         nsenter_as_root(
                             ns,
+                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <:
+                            # [str, bytes]]]` for 2nd param but got `str`.
                             "btrfs",
                             "property",
                             "set",
@@ -982,6 +1002,8 @@ class Subvol:
                     #
                     subvol_id = self.run_as_root(
                         ns.nsenter_without_sudo(
+                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <:
+                            # [str, bytes]]]` for 1st param but got `str`.
                             "btrfs",
                             "subvolume",
                             "list",
@@ -995,6 +1017,8 @@ class Subvol:
                     # Actually set the default
                     self.run_as_root(
                         ns.nsenter_without_sudo(
+                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <:
+                            # [str, bytes]]]` for 1st param but got `str`.
                             "btrfs",
                             "subvolume",
                             "set-default",
@@ -1012,7 +1036,11 @@ class Subvol:
             )
 
     def _send_to_loopback_second_pass(
-        self, output_path, initial_size_bytes, loopback_opts: loopback_opts_t
+        self,
+        output_path,
+        initial_size_bytes,
+        loopback_opts: loopback_opts_t
+        # pyre-fixme[31]: Expression `(int, int)` is not a valid type.
     ) -> (int, int):
         size_bytes_to_try = 512 * os.stat(output_path).st_blocks
 
@@ -1206,6 +1234,7 @@ class TempSubvolumes(contextlib.AbstractContextManager):
         exposing setuid binaries inside the built subvolumes.
         """
         rel_path = (
+            # pyre-fixme[16]: `TempSubvolumes` has no attribute `_temp_dir`.
             (self._temp_dir / rel_path)
             .realpath()
             .relpath(self._temp_dir.realpath())
@@ -1269,7 +1298,11 @@ def get_subvolumes_dir(path_in_repo=None) -> Path:
 
 
 def find_subvolume_on_disk(
-    layer_output: str, path_in_repo: Path = None, subvolumes_dir: Path = None
+    layer_output: str,
+    # pyre-fixme[9]: path_in_repo has type `Path`; used as `None`.
+    path_in_repo: Path = None,
+    # pyre-fixme[9]: subvolumes_dir has type `Path`; used as `None`.
+    subvolumes_dir: Path = None,
 ) -> SubvolumeOnDisk:
     # It's OK for both to be None (uses the current file to find repo), but
     # it's not OK to set both.

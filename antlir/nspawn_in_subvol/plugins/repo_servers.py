@@ -68,6 +68,8 @@ class _ContainerPidExfiltrator:
         # The read end of the second pipe signals our exfiltration script
         # that it should continue to execute the user command.
         with pipe() as (exfil_r, exfil_w), pipe() as (ready_r, ready_w):
+            # pyre-fixme[7]: Expected `_ContainerPidExfiltrator` but got
+            #  `Generator[_ContainerPidExfiltrator, None, None]`.
             yield _ContainerPidExfiltrator(
                 exfil_r=exfil_r,
                 exfil_w=exfil_w,
@@ -111,10 +113,13 @@ class _ContainerPidExfiltrator:
         self.ready_r.close()
 
         try:
-            # Note: this is `readline()` instead of `read()` because we
-            # cannot wait for `exfil_w` to get closed, the `nsenter` process
-            # also inherits it, and will hold it open for as long as the
-            # user command runs, causing us to deadlock here.
+            # Note: this is `readline()` instead of `read()` because we cannot
+            # wait for `exfil_w` to get closed, the `nsenter` process also
+            # inherits it, and will hold it open for as long as the user command
+            # runs, causing us to deadlock here.
+            #
+            # pyre-fixme[7]: Expected `int` but got `Generator[int, None,
+            # None]`.
             yield int(self.exfil_r.readline().decode().split(":")[1].strip())
         finally:
             if not self._ready_sent:
@@ -133,12 +138,17 @@ class _ContainerPidExfiltrator:
 def _wrap_opts_with_container_pid_exfiltrator(
     opts: _NspawnOpts,
 ) -> Tuple[_NspawnOpts, _ContainerPidExfiltrator]:
+    # pyre-fixme[16]: `_ContainerPidExfiltrator` has no attribute `__enter__`.
     with _ContainerPidExfiltrator.new(
         # Below, we append FDs to `forward_fd`.  In the container, these
         # will map sequentially to `3 + len(opts.forward_fd)` and up.
+        # pyre-fixme[6]: Expected `Sized` for 1st param but got `Iterable[int]`.
         exfil_w_dest_fd=3 + len(opts.forward_fd),
+        # pyre-fixme[6]: Expected `Sized` for 1st param but got `Iterable[int]`.
         ready_r_dest_fd=4 + len(opts.forward_fd),
     ) as cpe:
+        # pyre-fixme[7]: Expected `Tuple[_NspawnOpts, _ContainerPidExfiltrator]`
+        #  but got `Generator[Tuple[_NspawnOpts, typing.Any], None, None]`.
         yield opts._replace(
             forward_fd=(
                 *opts.forward_fd,
@@ -185,11 +195,18 @@ class RepoServers(NspawnPlugin):
         #    __package__, 'repo-server', exe=True,
         # ))
         # Rewrite `opts` with a plugin script and some forwarded FDs
+        # pyre-fixme[16]: `Tuple` has no attribute `__enter__`.
         with _wrap_opts_with_container_pid_exfiltrator(opts) as (
             opts,
             cpe,
+            # pyre-fixme[19]: Expected 2 positional arguments.
         ), setup_ctx(subvol, opts, popen_args) as setup:
+            # pyre-fixme[16]: `RepoServers` has no attribute
+            #  `_container_pid_exfiltrator`.
             self._container_pid_exfiltrator = cpe
+            # pyre-fixme[7]: Expected `_NspawnSetup` but got
+            #  `Generator[antlir.nspawn_in_subvol.cmd._NspawnSetup, None,
+            #  None]`.
             yield setup
 
     @contextmanager
@@ -201,11 +218,15 @@ class RepoServers(NspawnPlugin):
         with ExitStack() as stack:
             popen_res = stack.enter_context(post_setup_popen_ctx(setup))
             container_pid = stack.enter_context(
+                # pyre-fixme[16]: `RepoServers` has no attribute
+                #  `_container_pid_exfiltrator`.
                 self._container_pid_exfiltrator.exfiltrate_container_pid()
             )
             # To speed up startup, launch all the servers, and then await them.
             snap_to_servers = {
                 snap_dir: stack.enter_context(
+                    # pyre-fixme[6]: Expected `ContextManager[Variable[
+                    # contextlib._T]...
                     launch_repo_servers_for_netns(
                         target_pid=container_pid,
                         snapshot_dir=snap_subvol.path(snap_dir),
@@ -226,4 +247,8 @@ class RepoServers(NspawnPlugin):
                 )
             )
             self._container_pid_exfiltrator.send_ready()
+            # pyre-fixme[7]: Expected `Tuple[subprocess.Popen[typing.Any],
+            #  subprocess.Popen[typing.Any]]` but got
+            #  `Generator[Tuple[subprocess.Popen[typing.Any],
+            #  subprocess.Popen[typing.Any]], None, None]`.
             yield popen_res

@@ -111,6 +111,7 @@ def _make_script(dest: bytes, cmds: List[str]):
                 # Set umask to 0022 because bash's redirect mode is 0666, and we
                 # want file permissiosn to be 0644.
                 "umask 0022",
+                # pyre-fixme[16]: `bytes` has no attribute `shell_quote`.
                 "dest=" + dest.shell_quote(),
                 'dest_dir=$(dirname "$dest")',
                 # This won't make any directories outside the subvolume, since

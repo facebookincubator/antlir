@@ -150,7 +150,11 @@ def ensure_per_repo_artifacts_dir_exists(
     path_in_repo: Optional[str] = None,
 ) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
+    # pyre-fixme[6]: Expected `Optional[Path]` for 1st param but got
+    # `Optional[str]`.
     buck_cell_root = find_buck_cell_root(path_in_repo=path_in_repo)
+    # pyre-fixme[6]: Expected `Optional[Path]` for 1st param but got
+    # `Optional[str]`.
     artifacts_dir = find_artifacts_dir(path_in_repo=path_in_repo)
 
     # On Facebook infra, the repo might be hosted on an Eden filesystem,
@@ -161,7 +165,10 @@ def ensure_per_repo_artifacts_dir_exists(
     # The location in the scratch directory is a hardcoded path because
     # this really must be a per-repo singleton.
     real_dir = _maybe_make_symlink_to_scratch(
-        artifacts_dir, "buck-image-out", buck_cell_root
+        artifacts_dir,
+        # pyre-fixme[6]: Expected `Path` for 2nd param but got `str`.
+        "buck-image-out",
+        buck_cell_root,
     )
 
     try:

@@ -294,6 +294,7 @@ rpmsign --define="_gpg_name $fingerprint" --addsign \
         bindmount_rw=[(os.path.dirname(rpm_path), package_dir)],
         user=pwd.getpwnam("root"),
     )
+    # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
     with popen_nspawn(opts, PopenArgs(stdin=subprocess.PIPE)) as (p, _):
         p.stdin.write(gpg_signing_key.encode())
 
@@ -391,6 +392,8 @@ def make_repo_steps(
                 # This is a copy to avoid changing the `build_timestamp` in
                 # the `repomd.xml`.
                 if avoid_symlinks:
+                    # pyre-fixme[6]: Expected `Union[os.PathLike[str], str]`
+                    # for 1st param but got `Path`.
                     shutil.copytree(out_dir / str(step_i - 1) / repo, repo_dir)
                 else:
                     os.symlink(f"../{step_i - 1}/{repo_name}", repo_dir)
@@ -398,6 +401,8 @@ def make_repo_steps(
             if isinstance(repo, str):  # Alias of another repo
                 assert repo in repos
                 if avoid_symlinks:
+                    # pyre-fixme[6]: Expected `Union[os.PathLike[str], str]`
+                    # for 1st param but got `Path`.
                     shutil.copytree(step_dir / repo, repo_dir)
                 else:
                     os.symlink(repo, repo_dir)
@@ -410,10 +415,15 @@ def make_repo_steps(
                 prev_path = rpm_to_path.get(rpm)
                 if prev_path and avoid_symlinks:
                     shutil.copy(
-                        out_dir / prev_path, package_dir / prev_path.basename()
+                        # pyre-fixme[6]: Expected `Union[os.PathLike[str], str]`
+                        # 1st param but got `Path`.
+                        out_dir / prev_path,
+                        package_dir / prev_path.basename(),
                     )
                 elif prev_path:
                     os.symlink(
+                        # pyre-fixme[58]: `/` is not supported for operand types
+                        #  `str` and `Any`.
                         "../../.." / prev_path,
                         package_dir / prev_path.basename(),
                     )

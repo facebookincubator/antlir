@@ -127,12 +127,14 @@ class LayerOpts(NamedTuple):
 
 
 @dataclasses.dataclass(init=False, frozen=True)
+# pyre-fixme[13]: Attribute `from_target` is never initialized.
 class ImageItem:
     "Base class for the types of items that can be installed into images."
 
     from_target: str
 
     def phase_order(self) -> PhaseOrder:
+        # pyre-fixme[7]: Expected `PhaseOrder` but got `None`.
         return None
 
     @classmethod
@@ -343,13 +345,18 @@ def _generate_file(
 def _image_source_path(
     layer_opts: LayerOpts,
     *,
+    # pyre-fixme[9]: source has type `AnyStr`; used as `None`.
     source: AnyStr = None,
+    # pyre-fixme[9]: layer has type `Subvol`; used as `None`.
     layer: Subvol = None,
+    # pyre-fixme[9]: path has type `AnyStr`; used as `None`.
     path: AnyStr = None,
 ) -> Path:
     assert (source is None) ^ (layer is None), (source, layer, path)
     source = Path.or_none(source)
     # Absolute `path` is still relative to `source` or `layer`
+    # pyre-fixme[9]: path has type `AnyStr`; used as `Path`.
+    # pyre-fixme[6]: Expected `Optional[bytes]` for 1st param but got `str`.
     path = Path((path and path.lstrip("/")) or ".")
 
     if source:
@@ -388,10 +395,12 @@ def _make_image_source_item(
     # share the same source file for all generates with the same command --
     # you'd add a global map of (generator, args) -> output, perhaps using
     # weakref hooks to refcount output files and GC them.
+    # pyre-fixme[16]: `Mapping` has no attribute `pop`.
     generator = source.pop("generator", None)
     generator_args = source.pop("generator_args", None)
     generator_args = list(generator_args) if generator_args is not None else []
     if generator or generator_args:
+        # pyre-fixme[16]: `Mapping` has no attribute `__setitem__`.
         source["source"] = _generate_file(
             exit_stack.enter_context(tempfile.TemporaryDirectory()),
             generator,
@@ -399,9 +408,11 @@ def _make_image_source_item(
         )
 
     algo_and_hash = source.pop("content_hash", None)
+    # pyre-fixme[6]: Expected `Subvol` for 2nd param but got `str`.
     source_path = _image_source_path(layer_opts, **source)
     if algo_and_hash:
         algorithm, expected_hash = algo_and_hash.split(":")
+        # pyre-fixme[6]: Expected `str` for 1st param but got `Path`.
         actual_hash = _hash_path(source_path, algorithm)
         if actual_hash != expected_hash:
             raise AssertionError(

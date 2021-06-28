@@ -26,6 +26,8 @@ class AttachAntlirDir(NspawnPlugin):
         with setup_subvol_ctx(opts) as subvol:
             subvol_antlir_dir = subvol.path(ANTLIR_DIR)
             build_appliance_antlir_dir = (
+                # pyre-fixme[16]: Optional type has no attribute
+                # `build_appliance_path`.
                 opts.subvolume_on_disk.build_appliance_path
                 / ANTLIR_DIR.strip_leading_slashes()
             )
@@ -39,6 +41,8 @@ class AttachAntlirDir(NspawnPlugin):
                 ]
             )
 
+            # pyre-fixme[7]: Expected `_NspawnSetup` but got
+            #  `Generator[antlir.subvol_utils.Subvol, None, None]`.
             yield subvol
 
             subvol.run_as_root(["rm", "-rf", subvol_antlir_dir])

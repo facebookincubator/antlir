@@ -184,6 +184,8 @@ def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
         pass_fds=[rs.sock.fileno()],
     ) as server_proc:
         try:
+            # pyre-fixme[7]: Expected `RepoServer` but got
+            # `Generator[RepoServer, None, None]`.
             yield rs._replace(proc=server_proc)
         finally:
             # Uh-oh, the server already exited. Did it crash?
@@ -231,6 +233,8 @@ def launch_repo_servers_for_netns(
             repo_server_ports,
         ):
             rs = stack.enter_context(
+                # pyre-fixme[6]: Expected `ContextManager[Variable[
+                # contextlib._T]]` for 1st param but got `RepoServer`.
                 _launch_repo_server(
                     repo_server_bin,
                     RepoServer(
@@ -242,4 +246,6 @@ def launch_repo_servers_for_netns(
             )
             log.debug(f"Launched {rs} in {target_pid}'s netns")
             servers.append(rs)
+        # pyre-fixme[7]: Expected `List[RepoServer]` but got
+        #  `Generator[List[typing.Any], None, None]`.
         yield servers

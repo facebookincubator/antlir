@@ -29,11 +29,15 @@ class _StorageRemover(NamedTuple):
     def remove(self, sid: str) -> None:
         self.procs.append(
             subprocess.Popen(
+                # pyre-fixme[16]: `Storage` has no attribute `_remove_cmd`.
                 self.storage._remove_cmd(
+                    # pyre-fixme[16]: `Storage` has no attribute
+                    # `_path_for_storage_id`.
                     path=self.storage._path_for_storage_id(
                         self.storage.strip_key(sid)
                     )
                 ),
+                # pyre-fixme[16]: `Storage` has no attribute `_configured_env`.
                 env=self.storage._configured_env(),
                 stdout=2,
             )
@@ -135,7 +139,15 @@ class CLIObjectStorage(Storage):
                     raise
                 yield sid
 
+            # pyre-fixme[6]: Expected `ContextManager[typing.Any]` for 2nd
+            # param but got `() -> Any`.
             with _CommitCallback(self, get_id_and_release_resources) as commit:
+                # pyre-fixme[7]: Expected
+                # `ContextManager[antlir.rpm.storage.storage.StorageOutput]`
+                # but got `Generator[antlir.rpm.storage.storage.StorageOutput,
+                # None, None]`.
+                # pyre-fixme[6]: Expected `IO[typing.Any]` for 1st param but got
+                #  `Optional[typing.IO[typing.Any]]`.
                 yield StorageOutput(output=proc.stdin, commit_callback=commit)
 
     @contextmanager
@@ -151,6 +163,11 @@ class CLIObjectStorage(Storage):
             stdout=subprocess.PIPE,
         ) as proc:
             log.debug(f"{log_prefix} - Started {path} GET proc")
+            # pyre-fixme[7]: Expected
+            #  `ContextManager[antlir.rpm.storage.storage.StorageInput]` but got
+            #  `Generator[antlir.rpm.storage.storage.StorageInput, None, None]`.
+            # pyre-fixme[6]: Expected `IO[typing.Any]` for 1st param but got
+            #  `Optional[typing.IO[typing.Any]]`.
             yield StorageInput(input=proc.stdout)
             log.debug(f"{log_prefix} - Waiting for {path} GET")
         log.debug(
@@ -163,6 +180,8 @@ class CLIObjectStorage(Storage):
     def remover(self) -> ContextManager[_StorageRemover]:
         rm = _StorageRemover(storage=self, procs=[])
         try:
+            # pyre-fixme[7]: Expected `ContextManager[_StorageRemover]` but got
+            #  `Generator[_StorageRemover, None, None]`.
             yield rm
         finally:
             last_ex = None  # We'll re-raise the last exception.

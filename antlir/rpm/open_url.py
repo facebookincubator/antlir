@@ -13,10 +13,14 @@ import requests
 
 @contextmanager
 def open_url(url: str) -> Iterator[BytesIO]:
+    # pyre-fixme[16]: Module `utils` has no attribute `urlparse`.
     parsed_url = requests.utils.urlparse(url)
     if parsed_url.scheme == "file":
         assert parsed_url.netloc == "", f"Bad file URL: {url}"
+        # pyre-fixme[16]: Module `utils` has no attribute `unquote`.
         with open(requests.utils.unquote(parsed_url.path), "rb") as infile:
+            # pyre-fixme[7]: Expected `Iterator[BytesIO]` but got
+            #  `Generator[io.BufferedReader, None, None]`.
             yield infile
     elif parsed_url.scheme in ["http", "https"]:
         # verify=True is the default, but I want to be explicit about HTTPS,

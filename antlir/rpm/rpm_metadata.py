@@ -33,6 +33,8 @@ class RpmMetadata(NamedTuple):
         if not os.path.exists(db_path):
             raise ValueError(f"RPM DB path {db_path} does not exist")
 
+        # pyre-fixme[6]: Expected `RpmMetadata` for 1st param but got
+        #  `Type[RpmMetadata]`.
         return cls._repo_query(cls, db_path, package_name, None)
 
     @classmethod
@@ -40,6 +42,8 @@ class RpmMetadata(NamedTuple):
         if not package_path.endswith(b".rpm"):
             raise ValueError(f"RPM file {package_path} needs to end with .rpm")
 
+        # pyre-fixme[6]: Expected `RpmMetadata` for 1st param but got
+        #  `Type[RpmMetadata]`.
         return cls._repo_query(cls, None, None, package_path)
 
     def _repo_query(
@@ -53,8 +57,12 @@ class RpmMetadata(NamedTuple):
         ]
 
         if db_path and package_name and (package_path is None):
+            # pyre-fixme[6]: Expected `Iterable[str]` for 1st param but got
+            #  `Iterable[typing.Union[Path, str]]`.
             query_args += ["--dbpath", db_path, package_name]
         elif package_path and (db_path is None and package_name is None):
+            # pyre-fixme[6]: Expected `Iterable[str]` for 1st param but got
+            #  `Iterable[typing.Union[Path, str]]`.
             query_args += ["--package", package_path]
         else:
             raise ValueError(
@@ -130,7 +138,9 @@ R_ALPHA = re.compile(br"^([a-zA-Z]+)(.*)$")
 def _compare_values(left: str, right: str) -> int:
     # Rpm versions can only be ascii, anything else is just
     # ignored
+    # pyre-fixme[9]: left has type `str`; used as `bytes`.
     left = left.encode("ascii", "ignore")
+    # pyre-fixme[9]: right has type `str`; used as `bytes`.
     right = right.encode("ascii", "ignore")
 
     if left == right:

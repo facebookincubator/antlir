@@ -108,6 +108,7 @@ def run_nspawn(
     The second one is for the nspawn process representing the container
     console process itself.
     """
+    # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
     with popen_nspawn(opts, popen_args, plugins=plugins) as (np, cp):
         np_stdout, np_stderr = np.communicate()
         # We don't make any provisions for pipes to the container console
@@ -136,9 +137,14 @@ def popen_nspawn(
     plugins: Iterable[NspawnPlugin] = (),
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
     log.debug(f"popen_nspawn {opts.cmd}")
+    # pyre-fixme[7]: Expected `Iterable[Tuple[subprocess.Popen[typing.Any],
+    #  subprocess.Popen[typing.Any]]]` but got `Tuple[subprocess.Popen[
+    # typing.Any], subprocess.Popen[typing.Any]]`.
     return _popen_plugin_driver(
         opts=opts,
         popen_args=popen_args,
+        # pyre-fixme[6]: Expected `(_NspawnSetup) -> ContextManager[
+        # Tuple[subprocess....
         post_setup_popen=_post_setup_popen_nspawn,
         plugins=plugins,
     )
@@ -148,6 +154,7 @@ def popen_nspawn(
 def _post_setup_popen_nspawn(
     setup: _NspawnSetup,
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
+    # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
     with _popen_nspawn(setup) as (
         nspawn_proc,
         container_proc_pid,
@@ -240,6 +247,7 @@ def _tmp_mount() -> Path:
     with temp_dir() as tmp_mount:
         (tmp_mount / "busybox").touch()
         os.mkdir(tmp_mount / "outerproc")
+        # pyre-fixme[7]: Expected `Path` but got `Generator[Path, None, None]`.
         yield tmp_mount
 
 
@@ -281,6 +289,8 @@ def _make_nspawn_cmd(
         # command, we make the "booted", "non-booted", and "VM" cases very
         # similar, and the callers mostly don't need to know the difference.
         cmd.extend(_non_booted_container_dummy())
+    # pyre-fixme[7]: Expected `List[typing.Union[bytes, str]]` but got
+    #  `List[Variable[typing.AnyStr <: [str, bytes]]]`.
     return cmd
 
 
@@ -331,6 +341,7 @@ def _popen_nspawn(
     # Create a pipe that we can forward into the namespace that our
     # shell script can use to exfil data about the namespace we've been
     # put into before we hand control over to the init system.
+    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with _tmp_mount() as tmp_mount, Path.resource(
         __package__, "busybox", exe=True
     ) as busybox, pipe() as (exfil_r, exfil_w), (
@@ -485,7 +496,11 @@ def _popen_nsenter_into_container(
     ]
 
     # This never returns a bare Popen, so it's fine not to use @contextmanager
+    # pyre-fixme[7]: Expected `ContextManager[subprocess.Popen[typing.Any]]`
+    # but got `Iterable[subprocess.Popen[typing.Any]]`.
     return maybe_popen_and_inject_fds(
+        # pyre-fixme[6]: Expected `List[str]` for 1st param but got
+        #  `List[typing.Union[None, bytes, str]]`.
         nsenter_cmd,
         opts,
         popen=functools.partial(

@@ -38,6 +38,8 @@ class StorageOutput:
 
     def __init__(self, *, output: IO, commit_callback: "_CommitCallback"):
         self._output = output
+        # pyre-fixme[8]: Attribute has type `(bool) -> str`; used as
+        # `_CommitCallback`.
         self._commit_callback = commit_callback
 
     def write(self, data: bytes):
@@ -57,8 +59,10 @@ class StorageOutput:
         failure occurs, all written blobs are automatically deleted.  While
         not truly transactional, this is still very useful.
         """
+        # pyre-fixme[8]: Attribute has type `IO[typing.Any]`; used as `None`.
         self._output = None  # Prevent future write attempts.
         # NB: _CommitCallback raises on double-commits.
+        # pyre-fixme[28]: Unexpected keyword argument `remove_on_exception`.
         return self._commit_callback(remove_on_exception=remove_on_exception)
 
 
@@ -110,12 +114,14 @@ class Storage(Pluggable):
 
     def _add_key(self, sid: str) -> str:
         "_CommitCallback uses this to mark an ID before returning to the user"
+        # pyre-fixme[16]: `Storage` has no attribute `key`.
         assert self._KEY_REGEX.match(self.key)
         return f"{self.key}:{sid}"
 
     def strip_key(self, sid: str) -> str:
         "Implementations use this to accept user-provided IDs (e.g. reader)"
         key, sid = sid.split(":", 1)
+        # pyre-fixme[16]: `Storage` has no attribute `key`.
         assert key == self.key, f"Wrong storage: {key} != {self.key}"
         return sid
 
@@ -154,8 +160,11 @@ class _CommitCallback(AbstractContextManager):
         # use `commit`, even if `get_id_and_release_resources` raises.
         get_id_and_release_resources = self.get_id_and_release_resources
         self.remove_on_exception = remove_on_exception
+        # pyre-fixme[8]: Attribute has type `ContextManager[typing.Any]`; used
+        # as `None`.
         self.get_id_and_release_resources = None  # Detect double-commits
 
+        # pyre-fixme[29]: `ContextManager[typing.Any]` is not a function.
         with get_id_and_release_resources() as id:
             # The user-visible ID should be keyed to the Storage that made it.
             self.id = self.storage._add_key(id)
@@ -203,6 +212,7 @@ class _CommitCallback(AbstractContextManager):
                 self.remove = True
 
         if self.remove and self.id:
+            # pyre-fixme[16]: `Storage` has no attribute `remove`.
             self.storage.remove(self.id)
 
         return False  # This context manager does not suppress exceptions

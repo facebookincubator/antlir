@@ -392,6 +392,7 @@ class RepoDBContext(AbstractContextManager):
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         self._conn = None
+        # pyre-fixme[7]: Expected `bool` but got `Optional[bool]`.
         return self._conn_ctx.__exit__(exc_type, exc_val, exc_tb)
 
     @contextmanager
@@ -530,6 +531,8 @@ class RepoDBContext(AbstractContextManager):
             )
             results = cursor.fetchall()
         if not results:
+            # pyre-fixme[7]: Expected `Tuple[str, antlir.rpm.common.Checksum]`
+            #  but got `Tuple[None, None]`.
             return None, None
 
         # We can get multiple results:
@@ -599,10 +602,12 @@ class RepoDBContext(AbstractContextManager):
         self, table: StorageTable, obj: Union["Rpm", Repodata]
     ) -> Optional[str]:
         with self._cursor() as cursor:
+            # pyre-fixme[16]: `StorageTable` has no attribute `NAME`.
+            table_name = table.NAME
             cursor.execute(
                 f"""
                 SELECT {self._identifiers(table.column_names())}, `storage_id`
-                FROM `{table.NAME}`
+                FROM `{table_name}`
                 WHERE ({
                     ' AND '.join(
                         f'`{c}` = {self._placeholder()}'
@@ -610,6 +615,7 @@ class RepoDBContext(AbstractContextManager):
                     )
                 })
             """,
+                # pyre-fixme[16]: `StorageTable` has no attribute `key`.
                 table.key(obj),
             )
             results = cursor.fetchall()
@@ -643,9 +649,11 @@ class RepoDBContext(AbstractContextManager):
         # this would make the transaction slow, and thus isn't worth it.
         with self._cursor() as cursor:
             col_names = table.column_names()
+            # pyre-fixme[16]: `StorageTable` has no attribute `NAME`.
+            table_name = table.NAME
             cursor.execute(
                 f"""
-                INSERT {self._or_ignore()} INTO `{table.NAME}`
+                INSERT {self._or_ignore()} INTO `{table_name}`
                 ({self._identifiers(col_names)}, `storage_id`)
                 VALUES ({
                     ', '.join([self._placeholder()] * (len(col_names) + 1))
@@ -656,6 +664,7 @@ class RepoDBContext(AbstractContextManager):
             if cursor.rowcount:
                 return storage_id  # We won the race to insert our storage_id
             # Our storage_id will not be used, find the already-stored one.
+            # pyre-fixme[7]: Expected `str` but got `Optional[str]`.
             return self.get_storage_id(table, obj)
 
     def commit(self):

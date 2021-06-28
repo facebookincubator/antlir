@@ -38,6 +38,7 @@ _mockable_platform_release = platform.release
 # Bite me, Python3.
 def byteme(s: AnyStr) -> bytes:
     "Byte literals are tiring, just promote strings as needed."
+    # pyre-fixme[16]: `bytes` has no attribute `encode`.
     return s.encode() if isinstance(s, str) else s
 
 
@@ -199,6 +200,10 @@ def run_stdout_to_err(
     subprocesses from accidentally polluting stdout.
     """
     assert stdout is None, "run_stdout_to_err does not take a stdout kwarg"
+    # pyre-fixme[6]: Expected `Union[os.PathLike[bytes], os.PathLike[str],
+    #  typing.Sequence[typing.Union[os.PathLike[bytes], os.PathLike[str], bytes,
+    #  str]], bytes, str]` for 1st param but got `Iterable[Variable[AnyStr <:
+    #  [str, bytes]]]`.
     return subprocess.run(args, **kwargs, stdout=2)  # Redirect to stderr
 
 
@@ -215,6 +220,7 @@ def open_fd(path: AnyStr, flags) -> int:
     # clearly named keyword-only arg.
     fd = os.open(path, flags=flags | os.O_NOCTTY | os.O_CLOEXEC)
     try:
+        # pyre-fixme[7]: Expected `int` but got `Generator[int, None, None]`.
         yield fd
     finally:
         os.close(fd)
@@ -255,6 +261,8 @@ def retry_fn(
                 raise
             log.log(
                 logging.ERROR if log_exception else logging.DEBUG,
+                # pyre-fixme[6]: Expected `Sized` for 1st param but got
+                #  `Iterable[float]`.
                 f"\n\n[Retry {i + 1} of {len(delays)}] {what} -- waiting "
                 f"{delay} seconds.\n\n",
                 exc_info=log_exception,
@@ -310,18 +318,22 @@ async def async_retry_fn(
     """
     for i, delay in enumerate(delays):
         try:
+            # pyre-fixme[12]: Expected an awaitable but got `T`.
             return await retryable_fn()
         except Exception as e:
             if is_exception_retryable and not is_exception_retryable(e):
                 raise
             log.log(
                 logging.ERROR if log_exception else logging.DEBUG,
+                # pyre-fixme[6]: Expected `Sized` for 1st param but got
+                #  `Iterable[float]`.
                 f"\n\n[Retry {i + 1} of {len(delays)}] {what} -- waiting "
                 f"{delay} seconds.\n\n",
                 exc_info=log_exception,
             )
             time.sleep(delay)
     return (
+        # pyre-fixme[12]: Expected an awaitable but got `T`.
         await retryable_fn()
     )  # With 0 retries, we should still run the function.
 

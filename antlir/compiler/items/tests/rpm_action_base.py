@@ -19,7 +19,10 @@ class RpmActionItemTestBase:
     def _check_rpm_action_item_build_appliance(self, ba_path: Path):
         self._check_rpm_action_item(
             layer_opts=DUMMY_LAYER_OPTS._replace(
-                build_appliance=ba_path, rpm_installer=self._YUM_DNF
+                build_appliance=ba_path,
+                # pyre-fixme[16]: `RpmActionItemTestBase` has no attribute
+                # `_YUM_DNF`.
+                rpm_installer=self._YUM_DNF,
             )
         )
 

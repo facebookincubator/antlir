@@ -202,18 +202,26 @@ class _NspawnOpts(NamedTuple):
     boot: bool = False
     bind_repo_ro: bool = False  # to support @mode/dev
     # Future: maybe make these `Path`?
+    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
+    #  bytes]]`.
     bindmount_ro: Iterable[Tuple[AnyStr, AnyStr]] = ()  # for `RpmActionItem`
+    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
+    #  bytes]]`.
     bindmount_rw: Iterable[Tuple[AnyStr, AnyStr]] = ()  # for `RpmActionItem`
     forward_fd: Iterable[int] = ()  # for `image.*_unittest`
     # The default is to let `systemd-nspawn` pick a random hostname.
     hostname: Optional[str] = None  # for `image.*_unittest`
     quiet: bool = False
     # For now, these have the form `K=V`. Future: make this a map?
+    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
+    #  bytes]]`.
     setenv: Iterable[AnyStr] = ()  # for `image.*_unittest`
     snapshot: bool = True  # For `GenruleLayerItem`
     user: pwd.struct_passwd = _NOBODY_USER
     debug_only_opts: _NspawnDebugOnlyNotForProdOpts = _DEBUG_OPTS_FOR_PROD
     allow_mknod: bool = False
+    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
+    #  bytes]]`.
     targets_and_outputs: Mapping[AnyStr, Path] = {}
 
 
@@ -377,6 +385,7 @@ def _extract_opts_from_dict(
         if k in extra_fields:
             assert k not in dct
         else:
+            # pyre-fixme[16]: `Mapping` has no attribute `pop`.
             extra_fields[k] = dct.pop(k)
     return ctor(
         **{

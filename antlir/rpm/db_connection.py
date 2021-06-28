@@ -31,6 +31,7 @@ class DBConnectionContext(AbstractContextManager, Pluggable):
         raise NotImplementedError
 
 
+# pyre-fixme[11]: Annotation `sqlite` is not defined as a type.
 class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
     SQL_DIALECT = SQLDialect.SQLITE3
     _warned_about_sqlite_force_master = False
@@ -96,6 +97,7 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
 try:
     # Import FB-specific implementations if available. Do this last in the
     # file so that DBConnectionContext is already available to them.
+    # pyre-fixme[21]: Could not find module `antlir.rpm.facebook`.
     from .facebook import db_connection as _fb_db_connection  # noqa: F401
 except ImportError:  # pragma: no cover
     pass

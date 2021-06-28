@@ -42,6 +42,7 @@ class LoopbackVolume:
         unshare: Optional[Unshare],
         image_path: Path,
         fs_type: str,
+        # pyre-fixme[9]: mount_options has type `Iterable[str]`; used as `None`.
         mount_options: Iterable[str] = None,
     ):
         self._unshare = unshare
@@ -55,8 +56,14 @@ class LoopbackVolume:
     def __enter__(self) -> "LoopbackVolume":
         self._temp_dir = self._temp_dir_ctx.__enter__().abspath()
         try:
+            # pyre-fixme[58]: `/` is not supported for operand types
+            #  `Optional[Path]` and `bytes`.
             self._mount_dir = self._temp_dir / b"volume"
+            # pyre-fixme[6]: Expected `Union[os.PathLike[bytes],
+            # os.PathLike[str], bytes, str]` for 1st param but got
+            # `Optional[Path]`.
             os.mkdir(self._mount_dir)
+            # pyre-fixme[16]: `LoopbackVolume` has no attribute `_loop_dev`.
             self._loop_dev = self.mount()
 
         except BaseException:  # pragma: nocover
@@ -94,6 +101,8 @@ class LoopbackVolume:
         run_stdout_to_err(
             nsenter_as_root(
                 self._unshare,
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 2nd param but got `str`.
                 "mount",
                 "-t",
                 self._fs_type,
@@ -108,6 +117,8 @@ class LoopbackVolume:
         loop_dev = subprocess.check_output(
             nsenter_as_user(
                 self._unshare,
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 2nd param but got `str`.
                 "findmnt",
                 "--noheadings",
                 "--output",
@@ -122,6 +133,9 @@ class LoopbackVolume:
         # we've seen in production have sector sizes of 512, 1024, or 4096).
         if (
             run_stdout_to_err(
+                # pyre-fixme[6]: Expected `Iterable[Variable[typing.AnyStr <:
+                #  [str, bytes]]]` for 1st param but got
+                #  `List[typing.Union[bytes, str]]`.
                 ["sudo", "losetup", "--sector-size=4096", loop_dev]
             ).returncode
             != 0
@@ -134,6 +148,9 @@ class LoopbackVolume:
         # Also, when the image is on tmpfs, setting direct IO fails.
         if (
             run_stdout_to_err(
+                # pyre-fixme[6]: Expected `Iterable[Variable[typing.AnyStr <:
+                #  [str, bytes]]]` for 1st param but got
+                #  `List[typing.Union[bytes, str]]`.
                 ["sudo", "losetup", "--direct-io=on", loop_dev]
             ).returncode
             != 0
@@ -142,6 +159,7 @@ class LoopbackVolume:
                 f"Could not enable --direct-io for {loop_dev}, expect worse "
                 "performance."
             )
+        # pyre-fixme[7]: Expected `Path` but got `bytes`.
         return loop_dev
 
     def unmount_if_mounted(self):
@@ -152,6 +170,7 @@ class LoopbackVolume:
             )
 
     def dir(self) -> Path:
+        # pyre-fixme[7]: Expected `Path` but got `Optional[Path]`.
         return self._mount_dir
 
 
@@ -183,6 +202,8 @@ class BtrfsLoopbackVolume(LoopbackVolume):
             self.__exit__(*sys.exc_info())
             raise
 
+        # pyre-fixme[7]: Expected `BtrfsLoopbackVolume` but got
+        # `LoopbackVolume`.
         return super().__enter__()
 
     def _create_or_resize_image_file(self, size_bytes: int):
@@ -223,6 +244,7 @@ class BtrfsLoopbackVolume(LoopbackVolume):
         Receive a btrfs sendstream from the `send` fd
         """
         return run_stdout_to_err(
+            # pyre-fixme[16]: `Optional` has no attribute `nsenter_as_root`.
             self._unshare.nsenter_as_root(
                 "btrfs",
                 "receive",
@@ -278,6 +300,8 @@ class BtrfsLoopbackVolume(LoopbackVolume):
         min_size_out = subprocess.check_output(
             nsenter_as_root(
                 self._unshare,
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 2nd param but got `str`.
                 "btrfs",
                 "inspect-internal",
                 "min-dev-size",
@@ -309,6 +333,8 @@ class BtrfsLoopbackVolume(LoopbackVolume):
         run_stdout_to_err(
             nsenter_as_root(
                 self._unshare,
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 2nd param but got `str`.
                 "btrfs",
                 "filesystem",
                 "resize",
@@ -322,6 +348,8 @@ class BtrfsLoopbackVolume(LoopbackVolume):
             subprocess.check_output(
                 nsenter_as_user(
                     self._unshare,
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <:
+                    #  [str, bytes]]]` for 2nd param but got `str`.
                     "findmnt",
                     "--bytes",
                     "--noheadings",
@@ -333,7 +361,10 @@ class BtrfsLoopbackVolume(LoopbackVolume):
         )
         self._create_or_resize_image_file(fs_bytes)
         run_stdout_to_err(
-            ["sudo", "losetup", "--set-capacity", self._loop_dev], check=True
+            # pyre-fixme[16]: `BtrfsLoopbackVolume` has no attribute
+            # `_loop_dev`.
+            ["sudo", "losetup", "--set-capacity", self._loop_dev],
+            check=True,
         )
 
         assert min_size_bytes == fs_bytes

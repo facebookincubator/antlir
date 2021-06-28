@@ -74,6 +74,7 @@ class SQLiteRpmParser(AbstractContextManager):
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         # Clean up before maybe raising our own exception
+        # pyre-fixme[16]: `SQLiteRpmParser` has no attribute `_tmp_db_ctx`.
         retval = self._tmp_db_ctx.__exit__(exc_type, exc_val, exc_tb)
         if exc_type is None and not self._unpacker.eof:
             raise RuntimeError(
@@ -86,6 +87,7 @@ class SQLiteRpmParser(AbstractContextManager):
 
     def feed(self, chunk: bytes) -> Iterator[Rpm]:
         while True:
+            # pyre-fixme[16]: `SQLiteRpmParser` has no attribute `_tmp_db`.
             self._tmp_db.write(
                 # Don't use arbitrary amounts of RAM for decompression.
                 # Bigger is better, within reason.  See the note on `zlib`
@@ -127,6 +129,8 @@ class SQLiteRpmParser(AbstractContextManager):
                     arch=arch,
                     build_timestamp=build_time,
                     # The canonical checksum is set after we download the RPM
+                    # pyre-fixme[6]: Expected `Checksum` for 7th param but got
+                    # `None`.
                     canonical_checksum=None,
                     checksum=Checksum(algorithm=chk_type, hexdigest=chk_val),
                     location=location,
@@ -224,7 +228,10 @@ class XMLRpmParser(AbstractContextManager):
                 elif m.group(2) == self._CHECKSUM:
                     assert elt.attrib["pkgid"] == "YES"
                     self._package[self._CHECKSUM] = Checksum(
-                        algorithm=elt.attrib["type"], hexdigest=elt.text
+                        algorithm=elt.attrib["type"],
+                        # pyre-fixme[6]: Expected `str` for 2nd param but got
+                        #  `Optional[str]`.
+                        hexdigest=elt.text,
                     )
                 elif m.group(2) == self._LOCATION:
                     self._package[self._LOCATION] = elt.attrib["href"]
@@ -243,6 +250,8 @@ class XMLRpmParser(AbstractContextManager):
                         source_rpm=self._package[self._SOURCE_RPM],
                         build_timestamp=int(self._package[self._TIME]),
                         # This is set after we download the RPM
+                        # pyre-fixme[6]: Expected `Checksum` for 11th param but
+                        # got `None`.
                         canonical_checksum=None,
                     )
                     self._package = {}  # Detect missing fields

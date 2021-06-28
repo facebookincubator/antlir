@@ -36,6 +36,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     # For a handful of tests, this must be a boolean value so the layer
     # emits it it into /.meta, but the value is not important.
     artifacts_may_require_repo=True,
+    # pyre-fixme[6]: Expected `Mapping[str, str]` for 4th param but got `None`.
     target_to_path=None,
     subvolumes_dir=None,
     rpm_installer=None,
