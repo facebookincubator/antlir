@@ -9,7 +9,7 @@ import logging
 import os
 import subprocess
 import sys
-from typing import AnyStr, Iterable, List
+from typing import AnyStr, Iterable, List, Union
 
 
 # This module is never __main__, so the module name should be sane
@@ -266,19 +266,13 @@ class Unshare:
             ),
         ]
 
-    def nsenter_without_sudo(self, *cmd: List[AnyStr]) -> List[AnyStr]:
-        # pyre-fixme[7]: Expected `List[Variable[AnyStr <: [str, bytes]]]` but
-        # got `List[typing.Union[List[Variable[AnyStr <: [str, bytes]]], str]]`.
+    def nsenter_without_sudo(self, *cmd: AnyStr) -> List[Union[str, bytes]]:
         return ["nsenter", *self._nsenter_args(), *cmd]
 
-    def nsenter_as_root(self, *cmd: List[AnyStr]) -> List[AnyStr]:
-        # pyre-fixme[7]: Expected `List[Variable[AnyStr <: [str, bytes]]]` but
-        # got `List[typing.Union[List[Variable[AnyStr <: [str, bytes]]], str]]`.
+    def nsenter_as_root(self, *cmd: AnyStr) -> List[Union[str, bytes]]:
         return ["sudo", "nsenter", *self._nsenter_args(), *cmd]
 
-    def nsenter_as_user(self, *cmd: List[AnyStr]) -> List[AnyStr]:
-        # pyre-fixme[7]: Expected `List[Variable[AnyStr <: [str, bytes]]]` but
-        # got `List[typing.Union[List[Variable[AnyStr <: [str, bytes]]], str]]`.
+    def nsenter_as_user(self, *cmd: AnyStr) -> List[Union[str, bytes]]:
         return [
             "sudo",
             "nsenter",

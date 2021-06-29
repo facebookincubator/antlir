@@ -1002,12 +1002,10 @@ class Subvol:
                     #
                     subvol_id = self.run_as_root(
                         ns.nsenter_without_sudo(
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <:
-                            # [str, bytes]]]` for 1st param but got `str`.
                             "btrfs",
                             "subvolume",
                             "list",
-                            Path(loop_vol.dir()) / self.path().basename(),
+                            str(Path(loop_vol.dir()) / self.path().basename()),
                         ),
                         stdout=subprocess.PIPE,
                     ).stdout.split(b" ")[1]
@@ -1017,13 +1015,11 @@ class Subvol:
                     # Actually set the default
                     self.run_as_root(
                         ns.nsenter_without_sudo(
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <:
-                            # [str, bytes]]]` for 1st param but got `str`.
                             "btrfs",
                             "subvolume",
                             "set-default",
                             subvol_id,
-                            loop_vol.dir(),
+                            str(loop_vol.dir()),
                         ),
                         stderr=subprocess.STDOUT,
                     )

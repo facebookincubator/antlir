@@ -163,8 +163,6 @@ def _nspawn_cmd(
         "env",
         "UNIFIED_CGROUP_HIERARCHY=yes",
         *ns.nsenter_without_sudo(
-            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str, bytes]]]`
-            # for 1st param but got `str`.
             "systemd-nspawn",
             # These are needed since we do not want to require a working `dbus`
             # on the host.
@@ -176,7 +174,7 @@ def _nspawn_cmd(
             "--machine",
             uuid.uuid4().hex,
             "--directory",
-            temp_bind_rootfs,
+            str(temp_bind_rootfs),
             *_inject_os_release_args(nspawn_subvol),
             # Don't pollute the host's /var/log/journal
             "--link-journal=no",
@@ -428,12 +426,10 @@ def _nspawn_setup(
         nspawn_args, cmd_env = _extra_nspawn_args_and_env(opts)
         nspawn_subvol.run_as_root(
             ns.nsenter_without_sudo(
-                # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                # bytes]]]` for 1st param but got `str`.
                 "mount",
                 "--bind",
-                nspawn_subvol.path(),
-                temp_bind_rootfs,
+                str(nspawn_subvol.path()),
+                str(temp_bind_rootfs),
             )
         )
 

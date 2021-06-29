@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from itertools import chain
-from typing import Iterable, List, Mapping, Optional, Tuple
+from typing import Iterable, List, Mapping, Optional, Tuple, cast
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path
@@ -104,12 +104,13 @@ class GuestSSHConnection:
         options = list(
             chain.from_iterable(["-o", f"{k}={v}"] for k, v in options.items())
         )
-        return self.tapdev.netns.nsenter_as_user(
-            # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-            #  bytes]]]` for 1st param but got `str`.
-            "ssh",
-            *options,
-            "-i",
-            str(self.privkey),
-            f"root@{self.tapdev.guest_ipv6_ll}",
+        return cast(
+            List[str],
+            self.tapdev.netns.nsenter_as_user(
+                "ssh",
+                *options,
+                "-i",
+                str(self.privkey),
+                f"root@{self.tapdev.guest_ipv6_ll}",
+            ),
         )
