@@ -19,6 +19,7 @@ from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
 from enum import Enum
 from itertools import chain
 from typing import (
+    cast,
     AsyncContextManager,
     Iterable,
     NamedTuple,
@@ -365,9 +366,7 @@ async def __vm_with_stack(
 
     logger.debug(
         "Namespace has been created. Enter with: "
-        # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-        #  bytes]]]` for 1st param but got `str`.
-        f"{' '.join(ns.nsenter_as_user('/bin/bash'))}"
+        f"{' '.join(cast(List[str], ns.nsenter_as_user('/bin/bash')))}"
     )
 
     logger.debug(
@@ -380,8 +379,6 @@ async def __vm_with_stack(
         # `python_binary` rules into `python3 -Es $par`
         *(
             asyncio.create_subprocess_exec(
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 1st param but got `str`.
                 *ns.nsenter_as_user("/bin/sh", "-c", sidecar)
             )
             for sidecar in opts.runtime.sidecar_services
@@ -464,8 +461,6 @@ async def __vm_with_stack(
 
     args += __qemu_share_args(shares)
 
-    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str, bytes]]]`
-    #  for 1st param but got `str`.
     qemu_cmd = ns.nsenter_as_user(str(opts.runtime.emulator.binary.path), *args)
 
     # Special console handling here.
