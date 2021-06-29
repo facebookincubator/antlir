@@ -11,7 +11,12 @@ import tempfile
 import unittest
 
 from antlir.subvol_utils import with_temp_subvols
-from antlir.tests.subvol_helpers import render_sendstream, render_subvol
+from antlir.tests.subvol_helpers import (
+    get_meta_dir_contents,
+    pop_path,
+    render_sendstream,
+    render_subvol,
+)
 
 from ..unshare import Unshare, nsenter_as_root
 
@@ -87,6 +92,13 @@ class ImagePackageTestCaseBase(unittest.TestCase):
         )
         original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
 
+    def _assert_meta_valid_and_sendstreams_equal(self, expected_stream, stream):
+        self.assertEqual(get_meta_dir_contents(), pop_path(stream, ".meta"))
+        self.assertEqual(
+            expected_stream,
+            stream,
+        )
+
     @with_temp_subvols
     def _verify_ext3_mount(self, temp_subvolumes, unshare, mount_dir, label):
         self._assert_filesystem_label(unshare, mount_dir, label)
@@ -117,7 +129,7 @@ class ImagePackageTestCaseBase(unittest.TestCase):
             # lost+found is an ext3 thing
             original_render[1]["lost+found"] = ["(Dir m700)", {}]
 
-            self.assertEqual(
+            self._assert_meta_valid_and_sendstreams_equal(
                 original_render,
                 self._render_sendstream_path(temp_sendstream.name),
             )

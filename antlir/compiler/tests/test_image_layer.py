@@ -27,6 +27,7 @@ from antlir.tests.flavor_helpers import (
 from antlir.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
 from antlir.tests.subvol_helpers import (
     check_common_rpm_render,
+    get_meta_dir_contents,
     pop_path,
     render_subvol,
 )
@@ -218,9 +219,13 @@ class ImageLayerTestCase(unittest.TestCase):
             with self.target_subvol(
                 subvol_name, mount_config=mount_config
             ) as sv:
+                rendered_subvol = render_subvol(sv)
+                self.assertEqual(
+                    get_meta_dir_contents(), pop_path(rendered_subvol, ".meta")
+                )
                 self.assertEqual(
                     render_demo_subvols(**{original_name: original_name}),
-                    render_subvol(sv),
+                    rendered_subvol,
                 )
 
     # This is reused by `test_genrule_layer` because we currently lack

@@ -400,6 +400,10 @@ class CompilerTestCase(unittest.TestCase):
                 ),
             ),
             ((_FIND_ARGS,), {"stdout": subprocess.PIPE}),
+            (
+                (["tee", _FAKE_SUBVOL_META_FLAVOR_FILE],),
+                {"input": b"antlir_test", "stdout": subprocess.DEVNULL},
+            ),
         ]
 
     def _assert_equal_call_sets(self, expected, actual):

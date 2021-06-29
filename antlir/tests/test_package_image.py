@@ -22,7 +22,6 @@ from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir, MiB
 from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
-from antlir.tests.subvol_helpers import pop_path
 
 from ..loopback_opts_t import loopback_opts_t
 from ..package_image import Format, package_image
@@ -61,7 +60,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             yield out_path
 
     def _assert_sendstream_files_equal(self, path1: str, path2: str):
-        self.assertEqual(
+        self._assert_meta_valid_and_sendstreams_equal(
             self._render_sendstream_path(path1),
             self._render_sendstream_path(path2),
         )
@@ -303,29 +302,9 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             # and is not useful for purposes of comparing the subvolume
             # contents.  However, it's useful to verify that the meta dir
             # we popped is what we expect.
-            self.assertEqual(
-                [
-                    "(Dir)",
-                    {
-                        "flavor": [render_flavor()],
-                        "private": [
-                            "(Dir)",
-                            {
-                                "opts": [
-                                    "(Dir)",
-                                    {
-                                        "artifacts_may_require_repo": [
-                                            "(File d2)"
-                                        ]
-                                    },
-                                ]
-                            },
-                        ],
-                    },
-                ],
-                pop_path(rendered_tarball_image, ".meta"),
+            self._assert_meta_valid_and_sendstreams_equal(
+                demo_render, rendered_tarball_image
             )
-            self.assertEqual(demo_render, rendered_tarball_image)
 
     def test_format_name_collision(self):
         with self.assertRaisesRegex(AssertionError, "share format_name"):
@@ -384,7 +363,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             # squashfs does not support ACLs
             original_render[1]["dir_with_acls"][0] = "(Dir)"
 
-            self.assertEqual(
+            self._assert_meta_valid_and_sendstreams_equal(
                 original_render,
                 self._render_sendstream_path(temp_sendstream.name),
             )
@@ -446,7 +425,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             # CPIO does not support unix sockets
             original_render[1].pop("unix_sock")
 
-            self.assertEqual(
+            self._assert_meta_valid_and_sendstreams_equal(
                 original_render,
                 self._render_sendstream_path(temp_sendstream.name),
             )
