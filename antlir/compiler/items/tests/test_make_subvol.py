@@ -153,8 +153,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                 from_target="t",
                 source=Path(__file__).dirname() / "create_ops.sendstream",
             ),
-            # TODO: Remove this when we write the flavor in
-            # ensure_meta_dir_exists
+            # TODO: Remove this when we write the flavor in setup_meta_dir
             has_flavor=False,
         )
 

@@ -14,7 +14,7 @@ from typing import Iterable
 from antlir.fs_utils import META_FLAVOR_FILE, open_for_read_decompress
 from antlir.subvol_utils import Subvol
 
-from .common import ImageItem, LayerOpts, PhaseOrder, ensure_meta_dir_exists
+from .common import ImageItem, LayerOpts, PhaseOrder, setup_meta_dir
 from .tarball import load_from_tarball
 
 
@@ -50,7 +50,7 @@ class ParentLayerItem(ImageItem):
             if not layer_opts.unsafe_bypass_flavor_check:
                 _check_parent_flavor(parent.subvol, layer_opts.flavor)
             # This assumes that the parent has everything mounted already.
-            ensure_meta_dir_exists(subvol, layer_opts)
+            setup_meta_dir(subvol, layer_opts)
 
         return builder
 
@@ -75,7 +75,7 @@ class FilesystemRootItem(ImageItem):
             # but in practice, probably any other choice would be wrong.
             subvol.run_as_root(["chmod", "0755", subvol.path()])
             subvol.run_as_root(["chown", "root:root", subvol.path()])
-            ensure_meta_dir_exists(subvol, layer_opts)
+            setup_meta_dir(subvol, layer_opts)
 
         return builder
 
@@ -113,6 +113,6 @@ class LayerFromPackageItem(ImageItem):
             # compiler will mark it RO at the end.  This is important e.g.
             # for setting `/.meta/flavor`.
             subvol.set_readonly(False)
-            ensure_meta_dir_exists(subvol, layer_opts)
+            setup_meta_dir(subvol, layer_opts)
 
         return builder
