@@ -6,6 +6,7 @@ load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
 load(":defs.bzl", "defs")
 
 # While the reproducible-builds.org instructions (see below) ensure that a
@@ -1068,6 +1069,24 @@ image.gpt(
         image.gpt_partition(
             package = ":create_ops_ext3",
         ),
+    ],
+    visibility = ["//antlir/..."],
+)
+
+image.layer(
+    name = "users-groups-from-scratch",
+    features = [
+        image.ensure_dirs_exist("/etc"),
+        # Importantly for this test, /etc/passwd must be installed first. Prior
+        # to the fix for this, /etc/passwd would then also attempt to bind mount
+        # /etc/group into the build appliance chroot, which made it impossible
+        # to install an actual /etc/group
+        image.install("passwd", "/etc/passwd"),
+        image.install("group", "/etc/group"),
+        image.ensure_dirs_exist("/sbin"),
+        image.install("//antlir:empty", SHELL_NOLOGIN),
+        feature.group_add("example"),
+        feature.user_add("example", "example", "/", SHELL_NOLOGIN),
     ],
     visibility = ["//antlir/..."],
 )
