@@ -157,7 +157,10 @@ def build_stat_options(
             )
 
     if build_appliance:
-        use_subvol_passwd = subvol.path("/etc/passwd").exists()
+        use_subvol_passwd = (
+            subvol.path("/etc/passwd").exists()
+            and subvol.path("/etc/group").exists()
+        )
 
         ba.run(
             [

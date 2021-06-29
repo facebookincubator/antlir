@@ -686,3 +686,7 @@ python_library(
     ],
     deps = [":config"],
 )
+
+export_file(
+    name = "empty",
+)

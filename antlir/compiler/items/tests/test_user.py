@@ -9,11 +9,11 @@ import unittest
 from antlir.compiler.requires_provides import (
     ProvidesUser,
     RequireGroup,
-    RequireDirectory,
     RequireFile,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
+from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..group import GROUP_FILE_PATH
 from ..user import (
@@ -533,6 +533,13 @@ lp:!!:1234::::::
             sf.lines["bin"].encrypted_passwd,
             default_crypt_string,
         )
+
+    def test_user_groups_from_scratch(self):
+        test_subvol = layer_resource_subvol(
+            __package__, "test-layer-users-groups-from-scratch"
+        )
+        passwd = _read_passwd_file(test_subvol)
+        self.assertIn("example", passwd)
 
 
 class ReadWriteMethodsTest(unittest.TestCase):
