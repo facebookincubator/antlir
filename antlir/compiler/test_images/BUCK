@@ -937,11 +937,10 @@ image.package(
     visibility = ["//antlir/..."],
 )
 
-image.layer(
+image.layer_from_package(
     name = "create_ops-layer-via-tarball-package",
-    features = [
-        image.tarball(":create_ops.tar.gz", "/"),
-    ],
+    format = "tar",
+    source = ":create_ops.tar.gz",
     visibility = ["//antlir/..."],
 )
 

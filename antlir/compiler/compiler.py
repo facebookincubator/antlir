@@ -129,10 +129,7 @@ def parse_args(args) -> argparse.Namespace:
 
 
 def _overwrite_meta_flavor(*, flavor: str, subvol: Subvol):
-    # We only write the flavor if the META_DIR exists, as otherwise it's a
-    # test image that doesn't need a flavor.
-    if subvol.path(META_FLAVOR_FILE.dirname()).exists():
-        subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
+    subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
 
 
 def _check_or_write_meta_flavor(

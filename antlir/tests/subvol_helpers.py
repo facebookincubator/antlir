@@ -111,3 +111,21 @@ def check_common_rpm_render(
         ],
         r,
     )
+
+
+def get_meta_dir_contents(has_flavor=True):
+    return [
+        "(Dir)",
+        {
+            **({"flavor": [render_flavor()]} if has_flavor else {}),
+            "private": [
+                "(Dir)",
+                {
+                    "opts": [
+                        "(Dir)",
+                        {"artifacts_may_require_repo": ["(File d2)"]},
+                    ]
+                },
+            ],
+        },
+    ]

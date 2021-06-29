@@ -13,6 +13,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.tests.subvol_helpers import get_meta_dir_contents, pop_path
 
 from ..common import PhaseOrder
 from ..ensure_dirs_exist import (
@@ -125,17 +126,24 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                     DUMMY_LAYER_OPTS_BA._replace(flavor="different flavor"),
                 )(child)
 
-    def _check_receive_package(self, item, lossy_packaging=None):
+    def _check_receive_package(
+        self, item, lossy_packaging=None, has_flavor=True
+    ):
         self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             new_subvol_name = "differs_from_create_ops"
             subvol = temp_subvolumes.caller_will_create(new_subvol_name)
             item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(subvol)
+            rendered_subvol = render_subvol(subvol)
+            self.assertEqual(
+                get_meta_dir_contents(has_flavor=has_flavor),
+                pop_path(rendered_subvol, ".meta"),
+            )
             self.assertEqual(
                 render_demo_subvols(
                     create_ops=new_subvol_name, lossy_packaging=lossy_packaging
                 ),
-                render_subvol(subvol),
+                rendered_subvol,
             )
 
     def test_receive_sendstream(self):
@@ -144,7 +152,10 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                 format="sendstream",
                 from_target="t",
                 source=Path(__file__).dirname() / "create_ops.sendstream",
-            )
+            ),
+            # TODO: Remove this when we write the flavor in
+            # ensure_meta_dir_exists
+            has_flavor=False,
         )
 
     def test_receive_tarball(self):

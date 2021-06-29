@@ -113,5 +113,6 @@ class LayerFromPackageItem(ImageItem):
             # compiler will mark it RO at the end.  This is important e.g.
             # for setting `/.meta/flavor`.
             subvol.set_readonly(False)
+            ensure_meta_dir_exists(subvol, layer_opts)
 
         return builder
