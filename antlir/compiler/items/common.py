@@ -271,7 +271,7 @@ def is_path_protected(path: Path, protected_paths: Set[Path]) -> bool:
     return False
 
 
-def ensure_meta_dir_exists(subvol: Subvol, layer_opts: LayerOpts):
+def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
     subvol.run_as_root(
         ["mkdir", "--mode=0755", "--parents", subvol.path(META_DIR)]
     )
