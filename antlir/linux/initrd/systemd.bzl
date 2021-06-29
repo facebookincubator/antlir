@@ -38,7 +38,6 @@ UNITS = [
     "systemd-networkd-wait-online.service",
     "systemd-networkd.service",
     "systemd-poweroff.service",
-    "systemd-sysusers.service",
     "systemd-tmpfiles-setup-dev.service",
     "systemd-tmpfiles-setup.service",
     "systemd-udev-trigger.service",
@@ -52,7 +51,6 @@ BINARIES = [
     "/usr/bin/networkctl",
     "/usr/bin/systemctl",
     "/usr/bin/systemd-escape",
-    "/usr/bin/systemd-sysusers",
     "/usr/bin/systemd-tmpfiles",
     "/usr/bin/udevadm",
     "/usr/lib/systemd/systemd",
@@ -78,8 +76,6 @@ CONFIG_FILES = [
     ("/usr/lib", "tmpfiles.d", "tmp.conf"),
     ("/usr/lib", "udev/rules.d", "99-systemd.rules"),
     ("/usr/lib", "systemd/network", "99-default.link"),
-    ("/usr/lib", "sysusers.d", "basic.conf"),
-    ("/usr/lib", "sysusers.d", "systemd.conf"),
 ]
 
 def clone_systemd_configs(src):
