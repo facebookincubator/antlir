@@ -132,6 +132,7 @@ def gen_subvolume_subtree_provides(
                 for relpath, readlink_val in zip(relpaths, readlink_vals)
             ]
         else:  # pragma: no cover
+            # pyre-fixme[61]: `abspath` may not be initialized here.
             raise AssertionError(f"Unknown {filetype} for {abspath}")
 
     # We should've gotten a CalledProcessError from `find`.

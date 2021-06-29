@@ -26,4 +26,5 @@ def fake_pty_cmd(os_root: MehStr, fake_pty_path: MehStr) -> List[MehStr]:
             break
     else:  # pragma: no cover
         raise RuntimeError(f"Could not find Python in {os_root}")
+    # pyre-fixme[61]: `python` may not be initialized here.
     return ["/" + python, fake_pty_path]
