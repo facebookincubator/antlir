@@ -4,6 +4,8 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get", "python_unittest")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load(":initrd_release.bzl", "initrd_release")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
@@ -41,6 +43,20 @@ networking = [
 
 nss = linux.config.glibc.nsswitch.install(linux.config.glibc.nsswitch.default)
 
+users = [
+    image.install("group", "/etc/group"),
+    image.install("passwd", "/etc/passwd"),
+    image.install("//antlir:empty", "/etc/shadow"),
+    image.install("//antlir:empty", "/usr/bin/nologin"),
+    feature.group_add("systemd-network"),
+    feature.user_add(
+        "systemd-network",
+        "systemd-network",
+        "/",
+        SHELL_NOLOGIN,
+    ),
+]
+
 # Kernel-agnostic base initrd
 image.layer(
     name = "base",
@@ -71,6 +87,7 @@ image.layer(
         ),
         networking,
         nss,
+        users,
         # Due to limitations in the current extractor implementation, we have to
         # extract systemd at the same time as antlirctl.
         extract.extract(
