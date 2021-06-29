@@ -1,14 +1,29 @@
-load('//antlir/bzl:oss_shim.bzl', 'http_file')
+load('//antlir/bzl:oss_shim.bzl', 'http_file', 'export_file')
 load('//antlir/bzl:image.bzl', 'image')
 
 # these need to be updated manually based on the downloaded version
-version = '6.0.0'
-sha256sum = '87bc1a471ca24b97e7005711066007d443423d19aacda3d442558ae032fa30b9'
+qemu = {
+    'version': '6.0.0',
+    'sha256': '87bc1a471ca24b97e7005711066007d443423d19aacda3d442558ae032fa30b9',
+}
+pixman = {
+    'version': '0.40.0',
+    'sha256': '3a68a28318a78fffc61603c8385bb0010c3fb23d17cd1285d36a7148c87a3b91',
+}
+
+export_file(name = 'build.sh')
 
 http_file(
     name = 'source',
-    urls = ['https://download.qemu.org/qemu-{}.tar.xz'.format(version)],
-    sha256 = sha256sum,
+    urls = ['https://download.qemu.org/qemu-{}.tar.xz'.format(qemu['version'])],
+    sha256 = qemu['sha256'],
+)
+
+# we also need to build a static version of pixman
+http_file(
+    name = 'pixman',
+    urls = ['https://github.com/freedesktop/pixman/archive/refs/tags/pixman-{}.tar.gz'.format(pixman['version'])],
+    sha256 = pixman['sha256'],
 )
 
 image.layer(
@@ -17,16 +32,20 @@ image.layer(
     features = [
         # genrule_layer runs as user 'nobody'
         image.ensure_subdirs_exist('/', '_temp_qemu', user='nobody'),
+        image.ensure_subdirs_exist('/', 'output', user='nobody'),
 
         # put sources and build script in the base layer
+        image.install(':build.sh', '/_temp_qemu/build.sh'),
         image.install(':source', '/_temp_qemu/source.tar.xz'),
-        image.install('build.sh', '/_temp_qemu/build.sh'),
+        image.install(':pixman', '/_temp_qemu/pixman.tar.gz'),
 
-        # dependencies listed at https://wiki.qemu.org/Hosts/Linux
         image.rpms_install([
-            'git', 'glib2-devel', 'libfdt-devel', 'pixman-devel', 'zlib-devel',
-            'bzip2', 'ninja-build', 'python3',
-            'libaio-devel', 'libcap-devel', 'libiscsi-devel',  # <- optional
+            # dependencies listed at https://wiki.qemu.org/Hosts/Linux
+            'git', 'bzip2', 'python3', 'ninja-build',
+            'glib2-devel', 'libfdt-devel', 'pixman-devel', 'zlib-devel',
+            # static build dependencies (at least on this builder image)
+            'glib2-static', 'glibc-static', 'pcre-static', 'zlib-static',
+            'libzstd-static', 'autoconf', 'libtool',
         ]),
     ],
 )
@@ -38,12 +57,12 @@ image.genrule_layer(
     antlir_rule = 'user-internal',
     cmd = [
         '/bin/sh', '-c',
-        'cd /_temp_qemu && bash build.sh source.tar.xz {}'.format(version),
+        'cd /_temp_qemu && bash build.sh {} {}'.format(qemu['version'], pixman['version']),
     ],
 )
 
 image.layer(
     name = 'image',
     parent_layer = ':_build_qemu',
-    # features = [image.remove('/_temp_qemu')],  # TODO: only after make install
+    features = [image.remove('/_temp_qemu')],  # clear intermediate files
 )
