@@ -128,42 +128,6 @@ def parse_args(args) -> argparse.Namespace:
     return Path.parse_args(parser, args)
 
 
-def _overwrite_meta_flavor(*, flavor: str, subvol: Subvol):
-    subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
-
-
-def _check_or_write_meta_flavor(
-    *,
-    flavor: str,
-    subvol: Subvol,
-    build_appliance: Subvol,
-) -> None:
-    """
-    Write the flavor into the subvol meta.  This is so we can know what
-    build appliance to use for sendstreams from older revisions.
-    """
-    # TODO: Remove the existence check once the flavor has been written
-    # in all built sendstreams.
-    if build_appliance and build_appliance.path(META_FLAVOR_FILE).exists():
-        build_appliance_flavor = build_appliance.read_path_text(
-            META_FLAVOR_FILE
-        )
-        assert flavor == build_appliance_flavor, (
-            f"The flavor `{flavor}` given differs from "
-            f"the flavor `{build_appliance_flavor}` of the "
-            "build appliance`."
-        )
-
-    if subvol.path(META_FLAVOR_FILE).exists():
-        subvol_flavor = subvol.read_path_text(META_FLAVOR_FILE)
-        assert flavor == subvol_flavor, (
-            f"The flavor `{flavor}` given differs from the "
-            f"flavor `{subvol_flavor}` already written in the subvol`."
-        )
-    else:
-        _overwrite_meta_flavor(flavor=flavor, subvol=subvol)
-
-
 def compile_items_to_subvol(
     *,
     exit_stack: ExitStack,
@@ -237,14 +201,6 @@ def build_image(args):
                 layer_opts=layer_opts,
             ),
         )
-        if layer_opts.unsafe_bypass_flavor_check:
-            _overwrite_meta_flavor(flavor=args.flavor, subvol=subvol)
-        else:
-            _check_or_write_meta_flavor(
-                flavor=args.flavor,
-                subvol=subvol,
-                build_appliance=layer_opts.build_appliance,
-            )
         # Build artifacts should never change. Run this BEFORE the exit_stack
         # cleanup to enforce that the cleanup does not touch the image.
         subvol.set_readonly(True)

@@ -871,6 +871,7 @@ image.layer_from_package(
     source = ":" + op + "-original.sendstream",
     subvol_name = op,
     visibility = ["//antlir/..."],
+    flavor = "antlir_test",
 )
 
 image.package(
@@ -902,6 +903,7 @@ image.layer_from_package(
     ),
     subvol_name = "create_ops",
     visibility = ["//antlir/compiler/..."],
+    flavor = "antlir_test",
 )
 
 image.layer(
@@ -920,6 +922,7 @@ image.layer_from_package(
     ),
     subvol_name = "create_ops",
     visibility = ["//antlir/..."],
+    flavor = "antlir_test",
 )
 
 image.layer_alias(
@@ -942,6 +945,7 @@ image.layer_from_package(
     format = "tar",
     source = ":create_ops.tar.gz",
     visibility = ["//antlir/..."],
+    flavor = "antlir_test",
 )
 
 image.package(

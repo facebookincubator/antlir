@@ -14,13 +14,16 @@ from antlir.compiler.requires_provides import (
     RequireGroup,
 )
 from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
+from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..common import (
     META_DIR,
+    META_FLAVOR_FILE,
     ImageItem,
     image_source_item,
     protected_path_set,
+    setup_meta_dir,
     is_path_protected,
 )
 from ..ensure_dirs_exist import EnsureDirsExistItem
@@ -142,3 +145,76 @@ class ItemsCommonTestCase(BaseItemTestCase):
                 is_path_protected(path, protected_paths),
                 f"{path}, {protected_paths}",
             )
+
+    def _get_layer_opts(
+        self,
+        build_appliance=None,
+        flavor="antlir_test",
+        unsafe_bypass_flavor_check=False,
+    ):
+        return DUMMY_LAYER_OPTS._replace(
+            build_appliance=build_appliance,
+            flavor=flavor,
+            unsafe_bypass_flavor_check=unsafe_bypass_flavor_check,
+        )
+
+    def _setup_flavor_test_subvol(self, temp_subvolumes, flavor=None):
+        subvol = temp_subvolumes.create("subvol")
+        subvol.run_as_root(["mkdir", subvol.path(META_DIR)])
+
+        if flavor:
+            subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
+
+        return subvol
+
+    @with_temp_subvols
+    def test_build_appliance_flavor_mismatch_error(self, temp_subvols):
+        subvol = self._setup_flavor_test_subvol(temp_subvols)
+        with self.assertRaisesRegex(AssertionError, "of the build appliance"):
+            setup_meta_dir(
+                subvol,
+                self._get_layer_opts(
+                    build_appliance=layer_resource_subvol(
+                        __package__, "test-build-appliance"
+                    ),
+                    flavor="wrong",
+                ),
+            )
+
+    @with_temp_subvols
+    def test_flavor_file_exists_do_nothing(self, temp_subvols):
+        subvol = self._setup_flavor_test_subvol(
+            temp_subvols, flavor="antlir_test"
+        )
+        setup_meta_dir(subvol, self._get_layer_opts())
+
+        self.assertEqual("antlir_test", subvol.read_path_text(META_FLAVOR_FILE))
+
+    @with_temp_subvols
+    def test_flavor_file_exists_mismatch_error(self, temp_subvols):
+        subvol = self._setup_flavor_test_subvol(temp_subvols, flavor="wrong")
+        with self.assertRaisesRegex(AssertionError, "given differs"):
+            setup_meta_dir(
+                subvol,
+                self._get_layer_opts(),
+            )
+
+    @with_temp_subvols
+    def test_write_flavor(self, temp_subvols):
+        subvol = self._setup_flavor_test_subvol(temp_subvols)
+        setup_meta_dir(
+            subvol,
+            self._get_layer_opts(),
+        )
+
+        self.assertEqual("antlir_test", subvol.read_path_text(META_FLAVOR_FILE))
+
+    @with_temp_subvols
+    def test_overwrite_flavor(self, temp_subvols):
+        subvol = self._setup_flavor_test_subvol(temp_subvols, "wrong")
+        setup_meta_dir(
+            subvol,
+            self._get_layer_opts(unsafe_bypass_flavor_check=True),
+        )
+
+        self.assertEqual("antlir_test", subvol.read_path_text(META_FLAVOR_FILE))
