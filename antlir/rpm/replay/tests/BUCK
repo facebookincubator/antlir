@@ -5,6 +5,7 @@ load("//antlir/rpm/replay:queries.bzl", "ANTLIR_BUILD_PKG_LABEL", "test_env_map"
 
 image.layer(
     name = "root",
+    parent_layer = ":base",
     features = [image.rpms_install([
         "rpm-test-cake",
     ])],
@@ -165,4 +166,46 @@ python_library(
     srcs = ["test_utils.py"],
     visibility = ["//tupperware/cm/antlir/tests/..."],
     deps = ["//antlir/rpm/replay:replay_util"],
+)
+
+image.layer(
+    name = "rpm-replay-leaf",
+    parent_layer = ":root",
+    features = [
+        image.rpms_install([
+            "rpm-test-has-epoch",
+            "rpm-test-second",
+            "rpm-test-fifth",
+        ]),
+        image.ensure_subdirs_exist("/", "hello/there"),
+    ],
+    flavor = "antlir_test",
+    flavor_config_override = image.opts(
+        rpm_repo_snapshot = "//antlir/rpm:subvol-rpm-compare-repo-snapshot-for-tests",
+    ),
+)
+
+python_unittest(
+    name = "test-rpm-replay",
+    srcs = ["test_rpm_replay.py"],
+    env = test_env_map([("leaf", ":rpm-replay-leaf")]),
+    needed_coverage = [
+        (100, "//antlir/rpm/replay:rpm_replay"),
+    ],
+    resources = {
+        layer_resource(":root"): "root_subvol",
+        layer_resource("//antlir/compiler/test_images:build_appliance_testing"): "ba_subvol",
+        layer_resource(":rpm-replay-leaf"): "leaf_subvol",
+    },
+    deps = [
+        ":test_utils",
+        "//antlir:config",
+        "//antlir:subvol_utils",
+        "//antlir:testlib_layer_resource",
+        "//antlir/compiler:items_for_features",
+        "//antlir/rpm/replay:extract_nested_features",
+        "//antlir/rpm/replay:rpm_replay",
+        "//antlir/rpm/replay:subvol_diff",
+        "//antlir/rpm/replay:subvol_rpm_compare",
+    ],
 )

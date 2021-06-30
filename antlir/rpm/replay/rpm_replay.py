@@ -8,6 +8,7 @@ import itertools
 import logging
 import pwd
 from contextlib import ExitStack, contextmanager
+from typing import Any, List, Tuple
 from typing import Callable, Iterator, Mapping, Sequence
 
 from antlir.common import get_logger
@@ -17,6 +18,7 @@ from antlir.compiler.compiler import (
     LayerOpts,
 )
 from antlir.compiler.items.make_subvol import ParentLayerItem
+from antlir.fs_utils import Path
 from antlir.fs_utils import temp_dir
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
@@ -39,6 +41,24 @@ _RPM_INSTALL_CMD = [
     "--nodigest",
     "--nosignature",
 ]
+
+
+def filter_features_to_replay(
+    features_to_replay: List[Tuple[str, str, Any]]
+) -> List[Tuple[str, str, Any]]:
+    return [
+        feature
+        for feature in features_to_replay
+        if feature[0]
+        not in {
+            "parent_layer",  # Layering shouldn't affect contents
+            # Captured by `install_rpm_names`, but we don't
+            # want to replay these with `RpmActionItem`, the
+            # whole point is to use `rpm -i` instead.
+            "rpms",
+            "layer_from_package",  # `packaged_root`
+        }
+    ]
 
 
 def _install_rpms_into_subvol(
@@ -102,16 +122,15 @@ def replay_rpms_and_compiler_items(
         build_appliance=subvols.ba,
         layer_target="unimportant",
         rpm_installer=subvols.rpm_installer,
-        # pyre-fixme[16]: `SubvolsToCompare` has no attribute `flavor`.
-        flavor=subvols.flavor,
+        flavor=flavor,
         rpm_repo_snapshot=subvols.rpm_repo_snapshot,
         target_to_path=target_to_path,
-        subvolumes_dir=None,
+        subvolumes_dir=Path("unimportant"),
         version_set_override=None,
         debug=log.isEnabledFor(logging.DEBUG),
     )
     with TempSubvolumes() as tmp_subvols, ExitStack() as exit_stack:
-        if rpm_diff.removed:
+        if rpm_diff.removed:  # pragma: no cover
             raise NotImplementedError(
                 f"Incremental RPM replay cannot remove RPMs: {rpm_diff.removed}"
             )
