@@ -78,7 +78,10 @@ python_library(
 python_library(
     name = "rpm_replay",
     srcs = ["rpm_replay.py"],
-    visibility = ["//tupperware/cm/antlir/..."],
+    visibility = [
+        "//antlir/rpm/replay/tests/...",
+        "//tupperware/cm/antlir/...",
+    ],
     deps = [
         ":subvol_rpm_compare",
         "//antlir:common",
@@ -94,7 +97,10 @@ python_library(
 python_library(
     name = "subvol_diff",
     srcs = ["subvol_diff.py"],
-    visibility = ["//tupperware/cm/antlir/..."],
+    visibility = [
+        "//antlir/rpm/replay/tests/...",
+        "//tupperware/cm/antlir/...",
+    ],
     deps = [
         "//antlir:common",
         "//antlir:fs_utils",
