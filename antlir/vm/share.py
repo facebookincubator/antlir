@@ -10,7 +10,7 @@ import tempfile
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import ContextManager, Iterable, Optional, Tuple, Union
+from typing import ContextManager, Iterable, Optional, Tuple
 
 from antlir.fs_utils import Path
 
@@ -39,19 +39,16 @@ class Share(ABC):
     @abstractmethod
     def generator(self) -> bool:  # pragma: no cover
         """Should this share have a systemd mount unit generated for it"""
-        pass
 
     @property
     @abstractmethod
     def mount_unit(self) -> Tuple[str, str]:  # pragma: no cover
         """Return the name of the mount unit file, and its contents"""
-        pass
 
     @property
     @abstractmethod
     def qemu_args(self) -> Iterable[str]:  # pragma: no cover
         """QEMU cmdline args to attach this share"""
-        pass
 
     @staticmethod
     def _systemd_escape_mount(path: str) -> str:

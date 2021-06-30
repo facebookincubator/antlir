@@ -6,7 +6,6 @@
 
 import os
 import subprocess
-import tempfile
 import unittest
 import uuid
 from contextlib import contextmanager

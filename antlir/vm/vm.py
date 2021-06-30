@@ -6,16 +6,13 @@
 
 import argparse
 import asyncio
-import importlib.resources
 import os
-import shlex
 import socket
 import subprocess
-import sys
 import tempfile
 import time
 import uuid
-from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
+from contextlib import AsyncExitStack, asynccontextmanager
 from enum import Enum
 from itertools import chain
 from typing import (
@@ -34,7 +31,6 @@ from antlir.config import load_repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.shape import Shape
-from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.guest_ssh import GuestSSHConnection
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
@@ -47,8 +43,6 @@ logger = get_logger()
 
 class VMBootError(Exception):
     """The VM failed to boot"""
-
-    pass
 
 
 def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:

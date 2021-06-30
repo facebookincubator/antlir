@@ -46,8 +46,6 @@ class GeneratorExitWithResult(Exception):
     your coroutine will automatically return None.
     """
 
-    pass
-
 
 @contextmanager
 def while_not_exited(coroutine) -> Iterator[CoroutineContext]:

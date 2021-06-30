@@ -16,7 +16,6 @@ does some light pre-mangling), rewrites them to be ready for use with our
 into a directory.
 """
 import argparse
-import gzip
 import os
 import textwrap
 from typing import Iterable, List, TextIO

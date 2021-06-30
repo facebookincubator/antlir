@@ -6,7 +6,7 @@
 from contextlib import contextmanager
 
 from antlir.fs_utils import ANTLIR_DIR, CP_CLONE_CMD
-from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
+from antlir.nspawn_in_subvol.args import _NspawnOpts
 from antlir.nspawn_in_subvol.plugin_hooks import (
     _NspawnSetup,
     _NspawnSetupCtxMgr,

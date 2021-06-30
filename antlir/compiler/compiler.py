@@ -27,7 +27,7 @@ from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
 from antlir.find_built_subvol import find_built_subvol
-from antlir.fs_utils import META_FLAVOR_FILE, Path
+from antlir.fs_utils import Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 

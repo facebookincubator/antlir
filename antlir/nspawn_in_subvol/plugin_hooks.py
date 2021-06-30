@@ -9,7 +9,7 @@
 import functools
 import subprocess
 from contextlib import contextmanager
-from typing import Callable, ContextManager, Iterable, Tuple, Union
+from typing import Callable, ContextManager, Iterable, Tuple
 
 from antlir.subvol_utils import Subvol
 

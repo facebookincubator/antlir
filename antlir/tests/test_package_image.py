@@ -10,7 +10,7 @@ import stat
 import subprocess
 import tempfile
 from contextlib import contextmanager
-from typing import Iterator, Optional
+from typing import Iterator
 
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_gnu_tar,
@@ -19,7 +19,6 @@ from antlir.fs_utils import generate_work_dir, open_for_read_decompress
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir, MiB
-from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 

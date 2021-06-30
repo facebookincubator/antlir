@@ -9,8 +9,6 @@ import json
 import os
 import unittest
 from contextlib import contextmanager
-from grp import getgrnam
-from pwd import getpwnam
 
 from antlir.artifacts_dir import find_repo_root
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
