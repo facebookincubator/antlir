@@ -24,7 +24,7 @@ import tempfile
 from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
 from antlir.compiler import procfs_serde
-from antlir.fs_utils import META_DIR, Path
+from antlir.fs_utils import META_DIR, META_FLAVOR_FILE, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 from pydantic import validator
@@ -296,6 +296,34 @@ def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
         subvol,
         META_ARTIFACTS_REQUIRE_REPO.decode(),
     )
+
+    build_appliance = layer_opts.build_appliance
+    flavor = layer_opts.flavor
+
+    if layer_opts.unsafe_bypass_flavor_check:
+        subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
+        return
+
+    # TODO: Remove the existence check once the flavor has been written
+    # in all built sendstreams.
+    if build_appliance and build_appliance.path(META_FLAVOR_FILE).exists():
+        build_appliance_flavor = build_appliance.read_path_text(
+            META_FLAVOR_FILE
+        )
+        assert flavor == build_appliance_flavor, (
+            f"The flavor `{flavor}` given differs from "
+            f"the flavor `{build_appliance_flavor}` of the "
+            "build appliance`."
+        )
+
+    if subvol.path(META_FLAVOR_FILE).exists():
+        subvol_flavor = subvol.read_path_text(META_FLAVOR_FILE)
+        assert flavor == subvol_flavor, (
+            f"The flavor `{flavor}` given differs from the "
+            f"flavor `{subvol_flavor}` already written in the subvol`."
+        )
+    else:
+        subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
 
 
 def _hash_path(path: str, algorithm: str) -> str:

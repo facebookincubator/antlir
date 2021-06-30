@@ -113,11 +113,11 @@ def check_common_rpm_render(
     )
 
 
-def get_meta_dir_contents(has_flavor=True):
+def get_meta_dir_contents():
     return [
         "(Dir)",
         {
-            **({"flavor": [render_flavor()]} if has_flavor else {}),
+            "flavor": [render_flavor("antlir_test")],
             "private": [
                 "(Dir)",
                 {

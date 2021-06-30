@@ -20,6 +20,7 @@ from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.tests.subvol_helpers import get_meta_dir_contents
 
 from ..make_subvol import FilesystemRootItem, ParentLayerItem
 from ..mount import (
@@ -223,32 +224,16 @@ class MountItemTestCase(BaseItemTestCase):
                 ]
             },
         ]
+        expected_subvol = [
+            "(Dir)",
+            {
+                "meow": ["(Dir)", {}],
+                ".meta": get_meta_dir_contents(),
+            },
+        ]
+        expected_subvol[1][".meta"][1]["private"][1]["mount"] = mount
         self.assertEqual(
-            [
-                "(Dir)",
-                {
-                    "meow": ["(Dir)", {}],
-                    ".meta": [
-                        "(Dir)",
-                        {
-                            "private": [
-                                "(Dir)",
-                                {
-                                    "opts": [
-                                        "(Dir)",
-                                        {
-                                            "artifacts_may_require_repo": [
-                                                "(File d2)"
-                                            ]
-                                        },
-                                    ],
-                                    "mount": mount,
-                                },
-                            ]
-                        },
-                    ],
-                },
-            ],
+            expected_subvol,
             render_subvol(subvol),
         )
         for filename, contents in (

@@ -42,26 +42,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             self.assertEqual(
                 [
                     "(Dir)",
-                    {
-                        ".meta": [
-                            "(Dir)",
-                            {
-                                "private": [
-                                    "(Dir)",
-                                    {
-                                        "opts": [
-                                            "(Dir)",
-                                            {
-                                                "artifacts_may_require_repo": [
-                                                    "(File d2)"
-                                                ]
-                                            },
-                                        ]
-                                    },
-                                ]
-                            },
-                        ]
-                    },
+                    {".meta": get_meta_dir_contents()},
                 ],
                 render_subvol(subvol),
             )
@@ -96,20 +77,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             child_content = copy.deepcopy(parent_content)
             child_content[1]["a"][1]["c"] = ["(Dir)", {}]
             # Since the parent lacked a /.meta, the child added it.
-            child_content[1][".meta"] = [
-                "(Dir)",
-                {
-                    "private": [
-                        "(Dir)",
-                        {
-                            "opts": [
-                                "(Dir)",
-                                {"artifacts_may_require_repo": ["(File d2)"]},
-                            ]
-                        },
-                    ]
-                },
-            ]
+            child_content[1][".meta"] = get_meta_dir_contents()
             self.assertEqual(child_content, render_subvol(child))
 
     def test_parent_layer_flavor_error(self):
@@ -126,9 +94,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                     DUMMY_LAYER_OPTS_BA._replace(flavor="different flavor"),
                 )(child)
 
-    def _check_receive_package(
-        self, item, lossy_packaging=None, has_flavor=True
-    ):
+    def _check_receive_package(self, item, lossy_packaging=None):
         self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
         with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
             new_subvol_name = "differs_from_create_ops"
@@ -136,7 +102,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(subvol)
             rendered_subvol = render_subvol(subvol)
             self.assertEqual(
-                get_meta_dir_contents(has_flavor=has_flavor),
+                get_meta_dir_contents(),
                 pop_path(rendered_subvol, ".meta"),
             )
             self.assertEqual(
@@ -153,8 +119,6 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                 from_target="t",
                 source=Path(__file__).dirname() / "create_ops.sendstream",
             ),
-            # TODO: Remove this when we write the flavor in setup_meta_dir
-            has_flavor=False,
         )
 
     def test_receive_tarball(self):

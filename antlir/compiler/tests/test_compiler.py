@@ -373,7 +373,7 @@ class CompilerTestCase(unittest.TestCase):
             version_set_override=None,
             rpm_installer=YumDnf.dnf,
             rpm_repo_snapshot=None,
-            flavor="flavor",
+            flavor="antlir_test",
         )
         phase_item_ids = set()
         for builder_maker, item_ids in si.ORDERED_PHASES:
@@ -400,10 +400,6 @@ class CompilerTestCase(unittest.TestCase):
                 ),
             ),
             ((_FIND_ARGS,), {"stdout": subprocess.PIPE}),
-            (
-                (["tee", _FAKE_SUBVOL_META_FLAVOR_FILE],),
-                {"input": b"antlir_test", "stdout": subprocess.DEVNULL},
-            ),
         ]
 
     def _assert_equal_call_sets(self, expected, actual):
@@ -504,94 +500,6 @@ class CompilerTestCase(unittest.TestCase):
                         parent_dep={"//fake:parent": parent_dir.decode()},
                     ),
                 )
-
-    @unittest.mock.patch.object(subvol_utils.Subvol, "read_path_text")
-    def test_build_appliance_flavor_mismatch_error(self, mock_read_path_text):
-        def read_path_text_side_effect(self, relpath):
-            if (
-                self.path(relpath)
-                == layer_resource(__package__, _TEST_BUILD_APPLIANCE)
-                / META_FLAVOR_FILE
-            ):
-                return "badflavor"
-            return "antlir_test"
-
-        with self.assertRaisesRegex(AssertionError, "of the build appliance"):
-            self._compiler_run_as_root_calls(
-                parent_feature_json=[], parent_dep={}
-            )
-
-    @contextmanager
-    def _setup_path_exists(self, existing_paths):
-        old_mock_path_exists = fs_utils.Path.exists
-        with unittest.mock.patch.object(
-            fs_utils.Path, "exists", autospec=True
-        ) as mock_path_exists:
-
-            def path_exists_side_effect(self, **kwargs):
-                if self in existing_paths:
-                    return True
-                return old_mock_path_exists(self, **kwargs)
-
-            mock_path_exists.side_effect = path_exists_side_effect
-            yield mock_path_exists
-
-    @unittest.mock.patch.object(
-        subvol_utils.Subvol, "read_path_text", autospec=True
-    )
-    def test_flavor_file_exists_do_nothing(self, mock_read_path_text):
-        mock_read_path_text.side_effect = lambda x, y: "antlir_test"
-
-        with self._setup_path_exists(_FAKE_SUBVOL_META_FLAVOR_FILE):
-            run_as_root_calls = self._compiler_run_as_root_calls(
-                parent_feature_json=[], parent_dep={}
-            )
-
-            # Check that we never call `tee` to write a flavor file.
-            for call in run_as_root_calls:
-                self.assertNotEqual(call[0][0][0], "tee")
-
-    @unittest.mock.patch.object(
-        subvol_utils.Subvol, "read_path_text", autospec=True
-    )
-    def test_flavor_file_exists_mismatch_error(self, mock_read_path_text):
-        def read_path_text_side_effect(self, relpath):
-            if self.path(relpath) == _FAKE_SUBVOL_META_FLAVOR_FILE:
-                return "badflavor"
-            return "antlir_test"
-
-        with self._setup_path_exists(_FAKE_SUBVOL_META_FLAVOR_FILE):
-            with self.assertRaisesRegex(AssertionError, "given differs"):
-                self._compiler_run_as_root_calls(
-                    parent_feature_json=[], parent_dep={}
-                )
-
-    _WRITE_FLAVOR_CALLS = [
-        (
-            (["tee", _FAKE_SUBVOL_META_FLAVOR_FILE],),
-            {"input": b"antlir_test", "stdout": -3},
-        ),
-    ]
-
-    def test_write_flavor(self):
-        with self._setup_path_exists(
-            _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE.dirname()
-        ):
-            actual_calls = self._compiler_run_as_root_calls(
-                parent_feature_json=[], parent_dep={}
-            )
-            self._assert_call_subset(self._WRITE_FLAVOR_CALLS, actual_calls)
-
-    def test_overwrite_flavor(self):
-        with self._setup_path_exists(
-            _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE
-        ):
-            actual_calls = self._compiler_run_as_root_calls(
-                parent_feature_json=[],
-                parent_dep={},
-                extra_args=["--unsafe-bypass-flavor-check"],
-            )
-            self._assert_call_subset(self._WRITE_FLAVOR_CALLS, actual_calls)
 
 
 if __name__ == "__main__":
