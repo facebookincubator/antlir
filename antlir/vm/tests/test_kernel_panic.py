@@ -10,7 +10,6 @@ import tempfile
 import unittest
 
 from antlir.fs_utils import Path
-from antlir.nspawn_in_subvol.common import DEFAULT_PATH_ENV
 
 
 class KernelPanicTest(unittest.TestCase):

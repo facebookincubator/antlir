@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import io
-import itertools
 import json
 import os
 import subprocess
@@ -15,7 +14,7 @@ import unittest
 import unittest.mock
 from contextlib import contextmanager
 
-from antlir import fs_utils, subvol_utils
+from antlir import subvol_utils
 from antlir.compiler.items import (
     ensure_dirs_exist,
     rpm_action,

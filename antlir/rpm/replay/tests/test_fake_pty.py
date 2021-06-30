@@ -7,7 +7,6 @@ import os
 import subprocess
 import unittest
 
-from antlir.fs_utils import Path
 from antlir.rpm.replay.fake_pty_wrapper import fake_pty_cmd, fake_pty_resource
 
 

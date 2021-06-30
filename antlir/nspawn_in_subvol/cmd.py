@@ -10,14 +10,11 @@ No externally useful functions here.  Read the `run.py` docblock instead.
 Converts structures from `args.py` into a `systemd-nspawn` command-line.
 """
 import base64
-import importlib.resources
-import json
 import os
 import re
 import subprocess
 import uuid
 from contextlib import contextmanager, nullcontext
-from dataclasses import dataclass
 from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
 from antlir.compiler import procfs_serde

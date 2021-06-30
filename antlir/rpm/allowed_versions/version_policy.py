@@ -79,7 +79,6 @@ class ManualVersionPolicy(VersionPolicy, plugin_kind="manual"):
 
     async def snapshot(self, snapshot_dir: Path):
         '"manual" version policies do not need to snapshot anything'
-        pass
 
     @contextmanager
     def load_config_fn(
