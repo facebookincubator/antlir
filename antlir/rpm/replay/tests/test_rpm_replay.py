@@ -46,12 +46,13 @@ class RpmReplayTestCase(unittest.TestCase):
             ):
                 yield from item_factory.gen_items_for_feature(*feature)
 
+        repo_config = load_repo_config()
         subvols = SubvolsToCompare(
             ba=ba,
             root=root,
             leaf=leaf,
             rpm_installer=YumDnf(
-                load_repo_config().flavor_to_config["antlir_test"].rpm_installer
+                repo_config.flavor_to_config["antlir_test"].rpm_installer
             ),
             rpm_repo_snapshot=snapshot_install_dir(
                 "//antlir/rpm:subvol-rpm-compare-repo-snapshot-for-tests"
@@ -67,7 +68,7 @@ class RpmReplayTestCase(unittest.TestCase):
                 rpm_download_subvol=rpm_download_subvol,
                 subvols=subvols,
                 flavor="antlir_test",
-                artifacts_may_require_repo=True,
+                artifacts_may_require_repo=repo_config.artifacts_require_repo,
                 target_to_path=env_map["target_map"],
                 gen_replay_items=gen_replay_items,
             ) as install_subvol:
