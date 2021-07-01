@@ -55,6 +55,7 @@ image.genrule_layer(
     parent_layer = ':_setup_qemu',
     rule_type = 'build',
     antlir_rule = 'user-internal',
+    user = 'root',  # may be needed after all
     cmd = [
         '/bin/sh', '-c',
         'cd /_temp_qemu && bash build.sh {} {}'.format(qemu['version'], pixman['version']),
