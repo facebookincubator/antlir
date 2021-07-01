@@ -16,7 +16,6 @@ These interactive helper targets may change and should not be used in automation
 
 - `=container` will launch the user into an interactive shell inside the image.
 - `=systemd` will boot `systemd` inside the image.
-- `=vm` will run a vm with the latest stable release kernel inside the image and launch the user into an interactive shell via ssh.
 
 ### `image.*_unittest`
 - `=container` will launch the user into an interactive shell inside the image.

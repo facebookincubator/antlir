@@ -203,14 +203,3 @@ vm.rust_unittest(
         ),
     ],
 )
-
-# This test image should be buildable and is runnable with
-# `buck run :test-layer-with-vm-runtime=vm`
-image.layer(
-    name = "test-layer-with-vm-runtime",
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
-    runtime = [
-        "systemd",
-        "vm",
-    ],
-)
