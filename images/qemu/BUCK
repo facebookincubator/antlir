@@ -1,5 +1,6 @@
 load('//antlir/bzl:oss_shim.bzl', 'http_file', 'export_file')
 load('//antlir/bzl:image.bzl', 'image')
+load(':hoist.bzl', 'hoist')
 
 # these need to be updated manually based on the downloaded version
 qemu = {
@@ -27,7 +28,7 @@ http_file(
 )
 
 image.layer(
-    name = '_setup_qemu',
+    name = '_setup',
     parent_layer = '//images/appliance:stable-build-appliance',
     features = [
         # genrule_layer runs as user 'nobody'
@@ -51,8 +52,8 @@ image.layer(
 )
 
 image.genrule_layer(
-    name = '_build_qemu',
-    parent_layer = ':_setup_qemu',
+    name = '_build',
+    parent_layer = ':_setup',
     rule_type = 'build',
     antlir_rule = 'user-internal',
     user = 'root',  # may be needed after all
@@ -62,8 +63,40 @@ image.genrule_layer(
     ],
 )
 
-image.layer(
-    name = 'image',
-    parent_layer = ':_build_qemu',
-    features = [image.remove('/_temp_qemu')],  # clear intermediate files
+vm_visibility = [
+    '//antlir/linux/...',
+    '//antlir/vm/...',
+    '//third-party/...',
+]
+
+hoist(
+    name = 'qemu',
+    out = 'qemu',
+    layer = '_build',
+    path = '/output/qemu/bin/qemu-system-x86_64',
+    visibility = vm_visibility,
 )
+
+hoist(
+    name = 'qemu-img',
+    out = 'qemu-img',
+    layer = '_build',
+    path = '/output/qemu/bin/qemu-img',
+    visibility = vm_visibility,
+)
+
+[
+    hoist(
+        name = 'share/qemu/{}'.format(rom),
+        out = rom,
+        layer = '_build',
+        path = '/output/qemu/share/qemu/{}'.format(rom),
+        visibility = vm_visibility,
+    ) for rom in [
+        'bios-256k.bin',
+        'efi-virtio.rom',
+        'kvmvapic.bin',
+        'linuxboot_dma.bin',
+        'vgabios-stdvga.bin',
+    ]
+]
