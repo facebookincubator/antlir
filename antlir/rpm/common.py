@@ -21,7 +21,7 @@ from typing import (
 )
 
 from antlir.common import byteme, get_logger
-from antlir.fs_utils import MehStr, Path
+from antlir.fs_utils import Path
 
 
 log = get_logger()
@@ -29,13 +29,15 @@ _UINT64_STRUCT = struct.Struct("=Q")
 T = TypeVar("T")
 
 
-def readonly_snapshot_db(snapshot_dir: MehStr) -> Iterator[sqlite3.Connection]:
-    "Context manager for a read-only snapshot DB connection"
-    db_path = Path(snapshot_dir) / "snapshot/snapshot.sql3"
+def snapshot_subdir(snapshot_dir: Path) -> Path:
+    return snapshot_dir / "snapshot"
+
+
+def readonly_snapshot_db(snapshot_dir: Path) -> sqlite3.Connection:
+    "Returns a read-only snapshot DB connection"
+    db_path = snapshot_subdir(snapshot_dir) / "snapshot.sql3"
     if not db_path.exists():  # The SQLite error lacks the path.
         raise FileNotFoundError(db_path, "RPM snapshot lacks SQL3 DB")
-    # pyre-fixme[7]: Expected `Iterator[sqlite3.dbapi2.Connection]` but got
-    #  `Connection`.
     return sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
 
 

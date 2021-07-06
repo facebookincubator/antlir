@@ -26,8 +26,10 @@ from ..common import (
 class TestCommon(unittest.TestCase):
     def test_readonly_snapshot_db(self):
         with self.assertRaises(FileNotFoundError):
-            readonly_snapshot_db("/DoEs/nOt/eXiSt")
-        with readonly_snapshot_db(os.environ["antlir_test_snapshot"]) as db:
+            readonly_snapshot_db(Path("/DoEs/nOt/eXiSt"))
+        with readonly_snapshot_db(
+            Path(os.environ["antlir_test_snapshot"])
+        ) as db:
             ((rows,),) = db.execute("SELECT COUNT(1) FROM `rpm`").fetchall()
             self.assertGreaterEqual(rows, 1)
 

@@ -172,13 +172,11 @@ def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
     with rs.sock, _mockable_popen_for_repo_server(
         [
             repo_server_bin,
-            "--socket-fd",
-            str(rs.sock.fileno()),
-            "--snapshot-dir",
+            f"--socket-fd={rs.sock.fileno()}",
             # TODO: Once the committed BAs all have a `repo-server` that
             # knows to append `/snapshot` to the path, remove it here, and
             # tidy up the snapshot resolution code in `repo_server.py`.
-            rs.rpm_repo_snapshot / "snapshot",
+            f"--snapshot-dir={rs.rpm_repo_snapshot / 'snapshot'}",
             *(["--debug"] if log.isEnabledFor(logging.DEBUG) else []),
         ],
         pass_fds=[rs.sock.fileno()],

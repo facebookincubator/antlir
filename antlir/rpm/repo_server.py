@@ -41,7 +41,7 @@ from typing import Mapping, Tuple
 from antlir.common import get_logger, init_logging, set_new_key
 from antlir.fs_utils import Path
 
-from .common import Checksum
+from .common import Checksum, readonly_snapshot_db, snapshot_subdir
 from .repo_snapshot import FileIntegrityError, ReportableError
 from .storage import Storage
 
@@ -105,21 +105,13 @@ def add_snapshot_db_objs(db):
     return location_to_obj
 
 
-def read_snapshot_dir(path: Path):
-    # TODO: Once all BAs include a repo-server with the new code to
-    # "snapshot/snapshot.sql3", remove the fallback to "snapshot.sql3";
-    # switch to using `readonly_snapshot_db()`; tidy `launch_repo_servers.py`.
-    subdir = (path / "snapshot") if os.path.exists(path / "snapshot") else path
-    db_path = subdir / "snapshot.sql3"
-    assert os.path.exists(db_path), f"no {db_path}, use rpm_repo_snapshot()"
-    with sqlite3.connect(
-        f"file:{subdir}/snapshot.sql3?mode=ro", uri=True
-    ) as db:
+def read_snapshot_dir(snapshot_dir: Path):
+    with readonly_snapshot_db(snapshot_dir) as db:
         location_to_obj = add_snapshot_db_objs(db)
-    db.close()
-    for repo in (subdir / "repos").listdir():
+    repos_dir = snapshot_subdir(snapshot_dir) / "repos"
+    for repo in repos_dir.listdir():
         # Make JSON metadata for the repo's GPG keys.
-        key_dir = subdir / "repos" / repo / "gpg_keys"
+        key_dir = repos_dir / repo / "gpg_keys"
         for key_filename in key_dir.listdir():
             with open(key_dir / key_filename, "rb") as infile:
                 key_content = infile.read()
@@ -414,12 +406,18 @@ def main():  # pragma: no cover
     args = parser.parse_args()
     init_logging(debug=args.debug)
 
-    with open(args.snapshot_dir / "storage.json") as f:
+    # TODO: Once all BAs include a repo-server with the new code that knows
+    # to append "/snapshot", remove this & tidy `launch_repo_servers.py`.
+    if not snapshot_subdir(args.snapshot_dir).exists():
+        assert args.snapshot_dir.basename() == b"snapshot", args.snapshot_dir
+        args.snapshot_dir = args.snapshot_dir.dirname()
+
+    with open(snapshot_subdir(args.snapshot_dir) / "storage.json") as f:
         storage = json.load(f)
     # We want relative `base_dir` to point into the snapshot dir.
     if storage["kind"] == "filesystem":
         storage["base_dir"] = (
-            args.snapshot_dir / storage["base_dir"]
+            snapshot_subdir(args.snapshot_dir) / storage["base_dir"]
         ).normpath()
 
     with repo_server(
@@ -430,7 +428,7 @@ def main():  # pragma: no cover
         # In the current usage, we start listening in `_launch_repo_server`,
         # but leaving this here should be harmless.
         httpd.server_activate()
-        snapshot_short_name = args.snapshot_dir.dirname().basename()
+        snapshot_short_name = args.snapshot_dir.basename()
         log.debug(f"HTTP `repo-server` for {snapshot_short_name} is listening")
         try:
             httpd.serve_forever()
