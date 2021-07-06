@@ -227,13 +227,14 @@ def open_fd(path: AnyStr, flags) -> int:
 
 
 def not_none(
-    var: Optional[T], var_name: str, detail: Optional[str] = None
+    var: Optional[T], var_name: str = "", detail: Optional[str] = None
 ) -> T:
     """Used for type-refinement with `Optional`s."""
     if var is not None:
         return var
+    expr_str = f"`{var_name}`" if var_name else "Expression"
     detail_str = "" if detail is None else f": {detail}"
-    raise AssertionError(f"`{var_name}` must not be None{detail_str}")
+    raise AssertionError(f"{expr_str} must not be None{detail_str}")
 
 
 def retry_fn(
