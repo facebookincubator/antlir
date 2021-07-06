@@ -161,10 +161,6 @@ def _nspawn_cmd(
         "UNIFIED_CGROUP_HIERARCHY=yes",
         *ns.nsenter_without_sudo(
             "systemd-nspawn",
-            # These are needed since we do not want to require a working `dbus`
-            # on the host.
-            "--register=no",
-            "--keep-unit",
             # Randomize --machine so that the container has a random hostname
             # each time. The goal is to help detect builds that somehow use the
             # hostname to influence the resulting image.
@@ -310,6 +306,12 @@ def _extra_nspawn_args_and_env(
     # false, meaning that mknod is not allowed.
     if not opts.allow_mknod:
         extra_nspawn_args.append("--drop-capability=CAP_MKNOD")
+
+    if opts.debug_only_opts.register:
+        extra_nspawn_args.append("--register=yes")
+    else:
+        extra_nspawn_args.append("--register=no")
+        extra_nspawn_args.append("--keep-unit")
 
     cmd_env = []
 

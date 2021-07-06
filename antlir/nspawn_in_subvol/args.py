@@ -132,6 +132,13 @@ class _NspawnDebugOnlyNotForProdOpts(NamedTuple):
     # logging.  Last I tried this, it caused assertion failures in `nspawn`,
     # so it's not supported right now.
     debug: bool = False
+    # Register the container instance with systemd-machined so that it
+    # can be interacted with via machinectl.  This is useful for local debugging
+    # only, it should never be relied on for CI or Production so there is
+    # no strong dependency on a working, ambient systemd.
+    # This can only be used with the `--boot` option since it requires a
+    # working systemd inside the container.
+    register: bool = False
 
 
 def _new_nspawn_debug_only_not_for_prod_opts(**kwargs):
@@ -182,6 +189,14 @@ def _parser_add_debug_only_not_for_prod_opts(parser: argparse.ArgumentParser):
         help="Pass `--private-network` to `systemd-nspawn`. This defaults "
         "to true to (a) encourage hermeticity, (b) because this stops "
         "nspawn from writing to resolv.conf in the image.",
+    )
+    parser.add_argument(
+        "--register",
+        action="store_true",
+        default=defaults["register"],
+        help="Register this container instance with `sysytemd-machined`. This "
+        "is useful for local debugging and should never be relied on for CI "
+        "or Production since it requires a known working, ambient systemd.",
     )
 
 
@@ -249,6 +264,7 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--boot",
         action="store_true",
+        default=defaults["boot"],
         help="Boot the container with nspawn.  This means invoke `systemd` "
         "as PID 1 and let it start up services",
     )
@@ -573,6 +589,11 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     if allow_debug_only_opts:
         _parser_add_debug_only_not_for_prod_opts(parser)
     args = Path.parse_args(parser, argv)
+
+    if allow_debug_only_opts and args.register:
+        assert (
+            args.register and args.boot
+        ), "--register can only be used with --boot"
 
     layer_path = args.layer_path
     del args.layer_path
