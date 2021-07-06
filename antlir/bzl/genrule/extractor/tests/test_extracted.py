@@ -49,7 +49,9 @@ class TestExtracted(unittest.TestCase):
                 src = os.stat(src_subvol.path(path))
                 dst = os.stat(dst_subvol.path(path))
                 self.assertEqual(
-                    stat.filemode(src.st_mode), stat.filemode(dst.st_mode)
+                    stat.filemode(src.st_mode),
+                    stat.filemode(dst.st_mode),
+                    f"mode for {path} does not match",
                 )
 
     def test_repo_built_binary_runs(self):

@@ -1,24 +1,15 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "python_binary", "third_party")
 
-rust_binary(
+python_binary(
     name = "extract",
-    srcs = ["extract.rs"],
-    # this is installed in a wide variety of containers, so do as much static
-    # linkage as possible
-    link_style = "static",
+    srcs = ["extract.py"],
+    main_module = "antlir.bzl.genrule.extractor.extract",
     deps = [
+        "//antlir:common",
+        "//antlir:fs_utils",
         third_party.library(
-            lib,
-            platform = "rust",
-        )
-        for lib in [
-            "anyhow",
-            "goblin",
-            "once_cell",
-            "slog",
-            "slog_glog_fmt",
-            "structopt",
-            "regex",
-        ]
+            "pyelftools",
+            platform = "python",
+        ),
     ],
 )
