@@ -398,7 +398,6 @@ def _save_allowed_versions(
         pass
     pkg_to_src_path = {}
     for db in snapshot_dbs:
-        # pyre-fixme[16]: `Iterator` has no attribute `execute`.
         (pkgs,) = zip(*db.execute("select distinct name from rpm;").fetchall())
         for pkg in pkgs:
             pkg_to_src_path[pkg] = _EMPTY_VSET_PATH
@@ -410,8 +409,6 @@ def _save_allowed_versions(
         envras = set()
         for snapshot_path, snapshot_db in snapshot_paths_and_dbs:
             log.debug(f"Resolving {vpgroup} via snapshot {snapshot_path}")
-            # pyre-fixme[6]: Expected `Connection` for 1st param but got
-            #  `Iterator[sqlite3.dbapi2.Connection]`.
             envras |= _resolve_envras_for_package_group(snapshot_db, vpgroup)
         # XXX It can happen that the package group has no lock in any
         # snapshot -- make this a diff description error.
