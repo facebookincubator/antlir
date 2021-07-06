@@ -216,6 +216,55 @@ class NspawnTestCase(NspawnTestBase):
             _nspawn_args, cmd_env = _extra_nspawn_args_and_env(args.opts)
             self.assertIn("THRIFT_TLS_TEST=test_val", cmd_env)
 
+    def test_extra_nspawn_args_register_opts(self):
+        # opts.debug_only_opts.register
+
+        # Check that it requires --boot to work
+        with self.assertRaisesRegex(
+            AssertionError, "--register can only be used with --boot"
+        ):
+            with _mocks_for_parse_cli_args():
+                args = _parse_cli_args(
+                    [
+                        "--layer",
+                        layer_resource(__package__, "test-layer"),
+                        "--register",
+                    ],
+                    allow_debug_only_opts=True,
+                )
+
+        # Normal operation with register
+        with _mocks_for_parse_cli_args():
+            args = _parse_cli_args(
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--register",
+                    "--boot",
+                ],
+                allow_debug_only_opts=True,
+            )
+
+        with _mocks_for_extra_nspawn_args(artifacts_require_repo=False):
+            _nspawn_args, cmd_env = _extra_nspawn_args_and_env(args.opts)
+            self.assertIn("--register=yes", _nspawn_args)
+            self.assertNotIn("--keep-unit", _nspawn_args)
+
+        # Normal operation without register
+        with _mocks_for_parse_cli_args():
+            args = _parse_cli_args(
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                ],
+                allow_debug_only_opts=False,
+            )
+
+        with _mocks_for_extra_nspawn_args(artifacts_require_repo=False):
+            _nspawn_args, cmd_env = _extra_nspawn_args_and_env(args.opts)
+            self.assertIn("--register=no", _nspawn_args)
+            self.assertIn("--keep-unit", _nspawn_args)
+
     def test_exit_code(self):
         self.assertEqual(
             37,
