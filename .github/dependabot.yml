@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    directory: "website"
+    directory: "antlir/website"
     schedule:
       interval: "monthly"
     # Disable all pull requests for docs site dependencies
