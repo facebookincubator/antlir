@@ -14,6 +14,8 @@ Antlir has a relatively small set of dependencies required on the build host.
 - `btrfs-progs`
 - `libcap-ng-devel`
 - `gcc` or `clang`
+- `rpm2cpio`
+- `zstd`
 - [`watchman`](https://facebook.github.io/watchman/docs/install.html) - optional but recommended for faster builds
 - a working `cgroupv2` setup (first introduced in the 4.5 kernel and already enabled on many modern distros)
 
@@ -71,3 +73,11 @@ cgroupv2 enabled, and others should have guides to do so.
 Usually this is just setting `systemd.unified_cgroup_hierarchy=1` on your
 kernel cmdline for `systemd`-based systems so that `systemd` will mount
 cgroupv2 at `/sys/fs/cgroup`.
+
+#### Running BUCK as root
+It is not advised to run BUCK as a root user. If this is done, then mostly
+`buck clean` has to to be called.
+
+However, some invocations when running `buck {build, test, run}` requires the
+user to have sudo persmissions without having to enter the password manually.
+This can be done by [adding the user to the sudoers file](https://linuxize.com/post/how-to-add-user-to-sudoers-in-ubuntu/#adding-user-to-the-sudoers-file).
