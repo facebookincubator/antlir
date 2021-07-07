@@ -91,7 +91,7 @@ def rewrite_testpilot_python_cmd(
 
     # Future: these options may be specific to `python_unittest`.
     parser.add_argument("--output", "-o")
-    parser.add_argument("--list-tests")
+    parser.add_argument("--list-tests", nargs="?")
     test_opts, unparsed_args = parser.parse_known_args(cmd[1:])
 
     if test_opts.output is None and test_opts.list_tests is None:
