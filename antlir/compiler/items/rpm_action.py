@@ -13,8 +13,8 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
 
+from antlir.common import not_none
 from antlir.fs_utils import (
-    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
     Path,
     generate_work_dir,
 )
@@ -329,18 +329,6 @@ class RpmActionItem(ImageItem):
         return builder
 
 
-def _default_snapshot(build_appliance: Subvol, prog_name: str) -> Path:
-    return (
-        # The symlink is relative, but we need an absolute path.
-        Path(RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR)
-        / os.readlink(
-            build_appliance.path(
-                RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / prog_name
-            )
-        )
-    ).normpath()
-
-
 def _yum_dnf_using_build_appliance(
     *,
     build_appliance: Subvol,
@@ -352,12 +340,8 @@ def _yum_dnf_using_build_appliance(
     layer_opts: LayerOpts,
 ) -> None:
     work_dir = generate_work_dir()
-    prog_name = layer_opts.rpm_installer.value
-    snapshot_dir = (
-        layer_opts.rpm_repo_snapshot
-        if layer_opts.rpm_repo_snapshot
-        else _default_snapshot(build_appliance, prog_name)
-    )
+    prog_name = not_none(layer_opts.rpm_installer).value
+    snapshot_dir = not_none(layer_opts.rpm_repo_snapshot)
     opts = new_nspawn_opts(
         cmd=[
             "sh",

@@ -20,11 +20,8 @@ from antlir.tests.subvol_helpers import check_common_rpm_render, pop_path
 
 from ..common import PhaseOrder
 from ..rpm_action import RpmAction, RpmActionItem
-from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
+from .common import BaseItemTestCase, render_subvol
 from .rpm_action_base import RpmActionItemTestBase
-
-
-DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 
 
 REPO_CFG = load_repo_config()
@@ -60,11 +57,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
     def test_rpm_action_item_build_appliance(self):
         self._check_rpm_action_item_build_appliance(
             layer_resource_subvol(__package__, "test-build-appliance")
-        )
-
-    def _opts(self, **kwargs):
-        return DUMMY_LAYER_OPTS_BA._replace(
-            **kwargs, rpm_installer=self._YUM_DNF
         )
 
     @contextmanager
