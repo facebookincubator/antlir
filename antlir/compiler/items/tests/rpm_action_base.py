@@ -7,23 +7,29 @@
 import subprocess
 import sys
 
-from antlir.fs_utils import Path
+from antlir.fs_utils import Path, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import TempSubvolumes
+from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..rpm_action import RpmAction, RpmActionItem
 from .common import DUMMY_LAYER_OPTS, render_subvol
 
 
 class RpmActionItemTestBase:
+    def _opts(self, *, build_appliance=None, **kwargs):
+        return DUMMY_LAYER_OPTS._replace(
+            **kwargs,
+            build_appliance=build_appliance
+            or layer_resource_subvol(__package__, "test-build-appliance"),
+            rpm_installer=self._YUM_DNF,
+            rpm_repo_snapshot=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
+            / self._YUM_DNF.value,
+        )
+
     def _check_rpm_action_item_build_appliance(self, ba_path: Path):
         self._check_rpm_action_item(
-            layer_opts=DUMMY_LAYER_OPTS._replace(
-                build_appliance=ba_path,
-                # pyre-fixme[16]: `RpmActionItemTestBase` has no attribute
-                # `_YUM_DNF`.
-                rpm_installer=self._YUM_DNF,
-            )
+            layer_opts=self._opts(build_appliance=ba_path),
         )
 
     def _check_rpm_action_item(self, layer_opts):

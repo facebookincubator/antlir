@@ -108,9 +108,9 @@ class LayerOpts(NamedTuple):
     artifacts_may_require_repo: bool
     build_appliance: Optional[Subvol]
     layer_target: str
-    rpm_installer: YumDnf
     flavor: str
-    # If set, overrides the package manager's default snapshot from the BA.
+    # For images installing RPMs, both are required, and set by the flavor.
+    rpm_installer: Optional[YumDnf]
     rpm_repo_snapshot: Optional[Path]
     target_to_path: Mapping[str, str]
     subvolumes_dir: Path

@@ -65,7 +65,7 @@ is in the repo currently.
 
 load(":check_flavor_exists.bzl", "check_flavor_exists")
 load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
-load(":snapshot_install_dir.bzl", "snapshot_install_dir")
+load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 
 def _validate_flavor_config(
@@ -119,7 +119,10 @@ def _validate_flavor_config(
         build_appliance = build_appliance,
         rpm_installer = rpm_installer,
         rpm_repo_snapshot = (
-            snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else None
+            snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else "{}/{}".format(
+                RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
+                rpm_installer,
+            )
         ),
         rpm_version_set_overrides = rpm_version_set_overrides,
         unsafe_bypass_flavor_check = unsafe_bypass_flavor_check,

@@ -21,7 +21,12 @@ from antlir.compiler.items import (
     symlink,
     tarball,
 )
-from antlir.fs_utils import META_FLAVOR_FILE, Path, temp_dir
+from antlir.fs_utils import (
+    META_FLAVOR_FILE,
+    Path,
+    temp_dir,
+    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
+)
 from antlir.nspawn_in_subvol import ba_runner
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import get_subvolumes_dir, TempSubvolumes
@@ -269,13 +274,18 @@ class CompilerTestCase(unittest.TestCase):
         # Since we're not making subvolumes, we need this so that
         # `Subvolume(..., already_exists=True)` will work.
         is_btrfs.return_value = True
+        rpm_installer = "dnf"
         return (
             build_image(
                 parse_args(
                     [
                         # Must match LayerOpts below
                         "--artifacts-may-require-repo",
-                        "--rpm-installer=dnf",
+                        f"--rpm-installer={rpm_installer}",
+                        f"""--rpm-repo-snapshot={
+                            RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
+                            / rpm_installer
+                        }""",
                         "--subvolumes-dir",
                         _SUBVOLS_DIR,
                         "--subvolume-rel-path",
@@ -363,6 +373,7 @@ class CompilerTestCase(unittest.TestCase):
         subvol = subvol_utils.Subvol(
             f"{_SUBVOLS_DIR}/{_FAKE_SUBVOL}", already_exists=True
         )
+        rpm_installer = YumDnf.dnf
         layer_opts = LayerOpts(
             layer_target="fake-target",
             build_appliance=self._get_build_appliance(),
@@ -370,8 +381,9 @@ class CompilerTestCase(unittest.TestCase):
             target_to_path=si.TARGET_TO_PATH,
             subvolumes_dir=_SUBVOLS_DIR,
             version_set_override=None,
-            rpm_installer=YumDnf.dnf,
-            rpm_repo_snapshot=None,
+            rpm_installer=rpm_installer,
+            rpm_repo_snapshot=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
+            / rpm_installer.value,
             flavor="antlir_test",
         )
         phase_item_ids = set()
