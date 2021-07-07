@@ -7,7 +7,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("@config//:config.bzl", _do_not_use_repo_cfg = "do_not_use_repo_cfg")
 load("//third-party/fedora33/kernel:kernels.bzl", "kernels")
-# @lint-ignore-every BUCKFBCODENATIVE
+# @lint-ignore-every BUCKLINT
 
 _RULE_TYPE_KWARG = "antlir_rule"
 
@@ -492,7 +492,7 @@ shim = struct(
     # Utility functions -- use `_assert_package()`, if at all possible.
     #
     config = struct(
-        # @lint-ignore BUCKFBCODENATIVE
+        # @lint-ignore BUCKLINT
         get_current_repo_name = native.repository_name,
         get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
     ),

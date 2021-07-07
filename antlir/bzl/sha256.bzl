@@ -37,7 +37,7 @@ def hex_to_base64(x):
 
 # The return value has 6 bits per byte, except the last byte has 4 bits.
 def sha256_b64(s):
-    # @lint-ignore BUCKFBCODENATIVE
+    # @lint-ignore BUCKLINT
     return hex_to_base64(native.sha256(s))
 
 def _self_test():
