@@ -9,7 +9,7 @@ cd pixman-pixman-$2
 ./autogen.sh
 export CFLAGS="$CFLAGS -fPIE"
 mkdir /_temp_qemu/pixman
-./configure --enable-static=yes --prefix=/_temp_qemu/pixman
+./configure --prefix=/_temp_qemu/pixman --enable-static=yes
 make
 make install
 cd ..
@@ -20,7 +20,18 @@ cd qemu-$1
 export LDFLAGS="$LDFLAGS -L/_temp_qemu/pixman/lib/"
 export CFLAGS="$CFLAGS -I/_temp_qemu/pixman/include/"
 mkdir /output/qemu
-./configure --target-list=x86_64-softmmu --disable-slirp --static --prefix=/output/qemu
+./configure \
+  --prefix=/output/qemu \
+  --static \
+  --target-list=x86_64-softmmu \
+  --disable-slirp \
+  --audio-drv-list= \
+  --disable-sdl \
+  --disable-gtk \
+  --disable-vte \
+  --disable-brlapi \
+  --disable-opengl \
+  --disable-virglrenderer
 make
 make install
 cd ..
