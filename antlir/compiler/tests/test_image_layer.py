@@ -477,7 +477,9 @@ class ImageLayerTestCase(unittest.TestCase):
             for bar in ["bar", "bar2", "bar3"]:
                 self._check_installed_files_bar(
                     pop_path(r, bar),
-                    # When multiple `test_cloned_files` run concurrently, XXX
+                    # When multiple `test_cloned_files` run concurrently,
+                    # this would render cross-subvolume clones.  This is
+                    # expected, but super-annoying to test tightly.
                     clones_re=r"(|\([^)]*\))",
                 )
             self.assertEqual(
