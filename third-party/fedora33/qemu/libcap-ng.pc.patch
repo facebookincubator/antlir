@@ -1,4 +1,4 @@
 3c3
-< libdir=/usr/lib64
+< libdir=/lib64
 ---
-> libdir=/lib64
+> libdir=/usr/lib64
