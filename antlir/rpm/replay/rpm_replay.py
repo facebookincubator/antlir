@@ -11,7 +11,7 @@ from contextlib import ExitStack, contextmanager
 from typing import Any, List, Tuple
 from typing import Callable, Iterator, Mapping, Sequence
 
-from antlir.common import get_logger
+from antlir.common import get_logger, not_none
 from antlir.compiler.compiler import (
     compile_items_to_subvol,
     ImageItem,
@@ -22,11 +22,7 @@ from antlir.fs_utils import Path
 from antlir.fs_utils import temp_dir
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.rpm.replay.subvol_rpm_compare import (
-    NEVRA,
-    RpmDiff,
-    SubvolsToCompare,
-)
+from antlir.rpm.replay.subvol_rpm_compare import NEVRA, RpmDiff
 from antlir.subvol_utils import Subvol, TempSubvolumes
 
 log = get_logger()
@@ -103,39 +99,26 @@ def replay_rpms_and_compiler_items(
     # The first 2 args come from `subvol_rpm_compare_and_download()`
     rpm_diff: RpmDiff,
     rpm_download_subvol: Subvol,
-    # These are needed for the replay logic.
-    subvols: SubvolsToCompare,
-    flavor: str,
-    artifacts_may_require_repo: bool,
-    target_to_path: Mapping[str, str],
+    # The next 3 are needed for the replay logic.
+    root: Subvol,
+    layer_opts: LayerOpts,
     gen_replay_items: ReplayItemsGenerator,
 ) -> Iterator[Subvol]:
     """
     Chain this after `subvol_rpm_compare_and_download()`.
 
     Replays `rpm_diff` (using RPMs from `rpm_download_subvol`) together with
-    the Antlir compiler `ImageItems` from `gen_replay_items()`, on top
-    of `subvols.root`, with the intention of reproducing `subvols.leaf`.
+    the Antlir compiler `ImageItems` from `gen_replay_items()`, on top of
+    `root`, with the intention of reproducing the `leaf` that was given to
+    `subvol_rpm_compare_and_download()`.
     """
-    layer_opts = LayerOpts(
-        artifacts_may_require_repo=artifacts_may_require_repo,
-        build_appliance=subvols.ba,
-        layer_target="unimportant",
-        rpm_installer=subvols.rpm_installer,
-        flavor=flavor,
-        rpm_repo_snapshot=subvols.rpm_repo_snapshot,
-        target_to_path=target_to_path,
-        subvolumes_dir=Path("unimportant"),
-        version_set_override=None,
-        debug=log.isEnabledFor(logging.DEBUG),
-    )
     with TempSubvolumes() as tmp_subvols, ExitStack() as exit_stack:
         if rpm_diff.removed:  # pragma: no cover
             raise NotImplementedError(
                 f"Incremental RPM replay cannot remove RPMs: {rpm_diff.removed}"
             )
 
-        # Replay the non-RPM compiler items on top of `subvols.root`.
+        # Replay the non-RPM compiler items on top of `root`.
         install_subvol = tmp_subvols.caller_will_create("rpm_replay")
         compile_items_to_subvol(
             exit_stack=exit_stack,
@@ -145,7 +128,7 @@ def replay_rpms_and_compiler_items(
                 [
                     ParentLayerItem(
                         from_target="//FAKE:ordered_nevras_for_rpm_replay",
-                        subvol=subvols.root,
+                        subvol=root,
                     )
                 ],
                 gen_replay_items(exit_stack, layer_opts),
@@ -154,7 +137,7 @@ def replay_rpms_and_compiler_items(
 
         # Install the specified RPMs in the specified order via `/bin/rpm`
         _install_rpms_into_subvol(
-            ba_subvol=subvols.ba,
+            ba_subvol=not_none(layer_opts.build_appliance),
             install_subvol=install_subvol,
             rpms_in_order=rpm_diff.added_in_order,
             rpm_download_subvol=rpm_download_subvol,
