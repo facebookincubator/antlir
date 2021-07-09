@@ -11,8 +11,11 @@ pixman = {
     'version': '0.40.0',
     'sha256': '3a68a28318a78fffc61603c8385bb0010c3fb23d17cd1285d36a7148c87a3b91',
 }
+libcap_ng = {
+    'version': '0.8.2',
+    'sha256': '65b86885b8d873e55c05bd49427fd370d559b26f0c2089ac9194828e6a2fe233',
+}
 
-# check out the build script to see how these are used
 export_file(name = 'build.sh')
 export_file(name = 'meson.build.patch')
 export_file(name = 'libcap-ng.pc.patch')
@@ -23,11 +26,16 @@ http_file(
     sha256 = qemu['sha256'],
 )
 
-# we also need to build a static version of pixman
+# packages which don't provide static libs also need to be built from source
 http_file(
     name = 'pixman',
     urls = ['https://github.com/freedesktop/pixman/archive/refs/tags/pixman-{}.tar.gz'.format(pixman['version'])],
     sha256 = pixman['sha256'],
+)
+http_file(
+    name = 'libcap-ng',
+    urls = ['https://github.com/stevegrubb/libcap-ng/archive/refs/tags/v{}.tar.gz'.format(libcap_ng['version'])],
+    sha256 = libcap_ng['sha256'],
 )
 
 image.layer(
@@ -59,6 +67,7 @@ image.layer(
         image.install(':build.sh', '/_temp_qemu/build.sh'),
         image.install(':source', '/_temp_qemu/source.tar.xz'),
         image.install(':pixman', '/_temp_qemu/pixman.tar.gz'),
+        image.install(':libcap-ng', '/_temp_qemu/libcap-ng.tar.gz'),
         image.install(':meson.build.patch', '/_temp_qemu/meson.build.patch'),
         image.install(':libcap-ng.pc.patch', '/_temp_qemu/libcap-ng.pc.patch'),
     ],
@@ -69,10 +78,12 @@ image.genrule_layer(
     parent_layer = ':_setup',
     rule_type = 'build',
     antlir_rule = 'user-internal',
-    user = 'root',  # needed to patch .pc files, sometimes for untarring
+    # user = 'root',  # needed to patch .pc files, sometimes for untarring
     cmd = [
         '/bin/sh', '-c',
-        'cd /_temp_qemu && bash build.sh {} {}'.format(qemu['version'], pixman['version']),
+        'cd /_temp_qemu && bash build.sh {} {} {}'.format(
+            qemu['version'], pixman['version'], libcap_ng['version']
+        ),
     ],
 )
 
