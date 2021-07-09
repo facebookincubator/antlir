@@ -24,7 +24,12 @@ for p in [
     "var/cache/ldconfig/aux-cache",
     "var/lib/rpm",
     "var/lib/yum",
+    "var/lib/dnf",
     "var/log/yum.log",
+    "var/log/hawkey.log",
+    "var/log/dnf.librepo.log",
+    "var/log/dnf.log",
+    "var/log/dnf.rpm.log",
 ]:
     assert not p.startswith("/"), p
     _PATHS_EXPECTED_TO_DIFFER.add(p.encode())
