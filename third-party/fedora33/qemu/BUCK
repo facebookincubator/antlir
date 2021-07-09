@@ -12,7 +12,10 @@ pixman = {
     'sha256': '3a68a28318a78fffc61603c8385bb0010c3fb23d17cd1285d36a7148c87a3b91',
 }
 
+# check out the build script to see how these are used
 export_file(name = 'build.sh')
+export_file(name = 'meson.build.patch')
+export_file(name = 'libcap-ng.pc.patch')
 
 http_file(
     name = 'source',
@@ -31,7 +34,7 @@ image.layer(
     name = '_setup',
     parent_layer = '//images/appliance:stable-build-appliance',
     features = [
-        # genrule_layer runs as user 'nobody'
+        # genrule_layer runs as user 'nobody' by default
         image.ensure_subdirs_exist('/', '_temp_qemu', user='nobody'),
         image.ensure_subdirs_exist('/', 'output', user='nobody'),
 
@@ -39,6 +42,8 @@ image.layer(
         image.install(':build.sh', '/_temp_qemu/build.sh'),
         image.install(':source', '/_temp_qemu/source.tar.xz'),
         image.install(':pixman', '/_temp_qemu/pixman.tar.gz'),
+        image.install(':meson.build.patch', '/_temp_qemu/meson.build.patch'),
+        image.install(':libcap-ng.pc.patch', '/_temp_qemu/libcap-ng.pc.patch'),
 
         image.rpms_install([
             # dependencies listed at https://wiki.qemu.org/Hosts/Linux
@@ -47,7 +52,7 @@ image.layer(
             # static build dependencies (at least on this builder image)
             'glib2-static', 'glibc-static', 'pcre-static', 'zlib-static',
             'libzstd-static', 'autoconf', 'libtool',
-            # virtfs requirements
+            # needed for virtfs
             'libcap-ng-devel', 'libattr-devel',
         ]),
     ],
@@ -58,7 +63,7 @@ image.genrule_layer(
     parent_layer = ':_setup',
     rule_type = 'build',
     antlir_rule = 'user-internal',
-    user = 'root',  # may be needed after all
+    user = 'root',  # needed to patch .pc files, sometimes for untarring
     cmd = [
         '/bin/sh', '-c',
         'cd /_temp_qemu && bash build.sh {} {}'.format(qemu['version'], pixman['version']),
