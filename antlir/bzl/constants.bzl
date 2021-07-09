@@ -11,6 +11,7 @@
 #
 load("//antlir/bzl:oss_shim.bzl", "do_not_use_repo_cfg")
 load("//antlir/bzl:shape.bzl", "shape")
+load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
 
 DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
 VERSION_SET_ALLOW_ALL_VERSIONS = "__VERSION_SET_ALLOW_ALL_VERSIONS__"
@@ -19,21 +20,6 @@ CONFIG_KEY = "antlir"
 # This needs to be kept in sync with
 # `antlir.nspawn_in_subvol.args._QUERY_TARGETS_AND_OUTPUTS_SEP`
 QUERY_TARGETS_AND_OUTPUTS_SEP = "|"
-
-# This is used as standard demiliter in .buckconfig while using
-# flavor names under a specific config group
-BUCK_CONFIG_FLAVOR_NAME_DELIMITER = "#"
-
-def _get_flavor_config(flavor_name = None):
-    flavor_to_config = do_not_use_repo_cfg.get("flavor_to_config", {})
-    for flavor, flavor_config in flavor_to_config.items():
-        config_key = CONFIG_KEY + BUCK_CONFIG_FLAVOR_NAME_DELIMITER + flavor
-        for key, v in flavor_config.items():
-            val = native.read_config(config_key, key, None)
-            if val != None:
-                flavor_config[key] = val
-
-    return flavor_to_config
 
 # Use `_get_str_cfg` or `_get_str_list_cfg` instead.
 def _do_not_use_directly_get_cfg(name, default = None):
@@ -88,16 +74,117 @@ def _get_artifact_key_to_path():
 
     return key_to_path
 
-# These are configuration keys that can be grouped under a specific
-# common name called flavor. This way, during run-time, we can choose
-# default values for set of configuration keys based on selected flavor
-# name
-flavor_config_t = shape.shape(
+_nevra_t = shape.shape(
+    name = shape.field(str),
+    # TODO: Codemod all callsites and update this to be `int`.
+    epoch = shape.field(str),
+    version = shape.field(str),
+    release = shape.field(str),
+    arch = shape.field(str),
+)
+
+def new_nevra(**kwargs):
+    return shape.new(_nevra_t, **kwargs)
+
+# These are configuration keys that can be grouped under a specific common
+# name called flavor.  This way, during run-time, we can choose default
+# values for set of configuration keys based on selected flavor name.
+_flavor_config_t = shape.shape(
+    name = shape.field(str),
+    # FIXME: Ideally, remove `optional = True`.  This field is not optional,
+    # per `new_flavor_config` below, but expressing that requires changing
+    # the wire format for `DO_NOT_USE_BUILD_APPLIANCE` to be a string
+    # instead of `None` -- see `new_flavor_config`. This needs a Python fix.
     build_appliance = shape.field(str, optional = True),
     rpm_installer = shape.field(str, optional = True),
     rpm_repo_snapshot = shape.field(str, optional = True),
     version_set_path = shape.field(str, optional = True),
+    rpm_version_set_overrides = shape.list(_nevra_t, optional = True),
+    unsafe_bypass_flavor_check = shape.field(bool, optional = True),
 )
+
+def new_flavor_config(
+        name,
+        build_appliance,
+        rpm_installer,
+        rpm_repo_snapshot = None,
+        rpm_version_set_overrides = None,
+        version_set_path = VERSION_SET_ALLOW_ALL_VERSIONS,
+        unsafe_bypass_flavor_check = False):
+    """
+    Arguments
+
+    - `name`: The name of the flavor
+    - `build_appliance`: Path to a layer target of a build appliance,
+    containing an installed `rpm_repo_snapshot()`, plus an OS image
+    with other image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
+    - `rpm_installer`: The build appliance currently does not set
+    a default package manager -- in non-default settings, this
+    has to be chosen per image, since a BA can support multiple
+    package managers.  In the future, if specifying a non-default
+    installer per image proves onerous when using non-default BAs, we
+    could support a `default` symlink under `RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR`.
+    - `rpm_repo_snapshot`: List of target or `/__antlir__` paths,
+    see `snapshot_install_dir` doc. `None` uses the default determined
+    by looking up `rpm_installer` in `RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR`.
+    - `rpm_version_set_overrides`: List of `nevra` objects
+    (see antlir/bzl/constants.bzl for definition). If rpm with given name to
+    be installed, the `nevra` defines its version.
+    - `unsafe_bypass_flavor_check`: Do NOT use.
+    """
+    if build_appliance == None:
+        fail(
+            "Must be a target path, or a value from `constants.bzl`",
+            "build_appliance",
+        )
+
+    if rpm_installer != "yum" and rpm_installer != "dnf":
+        fail("Unsupported rpm_installer supplied in build_opts")
+
+    # When building the BA itself, we need this constant to avoid a circular
+    # dependency.
+    #
+    # This feature is exposed a non-`None` magic constant so that callers
+    # cannot get confused whether `None` refers to "no BA" or "default BA".
+    if build_appliance == DO_NOT_USE_BUILD_APPLIANCE:
+        build_appliance = None
+
+    return shape.new(
+        _flavor_config_t,
+        name = name,
+        build_appliance = build_appliance,
+        rpm_installer = rpm_installer,
+        rpm_repo_snapshot = (
+            snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else "{}/{}".format(
+                RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
+                rpm_installer,
+            )
+        ),
+        rpm_version_set_overrides = rpm_version_set_overrides,
+        version_set_path = version_set_path,
+        unsafe_bypass_flavor_check = unsafe_bypass_flavor_check,
+    )
+
+def _get_flavor_to_config():
+    flavor_to_config = {}
+    for flavor, orig_flavor_config in do_not_use_repo_cfg.get("flavor_to_config", {}).items():
+        flavor_config = {"name": flavor}
+        flavor_config.update(orig_flavor_config)  # we'll mutate a copy
+
+        # Apply `buck -c` overrides.
+        #
+        # Buck has a notion of flavors that is separate from Antlir's but
+        # similar in spirit.  It uses # as the delimiter for per-flavor
+        # config options, so we follow that pattern.
+        config_key = CONFIG_KEY + "#" + flavor
+        for key, v in flavor_config.items():
+            val = native.read_config(config_key, key, None)
+            if val != None:
+                flavor_config[key] = val
+
+        flavor_to_config[flavor] = new_flavor_config(**flavor_config)
+
+    return flavor_to_config
 
 #
 # These are repo-specific configuration keys, which can be overridden via
@@ -140,7 +227,7 @@ repo_config_t = shape.shape(
     host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
     flavor_available = shape.list(str),
     flavor_default = str,
-    flavor_to_config = shape.dict(str, flavor_config_t),
+    flavor_to_config = shape.dict(str, _flavor_config_t),
     antlir_linux_flavor = str,
 )
 
@@ -176,7 +263,7 @@ REPO_CFG = shape.new(
     ),
     flavor_available = _get_str_list_cfg("flavor_available"),
     flavor_default = _get_str_cfg("flavor_default"),
-    flavor_to_config = _get_flavor_config(),
+    flavor_to_config = _get_flavor_to_config(),
     # KEEP THIS DICTIONARY SMALL.
     #
     # For each `feature`, we have to emit as many targets as there are

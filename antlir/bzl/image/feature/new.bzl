@@ -103,8 +103,7 @@ def PRIVATE_DO_NOT_USE_feature_target_name(name, flavor):
     # When a feature is declared, it doesn't know the version set of the
     # layer that will use it, so we normally declare all possible variants.
     # This is only None when there are no version sets in use.
-    version_set_path = REPO_CFG.flavor_to_config[flavor] \
-        .get("version_set_path", VERSION_SET_ALLOW_ALL_VERSIONS)
+    version_set_path = REPO_CFG.flavor_to_config[flavor].version_set_path
     if version_set_path != VERSION_SET_ALLOW_ALL_VERSIONS:
         name += "__flavor__" + flavor
     return name
@@ -150,8 +149,7 @@ def _normalize_feature_and_get_deps(feature, flavor):
         # only mutate the `version_set` key.
         feature_dict["rpms"] = [dict(**r) for r in aliased_rpms]
 
-    vs_path = REPO_CFG.flavor_to_config[flavor] \
-        .get("version_set_path", VERSION_SET_ALLOW_ALL_VERSIONS)
+    vs_path = REPO_CFG.flavor_to_config[flavor].version_set_path
     if vs_path != VERSION_SET_ALLOW_ALL_VERSIONS:
         # Resolve RPM names to version set targets.  We cannot avoid this
         # coupling with `rpm.bzl` because the same `image.rpms_install` may

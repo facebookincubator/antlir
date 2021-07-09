@@ -74,7 +74,13 @@ cat > "$OUT" << 'EOF'
 {envra_file_contents}
 EOF
             """.format(
-                envra_file_contents = "\n".join(["\t".join(envra._private_envra) for envra in flavor_config.rpm_version_set_overrides]),
+                envra_file_contents = "\n".join(["\t".join([
+                    nevra.epoch,
+                    nevra.name,
+                    nevra.version,
+                    nevra.release,
+                    nevra.arch,
+                ]) for nevra in flavor_config.rpm_version_set_overrides]),
             ),
             antlir_rule = "user-internal",
         )

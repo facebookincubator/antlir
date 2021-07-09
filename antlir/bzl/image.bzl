@@ -13,6 +13,7 @@ load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
 load("//antlir/bzl/image_actions:rpms.bzl", "image_rpms_install", "image_rpms_remove_if_exists")
 load("//antlir/bzl/image_actions:symlink.bzl", "image_ensure_dir_symlink", "image_ensure_file_symlink")
 load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
+load(":constants.bzl", "new_nevra")
 load(":image_cpp_unittest.bzl", "image_cpp_unittest")
 load(":image_genrule_layer.bzl", "image_genrule_layer")
 load(":image_gpt.bzl", "image_gpt", "image_gpt_partition")
@@ -22,7 +23,6 @@ load(":image_layer_from_package.bzl", "image_layer_from_package")
 load(":image_package.bzl", "image_package")
 load(":image_packaged_layer.bzl", "image_packaged_layer")
 load(":image_python_unittest.bzl", "image_python_unittest")
-load(":image_rpm.bzl", "image_rpm")
 load(":image_rust_unittest.bzl", "image_rust_unittest")
 load(":image_source.bzl", "image_source")
 load(":image_test_rpm_names.bzl", "image_test_rpm_names")
@@ -49,7 +49,7 @@ image = struct(
     packaged_layer = image_packaged_layer,
     python_unittest = image_python_unittest,
     remove = image_remove,
-    rpm = image_rpm,
+    rpm = struct(nevra = new_nevra),
     rpms_install = image_rpms_install,
     rpms_remove_if_exists = image_rpms_remove_if_exists,
     source = image_source,
