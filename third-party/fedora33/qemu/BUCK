@@ -47,6 +47,8 @@ image.layer(
             # static build dependencies (at least on this builder image)
             'glib2-static', 'glibc-static', 'pcre-static', 'zlib-static',
             'libzstd-static', 'autoconf', 'libtool',
+            # virtfs requirements
+            'libcap-ng-devel', 'libattr-devel',
         ]),
     ],
 )

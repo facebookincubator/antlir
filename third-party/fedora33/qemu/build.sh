@@ -19,19 +19,14 @@ tar -xJf source.tar.xz
 cd qemu-$1
 export LDFLAGS="$LDFLAGS -L/_temp_qemu/pixman/lib/"
 export CFLAGS="$CFLAGS -I/_temp_qemu/pixman/include/"
+export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64"
 mkdir /output/qemu
 ./configure \
   --prefix=/output/qemu \
   --static \
   --target-list=x86_64-softmmu \
   --disable-slirp \
-  --audio-drv-list= \
-  --disable-sdl \
-  --disable-gtk \
-  --disable-vte \
-  --disable-brlapi \
-  --disable-opengl \
-  --disable-virglrenderer
+  --enable-virtfs
 make
 make install
 cd ..
