@@ -23,17 +23,19 @@ class RepoConfigTestCase(unittest.TestCase):
             "artifact": {
                 "test.artifact": "//build:artifact",
             },
-            "flavor_available": ["default", "all_jobs"],
-            "flavor_default": "default",
-            "antlir_linux_flavor": "default",
+            "flavor_available": ["no_vset", "with_vset"],
+            "flavor_default": "no_vset",
+            "antlir_linux_flavor": "no_vset",
             "flavor_to_config": {
-                "default": {
+                "no_vset": {
+                    "name": "no_vset",
                     "version_set_path": "__VERSION_SET_ALLOW_ALL_VERSIONS__",
                     "rpm_installer": "yum",
                 },
-                "all_jobs": {
-                    "version_set_to_path": "//all/jobs/version/set:path",
-                    "rpm_installer": "yum",
+                "with_vset": {
+                    "name": "with_vset",
+                    "version_set_to_path": "//some/project/path",
+                    "rpm_installer": "dnf",
                 },
             },
             "host_mounts_for_repo_artifacts": [],
