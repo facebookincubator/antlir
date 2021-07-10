@@ -52,6 +52,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:check_flavor_exists.bzl", "check_flavor_exists")
 load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -136,7 +137,30 @@ def _flatten_nested_lists(lst):
 def _normalize_feature_and_get_deps(feature, flavor):
     "Returns a ready-to-serialize feature dictionary and its direct deps."
     target_tagger = new_target_tagger()
-    feature_dict = structs.to_dict(feature.items)
+
+    feature_dict = {
+        feature_key: [
+            (
+                shape.as_serializable_dict(feature) if
+                # Some features have been converted to `shape`.  To make
+                # them serializable together with legacy features, we must
+                # turn these shapes into JSON-ready dicts.
+                #
+                # Specifically, this transformation removes the private
+                # `__shape__` field, and asserts that there are no
+                # `shape.target()` fields -- shapes are not integrated with
+                # target_tagger yet, so one has to explicitly target-tag the
+                # stuff that goes into these shapes.
+                #
+                # Future: once we shapify all features, this explicit
+                # conversion can be removed since shape serialization will
+                # just do the right thing.
+                shape.is_any_instance(feature) else feature
+            )
+            for feature in features
+        ]
+        for feature_key, features in structs.to_dict(feature.items).items()
+    }
 
     # For RPM actions, we must mutate the inner dicts of `feature_dict`
     # below.  As it turns out, `feature_dict` retains the same `dict`

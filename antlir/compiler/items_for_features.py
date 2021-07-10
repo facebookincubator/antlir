@@ -9,6 +9,7 @@ import json
 from contextlib import ExitStack
 from typing import Any, Iterable, Union, Mapping, Optional, NamedTuple
 
+from antlir.common import get_logger
 from antlir.compiler.items.clone import CloneItem
 from antlir.compiler.items.common import LayerOpts, image_source_item
 from antlir.compiler.items.ensure_dirs_exist import ensure_subdirs_exist_factory
@@ -27,6 +28,8 @@ from antlir.compiler.items.tarball import TarballItem
 from antlir.compiler.items.user import UserItem
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
+
+log = get_logger()
 
 
 class GenFeaturesContext(NamedTuple):
@@ -166,4 +169,8 @@ def gen_items_for_features(
             ignore_missing_paths=False,
         ),
     ):
-        yield from factory.gen_items_for_feature(*key_target_config)
+        try:
+            yield from factory.gen_items_for_feature(*key_target_config)
+        except Exception:  # pragma: no cover
+            log.error(f"While constructing image feature {key_target_config}")
+            raise

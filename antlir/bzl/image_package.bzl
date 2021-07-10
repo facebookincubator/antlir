@@ -81,10 +81,7 @@ def image_package(
                     build_appliance,
                 ) if build_appliance != DO_NOT_USE_BUILD_APPLIANCE else "",
                 maybe_loopback_opts = "--loopback-opts {}".format(
-                    shell.quote(shape.do_not_cache_me_json(
-                        instance = loopback_opts,
-                        shape = loopback_opts_t,
-                    )),
+                    shell.quote(shape.do_not_cache_me_json(loopback_opts)),
                 ) if loopback_opts else "",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,

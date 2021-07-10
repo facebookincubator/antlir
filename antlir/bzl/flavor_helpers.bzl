@@ -65,6 +65,7 @@ is in the repo currently.
 
 load(":check_flavor_exists.bzl", "check_flavor_exists")
 load(":constants.bzl", "REPO_CFG", "new_flavor_config")
+load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
 
 def _get_flavor_config(flavor, flavor_config_override):
@@ -84,7 +85,7 @@ def _get_flavor_config(flavor, flavor_config_override):
     '''
     check_flavor_exists(flavor)
 
-    flavor_config = structs.to_dict(REPO_CFG.flavor_to_config[flavor])
+    flavor_config = shape.as_dict_shallow(REPO_CFG.flavor_to_config[flavor])
     overrides = structs.to_dict(flavor_config_override) if flavor_config_override else {}
 
     # This override is forbidden because vset paths are currently consumed
