@@ -98,8 +98,7 @@ Optional arguments:
             features = [target_tagger_to_feature(
                 target_tagger,
                 struct(genrule_layer = [
-                    # TODO: use the `shape.to_dict()` helper from Arnav's diff.
-                    shape.as_dict(shape.new(
+                    shape.as_serializable_dict(shape.new(
                         genrule_layer_t,
                         cmd = cmd,
                         user = user,

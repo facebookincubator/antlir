@@ -305,7 +305,6 @@ mount_t = shape.shape(
 def _mount_unit_file(name, mount):
     return shape.render_template(
         name = name,
-        shape = mount_t,
         instance = mount,
         template = "//antlir/bzl/linux/systemd:mount",
     )

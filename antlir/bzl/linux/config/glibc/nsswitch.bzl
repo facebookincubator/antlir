@@ -33,7 +33,6 @@ def _new(**kwargs):
 def _render(name, instance):
     return shape.render_template(
         name = name,
-        shape = _conf,
         instance = instance,
         template = "//antlir/bzl/linux/config/glibc:nsswitch",
     )
@@ -62,37 +61,43 @@ nsswitch = struct(
     default = shape.new(
         _conf,
         databases = [
-            shape.struct(
+            shape.new(
+                _database,
                 name = "passwd",
                 services = [
-                    shape.struct(name = "files"),
-                    shape.struct(name = "systemd"),
+                    shape.new(_service, name = "files"),
+                    shape.new(_service, name = "systemd"),
                 ],
             ),
-            shape.struct(
+            shape.new(
+                _database,
                 name = "group",
                 services = [
-                    shape.struct(
+                    shape.new(
+                        _service,
                         name = "files",
-                        action = shape.struct(
+                        action = shape.new(
+                            _action,
                             status = "success",
                             action = "merge",
                         ),
                     ),
-                    shape.struct(name = "systemd"),
+                    shape.new(_service, name = "systemd"),
                 ],
             ),
-            shape.struct(
+            shape.new(
+                _database,
                 name = "shadow",
                 services = [
-                    shape.struct(name = "files"),
+                    shape.new(_service, name = "files"),
                 ],
             ),
-            shape.struct(
+            shape.new(
+                _database,
                 name = "hosts",
                 services = [
-                    shape.struct(name = "files"),
-                    shape.struct(name = "dns"),
+                    shape.new(_service, name = "files"),
+                    shape.new(_service, name = "dns"),
                 ],
             ),
         ],

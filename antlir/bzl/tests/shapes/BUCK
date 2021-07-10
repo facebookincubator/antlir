@@ -178,7 +178,6 @@ python_unittest(
                 character_collection_t,
                 characters = characters,
             ),
-            character_collection_t,
         ),
     },
     needed_coverage = [
@@ -192,7 +191,6 @@ python_unittest(
                 name = "Stormtrooper",
                 appears_in = [1],
             ),
-            shape = hashable_t,
         ): "data.json",
         shape.render_template(
             name = "template",
@@ -219,7 +217,6 @@ python_unittest(
                     ]
                 ],
             ),
-            shape = hashable_t,
             template = ":example-template",
         ): "template.txt",
     },
@@ -235,7 +232,6 @@ python_unittest(
                 appears_in = [1],
             ),
             module = "data",
-            shape = hashable_t,
             classname = "StormtrooperArgsType",
         ),
     ],

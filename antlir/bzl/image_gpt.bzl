@@ -43,12 +43,7 @@ def image_gpt(
               --gpt {opts_quoted} \
               --build-appliance $(query_outputs {build_appliance}) \
             '''.format(
-                opts_quoted = shell.quote(
-                    shape.do_not_cache_me_json(
-                        instance = gpt,
-                        shape = gpt_t,
-                    ),
-                ),
+                opts_quoted = shell.quote(shape.do_not_cache_me_json(gpt)),
                 build_appliance = build_appliance,
             ),
             rule_type = "image_gpt",

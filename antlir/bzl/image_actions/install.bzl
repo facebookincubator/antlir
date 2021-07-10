@@ -131,7 +131,10 @@ binary to be unusable in image tests in @mode/dev.
             # compiler does not have to.
             tagged_source["path"] = None
 
-    install_spec = {"dest": dest, "source": tagged_source}
+    install_spec = {
+        "dest": dest,
+        "source": shape.new(target_tagged_image_source_shape, **tagged_source),
+    }
     add_stat_options(install_spec, mode, user, group)
 
     install_files = shape.new(install_files_t, **install_spec)
@@ -172,11 +175,16 @@ image) is used. The default for `user` and `group` is `root`.
     """
 
     target_tagger = new_target_tagger()
+    source_dict = image_source_as_target_tagged_dict(
+        target_tagger,
+        maybe_export_file(source),
+    )
+    _forbid_layer_source(source_dict)
+
     install_spec = {
         "dest": dest,
-        "source": image_source_as_target_tagged_dict(target_tagger, maybe_export_file(source)),
+        "source": shape.new(target_tagged_image_source_shape, **source_dict),
     }
-    _forbid_layer_source(install_spec["source"])
     add_stat_options(install_spec, mode, user, group)
 
     # Future: We might use a Buck macro that enforces that the target is

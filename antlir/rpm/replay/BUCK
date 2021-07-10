@@ -45,7 +45,6 @@ python_library(
                 features_prefix = FEATURES_FOR_LAYER_PREFIX,
                 features_suffix = DO_NOT_USE_FEATURES_SUFFIX,
             ),
-            shape = _constants_t,
             module = "constants_bzl_args",
         ),
     ],

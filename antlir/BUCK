@@ -491,7 +491,7 @@ python_unittest(
     srcs = ["tests/test_gpt.py"],
     env = {
         "test-gpt-json": shape.do_not_cache_me_json(
-            instance = shape.new(
+            shape.new(
                 gpt_t,
                 name = "gpt_test",
                 table = [
@@ -507,7 +507,6 @@ python_unittest(
                     ),
                 ],
             ),
-            shape = gpt_t,
         ),
     },
     needed_coverage = [(100, ":gpt-library")],
@@ -582,7 +581,6 @@ shape.loader(
         shape.json_file(
             name = "config.json",
             instance = REPO_CFG,
-            shape = repo_config_t,
         ): "config.json",
     },
 )

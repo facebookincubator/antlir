@@ -277,7 +277,7 @@ def _vm_multi_kernel_unittest(
         **kwargs):
     for suffix, kernel in kernels.items():
         if vm_opts:
-            merged_vm_opts = shape.as_dict(vm_opts)
+            merged_vm_opts = shape.as_dict_shallow(vm_opts)
             merged_vm_opts["kernel"] = kernel
 
             # Don't provide the initrd originally constructed since

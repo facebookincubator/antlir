@@ -67,7 +67,7 @@ def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_prefix, **k
     return was_wrapped, tag_target(target_tagger, wrapped_target)
 
 def image_source_as_target_tagged_dict(target_tagger, user_source):
-    src = structs.to_dict(image_source(user_source))
+    src = shape.as_dict_for_target_tagger(image_source(user_source))
     if src.get("generator"):
         _was_wrapped, src["generator"] = tag_and_maybe_wrap_executable_target(
             target_tagger = target_tagger,

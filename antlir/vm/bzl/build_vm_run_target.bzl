@@ -38,10 +38,7 @@ mv "$TMP/out" "$OUT"
         """.format(
             exe_target = exe_target,
             extra_args = " ".join(args) if args else "",
-            opts_quoted = shell.quote(shape.do_not_cache_me_json(
-                instance = vm_opts,
-                shape = api.opts.t,
-            )),
+            opts_quoted = shell.quote(shape.do_not_cache_me_json(vm_opts)),
         ),
         cacheable = False,
         executable = True,

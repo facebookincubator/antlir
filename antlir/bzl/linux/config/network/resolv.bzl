@@ -18,7 +18,6 @@ def _new(**kwargs):
 def _render(name, instance):
     return shape.render_template(
         name = name,
-        shape = _conf,
         instance = instance,
         template = "//antlir/bzl/linux/config/network:resolv",
     )
