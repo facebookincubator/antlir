@@ -1,4 +1,4 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG", "repo_config_t")
+load("//antlir/bzl:constants.bzl", "REPO_CFG", "repo_config_t", "flavor_config_t_shape_loader")
 load("//antlir/bzl:image_gpt.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
@@ -430,6 +430,8 @@ python_unittest(
     needed_coverage = [(100, ":update_package_db")],
     deps = [":update_package_db"],
 )
+
+flavor_config_t_shape_loader()
 
 shape.loader(
     name = "loopback_opts_t",
