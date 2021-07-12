@@ -272,13 +272,17 @@ def feature_new(
     visibility = visibility or []
     flavors = flavors or REPO_CFG.flavor_available
 
+    names = []
     for flavor in flavors:
-        _feature_new_impl(
-            name = name,
-            features = features,
-            visibility = visibility,
-            flavor = flavor,
-        )
+        ft_name = PRIVATE_DO_NOT_USE_feature_target_name(name, flavor)
+        if ft_name not in names:
+            _feature_new_impl(
+                name = name,
+                features = features,
+                visibility = visibility,
+                flavor = flavor,
+            )
+            names.append(ft_name)
 
 def _feature_new_impl(name, features, visibility, flavor):
     # (1) Normalizes & annotates Buck target names so that they can be

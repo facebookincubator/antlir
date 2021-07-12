@@ -405,7 +405,7 @@ class NspawnTestCase(NspawnTestBase):
 
     def test_cap_net_admin(self):
         self._nspawn_in(
-            (__package__, "test-layer"),
+            (__package__, "test-layer-iproute"),
             [
                 "--user",
                 "root",
@@ -609,7 +609,9 @@ class NspawnTestCase(NspawnTestBase):
         # the fedora appliance image it is 65543:65543
         self.assertRegex(
             ret.stdout.decode(),
-            fr"uid={_NOBODY_USER.pw_uid}(\(nobody\))? gid={_NOBODY_USER.pw_gid}(\(nobody\))? groups={_NOBODY_USER.pw_gid}(\(nobody\))?\n",
+            fr"uid={_NOBODY_USER.pw_uid}(\(nobody\))? "
+            fr"gid={_NOBODY_USER.pw_gid}(\(nobody\))? "
+            fr"groups={_NOBODY_USER.pw_gid}(\(nobody\))?\n",
         )
         self.assertEqual(b"", ret.stderr)
 

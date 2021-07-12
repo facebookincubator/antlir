@@ -146,6 +146,7 @@ image.layer(
         ),  # Tests write here
         image.ensure_subdirs_exist("/", "other_dir"),
     ],
+    flavor = "antlir_test",
 )
 
 python_unittest(
@@ -214,4 +215,5 @@ image.layer(
     name = "attach-antlir-dir-test-layer",
     parent_layer = TEST_IMAGE_PREFIX + "test-layer",
     features = [image.remove(ANTLIR_DIR)],
+    flavor = "antlir_test",
 )

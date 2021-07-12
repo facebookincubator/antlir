@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":constants.bzl", "REPO_CFG")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load(":oss_shim.bzl", "buck_sh_test", "get_visibility", "python_binary", "rust_unittest")
 
@@ -14,6 +15,7 @@ def image_rust_unittest(
         hostname = None,
         container_opts = None,
         visibility = None,
+        flavor = REPO_CFG.flavor_default,
         **rust_unittest_kwargs):
     wrapper_props = helpers.nspawn_wrapper_properties(
         name = name,
@@ -27,6 +29,7 @@ def image_rust_unittest(
         visibility = [],
         hostname = hostname,
         container_opts = container_opts,
+        flavor = flavor,
     )
 
     rust_unittest(

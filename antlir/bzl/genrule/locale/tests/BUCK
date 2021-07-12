@@ -3,6 +3,7 @@ load("//antlir/bzl/genrule/locale:locale.bzl", "image_build_locale_archive")
 
 image_build_locale_archive(
     name = "build-multiple-locales",
+    flavor = "antlir_test",
     locales = [
         "en_US.utf8",
         "en_CA.utf8",
@@ -12,6 +13,7 @@ image_build_locale_archive(
 
 image_build_locale_archive(
     name = "build-single-locale",
+    flavor = "antlir_test",
     locales = ["en_US.utf8"],
     parent_layer = "//antlir/compiler/test_images:test-layer",
 )
@@ -31,10 +33,12 @@ image.layer(
             dest_path = "/single-locale-archive",
         ),
     ],
+    flavor = "antlir_test",
 )
 
 image.python_unittest(
     name = "test-locales",
     layer = ":custom-locales-layer",
     srcs = ["test_locales.py"],
+    flavor = "antlir_test",
 )

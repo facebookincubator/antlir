@@ -19,7 +19,7 @@ def READ_MY_DOC_image_feature_target(name):
     """
     return PRIVATE_DO_NOT_USE_feature_target_name(
         name = name,
-        flavor = REPO_CFG.flavor_default,
+        flavor = "antlir_test",
     )
 
 def image_feature_python_unittest(test_image_feature_transitive_deps, deps = None, env = None, **kwargs):
