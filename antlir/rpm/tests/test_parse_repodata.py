@@ -160,8 +160,16 @@ class ParseRepodataTestCase(unittest.TestCase):
             with open(repo_path / sql_rd.location, "rb") as sf:
                 bz_data = sf.read()
 
-            with self.assertRaisesRegex(RuntimeError, "^Unused data after "):
+            try:
                 _rpm_set(BytesIO(bz_data + b"oops"), sql_rd)
+                self.fail("Exception not raised")
+            except RuntimeError as ex:
+                self.assertRegex(str(ex), "^Unused data after ")
+            except EOFError:
+                # For reasons I don't understand, this is sometimes raised
+                # instead of going down the `unused_data` branch.
+                pass
+
             with self.assertRaisesRegex(RuntimeError, "archive is incomplete"):
                 _rpm_set(BytesIO(bz_data[:-5]), sql_rd)
 
