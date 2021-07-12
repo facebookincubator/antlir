@@ -308,6 +308,11 @@ def subvol_rpm_compare(
     my_nevras = set(_gen_nevras_in_subvol(subvols.ba, subvols.leaf))
     removed_nevras = root_nevras - my_nevras
     added_nevras = my_nevras - root_nevras
+    # The "sort & download" step is fairly expensive (~25s) even when
+    # there are no RPMs to sort. Instead of debugging why this is,
+    # just short-circuit it.
+    if not added_nevras:
+        return RpmDiff(removed=removed_nevras, added_in_order=[])
 
     # Shell out to `yum` or `dnf` in the BA to find the correct install
     # order for the new RPMs. Per the comment on P410145489, this matters.
