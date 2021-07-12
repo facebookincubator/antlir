@@ -220,6 +220,7 @@ python_unittest(
 image_python_unittest(
     name = "test-subvol-utils-inner",
     srcs = ["tests/test_subvol_utils_inner.py"],
+    flavor = "antlir_test",
     hostname = "test-subvol-utils-inner",
     layer = TEST_IMAGE_PREFIX + "test-layer",
     # Needed to make subvolumes

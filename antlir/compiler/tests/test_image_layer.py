@@ -450,7 +450,7 @@ class ImageLayerTestCase(unittest.TestCase):
                         ".meta": [
                             "(Dir)",
                             {
-                                "flavor": [render_flavor()],
+                                "flavor": [render_flavor(flavor="antlir_test")],
                                 "private": [
                                     "(Dir)",
                                     {
@@ -489,7 +489,7 @@ class ImageLayerTestCase(unittest.TestCase):
                         ".meta": [
                             "(Dir)",
                             {
-                                "flavor": [render_flavor()],
+                                "flavor": [render_flavor(flavor="antlir_test")],
                                 "private": [
                                     "(Dir)",
                                     {

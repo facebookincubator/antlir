@@ -65,6 +65,7 @@ class _FeatureHandlers:
     config: Dict[str, Any]
     layer_out: Path
     target_to_path: Dict[str, str]
+    flavor_vset: Optional[str]
 
     def layer_from_package(self) -> ExtractedFeatures:
         return ExtractedFeatures(
@@ -85,11 +86,22 @@ class _FeatureHandlers:
         ), f"Got feature target for parent layer: {parent_layer_target}"
         # Layer targets implicitly get 'features-for-layer' targets created that
         # output their feature JSON; see `feature.bzl` in `antlir/`.
-        feature_target = path + ":" + FEATURES_PREFIX + name + FEATURES_SUFFIX
+        flavor_vset_addon = (
+            "__flavor__" + self.flavor_vset if self.flavor_vset else ""
+        )
+        feature_target = (
+            path
+            + ":"
+            + FEATURES_PREFIX
+            + name
+            + FEATURES_SUFFIX
+            + flavor_vset_addon
+        )
         return extract_nested_features(
             layer_features_out=self.target_to_path[feature_target],
             layer_out=self.target_to_path[parent_layer_target],
             target_to_path=self.target_to_path,
+            flavor_vset=self.flavor_vset,
         )
 
     def mounts(self) -> ExtractedFeatures:
@@ -146,6 +158,7 @@ def extract_nested_features(
     layer_features_out: str,
     layer_out: str,
     target_to_path: Dict[str, str],
+    flavor_vset: Optional[str] = None,
 ) -> ExtractedFeatures:
     extracted_features = ExtractedFeatures()
     for (feature_key, target, config) in gen_included_features(
@@ -162,6 +175,7 @@ def extract_nested_features(
                 config=config,
                 layer_out=Path(layer_out),
                 target_to_path=target_to_path,
+                flavor_vset=flavor_vset,
             ),
             feature_key,
             None,

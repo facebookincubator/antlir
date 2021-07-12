@@ -29,6 +29,7 @@ python_library(
 image.python_unittest(
     name = "test-image-python-unittest",
     srcs = ["test_image_python_unittest.py"],
+    flavor = "antlir_test",
     layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
     container_opts = image.opts(internal_only_logs_tmpfs = True),
     needed_coverage = [(100, ":coverage_test_helper")],
@@ -39,6 +40,7 @@ image.python_unittest(
 image.python_unittest(
     name = "test-boot-image-python-unittest",
     srcs = ["test_image_python_unittest.py"],
+    flavor = "antlir_test",
     layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
     container_opts = image.opts(internal_only_logs_tmpfs = True),
     needed_coverage = [(100, ":coverage_test_helper")],
@@ -67,6 +69,7 @@ image.python_unittest(
 image.python_unittest(
     name = "test-image-hostname-python",
     srcs = ["test_image_hostname.py"],
+    flavor = "antlir_test",
     layer = TEST_IMAGE_PREFIX + "test-layer",
     hostname = "test-hostname.com",
 )
@@ -74,6 +77,7 @@ image.python_unittest(
 image.cpp_unittest(
     name = "test-image-cpp-unittest",
     srcs = ["ImageCppUnittestTest.cpp"],
+    flavor = "antlir_test",
     layer = TEST_IMAGE_PREFIX + "test-layer",
     env = {"kitteh": "meow"},
 )
@@ -81,6 +85,7 @@ image.cpp_unittest(
 image.cpp_unittest(
     name = "test-boot-image-cpp-unittest",
     srcs = ["ImageCppUnittestTest.cpp"],
+    flavor = "antlir_test",
     layer = TEST_IMAGE_PREFIX + "test-layer",
     env = {"kitteh": "meow"},
     boot = True,
@@ -89,6 +94,7 @@ image.cpp_unittest(
 image.cpp_unittest(
     name = "test-image-hostname-cpp",
     srcs = ["ImageHostnameTest.cpp"],
+    flavor = "antlir_test",
     layer = TEST_IMAGE_PREFIX + "test-layer",
     env = {},
     hostname = "test-hostname.com",
@@ -105,6 +111,7 @@ python_unittest(
 image.rust_unittest(
     name = "test-image-rust-unittest",
     srcs = ["image_rust_unittest.rs"],
+    flavor = "antlir_test",
     layer = TEST_IMAGE_PREFIX + "test-layer",
     env = {
         "dogsgo": "woof",

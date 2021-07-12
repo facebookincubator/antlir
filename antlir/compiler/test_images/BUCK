@@ -82,7 +82,7 @@ defs.buck_genrule(
 # that does not impose a circular dependency.  But for now, this works.
 image.layer(
     name = "test-layer",
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    parent_layer = flavor_helpers.test_build_appliance,
     features = [
         # `test_non_ephemeral_snapshot` needs a place to write as `nobody`.
         image.ensure_subdirs_exist(
@@ -92,6 +92,17 @@ image.layer(
             user = "nobody",
             group = "nobody",
         ),
+        "//antlir/features:build_artifact_cleanup",
+    ],
+    flavor = "antlir_test",
+    runtime = ["systemd"],
+    visibility = ["//antlir/..."],
+)
+
+image.layer(
+    name = "test-layer-iproute",
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    features = [
         image.rpms_install(
             [
                 # Needed to check CAP_NET_ADMIN
@@ -117,6 +128,7 @@ image.layer_alias(
 # on top of the read-only host clone.
 image_build_librename_shadowed(
     name = "build-librename-shadowed",
+    flavor = "antlir_test",
     parent_layer = ":test-layer",
 )
 
@@ -167,6 +179,7 @@ image.genrule_layer(
         "-c",
         "/bin/mount > /GENRULE_LAYER_MOUNTS",
     ],
+    flavor = "antlir_test",
     parent_layer = ":test-layer-with-mounts",
     rule_type = "test_genrule_layer",
     user = "root",
@@ -183,6 +196,7 @@ image.genrule_layer(
         "-c",
         "test -e $(location :shadow_me)",
     ],
+    flavor = "antlir_test",
     parent_layer = ":test-layer",
     rule_type = "test_genrule_layer",
     bind_repo_ro = True,
@@ -422,6 +436,7 @@ image.layer(
             "/sendstream_meownt",
         ),
     ],
+    flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )
 
@@ -430,6 +445,7 @@ image.layer(
     features = [
         ":feature_mount",
     ],
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/items/..."],
 )
 
@@ -541,12 +557,14 @@ image.layer(
     name = "installed-executables",
     parent_layer = ":test-layer",
     features = [":feature_install_files"],
+    flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )
 
 image.layer(
     name = "installed-files",
     features = [":feature_install_files"],
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -559,6 +577,7 @@ image.layer(
         image.ensure_subdirs_exist("/", "bar2"),
         image.clone(":installed-files", "/foo/bar/", "/bar2/"),
     ],
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -662,6 +681,7 @@ image.layer(
         ":feature_addremove_conflict_add",
         ":feature_repeated_removal",
     ],
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -672,6 +692,7 @@ image.layer(
         ":feature_addremove_conflict_remove",
         ":feature_repeated_removal",
     ],
+    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
