@@ -16,10 +16,6 @@ libcap_ng = {
     'sha256': '65b86885b8d873e55c05bd49427fd370d559b26f0c2089ac9194828e6a2fe233',
 }
 
-export_file(name = 'build.sh')
-export_file(name = 'meson.build.patch')
-export_file(name = 'libcap-ng.pc.patch')
-
 http_file(
     name = 'source',
     urls = ['https://download.qemu.org/qemu-{}.tar.xz'.format(qemu['version'])],
@@ -39,52 +35,43 @@ http_file(
 )
 
 image.layer(
-    name = '_base',
+    name = 'base',
     parent_layer = '//images/appliance:stable-build-appliance',
     features = [
         image.rpms_install([
-            # dependencies listed at https://wiki.qemu.org/Hosts/Linux
-            'git', 'bzip2', 'python3', 'ninja-build',
-            'glib2-devel', 'libfdt-devel', 'pixman-devel', 'zlib-devel',
-            # static build dependencies (at least on this builder image)
+            # build dependencies
+            'git', 'bzip2', 'python3', 'ninja-build', 'autoconf', 'libtool',
+            # static dependencies (at least on this builder image)
             'glib2-static', 'glibc-static', 'pcre-static', 'zlib-static',
-            'libzstd-static', 'autoconf', 'libtool',
-            # needed for virtfs
-            'libcap-ng-devel', 'libattr-devel',
+            'libzstd-static', 'libfdt-static', 'libattr-devel',
         ]),
     ],
 )
 
 image.layer(
-    name = '_setup',
-    parent_layer = ':_base',
+    name = 'setup',
+    parent_layer = ':base',
     features = [
         # genrule_layer runs as user 'nobody' by default
         image.ensure_subdirs_exist('/', '_temp_qemu', user='nobody'),
         image.ensure_subdirs_exist('/', 'output', user='nobody'),
 
         # put sources and build script in the base layer
-        image.install(':build.sh', '/_temp_qemu/build.sh'),
+        image.install('build.sh', '/_temp_qemu/build.sh'),
+        image.install('meson.build.patch', '/_temp_qemu/meson.build.patch'),
         image.install(':source', '/_temp_qemu/source.tar.xz'),
         image.install(':pixman', '/_temp_qemu/pixman.tar.gz'),
         image.install(':libcap-ng', '/_temp_qemu/libcap-ng.tar.gz'),
-        image.install(':meson.build.patch', '/_temp_qemu/meson.build.patch'),
-        image.install(':libcap-ng.pc.patch', '/_temp_qemu/libcap-ng.pc.patch'),
     ],
 )
 
 image.genrule_layer(
-    name = '_build',
-    parent_layer = ':_setup',
+    name = 'build',
+    parent_layer = ':setup',
     rule_type = 'build',
     antlir_rule = 'user-internal',
-    # user = 'root',  # needed to patch .pc files, sometimes for untarring
-    cmd = [
-        '/bin/sh', '-c',
-        'cd /_temp_qemu && bash build.sh {} {} {}'.format(
-            qemu['version'], pixman['version'], libcap_ng['version']
-        ),
-    ],
+    cmd = ['/_temp_qemu/build.sh',
+           qemu['version'], pixman['version'], libcap_ng['version']],
 )
 
 vm_visibility = [
@@ -96,16 +83,16 @@ vm_visibility = [
 hoist(
     name = 'qemu',
     out = 'qemu',
-    layer = '_build',
-    path = '/output/qemu/bin/qemu-system-x86_64',
+    layer = 'build',
+    path = '/output/bin/qemu-system-x86_64',
     visibility = vm_visibility,
 )
 
 hoist(
     name = 'qemu-img',
     out = 'qemu-img',
-    layer = '_build',
-    path = '/output/qemu/bin/qemu-img',
+    layer = 'build',
+    path = '/output/bin/qemu-img',
     visibility = vm_visibility,
 )
 
@@ -113,8 +100,8 @@ hoist(
     hoist(
         name = 'share/qemu/{}'.format(rom),
         out = rom,
-        layer = '_build',
-        path = '/output/qemu/share/qemu/{}'.format(rom),
+        layer = 'build',
+        path = '/output/share/qemu/{}'.format(rom),
         visibility = vm_visibility,
     ) for rom in [
         'bios-256k.bin',
