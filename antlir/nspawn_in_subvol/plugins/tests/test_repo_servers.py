@@ -13,14 +13,10 @@ import unittest
 from contextlib import contextmanager
 
 from antlir.common import check_popen_returncode
-from antlir.config import load_repo_config
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
 
 from .. import launch_repo_servers
 from .rpm_base import RpmNspawnTestBase
-
-
-REPO_CFG = load_repo_config()
 
 
 class TestImpl:

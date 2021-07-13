@@ -59,7 +59,6 @@ image.python_unittest(
     container_opts = image.opts(shadow_proxied_binaries = True),
     run_as_user = "root",
     deps = [
-        "//antlir:config",
         "//antlir:fs_utils",
         "//antlir:testlib_flavor_helpers",
         "//antlir/rpm:find_snapshot",

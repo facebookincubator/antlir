@@ -7,8 +7,8 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load("//antlir/bzl/image/feature:new.bzl", "FEATURES_FOR_LAYER_PREFIX", "feature_new", "normalize_features")
-load(":constants.bzl", "REPO_CFG")
+load("//antlir/bzl/image/feature:new.bzl", "feature_new", "normalize_features")
+load(":constants.bzl", "BZL_CONST", "REPO_CFG")
 load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -42,7 +42,9 @@ def compile_image_features(
 
     # Outputs the feature JSON for the given layer to disk so that it can be
     # parsed by other tooling.
-    features_for_layer = FEATURES_FOR_LAYER_PREFIX + name
+    #
+    # Keep in sync with `bzl_const.py`.
+    features_for_layer = name + BZL_CONST.layer_feature_suffix
     feature_new(
         name = features_for_layer,
         features = features + (

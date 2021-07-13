@@ -7,13 +7,12 @@
 import os
 import unittest
 
-from antlir.config import load_repo_config
+from antlir.config import repo_config
 
 
 class CheckSize(unittest.TestCase):
     def test_package_size(self):
-        cfg = load_repo_config()
-        if cfg.artifacts_require_repo:
+        if repo_config().artifacts_require_repo:
             self.skipTest(
                 "package size only is only accurate in release builds "
                 "with standalone artifacts"

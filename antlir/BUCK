@@ -1,4 +1,4 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG", "flavor_config_t_shape_loader", "repo_config_t")
+load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG", "flavor_config_t_shape_loader")
 load("//antlir/bzl:image_gpt.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
@@ -576,25 +576,27 @@ python_library(
     ],
 )
 
-shape.loader(
-    name = "repo_config_t",
-    shape = repo_config_t,
-    classname = "repo_config_t",
-    resources = {
-        shape.json_file(
-            name = "config.json",
-            instance = REPO_CFG,
-        ): "config.json",
-    },
-)
-
 python_library(
     name = "config",
     srcs = ["config.py"],
     deps = [
         ":artifacts_dir",
         ":fs_utils",
-        ":repo_config_t",
+        shape.python_data(
+            name = "repo_config_t",
+            instance = REPO_CFG,
+        ),
+    ],
+)
+
+python_library(
+    name = "bzl_const",
+    srcs = ["bzl_const.py"],
+    deps = [
+        shape.python_data(
+            name = "bzl_const_t",
+            instance = BZL_CONST,
+        ),
     ],
 )
 

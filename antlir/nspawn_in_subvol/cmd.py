@@ -20,7 +20,7 @@ from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 from antlir.compiler import procfs_serde
 from antlir.compiler.items.common import META_ARTIFACTS_REQUIRE_REPO
 from antlir.compiler.items.mount import mounts_from_meta
-from antlir.config import load_repo_config
+from antlir.config import repo_config
 from antlir.find_built_subvol import Subvol, find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
@@ -203,9 +203,6 @@ def _extra_nspawn_args_and_env(
     # NB: This does not set `--user` since this is done via `nsenter`
     extra_nspawn_args = []
 
-    # Load configs for this repository
-    repo_config = load_repo_config()
-
     # Note: that nspawn_in_subvol only handles `BuildSource` mount
     # configurations.
     for mount in mounts_from_meta(opts.layer.path()):
@@ -253,13 +250,13 @@ def _extra_nspawn_args_and_env(
             bind_args(
                 # Buck seems to operate with `realpath` when it resolves
                 # `$(location)` macros, so this is what we should mount.
-                os.path.realpath(repo_config.repo_root)
+                os.path.realpath(repo_config().repo_root)
             )
         )
 
         # insert additional host mounts that are always required when
         # using repository artifacts.
-        for mount in repo_config.host_mounts_for_repo_artifacts:
+        for mount in repo_config().host_mounts_for_repo_artifacts:
             extra_nspawn_args.extend(bind_args(mount))
 
         # Future: we **may** also need to mount the scratch directory

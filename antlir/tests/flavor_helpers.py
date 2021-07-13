@@ -4,19 +4,21 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from antlir.config import load_repo_config
+from typing import Set
+
+from antlir.common import not_none
+from antlir.config import repo_config
 
 
 def render_flavor(flavor=None) -> str:
     "A Subvolume rendering of `flavor`, or `flavor_default` if None."
-    flavor = flavor or load_repo_config().flavor_default
+    flavor = flavor or repo_config().flavor_default
     return f"(File d{len(flavor)})"
 
 
-# pyre-fixme[31]: Expression `set(str)` is not a valid type.
-def get_rpm_installers_supported() -> {str}:
+def get_rpm_installers_supported() -> Set[str]:
     return {
-        config.rpm_installer
-        for _, config in load_repo_config().flavor_to_config.items()
+        not_none(config.rpm_installer)
+        for _, config in repo_config().flavor_to_config.items()
         if config.rpm_installer
     }

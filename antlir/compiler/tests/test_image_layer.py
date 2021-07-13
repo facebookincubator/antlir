@@ -15,7 +15,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
 from antlir.compiler.items.mount import mounts_from_meta
-from antlir.config import load_repo_config
+from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.tests.flavor_helpers import (
@@ -47,7 +47,7 @@ TARGET_TO_PATH = {
 }
 
 
-REPO_CFG = load_repo_config()
+REPO_CFG = repo_config()
 SHADOW_ME = "shadow me"
 
 
@@ -314,11 +314,11 @@ class ImageLayerTestCase(unittest.TestCase):
             ):
                 # Assume that the prefix of the repo (e.g. /home or /data)
                 # is not one of the normal FHS-type directories below.
-                repo = os.path.abspath(str(find_repo_root()))
+                repo = find_repo_root().abspath()
                 top = repo
                 while True:
-                    parent = os.path.dirname(top)
-                    if parent == "/":
+                    parent = top.dirname()
+                    if parent == b"/":
                         break
                     top = parent
 
@@ -328,7 +328,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 paths_to_verify = [repo]
                 expected = {}
                 for d in REPO_CFG.host_mounts_for_repo_artifacts:
-                    d = os.path.abspath(d)
+                    d = d.abspath()
                     if d.startswith(top):
                         paths_to_verify.append(d)
                     else:
@@ -336,20 +336,20 @@ class ImageLayerTestCase(unittest.TestCase):
                         # I know this will make someone very frustrated again
                         # in the future, but it's just too crazy to account for
                         # all of the many cases in which this can break
-                        while d != "/":
-                            pop_path(r, d)
-                            d = os.path.dirname(d)
+                        while d != b"/":
+                            pop_path(r, str(d))
+                            d = d.dirname()
 
                 for d in paths_to_verify:
-                    while d != "/":
+                    while d != b"/":
                         nested = expected
-                        for part in d.split(os.path.sep)[2:]:
+                        for part in str(d).split(os.path.sep)[2:]:
                             if part not in nested:
                                 nested[part] = ["(Dir)", {}]
                             nested = nested[part][1]
-                        d = os.path.dirname(d)
+                        d = d.dirname()
 
-                self.assertEqual(["(Dir)", expected], pop_path(r, top))
+                self.assertEqual(["(Dir)", expected], pop_path(r, str(top)))
 
             # Clean other, less sketchy side effects of `nspawn_in_subvol`:
             # empty LFS directories.

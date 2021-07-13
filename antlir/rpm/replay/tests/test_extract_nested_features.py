@@ -20,6 +20,7 @@ def _extract_features(infix: str):
         layer_features_out=env["layer_feature_json"],
         layer_out=env["layer_output"],
         target_to_path=env["target_map"],
+        flavor="antlir_test",
     )
 
 
@@ -85,16 +86,19 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         self.assertEqual({"/new/dir/", "/another/dir/"}, ef.make_dir_paths)
         self._check_base_plus_one(ef)
         self.assertEqual(set(), ef.features_needing_custom_image)
-        target_prefix = "//antlir/rpm/replay/tests:features-for-layer-"
+
+        def feature_target(layer_name):
+            return f"//antlir/rpm/replay/tests:{layer_name}__layer-feature"
+
         self.assertEqual(
             {
-                ("layer_from_package", target_prefix + "base"),
-                ("parent_layer", target_prefix + "base-plus-one"),
-                ("mounts", target_prefix + "base-plus-one"),
-                ("rpms", target_prefix + "base-plus-one"),
-                ("ensure_subdirs_exist", target_prefix + "base-plus-one"),
-                ("parent_layer", target_prefix + "non-custom"),
-                ("ensure_subdirs_exist", target_prefix + "non-custom"),
+                ("layer_from_package", feature_target("base")),
+                ("parent_layer", feature_target("base-plus-one")),
+                ("mounts", feature_target("base-plus-one")),
+                ("rpms", feature_target("base-plus-one")),
+                ("ensure_subdirs_exist", feature_target("base-plus-one")),
+                ("parent_layer", feature_target("non-custom")),
+                ("ensure_subdirs_exist", feature_target("non-custom")),
             },
             {(key, target) for key, target, _cfg in ef.features_to_replay},
         )

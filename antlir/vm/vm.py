@@ -25,9 +25,9 @@ from typing import (
     Union,
 )
 
-from antlir.common import init_logging, get_logger
+from antlir.common import init_logging, get_logger, not_none
 from antlir.compiler.items.mount import mounts_from_image_meta
-from antlir.config import load_repo_config
+from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.shape import Shape
@@ -264,9 +264,8 @@ async def __vm_with_stack(
     # Set defaults
     shares = shares or []
 
-    # Load the repo_config
-    # Note that we currently rely on the assumption that the binary that ends
-    # up executing this code (//antlir/vm:vmtest or //antlir/vm:run) is being
+    # We currently rely on the assumption that the binary that ends up
+    # executing this code (//antlir/vm:vmtest or //antlir/vm:run) is being
     # executed while the cwd is within the repo path.  This might *not* always
     # be the case, but given the nature of the fact that these are invoked via
     # either `buck run` or `buck test` , and buck requires a working repo to
@@ -275,7 +274,7 @@ async def __vm_with_stack(
     # a VM via another test binary *outside* the VM and this kind of embedding
     # can cause the sys.argv[0] of the executing binary to live outside
     # of the repo. (See the //antlir/vm/tests:kernel_panic_test)
-    repo_config = load_repo_config(path_in_repo=Path(os.getcwd()))
+    repo_cfg = repo_config(path_in_repo=Path(os.getcwd()))
 
     # Process all the mounts from the root image we are using
     mounts = mounts_from_image_meta(opts.disk.package.path)
@@ -346,14 +345,14 @@ async def __vm_with_stack(
         ]
     )
 
-    if bind_repo_ro or repo_config.artifacts_require_repo:
+    if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
-        shares.append(Plan9Export(repo_config.repo_root))
+        shares.append(Plan9Export(not_none(repo_cfg.repo_root)))
 
         # Also share any additionally configured host mounts needed
         # along with the repository root.
-        for mount in repo_config.host_mounts_for_repo_artifacts:
+        for mount in repo_cfg.host_mounts_for_repo_artifacts:
             shares.append(Plan9Export(mount))
 
     ns = stack.enter_context(Unshare([Namespace.NETWORK, Namespace.PID]))

@@ -14,12 +14,21 @@ load("//antlir/bzl:shape.bzl", "shape")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
 
 DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
-VERSION_SET_ALLOW_ALL_VERSIONS = "__VERSION_SET_ALLOW_ALL_VERSIONS__"
 CONFIG_KEY = "antlir"
 
-# This needs to be kept in sync with
-# `antlir.nspawn_in_subvol.args._QUERY_TARGETS_AND_OUTPUTS_SEP`
-QUERY_TARGETS_AND_OUTPUTS_SEP = "|"
+BZL_CONST = shape.new(
+    shape.shape(
+        layer_feature_suffix = str,
+        PRIVATE_feature_suffix = str,
+        version_set_allow_all_versions = str,
+    ),
+    layer_feature_suffix = "__layer-feature",
+    # Do NOT use this outside of Antlir internals.  See "Why are `feature`s
+    # forbidden as dependencies?" in `bzl/image/feature/new.bzl` for a
+    # detailed explanation.
+    PRIVATE_feature_suffix = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN",
+    version_set_allow_all_versions = "__VERSION_SET_ALLOW_ALL_VERSIONS__",
+)
 
 # Use `_get_str_cfg` or `_get_str_list_cfg` instead.
 def _do_not_use_directly_get_cfg(name, default = None):
@@ -60,8 +69,8 @@ def _get_version_set_to_path():
         fail("antlir.version_set_to_path is a space-separated dict: k1 v1 k2 v2")
 
     # A layer can turn off version locking
-    # via `version_set = VERSION_SET_ALLOW_ALL_VERSIONS`.
-    vs_to_path[VERSION_SET_ALLOW_ALL_VERSIONS] = "TROLLING TROLLING TROLLING"
+    # via `version_set = BZL_CONST.version_set_allow_all_versions`.
+    vs_to_path[BZL_CONST.version_set_allow_all_versions] = "TROLLING TROLLING TROLLING"
     return vs_to_path
 
 # Defaults to the empty list if the config is not set
@@ -118,7 +127,7 @@ def new_flavor_config(
         rpm_installer,
         rpm_repo_snapshot = None,
         rpm_version_set_overrides = None,
-        version_set_path = VERSION_SET_ALLOW_ALL_VERSIONS,
+        version_set_path = BZL_CONST.version_set_allow_all_versions,
         unsafe_bypass_flavor_check = False):
     """
     Arguments
@@ -232,8 +241,8 @@ def _get_flavor_to_config():
 repo_config_t = shape.shape(
     artifacts_require_repo = bool,
     artifact = shape.dict(str, str),
-    host_mounts_allowed_in_targets = shape.field(shape.list(str), optional = True),
-    host_mounts_for_repo_artifacts = shape.field(shape.list(str), optional = True),
+    host_mounts_allowed_in_targets = shape.list(shape.path()),
+    host_mounts_for_repo_artifacts = shape.list(shape.path()),
     flavor_available = shape.list(str),
     flavor_default = str,
     flavor_to_config = shape.dict(str, _flavor_config_t),
