@@ -55,7 +55,7 @@ class RpmReplayTestCase(unittest.TestCase):
                 repo_cfg.flavor_to_config["antlir_test"].rpm_installer
             ),
             rpm_repo_snapshot=snapshot_install_dir(
-                "//antlir/rpm:subvol-rpm-compare-repo-snapshot-for-tests"
+                "//antlir/rpm:rpm-replay-repo-snapshot-for-tests"
             ),
         )
 

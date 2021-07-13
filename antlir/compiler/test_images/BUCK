@@ -1003,7 +1003,7 @@ add_rpm_repo_snapshots_layer(
         ("//antlir/rpm:non-default-repo-snapshot-for-tests", installer)
         for installer in flavor_helpers.get_rpm_installers_supported()
     ] + [
-        ("//antlir/rpm:subvol-rpm-compare-repo-snapshot-for-tests", installer)
+        ("//antlir/rpm:rpm-replay-repo-snapshot-for-tests", installer)
         for installer in flavor_helpers.get_rpm_installers_supported()
     ],
     parent_layer = flavor_helpers.default_flavor_build_appliance,

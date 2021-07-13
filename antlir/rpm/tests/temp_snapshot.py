@@ -102,10 +102,9 @@ if __name__ == "__main__":
                 [Rpm("cake", "non", "default"), Rpm("cheese", "0", "0")]
             )
         },
-        "subvol-rpm-compare": {
+        "rpm-replay": {
             "cheese": Repo(
                 [
-                    Rpm("cake", "0", "0"),
                     # Epoch affects rpm installer output;
                     # so we use "has-epoch" rpm to exercise that parsing case.
                     Rpm("has-epoch", "0", "0", epoch="1"),
