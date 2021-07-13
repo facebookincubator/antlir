@@ -80,7 +80,7 @@ def _build_test_tags(unittest_rule, tags):
     'tags' provided by a user are always applied to the outer test, so they
     control the behavior of TestPilot or to add information for 'buck query'.
     """
-    wrapper_tags = tags + ["vmtest"]
+    wrapper_tags = tags + ["vmtest", "heavyweight"]
 
     # Make sure that the test runner ignores the underlying test, and only
     # looks at the version that runs in a VM.
