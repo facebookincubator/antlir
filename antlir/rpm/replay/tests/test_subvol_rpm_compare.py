@@ -31,7 +31,7 @@ class SubvolRpmCompareTestImpl:
             leaf=leaf,
             rpm_installer=self._YUM_DNF,
             rpm_repo_snapshot=snapshot_install_dir(
-                "//antlir/rpm:subvol-rpm-compare-repo-snapshot-for-tests"
+                "//antlir/rpm:rpm-replay-repo-snapshot-for-tests"
             ),
         )
 
@@ -68,7 +68,7 @@ class SubvolRpmCompareTestImpl:
                 ["rpm-test-has-epoch", *rpms_with_deps],
             ],
         )
-        self.assertEqual(["rpm-test-cake"], rpms_removed_names)
+        self.assertEqual(["rpm-test-milk"], rpms_removed_names)
 
     def test_subvol_rpm_compare_and_download(self):
         subvols = self.construct_subvols_to_compare()

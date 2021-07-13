@@ -410,8 +410,8 @@ test_rpm_repo_snapshot(
 )
 
 test_rpm_repo_snapshot(
-    name = "subvol-rpm-compare-repo-snapshot-for-tests",
-    kind = "subvol-rpm-compare",
+    name = "rpm-replay-repo-snapshot-for-tests",
+    kind = "rpm-replay",
     repo_server_ports = (28893, 28894),
     rpm_installers = ("dnf", "yum"),
 )
