@@ -716,7 +716,7 @@ def _python_data(
     )
     return normalize_target(":" + name)
 
-def _json_file(name, instance):  # pragma: no cover
+def _json_file(name, instance, visibility = None):  # pragma: no cover
     """
     Serialize the given shape instance to a JSON file that can be used in the
     `resources` section of a `python_binary` or a `$(location)` macro in a
@@ -733,6 +733,7 @@ def _json_file(name, instance):  # pragma: no cover
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
+        visibility = visibility,
     )
     return normalize_target(":" + name)
 
