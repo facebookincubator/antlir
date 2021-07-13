@@ -13,8 +13,8 @@ def layer_features_json_query(layer):
             value = "image_feature",
             expr = query.deps(
                 expr = query.set(layer),
-                # Limit depth to 1 to get just the `features-for-layer`
-                # target.  All other features are at distance 2+.
+                # Limit depth to 1 to get just the `__layer-feature` target.
+                # All other features are at distance 2+.
                 depth = 1,
             ),
         ),

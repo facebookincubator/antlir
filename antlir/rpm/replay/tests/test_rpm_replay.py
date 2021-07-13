@@ -7,7 +7,7 @@ import os
 import unittest
 
 from antlir.compiler.items_for_features import ItemFactory
-from antlir.config import load_repo_config
+from antlir.config import repo_config
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -37,6 +37,7 @@ class RpmReplayTestCase(unittest.TestCase):
             layer_features_out=env_map["layer_feature_json"],
             layer_out=env_map["layer_output"],
             target_to_path=env_map["target_map"],
+            flavor="antlir_test",
         )
 
         def gen_replay_items(exit_stack, layer_opts):
@@ -46,13 +47,12 @@ class RpmReplayTestCase(unittest.TestCase):
             ):
                 yield from item_factory.gen_items_for_feature(*feature)
 
-        repo_cfg = load_repo_config()
         subvols = SubvolsToCompare(
             ba=ba,
             root=root,
             leaf=leaf,
             rpm_installer=YumDnf(
-                repo_cfg.flavor_to_config["antlir_test"].rpm_installer
+                repo_config().flavor_to_config["antlir_test"].rpm_installer
             ),
             rpm_repo_snapshot=snapshot_install_dir(
                 "//antlir/rpm:rpm-replay-repo-snapshot-for-tests"
@@ -68,7 +68,7 @@ class RpmReplayTestCase(unittest.TestCase):
                 rpm_download_subvol=rpm_download_subvol,
                 root=root,
                 layer_opts=LayerOpts(
-                    artifacts_may_require_repo=repo_cfg.artifacts_require_repo,
+                    artifacts_may_require_repo=repo_config().artifacts_require_repo,
                     build_appliance=ba,
                     layer_target="unimportant",
                     rpm_installer=subvols.rpm_installer,

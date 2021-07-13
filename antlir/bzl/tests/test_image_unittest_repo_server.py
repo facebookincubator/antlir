@@ -8,12 +8,9 @@ import os
 import subprocess
 import unittest
 
-from antlir.config import load_repo_config
 from antlir.fs_utils import temp_dir
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
-
-REPO_CFG = load_repo_config()
 
 
 class ImageUnittestTestRepoServer(unittest.TestCase):

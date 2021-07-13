@@ -7,7 +7,7 @@
 import tempfile
 import unittest
 
-from antlir.config import load_repo_config
+from antlir.config import repo_config
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.flavor_helpers import render_flavor
@@ -106,7 +106,7 @@ class AddRemoveConflictTestCase(unittest.TestCase):
                         "--targets-and-outputs",
                         tf.name,
                         "--flavor",
-                        load_repo_config().flavor_default,
+                        repo_config().flavor_default,
                     ]
                 )
             )

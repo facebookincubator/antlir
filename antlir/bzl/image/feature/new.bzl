@@ -50,17 +50,12 @@ Read that target's docblock for more info, but in essence, that will:
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:check_flavor_exists.bzl", "check_flavor_exists")
-load("//antlir/bzl:constants.bzl", "REPO_CFG", "VERSION_SET_ALLOW_ALL_VERSIONS")
+load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
-
-FEATURES_FOR_LAYER_PREFIX = "features-for-layer-"
-
-# See the comment below to understand why you should not use this
-DO_NOT_USE_FEATURES_SUFFIX = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
 
 # ## Why are `feature`s forbidden as dependencies?
 #
@@ -97,23 +92,19 @@ DO_NOT_USE_FEATURES_SUFFIX = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_
 # have direct access to the `feature.new` JSON outputs in any case.  Most
 # users will want to depend on build artifacts that are downstream of
 # `feature.new`, like `image.layer`.
+#
+# IMPORTANT: Keep in sync with `bzl_const.py`
 def PRIVATE_DO_NOT_USE_feature_target_name(name, flavor):
-    name += DO_NOT_USE_FEATURES_SUFFIX
+    name += BZL_CONST.PRIVATE_feature_suffix
     check_flavor_exists(flavor)
 
     # When a feature is declared, it doesn't know the version set of the
     # layer that will use it, so we normally declare all possible variants.
     # This is only None when there are no version sets in use.
     version_set_path = REPO_CFG.flavor_to_config[flavor].version_set_path
-    if version_set_path != VERSION_SET_ALLOW_ALL_VERSIONS:
+    if version_set_path != BZL_CONST.version_set_allow_all_versions:
         name += "__flavor__" + flavor
     return name
-
-def PRIVATE_DO_NOT_USE_features_for_layer(layer_name, flavor):
-    return FEATURES_FOR_LAYER_PREFIX + PRIVATE_DO_NOT_USE_feature_target_name(
-        layer_name,
-        flavor,
-    )
 
 def _flatten_nested_lists(lst):
     flat_lst = []
@@ -174,7 +165,7 @@ def _normalize_feature_and_get_deps(feature, flavor):
         feature_dict["rpms"] = [dict(**r) for r in aliased_rpms]
 
     vs_path = REPO_CFG.flavor_to_config[flavor].version_set_path
-    if vs_path != VERSION_SET_ALLOW_ALL_VERSIONS:
+    if vs_path != BZL_CONST.version_set_allow_all_versions:
         # Resolve RPM names to version set targets.  We cannot avoid this
         # coupling with `rpm.bzl` because the same `image.rpms_install` may
         # be normalized against multiple version set names.

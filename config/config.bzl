@@ -39,7 +39,7 @@ do_not_use_repo_cfg = {
     },
     "host_mounts_allowed_in_targets": " ".join([
         "//images/appliance:host-build-appliance",
-        "//images/appliance:features-for-layer-host-build-appliance",
+        "//images/appliance:host-build-appliance__layer-feature",
     ]),
     "host_mounts_for_repo_artifacts": [],
     # Future: Once we can guarantee `libcap-ng` to be at least 0.8, add

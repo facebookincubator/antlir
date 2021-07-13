@@ -9,7 +9,6 @@ import subprocess
 import sys
 from contextlib import contextmanager
 
-from antlir.config import load_repo_config
 from antlir.fs_utils import Path, temp_dir
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.rpm.yum_dnf_conf import YumDnf
@@ -22,9 +21,6 @@ from ..common import PhaseOrder
 from ..rpm_action import RpmAction, RpmActionItem
 from .common import BaseItemTestCase, render_subvol
 from .rpm_action_base import RpmActionItemTestBase
-
-
-REPO_CFG = load_repo_config()
 
 
 class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
