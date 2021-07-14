@@ -203,12 +203,12 @@ mv "$TMP/out" "$OUT"
     )
     return True, ":" + name
 
-def maybe_wrap_executable_target(target, wrap_prefix, **kwargs):
+def maybe_wrap_executable_target(target, wrap_suffix, **kwargs):
     """
     Docs on `_maybe_wrap_runtime_deps_as_build_time_deps'.  This variant
     automatically names the wrapped target, and reuses an existing one.
     """
-    exists, wrapped_target = wrap_target(target, wrap_prefix)
+    exists, wrapped_target = wrap_target(target, wrap_suffix)
 
     # Reuse a pre-existing wrapper for the same target -- with our 120-bit
     # secure hashes, collisions are practically impossible.

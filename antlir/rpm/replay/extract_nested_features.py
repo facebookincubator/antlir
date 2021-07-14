@@ -16,7 +16,6 @@ from antlir.compiler.items_for_features import (
 from antlir.find_built_subvol import find_built_subvol, Subvol
 from antlir.fs_utils import Path
 
-
 log = get_logger()
 
 

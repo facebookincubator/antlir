@@ -118,7 +118,7 @@ def rpm_repo_snapshot(
     # We need a wrapper to `cp` a `buck run`nable target in @mode/dev.
     _, yum_dnf_from_snapshot_wrapper = maybe_wrap_executable_target(
         target = "//antlir/rpm:yum-dnf-from-snapshot",
-        wrap_prefix = "__rpm_repo_snapshot",
+        wrap_suffix = "rpm_repo_snapshot",
         visibility = [],
     )
 
@@ -126,7 +126,7 @@ def rpm_repo_snapshot(
     # See the comment in that file for more info.
     _, repo_server_wrapper = maybe_wrap_executable_target(
         target = "//antlir/rpm:repo-server",
-        wrap_prefix = "__rpm_repo_snapshot",
+        wrap_suffix = "rpm_repo_snapshot",
         visibility = [],
     )
     quoted_repo_server_ports = shell.quote(

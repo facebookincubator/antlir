@@ -58,10 +58,10 @@ def tag_required_target_key(tagger, d, target_key, is_layer = False):
         )
     d[target_key] = tag_target(tagger, target = d[target_key], is_layer = is_layer)
 
-def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_prefix, **kwargs):
+def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_suffix, **kwargs):
     was_wrapped, wrapped_target = maybe_wrap_executable_target(
         target,
-        wrap_prefix,
+        wrap_suffix,
         **kwargs
     )
     return was_wrapped, tag_target(target_tagger, wrapped_target)
@@ -72,7 +72,7 @@ def image_source_as_target_tagged_dict(target_tagger, user_source):
         _was_wrapped, src["generator"] = tag_and_maybe_wrap_executable_target(
             target_tagger = target_tagger,
             target = src.pop("generator"),
-            wrap_prefix = "image_source_wrap_generator",
+            wrap_suffix = "image_source_wrap_generator",
             visibility = [],  # Not visible outside of project
         )
     else:

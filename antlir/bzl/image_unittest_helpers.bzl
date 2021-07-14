@@ -17,11 +17,8 @@ load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 
 def _hidden_test_name(name):
-    # This is the test binary that is supposed to run inside the image.  The
-    # "IGNORE-ME" prefix serves to inform users who come across this target
-    # that this is not the test binary they are looking for.  It's a prefix
-    # to avoid people stumbling across it via tab-completion.
-    return "IGNORE-ME-layer-test--" + name
+    # This is the test binary that is supposed to run inside the image.
+    return name + "__test_binary"
 
 def _tags_to_hide_test():
     # These tags (aka labels) are a defense-in-depth attempt to make the
@@ -145,7 +142,7 @@ def _nspawn_wrapper_properties(
     # would prevent one from running the test binary directly, bypassing
     # Buck.  Since Buck CLI is slow, this would be a significant drop in
     # usability, so we use this library trick.
-    test_spec_py = "layer-test-spec-py-" + name
+    test_spec_py = name + "__layer-test-spec-py"
     buck_genrule(
         name = test_spec_py,
         out = "unused_name.py",
@@ -222,7 +219,7 @@ mv $TMP/out "$OUT"
     # IMPORTANT: If you add more dependencies to THIS LIBRARY, or to any of
     # the AUXILIARY TARGETS above, you must add their externally observable
     # parts to `porcelain_deps` below, or CI test triggering will break.
-    wrapper_impl_library = "layer-test-wrapper-library-" + name
+    wrapper_impl_library = "{}__layer-test-wrapper-library".format(name)
     python_library(
         name = wrapper_impl_library,
         visibility = visibility,

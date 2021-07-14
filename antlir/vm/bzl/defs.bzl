@@ -147,14 +147,15 @@ def _vm_unittest(
     )
 
     # Build an image layer + package containing the actual test binary
-    actual_test_layer = "{}--test-binary-layer".format(name)
-    actual_test_image = "{}=image.btrfs".format(actual_test_layer)
+    actual_test_layer = "{}__test-binary-layer".format(name)
     image.layer(
         name = actual_test_layer,
         features = [
             image.install_buck_runnable(":" + actual_test_binary, "/test"),
         ],
     )
+
+    actual_test_image = "{}__test-binary-image".format(name)
     image.package(
         name = actual_test_image,
         format = "btrfs",
