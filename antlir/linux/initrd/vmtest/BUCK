@@ -5,13 +5,13 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "rust_binary", "
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:defs.bzl", "linux")
-load("//antlir/vm/bzl:defs.bzl", "vm")
-load("//antlir/vm/bzl:initrd.bzl", "initrd")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
+load("//antlir/vm/bzl:defs.bzl", "vm")
+load("//antlir/vm/bzl:initrd.bzl", "initrd")
 
 # TODO: we probably will want dropbear in the base initrd for remote debugging
 # purposes, but for now isolate it to vmtest only
@@ -75,8 +75,6 @@ image.layer(
         image.ensure_dirs_exist("/etc/systemd/system"),
         # Some fixups for vmtest features in the limited initrd environment
         image.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
-        # Set a static IP when running in vmtest
-        image.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
         # We want to stay in the initrd, so mask out the units that switch-root
         # into the base os
         systemd.mask_units([
@@ -125,6 +123,15 @@ vm.rust_unittest(
     ),
     srcs = ["test_boots.rs"],
     crate_root = "test_boots.rs",
+    deps = [
+        third_party.library(
+            name,
+            platform = "rust",
+        )
+        for name in [
+            "nix",
+        ]
+    ],
 )
 
 rust_binary(
@@ -158,7 +165,9 @@ vm.rust_unittest(
         initrd = ":vmtest-initrd.cpio.gz",
         kernel = TEST_KERNEL,
         runtime = vm.types.runtime.new(
-            sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"],
+            sidecar_services = [
+                "$(exe :images-sidecar) $(location :image_packages)",
+            ],
         ),
     ),
     srcs = ["test_images.rs"],

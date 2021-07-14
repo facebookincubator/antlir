@@ -38,7 +38,9 @@ networking = [
     # Explicitly enable systemd-networkd to configure the network links
     # early in boot
     systemd.enable_unit("systemd-networkd.service"),
-    image.install("//antlir/linux/metalos:eth.network", "/usr/lib/systemd/network/20-eth.network"),
+    # There is some opportunity to consolidate with the MetalOS root network
+    # unit, but for right now we only want to use SLAAC in the initrd.
+    image.install("units/eth.network", "/usr/lib/systemd/network/50-eth.network"),
 ]
 
 nss = linux.config.glibc.nsswitch.install(linux.config.glibc.nsswitch.default)

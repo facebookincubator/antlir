@@ -1,0 +1,10 @@
+[Match]
+Name=eth*
+
+[Network]
+IPv6AcceptRA=yes
+
+[IPv6AcceptRA]
+# Force SLAAC only for early boot, otherwise systemd-networkd will start the
+# dhcpv6 client after receiving a RA.
+DHCPv6Client=false

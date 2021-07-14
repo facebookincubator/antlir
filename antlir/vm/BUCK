@@ -57,6 +57,9 @@ python_library(
     srcs = [
         "vm.py",
     ],
+    resources = {
+        ":router-advertiser": "router-advertiser",
+    },
     deps = [
         ":guest-ssh",
         ":share",
@@ -90,6 +93,18 @@ python_library(
     srcs = ["tap.py"],
     deps = [
         "//antlir:unshare",
+    ],
+)
+
+python_binary(
+    name = "router-advertiser",
+    srcs = ["router_advertiser.py"],
+    main_module = "antlir.vm.router_advertiser",
+    deps = [
+        third_party.library(
+            "scapy",
+            platform = "python",
+        ),
     ],
 )
 
