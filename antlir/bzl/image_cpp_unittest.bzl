@@ -42,7 +42,7 @@ def image_cpp_unittest(
         **wrapper_props.inner_test_kwargs
     )
 
-    wrapper_binary = "layer-test-wrapper-" + name
+    wrapper_binary = name + "__test-wrapper"
     python_binary(
         name = wrapper_binary,
         main_module = "antlir.nspawn_in_subvol.run_test",
@@ -72,7 +72,7 @@ def image_cpp_unittest(
     #
     # at test runtime.  The good news: if Buck ever breaks this convention,
     # CI will tell us promptly.
-    exec_wrapper_c = "layer-test-exec-wrapper-c-" + name
+    exec_wrapper_c = name + "__test-exec-in-c-wrapper"
     buck_genrule(
         name = exec_wrapper_c,
         out = "exec_nspawn_wrapper.c",

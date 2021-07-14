@@ -39,13 +39,15 @@ T_TAR = f"{T_BASE}:feature_tar_and_rpms"
 T_PRINT_OK = f"{T_BASE}:print-ok"
 T_EXE_WRAP_PRINT_OK = (
     f"{T_BASE}:"
-    + "install_buck_runnable_wrap_source__print-ok__tZD0yB-oR8iaa7Q8gX1u"
+    + "print-ok__"
+    + "install_buck_runnable_wrap_source-print-ok__tZD0yB-oR8iaa7Q8gX1u"
 )
 T_DIR_PRINT_OK = f"{T_BASE}:dir-print-ok"
 T_DIR_WITH_SCRIPT = f"{T_BASE}:dir-with-script"
 T_EXE_WRAP_DIR_PRINT_OK = (
     f"{T_BASE}:"
-    + "install_buck_runnable_wrap_source__dir-print-ok__aSw-wLLqmDSnGfAZQzPs"
+    + "dir-print-ok__"
+    + "install_buck_runnable_wrap_source-dir-print-ok__aSw-wLLqmDSnGfAZQzPs"
 )
 T_INSTALL_FILES = f"{T_BASE}:feature_install_files"
 T_KITCHEN_SINK = f"{T_BASE}:feature_kitchen_sink"

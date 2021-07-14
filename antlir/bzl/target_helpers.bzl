@@ -50,10 +50,10 @@ def mangle_target(target, min_abbrev = 15):
         # project to trigger a birthday collision.  We don't need all 43 bytes.
     ) + "__" + sha256_b64(target)[:20]
 
-def wrap_target(target, wrap_prefix):
-    # The wrapper target is plumbing, so it will start with the provided
-    # prefix to hide it from e.g. tab-completion.
-    wrapped_target = wrap_prefix + "__" + mangle_target(target)
+def wrap_target(target, wrap_suffix):
+    target = normalize_target(target)
+    _, name = target.split(":")
+    wrapped_target = name + "__" + wrap_suffix + "-" + mangle_target(target)
     return native.rule_exists(wrapped_target), wrapped_target
 
 def targets_and_outputs_arg_list(name, query):
@@ -84,7 +84,7 @@ def targets_and_outputs_arg_list(name, query):
     if not query:
         fail("`targets_and_outputs_arg_list` requires a query built with `//antlir/bzl:query.bzl`")
 
-    target = "targets-to-outputs-deps-{}-{}".format(name, sha256_b64(name + query))
+    target = "{}__deps-targets-to-outputs-{}".format(name, sha256_b64(name + query))
     buck_genrule(
         name = target,
         out = ".",

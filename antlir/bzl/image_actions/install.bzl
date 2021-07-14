@@ -118,7 +118,7 @@ binary to be unusable in image tests in @mode/dev.
             target_tagger = target_tagger,
             # Peel back target tagging since this helper expects untagged.
             target = extract_tagged_target(tagged_source.pop("source")),
-            wrap_prefix = "install_buck_runnable_wrap_source",
+            wrap_suffix = "install_buck_runnable_wrap_source",
             visibility = None,
             # NB: Buck makes it hard to execute something out of an
             # output that is a directory, but it is possible so long as

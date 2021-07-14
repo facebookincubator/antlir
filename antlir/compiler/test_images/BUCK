@@ -477,7 +477,7 @@ defs.buck_genrule(
         maybe_wrapped_ok = maybe_wrap_executable_target(
             target = ":print-ok",
             visibility = [],
-            wrap_prefix = "test-wrap-",
+            wrap_suffix = "test-wrap",
         )[1],
     ),
     cacheable = False,  # The wrapper makes our output non-cacheable.

@@ -39,7 +39,7 @@ def image_rust_unittest(
         **wrapper_props.inner_test_kwargs
     )
 
-    wrapper_binary = "layer-test-wrapper-" + name
+    wrapper_binary = name + "__test-wrapper"
     python_binary(
         name = wrapper_binary,
         main_module = "antlir.nspawn_in_subvol.run_test",
