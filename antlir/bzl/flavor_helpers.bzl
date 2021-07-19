@@ -115,5 +115,4 @@ flavor_helpers = struct(
     get_flavor_config = _get_flavor_config,
     get_rpm_installer = _get_rpm_installer,
     get_rpm_installers_supported = _get_rpm_installers_supported,
-    test_build_appliance = _get_build_appliance("antlir_test"),
 )
