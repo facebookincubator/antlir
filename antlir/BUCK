@@ -107,6 +107,7 @@ python_library(
     srcs = ["tests/layer_resource.py"],
     visibility = [
         "//antlir/...",
+        "//tupperware/cm/antlir/tests/...",
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
     ],
