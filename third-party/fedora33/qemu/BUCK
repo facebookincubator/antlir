@@ -1,39 +1,133 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
+load(":hoist.bzl", "hoist")
 
-# This is all here to provide pass through-logic to the host qemu
-# installation. Until we can get to the point of building qemu
-# in a clean way with this repo, we will use this mechanism.
-export_file(
-    name = "qemu",
-    visibility = [
-        "//antlir/linux/...",
-        "//antlir/vm/...",
-        "//third-party/...",
+# these need to be updated manually based on the downloaded version
+qemu = {
+    "sha256": "87bc1a471ca24b97e7005711066007d443423d19aacda3d442558ae032fa30b9",
+    "version": "6.0.0",
+}
+
+pixman = {
+    "sha256": "3a68a28318a78fffc61603c8385bb0010c3fb23d17cd1285d36a7148c87a3b91",
+    "version": "0.40.0",
+}
+
+libcap_ng = {
+    "sha256": "65b86885b8d873e55c05bd49427fd370d559b26f0c2089ac9194828e6a2fe233",
+    "version": "0.8.2",
+}
+
+# TODO(vmagro): for some reason, downloading qemu sources as an http_file fails
+# on FB internal CI. I cannot figure out why, but download it in a genrule that
+# checks the sha256 as a stopgap until I can figure out why it's failing.
+buck_genrule(
+    name = "source",
+    out = "source.tar.xz",
+    cmd = """
+        curl https://download.qemu.org/qemu-{}.tar.xz -o $OUT
+        echo "{} $OUT" | sha256sum --check
+    """.format(
+        qemu["version"],
+        qemu["sha256"],
+    ),
+)
+
+# packages which don't provide static libs also need to be built from source
+http_file(
+    name = "pixman",
+    sha256 = pixman["sha256"],
+    urls = ["https://github.com/freedesktop/pixman/archive/refs/tags/pixman-{}.tar.gz".format(pixman["version"])],
+)
+
+http_file(
+    name = "libcap-ng",
+    sha256 = libcap_ng["sha256"],
+    urls = ["https://github.com/stevegrubb/libcap-ng/archive/refs/tags/v{}.tar.gz".format(libcap_ng["version"])],
+)
+
+image.layer(
+    name = "base",
+    parent_layer = "//images/appliance:stable-build-appliance",
+    features = [
+        image.rpms_install([
+            # build dependencies
+            "git",
+            "bzip2",
+            "python3",
+            "ninja-build",
+            "autoconf",
+            "libtool",
+            # static dependencies (at least on this builder image)
+            "glib2-static",
+            "glibc-static",
+            "pcre-static",
+            "zlib-static",
+            "libzstd-static",
+            "libfdt-static",
+            "libattr-devel",
+        ]),
     ],
 )
 
-export_file(
-    name = "qemu-img",
-    visibility = [
-        "//antlir/linux/...",
-        "//antlir/vm/...",
-        "//third-party/...",
+image.layer(
+    name = "setup",
+    parent_layer = ":base",
+    features = [
+        image.ensure_dirs_exist("/_temp_qemu"),
+        image.ensure_dirs_exist("/output"),
+        # put sources and build script in the base layer
+        image.install("build.sh", "/_temp_qemu/build.sh"),
+        image.install("meson.build.patch", "/_temp_qemu/meson.build.patch"),
+        image.install(":source", "/_temp_qemu/source.tar.xz"),
+        image.install(":pixman", "/_temp_qemu/pixman.tar.gz"),
+        image.install(":libcap-ng", "/_temp_qemu/libcap-ng.tar.gz"),
     ],
+)
+
+image.genrule_layer(
+    name = "build",
+    parent_layer = ":setup",
+    rule_type = "build",
+    antlir_rule = "user-internal",
+    user = "root",
+    cmd = [
+        "/_temp_qemu/build.sh",
+        qemu["version"],
+        pixman["version"],
+        libcap_ng["version"],
+    ],
+)
+
+vm_visibility = [
+    "//antlir/linux/...",
+    "//antlir/vm/...",
+    "//third-party/...",
+]
+
+hoist(
+    name = "qemu",
+    out = "qemu",
+    layer = "build",
+    path = "/output/bin/qemu-system-x86_64",
+    visibility = vm_visibility,
+)
+
+hoist(
+    name = "qemu-img",
+    out = "qemu-img",
+    layer = "build",
+    path = "/output/bin/qemu-img",
+    visibility = vm_visibility,
 )
 
 [
-    buck_genrule(
+    hoist(
         name = "share/qemu/{}".format(rom),
         out = rom,
-        # NOTE: This assumes that the host qemu installs roms
-        # to /usr/share/qemu.  That is the case for fedora33
-        # and Arch Linux as of March 2021.
-        cmd = "cp /usr/share/qemu/{} $OUT".format(rom),
-        visibility = [
-            "//antlir/linux/...",
-            "//antlir/vm/...",
-            "//third-party/...",
-        ],
+        layer = "build",
+        path = "/output/share/qemu/{}".format(rom),
+        visibility = vm_visibility,
     )
     for rom in [
         "bios-256k.bin",

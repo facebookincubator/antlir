@@ -15,7 +15,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y attr libcap-ng-dev systemd-container libzstd-dev
+          sudo apt-get install -y attr libcap-ng-dev systemd-container libzstd-dev openssh-client
 
       # createrepo_c is not packaged for Ubuntu 20.04. Until it is or until we
       # can use a hosted runner that is based on CentOS (or Fedora), compile

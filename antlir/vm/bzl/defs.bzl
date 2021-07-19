@@ -71,6 +71,11 @@ _RULE_TO_TEST_TYPE = {
     python_unittest: "pyunit",
     rust_unittest: "rust",
 }
+_RULE_TO_TEST_TAG = {
+    cpp_unittest: "cpp",
+    python_unittest: "python",
+    rust_unittest: "rust",
+}
 
 def _build_test_tags(unittest_rule, tags):
     """
@@ -130,6 +135,7 @@ def _vm_unittest(
     # Future: These tags are heavily FB specific and really have no place
     # in the OSS side.  It would be nice if these weren't blindly applied.
     actual_test_tags, wrapper_tags = _build_test_tags(unittest_rule, kwargs.pop("tags", []))
+    wrapper_tags.append("vmtest_" + _RULE_TO_TEST_TAG[unittest_rule])
 
     # Build the actual unit test binary/target here
     actual_test_binary = helpers.hidden_test_name(name)
