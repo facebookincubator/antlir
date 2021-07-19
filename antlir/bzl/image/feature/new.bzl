@@ -263,7 +263,13 @@ def feature_new(
     visibility = visibility or []
     flavors = flavors or REPO_CFG.flavor_available
 
-    names = []
+    # We iterate over flavors below. If at least two flavors have
+    # version_set_path unset in REPO_CFG, then the function
+    # PRIVATE_DO_NOT_USE_feature_target_name() generates the same
+    # target name. That's why we need to ensure uniqueness of
+    # ft_name below. Otherwise, buck would complain about attempt
+    # to generate new rule with the same name as already exists.
+    names = {}
     for flavor in flavors:
         ft_name = PRIVATE_DO_NOT_USE_feature_target_name(name, flavor)
         if ft_name not in names:
@@ -273,7 +279,7 @@ def feature_new(
                 visibility = visibility,
                 flavor = flavor,
             )
-            names.append(ft_name)
+            names[ft_name] = 1
 
 def _feature_new_impl(name, features, visibility, flavor):
     # (1) Normalizes & annotates Buck target names so that they can be

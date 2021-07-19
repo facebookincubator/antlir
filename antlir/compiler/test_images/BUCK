@@ -1,5 +1,6 @@
 # IMPORTANT: Do NOT use `oss_shim.bzl` here, instead load fbcode macros via
 # the shim in `defs.bzl`.
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
@@ -82,7 +83,7 @@ defs.buck_genrule(
 # that does not impose a circular dependency.  But for now, this works.
 image.layer(
     name = "test-layer",
-    parent_layer = flavor_helpers.test_build_appliance,
+    parent_layer = REPO_CFG.flavor_to_config["antlir_test"].build_appliance,
     features = [
         # `test_non_ephemeral_snapshot` needs a place to write as `nobody`.
         image.ensure_subdirs_exist(
@@ -111,7 +112,6 @@ image.layer(
         ),
         "//antlir/features:build_artifact_cleanup",
     ],
-    runtime = ["systemd"],
     visibility = ["//antlir/..."],
 )
 
