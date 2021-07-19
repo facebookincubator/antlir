@@ -1010,6 +1010,7 @@ add_rpm_repo_snapshots_layer(
     visibility = [
         "//antlir/...",
         "//hermetic_infra/hermit/integration/...",
+        "//tupperware/cm/antlir/tests/...",
     ],
     yum_snapshot = "//antlir/rpm:repo-snapshot-for-tests" if "yum" in flavor_helpers.get_rpm_installers_supported() else None,
 )
