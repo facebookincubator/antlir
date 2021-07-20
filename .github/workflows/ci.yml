@@ -43,12 +43,12 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: '~3.9'
+          python-version: "~3.9"
 
       - uses: actions-rs/toolchain@v1
         with:
-            toolchain: nightly-2021-03-25
-            override: true
+          toolchain: nightly-2021-03-25
+          override: true
 
       - name: Fetch buck
         run: buck --version
@@ -61,9 +61,12 @@ jobs:
       - name: Fetch remote artifacts
         run: buck fetch //...
 
+      - name: Build tests
+        run: buck build --keep-going $(buck query @tools/testinfra/ci_tests_query)
+
       # This is not quite a test, but exercises a lot of antlir and is expected
       # to pass, unlike the unit tests below, not all of which have been fixed
-      # to support the OSS build (mainly due to missing 'yum')
+      # to support the OSS build
       - name: Build base image(s)
         run: buck build //images/base/...
 
@@ -75,20 +78,19 @@ jobs:
         run: buck query 'kind(cxx_test, //...)' | xargs -n1 buck run
         continue-on-error: true
 
+      # Run all tests, excluding any that are disabled (mainly the hidden
+      # layer tests)
       - name: Run tests
-        # Run all tests, excluding any that are disabled (mainly the hidden
-        # layer tests)
-        # TODO(vmagro): cxx_test is excluded because the Buck test runner
-        # assumes that test output ends up in a certain spot on the host.
-        # TODO(vmagro): re-enable vm tests soon, right now they are
-        # known-broken due to some missing infra.
-        # TODO(lsalis): re-enable locale tests when there is a working
-        # alternative to build-locale-archive for fedora
-        # WARNING: keep this query in sync with the internal one in antlir.td
-        # to ensure the same set of tests is run internally and externally
+        run: buck test --always-exclude $(buck query @tools/testinfra/ci_tests_query) --xml tests.xml
+
+      - name: Post-process tests.xml
+        if: success() || failure()
         run: |
-            buck test --always-exclude $(buck query @tools/ci_tests_query) --xml tests.xml > buck.log 2> buck.err || true
-            echo Buck stderr
-            cat buck.err
-            echo Test results
-            ./tools/results_parser.py tests.xml
+          sed -e 's/&#27;//g' -i tests.xml
+          buck run //tools/testinfra:buck2junit -- -s:tests.xml -o:tests-junit.xml
+
+      - uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: test-results
+          path: tests-junit.xml

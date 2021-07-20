@@ -263,6 +263,9 @@ def _genrule(*args, **kwargs):
 def _http_file(*args, **kwargs):
     _wrap_internal(native.http_file, args, kwargs)
 
+def _http_archive(*args, **kwargs):
+    _wrap_internal(native.http_archive, args, kwargs)
+
 def _sh_binary(*args, **kwargs):
     _wrap_internal(native.sh_binary, args, kwargs)
 
@@ -510,6 +513,7 @@ shim = struct(
     export_file = _export_file,
     get_visibility = _normalize_visibility,
     http_file = _http_file,
+    http_archive = _http_archive,
     kernel_get = struct(
         base_target = "//third-party/fedora33/kernel",
         default = _kernel("5.8.15-301.fc33.x86_64"),
