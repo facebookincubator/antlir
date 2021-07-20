@@ -7,21 +7,18 @@
 import os
 import unittest
 
-from antlir.rpm.replay.tests.test_utils import build_env_map
+from antlir.rpm.replay.tests.test_utils import (
+    build_env_map,
+    extract_features_from_env_map,
+)
 
-from ..extract_nested_features import extract_nested_features, log as enf_log
+from ..extract_nested_features import log as enf_log
 
 
 def _extract_features(infix: str):
     # pyre-fixme[6]: Expected `Dict[str, str]` for 1st param but got
     # `_Environ[str]`.
-    env = build_env_map(os.environ, infix)
-    return extract_nested_features(
-        layer_features_out=env["layer_feature_json"],
-        layer_out=env["layer_output"],
-        target_to_path=env["target_map"],
-        flavor="antlir_test",
-    )
+    return extract_features_from_env_map(build_env_map(os.environ, infix))
 
 
 class ExtractNestedFeaturesTestCase(unittest.TestCase):

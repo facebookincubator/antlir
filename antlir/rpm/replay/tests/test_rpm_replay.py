@@ -12,7 +12,6 @@ from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.tests.layer_resource import layer_resource_subvol
 
-from ..extract_nested_features import extract_nested_features
 from ..rpm_replay import (
     replay_rpms_and_compiler_items,
     filter_features_to_replay,
@@ -23,7 +22,7 @@ from ..subvol_rpm_compare import (
     subvol_rpm_compare_and_download,
     SubvolsToCompare,
 )
-from .test_utils import build_env_map
+from .test_utils import build_env_map, extract_features_from_env_map
 
 
 class RpmReplayTestCase(unittest.TestCase):
@@ -33,12 +32,7 @@ class RpmReplayTestCase(unittest.TestCase):
         ba = layer_resource_subvol(__package__, "ba_subvol")
 
         env_map = build_env_map(os.environ, "leaf")
-        extracted_features = extract_nested_features(
-            layer_features_out=env_map["layer_feature_json"],
-            layer_out=env_map["layer_output"],
-            target_to_path=env_map["target_map"],
-            flavor="antlir_test",
-        )
+        extracted_features = extract_features_from_env_map(env_map)
 
         def gen_replay_items(exit_stack, layer_opts):
             item_factory = ItemFactory(exit_stack, layer_opts)

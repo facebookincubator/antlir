@@ -6,6 +6,7 @@
 
 from typing import Any, Dict
 
+from ..extract_nested_features import extract_nested_features, ExtractedFeatures
 from ..replay_util import make_target_path_map
 
 
@@ -22,3 +23,12 @@ def build_env_map(environ: Dict[str, str], infix: str) -> Dict[str, Any]:
         "layer_feature_json": layer_feature_json,
         "target_map": target_map,
     }
+
+
+def extract_features_from_env_map(env_map: Dict[str, Any]) -> ExtractedFeatures:
+    return extract_nested_features(
+        layer_features_out=env_map["layer_feature_json"],
+        layer_out=env_map["layer_output"],
+        target_to_path=env_map["target_map"],
+        flavor="antlir_test",
+    )

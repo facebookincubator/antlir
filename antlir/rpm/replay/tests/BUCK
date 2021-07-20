@@ -20,7 +20,10 @@ python_library(
     name = "test_utils",
     srcs = ["test_utils.py"],
     visibility = ["//tupperware/cm/antlir/tests/..."],
-    deps = ["//antlir/rpm/replay:replay_util"],
+    deps = [
+        "//antlir/rpm/replay:extract_nested_features",
+        "//antlir/rpm/replay:replay_util",
+    ],
 )
 
 ##
