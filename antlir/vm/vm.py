@@ -9,6 +9,7 @@ import asyncio
 import os
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 import uuid
@@ -476,9 +477,13 @@ async def __vm_with_stack(
                 qemu_cmd,
                 # Never have stdin connected unless we are in shell mode
                 stdin=subprocess.DEVNULL,
-                stdout=console,
-                # Send stderr to the same place that console goes
-                stderr=subprocess.STDOUT,
+                # Send stdout (console and other qemu specific logs) to
+                # either the requested console output, or directly to stderr
+                stdout=console or sys.stderr,
+                # Send stderr to the same place that console goes.  Note that
+                # if console == None, stderr goes to the stderr of whatever
+                # is calling this.
+                stderr=console,
             )
 
         boot_elapsed_ms = _wait_for_boot(notify_sockfile, timeout_ms=timeout_ms)
