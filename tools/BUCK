@@ -1,0 +1,33 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "buck_genrule", "export_file", "http_archive")
+
+http_archive(
+    name = "saxon.zip",
+    urls = ["https://sourceforge.net/projects/saxon/files/Saxon-HE/10/Java/SaxonHE10-5J.zip/download"],
+    sha256 = "2e400e33facc77eb6a31aae93f68525e3203be8639685c0d6e55507605709b1d",
+    type = "zip",
+)
+
+buck_genrule(
+    name = "saxon.jar",
+    out = "saxon.jar",
+    cmd = "cp $(location :saxon.zip)/saxon-he-10.5.jar $OUT",
+)
+
+buck_genrule(
+    name = "java",
+    cmd = "ln -s \\$(which java) $OUT",
+    executable = True,
+    out = "system-java",
+)
+
+export_file(name = "buck2junit.xslt")
+
+buck_command_alias(
+    name = "buck2junit",
+    exe = ":java",
+    args = [
+        "-jar",
+        "$(location :saxon.jar)",
+        "-xsl:$(location :buck2junit.xslt)",
+    ],
+)
