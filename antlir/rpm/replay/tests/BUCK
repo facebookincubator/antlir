@@ -26,6 +26,19 @@ python_library(
     ],
 )
 
+python_unittest(
+    name = "test-subvol-diff",
+    srcs = ["test_subvol_diff.py"],
+    needed_coverage = [
+        (100, "//antlir/rpm/replay:subvol_diff"),
+    ],
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir/rpm/replay:subvol_diff",
+    ],
+)
+
 ##
 ## Test layers for `extract_nested_features`
 ##
