@@ -33,7 +33,7 @@ class RpmActionItemTestBase:
         )
 
     def _check_rpm_action_item(self, layer_opts):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("rpm_action")
             self.assertEqual(["(Dir)", {}], render_subvol(subvol))
 

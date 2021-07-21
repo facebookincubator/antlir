@@ -43,7 +43,7 @@ def _maybe_make_symlink_to_scratch(
 
     # These two error conditions should never happen under normal usage, so
     # they are left as exceptions instead of auto-remediations.
-    if not os.path.islink(symlink_path):
+    if not symlink_path.islink():
         raise RuntimeError(
             f"{symlink_path} is not a symlink. Clean up whatever is there "
             "and try again?"
@@ -86,24 +86,18 @@ def find_repo_root(path_in_repo: Optional[Path] = None) -> Path:
     """
 
     # We have to start somewhere reasonable.  If we don't get an explicit path
-    # start from the cwd and then the location of the binary being executed.
-    paths_to_try = (
-        [path_in_repo]
-        if path_in_repo
-        else [Path(os.getcwd()), Path(sys.argv[0]).dirname()]
-    )
+    # start from the location of the binary being executed.
+    path_in_repo = path_in_repo or Path(sys.argv[0]).dirname()
 
-    for path_in_repo in paths_to_try:
-        repo_root = _first_parent_containing_sigil(
-            path_in_repo, ".hg", is_dir=True
-        ) or _first_parent_containing_sigil(path_in_repo, ".git", is_dir=True)
+    repo_root = _first_parent_containing_sigil(
+        path_in_repo, ".hg", is_dir=True
+    ) or _first_parent_containing_sigil(path_in_repo, ".git", is_dir=True)
 
-        if repo_root:
-            return repo_root
+    if repo_root:
+        return repo_root
 
-    # If we got this far we never found the repo root
     raise RuntimeError(
-        f"No hg or git root found in any ancestor of {paths_to_try}."
+        f"No hg or git root found in any ancestor of {path_in_repo}."
         f" Is this an hg or git repo?"
     )
 
@@ -121,23 +115,16 @@ def find_buck_cell_root(path_in_repo: Optional[Path] = None) -> Path:
     This is functionally equivalent to `buck root`, but we opt to do it here as
     `buck root` takes >2s to execute (due to CLI startup time).
     """
-    paths_to_try = (
-        [Path(path_in_repo)]
-        if path_in_repo
-        else [Path(os.getcwd()), Path(sys.argv[0])]
-    )
-    for path_in_repo in paths_to_try:
-        cell_path = _first_parent_containing_sigil(
-            path_in_repo, ".buckconfig", is_dir=False
-        )
-        if cell_path:
-            # Future: this should just use Path, but we have to finish
-            # converting all the downstream uses of this first
-            return cell_path
+    path_in_repo = path_in_repo or Path(sys.argv[0]).dirname()
 
-    # If we got this far we never found the cell root
+    cell_path = _first_parent_containing_sigil(
+        path_in_repo, ".buckconfig", is_dir=False
+    )
+    if cell_path:
+        return cell_path
+
     raise RuntimeError(
-        f"Could not find .buckconfig in any ancestor of {paths_to_try}"
+        f"Could not find .buckconfig in any ancestor of {path_in_repo}"
     )
 
 
@@ -147,14 +134,10 @@ def find_artifacts_dir(path_in_repo: Optional[Path] = None) -> Path:
 
 
 def ensure_per_repo_artifacts_dir_exists(
-    path_in_repo: Optional[str] = None,
+    path_in_repo: Optional[Path] = None,
 ) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
-    # pyre-fixme[6]: Expected `Optional[Path]` for 1st param but got
-    # `Optional[str]`.
     buck_cell_root = find_buck_cell_root(path_in_repo=path_in_repo)
-    # pyre-fixme[6]: Expected `Optional[Path]` for 1st param but got
-    # `Optional[str]`.
     artifacts_dir = find_artifacts_dir(path_in_repo=path_in_repo)
 
     # On Facebook infra, the repo might be hosted on an Eden filesystem,

@@ -83,7 +83,7 @@ class _FeatureHandlers:
             layer_features_out=self.target_to_path[
                 project + ":" + feature_for_layer(parent_name, self.flavor)
             ],
-            layer_out=self.target_to_path[parent_layer_target],
+            layer_out=Path(self.target_to_path[parent_layer_target]),
             target_to_path=self.target_to_path,
             flavor=self.flavor,
         )
@@ -140,7 +140,7 @@ class _FeatureHandlers:
 def extract_nested_features(
     *,
     layer_features_out: str,
-    layer_out: str,
+    layer_out: Path,
     target_to_path: Dict[str, str],
     flavor: str,
 ) -> ExtractedFeatures:
@@ -157,7 +157,7 @@ def extract_nested_features(
         non_custom_handler = getattr(
             _FeatureHandlers(
                 config=config,
-                layer_out=Path(layer_out),
+                layer_out=layer_out,
                 target_to_path=target_to_path,
                 flavor=flavor,
             ),

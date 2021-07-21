@@ -128,7 +128,7 @@ class TarballItemTestCase(BaseItemTestCase):
             )
 
     def test_tarball_command(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("tar-sv")
             subvol.run_as_root(["mkdir", subvol.path("d")])
 

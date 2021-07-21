@@ -112,7 +112,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 )
 
     def _test_symlink_command(self, layer_opts):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("tar-sv")
             subvol.run_as_root(["mkdir", subvol.path("dir")])
 

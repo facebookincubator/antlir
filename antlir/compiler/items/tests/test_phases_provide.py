@@ -30,7 +30,7 @@ from .common import (
 
 class PhaseProvidesItemTestCase(BaseItemTestCase):
     def test_phases_provide(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             parent = temp_subvolumes.create("parent")
             # Permit _populate_temp_filesystem to make writes.
             parent.run_as_root(

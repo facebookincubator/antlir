@@ -21,6 +21,7 @@ python_library(
     srcs = ["test_utils.py"],
     visibility = ["//tupperware/cm/antlir/tests/..."],
     deps = [
+        "//antlir:fs_utils",
         "//antlir/rpm/replay:extract_nested_features",
         "//antlir/rpm/replay:replay_util",
     ],

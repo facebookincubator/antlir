@@ -447,7 +447,7 @@ class CompilerTestCase(unittest.TestCase):
             )
 
         # Now, add an empty parent layer
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             parent = temp_subvolumes.create("parent")
             # Manually add/remove some commands from the "expected" set to
             # accommodate the fact that we have a parent subvolume.

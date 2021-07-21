@@ -25,7 +25,7 @@ DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
 class RemovePathItemTestCase(BaseItemTestCase):
     def test_remove_item(self):
         with TempSubvolumes(
-            sys.argv[0]
+            Path(sys.argv[0])
         ) as temp_subvolumes, tempfile.NamedTemporaryFile() as empty_tf:
             subvol = temp_subvolumes.create("remove_action")
             self.assertEqual(["(Dir)", {}], render_subvol(subvol))

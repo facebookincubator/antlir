@@ -76,7 +76,7 @@ class GroupItemTest(BaseItemTestCase):
         )
 
     def test_build(self):
-        with TempSubvolumes(sys.argv[0]) as ts:
+        with TempSubvolumes(Path(sys.argv[0])) as ts:
             sv = ts.create("root")
             sv.run_as_root(["mkdir", sv.path("/etc")]).check_returncode()
             sv.overwrite_path_as_root(GROUP_FILE_PATH, _SAMPLE_ETC_GROUP)
@@ -87,7 +87,7 @@ class GroupItemTest(BaseItemTestCase):
             )
 
     def test_build_twice(self):
-        with TempSubvolumes(sys.argv[0]) as ts:
+        with TempSubvolumes(Path(sys.argv[0])) as ts:
             sv = ts.create("root")
             sv.run_as_root(["mkdir", sv.path("/etc")]).check_returncode()
             sv.overwrite_path_as_root(GROUP_FILE_PATH, _SAMPLE_ETC_GROUP)
@@ -103,7 +103,7 @@ class GroupItemTest(BaseItemTestCase):
             )
 
     def test_build_with_gid(self):
-        with TempSubvolumes(sys.argv[0]) as ts:
+        with TempSubvolumes(Path(sys.argv[0])) as ts:
             sv = ts.create("root")
             sv.run_as_root(["mkdir", sv.path("/etc")]).check_returncode()
             sv.overwrite_path_as_root(GROUP_FILE_PATH, _SAMPLE_ETC_GROUP)
