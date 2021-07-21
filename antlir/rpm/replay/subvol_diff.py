@@ -77,6 +77,7 @@ def _parse_diff_output(
         if m:
             left_or_right, lacks_counterpart = m.groups()
             assert not re.match(b".*: [^/]*$", left_or_right), ("ambigous", l)
+            left_or_right += b"/"
             if left_or_right.startswith(left_base):
                 left_or_right = os.path.relpath(left_or_right, left_base)
             elif left_or_right.startswith(right_base):
