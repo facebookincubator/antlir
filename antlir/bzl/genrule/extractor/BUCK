@@ -6,19 +6,17 @@ rust_binary(
     # this is installed in a wide variety of containers, so do as much static
     # linkage as possible
     link_style = "static",
-    deps = [
-        third_party.library(
-            lib,
+    deps =
+        third_party.libraries(
+            [
+                "anyhow",
+                "goblin",
+                "once_cell",
+                "slog",
+                "slog_glog_fmt",
+                "structopt",
+                "regex",
+            ],
             platform = "rust",
-        )
-        for lib in [
-            "anyhow",
-            "goblin",
-            "once_cell",
-            "slog",
-            "slog_glog_fmt",
-            "structopt",
-            "regex",
-        ]
-    ],
+        ),
 )
