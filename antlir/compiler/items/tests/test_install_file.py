@@ -122,7 +122,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
 
     def test_install_file_command(self):
         with TempSubvolumes(
-            sys.argv[0]
+            Path(sys.argv[0])
         ) as temp_subvolumes, tempfile.NamedTemporaryFile() as empty_tf:
             subvol = temp_subvolumes.create("tar-sv")
             subvol.run_as_root(["mkdir", subvol.path("d")])
@@ -175,7 +175,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             )
 
     def test_install_file_command_recursive(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("tar-sv")
             subvol.run_as_root(["mkdir", subvol.path("d")])
 
@@ -271,7 +271,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 dest="/d",
             )
 
-            with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+            with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
                 subvol = temp_subvolumes.create("large-chmod")
                 dir_item.build(subvol, DUMMY_LAYER_OPTS)
 

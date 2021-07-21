@@ -9,6 +9,8 @@ import sys
 import unittest
 from typing import List, Sequence
 
+from antlir.fs_utils import Path
+
 from ..parse_dump import (
     NAME_TO_PARSER_TYPE,
     parse_btrfs_dump,
@@ -84,7 +86,7 @@ class ParseBtrfsDumpTestCase(unittest.TestCase):
         )
 
         # Now check that `demo_sendstream.py` also exercises those operations.
-        stream_dict = make_demo_sendstreams(sys.argv[0])
+        stream_dict = make_demo_sendstreams(Path(sys.argv[0]))
         out_lines = [
             *stream_dict["create_ops"]["dump"],
             *stream_dict["mutate_ops"]["dump"],

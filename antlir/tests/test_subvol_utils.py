@@ -43,7 +43,7 @@ class SubvolTestCase(unittest.TestCase):
 
         # Make sure we have a volume to work with
         get_volume_for_current_repo(
-            ensure_per_repo_artifacts_dir_exists(sys.argv[0])
+            ensure_per_repo_artifacts_dir_exists(Path(sys.argv[0]))
         )
 
     @with_temp_subvols
@@ -396,7 +396,7 @@ class SubvolTestCase(unittest.TestCase):
 
         def fn(self, ts):
             nonlocal temp_dir_path
-            prefix = volume_dir(sys.argv[0]) / "tmp" / "TempSubvolumes_"
+            prefix = volume_dir(Path(sys.argv[0])) / "tmp" / "TempSubvolumes_"
             self.assertTrue(ts.temp_dir.startswith(prefix))
             self.assertTrue(os.path.exists(ts.temp_dir))
             temp_dir_path = ts.temp_dir

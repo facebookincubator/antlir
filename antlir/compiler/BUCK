@@ -139,6 +139,7 @@ image_feature_python_unittest(
     deps = [
         ":dep_graph",
         ":items_for_features",
+        "//antlir:fs_utils",
         "//antlir:subvol_utils",
     ],
 )

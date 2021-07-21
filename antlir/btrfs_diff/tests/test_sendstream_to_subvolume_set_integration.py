@@ -25,6 +25,8 @@ In effect, we jointly test the Linux kernel, btrfs-progs, and this library.
 import sys
 import unittest
 
+from antlir.fs_utils import Path
+
 from ..freeze import freeze
 from ..rendered_tree import emit_non_unique_traversal_ids
 from ..subvolume_set import SubvolumeSet
@@ -44,7 +46,7 @@ class SendstreamToSubvolumeSetIntegrationTestCase(unittest.TestCase):
         # new kernels and `btrfs-progs` get rolled out.  Besides checking
         # the infra, this also indirectly validates that our subvolume
         # rendering is stable and independent of the send-stream specifics.
-        stream_dict = make_demo_sendstreams(sys.argv[1])
+        stream_dict = make_demo_sendstreams(Path(sys.argv[1]))
         subvols = SubvolumeSet.new()
         for d in stream_dict.values():
             render_sv.add_sendstream_to_subvol_set(subvols, d["sendstream"])

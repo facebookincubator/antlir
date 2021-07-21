@@ -186,6 +186,7 @@ python_unittest(
     deps = [
         ":parse_send_stream",
         ":testlib_demo_sendstreams",
+        "//antlir:fs_utils",
     ],
 )
 
@@ -282,5 +283,6 @@ python_unittest(
         ":freeze",
         ":subvolume_set",
         ":testlib_demo_sendstreams",
+        "//antlir:fs_utils",
     ],
 )

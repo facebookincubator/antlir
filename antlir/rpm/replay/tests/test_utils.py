@@ -6,13 +6,15 @@
 
 from typing import Any, Dict
 
+from antlir.fs_utils import Path
+
 from ..extract_nested_features import extract_nested_features, ExtractedFeatures
 from ..replay_util import make_target_path_map
 
 
 def build_env_map(environ: Dict[str, str], infix: str) -> Dict[str, Any]:
     prefix = f"antlir_test__{infix}__"
-    layer_output = environ[prefix + "layer_output"]
+    layer_output = Path(environ[prefix + "layer_output"])
     _, layer_feature_json = environ[prefix + "layer_feature_json"].split()
     target_map = {
         **make_target_path_map(environ[prefix + "target_path_pairs"].split()),
@@ -28,7 +30,7 @@ def build_env_map(environ: Dict[str, str], infix: str) -> Dict[str, Any]:
 def extract_features_from_env_map(env_map: Dict[str, Any]) -> ExtractedFeatures:
     return extract_nested_features(
         layer_features_out=env_map["layer_feature_json"],
-        layer_out=env_map["layer_output"],
+        layer_out=Path(env_map["layer_output"]),
         target_to_path=env_map["target_map"],
         flavor="antlir_test",
     )

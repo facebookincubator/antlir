@@ -59,7 +59,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         self.assertEqual(Path("none_such"), ci.dest)
         with self.assertRaises(subprocess.CalledProcessError):
             self._check_item(ci, set(), {RequireDirectory(path=Path("/"))})
-        with TempSubvolumes(sys.argv[0]) as temp_subvols:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             subvol = temp_subvols.create("test_clone_nonexistent_source")
             with self.assertRaises(subprocess.CalledProcessError):
                 ci.build(subvol, DUMMY_LAYER_OPTS)
@@ -72,7 +72,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             {ProvidesFile(path=Path("cloned_hello.tar"))},
             {RequireDirectory(path=Path("/"))},
         )
-        with TempSubvolumes(sys.argv[0]) as temp_subvols:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             subvol = temp_subvols.create("test_clone_file")
             ci.build(subvol, DUMMY_LAYER_OPTS)
             r = render_subvol(subvol)
@@ -112,7 +112,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             },
             {RequireDirectory(path=Path("/bar"))},
         )
-        with TempSubvolumes(sys.argv[0]) as temp_subvols:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             subvol = temp_subvols.create("test_clone_omit_outer_dir")
             subvol.run_as_root(["mkdir", subvol.path("bar")])
             self._check_clone_bar(ci, subvol)
@@ -130,12 +130,12 @@ class InstallFileItemTestCase(BaseItemTestCase):
             },
             {RequireDirectory(path=Path("/"))},
         )
-        with TempSubvolumes(sys.argv[0]) as temp_subvols:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             subvol = temp_subvols.create("test_clone_pre_existing_dest")
             self._check_clone_bar(ci, subvol)
 
     def test_clone_special_files(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvols:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             src_subvol = temp_subvols.create("test_clone_special_files_src")
             dest_subvol = temp_subvols.create("test_clone_special_files_dest")
 
@@ -162,7 +162,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             )
 
     def test_clone_hardlinks(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvols:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             src_subvol = temp_subvols.create("test_clone_hardlinks_src")
             dest_subvol = temp_subvols.create("test_clone_hardlinks_dest")
 
@@ -226,7 +226,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         )
         self.assertEqual({RequireDirectory(path=Path("/"))}, set(ci.requires()))
         self.assertGreater(len(set(ci.provides())), 1)
-        with TempSubvolumes(sys.argv[0]) as temp_subvols:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             dest_subvol = temp_subvols.create("create_ops")
             ci.build(dest_subvol, DUMMY_LAYER_OPTS)
             self.assertEqual(

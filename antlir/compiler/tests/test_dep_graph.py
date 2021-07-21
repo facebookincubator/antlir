@@ -672,7 +672,7 @@ class DepGraphTestBase(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
         unittest.util._MAX_LENGTH = 12345
-        self._temp_svs_ctx = TempSubvolumes(sys.argv[0])
+        self._temp_svs_ctx = TempSubvolumes(Path(sys.argv[0]))
         temp_svs = self._temp_svs_ctx.__enter__()
         self.addCleanup(self._temp_svs_ctx.__exit__, None, None, None)
         self._temp_dir_ctx = temp_dir()

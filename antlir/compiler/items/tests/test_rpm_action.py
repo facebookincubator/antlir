@@ -59,7 +59,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
     def _test_rpm_action_item_install_local_setup(self):
         parent_subvol = layer_resource_subvol(__package__, "test-with-no-rpm")
         local_rpm_path = Path(__file__).dirname() / "rpm-test-cheese-2-1.rpm"
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.snapshot(parent_subvol, "add_cheese")
 
             RpmActionItem.get_phase_builder(
@@ -101,7 +101,9 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
         self.assertEqual(["(Dir)", fs_render], render_subvol(subvol))
 
     def test_version_lock(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, temp_dir() as td:
+        with TempSubvolumes(
+            Path(sys.argv[0])
+        ) as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
 
@@ -119,7 +121,9 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
     def test_version_override(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, temp_dir() as td:
+        with TempSubvolumes(
+            Path(sys.argv[0])
+        ) as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
 
@@ -141,7 +145,9 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
     def test_version_override_with_dependency(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, temp_dir() as td:
+        with TempSubvolumes(
+            Path(sys.argv[0])
+        ) as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
 
@@ -179,7 +185,9 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 )
 
     def test_version_lock_and_override(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes, temp_dir() as td:
+        with TempSubvolumes(
+            Path(sys.argv[0])
+        ) as temp_subvolumes, temp_dir() as td:
             with open(td / "vset_version_lock", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t2\trc0\tx86_64")
             with open(td / "vset_version_override", "w") as outfile:
@@ -211,7 +219,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
         )
         src_rpm = Path(__file__).dirname() / "rpm-test-cheese-1-1.rpm"
 
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
             # make sure the RPM we are installing is older in order to
@@ -233,7 +241,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
         parent_subvol = layer_resource_subvol(
             __package__, "test-with-one-local-rpm"
         )
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
             subvol = temp_subvolumes.snapshot(parent_subvol, "remove_cheese")
@@ -300,7 +308,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             __package__, "test-with-one-local-rpm"
         )
         local_rpm_path = Path(__file__).dirname() / "rpm-test-cheese-2-1.rpm"
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
             subvol = temp_subvolumes.snapshot(parent_subvol, "remove_cheese")

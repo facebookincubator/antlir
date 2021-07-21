@@ -280,7 +280,7 @@ def _populate_sendstream_dict(d):
 
 # Takes `path_in_repo` because this is part of the library interface, and
 # thus must work in @mode/opt, and thus we cannot use `__file__` here.
-def make_demo_sendstreams(path_in_repo: bytes):
+def make_demo_sendstreams(path_in_repo: Path):
     with TempSubvolumes(path_in_repo) as subvols:
         res = {}
 

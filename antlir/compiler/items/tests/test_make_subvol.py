@@ -36,7 +36,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
     def test_filesystem_root(self):
         item = FilesystemRootItem(from_target="t")
         self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.caller_will_create("fs-root")
             item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(subvol)
             self.assertEqual(
@@ -48,7 +48,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             )
 
     def test_parent_layer(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             parent = temp_subvolumes.create("parent")
             item = ParentLayerItem(from_target="t", subvol=parent)
             self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
@@ -81,7 +81,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             self.assertEqual(child_content, render_subvol(child))
 
     def test_parent_layer_flavor_error(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             parent = layer_resource_subvol(__package__, "test-build-appliance")
             item = ParentLayerItem(from_target="t", subvol=parent)
 
@@ -96,7 +96,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
 
     def _check_receive_package(self, item, lossy_packaging=None):
         self.assertEqual(PhaseOrder.MAKE_SUBVOL, item.phase_order())
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             new_subvol_name = "differs_from_create_ops"
             subvol = temp_subvolumes.caller_will_create(new_subvol_name)
             item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(subvol)

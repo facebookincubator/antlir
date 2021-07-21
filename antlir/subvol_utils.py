@@ -13,7 +13,7 @@ import subprocess
 import sys
 import time
 from contextlib import contextmanager
-from typing import AnyStr, BinaryIO, Iterable, Iterator, TypeVar
+from typing import AnyStr, BinaryIO, Iterable, Iterator, Optional, TypeVar
 
 from .artifacts_dir import find_artifacts_dir
 from .common import (
@@ -1169,14 +1169,14 @@ def with_temp_subvols(method):
 
     @functools.wraps(method)
     def decorated(self, *args, **kwargs):
-        with TempSubvolumes(sys.argv[0]) as temp_subvols:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             return method(self, temp_subvols, *args, **kwargs)
 
     return decorated
 
 
 # NB: Memoizing this function would be pretty reasonable.
-def volume_dir(path_in_repo=None) -> Path:
+def volume_dir(path_in_repo: Optional[Path] = None) -> Path:
     return find_artifacts_dir(path_in_repo) / "volume"
 
 
@@ -1201,7 +1201,7 @@ class TempSubvolumes(contextlib.AbstractContextManager):
     The easier approach is to write `with TempSubvolumes() ...` in each test.
     """
 
-    def __init__(self, path_in_repo=None):
+    def __init__(self, path_in_repo: Optional[Path] = None):
         self.subvols = []
         # The 'tmp' subdirectory simplifies cleanup of leaked temp subvolumes
         volume_tmp_dir = volume_dir(path_in_repo) / "tmp"
@@ -1289,7 +1289,7 @@ class TempSubvolumes(contextlib.AbstractContextManager):
         return self._temp_dir_ctx.__exit__(exc_type, exc_val, exc_tb)
 
 
-def get_subvolumes_dir(path_in_repo=None) -> Path:
+def get_subvolumes_dir(path_in_repo: Optional[Path] = None) -> Path:
     return volume_dir(path_in_repo) / "targets"
 
 

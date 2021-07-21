@@ -13,6 +13,7 @@ from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.rpm_action import RpmActionItem
+from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 
 from ..dep_graph import DependencyGraph
@@ -118,7 +119,7 @@ class ImageFeatureTestCase(unittest.TestCase):
             builders_and_phases,
         )
         phase_items = [i for _, items in builders_and_phases for i in items]
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("subvol")
             doi = list(
                 dg.gen_dependency_order_items(

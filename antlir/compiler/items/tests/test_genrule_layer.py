@@ -56,7 +56,7 @@ class GenruleLayerItemTestCase(unittest.TestCase):
     @contextmanager
     def _temp_resource_subvol(self, name: str):
         parent_sv = layer_resource_subvol(__package__, name)
-        with TempSubvolumes(sys.argv[0]) as temp_subvols:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             # Cannot use `.snapshot()` since that doesn't handle mounts.
             child_sv = temp_subvols.caller_will_create(name)
             ParentLayerItem.get_phase_builder(

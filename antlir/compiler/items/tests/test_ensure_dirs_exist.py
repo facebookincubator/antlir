@@ -81,7 +81,7 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
             )
 
     def test_ensure_subdirs_exist_command(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("ensure-subdirs-exist-cmd")
             ensure_items = list(
                 ensure_subdirs_exist_factory(
@@ -113,7 +113,7 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
             )
 
     def test_ensure_dirs_exist_item_stat_check(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("ensure-dirs-exist-item")
             subvol.run_as_root(["mkdir", "-p", subvol.path("m")])
             good = {
@@ -141,7 +141,7 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 )
 
     def test_ensure_dirs_exist_item_xattrs_check(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("ensure-dirs-exist-item")
             subvol.run_as_root(["mkdir", "-p", subvol.path("alpha")])
             subvol.run_as_root(["chmod", "755", subvol.path("alpha")])
@@ -166,7 +166,7 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 ede_item.build(subvol, DUMMY_LAYER_OPTS_BA)
 
     def test_ensure_other_files_and_dirs_are_kept_intact(self):
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("ensure-dirs-exist-item")
             subvol.run_as_root(["mkdir", "-p", subvol.path("foo")])
             subvol.run_as_root(["chmod", "755", subvol.path("foo")])

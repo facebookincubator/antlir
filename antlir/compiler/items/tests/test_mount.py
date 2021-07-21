@@ -64,7 +64,7 @@ class MountItemTestCase(BaseItemTestCase):
 
         mount_item = _mount_item_new("//dummy/host_mounts:t", mount_config)
 
-        with TempSubvolumes(sys.argv[0]) as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("mounter")
             mount_item.build(
                 subvol,
@@ -262,7 +262,7 @@ class MountItemTestCase(BaseItemTestCase):
 
     def test_mount_item(self):
         with TempSubvolumes(
-            sys.argv[0]
+            Path(sys.argv[0])
         ) as temp_subvolumes, tempfile.TemporaryDirectory() as source_dir:
             runtime_source = {"so": "me", "arbitrary": {"j": "son"}}
             mount_config = {
