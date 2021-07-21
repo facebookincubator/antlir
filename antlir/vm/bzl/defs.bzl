@@ -85,7 +85,7 @@ def _build_test_tags(unittest_rule, tags):
     'tags' provided by a user are always applied to the outer test, so they
     control the behavior of TestPilot or to add information for 'buck query'.
     """
-    wrapper_tags = tags + ["vmtest", "run_as_bundle"]
+    wrapper_tags = tags + ["vmtest"]
 
     # Make sure that the test runner ignores the underlying test, and only
     # looks at the version that runs in a VM.
@@ -120,6 +120,15 @@ def _vm_unittest(
         # inside) is too far away from the user-given deps see D19499568 and
         # linked discussions for more details
         user_specified_deps = None,
+        # Provide a mechanism for users to control running all the test cases
+        # defined in a single unittest as a bundle.  Running as a bundle means
+        # that only *one* VM instance will be spun up for the whole unittest
+        # and all test cases will be executed inside that single VM instance.
+        # This might have undesirable effects if the test case is intentionally
+        # doing something that changes the state of the VM that cannot or
+        # should not be undone by the test fixture (ie, rebooting or setting
+        # a sysctl that cannot be undone for example).
+        run_as_bundle = True,
         **kwargs):
     if kwargs.pop("layer", None):
         fail("Please provide the `layer` attribute as part of `vm_opts`.")
@@ -136,6 +145,8 @@ def _vm_unittest(
     # in the OSS side.  It would be nice if these weren't blindly applied.
     actual_test_tags, wrapper_tags = _build_test_tags(unittest_rule, kwargs.pop("tags", []))
     wrapper_tags.append("vmtest_" + _RULE_TO_TEST_TAG[unittest_rule])
+    if run_as_bundle:
+        wrapper_tags.append("run_as_bundle")
 
     # Build the actual unit test binary/target here
     actual_test_binary = helpers.hidden_test_name(name)
