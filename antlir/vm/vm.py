@@ -267,15 +267,10 @@ async def __vm_with_stack(
 
     # We currently rely on the assumption that the binary that ends up
     # executing this code (//antlir/vm:vmtest or //antlir/vm:run) is being
-    # executed while the cwd is within the repo path.  This might *not* always
-    # be the case, but given the nature of the fact that these are invoked via
-    # either `buck run` or `buck test` , and buck requires a working repo to
-    # function, this is a reasonable assumption.  Note that we need this here
-    # in the first place because we test that we can run a test binary inside
-    # a VM via another test binary *outside* the VM and this kind of embedding
-    # can cause the sys.argv[0] of the executing binary to live outside
-    # of the repo. (See the //antlir/vm/tests:kernel_panic_test)
-    repo_cfg = repo_config(path_in_repo=Path(os.getcwd()))
+    # executed from within a working repository.  This is a reasonable
+    # assumption for now since the `antlir.vm` subsystem is only used for
+    # in-repo testing.
+    repo_cfg = repo_config()
 
     # Process all the mounts from the root image we are using
     mounts = mounts_from_image_meta(opts.disk.package.path)
