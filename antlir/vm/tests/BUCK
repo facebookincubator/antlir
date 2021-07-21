@@ -126,31 +126,26 @@ image.layer(
     ],
 )
 
-[
-    vm.python_unittest(
-        name = "python-{}".format(scheme),
-        srcs = ["test_basic_vm.py"],
-        env = test_env_vars,
-        resources = {
-            ":resource.txt": "resource",
-        },
-        vm_opts = vm.types.opts.new(
-            cpus = 4,
-            disk = vm.types.disk.new(
-                seed = True,
-                layer = ":vmtest-custom-layer",
-            ),
-            runtime = vm.types.runtime.new(
-                connection = vm.types.connection.new(
-                    scheme = scheme,
-                ),
+vm.python_unittest(
+    name = "python",
+    srcs = ["test_basic_vm.py"],
+    env = test_env_vars,
+    resources = {
+        ":resource.txt": "resource",
+    },
+    vm_opts = vm.types.opts.new(
+        cpus = 4,
+        disk = vm.types.disk.new(
+            seed = True,
+            layer = ":vmtest-custom-layer",
+        ),
+        runtime = vm.types.runtime.new(
+            connection = vm.types.connection.new(
+                scheme = "ssh",
             ),
         ),
-    )
-    for scheme in [
-        "ssh",
-    ]
-]
+    ),
+)
 
 vm.cpp_unittest(
     name = "cpp",
