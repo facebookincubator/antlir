@@ -119,6 +119,12 @@ def python_unittest(*args, **kwargs):
     _check_args("python_unittest", args, kwargs, _PYTHON_UNITTEST_KWARGS)
     shim.python_unittest(**kwargs)
 
+def _third_party_libraries(names, platform = None):
+    return [
+        shim.third_party.library(name, platform = platform)
+        for name in names
+    ]
+
 buck_command_alias = shim.buck_command_alias
 buck_filegroup = shim.buck_filegroup
 buck_genrule = shim.buck_genrule
@@ -137,5 +143,8 @@ rust_binary = shim.rust_binary
 rust_library = shim.rust_library
 rust_unittest = shim.rust_unittest
 target_utils = shim.target_utils
-third_party = shim.third_party
+third_party = struct(
+    library = shim.third_party.library,
+    libraries = _third_party_libraries,
+)
 vm_image_path = shim.vm_image_path

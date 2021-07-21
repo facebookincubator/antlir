@@ -131,17 +131,14 @@ rust_binary(
     name = "images-sidecar",
     srcs = ["images_sidecar.rs"],
     crate_root = "images_sidecar.rs",
-    deps = [
-        third_party.library(
-            name,
-            platform = "rust",
-        )
-        for name in [
+    deps = third_party.libraries(
+        [
             "anyhow",
             "tokio",
             "warp",
-        ]
-    ],
+        ],
+        platform = "rust",
+    ),
 )
 
 buck_genrule(
