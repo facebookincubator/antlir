@@ -101,8 +101,6 @@ def _build_test_tags(unittest_rule, tags):
         # inform tpx that the wrapper observes the same behavior
         wrapper_tags.append("tpx:list-format-migration:json")
         inner_tags.append("use-testpilot-adapter")
-    if unittest_rule == cpp_unittest:
-        wrapper_tags.append("tpx-test-type:vmtest_gtest")
 
     return inner_tags, wrapper_tags
 
@@ -188,6 +186,7 @@ def _vm_unittest(
         args = [
             "--test-binary $(location {})".format(shell.quote(":" + actual_test_binary)),
             "--test-binary-image $(location {})".format(shell.quote(":" + actual_test_image)),
+            "--test-type {}".format(shell.quote(_RULE_TO_TEST_TYPE[unittest_rule])),
             # Always enable debug + console logging for better debugging
             # --append-console is a tricky one: it has to be before --debug so that any
             # test case name is not interpreted as a file to path for the console

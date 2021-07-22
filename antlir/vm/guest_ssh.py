@@ -75,7 +75,6 @@ class GuestSSHConnection:
         cmd = self.ssh_cmd(timeout_ms=timeout_ms) + ["--"] + cmd_pre + cmd
 
         logger.debug(f"Running {cmd} in vm at {self.tapdev.guest_ipv6_ll}")
-        logger.debug(f"{' '.join(cmd)}")
         res = subprocess.run(
             cmd,
             check=check,

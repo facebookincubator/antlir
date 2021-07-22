@@ -24,9 +24,6 @@ class KernelPanicTest(unittest.TestCase):
                 [Path(vmtest), "--append-console={}".format(console_f.name)],
             )
 
-            # This fails because ssh terminates, and ssh exits with 255 anytime
-            # there is an error on the connection
-            self.assertEqual(proc.returncode, 255)
             # Expect to see the kernel panic message in the console output
             self.assertIn(
                 b"Kernel panic - not syncing: sysrq triggered crash",
