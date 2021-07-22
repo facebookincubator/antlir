@@ -4,11 +4,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import argparse
 import asyncio
+import contextlib
 import io
 import os.path
 import sys
-from typing import List, Optional
+from typing import Generator, List, Optional, Tuple, Union
 
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import get_logger
@@ -22,20 +24,73 @@ from antlir.vm.vm_opts_t import vm_opts_t
 logger = get_logger()
 
 
-# pyre-fixme[9]: file has type `IOBase`; used as `TextIO`.
-def blocking_print(*args, file: io.IOBase = sys.stdout, **kwargs):
-    blocking = os.get_blocking(file.fileno())
-    os.set_blocking(file.fileno(), True)
-    print(*args, file=file, **kwargs)
-    # reset to the old blocking mode
-    os.set_blocking(file.fileno(), blocking)
+@contextlib.contextmanager
+def do_not_rewrite_cmd(
+    cmd: List[Union[Path, str]], output: Path
+) -> Generator[Tuple[List[Union[Path, str]], None], None, None]:
+    yield cmd, None
 
 
-# pyre-fixme[13]: Attribute `gtest_list_tests` is never initialized.
-# pyre-fixme[13]: Attribute `list_rust` is never initialized.
-# pyre-fixme[13]: Attribute `list_tests` is never initialized.
-# pyre-fixme[13]: Attribute `test_binary` is never initialized.
-# pyre-fixme[13]: Attribute `test_binary_image` is never initialized.
+@contextlib.contextmanager
+def rewrite_testpilot_python_cmd(
+    cmd: List[Union[Path, str]], output: Path
+) -> Generator[
+    Tuple[List[Union[Path, str]], Optional[io.BufferedWriter]], None, None
+]:
+    logger.debug(f"rewriting python cmd: {cmd}")
+    parser = argparse.ArgumentParser(allow_abbrev=False, add_help=False)
+    parser.add_argument("--output", "-o")
+
+    # pyre-fixme[6]: Expected `Optional[typing.Sequence[str]]` for 1st param
+    #   but got `List[Union[Path, str]]`.
+    test_opts, unparsed_args = parser.parse_known_args(cmd[1:])
+
+    if test_opts.output is None:
+        yield cmd, None
+    else:
+        with open(test_opts.output, "wb") as f:
+            yield [
+                "TEST_PILOT=1",
+                cmd[0],
+                "--output",
+                output,
+                *unparsed_args,
+            ], f
+
+
+@contextlib.contextmanager
+def rewrite_tpx_gtest_cmd(
+    cmd: List[Union[Path, str]], output: Path
+) -> Generator[
+    Tuple[List[Union[Path, str]], Optional[io.BufferedWriter]], None, None
+]:
+    logger.debug("Rewriting gtest cmd: {cmd}")
+
+    gtest_output = os.environ.get("GTEST_OUTPUT")
+    if gtest_output is None:
+        yield cmd, None
+    else:
+        prefix = "xml:"
+        assert gtest_output.startswith(prefix)
+        gtest_output = gtest_output[len(prefix) :]
+        with open(gtest_output, "wb") as f:
+            # pyre-fixme[58]: `+` is not supported for operand types
+            #   `List[str]` and `List[Union[Path, str]]`.  Serisously? wtf...
+            # pyre-fixme[7]:  Expected `Generator[Tuple[List[Union[Path, str]],
+            #    Optional[io.BufferedWriter]], None, None]` but got
+            #    `Generator[Tuple[List[str], io.BufferedWriter], None, None]`.
+            #    Wtf again...
+            yield [f"GTEST_OUTPUT={prefix}{output}"] + cmd, f
+
+
+_TEST_TYPE_TO_REWRITE_CMD = {
+    "pyunit": rewrite_testpilot_python_cmd,
+    "gtest": rewrite_tpx_gtest_cmd,
+    "rust": do_not_rewrite_cmd,
+}
+
+# pyre-fixme[13]: Attributes `test_binary`, `test_binary_image`, and
+#   `test_type` are never initialized.
 class VMTestExecOpts(VMExecOpts):
     """
     Custom execution options for this VM entry point.
@@ -43,12 +98,12 @@ class VMTestExecOpts(VMExecOpts):
 
     devel_layer: bool = False
     setenv: List[str] = []
-    sync_file: List[Path] = []
+    gtest_list_tests: bool = False
+    list_tests: Optional[Path] = None
+    list_rust: bool = False
     test_binary: Path
     test_binary_image: Path
-    gtest_list_tests: bool
-    list_tests: Optional[str]
-    list_rust: bool
+    test_type: str
 
     @classmethod
     def setup_cli(cls, parser):
@@ -67,14 +122,6 @@ class VMTestExecOpts(VMExecOpts):
             help="Specify an environment variable to pass to the test "
             "in the form NAME=VALUE",
         )
-
-        parser.add_argument(
-            "--sync-file",
-            type=Path,
-            action="append",
-            default=[],
-            help="Sync this file for tpx from the vm to the host.",
-        )
         parser.add_argument(
             "--test-binary",
             type=Path,
@@ -89,17 +136,27 @@ class VMTestExecOpts(VMExecOpts):
             "to run",
             required=True,
         )
+        parser.add_argument(
+            "--test-type",
+            help="The type of test being executed, this is populated "
+            "by the .bzl that wraps the test.",
+            required=True,
+            choices=_TEST_TYPE_TO_REWRITE_CMD.keys(),
+        )
+
         list_group = parser.add_mutually_exclusive_group()
+        # For gtest
         list_group.add_argument(
             "--gtest_list_tests",
             action="store_true",
-        )  # For c++ gtest
+        )
+        # For python tests
         list_group.add_argument(
             "--list-tests",
-        )  # Python pyunit with the new TestPilot adapter
-        list_group.add_argument(
-            "--list", action="store_true", dest="list_rust"
-        )  # Rust
+            type=Path.from_argparse,
+        )
+        # For rust tests
+        list_group.add_argument("--list", action="store_true", dest="list_rust")
 
 
 async def run(
@@ -107,6 +164,7 @@ async def run(
     bind_repo_ro: bool,
     console: ConsoleRedirect,
     debug: bool,
+    # Extra, unprocessed args passed to the CLI
     extra: List[str],
     opts: vm_opts_t,
     shell: Optional[ShellMode],
@@ -114,13 +172,13 @@ async def run(
     # antlir.vm.vmtest specific args
     devel_layer: bool,
     gtest_list_tests: bool,
-    list_tests: Optional[str],
+    list_tests: Optional[Path],
     list_rust: bool,
     setenv: List[str],
-    sync_file: List[str],
     test_binary: Path,
     test_binary_image: Path,
-) -> None:
+    test_type: str,
+) -> Optional[int]:
 
     # Start the test binary directly to list out test cases instead of
     # starting an entire VM.  This is faster, but it's also a potential
@@ -132,25 +190,43 @@ async def run(
         assert (
             int(gtest_list_tests) + int(bool(list_tests)) + int(list_rust)
         ) == 1, "Got mutually exclusive test listing arguments"
-        args = []
+        args: List[Union[Path, str]] = [test_binary]
+
+        # By default the output should to go to stdout, but it could also
+        # be a file, so we'll use a path for stdout to make the code easier.
+        output = Path("/dev/fd/1")
         if gtest_list_tests:
-            args = ["--gtest_list_tests"]
+            assert test_type == "gtest", (
+                f"Incompatible test_type: {test_type} and list arg: "
+                "--gtest_list_tests"
+            )
+            args += ["--gtest_list_tests"]
+        # Python tests send output to the file provided by `--list-tests`
         elif list_tests:
-            # NB: Unlike for the VM, we don't explicitly have to
-            # pass the magic `TEST_PILOT` environment var to allow
-            # triggering the new TestPilotAdapter. The environment
-            # is inherited.
-            args = ["--list-tests", list_tests]
+            assert (
+                test_type == "pyunit"
+            ), f"Incompatible test_type: {test_type} and list arg: --list-tests"
+            args += ["--list-tests", output]
+            output = list_tests
         elif list_rust:
-            args = ["--list"]
-        logger.debug(f"executing {[test_binary, *args]} to list tests")
-        proc = await asyncio.create_subprocess_exec(str(test_binary), *args)
-        await proc.wait()
-        sys.exit(proc.returncode)
+            assert (
+                test_type == "rust"
+            ), f"Incompatible test_type: {test_type} and list arg: --list"
+            args += ["--list"]
+
+        logger.debug(f"Listing tests: {args} to {output}")
+        with open(output, "wb") as f:
+            proc = await asyncio.create_subprocess_exec(
+                *args,
+                stderr=f,
+            )
+            await proc.wait()
+        return proc.returncode
 
     # If we've made it this far we are executing the actual test, not just
     # listing tests
     returncode = -1
+
     # pyre-fixme[6]: Expected `SupportsKeysAndGetItem[Variable[_KT],
     #  Variable[_VT]]` for 1st param but got `Generator[List[str], None, None]`.
     test_env = dict(s.split("=", maxsplit=1) for s in setenv)
@@ -204,80 +280,48 @@ async def run(
         # because if a context manager doesn't yield *something* it will
         # throw an exception that this caller has to handle.
         if instance:
-            # Sync the file which tpx needs from the vm to the host.
-            file_arguments = list(sync_file)
-            for arg in extra:
-                # for any args that look like files make sure that the
-                # directory exists so that the test binary can write to
-                # files that it expects to exist (that would normally be
-                # created by TestPilot)
-                dirname = os.path.dirname(arg)
-                # TestPilot will already create the directories on the
-                # host, so as another sanity check only create the
-                # directories in the VM that already exist on the host
-                if dirname and os.path.exists(dirname):
-                    await instance.run(
-                        ["mkdir", "-p", dirname],
-                        timeout_ms=timeout_ms,
-                    )
-                    file_arguments.append(arg)
+            cmd: List[Union[Path, str]] = [Path("/vmtest/test")]
+            cmd.extend(list(extra))
 
-            # The behavior of the FB-internal Python test main changes
-            # completely depending on whether this environment var is set.
-            # We must forward it so that the new TP adapter can work.
-            test_pilot_env = os.environ.get("TEST_PILOT")
-            if test_pilot_env:
-                test_env["TEST_PILOT"] = test_pilot_env
+            # find the correct rewrite command for the test type
+            rewrite_cmd = _TEST_TYPE_TO_REWRITE_CMD[test_type]
 
-            cmd = ["/vmtest/test"] + list(extra)
-            logger.debug(f"executing {cmd} inside guest")
-            returncode, stdout, stderr = await instance.run(
-                cmd=cmd,
-                timeout_ms=timeout_ms,
-                env=test_env,
-                # TODO(lsalis):  This is currently needed due to how some
-                # cpp_unittest targets depend on artifacts in the code
-                # repo.  Once we have proper support for `runtime_files`
-                # this can be removed.  See here for more details:
-                # https://fburl.com/xt322rks
-                cwd=find_buck_cell_root(path_in_repo=Path(os.getcwd())),
-            )
+            test_output = Path("/tmp/test.output")
+            with rewrite_cmd(cmd, test_output) as (cmd, results):
+                logger.debug(
+                    f"Executing {cmd} inside guest. "
+                    f"Writing to {results} in host."
+                )
+                returncode, _, _ = await instance.run(
+                    cmd=cmd,
+                    timeout_ms=timeout_ms,
+                    env=test_env,
+                    # Note: This is currently needed due to how some
+                    # cpp_unittest targets depend on artifacts in the code
+                    # repo.  Once we have proper support for `runtime_files`
+                    # this can be removed.  See here for more details:
+                    # https://fburl.com/xt322rks
+                    cwd=find_buck_cell_root(path_in_repo=Path(sys.argv[0])),
+                    # Dump stdout back to the calling terminal
+                    stdout=None,
+                )
 
-            if returncode != 0:
-                logger.error(f"{cmd} failed with returncode {returncode}")
-            else:
-                logger.debug(f"{cmd} succeeded")
+                logger.info(f"{cmd} completed with: {returncode}")
+                if results:
+                    try:
+                        await instance.run(
+                            ["cat", test_output],
+                            check=True,
+                            timeout_ms=timeout_ms,
+                            stdout=results,
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to copy {test_output} to host: {str(e)}"
+                        )
 
-            # Some tests have incredibly large amounts of output, which
-            # results in a BlockingIOError when stdout/err are in
-            # non-blocking mode. Just force it to print the output in
-            # blocking mode to avoid that - we don't really care how long
-            # it ends up blocked as long as it eventually gets written.
-            if stdout:
-                blocking_print(stdout.decode("utf-8"), end="")
-
-            if stderr:
-                # pyre-fixme[6]: Expected `IOBase` for 2nd param but got
-                # `TextIO`.
-                blocking_print(stderr.decode("utf-8"), file=sys.stderr, end="")
-
-            for path in file_arguments:
-                logger.debug(f"copying {path} back to the host")
-                # copy any files that were written in the guest back to the
-                # host so that TestPilot can read from where it expects
-                # outputs to end up
-                try:
-                    retcode, contents, _ = await instance.run(
-                        ["cat", str(path)],
-                        check=True,
-                        timeout_ms=timeout_ms,
-                    )
-                    with open(path, "wb") as out:
-                        out.write(contents)
-                except Exception as e:
-                    logger.error(f"Failed to copy {path} to host: {str(e)}")
-
-    sys.exit(returncode)
+    # Exit with the return code of the actual test run, not the VM exit
+    return returncode
 
 
 if __name__ == "__main__":
