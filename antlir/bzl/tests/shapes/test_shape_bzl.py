@@ -239,34 +239,52 @@ class TestShapeBzl(unittest.TestCase):
             code,
             """class shape(Shape):
   __GENERATED_SHAPE__ = True
+  _hello_t = str
   hello: str
+  _world_t = Optional[str]
   world: Optional[str] = None
+  _answer_t = int
   answer: int = 42
   class Hello_World(Enum):
     HELLO = 'hello'
     WORLD = 'world'
+  _enum_t = Hello_World
   enum: Hello_World
+  _file_t = Path
   file: Path
+  _location_t = Target
   location: Target
   class _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ(Shape):
     __GENERATED_SHAPE__ = True
+    _inner_t = bool
     inner: bool
+  _nested_t = _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ
   nested: _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ = _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ(**{'inner': True})
+  _dct_t = Mapping[str, str]
   dct: Mapping[str, str]
+  _lst_t = Tuple[int, ...]
   lst: Tuple[int, ...]
+  _tup_t = Tuple[bool, int, str]
   tup: Tuple[bool, int, str]
   class _NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0(Shape):
     __GENERATED_SHAPE__ = True
+    _inner_lst_t = bool
     inner_lst: bool
+  _nested_lst_t = Tuple[_NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0, ...]
   nested_lst: Tuple[_NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0, ...]
   class _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0(Shape):
     __GENERATED_SHAPE__ = True
+    _inner_dct_t = bool
     inner_dct: bool
+  _nested_dct_t = Mapping[str, _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0]
   nested_dct: Mapping[str, _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0]
   class __wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE(Shape):
     __GENERATED_SHAPE__ = True
+    _answer_t = int
     answer: int
+  _dct_of_lst_of_shape_t = Mapping[str, Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]]
   dct_of_lst_of_shape: Mapping[str, Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]]
+  _union_of_things_t = Union[int, str]
   union_of_things: Union[int, str]""",  # noqa: E501
         )
 

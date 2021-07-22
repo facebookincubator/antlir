@@ -330,6 +330,7 @@ def _codegen_field(name, field):
     src = []
     python_type = _python_type(field)
     src.extend(_shapes_for_field(field))
+    src.append("_{}_t = {}".format(name, python_type))
 
     if field.default == _NO_DEFAULT:
         src.append("{}: {}".format(name, python_type))
