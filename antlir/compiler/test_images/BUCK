@@ -143,7 +143,10 @@ defs.export_file(name = "shadow_me")
             image.rpms_install(["rpm-test-milk"]),
         ],
         flavor = "antlir_test",
-        flavor_config_override = image.opts(rpm_installer = rpm_installer),
+        flavor_config_override = image.opts(
+            rpm_installer = rpm_installer,
+            rpm_repo_snapshot = None,
+        ),
         visibility = ["//antlir/compiler/..."],
     )
     for rpm_installer in flavor_helpers.get_rpm_installers_supported()

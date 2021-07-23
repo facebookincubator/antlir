@@ -92,6 +92,12 @@ def _get_flavor_config(flavor, flavor_config_override):
     # in `image/feature/new.bzl`, where per-layer overrides are NOT available.
     if "version_set_path" in overrides:
         fail("Cannot override `version_set_path`", "flavor_config_override")
+
+    if "rpm_installer" in overrides and not "rpm_repo_snapshot" in overrides:
+        fail(
+            "Please override the `rpm_repo_snapshot` as well to make sure it " +
+            "matches `rpm_installer`. Set it to `None` to use the default snapshot.",
+        )
     flavor_config.update(overrides)
 
     return new_flavor_config(**flavor_config)
