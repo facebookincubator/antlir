@@ -371,11 +371,12 @@ def _resolve_envras_for_package_group(
             f"After merging {pkg} with EVRAs {cur_evr_to_a_to_pkgs}, the "
             f"group was left with {evr_to_a_to_pkgs}."
         )
+    if evr_to_a_to_pkgs is None:
+        return set()
     # pyre-fixme[7]: Expected `Set[Tuple[str, str, str, str, str]]` but got
     #  `Set[SortableENVRA]`.
     return {
         SortableENVRA(e, n, v, r, a)
-        # pyre-fixme[16]: Optional type has no attribute `items`.
         for (e, v, r), a_to_pkgs in evr_to_a_to_pkgs.items()
         for a, pkgs in a_to_pkgs.items()
         for n in pkgs

@@ -7,7 +7,7 @@ import json
 import os
 import sqlite3
 from contextlib import contextmanager
-from typing import Iterator, List, Tuple
+from typing import Iterator, List, Optional, Tuple
 from unittest import TestCase
 
 from antlir.fs_utils import Path, temp_dir
@@ -81,10 +81,14 @@ def get_vset_to_policy(version_set, policy, versions):
     }
 
 
-def get_packages(packages_source):
+def get_packages(
+    packages_source: str, package_names: Optional[List[str]] = None
+):
+    if package_names is None:
+        package_names = [_FOO_RPM, _BAR_RPM, _NON_RPM]
     return {
         "source": packages_source,
-        "names": [_FOO_RPM, _BAR_RPM, _NON_RPM],
+        "names": package_names,
     }
 
 
@@ -117,7 +121,8 @@ def four_temp_dirs():
 
 @contextmanager
 def _test_args(
-    packages_source="manual",
+    packages_source: str = "manual",
+    package_names: Optional[List[str]] = None,
     version_set=_VSET_NAME,
     policy="manual",
     versions=_STR_VERSIONS,
@@ -132,7 +137,7 @@ def _test_args(
         prepare_package_groups_dir(
             dir_path=package_groups_dir,
             json_name=_FOO_JSON,
-            packages=get_packages(packages_source),
+            packages=get_packages(packages_source, package_names),
             vset_to_policy=get_vset_to_policy(version_set, policy, versions),
         )
         prepare_version_sets_dir(version_sets_dir)
@@ -251,6 +256,22 @@ class UpdateAllowedVersionsTestCase(TestCase):
     @patch_snapshots
     def test_no_suitable_evr(self):
         with _test_args(foo_epoch=1) as (args, output_dir):
+            with self.assertLogs(log) as log_ctx:
+                update_allowed_versions(parse_args(args))
+                self.assertFalse(os.path.exists(output_dir / _RESULT_VSET_JSON))
+            self.assertTrue(
+                any(
+                    "ERROR:antlir.update_allowed_versions:"
+                    "XXX group has no lock in any snapshot" in o
+                    for o in log_ctx.output
+                )
+            )
+
+    # _resolve_envras_for_package_group() returns empty set if there are no
+    # rpms with a matching name
+    @patch_snapshots
+    def test_no_name_match(self):
+        with _test_args(package_names=[_NON_RPM]) as (args, output_dir):
             with self.assertLogs(log) as log_ctx:
                 update_allowed_versions(parse_args(args))
                 self.assertFalse(os.path.exists(output_dir / _RESULT_VSET_JSON))
