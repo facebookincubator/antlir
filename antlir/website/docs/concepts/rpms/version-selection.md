@@ -98,8 +98,13 @@ version in the RPM snapshot may be installed.
 
 ## How do I define a policy for my packages?
 
-Add `YOUR_GROUPNAME.json` into
-`fbcode/antlir/rpm/allowed_versions/facebook/package_groups/` with the
+Decide whether your policy is specific for a flavor or it's good for all
+flavors. In the former case your `package_groups` directory will be
+`fbcode/antlir/rpm/allowed_versions/facebook/package_groups/<flavor>/`,
+in the latter case:
+`fbcode/antlir/rpm/allowed_versions/facebook/package_groups/`
+
+Add `YOUR_GROUPNAME.json` into your `package_groups` directory with the
 following information:
 
     $ jq -C . systemd.json
@@ -109,7 +114,7 @@ following information:
        "name": "systemd-packages"
     },
     "version_set_to_policy": {
-       "tw_jobs": "significant_fraction_of_hosts"
+       "tw_jobs": "slowroll"
     },
     "oncall": "systemd_releng"
     }
@@ -124,10 +129,35 @@ Suggested auto-formatting is
 Whether for formatting, or for data model changes, we may modify your policy
 files without warning, while aiming to preserve their intent.
 
-Put up a diff with your policy and **wait for tests to be green**.
+Update version files for each flavor affected:
+```
+$ buck run antlir/rpm/allowed_versions:update-allowed-versions -- \
+    --no-update-data-snapshot \
+    --flavor centos8 \
+    --data-snapshot-dir antlir/rpm/allowed_versions/facebook/snapshot/centos8 \
+    --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups \
+    --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups/centos8 \
+    --version-sets-dir bot_generated/antlir/version_sets/centos8 \
+    --rpm-repo-snapshot $(buck build antlir/rpm/facebook:fb_centos8 --show-full-output | cut -d ' ' -f2)
+$ buck run antlir/rpm/allowed_versions:update-allowed-versions -- \
+    --no-update-data-snapshot \
+    --flavor centos7 \
+    --data-snapshot-dir antlir/rpm/allowed_versions/facebook/snapshot/centos7 \
+    --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups \
+    --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups/centos7 \
+    --version-sets-dir bot_generated/antlir/version_sets/centos7 \
+    --rpm-repo-snapshot $(buck build antlir/rpm/facebook:fb_centos7 --show-full-output | cut -d ' ' -f2)
+```
 
-Once your policy is committed, automation will begin generating a preferred
-version for your package group.
+At this point you can manually inspect updated version files (they are in
+`bot_generated/antlir/version_sets/<flavor>/tw_jobs/rpm/<oncall>/`) to see that
+they have proper ENVRAs and rebuild image layers locally for testing purposes.
+
+Put up a diff with your policy and version files, then **wait for tests to be
+green**.
+
+Once your policy and version files are committed, automation will begin
+regenerating a preferred version for your package group.
 
 ## What happens when a version updates?
 
