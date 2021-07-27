@@ -299,39 +299,94 @@ def _check_collection_type(x, t):
         return error
     return "unsupported collection type {}".format(t.collection)  # pragma: no cover
 
-def _shapes_for_field(field_or_type):
-    # recursively codegen classes for every shape that is contained in this
-    # field, or any level of nesting beneath
+def _nesting(type, path):
+    return struct(
+        type = type,
+        path = path,
+    )
+
+def _codegen_type_aliases(nestings):
+    return [
+        "typeof_{field} = {type}".format(
+            field="__".join(nesting.path),
+            type=_python_type(nesting.type),
+        )
+        for nesting in nestings
+    ]
+
+def _nested_types(type, path = None):
+    # recursively flatten a nesting of composed types, such that the result is
+    # in reverse topological ordering, that is, deepest first
+    basepath = path or []
+    nestings = []
+
+    # this is needed due to recursion on types inside collections
+    type = type.type if _is_field(type) else type
+
+    if _is_shape(type):
+        for name, field in type.fields.items():
+            path = basepath + [name]
+            nestings.extend(_nested_types(field.type, path))
+            nestings.append(_nesting(field.type, path))
+    elif _is_collection(type):
+        item_types = []
+        if types.is_list(type.item_type) or types.is_tuple(type.item_type):
+            item_types = list(type.item_type)
+        else:
+            item_types = [type.item_type]
+
+        for i, t in enumerate(item_types):
+            # when types are not associated to any field name, we use indexes
+            path = basepath + [str(i)]
+            nestings.extend(_nested_types(t, path))
+            nestings.append(_nesting(t, path))
+
+    return nestings
+
+def _codegen_type(type, generated):
     src = []
-    if _is_field(field_or_type):
-        field = field_or_type
-        if _is_shape(field.type):
-            src.extend(_codegen_shape(field.type))
-        if _is_collection(field.type):
-            item_types = []
 
-            # some collections have multiple types and some have only one
-            if types.is_list(field.type.item_type) or types.is_tuple(field.type.item_type):
-                item_types = list(field.type.item_type)
-            else:
-                item_types = [field.type.item_type]
+    # avoid duplicates
+    python_type = _python_type(type)
+    if python_type in generated:
+        return src
+    else:
+        generated[python_type] = True
 
-            for t in item_types:
-                src.extend(_shapes_for_field(t))
-        if _is_enum(field.type):
-            src.extend(_codegen_enum(field.type))
-    elif _is_shape(field_or_type):
-        src.extend(_codegen_shape(field_or_type))
+    # nested shapes like `shape.list(Y)` with Y = `shape.list(X)` end up in the
+    # recursion with Y (the nested shape) as a field, this gets around that
+    type = type.type if _is_field(type) else type
+
+    if _is_shape(type):
+        src.extend(_codegen_shape(type))
+    elif _is_collection(type):
+        item_types = []
+
+        # some collections have multiple types and some have only one
+        if types.is_list(type.item_type) or types.is_tuple(type.item_type):
+            item_types = list(type.item_type)
+        else:
+            item_types = [type.item_type]
+
+        for t in item_types:
+            src.extend(_codegen_type(t, generated))
+    elif _is_enum(type):
+        src.extend(_codegen_enum(type))
+
+    return src
+
+def _codegen_nested_classes(nestings):
+    # assumes nestings are in the correct order (ie from `_nested_types`).
+    # we also take care not to generate the same class more than once
+    src = []
+    generated = {}
+    for nesting in nestings:
+        src.extend(_codegen_type(nesting.type, generated))
     return src
 
 def _codegen_field(name, field):
-    # for nested shapes, the class definitions must be listed in the body
-    # before the fields, so that forward references are avoided
     src = []
     python_type = _python_type(field)
-    src.extend(_shapes_for_field(field))
-    src.append("_{}_t = {}".format(name, python_type))
-
     if field.default == _NO_DEFAULT:
         src.append("{}: {}".format(name, python_type))
     else:
@@ -344,6 +399,7 @@ def _codegen_field(name, field):
     return src
 
 def _codegen_shape(shape, classname = None):
+    # generates a shape, but none of its nested types (if any)
     if classname == None:
         classname = _python_type(shape)
     src = [
@@ -526,8 +582,16 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
     """codegen a fully type-hinted python source file to load the given shape"""
     if not _is_shape(shape):
         fail("expected shape type, got {}".format(shape))
+
+    # generation order: innermost types -> outermost types -> aliases
+    lines = []
+    nested = _nested_types(shape)
+    lines.extend(_codegen_nested_classes(nested))
+    lines.extend(_codegen_shape(shape, classname))
+    lines.extend(_codegen_type_aliases(nested))
     python_src = "from typing import *\nfrom antlir.shape import *\n"
-    python_src += "\n".join(_codegen_shape(shape, classname))
+    python_src += "\n".join(lines)
+
     buck_genrule(
         name = "{}.py".format(name),
         out = "unused.py",

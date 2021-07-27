@@ -15,6 +15,9 @@ from .shape_bzl import (
     struct,
     structs,
     _recursive_copy_transform,
+    _nested_types,
+    _codegen_nested_classes,
+    _codegen_type_aliases,
 )
 
 
@@ -234,58 +237,77 @@ class TestShapeBzl(unittest.TestCase):
             ),
             union_of_things=shape.union(int, str),
         )
-        code = "\n".join(_codegen_shape(t, "shape"))
+
         self.assertEqual(
-            code,
+            "\n".join(_codegen_shape(t, "shape")),
             """class shape(Shape):
   __GENERATED_SHAPE__ = True
-  _hello_t = str
   hello: str
-  _world_t = Optional[str]
   world: Optional[str] = None
-  _answer_t = int
   answer: int = 42
-  class Hello_World(Enum):
-    HELLO = 'hello'
-    WORLD = 'world'
-  _enum_t = Hello_World
   enum: Hello_World
-  _file_t = Path
   file: Path
-  _location_t = Target
   location: Target
-  class _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ(Shape):
-    __GENERATED_SHAPE__ = True
-    _inner_t = bool
-    inner: bool
-  _nested_t = _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ
   nested: _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ = _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ(**{'inner': True})
-  _dct_t = Mapping[str, str]
   dct: Mapping[str, str]
-  _lst_t = Tuple[int, ...]
   lst: Tuple[int, ...]
-  _tup_t = Tuple[bool, int, str]
   tup: Tuple[bool, int, str]
-  class _NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0(Shape):
-    __GENERATED_SHAPE__ = True
-    _inner_lst_t = bool
-    inner_lst: bool
-  _nested_lst_t = Tuple[_NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0, ...]
   nested_lst: Tuple[_NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0, ...]
-  class _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0(Shape):
-    __GENERATED_SHAPE__ = True
-    _inner_dct_t = bool
-    inner_dct: bool
-  _nested_dct_t = Mapping[str, _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0]
   nested_dct: Mapping[str, _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0]
-  class __wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE(Shape):
-    __GENERATED_SHAPE__ = True
-    _answer_t = int
-    answer: int
-  _dct_of_lst_of_shape_t = Mapping[str, Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]]
   dct_of_lst_of_shape: Mapping[str, Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]]
-  _union_of_things_t = Union[int, str]
   union_of_things: Union[int, str]""",  # noqa: E501
+        )
+        nestings = _nested_types(t)
+        self.assertEqual(
+            "\n".join(_codegen_nested_classes(nestings)),
+        """class Hello_World(Enum):
+  HELLO = 'hello'
+  WORLD = 'world'
+class _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ(Shape):
+  __GENERATED_SHAPE__ = True
+  inner: bool
+class _NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0(Shape):
+  __GENERATED_SHAPE__ = True
+  inner_lst: bool
+class _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0(Shape):
+  __GENERATED_SHAPE__ = True
+  inner_dct: bool
+class __wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE(Shape):
+  __GENERATED_SHAPE__ = True
+  answer: int"""
+        )
+        self.assertEqual(
+            "\n".join(_codegen_type_aliases(nestings)),
+            """typeof_hello = str
+typeof_world = str
+typeof_answer = int
+typeof_enum = Hello_World
+typeof_file = Path
+typeof_location = Target
+typeof_nested__inner = bool
+typeof_nested = _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ
+typeof_dct__0 = str
+typeof_dct__1 = str
+typeof_dct = Mapping[str, str]
+typeof_lst__0 = int
+typeof_lst = Tuple[int, ...]
+typeof_tup__0 = bool
+typeof_tup__1 = int
+typeof_tup__2 = str
+typeof_tup = Tuple[bool, int, str]
+typeof_nested_lst__0__inner_lst = bool
+typeof_nested_lst__0 = _NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0
+typeof_nested_lst = Tuple[_NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0, ...]
+typeof_nested_dct__0 = str
+typeof_nested_dct__1__inner_dct = bool
+typeof_nested_dct__1 = _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0
+typeof_nested_dct = Mapping[str, _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0]
+typeof_dct_of_lst_of_shape__0 = str
+typeof_dct_of_lst_of_shape__1__0__answer = int
+typeof_dct_of_lst_of_shape__1__0 = __wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE
+typeof_dct_of_lst_of_shape__1 = Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]
+typeof_dct_of_lst_of_shape = Mapping[str, Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]]
+typeof_union_of_things = Union[int, str]""",
         )
 
     def test_codegen_with_empty_union_type(self):
