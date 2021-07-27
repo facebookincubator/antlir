@@ -192,9 +192,6 @@ async def run(
         ) == 1, "Got mutually exclusive test listing arguments"
         args: List[Union[Path, str]] = [test_binary]
 
-        # By default the output should to go to stdout, but it could also
-        # be a file, so we'll use a path for stdout to make the code easier.
-        output = Path("/dev/fd/1")
         if gtest_list_tests:
             assert test_type == "gtest", (
                 f"Incompatible test_type: {test_type} and list arg: "
@@ -206,15 +203,15 @@ async def run(
             assert (
                 test_type == "pyunit"
             ), f"Incompatible test_type: {test_type} and list arg: --list-tests"
-            args += ["--list-tests", output]
-            output = list_tests
+            args += ["--list-tests", list_tests]
         elif list_rust:
             assert (
                 test_type == "rust"
             ), f"Incompatible test_type: {test_type} and list arg: --list"
             args += ["--list"]
 
-        logger.debug(f"Listing tests: {args} to {output}")
+        logger.debug(f"Listing tests: {args} to {list_tests}")
+        output = Path("/dev/fd/1")
         with open(output, "wb") as f:
             proc = await asyncio.create_subprocess_exec(
                 *args,
