@@ -85,7 +85,7 @@ def _build_test_tags(unittest_rule, tags):
     'tags' provided by a user are always applied to the outer test, so they
     control the behavior of TestPilot or to add information for 'buck query'.
     """
-    wrapper_tags = tags + ["vmtest"]
+    wrapper_tags = tags + ["vmtest", "heavyweight"]
 
     # Make sure that the test runner ignores the underlying test, and only
     # looks at the version that runs in a VM.
@@ -126,7 +126,7 @@ def _vm_unittest(
         # doing something that changes the state of the VM that cannot or
         # should not be undone by the test fixture (ie, rebooting or setting
         # a sysctl that cannot be undone for example).
-        run_as_bundle = True,
+        run_as_bundle = False,
         **kwargs):
     if kwargs.pop("layer", None):
         fail("Please provide the `layer` attribute as part of `vm_opts`.")
