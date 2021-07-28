@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/linux:defs.bzl", "linux")
 
 def _host():
     """
@@ -14,10 +13,7 @@ def _host():
         image.install("//antlir/linux/vm/network:eth0.network", "/usr/lib/systemd/network/10-eth0.network"),
         image.install("//antlir/linux/vm/network:eth0.link", "/usr/lib/systemd/network/10-eth0.link"),
         # empty resolv.conf since the only mechanism to refer to the host (by name) is via /etc/hosts
-        linux.config.network.resolv.install(
-            nameservers = [],
-            search_domains = [],
-        ),
+        "//antlir/linux/vm/network:resolvconf",
         image.remove("/etc/hosts", must_exist = False),
         image.install("//antlir/linux/vm/network:etc-hosts", "/etc/hosts"),
     ]
