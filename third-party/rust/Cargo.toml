@@ -22,6 +22,7 @@ regex = "1.4.5"
 reqwest = {version = "0.11", features = ["blocking", "json", "rustls-tls"]}
 rustls = "0.19.1"
 rustls-native-certs = "0.5.0"
+serde = { version = "1.0.126", features = ["derive"] }
 slog = "2.7.0"
 slog-async = "2.3"
 slog-term = "2.4.2"
@@ -29,6 +30,7 @@ slog_glog_fmt = "0.1.3"
 structopt = "0.3.21"
 tokio = {version = "1.4", features = ["full"]}
 tokio-stream = { version = "0.1.6", features = ["fs", "io-util", "net", "sync", "time", "signal"] }
+toml = "0.5.7"
 tower = {version = "0.4", features = ["util"]}
 trust-dns-resolver = "0.20"
 warp = {version = "0.3.0", features = ["tls"]}

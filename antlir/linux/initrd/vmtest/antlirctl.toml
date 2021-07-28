@@ -1,0 +1,2 @@
+[download]
+package_format_uri = "http://vmtest-host:8000/package/{package}"

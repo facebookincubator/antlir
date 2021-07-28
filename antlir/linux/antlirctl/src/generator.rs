@@ -62,12 +62,15 @@ fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
     let cmdline =
         AntlirCmdline::from_kernel().context("invalid kernel cmdline options for Antlir")?;
 
-    if let Some(os_uri) = cmdline.os_uri() {
-        info!(log, "instantiating antlir-fetch-image@{}.service", os_uri);
+    if let Some(os_package) = cmdline.os_package() {
+        info!(
+            log,
+            "instantiating antlir-fetch-image@{}.service", &os_package
+        );
         instantiate_and_enable_template(
             opts.normal_dir.clone(),
             "antlir-fetch-image@.service",
-            os_uri,
+            os_package,
             "initrd.target",
         )?;
     }

@@ -28,7 +28,7 @@ use trust_dns_resolver::TokioAsyncResolver;
 
 #[derive(StructOpt)]
 pub struct Opts {
-    url: Uri,
+    package: String,
     dest: PathBuf,
     #[structopt(long)]
     download_only: bool,
@@ -93,15 +93,13 @@ async fn drain_stream<S: Stream<Item = hyper::Result<Bytes>>, W: Write>(
     Ok(())
 }
 
-pub async fn fetch_image(log: Logger, opts: Opts) -> Result<()> {
-    let log = log.new(o!("url" => opts.url.to_string(), "dest" => format!("{:?}", opts.dest)));
+pub async fn fetch_image(log: Logger, config: crate::Config, opts: Opts) -> Result<()> {
+    let log = log.new(o!("package" => opts.package.clone(), "dest" => format!("{:?}", opts.dest)));
     fs::create_dir_all(&opts.dest)
         .with_context(|| format!("failed to create destination dir {:?}", opts.dest))?;
 
-    match opts.url.scheme_str() {
-        Some("http") | Some("https") => {}
-        _ => bail!("only http(s) urls are supported"),
-    };
+    let mut uri = config.download.package_uri(opts.package)?;
+    debug!(log, "downloading from {}", uri);
 
     let https = https_trustdns_connector()?;
     let client: hyper::Client<_, hyper::Body> = hyper::Client::builder().build(https);
@@ -109,7 +107,6 @@ pub async fn fetch_image(log: Logger, opts: Opts) -> Result<()> {
     // hyper is a low level client (which is good for our dns connector), but
     // then we have to do things like follow redirects manually
     let mut redirects = 0u8;
-    let mut uri = opts.url.clone();
     let resp = loop {
         let resp = client.get(uri.clone()).await?;
         if resp.status().is_redirection() {

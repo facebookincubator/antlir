@@ -1,9 +1,10 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "rust_binary", "third_party")
 
 rust_binary(
     name = "antlirctl",
     srcs = [
         "src/antlirctl.rs",
+        "src/config.rs",
         "src/fetch_image.rs",
         "src/generator.rs",
         "src/kernel_cmdline.rs",
@@ -42,6 +43,8 @@ rust_binary(
                 "slog-async",
                 "slog-term",
                 "slog_glog_fmt",
+                "toml",  # load config files
+                "serde",  # load config files
                 "zstd",  # os images are zstd-compressed btrfs sendstreams
                 # Needed for HTTPS requests to download images
                 "bytes",
@@ -57,4 +60,8 @@ rust_binary(
             ],
             platform = "rust",
         ),
+)
+
+export_file(
+    name = "default-config.toml",
 )
