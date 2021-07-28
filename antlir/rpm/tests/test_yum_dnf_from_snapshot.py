@@ -15,6 +15,7 @@ from antlir.fs_utils import META_DIR, Path, create_ro, temp_dir
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
+from antlir.tests.flavor_helpers import get_rpm_installers_supported
 from antlir.tests.subvol_helpers import (
     check_common_rpm_render,
     pop_path,
@@ -22,7 +23,6 @@ from antlir.tests.subvol_helpers import (
 )
 
 from .. import yum_dnf_from_snapshot
-from ..common import has_yum, yum_is_dnf
 
 
 _INSTALL_ARGS = ["install", "--assumeyes", "rpm-test-carrot", "rpm-test-milk"]
@@ -379,7 +379,10 @@ class YumDnfFromSnapshotTestImpl:
             )
 
 
-@unittest.skipIf(yum_is_dnf() or not has_yum(), "yum == dnf or yum missing")
+@unittest.skipIf(
+    "yum" not in get_rpm_installers_supported(),
+    "yum is not a supported rpm installer",
+)
 class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
     _YUM_DNF = YumDnf.yum
 

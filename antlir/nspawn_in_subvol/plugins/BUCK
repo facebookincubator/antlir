@@ -80,6 +80,7 @@ python_unittest(
     ],
     deps = [
         ":testlib_rpm_base",
+        "//antlir:testlib_flavor_helpers",
         "//antlir/rpm:common",
     ],
 )

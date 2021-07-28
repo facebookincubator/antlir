@@ -440,6 +440,7 @@ export_file(name = "tests/needs-carrot.spec")
         deps = [
             ":find_snapshot",
             ":yum-dnf-from-snapshot-library",
+            "//antlir:testlib_flavor_helpers",
             "//antlir:testlib_subvol_helpers",
         ],
     )
