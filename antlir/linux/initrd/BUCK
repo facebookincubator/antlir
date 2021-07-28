@@ -82,6 +82,10 @@ image.layer(
             target = "initrd.target",
         ),
         systemd.install_dropin(
+            "dropins/reload-before-cleanup.conf",
+            unit = "initrd-cleanup.service",
+        ),
+        systemd.install_dropin(
             "dropins/udevd-before-trigger.conf",
             unit = "systemd-udevd.service",
         ),

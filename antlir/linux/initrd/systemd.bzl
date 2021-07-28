@@ -9,6 +9,7 @@ load("//antlir/bzl:systemd.bzl", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 
 TARGETS = [
     "basic.target",
+    "emergency.target",
     "final.target",
     "initrd-fs.target",
     "initrd-root-device.target",
@@ -28,8 +29,6 @@ TARGETS = [
 
 UNITS = [
     "initrd-cleanup.service",
-    "initrd-parse-etc.service",
-    "initrd-switch-root.service",
     "initrd-udevadm-cleanup-db.service",
     "systemd-journald-dev-log.socket",
     "systemd-journald.service",
