@@ -749,8 +749,13 @@ def _python_data(
     shape = instance.__shape__
     instance = _safe_to_serialize_instance(instance)
 
+    lines = []
+    nested = _nested_types(shape)
+    lines.extend(_codegen_nested_classes(nested))
+    lines.extend(_codegen_shape(shape, classname))
+    lines.extend(_codegen_type_aliases(nested))
     python_src = "from typing import *\nfrom antlir.shape import *\n"
-    python_src += "\n".join(_codegen_shape(shape, classname))
+    python_src += "\n".join(lines)
     python_src += "\ndata = {classname}.parse_raw('{shape_json}')".format(
         classname = classname,
         shape_json = instance.to_json(),
