@@ -34,6 +34,7 @@ log = get_logger()
 KiB = 2 ** 10
 MiB = 2 ** 20
 
+
 # Exposed as a helper so that test_compiler.py can mock it.
 def _path_is_btrfs_subvol(path: Path) -> bool:
     "Ensure that there is a btrfs subvolume at this path. As per @kdave at"
@@ -977,6 +978,23 @@ class Subvol:
                     _drain_pipe_return_byte_count(r_send)
 
                 recv_ret.check_returncode()
+
+                subvol_path_src = loop_vol.dir() / self.path().basename()
+                # Optionally change the subvolume name while packaging
+                subvol_path_dst = (
+                    (loop_vol.dir() / Path(loopback_opts.subvol_name))
+                    if loopback_opts.subvol_name
+                    else subvol_path_src
+                )
+                if subvol_path_src != subvol_path_dst:
+                    self.run_as_root(
+                        ns.nsenter_without_sudo(
+                            "mv",
+                            str(subvol_path_src),
+                            str(subvol_path_dst),
+                        ),
+                    )
+
                 if loopback_opts.writable_subvolume:
                     run_stdout_to_err(
                         nsenter_as_root(
@@ -987,7 +1005,7 @@ class Subvol:
                             "property",
                             "set",
                             "-ts",
-                            Path(loop_vol.dir()) / self.path().basename(),
+                            subvol_path_dst,
                             "ro",
                             "false",
                         )
@@ -1005,7 +1023,7 @@ class Subvol:
                             "btrfs",
                             "subvolume",
                             "list",
-                            str(Path(loop_vol.dir()) / self.path().basename()),
+                            str(subvol_path_dst),
                         ),
                         stdout=subprocess.PIPE,
                     ).stdout.split(b" ")[1]
