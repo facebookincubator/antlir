@@ -154,6 +154,8 @@ _vm_opts_t = shape.shape(
     initrd = shape.target(),
     # The kernel to boot the vm with
     kernel = shape.field(kernel_t),
+    # Append extra kernel cmdline args
+    append = shape.list(str, default = []),
     # Amount of memory in mb
     mem_mb = shape.field(int, default = 4096),
     # Disk for the vm.  This contains the root filesystem and must be a
