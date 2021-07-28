@@ -27,6 +27,7 @@ loopback_opts_t = shape.shape(
     writable_subvolume = shape.field(bool, default = False),
     seed_device = shape.field(bool, default = False),
     default_subvolume = shape.field(bool, default = False),
+    subvol_name = shape.field(str, optional = True),
 )
 
 def _new_loopback_opts_t(
