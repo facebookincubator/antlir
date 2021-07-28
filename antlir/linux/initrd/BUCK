@@ -88,6 +88,8 @@ image.layer(
         networking,
         nss,
         users,
+        image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
+        image.install("udev.rules", "/usr/lib/udev/rules.d/10-antlir.rules"),
         # Due to limitations in the current extractor implementation, we have to
         # extract systemd at the same time as antlirctl.
         extract.extract(
@@ -99,8 +101,7 @@ image.layer(
             dest = "/",
             source = ":deps",
         ),
-        image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
-        image.install("udev.rules", "/usr/lib/udev/rules.d/10-antlir.rules"),
+        image.install("//antlir/linux/antlirctl:default-config.toml", "/etc/antlirctl.toml"),
         # antlirctl provides /usr/bin/{mkdir, mount} so we can avoid importing
         # busybox for just a few tiny commands
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mkdir"),

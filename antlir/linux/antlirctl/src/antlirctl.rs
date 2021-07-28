@@ -11,11 +11,12 @@
 use std::collections::VecDeque;
 use std::path::PathBuf;
 
-use anyhow::Result;
-use slog::o;
+use anyhow::{Context, Result};
+use slog::{o, warn};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
+mod config;
 mod fetch_image;
 mod generator;
 mod kernel_cmdline;
@@ -23,9 +24,10 @@ mod mkdir;
 mod mount;
 mod systemd;
 
+pub use config::Config;
+
 #[derive(StructOpt)]
-#[structopt(name = "antlirctl", setting(AppSettings::NoBinaryName))]
-enum AntlirCtl {
+enum Subcommand {
     /// Systemd unit generator
     AntlirGenerator(generator::Opts),
     /// Download an image over HTTPS
@@ -34,6 +36,15 @@ enum AntlirCtl {
     Mount(mount::Opts),
     /// Simple implementation of /bin/mkdir
     Mkdir(mkdir::Opts),
+}
+
+#[derive(StructOpt)]
+#[structopt(name = "antlirctl", setting(AppSettings::NoBinaryName))]
+struct AntlirCtl {
+    #[structopt(short, long, default_value("/etc/antlirctl.toml"))]
+    config: PathBuf,
+    #[structopt(subcommand)]
+    command: Subcommand,
 }
 
 #[tokio::main]
@@ -58,10 +69,22 @@ async fn main() -> Result<()> {
 
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
 
-    match options {
-        AntlirCtl::AntlirGenerator(opts) => generator::generator(log, opts),
-        AntlirCtl::FetchImage(opts) => fetch_image::fetch_image(log, opts).await,
-        AntlirCtl::Mkdir(opts) => mkdir::mkdir(opts),
-        AntlirCtl::Mount(opts) => mount::mount(opts),
+    let mut config: config::Config = match std::fs::read_to_string(&options.config) {
+        Ok(config_str) => toml::from_str(&config_str).context("invalid config")?,
+        Err(e) => {
+            warn!(
+                log,
+                "failed to read config from {:?}, using defaults: {}", options.config, e
+            );
+            Default::default()
+        }
+    };
+    config.apply_kernel_cmdline_overrides().unwrap();
+
+    match options.command {
+        Subcommand::AntlirGenerator(opts) => generator::generator(log, opts),
+        Subcommand::FetchImage(opts) => fetch_image::fetch_image(log, config, opts).await,
+        Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
+        Subcommand::Mount(opts) => mount::mount(opts),
     }
 }

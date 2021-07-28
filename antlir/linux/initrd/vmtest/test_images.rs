@@ -23,22 +23,19 @@ fn wait_for_systemd() -> String {
 #[test]
 fn systemd_unit() {
     assert_eq!("running", wait_for_systemd().trim());
-    let escaped_url = r"http:--vmtest\x2dhost:8000-package-metalos:1";
     Command::new("systemctl")
         .arg("start")
-        .arg(format!("antlir-fetch-image@{}.service", escaped_url))
+        .arg("antlir-fetch-image@metalos:1.service")
         .spawn()
         .expect("failed to start antlir-fetch-image")
         .wait()
         .expect("antlir-fetch-image service failed");
 
-    let dir = Path::new("/sysroot/var/lib/antlir/image/")
-        .join(&escaped_url)
-        .join("volume");
+    let dir = Path::new("/sysroot/var/lib/antlir/image/metalos:1/volume");
     let journal = String::from_utf8(
         Command::new("journalctl")
             .arg("-u")
-            .arg(format!("antlir-fetch-image@{}.service", escaped_url))
+            .arg("antlir-fetch-image@metalos:1.service")
             .output()
             .expect("failed to get journal output")
             .stdout,

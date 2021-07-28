@@ -1,0 +1,2 @@
+# Intentionally left empty in favor of the std::default::Default implementation
+# for config::Config.

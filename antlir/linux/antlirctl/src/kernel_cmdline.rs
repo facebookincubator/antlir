@@ -11,6 +11,8 @@ use anyhow::{Context, Error, Result};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
+use crate::config::PackageFormatUri;
+
 #[derive(Debug, StructOpt, PartialEq, Default)]
 #[structopt(name = "kernel-cmdline", setting(AppSettings::NoBinaryName))]
 pub struct AntlirCmdline {
@@ -39,8 +41,14 @@ impl AntlirCmdline {
         })
     }
 
-    pub fn os_uri(&self) -> Option<&str> {
-        self.arg("antlir.os_uri").and_then(|opt| opt.as_value())
+    pub fn os_package(&self) -> Option<&str> {
+        self.arg("antlir.os_package").and_then(|opt| opt.as_value())
+    }
+
+    pub fn package_format_uri(&self) -> Option<Result<PackageFormatUri>> {
+        self.arg("antlir.package_format_uri")
+            .and_then(|opt| opt.as_value())
+            .map(std::str::FromStr::from_str)
     }
 
     pub fn root(&self) -> Option<Root> {
@@ -167,13 +175,12 @@ mod tests {
     #[test]
     fn basic_cmdlines() -> Result<()> {
         for cmdline in &[
-            "rd.systemd.debug_shell=1 quiet antlir.os_uri=https://some/url",
-            "rd.systemd.debug_shell=1 quiet antlir.os-uri=https://some/url",
-            "rd.systemd.debug_shell=1 quiet antlir.os_uri=\"https://some/url\"",
+            "rd.systemd.debug_shell=1 quiet antlir.os_package=some-pkg:id",
+            "rd.systemd.debug_shell=1 quiet antlir.os-package=some-pkg:id",
+            "rd.systemd.debug_shell=1 quiet antlir.os_package=\"some-pkg:id\"",
         ] {
             let cmdline: AntlirCmdline = cmdline.parse()?;
-            eprintln!("{:?}", cmdline);
-            assert_eq!(Some("https://some/url"), cmdline.os_uri(),);
+            assert_eq!(Some("some-pkg:id"), cmdline.os_package());
         }
         Ok(())
     }

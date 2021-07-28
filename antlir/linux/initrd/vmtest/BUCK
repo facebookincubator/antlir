@@ -65,6 +65,7 @@ image.layer(
         notify.install(),
         # initrd-specific things below:
         binaries,
+        image.install("antlirctl.toml", "/etc/antlirctl.toml"),
         # This is just appended to the base initrd, so make sure all the
         # directories that are needed get created
         image.ensure_subdirs_exist("/usr/lib", "systemd"),
@@ -126,6 +127,7 @@ vm.rust_unittest(
     srcs = ["test_boots.rs"],
     crate_root = "test_boots.rs",
 )
+
 
 rust_binary(
     name = "images-sidecar",
