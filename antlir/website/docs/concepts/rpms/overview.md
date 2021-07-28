@@ -106,3 +106,8 @@ has code (see `antlir/rpm/snapshot_repos.py`) to:
       - The storage ID of the `RepoSnapshot`
       - `{yum,dnf}.conf` corresponding to the snapshot
       - Trusted GPG keys
+
+
+### Repo snapshot debugging
+
+See commands for [inspecting RPM snapshots in the FAQ](../../faq.md#how-do-i-inspect-the-rpm-snapshot-db).

@@ -137,3 +137,21 @@ For `yum`, this is a bit harder, since Antlir does not yet wrap `yumdownloader`.
 
 NB: We could get the easy `dnf`-like behavior by aliasing `yum download` to
 `yumdownloader` in our wrapper, if this proves to be a common use-case.
+
+### How do I see what RPMs are available within a build appliance?
+
+To inspect what RPMs are available for installation within an image you
+can run the build appliance used to build the image and use yum/dnf to
+search for and test-install packages:
+```
+IMG=//BUILD:APPLIANCE
+buck run $IMG=container -- --user=root
+...
+bash-5.0# dnf list --available clang
+...
+bash-5.0# dnf install clang
+...
+```
+
+Note that any changes made to a running image (for example, via the dnf
+install above) are discarded once you exit the running image.
