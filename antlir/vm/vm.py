@@ -407,7 +407,7 @@ async def __vm_with_stack(
             " panic=-1"
             " cgroup_no_v1=all"
             " systemd.unified_cgroup_hierarchy=1"
-            " rd.emergency=poweroff"
+            " rd.emergency=poweroff " + " ".join(opts.append)
         ),
         # socket/serial device pair (for use by _wait_for_boot)
         "-chardev",
