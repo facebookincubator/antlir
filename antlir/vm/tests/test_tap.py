@@ -40,6 +40,8 @@ class TestTap(unittest.TestCase):
 
     def test_create_dev_net_tun(self):
         # remove /dev/net/tun so that the caller has to create it
-        subprocess.run(["sudo", "rm", "/dev/net/tun"], check=True)
+        subprocess.run(["sudo", "rm", "-f", "/dev/net/tun"], check=True)
         subprocess.run(["sudo", "rm", "-rf", "/dev/net"], check=True)
+        self.assertFalse(os.path.exists("/dev/net/tun"))
+        self.assertFalse(os.path.exists("/dev/net"))
         self.test_create()

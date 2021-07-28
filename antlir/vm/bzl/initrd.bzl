@@ -11,6 +11,7 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 
 DEFAULT_MODULE_LIST = [
     "drivers/block/virtio_blk.ko",
+    "drivers/block/loop.ko",
     "drivers/char/hw_random/virtio-rng.ko",
     "drivers/net/net_failover.ko",
     "drivers/net/virtio_net.ko",
@@ -106,7 +107,9 @@ def initrd(kernel, module_list = None, visibility = None):
             # seedroot units to make it rw with /dev/vdb as a scratch device
             systemd.install_unit("//antlir/vm/initrd:seedroot-device-add.service"),
             systemd.install_unit("//antlir/vm/initrd:seedroot.service"),
+            systemd.install_unit("//antlir/vm/initrd:initrd-switch-root.service"),
             systemd.enable_unit("seedroot.service", target = "initrd-fs.target"),
+            systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
             # mount kernel modules over 9p in the initrd so they are available
             # immediately in the base os
             systemd.install_unit(":" + name + "--modules.mount", mount_unit_name),
@@ -137,8 +140,6 @@ def initrd(kernel, module_list = None, visibility = None):
                 ]
                 for f in ("dep", "symbols", "alias", "builtin")
             ],
-            systemd.install_dropin("//antlir/vm/initrd:vmtest-tmpfiles-fix.conf", "systemd-tmpfiles-setup.service"),
-            systemd.install_dropin("//antlir/vm/initrd:vmtest-tmpfiles-fix.conf", "systemd-tmpfiles-setup-dev.service"),
         ],
         visibility = [],
     )
