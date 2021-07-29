@@ -83,6 +83,7 @@ def rpm_nspawn_plugins(
     shadow_paths = [*plugin_args.shadow_paths]
 
     default_snapshot_dir = _get_snapshot_dir(opts, plugin_args)
+    shadow_paths_allow_unmatched = []
 
     if (
         plugin_args.shadow_proxied_binaries
@@ -91,13 +92,15 @@ def rpm_nspawn_plugins(
     ):
         # This can run as non-root since `_set_up_rpm_repo_snapshots` makes
         # this a world-readable directory.
-        for prog_name in default_snapshot_dir.listdir():
+        for prog_name in sorted(default_snapshot_dir.listdir()):
             # Here, we need container, not host paths
             snapshot_dir = RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / prog_name
             serve_rpm_snapshots.add(snapshot_dir)
             shadow_paths.append(
                 (prog_name, snapshot_dir / prog_name / "bin" / prog_name)
             )
+            if plugin_args.attach_antlir_dir == AttachAntlirDirMode.DEFAULT_ON:
+                shadow_paths_allow_unmatched.append(prog_name)
 
     return (
         # pyre-fixme[60]: Concatenation not yet support for multiple variadic
@@ -120,7 +123,16 @@ def rpm_nspawn_plugins(
         # will add a default behavior to shadow the OS
         # `yum` / `dnf` binaries with wrappers that talk to our
         # repo servers in `nspawn_in_subvol` containers.
-        *([ShadowPaths(shadow_paths)] if shadow_paths else []),
+        *(
+            [
+                ShadowPaths(
+                    shadow_paths,
+                    shadow_paths_allow_unmatched,
+                )
+            ]
+            if shadow_paths
+            else []
+        ),
         *(
             [
                 *(

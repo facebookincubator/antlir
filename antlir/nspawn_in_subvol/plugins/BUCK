@@ -1,3 +1,4 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
@@ -112,7 +113,10 @@ python_unittest(
     resources = {
         layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance",
     },
-    deps = ["//antlir/nspawn_in_subvol:testlib_base"],
+    deps = [
+        "//antlir:testlib_flavor_helpers",
+        "//antlir/nspawn_in_subvol:testlib_base",
+    ],
 )
 
 python_library(
@@ -156,12 +160,25 @@ image.layer(
     flavor = "antlir_test",
 )
 
+image.layer(
+    name = "shadow-paths-no-rpm",
+    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
+    features = [
+        image.remove(
+            "/usr/bin/" + REPO_CFG.flavor_to_config["antlir_test"].rpm_installer,
+            must_exist = True,
+        ),
+    ],
+    flavor = "antlir_test",
+)
+
 python_unittest(
     name = "test-shadow-paths",
     srcs = ["tests/test_shadow_paths.py"],
     needed_coverage = [(100, ":shadow_paths")],
     resources = {
         layer_resource(":shadow-paths-test-layer"): "tests/shadows",
+        layer_resource(":shadow-paths-no-rpm"): "tests/shadows-no-rpm",
     },
     deps = [
         "//antlir:subvol_utils",
