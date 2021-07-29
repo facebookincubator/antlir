@@ -10,7 +10,7 @@ from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 
 from ..attach_antlir_dir import ANTLIR_DIR
 
-_SRC_SUBVOL_PAIR = (__package__, "attach_antlir_dir")
+_SRC_SUBVOL_PAIR = (__package__, "no-antlir-layer")
 _SRC_SUBVOL = layer_resource_subvol(*_SRC_SUBVOL_PAIR)
 
 _ATTACH_ANTLIR_DIR_CMD_ARGS = [

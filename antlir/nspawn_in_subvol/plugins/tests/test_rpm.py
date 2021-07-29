@@ -30,18 +30,11 @@ class RpmPluginsTestCase(unittest.TestCase):
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
-    def _create_mock_subvol(self):
-        mock_subvol = mock.Mock(spec=["canonicalize_path"])
-        mock_subvol.canonicalize_path = mock.Mock(
-            side_effect=lambda x: x / Path("_")
-        )
-        return mock_subvol
-
     def _create_snapshot_dir(self, attach_antlir_dir, svod=None):
         mock_path = mock.Mock()
         mock_path.exists = mock.Mock(return_value=not attach_antlir_dir)
 
-        mock_subvol = self._create_mock_subvol()
+        mock_subvol = mock.Mock()
         mock_subvol.path = mock.Mock(return_value=mock_path)
 
         return (
@@ -122,8 +115,12 @@ class RpmPluginsTestCase(unittest.TestCase):
                     else ()
                 ),
                 ("fake_shadow_paths", [("src", "dest")]),
-                ("fake_version_lock", {b"a/_": "vla", b"c/_": "vlc"}),
-                ("fake_repo_server", {b"a/_", b"b/_", b"c/_"}),
+                (
+                    "fake_version_lock",
+                    [("a", "vla"), ("c", "vlc")],
+                    {"a", "b", "c"},
+                ),
+                ("fake_repo_server", {"a", "b", "c"}),
             ),
             rpm_plugins.rpm_nspawn_plugins(
                 opts=new_nspawn_opts(
@@ -143,7 +140,7 @@ class RpmPluginsTestCase(unittest.TestCase):
         )
 
     def _create_test_rpm_nspawn_plugins_subvol(self, paths, paths_exist):
-        mock_subvol = self._create_mock_subvol()
+        mock_subvol = mock.Mock()
         mocks = {}
         for i, path in enumerate(paths):
             mock_path = mock.Mock()
@@ -158,7 +155,7 @@ class RpmPluginsTestCase(unittest.TestCase):
     @mock.patch.object(
         rpm_plugins,
         "YumDnfVersionlock",
-        mock.Mock(side_effect=lambda x: ("fake_version_lock", x)),
+        mock.Mock(side_effect=lambda x, y: ("fake_version_lock", x, y)),
     )
     @mock.patch.object(
         rpm_plugins,
@@ -243,7 +240,7 @@ class RpmPluginsTestCase(unittest.TestCase):
 
         # Now, let's check automatic shadowing
 
-        mock_subvol = self._create_mock_subvol()
+        mock_subvol = mock.Mock()
         mock_path = mock.Mock()
         mock_path.exists = mock.Mock(side_effect=[True])
         mock_path.listdir = mock.Mock(side_effect=[[Path("fake_dnf")]])
@@ -265,8 +262,8 @@ class RpmPluginsTestCase(unittest.TestCase):
                 (
                     "fake_repo_server",
                     {
-                        b"explicit_snap/_",
-                        RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / "fake_dnf/_",
+                        "explicit_snap",
+                        RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / "fake_dnf",
                     },
                 ),
             ),
