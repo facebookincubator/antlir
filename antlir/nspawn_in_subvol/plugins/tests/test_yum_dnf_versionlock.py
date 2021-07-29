@@ -24,7 +24,7 @@ class TestImpl:
             tf.flush()
             yield tf.name
 
-    def test_version_lock(self):
+    def _check_version_lock(self, build_appliance_pair):
         # Version-locking carrot causes a non-latest version to be installed
         # -- compare with `test_yum_with_repo_server`.
         with self._write_versionlocks(
@@ -43,8 +43,16 @@ class TestImpl:
                     "carrot 1 lockme\n",
                     br"Installing\s+: rpm-test-carrot-1-lockme.x86_64",
                 ),
+                build_appliance_pair=build_appliance_pair,
             )
 
+    def test_version_lock_build_appliance(self):
+        self._check_version_lock((__package__, "build-appliance"))
+
+    def test_version_lock_no_antlir_build_appliance(self):
+        self._check_version_lock((__package__, "no-antlir-build-appliance"))
+
+    def test_version_lock_invalid(self):
         def _not_reached(ret):
             raise NotImplementedError
 

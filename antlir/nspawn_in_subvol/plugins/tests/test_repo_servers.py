@@ -66,7 +66,7 @@ class TestImpl:
                 f"'{self._PROG}'' not in '{get_rpm_installers_supported()}'"
             )
 
-    def test_repo_servers(self):
+    def _check_repo_servers(self, build_appliance):
         # Get basic coverage for our non-trivial debug log code.
         # Note also that `_check_no_repodata_fetches` relies on this.
         launch_repo_servers.log.setLevel(logging.DEBUG)
@@ -84,7 +84,14 @@ class TestImpl:
                 # Future: we should probably stop testing with unwrapped
                 # `yum` / `dnf` entirely.
                 run_prog_as_is=True,
+                build_appliance_pair=(__package__, build_appliance),
             )
+
+    def test_repo_servers_build_appliance(self):
+        self._check_repo_servers("build-appliance")
+
+    def test_repo_servers_no_antlir_build_appliance(self):
+        self._check_repo_servers("no-antlir-build-appliance")
 
 
 class DnfRepoServersTestCase(TestImpl, RpmNspawnTestBase):

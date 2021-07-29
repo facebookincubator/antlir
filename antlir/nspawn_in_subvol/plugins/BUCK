@@ -54,6 +54,9 @@ python_unittest(
         (100, ":launch_repo_servers"),
         (100, ":repo_servers"),
     ],
+    resources = {
+        layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-build-appliance",
+    },
     deps = [
         ":testlib_rpm_base",
         "//antlir:testlib_flavor_helpers",
@@ -78,6 +81,9 @@ python_unittest(
         (100, ":yum_dnf_versionlock"),
         (100, "//antlir/nspawn_in_subvol:plugin_hooks"),
     ],
+    resources = {
+        layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-build-appliance",
+    },
     deps = [
         ":testlib_rpm_base",
         "//antlir:testlib_flavor_helpers",
@@ -204,7 +210,7 @@ python_unittest(
     srcs = ["tests/test_attach_antlir_dir.py"],
     needed_coverage = [(100, ":attach_antlir_dir")],
     resources = {
-        layer_resource(":attach-antlir-dir-test-layer"): "tests/attach_antlir_dir",
+        layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-layer",
     },
     deps = [
         "//antlir:subvol_utils",
@@ -213,8 +219,8 @@ python_unittest(
 )
 
 image.layer(
-    name = "attach-antlir-dir-test-layer",
-    parent_layer = TEST_IMAGE_PREFIX + "test-layer",
+    name = "no-antlir-build-appliance-testing",
+    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [image.remove(ANTLIR_DIR)],
     flavor = "antlir_test",
 )

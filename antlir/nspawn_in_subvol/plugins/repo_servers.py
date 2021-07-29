@@ -222,6 +222,16 @@ class RepoServers(NspawnPlugin):
                 #  `_container_pid_exfiltrator`.
                 self._container_pid_exfiltrator.exfiltrate_container_pid()
             )
+
+            # Canonicalize paths here and below to ensure that it doesn't
+            # matter if snapshots are specified by symlink or by real location.
+            # This must occur after `AttachAntlirDir.wrap_setup_subvol`
+            # so that we can resolve symlinks in `__antlir__`.
+            serve_rpm_snapshots = frozenset(
+                snap_subvol.canonicalize_path(p)
+                for p in self._serve_rpm_snapshots
+            )
+
             # To speed up startup, launch all the servers, and then await them.
             snap_to_servers = {
                 snap_dir: stack.enter_context(
@@ -235,7 +245,7 @@ class RepoServers(NspawnPlugin):
                         ),
                     )
                 )
-                for snap_dir in self._serve_rpm_snapshots
+                for snap_dir in serve_rpm_snapshots
             }
             log.info(
                 "Started `repo-server` for snapshots (ports): "

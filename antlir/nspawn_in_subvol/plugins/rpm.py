@@ -29,7 +29,6 @@ plugins. Specifically:
     that to encode the desired dataflow.
 """
 
-from types import MappingProxyType
 from typing import Iterable
 
 from antlir.common import set_new_key
@@ -100,22 +99,6 @@ def rpm_nspawn_plugins(
                 (prog_name, snapshot_dir / prog_name / "bin" / prog_name)
             )
 
-    # Canonicalize paths here and below to ensure that it doesn't matter if
-    # snapshots are specified by symlink or by real location.
-    serve_rpm_snapshots = frozenset(
-        opts.layer.canonicalize_path(p) for p in serve_rpm_snapshots
-    )
-
-    # Sanity-check the snapshot -> versionlock map
-    s_to_vl = {}
-    for s, vl in plugin_args.snapshots_and_versionlocks or ():
-        s = opts.layer.canonicalize_path(s)
-        assert s in serve_rpm_snapshots, (s, serve_rpm_snapshots)
-        # Future: we should probably allow duplicates if the canonicalized
-        # source and destination are both the same.
-        set_new_key(s_to_vl, s, vl)
-    snapshot_to_versionlock = MappingProxyType(s_to_vl)
-
     return (
         # pyre-fixme[60]: Concatenation not yet support for multiple variadic
         # tuples:...
@@ -141,8 +124,13 @@ def rpm_nspawn_plugins(
         *(
             [
                 *(
-                    [YumDnfVersionlock(snapshot_to_versionlock)]
-                    if snapshot_to_versionlock
+                    [
+                        YumDnfVersionlock(
+                            plugin_args.snapshots_and_versionlocks,
+                            serve_rpm_snapshots,
+                        )
+                    ]
+                    if plugin_args.snapshots_and_versionlocks
                     else []
                 ),
                 RepoServers(serve_rpm_snapshots),

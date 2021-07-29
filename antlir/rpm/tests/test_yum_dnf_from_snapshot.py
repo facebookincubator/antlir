@@ -381,7 +381,7 @@ class YumDnfFromSnapshotTestImpl:
 
 @unittest.skipIf(
     "yum" not in get_rpm_installers_supported(),
-    "yum is not a supported rpm installer",
+    f"yum is not a supported rpm installer in {get_rpm_installers_supported()}",
 )
 class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
     _YUM_DNF = YumDnf.yum

@@ -19,7 +19,8 @@ image.  This allows us to change version selections on a more frequent
 cadence than we change repo snapshots.
 """
 from contextlib import ExitStack, contextmanager
-from typing import Dict, Mapping, Tuple
+from types import MappingProxyType
+from typing import Dict, Iterable, Tuple
 
 from antlir.common import get_logger, set_new_key
 from antlir.fs_utils import Path, create_ro, temp_dir
@@ -74,34 +75,13 @@ def _prepare_versionlock_lists(
 
 
 class YumDnfVersionlock(NspawnPlugin):
-    def __init__(self, snapshot_to_versionlock: Mapping[Path, Path]):
-        self._snapshot_to_versionlock = snapshot_to_versionlock
-
-    @contextmanager
-    def wrap_setup_subvol(
-        self, setup_subvol_ctx: _SetupSubvolCtxMgr, opts: _NspawnOpts
-    ) -> Subvol:
-        with ExitStack() as stack:
-            # pyre-fixme[16]: `YumDnfVersionlock` has no attribute `dest_to_src`
-            self.dest_to_src = {}
-            for snapshot, versionlock in self._snapshot_to_versionlock.items():
-                for dest, (src, vl_size) in stack.enter_context(
-                    # pyre-fixme[6]: Expected
-                    # `ContextManager[Variable[contextlib._T]]` for 1st param
-                    # but got `Dict[str, Tuple[str, int]]`.
-                    _prepare_versionlock_lists(
-                        # Same note as in `repo_servers.py` regarding the
-                        # usage of the pre-snapshot subvolume.
-                        opts.layer,
-                        snapshot,
-                        versionlock,
-                    )
-                ).items():
-                    log.info(f"Locking {vl_size} RPM versions via {dest}")
-                    set_new_key(self.dest_to_src, dest, src)
-            # pyre-fixme[7]: Expected `Subvol` but got `Generator[Subvol, None,
-            # None]`.
-            yield stack.enter_context(setup_subvol_ctx(opts))
+    def __init__(
+        self,
+        snapshots_and_versionlocks: Iterable[Tuple[Path, Path]],
+        serve_rpm_snapshots: Iterable[Path],
+    ):
+        self._snapshots_and_versionlocks = snapshots_and_versionlocks
+        self._serve_rpm_snapshots = serve_rpm_snapshots
 
     @contextmanager
     def wrap_setup(
@@ -111,24 +91,56 @@ class YumDnfVersionlock(NspawnPlugin):
         opts: _NspawnOpts,
         popen_args: PopenArgs,
     ) -> _NspawnSetup:
-        # pyre-fixme[19]: Expected 2 positional arguments.
-        with setup_ctx(
-            subvol,
-            opts._replace(
-                bindmount_ro=(
-                    # pyre-fixme[60]: Concatenation not yet support for multiple
-                    #  variadic tuples: `*opts.bindmount_ro, *comprehension((s,
-                    #  d) for generators(generator((d, s) in
-                    #  self.dest_to_src.items() if )))`.
-                    *opts.bindmount_ro,
-                    # pyre-fixme[16]: `YumDnfVersionlock` has no attribute
-                    #  `dest_to_src`.
-                    *((s, d) for d, s in self.dest_to_src.items()),
-                )
-            ),
-            popen_args,
-        ) as nspawn_setup:
+
+        # Sanity-check the snapshot -> versionlock map
+        s_to_vl = {}
+        serve_rpm_snapshots = {
+            subvol.canonicalize_path(s) for s in self._serve_rpm_snapshots
+        }
+        for s, vl in self._snapshots_and_versionlocks or ():
+            s = subvol.canonicalize_path(s)
+            assert s in serve_rpm_snapshots, (
+                s,
+                serve_rpm_snapshots,
+            )
+            # Future: we should probably allow duplicates if the canonicalized
+            # source and destination are both the same.
+            set_new_key(s_to_vl, s, vl)
+        snapshot_to_versionlock = MappingProxyType(s_to_vl)
+
+        with ExitStack() as stack:
+            dest_to_src = {}
+            for snapshot, versionlock in snapshot_to_versionlock.items():
+                for dest, (src, vl_size) in stack.enter_context(
+                    # pyre-fixme[6]: Expected
+                    # `ContextManager[Variable[contextlib._T]]` for 1st param
+                    # but got `Dict[str, Tuple[str, int]]`.
+                    _prepare_versionlock_lists(
+                        subvol,
+                        snapshot,
+                        versionlock,
+                    )
+                ).items():
+                    log.info(f"Locking {vl_size} RPM versions via {dest}")
+                    set_new_key(dest_to_src, dest, src)
             # pyre-fixme[7]: Expected `_NspawnSetup` but got
             #  `Generator[antlir.nspawn_in_subvol.cmd._NspawnSetup, None,
             #  None]`.
-            yield nspawn_setup
+            yield stack.enter_context(
+                # pyre-fixme[19]: Expected 2 positional arguments.
+                setup_ctx(
+                    subvol,
+                    opts._replace(
+                        bindmount_ro=(
+                            # pyre-fixme[60]: Concatenation not yet support for
+                            # multiple variadic tuples: `*opts.bindmount_ro,
+                            # *comprehension((s, d) for generators(
+                            # generator((d, s) in self.dest_to_src.items()
+                            # if )))`.
+                            *opts.bindmount_ro,
+                            *((s, d) for d, s in dest_to_src.items()),
+                        )
+                    ),
+                    popen_args,
+                )
+            )
