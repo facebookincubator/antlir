@@ -82,6 +82,7 @@ def _resolve_to_canonical_shadow_paths(
     shadow_paths: Iterable[Tuple[Path, Path]],
     subvol: Subvol,
     search_dirs: List[Path],
+    shadow_paths_allow_unmatched: List[Path],
 ) -> Mapping[Path, Path]:
     "Converts `ShadowPaths` inputs to symlink-free host absolute paths."
     assert search_dirs, search_dirs
@@ -164,6 +165,10 @@ printf '%s\\0%s\\0%s\\0' "$dst" {c.input_dest.shell_quote()} "$src"
         # with updates via `librename_shadowed.so`.
         assert real_src not in real_srcs, f"{real_src} shadowed > 1 destination"
         real_srcs.add(real_src)
+
+    for name in shadow_paths_allow_unmatched:
+        if name in unmatched_inputs:
+            unmatched_inputs.pop(name)
 
     # Check that every input `dest` was matched at least once.  Arguably, we
     # should not require filenames to match, since it's not guaranteed that
@@ -262,7 +267,7 @@ rm {backup.shell_quote()}
                 # plugin was the only thing that made it exist.
                 + f"""
 spr={subvol.path(SHADOWED_PATHS_ROOT).shell_quote()}
-find "$spr" -type d | sort -r | xargs rmdir
+find "$spr" -type d -print0 | sort -r -z | xargs -r0 rmdir
 antlir=$(dirname "$spr")
 if [[ -d "$antlir" ]] ; then rmdir --ignore-fail-on-non-empty "$antlir" ; fi
 """,
@@ -281,10 +286,22 @@ class ShadowPaths(NspawnPlugin):
         same (`destination`, `source`) pairs, those duplicates are ignored.
       - Any other duplicate `destination` or `source` entries are forbidden
         to avoid ambiguous behavior and aliasing.
+
+    `shadow_paths_allow_unmatched` overrides the shadowing behavior so
+    that for the names passed in it is fine to not have a matching
+    path to shadow. This is because the centos7 build appliance
+    `__antlir__` directory contains `dnf` to bootstrap centos8, but the
+    image may not contain a `dnf` binary. We should still be able to run
+    `nspawn_in_subvol` without errors in that scenario.
     """
 
-    def __init__(self, shadow_paths: Iterable[Tuple[Path, Path]]):
+    def __init__(
+        self,
+        shadow_paths: Iterable[Tuple[Path, Path]],
+        shadow_paths_allow_unmatched: List[Path],
+    ):
         self._shadow_paths = shadow_paths
+        self._shadow_paths_allow_unmatched = shadow_paths_allow_unmatched
 
     @contextmanager
     def wrap_setup(
@@ -300,6 +317,7 @@ class ShadowPaths(NspawnPlugin):
             # pyre-fixme[6]: Expected `List[Path]` for 3rd param but got
             #  `Tuple[Path, ...]`.
             search_dirs=tuple(_shadow_search_dirs(opts.setenv)),
+            shadow_paths_allow_unmatched=self._shadow_paths_allow_unmatched,
         )
         for cdest, src in container_dest_to_real_src.items():
             log.debug(f"{src} will shadow {cdest}")

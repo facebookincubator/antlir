@@ -195,3 +195,16 @@ class ShadowPathTestCase(NspawnTestBase):
         )
         # The shadow root got cleaned up
         self.assertFalse(os.path.exists(dest_subvol.path(SHADOWED_PATHS_ROOT)))
+
+    def test_skip_unmatched_rpm(self):
+        # We test shadowing a layer with the the rpm installer file removed.
+        # This is to make sure that we can
+        self._nspawn_in(
+            (__package__, "shadows-no-rpm"),
+            [
+                "--user=root",
+                "--",
+                "echo",
+                "test",
+            ],
+        )

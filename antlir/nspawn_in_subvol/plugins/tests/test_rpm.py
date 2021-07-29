@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import functools
 import pwd
 import unittest
 from unittest import mock
@@ -19,9 +20,39 @@ from antlir.nspawn_in_subvol.args import (
     new_nspawn_opts,
 )
 from antlir.nspawn_in_subvol.common import AttachAntlirDirError
+from antlir.tests.flavor_helpers import get_rpm_installers_supported
 from antlir.tests.layer_resource import layer_resource_subvol
 
 from .. import rpm as rpm_plugins
+
+
+def with_mock_plugins(method):
+    @functools.wraps(method)
+    def decorated(self, *args, **kwargs):
+        with unittest.mock.patch.object(
+            rpm_plugins,
+            "YumDnfVersionlock",
+            side_effect=lambda x, y: ("fake_version_lock", x, y),
+        ) as _, unittest.mock.patch.object(
+            rpm_plugins,
+            "RepoServers",
+            side_effect=lambda x: ("fake_repo_server", x),
+        ) as _, unittest.mock.patch.object(
+            rpm_plugins,
+            "ShadowPaths",
+            side_effect=lambda x, y: (
+                "fake_shadow_paths",
+                x,
+                set(y),
+            ),
+        ) as _, unittest.mock.patch.object(
+            rpm_plugins,
+            "AttachAntlirDir",
+            side_effect=lambda: ("fake_attach_antlir_dir"),
+        ) as _:
+            return method(self, *args, **kwargs)
+
+    return decorated
 
 
 class RpmPluginsTestCase(unittest.TestCase):
@@ -114,7 +145,11 @@ class RpmPluginsTestCase(unittest.TestCase):
                     if attach_antlir_dir != AttachAntlirDirMode.OFF
                     else ()
                 ),
-                ("fake_shadow_paths", [("src", "dest")]),
+                (
+                    "fake_shadow_paths",
+                    [("src", "dest")],
+                    set(),
+                ),
                 (
                     "fake_version_lock",
                     [("a", "vla"), ("c", "vlc")],
@@ -152,26 +187,7 @@ class RpmPluginsTestCase(unittest.TestCase):
     # This fully mocked because we have lots of integration tests:
     #   - the per-plugin tests
     #   - `test-rpm-installer-shadow-paths`
-    @mock.patch.object(
-        rpm_plugins,
-        "YumDnfVersionlock",
-        mock.Mock(side_effect=lambda x, y: ("fake_version_lock", x, y)),
-    )
-    @mock.patch.object(
-        rpm_plugins,
-        "RepoServers",
-        mock.Mock(side_effect=lambda x: ("fake_repo_server", x)),
-    )
-    @mock.patch.object(
-        rpm_plugins,
-        "ShadowPaths",
-        mock.Mock(side_effect=lambda x: ("fake_shadow_paths", x)),
-    )
-    @mock.patch.object(
-        rpm_plugins,
-        "AttachAntlirDir",
-        mock.Mock(side_effect=lambda: ("fake_attach_antlir_dir")),
-    )
+    @with_mock_plugins
     def test_rpm_nspawn_plugins(self):
         paths = [ANTLIR_DIR, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR]
 
@@ -251,13 +267,16 @@ class RpmPluginsTestCase(unittest.TestCase):
                 (
                     "fake_shadow_paths",
                     [
-                        ("src", "dest"),
+                        (b"src", b"dest"),
                         (
                             b"fake_dnf",
                             RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
                             / "fake_dnf/fake_dnf/bin/fake_dnf",
                         ),
                     ],
+                    {b"fake_dnf"}
+                    if attach_antlir_dir == AttachAntlirDirMode.DEFAULT_ON
+                    else set(),
                 ),
                 (
                     "fake_repo_server",
@@ -275,7 +294,7 @@ class RpmPluginsTestCase(unittest.TestCase):
                     shadow_proxied_binaries=True,
                     # These are here to show that our shadowing defaults do
                     # not break explicitly requested inputs.
-                    shadow_paths=[("src", "dest")],
+                    shadow_paths=[(b"src", b"dest")],
                     serve_rpm_snapshots=["explicit_snap"],
                 ),
             ),
@@ -300,4 +319,48 @@ class RpmPluginsTestCase(unittest.TestCase):
                     attach_antlir_dir=AttachAntlirDirMode.DEFAULT_ON,
                 ),
             ),
+        )
+
+    @with_mock_plugins
+    def test_shadow_paths_allow_unmatched(self):
+        subvol = layer_resource_subvol(__package__, "build-appliance")
+        rpm_installers = {Path(rpm) for rpm in get_rpm_installers_supported()}
+
+        plugins = (
+            rpm_plugins.rpm_nspawn_plugins(
+                opts=new_nspawn_opts(
+                    cmd=[], layer=subvol, user=pwd.getpwnam("root")
+                ),
+                plugin_args=NspawnPluginArgs(
+                    shadow_proxied_binaries=True,
+                    attach_antlir_dir=AttachAntlirDirMode.DEFAULT_ON,
+                ),
+            ),
+        )
+
+        self.assertEqual(
+            (
+                (
+                    (
+                        "fake_shadow_paths",
+                        [
+                            (
+                                rpm,
+                                RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
+                                / f"{rpm}/{rpm}/bin/{rpm}",
+                            )
+                            for rpm in sorted(rpm_installers)
+                        ],
+                        rpm_installers,
+                    ),
+                    (
+                        "fake_repo_server",
+                        {
+                            RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / rpm
+                            for rpm in rpm_installers
+                        },
+                    ),
+                ),
+            ),
+            plugins,
         )
