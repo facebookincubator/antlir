@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import dataclasses
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Set, Tuple, Union
 
 from antlir.bzl_const import feature_for_layer
 from antlir.common import get_logger
@@ -62,7 +62,7 @@ class ExtractedFeatures:
 class _FeatureHandlers:
     config: Dict[str, Any]
     layer_out: Path
-    target_to_path: Dict[str, str]
+    target_to_path: Mapping[str, Path]
     flavor: str
 
     def layer_from_package(self) -> ExtractedFeatures:
@@ -139,9 +139,9 @@ class _FeatureHandlers:
 
 def extract_nested_features(
     *,
-    layer_features_out: str,
+    layer_features_out: Union[Path, str],
     layer_out: Path,
-    target_to_path: Dict[str, str],
+    target_to_path: Mapping[str, Path],
     flavor: str,
 ) -> ExtractedFeatures:
     extracted_features = ExtractedFeatures()

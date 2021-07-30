@@ -100,7 +100,7 @@ _vm_disk_api = struct(
 
 _vm_connection_t = shape.shape(
     scheme = shape.field(str, default = "ssh"),
-    options = shape.dict(str, str, optional = True),
+    options = shape.dict(str, shape.union(str, int), default = {}),
 )
 
 def _new_vm_connection(**kwargs):

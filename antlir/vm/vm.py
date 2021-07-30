@@ -106,7 +106,6 @@ DEFAULT_CONSOLE = subprocess.DEVNULL
 DEFAULT_TIMEOUT_MS = 300 * 1000
 
 
-# pyre-fixme[13]: Attribute `opts` is never initialized.
 class VMExecOpts(Shape):
     """
     This is the common set of arguments that can be passed to an `antlir.vm`
@@ -120,7 +119,7 @@ class VMExecOpts(Shape):
     # Extra, undefined arguments that are passed on the cli
     extra: List[str] = []
     # VM Opts instance passed to the CLI
-    opts: vm_opts_t
+    opts: Optional[vm_opts_t] = None
     # Enable debug logs
     debug: bool = False
     # Connect to a shell inside the vm via the specified method
@@ -250,7 +249,7 @@ async def __vm_with_stack(
     console: ConsoleRedirect = DEFAULT_CONSOLE,
     bind_repo_ro: bool = True,
     shell: Optional[ShellMode] = None,
-    shares: Optional[Iterable[Share]] = None,
+    shares: Optional[List[Share]] = None,
 ):
     notify_sockfile = Path(
         os.path.join(
@@ -272,15 +271,14 @@ async def __vm_with_stack(
     mounts = mounts_from_image_meta(opts.disk.package.path)
 
     for mount in mounts:
-        # pyre-fixme[16]: `Tuple` has no attribute `build_source`.
         if mount.build_source.type == "host":
-            # pyre-fixme[16]: `Iterable` has no attribute `append`.
             shares.append(
                 Plan9Export(
-                    path=mount.build_source.source,
-                    # pyre-fixme[16]: `Tuple` has no attribute `mountpoint`.
+                    path=Path(mount.build_source.source),
                     mountpoint=Path("/") / mount.mountpoint,
-                    mount_tag=mount.build_source.source.replace("/", "-")[1:],
+                    mount_tag=str(mount.build_source.source).replace("/", "-")[
+                        1:
+                    ],
                 )
             )
         else:
@@ -314,7 +312,6 @@ async def __vm_with_stack(
     # be able to mount them. In the future, it might be possible to remove this
     # requirement in a systemd-based initrd that is a little more intelligent,
     # but is very low-pri now
-    # pyre-fixme[16]: `Iterable` has no attribute `extend`.
     shares.extend(
         [
             BtrfsDisk(
@@ -431,7 +428,6 @@ async def __vm_with_stack(
     # to install kernels in the root fs and avoid expensive copying of
     # ~400M worth of modules during boot
     if opts.kernel.artifacts.modules is not None:
-        # pyre-fixme[16]: `Iterable` has no attribute `__iadd__`.
         shares += [
             Plan9Export(
                 # pyre-fixme[16]: `Optional` has no attribute `path`.
@@ -503,8 +499,6 @@ async def __vm_with_stack(
             logger.debug("Using ShellMode == ShellMode.ssh")
             with GuestSSHConnection(
                 tapdev=tapdev,
-                # pyre-fixme[6]: Expected `Mapping[str, str]` for 2nd param but
-                #  got `Optional[typing.Mapping[str, str]]`.
                 options=opts.runtime.connection.options,
             ) as ssh:
                 ssh_cmd = ssh.ssh_cmd(timeout_ms=timeout_ms)
@@ -524,8 +518,6 @@ async def __vm_with_stack(
             if opts.runtime.connection.scheme == "ssh":
                 with GuestSSHConnection(
                     tapdev=tapdev,
-                    # pyre-fixme[6]: Expected `Mapping[str, str]` for 2nd param
-                    #  but got `Optional[typing.Mapping[str, str]]`.
                     options=opts.runtime.connection.options,
                 ) as ssh:
                     yield (ssh, boot_elapsed_ms, timeout_ms)

@@ -218,7 +218,9 @@ def _extra_nspawn_args_and_env(
             target = mount.build_source.source
             extra_nspawn_args.extend(
                 bind_args(
-                    find_built_subvol(opts.targets_and_outputs[target]).path(),
+                    find_built_subvol(
+                        opts.targets_and_outputs[str(target)]
+                    ).path(),
                     "/" + mount.mountpoint,
                     readonly=True,
                 )

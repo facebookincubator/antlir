@@ -33,7 +33,7 @@ log = get_logger()
 
 
 class GenFeaturesContext(NamedTuple):
-    target_to_path: Mapping[str, str]
+    target_to_path: Mapping[str, Path]
     subvolumes_dir: Optional[Path]
     ignore_missing_paths: bool
 
@@ -86,7 +86,7 @@ def replace_targets_by_paths(x: Any, ctx: GenFeaturesContext):
 
 
 def gen_included_features(
-    features_or_paths: Iterable[Union[str, dict]],
+    features_or_paths: Iterable[Union[str, dict, Path]],
     features_ctx: GenFeaturesContext,
 ):
     for feature_or_path in features_or_paths:
