@@ -15,7 +15,6 @@ _SRC_SUBVOL = layer_resource_subvol(*_SRC_SUBVOL_PAIR)
 
 _ATTACH_ANTLIR_DIR_CMD_ARGS = [
     "--attach-antlir-dir",
-    "explicit_on",
     "--layer",
     layer_resource(*_SRC_SUBVOL_PAIR),
     "--",
