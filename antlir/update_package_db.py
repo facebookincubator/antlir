@@ -94,8 +94,8 @@ DbUpdateOptions = Dict[str, str]
 #     updater --db path
 #
 # Note if None is returned, the given package:tag pair will be deleted
-GetDbInfoRet = Awaitable[Tuple[Package, Tag, Optional[DbInfo]]]
-GetDbInfoFn = Callable[[Package, Tag, DbUpdateOptions], GetDbInfoRet]
+GetDbInfoRet = Tuple[Package, Tag, Optional[DbInfo]]
+GetDbInfoFn = Callable[[Package, Tag, DbUpdateOptions], Awaitable[GetDbInfoRet]]
 # The in-memory representation of the package DB.
 PackageTagDb = Dict[Package, Dict[Tag, DbInfo]]
 
