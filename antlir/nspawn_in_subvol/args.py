@@ -56,6 +56,9 @@ class AttachAntlirDirMode(Enum):
     DEFAULT_ON = "default_on"  # Fails silently when ANTLIR_DIR is not available
     EXPLICIT_ON = "explicit_on"  # Errors out when ANTLIR_DIR is not available
 
+    def __str__(self):
+        return self.value
+
 
 class PopenArgs(NamedTuple):
     """
@@ -512,7 +515,7 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
         "versionlock is a host path.",
     )
     parser.add_argument(
-        "--attach-antlir-dir",
+        "--attach-antlir-dir-mode",
         choices=list(AttachAntlirDirMode),
         type=AttachAntlirDirMode,
         default=AttachAntlirDirMode.DEFAULT_ON,
@@ -529,6 +532,16 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
         '"explicit_on" throws an error if it cannot find the `__antlir__` '
         'directory in the build appliance while "default_on" fails '
         "silently.",
+    )
+    parser.add_argument(
+        "--attach-antlir-dir",
+        action="store_const",
+        dest="--attach-antlir-dir-mode",
+        const="explicit_on",
+        help="Enabling this flag will force "
+        "`--attach-antlir-dir-mode=explicit_on`. This is useful for "
+        "debugging layers to figure out why the BA `__antlir__` "
+        "directory cannot be attached to the layer.",
     )
 
 
