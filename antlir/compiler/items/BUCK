@@ -8,6 +8,7 @@ load("//antlir/bzl/image_actions:clone.bzl", "clone_t")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "ensure_subdirs_exist_t")
 load("//antlir/bzl/image_actions:install.bzl", "install_files_t")
 load("//antlir/bzl/image_actions:remove.bzl", "remove_paths_t")
+load("//antlir/bzl/image_actions:rpms.bzl", "rpm_action_item_t")
 load("//antlir/bzl/image_actions:symlink.bzl", "symlink_t")
 load("//antlir/bzl/image_actions:tarball.bzl", "tarball_t")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -148,6 +149,7 @@ python_library(
     srcs = ["rpm_action.py"],
     deps = [
         ":common",
+        ":rpm_action_item_t",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:rpm",
         "//antlir/rpm:find_snapshot",
@@ -166,7 +168,17 @@ python_library(
         ":rpm_action",
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
+        third_party.library(
+            "pydantic",
+            platform = "python",
+        ),
     ],
+)
+
+shape.loader(
+    name = "rpm_action_item_t",
+    shape = rpm_action_item_t,
+    classname = "rpm_action_item_t",
 )
 
 python_unittest(

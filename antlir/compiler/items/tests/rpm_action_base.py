@@ -11,6 +11,7 @@ from antlir.fs_utils import Path, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
+from pydantic import ValidationError
 
 from ..rpm_action import RpmAction, RpmActionItem
 from .common import DUMMY_LAYER_OPTS, render_subvol
@@ -66,7 +67,7 @@ class RpmActionItemTestBase:
 
             # Cannot pass both `name` and `source`
             with self.assertRaisesRegex(
-                AssertionError,
+                ValidationError,
                 "Exactly one of `name` or `source` must be set .*",
             ):
                 RpmActionItem.get_phase_builder(

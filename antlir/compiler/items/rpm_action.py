@@ -10,8 +10,16 @@ import pwd
 import shlex
 import tempfile
 from contextlib import contextmanager
-from dataclasses import dataclass
-from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple, Union
+from typing import (
+    Iterable,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+    Any,
+)
 
 from antlir.common import not_none
 from antlir.fs_utils import (
@@ -27,8 +35,10 @@ from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.subvol_utils import Subvol
+from pydantic import root_validator
 
 from .common import ImageItem, LayerOpts, PhaseOrder, protected_path_set
+from .rpm_action_item_t import rpm_action_item_t
 
 
 class RpmAction(enum.Enum):
@@ -249,21 +259,29 @@ def _prepare_versionlock(
 
 # These items are part of a phase, so they don't get dependency-sorted, so
 # there is no `requires()` or `provides()` or `build()` method.
-@dataclass(init=False, frozen=True)
 # pyre-fixme[13]: Attribute `action` is never initialized.
-class RpmActionItem(ImageItem):
+class RpmActionItem(rpm_action_item_t, ImageItem):
+    # pyre-fixme[15]: `action` overrides attribute defined in
+    # `rpm_action_item_t` inconsistently.
     action: RpmAction
     name: Optional[str] = None
-    source: Optional[str] = None
+    # pyre-fixme[15]: `source` overrides attribute defined in
+    # `rpm_action_item_t` inconsistently.
+    source: Optional[Path] = None
     version_set: Optional[Path] = None
 
-    @classmethod
-    def customize_fields(cls, kwargs):
-        super().customize_fields(kwargs)
-        assert (kwargs.get("name") is None) ^ (
-            kwargs.get("source") is None
-        ), f"Exactly one of `name` or `source` must be set in {kwargs}"
-        kwargs["action"] = RpmAction(kwargs["action"])
+    def __init__(self, *args: Any, **kwargs: Any):
+        rpm_action_item_t.__init__(self, *args, **kwargs)
+        ImageItem.__init__(self, from_target=kwargs.get("from_target"))
+
+    @root_validator
+    def check_name_or_source_exclusive(
+        cls, values: Mapping[str, Any]
+    ) -> Mapping[str, Any]:  # noqa B902
+        assert (values.get("name") is None) ^ (
+            values.get("source") is None
+        ), f"Exactly one of `name` or `source` must be set in {values}"
+        return values
 
     def phase_order(self):
         return {
