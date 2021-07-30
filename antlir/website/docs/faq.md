@@ -70,6 +70,23 @@ Troubleshooting steps:
     via `rpm_version_set_overrides` argument of `image.opts`. See docs for
     `rpms_install` in the [API page](/docs/api/image).
 
+  - Run the command
+
+    ```
+    buck run //your:layer=container -- --user=root --attach-antlir-dir
+    ```
+
+    to attach the BA's `__antlir__` directory to your layer and drop you into
+    the console.
+
+    `--attach-antlir-dir` ensures that if there is an issue
+    attaching the `__antlir__` directory from the build appliance, the command
+    will fail and print an error message. The default behavior is to fail
+    silently and drop you into the console without an `__antlir__` directory.
+
+    From the console, you can then run `yum` or `dnf` commands to figure
+    out why your RPMs aren't being installed.
+
   - [Inspect the repo snapshot](#how-do-i-inspect-the-rpm-snapshot-db) and run
     this SQL statement, replacing `pv` with your RPM name:
 
