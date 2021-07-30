@@ -46,55 +46,51 @@ class VMBootError(Exception):
     """The VM failed to boot"""
 
 
-def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:
+async def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:
     """
-    The guest sends a READY message to the unix domain socket when it has
-    reached the booted state.  This will wait for up to `timeout_sec` seconds
+    The guest sends a READY message to the provided unix domain socket when
+    it has reached the booted state.  Connect to the socket and wait for the
+    message.  The sockfile is created by Qemu.
+
+    This will wait for up to `timeout_ms` miliseconds
     the notify socket to actually show up and be connectable, and then wait
-    for the remaining amount of `timeout_sec` for the actual boot event.
+    for the remaining amount of `timeout_ms` for the actual boot event.
 
     This method returns the number of milliseconds that it took to receive the
     boot event from inside the VM.
     """
+    logger.debug(f"Waiting {timeout_ms}ms for notify socket file: {sockfile}")
     start_ms = int(time.monotonic() * 1000)
-    # The emulator is the thing that actually ends up creating the uds file, so
-    # we might have to wait a bit for the file to show up.
-    logger.debug(f"Waiting {timeout_ms}ms for notify socket: {sockfile}")
     try:
         elapsed_ms = sockfile.wait_for(timeout_ms=timeout_ms)
     except FileNotFoundError as fnfe:
         logger.debug(f"Notify socket never showed up: {fnfe}")
-        raise VMBootError(f"Timeout waiting for notify socket: {fnfe}")
+        raise VMBootError(
+            f"Timeout waiting for notify socket: {sockfile}, {timeout_ms}ms"
+        )
 
-    # Calculate how much time we have left for the recv portion of this.
-    # The socket APIs operate in seconds, so we have to convert, floats are ok.
-    recv_timeout_sec = (timeout_ms - elapsed_ms) / 1000
-    logger.debug(f"Connecting to notify socket: {sockfile}")
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-        try:
-            logger.debug(
-                f"Waiting {recv_timeout_sec:.4f}s for boot event: {sockfile}"
-            )
-            sock.settimeout(recv_timeout_sec)
-            sock.connect(sockfile)
+    # How long we can wait for the notify message
+    recv_timeout_ms = timeout_ms - elapsed_ms
 
-            # Note: we don't really read anything from this socket, we just wait
-            # for *some* data to show up. In the future we could have the notify
-            # service that runs in the VM actually send some useful data that
-            # we could use.
-            sock.recv(16)
-            logger.debug("Guest boot event received")
+    async def _connect_and_readline():
+        logger.debug(f"Waiting {recv_timeout_ms}ms for notify from: {sockfile}")
+        notify_r, notify_w = await asyncio.open_unix_connection(sockfile)
+        msg = await notify_r.readline()
+        logger.debug(f"Received boot event: {msg}")
+        notify_w.close()
+        await notify_w.wait_closed()
 
-            # Return "real" elapsed_ms since we started
-            return int(time.monotonic() * 1000) - start_ms
+    try:
+        await asyncio.wait_for(
+            _connect_and_readline(), timeout=recv_timeout_ms / 1000
+        )
+    except asyncio.TimeoutError:
+        raise VMBootError(
+            f"Timeout waiting for boot notify: {recv_timeout_ms}ms"
+        )
 
-        except socket.timeout:
-            elapsed_ms = int(time.monotonic() * 1000) - start_ms
-            logger.debug(f"socket timeout after {elapsed_ms}ms")
-            raise VMBootError(f"Timeout waiting for boot event: {timeout_ms}ms")
-        finally:
-            logger.debug(f"Closing notify socket: {sockfile}")
-            sock.close()
+    # Return elapsed ms
+    return int(time.monotonic() * 1000) - start_ms
 
 
 class ShellMode(Enum):
@@ -481,8 +477,16 @@ async def __vm_with_stack(
                 stderr=console,
             )
 
-        boot_elapsed_ms = _wait_for_boot(notify_sockfile, timeout_ms=timeout_ms)
-        timeout_ms = timeout_ms - boot_elapsed_ms
+        try:
+            boot_elapsed_ms = await _wait_for_boot(
+                notify_sockfile, timeout_ms=timeout_ms
+            )
+        # This is difficult to cover in a unittest since it means intentionally
+        # causing a real VM to fail to boot, which could result in resource
+        # leakage. Since the  _wait_for_boot method has full test coverage
+        # we'll skip covering this exception.
+        except asyncio.TimeoutError:  # pragma: no cover
+            raise VMBootError(f"Timeout waiting for boot event: {timeout_ms}ms")
 
         logger.debug(
             f"VM boot time: {boot_elapsed_ms}ms, "
