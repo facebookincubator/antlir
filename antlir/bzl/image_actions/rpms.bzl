@@ -4,7 +4,15 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
+load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_shape", "new_target_tagger", "target_tagged_image_source_shape", "target_tagger_to_feature")
+
+rpm_action_item_t = shape.shape(
+    action = shape.enum("install", "remove_if_exists"),
+    source = shape.field(target_tagged_image_source_shape, optional = True),
+    name = shape.field(str, optional = True),
+    version_set = shape.field(shape.path(), optional = True),
+)
 
 def _rpm_name_or_source(name_source):
     # Normal RPM names cannot have a colon, whereas target paths
@@ -22,21 +30,23 @@ def _build_rpm_feature(rpmlist, action, needs_version_set):
     target_tagger = new_target_tagger()
     res_rpms = []
     for path in rpmlist:
-        dct = {"action": action, _rpm_name_or_source(path): path}
-
-        if dct.get("source") != None:
-            dct["source"] = image_source_as_target_tagged_dict(
-                target_tagger,
-                dct["source"],
-            )
+        source = None
+        name = None
+        version_set = None
+        if _rpm_name_or_source(path) == "source":
+            source = image_source_as_target_tagged_shape(target_tagger, path)
         else:
-            dct["source"] = None  # Ensure this key is populated
+            name = path
             if needs_version_set:
-                # This gets converted to a version set target path in
-                # `normalize_features`.
-                dct["version_set"] = dct["name"]
-
-        res_rpms.append(dct)
+                version_set = name
+        rpm_action_item = shape.new(
+            rpm_action_item_t,
+            action = action,
+            source = source,
+            name = name,
+            version_set = version_set,
+        )
+        res_rpms.append(rpm_action_item)
     return target_tagger_to_feature(
         target_tagger = target_tagger,
         items = struct(rpms = res_rpms),
