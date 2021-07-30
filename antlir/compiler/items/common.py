@@ -21,7 +21,15 @@ import inspect
 import os
 import subprocess
 import tempfile
-from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
+from typing import (
+    AnyStr,
+    FrozenSet,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Set,
+)
 
 from antlir.compiler import procfs_serde
 from antlir.fs_utils import META_DIR, META_FLAVOR_FILE, Path
@@ -112,7 +120,7 @@ class LayerOpts(NamedTuple):
     # For images installing RPMs, both are required, and set by the flavor.
     rpm_installer: Optional[YumDnf]
     rpm_repo_snapshot: Optional[Path]
-    target_to_path: Mapping[str, str]
+    target_to_path: Mapping[str, Path]
     subvolumes_dir: Path
     version_set_override: Optional[str]
     debug: bool = False

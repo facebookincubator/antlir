@@ -14,7 +14,7 @@ import json
 import os
 import subprocess
 from dataclasses import dataclass
-from typing import Iterator, Mapping, NamedTuple, Optional, Tuple
+from typing import Iterator, Mapping, NamedTuple, Optional, Union
 
 from antlir.compiler import procfs_serde
 from antlir.compiler.requires_provides import (
@@ -31,14 +31,13 @@ from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER
 
 class BuildSource(NamedTuple):
     type: str
-    # This is overloaded to mean different things depending on `type`.
-    source: str
+    source: Union[Path, str]
 
     def to_path(
-        self, *, target_to_path: Mapping[str, str], subvolumes_dir: Path
+        self, *, target_to_path: Mapping[str, Path], subvolumes_dir: Path
     ) -> Path:
         if self.type == "layer":
-            out_path = target_to_path.get(self.source)
+            out_path = target_to_path.get(str(self.source))
             if out_path is None:
                 raise AssertionError(
                     f"MountItem could not resolve {self.source}"
@@ -237,7 +236,7 @@ def mounts_from_meta(volume_path: Path) -> Iterator[Mount]:
             yield mount
 
 
-def mounts_from_image_meta(image: Path) -> Iterator[Tuple[Path]]:
+def mounts_from_image_meta(image: Path) -> Iterator[Mount]:
     """
     Returns a list of constructed `MountItem`s built from the .meta of
     the provided btrfs loopback image.
@@ -258,6 +257,4 @@ def mounts_from_image_meta(image: Path) -> Iterator[Tuple[Path]]:
         )
 
         for mount in mounts_from_meta(td / "volume"):
-            # pyre-fixme[7]: Expected `Iterator[Tuple[Path]]` but got
-            #  `Generator[Mount, None, None]`.
             yield mount

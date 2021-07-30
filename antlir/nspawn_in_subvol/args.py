@@ -238,9 +238,7 @@ class _NspawnOpts(NamedTuple):
     user: pwd.struct_passwd = _NOBODY_USER
     debug_only_opts: _NspawnDebugOnlyNotForProdOpts = _DEBUG_OPTS_FOR_PROD
     allow_mknod: bool = False
-    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
-    #  bytes]]`.
-    targets_and_outputs: Mapping[AnyStr, Path] = {}
+    targets_and_outputs: Mapping[str, Path] = {}
 
 
 def new_nspawn_opts(**kwargs):

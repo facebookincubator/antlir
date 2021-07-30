@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from itertools import chain
-from typing import Iterable, List, Mapping, Optional, Tuple, cast
+from typing import Iterable, List, Mapping, Optional, Tuple, Union
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path
@@ -28,10 +28,8 @@ logger = get_logger()
 @dataclass()
 class GuestSSHConnection:
     tapdev: VmTap
-    # pyre-fixme[8]: Attribute has type `Mapping[str, str]`; used as `None`.
-    options: Mapping[str, str] = None
-    # pyre-fixme[8]: Attribute has type `Path`; used as `None`.
-    privkey: Path = None
+    options: Mapping[str, Union[str, int]]
+    privkey: Optional[Path] = None
 
     def __enter__(self):
         self.privkey = Path(tempfile.NamedTemporaryFile(delete=False).name)
@@ -47,6 +45,31 @@ class GuestSSHConnection:
             os.remove(self.privkey)
         except Exception as e:  # pragma: no cover
             logger.error(f"Error removing privkey: {self.privkey}: {e}")
+
+    def ssh_cmd(self, *, timeout_ms: int) -> List[Union[str, bytes]]:
+        options = {
+            # just ignore the ephemeral vm fingerprint
+            "UserKnownHostsFile": "/dev/null",
+            "StrictHostKeyChecking": "no",
+            "ConnectTimeout": int(timeout_ms / 1000),
+            "ConnectionAttempts": 10,
+        }
+
+        if self.options:
+            logger.debug(f"Additional options: {self.options}")
+            options.update(self.options)
+
+        options = list(
+            chain.from_iterable(["-o", f"{k}={v}"] for k, v in options.items())
+        )
+
+        return self.tapdev.netns.nsenter_as_user(
+            "ssh",
+            *options,
+            "-i",
+            str(self.privkey),
+            f"root@{self.tapdev.guest_ipv6_ll}",
+        )
 
     async def run(
         self,
@@ -72,7 +95,12 @@ class GuestSSHConnection:
             " ".join(f"{key}={val}" for key, val in run_env.items()),
         )
 
-        cmd = self.ssh_cmd(timeout_ms=timeout_ms) + ["--"] + cmd_pre + cmd
+        cmd = [
+            *self.ssh_cmd(timeout_ms=timeout_ms),
+            "--",
+            *cmd_pre,
+            *cmd,
+        ]
 
         logger.debug(f"Running {cmd} in vm at {self.tapdev.guest_ipv6_ll}")
         res = subprocess.run(
@@ -86,30 +114,3 @@ class GuestSSHConnection:
         )
         logger.debug(f"res: {res.returncode}, {res.stdout}, {res.stderr}")
         return res.returncode, res.stdout, res.stderr
-
-    def ssh_cmd(self, timeout_ms: int, **kwargs) -> List[str]:
-        options = {
-            # just ignore the ephemeral vm fingerprint
-            "UserKnownHostsFile": "/dev/null",
-            "StrictHostKeyChecking": "no",
-            "ConnectTimeout": int(timeout_ms / 1000),
-            "ConnectionAttempts": 10,
-        }
-
-        if self.options:
-            logger.debug(f"Additional options: {self.options}")
-            options.update(self.options)
-
-        options = list(
-            chain.from_iterable(["-o", f"{k}={v}"] for k, v in options.items())
-        )
-        return cast(
-            List[str],
-            self.tapdev.netns.nsenter_as_user(
-                "ssh",
-                *options,
-                "-i",
-                str(self.privkey),
-                f"root@{self.tapdev.guest_ipv6_ll}",
-            ),
-        )
