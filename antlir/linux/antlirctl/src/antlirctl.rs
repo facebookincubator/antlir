@@ -6,7 +6,6 @@
  */
 
 #![deny(warnings)]
-#![allow(stable_features)]
 
 use std::collections::VecDeque;
 use std::path::PathBuf;
