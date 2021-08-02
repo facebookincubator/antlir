@@ -6,6 +6,7 @@
 
 import os
 
+from antlir.bzl_const import BZL_CONST
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.group import GroupItem
@@ -13,7 +14,10 @@ from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.mount import MountItem
 from antlir.compiler.items.remove_path import RemovePathItem
-from antlir.compiler.items.rpm_action import RpmAction, RpmActionItem
+from antlir.compiler.items.rpm_action import (
+    RpmAction,
+    RpmActionItem,
+)
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
 from antlir.compiler.items.user import UserItem
@@ -87,7 +91,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     rpm_installer=None,
     rpm_repo_snapshot=None,
     allowed_host_mount_targets=[],
-    flavor="flavor",
+    flavor="antlir_test",
 )
 
 # This should be a faithful transcription of the `feature`
@@ -172,22 +176,40 @@ ID_TO_ITEM = {
         force_root_ownership=False,
     ),
     ".rpms/install/rpm-test-mice": RpmActionItem(
-        from_target=T_TAR, name="rpm-test-mice", action=RpmAction.install
+        from_target=T_TAR,
+        name="rpm-test-mice",
+        action=RpmAction.install,
+        flavor_and_version_set=(
+            ("antlir_test", BZL_CONST.version_set_allow_all_versions),
+        ),
+        layer_opts=DUMMY_LAYER_OPTS,
     ),
     ".rpms/install/rpm-test-cheese-2-1.rpm": RpmActionItem(
         from_target=T_TAR,
         source=Path(TARGET_TO_PATH[T_RPM_TEST_CHEESE]),
         action=RpmAction.install,
+        flavor_and_version_set=(
+            ("antlir_test", BZL_CONST.version_set_allow_all_versions),
+        ),
+        layer_opts=DUMMY_LAYER_OPTS,
     ),
     ".rpms/remove_if_exists/rpm-test-carrot": RpmActionItem(
         from_target=T_TAR,
         name="rpm-test-carrot",
         action=RpmAction.remove_if_exists,
+        flavor_and_version_set=(
+            ("antlir_test", BZL_CONST.version_set_allow_all_versions),
+        ),
+        layer_opts=DUMMY_LAYER_OPTS,
     ),
     ".rpms/remove_if_exists/rpm-test-milk": RpmActionItem(
         from_target=T_TAR,
         name="rpm-test-milk",
         action=RpmAction.remove_if_exists,
+        flavor_and_version_set=(
+            ("antlir_test", BZL_CONST.version_set_allow_all_versions),
+        ),
+        layer_opts=DUMMY_LAYER_OPTS,
     ),
     # From `feature_mount`:
     "meownt": MountItem(

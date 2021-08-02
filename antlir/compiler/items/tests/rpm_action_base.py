@@ -7,14 +7,35 @@
 import subprocess
 import sys
 
+from antlir.bzl_const import BZL_CONST
 from antlir.fs_utils import Path, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
 from pydantic import ValidationError
 
-from ..rpm_action import RpmAction, RpmActionItem
+from ..rpm_action import (
+    RpmAction,
+    RpmActionItem,
+)
 from .common import DUMMY_LAYER_OPTS, render_subvol
+
+
+def create_rpm_action_item(
+    from_target="t",
+    flavor_to_version_set=None,
+    layer_opts=DUMMY_LAYER_OPTS,
+    **kwargs
+):
+    flavor_to_version_set = flavor_to_version_set or {
+        "antlir_test": BZL_CONST.version_set_allow_all_versions
+    }
+    return RpmActionItem(
+        from_target=from_target,
+        flavor_and_version_set=tuple(flavor_to_version_set.items()),
+        layer_opts=layer_opts,
+        **kwargs,
+    )
 
 
 class RpmActionItemTestBase:
@@ -55,7 +76,7 @@ class RpmActionItemTestBase:
             with self.assertRaises(subprocess.CalledProcessError):
                 RpmActionItem.get_phase_builder(
                     [
-                        RpmActionItem(
+                        create_rpm_action_item(
                             from_target="m",
                             name="rpm-test-milk-2.71",
                             source=None,
@@ -72,7 +93,7 @@ class RpmActionItemTestBase:
             ):
                 RpmActionItem.get_phase_builder(
                     [
-                        RpmActionItem(
+                        create_rpm_action_item(
                             from_target="m",
                             name="rpm-test-milk",
                             source="rpm-test-milk",
@@ -84,9 +105,7 @@ class RpmActionItemTestBase:
 
             RpmActionItem.get_phase_builder(
                 [
-                    RpmActionItem(
-                        from_target="t", name=n, action=RpmAction.install
-                    )
+                    create_rpm_action_item(name=n, action=RpmAction.install)
                     for n in [
                         # This specific RPM contains `/bin/sh` and a
                         # post-install script to test `/dev/null` isolation.

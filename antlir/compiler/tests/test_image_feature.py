@@ -62,7 +62,7 @@ class ImageFeatureTestCase(unittest.TestCase):
                     version_set_override=None,
                     rpm_installer=None,
                     rpm_repo_snapshot=None,
-                    flavor="flavor",
+                    flavor="antlir_test",
                 ),
             )
         )

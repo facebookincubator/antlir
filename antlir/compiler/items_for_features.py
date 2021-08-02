@@ -126,7 +126,9 @@ class ItemFactory:
             ),
             "parent_layer": ParentLayerItem,
             "remove_paths": RemovePathItem,
-            "rpms": self._image_sourcify(RpmActionItem),
+            "rpms": self._image_sourcify(
+                lambda **kwargs: RpmActionItem(**kwargs, layer_opts=layer_opts)
+            ),
             "symlinks_to_dirs": SymlinkToDirItem,
             "symlinks_to_files": SymlinkToFileItem,
             "tarballs": self._image_sourcify(TarballItem),

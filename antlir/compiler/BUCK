@@ -99,7 +99,10 @@ python_library(
 python_library(
     name = "sample_items",
     srcs = ["tests/sample_items.py"],
-    deps = ["//antlir/compiler/items:all-items"],
+    deps = [
+        "//antlir:bzl_const",
+        "//antlir/compiler/items:all-items",
+    ],
 )
 
 # Transitive deps of `tests:feature_kitchen_sink` --
