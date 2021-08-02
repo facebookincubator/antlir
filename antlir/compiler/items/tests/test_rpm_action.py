@@ -9,6 +9,7 @@ import subprocess
 import sys
 from contextlib import contextmanager
 
+from antlir.bzl_const import BZL_CONST
 from antlir.fs_utils import Path, temp_dir
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.rpm.yum_dnf_conf import YumDnf
@@ -18,9 +19,12 @@ from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import check_common_rpm_render, pop_path
 
 from ..common import PhaseOrder
-from ..rpm_action import RpmAction, RpmActionItem
+from ..rpm_action import (
+    RpmAction,
+    RpmActionItem,
+)
 from .common import BaseItemTestCase, render_subvol
-from .rpm_action_base import RpmActionItemTestBase
+from .rpm_action_base import create_rpm_action_item, RpmActionItemTestBase
 
 
 class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
@@ -29,14 +33,14 @@ class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
     def test_phase_orders(self):
         self.assertEqual(
             PhaseOrder.RPM_INSTALL,
-            RpmActionItem(
-                from_target="t", name="n", action=RpmAction.install
+            create_rpm_action_item(
+                name="n", action=RpmAction.install
             ).phase_order(),
         )
         self.assertEqual(
             PhaseOrder.RPM_REMOVE,
-            RpmActionItem(
-                from_target="t", name="n", action=RpmAction.remove_if_exists
+            create_rpm_action_item(
+                name="n", action=RpmAction.remove_if_exists
             ).phase_order(),
         )
 
@@ -64,8 +68,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
             RpmActionItem.get_phase_builder(
                 [
-                    RpmActionItem(
-                        from_target="t",
+                    create_rpm_action_item(
                         source=local_rpm_path,
                         action=RpmAction.install,
                     )
@@ -111,11 +114,13 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             subvol.run_as_root(["mkdir", subvol.path(".meta")])
             self._check_rpm_action_item_subvol(
                 subvol,
-                RpmActionItem(
-                    from_target="t",
+                create_rpm_action_item(
                     name="rpm-test-carrot",
                     action=RpmAction.install,
-                    version_set=td / "vset",
+                    flavor_to_version_set={
+                        "antlir_test": (td / "vset").decode()
+                    },
+                    layer_opts=self._opts(),
                 ),
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
             )
@@ -129,15 +134,16 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
             subvol = temp_subvolumes.create("rpm_ver_lock")
             subvol.run_as_root(["mkdir", subvol.path(".meta")])
+            layer_opts = self._opts(version_set_override=td / "vset")
             self._check_rpm_action_item_subvol(
                 subvol,
-                RpmActionItem(
-                    from_target="t",
+                create_rpm_action_item(
                     name="rpm-test-carrot",
                     action=RpmAction.install,
+                    layer_opts=layer_opts,
                 ),
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
-                opts=self._opts(version_set_override=td / "vset"),
+                opts=layer_opts,
             )
             self.assertEquals(
                 "carrot 1 lockme\n",
@@ -155,12 +161,13 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             subvol.run_as_root(["mkdir", subvol.path(".meta")])
 
             def _self_check():
+                layer_opts = self._opts(version_set_override=td / "vset")
                 self._check_rpm_action_item_subvol(
                     subvol,
-                    RpmActionItem(
-                        from_target="t",
+                    create_rpm_action_item(
                         name="rpm-test-veggie",
                         action=RpmAction.install,
+                        layer_opts=layer_opts,
                     ),
                     {
                         "rpm_test": [
@@ -171,7 +178,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                             },
                         ]
                     },
-                    opts=self._opts(version_set_override=td / "vset"),
+                    opts=layer_opts,
                 )
 
             if self._YUM_DNF == YumDnf.yum:
@@ -195,18 +202,21 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
             subvol = temp_subvolumes.create("rpm_ver_lock")
             subvol.run_as_root(["mkdir", subvol.path(".meta")])
+            layer_opts = self._opts(
+                version_set_override=td / "vset_version_override"
+            )
             self._check_rpm_action_item_subvol(
                 subvol,
-                RpmActionItem(
-                    from_target="t",
+                create_rpm_action_item(
                     name="rpm-test-carrot",
                     action=RpmAction.install,
-                    version_set=td / "vset_version_lock",
+                    flavor_to_version_set={
+                        "antlir_test": (td / "vset_version_lock").decode()
+                    },
+                    layer_opts=layer_opts,
                 ),
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
-                opts=self._opts(
-                    version_set_override=td / "vset_version_override"
-                ),
+                opts=layer_opts,
             )
             self.assertEquals(
                 "carrot 1 lockme\n",
@@ -231,8 +241,8 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             subvol = temp_subvolumes.snapshot(parent_subvol, "rpm_action")
             self._check_rpm_action_item_subvol(
                 subvol,
-                RpmActionItem(
-                    from_target="t", source=src_rpm, action=RpmAction.install
+                create_rpm_action_item(
+                    source=src_rpm, action=RpmAction.install
                 ),
                 {"rpm_test": ["(Dir)", {"cheese1.txt": ["(File d42)"]}]},
             )
@@ -247,8 +257,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             subvol = temp_subvolumes.snapshot(parent_subvol, "remove_cheese")
             self._check_rpm_action_item_subvol(
                 subvol,
-                RpmActionItem(
-                    from_target="t",
+                create_rpm_action_item(
                     source=local_rpm_path,
                     action=RpmAction.remove_if_exists,
                 ),
@@ -274,7 +283,9 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 # Note that we don't need to run the builder to hit the error
                 RpmActionItem.get_phase_builder(
                     [
-                        RpmActionItem(from_target="t", name=r, action=a)
+                        create_rpm_action_item(
+                            name=r, action=a, layer_opts=self._opts()
+                        )
                         for r, a in rpm_actions
                     ],
                     self._opts(),
@@ -285,17 +296,17 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             # different but RPM names are the same)
             RpmActionItem.get_phase_builder(
                 [
-                    RpmActionItem(
-                        from_target="t",
+                    create_rpm_action_item(
                         source=Path(__file__).dirname()
                         / "rpm-test-cheese-2-1.rpm",
                         action=RpmAction.install,
+                        layer_opts=self._opts(),
                     ),
-                    RpmActionItem(
-                        from_target="t",
+                    create_rpm_action_item(
                         source=Path(__file__).dirname()
                         / "rpm-test-cheese-1-1.rpm",
                         action=RpmAction.remove_if_exists,
+                        layer_opts=self._opts(),
                     ),
                 ],
                 self._opts(),
@@ -314,16 +325,29 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             subvol = temp_subvolumes.snapshot(parent_subvol, "remove_cheese")
             RpmActionItem.get_phase_builder(
                 [
-                    RpmActionItem(
-                        from_target="t",
+                    create_rpm_action_item(
                         source=local_rpm_path,
                         action=RpmAction.install,
+                        layer_opts=self._opts(),
                     )
                 ],
                 self._opts(),
             )(subvol)
             # cheese2 file is still there
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
+
+    def test_rpm_action_no_matching_flavor_error(self):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "No matching version set found for rpm dog for flavor antlir_test",
+        ):
+            create_rpm_action_item(
+                name="dog",
+                action=RpmAction.install,
+                flavor_to_version_set={
+                    "wrong": BZL_CONST.version_set_allow_all_versions
+                },
+            ),
 
 
 class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):

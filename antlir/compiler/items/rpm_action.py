@@ -11,6 +11,9 @@ import shlex
 import tempfile
 from contextlib import contextmanager
 from typing import (
+    Any,
+    Dict,
+    FrozenSet,
     Iterable,
     List,
     Mapping,
@@ -18,9 +21,9 @@ from typing import (
     Optional,
     Tuple,
     Union,
-    Any,
 )
 
+from antlir.bzl_const import BZL_CONST
 from antlir.common import not_none
 from antlir.fs_utils import (
     Path,
@@ -269,8 +272,24 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     # `rpm_action_item_t` inconsistently.
     source: Optional[Path] = None
     version_set: Optional[Path] = None
+    # This is optional until we move feature normalization into
+    # `rpms.bzl`. Then we can initialize this with
+    # `rpm_action_item`.
+    flavor_and_version_set: Optional[Tuple[Tuple[str, str], ...]] = None
 
     def __init__(self, *args: Any, **kwargs: Any):
+        layer_opts = kwargs.pop("layer_opts")
+        flavor_and_version_set = kwargs["flavor_and_version_set"]
+
+        if layer_opts.flavor not in {
+            flavor for flavor, version_set in flavor_and_version_set
+        }:
+            rpm_name = kwargs.get("name", None) or kwargs["source"]
+            raise RuntimeError(
+                f"No matching version set found for rpm {rpm_name} "
+                f"for flavor {layer_opts.flavor}."
+            )
+
         rpm_action_item_t.__init__(self, *args, **kwargs)
         ImageItem.__init__(self, from_target=kwargs.get("from_target"))
 
@@ -304,9 +323,14 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
         # need apply on top of the repo-wide version set we are using.
         version_sets = set()
         for item in items:
-            if item.version_set is None:
-                continue
-            version_sets.add(item.version_set)
+            version_sets.update(
+                [
+                    Path(version_set)
+                    for flavor, version_set in item.flavor_and_version_set or []
+                    if flavor == layer_opts.flavor
+                    and version_set != BZL_CONST.version_set_allow_all_versions
+                ]
+            )
 
         def builder(subvol: Subvol) -> None:
             # pyre-fixme[16]: `Path` has no attribute `__enter__`.

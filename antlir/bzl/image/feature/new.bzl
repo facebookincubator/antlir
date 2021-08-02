@@ -164,21 +164,24 @@ def _normalize_feature_and_get_deps(feature, flavor):
         # only mutate the `version_set` key.
         feature_dict["rpms"] = [dict(**r) for r in aliased_rpms]
 
-    vs_path = REPO_CFG.flavor_to_config[flavor].version_set_path
-    if vs_path != BZL_CONST.version_set_allow_all_versions:
-        # Resolve RPM names to version set targets.  We cannot avoid this
-        # coupling with `rpm.bzl` because the same `image.rpms_install` may
-        # be normalized against multiple version set names.
-        for rpm_item in feature_dict.get("rpms", []):
-            vs_name = rpm_item.get("version_set")
-            if vs_name:
-                rpm_item["version_set"] = tag_target(
-                    target_tagger,
-                    vs_path + "/rpm:" + vs_name,
-                )
-    else:
-        for rpm_item in feature_dict.get("rpms", []):
-            rpm_item.pop("version_set", None)
+    # Resolve RPM names to version set targets.  We cannot avoid this
+    # coupling with `rpm.bzl` because the same `image.rpms_install` may
+    # be normalized against multiple version set names.
+    for rpm_item in feature_dict.get("rpms", []):
+        flavor_to_version_set = {}
+
+        vs_name = rpm_item.pop("version_set", None)
+
+        vs_path = REPO_CFG.flavor_to_config[flavor].version_set_path
+        if vs_path != BZL_CONST.version_set_allow_all_versions and vs_name:
+            flavor_to_version_set[flavor] = tag_target(
+                target_tagger,
+                vs_path + "/rpm:" + vs_name,
+            )
+        else:
+            flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
+
+        rpm_item["flavor_and_version_set"] = tuple(flavor_to_version_set.items())
 
     direct_deps = []
     direct_deps.extend(feature.deps)

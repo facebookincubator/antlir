@@ -12,6 +12,7 @@ rpm_action_item_t = shape.shape(
     source = shape.field(target_tagged_image_source_shape, optional = True),
     name = shape.field(str, optional = True),
     version_set = shape.field(shape.path(), optional = True),
+    flavor_and_version_set = shape.field(shape.list(shape.tuple(str, str)), optional = True),
 )
 
 def _rpm_name_or_source(name_source):
