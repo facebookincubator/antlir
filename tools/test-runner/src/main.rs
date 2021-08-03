@@ -40,14 +40,16 @@ fn main() -> Result<()> {
         );
     }
 
-    // collect test information
+    // collect and validate test information
     let file = File::open(&options.spec)
         .with_context(|| format!("Failed to read test specs from {}", options.spec.display()))?;
     let reader = BufReader::new(file);
-    let tests: Vec<TestSpec> = serde_json::from_reader(reader)
+    let specs: Vec<TestSpec> = serde_json::from_reader(reader)
         .with_context(|| format!("Failed to parse JSON spec from {}", options.spec.display()))?;
+    let tests: Result<Vec<Test>, _> = specs.into_iter().map(validate).collect();
+    let tests = tests.with_context(|| "Found an invalid test spec")?;
 
-    // then run them
+    // run all tests
     let retcode = run_all(tests, options.threads)?;
     process::exit(retcode);
 }
@@ -55,39 +57,18 @@ fn main() -> Result<()> {
 /// This is the actual test structure used internally.
 #[derive(Debug)]
 struct Test {
-    target: String,
+    buck_target: String,
     command: Command,
 }
 
-fn run_all(specs: Vec<TestSpec>, threads: u32) -> Result<i32> {
-    // try to validate all test specs before running anything
-    let specs: Vec<Result<Test>> = specs.into_iter().map(validate).collect();
-    let mut tests: Vec<Test> = Vec::with_capacity(specs.len());
-
-    // print all errors and exit if there were any, while collecting valid tests
-    let mut quit = false;
-    for spec in specs {
-        match spec {
-            Err(e) => {
-                eprintln!("{}", e);
-                quit = true;
-            }
-            Ok(t) => {
-                tests.push(t);
-            }
-        };
-    }
-    if quit {
-        bail!("Found one or more invalid test specifications, see above");
-    }
-
+fn run_all(tests: Vec<Test>, threads: u32) -> Result<i32> {
     // at this point, we should be able to safely run tests, even if they fail
     let total = tests.len();
     println!("Running {} test targets...", total);
     let mut passed = 0;
     let mut errors: Vec<String> = Vec::new();
-    for test in tests.iter_mut() {
-        let target = &test.target;
+    for mut test in tests.into_iter() {
+        let target = &test.buck_target;
         let mut child = test.command.spawn()?;
         let status = child.wait()?;
         if status.success() {
@@ -175,7 +156,7 @@ fn validate(spec: TestSpec) -> Result<Test> {
     }
 
     if !err.is_empty() {
-        bail!("Invalid context for running test {}:\n{}", spec.target, err);
+        bail!("Invalid context for running test target {}\n{}", spec.target, err);
 
     // refer to https://doc.rust-lang.org/std/process/struct.Command.html#impl
     // notably, a Command will inherit the current env, working dir and stdin/out/err
@@ -202,7 +183,7 @@ fn validate(spec: TestSpec) -> Result<Test> {
         command.stderr(Stdio::piped());
 
         return Ok(Test {
-            target: spec.target,
+            buck_target: spec.target,
             command,
         });
     }
