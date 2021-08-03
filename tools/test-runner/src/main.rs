@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process;
-use std::process::Stdio;
+use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
@@ -18,11 +18,10 @@ use structopt::{clap, StructOpt};
 )]
 struct Options {
     /// JSON file containing test descriptions. Passed in by buck test
-    #[structopt(parse(from_os_str), long = "buck-test-info")]
+    #[structopt(long = "buck-test-info")]
     spec: PathBuf,
 
-    /// Maximum number of threads used. Passed in by buck test
-    // XXX: not documented
+    /// Maximum number of concurrent tests. Passed in by buck test
     #[structopt(long = "jobs", default_value = "1")]
     threads: u32,
 
@@ -57,7 +56,7 @@ fn main() -> Result<()> {
 #[derive(Debug)]
 struct Test {
     target: String,
-    command: process::Command,
+    command: Command,
 }
 
 fn run_all(specs: Vec<TestSpec>, threads: u32) -> Result<i32> {
@@ -136,7 +135,7 @@ struct TestSpec {
 
     /// The type of the test.
     #[serde(rename(deserialize = "type"))]
-    type_: TestType,
+    kind: TestType,
 
     /// Command line that should be used to run the test.
     command: Vec<String>,
@@ -144,10 +143,10 @@ struct TestSpec {
     /// Environment variables to be defined when running the test.
     env: HashMap<String, String>,
 
-    /// Labels that are defined on the test rule. NOTE: not used
+    /// Labels that are defined on the test rule. NOTE: not used yet
     labels: Vec<String>,
 
-    /// Contacts that are defined on the test rule. NOTE: not used
+    /// Contacts that are defined on the test rule. NOTE: not used yet
     contacts: Vec<String>,
 
     /// Working directory the test should be run from. XXX: not documented
@@ -181,7 +180,7 @@ fn validate(spec: TestSpec) -> Result<Test> {
     // refer to https://doc.rust-lang.org/std/process/struct.Command.html#impl
     // notably, a Command will inherit the current env, working dir and stdin/out/err
     } else {
-        let mut command = process::Command::new(&spec.command[0]);
+        let mut command = Command::new(&spec.command[0]);
         if spec.command.len() > 1 {
             command.args(&spec.command[1..]);
         }
@@ -197,14 +196,14 @@ fn validate(spec: TestSpec) -> Result<Test> {
         };
         command.current_dir(dir);
 
-        // no stdin, but we may use stdout and stderr afterwards
+        // no stdin, but we'll want stdout and stderr afterwards
         command.stdin(Stdio::null());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
 
         return Ok(Test {
             target: spec.target,
-            command: command,
+            command,
         });
     }
 }
