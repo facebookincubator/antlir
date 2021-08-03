@@ -343,45 +343,24 @@ def _nested_types(type, path = None):
 
     return nestings
 
-def _codegen_type(type, generated):
-    src = []
-
-    # avoid duplicates
-    python_type = _python_type(type)
-    if python_type in generated:
-        return src
-    else:
-        generated[python_type] = True
-
-    # nested shapes like `shape.list(Y)` with Y = `shape.list(X)` end up in the
-    # recursion with Y (the nested shape) as a field, this gets around that
-    type = type.type if _is_field(type) else type
-
-    if _is_shape(type):
-        src.extend(_codegen_shape(type))
-    elif _is_collection(type):
-        item_types = []
-
-        # some collections have multiple types and some have only one
-        if types.is_list(type.item_type) or types.is_tuple(type.item_type):
-            item_types = list(type.item_type)
-        else:
-            item_types = [type.item_type]
-
-        for t in item_types:
-            src.extend(_codegen_type(t, generated))
-    elif _is_enum(type):
-        src.extend(_codegen_enum(type))
-
-    return src
-
 def _codegen_nested_classes(nestings):
-    # assumes nestings are in the correct order (ie from `_nested_types`).
-    # we also take care not to generate the same class more than once
+    # assumes nestings are in the correct order (ie from `_nested_types`)
     src = []
+
+    # we also take care not to generate the same class more than once
     generated = {}
     for nesting in nestings:
-        src.extend(_codegen_type(nesting.type, generated))
+        type = nesting.type
+        classname = _python_type(type)
+        if classname not in generated:
+            generated[classname] = True
+
+            # these are the only types that generate new classes
+            if _is_shape(type):
+                src.extend(_codegen_shape(type))
+            elif _is_enum(type):
+                src.extend(_codegen_enum(type))
+
     return src
 
 def _codegen_field(name, field):
