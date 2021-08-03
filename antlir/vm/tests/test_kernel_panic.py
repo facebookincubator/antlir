@@ -21,7 +21,10 @@ class KernelPanicTest(unittest.TestCase):
             # This is the running the fully materialized =vmtest script
             # that buck built.
             proc = subprocess.run(
-                [Path(vmtest), "--append-console={}".format(console_f.name)],
+                [
+                    Path(vmtest),
+                    "--append-console={}".format(console_f.name),
+                ],
             )
 
             # Expect to see the kernel panic message in the console output

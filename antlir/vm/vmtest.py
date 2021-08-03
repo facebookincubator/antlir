@@ -10,7 +10,8 @@ import contextlib
 import io
 import os.path
 import sys
-from typing import Generator, List, Optional, Tuple, Union
+import uuid
+from typing import Any, Dict, AsyncGenerator, List, Optional, Tuple, Union
 
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import get_logger
@@ -23,21 +24,64 @@ from antlir.vm.vm_opts_t import vm_opts_t
 
 logger = get_logger()
 
-
-@contextlib.contextmanager
-def do_not_rewrite_cmd(
-    cmd: List[Union[Path, str]], output: Path
-) -> Generator[Tuple[List[Union[Path, str]], None], None, None]:
-    yield cmd, None
+_WRAP_IN_VM_TEST_BINARY = Path("/vmtest/wrap")
+_IN_VM_TEST_BINARY = Path("/vmtest/test")
 
 
-@contextlib.contextmanager
-def rewrite_testpilot_python_cmd(
-    cmd: List[Union[Path, str]], output: Path
-) -> Generator[
-    Tuple[List[Union[Path, str]], Optional[io.BufferedWriter]], None, None
+@contextlib.asynccontextmanager
+async def wrap_and_forward(
+    output: Path,
+    cmd: List[Union[Path, str]],
+    test_type: str,
+):
+    with open(output, "wb") as out:
+        stop = asyncio.Event()
+
+        async def _handle(reader, writer):
+            while True:
+                data = await reader.read(4096)
+                if not data and reader.at_eof():
+                    break
+                out.write(data)
+                out.flush()
+
+            writer.close()
+            await writer.wait_closed()
+            stop.set()
+
+        socket = Path("/tmp") / f"{uuid.uuid4().hex}.sock"
+        async with await asyncio.start_unix_server(_handle, path=str(socket)):
+            try:
+                yield [
+                    _WRAP_IN_VM_TEST_BINARY,
+                    "--socket",
+                    socket,
+                    "--test-type",
+                    test_type,
+                    "--",
+                    *cmd,
+                ], socket
+
+                await stop.wait()
+            finally:
+                os.unlink(socket)
+
+
+@contextlib.asynccontextmanager
+async def do_not_wrap_cmd(
+    cmd: List[Union[Path, str]], env: Dict[Any, Any]
+) -> AsyncGenerator[
+    Tuple[List[Union[Path, str]], Dict[Any, Any], Optional[Path]], None
 ]:
-    logger.debug(f"rewriting python cmd: {cmd}")
+    yield cmd, env, None
+
+
+@contextlib.asynccontextmanager
+async def wrap_testpilot_python_cmd(
+    cmd: List[Union[Path, str]], env: Dict[Any, Any]
+) -> AsyncGenerator[
+    Tuple[List[Union[Path, str]], Dict[Any, Any], Optional[Path]], None
+]:
     parser = argparse.ArgumentParser(allow_abbrev=False, add_help=False)
     parser.add_argument("--output", "-o")
 
@@ -45,48 +89,47 @@ def rewrite_testpilot_python_cmd(
     #   but got `List[Union[Path, str]]`.
     test_opts, unparsed_args = parser.parse_known_args(cmd[1:])
 
-    if test_opts.output is None:
-        yield cmd, None
+    if not test_opts.output:
+        yield cmd, env, None
     else:
-        with open(test_opts.output, "wb") as f:
-            yield [
-                "TEST_PILOT=1",
-                cmd[0],
-                "--output",
-                output,
-                *unparsed_args,
-            ], f
+        async with wrap_and_forward(
+            output=test_opts.output,
+            # pyre-fixme[58]: `+` is not supported for operand types
+            #   `List[Union[Path, str]]` and `List[str]`.
+            cmd=[cmd[0]] + unparsed_args,
+            test_type="pyunit",
+        ) as (cmd, socket):
+            yield cmd, env, socket
 
 
-@contextlib.contextmanager
-def rewrite_tpx_gtest_cmd(
-    cmd: List[Union[Path, str]], output: Path
-) -> Generator[
-    Tuple[List[Union[Path, str]], Optional[io.BufferedWriter]], None, None
+@contextlib.asynccontextmanager
+async def wrap_tpx_gtest_cmd(
+    cmd: List[Union[Path, str]],
+    env: Dict[Any, Any],
+) -> AsyncGenerator[
+    Tuple[List[Union[Path, str]], Dict[Any, Any], Optional[Path]], None
 ]:
     logger.debug("Rewriting gtest cmd: {cmd}")
 
-    gtest_output = os.environ.get("GTEST_OUTPUT")
-    if gtest_output is None:
-        yield cmd, None
+    gtest_output = env.get("GTEST_OUTPUT") or os.environ.get("GTEST_OUTPUT")
+    if not gtest_output:
+        yield cmd, env, None
     else:
         prefix = "xml:"
         assert gtest_output.startswith(prefix)
         gtest_output = gtest_output[len(prefix) :]
-        with open(gtest_output, "wb") as f:
-            # pyre-fixme[58]: `+` is not supported for operand types
-            #   `List[str]` and `List[Union[Path, str]]`.  Serisously? wtf...
-            # pyre-fixme[7]:  Expected `Generator[Tuple[List[Union[Path, str]],
-            #    Optional[io.BufferedWriter]], None, None]` but got
-            #    `Generator[Tuple[List[str], io.BufferedWriter], None, None]`.
-            #    Wtf again...
-            yield [f"GTEST_OUTPUT={prefix}{output}"] + cmd, f
+        async with wrap_and_forward(
+            output=gtest_output,
+            cmd=cmd,
+            test_type="gtest",
+        ) as (cmd, socket):
+            yield cmd, env, socket
 
 
-_TEST_TYPE_TO_REWRITE_CMD = {
-    "pyunit": rewrite_testpilot_python_cmd,
-    "gtest": rewrite_tpx_gtest_cmd,
-    "rust": do_not_rewrite_cmd,
+_TEST_TYPE_TO_WRAP_CMD = {
+    "pyunit": wrap_testpilot_python_cmd,
+    "gtest": wrap_tpx_gtest_cmd,
+    "rust": do_not_wrap_cmd,
 }
 
 # pyre-fixme[13]: Attributes `test_binary`, `test_binary_image`, and
@@ -141,7 +184,7 @@ class VMTestExecOpts(VMExecOpts):
             help="The type of test being executed, this is populated "
             "by the .bzl that wraps the test.",
             required=True,
-            choices=_TEST_TYPE_TO_REWRITE_CMD.keys(),
+            choices=_TEST_TYPE_TO_WRAP_CMD.keys(),
         )
 
         list_group = parser.add_mutually_exclusive_group()
@@ -179,6 +222,10 @@ async def run(
     test_binary_image: Path,
     test_type: str,
 ) -> Optional[int]:
+
+    # pyre-fixme[6]: Expected `SupportsKeysAndGetItem[Variable[_KT],
+    #  Variable[_VT]]` for 1st param but got `Generator[List[str], None, None]`.
+    env = dict(s.split("=", maxsplit=1) for s in setenv)
 
     # Start the test binary directly to list out test cases instead of
     # starting an entire VM.  This is faster, but it's also a potential
@@ -223,10 +270,6 @@ async def run(
     # If we've made it this far we are executing the actual test, not just
     # listing tests
     returncode = -1
-
-    # pyre-fixme[6]: Expected `SupportsKeysAndGetItem[Variable[_KT],
-    #  Variable[_VT]]` for 1st param but got `Generator[List[str], None, None]`.
-    test_env = dict(s.split("=", maxsplit=1) for s in setenv)
 
     # Build shares to provide to the vm
     #
@@ -277,48 +320,51 @@ async def run(
         # because if a context manager doesn't yield *something* it will
         # throw an exception that this caller has to handle.
         if instance:
-            cmd: List[Union[Path, str]] = [Path("/vmtest/test")]
+            cmd: List[Union[Path, str]] = ["/vmtest/test"]
             cmd.extend(list(extra))
 
             # find the correct rewrite command for the test type
-            rewrite_cmd = _TEST_TYPE_TO_REWRITE_CMD[test_type]
+            maybe_wrap_cmd = _TEST_TYPE_TO_WRAP_CMD[test_type]
 
-            test_output = Path("/tmp/test.output")
-            with rewrite_cmd(cmd, test_output) as (cmd, results):
-                logger.debug(
-                    f"Executing {cmd} inside guest. "
-                    f"Writing to {results} in host."
-                )
-                returncode, _, _ = await instance.run(
+            # Each test type (cpp, python, rust) has a different argument
+            # format for defining where test output should go.  Additionally
+            # since these tests are being executed *inside* the VM we need
+            # to exfiltrate the test output somehow.  To avoid making multiple
+            # connections to a test VM, we do the exfiltration using local
+            # unix domain socket forwarding over the SSH connection.
+            # Now, the average test binary cannot write their output directly
+            # to a domain socket.  To handle that, the test binary (installed
+            # at /vmtest/test) inside the VM has a special wrapper which
+            # opens a new file descriptor, provides it to the test binary
+            # when executed, and forwards the writes into the FD over the
+            # domain socket.  On this end, we are provided with the domain
+            # socket path to forward over the ssh connection.
+            async with maybe_wrap_cmd(cmd=cmd, env=env) as (
+                cmd,
+                env,
+                socket,
+            ):
+                logger.debug(f"Executing {cmd} inside guest.")
+                res = await instance.run(
                     cmd=cmd,
                     timeout_ms=timeout_ms,
-                    env=test_env,
+                    env=env,
                     # Note: This is currently needed due to how some
                     # cpp_unittest targets depend on artifacts in the code
                     # repo.  Once we have proper support for `runtime_files`
                     # this can be removed.  See here for more details:
                     # https://fburl.com/xt322rks
                     cwd=find_buck_cell_root(path_in_repo=Path(sys.argv[0])),
-                    # Dump stdout back to the calling terminal
+                    # Always dump stderr/stdout back to the calling terminal
+                    stderr=None,
                     stdout=None,
+                    # Maybe forward a socket
+                    forward={socket: socket} if socket else None,
                 )
-
-                logger.info(f"{cmd} completed with: {returncode}")
-                if results:
-                    try:
-                        await instance.run(
-                            ["cat", test_output],
-                            check=True,
-                            timeout_ms=timeout_ms,
-                            stdout=results,
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to copy {test_output} to host: {str(e)}"
-                        )
+                logger.info(f"{cmd} completed with: {res.returncode}")
 
     # Exit with the return code of the actual test run, not the VM exit
-    return returncode
+    return res.returncode
 
 
 if __name__ == "__main__":

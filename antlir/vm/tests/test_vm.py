@@ -109,21 +109,26 @@ class AsyncTestAntlirVm(unittest.TestCase):
         async with vm(
             opts=opts_instance,
         ) as (instance, boottime_ms, timeout_ms):
-            retcode, stdout, _ = await instance.run(
+            proc = await instance.run(
                 cmd=["/bin/hostnamectl", "status", "--static"],
                 timeout_ms=timeout_ms,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
-
+            stdout, _ = await proc.communicate()
             self.assertEqual(stdout, b"vmtest\n")
-            self.assertEqual(retcode, 0)
+            self.assertEqual(proc.returncode, 0)
 
-            retcode, stdout, _ = await instance.run(
+            proc = await instance.run(
                 cmd=["pwd"],
                 cwd="/tmp",
                 timeout_ms=timeout_ms,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
             )
+            stdout, _ = await proc.communicate()
             self.assertEqual(stdout, b"/tmp\n")
-            self.assertEqual(retcode, 0)
+            self.assertEqual(proc.returncode, 0)
 
             with self.assertRaises(subprocess.CalledProcessError):
                 await instance.run(
@@ -131,6 +136,13 @@ class AsyncTestAntlirVm(unittest.TestCase):
                     cmd=["/bin/false"],
                     timeout_ms=timeout_ms,
                 )
+
+            proc = await instance.run(
+                cmd=["/bin/file", "/tmp/test.sock"],
+                timeout_ms=timeout_ms,
+                forward={"/tmp/test.sock": "/tmp/test.sock"},
+            )
+            self.assertEqual(proc.returncode, 0)
 
     def test_api_scheme_ssh(self):
         self.event_loop.run_until_complete(self._test_vm_scheme(scheme="ssh"))
@@ -145,7 +157,7 @@ class AsyncTestAntlirVm(unittest.TestCase):
                     console=Path(tf.name),
                 ) as (instance, boottime_ms, timeout_ms):
                     # We only care about capturing console output
-                    retcode, _, _ = await instance.run(
+                    await instance.run(
                         [
                             "bash",
                             "-c",
@@ -169,7 +181,7 @@ class AsyncTestAntlirVm(unittest.TestCase):
                     console=Path(console_f.name),
                 ) as (instance, boottime_ms, timeout_ms):
                     # We only care about capturing console output
-                    retcode, _, _ = await instance.run(
+                    proc = await instance.run(
                         [
                             "bash",
                             "-c",
@@ -187,7 +199,7 @@ class AsyncTestAntlirVm(unittest.TestCase):
                 )
                 # Expect that we failed with 255, which is the error returned by
                 # SSH when it encounters an error.
-                self.assertEqual(retcode, 255)
+                self.assertEqual(proc.returncode, 255)
 
         self.event_loop.run_until_complete(_test())
 
