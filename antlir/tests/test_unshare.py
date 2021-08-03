@@ -36,7 +36,11 @@ class UnshareTestCase(unittest.TestCase):
                 # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
                 #  bytes]]]` for 2nd param but got `str`.
                 "bash",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 3rd param but got `str`.
                 "-uec",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 4th param but got `str`.
                 "echo ready $$ ; exec sleep infinity",
             ),
             stdout=subprocess.PIPE,

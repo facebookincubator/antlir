@@ -62,6 +62,7 @@ Options=version=9p2000.L,posixacl,cache=loose,ro
         Plan9Export(path="/tmp/not-included", generator=False),
         # pyre-fixme[6]: Expected `str` for 2nd param but got `None`.
         None,
+        # pyre-fixme[6]: Expected `str` for 3rd param but got `None`.
         None,
     ),
     TestShare(
