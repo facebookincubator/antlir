@@ -104,11 +104,21 @@ class LoopbackVolume:
                 # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
                 #  bytes]]]` for 2nd param but got `str`.
                 "mount",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 3rd param but got `str`.
                 "-t",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 4th param but got `str`.
                 self._fs_type,
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 5th param but got `str`.
                 "-o",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 6th param but got `str`.
                 mount_opts,
                 self._image_path,
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 8th param but got `Optional[Path]`.
                 self._mount_dir,
             ),
             check=True,
@@ -120,9 +130,17 @@ class LoopbackVolume:
                 # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
                 #  bytes]]]` for 2nd param but got `str`.
                 "findmnt",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 3rd param but got `str`.
                 "--noheadings",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 4th param but got `str`.
                 "--output",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 5th param but got `str`.
                 "SOURCE",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 6th param but got `Optional[Path]`.
                 self._mount_dir,
             )
         ).rstrip(b"\n")
@@ -303,8 +321,14 @@ class BtrfsLoopbackVolume(LoopbackVolume):
                 # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
                 #  bytes]]]` for 2nd param but got `str`.
                 "btrfs",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 3rd param but got `str`.
                 "inspect-internal",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 4th param but got `str`.
                 "min-dev-size",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 5th param but got `Optional[Path]`.
                 self._mount_dir,
             )
         ).split(b" ")
@@ -336,9 +360,15 @@ class BtrfsLoopbackVolume(LoopbackVolume):
                 # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
                 #  bytes]]]` for 2nd param but got `str`.
                 "btrfs",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 3rd param but got `str`.
                 "filesystem",
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 4th param but got `str`.
                 "resize",
                 str(min_size_bytes),
+                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                #  bytes]]]` for 6th param but got `Optional[Path]`.
                 self._mount_dir,
             ),
             check=True,
@@ -351,10 +381,20 @@ class BtrfsLoopbackVolume(LoopbackVolume):
                     # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <:
                     #  [str, bytes]]]` for 2nd param but got `str`.
                     "findmnt",
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 3rd param but got `str`.
                     "--bytes",
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 4th param but got `str`.
                     "--noheadings",
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 5th param but got `str`.
                     "--output",
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 6th param but got `str`.
                     "SIZE",
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 7th param but got `Optional[Path]`.
                     self._mount_dir,
                 )
             )

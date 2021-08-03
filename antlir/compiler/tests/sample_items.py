@@ -86,10 +86,13 @@ DUMMY_LAYER_OPTS = LayerOpts(
     artifacts_may_require_repo=True,
     # pyre-fixme[6]: Expected `Mapping[str, str]` for 4th param but got `None`.
     target_to_path=None,
+    # pyre-fixme[6]: Expected `Path` for 5th param but got `None`.
     subvolumes_dir=None,
     version_set_override=None,
     rpm_installer=None,
     rpm_repo_snapshot=None,
+    # pyre-fixme[6]: Expected `frozenset[str]` for 9th param but got
+    #  `List[Variable[_T]]`.
     allowed_host_mount_targets=[],
     flavor="antlir_test",
 )

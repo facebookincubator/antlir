@@ -412,6 +412,8 @@ def extents_to_chunks_with_clones(
             Chunk(
                 kind=c.kind,
                 length=c.length,
+                # pyre-fixme[6]: Expected `Set[ChunkClone]` for 3rd param but got
+                #  `frozenset[Variable[_T_co](covariant)]`.
                 chunk_clones=frozenset(c.chunk_clones),
             )
             for c in new_chunks

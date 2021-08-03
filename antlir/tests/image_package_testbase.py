@@ -53,10 +53,20 @@ class ImagePackageTestCaseBase(unittest.TestCase):
                     # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <:
                     #  [str, bytes]]]` for 2nd param but got `str`.
                     "findmnt",
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 3rd param but got `str`.
                     "--mountpoint",
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 4th param but got `str`.
                     mount_dir,
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 5th param but got `str`.
                     "--noheadings",
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 6th param but got `str`.
                     "-o",
+                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
+                    #  bytes]]]` for 7th param but got `str`.
                     "LABEL",
                 )
             )

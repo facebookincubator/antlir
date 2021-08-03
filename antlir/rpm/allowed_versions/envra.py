@@ -49,6 +49,7 @@ class SortableENVRA(NamedTuple):
             name=self.name,
             # We check this is not `None` in `as_rpm_metadata`, and check
             # for heterogeneous comparisons in `_compare`.
+            # pyre-fixme[6]: Expected `int` for 2nd param but got `Optional[int]`.
             epoch=self.epoch,
             version=self.version,
             release=self.release,

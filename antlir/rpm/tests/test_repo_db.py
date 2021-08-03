@@ -25,9 +25,12 @@ _FAKE_RPM = Rpm(
     build_timestamp=37,
     # pyre-fixme[6]: Expected `Checksum` for 7th param but got `None`.
     checksum=None,  # populated separately by each test
+    # pyre-fixme[6]: Expected `Checksum` for 8th param but got `None`.
     canonical_checksum=None,  # populated separately by each test
+    # pyre-fixme[6]: Expected `str` for 9th param but got `None`.
     location=None,  # not used by repo_db code
     size=1337,
+    # pyre-fixme[6]: Expected `str` for 11th param but got `None`.
     source_rpm=None,
 )
 

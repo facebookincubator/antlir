@@ -438,6 +438,10 @@ async def main_cli(
     await update_package_db(
         db_path=args.db,
         how_to_generate=how_to_generate,
+        # pyre-fixme[6]: Expected `ContextManager[typing.Callable[[str, str,
+        #  Dict[str, str]], Awaitable[Tuple[str, str, Optional[Dict[str, str]]]]]]` for
+        #  3rd param but got `ContextManager[Iterator[typing.Callable[[str, str,
+        #  Dict[str, str]], Awaitable[Tuple[str, str, Optional[Dict[str, str]]]]]]]`.
         get_db_info_factory=get_db_info_factory,
         out_db_path=args.out_db,
         update_all=args.update_all,
