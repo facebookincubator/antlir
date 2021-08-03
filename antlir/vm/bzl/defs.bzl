@@ -167,6 +167,7 @@ def _vm_unittest(
         name = actual_test_layer,
         features = [
             image.install_buck_runnable(":" + actual_test_binary, "/test"),
+            image.install_buck_runnable("//antlir/vm:wrap-in-vm-test-exec", "/wrap"),
         ],
     )
 

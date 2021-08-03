@@ -111,6 +111,19 @@ export_file(
 )
 
 python_binary(
+    name = "wrap-in-vm-test-exec",
+    srcs = [
+        "wrap_in_vm_test_exec.py",
+    ],
+    main_module = "antlir.vm.wrap_in_vm_test_exec",
+    visibility = ["PUBLIC"],
+    deps = [
+        "//antlir:common",
+        "//antlir:fs_utils",
+    ],
+)
+
+python_binary(
     name = "vmtest",
     srcs = [
         "vmtest.py",

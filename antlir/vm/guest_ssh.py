@@ -4,13 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import asyncio
 import importlib
 import os
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from itertools import chain
-from typing import Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Iterable, List, Mapping, Optional, Union
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path
@@ -46,13 +47,16 @@ class GuestSSHConnection:
         except Exception as e:  # pragma: no cover
             logger.error(f"Error removing privkey: {self.privkey}: {e}")
 
-    def ssh_cmd(self, *, timeout_ms: int) -> List[Union[str, bytes]]:
+    def ssh_cmd(
+        self, *, timeout_ms: int, forward: Optional[Mapping[Path, Path]] = None
+    ) -> List[Union[str, bytes]]:
         options = {
             # just ignore the ephemeral vm fingerprint
             "UserKnownHostsFile": "/dev/null",
             "StrictHostKeyChecking": "no",
             "ConnectTimeout": int(timeout_ms / 1000),
             "ConnectionAttempts": 10,
+            "StreamLocalBindUnlink": "yes",
         }
 
         if self.options:
@@ -63,9 +67,20 @@ class GuestSSHConnection:
             chain.from_iterable(["-o", f"{k}={v}"] for k, v in options.items())
         )
 
+        maybe_forward = (
+            list(
+                chain.from_iterable(
+                    ["-R", f"{k}:{v}"] for k, v in forward.items()
+                )
+            )
+            if forward
+            else []
+        )
+
         return self.tapdev.netns.nsenter_as_user(
             "ssh",
             *options,
+            *maybe_forward,
             "-i",
             str(self.privkey),
             f"root@{self.tapdev.guest_ipv6_ll}",
@@ -75,12 +90,13 @@ class GuestSSHConnection:
         self,
         cmd: Iterable[str],
         timeout_ms: int,
-        env: Optional[Mapping[str, str]] = None,
         check: bool = False,
         cwd: Optional[Path] = None,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    ) -> Tuple[int, bytes, bytes]:
+        env: Optional[Mapping[str, str]] = None,
+        forward: Optional[Mapping[Path, Path]] = None,
+        stdout=None,
+        stderr=None,
+    ) -> asyncio.subprocess.Process:
         """
         run a command inside the vm
         """
@@ -96,21 +112,30 @@ class GuestSSHConnection:
         )
 
         cmd = [
-            *self.ssh_cmd(timeout_ms=timeout_ms),
+            *self.ssh_cmd(
+                timeout_ms=timeout_ms,
+                forward=forward,
+            ),
             "--",
             *cmd_pre,
             *cmd,
         ]
 
         logger.debug(f"Running {cmd} in vm at {self.tapdev.guest_ipv6_ll}")
-        res = subprocess.run(
-            cmd,
-            check=check,
+        logger.debug(f"{' '.join([str(c) for c in cmd])}")
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
             stdout=stdout,
             stderr=stderr,
-            # Future: handle stdin properly so that we can pipe input from
-            # the caller into a program being executing inside a VM
-            timeout=timeout_ms / 1000,
         )
-        logger.debug(f"res: {res.returncode}, {res.stdout}, {res.stderr}")
-        return res.returncode, res.stdout, res.stderr
+        await proc.wait()
+        if check and proc.returncode != 0:
+            stdout, stderr = await proc.communicate()
+            raise subprocess.CalledProcessError(
+                returncode=proc.returncode or -1,
+                cmd=cmd,
+                stderr=stderr,
+                output=stdout,
+            )
+
+        return proc
