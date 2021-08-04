@@ -3,13 +3,13 @@ use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::process;
-use std::process::{Command, Stdio};
+use std::process::{Command, Stdio, exit, Child};
 
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use serde_json;
 use structopt::{clap, StructOpt};
+use rayon::iter::*;
 
 #[derive(StructOpt, Debug)]
 #[structopt(
@@ -23,7 +23,7 @@ struct Options {
 
     /// Maximum number of concurrent tests. Passed in by buck test
     #[structopt(long = "jobs", default_value = "1")]
-    threads: u32,
+    threads: usize,
 
     /// Warns on any further options for forward compatibility with buck test
     #[structopt(hidden = true)]
@@ -50,34 +50,40 @@ fn main() -> Result<()> {
     let tests = tests.with_context(|| "Found an invalid test spec")?;
 
     // run all tests
-    let retcode = run_all(tests, options.threads)?;
-    process::exit(retcode);
+    let _ = rayon::ThreadPoolBuilder::new().num_threads(options.threads).build_global();
+    let retcode = run_all(tests);
+    exit(retcode);
 }
 
-/// This is the actual test structure used internally.
 #[derive(Debug)]
 struct Test {
     buck_target: String,
     command: Command,
 }
 
-fn run_all(tests: Vec<Test>, threads: u32) -> Result<i32> {
-    // at this point, we should be able to safely run tests, even if they fail
+fn run_all(tests: Vec<Test>) -> i32 {
+    // run tests in parallel
     let total = tests.len();
-    println!("Running {} test targets...", total);
+    eprintln!("Running {} test targets...", total);
+    let tests: Vec<(Test, Child)> = tests.into_par_iter().map(|mut test| {
+        let mut child = test.command.spawn().unwrap();
+        let _ = child.wait().unwrap(); // wait on each thread
+        return (test, child);
+    }).collect();
+
+    // collect results
     let mut passed = 0;
     let mut errors: Vec<String> = Vec::new();
-    for mut test in tests.into_iter() {
-        let target = &test.buck_target;
-        let mut child = test.command.spawn()?;
-        let status = child.wait()?;
+    for (test, mut result) in tests {
+        let target = test.buck_target;
+        let status = result.wait().unwrap(); // this shouldn't block
         if status.success() {
-            println!("[PASS] {}", target);
+            eprintln!("[PASS] {}", target);
             passed += 1;
         } else {
-            println!("[FAIL] {} ({})", target, status);
+            eprintln!("[FAIL] {} ({})", target, status);
             let mut message = format!("\nTarget {} failed:\n", target);
-            let stderr = child.stderr.take().unwrap();
+            let stderr = result.stderr.take().unwrap();
             for line in BufReader::new(stderr).lines() {
                 let line = format!("    {}\n", line.unwrap());
                 message.push_str(&line);
@@ -86,19 +92,16 @@ fn run_all(tests: Vec<Test>, threads: u32) -> Result<i32> {
         }
     }
 
-    // if there were any errors, we let the user know what they were
+    // let the user know of any errors
     for error in errors {
         eprintln!("{}", error);
     }
 
     // put a summary in the output, as well in this runner's return code
     let percent = 100.0 * passed as f32 / total as f32;
-    println!(
-        "  Summary: {:.2}% test targets passed ({} out of {})",
-        percent, passed, total
-    );
-    let fail_count = (total - passed) as i32;
-    Ok(fail_count)
+    println!("{:.2}% test targets passed ({} out of {})", percent, passed, total);
+    let failing = (total - passed) as i32;
+    return failing;
 }
 
 #[derive(Deserialize, Debug)]
