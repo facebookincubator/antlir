@@ -13,6 +13,8 @@ rpm_action_item_t = shape.shape(
     name = shape.field(str, optional = True),
     version_set = shape.field(shape.path(), optional = True),
     flavor_and_version_set = shape.field(shape.list(shape.tuple(str, str)), optional = True),
+    # TODO: Remove this once feature normalization is moved here.
+    flavors = shape.field(shape.list(str), optional = True),
 )
 
 def _rpm_name_or_source(name_source):
@@ -27,7 +29,9 @@ def _rpm_name_or_source(name_source):
 # names at this point, since we'd need the repo snapshot to decide
 # whether the names are valid, and whether they contain a
 # version or release number.  That'll happen later in the build.
-def _build_rpm_feature(rpmlist, action, needs_version_set):
+def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
+    flavors = flavors or []
+
     target_tagger = new_target_tagger()
     res_rpms = []
     for path in rpmlist:
@@ -46,6 +50,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set):
             source = source,
             name = name,
             version_set = version_set,
+            flavors = flavors,
         )
         res_rpms.append(rpm_action_item)
     return target_tagger_to_feature(
@@ -55,7 +60,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set):
         extra_deps = ["//antlir/bzl/image_actions:rpms"],
     )
 
-def image_rpms_install(rpmlist):
+def image_rpms_install(rpmlist, flavors = None):
     """
 `image.rpms_install(["foo"])` installs `foo.rpm`,
 `image.rpms_install(["//target:bar"])` builds `bar` target and installs
@@ -122,9 +127,9 @@ be aggravated by the lack of error handling in the script making the RPM install
 operation successful even if the binary fails.
     """
 
-    return _build_rpm_feature(rpmlist, "install", needs_version_set = True)
+    return _build_rpm_feature(rpmlist, "install", needs_version_set = True, flavors = flavors)
 
-def image_rpms_remove_if_exists(rpmlist):
+def image_rpms_remove_if_exists(rpmlist, flavors = None):
     """
 `image.rpms_remove_if_exists(["baz"])` removes `baz.rpm` if exists.
 
@@ -136,4 +141,5 @@ package, this will cause a build failure.
         rpmlist,
         "remove_if_exists",
         needs_version_set = False,
+        flavors = flavors,
     )

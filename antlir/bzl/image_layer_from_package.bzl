@@ -37,8 +37,6 @@ def image_layer_from_package(
     (we'll support incremental sendstreams eventually) and
     `features` (make your changes in a child layer).
     """
-    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
-
     for bad_kwarg in ["parent_layer", "features"]:
         if bad_kwarg in image_layer_kwargs:
             fail("Unsupported with layer_from_package", bad_kwarg)
@@ -66,10 +64,12 @@ def image_layer_from_package(
                     }],
                 ),
             )],
-            flavor_config = flavor_config,
+            flavor = flavor,
+            flavor_config_override = flavor_config_override,
             subvol_name = subvol_name,
         ),
-        _flavor_config = flavor_config,
+        _flavor = flavor,
+        _flavor_config_override = flavor_config_override,
         antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

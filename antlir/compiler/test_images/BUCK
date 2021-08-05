@@ -225,7 +225,6 @@ feature.new(
             mode = "a+rwx",
         ),
     ],
-    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -237,7 +236,6 @@ feature.new(
             mode = "a+rwx",
         ),
     ],
-    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -274,7 +272,6 @@ feature.new(
             groupname = "ggg",
         ),
     ],
-    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -291,7 +288,6 @@ feature.new(
         # /dev/null is allowlisted to be a dangling symlink
         image.ensure_file_symlink("/dev/null", "/foo/symlink_to_dev_null"),
     ],
-    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -389,16 +385,22 @@ image.layer(
 feature.new(
     name = "feature_tar_and_rpms",
     features = [
-        image.rpms_install([
-            # Local RPM file that is not (yet) installed or published
-            ":rpm-test-cheese-2-1.rpm",
-            "rpm-test-mice",
-        ]),
-        image.rpms_remove_if_exists([
-            "rpm-test-carrot",  # Installed by `parent_layer`
-            # No-op in `child/layer` -- it was never installed
-            "rpm-test-milk",
-        ]),
+        image.rpms_install(
+            [
+                # Local RPM file that is not (yet) installed or published
+                ":rpm-test-cheese-2-1.rpm",
+                "rpm-test-mice",
+            ],
+            flavors = ["antlir_test"],
+        ),
+        image.rpms_remove_if_exists(
+            [
+                "rpm-test-carrot",  # Installed by `parent_layer`
+                # No-op in `child/layer` -- it was never installed
+                "rpm-test-milk",
+            ],
+            flavors = ["antlir_test"],
+        ),
         image.tarball(
             image.source(
                 # Check hash validation
@@ -412,7 +414,6 @@ feature.new(
             "foo",
         ),
     ],
-    flavors = ["antlir_test"],
     # `rpm-test-*` RPMs may not be mentioned by all of the allowed version
     # sets, so just emit this feature for one.
     visibility = ["//antlir/compiler/..."],
@@ -425,7 +426,6 @@ feature.new(
         image.host_file_mount("/dev/null", "/dev_null"),
         image.layer_mount(":hello_world_base", "/meownt"),
     ],
-    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -552,7 +552,6 @@ feature.new(
             "/foo/bar/installed/solo-exe.sh",
         ),
     ],
-    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -614,7 +613,6 @@ feature.new(
         ":feature_tar_and_rpms",
         ":feature_symlinks",
     ],
-    flavors = ["antlir_test"],
     # We can only build for "no version set" because our child
     # `feature_tar_and_rpms` provides no other version sets.
     visibility = ["//antlir/compiler/..."],
@@ -633,7 +631,6 @@ feature.new(
     features = [
         image.ensure_subdirs_exist("/", "a/b"),
     ],
-    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -642,7 +639,6 @@ feature.new(
     features = [
         image.remove("/a"),
     ],
-    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -654,7 +650,6 @@ feature.new(
             must_exist = False,
         ),
     ],
-    flavors = ["antlir_test"],
 )
 
 # This feature is added to both layers, which validates that `image.layer`
@@ -664,7 +659,6 @@ feature.new(
 feature.new(
     name = "feature_repeated_removal",
     features = [":feature_remove_nonexistent"],
-    flavors = ["antlir_test"],
 )
 
 # `test-add-remove-conflict` compiles this feature to produce a failure
@@ -674,7 +668,6 @@ feature.new(
         ":feature_addremove_conflict_add",
         ":feature_addremove_conflict_remove",
     ],
-    flavors = ["antlir_test"],
     visibility = ["//antlir/compiler/..."],
 )
 

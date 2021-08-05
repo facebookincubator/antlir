@@ -199,8 +199,6 @@ def _fetched_package_layer(
             print_how_to_fetch_json = print_how_to_fetch_json,
         ),
         visibility = visibility,
-        # We don't touch the layer's `build_opts`, so it'll use the default.
-        flavor = REPO_CFG.flavor_default,
     )
 
     mount_config = name + "-fetched-package-mount-config"

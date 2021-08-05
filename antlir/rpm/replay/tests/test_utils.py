@@ -32,5 +32,4 @@ def extract_features_from_env_map(env_map: Dict[str, Any]) -> ExtractedFeatures:
         layer_features_out=env_map["layer_feature_json"],
         layer_out=Path(env_map["layer_output"]),
         target_to_path=env_map["target_map"],
-        flavor="antlir_test",
     )
