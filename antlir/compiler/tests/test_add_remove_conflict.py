@@ -11,7 +11,7 @@ from antlir.config import repo_config
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.flavor_helpers import render_flavor
-from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.subvol_helpers import render_subvol
 
 from ..compiler import build_image, parse_args
@@ -61,6 +61,9 @@ class AddRemoveConflictTestCase(unittest.TestCase):
         )
 
     def test_conflict(self):
+        build_appliance_layer_path = layer_resource(
+            __package__, "test-build-appliance"
+        )
         with TempSubvolumes() as tmp_subvols, (
             tempfile.NamedTemporaryFile()
         ) as tf, Path.resource(
@@ -74,6 +77,8 @@ class AddRemoveConflictTestCase(unittest.TestCase):
             AssertionError,
             "Path does not exist",
         ):
+            flavor_config = repo_config().flavor_to_config["antlir_test"]
+
             # Write the targets_and_outputs file
             tf.write(
                 Path.json_dumps(
@@ -84,6 +89,9 @@ class AddRemoveConflictTestCase(unittest.TestCase):
                         _test_feature_target(
                             "feature_addremove_conflict_remove"
                         ): feature_remove,
+                        flavor_config.build_appliance: (
+                            build_appliance_layer_path
+                        ),
                     }
                 ).encode()
             )
@@ -105,8 +113,8 @@ class AddRemoveConflictTestCase(unittest.TestCase):
                         f"--child-feature-json={feature_both}",
                         "--targets-and-outputs",
                         tf.name,
-                        "--flavor",
-                        repo_config().flavor_default,
+                        "--flavor-config",
+                        flavor_config.json(),
                     ]
                 )
             )

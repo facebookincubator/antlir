@@ -21,6 +21,7 @@ from antlir.compiler.items import (
     symlink,
     tarball,
 )
+from antlir.flavor_config_t import flavor_config_t
 from antlir.fs_utils import (
     META_FLAVOR_FILE,
     Path,
@@ -274,30 +275,28 @@ class CompilerTestCase(unittest.TestCase):
         # Since we're not making subvolumes, we need this so that
         # `Subvolume(..., already_exists=True)` will work.
         is_btrfs.return_value = True
-        rpm_installer = "dnf"
+        flavor_config = flavor_config_t(
+            name="antlir_test",
+            build_appliance="build-appliance-testing",
+            rpm_installer="dnf",
+            rpm_repo_snapshot=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / "dnf",
+        )
         return (
             build_image(
                 parse_args(
                     [
                         # Must match LayerOpts below
                         "--artifacts-may-require-repo",
-                        f"--rpm-installer={rpm_installer}",
-                        f"""--rpm-repo-snapshot={
-                            RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
-                            / rpm_installer
-                        }""",
                         "--subvolumes-dir",
                         _SUBVOLS_DIR,
                         "--subvolume-rel-path",
                         _FAKE_SUBVOL,
-                        "--build-appliance",
-                        layer_resource(__package__, "test-build-appliance"),
                         "--child-layer-target",
                         "CHILD_TARGET",
                         "--child-feature-json",
                         si.TARGET_TO_PATH[si.mangle(si.T_KITCHEN_SINK)],
-                        "--flavor",
-                        "antlir_test",
+                        "--flavor-config",
+                        flavor_config.json(),
                     ]
                     + args
                 )
@@ -328,6 +327,9 @@ class CompilerTestCase(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as tf, mock_user_group_read_write():
             deps = parent_dep.copy() or {}
             deps.update(si.TARGET_TO_PATH)
+            deps["build-appliance-testing"] = layer_resource(
+                __package__, "test-build-appliance"
+            )
             tf.write(Path.json_dumps(deps).encode())
             tf.seek(0)
 
