@@ -74,7 +74,6 @@ Optional arguments:
   - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
     for supported, but less commonly used, kwargs.
     """
-    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
 
     # This is not strictly needed since `image_layer_impl` lacks this kwarg.
     if "features" in image_layer_kwargs:
@@ -108,8 +107,10 @@ Optional arguments:
                 ]),
                 extra_deps = ["//antlir/bzl:image_genrule_layer"],
             )],
-            flavor_config = flavor_config,
+            flavor = flavor,
+            flavor_config_override = flavor_config_override,
         ),
-        _flavor_config = flavor_config,
+        _flavor = flavor,
+        _flavor_config_override = flavor_config_override,
         **image_layer_kwargs
     )

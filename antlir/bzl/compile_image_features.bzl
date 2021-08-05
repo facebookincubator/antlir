@@ -9,6 +9,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl/image/feature:new.bzl", "feature_new", "normalize_features")
 load(":constants.bzl", "BZL_CONST", "REPO_CFG")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -18,7 +19,8 @@ def compile_image_features(
         current_target,
         parent_layer,
         features,
-        flavor_config,
+        flavor,
+        flavor_config_override,
         subvol_name = None):
     '''
     Arguments
@@ -33,6 +35,8 @@ def compile_image_features(
 
     target_tagger = new_target_tagger()
 
+    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
+
     if flavor_config.build_appliance:
         features.append(target_tagger_to_feature(
             target_tagger,
@@ -44,6 +48,7 @@ def compile_image_features(
     # parsed by other tooling.
     #
     # Keep in sync with `bzl_const.py`.
+    flavors = [flavor] if flavor else REPO_CFG.flavor_available
     features_for_layer = name + BZL_CONST.layer_feature_suffix
     feature_new(
         name = features_for_layer,
@@ -57,12 +62,12 @@ def compile_image_features(
                 )}]),
             )] if parent_layer else []
         ),
-        flavors = [flavor_config.name],
+        flavors = flavors,
     )
     normalized_features = normalize_features(
         [":" + features_for_layer],
         current_target,
-        flavor = flavor_config.name,
+        flavors = flavors,
     )
 
     vset_override_name = None

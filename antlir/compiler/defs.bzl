@@ -17,10 +17,7 @@ def READ_MY_DOC_image_feature_target(name):
     one of its indirect `feature` dependencies changes.  See
     `feature/new.bzl` for an explanation.
     """
-    return PRIVATE_DO_NOT_USE_feature_target_name(
-        name = name,
-        flavor = "antlir_test",
-    )
+    return PRIVATE_DO_NOT_USE_feature_target_name(name)
 
 def image_feature_python_unittest(test_image_feature_transitive_deps, deps = None, env = None, **kwargs):
     env = env or {}

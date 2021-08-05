@@ -94,17 +94,8 @@ load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "targe
 # `feature.new`, like `image.layer`.
 #
 # IMPORTANT: Keep in sync with `bzl_const.py`
-def PRIVATE_DO_NOT_USE_feature_target_name(name, flavor):
-    name += BZL_CONST.PRIVATE_feature_suffix
-    check_flavor_exists(flavor)
-
-    # When a feature is declared, it doesn't know the version set of the
-    # layer that will use it, so we normally declare all possible variants.
-    # This is only None when there are no version sets in use.
-    version_set_path = REPO_CFG.flavor_to_config[flavor].version_set_path
-    if version_set_path != BZL_CONST.version_set_allow_all_versions:
-        name += "__flavor__" + flavor
-    return name
+def PRIVATE_DO_NOT_USE_feature_target_name(name):
+    return name + BZL_CONST.PRIVATE_feature_suffix
 
 def _flatten_nested_lists(lst):
     flat_lst = []
@@ -125,7 +116,7 @@ def _flatten_nested_lists(lst):
             flat_lst.append(v)
     return flat_lst
 
-def _normalize_feature_and_get_deps(feature, flavor):
+def _normalize_feature_and_get_deps(feature, flavors):
     "Returns a ready-to-serialize feature dictionary and its direct deps."
     target_tagger = new_target_tagger()
 
@@ -169,17 +160,18 @@ def _normalize_feature_and_get_deps(feature, flavor):
     # be normalized against multiple version set names.
     for rpm_item in feature_dict.get("rpms", []):
         flavor_to_version_set = {}
-
         vs_name = rpm_item.pop("version_set", None)
+        rpm_flavors = rpm_item.pop("flavors", None) or flavors
 
-        vs_path = REPO_CFG.flavor_to_config[flavor].version_set_path
-        if vs_path != BZL_CONST.version_set_allow_all_versions and vs_name:
-            flavor_to_version_set[flavor] = tag_target(
-                target_tagger,
-                vs_path + "/rpm:" + vs_name,
-            )
-        else:
-            flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
+        for flavor in rpm_flavors:
+            vs_path = REPO_CFG.flavor_to_config[flavor].version_set_path
+            if vs_path != BZL_CONST.version_set_allow_all_versions and vs_name:
+                flavor_to_version_set[flavor] = tag_target(
+                    target_tagger,
+                    vs_path + "/rpm:" + vs_name,
+                )
+            else:
+                flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
 
         rpm_item["flavor_and_version_set"] = tuple(flavor_to_version_set.items())
 
@@ -191,7 +183,7 @@ def _normalize_feature_and_get_deps(feature, flavor):
 def normalize_features(
         porcelain_targets_or_structs,
         human_readable_target,
-        flavor):
+        flavors):
     porcelain_targets_or_structs = _flatten_nested_lists(
         porcelain_targets_or_structs,
     )
@@ -201,12 +193,12 @@ def normalize_features(
     for f in porcelain_targets_or_structs:
         if types.is_string(f):
             targets.append(
-                PRIVATE_DO_NOT_USE_feature_target_name(f, flavor),
+                PRIVATE_DO_NOT_USE_feature_target_name(f),
             )
         else:
             feature_dict, more_deps = _normalize_feature_and_get_deps(
                 feature = f,
-                flavor = flavor,
+                flavors = flavors,
             )
             direct_deps.extend(more_deps)
             feature_dict["target"] = human_readable_target
@@ -222,9 +214,8 @@ def private_do_not_use_feature_json_genrule(
         name,
         deps,
         output_feature_cmd,
-        visibility,
-        flavor):
-    name = PRIVATE_DO_NOT_USE_feature_target_name(name, flavor)
+        visibility):
+    name = PRIVATE_DO_NOT_USE_feature_target_name(name)
     buck_genrule(
         name = name,
         out = "feature.json",
@@ -250,6 +241,9 @@ def feature_new(
         name,
         features,
         visibility = None,
+        # This is used when a user wants to declare a feature
+        # that is not available for all flavors in REPO_CFG.flavor_to_config.
+        # An example of this is the internal feature in `image_layer.bzl`.
         flavors = None):
     """
     Turns a group of image actions into a Buck target, so it can be
@@ -266,25 +260,6 @@ def feature_new(
     visibility = visibility or []
     flavors = flavors or REPO_CFG.flavor_available
 
-    # We iterate over flavors below. If at least two flavors have
-    # version_set_path unset in REPO_CFG, then the function
-    # PRIVATE_DO_NOT_USE_feature_target_name() generates the same
-    # target name. That's why we need to ensure uniqueness of
-    # ft_name below. Otherwise, buck would complain about attempt
-    # to generate new rule with the same name as already exists.
-    names = {}
-    for flavor in flavors:
-        ft_name = PRIVATE_DO_NOT_USE_feature_target_name(name, flavor)
-        if ft_name not in names:
-            _feature_new_impl(
-                name = name,
-                features = features,
-                visibility = visibility,
-                flavor = flavor,
-            )
-            names[ft_name] = 1
-
-def _feature_new_impl(name, features, visibility, flavor):
     # (1) Normalizes & annotates Buck target names so that they can be
     #     automatically enumerated from our JSON output.
     # (2) Builds a list of targets so that this converter can tell Buck
@@ -297,7 +272,7 @@ def _feature_new_impl(name, features, visibility, flavor):
     normalized_features = normalize_features(
         features,
         human_readable_target,
-        flavor,
+        flavors,
     )
 
     feature = target_tagger_to_feature(
@@ -331,5 +306,4 @@ def _feature_new_impl(name, features, visibility, flavor):
             out = shell.quote(feature.items.to_json()),
         ),
         visibility = visibility,
-        flavor = flavor,
     )

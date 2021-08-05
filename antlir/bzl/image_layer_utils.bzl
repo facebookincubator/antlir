@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config")
 load(":query.bzl", "layer_deps_query")
@@ -49,7 +50,8 @@ def _image_layer_impl(
         _rule_type,
         _layer_name,
         _make_subvol_cmd,
-        _flavor_config,
+        _flavor,
+        _flavor_config_override,
         # For now, layer implementations mark this explicitly.  I doubt that
         # "antlir-private" is a sensible default here.
         antlir_rule,
@@ -98,6 +100,8 @@ def _image_layer_impl(
     visibility = visibility or []
     if mount_config == None:
         mount_config = {}
+
+    flavor_config = flavor_helpers.get_flavor_config(_flavor, _flavor_config_override)
 
     # IMPORTANT: If you touch this genrule, update `image_layer_alias`.
     buck_genrule(
@@ -191,7 +195,7 @@ def _image_layer_impl(
         # keep our output JSON out of the distributed Buck cache.  See
         # the docs for BuildRule::isCacheable.
         cacheable = False,
-        flavor_config = _flavor_config,
+        flavor_config = flavor_config,
         type = _rule_type,  # For queries
         visibility = visibility,
         antlir_rule = antlir_rule,

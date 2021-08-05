@@ -63,7 +63,6 @@ class _FeatureHandlers:
     config: Dict[str, Any]
     layer_out: Path
     target_to_path: Mapping[str, Path]
-    flavor: str
 
     def layer_from_package(self) -> ExtractedFeatures:
         return ExtractedFeatures(
@@ -81,11 +80,10 @@ class _FeatureHandlers:
         project, parent_name = parent_layer_target.split(":", maxsplit=1)
         return extract_nested_features(
             layer_features_out=self.target_to_path[
-                project + ":" + feature_for_layer(parent_name, self.flavor)
+                project + ":" + feature_for_layer(parent_name)
             ],
             layer_out=Path(self.target_to_path[parent_layer_target]),
             target_to_path=self.target_to_path,
-            flavor=self.flavor,
         )
 
     def mounts(self) -> ExtractedFeatures:
@@ -142,7 +140,6 @@ def extract_nested_features(
     layer_features_out: Union[Path, str],
     layer_out: Path,
     target_to_path: Mapping[str, Path],
-    flavor: str,
 ) -> ExtractedFeatures:
     extracted_features = ExtractedFeatures()
     for (feature_key, target, config) in gen_included_features(
@@ -159,7 +156,6 @@ def extract_nested_features(
                 config=config,
                 layer_out=layer_out,
                 target_to_path=target_to_path,
-                flavor=flavor,
             ),
             feature_key,
             None,

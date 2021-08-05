@@ -83,6 +83,9 @@ def _get_flavor_config(flavor, flavor_config_override):
     build_appliance = flavor_config["build_appliance"]
     ```
     '''
+    if not flavor and flavor_config_override:
+        fail("Please specify the flavor when overriding the flavor config")
+
     check_flavor_exists(flavor)
 
     flavor_config = shape.as_dict_shallow(REPO_CFG.flavor_to_config[flavor])
