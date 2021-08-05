@@ -33,6 +33,7 @@ python_library(
     visibility = [
         "//antlir/...",
         "//tupperware/cm/antlir/...",
+        "//windtunnel/cogwheel/generators/...",
     ],
     deps = [
         ":common",
