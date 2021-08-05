@@ -27,11 +27,11 @@ emit_metadata = false
 
 # Include an explicit public top-level target which depends on all other library targets,
 # so that you can to a test/check build.
-include_top_level = false
+include_top_level = true
 
 # Include targets for binary and cdylib-only packages (that is packages which can't directly
 # be depended-on by Rust)
-extra_top_levels = false
+extra_top_levels = true
 
 # Configuration for vendoring
 [vendor]

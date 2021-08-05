@@ -27,23 +27,29 @@ def main():
 
     match = CRATE_VERSION_RE.match(args.crate_root)
     assert match is not None
-    crates_io_name = match.group("crate")
+    crate = match.group("crate")
     version = match.group("ver")
 
     os.makedirs(os.path.join(args.out, "vendor"))
 
     for package in cargo_lock["package"]:
-        if package["name"] == crates_io_name and package["version"] == version:
-            assert (
-                package["source"]
-                == "registry+https://github.com/rust-lang/crates.io-index"
-            ), "non-crates.io packages not supported"
-            url = f"https://static.crates.io/crates/{crates_io_name}/{crates_io_name}-{version}.crate"
+        if package["name"] == crate and package["version"] == version:
+            src = package["source"]
+            if src == "registry+https://github.com/rust-lang/crates.io-index":
+                url = f"https://static.crates.io/crates/{crate}/{crate}-{version}.crate"
+            else:
+                raise RuntimeError(
+                    f"only crates.io deps are supported, got {package}"
+                )
             print(url)
             resp = requests.get(url)
             assert resp.status_code == 200, resp.status_code
-            assert hashlib.sha256(resp.content).hexdigest() == package["checksum"]
-            tar = tarfile.TarFile(fileobj=gzip.GzipFile(fileobj=BytesIO(resp.content)))
+            assert (
+                hashlib.sha256(resp.content).hexdigest() == package["checksum"]
+            )
+            tar = tarfile.TarFile(
+                fileobj=gzip.GzipFile(fileobj=BytesIO(resp.content))
+            )
             tar.extractall(os.path.join(args.out, "vendor"))
 
             return
