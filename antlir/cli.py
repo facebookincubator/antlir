@@ -16,18 +16,21 @@ from antlir.common import init_logging
 from antlir.fs_utils import Path
 
 
-# pyre-fixme[34]: `Variable[AnyStr <: [str, bytes]]` isn't present in the
-#  function's parameters.
-def _load_targets_and_outputs(arg: str) -> Mapping[AnyStr, Path]:
+def _load_targets_and_outputs(arg: AnyStr) -> Mapping[AnyStr, Path]:
     return json.loads(Path(arg).read_text())
 
 
-def add_targets_and_outputs_arg(parser: argparse.ArgumentParser):
+def add_targets_and_outputs_arg(
+    parser: argparse.ArgumentParser, *, action=None, suppress_help: bool = False
+):
     parser.add_argument(
         "--targets-and-outputs",
         type=_load_targets_and_outputs,
-        help="Load and parse a json document containing a mapping"
+        help=argparse.SUPPRESS
+        if suppress_help
+        else "Load and parse a json document containing a mapping"
         "of targets -> on disk outputs",
+        action=action,
     )
 
 
