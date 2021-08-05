@@ -31,7 +31,7 @@ include_top_level = false
 
 # Include targets for binary and cdylib-only packages (that is packages which can't directly
 # be depended-on by Rust)
-extra_top_levels = false
+extra_top_levels = true
 
 # Configuration for vendoring
 [vendor]

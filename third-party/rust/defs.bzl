@@ -263,18 +263,19 @@ def third_party_rust_library(
 def third_party_rust_binary(
         name,
         crate_root,
-        srcs,
+        srcs = None,
         platform = {},
         mapped_srcs = None,
         **kwargs):
-    if mapped_srcs:
-        fail("mapped_srcs not yet supported", attr = "mapped_srcs")
-
+    if not srcs:
+        srcs = []
     if crate_root.startswith("vendor/"):
         # The archive target will have been created by the third_party_rust_library
         # macro
         archive_target = _archive_target_name(crate_root)
         source_targets = {_extract_from_archive(archive_target, src): src for src in srcs}
+        for src, srcname in (mapped_srcs or {}).items():
+            source_targets[src] = srcname
     else:
         source_targets = {src: src for src in srcs}
         source_targets.update(mapped_srcs or {})
