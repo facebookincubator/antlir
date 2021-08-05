@@ -16,6 +16,7 @@ futures-util = "0.3.14"
 goblin = "0.3.4"
 hyper = {version = "0.14.7", features = ["client", "http1", "http2"]}
 hyper-rustls = "0.22"
+lalrpop = "0.19.6"
 nix = "0.19"
 once_cell = "1.7.2"
 regex = "1.4.5"
@@ -27,6 +28,8 @@ slog = "2.7.0"
 slog-async = "2.3"
 slog-term = "2.4.2"
 slog_glog_fmt = "0.1.3"
+starlark = {path = "./starlark-rust/starlark"}
+starlark_module = {path = "./starlark-rust/starlark_module"}
 structopt = "0.3.21"
 tokio = {version = "1.4", features = ["full"]}
 tokio-stream = { version = "0.1.6", features = ["fs", "io-util", "net", "sync", "time", "signal"] }

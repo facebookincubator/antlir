@@ -140,7 +140,6 @@ def rust_buildscript_genrule_srcs(
         env = None,
         target = None,
         srcs = None):
-
     pre = _make_preamble("$OUT", package_name, version, features, cfgs, env, target)
     buck_genrule(
         name = name,
@@ -227,18 +226,25 @@ def third_party_rust_library(
     # The python binary this is calling parses Cargo.lock to validate the
     # checksum of the downloaded archive, which would otherwise require a
     # second pass in buckification.
+    if crate_root.startswith("vendor/"):
+        archive_target = _archive_target_name(crate_root)
+        buck_genrule(
+            name = archive_target,
+            out = ".",
+            cmd = "$(exe //third-party/rust:download) $(location //third-party/rust:Cargo.lock) {} $OUT".format(
+                shell.quote(crate_root),
+            ),
+        )
+        source_targets = {_extract_from_archive(archive_target, src): src for src in srcs}
+        for src, srcname in (mapped_srcs or {}).items():
+            source_targets[src] = srcname
 
-    archive_target = _archive_target_name(crate_root)
-    buck_genrule(
-        name = archive_target,
-        out = ".",
-        cmd = "$(exe //third-party/rust:download) $(location //third-party/rust:Cargo.lock) {} $OUT".format(
-            shell.quote(crate_root),
-        ),
-    )
-    source_targets = {_extract_from_archive(archive_target, src): src for src in srcs}
-    for src, srcname in (mapped_srcs or {}).items():
-        source_targets[src] = srcname
+        # For some other crates, we have a separate copy in the repo, so we
+        # shouldn't attempt to download a tarball from crates.io
+
+    else:
+        source_targets = {src: src for src in srcs}
+        source_targets.update(mapped_srcs or {})
 
     # ignore licenses for simplicity, they can be added back later if it becomes desirable
     kwargs.pop("licenses", None)
@@ -257,17 +263,23 @@ def third_party_rust_library(
 def third_party_rust_binary(
         name,
         crate_root,
-        srcs,
+        srcs = None,
         platform = {},
         mapped_srcs = None,
         **kwargs):
-    if mapped_srcs:
-        fail("mapped_srcs not yet supported", attr = "mapped_srcs")
+    if not srcs:
+        srcs = []
 
-    # The archive target will have been created by the third_party_rust_library
-    # macro
-    archive_target = _archive_target_name(crate_root)
-    source_targets = {_extract_from_archive(archive_target, src): src for src in srcs}
+    if crate_root.startswith("vendor/"):
+        # The archive target will have been created by the third_party_rust_library
+        # macro
+        archive_target = _archive_target_name(crate_root)
+        source_targets = {_extract_from_archive(archive_target, src): src for src in srcs}
+        for src, srcname in (mapped_srcs or {}).items():
+            source_targets[src] = srcname
+    else:
+        source_targets = {src: src for src in srcs}
+        source_targets.update(mapped_srcs or {})
 
     # ignore licenses for simplicity, they can be added back later if it becomes desirable
     kwargs.pop("licenses", None)
