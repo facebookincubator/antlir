@@ -7,6 +7,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:new.bzl", "feature_new", "normalize_features")
 load(":constants.bzl", "BZL_CONST", "REPO_CFG")
 load(":flavor_helpers.bzl", "flavor_helpers")
@@ -127,11 +128,7 @@ EOF
           --subvolumes-dir "$subvolumes_dir" \
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \
-          --flavor {flavor_quoted} \
-          {maybe_unsafe_bypass_flavor_check} \
-          {maybe_quoted_build_appliance_args} \
-          {maybe_quoted_rpm_installer_args} \
-          {maybe_quoted_rpm_repo_snapshot_args} \
+          --flavor-config {flavor_config} \
           {maybe_allowed_host_mount_target_args} \
           {maybe_version_set_override} \
           --child-layer-target {current_target_quoted} \
@@ -148,10 +145,7 @@ EOF
     '''.format(
         subvol_name_quoted = shell.quote(subvol_name or "volume"),
         current_target_quoted = shell.quote(current_target),
-        flavor_quoted = shell.quote(flavor_config.name),
-        maybe_unsafe_bypass_flavor_check = (
-            "--unsafe-bypass-flavor-check" if flavor_config.unsafe_bypass_flavor_check else ""
-        ),
+        flavor_config = shell.quote(shape.do_not_cache_me_json(flavor_config)),
         quoted_child_feature_json_args = " ".join([
             "--child-feature-json $(location {})".format(t)
             for t in normalized_features.targets
@@ -191,21 +185,6 @@ EOF
             # compiler to further modulate this flag upon checking whether
             # any executables were in fact installed.
             REPO_CFG.artifacts_require_repo else ""
-        ),
-        maybe_quoted_build_appliance_args = (
-            "--build-appliance-buck-out $(location {})".format(
-                flavor_config.build_appliance,
-            ) if flavor_config.build_appliance else ""
-        ),
-        maybe_quoted_rpm_installer_args = (
-            "--rpm-installer {}".format(
-                shell.quote(flavor_config.rpm_installer),
-            ) if flavor_config.rpm_installer else ""
-        ),
-        maybe_quoted_rpm_repo_snapshot_args = (
-            "--rpm-repo-snapshot {}".format(
-                shell.quote(flavor_config.rpm_repo_snapshot),
-            ) if flavor_config.rpm_repo_snapshot else ""
         ),
         maybe_version_set_override = (
             "--version-set-override $(location :{})".format(vset_override_name) if vset_override_name else ""

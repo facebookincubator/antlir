@@ -7,6 +7,11 @@ load(":oss_shim.bzl", "buck_genrule", "target_utils")
 load(":sha256.bzl", "sha256_b64")
 
 def normalize_target(target):
+    # Don't normalize if already normalized. This avoids the Buck error:
+    #   Error in package_name: Top-level invocations of package_name are not
+    #   allowed in .bzl files.  Wrap it in a macro and call it from a BUCK file.
+    if "//" in target:
+        return target
     parsed = target_utils.parse_target(
         target,
         # $(query_targets ...) omits the current repo/cell name

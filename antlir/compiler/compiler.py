@@ -27,6 +27,7 @@ from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
 from antlir.find_built_subvol import find_built_subvol
+from antlir.flavor_config_t import flavor_config_t
 from antlir.fs_utils import Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
@@ -57,20 +58,11 @@ def parse_args(args) -> argparse.Namespace:
         "should already exist.",
     )
     parser.add_argument(
-        "--build-appliance-buck-out",
-        type=Path.from_argparse,
-        help="Path to the Buck output of the build appliance target",
-    )
-    parser.add_argument(
-        "--rpm-installer",
-        type=YumDnf,
-        help="Name of a supported RPM package manager (e.g. `yum` or `dnf`). "
-        "Required if your image installs RPMs.",
-    )
-    parser.add_argument(
-        "--rpm-repo-snapshot",
-        type=Path.from_argparse,
-        help="Path to snapshot directory in the build appliance image.",
+        "--flavor-config",
+        required=True,
+        type=flavor_config_t.parse_raw,
+        help="The serialized config for the flavor. This contains "
+        "information about the build appliance and rpm installer.",
     )
     parser.add_argument(
         "--artifacts-may-require-repo",
@@ -109,17 +101,6 @@ def parse_args(args) -> argparse.Namespace:
         "--version-set-override",
         help="Path to a file containing TAB-separated ENVRAs, one per line."
         "Also refer to `build_opts.bzl`.",
-    )
-    parser.add_argument(
-        "--flavor",
-        required=True,
-        help="The flavor of the image that will be written into `/.meta` "
-        "directory.",
-    )
-    parser.add_argument(
-        "--unsafe-bypass-flavor-check",
-        action="store_true",
-        help="Do NOT use this",
     )
 
     add_targets_and_outputs_arg(parser)
@@ -166,25 +147,31 @@ def build_image(args):
 
     subvol = Subvol(args.subvolumes_dir / args.subvolume_rel_path)
 
+    flavor_config = args.flavor_config
+
     build_appliance = None
-    if args.build_appliance_buck_out:
-        build_appliance = find_built_subvol(
-            args.build_appliance_buck_out, subvolumes_dir=args.subvolumes_dir
-        )
+    if flavor_config.build_appliance:
+        build_appliance_layer_path = args.targets_and_outputs[
+            flavor_config.build_appliance
+        ]
+        build_appliance = find_built_subvol(build_appliance_layer_path)
 
     layer_opts = LayerOpts(
         layer_target=args.child_layer_target,
         build_appliance=build_appliance,
-        rpm_installer=args.rpm_installer,
-        rpm_repo_snapshot=args.rpm_repo_snapshot,
+        rpm_installer=YumDnf(flavor_config.rpm_installer),
+        rpm_repo_snapshot=Path(flavor_config.rpm_repo_snapshot),
         artifacts_may_require_repo=args.artifacts_may_require_repo,
         target_to_path=args.targets_and_outputs,
         subvolumes_dir=args.subvolumes_dir,
         version_set_override=args.version_set_override,
         debug=args.debug,
         allowed_host_mount_targets=frozenset(args.allowed_host_mount_target),
-        flavor=args.flavor,
-        unsafe_bypass_flavor_check=args.unsafe_bypass_flavor_check,
+        flavor=flavor_config.name,
+        # This value should never be inherited from the parent layer
+        # as it is generally used to create a new build appliance flavor
+        # by force overriding an existing flavor.
+        unsafe_bypass_flavor_check=flavor_config.unsafe_bypass_flavor_check,
     )
 
     # This stack allows build items to hold temporary state on disk.

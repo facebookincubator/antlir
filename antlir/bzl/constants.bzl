@@ -12,6 +12,7 @@
 load("//antlir/bzl:oss_shim.bzl", "do_not_use_repo_cfg")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
+load(":target_helpers.bzl", "normalize_target")
 
 DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
 CONFIG_KEY = "antlir"
@@ -166,6 +167,9 @@ def new_flavor_config(
     # cannot get confused whether `None` refers to "no BA" or "default BA".
     if build_appliance == DO_NOT_USE_BUILD_APPLIANCE:
         build_appliance = None
+
+    if build_appliance:
+        build_appliance = normalize_target(build_appliance)
 
     return shape.new(
         _flavor_config_t,
