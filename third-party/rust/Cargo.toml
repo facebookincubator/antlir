@@ -27,6 +27,8 @@ slog = "2.7.0"
 slog-async = "2.3"
 slog-term = "2.4.2"
 slog_glog_fmt = "0.1.3"
+starlark = {path = "./starlark-rust/starlark"}
+starlark_module = {path = "./starlark-rust/starlark_module"}
 structopt = "0.3.21"
 tokio = {version = "1.4", features = ["full"]}
 tokio-stream = { version = "0.1.6", features = ["fs", "io-util", "net", "sync", "time", "signal"] }
