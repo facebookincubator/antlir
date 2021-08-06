@@ -32,8 +32,6 @@ def third_party_rust_library(name, archive, srcs, mapped_srcs = None, **kwargs):
 
     # src_targets.update(mapped_srcs)
 
-    kwargs.pop("rustc_flags")
-
     rust_library(
         name = name,
         srcs = [],
@@ -55,3 +53,10 @@ def third_party_rust_binary(name, archive, srcs, mapped_srcs = None, **kwargs):
         mapped_srcs = src_targets,
         **kwargs
     )
+
+    if kwargs["crate"] == "build_script_build":
+        buck_genrule(
+            name = name + "-args",
+            out = "args",
+            cmd = "$(exe :{}) | $(exe :buildrs-rustc-flags-filter) > $OUT".format(name),
+        )

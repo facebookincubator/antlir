@@ -42,7 +42,7 @@ rust_binary(
                 "slog",
                 "slog-async",
                 "slog-term",
-                "slog_glog_fmt",
+                # "slog_glog_fmt",
                 "toml",  # load config files
                 "serde",  # load config files
                 "zstd",  # os images are zstd-compressed btrfs sendstreams

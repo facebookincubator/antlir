@@ -1,10 +1,16 @@
 load(":defs.bzl", "archive", "third_party_rust_binary", "third_party_rust_library")
-load("//antlir/bzl:oss_shim.bzl", "rust_binary")
+load("//antlir/bzl:oss_shim.bzl", "python_binary", "rust_binary")
 
 rust_binary(
     name = "test",
     srcs = ["test.rs"],
     deps = [":anyhow"],
+)
+
+python_binary(
+    name = "buildrs-rustc-flags-filter",
+    srcs = ["buildrs_rustc_flags.py"],
+    main_module = "third-party.rust.buildrs_rustc_flags",
 )
 
 archive(
@@ -4913,7 +4919,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :libc-0.2.98-build-script-build-args)",
     ],
-    deps = ["//third-party/rust:libc-platform-deps"],
+    deps = [],
 )
 
 third_party_rust_binary(
@@ -5114,7 +5120,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = ["//third-party/rust:libc-0.2.98-build-script-build-platform-deps"],
+    deps = [],
 )
 
 third_party_rust_library(
@@ -7913,7 +7919,7 @@ third_party_rust_library(
     deps = [
         "//third-party/rust:libc",
         "//third-party/rust:once_cell",
-        "//third-party/rust:ring-0.16.20-ring-c-asm-elf",
+        # "//third-party/rust:ring-0.16.20-ring-c-asm-elf",
         "//third-party/rust:spin-0.5.2",
         "//third-party/rust:untrusted-0.7.1",
     ],
@@ -11159,6 +11165,5 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     deps = [
         "//third-party/rust:libc",
-        "//third-party/rust:zstd-sys-platform-deps",
     ],
 )
