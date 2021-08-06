@@ -1,3 +1,12 @@
+load(":defs.bzl", "archive", "third_party_rust_binary", "third_party_rust_library")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary")
+
+rust_binary(
+    name = "test",
+    srcs = ["test.rs"],
+    deps = [":anyhow"],
+)
+
 archive(
     name = "addr2line-0.13.0--archive",
     sha256 = "1b6a2d3371669ab3ca9797670853d61402b03d0b4b9ebf33d677dfa720203072",
