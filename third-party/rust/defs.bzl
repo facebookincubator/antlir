@@ -74,7 +74,7 @@ def extract_buildscript_src(target):
         buck_genrule(
             name = buildscript_srcs,
             out = ":",
-            cmd = "mkdir -p $OUT; OUT_DIR=$OUT $(exe :{})".format(buildscript),
+            cmd = "mkdir -p $OUT; OUT_DIR=$OUT TARGET=x86_64-unknown-linux-gnu $(exe :{})".format(buildscript),
         )
     buck_genrule(
         name = buildscript_srcs + "=" + src,
