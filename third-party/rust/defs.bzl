@@ -30,6 +30,9 @@ def third_party_rust_library(name, archive, srcs, mapped_srcs = None, **kwargs):
         src = src.replace("vendor/", "")
         src_targets[_extract_file(archive, src)] = src
 
+    for target, src in mapped_srcs.items():
+        src_targets[extract_buildscript_src(target)] = src
+
     # src_targets.update(mapped_srcs)
 
     rust_library(
@@ -60,3 +63,22 @@ def third_party_rust_binary(name, archive, srcs, mapped_srcs = None, **kwargs):
             out = "args",
             cmd = "$(exe :{}) | $(exe :buildrs-rustc-flags-filter) > $OUT".format(name),
         )
+
+def extract_buildscript_src(target):
+    buildscript_srcs, src = target.rsplit("=", 1)
+    if not buildscript_srcs.startswith("//third-party/rust:"):
+        fail("buildscript-srcs must start with //third-party/rust:")
+    buildscript_srcs = buildscript_srcs[len("//third-party/rust:"):]
+    if not native.rule_exists(buildscript_srcs):
+        buildscript = buildscript_srcs[:-len("-srcs")]
+        buck_genrule(
+            name = buildscript_srcs,
+            out = ":",
+            cmd = "mkdir -p $OUT; OUT_DIR=$OUT $(exe :{})".format(buildscript),
+        )
+    buck_genrule(
+        name = buildscript_srcs + "=" + src,
+        out = "unused",
+        cmd = "cp $(location :{})/{} $OUT".format(buildscript_srcs, src),
+    )
+    return ":" + buildscript_srcs + "=" + src

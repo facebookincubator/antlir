@@ -2268,7 +2268,7 @@ third_party_rust_library(
     },
     features = [],
     mapped_srcs = {
-        "//third-party/rust:const_fn-0.4.2-build-script-build-srcs=version.rs": "vendor/const_fn-0.4.2/src/version.rs",
+        "//third-party/rust:const_fn-0.4.2-build-script-build-srcs=version.rs": "const_fn-0.4.2/src/version.rs",
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
@@ -3983,7 +3983,7 @@ third_party_rust_library(
     crate_root = "hashbrown-0.11.2/src/lib.rs",
     edition = "2018",
     env = {
-        "CARGO_MANIFEST_DIR": "third-party/rust/vendor/hashbrown-0.11.2",
+        "CARGO_MANIFEST_DIR": "third-party/rust/hashbrown-0.11.2",
         "CARGO_PKG_NAME": "hashbrown",
         "CARGO_PKG_VERSION": "0.11.2",
         "CARGO_PKG_VERSION_MAJOR": "0",
@@ -5665,7 +5665,7 @@ third_party_rust_library(
         "rev-mappings",
     ],
     mapped_srcs = {
-        "//third-party/rust:mime_guess-2.0.3-build-script-build-srcs=mime_types_generated.rs": "vendor/mime_guess-2.0.3/src/mime_types_generated.rs",
+        "//third-party/rust:mime_guess-2.0.3-build-script-build-srcs=mime_types_generated.rs": "mime_guess-2.0.3/src/mime_types_generated.rs",
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
@@ -6679,7 +6679,7 @@ third_party_rust_library(
     },
     features = [],
     mapped_srcs = {
-        "//third-party/rust:proc-macro-nested-0.1.6-build-script-build-srcs=count.rs": "vendor/proc-macro-nested-0.1.6/src/count.rs",
+        "//third-party/rust:proc-macro-nested-0.1.6-build-script-build-srcs=count.rs": "proc-macro-nested-0.1.6/src/count.rs",
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
@@ -10419,7 +10419,7 @@ third_party_rust_library(
     crate_root = "trust-dns-resolver-0.20.0/src/lib.rs",
     edition = "2018",
     env = {
-        "CARGO_MANIFEST_DIR": "third-party/rust/vendor/trust-dns-resolver-0.20.0",
+        "CARGO_MANIFEST_DIR": "third-party/rust/trust-dns-resolver-0.20.0",
         "CARGO_PKG_NAME": "trust-dns-resolver",
         "CARGO_PKG_VERSION": "0.20.0",
         "CARGO_PKG_VERSION_MAJOR": "0",
@@ -10567,8 +10567,8 @@ third_party_rust_library(
     },
     features = [],
     mapped_srcs = {
-        "//third-party/rust:typenum-1.12.0-build-script-main-srcs=consts.rs": "vendor/typenum-1.12.0/src/consts.rs",
-        "//third-party/rust:typenum-1.12.0-build-script-main-srcs=op.rs": "vendor/typenum-1.12.0/src/op.rs",
+        "//third-party/rust:typenum-1.12.0-build-script-main-srcs=consts.rs": "typenum-1.12.0/src/consts.rs",
+        "//third-party/rust:typenum-1.12.0-build-script-main-srcs=op.rs": "typenum-1.12.0/src/op.rs",
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
