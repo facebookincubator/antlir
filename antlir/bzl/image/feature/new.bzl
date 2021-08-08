@@ -56,6 +56,7 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
+load("//antlir/bzl/image_actions:rpms.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 
 # ## Why are `feature`s forbidden as dependencies?
 #
@@ -162,6 +163,7 @@ def _normalize_feature_and_get_deps(feature, flavors):
         flavor_to_version_set = {}
         vs_name = rpm_item.pop("version_set", None)
         rpm_flavors = rpm_item.pop("flavors", None) or flavors
+        rpm_valid = False
 
         for flavor in rpm_flavors:
             vs_path = REPO_CFG.flavor_to_config[flavor].version_set_path
@@ -172,6 +174,15 @@ def _normalize_feature_and_get_deps(feature, flavors):
                 )
             else:
                 flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
+
+            if flavor in flavors:
+                rpm_valid = True
+
+        if not rpm_valid and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM:
+            fail("Rpm `{}` must have one of the flavors `{}`".format(
+                rpm_item["name"] or rpm_item["source"],
+                flavors,
+            ))
 
         rpm_item["flavor_and_version_set"] = tuple(flavor_to_version_set.items())
 
@@ -190,6 +201,7 @@ def normalize_features(
     targets = []
     inline_features = []
     direct_deps = []
+    rpm_install_flavors = {}
     for f in porcelain_targets_or_structs:
         if types.is_string(f):
             targets.append(
@@ -200,9 +212,31 @@ def normalize_features(
                 feature = f,
                 flavors = flavors,
             )
+
+            valid_rpms = []
+            for rpm_item in feature_dict.get("rpms", []):
+                if rpm_item["action"] == "install":
+                    for flavor, _ in rpm_item["flavor_and_version_set"]:
+                        rpm_install_flavors[flavor] = 1
+
+                # We add a dummy in `_build_rpm_feature` in `rpms.bzl`
+                # to hold information about the action and flavor for
+                # empty rpm lists for validity checks.
+                # See the comment in `_build_rpm_feature` for more
+                # information.
+                if rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM:
+                    valid_rpms.append(rpm_item)
+
+            if "rpms" in feature_dict:
+                feature_dict["rpms"] = valid_rpms
+
             direct_deps.extend(more_deps)
             feature_dict["target"] = human_readable_target
             inline_features.append(feature_dict)
+
+    if rpm_install_flavors and sorted(rpm_install_flavors.keys()) != sorted(flavors):
+        missing_flavors = [flavor for flavor in flavors if flavor not in rpm_install_flavors]
+        fail("Missing `rpms_install` for flavors `{}`. Expected `{}`".format(missing_flavors, flavors))
 
     return struct(
         targets = targets,

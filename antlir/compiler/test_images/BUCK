@@ -417,6 +417,7 @@ feature.new(
     # `rpm-test-*` RPMs may not be mentioned by all of the allowed version
     # sets, so just emit this feature for one.
     visibility = ["//antlir/compiler/..."],
+    flavors = ["antlir_test"],
 )
 
 feature.new(

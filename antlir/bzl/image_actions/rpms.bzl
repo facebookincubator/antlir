@@ -7,6 +7,8 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_shape", "new_target_tagger", "target_tagged_image_source_shape", "target_tagger_to_feature")
 
+RPM_INSTALL_INFO_DUMMY_ACTION_ITEM = "__RPM_INSTALL_INFO_DUMMY_ACTION_ITEM__"
+
 rpm_action_item_t = shape.shape(
     action = shape.enum("install", "remove_if_exists"),
     source = shape.field(target_tagged_image_source_shape, optional = True),
@@ -33,7 +35,30 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
     flavors = flavors or []
 
     target_tagger = new_target_tagger()
-    res_rpms = []
+
+    # We have a dummy rpm so that we consider empty lists when
+    # we check coverage of all flavors in a feature.
+    #
+    # ```
+    # feature.new(
+    #     name = "test",
+    #     features=[
+    #         image.rpms_install([], flavors=["only-relevant-on-centos7"]),
+    #         image.rpms_install([], flavors=["only-relevant-on-centos8"]),
+    #     ],
+    #     flavors = ["centos7", "centos8"],
+    # )
+    # ```
+    #
+    # should not throw an error.
+    res_rpms = [
+        shape.new(
+            rpm_action_item_t,
+            name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
+            action = action,
+            flavors = flavors,
+        ),
+    ]
     for path in rpmlist:
         source = None
         name = None

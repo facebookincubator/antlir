@@ -33,7 +33,7 @@ def image_genrule_layer(
         cmd,
         user = "nobody",
         parent_layer = None,
-        flavor = REPO_CFG.flavor_default,
+        flavor = None,
         flavor_config_override = None,
         container_opts = None,
         bind_repo_ro = False,
@@ -110,7 +110,5 @@ Optional arguments:
             flavor = flavor,
             flavor_config_override = flavor_config_override,
         ),
-        _flavor = flavor,
-        _flavor_config_override = flavor_config_override,
         **image_layer_kwargs
     )

@@ -98,7 +98,7 @@ def image_layer(
         name,
         parent_layer = None,
         features = None,
-        flavor = REPO_CFG.flavor_default,
+        flavor = None,
         flavor_config_override = None,
         antlir_rule = "user-internal",
         **image_layer_kwargs):
@@ -136,8 +136,6 @@ def image_layer(
             flavor = flavor,
             flavor_config_override = flavor_config_override,
         ),
-        _flavor = flavor,
-        _flavor_config_override = flavor_config_override,
         antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

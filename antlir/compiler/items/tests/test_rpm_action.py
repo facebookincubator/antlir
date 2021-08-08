@@ -120,7 +120,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     flavor_to_version_set={
                         "antlir_test": (td / "vset").decode()
                     },
-                    layer_opts=self._opts(),
                 ),
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
             )
@@ -140,7 +139,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 create_rpm_action_item(
                     name="rpm-test-carrot",
                     action=RpmAction.install,
-                    layer_opts=layer_opts,
                 ),
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
                 opts=layer_opts,
@@ -167,7 +165,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     create_rpm_action_item(
                         name="rpm-test-veggie",
                         action=RpmAction.install,
-                        layer_opts=layer_opts,
                     ),
                     {
                         "rpm_test": [
@@ -213,7 +210,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     flavor_to_version_set={
                         "antlir_test": (td / "vset_version_lock").decode()
                     },
-                    layer_opts=layer_opts,
                 ),
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
                 opts=layer_opts,
@@ -283,9 +279,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 # Note that we don't need to run the builder to hit the error
                 RpmActionItem.get_phase_builder(
                     [
-                        create_rpm_action_item(
-                            name=r, action=a, layer_opts=self._opts()
-                        )
+                        create_rpm_action_item(name=r, action=a)
                         for r, a in rpm_actions
                     ],
                     self._opts(),
@@ -300,13 +294,11 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                         source=Path(__file__).dirname()
                         / "rpm-test-cheese-2-1.rpm",
                         action=RpmAction.install,
-                        layer_opts=self._opts(),
                     ),
                     create_rpm_action_item(
                         source=Path(__file__).dirname()
                         / "rpm-test-cheese-1-1.rpm",
                         action=RpmAction.remove_if_exists,
-                        layer_opts=self._opts(),
                     ),
                 ],
                 self._opts(),
@@ -328,7 +320,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     create_rpm_action_item(
                         source=local_rpm_path,
                         action=RpmAction.install,
-                        layer_opts=self._opts(),
                     )
                 ],
                 self._opts(),
@@ -336,18 +327,21 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             # cheese2 file is still there
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
 
-    def test_rpm_action_no_matching_flavor_error(self):
-        with self.assertRaisesRegex(
-            RuntimeError,
-            "No matching version set found for rpm dog for flavor antlir_test",
-        ):
-            create_rpm_action_item(
-                name="dog",
-                action=RpmAction.install,
-                flavor_to_version_set={
-                    "wrong": BZL_CONST.version_set_allow_all_versions
-                },
-            ),
+    def test_rpm_action_skip_wrong_flavor(self):
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+            src_rpm = Path(__file__).dirname() / "rpm-test-cheese-1-1.rpm"
+            subvol = temp_subvolumes.create("subvol")
+            self._check_rpm_action_item_subvol(
+                subvol,
+                create_rpm_action_item(
+                    source=src_rpm,
+                    action=RpmAction.install,
+                    flavor_to_version_set={
+                        "wrong": BZL_CONST.version_set_allow_all_versions
+                    },
+                ),
+                {},
+            )
 
 
 class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):

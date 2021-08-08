@@ -82,6 +82,7 @@ image.layer(
 add_rpm_repo_snapshots_layer(
     name = "rc-build-appliance.bootstrap",
     dnf_snapshot = "//snapshot:fedora33",
+    flavor = "fedora33",
     flavor_config_override = stable_fedora_opts,
     parent_layer = ":rc-build-appliance.no-snapshot.bootstrap",
     visibility = [],
@@ -97,6 +98,7 @@ image.layer(
 add_rpm_repo_snapshots_layer(
     name = "rc-build-appliance",
     dnf_snapshot = "//snapshot:fedora33",
+    flavor = "fedora33",
     flavor_config_override = rc_opts,
     parent_layer = ":rc-build-appliance.no-snapshot",
     visibility = ["PUBLIC"],

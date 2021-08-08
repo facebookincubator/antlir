@@ -24,8 +24,7 @@ from .common import DUMMY_LAYER_OPTS, render_subvol
 def create_rpm_action_item(
     from_target="t",
     flavor_to_version_set=None,
-    layer_opts=DUMMY_LAYER_OPTS,
-    **kwargs
+    **kwargs,
 ):
     flavor_to_version_set = flavor_to_version_set or {
         "antlir_test": BZL_CONST.version_set_allow_all_versions
@@ -33,7 +32,6 @@ def create_rpm_action_item(
     return RpmActionItem(
         from_target=from_target,
         flavor_and_version_set=tuple(flavor_to_version_set.items()),
-        layer_opts=layer_opts,
         **kwargs,
     )
 

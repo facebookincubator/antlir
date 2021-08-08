@@ -185,7 +185,6 @@ ID_TO_ITEM = {
         flavor_and_version_set=(
             ("antlir_test", BZL_CONST.version_set_allow_all_versions),
         ),
-        layer_opts=DUMMY_LAYER_OPTS,
     ),
     ".rpms/install/rpm-test-cheese-2-1.rpm": RpmActionItem(
         from_target=T_TAR,
@@ -194,7 +193,6 @@ ID_TO_ITEM = {
         flavor_and_version_set=(
             ("antlir_test", BZL_CONST.version_set_allow_all_versions),
         ),
-        layer_opts=DUMMY_LAYER_OPTS,
     ),
     ".rpms/remove_if_exists/rpm-test-carrot": RpmActionItem(
         from_target=T_TAR,
@@ -203,7 +201,6 @@ ID_TO_ITEM = {
         flavor_and_version_set=(
             ("antlir_test", BZL_CONST.version_set_allow_all_versions),
         ),
-        layer_opts=DUMMY_LAYER_OPTS,
     ),
     ".rpms/remove_if_exists/rpm-test-milk": RpmActionItem(
         from_target=T_TAR,
@@ -212,7 +209,6 @@ ID_TO_ITEM = {
         flavor_and_version_set=(
             ("antlir_test", BZL_CONST.version_set_allow_all_versions),
         ),
-        layer_opts=DUMMY_LAYER_OPTS,
     ),
     # From `feature_mount`:
     "meownt": MountItem(

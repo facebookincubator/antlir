@@ -26,9 +26,10 @@ from antlir.cli import add_targets_and_outputs_arg
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
+from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.flavor_config_t import flavor_config_t
-from antlir.fs_utils import Path
+from antlir.fs_utils import META_FLAVOR_FILE, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 
@@ -59,7 +60,6 @@ def parse_args(args) -> argparse.Namespace:
     )
     parser.add_argument(
         "--flavor-config",
-        required=True,
         type=flavor_config_t.parse_raw,
         help="The serialized config for the flavor. This contains "
         "information about the build appliance and rpm installer.",
@@ -102,6 +102,12 @@ def parse_args(args) -> argparse.Namespace:
         help="Path to a file containing TAB-separated ENVRAs, one per line."
         "Also refer to `build_opts.bzl`.",
     )
+    parser.add_argument(
+        "--parent-layer",
+        help="The directory of the buck image output of the parent layer. "
+        "We will read the flavor from the parent layer to deduce the flavor "
+        "of the child layer",
+    )
 
     add_targets_and_outputs_arg(parser)
     return Path.parse_args(parser, args)
@@ -133,6 +139,12 @@ def compile_items_to_subvol(
         item.build(subvol, layer_opts)
 
 
+def get_parent_layer_flavor_config(parent_layer: Subvol) -> flavor_config_t:
+    parent_layer = find_built_subvol(parent_layer)
+    flavor = parent_layer.read_path_text(META_FLAVOR_FILE)
+    return repo_config().flavor_to_config[flavor]
+
+
 def build_image(args):
     # We want check the umask since it can affect the result of the
     # `os.access` check for `image.install*` items.  That said, having a
@@ -149,8 +161,14 @@ def build_image(args):
 
     flavor_config = args.flavor_config
 
+    if not flavor_config:
+        assert (
+            args.parent_layer
+        ), "Parent layer must be given if no flavor config is given"
+        flavor_config = get_parent_layer_flavor_config(args.parent_layer)
+
     build_appliance = None
-    if flavor_config.build_appliance:
+    if flavor_config and flavor_config.build_appliance:
         build_appliance_layer_path = args.targets_and_outputs[
             flavor_config.build_appliance
         ]

@@ -155,6 +155,7 @@ python_library(
         ":items_for_features",
         ":subvolume_on_disk",
         "//antlir:cli",
+        "//antlir:config",
         "//antlir:flavor_config_t",
         "//antlir:fs_utils",
     ],
@@ -171,6 +172,7 @@ image_feature_python_unittest(
         layer_resource(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "tests/test-build-appliance",
+        layer_resource(flavor_helpers.default_flavor_build_appliance): "tests/default-build-appliance",
     },
     test_image_feature_transitive_deps = TEST_IMAGE_FEATURE_TRANSITIVE_DEPS,
     deps = [
