@@ -36,9 +36,23 @@ def compile_image_features(
 
     target_tagger = new_target_tagger()
 
-    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
+    if not flavor:
+        if parent_layer and flavor_config_override:
+            # We throw this error because the default flavor can differ
+            # from the flavor set in the parent layer making the override
+            # invalid.
+            fail(
+                "If you set `flavor_config_override` together with `parent_layer`, " +
+                "you must explicitly set `flavor` to  the parent's `flavor`.",
+            )
+        elif not parent_layer:
+            flavor = REPO_CFG.flavor_default
 
-    if flavor_config.build_appliance:
+        # else: no override and `parent_layer` is set, so we'll read the flavor from the parent.
+
+    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override) if flavor else None
+
+    if flavor_config and flavor_config.build_appliance:
         features.append(target_tagger_to_feature(
             target_tagger,
             struct(),
@@ -72,7 +86,7 @@ def compile_image_features(
     )
 
     vset_override_name = None
-    if flavor_config.rpm_version_set_overrides:
+    if flavor_config and flavor_config.rpm_version_set_overrides:
         vset_override_name = "vset-override-" + sha256_b64(current_target)
         buck_genrule(
             name = vset_override_name,
@@ -128,9 +142,10 @@ EOF
           --subvolumes-dir "$subvolumes_dir" \
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"{subvol_name_quoted} \
-          --flavor-config {flavor_config} \
+          {maybe_flavor_config} \
           {maybe_allowed_host_mount_target_args} \
           {maybe_version_set_override} \
+          {maybe_parent_layer} \
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
           {targets_and_outputs} \
@@ -145,7 +160,6 @@ EOF
     '''.format(
         subvol_name_quoted = shell.quote(subvol_name or "volume"),
         current_target_quoted = shell.quote(current_target),
-        flavor_config = shell.quote(shape.do_not_cache_me_json(flavor_config)),
         quoted_child_feature_json_args = " ".join([
             "--child-feature-json $(location {})".format(t)
             for t in normalized_features.targets
@@ -155,6 +169,11 @@ EOF
                 target = current_target,
             ).to_json()))] if normalized_features.inline_features else []
         )),
+        maybe_flavor_config = (
+            "--flavor-config {}".format(
+                shell.quote(shape.do_not_cache_me_json(flavor_config)),
+            ) if flavor_config else ""
+        ),
         maybe_allowed_host_mount_target_args = (
             " ".join([
                 "--allowed-host-mount-target={}".format(t.strip())
@@ -188,5 +207,8 @@ EOF
         ),
         maybe_version_set_override = (
             "--version-set-override $(location :{})".format(vset_override_name) if vset_override_name else ""
+        ),
+        maybe_parent_layer = (
+            "--parent-layer $(location {})".format(parent_layer) if parent_layer and not flavor else ""
         ),
     )

@@ -16,7 +16,7 @@ def image_layer_from_package(
         name,
         format,
         source = None,
-        flavor = REPO_CFG.flavor_default,
+        flavor = None,
         flavor_config_override = None,
         # A sendstream layer does not add any build logic on top of the
         # input, so we treat it as internal to improve CI coverage.
@@ -68,8 +68,6 @@ def image_layer_from_package(
             flavor_config_override = flavor_config_override,
             subvol_name = subvol_name,
         ),
-        _flavor = flavor,
-        _flavor_config_override = flavor_config_override,
         antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

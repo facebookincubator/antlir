@@ -21,6 +21,7 @@ from antlir.compiler.items import (
     symlink,
     tarball,
 )
+from antlir.config import repo_config
 from antlir.flavor_config_t import flavor_config_t
 from antlir.fs_utils import (
     META_FLAVOR_FILE,
@@ -63,6 +64,20 @@ _FIND_ARGS = [
 ]
 _TEST_BUILD_APPLIANCE = "test-build-appliance"
 _FAKE_SUBVOL_META_FLAVOR_FILE = _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE
+_REPO_CFG = repo_config()
+
+_DEFAULT_BUILD_APPLIANCE = layer_resource(
+    __package__, "default-build-appliance"
+)
+_DEFAULT_BUILD_APPLIANCE_SUBVOL = layer_resource_subvol(
+    __package__,
+    "default-build-appliance",
+)
+_DEFAULT_BUILD_APPLIANCE_TARGET_TO_PATH = {
+    _REPO_CFG.flavor_to_config[
+        _REPO_CFG.flavor_default
+    ].build_appliance: _DEFAULT_BUILD_APPLIANCE,
+}
 
 
 def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
@@ -243,6 +258,31 @@ def fix_stdin(c):
     return other + (kwargs,)
 
 
+def _mock_path_exists(existing_paths):
+    old_mock_path_exists = Path.exists
+
+    def path_exists_side_effect(self, **kwargs):
+        if self in existing_paths:
+            return True
+        return old_mock_path_exists(self, **kwargs)
+
+    return unittest.mock.patch.object(
+        Path,
+        "exists",
+        autospec=True,
+        side_effect=path_exists_side_effect,
+    )
+
+
+def _get_write_flavor_calls(flavor):
+    return [
+        (
+            (["tee", _FAKE_SUBVOL_META_FLAVOR_FILE],),
+            {"input": flavor, "stdout": -3},
+        ),
+    ]
+
+
 class CompilerTestCase(unittest.TestCase):
     def setUp(self):
         # More output for easier debugging
@@ -266,6 +306,8 @@ class CompilerTestCase(unittest.TestCase):
         get_uuid,
         run_as_root,
         *_run_nspawns,
+        include_sample_items=True,
+        include_flavor_config=True,
         run_as_root_side_effect=None,
     ):
         lexists.side_effect = _os_path_lexists
@@ -293,10 +335,22 @@ class CompilerTestCase(unittest.TestCase):
                         _FAKE_SUBVOL,
                         "--child-layer-target",
                         "CHILD_TARGET",
-                        "--child-feature-json",
-                        si.TARGET_TO_PATH[si.mangle(si.T_KITCHEN_SINK)],
-                        "--flavor-config",
-                        flavor_config.json(),
+                        *(
+                            (
+                                "--child-feature-json",
+                                si.TARGET_TO_PATH[si.mangle(si.T_KITCHEN_SINK)],
+                            )
+                            if include_sample_items
+                            else ()
+                        ),
+                        *(
+                            (
+                                "--flavor-config",
+                                flavor_config.json(),
+                            )
+                            if include_flavor_config
+                            else ()
+                        ),
                     ]
                     + args
                 )
@@ -309,8 +363,11 @@ class CompilerTestCase(unittest.TestCase):
         *,
         parent_feature_json,
         parent_dep,
+        include_sample_items=True,
+        include_flavor_config=True,
         run_as_root_side_effect=None,
         extra_args=None,
+        build_appliance_path=None,
     ):
         """
         Invoke the compiler on the targets from the "sample_items" test
@@ -324,6 +381,10 @@ class CompilerTestCase(unittest.TestCase):
         `test_image_layer.py` does an end-to-end test that validates the
         final state of a compiled, live subvolume.
         """
+        build_appliance_path = (
+            build_appliance_path or self._get_build_appliance().path()
+        )
+
         with tempfile.NamedTemporaryFile() as tf, mock_user_group_read_write():
             deps = parent_dep.copy() or {}
             deps.update(si.TARGET_TO_PATH)
@@ -340,6 +401,8 @@ class CompilerTestCase(unittest.TestCase):
                     tf.name,
                 ]
                 + (extra_args or []),
+                include_sample_items=include_sample_items,
+                include_flavor_config=include_flavor_config,
                 run_as_root_side_effect=run_as_root_side_effect,
             )
             self.assertEqual(
@@ -350,9 +413,7 @@ class CompilerTestCase(unittest.TestCase):
                         svod._HOSTNAME: "fake host",
                         svod._SUBVOLUMES_BASE_DIR: _SUBVOLS_DIR,
                         svod._SUBVOLUME_REL_PATH: _FAKE_SUBVOL,
-                        svod._BUILD_APPLIANCE_PATH: (
-                            self._get_build_appliance().path()
-                        ),
+                        svod._BUILD_APPLIANCE_PATH: build_appliance_path,
                     }
                 ),
                 res._replace(**{svod._HOSTNAME: "fake host"}),
@@ -513,6 +574,39 @@ class CompilerTestCase(unittest.TestCase):
                         parent_dep={"//fake:parent": parent_dir.decode()},
                     ),
                 )
+
+    def test_write_parent_flavor(self):
+        with _mock_path_exists(
+            _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE.dirname()
+        ):
+            actual_calls = self._compiler_run_as_root_calls(
+                include_sample_items=False,
+                include_flavor_config=False,
+                parent_feature_json=[],
+                parent_dep=_DEFAULT_BUILD_APPLIANCE_TARGET_TO_PATH,
+                extra_args=[
+                    "--parent-layer",
+                    _DEFAULT_BUILD_APPLIANCE,
+                ],
+                build_appliance_path=_DEFAULT_BUILD_APPLIANCE_SUBVOL.path(),
+            )
+
+            self._assert_call_subset(
+                _get_write_flavor_calls(_REPO_CFG.flavor_default.encode()),
+                actual_calls,
+            )
+
+    def test_no_flavor_config_or_parent_layer_error(self):
+        with self.assertRaisesRegex(
+            AssertionError,
+            "Parent layer must be given if no flavor config is given",
+        ):
+            self._compiler_run_as_root_calls(
+                include_flavor_config=False,
+                parent_feature_json=[],
+                parent_dep={},
+                build_appliance_path=_DEFAULT_BUILD_APPLIANCE_SUBVOL.path(),
+            )
 
 
 if __name__ == "__main__":

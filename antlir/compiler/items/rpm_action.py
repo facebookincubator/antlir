@@ -24,7 +24,7 @@ from typing import (
 )
 
 from antlir.bzl_const import BZL_CONST
-from antlir.common import not_none
+from antlir.common import get_logger, not_none
 from antlir.fs_utils import (
     Path,
     generate_work_dir,
@@ -42,6 +42,9 @@ from pydantic import root_validator
 
 from .common import ImageItem, LayerOpts, PhaseOrder, protected_path_set
 from .rpm_action_item_t import rpm_action_item_t
+
+
+log = get_logger()
 
 
 class RpmAction(enum.Enum):
@@ -278,18 +281,6 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     flavor_and_version_set: Optional[Tuple[Tuple[str, str], ...]] = None
 
     def __init__(self, *args: Any, **kwargs: Any):
-        layer_opts = kwargs.pop("layer_opts")
-        flavor_and_version_set = kwargs["flavor_and_version_set"]
-
-        if layer_opts.flavor not in {
-            flavor for flavor, version_set in flavor_and_version_set
-        }:
-            rpm_name = kwargs.get("name", None) or kwargs["source"]
-            raise RuntimeError(
-                f"No matching version set found for rpm {rpm_name} "
-                f"for flavor {layer_opts.flavor}."
-            )
-
         rpm_action_item_t.__init__(self, *args, **kwargs)
         ImageItem.__init__(self, from_target=kwargs.get("from_target"))
 
@@ -312,6 +303,23 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     def get_phase_builder(
         cls, items: Iterable["RpmActionItem"], layer_opts: LayerOpts
     ):
+        # THIS IGNORES RPMS THAT DON'T HAVE A MATCHING FLAVOR
+        # IN LAYER_OPTS. WE NEED THIS TO ENABLE CROSS FLAVOR MIGRATIONS.
+        matching_flavor_items = []
+        for item in items or []:
+            # TODO: Once `flavor_and_version_set` is a dictionary, we
+            # can just do a normal in check.
+            if layer_opts.flavor in {
+                flavor for flavor, version_set in item.flavor_and_version_set
+            }:
+                matching_flavor_items.append(item)
+            else:
+                log.info(
+                    f"Rpm {item.name} does not match flavor "
+                    f"{layer_opts.flavor}. Skipping..."
+                )
+        items = matching_flavor_items
+
         # Do as much validation as possible outside of the builder to give
         # fast feedback to the user.
         build_appliance = layer_opts.requires_build_appliance()

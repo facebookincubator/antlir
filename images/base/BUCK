@@ -50,6 +50,7 @@ image.layer(
         # systemd-networkd isn't enabled by default in fedora.
         systemd.enable_unit("systemd-networkd.service"),
     ],
+    flavor = "fedora33",
     flavor_config_override = snapshot_fedora_override,
     runtime = ["systemd"],
 )
