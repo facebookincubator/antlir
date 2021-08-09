@@ -6,6 +6,7 @@
 
 import asyncio
 import logging
+import subprocess
 import time
 import unittest
 import unittest.mock
@@ -14,6 +15,7 @@ from ..common import (
     async_retry_fn,
     async_retryable,
     kernel_version,
+    async_run,
     log as common_log,
     retry_fn,
     retryable,
@@ -243,3 +245,15 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             platform_release.return_value = uname
 
             self.assertEqual(kernel_version(), parsed)
+
+    async def test_async_run(self):
+        cmd = ["echo", "-n", "hithere"]
+        res = await async_run(cmd, check=True, stdout=asyncio.subprocess.PIPE)
+        self.assertEqual(b"hithere", res.stdout)
+        self.assertFalse(res.stderr)
+        self.assertEqual(0, res.returncode)
+        self.assertEqual(cmd, res.args)
+
+    async def test_async_run_check_failure(self):
+        with self.assertRaises(subprocess.CalledProcessError):
+            await async_run(["sh", "exit", "1"], check=True)
