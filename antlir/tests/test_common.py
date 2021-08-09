@@ -20,7 +20,7 @@ from ..common import (
 )
 
 
-class TestCommon(unittest.TestCase):
+class TestCommon(unittest.IsolatedAsyncioTestCase):
     def test_retry_fn(self):
         class Retriable:
             def __init__(self, attempts_to_fail=0):
@@ -115,7 +115,7 @@ class TestCommon(unittest.TestCase):
             to_be_retried(1, b=2)
         self.assertIn("got 1, 2, 5", "".join(logs.output))
 
-    def test_async_retry_fn(self):
+    async def test_async_retry_fn(self):
         class Retriable:
             def __init__(self, attempts_to_fail=0):
                 self.attempts = 0
@@ -127,19 +127,10 @@ class TestCommon(unittest.TestCase):
                     return self.attempts
                 raise RuntimeError(self.attempts)
 
-        # In order to test our asynchronous decorator functionality, we
-        # get the event loop of our test and schedule+run corountines
-        # till completion. We cannot simply await since you can only
-        # await inside an async function. Making the outer test async seems
-        # to properly run the test, but fails to evaluate coverage.
-        loop = asyncio.get_event_loop()
-
         self.assertEqual(
             1,
-            loop.run_until_complete(
-                async_retry_fn(
-                    Retriable().run, delays=[], what="succeeds immediately"
-                )
+            await async_retry_fn(
+                Retriable().run, delays=[], what="succeeds immediately"
             ),
         )
 
@@ -148,12 +139,10 @@ class TestCommon(unittest.TestCase):
         with self.assertLogs(common_log) as log_ctx:
             self.assertEqual(
                 4,
-                loop.run_until_complete(
-                    async_retry_fn(
-                        Retriable(3).run,
-                        delays=[0, 0.1, 0.2],
-                        what="succeeds on try 4",
-                    )
+                await async_retry_fn(
+                    Retriable(3).run,
+                    delays=[0, 0.1, 0.2],
+                    what="succeeds on try 4",
                 ),
             )
         self.assertTrue(
@@ -169,13 +158,11 @@ class TestCommon(unittest.TestCase):
         with self.assertLogs(common_log, level=logging.DEBUG) as log_ctx:
             self.assertEqual(
                 4,
-                loop.run_until_complete(
-                    async_retry_fn(
-                        Retriable(3).run,
-                        delays=[0, 0.1, 0.2],
-                        what="succeeds on try 4",
-                        log_exception=False,
-                    )
+                await async_retry_fn(
+                    Retriable(3).run,
+                    delays=[0, 0.1, 0.2],
+                    what="succeeds on try 4",
+                    log_exception=False,
                 ),
             )
         self.assertTrue(
@@ -190,10 +177,8 @@ class TestCommon(unittest.TestCase):
         with self.assertLogs(common_log) as log_ctx, self.assertRaises(
             RuntimeError
         ) as ex_ctx:
-            loop.run_until_complete(
-                async_retry_fn(
-                    Retriable(100).run, delays=[0] * 7, what="never succeeds"
-                )
+            await async_retry_fn(
+                Retriable(100).run, delays=[0] * 7, what="never succeeds"
             )
         self.assertTrue(
             any(
@@ -210,17 +195,15 @@ class TestCommon(unittest.TestCase):
             return True
 
         with self.assertRaises(RuntimeError) as ex_ctx:
-            loop.run_until_complete(
-                async_retry_fn(
-                    Retriable(10).run,
-                    _is_retryable,
-                    delays=[0] * 5,
-                    what="never retries",
-                )
+            await async_retry_fn(
+                Retriable(10).run,
+                _is_retryable,
+                delays=[0] * 5,
+                what="never retries",
             )
         self.assertEqual((1,), ex_ctx.exception.args)
 
-    def test_async_retryable(self):
+    async def test_async_retryable(self):
         @async_retryable("got {a}, {b}, {c}", [0])
         async def to_be_retried(a: int, b: int, c: int = 5):
             raise RuntimeError("retrying...")
@@ -228,8 +211,7 @@ class TestCommon(unittest.TestCase):
         with self.assertRaises(RuntimeError), self.assertLogs(
             common_log
         ) as logs:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(to_be_retried(1, b=2))
+            await to_be_retried(1, b=2)
         self.assertIn("got 1, 2, 5", "".join(logs.output))
 
     def test_retryable_skip(self):
