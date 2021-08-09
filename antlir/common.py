@@ -6,6 +6,7 @@
 
 "Utilities to make Python systems programming more palatable."
 import array
+import asyncio
 import inspect
 import logging
 import os
@@ -20,6 +21,8 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import (
     AnyStr,
+    NamedTuple,
+    Union,
     Callable,
     Iterable,
     Iterator,
@@ -384,3 +387,41 @@ def kernel_version() -> Tuple[int, int]:
             f"Invalid kernel version format '{platform.release()}'"
         )
     return int(m.group(1)), int(m.group(2))
+
+
+class AsyncCompletedProc(NamedTuple):
+    args: List[Union[str, bytes]]
+    returncode: int
+    stdout: Optional[bytes]
+    stderr: Optional[bytes]
+
+    def check_returncode(self):
+        if self.returncode != 0:
+            raise subprocess.CalledProcessError(
+                returncode=self.returncode,
+                cmd=self.args,
+            )
+
+
+async def async_run(
+    cmd: List[Union[str, bytes]],
+    input: Optional[bytes] = None,
+    check: bool = True,
+    **kwargs,
+) -> AsyncCompletedProc:
+    """Helper function to run an async subprocess and report the result in a
+    canonical format.
+
+    Note if providing `input` you'll want to set `stdin=asyncio.subprocess.PIPE`
+    """
+    proc = await asyncio.create_subprocess_exec(*cmd, **kwargs)
+    stdout, stderr = await proc.communicate(input)
+    ret = AsyncCompletedProc(
+        args=cmd,
+        returncode=not_none(proc.returncode),
+        stdout=stdout,
+        stderr=stderr,
+    )
+    if check:
+        ret.check_returncode()
+    return ret
