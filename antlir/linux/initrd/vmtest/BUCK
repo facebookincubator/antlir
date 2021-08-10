@@ -128,6 +128,98 @@ vm.rust_unittest(
     crate_root = "test_boots.rs",
 )
 
+# This needs to be as close as possible the prod initrd, with only the bare
+# minimum of extra features to get baseline functionality in vmtest. Tests that
+# exercise this initrd are run in the post-switch-root image, so this can be as
+# close to the base as possible.
+image.layer(
+    name = "switch-root-initrd",
+    parent_layer = "//antlir/linux/initrd:base",
+    features = [
+        image.ensure_subdirs_exist("/usr/lib", "udev/rules.d"),
+        image.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
+        image.ensure_subdirs_exist("/etc", "systemd/system"),
+        # to avoid having to unmount this when switch-rooting, just don't mount
+        # it in the first place - it should be mounted later by the generator
+        # in the root fs if required
+        systemd.mask_units([systemd.escape(
+            "/sysroot/usr/lib/modules/{}.mount".format(TEST_KERNEL.uname),
+            path = True,
+        )]),
+        systemd.install_dropin("after-seedroot.conf", "antlir-fetch-image@.service"),
+        systemd.enable_unit("systemd-modules-load.service", "initrd-switch-root.target"),
+        # the default kernel-specific vm initrd includes this unit to
+        # switch-root into /sysroot, which we don't want for MetalOS
+        systemd.mask_units(["initrd-switch-root.service"]),
+        network.host(),
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+)
+
+image.package(
+    name = "switch-root-initrd-base.cpio.gz",
+    layer = ":switch-root-initrd",
+    format = "cpio.gz",
+    visibility = [],
+    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+)
+
+buck_genrule(
+    name = "switch-root-initrd.cpio.gz",
+    out = "initrd.cpio.gz",
+    cmd = "cat $(location :{}-initrd) $(location :switch-root-initrd-base.cpio.gz) > $OUT".format(TEST_KERNEL.uname),
+)
+
+image.layer(
+    name = "metalos-vmtest",
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
+    features = [
+        ssh.test_only_login(),
+        console.autologin(),
+        generator.mounts(),
+        image.remove("/etc/hosts"),
+        network.host(),
+        notify.install(),
+        # Technically, sshd.service is already enabled in the base metalos
+        # image, but this indicates that in the vmtest use-case, sshd _is_ the
+        # workload.
+        systemd.enable_unit("sshd.service", "workload.target"),
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+)
+
+image.package(
+    name = "metalos-vmtest.sendstream.zst",
+    layer = ":metalos-vmtest",
+    format = "sendstream.zst",
+    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+)
+
+image.layer(
+    name = "empty-layer",
+)
+
+vm.rust_unittest(
+    name = "switch-root",
+    vm_opts = vm.types.opts.new(
+        initrd = ":switch-root-initrd.cpio.gz",
+        kernel = TEST_KERNEL,
+        append = [
+            "antlir.package-format-uri=http://vmtest-host:8000/package/{package}",
+            "antlir.os-package=metalos:1",
+            "rd.systemd.journald.forward_to_console=1",
+        ],
+        runtime = vm.types.runtime.new(
+            sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"],
+        ),
+        disk = vm.types.disk.new(layer = ":empty-layer"),
+    ),
+    srcs = ["test_switch_root.rs"],
+    crate_root = "test_switch_root.rs",
+    # TODO(vmagro): re-enable this when the container runtime environment is
+    # done and the sidecars can reliably run on Sandcastle
+    tags = ["local_only"],
+)
 
 rust_binary(
     name = "images-sidecar",
@@ -147,7 +239,7 @@ buck_genrule(
     name = "image_packages",
     out = ".",
     cmd = """
-        cp --reflink=auto $(location //antlir/linux/metalos:metalos.sendstream.zst) $OUT/metalos.sendstream.zst
+        cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:1
     """,
 )
 

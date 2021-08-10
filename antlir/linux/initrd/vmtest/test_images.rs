@@ -21,7 +21,7 @@ fn wait_for_systemd() -> String {
 }
 
 #[test]
-fn systemd_unit() {
+fn fetch_unit() {
     assert_eq!("running", wait_for_systemd().trim());
     Command::new("systemctl")
         .arg("start")

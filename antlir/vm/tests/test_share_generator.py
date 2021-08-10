@@ -133,7 +133,9 @@ class TestShareGenerator(unittest.TestCase):
 
             self.assertEqual(
                 set(os.listdir(outdir)),
-                units.union({"local-fs.target.requires"}),
+                units.union(
+                    {"local-fs.target.requires", "workload-pre.target.requires"}
+                ),
             )
             self.assertEqual(
                 set(

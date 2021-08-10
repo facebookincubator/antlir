@@ -27,16 +27,17 @@ pub struct Opts {
     late_dir: PathBuf,
 }
 
-// This helper intentionally not implemented in systemd.rs. The generator has to
-// operate on files since systemd might not be ready while the generator is
-// running. Post-generator interactions with systemd should happen over dbus,
-// not filesystem mangling.
-fn instantiate_and_enable_template<U: AsRef<str>, I: AsRef<str>, W: AsRef<str>>(
+// This unit file helper intentionally not implemented in systemd.rs. The
+// generator has to operate on files since systemd might not be ready while the
+// generator is running. Post-generator interactions with systemd should happen
+// over dbus, not filesystem mangling. See the systemd generator docs for more
+// details about the limitations imposed on generators.
+// https://www.freedesktop.org/software/systemd/man/systemd.generator.html#Notes%20about%20writing%20generators
+fn instantiate_template<U: AsRef<str>, I: AsRef<str>>(
     normal_dir: PathBuf,
     unit: U,
     instance: I,
-    wanted_by: W,
-) -> Result<()> {
+) -> Result<String> {
     let instance_unit = systemd::template_unit_name(&unit, instance)?;
     let instance_file = normal_dir.join(&instance_unit);
     let template_src = PathBuf::from(PROVIDER_ROOT).join(unit.as_ref());
@@ -46,16 +47,7 @@ fn instantiate_and_enable_template<U: AsRef<str>, I: AsRef<str>, W: AsRef<str>>(
             instance_file, template_src
         )
     })?;
-    let wants_dir = normal_dir.join(format!("{}.wants", wanted_by.as_ref()));
-    fs::create_dir_all(&wants_dir).with_context(|| format!("failed to create {:?}", wants_dir))?;
-    symlink(&instance_file, wants_dir.join(&instance_unit)).with_context(|| {
-        format!(
-            "failed to symlink {:?} -> {:?}",
-            wants_dir.join(&instance_unit),
-            instance_file,
-        )
-    })?;
-    Ok(())
+    Ok(instance_unit)
 }
 
 fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
@@ -67,11 +59,33 @@ fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
             log,
             "instantiating antlir-fetch-image@{}.service", &os_package
         );
-        instantiate_and_enable_template(
+        let fetch_unit = instantiate_template(
             opts.normal_dir.clone(),
             "antlir-fetch-image@.service",
             os_package,
-            "initrd.target",
+        )?;
+        fs::create_dir_all(&opts.normal_dir.join("antlir-switch-root.service.d"))
+            .context("failed to create .d/ for antlir-switch-root.service")?;
+        let mut subvol_conf = fs::File::create(
+            opts.normal_dir
+                .join("antlir-switch-root.service.d")
+                .join("os_subvol.conf"),
+        )
+        .context("failed to create drop-in for antlir-switch-root.service")?;
+        info!(
+            log,
+            "Writing drop-in to switch-root into subvol for {}", &os_package,
+        );
+        info!(
+            log,
+            "antlir-switch-root.service will wait for {}", &fetch_unit,
+        );
+        write!(
+            subvol_conf,
+            "[Unit]\nAfter={}\nRequires={}\n[Service]\nEnvironment=OS_SUBVOL=var/lib/antlir/image/{}/volume",
+            fetch_unit,
+            fetch_unit,
+            systemd::escape(os_package)?
         )?;
     }
 
@@ -139,21 +153,10 @@ mod tests {
         let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
         let tmpdir = std::env::temp_dir().join(format!("instantiate_template_{:?}", ts));
         std::fs::create_dir(&tmpdir)?;
-        instantiate_and_enable_template(
-            tmpdir.clone(),
-            "hello@.service",
-            "world",
-            "multi-user.target",
-        )?;
+        instantiate_template(tmpdir.clone(), "hello@.service", "world")?;
         assert_eq!(
             tmpdir.join("hello@world.service").read_link()?,
             Path::new(PROVIDER_ROOT).join("hello@.service"),
-        );
-        assert_eq!(
-            tmpdir
-                .join("multi-user.target.wants/hello@world.service")
-                .read_link()?,
-            tmpdir.join("hello@world.service"),
         );
         std::fs::remove_dir_all(&tmpdir)?;
         Ok(())

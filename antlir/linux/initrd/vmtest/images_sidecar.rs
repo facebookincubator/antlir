@@ -18,6 +18,16 @@ async fn main() -> Result<()> {
     let args: Vec<_> = env::args().collect();
     let images_dir: PathBuf = (&args[1]).into();
 
+    eprintln!("images_sidecar: serving the following packages");
+    for entry in std::fs::read_dir(&images_dir)? {
+        if let Ok(entry) = entry {
+            eprintln!(
+                "images_sidecar:  {}",
+                entry.path().strip_prefix(&images_dir)?.display()
+            );
+        }
+    }
+
     let log = warp::log::custom(|info| {
         eprintln!(
             "images_sidecar: {} {} {}",
@@ -27,13 +37,8 @@ async fn main() -> Result<()> {
         );
     });
 
-    // TODO this should eventually test with multiple images + multiple
-    // versions, but for the first pass just always return the metalos
-    // sendstream
-    let routes = warp::path!("package" / "metalos:1")
-        .and(warp::filters::fs::file(
-            images_dir.join("metalos.sendstream.zst"),
-        ))
+    let routes = warp::path("package")
+        .and(warp::filters::fs::dir(images_dir))
         .with(log);
 
     let addr = IpAddr::V6("::".parse()?);

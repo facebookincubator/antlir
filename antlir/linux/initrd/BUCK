@@ -111,6 +111,8 @@ image.layer(
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mkdir"),
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mount"),
         systemd.install_unit("units/antlir-fetch-image@.service"),
+        systemd.install_unit("units/antlir-switch-root.service"),
+        systemd.enable_unit("antlir-switch-root.service", "initrd-switch-root.target"),
         image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/lib/systemd/system-generators/antlir-generator"),
     ],
