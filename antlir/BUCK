@@ -160,6 +160,7 @@ python_library(
     srcs = ["loopback.py"],
     deps = [
         ":common",
+        ":loopback_opts_t",
         ":unshare",
     ],
 )

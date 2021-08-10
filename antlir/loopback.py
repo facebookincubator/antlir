@@ -17,6 +17,7 @@ from typing import Iterable, Optional
 
 from .common import get_logger, kernel_version, run_stdout_to_err
 from .fs_utils import Path, temp_dir
+from .loopback_opts_t import loopback_opts_t
 from .unshare import Unshare, nsenter_as_root, nsenter_as_user
 
 log = get_logger()
@@ -44,6 +45,7 @@ class LoopbackVolume:
         fs_type: str,
         # pyre-fixme[9]: mount_options has type `Iterable[str]`; used as `None`.
         mount_options: Iterable[str] = None,
+        loopback_opts: Optional[loopback_opts_t] = None,
     ):
         self._unshare = unshare
         self._temp_dir_ctx = temp_dir()
@@ -52,6 +54,7 @@ class LoopbackVolume:
         self._mount_dir: Optional[Path] = None
         self._mount_options = mount_options or None
         self._temp_dir: Optional[Path] = None
+        self._loopback_opts: Optional[loopback_opts_t] = loopback_opts
 
     def __enter__(self) -> "LoopbackVolume":
         self._temp_dir = self._temp_dir_ctx.__enter__().abspath()
@@ -282,6 +285,11 @@ class BtrfsLoopbackVolume(LoopbackVolume):
             f"Formatting btrfs {self._size_bytes}-byte FS at {self._image_path}"
         )
         self._size_bytes = self._create_or_resize_image_file(self._size_bytes)
+        maybe_label = (
+            ["--label", self._loopback_opts.label]
+            if self._loopback_opts and self._loopback_opts.label
+            else []
+        )
         # Note that this can fail with 'cannot check mount status' if the
         # host is in a bad state:
         #  - a file backing a loop device got deleted, or
@@ -303,6 +311,7 @@ class BtrfsLoopbackVolume(LoopbackVolume):
                 "mkfs.btrfs",
                 "--metadata",
                 "single",
+                *maybe_label,
                 self._image_path,
             ],
             check=True,
