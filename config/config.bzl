@@ -12,6 +12,7 @@ do_not_use_repo_cfg = {
         for k, v in {
             "build_appliance.newest": "//images/appliance:stable-build-appliance",
             "extractor.common_deps": "//images/appliance:stable-build-appliance",
+            "metalos.layer.base": "//antlir/linux/metalos:metalos",
             "vm.rootfs.btrfs.rc": "//images/base:fedora.vm.btrfs",
             "vm.rootfs.btrfs.stable": "//images/base:fedora.vm.btrfs",
             "vm.rootfs.layer.rc": "//images/base:fedora.vm",

@@ -21,6 +21,7 @@ mod generator;
 mod kernel_cmdline;
 mod mkdir;
 mod mount;
+mod switch_root;
 mod systemd;
 
 pub use config::Config;
@@ -35,6 +36,8 @@ enum Subcommand {
     Mount(mount::Opts),
     /// Simple implementation of /bin/mkdir
     Mkdir(mkdir::Opts),
+    /// Setup the new rootfs and switch-root into it
+    SwitchRoot(switch_root::Opts),
 }
 
 #[derive(StructOpt)]
@@ -85,5 +88,6 @@ async fn main() -> Result<()> {
         Subcommand::FetchImage(opts) => fetch_image::fetch_image(log, config, opts).await,
         Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
         Subcommand::Mount(opts) => mount::mount(opts),
+        Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts),
     }
 }

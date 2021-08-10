@@ -26,10 +26,6 @@ fn run_systemd_escape(args: &[&str]) -> Result<String> {
         .map(|s| s.trim().to_owned())
 }
 
-// This is likely to be required at some point in the near future, but the crate
-// is compiled to not allow warnings, so explicitly allow this function to
-// remain unused
-#[allow(dead_code)]
 pub fn escape<S: AsRef<str>>(s: S) -> Result<String> {
     run_systemd_escape(&[s.as_ref()])
 }

@@ -24,12 +24,12 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 pub struct Opts {
-    source: String,
-    target: PathBuf,
+    pub source: String,
+    pub target: PathBuf,
     #[structopt(short = "t")]
-    fstype: String,
+    pub fstype: String,
     #[structopt(short, require_delimiter(true))]
-    options: Vec<String>,
+    pub options: Vec<String>,
 }
 
 /// parse options given with -o into data and flags
@@ -41,6 +41,8 @@ fn parse_options(options: Vec<String>) -> (Vec<String>, MsFlags) {
             "ro" => flags.insert(MsFlags::MS_RDONLY),
             "remount" => flags.insert(MsFlags::MS_REMOUNT),
             "rw" => flags.remove(MsFlags::MS_RDONLY),
+            "relatime" => flags.insert(MsFlags::MS_RELATIME),
+            "norelatime" => flags.remove(MsFlags::MS_RELATIME),
             _ => data.push(opt),
         }
     }
@@ -67,7 +69,6 @@ pub fn source_to_device_path<S: AsRef<str>>(src: S) -> Result<PathBuf> {
         // This is a very rudimentary level of support for disk labels.
         // It should probably be using libblkid proper, but this works for the
         // current system setups at least.
-        eprintln!("label = {:?}", label);
         return Ok(format!("/dev/disk/by-label/{}", blkid_encode_string(label)).into());
     }
     // Assume that src is some opaque value that the kernel will know what to do

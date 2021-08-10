@@ -305,7 +305,7 @@ async def __vm_with_stack(
     )
     # TODO: should this size be configurable (or is it possible to dynamically
     # grow)?
-    rwdevice.truncate(1 * 1024 * 1024 * 1024)
+    rwdevice.truncate(4 * 1024 * 1024 * 1024)
 
     # The two initial disks (readonly rootfs seed device and the rw scratch
     # device) are required to have these two disk identifiers for the initrd to

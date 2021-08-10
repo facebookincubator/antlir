@@ -9,9 +9,10 @@ image.layer(
     features = [
         image.rpms_install([
             "basesystem",
+            "iproute",
+            "openssh-server",
             "systemd",
             "systemd-udev",
-            "iproute",
         ]),
     ],
     visibility = [],
@@ -54,6 +55,13 @@ image.layer(
         image.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
         systemd.enable_unit("systemd-networkd.service", "workload-pre.target"),
         systemd.enable_unit("systemd-resolved.service", "workload-pre.target"),
+        # TODO: this is a workaround for a likely bug in the initrd shutdown
+        # process that ends up leaving udev rules unprocessed in the
+        # post-switch-root root fs.
+        systemd.enable_unit("systemd-udev-trigger.service", "workload-pre.target"),
+        # TODO: should there be another target that exists for critical "out of
+        # band" services that are unrelated to the workload like sshd?
+        systemd.enable_unit("sshd.service", "workload-pre.target"),
     ],
     runtime = ["systemd"],
     flavor = REPO_CFG.antlir_linux_flavor,
@@ -69,4 +77,5 @@ image.package(
     visibility = [
         "//antlir/...",
     ],
+    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
 )

@@ -162,7 +162,6 @@ impl std::str::FromStr for AntlirCmdline {
         // last arg does not have the trailing whitespace to trigger the push in
         // the above loop
         args.push(current);
-        eprintln!("{:?}", args);
         AntlirCmdline::from_iter_safe(args).context("failed to parse")
     }
 }
