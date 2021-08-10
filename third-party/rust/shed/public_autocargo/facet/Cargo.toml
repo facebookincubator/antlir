@@ -1,0 +1,46 @@
+[package]
+name = "facet"
+version = "0.1.0"
+authors = ["Facebook <opensource+rust-shed@fb.com>"]
+edition = "2018"
+readme = "../../README.md"
+repository = "https://github.com/facebookexperimental/rust-shed/"
+license = "MIT OR Apache-2.0"
+
+[[test]]
+name = "facet_async_test"
+path = "test/async_test.rs"
+
+[[test]]
+name = "facet_basic_test"
+path = "test/basic_test.rs"
+
+[[test]]
+name = "facet_delegate_test"
+path = "test/delegate_test.rs"
+
+[[test]]
+name = "facet_deps_test"
+path = "test/deps_test.rs"
+
+[[test]]
+name = "facet_fallible_test"
+path = "test/fallible_test.rs"
+
+[[test]]
+name = "facet_params_test"
+path = "test/params_test.rs"
+
+[[test]]
+name = "facet_static_test"
+path = "test/static_test.rs"
+
+[dependencies]
+anyhow = "1.0"
+async-trait = "0.1.51"
+facet_proc_macros = { version = "0.1.0", path = "proc_macros" }
+futures = { version = "0.3.13", features = ["async-await", "compat"] }
+thiserror = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1.7.1", features = ["full", "test-util"] }
