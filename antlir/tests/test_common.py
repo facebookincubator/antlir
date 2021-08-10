@@ -257,3 +257,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
     async def test_async_run_check_failure(self):
         with self.assertRaises(subprocess.CalledProcessError):
             await async_run(["sh", "exit", "1"], check=True)
+
+    async def test_async_run_missing_pipe_stdin(self):
+        with self.assertRaisesRegex(AssertionError, "You must set"):
+            await async_run(["foo"], input=b"hello there")
