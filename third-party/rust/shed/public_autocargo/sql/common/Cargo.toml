@@ -1,0 +1,37 @@
+[package]
+name = "sql_common"
+version = "0.1.0"
+authors = ["Facebook <opensource+rust-shed@fb.com>"]
+edition = "2018"
+description = "Common definitions for sql crate"
+readme = "../../../README.md"
+repository = "https://github.com/facebookexperimental/rust-shed/"
+license = "MIT OR Apache-2.0"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+anyhow = "1.0"
+auto_impl = "0.4"
+cloned = { version = "0.1.0", path = "../../cloned" }
+failure_ext = { version = "0.1.0", path = "../../failure_ext" }
+futures = { version = "0.3.13", features = ["async-await", "compat"] }
+futures-old = { package = "futures", version = "0.1.31" }
+futures_ext = { package = "futures_01_ext", version = "0.1.0", path = "../../futures_01_ext" }
+futures_stats = { version = "0.1.0", path = "../../futures_stats" }
+lazy_static = "1.0"
+mysql_async = "0.23"
+mysql_derive = { version = "0.1.0", path = "../derive" }
+rusqlite = { version = "0.23", features = ["blob"] }
+stats = { version = "0.1.0", path = "../../stats" }
+thiserror = "1.0"
+time_ext = { version = "0.1.0", path = "../../time_ext" }
+tokio_shim = { version = "0.1.0", path = "../../tokio_shim" }
+
+[dev-dependencies]
+sql = { version = "0.1.0", path = ".." }
+sql_tests_lib = { version = "0.1.0", path = "../tests_lib" }
+
+[features]
+default = ["rusqlite/bundled"]
