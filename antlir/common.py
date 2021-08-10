@@ -411,9 +411,12 @@ async def async_run(
 ) -> AsyncCompletedProc:
     """Helper function to run an async subprocess and report the result in a
     canonical format.
-
-    Note if providing `input` you'll want to set `stdin=asyncio.subprocess.PIPE`
     """
+    if input is not None:
+        assert kwargs.get("stdin") == asyncio.subprocess.PIPE, (
+            "You must set `stdin=asyncio.subprocess.PIPE` for the provided "
+            "`input` to be sent to the process' stdin."
+        )
     proc = await asyncio.create_subprocess_exec(*cmd, **kwargs)
     stdout, stderr = await proc.communicate(input)
     ret = AsyncCompletedProc(
