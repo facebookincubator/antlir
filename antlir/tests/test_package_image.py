@@ -83,7 +83,11 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
 
     def test_package_image_as_btrfs_loopback(self):
         with self._package_image(
-            self._sibling_path("create_ops.layer"), "btrfs"
+            self._sibling_path("create_ops.layer"),
+            "btrfs",
+            loopback_opts=loopback_opts_t(
+                label="test-label",
+            ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
         ) as unshare, tempfile.TemporaryDirectory() as mount_dir, tempfile.NamedTemporaryFile() as temp_sendstream:  # noqa: E501
@@ -99,6 +103,11 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     out_path,
                     mount_dir,
                 )
+            )
+            self._assert_filesystem_label(
+                unshare,
+                mount_dir,
+                "test-label",
             )
             try:
                 # Future: Once I have FD, this should become:

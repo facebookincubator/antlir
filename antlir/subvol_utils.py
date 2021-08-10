@@ -914,7 +914,10 @@ class Subvol:
         with pipe() as (r_send, w_send), Unshare(
             [Namespace.MOUNT, Namespace.PID]
         ) as ns, BtrfsLoopbackVolume(
-            unshare=ns, image_path=output_path, size_bytes=fs_size_bytes
+            unshare=ns,
+            image_path=output_path,
+            size_bytes=fs_size_bytes,
+            loopback_opts=loopback_opts,
         ) as loop_vol, self.mark_readonly_and_write_sendstream_to_file(
             w_send
         ):
