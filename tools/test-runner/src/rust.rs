@@ -13,36 +13,45 @@ pub fn validate(spec: TestSpec) -> Vec<Test> {
         )
     };
 
-    // list all unit tests in the format:
-    //     <module>#<function1>
-    //     <module>#<function2>
+    // list tests and benchmarks in the format:
+    //     <name1>: <type>
+    //     <name1>: <type>
     //     ...
+    //
+    //     <NTEST> tests, <NBENCH> benchmarks
     let mut list_tests = base_command();
-    let mut list_tests = list_tests
-        .arg("--list-tests")
-        .arg("--list-format=buck")
-        .spawn()
-        .unwrap();
+    let mut list_tests = list_tests.arg("--list").spawn().unwrap();
     let stdout = list_tests.stdout.take().unwrap();
 
     // parse those into a set of individual tests
     let mut tests = Vec::new();
     for line in BufReader::new(stdout).lines() {
         let line = line.unwrap();
-        let line: Vec<&str> = line.split("#").collect();
-        let module = line[0];
-        let function = line[1];
-        let unit = module.to_string() + "." + function;
+        let line: Vec<&str> = line.split(": ").collect();
+
+        // if we have reached the last line, its time to stop
+        if line.len() < 2 {
+            break;
+        }
+
+        // we only care about tests, anything else is ignored
+        let unit = line[0];
+        let kind = line[1];
+        if kind != "test" {
+            continue;
+        }
 
         // make a command to run only this unit test
         let mut unit_command = base_command();
+        unit_command.arg("--test");
+        unit_command.arg("--exact");
         unit_command.arg(unit);
         tests.push(Test {
             command: unit_command,
-            name: spec.target.clone() + "#" + function,
+            name: spec.target.clone() + "#" + unit,
             labels: spec.labels.clone(),
             contacts: spec.contacts.clone(),
-            kind: TestKind::Pyunit,
+            kind: TestKind::Rust,
         });
     }
 

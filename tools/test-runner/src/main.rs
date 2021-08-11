@@ -7,6 +7,7 @@ use structopt::{clap, StructOpt};
 // we declare all modules here so that they may refer to each other using `super::<mod>`
 mod buck_test;
 mod pyunit;
+mod rust;
 
 use buck_test::Test;
 

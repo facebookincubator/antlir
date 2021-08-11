@@ -10,6 +10,7 @@ use rayon::iter::*;
 use serde::Deserialize;
 
 use super::pyunit;
+use super::rust;
 
 /// Unit test.
 #[derive(Debug)]
@@ -37,7 +38,10 @@ pub enum TestKind {
     /// Buck's custom `unittest` runner.
     Pyunit,
 
-    /// Anything else: simply runs a command and checks for non-zero exit code.
+    /// Buck's custom Rust tester.
+    Rust,
+
+    /// Simply runs a command and checks for non-zero exit code.
     Shell,
 }
 
@@ -64,14 +68,15 @@ pub fn run_all(tests: Vec<Test>, threads: usize) -> i32 {
     let mut errors: Vec<String> = Vec::new();
     for (test, mut result) in tests {
         let pass = match test.kind {
-            TestKind::Shell => shell::evaluate(&mut result),
             TestKind::Pyunit => pyunit::evaluate(&mut result),
+            TestKind::Rust => rust::evaluate(&mut result),
+            TestKind::Shell => shell::evaluate(&mut result),
         };
         if pass {
-            eprintln!("[PASS] {}", test.name);
+            println!("[PASS] {}", test.name);
             passed += 1;
         } else {
-            eprintln!("[FAIL] {}", test.name);
+            println!("[FAIL] {}", test.name);
             let mut message = format!("\nTest {} failed:\n", test.name);
             let stderr = result.stderr.take().unwrap();
             for line in BufReader::new(stderr).lines() {
@@ -131,7 +136,7 @@ pub struct TestSpec {
     pub target: String,
 
     /// The type of the test.
-    #[serde(rename(deserialize = "type"))]
+    #[serde(rename(deserialize = "type"), default = "default_kind")]
     kind: TestKind,
 
     /// Command line that should be used to run the test.
@@ -151,6 +156,9 @@ pub struct TestSpec {
 
     /// Absolute paths to any files required by this test target.
     required_paths: Option<Vec<PathBuf>>,
+}
+fn default_kind() -> TestKind {
+    TestKind::Shell
 }
 
 /// Reads test specs from a buck test run description at the given path.
@@ -188,8 +196,9 @@ pub fn validate(spec: TestSpec) -> Result<Vec<Test>> {
 
     // dispatch on kind for further processing
     let tests = match spec.kind.clone() {
-        TestKind::Shell => shell::validate(spec),
         TestKind::Pyunit => pyunit::validate(spec),
+        TestKind::Rust => rust::validate(spec),
+        TestKind::Shell => shell::validate(spec),
     };
 
     return Ok(tests);
