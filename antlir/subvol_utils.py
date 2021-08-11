@@ -173,7 +173,7 @@ class Subvol:
         # Flags:                  -
         # Snapshot(s):
 
-        return subvol_metadata[2].split(b":")[1].lstrip(b" ").decode()
+        return subvol_metadata[2].split(b":")[1].decode().strip()
 
     def canonicalize_path(self, path: AnyStr) -> Path:
         """

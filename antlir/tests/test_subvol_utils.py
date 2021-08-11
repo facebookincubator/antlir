@@ -460,3 +460,23 @@ class SubvolTestCase(AntlirTestCase):
             .subvolume_path()
             .exists()
         )
+
+    def test_get_uuid(self):
+        stdout = (
+            b"\n\tName: \t\t\tvolume\n\t"
+            b"UUID: \t\t\t8ec28ee3-e2cf-3345-8871-4bc4f85a3efc\n"
+        )
+        with unittest.mock.patch(
+            "antlir.subvol_utils.Subvol.run_as_root",
+            unittest.mock.Mock(
+                return_value=subprocess.CompletedProcess(
+                    args=[],
+                    returncode=0,
+                    stdout=stdout,
+                )
+            ),
+        ):
+            sv = Subvol("/dev/null/no-such-dir")
+            self.assertEqual(
+                sv.get_uuid(), "8ec28ee3-e2cf-3345-8871-4bc4f85a3efc"
+            )
