@@ -87,7 +87,16 @@ class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
         return cls.parse_raw(os.environ[envvar])
 
     def __hash__(self):
-        return hash((type(self), *self.__dict__.values()))
+        values = [type(self)]
+        for v in self.__dict__.values():
+            if type(v) is dict:
+                # dict is not hashable so we have to convert it to
+                # a hashable frozenset of tuples.
+                values.append(frozenset(v.items()))
+            else:
+                values.append(v)
+
+        return hash(tuple(values))
 
     def __repr__(self):
         """

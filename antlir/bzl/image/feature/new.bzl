@@ -49,13 +49,12 @@ Read that target's docblock for more info, but in essence, that will:
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:check_flavor_exists.bzl", "check_flavor_exists")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
-load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
+load("//antlir/bzl:target_tagger.bzl", "extract_tagged_target", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load("//antlir/bzl/image_actions:rpms.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 
 # ## Why are `feature`s forbidden as dependencies?
@@ -152,42 +151,32 @@ def _normalize_feature_and_get_deps(feature, flavors):
     # project. To avoid aliasing bugs, copy all these dicts.
     aliased_rpms = feature_dict.get("rpms", [])
     if aliased_rpms:
-        # IMPORTANT: This is NOT a deep copy, but we don't need it since we
-        # only mutate the `version_set` key.
         feature_dict["rpms"] = [dict(**r) for r in aliased_rpms]
 
-    # Resolve RPM names to version set targets.  We cannot avoid this
-    # coupling with `rpm.bzl` because the same `image.rpms_install` may
-    # be normalized against multiple version set names.
+    # Now that we know what flavors we need to build for the layer,
+    # we can only include dependencies from the feature that are
+    # necessary for the given flavor. This is needed to prevent
+    # build errors from depending on non-existent rpms.
+    deps = {d: 1 for d in feature.deps}
     for rpm_item in feature_dict.get("rpms", []):
         flavor_to_version_set = {}
-        vs_name = rpm_item.pop("version_set", None)
-        rpm_flavors = rpm_item.pop("flavors", None) or flavors
-        rpm_valid = False
 
-        for flavor in rpm_flavors:
-            vs_path = REPO_CFG.flavor_to_config[flavor].version_set_path
-            if vs_path != BZL_CONST.version_set_allow_all_versions and vs_name:
-                flavor_to_version_set[flavor] = tag_target(
-                    target_tagger,
-                    vs_path + "/rpm:" + vs_name,
-                )
-            else:
-                flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
-
+        for flavor, version_set in rpm_item.get("flavor_to_version_set", {}).items():
             if flavor in flavors:
-                rpm_valid = True
+                flavor_to_version_set[flavor] = version_set
+            elif version_set != BZL_CONST.version_set_allow_all_versions:
+                target = extract_tagged_target(version_set)
+                deps.pop(target)
 
-        if not rpm_valid and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM:
+        if not flavor_to_version_set and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM:
             fail("Rpm `{}` must have one of the flavors `{}`".format(
                 rpm_item["name"] or rpm_item["source"],
                 flavors,
             ))
-
-        rpm_item["flavor_and_version_set"] = tuple(flavor_to_version_set.items())
+        rpm_item["flavor_to_version_set"] = flavor_to_version_set
 
     direct_deps = []
-    direct_deps.extend(feature.deps)
+    direct_deps.extend(deps.keys())
     direct_deps.extend(target_tagger.targets.keys())
     return feature_dict, direct_deps
 
@@ -216,7 +205,7 @@ def normalize_features(
             valid_rpms = []
             for rpm_item in feature_dict.get("rpms", []):
                 if rpm_item["action"] == "install":
-                    for flavor, _ in rpm_item["flavor_and_version_set"]:
+                    for flavor, _ in rpm_item["flavor_to_version_set"].items():
                         rpm_install_flavors[flavor] = 1
 
                 # We add a dummy in `_build_rpm_feature` in `rpms.bzl`

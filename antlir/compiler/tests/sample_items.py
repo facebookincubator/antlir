@@ -182,33 +182,33 @@ ID_TO_ITEM = {
         from_target=T_TAR,
         name="rpm-test-mice",
         action=RpmAction.install,
-        flavor_and_version_set=(
-            ("antlir_test", BZL_CONST.version_set_allow_all_versions),
-        ),
+        flavor_to_version_set={
+            "antlir_test": BZL_CONST.version_set_allow_all_versions,
+        },
     ),
     ".rpms/install/rpm-test-cheese-2-1.rpm": RpmActionItem(
         from_target=T_TAR,
         source=Path(TARGET_TO_PATH[T_RPM_TEST_CHEESE]),
         action=RpmAction.install,
-        flavor_and_version_set=(
-            ("antlir_test", BZL_CONST.version_set_allow_all_versions),
-        ),
+        flavor_to_version_set={
+            "antlir_test": BZL_CONST.version_set_allow_all_versions,
+        },
     ),
     ".rpms/remove_if_exists/rpm-test-carrot": RpmActionItem(
         from_target=T_TAR,
         name="rpm-test-carrot",
         action=RpmAction.remove_if_exists,
-        flavor_and_version_set=(
-            ("antlir_test", BZL_CONST.version_set_allow_all_versions),
-        ),
+        flavor_to_version_set={
+            "antlir_test": BZL_CONST.version_set_allow_all_versions,
+        },
     ),
     ".rpms/remove_if_exists/rpm-test-milk": RpmActionItem(
         from_target=T_TAR,
         name="rpm-test-milk",
         action=RpmAction.remove_if_exists,
-        flavor_and_version_set=(
-            ("antlir_test", BZL_CONST.version_set_allow_all_versions),
-        ),
+        flavor_to_version_set={
+            "antlir_test": BZL_CONST.version_set_allow_all_versions,
+        },
     ),
     # From `feature_mount`:
     "meownt": MountItem(

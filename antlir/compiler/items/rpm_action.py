@@ -270,15 +270,11 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     # pyre-fixme[15]: `action` overrides attribute defined in
     # `rpm_action_item_t` inconsistently.
     action: RpmAction
+    flavor_to_version_set: Dict[str, Union[str, Dict[str, str]]]
     name: Optional[str] = None
     # pyre-fixme[15]: `source` overrides attribute defined in
     # `rpm_action_item_t` inconsistently.
     source: Optional[Path] = None
-    version_set: Optional[Path] = None
-    # This is optional until we move feature normalization into
-    # `rpms.bzl`. Then we can initialize this with
-    # `rpm_action_item`.
-    flavor_and_version_set: Optional[Tuple[Tuple[str, str], ...]] = None
 
     def __init__(self, *args: Any, **kwargs: Any):
         rpm_action_item_t.__init__(self, *args, **kwargs)
@@ -307,11 +303,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
         # IN LAYER_OPTS. WE NEED THIS TO ENABLE CROSS FLAVOR MIGRATIONS.
         matching_flavor_items = []
         for item in items or []:
-            # TODO: Once `flavor_and_version_set` is a dictionary, we
-            # can just do a normal in check.
-            if layer_opts.flavor in {
-                flavor for flavor, version_set in item.flavor_and_version_set
-            }:
+            if layer_opts.flavor in item.flavor_to_version_set:
                 matching_flavor_items.append(item)
             else:
                 log.info(
@@ -334,7 +326,9 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
             version_sets.update(
                 [
                     Path(version_set)
-                    for flavor, version_set in item.flavor_and_version_set or []
+                    for flavor, version_set in (
+                        item.flavor_to_version_set.items()
+                    )
                     if flavor == layer_opts.flavor
                     and version_set != BZL_CONST.version_set_allow_all_versions
                 ]
