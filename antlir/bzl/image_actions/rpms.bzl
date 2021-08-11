@@ -4,19 +4,26 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_shape", "new_target_tagger", "target_tagged_image_source_shape", "target_tagger_to_feature")
+load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_shape", "new_target_tagger", "tag_target", "target_tagged_image_source_shape", "target_tagger_to_feature")
 
 RPM_INSTALL_INFO_DUMMY_ACTION_ITEM = "__RPM_INSTALL_INFO_DUMMY_ACTION_ITEM__"
 
 rpm_action_item_t = shape.shape(
     action = shape.enum("install", "remove_if_exists"),
+    flavor_to_version_set = shape.field(
+        shape.dict(
+            str,
+            shape.union(
+                # This string corresponds to `version_set_allow_all_versions`.
+                str,
+                shape.dict(str, str),
+            ),
+        ),
+    ),
     source = shape.field(target_tagged_image_source_shape, optional = True),
     name = shape.field(str, optional = True),
-    version_set = shape.field(shape.path(), optional = True),
-    flavor_and_version_set = shape.field(shape.list(shape.tuple(str, str)), optional = True),
-    # TODO: Remove this once feature normalization is moved here.
-    flavors = shape.field(shape.list(str), optional = True),
 )
 
 def _rpm_name_or_source(name_source):
@@ -56,26 +63,42 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
             rpm_action_item_t,
             name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
             action = action,
-            flavors = flavors,
+            flavor_to_version_set = {flavor: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
         ),
     ]
     for path in rpmlist:
         source = None
         name = None
-        version_set = None
+        vs_name = None
         if _rpm_name_or_source(path) == "source":
             source = image_source_as_target_tagged_shape(target_tagger, path)
         else:
             name = path
             if needs_version_set:
-                version_set = name
+                vs_name = name
+
+        flavor_to_version_set = {}
+        for flavor in flavors or REPO_CFG.flavor_to_config.keys():
+            vs_path_prefix = REPO_CFG.flavor_to_config[flavor].version_set_path
+
+            # We just add the version set for user given flavors, even
+            # if they are invalid. We will add them as dependencies in
+            # `_normalize_feature_and_get_deps` where we have information
+            # about the flavors that the layer needs.
+            if vs_path_prefix != BZL_CONST.version_set_allow_all_versions and vs_name:
+                flavor_to_version_set[flavor] = tag_target(
+                    target_tagger,
+                    vs_path_prefix + "/rpm:" + vs_name,
+                )
+            else:
+                flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
+
         rpm_action_item = shape.new(
             rpm_action_item_t,
             action = action,
+            flavor_to_version_set = flavor_to_version_set,
             source = source,
             name = name,
-            version_set = version_set,
-            flavors = flavors,
         )
         res_rpms.append(rpm_action_item)
     return target_tagger_to_feature(

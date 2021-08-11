@@ -31,7 +31,7 @@ def create_rpm_action_item(
     }
     return RpmActionItem(
         from_target=from_target,
-        flavor_and_version_set=tuple(flavor_to_version_set.items()),
+        flavor_to_version_set=flavor_to_version_set,
         **kwargs,
     )
 

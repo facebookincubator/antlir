@@ -58,6 +58,11 @@ hashable_t = shape.shape(
         int,
         optional = True,
     ),
+    metadata = shape.dict(
+        str,
+        str,
+        default = {"species": "human"},
+    ),
 )
 
 buck_genrule(

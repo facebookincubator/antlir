@@ -247,6 +247,9 @@ repo_config_t = shape.shape(
     artifact = shape.dict(str, str),
     host_mounts_allowed_in_targets = shape.list(shape.path()),
     host_mounts_for_repo_artifacts = shape.list(shape.path()),
+    # This holds the default flavors that a feature should cover.
+    # Compared to `flavor_to_config`, it does not contain the
+    # `antlir_test` flavor, which shouldn't be always defined.
     flavor_available = shape.list(str),
     flavor_default = str,
     flavor_to_config = shape.dict(str, _flavor_config_t),

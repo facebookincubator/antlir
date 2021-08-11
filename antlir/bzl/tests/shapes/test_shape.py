@@ -87,13 +87,11 @@ class TestShape(unittest.TestCase):
             name="Stormtrooper",
             appears_in=[1, 2, 3, 4, 5, 6],
             friends=[],
-            metadata=None,
         )
         trooper2 = hashable_t(
             name="Stormtrooper",
             appears_in=[1, 2, 3, 4, 5, 6],
             friends=[],
-            metadata=None,
         )
         self.assertEqual(trooper1.__hash__(), trooper2.__hash__())
 
