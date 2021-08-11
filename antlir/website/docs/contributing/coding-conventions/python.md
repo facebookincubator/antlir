@@ -53,6 +53,14 @@ cover` on a line or block level:
     - **not great:** the untested error message makes it hard to debug a real
       failure -- e.g. you forgot the `f` in front of an f-string.
 
+### Inherit from `AntlirTestCase`
+
+Its `setUp()` turns off test output abbreviation (which otherwise
+complicates CI debugging unnecessarily), so be sure to call
+`super().setUp()` if overloading that.
+
+This class also enables `async def test_foo()` for testing asyncio code.
+
 ### Avoid `unittest.mock` when possible
 
 -   To unit-test `antlir` code, design testable interfaces from day 1.

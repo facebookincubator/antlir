@@ -28,6 +28,15 @@ python_unittest(
 )
 
 python_library(
+    name = "testlib_common",
+    srcs = ["tests/common.py"],
+    visibility = [
+        "//antlir/...",
+        "//tupperware/cm/antlir/...",
+    ],
+)
+
+python_library(
     name = "cli",
     srcs = ["cli.py"],
     visibility = [
@@ -136,6 +145,7 @@ python_library(
     visibility = ["//antlir/..."],
     deps = [
         ":subvol_utils",
+        ":testlib_common",
         ":testlib_subvol_helpers",
         ":unshare",
     ],
@@ -213,6 +223,7 @@ python_unittest(
     deps = [
         ":artifacts_dir",
         ":subvol_utils",
+        ":testlib_common",
         ":testlib_layer_resource",
         ":testlib_subvol_helpers",
         ":volume_for_repo",

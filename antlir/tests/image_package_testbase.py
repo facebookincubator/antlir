@@ -8,7 +8,6 @@
 import os
 import subprocess
 import tempfile
-import unittest
 
 from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.subvol_helpers import (
@@ -19,14 +18,12 @@ from antlir.tests.subvol_helpers import (
 )
 
 from ..unshare import Unshare, nsenter_as_root
+from .common import AntlirTestCase
 
 
-class ImagePackageTestCaseBase(unittest.TestCase):
+class ImagePackageTestCaseBase(AntlirTestCase):
     def setUp(self):
-        # More output for easier debugging
-        unittest.util._MAX_LENGTH = 12345
-        self.maxDiff = 12345
-
+        super().setUp()
         # Works in @mode/opt since the files of interest are baked into the XAR
         self.my_dir = os.path.dirname(__file__)
 

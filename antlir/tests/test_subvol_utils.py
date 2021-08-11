@@ -8,7 +8,6 @@ import os
 import subprocess
 import sys
 import tempfile
-import unittest
 import unittest.mock
 
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
@@ -28,19 +27,18 @@ from ..subvol_utils import (
     with_temp_subvols,
 )
 from ..volume_for_repo import get_volume_for_current_repo
+from .common import AntlirTestCase
 from .subvol_helpers import render_subvol
 
 
-class SubvolTestCase(unittest.TestCase):
+class SubvolTestCase(AntlirTestCase):
     """
     NB: The test here is partially redundant with demo_sendstreams, but
     coverage easier to manage when there's a clean, separate unit test.
     """
 
-    def setUp(self):  # More output for easier debugging
-        unittest.util._MAX_LENGTH = 12345
-        self.maxDiff = 12345
-
+    def setUp(self):
+        super().setUp()
         # Make sure we have a volume to work with
         get_volume_for_current_repo(
             ensure_per_repo_artifacts_dir_exists(Path(sys.argv[0]))
