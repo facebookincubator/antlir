@@ -1,14 +1,14 @@
-use std::fs::File;
-use std::io::BufReader;
 use std::path::PathBuf;
 use std::process::exit;
 
-use anyhow::{Context, Result};
-use serde_json;
+use anyhow::Result;
 use structopt::{clap, StructOpt};
 
-mod buck;
-use buck::{run_all, validate, Test, TestSpec};
+// we declare all modules here so that they may refer to each other using `super::<mod>`
+mod buck_test;
+mod pyunit;
+
+use buck_test::Test;
 
 #[derive(StructOpt, Debug)]
 #[structopt(
@@ -16,7 +16,7 @@ use buck::{run_all, validate, Test, TestSpec};
     setting = clap::AppSettings::AllowLeadingHyphen, // allows ignored options
 )]
 struct Options {
-    /// JSON file containing test descriptions. Passed in by buck test
+    /// Path to JSON-encoded test descriptions. Passed in by buck test
     #[structopt(long = "buck-test-info")]
     spec: PathBuf,
 
@@ -39,16 +39,16 @@ fn main() -> Result<()> {
         );
     }
 
-    // collect and validate test information
-    let file = File::open(&options.spec)
-        .with_context(|| format!("Failed to read test specs from {}", options.spec.display()))?;
-    let reader = BufReader::new(file);
-    let specs: Vec<TestSpec> = serde_json::from_reader(reader)
-        .with_context(|| format!("Failed to parse JSON spec from {}", options.spec.display()))?;
-    let tests: Result<Vec<Test>, _> = specs.into_iter().map(validate).collect();
-    let tests = tests.with_context(|| "Found an invalid test spec")?;
+    // validate and collect tests
+    let specs = buck_test::read(&options.spec)?;
+    let tests: Vec<Test> = specs
+        .into_iter()
+        .map(|spec| buck_test::validate(spec).unwrap())
+        .flatten()
+        .collect();
 
     // run all tests
-    let retcode = run_all(tests, options.threads);
+    // TODO: output test report
+    let retcode = buck_test::run_all(tests, options.threads);
     exit(retcode);
 }
