@@ -46,10 +46,7 @@ pub enum TestKind {
 }
 
 /// Labels which mark buck test targets for automatic (and silent) exclusion.
-const EXCLUDED_LABELS: &[&str] = &[
-    "disabled",
-    "exclude_test_if_transitive_dep",
-];
+const EXCLUDED_LABELS: &[&str] = &["disabled", "exclude_test_if_transitive_dep"];
 
 /// Runs all given tests, with a bound on concurrent processes.
 pub fn run_all(tests: Vec<Test>, threads: usize) -> i32 {
@@ -98,7 +95,7 @@ pub fn run_all(tests: Vec<Test>, threads: usize) -> i32 {
         eprintln!("{}", error);
     }
 
-    // put a summary in the output, as well as in this runner's return code
+    // put a summary in the output, as well as in this runner's exit code
     let percent = 100.0 * passed as f32 / total as f32;
     println!("{:.2}% tests passed ({} out of {})", percent, passed, total);
     let failing = (total - passed) as i32;

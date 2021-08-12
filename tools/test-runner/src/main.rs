@@ -17,6 +17,10 @@ use buck_test::Test;
     setting = clap::AppSettings::AllowLeadingHyphen, // allows ignored options
 )]
 struct Options {
+    /// Lists all unit tests and exits without running them
+    #[structopt(long)]
+    list: bool,
+
     /// Path to JSON-encoded test descriptions. Passed in by buck test
     #[structopt(long = "buck-test-info")]
     spec: PathBuf,
@@ -40,7 +44,7 @@ fn main() -> Result<()> {
         );
     }
 
-    // validate and collect tests
+    // validate and collect tests which are not auto-excluded
     let specs = buck_test::read(&options.spec)?;
     let tests: Vec<Test> = specs
         .into_iter()
@@ -48,7 +52,14 @@ fn main() -> Result<()> {
         .flatten()
         .collect();
 
-    // run all tests
-    let retcode = buck_test::run_all(tests, options.threads);
-    exit(retcode);
+    // either list or execute them all
+    if options.list {
+        for test in tests {
+            println!("{}", test.name);
+        }
+        exit(0);
+    } else {
+        let retcode = buck_test::run_all(tests, options.threads);
+        exit(retcode);
+    }
 }
