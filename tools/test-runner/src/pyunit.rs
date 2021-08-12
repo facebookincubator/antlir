@@ -1,3 +1,4 @@
+use std::io;
 use std::io::{BufRead, BufReader};
 use std::process::Child;
 
@@ -23,7 +24,15 @@ pub fn validate(spec: TestSpec) -> Vec<Test> {
         .arg("--list-format=buck")
         .spawn()
         .unwrap();
-    let stdout = list_tests.stdout.take().unwrap();
+    let status = list_tests.wait().unwrap();
+    let mut stdout = list_tests.stdout.unwrap();
+    if !status.success() {
+        let mut stderr = list_tests.stderr.unwrap();
+        let _ = io::copy(&mut stdout, &mut io::stderr());
+        let _ = io::copy(&mut stderr, &mut io::stderr());
+        eprint!("\n");
+        panic!("Failed to list tests from {}", spec.target);
+    }
 
     // parse those into a set of individual tests
     let mut tests = Vec::new();
