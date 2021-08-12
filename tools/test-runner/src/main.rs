@@ -49,7 +49,6 @@ fn main() -> Result<()> {
         .collect();
 
     // run all tests
-    // TODO: output test report
     let retcode = buck_test::run_all(tests, options.threads);
     exit(retcode);
 }

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -22,10 +22,10 @@ pub struct Test {
     pub name: String,
 
     /// Labels/tags associated to this test.
-    pub labels: Vec<String>,
+    pub labels: HashSet<String>,
 
     /// Contacts for further information.
-    pub contacts: Vec<String>,
+    pub contacts: HashSet<String>,
 
     /// Which type of test this is.
     pub kind: TestKind,
@@ -44,6 +44,12 @@ pub enum TestKind {
     /// Simply runs a command and checks for non-zero exit code.
     Shell,
 }
+
+/// Labels which mark buck test targets for automatic (and silent) exclusion.
+const EXCLUDED_LABELS: &[&str] = &[
+    "disabled",
+    "exclude_test_if_transitive_dep",
+];
 
 /// Runs all given tests, with a bound on concurrent processes.
 pub fn run_all(tests: Vec<Test>, threads: usize) -> i32 {
@@ -78,7 +84,7 @@ pub fn run_all(tests: Vec<Test>, threads: usize) -> i32 {
         } else {
             println!("[FAIL] {}", test.name);
             let mut message = format!("\nTest {} failed:\n", test.name);
-            let stderr = result.stderr.take().unwrap();
+            let stderr = result.stderr.unwrap();
             for line in BufReader::new(stderr).lines() {
                 let line = format!("    {}\n", line.unwrap());
                 message.push_str(&line);
@@ -99,6 +105,7 @@ pub fn run_all(tests: Vec<Test>, threads: usize) -> i32 {
     return failing;
 }
 
+// a.k.a., the defaults
 pub mod shell {
     use super::{make_command, Test, TestKind, TestSpec};
     use std::process::Child;
@@ -146,10 +153,10 @@ pub struct TestSpec {
     pub env: HashMap<String, String>,
 
     /// Labels that are defined on the test rule.
-    pub labels: Vec<String>,
+    pub labels: HashSet<String>,
 
     /// Contacts that are defined on the test rule.
-    pub contacts: Vec<String>,
+    pub contacts: HashSet<String>,
 
     /// Working directory the test should be run from.
     pub cwd: Option<PathBuf>,
@@ -174,6 +181,12 @@ pub fn read(path: &PathBuf) -> Result<Vec<TestSpec>> {
 
 /// Validates a spec into a (possibly empty) set of runnable tests.
 pub fn validate(spec: TestSpec) -> Result<Vec<Test>> {
+    for &exclude in EXCLUDED_LABELS {
+        if spec.labels.contains(exclude) {
+            return Ok(vec![]);
+        }
+    }
+
     // we'll collect all validation errors we can find
     let mut error = String::new();
 
