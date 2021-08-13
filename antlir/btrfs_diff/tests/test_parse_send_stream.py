@@ -10,8 +10,9 @@ that `test_parse_dump.py` already sanity-checks the gold data.
 """
 import io
 import struct
-import unittest
 from typing import Iterable
+
+from antlir.tests.common import AntlirTestCase
 
 from ..parse_send_stream import (
     AttributeKind,
@@ -28,18 +29,11 @@ from .demo_sendstreams import gold_demo_sendstreams
 from .demo_sendstreams_expected import get_filtered_and_expected_items
 
 
-# `unittest`'s output shortening makes tests much harder to debug.
-unittest.util._MAX_LENGTH = 12345
-
-
 def _parse_stream_bytes(s: bytes) -> Iterable[SendStreamItem]:
     return parse_send_stream(io.BytesIO(s))
 
 
-class ParseSendStreamTestCase(unittest.TestCase):
-    def setUp(self):
-        self.maxDiff = 12345
-
+class ParseSendStreamTestCase(AntlirTestCase):
     def test_verify_gold_parse(self):
         stream_dict = gold_demo_sendstreams()
         filtered_items, expected_items = get_filtered_and_expected_items(
@@ -99,7 +93,3 @@ class ParseSendStreamTestCase(unittest.TestCase):
                     )
                 )
             )
-
-
-if __name__ == "__main__":
-    unittest.main()

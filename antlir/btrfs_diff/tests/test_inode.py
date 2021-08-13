@@ -5,7 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import stat
-import unittest
+
+from antlir.tests.common import AntlirTestCase
 
 from ..extent import Extent
 from ..extents_to_chunks import extents_to_chunks_with_clones
@@ -23,8 +24,9 @@ from ..inode import (
 from ..inode_id import InodeIDMap
 
 
-class InodeTestCase(unittest.TestCase):
+class InodeTestCase(AntlirTestCase):
     def setUp(self):
+        super().setUp()
         self.id_map = InodeIDMap.new()
 
     def _complete_inode(self, file_type, **kwargs):
@@ -221,7 +223,3 @@ class InodeTestCase(unittest.TestCase):
                 )
             ),
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

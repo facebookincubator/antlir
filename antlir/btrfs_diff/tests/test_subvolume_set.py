@@ -5,7 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import dataclasses
-import unittest
+
+from antlir.tests.common import AntlirTestCase
 
 from ..freeze import freeze
 from ..parse_dump import SendStreamItems
@@ -14,16 +15,11 @@ from ..subvolume_set import SubvolumeSet, SubvolumeSetMutator
 from .subvolume_utils import expected_subvol_add_traversal_ids
 
 
-class SubvolumeSetTestCase(unittest.TestCase):
+class SubvolumeSetTestCase(AntlirTestCase):
     """
     This does not test applying `SendStreamItems` from `Subvolume` or
     `IncompleteInode` becasuse those classes have their own tests.
     """
-
-    def setUp(self):
-        # Print more data to simplify debugging
-        self.maxDiff = 12345
-        unittest.util._MAX_LENGTH = 12345
 
     def _check_repr(self, expected, subvol_set: SubvolumeSet):
         self.assertEqual(
@@ -278,7 +274,3 @@ class SubvolumeSetTestCase(unittest.TestCase):
         insert_cat(3)
         with self.assertRaisesRegex(RuntimeError, " is already in use: "):
             insert_cat(555)
-
-
-if __name__ == "__main__":
-    unittest.main()

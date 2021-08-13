@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import random
-import unittest
 from types import SimpleNamespace
 
 from ..freeze import freeze
@@ -20,10 +19,6 @@ from .deepcopy_test import DeepCopyTestCase
 
 
 class InodeIDTestCase(DeepCopyTestCase):
-    def setUp(self):
-        self.maxDiff = 12345
-        unittest.util._MAX_LENGTH = 12345
-
     def _check_id_and_map(self):
         """
         The `yield` statements in this generator allow `DeepCopyTestCase`
@@ -344,7 +339,3 @@ class InodeIDTestCase(DeepCopyTestCase):
         id2 = InodeID(id=0, inner_id_map=id1.inner_id_map)
         self.assertEqual(id1, id2)
         self.assertEqual(hash(id1), hash(id2))
-
-
-if __name__ == "__main__":
-    unittest.main()

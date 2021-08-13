@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import copy
-import unittest
 
 from ..coroutine_utils import while_not_exited
 from ..extent import Extent
@@ -23,14 +22,7 @@ from .deepcopy_test import DeepCopyTestCase
 from .subvolume_utils import InodeRepr, expected_subvol_add_traversal_ids
 
 
-# `unittest`'s output shortening makes tests much harder to debug.
-unittest.util._MAX_LENGTH = 12345
-
-
 class SubvolumeTestCase(DeepCopyTestCase):
-    def setUp(self):
-        self.maxDiff = 12345
-
     def _check_render(self, expected_ser, subvol: Subvolume, path: str = "."):
         self.assertEqual(
             *[
@@ -442,7 +434,3 @@ class SubvolumeTestCase(DeepCopyTestCase):
         }
         self.assertEqual({("ino",)}, all_equal)
         self.assertEqual("TraversalID(11/0)", repr(TraversalID(11)))
-
-
-if __name__ == "__main__":
-    unittest.main()

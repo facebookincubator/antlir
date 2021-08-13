@@ -6,10 +6,10 @@
 
 import io
 import sys
-import unittest
 from typing import List, Sequence
 
 from antlir.fs_utils import Path
+from antlir.tests.common import AntlirTestCase
 
 from ..parse_dump import (
     NAME_TO_PARSER_TYPE,
@@ -24,10 +24,6 @@ from .demo_sendstreams_expected import (
 )
 
 
-# `unittest`'s output shortening makes tests much harder to debug.
-unittest.util._MAX_LENGTH = 12345
-
-
 def _parse_demo_lines_to_list(s: Sequence[bytes]) -> List[SendStreamItem]:
     return list(
         parse_demo_sendstreams_btrfs_dump(io.BytesIO(b"\n".join(s) + b"\n"))
@@ -38,10 +34,7 @@ def _parse_lines_to_list(s: Sequence[bytes]) -> List[SendStreamItem]:
     return list(parse_btrfs_dump(io.BytesIO(b"\n".join(s) + b"\n")))
 
 
-class ParseBtrfsDumpTestCase(unittest.TestCase):
-    def setUp(self):
-        self.maxDiff = 12345
-
+class ParseBtrfsDumpTestCase(AntlirTestCase):
     def test_unquote(self):
         self.assertEqual(
             (b"\a\b\x1b\f\n\r\t\v " br"\XYZ\F\0\O\P"),
@@ -203,7 +196,3 @@ class ParseBtrfsDumpTestCase(unittest.TestCase):
             "mkfile(path='cat and dog')",
             str(SendStreamItems.mkfile(path="cat and dog")),
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

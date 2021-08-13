@@ -5,14 +5,15 @@
 # LICENSE file in the root directory of this source tree.
 
 import copy
-import unittest
 from collections import Counter
 from typing import Any, Callable, Generator, List, Optional, Tuple
+
+from antlir.tests.common import AntlirTestCase
 
 from ..coroutine_utils import while_not_exited
 
 
-class DeepCopyTestCase(unittest.TestCase):
+class DeepCopyTestCase(AntlirTestCase):
     """
     If you have a test that builds up some complex object (e.g. `InodeIDMap`,
     `Subvolume`) by following a script, you can use this utility to make

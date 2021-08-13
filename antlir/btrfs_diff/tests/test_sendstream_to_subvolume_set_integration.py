@@ -23,9 +23,9 @@ filesystems.
 In effect, we jointly test the Linux kernel, btrfs-progs, and this library.
 """
 import sys
-import unittest
 
 from antlir.fs_utils import Path
+from antlir.tests.common import AntlirTestCase
 
 from ..freeze import freeze
 from ..rendered_tree import emit_non_unique_traversal_ids
@@ -35,11 +35,7 @@ from .demo_sendstreams import make_demo_sendstreams
 from .demo_sendstreams_expected import render_demo_subvols
 
 
-class SendstreamToSubvolumeSetIntegrationTestCase(unittest.TestCase):
-    def setUp(self):  # More output for easier debugging
-        unittest.util._MAX_LENGTH = 12345
-        self.maxDiff = 12345
-
+class SendstreamToSubvolumeSetIntegrationTestCase(AntlirTestCase):
     def test_integration(self):
         # Generate brand-new sendstreams instead of using `gold`, since it
         # is useful for this test to exercise the live btrfs code paths as
@@ -78,7 +74,3 @@ class SendstreamToSubvolumeSetIntegrationTestCase(unittest.TestCase):
                 lambda sv: emit_non_unique_traversal_ids(sv.render())
             ),
         )
-
-
-if __name__ == "__main__":
-    unittest.main()
