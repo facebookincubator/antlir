@@ -339,7 +339,8 @@ class Subvol:
         for inner_path in sorted(subvols, reverse=True):
             uuid = self.get_uuid(inner_path)
             self.run_as_root(["btrfs", "subvolume", "delete", inner_path])
-            self._subvols_dict[uuid]._exists = False
+            if uuid in self._subvols_dict:
+                self._subvols_dict[uuid]._exists = False
 
         self.run_as_root(["btrfs", "subvolume", "delete", self.path()])
         self._exists = False
