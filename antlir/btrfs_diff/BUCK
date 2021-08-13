@@ -27,7 +27,10 @@ python_unittest(
         100,
         ":extent",
     )],
-    deps = [":extent"],
+    deps = [
+        ":extent",
+        "//antlir:testlib_common",
+    ],
 )
 
 python_library(
@@ -48,6 +51,7 @@ python_unittest(
 python_library(
     name = "deepcopy_test",
     srcs = ["tests/deepcopy_test.py"],
+    deps = ["//antlir:testlib_common"],
 )
 
 python_library(
@@ -67,6 +71,7 @@ python_unittest(
         ":coroutine_utils",
         ":deepcopy_test",
         ":inode_id",
+        "//antlir:testlib_common",
     ],
 )
 
@@ -89,6 +94,7 @@ python_unittest(
     deps = [
         ":extents_to_chunks",
         ":inode",
+        "//antlir:testlib_common",
     ],
 )
 
@@ -131,7 +137,10 @@ python_unittest(
         100,
         ":extents_to_chunks",
     )],
-    deps = [":extents_to_chunks"],
+    deps = [
+        ":extents_to_chunks",
+        "//antlir:testlib_common",
+    ],
 )
 
 python_library(
@@ -187,6 +196,7 @@ python_unittest(
         ":parse_send_stream",
         ":testlib_demo_sendstreams",
         "//antlir:fs_utils",
+        "//antlir:testlib_common",
     ],
 )
 
@@ -247,6 +257,7 @@ python_unittest(
     deps = [
         ":subvolume_set",
         ":testlib_subvolume_utils",
+        "//antlir:testlib_common",
     ],
 )
 
@@ -284,5 +295,6 @@ python_unittest(
         ":subvolume_set",
         ":testlib_demo_sendstreams",
         "//antlir:fs_utils",
+        "//antlir:testlib_common",
     ],
 )

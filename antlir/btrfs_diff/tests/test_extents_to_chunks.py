@@ -8,17 +8,14 @@ import itertools
 import math
 import re
 import textwrap
-import unittest
 from typing import Iterable, Tuple
+
+from antlir.tests.common import AntlirTestCase
 
 from ..extent import Extent
 from ..extents_to_chunks import extents_to_chunks_with_clones
 from ..inode import Chunk
 from ..inode_id import InodeID, InodeIDMap
-
-
-# `unittest`'s output shortening makes tests much harder to debug.
-unittest.util._MAX_LENGTH = 12345
 
 
 def _gen_ranges_from_figure(figure: str):
@@ -53,7 +50,7 @@ def _repr_ids_and_chunks(ids_and_chunks: Iterable[Tuple[InodeID, Chunk]]):
     }
 
 
-class ExtentsToChunksTestCase(unittest.TestCase):
+class ExtentsToChunksTestCase(AntlirTestCase):
     """
     This test has one main focus, plus a few additional checks.
 
@@ -130,7 +127,7 @@ class ExtentsToChunksTestCase(unittest.TestCase):
     """
 
     def setUp(self):
-        self.maxDiff = 12345
+        super().setUp()
         self.id_map = InodeIDMap.new()
 
     def _gen_ids_and_extents_from_figure(
@@ -707,7 +704,3 @@ class ExtentsToChunksTestCase(unittest.TestCase):
         # and checked against the real output, one file at a time.  So, this
         # is not just "blind gold data", but a real worked example.
         self.assertEqual(expected_dict, _repr_ids_and_chunks(ids_and_chunks))
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -9,20 +9,14 @@ import functools
 import itertools
 import math
 import sys
-import unittest
 from types import SimpleNamespace
+
+from antlir.tests.common import AntlirTestCase
 
 from ..extent import Extent
 
 
-# `unittest`'s output shortening makes tests much harder to debug.
-unittest.util._MAX_LENGTH = 12345
-
-
-class ExtentTestCase(unittest.TestCase):
-    def setUp(self):
-        self.maxDiff = 12345
-
+class ExtentTestCase(AntlirTestCase):
     def test_write_into_empty(self):
         # Writing at offset 0 does not create a hole.
         self.assertEqual(
@@ -544,7 +538,3 @@ class ExtentTestCase(unittest.TestCase):
         e = Extent.empty().write(offset=5, length=5)
         self.assertIs(e, copy.deepcopy(e))
         self.assertIs(e, copy.copy(e))
-
-
-if __name__ == "__main__":
-    unittest.main()
