@@ -572,12 +572,6 @@ python_unittest(
 )
 
 python_library(
-    name = "test_utils",
-    srcs = ["test_utils.py"],
-    deps = [],
-)
-
-python_library(
     name = "shape",
     srcs = ["shape.py"],
     visibility = ["PUBLIC"],
