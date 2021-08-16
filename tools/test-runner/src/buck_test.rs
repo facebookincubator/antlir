@@ -50,11 +50,12 @@ const EXCLUDED_LABELS: &[&str] = &["disabled", "exclude_test_if_transitive_dep"]
 
 #[derive(Debug)]
 struct TestResult {
-    test: Test,
+    test: String,
     pass: bool,
     retries: u32,
     stdout: ChildStdout,
     stderr: ChildStderr,
+    contacts: HashSet<String>,
 }
 
 /// Runs all given tests, with a bound on concurrent processes.
@@ -79,20 +80,22 @@ pub fn run_all(tests: Vec<Test>, threads: usize, retries: u32) -> i32 {
                 };
                 if pass {
                     return TestResult {
-                        test,
+                        test: test.name,
                         pass: true,
                         retries: retry,
                         stdout: child.stdout.unwrap(),
                         stderr: child.stderr.unwrap(),
+                        contacts: test.contacts,
                     };
                 }
             }
             return TestResult {
-                test,
+                test: test.name,
                 pass: false,
                 retries,
                 stdout: child.stdout.unwrap(),
                 stderr: child.stderr.unwrap(),
+                contacts: test.contacts,
             };
         })
         .collect();
@@ -102,7 +105,7 @@ pub fn run_all(tests: Vec<Test>, threads: usize, retries: u32) -> i32 {
     let mut errors: Vec<String> = Vec::new();
     for result in tests {
         if result.pass {
-            print!("[OK] {}", result.test.name,);
+            print!("[OK] {}", result.test);
             if result.retries > 0 {
                 print!(" ({} attempts needed)\n", 1 + result.retries);
             } else {
@@ -110,15 +113,19 @@ pub fn run_all(tests: Vec<Test>, threads: usize, retries: u32) -> i32 {
             }
             passed += 1;
         } else {
-            println!("[FAIL] {}", result.test.name);
+            println!("[FAIL] {}", result.test);
             let mut message = format!(
                 "\nTest {} failed after {} unsuccessful attempts:\n",
-                result.test.name,
+                result.test,
                 1 + result.retries
             );
             for line in BufReader::new(result.stderr).lines() {
                 let line = format!("    {}\n", line.unwrap());
                 message.push_str(&line);
+            }
+            if result.contacts.len() > 0 {
+                let contacts = format!("Please report this to {:?}\n", result.contacts);
+                message.push_str(&contacts);
             }
             errors.push(message);
         }
