@@ -1,13 +1,12 @@
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufReader, Read};
 use std::path::PathBuf;
-use std::process::{ChildStderr, ChildStdout, Command, Stdio};
+use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
-use rayon::iter::*;
 use serde::Deserialize;
 
 use super::pyunit;
@@ -50,23 +49,24 @@ pub enum TestKind {
 const EXCLUDED_LABELS: &[&str] = &["disabled", "exclude_test_if_transitive_dep"];
 
 #[derive(Debug)]
-struct TestResult {
-    name: String,
-    pass: bool,
-    time: Duration,
-    retries: u32,
-    stdout: ChildStdout,
-    stderr: ChildStderr,
-    contacts: HashSet<String>,
+pub struct TestResult {
+    pub name: String,
+    pub attempts: u32,
+    pub passed: bool,
+    pub duration: Duration,
+    pub stdout: String,
+    pub stderr: String,
+    pub contacts: HashSet<String>,
 }
 
-fn run(mut test: Test, retries: u32) -> TestResult {
-    let mut retry = 0;
+pub fn run(mut test: Test, retries: u32) -> TestResult {
+    let mut attempts = 0;
     loop {
         let time = Instant::now();
         let mut child = test.command.spawn().unwrap();
-        let _ = child.wait();
+        child.wait().unwrap();
         let duration = time.elapsed();
+        attempts += 1;
 
         let pass = match test.kind {
             TestKind::Pyunit => pyunit::evaluate(&mut child),
@@ -75,87 +75,37 @@ fn run(mut test: Test, retries: u32) -> TestResult {
         };
 
         if pass {
-            print!("[OK] {} ({} ms)", test.name, duration.as_millis());
-            if retry > 0 {
-                print!(" ({} attempts needed)\n", 1 + retry);
-            } else {
-                print!("\n");
-            }
+            let mut out = String::new();
+            child.stdout.unwrap().read_to_string(&mut out).unwrap();
+            let mut err = String::new();
+            child.stderr.unwrap().read_to_string(&mut err).unwrap();
             return TestResult {
                 name: test.name,
-                pass: true,
-                time: duration,
-                retries: retry,
-                stdout: child.stdout.unwrap(),
-                stderr: child.stderr.unwrap(),
+                attempts,
+                passed: true,
+                duration,
+                stdout: out,
+                stderr: err,
                 contacts: test.contacts,
             };
         } else {
-            retry += 1;
-            if retry >= 1 + retries {
-                println!("[FAIL] {} ({} ms)", test.name, duration.as_millis());
+            if attempts >= 1 + retries {
+                let mut out = String::new();
+                child.stdout.unwrap().read_to_string(&mut out).unwrap();
+                let mut err = String::new();
+                child.stderr.unwrap().read_to_string(&mut err).unwrap();
                 return TestResult {
                     name: test.name,
-                    pass: false,
-                    time: duration,
-                    retries,
-                    stdout: child.stdout.unwrap(),
-                    stderr: child.stderr.unwrap(),
+                    attempts,
+                    passed: false,
+                    duration,
+                    stdout: out,
+                    stderr: err,
                     contacts: test.contacts,
                 };
             }
         }
     }
-}
-
-/// Runs all given tests, with a bound on concurrent processes.
-pub fn run_all(tests: Vec<Test>, threads: usize, retries: u32) -> i32 {
-    let _ = rayon::ThreadPoolBuilder::new()
-        .num_threads(threads)
-        .build_global();
-
-    // run tests in parallel (retries are done in the same thread)
-    let total = tests.len();
-    eprintln!("Running {} tests...", total);
-    let tests: Vec<TestResult> = tests
-        .into_par_iter()
-        .map(|test| run(test, retries))
-        .collect();
-
-    // collect results, evaluating them based on what kind it is
-    let mut passed = 0;
-    let mut errors: Vec<String> = Vec::new();
-    for test in tests {
-        if test.pass {
-            passed += 1;
-        } else {
-            let mut message = format!(
-                "\nTest {} failed after {} unsuccessful attempts:\n",
-                test.name,
-                1 + test.retries
-            );
-            for line in BufReader::new(test.stderr).lines() {
-                let line = format!("    {}\n", line.unwrap());
-                message.push_str(&line);
-            }
-            if test.contacts.len() > 0 {
-                let contacts = format!("Please report this to {:?}\n", test.contacts);
-                message.push_str(&contacts);
-            }
-            errors.push(message);
-        }
-    }
-
-    // let the user know of any errors
-    for error in errors {
-        eprintln!("{}", error);
-    }
-
-    // put a summary in the output, as well as in this runner's exit code
-    let percent = 100.0 * passed as f32 / total as f32;
-    println!("{:.2}% tests passed ({} out of {})", percent, passed, total);
-    let failing = (total - passed) as i32;
-    return failing;
 }
 
 // a.k.a., the defaults
