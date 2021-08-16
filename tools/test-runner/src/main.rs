@@ -122,8 +122,7 @@ fn main() -> Result<()> {
         eprintln!("{}", error);
     }
     let failed = total - passed;
-    let percent = 100.0 * passed as f32 / total as f32;
-    println!("{:.2}% tests passed ({} out of {})", percent, passed, total);
+    println!("Out of {} tests, {} passed, {} failed", total, passed, failed);
 
     // generate test report
     match options.report {
@@ -174,7 +173,7 @@ fn report(tests: Vec<TestResult>, path: PathBuf) -> Result<()> {
                 writeln!(xml, " />")?;
             } else {
                 writeln!(xml, r#">"#)?;
-                writeln!(xml, r#"      <failure />"#)?;
+                writeln!(xml, r#"      <failure>Test failed after {} unsuccessful attempts</failure>"#, test.attempts)?;
                 writeln!(xml, r#"      <system-out>{}</system-out>"#,
                               xml_escape_text(test.stdout))?;
                 writeln!(xml, r#"      <system-err>{}</system-err>"#,
