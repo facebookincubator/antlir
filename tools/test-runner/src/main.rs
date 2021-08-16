@@ -1,7 +1,10 @@
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::process::exit;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
+use itertools::Itertools;
 use rayon::iter::*;
 use structopt::{clap, StructOpt};
 
@@ -120,10 +123,75 @@ fn main() -> Result<()> {
     }
     let failed = total - passed;
     let percent = 100.0 * passed as f32 / total as f32;
-    println!(
-        "{:.2}% tests passed ({} out of {})",
-        percent, passed, total
-    );
+    println!("{:.2}% tests passed ({} out of {})", percent, passed, total);
+
+    // generate test report
+    match options.report {
+        None => (),
+        Some(path) => report(tests, path)?,
+    }
 
     exit(failed as i32);
+}
+
+// Refer to https://llg.cubic.org/docs/junit/
+fn report(tests: Vec<TestResult>, path: PathBuf) -> Result<()> {
+    let file = File::create(&path).with_context(|| {
+        format!(
+            "Couldn't generate report at specified path {}",
+            path.display()
+        )
+    })?;
+    let mut xml = BufWriter::new(&file);
+
+    let failures = tests.iter().filter(|test| !test.passed).count();
+    writeln!(xml, r#"<?xml version="1.0" encoding="UTF-8"?>"#)?;
+    writeln!(xml, r#"<testsuites tests="{}" failures="{}">"#, tests.len(), failures)?;
+
+    // we group unit tests from the same buck target as a JUnit "testsuite"
+    let suites = tests
+        .into_iter()
+        .map(|test| {
+            let name: Vec<&str> = test.name.split("#").collect();
+            let target = name[0].to_owned();
+            let unit = if name.len() > 1 {
+                name[1].to_owned()
+            } else {
+                target.clone()
+            };
+            return (target, unit, test);
+        })
+        .into_group_map_by(|(target, _, _)| target.to_owned());
+    for (target, cases) in suites {
+        let failures = cases.iter().filter(|(_, _, test)| !test.passed).count();
+        writeln!(xml, r#"  <testsuite name="{}" tests="{}" failures="{}">"#,
+                      target, cases.len(), failures)?;
+
+        for (target, unit, test) in cases {
+            write!(xml, r#"    <testcase classname="{}" name="{}" time="{}""#,
+                        target, unit, test.duration.as_millis() as f32 / 1e3)?;
+            if test.passed {
+                writeln!(xml, " />")?;
+            } else {
+                writeln!(xml, r#">"#)?;
+                writeln!(xml, r#"      <failure />"#)?;
+                writeln!(xml, r#"      <system-out>{}</system-out>"#,
+                              xml_escape_text(test.stdout))?;
+                writeln!(xml, r#"      <system-err>{}</system-err>"#,
+                              xml_escape_text(test.stderr))?;
+                writeln!(xml, r#"    </testcase>"#)?;
+            }
+        }
+
+        writeln!(xml, r#"  </testsuite>"#)?;
+    }
+
+    writeln!(xml, r#"</testsuites>"#)?;
+
+    eprintln!("Test report written to {}", path.display());
+    return Ok(());
+}
+
+fn xml_escape_text(unescaped: String) -> String {
+    return unescaped.replace("<", "&lt;").replace("&", "&amp;");
 }
