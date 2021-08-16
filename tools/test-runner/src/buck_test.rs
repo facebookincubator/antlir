@@ -42,6 +42,8 @@ pub enum TestKind {
     Rust,
 
     /// Simply runs a command and checks for non-zero exit code.
+    /// When running a `(buck_)sh_test`, this tag is automatically inserted.
+    #[serde(rename = "custom")]
     Shell,
 }
 
@@ -146,7 +148,7 @@ pub struct TestSpec {
     pub target: String,
 
     /// The type of the test.
-    #[serde(rename(deserialize = "type"), default = "default_kind")]
+    #[serde(rename(deserialize = "type"))]
     kind: TestKind,
 
     /// Command line that should be used to run the test.
@@ -166,9 +168,6 @@ pub struct TestSpec {
 
     /// Absolute paths to any files required by this test target.
     required_paths: Option<Vec<PathBuf>>,
-}
-fn default_kind() -> TestKind {
-    TestKind::Shell
 }
 
 /// Reads test specs from a buck test run description at the given path.
