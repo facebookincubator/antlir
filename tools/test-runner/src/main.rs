@@ -17,13 +17,17 @@ use buck_test::Test;
     setting = clap::AppSettings::AllowLeadingHyphen, // allows ignored options
 )]
 struct Options {
+    /// Path to JSON-encoded test descriptions. Passed in by buck test
+    #[structopt(long = "buck-test-info")]
+    spec: PathBuf,
+
     /// Lists all unit tests and exits without running them
     #[structopt(long)]
     list: bool,
 
-    /// Path to JSON-encoded test descriptions. Passed in by buck test
-    #[structopt(long = "buck-test-info")]
-    spec: PathBuf,
+    /// Maximum number of times a failing unit test will be retried
+    #[structopt(long = "max-retries", default_value = "0")]
+    retries: u32,
 
     /// Maximum number of concurrent tests. Passed in by buck test
     #[structopt(long = "jobs", default_value = "1")]
@@ -59,7 +63,7 @@ fn main() -> Result<()> {
         }
         exit(0);
     } else {
-        let retcode = buck_test::run_all(tests, options.threads);
+        let retcode = buck_test::run_all(tests, options.threads, options.retries);
         exit(retcode);
     }
 }
