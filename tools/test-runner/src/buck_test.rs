@@ -64,7 +64,7 @@ pub fn run_all(tests: Vec<Test>, threads: usize, retries: u32) -> i32 {
         .num_threads(threads)
         .build_global();
 
-    // run tests in parallel (retries in the same thread)
+    // run tests in parallel (retries are done in the same thread)
     let total = tests.len();
     eprintln!("Running {} tests...", total);
     let tests: Vec<TestResult> = tests
@@ -79,6 +79,12 @@ pub fn run_all(tests: Vec<Test>, threads: usize, retries: u32) -> i32 {
                     TestKind::Shell => shell::evaluate(&mut child),
                 };
                 if pass {
+                    print!("[OK] {}", test.name);
+                    if retry > 0 {
+                        print!(" ({} attempts needed)\n", 1 + retry);
+                    } else {
+                        print!("\n");
+                    }
                     return TestResult {
                         test: test.name,
                         pass: true,
@@ -87,8 +93,11 @@ pub fn run_all(tests: Vec<Test>, threads: usize, retries: u32) -> i32 {
                         stderr: child.stderr.unwrap(),
                         contacts: test.contacts,
                     };
+                } else {
+                    child = test.command.spawn().unwrap();
                 }
             }
+            println!("[FAIL] {}", test.name);
             return TestResult {
                 test: test.name,
                 pass: false,
@@ -105,15 +114,8 @@ pub fn run_all(tests: Vec<Test>, threads: usize, retries: u32) -> i32 {
     let mut errors: Vec<String> = Vec::new();
     for result in tests {
         if result.pass {
-            print!("[OK] {}", result.test);
-            if result.retries > 0 {
-                print!(" ({} attempts needed)\n", 1 + result.retries);
-            } else {
-                print!("\n");
-            }
             passed += 1;
         } else {
-            println!("[FAIL] {}", result.test);
             let mut message = format!(
                 "\nTest {} failed after {} unsuccessful attempts:\n",
                 result.test,
