@@ -97,24 +97,25 @@ class AddRemoveConflictTestCase(unittest.TestCase):
             )
             tf.seek(0)
 
-            subvol = tmp_subvols.external_command_will_create("test_conflict")
+            subvol = tmp_subvols.caller_will_create("test_conflict")
             # We cannot make this an `image.layer` target, since Buck
             # doesn't (yet) have a nice story for testing targets whose
             # builds are SUPPOSED to fail.
-            build_image(
-                parse_args(
-                    [
-                        "--subvolumes-dir",
-                        subvol.path().dirname(),
-                        "--subvolume-rel-path",
-                        subvol.path().basename(),
-                        "--child-layer-target",
-                        "unused",
-                        f"--child-feature-json={feature_both}",
-                        "--targets-and-outputs",
-                        tf.name,
-                        "--flavor-config",
-                        flavor_config.json(),
-                    ]
+            with subvol.maybe_create_externally():
+                build_image(
+                    parse_args(
+                        [
+                            "--subvolumes-dir",
+                            subvol.path().dirname(),
+                            "--subvolume-rel-path",
+                            subvol.path().basename(),
+                            "--child-layer-target",
+                            "unused",
+                            f"--child-feature-json={feature_both}",
+                            "--targets-and-outputs",
+                            tf.name,
+                            "--flavor-config",
+                            flavor_config.json(),
+                        ]
+                    )
                 )
-            )

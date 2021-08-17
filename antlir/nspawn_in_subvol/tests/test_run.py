@@ -370,18 +370,19 @@ class NspawnTestCase(NspawnTestBase):
 
     @with_temp_subvols
     def test_non_ephemeral_snapshot(self, temp_subvols):
-        dest_subvol = temp_subvols.external_command_will_create("persistent")
-        self._nspawn_in(
-            (__package__, "test-layer"),
-            [
-                f"--snapshot-into={dest_subvol.path()}",
-                "--",
-                # Also tests that we are a non-root user in the container.
-                "sh",
-                "-c",
-                'echo ohaibai "$USER" > /home/nobody/poke',
-            ],
-        )
+        dest_subvol = temp_subvols.caller_will_create("persistent")
+        with dest_subvol.maybe_create_externally():
+            self._nspawn_in(
+                (__package__, "test-layer"),
+                [
+                    f"--snapshot-into={dest_subvol.path()}",
+                    "--",
+                    # Also tests that we are a non-root user in the container.
+                    "sh",
+                    "-c",
+                    'echo ohaibai "$USER" > /home/nobody/poke',
+                ],
+            )
         with open(dest_subvol.path("/home/nobody/poke")) as f:
             self.assertEqual("ohaibai nobody\n", f.read())
         # Spot-check: the host mounts should still be available on the snapshot

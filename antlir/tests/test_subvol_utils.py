@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -25,6 +26,8 @@ from ..subvol_utils import (
     TempSubvolumes,
     volume_dir,
     with_temp_subvols,
+    _query_uuid,
+    _UUID_TO_SUBVOLS,
 )
 from ..volume_for_repo import get_volume_for_current_repo
 from .common import AntlirTestCase
@@ -51,24 +54,111 @@ class SubvolTestCase(AntlirTestCase):
         self.assertEqual(p.path(), p2.path())
         temp_subvols.snapshot(p2, "child")
 
+    def _assert_subvol_exists(self, subvol):
+        self.assertTrue(subvol._exists)
+        self.assertTrue(
+            re.match("[a-f0-f]{32}$", subvol._uuid.replace("-", "")),
+            subvol._uuid,
+        )
+        self.assertTrue(subvol.path().exists(), subvol.path())
+
+    def _assert_subvol_does_not_exist(self, subvol):
+        self.assertEqual((False, None), (subvol._exists, subvol._uuid))
+        self.assertFalse(subvol.path().exists(), subvol.path())
+
+    # Checks that `_mark_{created,deleted}` work as expected, including
+    # nested subvolumes, read-only subvolumes, and `Subvol`s that are clones
+    # of one another.
+    @with_temp_subvols
+    def test_create_and_delete_on_exit(self, temp_subvols):
+        def subvol_stats():
+            return (
+                sum(len(subvols) for subvols in _UUID_TO_SUBVOLS.values()),
+                len(_UUID_TO_SUBVOLS),
+            )
+
+        subvol_count, uuid_count = subvol_stats()
+
+        s1 = temp_subvols.caller_will_create("create_and_delete")
+        self._assert_subvol_does_not_exist(s1)
+        self.assertEqual((subvol_count, uuid_count), subvol_stats())
+
+        with s1.create().delete_on_exit():
+            self._assert_subvol_exists(s1)
+            self.assertEqual((subvol_count + 1, uuid_count + 1), subvol_stats())
+
+            with Subvol(s1.path(), already_exists=True).delete_on_exit() as s2:
+                self._assert_subvol_exists(s2)
+                self._assert_subvol_exists(s2)
+                self.assertEqual(
+                    (subvol_count + 2, uuid_count + 1), subvol_stats()
+                )
+
+                nested = Subvol(s1.path("nested")).create()
+                # Cover the "nested untracked subvol" case -- this subvol
+                # will not be in `_UUID_TO_SUBVOLS`.  This deliberately
+                # omits `Subvol.maybe_create_externally()`.
+                s1.run_as_root(
+                    ["btrfs", "subvolume", "create", s1.path("nested_extern")],
+                )
+
+                self._assert_subvol_exists(nested)
+                self.assertTrue(os.path.exists(s1.path("nested_extern")))
+                self.assertEqual(
+                    # This is not counting "nested_extern".
+                    (subvol_count + 3, uuid_count + 2),
+                    subvol_stats(),
+                )
+
+                # Verify that parents get marked RW before deleting children.
+                s2.set_readonly(True)  # is a clone of `s1`
+                # It's OK if a child is read-only, too.
+                nested.set_readonly(True)
+
+            self._assert_subvol_does_not_exist(s1)
+            self._assert_subvol_does_not_exist(s2)
+            self._assert_subvol_does_not_exist(nested)
+            self.assertEqual((subvol_count, uuid_count), subvol_stats())
+
+        self.assertEqual((subvol_count, uuid_count), subvol_stats())
+
+    @with_temp_subvols
+    def test_maybe_create_externally(self, temp_subvols):
+        sv = temp_subvols.caller_will_create("maybe_create_externally")
+
+        with sv.maybe_create_externally():
+            pass  # We didn't create the subvol, and that's OK
+        self.assertFalse(sv._exists)
+
+        with sv.delete_on_exit():
+            with sv.maybe_create_externally():
+                sv.run_as_root(
+                    ["btrfs", "subvolume", "create", sv.path()],
+                    _subvol_exists=False,
+                )
+                self.assertFalse(sv._exists)
+            self.assertTrue(sv._exists)
+        self.assertFalse(sv._exists)
+
     def test_does_not_exist(self):
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaisesRegex(AssertionError, "No btrfs subvol"):
                 Subvol(td, already_exists=True)
 
-            sv = Subvol(td)
+            sv = Subvol(td, _test_only_allow_existing=True)
             with self.assertRaisesRegex(AssertionError, "exists is False"):
                 sv.run_as_root(["true"])
 
     def test_out_of_subvol_symlink(self):
         with temp_dir() as td:
             os.symlink("/dev/null", td / "my_null")
+            sv = Subvol(td, _test_only_allow_existing=True)
             self.assertEqual(
                 td / "my_null",
-                Subvol(td).path("my_null", no_dereference_leaf=True),
+                sv.path("my_null", no_dereference_leaf=True),
             )
             with self.assertRaisesRegex(AssertionError, " is outside of "):
-                Subvol(td).path("my_null")
+                sv.path("my_null")
 
     def test_run_as_root_no_cwd(self):
         sv = Subvol("/dev/null/no-such-dir")
@@ -109,7 +199,7 @@ class SubvolTestCase(AntlirTestCase):
                 "antlir.subvol_utils._path_is_btrfs_subvol",
                 unittest.mock.Mock(side_effect=[True]),
             ), unittest.mock.patch(
-                "antlir.subvol_utils.Subvol.get_uuid",
+                "antlir.subvol_utils._query_uuid",
                 unittest.mock.Mock(side_effect=["FAKE-UUID-000"]),
             ):
                 sv = Subvol(td, already_exists=True)
@@ -147,7 +237,8 @@ class SubvolTestCase(AntlirTestCase):
         self, temp_subvols, multi_pass_size_minimization
     ):
         loopback_opts = loopback_opts_t(
-            minimize_size=multi_pass_size_minimization
+            minimize_size=multi_pass_size_minimization,
+            subvol_name="check_subvol_rename",
         )
         sv = temp_subvols.create("subvol")
         sv.run_as_root(
@@ -360,9 +451,8 @@ class SubvolTestCase(AntlirTestCase):
         with temp_dir() as td:
             with open(td / "test_file", "w") as f:
                 f.write("foo")
-            self.assertEqual(
-                Subvol(td).read_path_text(Path("test_file")), "foo"
-            )
+            sv = Subvol(td, _test_only_allow_existing=True)
+            self.assertEqual(sv.read_path_text(Path("test_file")), "foo")
 
     @with_temp_subvols
     def test_read_file_as_root(self, ts: TempSubvolumes):
@@ -405,19 +495,33 @@ class SubvolTestCase(AntlirTestCase):
 
     def test_temp_subvolumes_create(self):
         with TempSubvolumes() as ts:
-            td_path = ts._temp_dir
-            sv_path = ts._temp_dir / "test"
+            td_path = ts.temp_dir
+            sv_path = ts.temp_dir / "test"
             self.assertTrue(os.path.exists(td_path))
             self.assertFalse(os.path.exists(sv_path))
+
             sv = ts.create("test")
-            self.assertEqual(sv._path, sv_path)
+            self.assertEqual(sv.path(), sv_path)
             self.assertTrue(os.path.exists(sv_path))
             self.assertTrue(sv._exists)
+
+            # NB: Changing this to `ts.create("test/nested")` would break
+            # the test because this would cause us to try to delete "nested"
+            # while "test" is still read-only.
+            sv_nested = Subvol(sv.path("nested")).create()
+            self.assertEqual(sv_nested.path(), ts.temp_dir / "test/nested")
+            self.assertTrue(os.path.exists(sv_nested.path()))
+            self.assertTrue(sv_nested._exists)
+
+            sv.set_readonly(True)  # Does not break clean-up
 
         self.assertIsNotNone(td_path)
         self.assertIsNotNone(sv_path)
         self.assertFalse(os.path.exists(td_path))
         self.assertFalse(os.path.exists(sv_path))
+
+        self.assertFalse(sv._exists)
+        self.assertFalse(sv_nested._exists)
 
     def test_temp_subvolumes_snapshot(self):
         with TempSubvolumes() as ts:
@@ -432,20 +536,12 @@ class SubvolTestCase(AntlirTestCase):
 
     def test_temp_subvolumes_caller_will_create(self):
         with TempSubvolumes() as ts:
-            sv_path = ts._temp_dir / "test"
+            sv_path = ts.temp_dir / "test"
             sv = ts.caller_will_create("test")
             self.assertEqual(sv._path, sv_path)
             # Path should not actually exist
             self.assertFalse(os.path.exists(sv_path))
             self.assertFalse(sv._exists)
-
-    def test_temp_subvolumes_external_command_will_create(self):
-        with TempSubvolumes() as ts:
-            sv = ts.external_command_will_create("test")
-            # Path should not actually exist
-            self.assertFalse(os.path.exists(ts._temp_dir / "test"))
-            # Exists should be overridden
-            self.assertTrue(sv._exists)
 
     def test_temp_subvolumes_outside_volume(self):
         with TempSubvolumes() as ts:
@@ -461,7 +557,7 @@ class SubvolTestCase(AntlirTestCase):
             .exists()
         )
 
-    def test_get_uuid(self):
+    def test_query_uuid(self):
         stdout = (
             b"\n\tName: \t\t\tvolume\n\t"
             b"UUID: \t\t\t8ec28ee3-e2cf-3345-8871-4bc4f85a3efc\n"
@@ -476,7 +572,9 @@ class SubvolTestCase(AntlirTestCase):
                 )
             ),
         ):
-            sv = Subvol("/dev/null/no-such-dir")
             self.assertEqual(
-                sv.get_uuid(), "8ec28ee3-e2cf-3345-8871-4bc4f85a3efc"
+                _query_uuid(
+                    Subvol("/dev/null/unused"), "/dev/null/no-such-dir"
+                ),
+                "8ec28ee3-e2cf-3345-8871-4bc4f85a3efc",
             )

@@ -218,12 +218,11 @@ def pipe():
 
 
 @contextmanager
-def open_fd(path: AnyStr, flags) -> int:
+def open_fd(path: AnyStr, flags) -> Iterator[int]:
     # If you ever need **NOT** to set one of these very sane defaults, add a
     # clearly named keyword-only arg.
     fd = os.open(path, flags=flags | os.O_NOCTTY | os.O_CLOEXEC)
     try:
-        # pyre-fixme[7]: Expected `int` but got `Generator[int, None, None]`.
         yield fd
     finally:
         os.close(fd)

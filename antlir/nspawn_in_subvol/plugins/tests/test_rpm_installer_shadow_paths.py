@@ -99,30 +99,31 @@ class TestImpl:
     def _check_update_shadowed_file(self, temp_subvols, *, boot):
         self._check_shadow_ba()
 
-        dest_subvol = temp_subvols.external_command_will_create("shadow_ba")
-        self._check_yum_dnf_ret(
-            "i will shadow\n",
-            br"Installing\s+: rpm-test-carrot-2-rc0.x86_64",
-            self._yum_or_dnf_install(
-                self._PROG,
-                "rpm-test-carrot",
-                extra_args=(
-                    *(["--boot"] if boot else []),
-                    *(
-                        "--shadow-path",
-                        "/rpm_test/carrot.txt",
-                        "/i_will_shadow",
+        dest_subvol = temp_subvols.caller_will_create("shadow_ba")
+        with dest_subvol.maybe_create_externally():
+            self._check_yum_dnf_ret(
+                "i will shadow\n",
+                br"Installing\s+: rpm-test-carrot-2-rc0.x86_64",
+                self._yum_or_dnf_install(
+                    self._PROG,
+                    "rpm-test-carrot",
+                    extra_args=(
+                        *(["--boot"] if boot else []),
+                        *(
+                            "--shadow-path",
+                            "/rpm_test/carrot.txt",
+                            "/i_will_shadow",
+                        ),
+                        f"--snapshot-into={dest_subvol.path()}",
                     ),
-                    f"--snapshot-into={dest_subvol.path()}",
+                    # This container will shadow the default RPM installer.
+                    run_prog_as_is=True,
+                    # Our RPM installer wrapper doesn't support updating
+                    # shadowed files with `--installroot` other than `/`.
+                    install_root="/",
+                    build_appliance_pair=self._SHADOW_BA_PAIR,
                 ),
-                # This container will have the default RPM installer shadowing.
-                run_prog_as_is=True,
-                # Our RPM installer wrapper doesn't support updating
-                # shadowed files with `--installroot` other than `/`.
-                install_root="/",
-                build_appliance_pair=self._SHADOW_BA_PAIR,
-            ),
-        )
+            )
         # The RPM installation worked as expected despite the shadow
         self.assertEqual(
             "carrot 2 rc0\n",

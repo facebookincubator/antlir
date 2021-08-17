@@ -215,7 +215,7 @@ def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:
 
     # This just serves to show that `btrfs send` ignores nested subvolumes.
     # There is no mention of `nested_subvol` in the send-stream.
-    nested_subvol = subvols.create(p("nested_subvol"))
+    nested_subvol = Subvol(subvol.path("nested_subvol")).create()
     nested_subvol.run_as_root(["touch", nested_subvol.path("borf")])
     nested_subvol.run_as_root(["mkdir", nested_subvol.path("beep")])
 
