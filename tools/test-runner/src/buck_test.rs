@@ -61,50 +61,52 @@ pub struct TestResult {
     pub contacts: HashSet<String>,
 }
 
-pub fn run(mut test: Test, retries: u32) -> TestResult {
-    let mut attempts = 0;
-    loop {
-        let time = Instant::now();
-        let mut child = test.command.spawn().unwrap();
-        child.wait().unwrap();
-        let duration = time.elapsed();
-        attempts += 1;
+impl Test {
+    pub fn run(mut self, retries: u32) -> TestResult {
+        let mut attempts = 0;
+        loop {
+            let time = Instant::now();
+            let mut child = self.command.spawn().unwrap();
+            child.wait().unwrap();
+            let duration = time.elapsed();
+            attempts += 1;
 
-        let pass = match test.kind {
-            TestKind::Pyunit => pyunit::evaluate(&mut child),
-            TestKind::Rust => rust::evaluate(&mut child),
-            TestKind::Shell => shell::evaluate(&mut child),
-        };
-
-        if pass {
-            let mut out = String::new();
-            child.stdout.unwrap().read_to_string(&mut out).unwrap();
-            let mut err = String::new();
-            child.stderr.unwrap().read_to_string(&mut err).unwrap();
-            return TestResult {
-                name: test.name,
-                attempts,
-                passed: true,
-                duration,
-                stdout: out,
-                stderr: err,
-                contacts: test.contacts,
+            let pass = match self.kind {
+                TestKind::Pyunit => pyunit::evaluate(&mut child),
+                TestKind::Rust => rust::evaluate(&mut child),
+                TestKind::Shell => shell::evaluate(&mut child),
             };
-        } else {
-            if attempts >= 1 + retries {
+
+            if pass {
                 let mut out = String::new();
                 child.stdout.unwrap().read_to_string(&mut out).unwrap();
                 let mut err = String::new();
                 child.stderr.unwrap().read_to_string(&mut err).unwrap();
                 return TestResult {
-                    name: test.name,
+                    name: self.name,
                     attempts,
-                    passed: false,
+                    passed: true,
                     duration,
                     stdout: out,
                     stderr: err,
-                    contacts: test.contacts,
+                    contacts: self.contacts,
                 };
+            } else {
+                if attempts >= 1 + retries {
+                    let mut out = String::new();
+                    child.stdout.unwrap().read_to_string(&mut out).unwrap();
+                    let mut err = String::new();
+                    child.stderr.unwrap().read_to_string(&mut err).unwrap();
+                    return TestResult {
+                        name: self.name,
+                        attempts,
+                        passed: false,
+                        duration,
+                        stdout: out,
+                        stderr: err,
+                        contacts: self.contacts,
+                    };
+                }
             }
         }
     }

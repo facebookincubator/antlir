@@ -81,7 +81,7 @@ fn main() -> Result<()> {
     let mut tests: Vec<TestResult> = tests
         .into_par_iter()
         .map(|test| {
-            let test = buck_test::run(test, options.retries);
+            let test = test.run(options.retries);
             if test.passed {
                 print!("[OK] {} ({} ms)", test.name, test.duration.as_millis());
                 if test.attempts > 1 {
