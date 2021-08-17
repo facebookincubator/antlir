@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
@@ -29,7 +30,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = Tru
         name = "{uname}--devel-installed".format(uname = uname),
         # This is used because we need the gpg keys that this rpm is signed
         # by and the build appliance should have it.
-        parent_layer = flavor_helpers.default_flavor_build_appliance,
+        parent_layer = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
         features = [
             image.rpms_install([devel_rpm]),
         ],
@@ -44,6 +45,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = Tru
                 "./",
             ),
         ],
+        flavor = REPO_CFG.antlir_linux_flavor,
         visibility = ["PUBLIC"],
     )
 
@@ -118,6 +120,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = Tru
             # to support that.
             image.ensure_subdirs_exist("/", "build"),
         ],
+        flavor = REPO_CFG.antlir_linux_flavor,
         visibility = ["PUBLIC"],
     )
 
