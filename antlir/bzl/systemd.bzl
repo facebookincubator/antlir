@@ -95,16 +95,19 @@ def _enable_unit(
         # The name of the systemd unit to enable.  This should be in the
         # full form of the service, ie:  unit.service, unit.mount, unit.socket, etc..
         unit,
-
         # The systemd target to enable the unit in.
-        target = "default.target"):
+        target = "default.target",
+        # Dependency type to create.
+        dep_type = "wants"):
     _fail_if_path(unit, "Enable Unit")
+    if dep_type not in ("wants", "requires"):
+        fail("dep_type must be one of {wants, requires}")
 
     return [
-        image.ensure_subdirs_exist(PROVIDER_ROOT, target + ".wants", mode = 0o755),
+        image.ensure_subdirs_exist(PROVIDER_ROOT, target + "." + dep_type, mode = 0o755),
         image.ensure_file_symlink(
             paths.join(PROVIDER_ROOT, unit),
-            paths.join(PROVIDER_ROOT, target + ".wants", unit),
+            paths.join(PROVIDER_ROOT, target + "." + dep_type, unit),
         ),
     ]
 
