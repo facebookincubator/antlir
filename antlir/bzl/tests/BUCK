@@ -1,4 +1,3 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest")
@@ -178,6 +177,14 @@ image.layer(
         systemd.install_unit("cheese-file.service"),
         systemd.enable_unit("cheese-file.service"),
         systemd.install_dropin("cheese-dropin.conf", "cheese-file.service"),
+
+        # Enable in a target with Requires= dep type
+        systemd.install_unit("cheese-requires.service"),
+        systemd.enable_unit(
+            "cheese-requires.service",
+            target = "example.target",
+            dep_type = "requires",
+        ),
 
         # Image source from a genrule, with a path
         systemd.install_unit(image.source(

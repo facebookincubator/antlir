@@ -16,24 +16,44 @@ ADMIN_ROOT = Path("/etc/systemd/system")
 TMPFILES_ROOT = Path("/etc/tmpfiles.d")
 
 # tuple of the form:
-# ( <unit name>, <enabled target>, <masked bool>, <dropin name>)
+# ( <unit name>, <enabled target>, <target dep type>, <masked bool>, <dropin name>)
 unit_test_specs = [
-    ("cheese-file.service", "default.target", False, "cheese-dropin.conf"),
-    ("cheese-export.service", "sysinit.target", False, "cheese-dropin.conf"),
+    (
+        "cheese-file.service",
+        "default.target",
+        "wants",
+        False,
+        "cheese-dropin.conf",
+    ),
+    (
+        "cheese-requires.service",
+        "example.target",
+        "requires",
+        False,
+        None,
+    ),
+    (
+        "cheese-export.service",
+        "sysinit.target",
+        "wants",
+        False,
+        "cheese-dropin.conf",
+    ),
     (
         "cheese-export-with-dest.service",
         "default.target",
+        "wants",
         False,
         "cheese-dropin-with-dest.conf",
     ),
-    ("cheese-generated.service", None, False, "cheese-dropin.conf"),
-    ("cheese-source.service", None, True, "cheese-dropin.conf"),
+    ("cheese-generated.service", None, None, False, "cheese-dropin.conf"),
+    ("cheese-source.service", None, None, True, "cheese-dropin.conf"),
 ]
 
 
-def _twant(target):
-    """Make a target name into a '.wants' dir as a Path type."""
-    return Path(target + ".wants")
+def _tdep(target, dep):
+    """Make a target name into a '.wants/requires' dir as a Path type."""
+    return Path(target + "." + dep)
 
 
 class TestSystemdFeatures(unittest.TestCase):
@@ -46,14 +66,16 @@ class TestSystemdFeatures(unittest.TestCase):
     def test_units_enabled(self):
         # Get a list of the available .wants dirs for all targets to validate
         available_targets = [
-            Path(avail) for avail in glob.glob(PROV_ROOT / "*.wants")
+            Path(avail)
+            for avail in glob.glob(PROV_ROOT / "*.wants")
+            + glob.glob(PROV_ROOT / "*.requires")
         ]
 
         # spec[1] is the target name, skip if None
-        for unit, target, *_ in unit_test_specs:
+        for unit, target, target_dep, *_ in unit_test_specs:
             # Make sure it's enabled where it should be
             if target:
-                enabled_in_target = PROV_ROOT / _twant(target) / unit
+                enabled_in_target = PROV_ROOT / _tdep(target, target_dep) / unit
 
                 self.assertTrue(
                     os.path.islink(enabled_in_target), enabled_in_target
@@ -66,7 +88,11 @@ class TestSystemdFeatures(unittest.TestCase):
             for avail_target in [
                 avail
                 for avail in available_targets
-                if target and avail.basename() != _twant(target)
+                if target
+                and (
+                    avail.basename() != _tdep(target, "wants")
+                    and avail.basename() != _tdep(target, "requires")
+                )
             ]:
                 unit_in_target_wants = avail_target / unit
 
@@ -75,7 +101,7 @@ class TestSystemdFeatures(unittest.TestCase):
                 )
 
     def test_units_masked(self):
-        for unit, _, masked, *_ in unit_test_specs:
+        for unit, _, _, masked, *_ in unit_test_specs:
             if masked:
                 masked_unit = ADMIN_ROOT / unit
 
@@ -87,6 +113,8 @@ class TestSystemdFeatures(unittest.TestCase):
         )
 
     def test_dropins(self):
-        for unit, _, _, dropin in unit_test_specs:
+        for unit, _, _, _, dropin in unit_test_specs:
+            if not dropin:
+                continue
             dropin_file = PROV_ROOT / (unit + ".d") / dropin
             self.assertTrue(os.path.exists(dropin_file), dropin_file)
