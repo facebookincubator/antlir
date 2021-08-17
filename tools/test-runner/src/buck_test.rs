@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::File;
 use std::io::{BufReader, Read};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
@@ -171,7 +171,9 @@ pub struct TestSpec {
 }
 
 /// Reads test specs from a buck test run description at the given path.
-pub fn read(path: &PathBuf) -> Result<Vec<TestSpec>> {
+pub fn read<P: AsRef<Path>>(path: P) -> Result<Vec<TestSpec>> {
+    let path = path.as_ref();
+
     let file = File::open(path)
         .with_context(|| format!("Failed to read test specs from {}", path.display()))?;
 
