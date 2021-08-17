@@ -48,20 +48,21 @@ class ShadowPathTestCase(NspawnTestBase):
     @with_temp_subvols
     def test_path_search_and_snapshot_into(self, temp_subvols):
         self._assert_original_shadow_me()
-        dest_subvol = temp_subvols.external_command_will_create("shadow_dest")
-        self._nspawn_in(
-            _SRC_SUBVOL_PAIR,
-            [
-                f"--snapshot-into={dest_subvol.path()}",
-                *("--shadow-path", "shadow_me", "/real_i_will_shadow"),
-                "--setenv=PATH=/real",
-                "--",
-                # Use an absolute path to the `cp` because we broke `PATH`.
-                "/bin/cp",
-                "/real/shadow_me",
-                "/out/shadow_me",
-            ],
-        )
+        dest_subvol = temp_subvols.caller_will_create("shadow_dest")
+        with dest_subvol.maybe_create_externally():
+            self._nspawn_in(
+                _SRC_SUBVOL_PAIR,
+                [
+                    f"--snapshot-into={dest_subvol.path()}",
+                    *("--shadow-path", "shadow_me", "/real_i_will_shadow"),
+                    "--setenv=PATH=/real",
+                    "--",
+                    # Use an absolute path to the `cp` because we broke `PATH`.
+                    "/bin/cp",
+                    "/real/shadow_me",
+                    "/out/shadow_me",
+                ],
+            )
         self._assert_original_shadow_me()
         self._assert_original_shadow_me(dest_subvol)
         # The source of the copy we made while shadowed was, in fact, shadowed
@@ -160,33 +161,32 @@ class ShadowPathTestCase(NspawnTestBase):
     @with_temp_subvols
     def test_copy_and_move_back(self, temp_subvols):
         self._assert_original_shadow_me()
-        dest_subvol = temp_subvols.external_command_will_create(
-            "shadow_copy_move"
-        )
-        self.assertEqual(
-            b"i will shadow\n",
-            self._nspawn_in(
-                _SRC_SUBVOL_PAIR,
-                [
-                    f"--snapshot-into={dest_subvol.path()}",
-                    *(
-                        "--shadow-path",
-                        "/real/shadow_me",
-                        "/real_i_will_shadow",
-                    ),
-                    "--",
-                    "sh",
-                    "-uexc",
-                    f"""\
-                echo UPDATED >> {(
-                    SHADOWED_PATHS_ROOT / 'real/shadow_me'
-                ).shell_quote()}
-                cat /real/shadow_me  # the file is still shadowed
-                """,
-                ],
-                stdout=subprocess.PIPE,
-            ).stdout,
-        )
+        dest_subvol = temp_subvols.caller_will_create("shadow_copy_move")
+        with dest_subvol.maybe_create_externally():
+            self.assertEqual(
+                b"i will shadow\n",
+                self._nspawn_in(
+                    _SRC_SUBVOL_PAIR,
+                    [
+                        f"--snapshot-into={dest_subvol.path()}",
+                        *(
+                            "--shadow-path",
+                            "/real/shadow_me",
+                            "/real_i_will_shadow",
+                        ),
+                        "--",
+                        "sh",
+                        "-uexc",
+                        f"""\
+                    echo UPDATED >> {(
+                        SHADOWED_PATHS_ROOT / 'real/shadow_me'
+                    ).shell_quote()}
+                    cat /real/shadow_me  # the file is still shadowed
+                    """,
+                    ],
+                    stdout=subprocess.PIPE,
+                ).stdout,
+            )
         self._assert_original_shadow_me()
         # The shadowed file got updated
         self.assertEqual(

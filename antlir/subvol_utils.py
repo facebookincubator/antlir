@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import contextlib
 import functools
 import logging
 import os
@@ -12,7 +11,7 @@ import platform
 import subprocess
 import sys
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from typing import AnyStr, BinaryIO, Iterable, Iterator, Optional, TypeVar
 
 from .artifacts_dir import find_artifacts_dir
@@ -65,13 +64,55 @@ def _drain_pipe_return_byte_count(f: BinaryIO) -> int:
         total += num_read
 
 
-class Subvols_Singleton(dict):
-    __instance = None
+# HACK ALERT: `Subvol.delete()` removes subvolumes nested inside it. Some
+# of these may also be tracked as `Subvol` objects. In this scenario,
+# we have to update `._exists` for the nested `Subvol`s. This global
+# registry contains all the **created and not deleted** `Subvol`s known
+# to the current program.
+#
+# This design is emphatically not thread-safe etc.  It also leaks any
+# `Subvol` objects that are destroyed without deleting the underlying
+# subvolume.
+_UUID_TO_SUBVOLS = {}
 
-    def __new__(cls, *args):
-        if cls.__instance is None:
-            cls.__instance = dict.__new__(cls, *args)
-        return cls.__instance
+
+def _mark_deleted(uuid: str):
+    "Mark all the clones of this `Subvol` as deleted. Ignores unknown UUIDs."
+    subvols = _UUID_TO_SUBVOLS.get(uuid)
+    if not subvols:
+        # This happens if we are deleting a subvolume created outside of the
+        # Antlir compiler, which is nested in a `Subvol`.
+        return
+    for sv in subvols:
+        # Not checking that `._path` agrees because that check would
+        # take work to make non-fragile.
+        assert uuid == sv._uuid, (uuid, sv._uuid, sv._path)
+        sv._USE_mark_created_deleted_INSTEAD_exists = False
+        sv._uuid = None
+    del _UUID_TO_SUBVOLS[uuid]
+
+
+def _query_uuid(subvol: "Subvol", path: Path):
+    res = subvol.run_as_root(
+        ["btrfs", "subvolume", "show", path], stdout=subprocess.PIPE
+    )
+    res.check_returncode()
+    subvol_metadata = res.stdout.split(b"\n", 3)
+    # /
+    # Name:                   <FS_TREE>
+    # UUID:                   15a88f92-4185-47c9-8048-f065a159f119
+    # Parent UUID:            -
+    # Received UUID:          -
+    # Creation time:          2020-09-30 09:36:02 -0700
+    # Subvolume ID:           5
+    # Generation:             2045967
+    # Gen at creation:        0
+    # Parent ID:              0
+    # Top level ID:           0
+    # Flags:                  -
+    # Snapshot(s):
+
+    return subvol_metadata[2].split(b":")[1].decode().strip()
 
 
 class Subvol:
@@ -113,23 +154,71 @@ class Subvol:
       subvolume e.g. in arguments to the `subvol.run_*` functions.
     """
 
-    def __init__(self, path: AnyStr, already_exists=False):
+    def __init__(
+        self,
+        path: AnyStr,
+        *,
+        already_exists=False,
+        _test_only_allow_existing=False,
+    ):
         """
-        `Subvol` can represent not-yet-created subvolumes.  Unless
-        already_exists=True, you must call create() or snapshot() to
-        actually make the subvolume.
+        `Subvol` can represent not-yet-created (or created-and-deleted)
+        subvolumes.  Unless already_exists=True, you must call create() or
+        snapshot() to actually make the subvolume.
+
+        WATCH OUT: Because of `_UUID_TO_SUBVOLS`, all `Subvol` objects in the
+        "exists" state (created, snapshotted, initialized with
+        `already_exists=True`, etc) will **leak** if the owning code loses
+        the last reference without deleting the underlying subvol.
+
+        This is OK for now since we don't store any expensive / mutexed
+        resources here.  However, if this ever changes, we may need to play
+        difficult games with `weakref` to avoid leaking those resources.
         """
         self._path = Path(path).abspath()
-        self._exists = already_exists
-        self._subvols_dict = Subvols_Singleton()
-        if self._exists:
+        self._USE_mark_created_deleted_INSTEAD_exists = False
+        self._uuid = None
+        if already_exists:
             if not _path_is_btrfs_subvol(self._path):
                 raise AssertionError(f"No btrfs subvol at {self._path}")
-            self._subvols_dict[self.get_uuid()] = self
+            self._mark_created()
+        elif not _test_only_allow_existing:
+            assert not os.path.exists(self._path), self._path
+
+    # This is read-only because any writes bypassing the `_mark*` functions
+    # would violate our internal invariants.
+    @property
+    def _exists(self):
+        return self._USE_mark_created_deleted_INSTEAD_exists
+
+    def _mark_created(self):
+        assert not self._exists and not self._uuid, (self._path, self._uuid)
+        self._USE_mark_created_deleted_INSTEAD_exists = True
+        # The UUID is valid only while `._exists == True`
+        self._uuid = _query_uuid(self, self.path())
+        # This not a set because our `hash()` is based on just `._path` and
+        # we really care about object identity here.
+        _UUID_TO_SUBVOLS.setdefault(self._uuid, []).append(self)
+
+    def _mark_deleted(self):
+        assert self._exists and self._uuid, self._path
+        assert any(
+            # `_mark_deleted()` will ignore unknown UUIDs, but ours must be
+            # known since we are not deleted.
+            (self is sv)
+            for sv in _UUID_TO_SUBVOLS.get(self._uuid, [])
+        ), (self._uuid, self._path)
+        _mark_deleted(self._uuid)
 
     def __eq__(self, other: "Subvol") -> bool:
         assert self._exists == other._exists, self.path()
-        return self._path == other._path
+        equal = self._path == other._path
+        assert not equal or self._uuid == other._uuid, (
+            self._path,
+            self._uuid,
+            other._uuid,
+        )
+        return equal
 
     def __hash__(self) -> int:
         return hash(self._path)
@@ -150,30 +239,6 @@ class Subvol:
         return self._path.normalized_subpath(
             path_in_subvol, no_dereference_leaf=no_dereference_leaf
         )
-
-    def get_uuid(self, path=None) -> str:
-        if path is None:
-            path = self.path()
-        res = self.run_as_root(
-            ["btrfs", "subvolume", "show", path], stdout=subprocess.PIPE
-        )
-        res.check_returncode()
-        subvol_metadata = res.stdout.split(b"\n", 3)
-        # /
-        # Name:                   <FS_TREE>
-        # UUID:                   15a88f92-4185-47c9-8048-f065a159f119
-        # Parent UUID:            -
-        # Received UUID:          -
-        # Creation time:          2020-09-30 09:36:02 -0700
-        # Subvolume ID:           5
-        # Generation:             2045967
-        # Gen at creation:        0
-        # Parent ID:              0
-        # Top level ID:           0
-        # Flags:                  -
-        # Snapshot(s):
-
-        return subvol_metadata[2].split(b":")[1].decode().strip()
 
     def canonicalize_path(self, path: AnyStr) -> Path:
         """
@@ -296,14 +361,24 @@ class Subvol:
     # For now, we shell out, but in the future, we may talk to a privileged
     # `btrfsutil` helper, or use `guestfs`.
 
-    def create(self):
+    def create(self) -> "Subvol":
         self.run_as_root(
             ["btrfs", "subvolume", "create", self.path()], _subvol_exists=False
         )
-        self._exists = True
-        self._subvols_dict[self.get_uuid()] = self
+        self._mark_created()
+        return self
 
-    def snapshot(self, source: "Subvol"):
+    @contextmanager
+    def maybe_create_externally(self) -> Iterator[None]:
+        assert not self._exists, self._path
+        assert not os.path.exists(self._path), self._path
+        try:
+            yield
+        finally:
+            if os.path.exists(self._path):
+                self._mark_created()
+
+    def snapshot(self, source: "Subvol") -> "Subvol":
         # Since `snapshot` has awkward semantics around the `dest`,
         # `_subvol_exists` won't be enough and we ought to ensure that the
         # path physically does not exist.  This needs to run as root, since
@@ -313,20 +388,31 @@ class Subvol:
             ["btrfs", "subvolume", "snapshot", source.path(), self.path()],
             _subvol_exists=False,
         )
-        self._exists = True
+        self._mark_created()
+        return self
+
+    @contextmanager
+    def delete_on_exit(self) -> Iterator["Subvol"]:
+        "Delete the subvol if it exists when exiting the context."
+        try:
+            yield self
+        finally:
+            if self._exists:
+                self.delete()
 
     def delete(self):
         """
-        This will delete the subvol + all nested/inner subvolumes that exist
-        underneath this subvol.  here are a few things that we should consider
-        addressing to ensure that this is as robust as possible:
-          - It is possible that that this could delete an inner subvolume
-            that is already managed by another `Subvol` object wihout
-            updating its `_exists`.  Currently, because we have no official
-            nested subvol usecase, we don't address this problem.  One possible
-            approach might be to require any nested subvol creation to be
-            managed by an instance of this class.
+        This will delete the subvol AND all nested/inner subvolumes that
+        exist underneath this subvol.
+
+        This fails if the `Subvol` does not exist.  This is because normal
+        business logic explicit deletion can safely assume that the `Subvol`
+        was already created.  This is a built-in correctness check.
+
+        For "cleanup" logic, check out `delete_on_exit`.
         """
+        assert self._exists, self._path
+
         # Set RW from the outermost to the innermost
         subvols = list(self._gen_inner_subvol_paths())
         self.set_readonly(False)
@@ -337,13 +423,14 @@ class Subvol:
             )
         # Delete from the innermost to the outermost
         for inner_path in sorted(subvols, reverse=True):
-            uuid = self.get_uuid(inner_path)
+            uuid = _query_uuid(self, inner_path)
             self.run_as_root(["btrfs", "subvolume", "delete", inner_path])
-            if uuid in self._subvols_dict:
-                self._subvols_dict[uuid]._exists = False
+            # Will succeed even if this subvolume was created by a
+            # subcommand, and is not tracked in `_UUID_TO_SUBVOLS`
+            _mark_deleted(uuid)
 
         self.run_as_root(["btrfs", "subvolume", "delete", self.path()])
-        self._exists = False
+        self._mark_deleted()
 
     def _gen_inner_subvol_paths(self) -> Iterable[Path]:
         """
@@ -1129,7 +1216,7 @@ class Subvol:
             ), f"{attempts} attempts were not enough for {self._path}"
 
     @contextmanager
-    def receive(self, from_file):
+    def receive(self, from_file) -> Iterator[None]:
         # At present, we always have an empty wrapper dir to receive into.
         # If this changes, we could make a tempdir inside `parent_fd`.
         with open_fd(
@@ -1168,7 +1255,7 @@ class Subvol:
                     # can try to clean up the subvolume on error instead,
                     # but at present it seems easier to leak it, and let the
                     # GC code delete it later.
-                    self._exists = True
+                    self._mark_created()
 
     def read_path_text(self, relpath: Path) -> str:
         return self.path(relpath).read_text()
@@ -1224,44 +1311,60 @@ def volume_dir(path_in_repo: Optional[Path] = None) -> Path:
     return find_artifacts_dir(path_in_repo) / "volume"
 
 
-class TempSubvolumes(contextlib.AbstractContextManager):
+class TempSubvolumes:
     """
     Tracks the subvolumes it creates, and destroys them on context exit.
 
-    Note that relying on unittest.TestCase.addCleanup to __exit__ this
-    context is unreliable -- e.g. clean-up is NOT triggered on
-    KeyboardInterrupt. Therefore, this **will** leak subvolumes
-    during development. You can clean them up thus:
+    BEST PRACTICES:
+
+      - To nest a subvol inside one made by `TempSubvolumes`, create it
+        via `Subvol` -- bypassing `TempSubvolumes`.  It is better to let it
+        be cleaned up implicitly.  If you request explicit cleanup by using
+        a `TempSubvolumes` method, the inner subvol would have to be deleted
+        first, which would break if the parent is read-only.  See an example
+        in `test_temp_subvolumes_create` (marked by "NB").
+
+      - Avoid using `unittest.TestCase.addCleanup` to `__exit__()` this
+        context.  Instead, use `@with_temp_subvols` on each test method.
+
+        `addCleanup` is unreliable -- e.g.  clean-up is NOT triggered on
+        KeyboardInterrupt.  Therefore, this **will** leak subvolumes during
+        development.  For manual cleanup:
 
         sudo btrfs sub del buck-image-out/volume/tmp/TempSubvolumes_*/subvol &&
             rmdir buck-image-out/volume/tmp/TempSubvolumes_*
 
-    Instead of polluting `buck-image-out/volume`, it  would be possible to
-    put these on a separate `BtrfsLoopbackVolume`, to rely on `Unshare` to
-    guarantee unmounting it, and to rely on `tmpwatch` to delete the stale
-    loopbacks from `/tmp/`.  At present, this doesn't seem worthwhile since
-    it would require using an `Unshare` object throughout `Subvol`.
-
-    The easier approach is to write `with TempSubvolumes() ...` in each test.
+        Instead of polluting `buck-image-out/volume`, it  would be possible to
+        put these on a separate `BtrfsLoopbackVolume`, to rely on `Unshare` to
+        guarantee unmounting it, and to rely on `tmpwatch` to delete the stale
+        loopbacks from `/tmp/`.  At present, this doesn't seem worthwhile since
+        it would require using an `Unshare` object throughout `Subvol`.
     """
 
     def __init__(self, path_in_repo: Optional[Path] = None):
-        self.subvols = []
+        super().__init__()
         # The 'tmp' subdirectory simplifies cleanup of leaked temp subvolumes
         volume_tmp_dir = volume_dir(path_in_repo) / "tmp"
         try:
             os.mkdir(volume_tmp_dir)
         except FileExistsError:
             pass
-        # Our exit is written with exception-safety in mind, so this
-        # `_temp_dir_ctx` **should** get `__exit__`ed when this class does.
-        self._temp_dir_ctx = temp_dir(  # noqa: P201
+        self._stack = ExitStack()
+        self._temp_dir_ctx = temp_dir(
             dir=volume_tmp_dir.decode(), prefix=self.__class__.__name__ + "_"
         )
 
     def __enter__(self):
-        self._temp_dir = self._temp_dir_ctx.__enter__()
+        self._stack.__enter__()
+        self._temp_dir = self._stack.enter_context(self._temp_dir_ctx)
         return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._temp_dir = None
+        return self._stack.__exit__(exc_type, exc_val, exc_tb)
+
+    def _new_subvol(self, subvol):
+        return self._stack.enter_context(subvol.delete_on_exit())
 
     @property
     def temp_dir(self):
@@ -1274,66 +1377,33 @@ class TempSubvolumes(contextlib.AbstractContextManager):
         exposing setuid binaries inside the built subvolumes.
         """
         rel_path = (
-            # pyre-fixme[16]: `TempSubvolumes` has no attribute `_temp_dir`.
-            (self._temp_dir / rel_path)
+            (self.temp_dir / rel_path)
             .realpath()
-            .relpath(self._temp_dir.realpath())
+            .relpath(self.temp_dir.realpath())
         )
         if rel_path.has_leading_dot_dot():
             raise AssertionError(
-                f"{rel_path} must be a subdirectory of {self._temp_dir}"
+                f"{rel_path} must be a subdirectory of {self.temp_dir}"
             )
-        abs_path = self._temp_dir / rel_path
-        try:
-            os.makedirs(abs_path.dirname())
-        except FileExistsError:
-            pass
+        abs_path = self.temp_dir / rel_path
+        os.makedirs(abs_path.dirname(), exist_ok=True)
         return abs_path
 
     def create(self, rel_path: AnyStr) -> Subvol:
-        subvol = Subvol(self._prep_rel_path(rel_path))
-        subvol.create()
-        self.subvols.append(subvol)
-        return subvol
+        return self._new_subvol(Subvol(self._prep_rel_path(rel_path)).create())
 
     def snapshot(self, source: Subvol, dest_rel_path: AnyStr) -> Subvol:
-        dest = Subvol(self._prep_rel_path(dest_rel_path))
-        dest.snapshot(source)
-        self.subvols.append(dest)
-        return dest
+        return self._new_subvol(
+            Subvol(self._prep_rel_path(dest_rel_path)).snapshot(source)
+        )
 
     def caller_will_create(self, rel_path: AnyStr) -> Subvol:
-        subvol = Subvol(self._prep_rel_path(rel_path))
-        # If the caller fails to create it, our __exit__ is robust enough
-        # to ignore this subvolume.
-        self.subvols.append(subvol)
-        return subvol
-
-    def external_command_will_create(self, rel_path: AnyStr) -> Subvol:
-        subvol = self.caller_will_create(rel_path)
-        subvol._exists = True
-        return subvol
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # If any of subvolumes are nested, and the parents were made
-        # read-only, we won't be able to delete them.
-        log.debug(f"Marking temp subvols read-write in {self._temp_dir}")
-        for subvol in self.subvols:
-            try:
-                subvol.set_readonly(False)
-            except BaseException:  # Ctrl-C does not interrupt cleanup
-                pass
-        log.debug(f"Deleting temp subvols in {self._temp_dir}")
-        for subvol in reversed(self.subvols):
-            try:
-                subvol.delete()
-            except BaseException:  # Ctrl-C does not interrupt cleanup
-                logging.exception(f"Deleting volume {subvol.path()} failed.")
-        log.debug(f"Done deleting temp subvols in {self._temp_dir}")
-        return self._temp_dir_ctx.__exit__(exc_type, exc_val, exc_tb)
+        return self._new_subvol(Subvol(self._prep_rel_path(rel_path)))
 
 
-def get_subvolumes_dir(path_in_repo: Optional[Path] = None) -> Path:
+def get_subvolumes_dir(
+    path_in_repo: Optional[Path] = None,
+) -> Path:
     return volume_dir(path_in_repo) / "targets"
 
 

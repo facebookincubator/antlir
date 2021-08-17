@@ -12,7 +12,7 @@ import unittest
 
 from .. import subvolume_garbage_collector as sgc
 from ..fs_utils import temp_dir, Path
-from ..subvol_utils import with_temp_subvols
+from ..subvol_utils import with_temp_subvols, TempSubvolumes
 
 
 class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
@@ -142,12 +142,10 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             self.assertEqual([], refs_dir.listdir())
 
     @contextlib.contextmanager
-    @with_temp_subvols
-    def _gc_test_case(self, tmp_subvols):
+    def _gc_test_case(self):
         # NB: I'm too lazy to test that `refs_dir` is created if missing.
-        with tempfile.TemporaryDirectory() as refs_dir:
-            refs_dir_p = Path(refs_dir)
-            subs_dir_p = tmp_subvols.temp_dir
+        with TempSubvolumes() as tmp_subvols, temp_dir() as refs_dir:
+            subs_dir = tmp_subvols.temp_dir
             # Track subvolumes + refcounts that will get garbage-collected
             # separately from those that won't.
             gcd_subs = set()
@@ -156,54 +154,52 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             kept_refs = set()
 
             # Subvolume without a refcount -- tests "rule name != subvol"
-            os.makedirs(subs_dir_p / "no:refs")
+            os.makedirs(subs_dir / "no:refs")
             tmp_subvols.create("no:refs/subvol_name")
             gcd_subs.add(Path("no:refs"))
 
-            tmp_subvols.create("no_refs:nor_subvol")
+            # Wrapper without a refcount and without a subvolume
+            os.makedirs((subs_dir / "no_refs:nor_subvol"))
             gcd_subs.add(Path("no_refs:nor_subvol"))
 
             # Subvolume, whose refcount is 1
-            self._touch(refs_dir, "1:link.json")
-            os.makedirs(subs_dir_p / "1:link")
+            (refs_dir / "1:link.json").touch()
+            os.makedirs(subs_dir / "1:link")
             tmp_subvols.create("1:link/1")
 
             gcd_refs.add(Path("1:link.json"))
             gcd_subs.add(Path("1:link"))
 
             # Some refcount files with a link count of 2
-            self._touch(refs_dir_p / "2link:1.json")
-            os.link(
-                refs_dir_p / "2link:1.json",
-                refs_dir_p / "2link:2.json",
-            )
+            (refs_dir / "2link:1.json").touch()
+            os.link(refs_dir / "2link:1.json", refs_dir / "2link:2.json")
             kept_refs.add(Path("2link:1.json"))
             kept_refs.add(Path("2link:2.json"))
 
             # Subvolumes for both of the 2-link refcount files
-            os.makedirs(subs_dir_p / "2link:1")
+            os.makedirs(subs_dir / "2link:1")
             tmp_subvols.create("2link:1/2link")
-            os.makedirs(subs_dir_p / "2link:2")
+            os.makedirs(subs_dir / "2link:2")
             tmp_subvols.create("2link:2/2link")
             kept_subs.add(Path("2link:1"))
             kept_subs.add(Path("2link:2"))
 
             # Some refcount files with a link count of 3
-            three_link = refs_dir_p / "3link:1.json"
-            self._touch(three_link)
-            os.link(three_link, refs_dir_p / "3link:2.json")
-            os.link(three_link, refs_dir_p / "3link:3.json")
+            three_link = refs_dir / "3link:1.json"
+            three_link.touch()
+            os.link(three_link, refs_dir / "3link:2.json")
+            os.link(three_link, refs_dir / "3link:3.json")
             kept_refs.add(Path("3link:1.json"))
             kept_refs.add(Path("3link:2.json"))
             kept_refs.add(Path("3link:3.json"))
 
             # Make a subvolume for 1 of them, it won't get GC'd
-            os.makedirs(subs_dir_p / "3link:2")
+            os.makedirs(subs_dir / "3link:2")
             tmp_subvols.create("3link:2/3link")
             kept_subs.add(Path("3link:2"))
 
-            self.assertEqual(kept_refs | gcd_refs, set(refs_dir_p.listdir()))
-            self.assertEqual(kept_subs | gcd_subs, set(subs_dir_p.listdir()))
+            self.assertEqual(kept_refs | gcd_refs, set(refs_dir.listdir()))
+            self.assertEqual(kept_subs | gcd_subs, set(subs_dir.listdir()))
 
             yield sgc.argparse.Namespace(
                 gcd_subs=gcd_subs,
@@ -211,7 +207,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 gcd_refs=gcd_refs,
                 kept_refs=kept_refs,
                 refs_dir=refs_dir,
-                subs_dir=str(subs_dir_p),
+                subs_dir=subs_dir,
             )
 
     def _gc_only(self, n):
@@ -226,8 +222,8 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
         ]:
             with self._gc_test_case() as n:
                 fn(n)
-                self.assertEqual(n.kept_refs, set(Path(n.refs_dir).listdir()))
-                self.assertEqual(n.kept_subs, set(Path(n.subs_dir).listdir()))
+                self.assertEqual(n.kept_refs, set(n.refs_dir.listdir()))
+                self.assertEqual(n.kept_subs, set(n.subs_dir.listdir()))
 
     def test_no_gc_due_to_lock(self):
         with self._gc_test_case() as n:
@@ -255,10 +251,10 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 os.close(fd)
 
             self.assertEqual(
-                n.kept_refs | n.gcd_refs, set(Path(n.refs_dir).listdir())
+                n.kept_refs | n.gcd_refs, set(n.refs_dir.listdir())
             )
             self.assertEqual(
-                n.kept_subs | n.gcd_subs, set(Path(n.subs_dir).listdir())
+                n.kept_subs | n.gcd_subs, set(n.subs_dir.listdir())
             )
 
     def test_garbage_collect_and_make_new_subvolume(self):
@@ -274,11 +270,11 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             self.assertEqual([b"OUT"], json_dir.listdir())
             self.assertEqual(
                 n.kept_refs | {Path("new:subvol.json")},
-                set(Path(n.refs_dir).listdir()),
+                set(n.refs_dir.listdir()),
             )
             self.assertEqual(
                 n.kept_subs | {Path("new:subvol")},
-                set(Path(n.subs_dir).listdir()),
+                set(n.subs_dir.listdir()),
             )
 
 

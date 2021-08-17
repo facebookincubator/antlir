@@ -24,22 +24,16 @@ from antlir.tests.subvol_helpers import (
 
 from .. import yum_dnf_from_snapshot
 
-
 _INSTALL_ARGS = ["install", "--assumeyes", "rpm-test-carrot", "rpm-test-milk"]
 _SNAPSHOT_DIR = snapshot_install_dir("//antlir/rpm:repo-snapshot-for-tests")
 
 
-# Move this to `subvol_helpers.py` or similar if the pattern recurs.
-@contextmanager
-def _temp_subvol(name: str) -> Subvol:
-    sv = Subvol(Path("/") / f"{name}-{uuid.uuid4().hex}")
-    try:
-        sv.create()
-        # pyre-fixme[7]: Expected `Subvol` but got `Generator[Subvol, None,
-        # None]`.
-        yield sv
-    finally:
-        sv.delete()
+def _temp_subvol(name: str):
+    return (
+        Subvol(Path("/") / f"{name}-{uuid.uuid4().hex}")
+        .create()
+        .delete_on_exit()
+    )
 
 
 class YumDnfFromSnapshotTestImpl:

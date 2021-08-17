@@ -34,14 +34,13 @@ class AttachAntlirDirTestCase(NspawnTestBase):
 
     @with_temp_subvols
     def test_cleanup_antlir_dir(self, temp_subvols):
-        dest_subvol = temp_subvols.external_command_will_create(
-            "cleanup_antlir_dir"
-        )
-        self._nspawn_in(
-            _SRC_SUBVOL_PAIR,
-            [
-                f"--snapshot-into={dest_subvol.path()}",
-                *_ATTACH_ANTLIR_DIR_CMD_ARGS,
-            ],
-        )
+        dest_subvol = temp_subvols.caller_will_create("cleanup_antlir_dir")
+        with dest_subvol.maybe_create_externally():
+            self._nspawn_in(
+                _SRC_SUBVOL_PAIR,
+                [
+                    f"--snapshot-into={dest_subvol.path()}",
+                    *_ATTACH_ANTLIR_DIR_CMD_ARGS,
+                ],
+            )
         self.assertFalse(dest_subvol.path(ANTLIR_DIR).exists())

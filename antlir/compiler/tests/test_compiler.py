@@ -90,7 +90,7 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     """
     fn = unittest.mock.patch.object(os.path, "lexists")(fn)
     fn = unittest.mock.patch.object(subvol_utils, "_path_is_btrfs_subvol")(fn)
-    fn = unittest.mock.patch.object(subvol_utils.Subvol, "get_uuid")(fn)
+    fn = unittest.mock.patch.object(subvol_utils, "_query_uuid")(fn)
     fn = unittest.mock.patch.object(subvol_utils.Subvol, "run_as_root")(fn)
     fn = unittest.mock.patch.object(rpm_action, "run_nspawn")(fn)
     fn = unittest.mock.patch.object(tarball, "run_nspawn")(fn)
@@ -118,7 +118,7 @@ def _run_as_root(args, **kwargs):
         return ret
 
 
-def _btrfs_get_uuid(path=None):
+def _btrfs_get_uuid(subvol, path=None):
     return "FAKE-UUID-000"
 
 
@@ -433,9 +433,7 @@ class CompilerTestCase(unittest.TestCase):
         lexists.side_effect = _os_path_lexists
         is_btrfs.return_value = True
         get_uuid.side_effect = _btrfs_get_uuid
-        subvol = subvol_utils.Subvol(
-            f"{_SUBVOLS_DIR}/{_FAKE_SUBVOL}", already_exists=True
-        )
+        subvol = subvol_utils.Subvol(f"{_SUBVOLS_DIR}/{_FAKE_SUBVOL}")
         rpm_installer = YumDnf.dnf
         layer_opts = LayerOpts(
             layer_target="fake-target",
