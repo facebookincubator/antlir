@@ -107,6 +107,7 @@ class GuestSSHConnection:
         cmd_pre = []
         if cwd is not None:
             cmd_pre.append(f"cd {str(cwd)};")
+
         cmd_pre.append(
             " ".join(f"{key}={val}" for key, val in run_env.items()),
         )

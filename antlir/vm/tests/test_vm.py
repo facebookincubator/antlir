@@ -18,8 +18,8 @@ from antlir.vm.vm_opts_t import vm_opts_t
 
 class TestAntlirVM(unittest.TestCase):
     def test_parse_cli(self):
-        opts_instance = vm_opts_t.from_env("test-vm-agent-json")
-        opts_cli_arg = "--opts={}".format(os.environ["test-vm-agent-json"])
+        opts_instance = vm_opts_t.from_env("test-vm-json")
+        opts_cli_arg = "--opts={}".format(os.environ["test-vm-json"])
         # Test defaults of everything that has a default
         self.assertEqual(
             VMExecOpts(
@@ -104,51 +104,52 @@ class AsyncTestAntlirVm(unittest.TestCase):
     def tearDownClass(cls):
         cls.event_loop.close()
 
-    async def _test_vm_scheme(self, scheme):
-        opts_instance = vm_opts_t.from_env(f"test-vm-{scheme}-json")
-        async with vm(
-            opts=opts_instance,
-        ) as (instance, boottime_ms, timeout_ms):
-            proc = await instance.run(
-                cmd=["/bin/hostnamectl", "status", "--static"],
-                timeout_ms=timeout_ms,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            stdout, _ = await proc.communicate()
-            self.assertEqual(stdout, b"vmtest\n")
-            self.assertEqual(proc.returncode, 0)
+    def test_api_ssh(self):
+        opts_instance = vm_opts_t.from_env("test-vm-json")
 
-            proc = await instance.run(
-                cmd=["pwd"],
-                cwd="/tmp",
-                timeout_ms=timeout_ms,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            stdout, _ = await proc.communicate()
-            self.assertEqual(stdout, b"/tmp\n")
-            self.assertEqual(proc.returncode, 0)
-
-            with self.assertRaises(subprocess.CalledProcessError):
-                await instance.run(
-                    check=True,
-                    cmd=["/bin/false"],
+        async def _test():
+            async with vm(
+                opts=opts_instance,
+            ) as (instance, boottime_ms, timeout_ms):
+                proc = await instance.run(
+                    cmd=["/bin/hostnamectl", "status", "--static"],
                     timeout_ms=timeout_ms,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                 )
+                stdout, _ = await proc.communicate()
+                self.assertEqual(stdout, b"vmtest\n")
+                self.assertEqual(proc.returncode, 0)
 
-            proc = await instance.run(
-                cmd=["/bin/file", "/tmp/test.sock"],
-                timeout_ms=timeout_ms,
-                forward={"/tmp/test.sock": "/tmp/test.sock"},
-            )
-            self.assertEqual(proc.returncode, 0)
+                proc = await instance.run(
+                    cmd=["pwd"],
+                    cwd="/tmp",
+                    timeout_ms=timeout_ms,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                stdout, _ = await proc.communicate()
+                self.assertEqual(stdout, b"/tmp\n")
+                self.assertEqual(proc.returncode, 0)
 
-    def test_api_scheme_ssh(self):
-        self.event_loop.run_until_complete(self._test_vm_scheme(scheme="ssh"))
+                with self.assertRaises(subprocess.CalledProcessError):
+                    await instance.run(
+                        check=True,
+                        cmd=["/bin/false"],
+                        timeout_ms=timeout_ms,
+                    )
+
+                proc = await instance.run(
+                    cmd=["/bin/file", "/tmp/test.sock"],
+                    timeout_ms=timeout_ms,
+                    forward={"/tmp/test.sock": "/tmp/test.sock"},
+                )
+                self.assertEqual(proc.returncode, 0)
+
+        self.event_loop.run_until_complete(_test())
 
     def test_api_console(self):
-        opts_instance = vm_opts_t.from_env("test-vm-ssh-json")
+        opts_instance = vm_opts_t.from_env("test-vm-json")
 
         async def _test():
             with tempfile.NamedTemporaryFile() as tf:
@@ -172,7 +173,7 @@ class AsyncTestAntlirVm(unittest.TestCase):
         self.event_loop.run_until_complete(_test())
 
     def test_api_kernel_panic(self):
-        opts_instance = vm_opts_t.from_env("test-vm-ssh-json")
+        opts_instance = vm_opts_t.from_env("test-vm-json")
 
         async def _test():
             with tempfile.NamedTemporaryFile() as console_f:

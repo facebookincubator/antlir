@@ -515,17 +515,11 @@ async def __vm_with_stack(
             # necessary.
             yield (None, boot_elapsed_ms, timeout_ms)
         else:
-            if opts.runtime.connection.scheme == "ssh":
-                with GuestSSHConnection(
-                    tapdev=tapdev,
-                    options=opts.runtime.connection.options,
-                ) as ssh:
-                    yield (ssh, boot_elapsed_ms, timeout_ms)
-            else:
-                raise AttributeError(
-                    f"Invalid VM connect scheme: "
-                    f"{opts.runtime.connection.scheme}"
-                )  # pragma: no cover
+            with GuestSSHConnection(
+                tapdev=tapdev,
+                options=opts.runtime.connection.options,
+            ) as ssh:
+                yield (ssh, boot_elapsed_ms, timeout_ms)
 
     # Note: The error cases are not yet covered properly in tests.
     except VMBootError as vbe:  # pragma: no cover
