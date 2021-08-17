@@ -169,6 +169,7 @@ def _vm_unittest(
             image.install_buck_runnable(":" + actual_test_binary, "/test"),
             image.install_buck_runnable("//antlir/vm:wrap-in-vm-test-exec", "/wrap"),
         ],
+        flavor = REPO_CFG.antlir_linux_flavor,
     )
 
     actual_test_image = "{}__test-binary-image".format(name)
