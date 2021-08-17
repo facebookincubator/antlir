@@ -4,7 +4,7 @@ use std::process::Child;
 
 use super::buck_test::{make_command, shell, Test, TestKind, TestSpec};
 
-pub fn validate(spec: TestSpec) -> Vec<Test> {
+pub fn list_tests(spec: TestSpec) -> Vec<Test> {
     let base_command = || {
         make_command(
             spec.command[0].clone(),

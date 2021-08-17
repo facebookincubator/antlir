@@ -110,13 +110,13 @@ pub fn run(mut test: Test, retries: u32) -> TestResult {
     }
 }
 
-// a.k.a., the defaults
+// a.k.a. the defaults
 pub mod shell {
     use super::{make_command, Test, TestKind, TestSpec};
     use std::process::Child;
 
     /// Builds a singleton test from a given spec.
-    pub fn validate(spec: TestSpec) -> Vec<Test> {
+    pub fn list_tests(spec: TestSpec) -> Vec<Test> {
         let command = make_command(
             spec.command[0].clone(),
             spec.command[1..].to_vec(),
@@ -133,7 +133,7 @@ pub mod shell {
         return vec![test]; // i.e; "just run it"
     }
 
-    /// Validates the test based solely on its return value.
+    /// Evaluates the test based solely on its exit code.
     pub fn evaluate(result: &mut Child) -> bool {
         result.wait().unwrap().success() // shouldn't block, it already ran
     }
@@ -213,9 +213,9 @@ pub fn validate(spec: TestSpec) -> Result<Vec<Test>> {
 
     // dispatch on kind for further processing
     let tests = match spec.kind {
-        TestKind::Pyunit => pyunit::validate(spec),
-        TestKind::Rust => rust::validate(spec),
-        TestKind::Shell => shell::validate(spec),
+        TestKind::Pyunit => pyunit::list_tests(spec),
+        TestKind::Rust => rust::list_tests(spec),
+        TestKind::Shell => shell::list_tests(spec),
     };
 
     return Ok(tests);

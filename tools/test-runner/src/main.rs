@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 
 use anyhow::{Context, Result};
@@ -57,8 +57,8 @@ fn main() -> Result<()> {
     }
 
     // validate and collect tests which are not auto-excluded
-    let specs = buck_test::read(&options.spec)?;
-    let tests: Vec<Test> = specs
+    let tests: Vec<Test> =
+        buck_test::read(&options.spec)?
         .into_iter()
         .map(|spec| buck_test::validate(spec).unwrap())
         .flatten()
@@ -134,7 +134,8 @@ fn main() -> Result<()> {
 }
 
 // Refer to https://llg.cubic.org/docs/junit/
-fn report(tests: Vec<TestResult>, path: PathBuf) -> Result<()> {
+fn report<P: AsRef<Path>>(tests: Vec<TestResult>, path: P) -> Result<()> {
+    let path = path.as_ref();
     let file = File::create(&path).with_context(|| {
         format!(
             "Couldn't generate report at specified path {}",
