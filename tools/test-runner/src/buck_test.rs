@@ -212,7 +212,7 @@ pub fn validate(spec: TestSpec) -> Result<Vec<Test>> {
     }
 
     // dispatch on kind for further processing
-    let tests = match spec.kind.clone() {
+    let tests = match spec.kind {
         TestKind::Pyunit => pyunit::validate(spec),
         TestKind::Rust => rust::validate(spec),
         TestKind::Shell => shell::validate(spec),
