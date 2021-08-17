@@ -11,6 +11,8 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = "1.0"
+bytes = { version = "1.0", features = ["serde"] }
+chrono = { version = "0.4", features = ["clock", "serde", "std"], default-features = false }
 fbinit = { path = "../fbinit" }
 fbthrift = { path = "../../../../thrift/lib/rust" }
 serde = { version = "1.0.126", features = ["derive", "rc"] }
