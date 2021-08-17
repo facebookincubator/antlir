@@ -26,11 +26,15 @@ python_unittest(
         "test_vm.py",
     ],
     env = {
-        "test-vm-agent-json": shape.do_not_cache_me_json(
+        "test-vm-json": shape.do_not_cache_me_json(
             vm.types.opts.new(
                 runtime = vm.types.runtime.new(
                     connection = vm.types.connection.new(
-                        scheme = "agent",
+                        # Test using ssh options
+                        options = {
+                            "ServerAliveCountMax": "1",
+                            "ServerAliveInterval": "1",
+                        },
                     ),
                 ),
             ),
@@ -39,20 +43,6 @@ python_unittest(
             vm.types.opts.new(
                 runtime = vm.types.runtime.new(
                     sidecar_services = ["/bin/sleep 3600"],
-                ),
-            ),
-        ),
-        "test-vm-ssh-json": shape.do_not_cache_me_json(
-            vm.types.opts.new(
-                runtime = vm.types.runtime.new(
-                    connection = vm.types.connection.new(
-                        scheme = "ssh",
-                        # Test using ssh options
-                        options = {
-                            "ServerAliveCountMax": "1",
-                            "ServerAliveInterval": "1",
-                        },
-                    ),
                 ),
             ),
         ),
@@ -82,7 +72,6 @@ vm.python_unittest(
     vm_opts = vm.types.opts.new(
         runtime = vm.types.runtime.new(
             connection = vm.types.connection.new(
-                scheme = "ssh",
                 # Set the options such that it fails fast when
                 # the vm crashes.  This is just to make the test
                 # run in a reasonable amount of time.
@@ -138,11 +127,6 @@ vm.python_unittest(
         disk = vm.types.disk.new(
             seed = True,
             layer = ":vmtest-custom-layer",
-        ),
-        runtime = vm.types.runtime.new(
-            connection = vm.types.connection.new(
-                scheme = "ssh",
-            ),
         ),
     ),
 )
