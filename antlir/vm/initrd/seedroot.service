@@ -1,8 +1,10 @@
 [Unit]
-Description=Remount /sysroot rw
-ConditionPathIsReadWrite=!/sysroot
+Description=Remount /rootdisk rw
+DefaultDependencies=no
+RequiresMountsFor=/rootdisk
+ConditionPathIsReadWrite=!/rootdisk
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/mount -o remount,rw -t btrfs /sysroot /sysroot
+ExecStart=/usr/bin/mount -o remount,rw -t btrfs /rootdisk /rootdisk
 RemainAfterExit=yes

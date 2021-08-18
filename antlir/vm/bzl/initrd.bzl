@@ -82,12 +82,12 @@ def initrd(kernel, module_list = None, visibility = None):
                 before = ["initrd-fs.target"],
             ),
             what = "kernel-modules",
-            where = "/sysroot/usr/lib/modules/{}".format(kernel.uname),
+            where = "/rootdisk/usr/lib/modules/{}".format(kernel.uname),
             type = "9p",
             options = ["ro", "trans=virtio", "version=9p2000.L", "cache=loose", "posixacl"],
         ),
     )
-    mount_unit_name = systemd.escape("/sysroot/usr/lib/modules/{}.mount".format(kernel.uname), path = True)
+    mount_unit_name = systemd.escape("/rootdisk/usr/lib/modules/{}.mount".format(kernel.uname), path = True)
 
     buck_genrule(
         name = name + "--modules-load.conf",

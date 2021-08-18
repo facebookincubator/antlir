@@ -31,7 +31,7 @@ fn fetch_unit() {
         .wait()
         .expect("antlir-fetch-image service failed");
 
-    let dir = Path::new("/sysroot/var/lib/antlir/image/metalos:1/volume");
+    let dir = Path::new("/rootdisk/var/lib/antlir/image/metalos:1/volume");
     let journal = String::from_utf8(
         Command::new("journalctl")
             .arg("-u")

@@ -5,13 +5,13 @@
 Description=Fetch image from %I
 Requires=network-online.target
 After=network-online.target
-RequiresMountsFor=/sysroot
+RequiresMountsFor=/rootdisk
 # Only download an image version once
-ConditionDirectoryNotEmpty=!/sysroot/var/lib/antlir/image/%i
+ConditionDirectoryNotEmpty=!/rootdisk/var/lib/antlir/image/%i
 
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStartPre=mkdir -p /sysroot/var/lib/antlir/image
-ExecStartPre=btrfs subvolume create /sysroot/var/lib/antlir/image/%i
-ExecStart=antlirctl fetch-image %I /sysroot/var/lib/antlir/image/%i
+ExecStartPre=mkdir -p /rootdisk/var/lib/antlir/image
+ExecStartPre=btrfs subvolume create /rootdisk/var/lib/antlir/image/%i
+ExecStart=antlirctl fetch-image %I /rootdisk/var/lib/antlir/image/%i

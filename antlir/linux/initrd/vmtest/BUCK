@@ -5,13 +5,13 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "rust_binary", "
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/linux:defs.bzl", "linux")
-load("//antlir/vm/bzl:defs.bzl", "vm")
-load("//antlir/vm/bzl:initrd.bzl", "initrd")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
+load("//antlir/vm/bzl:defs.bzl", "vm")
+load("//antlir/vm/bzl:initrd.bzl", "initrd")
 
 # TODO: we probably will want dropbear in the base initrd for remote debugging
 # purposes, but for now isolate it to vmtest only
@@ -143,7 +143,7 @@ image.layer(
         # it in the first place - it should be mounted later by the generator
         # in the root fs if required
         systemd.mask_units([systemd.escape(
-            "/sysroot/usr/lib/modules/{}.mount".format(TEST_KERNEL.uname),
+            "/rootdisk/usr/lib/modules/{}.mount".format(TEST_KERNEL.uname),
             path = True,
         )]),
         systemd.install_dropin("after-seedroot.conf", "antlir-fetch-image@.service"),

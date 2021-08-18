@@ -11,22 +11,30 @@ load(":initrd_release.bzl", "initrd_release")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
 
 extract.source_layer(
-    name = "deps",
+    name = "system-deps",
     features = [
         image.rpms_install([
             "btrfs-progs",
             "systemd",
             "systemd-udev",
         ]),
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+    visibility = [
+        "//antlir/linux/initrd/debug/...",
+    ],
+)
+
+image.layer(
+    name = "deps",
+    parent_layer = ":system-deps",
+    features = [
         image.install(
             "//antlir/linux/antlirctl:antlirctl",
             "/usr/bin/antlirctl",
         ),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
-    visibility = [
-        "//antlir/linux/initrd/debug/...",
-    ],
 )
 
 # Generate /etc/initrd-release based on scm/fbpkg revision info
