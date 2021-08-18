@@ -41,8 +41,8 @@ image.layer(
     parent_layer = ":basesystem-strip",
     features = [
         image.install_buck_runnable(
-            "//antlir/linux/antlirctl:antlirctl",
-            "/usr/bin/antlirctl",
+            "//antlir/linux/metalctl:metalctl",
+            "/usr/bin/metalctl",
         ),
         systemd.install_unit("workload-pre.target"),
         systemd.install_unit("workload.target"),

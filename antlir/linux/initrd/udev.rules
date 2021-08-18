@@ -1,7 +1,7 @@
 # probe filesystem metadata of disks
 KERNEL!="sr*", IMPORT{builtin}="blkid"
 
-# antlirctl needs a few mechanisms to refer to disks/partitions by something
+# metalctl needs a few mechanisms to refer to disks/partitions by something
 # other than the /dev path
 ENV{ID_FS_USAGE}=="filesystem|other|crypto", ENV{ID_FS_LABEL_ENC}=="?*", SYMLINK+="disk/by-label/$env{ID_FS_LABEL_ENC}"
 ENV{ID_FS_USAGE}=="filesystem|other|crypto", ENV{ID_FS_UUID_ENC}=="?*", SYMLINK+="disk/by-uuid/$env{ID_FS_UUID_ENC}"

@@ -65,8 +65,8 @@ mod tests {
     #[test]
     fn test_template() -> Result<()> {
         assert_eq!(
-            template_unit_name("antlir-fetch-image@.service", "https://some/url")?,
-            "antlir-fetch-image@https:--some-url.service"
+            template_unit_name("metalos-fetch-image@.service", "https://some/url")?,
+            "metalos-fetch-image@https:--some-url.service"
         );
         Ok(())
     }

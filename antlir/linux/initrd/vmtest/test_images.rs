@@ -25,17 +25,17 @@ fn fetch_unit() {
     assert_eq!("running", wait_for_systemd().trim());
     Command::new("systemctl")
         .arg("start")
-        .arg("antlir-fetch-image@metalos:1.service")
+        .arg("metalos-fetch-image@metalos:1.service")
         .spawn()
-        .expect("failed to start antlir-fetch-image")
+        .expect("failed to start metalos-fetch-image")
         .wait()
-        .expect("antlir-fetch-image service failed");
+        .expect("metalos-fetch-image service failed");
 
-    let dir = Path::new("/rootdisk/var/lib/antlir/image/metalos:1/volume");
+    let dir = Path::new("/rootdisk/var/lib/metalos/image/metalos:1/volume");
     let journal = String::from_utf8(
         Command::new("journalctl")
             .arg("-u")
-            .arg("antlir-fetch-image@metalos:1.service")
+            .arg("metalos-fetch-image@metalos:1.service")
             .output()
             .expect("failed to get journal output")
             .stdout,
