@@ -1,0 +1,11 @@
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
+
+export_file(
+    name = "cargo_cfgs.awk",
+)
+
+python_binary(
+    name = "buildrs-rustc-flags",
+    srcs = ["buildrs_rustc_flags.py"],
+    main_module = "third-party.rust.tools.buildrs_rustc_flags",
+)

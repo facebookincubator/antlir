@@ -1,4 +1,0 @@
-extra_srcs = ["src/**/*.rs"]
-
-buildscript = []
-features = ["tokio_track_caller"]

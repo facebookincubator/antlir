@@ -1,8 +1,0 @@
-# The build script also depends on src/mine_types.rs, which happens to be
-# caught by the glob (it wouldn't if the build script were in a subdir)
-[[buildscript]]
-[buildscript.gen_srcs]
-files = ["mime_types_generated.rs"]
-
-[env]
-OUT_DIR = "."
