@@ -40,10 +40,9 @@ image.layer(
     name = "metalos",
     parent_layer = ":basesystem-strip",
     features = [
-        image.install(
+        image.install_buck_runnable(
             "//antlir/linux/antlirctl:antlirctl",
             "/usr/bin/antlirctl",
-            mode = "a+rx",
         ),
         systemd.install_unit("workload-pre.target"),
         systemd.install_unit("workload.target"),

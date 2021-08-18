@@ -23,6 +23,7 @@ mod mkdir;
 mod mount;
 mod switch_root;
 mod systemd;
+mod umount;
 
 pub use config::Config;
 
@@ -34,6 +35,8 @@ enum Subcommand {
     FetchImage(fetch_image::Opts),
     /// Simplistic method to mount filesystems
     Mount(mount::Opts),
+    /// Simplistic method to unmount filesystems
+    Umount(umount::Opts),
     /// Simple implementation of /bin/mkdir
     Mkdir(mkdir::Opts),
     /// Setup the new rootfs and switch-root into it
@@ -88,6 +91,7 @@ async fn main() -> Result<()> {
         Subcommand::FetchImage(opts) => fetch_image::fetch_image(log, config, opts).await,
         Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
         Subcommand::Mount(opts) => mount::mount(opts),
+        Subcommand::Umount(opts) => umount::umount(opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts),
     }
 }

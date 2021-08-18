@@ -2,17 +2,7 @@ load("//antlir/bzl:oss_shim.bzl", "export_file", "rust_binary", "third_party")
 
 rust_binary(
     name = "antlirctl",
-    srcs = [
-        "src/antlirctl.rs",
-        "src/config.rs",
-        "src/fetch_image.rs",
-        "src/generator.rs",
-        "src/kernel_cmdline.rs",
-        "src/mkdir.rs",
-        "src/mount.rs",
-        "src/switch_root.rs",
-        "src/systemd.rs",
-    ],
+    srcs = glob(["src/*.rs"]),
     allocator = "malloc",
     link_style = "static",
     linker_flags = [
