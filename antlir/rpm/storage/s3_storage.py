@@ -22,7 +22,6 @@ from ..storage import Storage, StorageInput, StorageOutput
 log = get_logger()
 
 
-# pyre-fixme[11]: Annotation `s3` is not defined as a type.
 class S3Storage(Storage, plugin_kind="s3"):
     def __init__(
         self,
