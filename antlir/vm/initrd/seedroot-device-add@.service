@@ -1,9 +1,9 @@
 [Unit]
-Description=Add %f to /sysroot
-Requires=sysroot.mount
-After=sysroot.mount
+Description=Add %f to /rootdisk
+DefaultDependencies=no
+RequiresMountsFor=/rootdisk
 
 [Service]
 Type=oneshot
-ExecStart=/usr/sbin/btrfs device add %f /sysroot
+ExecStart=/usr/sbin/btrfs device add %f /rootdisk
 RemainAfterExit=yes

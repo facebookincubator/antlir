@@ -25,7 +25,7 @@ pub struct Opts {
 /// the correct root mount point.
 pub fn switch_root(log: Logger, opts: Opts) -> Result<()> {
     let log = log.new(o!("snapshot" => opts.snapshot.clone()));
-    let (device, options) = find_sysroot_device().context("failed to find /sysroot device")?;
+    let (device, options) = find_rootdisk_device().context("failed to find /rootdisk device")?;
     let options: Vec<_> = options.split(',').map(|s| s.to_string()).collect();
     let options = replace_subvol(options, &opts.snapshot);
     // TODO: for vmtest, no matter how we mount the rootfs, /proc/mounts will
@@ -39,9 +39,8 @@ pub fn switch_root(log: Logger, opts: Opts) -> Result<()> {
         "/dev/vda" => "/dev/vdb".into(),
         _ => device,
     };
-    debug!(log, "unmounting /sysroot");
-    nix::mount::umount("/sysroot").context("failed to umount /sysroot")?;
-    debug!(log, "mounting subvolume on {}", &device);
+    std::fs::create_dir("/sysroot").context("failed to mkdir /sysroot")?;
+    debug!(log, "mounting subvolume on {}", device);
     mount(MountOpts {
         source: device.clone(),
         target: "/sysroot".into(),
@@ -100,24 +99,29 @@ fn replace_subvol<S: AsRef<str>, T: AsRef<str>>(options: Vec<S>, new: T) -> Vec<
         .collect()
 }
 
-fn find_sysroot_device() -> Result<(String, String)> {
+fn find_rootdisk_device() -> Result<(String, String)> {
     let mounts = std::fs::read_to_string("/proc/mounts").context("failed to read /proc/mounts")?;
-    parse_sysroot_device(mounts)
+    let (dev, opts) = parse_rootdisk_device(mounts)?;
+    // attempt to resolve any symlinks or otherwise non-canonical paths
+    let dev = std::fs::canonicalize(&dev)
+        .map(|path| path.to_string_lossy().into())
+        .unwrap_or(dev);
+    Ok((dev, opts))
 }
 
-/// Parse /proc/mounts output to find the device which is mounted at /sysroot
-fn parse_sysroot_device(mounts: String) -> Result<(String, String)> {
+/// Parse /proc/mounts output to find the device which is mounted at /rootdisk
+fn parse_rootdisk_device(mounts: String) -> Result<(String, String)> {
     let (mut dev, opts): (String, String) = mounts
         .lines()
         .filter_map(|l| {
             let fields: Vec<_> = l.split_whitespace().collect();
             match fields[1] {
-                "/sysroot" => Some((fields[0].into(), fields[3].into())),
+                "/rootdisk" => Some((fields[0].into(), fields[3].into())),
                 _ => None,
             }
         })
         .next()
-        .ok_or(Error::msg("/sysroot not in mounts"))?;
+        .ok_or(Error::msg("/rootdisk not in mounts"))?;
 
     // /proc/mounts escapes characters with octal
     if dev.contains('\\') {
@@ -149,11 +153,11 @@ fn parse_sysroot_device(mounts: String) -> Result<(String, String)> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_sysroot_device, replace_subvol};
+    use super::{parse_rootdisk_device, replace_subvol};
     use anyhow::Result;
 
     #[test]
-    fn sysroot_device() -> Result<()> {
+    fn rootdisk_device() -> Result<()> {
         let input = r#"rootfs / rootfs rw 0 0
 proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
 sysfs /sys sysfs rw,nosuid,nodev,noexec,relatime 0 0
@@ -170,10 +174,10 @@ fs2 /data/users/vmagro/scratch/dataZusersZvmagroZfbsource/buck-image-out 9p ro,d
 fs1 /mnt/gvfs 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0
 usr-local-fbcode /usr/local/fbcode 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0
 /dev/vdc /vmtest btrfs ro,relatime,space_cache,subvolid=256,subvol=/volume 0 0
-/dev/vda /sysroot btrfs rw,relatime,space_cache,subvolid=256,subvol=/volume 0 0
-kernel-modules /sysroot/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b36602 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0"#.to_string();
+/dev/vda /rootdisk btrfs rw,relatime,space_cache,subvolid=256,subvol=/volume 0 0
+kernel-modules /rootdisk/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b36602 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0"#.to_string();
         assert_eq!(
-            parse_sysroot_device(input)?,
+            parse_rootdisk_device(input)?,
             (
                 "/dev/vda".into(),
                 "rw,relatime,space_cache,subvolid=256,subvol=/volume".into()
@@ -181,10 +185,10 @@ kernel-modules /sysroot/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b36
         );
         let input = r#"rootfs / rootfs rw 0 0
 /dev/vdc /vmtest btrfs ro,relatime,space_cache,subvolid=256,subvol=/volume 0 0
-/dev/disk/by-label/\134x2f /sysroot btrfs rw,relatime,space_cache,subvolid=256,subvol=/volume 0 0
-kernel-modules /sysroot/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b36602 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0"#.to_string();
+/dev/disk/by-label/\134x2f /rootdisk btrfs rw,relatime,space_cache,subvolid=256,subvol=/volume 0 0
+kernel-modules /rootdisk/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b36602 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0"#.to_string();
         assert_eq!(
-            parse_sysroot_device(input)?,
+            parse_rootdisk_device(input)?,
             (
                 r"/dev/disk/by-label/\x2f".into(),
                 "rw,relatime,space_cache,subvolid=256,subvol=/volume".into()

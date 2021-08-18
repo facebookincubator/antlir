@@ -11,7 +11,7 @@ load("//antlir/bzl/linux:defs.bzl", "linux")
 
 image.layer(
     name = "debug-deps",
-    parent_layer = "//antlir/linux/initrd:deps",
+    parent_layer = "//antlir/linux/initrd:system-deps",
     flavor = REPO_CFG.antlir_linux_flavor,
     features = [
         image.rpms_install([
