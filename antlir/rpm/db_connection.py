@@ -31,7 +31,6 @@ class DBConnectionContext(AbstractContextManager, Pluggable):
         raise NotImplementedError
 
 
-# pyre-fixme[11]: Annotation `sqlite` is not defined as a type.
 class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
     SQL_DIALECT = SQLDialect.SQLITE3
     _warned_about_sqlite_force_master = False

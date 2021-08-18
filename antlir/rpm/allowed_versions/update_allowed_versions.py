@@ -94,7 +94,6 @@ class _PluginRef(NamedTuple):
         return snapshot_root / snapshot_dir
 
     def kind(self) -> str:
-        # pyre-fixme[16]: `PackageGroup` has no attribute `_pluggable_kind`.
         return self.plugin._pluggable_kind
 
 
@@ -116,8 +115,6 @@ class _PluginDriver:
         self._plugins = [
             _PluginRef(pluggable=pluggable, plugin=cls())
             for pluggable in _PLUGGABLE_TO_DIR_NAME
-            # pyre-fixme[16]: `PackageGroup` has no attribute
-            # `_pluggable_kind_to_cls`.
             for cls in pluggable._pluggable_kind_to_cls.values()
         ]
 

@@ -15,7 +15,6 @@ from antlir.fs_utils import Path
 from .storage import Storage, StorageInput, StorageOutput, _CommitCallback
 
 
-# pyre-fixme[11]: Annotation `filesystem` is not defined as a type.
 class FilesystemStorage(Storage, plugin_kind="filesystem"):
     """
     Stores blobs on the local filesystem. This is great if you initially

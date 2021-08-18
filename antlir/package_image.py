@@ -257,7 +257,6 @@ class Format:
         return cls.NAME_TO_CLASS[format_name]()
 
 
-# pyre-fixme[11]: Annotation `sendstream` is not defined as a type.
 class Sendstream(Format, format_name="sendstream"):
     """
     Packages the subvolume as a stand-alone (non-incremental) send-stream.
@@ -273,7 +272,6 @@ class Sendstream(Format, format_name="sendstream"):
             pass
 
 
-# pyre-fixme[11]: Annotation `zst` is not defined as a type.
 class SendstreamZst(Format, format_name="sendstream.zst"):
     """
     Packages the subvolume as a stand-alone (non-incremental) zstd-compressed
@@ -295,7 +293,6 @@ class SendstreamZst(Format, format_name="sendstream.zst"):
         check_popen_returncode(zst)
 
 
-# pyre-fixme[11]: Annotation `squashfs` is not defined as a type.
 class SquashfsImage(Format, format_name="squashfs"):
     """
     Packages the subvolume as a squashfs-formatted disk image, usage:
@@ -316,7 +313,6 @@ class SquashfsImage(Format, format_name="squashfs"):
         )
 
 
-# pyre-fixme[11]: Annotation `btrfs` is not defined as a type.
 class BtrfsImage(Format, format_name="btrfs"):
     """
     Packages the subvolume as a btrfs-formatted disk image, usage:
@@ -329,7 +325,6 @@ class BtrfsImage(Format, format_name="btrfs"):
         )
 
 
-# pyre-fixme[11]: Annotation `gz` is not defined as a type.
 class TarballGzipImage(Format, format_name="tar.gz"):
     """
     Packages the subvolume as a gzip-compressed tarball, usage:
@@ -349,7 +344,6 @@ class TarballGzipImage(Format, format_name="tar.gz"):
         check_popen_returncode(gz)
 
 
-# pyre-fixme[11]: Annotation `gz` is not defined as a type.
 class CPIOGzipImage(Format, format_name="cpio.gz"):
     """
     Packages the subvol as a gzip-compressed cpio.
@@ -442,7 +436,6 @@ def _bash_cmd_in_build_appliance(
     )
 
 
-# pyre-fixme[11]: Annotation `vfat` is not defined as a type.
 class VfatImage(Format, format_name="vfat"):
     """
     Packages the subvolume as a vfat-formatted disk image, usage:
@@ -477,7 +470,6 @@ class VfatImage(Format, format_name="vfat"):
         )
 
 
-# pyre-fixme[11]: Annotation `ext3` is not defined as a type.
 class Ext3Image(Format, format_name="ext3"):
     """
     Packages the subvolume as an ext3-formatted disk image, usage:
