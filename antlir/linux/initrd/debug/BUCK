@@ -66,7 +66,7 @@ debug_features = [
         ":debug-deps",
         sets.difference(
             DEFAULT_APPLETS,
-            # these are implemented in antlirctl
+            # these are implemented in metalctl
             sets.make([
                 "mkdir",
                 "mount",

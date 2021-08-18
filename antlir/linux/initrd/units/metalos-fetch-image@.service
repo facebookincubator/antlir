@@ -7,11 +7,11 @@ Requires=network-online.target
 After=network-online.target
 RequiresMountsFor=/rootdisk
 # Only download an image version once
-ConditionDirectoryNotEmpty=!/rootdisk/var/lib/antlir/image/%i
+ConditionDirectoryNotEmpty=!/rootdisk/var/lib/metalos/image/%i
 
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStartPre=mkdir -p /rootdisk/var/lib/antlir/image
-ExecStartPre=btrfs subvolume create /rootdisk/var/lib/antlir/image/%i
-ExecStart=antlirctl fetch-image %I /rootdisk/var/lib/antlir/image/%i
+ExecStartPre=mkdir -p /rootdisk/var/lib/metalos/image
+ExecStartPre=btrfs subvolume create /rootdisk/var/lib/metalos/image/%i
+ExecStart=metalctl fetch-image %I /rootdisk/var/lib/metalos/image/%i

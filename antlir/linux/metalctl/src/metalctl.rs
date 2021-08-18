@@ -30,7 +30,7 @@ pub use config::Config;
 #[derive(StructOpt)]
 enum Subcommand {
     /// Systemd unit generator
-    AntlirGenerator(generator::Opts),
+    MetalosGenerator(generator::Opts),
     /// Download an image over HTTPS
     FetchImage(fetch_image::Opts),
     /// Simplistic method to mount filesystems
@@ -44,9 +44,9 @@ enum Subcommand {
 }
 
 #[derive(StructOpt)]
-#[structopt(name = "antlirctl", setting(AppSettings::NoBinaryName))]
-struct AntlirCtl {
-    #[structopt(short, long, default_value("/etc/antlirctl.toml"))]
+#[structopt(name = "metalctl", setting(AppSettings::NoBinaryName))]
+struct MetalCtl {
+    #[structopt(short, long, default_value("/etc/metalctl.toml"))]
     config: PathBuf,
     #[structopt(subcommand)]
     command: Subcommand,
@@ -59,18 +59,18 @@ async fn main() -> Result<()> {
     // do besides panic?
     let bin_path: PathBuf = args
         .pop_front()
-        .expect("antlirctl: must have argv[0]")
+        .expect("metalctl: must have argv[0]")
         .into();
     let bin_name = bin_path
         .file_name()
-        .expect("antlirctl: argv[0] must be a file path");
+        .expect("metalctl: argv[0] must be a file path");
     // If argv[0] is a symlink for a multicall utility, push the file name back
     // into the args array so that structopt will parse it correctly
-    if bin_name != "antlirctl" {
+    if bin_name != "metalctl" {
         args.push_front(bin_name.to_owned());
     }
 
-    let options = AntlirCtl::from_iter(args);
+    let options = MetalCtl::from_iter(args);
 
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
 
@@ -87,7 +87,7 @@ async fn main() -> Result<()> {
     config.apply_kernel_cmdline_overrides().unwrap();
 
     match options.command {
-        Subcommand::AntlirGenerator(opts) => generator::generator(log, opts),
+        Subcommand::MetalosGenerator(opts) => generator::generator(log, opts),
         Subcommand::FetchImage(opts) => fetch_image::fetch_image(log, config, opts).await,
         Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
         Subcommand::Mount(opts) => mount::mount(opts),

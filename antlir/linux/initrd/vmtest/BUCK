@@ -65,7 +65,7 @@ image.layer(
         notify.install(),
         # initrd-specific things below:
         binaries,
-        image.install("antlirctl.toml", "/etc/antlirctl.toml"),
+        image.install("metalctl.toml", "/etc/metalctl.toml"),
         # This is just appended to the base initrd, so make sure all the
         # directories that are needed get created
         image.ensure_subdirs_exist("/usr/lib", "systemd"),
@@ -146,7 +146,7 @@ image.layer(
             "/rootdisk/usr/lib/modules/{}.mount".format(TEST_KERNEL.uname),
             path = True,
         )]),
-        systemd.install_dropin("after-seedroot.conf", "antlir-fetch-image@.service"),
+        systemd.install_dropin("after-seedroot.conf", "metalos-fetch-image@.service"),
         systemd.enable_unit("systemd-modules-load.service", "initrd-switch-root.target"),
         # the default kernel-specific vm initrd includes this unit to
         # switch-root into /sysroot, which we don't want for MetalOS
@@ -205,8 +205,8 @@ vm.rust_unittest(
         initrd = ":switch-root-initrd.cpio.gz",
         kernel = TEST_KERNEL,
         append = [
-            "antlir.package-format-uri=http://vmtest-host:8000/package/{package}",
-            "antlir.os-package=metalos:1",
+            "metalos.package-format-uri=http://vmtest-host:8000/package/{package}",
+            "metalos.os-package=metalos:1",
             "rd.systemd.journald.forward_to_console=1",
         ],
         runtime = vm.types.runtime.new(

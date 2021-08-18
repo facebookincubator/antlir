@@ -30,8 +30,8 @@ image.layer(
     parent_layer = ":system-deps",
     features = [
         image.install(
-            "//antlir/linux/antlirctl:antlirctl",
-            "/usr/bin/antlirctl",
+            "//antlir/linux/metalctl:metalctl",
+            "/usr/bin/metalctl",
         ),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
@@ -101,29 +101,29 @@ image.layer(
         nss,
         users,
         image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
-        image.install("udev.rules", "/usr/lib/udev/rules.d/10-antlir.rules"),
+        image.install("udev.rules", "/usr/lib/udev/rules.d/10-metalos.rules"),
         # Due to limitations in the current extractor implementation, we have to
-        # extract systemd at the same time as antlirctl.
+        # extract systemd at the same time as metalctl.
         extract.extract(
             flavor = REPO_CFG.antlir_linux_flavor,
             binaries = SYSTEMD_BINARIES + [
                 "/usr/sbin/btrfs",
-                "/usr/bin/antlirctl",
+                "/usr/bin/metalctl",
             ],
             dest = "/",
             source = ":deps",
         ),
-        image.install("//antlir/linux/antlirctl:default-config.toml", "/etc/antlirctl.toml"),
-        # antlirctl provides a few utility binaries that systemd calls so we can
+        image.install("//antlir/linux/metalctl:default-config.toml", "/etc/metalctl.toml"),
+        # metalctl provides a few utility binaries that systemd calls so we can
         # avoid importing busybox for just a few tiny commands
-        image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mkdir"),
-        image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mount"),
-        image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/umount"),
-        systemd.install_unit("units/antlir-fetch-image@.service"),
-        systemd.install_unit("units/antlir-switch-root.service"),
-        systemd.enable_unit("antlir-switch-root.service", "initrd-switch-root.target", "requires"),
+        image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mkdir"),
+        image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
+        image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/umount"),
+        systemd.install_unit("units/metalos-fetch-image@.service"),
+        systemd.install_unit("units/metalos-switch-root.service"),
+        systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
         image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
-        image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/lib/systemd/system-generators/antlir-generator"),
+        image.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [

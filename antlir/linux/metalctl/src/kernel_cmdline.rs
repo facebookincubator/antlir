@@ -15,7 +15,7 @@ use crate::config::PackageFormatUri;
 
 #[derive(Debug, StructOpt, PartialEq, Default)]
 #[structopt(name = "kernel-cmdline", setting(AppSettings::NoBinaryName))]
-pub struct AntlirCmdline {
+pub struct MetalosCmdline {
     #[structopt(parse(from_str = parse_opt))]
     opts: Vec<KernelCmdlineOpt>,
 }
@@ -27,8 +27,8 @@ pub struct Root<'a> {
     pub fstype: Option<&'a str>,
 }
 
-impl AntlirCmdline {
-    pub fn from_kernel() -> Result<AntlirCmdline> {
+impl MetalosCmdline {
+    pub fn from_kernel() -> Result<Self> {
         fs::read_to_string("/proc/cmdline")
             .context("failed to read /proc/cmdline")?
             .parse()
@@ -42,11 +42,12 @@ impl AntlirCmdline {
     }
 
     pub fn os_package(&self) -> Option<&str> {
-        self.arg("antlir.os_package").and_then(|opt| opt.as_value())
+        self.arg("metalos.os_package")
+            .and_then(|opt| opt.as_value())
     }
 
     pub fn package_format_uri(&self) -> Option<Result<PackageFormatUri>> {
-        self.arg("antlir.package_format_uri")
+        self.arg("metalos.package_format_uri")
             .and_then(|opt| opt.as_value())
             .map(std::str::FromStr::from_str)
     }
@@ -87,7 +88,7 @@ impl AntlirCmdline {
     }
 
     pub fn seed_device(&self) -> Option<&str> {
-        self.arg("antlir.seed_device")
+        self.arg("metalos.seed_device")
             .and_then(|opt| opt.as_value())
     }
 }
@@ -134,12 +135,12 @@ enum ParserState {
     Quoted,
 }
 
-impl std::str::FromStr for AntlirCmdline {
+impl std::str::FromStr for MetalosCmdline {
     type Err = Error;
 
     /// Parse /proc/cmdline to get values from the booted kernel cmdline. Some
-    /// selected options are available when they have significance for Antlir
-    /// code, for example 'antlir.os_uri'.
+    /// selected options are available when they have significance for MetalOS
+    /// code, for example 'metalos.os_uri'.
     fn from_str(s: &str) -> Result<Self> {
         // strip leading and trailing whitespace
         let s = s.trim();
@@ -167,23 +168,23 @@ impl std::str::FromStr for AntlirCmdline {
         // last arg does not have the trailing whitespace to trigger the push in
         // the above loop
         args.push(current);
-        AntlirCmdline::from_iter_safe(args).context("failed to parse")
+        Self::from_iter_safe(args).context("failed to parse")
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{AntlirCmdline, Root};
+    use super::{MetalosCmdline, Root};
     use anyhow::Result;
 
     #[test]
     fn basic_cmdlines() -> Result<()> {
         for cmdline in &[
-            "rd.systemd.debug_shell=1 quiet antlir.os_package=some-pkg:id",
-            "rd.systemd.debug_shell=1 quiet antlir.os-package=some-pkg:id",
-            "rd.systemd.debug_shell=1 quiet antlir.os_package=\"some-pkg:id\"",
+            "rd.systemd.debug_shell=1 quiet metalos.os_package=some-pkg:id",
+            "rd.systemd.debug_shell=1 quiet metalos.os-package=some-pkg:id",
+            "rd.systemd.debug_shell=1 quiet metalos.os_package=\"some-pkg:id\"",
         ] {
-            let cmdline: AntlirCmdline = cmdline.parse()?;
+            let cmdline: MetalosCmdline = cmdline.parse()?;
             assert_eq!(Some("some-pkg:id"), cmdline.os_package());
         }
         Ok(())
@@ -195,7 +196,7 @@ mod tests {
         let kv = |key: &str, val: &str| super::KernelCmdlineOpt::Kv(key.to_owned(), val.to_owned());
         let on_off = |key: &str, val: bool| super::KernelCmdlineOpt::OnOff(key.to_owned(), val);
         assert_eq!(
-            AntlirCmdline {
+            MetalosCmdline {
                 opts: vec![
                     kv(
                         "BOOT_IMAGE",
@@ -239,7 +240,7 @@ mod tests {
                 fstype: Some("btrfs"),
             }),
             "root=LABEL=/ ro rootflags=subvol=volume rootfstype=btrfs"
-                .parse::<AntlirCmdline>()
+                .parse::<MetalosCmdline>()
                 .unwrap()
                 .root(),
         );

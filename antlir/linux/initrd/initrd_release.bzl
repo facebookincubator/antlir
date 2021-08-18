@@ -23,15 +23,15 @@ def initrd_release(name):
         name = name,
         out = "initrd-release",
         cmd = """
-            echo "NAME='Antlir Linux'" > $OUT
-            echo "ID='antlir-linux'" >> $OUT
+            echo "NAME='MetalOS'" > $OUT
+            echo "ID='metalos'" >> $OUT
             echo "VERSION='{version}'" >> $OUT
-            echo "PRETTY_NAME='Antlir Linux Initrd ({version})'" >> $OUT
+            echo "PRETTY_NAME='MetalOS Initrd ({version})'" >> $OUT
             echo "BUILD_ID='{build_id}'" >> $OUT
             echo "VARIANT='Initrd'" >> $OUT
             echo "VARIANT_ID='initrd'" >> $OUT
             echo "ANSI_COLOR='0;34'" >> $OUT
-            echo "ANTLIR_VCS_REV={rev}" >> $OUT
+            echo "METALOS_VCS_REV={rev}" >> $OUT
         """.format(
             version = version,
             build_id = build_id,

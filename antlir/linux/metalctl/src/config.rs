@@ -11,7 +11,7 @@ use anyhow::{bail, Context, Error, Result};
 use hyper::Uri;
 use serde::{de, Deserialize, Deserializer};
 
-use crate::kernel_cmdline::AntlirCmdline;
+use crate::kernel_cmdline::MetalosCmdline;
 
 #[derive(Debug)]
 pub struct PackageFormatUri(String);
@@ -65,13 +65,13 @@ pub struct Config {
 impl Config {
     /// Some config options can be overridden by the kernel cmdline. The default
     /// values are first deserialized from the config file
-    /// (/etc/antlirctl.toml), and then any args present on the kernel cmdline
+    /// (/etc/metalctl.toml), and then any args present on the kernel cmdline
     /// are processed.
     pub fn apply_kernel_cmdline_overrides(&mut self) -> Result<()> {
-        self.apply_overrides(AntlirCmdline::from_kernel()?)
+        self.apply_overrides(MetalosCmdline::from_kernel()?)
     }
 
-    fn apply_overrides(&mut self, cmdline: AntlirCmdline) -> Result<()> {
+    fn apply_overrides(&mut self, cmdline: MetalosCmdline) -> Result<()> {
         if let Some(uri) = cmdline.package_format_uri() {
             self.download.package_format_uri = uri?;
         }
@@ -102,7 +102,7 @@ impl Default for Download {
 mod tests {
     use anyhow::Result;
 
-    use super::{AntlirCmdline, Config};
+    use super::{Config, MetalosCmdline};
     #[test]
     fn overrides() -> Result<()> {
         let mut config = Config::default();
@@ -110,8 +110,8 @@ mod tests {
             config.download.package_format_uri.0,
             "https://metalos/package/{package}"
         );
-        let cmdline: AntlirCmdline =
-            "antlir.package_format_uri=\"https://package-host/pkg/{package}\"".parse()?;
+        let cmdline: MetalosCmdline =
+            "metalos.package_format_uri=\"https://package-host/pkg/{package}\"".parse()?;
         config.apply_overrides(cmdline)?;
         assert_eq!(
             config.download.package_format_uri.0,

@@ -15,7 +15,7 @@ use slog::{error, info, o, Drain, Logger};
 use slog_glog_fmt::kv_categorizer::ErrorCategorizer;
 use structopt::StructOpt;
 
-use crate::kernel_cmdline::AntlirCmdline;
+use crate::kernel_cmdline::MetalosCmdline;
 use crate::systemd::{self, PROVIDER_ROOT};
 
 #[derive(StructOpt)]
@@ -52,37 +52,37 @@ fn instantiate_template<U: AsRef<str>, I: AsRef<str>>(
 
 fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
     let cmdline =
-        AntlirCmdline::from_kernel().context("invalid kernel cmdline options for Antlir")?;
+        MetalosCmdline::from_kernel().context("invalid kernel cmdline options for MetalOS")?;
 
     if let Some(os_package) = cmdline.os_package() {
         info!(
             log,
-            "instantiating antlir-fetch-image@{}.service", &os_package
+            "instantiating metalos-fetch-image@{}.service", &os_package
         );
         let fetch_unit = instantiate_template(
             opts.normal_dir.clone(),
-            "antlir-fetch-image@.service",
+            "metalos-fetch-image@.service",
             os_package,
         )?;
-        fs::create_dir_all(&opts.normal_dir.join("antlir-switch-root.service.d"))
-            .context("failed to create .d/ for antlir-switch-root.service")?;
+        fs::create_dir_all(&opts.normal_dir.join("metalos-switch-root.service.d"))
+            .context("failed to create .d/ for metalos-switch-root.service")?;
         let mut subvol_conf = fs::File::create(
             opts.normal_dir
-                .join("antlir-switch-root.service.d")
+                .join("metalos-switch-root.service.d")
                 .join("os_subvol.conf"),
         )
-        .context("failed to create drop-in for antlir-switch-root.service")?;
+        .context("failed to create drop-in for metalos-switch-root.service")?;
         info!(
             log,
             "Writing drop-in to switch-root into subvol for {}", &os_package,
         );
         info!(
             log,
-            "antlir-switch-root.service will wait for {}", &fetch_unit,
+            "metalos-switch-root.service will wait for {}", &fetch_unit,
         );
         write!(
             subvol_conf,
-            "[Unit]\nAfter={}\nRequires={}\n[Service]\nEnvironment=OS_SUBVOL=var/lib/antlir/image/{}/volume",
+            "[Unit]\nAfter={}\nRequires={}\n[Service]\nEnvironment=OS_SUBVOL=var/lib/metalos/image/{}/volume",
             fetch_unit,
             fetch_unit,
             systemd::escape(os_package)?
@@ -136,7 +136,7 @@ fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
 }
 
 pub fn generator(log: Logger, opts: Opts) -> Result<()> {
-    // antlir-generator has an additional logging drain setup that is not as
+    // metalos-generator has an additional logging drain setup that is not as
     // pretty looking as other slog drain formats, but is usable with /dev/kmsg.
     // Otherwise, the regular drain that logs to stderr silently disappears when
     // systemd runs the generator.
@@ -152,7 +152,7 @@ pub fn generator(log: Logger, opts: Opts) -> Result<()> {
 
     let log = slog::Logger::root(slog::Duplicate::new(log, drain).fuse(), o!());
 
-    info!(log, "antlir-generator starting");
+    info!(log, "metalos-generator starting");
 
     let sublog = log.new(o!());
 

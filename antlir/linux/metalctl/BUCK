@@ -1,7 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file", "rust_binary", "third_party")
 
 rust_binary(
-    name = "antlirctl",
+    name = "metalctl",
     srcs = glob(["src/*.rs"]),
     allocator = "malloc",
     link_style = "static",
