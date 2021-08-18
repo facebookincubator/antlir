@@ -105,7 +105,30 @@ fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
         .context("failed to write sysroot.mount")?;
         let requires_dir = opts.normal_dir.join("initrd-root-fs.target.requires");
         fs::create_dir(&requires_dir)?;
-        symlink(&sysroot_unit_path, requires_dir.join("sysroot.mount"))?;
+    }
+
+    if let Some(seed_device) = cmdline.seed_device() {
+        info!(log, "Enabling seed device: {}", &seed_device);
+
+        let seed_device_escaped = systemd::escape_path(&seed_device)?;
+
+        instantiate_template(
+            opts.normal_dir.clone(),
+            "seedroot-device-add@.service",
+            seed_device_escaped.clone(),
+        )?;
+
+        let seedroot_dropin_dir = opts.normal_dir.join("seedroot.service.d");
+        fs::create_dir(&seedroot_dropin_dir)?;
+        let seedroot_dropin_path = seedroot_dropin_dir.join("device-add.conf");
+        let mut unit = fs::File::create(&seedroot_dropin_path)
+            .with_context(|| format!("failed to open {:?} for writing", seedroot_dropin_path))?;
+        write!(
+            unit,
+            "[Unit]\nRequires=seedroot-device-add@{}.service\nAfter=seedroot-device-add@{}.service",
+            seed_device_escaped, seed_device_escaped,
+        )
+        .context("failed to write seedroot.service dropin")?;
     }
 
     Ok(())

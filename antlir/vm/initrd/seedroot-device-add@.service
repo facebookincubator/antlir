@@ -1,0 +1,9 @@
+[Unit]
+Description=Add %f to /sysroot
+Requires=sysroot.mount
+After=sysroot.mount
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/btrfs device add %f /sysroot
+RemainAfterExit=yes

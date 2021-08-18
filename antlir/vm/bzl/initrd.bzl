@@ -104,12 +104,12 @@ def initrd(kernel, module_list = None, visibility = None):
         name = name + "--layer",
         features = [
             image.ensure_dirs_exist("/usr/lib/systemd/system"),
-            # the initrd will mount /dev/vda at /sysroot - follow it up with
-            # seedroot units to make it rw with /dev/vdb as a scratch device
-            systemd.install_unit("//antlir/vm/initrd:seedroot-device-add.service"),
+            # The antlirctl generator will instantiate this template with the
+            # seed device provided on the kernel command line as antlir.seed_device.
+            systemd.install_unit("//antlir/vm/initrd:seedroot-device-add@.service"),
             systemd.install_unit("//antlir/vm/initrd:seedroot.service"),
-            systemd.install_unit("//antlir/vm/initrd:initrd-switch-root.service"),
             systemd.enable_unit("seedroot.service", target = "initrd-fs.target"),
+            systemd.install_unit("//antlir/vm/initrd:initrd-switch-root.service"),
             systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
             # mount kernel modules over 9p in the initrd so they are available
             # immediately in the base os

@@ -393,6 +393,7 @@ async def __vm_with_stack(
         "-append",
         (
             "console=ttyS0,115200"
+            " antlir.seed_device=/dev/vdb"
             " root=/dev/vda"
             " rootflags=subvol=volume,ro"
             " rootfstype=btrfs"

@@ -1,9 +1,0 @@
-[Unit]
-Description=Add /dev/vdb to /sysroot
-Requires=dev-vdb.device sysroot.mount
-After=dev-vdb.device sysroot.mount
-
-[Service]
-Type=oneshot
-ExecStart=/usr/sbin/btrfs device add /dev/vdb /sysroot
-RemainAfterExit=yes
