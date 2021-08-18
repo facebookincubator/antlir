@@ -114,13 +114,14 @@ image.layer(
             source = ":deps",
         ),
         image.install("//antlir/linux/antlirctl:default-config.toml", "/etc/antlirctl.toml"),
-        # antlirctl provides /usr/bin/{mkdir, mount} so we can avoid importing
-        # busybox for just a few tiny commands
+        # antlirctl provides a few utility binaries that systemd calls so we can
+        # avoid importing busybox for just a few tiny commands
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mkdir"),
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/mount"),
+        image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/bin/umount"),
         systemd.install_unit("units/antlir-fetch-image@.service"),
         systemd.install_unit("units/antlir-switch-root.service"),
-        systemd.enable_unit("antlir-switch-root.service", "initrd-switch-root.target"),
+        systemd.enable_unit("antlir-switch-root.service", "initrd-switch-root.target", "requires"),
         image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
         image.ensure_file_symlink("/usr/bin/antlirctl", "/usr/lib/systemd/system-generators/antlir-generator"),
     ],

@@ -70,6 +70,7 @@ debug_features = [
             sets.make([
                 "mkdir",
                 "mount",
+                "umount",
             ]),
         ),
         src_path = "/usr/sbin/busybox",
