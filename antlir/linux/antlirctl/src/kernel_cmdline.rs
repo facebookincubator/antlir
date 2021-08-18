@@ -85,6 +85,11 @@ impl AntlirCmdline {
                 }
             })
     }
+
+    pub fn seed_device(&self) -> Option<&str> {
+        self.arg("antlir.seed_device")
+            .and_then(|opt| opt.as_value())
+    }
 }
 
 #[derive(Debug, PartialEq)]
