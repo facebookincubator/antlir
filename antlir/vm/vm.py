@@ -315,21 +315,17 @@ async def __vm_with_stack(
     shares.extend(
         [
             BtrfsDisk(
-                # pyre-fixme[6]: Expected `PathLike[typing.Any]` for 1st param
-                #  but got `str`.
-                path=str(opts.disk.package.path),
+                path=opts.disk.package.path,
                 dev="vda",
                 generator=False,
-                mountpoint="/",
+                mountpoint=Path("/"),
             ),
             BtrfsDisk(
-                # pyre-fixme[6]: Expected `PathLike[typing.Any]` for 1st param
-                #  but got `str`.
-                path=rwdevice.name,
+                path=Path(rwdevice.name),
                 dev="vdb",
                 generator=False,
                 readonly=False,
-                mountpoint="/",
+                mountpoint=Path("/"),
             ),
         ]
     )
@@ -337,12 +333,17 @@ async def __vm_with_stack(
     if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
-        shares.append(Plan9Export(not_none(repo_cfg.repo_root)))
+        shares.append(
+            Plan9Export(
+                path=not_none(repo_cfg.repo_root),
+                mountpoint=not_none(repo_cfg.repo_root),
+            )
+        )
 
         # Also share any additionally configured host mounts needed
         # along with the repository root.
         for mount in repo_cfg.host_mounts_for_repo_artifacts:
-            shares.append(Plan9Export(mount))
+            shares.append(Plan9Export(path=mount, mountpoint=mount))
 
     ns = stack.enter_context(Unshare([Namespace.NETWORK, Namespace.PID]))
 
@@ -401,6 +402,7 @@ async def __vm_with_stack(
             " panic=-1"
             " cgroup_no_v1=all"
             " systemd.unified_cgroup_hierarchy=1"
+            # " systemd.log_level=debug systemd.log_target=console"
             " rd.emergency=poweroff " + " ".join(opts.append)
         ),
         # socket/serial device pair (for use by _wait_for_boot)
@@ -429,10 +431,14 @@ async def __vm_with_stack(
     # to install kernels in the root fs and avoid expensive copying of
     # ~400M worth of modules during boot
     if opts.kernel.artifacts.modules is not None:
+        modules_path = find_built_subvol(
+            # pyre-fixme [16]: `Optional` has no attribute `path`
+            opts.kernel.artifacts.modules.path
+        ).path()
         shares += [
             Plan9Export(
-                # pyre-fixme[16]: `Optional` has no attribute `path`.
-                find_built_subvol(opts.kernel.artifacts.modules.path).path(),
+                path=modules_path,
+                mountpoint=modules_path,
                 mount_tag="kernel-modules",
                 generator=False,
             )
@@ -461,6 +467,7 @@ async def __vm_with_stack(
         if shell and shell == ShellMode.console:  # pragma: no cover
             proc = subprocess.Popen(qemu_cmd)
         else:
+            logger.debug(f"qemu_cmd: {qemu_cmd}")
             proc = subprocess.Popen(
                 qemu_cmd,
                 # Never have stdin connected unless we are in shell mode
