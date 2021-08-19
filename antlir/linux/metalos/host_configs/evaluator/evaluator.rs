@@ -6,6 +6,7 @@
  */
 
 #![deny(warnings)]
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -21,6 +22,27 @@ struct Opts {
     generators: Vec<PathBuf>,
 }
 
+fn extract_generators(archive_path: &Path) -> Result<Vec<Generator>> {
+    let f = File::open(archive_path)
+        .with_context(|| format!("failed to open tarball {}", archive_path.display()))?;
+    let dec = zstd::Decoder::new(f)?;
+    let mut ar = tar::Archive::new(dec);
+    let mut generators = vec![];
+    for file in ar.entries().context("failed to get entries from tar")? {
+        let mut f = file.context("invalid file found in tar")?;
+        let path = f.path().context("invalid filename")?.into_owned();
+        if path.extension() == Some(OsStr::new("star")) {
+            let mut src = String::new();
+            f.read_to_string(&mut src)?;
+            generators.push(Generator::compile(
+                format!("{}:{}", archive_path.display(), path.display()),
+                src,
+            )?);
+        }
+    }
+    Ok(generators)
+}
+
 fn main() -> Result<()> {
     let opts = Opts::from_args();
     let host: Host = {
@@ -33,14 +55,26 @@ fn main() -> Result<()> {
             serde_json::from_reader(f)?
         }
     };
+    let mut generators = vec![];
     for gen_path in opts.generators {
-        let mut generator_src = String::new();
-        File::open(&gen_path)
-            .with_context(|| format!("failed to open generator file {}", gen_path.display()))?
-            .read_to_string(&mut generator_src)?;
-        let gen = Generator::compile(format!("{}", gen_path.display()), generator_src)?;
+        if gen_path.extension() == Some(OsStr::new("star")) {
+            let mut src = String::new();
+            File::open(&gen_path)
+                .with_context(|| format!("failed to open generator file {}", gen_path.display()))?
+                .read_to_string(&mut src)?;
+            generators.push(Generator::compile(format!("{}", gen_path.display()), src)?);
+        } else if gen_path.extension() == Some(OsStr::new("zst")) {
+            generators.extend(extract_generators(&gen_path)?);
+        } else {
+            eprintln!(
+                "Ignoring generator '{}' with unknown extension",
+                gen_path.display()
+            );
+        }
+    }
+    for gen in generators {
         let output = gen.eval(&host)?;
-        println!("{}\n{:#?}", gen_path.display(), output);
+        println!("{}\n{:#?}", gen.name, output);
     }
     Ok(())
 }
