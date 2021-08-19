@@ -1,4 +1,4 @@
 [Unit]
 Description=Host workload (Pre)
 RefuseManualStart=yes
-Before=workload.target
+Requires=core-services.target

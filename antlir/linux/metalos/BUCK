@@ -9,6 +9,7 @@ image.layer(
     features = [
         image.rpms_install([
             "basesystem",
+            "btrfs-progs",
             "iproute",
             "openssh-server",
             "systemd",
@@ -44,6 +45,7 @@ image.layer(
             "//antlir/linux/metalctl:metalctl",
             "/usr/bin/metalctl",
         ),
+        systemd.install_unit("core-services.target"),
         systemd.install_unit("workload-pre.target"),
         systemd.install_unit("workload.target"),
         # in the default CentOS packages, this points to graphical.target which makes no sense in our context
@@ -52,15 +54,13 @@ image.layer(
         # networking config to use DHCP is a generic workload-pre.target
         # dependency
         image.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
-        systemd.enable_unit("systemd-networkd.service", "workload-pre.target"),
-        systemd.enable_unit("systemd-resolved.service", "workload-pre.target"),
+        systemd.enable_unit("systemd-networkd.service", "core-services.target"),
+        systemd.enable_unit("systemd-resolved.service", "core-services.target"),
         # TODO: this is a workaround for a likely bug in the initrd shutdown
         # process that ends up leaving udev rules unprocessed in the
         # post-switch-root root fs.
-        systemd.enable_unit("systemd-udev-trigger.service", "workload-pre.target"),
-        # TODO: should there be another target that exists for critical "out of
-        # band" services that are unrelated to the workload like sshd?
-        systemd.enable_unit("sshd.service", "workload-pre.target"),
+        systemd.enable_unit("systemd-udev-trigger.service", "core-services.target"),
+        systemd.enable_unit("sshd.service", "core-services.target"),
     ],
     runtime = ["systemd"],
     flavor = REPO_CFG.antlir_linux_flavor,
