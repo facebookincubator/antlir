@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "cpp_library")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "cpp_library", "export_file", "rust_library")
 load(":defs.bzl", "archive", "third_party_rust_binary", "third_party_rust_library")
 
 archive(
@@ -26,6 +26,12 @@ archive(
 )
 
 archive(
+    name = "annotate-snippets-0.9.0--archive",
+    sha256 = "5c96c3d1062ea7101741480185a6a1275eab01cbe8b20e378d1311bc056d2e08",
+    url = "https://static.crates.io/crates/annotate-snippets/annotate-snippets-0.9.0.crate",
+)
+
+archive(
     name = "ansi_term-0.11.0--archive",
     sha256 = "ee49baf6cb617b853aa8d93bf420db2383fab46d314482ca2803b40d5fde979b",
     url = "https://static.crates.io/crates/ansi_term/ansi_term-0.11.0.crate",
@@ -35,6 +41,12 @@ archive(
     name = "anyhow-1.0.34--archive",
     sha256 = "bf8dcb5b4bbaa28653b647d8c77bd4ed40183b48882e130c1f1ffb73de069fd7",
     url = "https://static.crates.io/crates/anyhow/anyhow-1.0.34.crate",
+)
+
+archive(
+    name = "ascii-canvas-2.0.0--archive",
+    sha256 = "ff8eb72df928aafb99fe5d37b383f2fe25bd2a765e3e5f7c365916b6f2463a29",
+    url = "https://static.crates.io/crates/ascii-canvas/ascii-canvas-2.0.0.crate",
 )
 
 archive(
@@ -80,6 +92,24 @@ archive(
 )
 
 archive(
+    name = "beef-0.4.4--archive",
+    sha256 = "474a626a67200bd107d44179bb3d4fc61891172d11696609264589be6a0e6a43",
+    url = "https://static.crates.io/crates/beef/beef-0.4.4.crate",
+)
+
+archive(
+    name = "bit-set-0.5.2--archive",
+    sha256 = "6e11e16035ea35e4e5997b393eacbf6f63983188f7a2ad25bfb13465f5ad59de",
+    url = "https://static.crates.io/crates/bit-set/bit-set-0.5.2.crate",
+)
+
+archive(
+    name = "bit-vec-0.6.2--archive",
+    sha256 = "5f0dc55f2d8a1a85650ac47858bb001b4c0dd73d79e3c455a842925e68d29cd3",
+    url = "https://static.crates.io/crates/bit-vec/bit-vec-0.6.2.crate",
+)
+
+archive(
     name = "bitflags-1.2.1--archive",
     sha256 = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693",
     url = "https://static.crates.io/crates/bitflags/bitflags-1.2.1.crate",
@@ -107,6 +137,12 @@ archive(
     name = "buf_redux-0.8.4--archive",
     sha256 = "b953a6887648bb07a535631f2bc00fbdb2a2216f135552cb3f534ed136b9c07f",
     url = "https://static.crates.io/crates/buf_redux/buf_redux-0.8.4.crate",
+)
+
+archive(
+    name = "bumpalo-3.4.0--archive",
+    sha256 = "2e8c087f005730276d1096a652e92a8bacee2e2472bcc9715a74d2bec38b5820",
+    url = "https://static.crates.io/crates/bumpalo/bumpalo-3.4.0.crate",
 )
 
 archive(
@@ -212,9 +248,51 @@ archive(
 )
 
 archive(
+    name = "darling-0.10.2--archive",
+    sha256 = "0d706e75d87e35569db781a9b5e2416cff1236a47ed380831f959382ccd5f858",
+    url = "https://static.crates.io/crates/darling/darling-0.10.2.crate",
+)
+
+archive(
+    name = "darling_core-0.10.2--archive",
+    sha256 = "f0c960ae2da4de88a91b2d920c2a7233b400bc33cb28453a2987822d8392519b",
+    url = "https://static.crates.io/crates/darling_core/darling_core-0.10.2.crate",
+)
+
+archive(
+    name = "darling_macro-0.10.2--archive",
+    sha256 = "d9b5a2f4ac4969822c62224815d069952656cadc7084fdca9751e6d959189b72",
+    url = "https://static.crates.io/crates/darling_macro/darling_macro-0.10.2.crate",
+)
+
+archive(
     name = "data-encoding-2.3.0--archive",
     sha256 = "d4d0e2d24e5ee3b23a01de38eefdcd978907890701f08ffffd4cb457ca4ee8d6",
     url = "https://static.crates.io/crates/data-encoding/data-encoding-2.3.0.crate",
+)
+
+archive(
+    name = "derivative-2.1.1--archive",
+    sha256 = "cb582b60359da160a9477ee80f15c8d784c477e69c217ef2cdd4169c24ea380f",
+    url = "https://static.crates.io/crates/derivative/derivative-2.1.1.crate",
+)
+
+archive(
+    name = "derive_builder-0.9.0--archive",
+    sha256 = "a2658621297f2cf68762a6f7dc0bb7e1ff2cfd6583daef8ee0fed6f7ec468ec0",
+    url = "https://static.crates.io/crates/derive_builder/derive_builder-0.9.0.crate",
+)
+
+archive(
+    name = "derive_builder_core-0.9.0--archive",
+    sha256 = "2791ea3e372c8495c0bc2033991d76b512cd799d07491fbd6890124db9458bef",
+    url = "https://static.crates.io/crates/derive_builder_core/derive_builder_core-0.9.0.crate",
+)
+
+archive(
+    name = "diff-0.1.12--archive",
+    sha256 = "0e25ea47919b1560c4e3b7fe0aaab9becf5b84a10325ddf7db0f0ba5e1026499",
+    url = "https://static.crates.io/crates/diff/diff-0.1.12.crate",
 )
 
 archive(
@@ -230,9 +308,21 @@ archive(
 )
 
 archive(
+    name = "dirs-1.0.5--archive",
+    sha256 = "3fd78930633bd1c6e35c4b42b1df7b0cbc6bc191146e512bb3bedf243fcc3901",
+    url = "https://static.crates.io/crates/dirs/dirs-1.0.5.crate",
+)
+
+archive(
     name = "dirs-2.0.2--archive",
     sha256 = "13aea89a5c93364a98e9b37b2fa237effbb694d5cfe01c5b70941f7eb087d5e3",
     url = "https://static.crates.io/crates/dirs/dirs-2.0.2.crate",
+)
+
+archive(
+    name = "dirs-next-2.0.0--archive",
+    sha256 = "b98cf8ebf19c3d1b223e151f99a4f9f0690dca41414773390fc824184ac833e1",
+    url = "https://static.crates.io/crates/dirs-next/dirs-next-2.0.0.crate",
 )
 
 archive(
@@ -242,15 +332,39 @@ archive(
 )
 
 archive(
+    name = "dirs-sys-next-0.1.2--archive",
+    sha256 = "4ebda144c4fe02d1f7ea1a7d9641b6fc6b580adcfa024ae48797ecdeb6825b4d",
+    url = "https://static.crates.io/crates/dirs-sys-next/dirs-sys-next-0.1.2.crate",
+)
+
+archive(
+    name = "docopt-1.1.0--archive",
+    sha256 = "7f525a586d310c87df72ebcd98009e57f1cc030c8c268305287a476beb653969",
+    url = "https://static.crates.io/crates/docopt/docopt-1.1.0.crate",
+)
+
+archive(
     name = "either-1.6.1--archive",
     sha256 = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457",
     url = "https://static.crates.io/crates/either/either-1.6.1.crate",
 )
 
 archive(
+    name = "ena-0.14.0--archive",
+    sha256 = "d7402b94a93c24e742487327a7cd839dc9d36fec9de9fb25b09f2dae459f36c3",
+    url = "https://static.crates.io/crates/ena/ena-0.14.0.crate",
+)
+
+archive(
     name = "enum-as-inner-0.3.3--archive",
     sha256 = "7c5f0096a91d210159eceb2ff5e1c4da18388a170e1e3ce948aac9c8fdbbf595",
     url = "https://static.crates.io/crates/enum-as-inner/enum-as-inner-0.3.3.crate",
+)
+
+archive(
+    name = "erased-serde-0.3.12--archive",
+    sha256 = "6ca8b296792113e1500fd935ae487be6e00ce318952a6880555554824d6ebf38",
+    url = "https://static.crates.io/crates/erased-serde/erased-serde-0.3.12.crate",
 )
 
 archive(
@@ -278,6 +392,12 @@ archive(
 )
 
 archive(
+    name = "fixedbitset-0.2.0--archive",
+    sha256 = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d",
+    url = "https://static.crates.io/crates/fixedbitset/fixedbitset-0.2.0.crate",
+)
+
+archive(
     name = "fnv-1.0.7--archive",
     sha256 = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1",
     url = "https://static.crates.io/crates/fnv/fnv-1.0.7.crate",
@@ -287,6 +407,12 @@ archive(
     name = "form_urlencoded-1.0.0--archive",
     sha256 = "ece68d15c92e84fa4f19d3780f1294e5ca82a78a6d515f1efaabcc144688be00",
     url = "https://static.crates.io/crates/form_urlencoded/form_urlencoded-1.0.0.crate",
+)
+
+archive(
+    name = "fs2-0.4.3--archive",
+    sha256 = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213",
+    url = "https://static.crates.io/crates/fs2/fs2-0.4.3.crate",
 )
 
 archive(
@@ -458,6 +584,12 @@ archive(
 )
 
 archive(
+    name = "ident_case-1.0.1--archive",
+    sha256 = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39",
+    url = "https://static.crates.io/crates/ident_case/ident_case-1.0.1.crate",
+)
+
+archive(
     name = "idna-0.2.0--archive",
     sha256 = "02e2673c30ee86b5b96a9cb52ad15718aa1f966f5ab9ad54a8b95d5ca33120a9",
     url = "https://static.crates.io/crates/idna/idna-0.2.0.crate",
@@ -494,9 +626,27 @@ archive(
 )
 
 archive(
+    name = "itertools-0.9.0--archive",
+    sha256 = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b",
+    url = "https://static.crates.io/crates/itertools/itertools-0.9.0.crate",
+)
+
+archive(
     name = "itoa-0.4.6--archive",
     sha256 = "dc6f3ad7b9d11a0c00842ff8de1b60ee58661048eb8049ed33c73594f359d7e6",
     url = "https://static.crates.io/crates/itoa/itoa-0.4.6.crate",
+)
+
+archive(
+    name = "lalrpop-0.19.1--archive",
+    sha256 = "60fb56191fb8ed5311597e5750debe6779c9fdb487dbaa5ff302592897d7a2c8",
+    url = "https://static.crates.io/crates/lalrpop/lalrpop-0.19.1.crate",
+)
+
+archive(
+    name = "lalrpop-util-0.19.1--archive",
+    sha256 = "6771161eff561647fad8bb7e745e002c304864fb8f436b52b30acda51fca4408",
+    url = "https://static.crates.io/crates/lalrpop-util/lalrpop-util-0.19.1.crate",
 )
 
 archive(
@@ -536,9 +686,27 @@ archive(
 )
 
 archive(
+    name = "logos-0.11.4--archive",
+    sha256 = "b91c49573597a5d6c094f9031617bb1fed15c0db68c81e6546d313414ce107e4",
+    url = "https://static.crates.io/crates/logos/logos-0.11.4.crate",
+)
+
+archive(
+    name = "logos-derive-0.11.5--archive",
+    sha256 = "797b1f8a0571b331c1b47e7db245af3dc634838da7a92b3bef4e30376ae1c347",
+    url = "https://static.crates.io/crates/logos-derive/logos-derive-0.11.5.crate",
+)
+
+archive(
     name = "lru-cache-0.1.2--archive",
     sha256 = "31e24f1ad8321ca0e8a1e0ac13f23cb668e6f5466c2c57319f6a5cf1cc8e3b1c",
     url = "https://static.crates.io/crates/lru-cache/lru-cache-0.1.2.crate",
+)
+
+archive(
+    name = "maplit-1.0.2--archive",
+    sha256 = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d",
+    url = "https://static.crates.io/crates/maplit/maplit-1.0.2.crate",
 )
 
 archive(
@@ -599,6 +767,18 @@ archive(
     name = "multipart-0.17.0--archive",
     sha256 = "8209c33c951f07387a8497841122fc6f712165e3f9bda3e6be4645b58188f676",
     url = "https://static.crates.io/crates/multipart/multipart-0.17.0.crate",
+)
+
+archive(
+    name = "new_debug_unreachable-1.0.4--archive",
+    sha256 = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54",
+    url = "https://static.crates.io/crates/new_debug_unreachable/new_debug_unreachable-1.0.4.crate",
+)
+
+archive(
+    name = "nix-0.19.1--archive",
+    sha256 = "b2ccba0cfe4fdf15982d1674c69b1fd80bad427d293849982668dfe454bd61f2",
+    url = "https://static.crates.io/crates/nix/nix-0.19.1.crate",
 )
 
 archive(
@@ -668,9 +848,27 @@ archive(
 )
 
 archive(
+    name = "paste-1.0.2--archive",
+    sha256 = "ba7ae1a2180ed02ddfdb5ab70c70d596a26dd642e097bb6fe78b1bde8588ed97",
+    url = "https://static.crates.io/crates/paste/paste-1.0.2.crate",
+)
+
+archive(
     name = "percent-encoding-2.1.0--archive",
     sha256 = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e",
     url = "https://static.crates.io/crates/percent-encoding/percent-encoding-2.1.0.crate",
+)
+
+archive(
+    name = "petgraph-0.5.1--archive",
+    sha256 = "467d164a6de56270bd7c4d070df81d07beace25012d5103ced4e9ff08d6afdb7",
+    url = "https://static.crates.io/crates/petgraph/petgraph-0.5.1.crate",
+)
+
+archive(
+    name = "phf_shared-0.8.0--archive",
+    sha256 = "c00cf8b9eafe68dde5e9eaa2cef8ee84a9336a47d566ec55ca16589633b65af7",
+    url = "https://static.crates.io/crates/phf_shared/phf_shared-0.8.0.crate",
 )
 
 archive(
@@ -719,6 +917,12 @@ archive(
     name = "ppv-lite86-0.2.9--archive",
     sha256 = "c36fa947111f5c62a733b652544dd0016a43ce89619538a8ef92724a6f501a20",
     url = "https://static.crates.io/crates/ppv-lite86/ppv-lite86-0.2.9.crate",
+)
+
+archive(
+    name = "precomputed-hash-0.1.1--archive",
+    sha256 = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c",
+    url = "https://static.crates.io/crates/precomputed-hash/precomputed-hash-0.1.1.crate",
 )
 
 archive(
@@ -926,6 +1130,12 @@ archive(
 )
 
 archive(
+    name = "rustyline-7.1.0--archive",
+    sha256 = "8227301bfc717136f0ecbd3d064ba8199e44497a0bdd46bb01ede4387cfd2cec",
+    url = "https://static.crates.io/crates/rustyline/rustyline-7.1.0.crate",
+)
+
+archive(
     name = "ryu-1.0.5--archive",
     sha256 = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e",
     url = "https://static.crates.io/crates/ryu/ryu-1.0.5.crate",
@@ -1010,9 +1220,21 @@ archive(
 )
 
 archive(
+    name = "sha2-0.8.2--archive",
+    sha256 = "a256f46ea78a0c0d9ff00077504903ac881a1dafdc20da66545699e7776b3e69",
+    url = "https://static.crates.io/crates/sha2/sha2-0.8.2.crate",
+)
+
+archive(
     name = "signal-hook-registry-1.4.0--archive",
     sha256 = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0",
     url = "https://static.crates.io/crates/signal-hook-registry/signal-hook-registry-1.4.0.crate",
+)
+
+archive(
+    name = "siphasher-0.3.3--archive",
+    sha256 = "fa8f3741c7372e75519bd9346068370c9cdaabcc1f9599cbcf2a2719352286b7",
+    url = "https://static.crates.io/crates/siphasher/siphasher-0.3.3.crate",
 )
 
 archive(
@@ -1064,9 +1286,27 @@ archive(
 )
 
 archive(
+    name = "static_assertions-1.1.0--archive",
+    sha256 = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f",
+    url = "https://static.crates.io/crates/static_assertions/static_assertions-1.1.0.crate",
+)
+
+archive(
+    name = "string_cache-0.8.0--archive",
+    sha256 = "2940c75beb4e3bf3a494cef919a747a2cb81e52571e212bfbd185074add7208a",
+    url = "https://static.crates.io/crates/string_cache/string_cache-0.8.0.crate",
+)
+
+archive(
     name = "strsim-0.8.0--archive",
     sha256 = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a",
     url = "https://static.crates.io/crates/strsim/strsim-0.8.0.crate",
+)
+
+archive(
+    name = "strsim-0.9.3--archive",
+    sha256 = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c",
+    url = "https://static.crates.io/crates/strsim/strsim-0.9.3.crate",
 )
 
 archive(
@@ -1103,6 +1343,12 @@ archive(
     name = "tempfile-3.1.0--archive",
     sha256 = "7a6e24d9338a0a5be79593e2fa15a648add6138caa803e2d5bc782c371732ca9",
     url = "https://static.crates.io/crates/tempfile/tempfile-3.1.0.crate",
+)
+
+archive(
+    name = "term-0.5.2--archive",
+    sha256 = "edd106a334b7657c10b7c540a0106114feadeb4dc314513e97df481d5d966f42",
+    url = "https://static.crates.io/crates/term/term-0.5.2.crate",
 )
 
 archive(
@@ -1328,6 +1574,18 @@ archive(
 )
 
 archive(
+    name = "utf8-ranges-1.0.4--archive",
+    sha256 = "b4ae116fef2b7fea257ed6440d3cfcff7f190865f170cdad00bb6465bf18ecba",
+    url = "https://static.crates.io/crates/utf8-ranges/utf8-ranges-1.0.4.crate",
+)
+
+archive(
+    name = "utf8parse-0.2.0--archive",
+    sha256 = "936e4b492acfd135421d8dca4b1aa80a7bfc26e702ef3af710e0752684df5372",
+    url = "https://static.crates.io/crates/utf8parse/utf8parse-0.2.0.crate",
+)
+
+archive(
     name = "vec_map-0.8.2--archive",
     sha256 = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191",
     url = "https://static.crates.io/crates/vec_map/vec_map-0.8.2.crate",
@@ -1500,6 +1758,36 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "annotate-snippets",
+    srcs = [
+        "annotate-snippets-0.9.0/src/display_list/from_snippet.rs",
+        "annotate-snippets-0.9.0/src/display_list/mod.rs",
+        "annotate-snippets-0.9.0/src/display_list/structs.rs",
+        "annotate-snippets-0.9.0/src/formatter/mod.rs",
+        "annotate-snippets-0.9.0/src/formatter/style.rs",
+        "annotate-snippets-0.9.0/src/lib.rs",
+        "annotate-snippets-0.9.0/src/snippet.rs",
+        "annotate-snippets-0.9.0/src/stylesheets/color.rs",
+        "annotate-snippets-0.9.0/src/stylesheets/mod.rs",
+        "annotate-snippets-0.9.0/src/stylesheets/no_color.rs",
+    ],
+    archive = ":annotate-snippets-0.9.0--archive",
+    crate = "annotate_snippets",
+    crate_root = "annotate-snippets-0.9.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":unicode-width"],
+)
+
+third_party_rust_library(
     name = "ansi_term-0.11.0",
     srcs = [
         "ansi_term-0.11.0/src/ansi.rs",
@@ -1560,6 +1848,30 @@ third_party_rust_library(
         "--cfg=backtrace",
     ],
     deps = [],
+)
+
+third_party_rust_library(
+    name = "ascii-canvas-2.0.0",
+    srcs = [
+        "ascii-canvas-2.0.0/src/lib.rs",
+        "ascii-canvas-2.0.0/src/row.rs",
+        "ascii-canvas-2.0.0/src/style.rs",
+        "ascii-canvas-2.0.0/src/test.rs",
+    ],
+    archive = ":ascii-canvas-2.0.0--archive",
+    crate = "ascii_canvas",
+    crate_root = "ascii-canvas-2.0.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":term-0.5.2"],
 )
 
 third_party_rust_library(
@@ -1815,6 +2127,76 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "beef-0.4.4",
+    srcs = [
+        "beef-0.4.4/src/generic.rs",
+        "beef-0.4.4/src/lean.rs",
+        "beef-0.4.4/src/lib.rs",
+        "beef-0.4.4/src/serde.rs",
+        "beef-0.4.4/src/traits.rs",
+        "beef-0.4.4/src/wide.rs",
+    ],
+    archive = ":beef-0.4.4--archive",
+    crate = "beef",
+    crate_root = "beef-0.4.4/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "bit-set",
+    srcs = ["bit-set-0.5.2/src/lib.rs"],
+    archive = ":bit-set-0.5.2--archive",
+    crate = "bit_set",
+    crate_root = "bit-set-0.5.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":bit-vec"],
+)
+
+third_party_rust_library(
+    name = "bit-vec",
+    srcs = ["bit-vec-0.6.2/src/lib.rs"],
+    archive = ":bit-vec-0.6.2--archive",
+    crate = "bit_vec",
+    crate_root = "bit-vec-0.6.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
     name = "bitflags",
     srcs = [
         "bitflags-1.2.1/src/example_generated.rs",
@@ -1954,6 +2336,38 @@ third_party_rust_library(
         ":memchr-2.4.0",
         ":safemem-0.3.3",
     ],
+)
+
+third_party_rust_library(
+    name = "bumpalo",
+    srcs = [
+        "bumpalo-3.4.0/src/alloc.rs",
+        "bumpalo-3.4.0/src/boxed.rs",
+        "bumpalo-3.4.0/src/collections/mod.rs",
+        "bumpalo-3.4.0/src/collections/raw_vec.rs",
+        "bumpalo-3.4.0/src/collections/str/lossy.rs",
+        "bumpalo-3.4.0/src/collections/str/mod.rs",
+        "bumpalo-3.4.0/src/collections/string.rs",
+        "bumpalo-3.4.0/src/collections/vec.rs",
+        "bumpalo-3.4.0/src/lib.rs",
+    ],
+    archive = ":bumpalo-3.4.0--archive",
+    crate = "bumpalo",
+    crate_root = "bumpalo-3.4.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "collections",
+        "default",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
 )
 
 third_party_rust_library(
@@ -2692,6 +3106,142 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "darling-0.10.2",
+    srcs = [
+        "darling-0.10.2/src/lib.rs",
+        "darling-0.10.2/src/macros_public.rs",
+    ],
+    archive = ":darling-0.10.2--archive",
+    crate = "darling",
+    crate_root = "darling-0.10.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "suggestions",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":darling_core-0.10.2",
+        ":darling_macro-0.10.2",
+    ],
+)
+
+third_party_rust_library(
+    name = "darling_core-0.10.2",
+    srcs = [
+        "darling_core-0.10.2/src/ast/data.rs",
+        "darling_core-0.10.2/src/ast/generics.rs",
+        "darling_core-0.10.2/src/ast/mod.rs",
+        "darling_core-0.10.2/src/codegen/attr_extractor.rs",
+        "darling_core-0.10.2/src/codegen/default_expr.rs",
+        "darling_core-0.10.2/src/codegen/error.rs",
+        "darling_core-0.10.2/src/codegen/field.rs",
+        "darling_core-0.10.2/src/codegen/from_derive_impl.rs",
+        "darling_core-0.10.2/src/codegen/from_field.rs",
+        "darling_core-0.10.2/src/codegen/from_meta_impl.rs",
+        "darling_core-0.10.2/src/codegen/from_type_param.rs",
+        "darling_core-0.10.2/src/codegen/from_variant_impl.rs",
+        "darling_core-0.10.2/src/codegen/mod.rs",
+        "darling_core-0.10.2/src/codegen/outer_from_impl.rs",
+        "darling_core-0.10.2/src/codegen/trait_impl.rs",
+        "darling_core-0.10.2/src/codegen/variant.rs",
+        "darling_core-0.10.2/src/codegen/variant_data.rs",
+        "darling_core-0.10.2/src/derive.rs",
+        "darling_core-0.10.2/src/error/kind.rs",
+        "darling_core-0.10.2/src/error/mod.rs",
+        "darling_core-0.10.2/src/from_derive_input.rs",
+        "darling_core-0.10.2/src/from_field.rs",
+        "darling_core-0.10.2/src/from_generic_param.rs",
+        "darling_core-0.10.2/src/from_generics.rs",
+        "darling_core-0.10.2/src/from_meta.rs",
+        "darling_core-0.10.2/src/from_type_param.rs",
+        "darling_core-0.10.2/src/from_variant.rs",
+        "darling_core-0.10.2/src/lib.rs",
+        "darling_core-0.10.2/src/macros_private.rs",
+        "darling_core-0.10.2/src/macros_public.rs",
+        "darling_core-0.10.2/src/options/core.rs",
+        "darling_core-0.10.2/src/options/forward_attrs.rs",
+        "darling_core-0.10.2/src/options/from_derive.rs",
+        "darling_core-0.10.2/src/options/from_field.rs",
+        "darling_core-0.10.2/src/options/from_meta.rs",
+        "darling_core-0.10.2/src/options/from_type_param.rs",
+        "darling_core-0.10.2/src/options/from_variant.rs",
+        "darling_core-0.10.2/src/options/input_field.rs",
+        "darling_core-0.10.2/src/options/input_variant.rs",
+        "darling_core-0.10.2/src/options/mod.rs",
+        "darling_core-0.10.2/src/options/outer_from.rs",
+        "darling_core-0.10.2/src/options/shape.rs",
+        "darling_core-0.10.2/src/usage/generics_ext.rs",
+        "darling_core-0.10.2/src/usage/ident_set.rs",
+        "darling_core-0.10.2/src/usage/lifetimes.rs",
+        "darling_core-0.10.2/src/usage/mod.rs",
+        "darling_core-0.10.2/src/usage/options.rs",
+        "darling_core-0.10.2/src/usage/type_params.rs",
+        "darling_core-0.10.2/src/util/ident_string.rs",
+        "darling_core-0.10.2/src/util/ignored.rs",
+        "darling_core-0.10.2/src/util/mod.rs",
+        "darling_core-0.10.2/src/util/over_ride.rs",
+        "darling_core-0.10.2/src/util/path_list.rs",
+        "darling_core-0.10.2/src/util/spanned_value.rs",
+        "darling_core-0.10.2/src/util/with_original.rs",
+    ],
+    archive = ":darling_core-0.10.2--archive",
+    crate = "darling_core",
+    crate_root = "darling_core-0.10.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "strsim",
+        "suggestions",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":fnv",
+        ":ident_case-1.0.1",
+        ":proc-macro2",
+        ":quote",
+        ":strsim-0.9.3",
+        ":syn",
+    ],
+)
+
+third_party_rust_library(
+    name = "darling_macro-0.10.2",
+    srcs = ["darling_macro-0.10.2/src/lib.rs"],
+    archive = ":darling_macro-0.10.2--archive",
+    crate = "darling_macro",
+    crate_root = "darling_macro-0.10.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":darling_core-0.10.2",
+        ":quote",
+        ":syn",
+    ],
+)
+
+third_party_rust_library(
     name = "data-encoding",
     srcs = ["data-encoding-2.3.0/src/lib.rs"],
     archive = ":data-encoding-2.3.0--archive",
@@ -2705,6 +3255,131 @@ third_party_rust_library(
         "default",
         "std",
     ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "derivative",
+    srcs = [
+        "derivative-2.1.1/src/ast.rs",
+        "derivative-2.1.1/src/attr.rs",
+        "derivative-2.1.1/src/bound.rs",
+        "derivative-2.1.1/src/clone.rs",
+        "derivative-2.1.1/src/cmp.rs",
+        "derivative-2.1.1/src/debug.rs",
+        "derivative-2.1.1/src/default.rs",
+        "derivative-2.1.1/src/hash.rs",
+        "derivative-2.1.1/src/lib.rs",
+        "derivative-2.1.1/src/matcher.rs",
+        "derivative-2.1.1/src/paths.rs",
+        "derivative-2.1.1/src/utils.rs",
+    ],
+    archive = ":derivative-2.1.1--archive",
+    crate = "derivative",
+    crate_root = "derivative-2.1.1/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = ["use_core"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":proc-macro2",
+        ":quote",
+        ":syn",
+    ],
+)
+
+third_party_rust_library(
+    name = "derive_builder",
+    srcs = [
+        "derive_builder-0.9.0/src/doc_tpl/builder_method.md",
+        "derive_builder-0.9.0/src/doc_tpl/builder_struct.md",
+        "derive_builder-0.9.0/src/doc_tpl/mod.rs",
+        "derive_builder-0.9.0/src/lib.rs",
+        "derive_builder-0.9.0/src/log_disabled.rs",
+        "derive_builder-0.9.0/src/options/darling_opts.rs",
+        "derive_builder-0.9.0/src/options/mod.rs",
+    ],
+    archive = ":derive_builder-0.9.0--archive",
+    crate = "derive_builder",
+    crate_root = "derive_builder-0.9.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":darling-0.10.2",
+        ":derive_builder_core-0.9.0",
+        ":proc-macro2",
+        ":quote",
+        ":syn",
+    ],
+)
+
+third_party_rust_library(
+    name = "derive_builder_core-0.9.0",
+    srcs = [
+        "derive_builder_core-0.9.0/src/bindings.rs",
+        "derive_builder_core-0.9.0/src/block.rs",
+        "derive_builder_core-0.9.0/src/build_method.rs",
+        "derive_builder_core-0.9.0/src/builder.rs",
+        "derive_builder_core-0.9.0/src/builder_field.rs",
+        "derive_builder_core-0.9.0/src/deprecation_notes.rs",
+        "derive_builder_core-0.9.0/src/doc_comment.rs",
+        "derive_builder_core-0.9.0/src/initializer.rs",
+        "derive_builder_core-0.9.0/src/lib.rs",
+        "derive_builder_core-0.9.0/src/log_disabled.rs",
+        "derive_builder_core-0.9.0/src/options.rs",
+        "derive_builder_core-0.9.0/src/setter.rs",
+    ],
+    archive = ":derive_builder_core-0.9.0--archive",
+    crate = "derive_builder_core",
+    crate_root = "derive_builder_core-0.9.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":darling-0.10.2",
+        ":proc-macro2",
+        ":quote",
+        ":syn",
+    ],
+)
+
+third_party_rust_library(
+    name = "diff",
+    srcs = ["diff-0.1.12/src/lib.rs"],
+    archive = ":diff-0.1.12--archive",
+    crate = "diff",
+    crate_root = "diff-0.1.12/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
     mapped_srcs = {
     },
     named_deps = {
@@ -2799,6 +3474,60 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "dirs-1.0.5",
+    srcs = [
+        "dirs-1.0.5/src/lib.rs",
+        "dirs-1.0.5/src/lin.rs",
+        "dirs-1.0.5/src/mac.rs",
+        "dirs-1.0.5/src/redox.rs",
+        "dirs-1.0.5/src/unix.rs",
+        "dirs-1.0.5/src/win.rs",
+    ],
+    archive = ":dirs-1.0.5--archive",
+    crate = "dirs",
+    crate_root = "dirs-1.0.5/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":libc"],
+)
+
+third_party_rust_library(
+    name = "dirs-next-2.0.0",
+    srcs = [
+        "dirs-next-2.0.0/src/lib.rs",
+        "dirs-next-2.0.0/src/lin.rs",
+        "dirs-next-2.0.0/src/mac.rs",
+        "dirs-next-2.0.0/src/wasm.rs",
+        "dirs-next-2.0.0/src/win.rs",
+    ],
+    archive = ":dirs-next-2.0.0--archive",
+    crate = "dirs_next",
+    crate_root = "dirs-next-2.0.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":cfg-if-1.0.0",
+        ":dirs-sys-next-0.1.2",
+    ],
+)
+
+third_party_rust_library(
     name = "dirs-sys-0.3.5",
     srcs = [
         "dirs-sys-0.3.5/src/lib.rs",
@@ -2818,6 +3547,60 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     deps = [":libc"],
+)
+
+third_party_rust_library(
+    name = "dirs-sys-next-0.1.2",
+    srcs = [
+        "dirs-sys-next-0.1.2/src/lib.rs",
+        "dirs-sys-next-0.1.2/src/xdg_user_dirs.rs",
+    ],
+    archive = ":dirs-sys-next-0.1.2--archive",
+    crate = "dirs_sys_next",
+    crate_root = "dirs-sys-next-0.1.2/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":libc"],
+)
+
+third_party_rust_library(
+    name = "docopt-1.1.0",
+    srcs = [
+        "docopt-1.1.0/src/dopt.rs",
+        "docopt-1.1.0/src/lib.rs",
+        "docopt-1.1.0/src/parse.rs",
+        "docopt-1.1.0/src/synonym.rs",
+        "docopt-1.1.0/src/test/mod.rs",
+        "docopt-1.1.0/src/test/suggestions.rs",
+        "docopt-1.1.0/src/test/testcases.rs",
+    ],
+    archive = ":docopt-1.1.0--archive",
+    crate = "docopt",
+    crate_root = "docopt-1.1.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":lazy_static",
+        ":regex",
+        ":serde",
+        ":strsim-0.9.3",
+    ],
 )
 
 third_party_rust_library(
@@ -2847,6 +3630,33 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "ena-0.14.0",
+    srcs = [
+        "ena-0.14.0/src/bitvec.rs",
+        "ena-0.14.0/src/lib.rs",
+        "ena-0.14.0/src/snapshot_vec.rs",
+        "ena-0.14.0/src/undo_log.rs",
+        "ena-0.14.0/src/unify/backing_vec.rs",
+        "ena-0.14.0/src/unify/mod.rs",
+        "ena-0.14.0/src/unify/tests.rs",
+    ],
+    archive = ":ena-0.14.0--archive",
+    crate = "ena",
+    crate_root = "ena-0.14.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":log"],
+)
+
+third_party_rust_library(
     name = "enum-as-inner-0.3.3",
     srcs = ["enum-as-inner-0.3.3/src/lib.rs"],
     archive = ":enum-as-inner-0.3.3--archive",
@@ -2868,6 +3678,37 @@ third_party_rust_library(
         ":quote",
         ":syn",
     ],
+)
+
+third_party_rust_library(
+    name = "erased-serde",
+    srcs = [
+        "erased-serde-0.3.12/src/any.rs",
+        "erased-serde-0.3.12/src/de.rs",
+        "erased-serde-0.3.12/src/error.rs",
+        "erased-serde-0.3.12/src/features_check/mod.rs",
+        "erased-serde-0.3.12/src/lib.rs",
+        "erased-serde-0.3.12/src/macros.rs",
+        "erased-serde-0.3.12/src/private.rs",
+        "erased-serde-0.3.12/src/ser.rs",
+    ],
+    archive = ":erased-serde-0.3.12--archive",
+    crate = "erased_serde",
+    crate_root = "erased-serde-0.3.12/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":serde"],
 )
 
 third_party_rust_library(
@@ -3050,6 +3891,28 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "fixedbitset-0.2.0",
+    srcs = [
+        "fixedbitset-0.2.0/src/lib.rs",
+        "fixedbitset-0.2.0/src/range.rs",
+    ],
+    archive = ":fixedbitset-0.2.0--archive",
+    crate = "fixedbitset",
+    crate_root = "fixedbitset-0.2.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
     name = "fnv",
     srcs = ["fnv-1.0.7/lib.rs"],
     archive = ":fnv-1.0.7--archive",
@@ -3094,6 +3957,29 @@ third_party_rust_library(
         ":matches-0.1.8",
         ":percent-encoding",
     ],
+)
+
+third_party_rust_library(
+    name = "fs2",
+    srcs = [
+        "fs2-0.4.3/src/lib.rs",
+        "fs2-0.4.3/src/unix.rs",
+        "fs2-0.4.3/src/windows.rs",
+    ],
+    archive = ":fs2-0.4.3--archive",
+    crate = "fs2",
+    crate_root = "fs2-0.4.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":libc"],
 )
 
 third_party_rust_library(
@@ -4677,6 +5563,25 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "ident_case-1.0.1",
+    srcs = ["ident_case-1.0.1/src/lib.rs"],
+    archive = ":ident_case-1.0.1--archive",
+    crate = "ident_case",
+    crate_root = "ident_case-1.0.1/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
     name = "idna-0.2.0",
     srcs = [
         "idna-0.2.0/src/lib.rs",
@@ -4886,6 +5791,66 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "itertools-0.9.0",
+    srcs = [
+        "itertools-0.9.0/src/adaptors/mod.rs",
+        "itertools-0.9.0/src/adaptors/multi_product.rs",
+        "itertools-0.9.0/src/combinations.rs",
+        "itertools-0.9.0/src/combinations_with_replacement.rs",
+        "itertools-0.9.0/src/concat_impl.rs",
+        "itertools-0.9.0/src/cons_tuples_impl.rs",
+        "itertools-0.9.0/src/diff.rs",
+        "itertools-0.9.0/src/either_or_both.rs",
+        "itertools-0.9.0/src/exactly_one_err.rs",
+        "itertools-0.9.0/src/format.rs",
+        "itertools-0.9.0/src/free.rs",
+        "itertools-0.9.0/src/group_map.rs",
+        "itertools-0.9.0/src/groupbylazy.rs",
+        "itertools-0.9.0/src/impl_macros.rs",
+        "itertools-0.9.0/src/intersperse.rs",
+        "itertools-0.9.0/src/kmerge_impl.rs",
+        "itertools-0.9.0/src/lazy_buffer.rs",
+        "itertools-0.9.0/src/lib.rs",
+        "itertools-0.9.0/src/merge_join.rs",
+        "itertools-0.9.0/src/minmax.rs",
+        "itertools-0.9.0/src/multipeek_impl.rs",
+        "itertools-0.9.0/src/pad_tail.rs",
+        "itertools-0.9.0/src/peeking_take_while.rs",
+        "itertools-0.9.0/src/permutations.rs",
+        "itertools-0.9.0/src/process_results_impl.rs",
+        "itertools-0.9.0/src/put_back_n_impl.rs",
+        "itertools-0.9.0/src/rciter_impl.rs",
+        "itertools-0.9.0/src/repeatn.rs",
+        "itertools-0.9.0/src/size_hint.rs",
+        "itertools-0.9.0/src/sources.rs",
+        "itertools-0.9.0/src/tee.rs",
+        "itertools-0.9.0/src/tuple_impl.rs",
+        "itertools-0.9.0/src/unique_impl.rs",
+        "itertools-0.9.0/src/with_position.rs",
+        "itertools-0.9.0/src/zip_eq_impl.rs",
+        "itertools-0.9.0/src/zip_longest.rs",
+        "itertools-0.9.0/src/ziptuple.rs",
+    ],
+    archive = ":itertools-0.9.0--archive",
+    crate = "itertools",
+    crate_root = "itertools-0.9.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "use_std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":either"],
+)
+
+third_party_rust_library(
     name = "itoa-0.4.6",
     srcs = [
         "itoa-0.4.6/src/lib.rs",
@@ -4901,6 +5866,338 @@ third_party_rust_library(
         "default",
         "std",
     ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "lalrpop",
+    srcs = [
+        "lalrpop-0.19.1/src/api/mod.rs",
+        "lalrpop-0.19.1/src/build/action.rs",
+        "lalrpop-0.19.1/src/build/fake_term.rs",
+        "lalrpop-0.19.1/src/build/mod.rs",
+        "lalrpop-0.19.1/src/collections/map.rs",
+        "lalrpop-0.19.1/src/collections/mod.rs",
+        "lalrpop-0.19.1/src/collections/multimap.rs",
+        "lalrpop-0.19.1/src/collections/set.rs",
+        "lalrpop-0.19.1/src/file_text.rs",
+        "lalrpop-0.19.1/src/generate.rs",
+        "lalrpop-0.19.1/src/grammar/consts.rs",
+        "lalrpop-0.19.1/src/grammar/free_variables/mod.rs",
+        "lalrpop-0.19.1/src/grammar/free_variables/test.rs",
+        "lalrpop-0.19.1/src/grammar/mod.rs",
+        "lalrpop-0.19.1/src/grammar/parse_tree.rs",
+        "lalrpop-0.19.1/src/grammar/pattern.rs",
+        "lalrpop-0.19.1/src/grammar/repr.rs",
+        "lalrpop-0.19.1/src/grammar/token/mod.rs",
+        "lalrpop-0.19.1/src/grammar/token/test.rs",
+        "lalrpop-0.19.1/src/kernel_set.rs",
+        "lalrpop-0.19.1/src/lexer/dfa/interpret.rs",
+        "lalrpop-0.19.1/src/lexer/dfa/mod.rs",
+        "lalrpop-0.19.1/src/lexer/dfa/overlap.rs",
+        "lalrpop-0.19.1/src/lexer/dfa/test.rs",
+        "lalrpop-0.19.1/src/lexer/intern_token/mod.rs",
+        "lalrpop-0.19.1/src/lexer/mod.rs",
+        "lalrpop-0.19.1/src/lexer/nfa/interpret.rs",
+        "lalrpop-0.19.1/src/lexer/nfa/mod.rs",
+        "lalrpop-0.19.1/src/lexer/nfa/test.rs",
+        "lalrpop-0.19.1/src/lexer/re/mod.rs",
+        "lalrpop-0.19.1/src/lexer/re/test.rs",
+        "lalrpop-0.19.1/src/lib.rs",
+        "lalrpop-0.19.1/src/log.rs",
+        "lalrpop-0.19.1/src/lr1/build/mod.rs",
+        "lalrpop-0.19.1/src/lr1/build/test.rs",
+        "lalrpop-0.19.1/src/lr1/build_lalr/mod.rs",
+        "lalrpop-0.19.1/src/lr1/build_lalr/test.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/ascent.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/base.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/mod.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/parse_table.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/test_all.rs",
+        "lalrpop-0.19.1/src/lr1/core/mod.rs",
+        "lalrpop-0.19.1/src/lr1/error/mod.rs",
+        "lalrpop-0.19.1/src/lr1/error/test.rs",
+        "lalrpop-0.19.1/src/lr1/example/mod.rs",
+        "lalrpop-0.19.1/src/lr1/example/test.rs",
+        "lalrpop-0.19.1/src/lr1/first/mod.rs",
+        "lalrpop-0.19.1/src/lr1/first/test.rs",
+        "lalrpop-0.19.1/src/lr1/interpret.rs",
+        "lalrpop-0.19.1/src/lr1/item.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/construct/merge.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/construct/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/construct/state_set.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/lane/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/table/context_set/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/table/context_set/test.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/table/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/test.rs",
+        "lalrpop-0.19.1/src/lr1/lookahead.rs",
+        "lalrpop-0.19.1/src/lr1/mod.rs",
+        "lalrpop-0.19.1/src/lr1/report/mod.rs",
+        "lalrpop-0.19.1/src/lr1/state_graph.rs",
+        "lalrpop-0.19.1/src/lr1/tls.rs",
+        "lalrpop-0.19.1/src/lr1/trace/mod.rs",
+        "lalrpop-0.19.1/src/lr1/trace/reduce/mod.rs",
+        "lalrpop-0.19.1/src/lr1/trace/reduce/test.rs",
+        "lalrpop-0.19.1/src/lr1/trace/shift/mod.rs",
+        "lalrpop-0.19.1/src/lr1/trace/shift/test.rs",
+        "lalrpop-0.19.1/src/lr1/trace/trace_graph/mod.rs",
+        "lalrpop-0.19.1/src/lr1/trace/trace_graph/test.rs",
+        "lalrpop-0.19.1/src/main.rs",
+        "lalrpop-0.19.1/src/message/builder.rs",
+        "lalrpop-0.19.1/src/message/horiz.rs",
+        "lalrpop-0.19.1/src/message/indent.rs",
+        "lalrpop-0.19.1/src/message/message.rs",
+        "lalrpop-0.19.1/src/message/mod.rs",
+        "lalrpop-0.19.1/src/message/styled.rs",
+        "lalrpop-0.19.1/src/message/test.rs",
+        "lalrpop-0.19.1/src/message/text.rs",
+        "lalrpop-0.19.1/src/message/vert.rs",
+        "lalrpop-0.19.1/src/message/wrap.rs",
+        "lalrpop-0.19.1/src/normalize/inline/graph/mod.rs",
+        "lalrpop-0.19.1/src/normalize/inline/graph/test.rs",
+        "lalrpop-0.19.1/src/normalize/inline/mod.rs",
+        "lalrpop-0.19.1/src/normalize/inline/test.rs",
+        "lalrpop-0.19.1/src/normalize/lower/mod.rs",
+        "lalrpop-0.19.1/src/normalize/macro_expand/mod.rs",
+        "lalrpop-0.19.1/src/normalize/macro_expand/test.rs",
+        "lalrpop-0.19.1/src/normalize/mod.rs",
+        "lalrpop-0.19.1/src/normalize/norm_util.rs",
+        "lalrpop-0.19.1/src/normalize/prevalidate/mod.rs",
+        "lalrpop-0.19.1/src/normalize/prevalidate/test.rs",
+        "lalrpop-0.19.1/src/normalize/resolve/mod.rs",
+        "lalrpop-0.19.1/src/normalize/resolve/test.rs",
+        "lalrpop-0.19.1/src/normalize/token_check/mod.rs",
+        "lalrpop-0.19.1/src/normalize/token_check/test.rs",
+        "lalrpop-0.19.1/src/normalize/tyinfer/mod.rs",
+        "lalrpop-0.19.1/src/normalize/tyinfer/test.rs",
+        "lalrpop-0.19.1/src/parser/lrgrammar.rs",
+        "lalrpop-0.19.1/src/parser/mod.rs",
+        "lalrpop-0.19.1/src/parser/test.rs",
+        "lalrpop-0.19.1/src/rust/mod.rs",
+        "lalrpop-0.19.1/src/session.rs",
+        "lalrpop-0.19.1/src/test_util.rs",
+        "lalrpop-0.19.1/src/tls/mod.rs",
+        "lalrpop-0.19.1/src/tok/mod.rs",
+        "lalrpop-0.19.1/src/tok/test.rs",
+        "lalrpop-0.19.1/src/util.rs",
+    ],
+    archive = ":lalrpop-0.19.1--archive",
+    crate = "lalrpop",
+    crate_root = "lalrpop-0.19.1/src/lib.rs",
+    edition = "2015",
+    env = {
+        "CARGO_MANIFEST_DIR": "third-party/rust/lalrpop-0.19.1",
+        "CARGO_PKG_NAME": "lalrpop",
+        "CARGO_PKG_VERSION": "0.19.1",
+        "CARGO_PKG_VERSION_MAJOR": "0",
+        "CARGO_PKG_VERSION_MINOR": "19",
+        "CARGO_PKG_VERSION_PATCH": "1",
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":ascii-canvas-2.0.0",
+        ":atty",
+        ":bit-set",
+        ":diff",
+        ":docopt-1.1.0",
+        ":ena-0.14.0",
+        ":itertools-0.9.0",
+        ":lalrpop-util",
+        ":petgraph-0.5.1",
+        ":regex",
+        ":regex-syntax-0.6.21",
+        ":serde",
+        ":serde_derive",
+        ":sha2",
+        ":string_cache",
+        ":term-0.5.2",
+        ":unicode-xid-0.2.1",
+    ],
+)
+
+third_party_rust_binary(
+    name = "lalrpop-lalrpop",
+    srcs = [
+        "lalrpop-0.19.1/src/api/mod.rs",
+        "lalrpop-0.19.1/src/build/action.rs",
+        "lalrpop-0.19.1/src/build/fake_term.rs",
+        "lalrpop-0.19.1/src/build/mod.rs",
+        "lalrpop-0.19.1/src/collections/map.rs",
+        "lalrpop-0.19.1/src/collections/mod.rs",
+        "lalrpop-0.19.1/src/collections/multimap.rs",
+        "lalrpop-0.19.1/src/collections/set.rs",
+        "lalrpop-0.19.1/src/file_text.rs",
+        "lalrpop-0.19.1/src/generate.rs",
+        "lalrpop-0.19.1/src/grammar/consts.rs",
+        "lalrpop-0.19.1/src/grammar/free_variables/mod.rs",
+        "lalrpop-0.19.1/src/grammar/free_variables/test.rs",
+        "lalrpop-0.19.1/src/grammar/mod.rs",
+        "lalrpop-0.19.1/src/grammar/parse_tree.rs",
+        "lalrpop-0.19.1/src/grammar/pattern.rs",
+        "lalrpop-0.19.1/src/grammar/repr.rs",
+        "lalrpop-0.19.1/src/grammar/token/mod.rs",
+        "lalrpop-0.19.1/src/grammar/token/test.rs",
+        "lalrpop-0.19.1/src/kernel_set.rs",
+        "lalrpop-0.19.1/src/lexer/dfa/interpret.rs",
+        "lalrpop-0.19.1/src/lexer/dfa/mod.rs",
+        "lalrpop-0.19.1/src/lexer/dfa/overlap.rs",
+        "lalrpop-0.19.1/src/lexer/dfa/test.rs",
+        "lalrpop-0.19.1/src/lexer/intern_token/mod.rs",
+        "lalrpop-0.19.1/src/lexer/mod.rs",
+        "lalrpop-0.19.1/src/lexer/nfa/interpret.rs",
+        "lalrpop-0.19.1/src/lexer/nfa/mod.rs",
+        "lalrpop-0.19.1/src/lexer/nfa/test.rs",
+        "lalrpop-0.19.1/src/lexer/re/mod.rs",
+        "lalrpop-0.19.1/src/lexer/re/test.rs",
+        "lalrpop-0.19.1/src/lib.rs",
+        "lalrpop-0.19.1/src/log.rs",
+        "lalrpop-0.19.1/src/lr1/build/mod.rs",
+        "lalrpop-0.19.1/src/lr1/build/test.rs",
+        "lalrpop-0.19.1/src/lr1/build_lalr/mod.rs",
+        "lalrpop-0.19.1/src/lr1/build_lalr/test.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/ascent.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/base.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/mod.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/parse_table.rs",
+        "lalrpop-0.19.1/src/lr1/codegen/test_all.rs",
+        "lalrpop-0.19.1/src/lr1/core/mod.rs",
+        "lalrpop-0.19.1/src/lr1/error/mod.rs",
+        "lalrpop-0.19.1/src/lr1/error/test.rs",
+        "lalrpop-0.19.1/src/lr1/example/mod.rs",
+        "lalrpop-0.19.1/src/lr1/example/test.rs",
+        "lalrpop-0.19.1/src/lr1/first/mod.rs",
+        "lalrpop-0.19.1/src/lr1/first/test.rs",
+        "lalrpop-0.19.1/src/lr1/interpret.rs",
+        "lalrpop-0.19.1/src/lr1/item.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/construct/merge.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/construct/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/construct/state_set.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/lane/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/table/context_set/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/table/context_set/test.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/table/mod.rs",
+        "lalrpop-0.19.1/src/lr1/lane_table/test.rs",
+        "lalrpop-0.19.1/src/lr1/lookahead.rs",
+        "lalrpop-0.19.1/src/lr1/mod.rs",
+        "lalrpop-0.19.1/src/lr1/report/mod.rs",
+        "lalrpop-0.19.1/src/lr1/state_graph.rs",
+        "lalrpop-0.19.1/src/lr1/tls.rs",
+        "lalrpop-0.19.1/src/lr1/trace/mod.rs",
+        "lalrpop-0.19.1/src/lr1/trace/reduce/mod.rs",
+        "lalrpop-0.19.1/src/lr1/trace/reduce/test.rs",
+        "lalrpop-0.19.1/src/lr1/trace/shift/mod.rs",
+        "lalrpop-0.19.1/src/lr1/trace/shift/test.rs",
+        "lalrpop-0.19.1/src/lr1/trace/trace_graph/mod.rs",
+        "lalrpop-0.19.1/src/lr1/trace/trace_graph/test.rs",
+        "lalrpop-0.19.1/src/main.rs",
+        "lalrpop-0.19.1/src/message/builder.rs",
+        "lalrpop-0.19.1/src/message/horiz.rs",
+        "lalrpop-0.19.1/src/message/indent.rs",
+        "lalrpop-0.19.1/src/message/message.rs",
+        "lalrpop-0.19.1/src/message/mod.rs",
+        "lalrpop-0.19.1/src/message/styled.rs",
+        "lalrpop-0.19.1/src/message/test.rs",
+        "lalrpop-0.19.1/src/message/text.rs",
+        "lalrpop-0.19.1/src/message/vert.rs",
+        "lalrpop-0.19.1/src/message/wrap.rs",
+        "lalrpop-0.19.1/src/normalize/inline/graph/mod.rs",
+        "lalrpop-0.19.1/src/normalize/inline/graph/test.rs",
+        "lalrpop-0.19.1/src/normalize/inline/mod.rs",
+        "lalrpop-0.19.1/src/normalize/inline/test.rs",
+        "lalrpop-0.19.1/src/normalize/lower/mod.rs",
+        "lalrpop-0.19.1/src/normalize/macro_expand/mod.rs",
+        "lalrpop-0.19.1/src/normalize/macro_expand/test.rs",
+        "lalrpop-0.19.1/src/normalize/mod.rs",
+        "lalrpop-0.19.1/src/normalize/norm_util.rs",
+        "lalrpop-0.19.1/src/normalize/prevalidate/mod.rs",
+        "lalrpop-0.19.1/src/normalize/prevalidate/test.rs",
+        "lalrpop-0.19.1/src/normalize/resolve/mod.rs",
+        "lalrpop-0.19.1/src/normalize/resolve/test.rs",
+        "lalrpop-0.19.1/src/normalize/token_check/mod.rs",
+        "lalrpop-0.19.1/src/normalize/token_check/test.rs",
+        "lalrpop-0.19.1/src/normalize/tyinfer/mod.rs",
+        "lalrpop-0.19.1/src/normalize/tyinfer/test.rs",
+        "lalrpop-0.19.1/src/parser/lrgrammar.rs",
+        "lalrpop-0.19.1/src/parser/mod.rs",
+        "lalrpop-0.19.1/src/parser/test.rs",
+        "lalrpop-0.19.1/src/rust/mod.rs",
+        "lalrpop-0.19.1/src/session.rs",
+        "lalrpop-0.19.1/src/test_util.rs",
+        "lalrpop-0.19.1/src/tls/mod.rs",
+        "lalrpop-0.19.1/src/tok/mod.rs",
+        "lalrpop-0.19.1/src/tok/test.rs",
+        "lalrpop-0.19.1/src/util.rs",
+    ],
+    archive = ":lalrpop-0.19.1--archive",
+    crate = "lalrpop",
+    crate_root = "lalrpop-0.19.1/src/main.rs",
+    edition = "2015",
+    env = {
+        "CARGO_MANIFEST_DIR": "third-party/rust/lalrpop-0.19.1",
+        "CARGO_PKG_NAME": "lalrpop",
+        "CARGO_PKG_VERSION": "0.19.1",
+        "CARGO_PKG_VERSION_MAJOR": "0",
+        "CARGO_PKG_VERSION_MINOR": "19",
+        "CARGO_PKG_VERSION_PATCH": "1",
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":ascii-canvas-2.0.0",
+        ":atty",
+        ":bit-set",
+        ":diff",
+        ":docopt-1.1.0",
+        ":ena-0.14.0",
+        ":itertools-0.9.0",
+        ":lalrpop",
+        ":lalrpop-util",
+        ":petgraph-0.5.1",
+        ":regex",
+        ":regex-syntax-0.6.21",
+        ":serde",
+        ":serde_derive",
+        ":sha2",
+        ":string_cache",
+        ":term-0.5.2",
+        ":unicode-xid-0.2.1",
+    ],
+)
+
+third_party_rust_library(
+    name = "lalrpop-util",
+    srcs = [
+        "lalrpop-util-0.19.1/src/lexer.rs",
+        "lalrpop-util-0.19.1/src/lib.rs",
+        "lalrpop-util-0.19.1/src/state_machine.rs",
+    ],
+    archive = ":lalrpop-util-0.19.1--archive",
+    crate = "lalrpop_util",
+    crate_root = "lalrpop-util-0.19.1/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
     mapped_srcs = {
     },
     named_deps = {
@@ -5624,6 +6921,89 @@ third_party_rust_binary(
 )
 
 third_party_rust_library(
+    name = "logos",
+    srcs = [
+        "logos-0.11.4/src/internal.rs",
+        "logos-0.11.4/src/lexer.rs",
+        "logos-0.11.4/src/lib.rs",
+        "logos-0.11.4/src/source.rs",
+    ],
+    archive = ":logos-0.11.4--archive",
+    crate = "logos",
+    crate_root = "logos-0.11.4/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "export_derive",
+        "logos-derive",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":logos-derive-0.11.5"],
+)
+
+third_party_rust_library(
+    name = "logos-derive-0.11.5",
+    srcs = [
+        "logos-derive-0.11.5/src/error.rs",
+        "logos-derive-0.11.5/src/generator/context.rs",
+        "logos-derive-0.11.5/src/generator/fork.rs",
+        "logos-derive-0.11.5/src/generator/leaf.rs",
+        "logos-derive-0.11.5/src/generator/mod.rs",
+        "logos-derive-0.11.5/src/generator/rope.rs",
+        "logos-derive-0.11.5/src/generator/tables.rs",
+        "logos-derive-0.11.5/src/graph/fork.rs",
+        "logos-derive-0.11.5/src/graph/impls.rs",
+        "logos-derive-0.11.5/src/graph/meta.rs",
+        "logos-derive-0.11.5/src/graph/mod.rs",
+        "logos-derive-0.11.5/src/graph/range.rs",
+        "logos-derive-0.11.5/src/graph/regex.rs",
+        "logos-derive-0.11.5/src/graph/rope.rs",
+        "logos-derive-0.11.5/src/leaf.rs",
+        "logos-derive-0.11.5/src/lib.rs",
+        "logos-derive-0.11.5/src/mir.rs",
+        "logos-derive-0.11.5/src/parser/definition.rs",
+        "logos-derive-0.11.5/src/parser/mod.rs",
+        "logos-derive-0.11.5/src/parser/nested.rs",
+        "logos-derive-0.11.5/src/parser/subpattern.rs",
+        "logos-derive-0.11.5/src/parser/type_params.rs",
+        "logos-derive-0.11.5/src/util.rs",
+    ],
+    archive = ":logos-derive-0.11.5--archive",
+    crate = "logos_derive",
+    crate_root = "logos-derive-0.11.5/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "--extern=proc_macro",
+    ],
+    deps = [
+        ":beef-0.4.4",
+        ":fnv",
+        ":proc-macro2",
+        ":quote",
+        ":regex-syntax-0.6.21",
+        ":syn",
+        ":utf8-ranges-1.0.4",
+    ],
+)
+
+third_party_rust_library(
     name = "lru-cache",
     srcs = [
         "lru-cache-0.1.2/src/heapsize.rs",
@@ -5643,6 +7023,25 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     deps = [":linked-hash-map"],
+)
+
+third_party_rust_library(
+    name = "maplit",
+    srcs = ["maplit-1.0.2/src/lib.rs"],
+    archive = ":maplit-1.0.2--archive",
+    crate = "maplit",
+    crate_root = "maplit-1.0.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
 )
 
 third_party_rust_library(
@@ -6130,6 +7529,25 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "new_debug_unreachable-1.0.4",
+    srcs = ["new_debug_unreachable-1.0.4/src/lib.rs"],
+    archive = ":new_debug_unreachable-1.0.4--archive",
+    crate = "debug_unreachable",
+    crate_root = "new_debug_unreachable-1.0.4/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
     name = "nix",
     srcs = [
         "nix-0.20.0/src/dir.rs",
@@ -6190,6 +7608,83 @@ third_party_rust_library(
     archive = ":nix-0.20.0--archive",
     crate = "nix",
     crate_root = "nix-0.20.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":bitflags",
+        ":cfg-if-1.0.0",
+        ":libc",
+    ],
+)
+
+third_party_rust_library(
+    name = "nix-0.19.1",
+    srcs = [
+        "nix-0.19.1/src/dir.rs",
+        "nix-0.19.1/src/env.rs",
+        "nix-0.19.1/src/errno.rs",
+        "nix-0.19.1/src/fcntl.rs",
+        "nix-0.19.1/src/features.rs",
+        "nix-0.19.1/src/ifaddrs.rs",
+        "nix-0.19.1/src/kmod.rs",
+        "nix-0.19.1/src/lib.rs",
+        "nix-0.19.1/src/macros.rs",
+        "nix-0.19.1/src/mount.rs",
+        "nix-0.19.1/src/mqueue.rs",
+        "nix-0.19.1/src/net/if_.rs",
+        "nix-0.19.1/src/net/mod.rs",
+        "nix-0.19.1/src/poll.rs",
+        "nix-0.19.1/src/pty.rs",
+        "nix-0.19.1/src/sched.rs",
+        "nix-0.19.1/src/sys/aio.rs",
+        "nix-0.19.1/src/sys/epoll.rs",
+        "nix-0.19.1/src/sys/event.rs",
+        "nix-0.19.1/src/sys/eventfd.rs",
+        "nix-0.19.1/src/sys/inotify.rs",
+        "nix-0.19.1/src/sys/ioctl/bsd.rs",
+        "nix-0.19.1/src/sys/ioctl/linux.rs",
+        "nix-0.19.1/src/sys/ioctl/mod.rs",
+        "nix-0.19.1/src/sys/memfd.rs",
+        "nix-0.19.1/src/sys/mman.rs",
+        "nix-0.19.1/src/sys/mod.rs",
+        "nix-0.19.1/src/sys/pthread.rs",
+        "nix-0.19.1/src/sys/ptrace/bsd.rs",
+        "nix-0.19.1/src/sys/ptrace/linux.rs",
+        "nix-0.19.1/src/sys/ptrace/mod.rs",
+        "nix-0.19.1/src/sys/quota.rs",
+        "nix-0.19.1/src/sys/reboot.rs",
+        "nix-0.19.1/src/sys/select.rs",
+        "nix-0.19.1/src/sys/sendfile.rs",
+        "nix-0.19.1/src/sys/signal.rs",
+        "nix-0.19.1/src/sys/signalfd.rs",
+        "nix-0.19.1/src/sys/socket/addr.rs",
+        "nix-0.19.1/src/sys/socket/mod.rs",
+        "nix-0.19.1/src/sys/socket/sockopt.rs",
+        "nix-0.19.1/src/sys/stat.rs",
+        "nix-0.19.1/src/sys/statfs.rs",
+        "nix-0.19.1/src/sys/statvfs.rs",
+        "nix-0.19.1/src/sys/sysinfo.rs",
+        "nix-0.19.1/src/sys/termios.rs",
+        "nix-0.19.1/src/sys/time.rs",
+        "nix-0.19.1/src/sys/timerfd.rs",
+        "nix-0.19.1/src/sys/uio.rs",
+        "nix-0.19.1/src/sys/utsname.rs",
+        "nix-0.19.1/src/sys/wait.rs",
+        "nix-0.19.1/src/time.rs",
+        "nix-0.19.1/src/ucontext.rs",
+        "nix-0.19.1/src/unistd.rs",
+    ],
+    archive = ":nix-0.19.1--archive",
+    crate = "nix",
+    crate_root = "nix-0.19.1/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -6616,6 +8111,30 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "paste",
+    srcs = [
+        "paste-1.0.2/src/doc.rs",
+        "paste-1.0.2/src/error.rs",
+        "paste-1.0.2/src/lib.rs",
+        "paste-1.0.2/src/segment.rs",
+    ],
+    archive = ":paste-1.0.2--archive",
+    crate = "paste",
+    crate_root = "paste-1.0.2/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
     name = "percent-encoding",
     srcs = ["percent-encoding-2.1.0/lib.rs"],
     archive = ":percent-encoding-2.1.0--archive",
@@ -6632,6 +8151,90 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     deps = [],
+)
+
+third_party_rust_library(
+    name = "petgraph-0.5.1",
+    srcs = [
+        "petgraph-0.5.1/src/algo/dominators.rs",
+        "petgraph-0.5.1/src/algo/mod.rs",
+        "petgraph-0.5.1/src/astar.rs",
+        "petgraph-0.5.1/src/csr.rs",
+        "petgraph-0.5.1/src/data.rs",
+        "petgraph-0.5.1/src/dijkstra.rs",
+        "petgraph-0.5.1/src/dot.rs",
+        "petgraph-0.5.1/src/generate.rs",
+        "petgraph-0.5.1/src/graph_impl/frozen.rs",
+        "petgraph-0.5.1/src/graph_impl/mod.rs",
+        "petgraph-0.5.1/src/graph_impl/serialization.rs",
+        "petgraph-0.5.1/src/graph_impl/stable_graph/mod.rs",
+        "petgraph-0.5.1/src/graph_impl/stable_graph/serialization.rs",
+        "petgraph-0.5.1/src/graphmap.rs",
+        "petgraph-0.5.1/src/isomorphism.rs",
+        "petgraph-0.5.1/src/iter_format.rs",
+        "petgraph-0.5.1/src/iter_utils.rs",
+        "petgraph-0.5.1/src/lib.rs",
+        "petgraph-0.5.1/src/macros.rs",
+        "petgraph-0.5.1/src/matrix_graph.rs",
+        "petgraph-0.5.1/src/prelude.rs",
+        "petgraph-0.5.1/src/quickcheck.rs",
+        "petgraph-0.5.1/src/scored.rs",
+        "petgraph-0.5.1/src/serde_utils.rs",
+        "petgraph-0.5.1/src/simple_paths.rs",
+        "petgraph-0.5.1/src/traits_graph.rs",
+        "petgraph-0.5.1/src/unionfind.rs",
+        "petgraph-0.5.1/src/util.rs",
+        "petgraph-0.5.1/src/visit/dfsvisit.rs",
+        "petgraph-0.5.1/src/visit/filter.rs",
+        "petgraph-0.5.1/src/visit/macros.rs",
+        "petgraph-0.5.1/src/visit/mod.rs",
+        "petgraph-0.5.1/src/visit/reversed.rs",
+        "petgraph-0.5.1/src/visit/traversal.rs",
+    ],
+    archive = ":petgraph-0.5.1--archive",
+    crate = "petgraph",
+    crate_root = "petgraph-0.5.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "graphmap",
+        "matrix_graph",
+        "stable_graph",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":fixedbitset-0.2.0",
+        ":indexmap",
+    ],
+)
+
+third_party_rust_library(
+    name = "phf_shared-0.8.0",
+    srcs = ["phf_shared-0.8.0/src/lib.rs"],
+    archive = ":phf_shared-0.8.0--archive",
+    crate = "phf_shared",
+    crate_root = "phf_shared-0.8.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":siphasher"],
 )
 
 third_party_rust_library(
@@ -6843,6 +8446,25 @@ third_party_rust_library(
         "simd",
         "std",
     ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "precomputed-hash-0.1.1",
+    srcs = ["precomputed-hash-0.1.1/src/lib.rs"],
+    archive = ":precomputed-hash-0.1.1--archive",
+    crate = "precomputed_hash",
+    crate_root = "precomputed-hash-0.1.1/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
     mapped_srcs = {
     },
     named_deps = {
@@ -8489,6 +10111,68 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "rustyline",
+    srcs = [
+        "rustyline-7.1.0/src/command.rs",
+        "rustyline-7.1.0/src/completion.rs",
+        "rustyline-7.1.0/src/config.rs",
+        "rustyline-7.1.0/src/edit.rs",
+        "rustyline-7.1.0/src/error.rs",
+        "rustyline-7.1.0/src/highlight.rs",
+        "rustyline-7.1.0/src/hint.rs",
+        "rustyline-7.1.0/src/history.rs",
+        "rustyline-7.1.0/src/keymap.rs",
+        "rustyline-7.1.0/src/keys.rs",
+        "rustyline-7.1.0/src/kill_ring.rs",
+        "rustyline-7.1.0/src/layout.rs",
+        "rustyline-7.1.0/src/lib.rs",
+        "rustyline-7.1.0/src/line_buffer.rs",
+        "rustyline-7.1.0/src/test/common.rs",
+        "rustyline-7.1.0/src/test/emacs.rs",
+        "rustyline-7.1.0/src/test/history.rs",
+        "rustyline-7.1.0/src/test/mod.rs",
+        "rustyline-7.1.0/src/test/vi_cmd.rs",
+        "rustyline-7.1.0/src/test/vi_insert.rs",
+        "rustyline-7.1.0/src/tty/mod.rs",
+        "rustyline-7.1.0/src/tty/test.rs",
+        "rustyline-7.1.0/src/tty/unix.rs",
+        "rustyline-7.1.0/src/tty/windows.rs",
+        "rustyline-7.1.0/src/undo.rs",
+        "rustyline-7.1.0/src/validate.rs",
+    ],
+    archive = ":rustyline-7.1.0--archive",
+    crate = "rustyline",
+    crate_root = "rustyline-7.1.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "dirs-next",
+        "with-dirs",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":bitflags",
+        ":cfg-if-1.0.0",
+        ":dirs-next-2.0.0",
+        ":fs2",
+        ":libc",
+        ":log",
+        ":memchr-2.4.0",
+        ":nix-0.19.1",
+        ":unicode-segmentation",
+        ":unicode-width",
+        ":utf8parse-0.2.0",
+    ],
+)
+
+third_party_rust_library(
     name = "ryu-1.0.5",
     srcs = [
         "ryu-1.0.5/src/buffer/mod.rs",
@@ -9098,6 +10782,41 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "sha2",
+    srcs = [
+        "sha2-0.8.2/src/aarch64.rs",
+        "sha2-0.8.2/src/consts.rs",
+        "sha2-0.8.2/src/lib.rs",
+        "sha2-0.8.2/src/sha256.rs",
+        "sha2-0.8.2/src/sha256_utils.rs",
+        "sha2-0.8.2/src/sha512.rs",
+        "sha2-0.8.2/src/sha512_utils.rs",
+    ],
+    archive = ":sha2-0.8.2--archive",
+    crate = "sha2",
+    crate_root = "sha2-0.8.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":block-buffer-0.7.3",
+        ":digest",
+        ":fake-simd-0.1.2",
+        ":opaque-debug-0.2.3",
+    ],
+)
+
+third_party_rust_library(
     name = "signal-hook-registry-1.4.0",
     srcs = [
         "signal-hook-registry-1.4.0/src/half_lock.rs",
@@ -9117,6 +10836,34 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     deps = [":libc"],
+)
+
+third_party_rust_library(
+    name = "siphasher",
+    srcs = [
+        "siphasher-0.3.3/src/lib.rs",
+        "siphasher-0.3.3/src/sip.rs",
+        "siphasher-0.3.3/src/sip128.rs",
+        "siphasher-0.3.3/src/tests.rs",
+        "siphasher-0.3.3/src/tests128.rs",
+    ],
+    archive = ":siphasher-0.3.3--archive",
+    crate = "siphasher",
+    crate_root = "siphasher-0.3.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
 )
 
 third_party_rust_library(
@@ -9156,7 +10903,9 @@ third_party_rust_library(
     },
     features = [
         "default",
+        "erased-serde",
         "max_level_trace",
+        "nested-values",
         "std",
     ],
     mapped_srcs = {
@@ -9168,7 +10917,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :slog-2.5.2-build-script-build-args)",
     ],
-    deps = [],
+    deps = [":erased-serde"],
 )
 
 third_party_rust_binary(
@@ -9194,7 +10943,9 @@ third_party_rust_binary(
     },
     features = [
         "default",
+        "erased-serde",
         "max_level_trace",
+        "nested-values",
         "std",
     ],
     mapped_srcs = {
@@ -9398,11 +11149,91 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "static_assertions",
+    srcs = [
+        "static_assertions-1.1.0/src/assert_cfg.rs",
+        "static_assertions-1.1.0/src/assert_eq_align.rs",
+        "static_assertions-1.1.0/src/assert_eq_size.rs",
+        "static_assertions-1.1.0/src/assert_fields.rs",
+        "static_assertions-1.1.0/src/assert_impl.rs",
+        "static_assertions-1.1.0/src/assert_obj_safe.rs",
+        "static_assertions-1.1.0/src/assert_trait.rs",
+        "static_assertions-1.1.0/src/assert_type.rs",
+        "static_assertions-1.1.0/src/const_assert.rs",
+        "static_assertions-1.1.0/src/lib.rs",
+    ],
+    archive = ":static_assertions-1.1.0--archive",
+    crate = "static_assertions",
+    crate_root = "static_assertions-1.1.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "string_cache",
+    srcs = [
+        "string_cache-0.8.0/src/atom.rs",
+        "string_cache-0.8.0/src/dynamic_set.rs",
+        "string_cache-0.8.0/src/lib.rs",
+        "string_cache-0.8.0/src/static_sets.rs",
+        "string_cache-0.8.0/src/trivial_impls.rs",
+    ],
+    archive = ":string_cache-0.8.0--archive",
+    crate = "string_cache",
+    crate_root = "string_cache-0.8.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":lazy_static",
+        ":new_debug_unreachable-1.0.4",
+        ":phf_shared-0.8.0",
+        ":precomputed-hash-0.1.1",
+        ":serde",
+    ],
+)
+
+third_party_rust_library(
     name = "strsim-0.8.0",
     srcs = ["strsim-0.8.0/src/lib.rs"],
     archive = ":strsim-0.8.0--archive",
     crate = "strsim",
     crate_root = "strsim-0.8.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "strsim-0.9.3",
+    srcs = ["strsim-0.9.3/src/lib.rs"],
+    archive = ":strsim-0.9.3--archive",
+    crate = "strsim",
+    crate_root = "strsim-0.9.3/src/lib.rs",
     edition = "2015",
     env = {
     },
@@ -9678,6 +11509,36 @@ third_party_rust_library(
         ":libc",
         ":rand",
         ":remove_dir_all-0.5.3",
+    ],
+)
+
+third_party_rust_library(
+    name = "term-0.5.2",
+    srcs = [
+        "term-0.5.2/src/lib.rs",
+        "term-0.5.2/src/terminfo/mod.rs",
+        "term-0.5.2/src/terminfo/parm.rs",
+        "term-0.5.2/src/terminfo/parser/compiled.rs",
+        "term-0.5.2/src/terminfo/parser/names.rs",
+        "term-0.5.2/src/terminfo/searcher.rs",
+        "term-0.5.2/src/win.rs",
+    ],
+    archive = ":term-0.5.2--archive",
+    crate = "term",
+    crate_root = "term-0.5.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":byteorder",
+        ":dirs-1.0.5",
     ],
 )
 
@@ -11422,6 +13283,51 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "utf8-ranges-1.0.4",
+    srcs = [
+        "utf8-ranges-1.0.4/src/char_utf8.rs",
+        "utf8-ranges-1.0.4/src/lib.rs",
+    ],
+    archive = ":utf8-ranges-1.0.4--archive",
+    crate = "utf8_ranges",
+    crate_root = "utf8-ranges-1.0.4/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "utf8parse-0.2.0",
+    srcs = [
+        "utf8parse-0.2.0/src/lib.rs",
+        "utf8parse-0.2.0/src/types.rs",
+        "utf8parse-0.2.0/tests/UTF-8-demo.txt",
+    ],
+    archive = ":utf8parse-0.2.0--archive",
+    crate = "utf8parse",
+    crate_root = "utf8parse-0.2.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
     name = "vec_map",
     srcs = ["vec_map-0.8.2/src/lib.rs"],
     archive = ":vec_map-0.8.2--archive",
@@ -11825,4 +13731,66 @@ cpp_library(
     include_directories = ["vendor/ring-0.16.20/include"],
     preferred_linkage = "static",
     visibility = [],
+)
+
+rust_library(
+    name = "starlark",
+    srcs = glob(["starlark-rust/starlark/src/**/*.rs"]),
+    env = {
+        "OUT_DIR": "$(location :starlark-grammar)/src",
+    },
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    deps = [
+        ":annotate-snippets",
+        ":anyhow",
+        ":bumpalo",
+        ":derivative",
+        ":either",
+        ":hashbrown",
+        ":indexmap",
+        ":itertools",
+        ":lalrpop-util",
+        ":logos",
+        ":maplit",
+        ":once_cell",
+        ":paste",
+        ":rustyline",
+        ":starlark_module",
+        ":static_assertions",
+        ":thiserror",
+    ],
+)
+
+export_file(
+    name = "starlark-rust/starlark/src/syntax/grammar.lalrpop",
+)
+
+buck_genrule(
+    name = "starlark-grammar",
+    out = ".",
+    cmd = "$(exe :lalrpop-lalrpop) --out-dir $OUT $(location :starlark-rust/starlark/src/syntax/grammar.lalrpop)",
+)
+
+rust_library(
+    name = "starlark_module",
+    srcs = glob(["starlark-rust/starlark_module/src/**/*.rs"]),
+    proc_macro = True,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    deps = [
+        ":proc-macro2",
+        ":quote",
+        ":syn",
+    ],
 )
