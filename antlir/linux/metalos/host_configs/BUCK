@@ -1,4 +1,9 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "rust_binary", "rust_library", "third_party")
+
+buck_filegroup(
+    name = "generators",
+    srcs = glob(["generators/*.star"]),
+)
 
 rust_library(
     name = "evalctx",
@@ -28,6 +33,8 @@ rust_binary(
             "anyhow",
             "serde_json",
             "structopt",
+            "tar",
+            "zstd",
         ],
         platform = "rust",
     ),
