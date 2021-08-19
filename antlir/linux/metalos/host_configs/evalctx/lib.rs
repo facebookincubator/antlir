@@ -6,6 +6,7 @@
  */
 
 #![deny(warnings)]
+use starlark::environment::{Globals, GlobalsBuilder};
 
 /// Helper macro for a simple struct that is just exposing fields to Starlark.
 /// It handles the boilerplate of Starlark impls that are required for this
@@ -30,3 +31,26 @@ macro_rules! simple_data_struct {
 }
 
 mod host;
+mod template;
+
+pub fn metalos(builder: &mut GlobalsBuilder) {
+    builder.struct_("metalos", |builder: &mut GlobalsBuilder| {
+        template::module(builder);
+    });
+}
+
+pub fn globals() -> Globals {
+    GlobalsBuilder::new().with(metalos).build()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::metalos;
+    use starlark::assert::Assert;
+    #[test]
+    fn starlark_module_exposed() {
+        let mut a = Assert::new();
+        a.globals_add(metalos);
+        a.pass("metalos.template(\"\")");
+    }
+}

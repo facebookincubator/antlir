@@ -518,6 +518,12 @@ archive(
 )
 
 archive(
+    name = "handlebars-3.5.4--archive",
+    sha256 = "580b6f551b29a3a02436318aed09ba1c58eea177dc49e39beac627ad356730a5",
+    url = "https://static.crates.io/crates/handlebars/handlebars-3.5.4.crate",
+)
+
+archive(
     name = "hashbrown-0.11.2--archive",
     sha256 = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e",
     url = "https://static.crates.io/crates/hashbrown/hashbrown-0.11.2.crate",
@@ -860,6 +866,30 @@ archive(
 )
 
 archive(
+    name = "pest-2.1.3--archive",
+    sha256 = "10f4872ae94d7b90ae48754df22fd42ad52ce740b8f370b03da4835417403e53",
+    url = "https://static.crates.io/crates/pest/pest-2.1.3.crate",
+)
+
+archive(
+    name = "pest_derive-2.1.0--archive",
+    sha256 = "833d1ae558dc601e9a60366421196a8d94bc0ac980476d0b67e1d0988d72b2d0",
+    url = "https://static.crates.io/crates/pest_derive/pest_derive-2.1.0.crate",
+)
+
+archive(
+    name = "pest_generator-2.1.3--archive",
+    sha256 = "99b8db626e31e5b81787b9783425769681b347011cc59471e33ea46d2ea0cf55",
+    url = "https://static.crates.io/crates/pest_generator/pest_generator-2.1.3.crate",
+)
+
+archive(
+    name = "pest_meta-2.1.3--archive",
+    sha256 = "54be6e404f5317079812fc8f9f5279de376d8856929e21c184ecf6bbd692a11d",
+    url = "https://static.crates.io/crates/pest_meta/pest_meta-2.1.3.crate",
+)
+
+archive(
     name = "petgraph-0.5.1--archive",
     sha256 = "467d164a6de56270bd7c4d070df81d07beace25012d5103ced4e9ff08d6afdb7",
     url = "https://static.crates.io/crates/petgraph/petgraph-0.5.1.crate",
@@ -959,6 +989,12 @@ archive(
     name = "quick-error-1.2.3--archive",
     sha256 = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0",
     url = "https://static.crates.io/crates/quick-error/quick-error-1.2.3.crate",
+)
+
+archive(
+    name = "quick-error-2.0.0--archive",
+    sha256 = "3ac73b1112776fc109b2e61909bc46c7e1bf0d7f690ffb1676553acce16d5cda",
+    url = "https://static.crates.io/crates/quick-error/quick-error-2.0.0.crate",
 )
 
 archive(
@@ -1517,6 +1553,12 @@ archive(
     name = "typenum-1.12.0--archive",
     sha256 = "373c8a200f9e67a0c95e62a4f52fbf80c23b4381c05a17845531982fa99e6b33",
     url = "https://static.crates.io/crates/typenum/typenum-1.12.0.crate",
+)
+
+archive(
+    name = "ucd-trie-0.1.3--archive",
+    sha256 = "56dee185309b50d1f11bfedef0fe6d036842e3fb77413abef29f8f8d1c5d4c1c",
+    url = "https://static.crates.io/crates/ucd-trie/ucd-trie-0.1.3.crate",
 )
 
 archive(
@@ -5019,6 +5061,68 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "handlebars",
+    srcs = [
+        "handlebars-3.5.4/src/block.rs",
+        "handlebars-3.5.4/src/context.rs",
+        "handlebars-3.5.4/src/decorators/inline.rs",
+        "handlebars-3.5.4/src/decorators/mod.rs",
+        "handlebars-3.5.4/src/error.rs",
+        "handlebars-3.5.4/src/grammar.pest",
+        "handlebars-3.5.4/src/grammar.rs",
+        "handlebars-3.5.4/src/helpers/block_util.rs",
+        "handlebars-3.5.4/src/helpers/helper_boolean.rs",
+        "handlebars-3.5.4/src/helpers/helper_each.rs",
+        "handlebars-3.5.4/src/helpers/helper_if.rs",
+        "handlebars-3.5.4/src/helpers/helper_log.rs",
+        "handlebars-3.5.4/src/helpers/helper_lookup.rs",
+        "handlebars-3.5.4/src/helpers/helper_raw.rs",
+        "handlebars-3.5.4/src/helpers/helper_with.rs",
+        "handlebars-3.5.4/src/helpers/mod.rs",
+        "handlebars-3.5.4/src/helpers/scripting.rs",
+        "handlebars-3.5.4/src/json/mod.rs",
+        "handlebars-3.5.4/src/json/path.rs",
+        "handlebars-3.5.4/src/json/value.rs",
+        "handlebars-3.5.4/src/lib.rs",
+        "handlebars-3.5.4/src/macros.rs",
+        "handlebars-3.5.4/src/output.rs",
+        "handlebars-3.5.4/src/partial.rs",
+        "handlebars-3.5.4/src/registry.rs",
+        "handlebars-3.5.4/src/render.rs",
+        "handlebars-3.5.4/src/support.rs",
+        "handlebars-3.5.4/src/template.rs",
+        "handlebars-3.5.4/src/util.rs",
+    ],
+    archive = ":handlebars-3.5.4--archive",
+    crate = "handlebars",
+    crate_root = "handlebars-3.5.4/src/lib.rs",
+    edition = "2018",
+    env = {
+        "CARGO_MANIFEST_DIR": "third-party/rust/handlebars-3.5.4",
+        "CARGO_PKG_NAME": "handlebars",
+        "CARGO_PKG_VERSION": "3.5.4",
+        "CARGO_PKG_VERSION_MAJOR": "3",
+        "CARGO_PKG_VERSION_MINOR": "5",
+        "CARGO_PKG_VERSION_PATCH": "4",
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        "//third-party/rust:log",
+        "//third-party/rust:pest",
+        "//third-party/rust:pest_derive",
+        "//third-party/rust:quick-error-2.0.0",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_json",
+    ],
+)
+
+third_party_rust_library(
     name = "hashbrown",
     srcs = [
         "hashbrown-0.11.2/src/external_trait_impls/mod.rs",
@@ -8154,6 +8258,131 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "pest",
+    srcs = [
+        "pest-2.1.3/src/error.rs",
+        "pest-2.1.3/src/iterators/flat_pairs.rs",
+        "pest-2.1.3/src/iterators/mod.rs",
+        "pest-2.1.3/src/iterators/pair.rs",
+        "pest-2.1.3/src/iterators/pairs.rs",
+        "pest-2.1.3/src/iterators/queueable_token.rs",
+        "pest-2.1.3/src/iterators/tokens.rs",
+        "pest-2.1.3/src/lib.rs",
+        "pest-2.1.3/src/macros.rs",
+        "pest-2.1.3/src/parser.rs",
+        "pest-2.1.3/src/parser_state.rs",
+        "pest-2.1.3/src/position.rs",
+        "pest-2.1.3/src/prec_climber.rs",
+        "pest-2.1.3/src/span.rs",
+        "pest-2.1.3/src/stack.rs",
+        "pest-2.1.3/src/token.rs",
+        "pest-2.1.3/src/unicode/binary.rs",
+        "pest-2.1.3/src/unicode/category.rs",
+        "pest-2.1.3/src/unicode/mod.rs",
+    ],
+    archive = ":pest-2.1.3--archive",
+    crate = "pest",
+    crate_root = "pest-2.1.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = ["//third-party/rust:ucd-trie-0.1.3"],
+)
+
+third_party_rust_library(
+    name = "pest_derive",
+    srcs = ["pest_derive-2.1.0/src/lib.rs"],
+    archive = ":pest_derive-2.1.0--archive",
+    crate = "pest_derive",
+    crate_root = "pest_derive-2.1.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        "//third-party/rust:pest",
+        "//third-party/rust:pest_generator-2.1.3",
+    ],
+)
+
+third_party_rust_library(
+    name = "pest_generator-2.1.3",
+    srcs = [
+        "pest_generator-2.1.3/src/generator.rs",
+        "pest_generator-2.1.3/src/lib.rs",
+        "pest_generator-2.1.3/src/macros.rs",
+    ],
+    archive = ":pest_generator-2.1.3--archive",
+    crate = "pest_generator",
+    crate_root = "pest_generator-2.1.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        "//third-party/rust:pest",
+        "//third-party/rust:pest_meta-2.1.3",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
+    ],
+)
+
+third_party_rust_library(
+    name = "pest_meta-2.1.3",
+    srcs = [
+        "pest_meta-2.1.3/src/ast.rs",
+        "pest_meta-2.1.3/src/grammar.rs",
+        "pest_meta-2.1.3/src/lib.rs",
+        "pest_meta-2.1.3/src/optimizer/concatenator.rs",
+        "pest_meta-2.1.3/src/optimizer/factorizer.rs",
+        "pest_meta-2.1.3/src/optimizer/mod.rs",
+        "pest_meta-2.1.3/src/optimizer/restorer.rs",
+        "pest_meta-2.1.3/src/optimizer/rotater.rs",
+        "pest_meta-2.1.3/src/optimizer/skipper.rs",
+        "pest_meta-2.1.3/src/optimizer/unroller.rs",
+        "pest_meta-2.1.3/src/parser.rs",
+        "pest_meta-2.1.3/src/validator.rs",
+    ],
+    archive = ":pest_meta-2.1.3--archive",
+    crate = "pest_meta",
+    crate_root = "pest_meta-2.1.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        "//third-party/rust:maplit",
+        "//third-party/rust:pest",
+    ],
+)
+
+third_party_rust_library(
     name = "petgraph-0.5.1",
     srcs = [
         "petgraph-0.5.1/src/algo/dominators.rs",
@@ -8712,6 +8941,25 @@ third_party_rust_library(
     crate = "quick_error",
     crate_root = "quick-error-1.2.3/src/lib.rs",
     edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "quick-error-2.0.0",
+    srcs = ["quick-error-2.0.0/src/lib.rs"],
+    archive = ":quick-error-2.0.0--archive",
+    crate = "quick_error",
+    crate_root = "quick-error-2.0.0/src/lib.rs",
+    edition = "2018",
     env = {
     },
     features = [],
@@ -13009,6 +13257,32 @@ third_party_rust_binary(
         "TYPENUM_BUILD_OP": "consts.rs",
     },
     features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "ucd-trie-0.1.3",
+    srcs = [
+        "ucd-trie-0.1.3/src/general_category.rs",
+        "ucd-trie-0.1.3/src/lib.rs",
+        "ucd-trie-0.1.3/src/owned.rs",
+    ],
+    archive = ":ucd-trie-0.1.3--archive",
+    crate = "ucd_trie",
+    crate_root = "ucd-trie-0.1.3/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
     mapped_srcs = {
     },
     named_deps = {
