@@ -1,8 +1,9 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
 
 rust_library(
     name = "evalctx",
     srcs = glob(["evalctx/**/*.rs"]),
+    test_srcs = ["generators/hostname.star"],
     deps = third_party.libraries(
         [
             "anyhow",
@@ -10,9 +11,23 @@ rust_library(
             "paste",
             "handlebars",
             "once_cell",
+            "serde",
             "serde_json",
             "starlark",
             "starlark_module",
+        ],
+        platform = "rust",
+    ),
+)
+
+rust_binary(
+    name = "evaluator",
+    srcs = glob(["evaluator/**/*.rs"]),
+    deps = [":evalctx"] + third_party.libraries(
+        [
+            "anyhow",
+            "serde_json",
+            "structopt",
         ],
         platform = "rust",
     ),

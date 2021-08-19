@@ -30,17 +30,21 @@ macro_rules! simple_data_struct {
     };
 }
 
-mod host;
+pub mod generator;
+pub use generator::Generator;
+pub mod host;
+pub use host::Host;
 mod template;
 
 pub fn metalos(builder: &mut GlobalsBuilder) {
     builder.struct_("metalos", |builder: &mut GlobalsBuilder| {
+        generator::module(builder);
         template::module(builder);
     });
 }
 
 pub fn globals() -> Globals {
-    GlobalsBuilder::new().with(metalos).build()
+    GlobalsBuilder::extended().with(metalos).build()
 }
 
 #[cfg(test)]
