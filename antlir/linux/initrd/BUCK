@@ -46,6 +46,7 @@ networking = [
     # Explicitly enable systemd-networkd to configure the network links
     # early in boot
     systemd.enable_unit("systemd-networkd.service"),
+    systemd.enable_unit("systemd-networkd-wait-online.service"),
     image.install("//antlir/linux/metalos:eth.network", "/usr/lib/systemd/network/20-eth.network"),
 ]
 
