@@ -1,5 +1,12 @@
 load("//antlir/bzl:oss_shim.bzl", "http_file")
 
+# This wrapper function around `native.prebuilt_python_library`
+# exists because directly using `native.prebuilt_python_library`
+# in BUCK causes a build error.
+def prebuilt_python_library(**kwargs):
+    # @lint-ignore BUCKLINT
+    native.prebuilt_python_library(**kwargs)
+
 def pypi_package(
     name,
     url,
@@ -12,7 +19,7 @@ def pypi_package(
         visibility = []
     )
 
-    native.prebuilt_python_library(
+    prebuilt_python_library(
         name = name,
         binary_src = ":{}-download".format(name),
         visibility = ["PUBLIC"],

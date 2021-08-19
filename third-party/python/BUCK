@@ -1,4 +1,4 @@
-load("//third-party/python:pypi.bzl", "pypi_package")
+load("//third-party/python:pypi.bzl", "prebuilt_python_library", "pypi_package")
 
 pypi_package(
     name = "certifi",
@@ -24,13 +24,13 @@ pypi_package(
     url = "https://files.pythonhosted.org/packages/89/e3/afebe61c546d18fb1709a61bee788254b40e736cff7271c7de5de2dc4128/idna-2.9-py2.py3-none-any.whl",
 )
 
-pypi_package(
+# We have a patched version of pydantic that lets us serial dicts inside shapes. See D30240796.
+# TODO: Remove this for pypi package once the changes land upstream.
+prebuilt_python_library(
     name = "pydantic",
-    sha256 = "fec866a0b59f372b7e776f2d7308511784dace622e0992a0b59ea3ccee0ae833",
-    url = "https://files.pythonhosted.org/packages/ff/74/54e030641601112309f6d2af620774e9080f99c7a15742fc6a0b170c4076/pydantic-1.8.2-py3-none-any.whl",
-    deps = [
-        ":typing_extensions",
-    ],
+    binary_src = "pydantic-1.8.2-py3-none-any.whl",
+    visibility = ["PUBLIC"],
+    deps = [":typing_extensions"],
 )
 
 # TODO: remove typing_extensions when we are 100% on Python 3.9
