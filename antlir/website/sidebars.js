@@ -7,7 +7,7 @@
  * @format
  */
 
-const {fbInternalOnly} = require('internaldocs-fb-helpers');
+const {fbContent, fbInternalOnly} = require('internaldocs-fb-helpers');
 
 module.exports = {
   docs: [
@@ -103,12 +103,19 @@ module.exports = {
         },
       ],
     },
-    // Towards the end since it's linked from Getting Started, and only
-    // relevant to OSS users.
-    {
-      type: 'doc',
-      id: 'installing',
-    },
+    ...fbContent({
+      external: [
+        // Towards the end since it's also linked from Getting Started
+        {
+          type: 'doc',
+          id: 'installing',
+        },
+        {
+          type: 'doc',
+          id: 'oss-test-runner',
+        },
+      ],
+    }),
     ...fbInternalOnly([
       {
         type: 'doc',
