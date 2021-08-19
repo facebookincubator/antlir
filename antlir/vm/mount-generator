@@ -1,4 +1,16 @@
 #!/bin/sh
+
+log () {
+    msg="${1}"
+    if [ -w "/dev/kmsg" ]; then
+        out="/dev/kmsg"
+    else
+        out="/dev/stderr"
+    fi
+
+    echo "${msg}" > ${out}
+}
+
 # Generate mount units for all exported 9pfs shares.
 # This mounts all the filesystems at boot time in the location indicated by the
 # mount tag, rather than mounting them with (explicit) static systemd units or
@@ -7,13 +19,13 @@
 # files from a well-known 9p mount tag, but for now the only case where the
 # host needs to do change systemd units at runtime is for host-dependent 9pfs
 # mountpoints.
-echo "mount-generator: starting" > /dev/kmsg
+log "mount-generator: starting"
 set -e
 
 normal_dir="$1"
 # allow passing EXPORTS_DIR as a pre-mounted path for unit tests
 exportsdir="$EXPORTS_DIR"
-echo "mount-generator: $1 $EXPORTS_DIR" > /dev/kmsg
+log "mount-generator: $1 $EXPORTS_DIR" 
 
 if [ -z "$exportsdir" ]; then
     # Usually these are already loaded, but in Antlir Linux this generator runs in
@@ -21,15 +33,15 @@ if [ -z "$exportsdir" ]; then
     # Ignore any errors in modprobe and assume that the modules are already
     # loaded, the next steps will still fail in an obvious way if 9p is not
     # actually present.
-    echo "mount-generator: attempting to load 9p modules" > /dev/kmsg
+    log "mount-generator: attempting to load 9p modules"
     modprobe -a 9p 9pnet 9pnet_virtio || true
 
     exportsdir="/run/vmtest-exports"
-    echo "mount-generator: creating $exportsdir" > /dev/kmsg
+    log "mount-generator: creating $exportsdir"
     mkdir -p "$exportsdir"
-    echo "mount-generator: mounting exports in $exportsdir" > /dev/kmsg
+    log "mount-generator: mounting exports in $exportsdir"
     mount -t 9p -oversion=9p2000.L,posixacl,cache=loose exports "$exportsdir"
-    echo "mount-generator: mounted exports in $exportsdir" > /dev/kmsg
+    log "mount-generator: mounted exports in $exportsdir"
     trap 'umount $exportsdir && rm -rf $exportsdir' EXIT
 fi
 
@@ -41,7 +53,7 @@ mkdir -p "$normal_dir/workload-pre.target.requires"
 
 for unit in "$exportsdir"/*.mount
 do
-    echo "mount-generator: processing $unit" > /dev/kmsg
+    log "mount-generator: processing $unit"
     cp "$unit" "$normal_dir"/
     unit="$(basename "$unit")"
     ln -s "$normal_dir/$unit" "$normal_dir/local-fs.target.requires/$unit"

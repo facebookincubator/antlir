@@ -10,21 +10,22 @@ import subprocess
 import tempfile
 import unittest
 from dataclasses import dataclass
+from typing import Optional
 
+from antlir.fs_utils import Path
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
 
 
 @dataclass(frozen=True)
 class TestShare(object):
     share: Share
-    unit: str
-    contents: str
+    unit: Optional[str]
+    contents: Optional[str]
 
 
 TEST_SHARES = [
     TestShare(
-        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
-        Plan9Export(path="/tmp/hello"),
+        Plan9Export(path=Path("/tmp/hello"), mountpoint=Path("/tmp/hello")),
         "tmp-hello.mount",
         """[Unit]
 Description=Mount fs0 at /tmp/hello
@@ -40,8 +41,11 @@ Options=version=9p2000.L,posixacl,cache=loose,ro
 """,
     ),
     TestShare(
-        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
-        Plan9Export(path="/usr/tag", mount_tag="explicit_tag"),
+        Plan9Export(
+            path=Path("/usr/tag"),
+            mountpoint=Path("/usr/tag"),
+            mount_tag="explicit_tag",
+        ),
         "usr-tag.mount",
         """[Unit]
 Description=Mount explicit_tag at /usr/tag
@@ -57,17 +61,18 @@ Options=version=9p2000.L,posixacl,cache=loose,ro
 """,
     ),
     TestShare(
-        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
-        # pyre-fixme[6]: Expected `str` for 2nd param but got `None`.
-        Plan9Export(path="/tmp/not-included", generator=False),
-        # pyre-fixme[6]: Expected `str` for 2nd param but got `None`.
+        Plan9Export(
+            path=Path("/tmp/not-included"),
+            mountpoint=Path("/tmp/not-included"),
+            generator=False,
+        ),
         None,
-        # pyre-fixme[6]: Expected `str` for 3rd param but got `None`.
         None,
     ),
     TestShare(
-        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
-        Plan9Export(path="/some/host/path", mountpoint="/guest/other"),
+        Plan9Export(
+            path=Path("/some/host/path"), mountpoint=Path("/guest/other")
+        ),
         "guest-other.mount",
         """[Unit]
 Description=Mount fs2 at /guest/other
@@ -83,8 +88,11 @@ Options=version=9p2000.L,posixacl,cache=loose,ro
 """,
     ),
     TestShare(
-        # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
-        Plan9Export(path="/tmp/hello_rw", readonly=False),
+        Plan9Export(
+            path=Path("/tmp/hello_rw"),
+            mountpoint=Path("/tmp/hello_rw"),
+            readonly=False,
+        ),
         "tmp-hello_rw.mount",
         """[Unit]
 Description=Mount fs3 at /tmp/hello_rw
@@ -100,9 +108,7 @@ Options=version=9p2000.L,posixacl,cache=none,rw
 """,
     ),
     TestShare(
-        # pyre-fixme[6]: Expected `PathLike[typing.Any]` for 1st param but got
-        # `str`.
-        BtrfsDisk(path="/tmp/image.btrfs", mountpoint="/mnt/guest"),
+        BtrfsDisk(path=Path("/tmp/image.btrfs"), mountpoint=Path("/mnt/guest")),
         "mnt-guest.mount",
         """[Unit]
 Description=Mount vdc (/tmp/image.btrfs from host) at /mnt/guest
