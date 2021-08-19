@@ -114,6 +114,8 @@ simple_data_struct!(DNS);
 pub struct NetworkInterface {
     pub mac: String,
     pub addrs: Vec<IpAddr>,
+    #[builder(setter(strip_option))]
+    pub name: Option<String>,
 }
 simple_data_struct!(NetworkInterface);
 
@@ -148,6 +150,7 @@ mod tests {
                             NetworkInterface::builder()
                                 .mac("00:00:00:00:00:01")
                                 .addrs(vec!["2a03:2880:f103:181:face:b00c:0:25de".parse().unwrap()])
+                                .name("eth0")
                                 .build()
                                 .unwrap(),
                         ])
