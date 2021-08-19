@@ -1,0 +1,16 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_library", "third_party")
+
+rust_library(
+    name = "evalctx",
+    srcs = glob(["evalctx/**/*.rs"]),
+    deps = third_party.libraries(
+        [
+            "anyhow",
+            "derive_builder",
+            "paste",
+            "starlark",
+            "starlark_module",
+        ],
+        platform = "rust",
+    ),
+)
