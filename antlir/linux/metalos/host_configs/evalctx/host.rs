@@ -8,6 +8,7 @@
 use std::net::AddrParseError;
 
 use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
 use starlark::values::{AllocValue, Heap, Value};
 use starlark_module::StarlarkAttrs;
 
@@ -16,7 +17,16 @@ use starlark_module::StarlarkAttrs;
 /// about a host that is necessary for the config generators to materialize
 /// config files. This is designed to (eventually) be serializable by an
 /// external service and provided directly to a MetalOS host's initrd.
-#[derive(Debug, PartialEq, Eq, Clone, StarlarkAttrs, Builder)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Clone,
+    Deserialize,
+    Serialize,
+    StarlarkAttrs,
+    Builder
+)]
 #[builder(setter(into))]
 pub struct Host {
     pub hostname: String,
@@ -28,7 +38,7 @@ simple_data_struct!(Host);
 /// simply exposes the string value of the address, and does not provide any
 /// additional information to Starlark. If that is necessary in the future, this
 /// wrapper would need to have an implementation for StarlarkValue.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize, Serialize)]
 pub struct IpAddr(std::net::IpAddr);
 
 impl std::ops::Deref for IpAddr {
@@ -52,7 +62,16 @@ impl<'v> AllocValue<'v> for IpAddr {
 }
 
 /// Top-level network settings.
-#[derive(Debug, PartialEq, Eq, Clone, StarlarkAttrs, Builder)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Clone,
+    Deserialize,
+    Serialize,
+    StarlarkAttrs,
+    Builder
+)]
 #[builder(setter(into))]
 pub struct Network {
     pub dns: DNS,
@@ -61,17 +80,36 @@ pub struct Network {
 simple_data_struct!(Network);
 
 /// Configuration for DNS resolvers
-#[derive(Debug, PartialEq, Eq, Clone, StarlarkAttrs, Builder)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Clone,
+    Deserialize,
+    Serialize,
+    StarlarkAttrs,
+    Builder
+)]
 #[builder(setter(into))]
 pub struct DNS {
     pub servers: Vec<IpAddr>,
     #[builder(default)]
+    #[serde(default)]
     pub search_domains: Vec<String>,
 }
 simple_data_struct!(DNS);
 
 /// Configuration for a single network interface, keyed by MAC Address.
-#[derive(Debug, PartialEq, Eq, Clone, StarlarkAttrs, Builder)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Clone,
+    Deserialize,
+    Serialize,
+    StarlarkAttrs,
+    Builder
+)]
 #[builder(setter(into), build_fn(validate = "Self::validate"))]
 pub struct NetworkInterface {
     pub mac: String,

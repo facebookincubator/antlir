@@ -379,18 +379,10 @@ def _impl_python_unittest(
 def _python_unittest(*args, **kwargs):
     _wrap_internal(_impl_python_unittest, args, kwargs)
 
-def _rust_unittest(*args, **kwargs):
-    _wrap_internal(native.rust_test, args, kwargs)
-
-def _rust_binary(*args, **kwargs):
-    # Inside FB, we are a little special and explicitly use `malloc` as our
-    # allocator, and avoid linking to some always-present FB libraries in order
-    # to keep our environment simple and produce small binaries. In OSS, this
-    # isn't required (yet), since the default platforms will be close to this
-    # goal already.
-    kwargs.pop("allocator", None)
-    kwargs.pop("nodefaultlibs", None)
-
+def _split_rust_kwargs(kwargs):
+    # process some kwargs common to all rust targets, as well as some split
+    # kwargs from rust_{binary,library} that are forwarded to implicit
+    # rust_unittest targets
     if not kwargs.get("crate_root", None):
         topsrc_options = (kwargs.get("name") + ".rs", "main.rs")
 
@@ -404,26 +396,49 @@ def _rust_binary(*args, **kwargs):
 
         if len(topsrc) == 1:
             kwargs["crate_root"] = topsrc[0]
-
-    unittests = kwargs.pop("unittests", True)
-
-    _wrap_internal(native.rust_binary, args, kwargs)
+    test_kwargs = None
 
     # automatically generate a unittest target if the caller did not explicitly
     # opt out
-    if unittests:
-        _rust_unittest(
-            name = kwargs.get("name") + "-unittest",
-            srcs = kwargs.get("srcs", []),
-            mapped_srcs = kwargs.get("mapped_srcs", {}),
-            deps = kwargs.get("deps", []) + kwargs.get("test_deps", []),
-            labels = kwargs.get("labels", []),
-            crate = kwargs.get("crate", kwargs.get("name").replace("-", "_")),
-            crate_root = kwargs.get("crate_root"),
-        )
+    if kwargs.pop("unittests", True):
+        test_mapped_srcs = kwargs.get("mapped_srcs", {})
+        test_mapped_srcs.update(kwargs.pop("test_mapped_srcs", {}))
+        test_kwargs = {
+            "crate": kwargs.get("crate", kwargs.get("name").replace("-", "_")),
+            "crate_root": kwargs.get("crate_root"),
+            "deps": kwargs.get("deps", []) + kwargs.pop("test_deps", []),
+            "labels": kwargs.get("labels", []),
+            "mapped_srcs": test_mapped_srcs,
+            "name": kwargs.get("name") + "-unittest",
+            "srcs": kwargs.get("srcs", []) + kwargs.pop("test_srcs", []),
+        }
+
+    return kwargs, test_kwargs
+
+def _rust_unittest(*args, **kwargs):
+    _wrap_internal(native.rust_test, args, kwargs)
+
+def _rust_binary(*args, **kwargs):
+    # Inside FB, we are a little special and explicitly use `malloc` as our
+    # allocator, and avoid linking to some always-present FB libraries in order
+    # to keep our environment simple and produce small binaries. In OSS, this
+    # isn't required (yet), since the default platforms will be close to this
+    # goal already.
+    kwargs.pop("allocator", None)
+    kwargs.pop("nodefaultlibs", None)
+
+    kwargs, test_kwargs = _split_rust_kwargs(kwargs)
+    _wrap_internal(native.rust_binary, args, kwargs)
+
+    if test_kwargs:
+        _rust_unittest(**test_kwargs)
 
 def _rust_library(*args, **kwargs):
+    kwargs, test_kwargs = _split_rust_kwargs(kwargs)
     _wrap_internal(native.rust_library, args, kwargs)
+
+    if test_kwargs:
+        _rust_unittest(**test_kwargs)
 
 # Use = in the default filename to avoid clashing with RPM names.
 # The constant must match `update_allowed_versions.py`.
