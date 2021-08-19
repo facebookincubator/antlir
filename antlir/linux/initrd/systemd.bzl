@@ -56,6 +56,7 @@ BINARIES = [
     "/usr/lib/systemd/systemd-journald",
     "/usr/lib/systemd/systemd-modules-load",
     "/usr/lib/systemd/systemd-networkd",
+    "/usr/lib/systemd/systemd-networkd-wait-online",
     "/usr/lib/systemd/systemd-shutdown",
     "/usr/lib/systemd/systemd-sysctl",
     "/usr/lib/systemd/systemd-udevd",
