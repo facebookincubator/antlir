@@ -1,15 +1,25 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "rust_binary", "rust_library", "third_party")
+# @oss-disable: load("//antlir/linux/metalos/host_configs/evalctx/facebook:deps.bzl", fb_deps = "deps") 
 
 buck_filegroup(
     name = "generators",
     srcs = glob(["generators/*.star"]),
 )
 
+# The facebook extension to the evalctx crate adds some additional dependencies
+# on internal code
+maybe_fb_deps = []
+
+# @oss-disable: maybe_fb_deps.extend(fb_deps) 
+
 rust_library(
     name = "evalctx",
     srcs = glob(["evalctx/**/*.rs"]),
+    features = [
+        # @oss-disable: "facebook", 
+    ],
     test_srcs = ["generators/hostname.star"],
-    deps = third_party.libraries(
+    deps = maybe_fb_deps + third_party.libraries(
         [
             "anyhow",
             "derive_builder",
