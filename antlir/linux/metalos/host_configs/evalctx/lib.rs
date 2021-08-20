@@ -35,7 +35,7 @@ pub use generator::Generator;
 pub mod host;
 pub use host::Host;
 #[cfg(feature = "facebook")]
-mod facebook;
+pub mod facebook;
 mod template;
 
 pub fn metalos(builder: &mut GlobalsBuilder) {
