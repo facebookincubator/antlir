@@ -31,6 +31,9 @@ use starlark_module::StarlarkAttrs;
 pub struct Host {
     pub hostname: String,
     pub network: Network,
+    #[cfg(feature = "facebook")]
+    #[builder(default)]
+    pub facebook: crate::facebook::HostFacebook,
 }
 simple_data_struct!(Host);
 
@@ -52,6 +55,15 @@ impl std::str::FromStr for IpAddr {
     type Err = AddrParseError;
     fn from_str(s: &str) -> Result<IpAddr, AddrParseError> {
         Ok(Self(s.parse()?))
+    }
+}
+
+impl<T> From<T> for IpAddr
+where
+    T: Into<std::net::IpAddr>,
+{
+    fn from(x: T) -> Self {
+        Self(x.into())
     }
 }
 
@@ -167,11 +179,27 @@ mod tests {
         let mut a = Assert::new();
         a.globals_add(|gb| gb.set("input", Host::default()));
         a.eq("input.hostname", "\"host001.01.abc0.facebook.com\"");
-        a.eq("set(dir(input))", "[\"hostname\", \"network\"]");
+        let expected_dir = "\"hostname\", \"network\"";
+        if cfg!(feature = "facebook") {
+            a.eq(
+                "set(dir(input))",
+                &format!("[\"facebook\", {}]", expected_dir),
+            );
+        } else {
+            a.eq("set(dir(input))", &format!("[{}]", expected_dir));
+        }
         a.eq("input.network.dns.servers", "[\"2606:4700:4700::1111\"]");
         a.eq(
             "input.network.interfaces[0].addrs",
             "[\"2a03:2880:f103:181:face:b00c:0:25de\"]",
         );
+    }
+
+    #[cfg(feature = "facebook")]
+    #[test]
+    fn facebook_exposed() {
+        let mut a = Assert::new();
+        a.globals_add(|gb| gb.set("input", Host::default()));
+        a.eq("hasattr(input, \"facebook\")", "True");
     }
 }
