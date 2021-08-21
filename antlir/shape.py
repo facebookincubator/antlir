@@ -14,6 +14,7 @@ import os
 from typing import Type, TypeVar
 
 import pydantic
+from antlir.btrfs_diff.freeze import freeze, DoNotFreeze
 from antlir.fs_utils import Path
 
 
@@ -65,9 +66,14 @@ class ShapeMeta(pydantic.main.ModelMetaclass):
         return f"{clsname}({fields})"
 
 
-class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
+class Shape(pydantic.BaseModel, DoNotFreeze, metaclass=ShapeMeta):
     class Config:
         allow_mutation = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for k, v in self.__dict__.items():
+            self.__dict__[k] = freeze(v)
 
     @classmethod
     def read_resource(cls: Type[S], package: str, name: str) -> S:
@@ -87,16 +93,7 @@ class Shape(pydantic.BaseModel, metaclass=ShapeMeta):
         return cls.parse_raw(os.environ[envvar])
 
     def __hash__(self):
-        values = [type(self)]
-        for v in self.__dict__.values():
-            if type(v) is dict:
-                # dict is not hashable so we have to convert it to
-                # a hashable frozenset of tuples.
-                values.append(frozenset(v.items()))
-            else:
-                values.append(v)
-
-        return hash(tuple(values))
+        return hash((type(self), *self.__dict__.values()))
 
     def __repr__(self):
         """

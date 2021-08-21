@@ -15,6 +15,7 @@ from contextlib import contextmanager, ExitStack
 from typing import AnyStr, BinaryIO, Iterable, Iterator, Optional, TypeVar
 
 from .artifacts_dir import find_artifacts_dir
+from .btrfs_diff.freeze import DoNotFreeze
 from .common import (
     check_popen_returncode,
     get_logger,
@@ -115,7 +116,11 @@ def _query_uuid(subvol: "Subvol", path: Path):
     return subvol_metadata[2].split(b":")[1].decode().strip()
 
 
-class Subvol:
+# Subvol is marked as `DoNotFreeze` as it's hash is just of
+# byte string that contains the path to the subvol. It's member
+# variables are just a cache of the external state of the subvol
+# and do not affect its hash.
+class Subvol(DoNotFreeze):
     """
     ## What is this for?
 
@@ -220,6 +225,8 @@ class Subvol:
         )
         return equal
 
+    # `__hash__` contains only `_path`. The member variables
+    # of `Subvol` are just a cache of the external state of the subvol.
     def __hash__(self) -> int:
         return hash(self._path)
 
