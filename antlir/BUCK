@@ -202,6 +202,7 @@ python_library(
         ":loopback",
         ":loopback_opts_t",
         ":unshare",
+        "//antlir/btrfs_diff:freeze",
         "//antlir/compiler:subvolume_on_disk",
     ],
 )
@@ -581,6 +582,7 @@ python_library(
             "pydantic",
             platform = "python",
         ),
+        "//antlir/btrfs_diff:freeze",
     ],
 )
 

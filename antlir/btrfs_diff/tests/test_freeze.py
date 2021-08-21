@@ -8,7 +8,7 @@ import unittest
 from types import MappingProxyType
 from typing import NamedTuple, Sequence
 
-from ..freeze import freeze
+from ..freeze import DoNotFreeze, freeze, frozendict
 
 
 class FreezeTestCase(unittest.TestCase):
@@ -22,8 +22,8 @@ class FreezeTestCase(unittest.TestCase):
         d = {"inner": {1: l, 2: l}}
         fd = freeze(d, _memo=memo)
         self.assertEqual({"inner": {1: (), 2: ()}}, fd)
-        self.assertIsInstance(fd, MappingProxyType)
-        self.assertIsInstance(fd["inner"], MappingProxyType)
+        self.assertIsInstance(fd, frozendict)
+        self.assertIsInstance(fd["inner"], frozendict)
         self.assertIs(fd["inner"][1], fd["inner"][2])
         self.assertEqual({id(d), id(d["inner"]), id(l)}, set(memo.keys()))
 
@@ -56,13 +56,36 @@ class FreezeTestCase(unittest.TestCase):
         f = freeze([([]), {5}, frozenset([7]), {"a": "b"}])
         self.assertEqual(((()), {5}, {7}, {"a": "b"}), f)
         self.assertEqual(
-            [tuple, frozenset, frozenset, MappingProxyType],
+            [tuple, frozenset, frozenset, frozendict],
             [type(i) for i in f],
         )
 
     def test_not_implemented(self):
         with self.assertRaises(NotImplementedError):
             freeze(object())
+
+    def test_skip_do_not_freeze(self):
+        obj = DoNotFreeze()
+        self.assertIs(obj, freeze(obj))
+
+    def test_frozendict(self):
+        data = {"one": "1", "two": "2"}
+        fd = frozendict(data)
+
+        self.assertIn("one", fd)
+        self.assertEqual(2, len(fd))
+        self.assertEqual({"one", "two"}, set(fd))
+        self.assertEqual({"one", "two"}, fd.keys())
+        self.assertEqual({"1", "2"}, set(fd.values()))
+        self.assertEqual("1", fd.get("one"))
+
+        self.assertNotEqual([], fd)
+        self.assertEqual(data, fd)
+        self.assertEqual(MappingProxyType(data.copy()), fd)
+        self.assertNotEqual([], frozendict({}))
+
+        self.assertEqual(f"frozendict({data})", repr(fd))
+        self.assertEqual(1, len({fd, frozendict(data)}))
 
 
 if __name__ == "__main__":

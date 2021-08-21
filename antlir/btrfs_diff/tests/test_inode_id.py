@@ -7,7 +7,7 @@
 import random
 from types import SimpleNamespace
 
-from ..freeze import freeze
+from ..freeze import freeze, frozendict
 from ..inode_id import (
     _ROOT_REVERSE_ENTRY,
     InodeID,
@@ -110,7 +110,7 @@ class InodeIDTestCase(DeepCopyTestCase):
             self.assertEqual("a/c,a/d", repr(ns.ino2))
         # Try removing from the frozen map before changing the original one.
         with self.assertRaisesRegex(
-            TypeError, "mappingproxy.* does not support item deletion"
+            TypeError, "'frozendict' object does not support item deletion"
         ):
             freeze(id_map).remove_path(b"a/c")
         self.assertIs(mut_ns.ino2, id_map.remove_path(b"a/c"))
@@ -186,7 +186,8 @@ class InodeIDTestCase(DeepCopyTestCase):
         id_map = yield from maybe_replace_map(id_map, "removed a")
         for im, _ns in unfrozen_and_frozen(id_map, mut_ns):
             self.assertEqual(
-                {0: {_ROOT_REVERSE_ENTRY}}, im.inner.id_to_reverse_entries
+                frozendict({0: {_ROOT_REVERSE_ENTRY}}),
+                im.inner.id_to_reverse_entries,
             )
             self.assertEqual(
                 _PathEntry(

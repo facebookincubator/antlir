@@ -8,6 +8,7 @@ import importlib
 import unittest
 from typing import Mapping, Optional, Sequence, Tuple
 
+from antlir.btrfs_diff.freeze import frozendict
 from antlir.fs_utils import Path
 from antlir.shape import Shape, Target
 
@@ -60,7 +61,7 @@ class TestShape(unittest.TestCase):
             ),
         )
         self.assertEqual(c.callsign, ("Red", 5))
-        self.assertEqual(c.metadata, {"species": "human"})
+        self.assertEqual(c.metadata, frozendict({"species": "human"}))
         self.assertEqual(
             c.personnel_file, Path("/rebellion/luke_skywalker.txt")
         )
@@ -157,7 +158,7 @@ class TestShape(unittest.TestCase):
             )
             + "), "
             "callsign=('Red', 5), "
-            "metadata={'species': 'human'}, "
+            "metadata=frozendict({'species': 'human'}), "
             "affiliations=shape(faction='Rebellion'), "
             "personnel_file=b'/rebellion/luke_skywalker.txt'"
             ")",
@@ -227,7 +228,7 @@ class TestShape(unittest.TestCase):
             "friends=(shape(name='Yoda'), shape(name='Padme Amidala')), "
             "lightsaber=shape(color=BLUE, target=None), "
             "callsign=None, "
-            "metadata={'species': 'human'}, "
+            "metadata=frozendict({'species': 'human'}), "
             "affiliations=shape(faction='Jedi Temple'), "
             "personnel_file=None, "
             "padawan='Anakin Skywalker'"

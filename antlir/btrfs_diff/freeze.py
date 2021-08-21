@@ -20,8 +20,64 @@ itself.
 
 Future: Once `deepfrozen` is landed, this sort of thing should get nicer.
 """
+from collections.abc import Mapping
 from enum import Enum
 from types import MappingProxyType
+
+
+# Classes inheriting from this are ignored by freeze().
+class DoNotFreeze:
+    pass
+
+
+# pyre-fixme[39]: `Tuple[str, ...]` is not a valid parent class.
+class frozendict(Mapping, tuple, DoNotFreeze):
+    __slots__ = ()
+
+    def __new__(cls, *args, **kwargs):
+        return tuple.__new__(cls, (MappingProxyType(dict(*args, **kwargs)),))
+
+    def __contains__(self, key):
+        return key in tuple.__getitem__(self, 0)
+
+    def __getitem__(self, key):
+        return tuple.__getitem__(self, 0)[key]
+
+    def __len__(self):
+        return len(tuple.__getitem__(self, 0))
+
+    def __iter__(self):
+        return iter(tuple.__getitem__(self, 0))
+
+    def keys(self):
+        return tuple.__getitem__(self, 0).keys()
+
+    def values(self):
+        return tuple.__getitem__(self, 0).values()
+
+    def items(self):
+        return tuple.__getitem__(self, 0).items()
+
+    def get(self, key, default=None):
+        return tuple.__getitem__(self, 0).get(key, default)
+
+    def __eq__(self, other):
+        if isinstance(other, __class__):
+            other = tuple.__getitem__(other, 0)
+        return tuple.__getitem__(self, 0).__eq__(other)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}({repr(dict(tuple.__getitem__(self, 0)))})"
+        )
+
+    def __hash__(self):
+        # Although python dictionaries are order preserving,
+        # we hash order-insensitive because that's how dict equality works.
+        return hash(frozenset(self.items()))  # Future: more efficient hash?
 
 
 def freeze(obj, *, _memo=None, **kwargs):
@@ -54,7 +110,7 @@ def freeze(obj, *, _memo=None, **kwargs):
         elif isinstance(obj, (list, tuple)):
             frozen = tuple(freeze(i, _memo=_memo) for i in obj)
         elif isinstance(obj, dict):
-            frozen = MappingProxyType(
+            frozen = frozendict(
                 {
                     freeze(k, _memo=_memo): freeze(v, _memo=_memo)
                     for k, v in obj.items()
@@ -62,6 +118,8 @@ def freeze(obj, *, _memo=None, **kwargs):
             )
         elif isinstance(obj, (set, frozenset)):
             frozen = frozenset(freeze(i, _memo=_memo) for i in obj)
+        elif isinstance(obj, DoNotFreeze):
+            frozen = obj
         else:
             raise NotImplementedError(type(obj))
 
