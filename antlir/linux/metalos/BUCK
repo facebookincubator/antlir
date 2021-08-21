@@ -61,6 +61,8 @@ image.layer(
         # post-switch-root root fs.
         systemd.enable_unit("systemd-udev-trigger.service", "core-services.target"),
         systemd.enable_unit("sshd.service", "core-services.target"),
+        image.remove("/etc/ssh/sshd_config"),
+        image.install("sshd_config", "/etc/ssh/sshd_config"),
     ],
     runtime = ["systemd"],
     flavor = REPO_CFG.antlir_linux_flavor,
