@@ -20,7 +20,6 @@ def image_python_unittest(
         par_style = None,
         hostname = None,
         container_opts = None,
-        flavor = REPO_CFG.flavor_default,
         **python_unittest_kwargs):
     visibility = visibility or []
 
@@ -38,7 +37,6 @@ def image_python_unittest(
         visibility = visibility,
         hostname = hostname,
         container_opts = container_opts,
-        flavor = flavor,
     )
 
     # `par_style` only applies to the inner test that runs the actual user

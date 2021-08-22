@@ -30,8 +30,7 @@ _VALID_PYTHON_IDENTIFIER = _str_set(
 def image_test_rpm_names(
         name,
         layer,
-        rpm_list,
-        flavor = REPO_CFG.flavor_default):
+        rpm_list):
     fn_name = name  # Future: if we must allow dashes, replace them here.
     if not fn_name.startswith("test_") or not sets.is_subset(
         _str_set(fn_name),
@@ -66,5 +65,4 @@ A Hilariously Unlikely Yet Cheeky Sigil
         srcs = {":" + py_name: py_name},
         resources = {maybe_export_file(rpm_list): "expected_rpm_names"},
         deps = ["//antlir/bzl/tests:check_rpm_names"],
-        flavor = flavor,
     )
