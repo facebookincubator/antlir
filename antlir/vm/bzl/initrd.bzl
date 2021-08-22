@@ -100,25 +100,34 @@ def initrd(kernel, module_list = None, visibility = None):
         visibility = [],
     )
 
+    # Build an initrd specifically for operating as a VM. This is built on top of the
+    # MetalOS initrd and modified to support btrfs seed devices and 9p shared mounts
+    # for the repository, kernel modules, and others.
     image.layer(
         name = name + "--layer",
+        parent_layer = "//antlir/linux/initrd:base",
         features = [
-            image.ensure_dirs_exist("/usr/lib/systemd/system"),
-            # The antlirctl generator will instantiate this template with the
-            # seed device provided on the kernel command line as antlir.seed_device.
+            # The metalctl generator will instantiate this template with the
+            # seed device provided on the kernel command line as metalos.seed_device.
             systemd.install_unit("//antlir/vm/initrd:seedroot-device-add@.service"),
             systemd.install_unit("//antlir/vm/initrd:seedroot.service"),
             systemd.enable_unit("seedroot.service", target = "initrd-fs.target"),
+
+            # The switchroot behavior is different for the vmtest based initrd so
+            # lets remove the metalos-switch-root.service and install our own
+            image.remove("/usr/lib/systemd/system/metalos-switch-root.service"),
+            image.remove("/usr/lib/systemd/system/initrd-switch-root.target.requires/metalos-switch-root.service"),
             systemd.install_unit("//antlir/vm/initrd:initrd-switch-root.service"),
             systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
+
             # mount kernel modules over 9p in the initrd so they are available
-            # immediately in the base os
+            # immediately in the base os.
             systemd.install_unit(":" + name + "--modules.mount", mount_unit_name),
             systemd.enable_unit(mount_unit_name, target = "initrd-fs.target"),
-            # load the initrd modules specified in VM_MODULE_LIST above
-            image.ensure_dirs_exist("/usr/lib/modules-load.d"),
-            image.install(":" + name + "--modules-load.conf", "/usr/lib/modules-load.d/initrd-modules.conf"),
-            image.ensure_dirs_exist(paths.join("/usr/lib/modules", kernel.uname)),
+
+            # Install the initrd modules specified in VM_MODULE_LIST above into the
+            # layer
+            image.ensure_subdirs_exist("/usr/lib", paths.join("modules", kernel.uname)),
             image.install(
                 image.source(
                     source = ":" + name + "--modules",
@@ -141,36 +150,27 @@ def initrd(kernel, module_list = None, visibility = None):
                 ]
                 for f in ("dep", "symbols", "alias", "builtin")
             ],
+
+            # Ensure the kernel modules are loaded by systemd when the initrd is started
+            image.ensure_subdirs_exist("/usr/lib", "modules-load.d"),
+            image.install(":" + name + "--modules-load.conf", "/usr/lib/modules-load.d/initrd-modules.conf"),
         ],
         flavor = REPO_CFG.antlir_linux_flavor,
         visibility = [],
     )
 
     image.package(
-        name = name + "--append.cpio.gz",
+        name = name,
         layer = ":" + name + "--layer",
         format = "cpio.gz",
-        visibility = [],
-    )
-
-    # Form the vmtest initrd by concatenating vmtest features to the base
-    # Antlir Linux initrd
-    buck_genrule(
-        name = name,
-        out = "initrd.cpio.gz",
-        cmd = """
-            cat \
-                $(location //antlir/linux/initrd:base.cpio.gz) \
-                $(location :{}--append.cpio.gz) \
-                > $OUT
-            """.format(name),
-        antlir_rule = "user-internal",
         visibility = visibility,
     )
 
-    kernel_debug = name + "-debug"
+    # Build the debug version of the initrd by the cpio concat method.
+    # TODO: Refactor this to not use the concat method since we aren't going
+    # to be using that in production.
     buck_genrule(
-        name = kernel_debug,
+        name = name + "-debug",
         out = "initrd.cpio.gz",
         cmd = "cat $(location :{}) $(location //antlir/linux/initrd/debug:debug-append.cpio.gz) > $OUT".format(name),
         antlir_rule = "user-internal",

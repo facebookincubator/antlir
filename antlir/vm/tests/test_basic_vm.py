@@ -7,8 +7,11 @@
 import importlib.resources
 import multiprocessing
 import os
+import platform
 import socket
 import unittest
+
+from antlir.fs_utils import Path
 
 
 class BasicVMTest(unittest.TestCase):
@@ -43,3 +46,8 @@ class BasicVMTest(unittest.TestCase):
 
     def test_custom_rootfs(self):
         self.assertTrue(os.path.exists("/etc/i_am_a_custom_rootfs"))
+
+    def test_kernel_modules(self):
+        modules_path = Path("/usr/lib/modules") / platform.uname().release
+        self.assertTrue(modules_path.exists())
+        self.assertTrue(os.path.ismount(modules_path))

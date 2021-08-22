@@ -129,6 +129,9 @@ vm.python_unittest(
             layer = ":vmtest-custom-layer",
         ),
     ),
+    deps = [
+        "//antlir:fs_utils",
+    ],
 )
 
 vm.cpp_unittest(
