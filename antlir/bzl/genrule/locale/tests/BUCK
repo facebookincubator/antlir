@@ -40,5 +40,4 @@ image.python_unittest(
     name = "test-locales",
     layer = ":custom-locales-layer",
     srcs = ["test_locales.py"],
-    flavor = "antlir_test",
 )

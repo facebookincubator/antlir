@@ -96,5 +96,4 @@ image.python_unittest(
     name = "test-install-signed-toy-rpm",
     srcs = ["test_install_signed_toy_rpm.py"],
     layer = ":install-signed-toy-rpm",
-    flavor = "antlir_test",
 )

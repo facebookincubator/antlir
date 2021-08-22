@@ -15,7 +15,6 @@ def image_rust_unittest(
         hostname = None,
         container_opts = None,
         visibility = None,
-        flavor = REPO_CFG.flavor_default,
         **rust_unittest_kwargs):
     wrapper_props = helpers.nspawn_wrapper_properties(
         name = name,
@@ -29,7 +28,6 @@ def image_rust_unittest(
         visibility = [],
         hostname = hostname,
         container_opts = container_opts,
-        flavor = flavor,
     )
 
     rust_unittest(
