@@ -43,29 +43,32 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
 
     target_tagger = new_target_tagger()
 
-    # We have a dummy rpm so that we consider empty lists when
-    # we check coverage of all flavors in a feature.
-    #
-    # ```
-    # feature.new(
-    #     name = "test",
-    #     features=[
-    #         image.rpms_install([], flavors=["only-relevant-on-centos7"]),
-    #         image.rpms_install([], flavors=["only-relevant-on-centos8"]),
-    #     ],
-    #     flavors = ["centos7", "centos8"],
-    # )
-    # ```
-    #
-    # should not throw an error.
-    res_rpms = [
-        shape.new(
-            rpm_action_item_t,
-            name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
-            action = action,
-            flavor_to_version_set = {flavor: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
-        ),
-    ]
+    res_rpms = []
+    if action == "install":
+        # We have a dummy rpm so that we consider empty lists when
+        # we check coverage of all flavors in a feature.
+        #
+        # ```
+        # feature.new(
+        #     name = "test",
+        #     features=[
+        #         image.rpms_install([], flavors=["only-relevant-on-centos7"]),
+        #         image.rpms_install([], flavors=["only-relevant-on-centos8"]),
+        #     ],
+        #     flavors = ["centos7", "centos8"],
+        # )
+        # ```
+        #
+        # should not throw an error.
+        res_rpms.append(
+            shape.new(
+                rpm_action_item_t,
+                name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
+                action = action,
+                flavor_to_version_set = {flavor: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
+            ),
+        )
+
     for path in rpmlist:
         source = None
         name = None
