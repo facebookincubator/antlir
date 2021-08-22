@@ -64,7 +64,6 @@ _FIND_ARGS = [
 ]
 _TEST_BUILD_APPLIANCE = "test-build-appliance"
 _FAKE_SUBVOL_META_FLAVOR_FILE = _SUBVOLS_DIR / _FAKE_SUBVOL / META_FLAVOR_FILE
-_REPO_CFG = repo_config()
 
 _DEFAULT_BUILD_APPLIANCE = layer_resource(
     __package__, "default-build-appliance"
@@ -74,9 +73,9 @@ _DEFAULT_BUILD_APPLIANCE_SUBVOL = layer_resource_subvol(
     "default-build-appliance",
 )
 _DEFAULT_BUILD_APPLIANCE_TARGET_TO_PATH = {
-    _REPO_CFG.flavor_to_config[
-        _REPO_CFG.flavor_default
-    ].build_appliance: _DEFAULT_BUILD_APPLIANCE,
+    repo_config()
+    .flavor_to_config[repo_config().flavor_default]
+    .build_appliance: _DEFAULT_BUILD_APPLIANCE,
 }
 
 
@@ -590,7 +589,7 @@ class CompilerTestCase(unittest.TestCase):
             )
 
             self._assert_call_subset(
-                _get_write_flavor_calls(_REPO_CFG.flavor_default.encode()),
+                _get_write_flavor_calls(repo_config().flavor_default.encode()),
                 actual_calls,
             )
 
