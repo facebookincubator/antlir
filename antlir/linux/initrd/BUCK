@@ -130,6 +130,7 @@ image.layer(
     visibility = [
         kernel_get.base_target + "/...",
         "//antlir/linux/...",
+        "//scripts/dschatzberg/vm:",
     ],
 )
 
