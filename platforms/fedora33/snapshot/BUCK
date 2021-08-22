@@ -1,0 +1,32 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "export_file")
+load("//antlir/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
+load("//platforms:defs.bzl", "fedora_storage_config")
+
+export_file(
+    name = "dnf.conf",
+)
+
+rpm_repo_snapshot(
+    name = "fedora33",
+    src = ".",
+    rpm_installers = ("dnf",),
+    storage = fedora_storage_config(33),
+)
+
+# Command to snapshot the specified Fedora repos.
+# Currently just snapshot the Fedora33 Everything 'os' repository, but this will be
+# expanded to support more Fedora versions and repos.
+buck_command_alias(
+    name = "run-snapshot",
+    args = [
+        "--snapshot-dir=platforms/fedora33/snapshot",
+        "--gpg-key-allowlist-dir=platforms/fedora33/snapshot/repos/everything-os/gpg_keys",
+        '--db={"kind": "sqlite", "db_path": "platforms/fedora33/snapshot/snapshots.sql3"}',
+        "--threads=16",
+        "--storage={}".format(repr(fedora_storage_config(33))),
+        "--one-universe-for-all-repos=fedora33",
+        "--dnf-conf=$(location //platforms/fedora33/snapshot:dnf.conf)",
+        "--yum-conf=$(location //platforms/fedora33/snapshot:dnf.conf)",
+    ],
+    exe = "//antlir/rpm:snapshot-repos",
+)

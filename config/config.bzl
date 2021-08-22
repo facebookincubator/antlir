@@ -10,13 +10,13 @@ do_not_use_repo_cfg = {
     "artifact_key_to_path": " ".join([
         (k + " " + v)
         for k, v in {
-            "build_appliance.newest": "//images/appliance:stable-build-appliance",
-            "extractor.common_deps": "//images/appliance:stable-build-appliance",
-            "metalos.layer.base": "//images/base:fedora.vm",
-            "vm.rootfs.btrfs.rc": "//images/base:fedora.vm.btrfs",
-            "vm.rootfs.btrfs.stable": "//images/base:fedora.vm.btrfs",
-            "vm.rootfs.layer.rc": "//images/base:fedora.vm",
-            "vm.rootfs.layer.stable": "//images/base:fedora.vm",
+            "build_appliance.newest": "//platforms/fedora33/appliance:stable-build-appliance",
+            "extractor.common_deps": "//platforms/fedora33/appliance:stable-build-appliance",
+            "metalos.layer.base": "//antlir/linux/metalos:metalos",
+            "vm.rootfs.btrfs.rc": "//platforms/fedora33/base:fedora33.vm.btrfs",
+            "vm.rootfs.btrfs.stable": "//platforms/fedora33/base:fedora33.vm.btrfs",
+            "vm.rootfs.layer.rc": "//platforms/fedora33/base:fedora33.vm",
+            "vm.rootfs.layer.stable": "//platforms/fedora33/base:fedora33.vm",
         }.items()
     ]),
     "flavor_available": " ".join(["fedora33"]),
@@ -34,7 +34,7 @@ do_not_use_repo_cfg = {
             "rpm_installer": "dnf",
         },
         "fedora33": {
-            "build_appliance": "//images/appliance:stable-build-appliance",
+            "build_appliance": "//platforms/fedora33/appliance:stable-build-appliance",
             "rpm_installer": "dnf",
         },
     },

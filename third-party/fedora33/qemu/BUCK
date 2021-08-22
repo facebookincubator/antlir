@@ -48,7 +48,7 @@ http_file(
 
 image.layer(
     name = "base",
-    parent_layer = "//images/appliance:stable-build-appliance",
+    parent_layer = "//platforms/fedora33/appliance:stable-build-appliance",
     features = [
         image.rpms_install([
             # build dependencies
