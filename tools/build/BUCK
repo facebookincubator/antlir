@@ -1,14 +1,14 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_command_alias")
 load(":rust.bzl", "rustc_toolchain")
 
+# The latest nightly and it's sha can be found in
+# https://static.rust-lang.org/dist/channel-rust-nightly.toml
 linux_x86_64_toolchain = rustc_toolchain(
     arch = "x86_64",
     channel = "nightly",
-    # The sha256 of the artifact is available via a URL of this form:
-    # https://static.rust-lang.org/dist/{version}/rust-{channel}-{arch}-{target}.tar.gz.sha256
-    sha256 = "89effca4bf6420446cd55ce46c384ad4f8496f7ad6e96108255fbad0d37f036b",
+    sha256 = "bf1b041c95324caa94bc3d02fe32cce0160e0a4a430cf1072614287d9e4dfcff",
     target = "unknown-linux-gnu",
-    version = "2021-04-20",
+    version = "2021-08-23",
 )
 
 buck_command_alias(
