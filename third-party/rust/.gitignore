@@ -3,3 +3,4 @@ target/
 .cargo
 
 !vendor/ring-0.16.20
+!vendor/cxx-1.0.52

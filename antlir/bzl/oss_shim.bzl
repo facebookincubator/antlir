@@ -40,6 +40,8 @@ _CPP_LIBRARY_KWARGS = _make_rule_kwargs_dict(
         "deps",
         "compiler_flags",
         "headers",
+        "header_namespace",
+        "exported_headers",
         "include_directories",
         "linker_flags",
         "preferred_linkage",
