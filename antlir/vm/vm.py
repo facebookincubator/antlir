@@ -330,6 +330,22 @@ async def __vm_with_stack(
         ]
     )
 
+    # Modules are always required, insert the export for them here.
+    # Note: This Share used "generator=False" because the initrd
+    # will mount these into the rootfs before the switch-root.
+    # (see: //antlir/vm/bzl:initrd.bzl)
+    shares.append(
+        Plan9Export(
+            path=find_built_subvol(
+                # pyre-fixme [16]: `Optional` has no attribute `path`
+                opts.kernel.artifacts.modules.path
+            ).path(),
+            mountpoint=Path("/usr/lib/modules") / opts.kernel.uname,
+            mount_tag="kernel-modules",
+            generator=False,
+        )
+    )
+
     if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
@@ -402,7 +418,6 @@ async def __vm_with_stack(
             " panic=-1"
             " cgroup_no_v1=all"
             " systemd.unified_cgroup_hierarchy=1"
-            # " systemd.log_level=debug systemd.log_target=console"
             " rd.emergency=poweroff " + " ".join(opts.append)
         ),
         # socket/serial device pair (for use by _wait_for_boot)
@@ -426,23 +441,6 @@ async def __vm_with_stack(
             + "see https://our.intern.facebook.com/intern/qa/5312/"
             + "how-do-i-enable-kvm-on-my-devvm"
         )
-
-    # this modules directory is mounted by init.sh at boot, to avoid having
-    # to install kernels in the root fs and avoid expensive copying of
-    # ~400M worth of modules during boot
-    if opts.kernel.artifacts.modules is not None:
-        modules_path = find_built_subvol(
-            # pyre-fixme [16]: `Optional` has no attribute `path`
-            opts.kernel.artifacts.modules.path
-        ).path()
-        shares += [
-            Plan9Export(
-                path=modules_path,
-                mountpoint=modules_path,
-                mount_tag="kernel-modules",
-                generator=False,
-            )
-        ]
 
     export_share = stack.enter_context(Share.export_spec(shares))
     shares += [export_share]
