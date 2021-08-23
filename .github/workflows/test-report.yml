@@ -3,7 +3,7 @@
 name: "Test Report"
 on:
   workflow_run:
-    workflows: ["Antlir Tests"]
+    workflows: ["Antlir Tests", "Antlir Tests (External Runner)"]
     types:
       - completed
 jobs:

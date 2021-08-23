@@ -79,10 +79,13 @@ jobs:
         run: buck query 'kind(cxx_test, //...)' | xargs -n1 buck run
         continue-on-error: true
 
+      - name: Build test runner
+        run: buck build --out /tmp/runner //tools/testinfra/runner:runner
+
       # Run all tests, excluding any that are disabled (mainly the hidden
       # layer tests)
       - name: Run tests
-        run: buck test -c 'test.external_runner=//tools/testinfra/runner:runner' $(buck query @tools/testinfra/ci_tests_query) -- --report tests-junit.xml
+        run: buck test -c 'test.external_runner=/tmp/runner' $(buck query @tools/testinfra/ci_tests_query) -- --xml tests-junit.xml --max-retries 3
 
       - uses: actions/upload-artifact@v2
         if: success() || failure()
