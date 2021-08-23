@@ -44,15 +44,6 @@ python_library(
 )
 
 python_library(
-    name = "replay_util",
-    srcs = ["replay_util.py"],
-    visibility = [
-        "//antlir/rpm/replay/tests/...",
-        "//tupperware/cm/antlir/...",
-    ],
-)
-
-python_library(
     name = "rpm_replay",
     srcs = ["rpm_replay.py"],
     visibility = [
