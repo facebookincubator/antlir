@@ -8,18 +8,23 @@
 #![deny(warnings)]
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use structopt::StructOpt;
 
-use evalctx::{Generator, Host};
+use evalctx::{generator::GeneratorOutput, Generator, Host};
 
 #[derive(StructOpt)]
 struct Opts {
     host: PathBuf,
     generators: Vec<PathBuf>,
+    #[structopt(long)]
+    root: Option<PathBuf>,
+    #[structopt(long)]
+    dry_run: bool,
 }
 
 fn extract_generators(archive_path: &Path) -> Result<Vec<Generator>> {
@@ -72,9 +77,39 @@ fn main() -> Result<()> {
             );
         }
     }
+    let mut dry_run = opts.dry_run;
+    if !dry_run && opts.root.is_none() {
+        eprintln!("--root is missing, assuming --dry-run");
+        dry_run = true;
+    }
+    if dry_run {
+        for gen in generators {
+            let output = gen.eval(&host)?;
+            println!("{}\n{:#?}", gen.name, output);
+        }
+        return Ok(());
+    }
+    let root = opts
+        .root
+        .expect("not running in --dry-run mode, --root must be given");
     for gen in generators {
         let output = gen.eval(&host)?;
-        println!("{}\n{:#?}", gen.name, output);
+        apply_generator(&root, output)?;
+    }
+    Ok(())
+}
+
+fn apply_generator(root: &Path, output: GeneratorOutput) -> Result<()> {
+    for file in output.files {
+        let dst = root.force_join(file.path);
+        let mut f =
+            File::create(&dst).with_context(|| format!("failed to create {}", dst.display()))?;
+        f.write_all(&file.contents)
+            .with_context(|| format!("failed to write {}", dst.display()))?;
+        let mut perms = f.metadata()?.permissions();
+        perms.set_mode(file.mode);
+        f.set_permissions(perms)
+            .with_context(|| format!("failed to set mode of {}", dst.display()))?;
     }
     Ok(())
 }
