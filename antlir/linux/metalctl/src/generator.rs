@@ -82,10 +82,30 @@ fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
         );
         write!(
             subvol_conf,
-            "[Unit]\nAfter={}\nRequires={}\n[Service]\nEnvironment=OS_SUBVOL=var/lib/metalos/image/{}/volume",
+            "[Unit]\nAfter={}\nRequires={}\n[Service]\nEnvironment=OS_SUBVOL=var/lib/metalos/image/{}/volume\n",
             fetch_unit,
             fetch_unit,
             systemd::escape(os_package)?
+        )?;
+    }
+
+    if let Some(host_config_uri) = cmdline.host_config_uri() {
+        fs::create_dir_all(&opts.normal_dir.join("metalos-switch-root.service.d"))
+            .context("failed to create .d/ for metalos-switch-root.service")?;
+        let mut uri_dropin = fs::File::create(
+            opts.normal_dir
+                .join("metalos-switch-root.service.d")
+                .join("host_config_uri.conf"),
+        )
+        .context("failed to create drop-in for metalos-switch-root.service")?;
+        info!(
+            log,
+            "Writing drop-in to apply {} before switch-root", &host_config_uri
+        );
+        write!(
+            uri_dropin,
+            "[Service]\nEnvironment=HOST_CONFIG_URI={}\n",
+            host_config_uri
         )?;
     }
 

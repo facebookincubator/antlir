@@ -12,4 +12,6 @@ ExecStartPre=mkdir -p /rootdisk/var/lib/metalos/boot
 # by a drop-in placed by `metalos-generator`)
 ExecStartPre=btrfs subvolume snapshot /rootdisk/${OS_SUBVOL} /rootdisk/var/lib/metalos/boot/%b
 ExecStartPre=btrfs property set -ts /rootdisk/var/lib/metalos/boot/%b ro false
+# TODO: move this to a separate unit when the full flow becomes slightly clearer
+ExecStartPre=metalctl apply-host-config ${HOST_CONFIG_URI} /rootdisk/var/lib/metalos/boot/%b
 ExecStart=metalctl switch-root /var/lib/metalos/boot/%b

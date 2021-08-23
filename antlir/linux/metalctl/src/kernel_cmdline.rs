@@ -46,6 +46,11 @@ impl MetalosCmdline {
             .and_then(|opt| opt.as_value())
     }
 
+    pub fn host_config_uri(&self) -> Option<&str> {
+        self.arg("metalos.host_config_uri")
+            .and_then(|opt| opt.as_value())
+    }
+
     pub fn package_format_uri(&self) -> Option<Result<PackageFormatUri>> {
         self.arg("metalos.package_format_uri")
             .and_then(|opt| opt.as_value())
@@ -187,6 +192,17 @@ mod tests {
             let cmdline: MetalosCmdline = cmdline.parse()?;
             assert_eq!(Some("some-pkg:id"), cmdline.os_package());
         }
+        Ok(())
+    }
+
+    #[test]
+    fn url_value() -> Result<()> {
+        let cmdline: MetalosCmdline =
+            "metalos.host-config-uri=\"https://$HOSTNAME:8000/v1/host/host001.01.abc0.facebook.com\"".parse()?;
+        assert_eq!(
+            Some("https://$HOSTNAME:8000/v1/host/host001.01.abc0.facebook.com"),
+            cmdline.host_config_uri()
+        );
         Ok(())
     }
 

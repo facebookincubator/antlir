@@ -15,9 +15,11 @@ use slog::{o, warn};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
+mod apply_host_config;
 mod config;
 mod fetch_image;
 mod generator;
+mod http;
 mod kernel_cmdline;
 mod mkdir;
 mod mount;
@@ -41,6 +43,8 @@ enum Subcommand {
     Mkdir(mkdir::Opts),
     /// Setup the new rootfs and switch-root into it
     SwitchRoot(switch_root::Opts),
+    /// Generate and apply a structured host config
+    ApplyHostConfig(apply_host_config::Opts),
 }
 
 #[derive(StructOpt)]
@@ -93,5 +97,6 @@ async fn main() -> Result<()> {
         Subcommand::Mount(opts) => mount::mount(opts),
         Subcommand::Umount(opts) => umount::umount(opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts),
+        Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
     }
 }
