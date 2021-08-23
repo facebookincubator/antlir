@@ -99,10 +99,11 @@ def targets_and_outputs_arg_list(name, query):
         out = ".",
         bash = """
 echo -n "$(query_targets_and_outputs {delim} '{query}')" | \
-$(exe //antlir:serialize-targets-and-outputs) "{delim}" > "$OUT/targets-and-outputs.json"
+$(exe {serialize_targets_and_outputs}) "{delim}" > "$OUT/targets-and-outputs.json"
 echo -n '{query}' > "$OUT/query"
         """.format(
             delim = "<|ThisDelimiterIsSizzlin|>",
+            serialize_targets_and_outputs = antlir_dep(":serialize-targets-and-outputs"),
             query = query,
         ),
         antlir_rule = "user-internal",
