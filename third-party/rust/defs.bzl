@@ -25,6 +25,7 @@ def _extract_file(archive, src):
     return ":" + name
 
 def third_party_rust_library(name, archive, srcs, mapped_srcs = None, **kwargs):
+    kwargs["unittests"] = False
     if archive:
         src_targets = {}
         for src in srcs:
