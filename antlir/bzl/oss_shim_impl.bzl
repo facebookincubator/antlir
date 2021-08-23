@@ -495,6 +495,9 @@ def _get_project_root_from_gen_dir():
     # `_get_buck_out_path`, but it seems like an unnecessary complication.
     return "../.."
 
+def _get_antlir_cell_name():
+    return ""
+
 # Please keep each section lexicographically sorted.
 shim = struct(
     #
@@ -510,8 +513,7 @@ shim = struct(
     # Utility functions -- use `_assert_package()`, if at all possible.
     #
     config = struct(
-        # @lint-ignore BUCKLINT
-        get_current_repo_name = native.repository_name,
+        get_antlir_cell_name = _get_antlir_cell_name,
         get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
     ),
     cpp_binary = _cpp_binary,
