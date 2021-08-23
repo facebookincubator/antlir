@@ -101,7 +101,7 @@ def _gen_nevras_from_installer_output(
     requested_nevras: Set[NEVRA],
 ) -> Iterator[NEVRA]:
     # `yum` and `dnf` differ in how they format the "progress" part
-    installing_re = re.compile(r"^ +Installing +: +([^ ]+) ")
+    installing_re = re.compile(r"^ +(Upgrading|Installing) +: +([^ ]+) ")
     nvra_re = re.compile(r"^([a-zA-Z0-9._+-]+)-([^-]+)-([^-]+)\.([^.]+)$")
     nevra_re = re.compile(
         r"^([a-zA-Z0-9._+-]+)-([0-9]+):([^-]+)-([^-]+)\.([^.]+)$"
@@ -117,7 +117,7 @@ def _gen_nevras_from_installer_output(
         if not m:
             continue
 
-        pkg_spec = m.group(1)
+        pkg_spec = m.group(2)
         if ":" not in pkg_spec:  # Both `yum` and `dnf` omit epoch if 0
             m = nvra_re.match(pkg_spec)
             assert m, f"Could not parse {rpm_installer} output: {line}"
