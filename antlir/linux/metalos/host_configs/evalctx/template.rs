@@ -15,7 +15,7 @@ use handlebars::Handlebars;
 use once_cell::sync::Lazy;
 use starlark::codemap::Span;
 use starlark::environment::GlobalsBuilder;
-use starlark::eval::{Evaluator, Parameters};
+use starlark::eval::{Arguments, Evaluator};
 use starlark::values::{dict::DictOf, StarlarkValue, UnpackValue, Value, ValueLike};
 use starlark::{starlark_simple_value, starlark_type};
 use starlark_module::starlark_module;
@@ -63,16 +63,16 @@ impl<'v> StarlarkValue<'v> for Template {
         &self,
         _me: Value<'v>,
         _location: Option<Span>,
-        params: Parameters<'v, '_>,
+        args: Arguments<'v, '_>,
         eval: &mut Evaluator<'v, '_>,
     ) -> Result<Value<'v>> {
-        if !params.pos.is_empty() || params.args.is_some() {
+        if !args.pos.is_empty() || args.args.is_some() {
             bail!("template rendering only accepts kwargs");
         }
-        let mut context: BTreeMap<String, serde_json::Value> = params
+        let mut context: BTreeMap<String, serde_json::Value> = args
             .names
             .iter()
-            .zip(params.named.iter())
+            .zip(args.named.iter())
             .map(|(name, param)| {
                 Ok((
                     name.0.as_str().to_owned(),
@@ -87,7 +87,7 @@ impl<'v> StarlarkValue<'v> for Template {
             })
             .collect::<Result<_>>()?;
 
-        if let Some(kwargs) = params.kwargs {
+        if let Some(kwargs) = args.kwargs {
             let mut kwargs = DictOf::<String, Value>::unpack_value(kwargs)
                 .context("kwargs must be dict with string keys")?
                 .to_dict()
