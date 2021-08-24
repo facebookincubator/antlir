@@ -138,7 +138,7 @@ $ buck run antlir/rpm/allowed_versions:update-allowed-versions -- \
     --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups \
     --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups/centos8 \
     --version-sets-dir bot_generated/antlir/version_sets/centos8 \
-    --rpm-repo-snapshot $(buck build antlir/rpm/facebook:fb_centos8 --show-full-output | cut -d ' ' -f2)
+    --rpm-repo-snapshot $(buck build antlir/rpm/facebook:centos8 --show-full-output | cut -d ' ' -f2)
 $ buck run antlir/rpm/allowed_versions:update-allowed-versions -- \
     --no-update-data-snapshot \
     --flavor centos7 \
@@ -146,7 +146,7 @@ $ buck run antlir/rpm/allowed_versions:update-allowed-versions -- \
     --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups \
     --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups/centos7 \
     --version-sets-dir bot_generated/antlir/version_sets/centos7 \
-    --rpm-repo-snapshot $(buck build antlir/rpm/facebook:fb_centos7 --show-full-output | cut -d ' ' -f2)
+    --rpm-repo-snapshot $(buck build antlir/rpm/facebook:centos7 --show-full-output | cut -d ' ' -f2)
 ```
 
 At this point you can manually inspect updated version files (they are in
