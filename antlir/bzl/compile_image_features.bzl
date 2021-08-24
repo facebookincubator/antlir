@@ -12,7 +12,7 @@ load("//antlir/bzl/image/feature:new.bzl", "feature_new", "normalize_features")
 load(":constants.bzl", "BZL_CONST", "REPO_CFG")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":query.bzl", "layer_deps_query", "query")
-load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
+load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
 def compile_image_features(
@@ -137,7 +137,7 @@ EOF
         #
         # We access `ANTLIR_DEBUG` because this is never expected to
         # change the output, so it's deliberately not a Buck input.
-        $(exe {compiler}) {maybe_artifacts_require_repo} \
+        $(exe //antlir:compiler) {maybe_artifacts_require_repo} \
           ${{ANTLIR_DEBUG:+--debug}} \
           --subvolumes-dir "$subvolumes_dir" \
           --subvolume-rel-path \
@@ -158,7 +158,6 @@ EOF
         # rule.
         # $(query_outputs '{deps_query}')
     '''.format(
-        compiler = antlir_dep(":compiler"),
         subvol_name_quoted = shell.quote(subvol_name or "volume"),
         current_target_quoted = shell.quote(current_target),
         quoted_child_feature_json_args = " ".join([

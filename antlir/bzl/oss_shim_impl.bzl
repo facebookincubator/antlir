@@ -489,41 +489,11 @@ def _to_label(repo, path, name):
 
 ### END COPY-PASTA
 
-### BEGIN COPY-PASTA (@fbcode_macros//build_defs/lib:common_paths.bzl)
-
-def _get_buck_out_path():
-    # The buck out path can either be configured using the project.buck_out
-    # key, or it can be provided on the command line via the --isolation-prefix
-    # argument, in which case it appears as the buck.base_buck_out_dir key).
-    # The dance here is to ensure that buck.base_buck_out_dir always defines
-    # the root of the buck output directory and any configured directory is
-    # beneath that. This matches the logic that exists within Buck itself.
-    config_out = native.read_config("project", "buck_out", None)
-    base_dir = native.read_config("buck", "base_buck_out_dir", "buck-out")
-    if config_out == None:
-        return base_dir
-    if config_out.startswith("buck-out") and base_dir != "buck-out":
-        return config_out.replace("buck-out", base_dir)
-    return config_out
-
-def _get_gen_path():
-    # repository_name() always starts with "@"
-    cell = native.repository_name()[1:]
-    if cell == "":
-        return paths.join(_get_buck_out_path(), "gen")
-    return paths.join(_get_buck_out_path(), "cells", cell, "gen")
-
-### END COPY-PASTA
-
-### BEGIN COPY-PASTA (@fbcode_macros//build_defs:custom_rule.bzl)
-
 def _get_project_root_from_gen_dir():
-    return ".." + _get_gen_path().count("/") * "/.."
-
-### END COPY-PASTA
-
-def _get_antlir_cell_name():
-    return ""
+    # NB: This will break if "buck-out" is set to something containing 1 or
+    # more slashes (e.g.  `/my/buck/out`).  A fix would be to copy-pasta
+    # `_get_buck_out_path`, but it seems like an unnecessary complication.
+    return "../.."
 
 # Please keep each section lexicographically sorted.
 shim = struct(
@@ -540,7 +510,8 @@ shim = struct(
     # Utility functions -- use `_assert_package()`, if at all possible.
     #
     config = struct(
-        get_antlir_cell_name = _get_antlir_cell_name,
+        # @lint-ignore BUCKLINT
+        get_current_repo_name = native.repository_name,
         get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
     ),
     cpp_binary = _cpp_binary,

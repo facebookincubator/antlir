@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
 load(":oss_shim.bzl", "target_utils")
 
 def _wrap_bash_build_in_common_boilerplate(
@@ -30,13 +29,13 @@ def _wrap_bash_build_in_common_boilerplate(
     # even if the user moves the repo.  `exe` vs `location` is explained in
     # `image_package.bzl`.  We need `binary_path` because the `exe` macro
     # won't get expanded inside a \\$( ...  ) context.
-    binary_path=( $(exe {artifacts_dir}) )
+    binary_path=( $(exe //antlir:artifacts-dir) )
     artifacts_dir=\\$( "${{binary_path[@]}}" )
 
     # Future-proofing: keep all Buck target subvolumes under
     # "targets/" in the per-repo volume, so that we can easily
     # add other types of subvolumes in the future.
-    binary_path=( $(exe {volume_for_repo}) )
+    binary_path=( $(exe //antlir:volume-for-repo) )
     volume_dir=\\$( "${{binary_path[@]}}" "$artifacts_dir" {min_free_bytes} )
     subvolumes_dir="$volume_dir/targets"
     mkdir -m 0700 -p "$subvolumes_dir"
@@ -89,7 +88,6 @@ def _wrap_bash_build_in_common_boilerplate(
       cat > "$my_log"
     )
     """.format(
-        artifacts_dir = antlir_dep(":artifacts-dir"),
         bash = bash,
         min_free_bytes = volume_min_free_bytes if volume_min_free_bytes else "None",
         log_description = "{}:{}(name={})".format(
@@ -98,17 +96,23 @@ def _wrap_bash_build_in_common_boilerplate(
             target_name,
         ),
         self_dependency = self_dependency,
-        volume_for_repo = antlir_dep(":volume-for-repo"),
     )
 
 def _current_target(target_name):
-    return normalize_target(
-        target_utils.to_label(
-            "",
-            # @lint-ignore BUCKLINT
-            native.package_name(),
-            target_name,
-        ),
+    return target_utils.to_label(
+        # Note: we don't use the `config.get_current_repo_name()` here because
+        # currently in the OSS setup the current repo ends up being `@`, which
+        # doesn't work when we compile the layer. It doesn't work because
+        # a target like `//antlir/compiler/test_images:parent_layer` is not
+        # equivalent to `@//antlir/compiler/test_images:parent_layer`.
+        # Technically we should use the current repo name when constructing
+        # __all__ target labels. That would require a hefty refactor for all
+        # usages of hard coded targets. This should be done but can wait until
+        # the OSS repository is ready to be embedded/included in other projects
+        # as a proper repo/cell.
+        "",
+        native.package_name(),
+        target_name,
     )
 
 image_utils = struct(
