@@ -2,3 +2,4 @@
 Description=Host workload (Pre)
 RefuseManualStart=yes
 Requires=core-services.target
+Requires=network-online.target
