@@ -796,8 +796,6 @@ class Subvol(DoNotFreeze):
         if loopback_opts.size_mb:
             leftover_bytes, image_size = self._send_to_loopback_if_fits(
                 output_path,
-                # pyre-fixme[58]: `*` is not supported for operand types
-                #  `Optional[int]` and `Any`.
                 loopback_opts.size_mb * MiB,
                 loopback_opts,
             )

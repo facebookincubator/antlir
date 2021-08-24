@@ -144,6 +144,7 @@ class Unshare:
         )
         try:
             # `sudo` keeps stdout open, so we have to read just 1 line.
+            # pyre-fixme[16]: Optional type has no attribute `readline`.
             nspid_out = self._keepalive_proc.stdout.readline().split()
             self._keepalive_proc.stdout.close()  # Nothing should write here
             # We do NOT pass `--mount-proc` to `unshare`, so we can inspect
