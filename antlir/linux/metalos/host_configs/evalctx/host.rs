@@ -9,8 +9,7 @@ use std::net::AddrParseError;
 
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
-use starlark::values::{AllocValue, Heap, Value};
-use starlark_module::StarlarkAttrs;
+use starlark::values::{AllocValue, Heap, StarlarkAttrs, Value};
 
 /// Host is the main entrypoint to the Starlark config generator runtime. It is
 /// the top level struct that should contain all the structured information

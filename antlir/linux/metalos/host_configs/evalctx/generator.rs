@@ -11,9 +11,9 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use starlark::environment::{GlobalsBuilder, Module};
 use starlark::eval::Evaluator;
+use starlark::starlark_module;
 use starlark::syntax::{AstModule, Dialect};
 use starlark::values::{list::ListOf, OwnedFrozenValue, Value};
-use starlark_module::starlark_module;
 
 use crate::Host;
 

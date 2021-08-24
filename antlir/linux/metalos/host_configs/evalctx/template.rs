@@ -17,8 +17,7 @@ use starlark::codemap::Span;
 use starlark::environment::GlobalsBuilder;
 use starlark::eval::{Arguments, Evaluator};
 use starlark::values::{dict::DictOf, StarlarkValue, UnpackValue, Value, ValueLike};
-use starlark::{starlark_simple_value, starlark_type};
-use starlark_module::starlark_module;
+use starlark::{starlark_module, starlark_simple_value, starlark_type};
 
 static HANDLEBARS: Lazy<RwLock<Handlebars>> = Lazy::new(|| {
     let mut h = Handlebars::new();

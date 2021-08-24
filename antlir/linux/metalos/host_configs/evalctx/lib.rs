@@ -16,7 +16,7 @@ macro_rules! simple_data_struct {
         starlark::starlark_simple_value!($x);
         impl<'v> starlark::values::StarlarkValue<'v> for $x {
             starlark::starlark_type!(stringify!($x));
-            starlark_module::starlark_attrs!();
+            starlark::values::starlark_attrs!();
         }
 
         paste::paste! {
