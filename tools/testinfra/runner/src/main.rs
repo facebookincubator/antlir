@@ -52,7 +52,7 @@ struct Options {
     revision: Option<String>,
 
     /// Forces auto-disabled tests to run
-    #[structopt(long = "run-disabled")]
+    #[structopt(long)]
     run_disabled: bool,
 
     /// Maximum number of times a failing unit test will be retried
@@ -286,7 +286,7 @@ fn xml_escape_text(unescaped: &String) -> String {
 
 fn query_disabled(db: &mut Option<Client>) -> HashSet<(String, Option<String>)> {
     // we have unit test name as NOT NULL in the DB, so empty SQL strings are
-    // converted to Option types in Rust, the same inverse should be done on writes
+    // converted to Option types in Rust. the inverse should be done when inserting
     match db {
         None => HashSet::new(),
         Some(db) => db
@@ -309,7 +309,7 @@ fn query_commit(db: &mut Option<Client>, revision: String, tests: &Vec<TestResul
         Some(db) => {
             let mut transaction = db.transaction()?;
 
-            // we assume PostgreSQL > 9.5 in order to use <ON CONFLICT>
+            // we assume PostgreSQL >= 9.5 in order to use <ON CONFLICT>
             let insert_target = transaction.prepare(
                 "INSERT INTO targets (target)
                 VALUES ($1)
