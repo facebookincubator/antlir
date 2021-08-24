@@ -128,7 +128,6 @@ image.layer_alias(
 # on top of the read-only host clone.
 image_build_librename_shadowed(
     name = "build-librename-shadowed",
-    flavor = "antlir_test",
     parent_layer = ":test-layer",
 )
 

@@ -41,8 +41,7 @@ load("//antlir/bzl:image.bzl", "image")
 
 def image_build_librename_shadowed(
         name,
-        parent_layer,
-        flavor = REPO_CFG.flavor_default):
+        parent_layer):
     "`parent_layer` must have a C compiler."
 
     # Build as root, since this gets installed using `image.clone`, and this
@@ -60,7 +59,6 @@ def image_build_librename_shadowed(
                 "/build/rename_shadowed.c",
             ),
         ],
-        flavor = flavor,
     )
     image.genrule_layer(
         name = name,
@@ -82,5 +80,4 @@ def image_build_librename_shadowed(
         rule_type = "build_librename_shadowed",
         user = user,
         antlir_rule = "user-internal",
-        flavor = flavor,
     )
