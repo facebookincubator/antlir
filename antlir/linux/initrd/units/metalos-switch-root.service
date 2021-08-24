@@ -4,6 +4,9 @@ DefaultDependencies=no
 OnFailure=emergency.target
 OnFailureJobMode=replace-irreversibly
 AllowIsolate=yes
+# Forcibly stop this service so that the systemd in the post-switch-root os will
+# restart it and process the rules that are in the rootfs
+Conflicts=systemd-tmpfiles-setup.service
 
 [Service]
 Type=oneshot

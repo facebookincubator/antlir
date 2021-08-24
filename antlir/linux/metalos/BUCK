@@ -56,6 +56,9 @@ image.layer(
         image.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
         systemd.enable_unit("systemd-networkd.service", "core-services.target"),
         systemd.enable_unit("systemd-resolved.service", "core-services.target"),
+        image.install("systemd-resolved.tmpfiles.conf", "/usr/lib/tmpfiles.d/systemd-resolved.conf"),
+        systemd.enable_unit("systemd-tmpfiles-setup.service", "core-services.target"),
+        systemd.enable_unit("dbus.service", "core-services.target"),
         # TODO: this is a workaround for a likely bug in the initrd shutdown
         # process that ends up leaving udev rules unprocessed in the
         # post-switch-root root fs.
