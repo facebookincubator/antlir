@@ -7,9 +7,9 @@
 from typing import Any, Dict
 
 from antlir.fs_utils import Path
-from antlir.serialize_targets_and_outputs import make_target_path_map
 
 from ..extract_nested_features import extract_nested_features, ExtractedFeatures
+from ..replay_util import make_target_path_map
 
 
 def build_env_map(environ: Dict[str, str], infix: str) -> Dict[str, Any]:

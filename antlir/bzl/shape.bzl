@@ -115,7 +115,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load(":oss_shim.bzl", "buck_genrule", "python_library", "target_utils", "third_party")
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
-load(":target_helpers.bzl", "antlir_dep", "normalize_target")
+load(":target_helpers.bzl", "normalize_target")
 
 _SERIALIZING_LOCATION_MSG = (
     "shapes with layer/target fields cannot safely be serialized in the" +
@@ -538,7 +538,7 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
     python_library(
         name = name,
         srcs = {":{}.py".format(name): "{}.py".format(name)},
-        deps = [antlir_dep(":shape")],
+        deps = ["//antlir:shape"],
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
@@ -706,7 +706,7 @@ def _python_data(
         name = name,
         srcs = {":{}.py".format(name): "{}.py".format(module)},
         deps = [
-            antlir_dep(":shape"),
+            "//antlir:shape",
             third_party.library("pydantic", platform = "python"),
         ],
         # Antlir users should not directly use `shape`, but we do use it

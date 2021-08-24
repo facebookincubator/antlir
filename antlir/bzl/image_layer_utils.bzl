@@ -9,13 +9,13 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config")
 load(":query.bzl", "layer_deps_query")
-load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
+load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 
 def _add_run_in_subvol_target(name, kind, extra_args = None):
     target = name + "=" + kind
     buck_command_alias(
         name = target,
-        exe = antlir_dep("nspawn_in_subvol:run"),
+        exe = "//antlir/nspawn_in_subvol:run",
         args = [
             "--layer",
             "$(location {})".format(shell.quote(":" + name)),
@@ -103,7 +103,7 @@ def _image_layer_impl(
         name = _layer_name,
         out = "layer",
         bash = image_utils.wrap_bash_build_in_common_boilerplate(
-            self_dependency = antlir_dep("bzl:image_layer"),
+            self_dependency = "//antlir/bzl:image_layer",
             bash = '''
             # We want subvolume names to be user-controllable. To permit
             # this, we wrap each subvolume in a temporary subdirectory.
@@ -119,7 +119,7 @@ def _image_layer_impl(
             #
             # `exe` vs `location` is explained in `image_package.py`.
             # `exe` won't expand in \\$( ... ), so we need `binary_path`.
-            binary_path=( $(exe {subvolume_version}) )
+            binary_path=( $(exe //antlir:subvolume-version) )
             subvolume_ver=\\$( "${{binary_path[@]}}" )
             subvolume_wrapper_dir={layer_name_mangled_quoted}":$subvolume_ver"
 
@@ -127,7 +127,7 @@ def _image_layer_impl(
             # accidentally exit early with code 0, the rule still fails.
             mkdir "$TMP/out"
             {print_mount_config} |
-                $(exe {layer_mount_config}) {layer_target_quoted} \
+                $(exe //antlir:layer-mount-config) {layer_target_quoted} \
                     > "$TMP/out/mountconfig.json"
             # "layer.json" points at the subvolume inside `buck-image-out`.
             layer_json="$TMP/out/layer.json"
@@ -146,7 +146,7 @@ def _image_layer_impl(
             # debugging failed builds a bit more predictable.
             refcounts_dir=\\$( readlink -f {refcounts_dir_quoted} )
             # `exe` vs `location` is explained in `image_package.py`
-            $(exe {subvolume_garbage_collector}) \
+            $(exe //antlir:subvolume-garbage-collector) \
                 --refcounts-dir "$refcounts_dir" \
                 --subvolumes-dir "$subvolumes_dir" \
                 --new-subvolume-wrapper-dir "$subvolume_wrapper_dir" \
@@ -156,7 +156,6 @@ def _image_layer_impl(
 
             mv "$TMP/out" "$OUT"  # Allow the rule to succeed.
             '''.format(
-                layer_mount_config = antlir_dep(":layer-mount-config"),
                 # Buck target names permit `/`, but we want a 1-level
                 # hierarchy for layer wrapper directories in
                 # `buck-image-out`, so mangle `/`.
@@ -182,8 +181,6 @@ def _image_layer_impl(
                         shell.quote(struct(**mount_config).to_json()),
                     )
                 ),
-                subvolume_garbage_collector = antlir_dep(":subvolume-garbage-collector"),
-                subvolume_version = antlir_dep(":subvolume-version"),
             ),
             rule_type = _rule_type,
             target_name = _layer_name,
