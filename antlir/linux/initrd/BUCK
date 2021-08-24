@@ -112,7 +112,6 @@ image.layer(
         # Due to limitations in the current extractor implementation, we have to
         # extract systemd at the same time as metalctl.
         extract.extract(
-            flavor = REPO_CFG.antlir_linux_flavor,
             binaries = SYSTEMD_BINARIES + [
                 "/usr/sbin/btrfs",
                 "/usr/bin/metalctl",

@@ -88,7 +88,6 @@ debug_features = [
         ],
         dest = "/",
         source = ":debug-deps",
-        flavor = REPO_CFG.antlir_linux_flavor,
     ),
 ]
 

@@ -27,7 +27,6 @@ extract.source_layer(
 )
 
 binaries = extract.extract(
-    flavor = REPO_CFG.antlir_linux_flavor,
     binaries = [
         "/usr/sbin/dropbear",
         "/usr/bin/dropbearkey",

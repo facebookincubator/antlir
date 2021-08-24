@@ -8,7 +8,6 @@ image.layer(
     name = "extracted",
     features = [
         extract.extract(
-            flavor = REPO_CFG.antlir_linux_flavor,
             binaries = [
                 "/usr/lib/systemd/systemd",
                 "/usr/bin/repo-built-binary",
