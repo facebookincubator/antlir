@@ -62,7 +62,8 @@ pub fn list_tests(spec: TestSpec) -> Vec<Test> {
         unit_command.arg(unit);
         tests.push(Test {
             command: unit_command,
-            name: spec.target.clone() + "#" + unit,
+            target: spec.target.clone(),
+            unit: Some(unit.to_string()),
             labels: spec.labels.clone(),
             contacts: spec.contacts.clone(),
             kind: TestKind::Rust,

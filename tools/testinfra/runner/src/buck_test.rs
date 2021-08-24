@@ -25,8 +25,11 @@ pub struct Test {
     /// The command used to execute the test.
     pub command: Command,
 
-    /// User-facing identifier for this specific test.
-    pub name: String,
+    /// Fully qualified buck test target.
+    pub target: String,
+
+    /// Unit test inside target.
+    pub unit: Option<String>,
 
     /// Labels/tags associated to this test.
     pub labels: HashSet<String>,
@@ -59,13 +62,21 @@ const EXCLUDED_LABELS: &[&str] = &["disabled", "exclude_test_if_transitive_dep"]
 
 #[derive(Debug)]
 pub struct TestResult {
-    pub name: String,
+    pub target: String,
+    pub unit: Option<String>,
     pub attempts: u32,
     pub passed: bool,
     pub duration: Duration,
     pub stdout: String,
     pub stderr: String,
     pub contacts: HashSet<String>,
+}
+
+pub fn test_name(target: &String, unit: &Option<String>) -> String {
+    match unit {
+        None => target.clone(),
+        Some(unit) => target.clone() + "#" + &unit,
+    }
 }
 
 impl Test {
@@ -90,7 +101,8 @@ impl Test {
                 let mut err = String::new();
                 child.stderr.unwrap().read_to_string(&mut err).unwrap();
                 return TestResult {
-                    name: self.name,
+                    target: self.target,
+                    unit: self.unit,
                     attempts,
                     passed: true,
                     duration,
@@ -105,7 +117,8 @@ impl Test {
                     let mut err = String::new();
                     child.stderr.unwrap().read_to_string(&mut err).unwrap();
                     return TestResult {
-                        name: self.name,
+                        target: self.target,
+                        unit: self.unit,
                         attempts,
                         passed: false,
                         duration,
@@ -134,7 +147,8 @@ pub mod shell {
         );
         let test = Test {
             command,
-            name: spec.target,
+            target: spec.target,
+            unit: None,
             labels: spec.labels,
             contacts: spec.contacts,
             kind: TestKind::Shell,
