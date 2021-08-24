@@ -138,10 +138,7 @@ def _get_action_to_names_or_rpms(
         if item.source is not None:
             rpm_path = item.source
             name_or_rpm = _LocalRpm(
-                # pyre-fixme[6]: Expected `Path` for 1st param but got `str`.
                 path=rpm_path,
-                # pyre-fixme[6]: Expected `Path` for 1st positional only
-                # parameter to call `RpmMetadata.from_file` but got `str`
                 metadata=RpmMetadata.from_file(rpm_path),
             )
             conflict_detector.add(name_or_rpm.metadata.name, item)

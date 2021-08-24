@@ -59,12 +59,7 @@ class LoopbackVolume:
     def __enter__(self) -> "LoopbackVolume":
         self._temp_dir = self._temp_dir_ctx.__enter__().abspath()
         try:
-            # pyre-fixme[58]: `/` is not supported for operand types
-            #  `Optional[Path]` and `bytes`.
             self._mount_dir = self._temp_dir / b"volume"
-            # pyre-fixme[6]: Expected `Union[os.PathLike[bytes],
-            # os.PathLike[str], bytes, str]` for 1st param but got
-            # `Optional[Path]`.
             os.mkdir(self._mount_dir)
             # pyre-fixme[16]: `LoopbackVolume` has no attribute `_loop_dev`.
             self._loop_dev = self.mount()

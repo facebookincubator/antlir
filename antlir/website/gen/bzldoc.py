@@ -81,8 +81,8 @@ class BzlFile(object):
         loads = [
             node.value
             for node in self.body
-            if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
-            # pyre-fixme[16]: `expr` has no attribute `func`.
+            if isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
             and isinstance(node.value.func, ast.Name)
             and node.value.func.id == "load"
         ]
@@ -158,7 +158,6 @@ generated: """
 
             args = [a.arg for a in func.args.args]
             if func.args.vararg:
-                # pyre-fixme[16]: `Optional` has no attribute `arg`.
                 args.append("*" + func.args.vararg.arg)
             if func.args.kwarg:
                 args.append("**" + func.args.kwarg.arg)
