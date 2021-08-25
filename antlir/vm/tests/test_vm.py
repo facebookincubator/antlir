@@ -233,6 +233,48 @@ class AsyncTestAntlirVm(unittest.TestCase):
 
         self.event_loop.run_until_complete(_test())
 
+    def test_wait_for_boot_error(self):
+        async def _handle(r, w):
+            w.write(b"BAD")
+            await w.drain()
+            w.close()
+            await w.wait_closed()
+
+        async def _test():
+            with tempfile.TemporaryDirectory() as td:
+                tempsock = Path(td) / "temp.sock"
+
+                server = await asyncio.start_unix_server(_handle, path=tempsock)
+
+                with self.assertRaisesRegex(
+                    VMBootError, "Received invalid boot notification"
+                ):
+                    async with server:
+                        await _wait_for_boot(tempsock, timeout_ms=10000)
+
+        self.event_loop.run_until_complete(_test())
+
+    def test_wait_for_boot_eof(self):
+        async def _handle(r, w):
+            w.write(b"")
+            await w.drain()
+            w.close()
+            await w.wait_closed()
+
+        async def _test():
+            with tempfile.TemporaryDirectory() as td:
+                tempsock = Path(td) / "temp.sock"
+
+                server = await asyncio.start_unix_server(_handle, path=tempsock)
+
+                with self.assertRaisesRegex(
+                    VMBootError, "Received EOF before boot notification!"
+                ):
+                    async with server:
+                        await _wait_for_boot(tempsock, timeout_ms=10000)
+
+        self.event_loop.run_until_complete(_test())
+
     def test_wait_for_boot_timeout_socket(self):
         async def _test():
             with tempfile.TemporaryDirectory() as td:
