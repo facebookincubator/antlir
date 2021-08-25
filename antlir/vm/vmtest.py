@@ -22,7 +22,7 @@ from antlir.vm.vm import ConsoleRedirect, ShellMode, vm, VMExecOpts
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
-logger = get_logger()
+log = get_logger()
 
 _WRAP_IN_VM_TEST_BINARY = Path("/vmtest/wrap")
 _IN_VM_TEST_BINARY = Path("/vmtest/test")
@@ -109,7 +109,7 @@ async def wrap_tpx_gtest_cmd(
 ) -> AsyncGenerator[
     Tuple[List[Union[Path, str]], Dict[Any, Any], Optional[Path]], None
 ]:
-    logger.debug("Rewriting gtest cmd: {cmd}")
+    log.debug("Rewriting gtest cmd: {cmd}")
 
     gtest_output = env.get("GTEST_OUTPUT") or os.environ.get("GTEST_OUTPUT")
     if not gtest_output:
@@ -257,7 +257,7 @@ async def run(
             ), f"Incompatible test_type: {test_type} and list arg: --list"
             args += ["--list"]
 
-        logger.debug(f"Listing tests: {args} to {list_tests}")
+        log.debug(f"Listing tests: {args} to {list_tests}")
         output = Path("/dev/fd/1")
         with open(output, "wb") as f:
             proc = await asyncio.create_subprocess_exec(
@@ -269,7 +269,7 @@ async def run(
 
     # If we've made it this far we are executing the actual test, not just
     # listing tests
-    returncode = -1
+    returncode = 0
 
     # Build shares to provide to the vm
     #
@@ -312,7 +312,6 @@ async def run(
         shares=shares,
         shell=shell,
         timeout_ms=timeout_ms,
-        # pyre-fixme[23]: Unable to unpack `GuestSSHConnection` into 3 values.
     ) as (instance, boot_elapsed_ms, timeout_ms):
 
         # If we are run with `--shell` mode, we don't get an instance since
@@ -344,7 +343,7 @@ async def run(
                 env,
                 socket,
             ):
-                logger.debug(f"Executing {cmd} inside guest.")
+                log.debug(f"Executing {cmd} inside guest.")
                 res = await instance.run(
                     cmd=cmd,
                     timeout_ms=timeout_ms,
@@ -361,10 +360,11 @@ async def run(
                     # Maybe forward a socket
                     forward={socket: socket} if socket else None,
                 )
-                logger.info(f"{cmd} completed with: {res.returncode}")
+                log.info(f"{cmd} completed with: {res.returncode}")
+                returncode = res.returncode
 
     # Exit with the return code of the actual test run, not the VM exit
-    return res.returncode
+    return returncode
 
 
 if __name__ == "__main__":
