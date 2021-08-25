@@ -7,6 +7,7 @@ rust_binary(
         [
             "anyhow",
             "itertools",
+            "mysql_async",
             "rayon",
             "serde",
             "serde_json",
