@@ -272,14 +272,13 @@ async def run(
     returncode = 0
 
     # Build shares to provide to the vm
-    #
-    # pyre-fixme[6]: Expected `PathLike[typing.Any]` for 1st param but got
-    # `Path`.
-    shares = [BtrfsDisk(test_binary_image, "/vmtest")]
+    shares = [BtrfsDisk(path=test_binary_image, mountpoint=Path("/vmtest"))]
+
     if devel_layer and opts.kernel.artifacts.devel is None:
         raise Exception(
             "--devel-layer requires kernel.artifacts.devel set in vm_opts"
         )
+
     if devel_layer:
         # pyre-fixme[6]: Expected `Iterable[BtrfsDisk]` for 1st param but got
         #  `Iterable[Plan9Export]`.

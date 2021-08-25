@@ -8,15 +8,16 @@ import os
 import subprocess
 import tempfile
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from contextlib import AsyncExitStack, contextmanager
 from dataclasses import dataclass, field
-from typing import Generator, Iterable, Tuple
+from typing import Generator, Iterable, Optional, Tuple
 
 from antlir.fs_utils import Path, temp_dir
 
 
 __next_tag_index = 0
-# the first two disks MUST be rootfs and scratch device
+# We have 2 drives for the root disk (seed + child) so we start all others
+# after those 2
 __next_drive_index = 2
 
 
@@ -36,14 +37,19 @@ def _next_drive() -> str:
 
 class Share(ABC):
     @property
-    @abstractmethod
     def generator(self) -> bool:  # pragma: no cover
         """Should this share have a systemd mount unit generated for it"""
+        return False
 
     @property
-    @abstractmethod
-    def mount_unit(self) -> Tuple[str, str]:  # pragma: no cover
-        """Return the name of the mount unit file, and its contents"""
+    def mount_unit(
+        self,
+    ) -> Tuple[Optional[str], Optional[str]]:  # pragma: no cover
+        """
+        Return the name of the mount unit file, and its contents.
+        This is only applicable if `self.generator == True`.
+        """
+        return (None, None)
 
     @property
     @abstractmethod
@@ -73,6 +79,9 @@ class Share(ABC):
                 if not share.generator:
                     continue
                 unit_name, unit_contents = share.mount_unit
+                assert (
+                    unit_name and unit_contents
+                ), f"Invalid mount unit for {share}"
                 unit_path = exportdir / unit_name
                 with unit_path.open(mode="w") as f:
                     f.write(unit_contents)
@@ -128,7 +137,7 @@ Options=version=9p2000.L,posixacl,cache={cache},{ro_rw}
 
 @dataclass(frozen=True)
 class BtrfsDisk(Share):
-    """Share a btrfs image file as a virtio disk."""
+    """A single btrfs disk for use in qemu"""
 
     path: Path
     mountpoint: Path
@@ -154,10 +163,88 @@ Options=subvol={self.subvol},{ro_rw}
 """,
         )
 
+    # Note: coverage on this is actually provided via the
+    # `//antlir/vm/tests:test-kernel-panic` test, but due to
+    # how python coverage works it can't be included in the
+    # report.
     @property
-    def qemu_args(self) -> Iterable[str]:
+    def qemu_args(self) -> Iterable[str]:  # pragma: no cover
         readonly = "on" if self.readonly else "off"
         return (
-            "-drive",
-            f"if=virtio,format=raw,file={self.path!s},readonly={readonly}",
+            "--blockdev",
+            f"driver=raw,node-name=dev-{self.dev},read-only={readonly},"
+            f"file.driver=file,file.filename={self.path!s}",
+            "--device",
+            f"virtio-blk,drive=dev-{self.dev}",
+        )
+
+
+@dataclass(frozen=True)
+class BtrfsSeedRootDisk(Share):
+    """
+    A btrfs seed disk + a child disk for use in qemu.
+    """
+
+    path: Path
+    stack: AsyncExitStack
+    subvol: str = "volume"
+    # Note: these are hard coded for virtio and to be the 1st
+    # and 2nd drive presented to qemu.  This is handled in `//antlir/vm:vm`
+    # where this Share is inserted at the beginning of the list of shares
+    # provided to qemu.
+    # Future: This should support other interface formats like sata and nvme
+    seed_dev: str = "vda"
+    child_dev: str = "vdb"
+    # This is dynamically created during the __post_init__
+    child_disk: Optional[Path] = None
+
+    def __post_init__(self) -> None:
+        child_disk = self.stack.enter_context(
+            tempfile.NamedTemporaryFile(
+                prefix="vm_",
+                suffix="_rw.img",
+                # If available, create this temporary disk image in a temporary
+                # directory that we know will be on disk, instead of /tmp which
+                # may be a space-constrained tmpfs whichcan cause sporadic
+                # failures depending on how much VMs decide to write to the
+                # root partition multiplied by however many VMs are running
+                # concurrently. If DISK_TEMP is not set, Python will follow the
+                # normal mechanism to determine where to create this file as
+                # described in:
+                # https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
+                dir=os.getenv("DISK_TEMP"),
+            )
+        )
+
+        # TODO: should this size be configurable (or is it possible to
+        # dynamically grow)?
+        child_disk.truncate(4 * 1024 * 1024 * 1024)
+
+        # This sucks
+        object.__setattr__(self, "child_disk", Path(child_disk.name))
+
+    @property
+    def qemu_args(self) -> Iterable[str]:
+        return (
+            # Seed device
+            "--blockdev",
+            "driver=raw,node-name=seed,read-only=on,"
+            f"file.driver=file,file.filename={self.path!s}",
+            "--device",
+            "virtio-blk,drive=seed",
+            # Child device
+            "--blockdev",
+            "driver=raw,node-name=child,read-only=off,"
+            f"file.driver=file,file.filename={self.child_disk!s}",
+            "--device",
+            "virtio-blk,drive=child",
+        )
+
+    @property
+    def kernel_args(self) -> Iterable[str]:
+        return (
+            f"metalos.seed_device=/dev/{self.child_dev}",
+            f"root=/dev/{self.seed_dev}",
+            f"rootflags=subvol={self.subvol},ro",
+            "rootfstype=btrfs",
         )
