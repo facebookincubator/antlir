@@ -8,8 +8,10 @@ import os
 import platform
 import unittest
 
+from antlir.tests.common import AntlirTestCase
 
-class KernelDevelTest(unittest.TestCase):
+
+class KernelDevelTest(AntlirTestCase):
     def test_vm_has_devel(self):
         uname = platform.release()
 

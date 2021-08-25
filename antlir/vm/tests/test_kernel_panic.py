@@ -10,9 +10,10 @@ import tempfile
 import unittest
 
 from antlir.fs_utils import Path
+from antlir.tests.common import AntlirTestCase
 
 
-class KernelPanicTest(unittest.TestCase):
+class KernelPanicTest(AntlirTestCase):
     def test_vmtest_kernel_panic(self):
         with importlib.resources.path(
             __package__, "create-kernel-panic"

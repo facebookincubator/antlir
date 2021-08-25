@@ -7,10 +7,11 @@
 import os
 import unittest
 
+from antlir.tests.common import AntlirTestCase
 from antlir.vm.kernel_artifacts_t import kernel_artifacts_t
 
 
-class TestKernelArtifactsTest(unittest.TestCase):
+class TestKernelArtifactsTest(AntlirTestCase):
     def test_load(self):
         kernel_artifacts = kernel_artifacts_t.read_resource(
             __package__, "kernel-artifacts"

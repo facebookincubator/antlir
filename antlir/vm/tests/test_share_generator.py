@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from antlir.fs_utils import Path
+from antlir.tests.common import AntlirTestCase
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
 
 
@@ -124,7 +125,7 @@ Options=subvol=volume,ro
 ]
 
 
-class TestShareGenerator(unittest.TestCase):
+class TestShareGenerator(AntlirTestCase):
     def test_units(self):
         with importlib.resources.path(
             __package__, "mount-generator"
