@@ -12,9 +12,10 @@ import socket
 import unittest
 
 from antlir.fs_utils import Path
+from antlir.tests.common import AntlirTestCase
 
 
-class BasicVMTest(unittest.TestCase):
+class BasicVMTest(AntlirTestCase):
     def test_env(self):
         self.assertEqual(os.environ.pop("kitteh"), "meow")
         self.assertEqual(os.environ.pop("dogsgo"), "woof")

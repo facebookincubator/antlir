@@ -16,7 +16,10 @@ load("//antlir/vm/bzl:defs.bzl", "vm")
 vm.python_unittest(
     name = "test-tap",
     srcs = ["test_tap.py"],
-    deps = ["//antlir/vm:tap"],
+    deps = [
+        "//antlir:testlib_common",
+        "//antlir/vm:tap",
+    ],
 )
 
 python_unittest(
@@ -57,6 +60,7 @@ python_unittest(
     },
     deps = [
         "//antlir:fs_utils",
+        "//antlir:testlib_common",
         "//antlir/vm:share",
         "//antlir/vm:vm",
     ],
@@ -92,6 +96,7 @@ python_unittest(
     },
     deps = [
         "//antlir:fs_utils",
+        "//antlir:testlib_common",
         "//antlir/nspawn_in_subvol:common",
     ],
 )
@@ -131,6 +136,7 @@ vm.python_unittest(
     ),
     deps = [
         "//antlir:fs_utils",
+        "//antlir:testlib_common",
     ],
 )
 
@@ -153,6 +159,9 @@ vm.python_unittest(
     vm_opts = vm.types.opts.new(
         devel = True,
     ),
+    deps = [
+        "//antlir:testlib_common",
+    ],
 )
 
 rust_binary(

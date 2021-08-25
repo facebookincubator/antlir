@@ -9,11 +9,12 @@ import subprocess
 import unittest
 from typing import Set
 
+from antlir.tests.common import AntlirTestCase
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.tap import TAPDEV, VmTap
 
 
-class TestTap(unittest.TestCase):
+class TestTap(AntlirTestCase):
     def get_links(self, ns: Unshare) -> Set[str]:
         links = (
             subprocess.run(
