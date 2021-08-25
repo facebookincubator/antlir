@@ -12,8 +12,12 @@ from typing import (
     Optional,
 )
 
+from antlir.common import get_logger
 from antlir.vm.vm import ConsoleRedirect, ShellMode, vm, VMExecOpts
 from antlir.vm.vm_opts_t import vm_opts_t
+
+
+log = get_logger()
 
 
 class VMRunExecOpts(VMExecOpts):
@@ -42,7 +46,7 @@ async def run(
     timeout_ms: int,
     # antlir.vm.run specific args
     cmd: List[str],
-):
+) -> Optional[int]:
     # This is just a shortcut so that if the user doesn't provide a command
     # we drop them into a shell using the standard mechanism for that.
     if not cmd and not shell:
@@ -55,26 +59,20 @@ async def run(
         console=console,
         timeout_ms=timeout_ms,
         shell=shell,
-        # pyre-fixme[23]: Unable to unpack `GuestSSHConnection` into 3 values.
     ) as (instance, boot_ms, timeout_ms):
+
         # If we are run with `--shell` mode, we don't get an instance since
         # the --shell mode takes over.  This is a bit of a wart that exists
         # because if a context manager doesn't yield *something* it will
         # throw an exception that this caller has to handle.
         if instance:
-            returncode, stdout, stderr = await instance.run(
-                cmd, timeout_ms=timeout_ms
+            res = await instance.run(
+                cmd, stderr=None, stdout=None, timeout_ms=timeout_ms
             )
+            log.info(f"{cmd} completed with: {res.returncode}")
+            returncode = res.returncode
 
-            # We want to write whatever we get from the command out to the
-            # respective fds.
-            # Note: in the near future this will be replaced with ssh,
-            # which can be setup to just write directly to the users
-            # stdout/stderr fd's instead of having to buffer like this.
-            sys.stdout.write(stdout.decode())
-            sys.stderr.write(stderr.decode())
-
-    sys.exit(returncode)
+    return returncode
 
 
 if __name__ == "__main__":

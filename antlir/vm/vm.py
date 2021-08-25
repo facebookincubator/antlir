@@ -24,6 +24,7 @@ from typing import (
     Optional,
     List,
     Union,
+    Tuple,
 )
 
 from antlir.common import init_logging, get_logger, not_none
@@ -33,6 +34,7 @@ from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.shape import Shape
 from antlir.unshare import Namespace, Unshare
+from antlir.vm.common import insertstack
 from antlir.vm.guest_ssh import GuestSSHConnection
 from antlir.vm.share import BtrfsDisk, Plan9Export, Share
 from antlir.vm.tap import VmTap
@@ -241,8 +243,10 @@ class VMExecOpts(Shape):
         return cls(**args.__dict__)
 
 
+@insertstack
 @asynccontextmanager
-async def __vm_with_stack(
+async def vm(
+    *,
     stack: AsyncExitStack,
     opts: vm_opts_t,
     timeout_ms: int = DEFAULT_TIMEOUT_MS,
@@ -499,6 +503,7 @@ async def __vm_with_stack(
         if shell == ShellMode.console:  # pragma: no cover
             logger.debug("Waiting for VM console to terminate")
             yield (None, boot_elapsed_ms, timeout_ms)
+
         # Note: this is not covered in test cases because the API does
         # not yet provide a good way to expose this.
         elif shell == ShellMode.ssh:  # pragma: no cover
@@ -520,6 +525,7 @@ async def __vm_with_stack(
             # to this method.  The co-routine will only be called if
             # necessary.
             yield (None, boot_elapsed_ms, timeout_ms)
+
         else:
             with GuestSSHConnection(
                 tapdev=tapdev,
@@ -583,17 +589,6 @@ async def __vm_with_stack(
                     *[str(proc.pid) for proc in sidecar_procs],
                 ]
             )
-
-
-@asynccontextmanager
-# pyre-fixme[57]: Expected return annotation to be AsyncGenerator or a
-#  superclass but got `AsyncContextManager[GuestSSHConnection]`.
-async def vm(*args, **kwargs) -> AsyncContextManager[GuestSSHConnection]:
-    async with AsyncExitStack() as stack:
-        async with __vm_with_stack(*args, **kwargs, stack=stack) as vm:
-            # pyre-fixme[7]: Expected `AsyncContextManager[GuestSSHConnection]`
-            #  but got `AsyncGenerator[typing.Any, None]`.
-            yield vm
 
 
 def __qemu_share_args(shares: Iterable[Share]) -> Iterable[str]:

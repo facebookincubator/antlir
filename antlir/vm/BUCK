@@ -58,6 +58,7 @@ python_library(
         "vm.py",
     ],
     deps = [
+        ":common",
         ":guest-ssh",
         ":share",
         ":tap",
@@ -80,7 +81,6 @@ python_binary(
     main_module = "antlir.vm.run",
     visibility = ["PUBLIC"],
     deps = [
-        ":common",
         ":vm",
     ],
 )
