@@ -18,11 +18,13 @@ from enum import Enum
 from itertools import chain
 from typing import (
     cast,
-    AsyncContextManager,
+    Any,
+    AsyncGenerator,
     Iterable,
     NamedTuple,
     Optional,
     List,
+    Tuple,
     Union,
     Tuple,
 )
@@ -36,7 +38,7 @@ from antlir.shape import Shape
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.common import insertstack
 from antlir.vm.guest_ssh import GuestSSHConnection
-from antlir.vm.share import BtrfsDisk, Plan9Export, Share
+from antlir.vm.share import BtrfsSeedRootDisk, Plan9Export, Share
 from antlir.vm.tap import VmTap
 from antlir.vm.vm_opts_t import vm_opts_t
 
@@ -104,7 +106,7 @@ class ShellMode(Enum):
     console = "console"
     ssh = "ssh"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
 
 
@@ -141,7 +143,7 @@ class VMExecOpts(Shape):
     # overloading in subclasses.  That is a bit more magic than I wanted
     # to add at the moment, so I'm holding off.
     @classmethod
-    def setup_cli(cls, parser):
+    def setup_cli(cls, parser) -> None:
         """
         Add attributes defined on this type to the parser.
 
@@ -259,7 +261,8 @@ async def vm(
     bind_repo_ro: bool = True,
     shell: Optional[ShellMode] = None,
     shares: Optional[List[Share]] = None,
-):
+) -> AsyncGenerator[Tuple[Optional[GuestSSHConnection], int, int], None]:
+
     notify_sockfile = Path(
         os.path.join(
             tempfile.gettempdir(), "vmtest_notify_" + uuid.uuid4().hex + ".sock"
@@ -276,9 +279,33 @@ async def vm(
     # in-repo testing.
     repo_cfg = repo_config()
 
+    # Setup the root disk fist since without this, nothing works
+    assert opts.disk.seed, "Only seed devices are supported currently"
+    root_disk = BtrfsSeedRootDisk(
+        path=opts.disk.package.path,
+        stack=stack,
+    )
+    # Root disk is always first
+    shares.insert(0, root_disk)
+
+    # Modules are always required, insert the export for them here.
+    # Note: This Share used "generator=False" because the initrd
+    # will mount these into the rootfs before the switch-root.
+    # (see: //antlir/vm/bzl:initrd.bzl)
+    shares.append(
+        Plan9Export(
+            path=find_built_subvol(
+                # pyre-fixme [16]: `Optional` has no attribute `path`
+                opts.kernel.artifacts.modules.path
+            ).path(),
+            mountpoint=Path("/usr/lib/modules") / opts.kernel.uname,
+            mount_tag="kernel-modules",
+            generator=False,
+        )
+    )
+
     # Process all the mounts from the root image we are using
     mounts = mounts_from_image_meta(opts.disk.package.path)
-
     for mount in mounts:
         if mount.build_source.type == "host":
             shares.append(
@@ -297,64 +324,6 @@ async def vm(
                 "non-host mounts"
             )  # pragma: no cover
 
-    rwdevice = stack.enter_context(
-        tempfile.NamedTemporaryFile(
-            prefix="vm_",
-            suffix="_rw.img",
-            # If available, create this temporary disk image in a temporary
-            # directory that we know will be on disk, instead of /tmp which may
-            # be a space-constrained tmpfs whichcan cause sporadic failures
-            # depending on how much VMs decide to write to the root partition
-            # multiplied by however many VMs are running concurrently. If
-            # DISK_TEMP is not set, Python will follow the normal mechanism to
-            # determine where to create this file as described in:
-            # https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
-            dir=os.getenv("DISK_TEMP"),
-        )
-    )
-    # TODO: should this size be configurable (or is it possible to dynamically
-    # grow)?
-    rwdevice.truncate(4 * 1024 * 1024 * 1024)
-
-    # The two initial disks (readonly rootfs seed device and the rw scratch
-    # device) are required to have these two disk identifiers for the initrd to
-    # be able to mount them. In the future, it might be possible to remove this
-    # requirement in a systemd-based initrd that is a little more intelligent,
-    # but is very low-pri now
-    shares.extend(
-        [
-            BtrfsDisk(
-                path=opts.disk.package.path,
-                dev="vda",
-                generator=False,
-                mountpoint=Path("/"),
-            ),
-            BtrfsDisk(
-                path=Path(rwdevice.name),
-                dev="vdb",
-                generator=False,
-                readonly=False,
-                mountpoint=Path("/"),
-            ),
-        ]
-    )
-
-    # Modules are always required, insert the export for them here.
-    # Note: This Share used "generator=False" because the initrd
-    # will mount these into the rootfs before the switch-root.
-    # (see: //antlir/vm/bzl:initrd.bzl)
-    shares.append(
-        Plan9Export(
-            path=find_built_subvol(
-                # pyre-fixme [16]: `Optional` has no attribute `path`
-                opts.kernel.artifacts.modules.path
-            ).path(),
-            mountpoint=Path("/usr/lib/modules") / opts.kernel.uname,
-            mount_tag="kernel-modules",
-            generator=False,
-        )
-    )
-
     if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
@@ -369,6 +338,10 @@ async def vm(
         # along with the repository root.
         for mount in repo_cfg.host_mounts_for_repo_artifacts:
             shares.append(Plan9Export(path=mount, mountpoint=mount))
+
+    # Add the export share that the mount-generator will use to discover
+    # all of the 9p mounts.
+    shares.append(stack.enter_context(Share.export_spec(shares)))
 
     ns = stack.enter_context(Unshare([Namespace.NETWORK, Namespace.PID]))
 
@@ -419,15 +392,13 @@ async def vm(
         "-append",
         (
             "console=ttyS0,115200"
-            " metalos.seed_device=/dev/vdb"
-            " root=/dev/vda"
-            " rootflags=subvol=volume,ro"
-            " rootfstype=btrfs"
             " noapic"
             " panic=-1"
             " cgroup_no_v1=all"
             " systemd.unified_cgroup_hierarchy=1"
-            " rd.emergency=poweroff " + " ".join(opts.append)
+            " rd.emergency=poweroff "
+            + " ".join(root_disk.kernel_args)
+            + " ".join(opts.append)
         ),
         # socket/serial device pair (for use by _wait_for_boot)
         "-chardev",
@@ -443,7 +414,7 @@ async def vm(
     args.extend(["-L", str(opts.runtime.emulator.roms_dir.path)])
 
     if os.access("/dev/kvm", os.R_OK | os.W_OK):
-        args += ["-enable-kvm"]
+        args.append("-enable-kvm")
     else:  # pragma: no cover
         logger.warning(
             "KVM not available - falling back to slower, emulated CPU: "
@@ -451,10 +422,8 @@ async def vm(
             + "how-do-i-enable-kvm-on-my-devvm"
         )
 
-    export_share = stack.enter_context(Share.export_spec(shares))
-    shares += [export_share]
-
-    args += __qemu_share_args(shares)
+    # Build and append the args from all the various shares
+    args.extend(chain.from_iterable(share.qemu_args for share in shares))
 
     qemu_cmd = ns.nsenter_as_user(str(opts.runtime.emulator.binary.path), *args)
 
@@ -594,13 +563,3 @@ async def vm(
                     *[str(proc.pid) for proc in sidecar_procs],
                 ]
             )
-
-
-def __qemu_share_args(shares: Iterable[Share]) -> Iterable[str]:
-    # The ordering of arguments for BtrfsDisk type shares is highly
-    # significant, as it determines the drive device id
-    disks = [s for s in shares if isinstance(s, BtrfsDisk)]
-    disks = sorted(disks, key=lambda d: d.dev)
-    other = [s for s in shares if not isinstance(s, BtrfsDisk)]
-    shares = chain(disks, other)
-    return chain.from_iterable(share.qemu_args for share in shares)
