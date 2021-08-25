@@ -74,13 +74,18 @@ async def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:
     # How long we can wait for the notify message
     recv_timeout_ms = timeout_ms - elapsed_ms
 
-    async def _connect_and_readline():
+    async def _connect_and_readline() -> None:
         logger.debug(f"Waiting {recv_timeout_ms}ms for notify from: {sockfile}")
-        notify_r, notify_w = await asyncio.open_unix_connection(sockfile)
+        notify_r, notify_w = await asyncio.open_unix_connection(str(sockfile))
         msg = await notify_r.readline()
         logger.debug(f"Received boot event: {msg}")
         notify_w.close()
         await notify_w.wait_closed()
+
+        if msg.strip() == b"":
+            raise VMBootError("Received EOF before boot notification!")
+        elif msg.strip() != b"READY":
+            raise VMBootError(f"Received invalid boot notification: {msg}")
 
     try:
         await asyncio.wait_for(
