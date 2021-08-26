@@ -57,6 +57,7 @@ image.layer(
         # Without an rpms_install, /var/lib/rpm/ won't exist.
         # This prevents subvol-rpm-compare from querying or installing rpms.
         image.rpms_install(["rpm-test-milk"]),
+        image.rpms_install(["rpm-test-mice"]),
     ],
     flavor = "antlir_test",
 )
@@ -167,8 +168,14 @@ image.layer(
 image.layer(
     name = "test-subvol-rpm-compare-leaf",
     parent_layer = ":leaf",
-    features = [image.rpms_remove_if_exists(["rpm-test-milk"])],
+    features = [
+        image.rpms_remove_if_exists(["rpm-test-milk"]),
+        image.rpms_install(["rpm-test-mice"]),
+    ],
     flavor = "antlir_test",
+    flavor_config_override = image.opts(
+        rpm_repo_snapshot = "//antlir/rpm:rpm-replay-repo-snapshot-for-tests",
+    ),
 )
 
 python_unittest(

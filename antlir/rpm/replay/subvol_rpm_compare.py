@@ -101,7 +101,9 @@ def _gen_nevras_from_installer_output(
     requested_nevras: Set[NEVRA],
 ) -> Iterator[NEVRA]:
     # `yum` and `dnf` differ in how they format the "progress" part
-    installing_re = re.compile(r"^ +(Upgrading|Installing) +: +([^ ]+) ")
+    installing_re = re.compile(
+        r"^ +(Upgrading|Updating|Installing) +: +([^ ]+) "
+    )
     nvra_re = re.compile(r"^([a-zA-Z0-9._+-]+)-([^-]+)-([^-]+)\.([^.]+)$")
     nevra_re = re.compile(
         r"^([a-zA-Z0-9._+-]+)-([0-9]+):([^-]+)-([^-]+)\.([^.]+)$"
