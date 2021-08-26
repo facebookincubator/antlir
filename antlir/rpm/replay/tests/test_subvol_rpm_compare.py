@@ -14,6 +14,7 @@ from ..subvol_rpm_compare import (
     subvol_rpm_compare,
     SubvolsToCompare,
     subvol_rpm_compare_and_download,
+    NEVRA,
 )
 
 
@@ -51,7 +52,6 @@ class SubvolRpmCompareTestImpl:
         subvols = self.construct_subvols_to_compare()
         rd = subvol_rpm_compare(subvols=subvols)
         rpms_added_names = [nevra.name for nevra in rd.added_in_order]
-        rpms_removed_names = [nevra.name for nevra in rd.removed]
         rpms_with_deps = [
             "rpm-test-first",
             "rpm-test-second",
@@ -62,13 +62,30 @@ class SubvolRpmCompareTestImpl:
         self.assertIn(
             rpms_added_names,
             [
-                # Since `has-epoch` has no deps or dependents, it could
-                # go in either order
-                [*rpms_with_deps, "rpm-test-has-epoch"],
-                ["rpm-test-has-epoch", *rpms_with_deps],
+                # Since `has-epoch` and `mice` has no deps or dependents,
+                # it could go in any order
+                [*rpms_with_deps, "rpm-test-mice", "rpm-test-has-epoch"],
+                [*rpms_with_deps, "rpm-test-has-epoch", "rpm-test-mice"],
+                ["rpm-test-mice", "rpm-test-has-epoch", *rpms_with_deps],
+                ["rpm-test-has-epoch", "rpm-test-mice", *rpms_with_deps],
+                ["rpm-test-has-epoch", *rpms_with_deps, "rpm-test-mice"],
+                ["rpm-test-mice", *rpms_with_deps, "rpm-test-has-epoch"],
             ],
         )
-        self.assertEqual(["rpm-test-milk"], rpms_removed_names)
+
+        # mice should be upgraded to 0.2 version
+        self.assertIn(
+            NEVRA("rpm-test-mice", "0", "0.2", "a", "x86_64"), rd.added_in_order
+        )
+
+        self.assertEqual(
+            {
+                # mice upgrade causes 0.1 version to be removed
+                NEVRA("rpm-test-mice", "0", "0.1", "a", "x86_64"),
+                NEVRA("rpm-test-milk", "0", "2.71", "8", "x86_64"),
+            },
+            rd.removed,
+        )
 
     def test_subvol_rpm_compare_and_download(self):
         subvols = self.construct_subvols_to_compare()
@@ -87,6 +104,7 @@ class SubvolRpmCompareTestImpl:
                     "rpm-test-third-0-0.x86_64.rpm",
                     "rpm-test-fourth-0-0.x86_64.rpm",
                     "rpm-test-fifth-0-0.x86_64.rpm",
+                    "rpm-test-mice-0.2-a.x86_64.rpm",
                 },
                 downloaded_rpms,
             )

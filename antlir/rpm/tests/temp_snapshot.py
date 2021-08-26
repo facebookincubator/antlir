@@ -105,6 +105,9 @@ if __name__ == "__main__":
         "rpm-replay": {
             "cheese": Repo(
                 [
+                    # Rpm("mice", "0.1", "a") exists in the default repo;
+                    # so we use the below rpm to exercise an upgrade case.
+                    Rpm("mice", "0.2", "a"),
                     # Epoch affects rpm installer output;
                     # so we use "has-epoch" rpm to exercise that parsing case.
                     Rpm("has-epoch", "0", "0", epoch="1"),
