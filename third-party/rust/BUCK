@@ -56,7 +56,7 @@ rust_library(
         ":regex",
         ":rustyline",
         ":serde",
-        ":starlark_module",
+        ":starlark_derive",
         ":static_assertions",
         ":textwrap",
         ":thiserror",
@@ -64,8 +64,8 @@ rust_library(
 )
 
 rust_library(
-    name = "starlark_module",
-    srcs = glob(["starlark-rust/starlark_module/src/**/*.rs"]),
+    name = "starlark_derive",
+    srcs = glob(["starlark-rust/starlark_derive/src/**/*.rs"]),
     proc_macro = True,
     rustc_flags = [
         "-Aunused_braces",
