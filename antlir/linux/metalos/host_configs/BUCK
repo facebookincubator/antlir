@@ -29,7 +29,7 @@ rust_library(
             "serde",
             "serde_json",
             "starlark",
-            "starlark_module",
+            "starlark_derive",
         ],
         platform = "rust",
     ),
