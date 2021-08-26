@@ -2,4 +2,4 @@
 # workload-pre.target will ensure basic host configs are setup
 [Unit]
 Description=Host workload
-Requires=workload-pre.target
+Requires=multi-user.target workload-pre.target

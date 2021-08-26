@@ -11,7 +11,7 @@ there are some provided synchronization points for systemd services:
 - `core-services.target` should be used for any widely-used services that
 workloads may depend on, but are not directly related to the workload themselves
 
-- `workload-pre.target` should be used for for any workload-specific setup. It
+- `workload-pre.target` should be used for any workload-specific setup. It
 is ordered `After=core-services.target`
 
 - `workload.target` should be used for the service(s) that constitute the host's
