@@ -326,20 +326,24 @@ async fn commit_test_results(
             let insert_result = "INSERT IGNORE INTO results (revision, target, test, passed)
                 VALUES (:revision, :target, :test, :passed)";
 
-            let select_last_3 = "SELECT test.passed as passed
-                FROM results test, runs run
-                WHERE test.target = :target
-                AND test.test = :test
-                AND run.revision = test.revision
-                ORDER BY run.time DESC
-                LIMIT 3";
+            let count_fail_in_last_3 = "
+                SELECT count(*) AS count
+                FROM (
+                    SELECT test.passed as passed
+                    FROM results test, runs run
+                    WHERE test.target = :target
+                    AND test.test = :test
+                    AND run.revision = test.revision
+                    ORDER BY run.time DESC
+                    LIMIT 3
+                ) WHERE passed = false";
 
             let update_disabled = "UPDATE tests
                 SET disabled = :disabled
                 WHERE target = :target
                 AND test = :test";
 
-            db.exec_drop(
+            db.drop_exec(
                 "INSERT INTO runs (revision)
                 VALUES (:revision)
                 ON DUPLICATE KEY UPDATE time = CURRENT_TIMESTAMP",
@@ -348,20 +352,21 @@ async fn commit_test_results(
                 },
             )
             .await?;
+
             for test in tests {
                 let passed = match test.status {
                     TestStatus::Pass => true,
                     _ => false,
                 };
 
-                db.exec_drop(
+                db.drop_exec(
                     insert_target,
                     params! {
                         "target" => &test.target,
                     },
                 )
                 .await?;
-                db.exec_drop(
+                db.drop_exec(
                     insert_test,
                     params! {
                         "target" => &test.target,
@@ -369,7 +374,7 @@ async fn commit_test_results(
                     },
                 )
                 .await?;
-                db.exec_drop(
+                db.drop_exec(
                     insert_result,
                     params! {
                         "revision" => &revision,
@@ -381,20 +386,17 @@ async fn commit_test_results(
                 .await?;
 
                 // auto-disable tests which, after this run, have failed 3 or more times in a row
-                let disabled = db
-                    .exec(
-                        select_last_3,
+                let (db, disabled) = db
+                    .first_exec(
+                        count_fail_in_last_3,
                         params! {
                             "target" => &test.target,
                             "test" => &test.unit
                         },
                     )
-                    .await?
-                    .into_iter()
-                    .filter(|passed: &bool| !passed)
-                    .count()
-                    >= 3;
-                db.exec_drop(
+                    .await?;
+                let disabled = disabled.unwrap_or(0) >= 3;
+                db.drop_exec(
                     update_disabled,
                     params! {
                         "target" => &test.target,
