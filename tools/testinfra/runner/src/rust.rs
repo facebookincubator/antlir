@@ -63,7 +63,7 @@ pub fn list_tests(spec: TestSpec) -> Vec<Test> {
         tests.push(Test {
             command: unit_command,
             target: spec.target.clone(),
-            unit: Some(unit.to_string()),
+            unit: unit.to_string(),
             labels: spec.labels.clone(),
             contacts: spec.contacts.clone(),
             kind: TestKind::Rust,

@@ -28,8 +28,8 @@ pub struct Test {
     /// Fully qualified buck test target.
     pub target: String,
 
-    /// Unit test inside target.
-    pub unit: Option<String>,
+    /// Test unit, defaults to "main" for singleton test targets.
+    pub unit: String,
 
     /// Labels/tags associated to this test.
     pub labels: HashSet<String>,
@@ -60,23 +60,23 @@ pub enum TestKind {
 /// Labels which mark buck test targets for automatic (and silent) exclusion.
 const EXCLUDED_LABELS: &[&str] = &["disabled", "exclude_test_if_transitive_dep"];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub enum TestStatus {
+    Pass,
+    Fail,
+    Disabled,
+}
+
+#[derive(Debug, Clone)]
 pub struct TestResult {
     pub target: String,
-    pub unit: Option<String>,
+    pub unit: String,
+    pub status: TestStatus,
     pub attempts: u32,
-    pub passed: bool,
     pub duration: Duration,
     pub stdout: String,
     pub stderr: String,
     pub contacts: HashSet<String>,
-}
-
-pub fn test_name(target: &String, unit: &Option<String>) -> String {
-    match unit {
-        None => target.clone(),
-        Some(unit) => target.clone() + "#" + &unit,
-    }
 }
 
 impl Test {
@@ -103,8 +103,8 @@ impl Test {
                 return TestResult {
                     target: self.target,
                     unit: self.unit,
+                    status: TestStatus::Pass,
                     attempts,
-                    passed: true,
                     duration,
                     stdout: out,
                     stderr: err,
@@ -119,8 +119,8 @@ impl Test {
                     return TestResult {
                         target: self.target,
                         unit: self.unit,
+                        status: TestStatus::Fail,
                         attempts,
-                        passed: false,
                         duration,
                         stdout: out,
                         stderr: err,
@@ -148,7 +148,7 @@ pub mod shell {
         let test = Test {
             command,
             target: spec.target,
-            unit: None,
+            unit: "main".to_string(),
             labels: spec.labels,
             contacts: spec.contacts,
             kind: TestKind::Shell,
