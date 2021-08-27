@@ -161,33 +161,11 @@ def _vm_unittest(
         **kwargs
     )
 
-    # Build an image layer + package containing the actual test binary
-    actual_test_layer = "{}__test-binary-layer".format(name)
-    image.layer(
-        name = actual_test_layer,
-        features = [
-            image.install_buck_runnable(":" + actual_test_binary, "/test"),
-            image.install_buck_runnable("//antlir/vm:wrap-in-vm-test-exec", "/wrap"),
-        ],
-        flavor = REPO_CFG.antlir_linux_flavor,
-    )
-
-    actual_test_image = "{}__test-binary-image".format(name)
-    image.package(
-        name = actual_test_image,
-        format = "btrfs",
-        layer = ":" + actual_test_layer,
-        loopback_opts = image.opts(
-            # Do not try and optimize this when building in mode/opt
-            minimize_size = False,
-        ),
-    )
-
     run_target = build_vm_run_target(
         name = "{}=vmtest".format(name),
         args = [
             "--test-binary $(location {})".format(shell.quote(":" + actual_test_binary)),
-            "--test-binary-image $(location {})".format(shell.quote(":" + actual_test_image)),
+            "--test-binary-wrapper $(location {})".format("//antlir/vm:wrap-in-vm-test-exec"),
             "--test-type {}".format(shell.quote(_RULE_TO_TEST_TYPE[unittest_rule])),
             # Always enable debug + console logging for better debugging
             # --append-console is a tricky one: it has to be before --debug so that any
