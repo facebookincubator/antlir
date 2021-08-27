@@ -13,3 +13,6 @@ LogFormatKeys server_ip server_port remote_ip remote_port pid session_id method
 LogFormatKeys cert_id cert_serial principal user session_state auth_successful
 LogFormatKeys start_time command
 LogFormatJson yes
+
+# Allow users with locked passwords to login
+UsePAM yes

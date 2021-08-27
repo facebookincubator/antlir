@@ -20,6 +20,8 @@ DEFAULT_MODULE_LIST = [
     "net/9p/9pnet.ko",
     "net/9p/9pnet_virtio.ko",
     "net/core/failover.ko",
+    "drivers/nvme/host/nvme.ko",
+    "drivers/nvme/host/nvme-core.ko",
 ]
 
 def initrd(kernel, module_list = None, visibility = None):
