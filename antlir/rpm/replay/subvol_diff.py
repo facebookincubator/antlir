@@ -18,6 +18,7 @@ log = get_logger()
 _PATHS_EXPECTED_TO_DIFFER = set()
 for p in [
     "etc/shadow",  # FIXME: Only "days since pwd change may differ"
+    "etc/ld.so.cache",
     "usr/lib/fontconfig/cache",
     "usr/share/fonts/.uuid",
     "usr/share/fonts/dejavu/.uuid",
