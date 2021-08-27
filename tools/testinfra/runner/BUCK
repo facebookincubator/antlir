@@ -12,7 +12,7 @@ rust_binary(
             "serde",
             "serde_json",
             "structopt",
-            "postgres",
+            "tokio",
         ],
         platform = "rust",
     ),
