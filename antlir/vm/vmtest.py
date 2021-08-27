@@ -24,15 +24,10 @@ from antlir.vm.vm_opts_t import vm_opts_t
 
 log = get_logger()
 
-_WRAP_IN_VM_TEST_BINARY = Path("/vmtest/wrap")
-_IN_VM_TEST_BINARY = Path("/vmtest/test")
-
 
 @contextlib.asynccontextmanager
 async def wrap_and_forward(
-    output: Path,
-    cmd: List[Union[Path, str]],
-    test_type: str,
+    output: Path, cmd: List[Union[Path, str]], test_type: str, wrapper: Path
 ):
     with open(output, "wb") as out:
         stop = asyncio.Event()
@@ -53,7 +48,7 @@ async def wrap_and_forward(
         async with await asyncio.start_unix_server(_handle, path=str(socket)):
             try:
                 yield [
-                    _WRAP_IN_VM_TEST_BINARY,
+                    wrapper,
                     "--socket",
                     socket,
                     "--test-type",
@@ -69,7 +64,7 @@ async def wrap_and_forward(
 
 @contextlib.asynccontextmanager
 async def do_not_wrap_cmd(
-    cmd: List[Union[Path, str]], env: Dict[Any, Any]
+    cmd: List[Union[Path, str]], env: Dict[Any, Any], wrapper: Path
 ) -> AsyncGenerator[
     Tuple[List[Union[Path, str]], Dict[Any, Any], Optional[Path]], None
 ]:
@@ -78,7 +73,9 @@ async def do_not_wrap_cmd(
 
 @contextlib.asynccontextmanager
 async def wrap_testpilot_python_cmd(
-    cmd: List[Union[Path, str]], env: Dict[Any, Any]
+    cmd: List[Union[Path, str]],
+    env: Dict[Any, Any],
+    wrapper: Path,
 ) -> AsyncGenerator[
     Tuple[List[Union[Path, str]], Dict[Any, Any], Optional[Path]], None
 ]:
@@ -98,6 +95,7 @@ async def wrap_testpilot_python_cmd(
             #   `List[Union[Path, str]]` and `List[str]`.
             cmd=[cmd[0]] + unparsed_args,
             test_type="pyunit",
+            wrapper=wrapper,
         ) as (cmd, socket):
             yield cmd, env, socket
 
@@ -106,6 +104,7 @@ async def wrap_testpilot_python_cmd(
 async def wrap_tpx_gtest_cmd(
     cmd: List[Union[Path, str]],
     env: Dict[Any, Any],
+    wrapper: Path,
 ) -> AsyncGenerator[
     Tuple[List[Union[Path, str]], Dict[Any, Any], Optional[Path]], None
 ]:
@@ -122,6 +121,7 @@ async def wrap_tpx_gtest_cmd(
             output=gtest_output,
             cmd=cmd,
             test_type="gtest",
+            wrapper=wrapper,
         ) as (cmd, socket):
             yield cmd, env, socket
 
@@ -145,7 +145,7 @@ class VMTestExecOpts(VMExecOpts):
     list_tests: Optional[Path] = None
     list_rust: bool = False
     test_binary: Path
-    test_binary_image: Path
+    test_binary_wrapper: Path
     test_type: str
 
     @classmethod
@@ -173,10 +173,9 @@ class VMTestExecOpts(VMExecOpts):
             required=True,
         )
         parser.add_argument(
-            "--test-binary-image",
+            "--test-binary-wrapper",
             type=Path,
-            help="Path to a btrfs loopback image that contains the test binary "
-            "to run",
+            help="Path to the test binary wrapper",
             required=True,
         )
         parser.add_argument(
@@ -219,7 +218,7 @@ async def run(
     list_rust: bool,
     setenv: List[str],
     test_binary: Path,
-    test_binary_image: Path,
+    test_binary_wrapper: Path,
     test_type: str,
 ) -> Optional[int]:
 
@@ -271,8 +270,7 @@ async def run(
     # listing tests
     returncode = 0
 
-    # Build shares to provide to the vm
-    shares = [BtrfsDisk(path=test_binary_image, mountpoint=Path("/vmtest"))]
+    shares = []
 
     if devel_layer and opts.kernel.artifacts.devel is None:
         raise Exception(
@@ -280,8 +278,6 @@ async def run(
         )
 
     if devel_layer:
-        # pyre-fixme[6]: Expected `Iterable[BtrfsDisk]` for 1st param but got
-        #  `Iterable[Plan9Export]`.
         shares += [
             Plan9Export(
                 # pyre-fixme[16]: `Optional` has no attribute `path`.
@@ -318,7 +314,7 @@ async def run(
         # because if a context manager doesn't yield *something* it will
         # throw an exception that this caller has to handle.
         if instance:
-            cmd: List[Union[Path, str]] = ["/vmtest/test"]
+            cmd: List[Union[Path, str]] = [test_binary]
             cmd.extend(list(extra))
 
             # find the correct rewrite command for the test type
@@ -337,7 +333,9 @@ async def run(
             # when executed, and forwards the writes into the FD over the
             # domain socket.  On this end, we are provided with the domain
             # socket path to forward over the ssh connection.
-            async with maybe_wrap_cmd(cmd=cmd, env=env) as (
+            async with maybe_wrap_cmd(
+                cmd=cmd, env=env, wrapper=test_binary_wrapper
+            ) as (
                 cmd,
                 env,
                 socket,
