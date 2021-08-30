@@ -34,7 +34,7 @@ rust_library(
         "-Aunused_braces",
         "-Wbare_trait_objects",
         "-Wellipsis_inclusive_range_patterns",
-        "-Dnon_fmt_panic",
+        "-Dnon_fmt_panics",
         "-Dunconditional_recursion",
     ],
     unittests = False,
@@ -197,6 +197,12 @@ archive(
 )
 
 archive(
+    name = "adler32-1.2.0--archive",
+    sha256 = "aae1277d39aeec15cb388266ecc24b11c80469deae6067e17a1a7aa9e5c1f234",
+    url = "https://static.crates.io/crates/adler32/adler32-1.2.0.crate",
+)
+
+archive(
     name = "ahash-0.7.4--archive",
     sha256 = "43bb833f0bf979d8475d38fbf09ed3b8a55e1885fe93ad3f93239fc6a4f17b98",
     url = "https://static.crates.io/crates/ahash/ahash-0.7.4.crate",
@@ -230,6 +236,12 @@ archive(
     name = "argv-0.1.2--archive",
     sha256 = "87b48bbc752e97f1b6d7f237c0fd50056f19417e30b10121d4065d1459270e1d",
     url = "https://static.crates.io/crates/argv/argv-0.1.2.crate",
+)
+
+archive(
+    name = "arrayvec-0.5.2--archive",
+    sha256 = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b",
+    url = "https://static.crates.io/crates/arrayvec/arrayvec-0.5.2.crate",
 )
 
 archive(
@@ -290,6 +302,12 @@ archive(
     name = "beef-0.4.4--archive",
     sha256 = "474a626a67200bd107d44179bb3d4fc61891172d11696609264589be6a0e6a43",
     url = "https://static.crates.io/crates/beef/beef-0.4.4.crate",
+)
+
+archive(
+    name = "bigdecimal-0.1.2--archive",
+    sha256 = "1374191e2dd25f9ae02e3aa95041ed5d747fc77b3c102b49fe2dd9a8117a6244",
+    url = "https://static.crates.io/crates/bigdecimal/bigdecimal-0.1.2.crate",
 )
 
 archive(
@@ -359,6 +377,12 @@ archive(
 )
 
 archive(
+    name = "bytes-0.4.12--archive",
+    sha256 = "206fdffcfa2df7cbe15601ef46c813fce0965eb3286db6b56c583b814b51c81c",
+    url = "https://static.crates.io/crates/bytes/bytes-0.4.12.crate",
+)
+
+archive(
     name = "bytes-0.5.6--archive",
     sha256 = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38",
     url = "https://static.crates.io/crates/bytes/bytes-0.5.6.crate",
@@ -419,6 +443,18 @@ archive(
 )
 
 archive(
+    name = "crc32fast-1.2.0--archive",
+    sha256 = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1",
+    url = "https://static.crates.io/crates/crc32fast/crc32fast-1.2.0.crate",
+)
+
+archive(
+    name = "crossbeam-0.7.3--archive",
+    sha256 = "69323bff1fb41c635347b8ead484a5ca6c3f11914d784170b158d8449ab07f8e",
+    url = "https://static.crates.io/crates/crossbeam/crossbeam-0.7.3.crate",
+)
+
+archive(
     name = "crossbeam-channel-0.4.4--archive",
     sha256 = "b153fe7cbef478c567df0f972e02e6d736db11affe43dfc9c56a9374d1adfb87",
     url = "https://static.crates.io/crates/crossbeam-channel/crossbeam-channel-0.4.4.crate",
@@ -431,15 +467,33 @@ archive(
 )
 
 archive(
+    name = "crossbeam-deque-0.7.3--archive",
+    sha256 = "9f02af974daeee82218205558e51ec8768b48cf524bd01d550abe5573a608285",
+    url = "https://static.crates.io/crates/crossbeam-deque/crossbeam-deque-0.7.3.crate",
+)
+
+archive(
     name = "crossbeam-deque-0.8.0--archive",
     sha256 = "94af6efb46fef72616855b036a624cf27ba656ffc9be1b9a3c931cfc7749a9a9",
     url = "https://static.crates.io/crates/crossbeam-deque/crossbeam-deque-0.8.0.crate",
 )
 
 archive(
+    name = "crossbeam-epoch-0.8.2--archive",
+    sha256 = "058ed274caafc1f60c4997b5fc07bf7dc7cca454af7c6e81edffe5f33f70dace",
+    url = "https://static.crates.io/crates/crossbeam-epoch/crossbeam-epoch-0.8.2.crate",
+)
+
+archive(
     name = "crossbeam-epoch-0.9.1--archive",
     sha256 = "a1aaa739f95311c2c7887a76863f500026092fb1dce0161dab577e559ef3569d",
     url = "https://static.crates.io/crates/crossbeam-epoch/crossbeam-epoch-0.9.1.crate",
+)
+
+archive(
+    name = "crossbeam-queue-0.2.3--archive",
+    sha256 = "774ba60a54c213d409d5353bda12d49cd68d14e45036a285234c8d6f91f92570",
+    url = "https://static.crates.io/crates/crossbeam-queue/crossbeam-queue-0.2.3.crate",
 )
 
 archive(
@@ -641,9 +695,27 @@ archive(
 )
 
 archive(
+    name = "flate2-1.0.14--archive",
+    sha256 = "2cfff41391129e0a856d6d822600b8d71179d46879e310417eb9c762eb178b42",
+    url = "https://static.crates.io/crates/flate2/flate2-1.0.14.crate",
+)
+
+archive(
     name = "fnv-1.0.7--archive",
     sha256 = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1",
     url = "https://static.crates.io/crates/fnv/fnv-1.0.7.crate",
+)
+
+archive(
+    name = "foreign-types-0.3.2--archive",
+    sha256 = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1",
+    url = "https://static.crates.io/crates/foreign-types/foreign-types-0.3.2.crate",
+)
+
+archive(
+    name = "foreign-types-shared-0.1.1--archive",
+    sha256 = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b",
+    url = "https://static.crates.io/crates/foreign-types-shared/foreign-types-shared-0.1.1.crate",
 )
 
 archive(
@@ -923,6 +995,18 @@ archive(
 )
 
 archive(
+    name = "lexical-5.2.0--archive",
+    sha256 = "a28ff8a57641758c89a37b2d28556a68978b3ea3f709f39953e153acea3dbacf",
+    url = "https://static.crates.io/crates/lexical/lexical-5.2.0.crate",
+)
+
+archive(
+    name = "lexical-core-0.7.6--archive",
+    sha256 = "6607c62aa161d23d17a9072cc5da0be67cdfc89d3afb1e8d9c842bebc2525ffe",
+    url = "https://static.crates.io/crates/lexical-core/lexical-core-0.7.6.crate",
+)
+
+archive(
     name = "libc-0.2.98--archive",
     sha256 = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790",
     url = "https://static.crates.io/crates/libc/libc-0.2.98.crate",
@@ -932,6 +1016,12 @@ archive(
     name = "libm-0.2.1--archive",
     sha256 = "c7d73b3f436185384286bd8098d17ec07c9a7d2388a6599f824d8502b529702a",
     url = "https://static.crates.io/crates/libm/libm-0.2.1.crate",
+)
+
+archive(
+    name = "libz-sys-1.1.2--archive",
+    sha256 = "602113192b08db8f38796c4e85c39e960c145965140e918018bcde1952429655",
+    url = "https://static.crates.io/crates/libz-sys/libz-sys-1.1.2.crate",
 )
 
 archive(
@@ -1007,6 +1097,12 @@ archive(
 )
 
 archive(
+    name = "memoffset-0.5.6--archive",
+    sha256 = "043175f069eda7b85febe4a74abbaeff828d9f8b448515d3151a14a3542811aa",
+    url = "https://static.crates.io/crates/memoffset/memoffset-0.5.6.crate",
+)
+
+archive(
     name = "memoffset-0.6.4--archive",
     sha256 = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9",
     url = "https://static.crates.io/crates/memoffset/memoffset-0.6.4.crate",
@@ -1022,6 +1118,12 @@ archive(
     name = "mime_guess-2.0.3--archive",
     sha256 = "2684d4c2e97d99848d30b324b00c8fcc7e5c897b7cbb5819b09e7c90e8baf212",
     url = "https://static.crates.io/crates/mime_guess/mime_guess-2.0.3.crate",
+)
+
+archive(
+    name = "miniz_oxide-0.3.7--archive",
+    sha256 = "791daaae1ed6889560f8c4359194f56648355540573244a5448a83ba1ecc7435",
+    url = "https://static.crates.io/crates/miniz_oxide/miniz_oxide-0.3.7.crate",
 )
 
 archive(
@@ -1043,6 +1145,12 @@ archive(
 )
 
 archive(
+    name = "mio-named-pipes-0.1.7--archive",
+    sha256 = "0840c1c50fd55e521b247f949c241c9997709f23bd7f023b9762cd561e935656",
+    url = "https://static.crates.io/crates/mio-named-pipes/mio-named-pipes-0.1.7.crate",
+)
+
+archive(
     name = "mio-uds-0.6.8--archive",
     sha256 = "afcb699eb26d4332647cc848492bbc15eafb26f08d0304550d5aa1f612e066f0",
     url = "https://static.crates.io/crates/mio-uds/mio-uds-0.6.8.crate",
@@ -1052,6 +1160,24 @@ archive(
     name = "multipart-0.17.0--archive",
     sha256 = "8209c33c951f07387a8497841122fc6f712165e3f9bda3e6be4645b58188f676",
     url = "https://static.crates.io/crates/multipart/multipart-0.17.0.crate",
+)
+
+archive(
+    name = "mysql_async-0.23.1--archive",
+    sha256 = "2437d3b8ce11d743be7adfbdc5092f6046141b78677b1e3bc9e914d3d1a4c744",
+    url = "https://static.crates.io/crates/mysql_async/mysql_async-0.23.1.crate",
+)
+
+archive(
+    name = "mysql_common-0.22.2--archive",
+    sha256 = "c529a525c62e4788cff3a4557b652e2efd04eb3171da4ae2792031499f96442f",
+    url = "https://static.crates.io/crates/mysql_common/mysql_common-0.22.2.crate",
+)
+
+archive(
+    name = "native-tls-0.2.4--archive",
+    sha256 = "2b0d88c06fe90d5ee94048ba40409ef1d9315d86f6f38c2efdaad4fb50c58b2d",
+    url = "https://static.crates.io/crates/native-tls/native-tls-0.2.4.crate",
 )
 
 archive(
@@ -1076,6 +1202,12 @@ archive(
     name = "nix-0.20.0--archive",
     sha256 = "fa9b4819da1bc61c0ea48b63b7bc8604064dd43013e7cc325df098d49cd7c18a",
     url = "https://static.crates.io/crates/nix/nix-0.20.0.crate",
+)
+
+archive(
+    name = "num-bigint-0.2.6--archive",
+    sha256 = "090c7f9998ee0ff65aa5b723e4009f7b217707f1fb5ea551329cc4d6231fb304",
+    url = "https://static.crates.io/crates/num-bigint/num-bigint-0.2.6.crate",
 )
 
 archive(
@@ -1127,9 +1259,21 @@ archive(
 )
 
 archive(
+    name = "openssl-0.10.35--archive",
+    sha256 = "549430950c79ae24e6d02e0b7404534ecf311d94cc9f861e9e4020187d13d885",
+    url = "https://static.crates.io/crates/openssl/openssl-0.10.35.crate",
+)
+
+archive(
     name = "openssl-probe-0.1.2--archive",
     sha256 = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de",
     url = "https://static.crates.io/crates/openssl-probe/openssl-probe-0.1.2.crate",
+)
+
+archive(
+    name = "openssl-sys-0.9.65--archive",
+    sha256 = "7a7907e3bfa08bb85105209cdfcb6c63d109f8f6c1ed6ca318fff5c1853fbc1d",
+    url = "https://static.crates.io/crates/openssl-sys/openssl-sys-0.9.65.crate",
 )
 
 archive(
@@ -1469,6 +1613,12 @@ archive(
 )
 
 archive(
+    name = "rust_decimal-1.8.1--archive",
+    sha256 = "c9e81662973c7a8d9663e64a0de4cd642b89a21d64966e3d99606efdc5fb0cc6",
+    url = "https://static.crates.io/crates/rust_decimal/rust_decimal-1.8.1.crate",
+)
+
+archive(
     name = "rustc-demangle-0.1.20--archive",
     sha256 = "dead70b0b5e03e9c814bcb6b01e03e68f7c57a80aa48c72ec92152ab3e818d49",
     url = "https://static.crates.io/crates/rustc-demangle/rustc-demangle-0.1.20.crate",
@@ -1577,6 +1727,12 @@ archive(
 )
 
 archive(
+    name = "sha1-0.6.0--archive",
+    sha256 = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d",
+    url = "https://static.crates.io/crates/sha1/sha1-0.6.0.crate",
+)
+
+archive(
     name = "sha2-0.8.2--archive",
     sha256 = "a256f46ea78a0c0d9ff00077504903ac881a1dafdc20da66545699e7776b3e69",
     url = "https://static.crates.io/crates/sha2/sha2-0.8.2.crate",
@@ -1643,6 +1799,12 @@ archive(
 )
 
 archive(
+    name = "standback-0.2.10--archive",
+    sha256 = "33a71ea1ea5f8747d1af1979bfb7e65c3a025a70609f04ceb78425bc5adad8e6",
+    url = "https://static.crates.io/crates/standback/standback-0.2.10.crate",
+)
+
+archive(
     name = "static_assertions-1.1.0--archive",
     sha256 = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f",
     url = "https://static.crates.io/crates/static_assertions/static_assertions-1.1.0.crate",
@@ -1685,9 +1847,9 @@ archive(
 )
 
 archive(
-    name = "synstructure-0.12.4--archive",
-    sha256 = "b834f2d66f734cb897113e34aaff2f1ab4719ca946f9a7358dba8f8064148701",
-    url = "https://static.crates.io/crates/synstructure/synstructure-0.12.4.crate",
+    name = "synstructure-0.12.5--archive",
+    sha256 = "474aaa926faa1603c40b7885a9eaea29b444d1cb2850cb7c0e37bb1a4182f4fa",
+    url = "https://static.crates.io/crates/synstructure/synstructure-0.12.5.crate",
 )
 
 archive(
@@ -1763,6 +1925,24 @@ archive(
 )
 
 archive(
+    name = "time-0.2.22--archive",
+    sha256 = "55b7151c9065e80917fbf285d9a5d1432f60db41d170ccafc749a136b41a93af",
+    url = "https://static.crates.io/crates/time/time-0.2.22.crate",
+)
+
+archive(
+    name = "time-macros-0.1.1--archive",
+    sha256 = "957e9c6e26f12cb6d0dd7fc776bb67a706312e7299aed74c8dd5b17ebb27e2f1",
+    url = "https://static.crates.io/crates/time-macros/time-macros-0.1.1.crate",
+)
+
+archive(
+    name = "time-macros-impl-0.1.1--archive",
+    sha256 = "e5c3be1edfad6027c69f5491cf4cb310d1a71ecd6af742788c6ff8bced86b8fa",
+    url = "https://static.crates.io/crates/time-macros-impl/time-macros-impl-0.1.1.crate",
+)
+
+archive(
     name = "tinyvec-0.3.4--archive",
     sha256 = "238ce071d267c5710f9d31451efec16c5ee22de34df17cc05e56cbc92e967117",
     url = "https://static.crates.io/crates/tinyvec/tinyvec-0.3.4.crate",
@@ -1778,6 +1958,12 @@ archive(
     name = "tokio-1.7.1--archive",
     sha256 = "5fb2ed024293bb19f7a5dc54fe83bf86532a44c12a2bb8ba40d64a4509395ca2",
     url = "https://static.crates.io/crates/tokio/tokio-1.7.1.crate",
+)
+
+archive(
+    name = "tokio-io-0.1.13--archive",
+    sha256 = "57fc868aae093479e3131e3d165c93b1c7474109d13c90ec0dda2a1bbfff0674",
+    url = "https://static.crates.io/crates/tokio-io/tokio-io-0.1.13.crate",
 )
 
 archive(
@@ -1805,9 +1991,21 @@ archive(
 )
 
 archive(
+    name = "tokio-tls-0.3.1--archive",
+    sha256 = "9a70f4fcd7b3b24fb194f837560168208f669ca8cb70d0c4b862944452396343",
+    url = "https://static.crates.io/crates/tokio-tls/tokio-tls-0.3.1.crate",
+)
+
+archive(
     name = "tokio-tungstenite-0.13.0--archive",
     sha256 = "e1a5f475f1b9d077ea1017ecbc60890fda8e54942d680ca0b1d2b47cfa2d861b",
     url = "https://static.crates.io/crates/tokio-tungstenite/tokio-tungstenite-0.13.0.crate",
+)
+
+archive(
+    name = "tokio-util-0.2.0--archive",
+    sha256 = "571da51182ec208780505a32528fc5512a8fe1443ab960b3f2f3ef093cd16930",
+    url = "https://static.crates.io/crates/tokio-util/tokio-util-0.2.0.crate",
 )
 
 archive(
@@ -1895,6 +2093,12 @@ archive(
 )
 
 archive(
+    name = "twox-hash-1.5.0--archive",
+    sha256 = "3bfd5b7557925ce778ff9b9ef90e3ade34c524b5ff10e239c69a42d546d2af56",
+    url = "https://static.crates.io/crates/twox-hash/twox-hash-1.5.0.crate",
+)
+
+archive(
     name = "typenum-1.12.0--archive",
     sha256 = "373c8a200f9e67a0c95e62a4f52fbf80c23b4381c05a17845531982fa99e6b33",
     url = "https://static.crates.io/crates/typenum/typenum-1.12.0.crate",
@@ -1949,9 +2153,9 @@ archive(
 )
 
 archive(
-    name = "url-2.2.0--archive",
-    sha256 = "5909f2b0817350449ed73e8bcd81c8c3c8d9a7a5d8acba4b27db277f1868976e",
-    url = "https://static.crates.io/crates/url/url-2.2.0.crate",
+    name = "url-2.2.2--archive",
+    sha256 = "a507c383b2d33b5fc35d1861e77e6b383d158b2da5e14fe51b83dfedf6fd578c",
+    url = "https://static.crates.io/crates/url/url-2.2.2.crate",
 )
 
 archive(
@@ -1970,6 +2174,12 @@ archive(
     name = "utf8parse-0.2.0--archive",
     sha256 = "936e4b492acfd135421d8dca4b1aa80a7bfc26e702ef3af710e0752684df5372",
     url = "https://static.crates.io/crates/utf8parse/utf8parse-0.2.0.crate",
+)
+
+archive(
+    name = "uuid-0.8.1--archive",
+    sha256 = "9fde2f6a4bea1d6e007c4ad38c6839fa71cbb63b6dbf5b595aa38dc9b1093c11",
+    url = "https://static.crates.io/crates/uuid/uuid-0.8.1.crate",
 )
 
 archive(
@@ -2061,6 +2271,28 @@ third_party_rust_library(
     env = {
     },
     features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "adler32-1.2.0",
+    srcs = ["adler32-1.2.0/src/lib.rs"],
+    archive = ":adler32-1.2.0--archive",
+    crate = "adler32",
+    crate_root = "adler32-1.2.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
     mapped_srcs = {
     },
     named_deps = {
@@ -2255,6 +2487,36 @@ third_party_rust_library(
     env = {
     },
     features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "arrayvec",
+    srcs = [
+        "arrayvec-0.5.2/src/array.rs",
+        "arrayvec-0.5.2/src/array_string.rs",
+        "arrayvec-0.5.2/src/char.rs",
+        "arrayvec-0.5.2/src/errors.rs",
+        "arrayvec-0.5.2/src/lib.rs",
+        "arrayvec-0.5.2/src/maybe_uninit.rs",
+    ],
+    archive = ":arrayvec-0.5.2--archive",
+    crate = "arrayvec",
+    crate_root = "arrayvec-0.5.2/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "array-sizes-33-128",
+        "default",
+        "std",
+    ],
     mapped_srcs = {
     },
     named_deps = {
@@ -2597,6 +2859,33 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     deps = [],
+)
+
+third_party_rust_library(
+    name = "bigdecimal-0.1.2",
+    srcs = [
+        "bigdecimal-0.1.2/src/lib.rs",
+        "bigdecimal-0.1.2/src/macros.rs",
+    ],
+    archive = ":bigdecimal-0.1.2--archive",
+    crate = "bigdecimal",
+    crate_root = "bigdecimal-0.1.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = ["serde"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":num-bigint-0.2.6",
+        ":num-integer-0.1.44",
+        ":num-traits",
+        ":serde",
+    ],
 )
 
 third_party_rust_library(
@@ -2999,6 +3288,50 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "bytes-old",
+    srcs = [
+        "bytes-0.4.12/src/buf/buf.rs",
+        "bytes-0.4.12/src/buf/buf_mut.rs",
+        "bytes-0.4.12/src/buf/chain.rs",
+        "bytes-0.4.12/src/buf/from_buf.rs",
+        "bytes-0.4.12/src/buf/into_buf.rs",
+        "bytes-0.4.12/src/buf/iter.rs",
+        "bytes-0.4.12/src/buf/mod.rs",
+        "bytes-0.4.12/src/buf/reader.rs",
+        "bytes-0.4.12/src/buf/take.rs",
+        "bytes-0.4.12/src/buf/vec_deque.rs",
+        "bytes-0.4.12/src/buf/writer.rs",
+        "bytes-0.4.12/src/bytes.rs",
+        "bytes-0.4.12/src/debug.rs",
+        "bytes-0.4.12/src/either.rs",
+        "bytes-0.4.12/src/lib.rs",
+        "bytes-0.4.12/src/serde.rs",
+    ],
+    archive = ":bytes-0.4.12--archive",
+    crate = "bytes",
+    crate_root = "bytes-0.4.12/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "either",
+        "serde",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":byteorder",
+        ":either",
+        ":iovec-0.1.4",
+        ":serde",
+    ],
+)
+
+third_party_rust_library(
     name = "cfg-if",
     srcs = ["cfg-if-0.1.10/src/lib.rs"],
     archive = ":cfg-if-0.1.10--archive",
@@ -3292,6 +3625,103 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "crc32fast-1.2.0",
+    srcs = [
+        "crc32fast-1.2.0/src/baseline.rs",
+        "crc32fast-1.2.0/src/combine.rs",
+        "crc32fast-1.2.0/src/lib.rs",
+        "crc32fast-1.2.0/src/specialized/aarch64.rs",
+        "crc32fast-1.2.0/src/specialized/mod.rs",
+        "crc32fast-1.2.0/src/specialized/pclmulqdq.rs",
+        "crc32fast-1.2.0/src/table.rs",
+    ],
+    archive = ":crc32fast-1.2.0--archive",
+    crate = "crc32fast",
+    crate_root = "crc32fast-1.2.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :crc32fast-1.2.0-build-script-build-args)",
+    ],
+    deps = [":cfg-if"],
+)
+
+third_party_rust_binary(
+    name = "crc32fast-1.2.0-build-script-build",
+    srcs = [
+        "crc32fast-1.2.0/benches/bench.rs",
+        "crc32fast-1.2.0/build.rs",
+        "crc32fast-1.2.0/src/baseline.rs",
+        "crc32fast-1.2.0/src/combine.rs",
+        "crc32fast-1.2.0/src/lib.rs",
+        "crc32fast-1.2.0/src/specialized/aarch64.rs",
+        "crc32fast-1.2.0/src/specialized/mod.rs",
+        "crc32fast-1.2.0/src/specialized/pclmulqdq.rs",
+        "crc32fast-1.2.0/src/table.rs",
+    ],
+    archive = ":crc32fast-1.2.0--archive",
+    crate = "build_script_build",
+    crate_root = "crc32fast-1.2.0/build.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "crossbeam-0.7.3",
+    srcs = ["crossbeam-0.7.3/src/lib.rs"],
+    archive = ":crossbeam-0.7.3--archive",
+    crate = "crossbeam",
+    crate_root = "crossbeam-0.7.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "crossbeam-channel",
+        "crossbeam-deque",
+        "crossbeam-queue",
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":cfg-if",
+        ":crossbeam-channel-0.4.4",
+        ":crossbeam-deque-0.7.3",
+        ":crossbeam-epoch-0.8.2",
+        ":crossbeam-queue-0.2.3",
+        ":crossbeam-utils-0.7.2",
+    ],
+)
+
+third_party_rust_library(
     name = "crossbeam-channel",
     srcs = [
         "crossbeam-channel-0.5.0/src/channel.rs",
@@ -3374,6 +3804,29 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "crossbeam-deque-0.7.3",
+    srcs = ["crossbeam-deque-0.7.3/src/lib.rs"],
+    archive = ":crossbeam-deque-0.7.3--archive",
+    crate = "crossbeam_deque",
+    crate_root = "crossbeam-deque-0.7.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":crossbeam-epoch-0.8.2",
+        ":crossbeam-utils-0.7.2",
+        ":maybe-uninit-2.0.0",
+    ],
+)
+
+third_party_rust_library(
     name = "crossbeam-deque-0.8.0",
     srcs = [
         "crossbeam-deque-0.8.0/src/deque.rs",
@@ -3402,6 +3855,92 @@ third_party_rust_library(
         ":crossbeam-epoch-0.9.1",
         ":crossbeam-utils-0.8.0",
     ],
+)
+
+third_party_rust_library(
+    name = "crossbeam-epoch-0.8.2",
+    srcs = [
+        "crossbeam-epoch-0.8.2/src/atomic.rs",
+        "crossbeam-epoch-0.8.2/src/collector.rs",
+        "crossbeam-epoch-0.8.2/src/default.rs",
+        "crossbeam-epoch-0.8.2/src/deferred.rs",
+        "crossbeam-epoch-0.8.2/src/epoch.rs",
+        "crossbeam-epoch-0.8.2/src/guard.rs",
+        "crossbeam-epoch-0.8.2/src/internal.rs",
+        "crossbeam-epoch-0.8.2/src/lib.rs",
+        "crossbeam-epoch-0.8.2/src/sync/list.rs",
+        "crossbeam-epoch-0.8.2/src/sync/mod.rs",
+        "crossbeam-epoch-0.8.2/src/sync/queue.rs",
+    ],
+    archive = ":crossbeam-epoch-0.8.2--archive",
+    crate = "crossbeam_epoch",
+    crate_root = "crossbeam-epoch-0.8.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "lazy_static",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :crossbeam-epoch-0.8.2-build-script-build-args)",
+    ],
+    deps = [
+        ":cfg-if",
+        ":crossbeam-utils-0.7.2",
+        ":lazy_static",
+        ":maybe-uninit-2.0.0",
+        ":memoffset-0.5.6",
+        ":scopeguard",
+    ],
+)
+
+third_party_rust_binary(
+    name = "crossbeam-epoch-0.8.2-build-script-build",
+    srcs = [
+        "crossbeam-epoch-0.8.2/benches/defer.rs",
+        "crossbeam-epoch-0.8.2/benches/flush.rs",
+        "crossbeam-epoch-0.8.2/benches/pin.rs",
+        "crossbeam-epoch-0.8.2/build.rs",
+        "crossbeam-epoch-0.8.2/examples/sanitize.rs",
+        "crossbeam-epoch-0.8.2/examples/treiber_stack.rs",
+        "crossbeam-epoch-0.8.2/src/atomic.rs",
+        "crossbeam-epoch-0.8.2/src/collector.rs",
+        "crossbeam-epoch-0.8.2/src/default.rs",
+        "crossbeam-epoch-0.8.2/src/deferred.rs",
+        "crossbeam-epoch-0.8.2/src/epoch.rs",
+        "crossbeam-epoch-0.8.2/src/guard.rs",
+        "crossbeam-epoch-0.8.2/src/internal.rs",
+        "crossbeam-epoch-0.8.2/src/lib.rs",
+        "crossbeam-epoch-0.8.2/src/sync/list.rs",
+        "crossbeam-epoch-0.8.2/src/sync/mod.rs",
+        "crossbeam-epoch-0.8.2/src/sync/queue.rs",
+    ],
+    archive = ":crossbeam-epoch-0.8.2--archive",
+    crate = "build_script_build",
+    crate_root = "crossbeam-epoch-0.8.2/build.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "lazy_static",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -3443,6 +3982,37 @@ third_party_rust_library(
         ":lazy_static",
         ":memoffset",
         ":scopeguard",
+    ],
+)
+
+third_party_rust_library(
+    name = "crossbeam-queue-0.2.3",
+    srcs = [
+        "crossbeam-queue-0.2.3/src/array_queue.rs",
+        "crossbeam-queue-0.2.3/src/err.rs",
+        "crossbeam-queue-0.2.3/src/lib.rs",
+        "crossbeam-queue-0.2.3/src/seg_queue.rs",
+    ],
+    archive = ":crossbeam-queue-0.2.3--archive",
+    crate = "crossbeam_queue",
+    crate_root = "crossbeam-queue-0.2.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":cfg-if",
+        ":crossbeam-utils-0.7.2",
+        ":maybe-uninit-2.0.0",
     ],
 )
 
@@ -4721,6 +5291,64 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "flate2",
+    srcs = [
+        "flate2-1.0.14/src/bufreader.rs",
+        "flate2-1.0.14/src/crc.rs",
+        "flate2-1.0.14/src/deflate/bufread.rs",
+        "flate2-1.0.14/src/deflate/mod.rs",
+        "flate2-1.0.14/src/deflate/read.rs",
+        "flate2-1.0.14/src/deflate/write.rs",
+        "flate2-1.0.14/src/ffi/c.rs",
+        "flate2-1.0.14/src/ffi/mod.rs",
+        "flate2-1.0.14/src/ffi/rust.rs",
+        "flate2-1.0.14/src/gz/bufread.rs",
+        "flate2-1.0.14/src/gz/mod.rs",
+        "flate2-1.0.14/src/gz/read.rs",
+        "flate2-1.0.14/src/gz/write.rs",
+        "flate2-1.0.14/src/lib.rs",
+        "flate2-1.0.14/src/mem.rs",
+        "flate2-1.0.14/src/zio.rs",
+        "flate2-1.0.14/src/zlib/bufread.rs",
+        "flate2-1.0.14/src/zlib/mod.rs",
+        "flate2-1.0.14/src/zlib/read.rs",
+        "flate2-1.0.14/src/zlib/write.rs",
+    ],
+    archive = ":flate2-1.0.14--archive",
+    crate = "flate2",
+    crate_root = "flate2-1.0.14/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "any_zlib",
+        "default",
+        "futures",
+        "libz-sys",
+        "miniz_oxide",
+        "rust_backend",
+        "tokio",
+        "tokio-io",
+        "zlib",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":cfg-if",
+        ":crc32fast-1.2.0",
+        ":futures-old",
+        ":libc",
+        ":libz-sys-1.1.2",
+        ":miniz_oxide-0.3.7",
+        ":tokio-io",
+    ],
+)
+
+third_party_rust_library(
     name = "fnv",
     srcs = ["fnv-1.0.7/lib.rs"],
     archive = ":fnv-1.0.7--archive",
@@ -4733,6 +5361,44 @@ third_party_rust_library(
         "default",
         "std",
     ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "foreign-types",
+    srcs = ["foreign-types-0.3.2/src/lib.rs"],
+    archive = ":foreign-types-0.3.2--archive",
+    crate = "foreign_types",
+    crate_root = "foreign-types-0.3.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":foreign-types-shared-0.1.1"],
+)
+
+third_party_rust_library(
+    name = "foreign-types-shared-0.1.1",
+    srcs = ["foreign-types-shared-0.1.1/src/lib.rs"],
+    archive = ":foreign-types-shared-0.1.1--archive",
+    crate = "foreign_types_shared",
+    crate_root = "foreign-types-shared-0.1.1/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
     mapped_srcs = {
     },
     named_deps = {
@@ -7185,6 +7851,180 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "lexical-5.2.0",
+    srcs = ["lexical-5.2.0/src/lib.rs"],
+    archive = ":lexical-5.2.0--archive",
+    crate = "lexical",
+    crate_root = "lexical-5.2.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "correct",
+        "default",
+        "ryu",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":cfg-if",
+        ":lexical-core",
+    ],
+)
+
+third_party_rust_library(
+    name = "lexical-core",
+    srcs = [
+        "lexical-core-0.7.6/src/atof/algorithm/alias.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/bhcomp.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/bigcomp.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/bignum.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/cached.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/cached_float160.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/cached_float80.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/correct.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/errors.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/exponent.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/generic.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/ignore.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/interface.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/mod.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/permissive.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/standard.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/traits.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/trim.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/validate.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/incorrect.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/large_powers.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/large_powers_32.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/large_powers_64.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/math.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/mod.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/small_powers.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/small_powers_32.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/small_powers_64.rs",
+        "lexical-core-0.7.6/src/atof/api.rs",
+        "lexical-core-0.7.6/src/atof/mod.rs",
+        "lexical-core-0.7.6/src/atoi/api.rs",
+        "lexical-core-0.7.6/src/atoi/exponent.rs",
+        "lexical-core-0.7.6/src/atoi/generic.rs",
+        "lexical-core-0.7.6/src/atoi/mantissa.rs",
+        "lexical-core-0.7.6/src/atoi/mod.rs",
+        "lexical-core-0.7.6/src/atoi/shared.rs",
+        "lexical-core-0.7.6/src/float/convert.rs",
+        "lexical-core-0.7.6/src/float/float.rs",
+        "lexical-core-0.7.6/src/float/mantissa.rs",
+        "lexical-core-0.7.6/src/float/mod.rs",
+        "lexical-core-0.7.6/src/float/rounding.rs",
+        "lexical-core-0.7.6/src/float/shift.rs",
+        "lexical-core-0.7.6/src/ftoa/api.rs",
+        "lexical-core-0.7.6/src/ftoa/grisu2.rs",
+        "lexical-core-0.7.6/src/ftoa/grisu3.rs",
+        "lexical-core-0.7.6/src/ftoa/mod.rs",
+        "lexical-core-0.7.6/src/ftoa/radix.rs",
+        "lexical-core-0.7.6/src/ftoa/ryu.rs",
+        "lexical-core-0.7.6/src/itoa/api.rs",
+        "lexical-core-0.7.6/src/itoa/decimal.rs",
+        "lexical-core-0.7.6/src/itoa/generic.rs",
+        "lexical-core-0.7.6/src/itoa/mod.rs",
+        "lexical-core-0.7.6/src/itoa/naive.rs",
+        "lexical-core-0.7.6/src/lib.rs",
+        "lexical-core-0.7.6/src/util/algorithm.rs",
+        "lexical-core-0.7.6/src/util/assert.rs",
+        "lexical-core-0.7.6/src/util/cast.rs",
+        "lexical-core-0.7.6/src/util/config.rs",
+        "lexical-core-0.7.6/src/util/consume.rs",
+        "lexical-core-0.7.6/src/util/div128.rs",
+        "lexical-core-0.7.6/src/util/error.rs",
+        "lexical-core-0.7.6/src/util/format.rs",
+        "lexical-core-0.7.6/src/util/format/feature_format.rs",
+        "lexical-core-0.7.6/src/util/format/not_feature_format.rs",
+        "lexical-core-0.7.6/src/util/index.rs",
+        "lexical-core-0.7.6/src/util/iterator.rs",
+        "lexical-core-0.7.6/src/util/mask.rs",
+        "lexical-core-0.7.6/src/util/mod.rs",
+        "lexical-core-0.7.6/src/util/num.rs",
+        "lexical-core-0.7.6/src/util/perftools.rs",
+        "lexical-core-0.7.6/src/util/pow.rs",
+        "lexical-core-0.7.6/src/util/primitive.rs",
+        "lexical-core-0.7.6/src/util/result.rs",
+        "lexical-core-0.7.6/src/util/rounding.rs",
+        "lexical-core-0.7.6/src/util/sequence.rs",
+        "lexical-core-0.7.6/src/util/sign.rs",
+        "lexical-core-0.7.6/src/util/skip_value.rs",
+        "lexical-core-0.7.6/src/util/table.rs",
+        "lexical-core-0.7.6/src/util/test.rs",
+        "lexical-core-0.7.6/src/util/traits.rs",
+        "lexical-core-0.7.6/src/util/wrapped.rs",
+    ],
+    archive = ":lexical-core-0.7.6--archive",
+    crate = "lexical_core",
+    crate_root = "lexical-core-0.7.6/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "arrayvec",
+        "correct",
+        "default",
+        "format",
+        "ryu",
+        "static_assertions",
+        "std",
+        "table",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :lexical-core-0.7.6-build-script-build-args)",
+    ],
+    deps = [
+        ":arrayvec",
+        ":bitflags",
+        ":cfg-if-1.0.0",
+        ":ryu-1.0.5",
+        ":static_assertions",
+    ],
+)
+
+third_party_rust_binary(
+    name = "lexical-core-0.7.6-build-script-build",
+    srcs = ["lexical-core-0.7.6/build.rs"],
+    archive = ":lexical-core-0.7.6--archive",
+    crate = "build_script_build",
+    crate_root = "lexical-core-0.7.6/build.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "arrayvec",
+        "correct",
+        "default",
+        "format",
+        "ryu",
+        "static_assertions",
+        "std",
+        "table",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
     name = "libc",
     srcs = [
         "libc-0.2.98/src/fixed_width_ints.rs",
@@ -7731,6 +8571,29 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "libz-sys-1.1.2",
+    srcs = ["libz-sys-1.1.2/src/lib.rs"],
+    archive = ":libz-sys-1.1.2--archive",
+    crate = "libz_sys",
+    crate_root = "libz-sys-1.1.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "libc",
+        "stock-zlib",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":libc"],
+)
+
+third_party_rust_library(
     name = "link-cplusplus-1.0.3",
     srcs = ["link-cplusplus-1.0.3/src/lib.rs"],
     archive = ":link-cplusplus-1.0.3--archive",
@@ -8249,6 +9112,58 @@ third_party_rust_library(
     deps = [],
 )
 
+third_party_rust_library(
+    name = "memoffset-0.5.6",
+    srcs = [
+        "memoffset-0.5.6/src/lib.rs",
+        "memoffset-0.5.6/src/offset_of.rs",
+        "memoffset-0.5.6/src/raw_field.rs",
+        "memoffset-0.5.6/src/span_of.rs",
+    ],
+    archive = ":memoffset-0.5.6--archive",
+    crate = "memoffset",
+    crate_root = "memoffset-0.5.6/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :memoffset-0.5.6-build-script-build-args)",
+    ],
+    deps = [],
+)
+
+third_party_rust_binary(
+    name = "memoffset-0.5.6-build-script-build",
+    srcs = [
+        "memoffset-0.5.6/build.rs",
+        "memoffset-0.5.6/src/lib.rs",
+        "memoffset-0.5.6/src/offset_of.rs",
+        "memoffset-0.5.6/src/raw_field.rs",
+        "memoffset-0.5.6/src/span_of.rs",
+    ],
+    archive = ":memoffset-0.5.6--archive",
+    crate = "build_script_build",
+    crate_root = "memoffset-0.5.6/build.rs",
+    edition = "2015",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":autocfg-1.0.1"],
+)
+
 third_party_rust_binary(
     name = "memoffset-0.6.4-build-script-build",
     srcs = [
@@ -8357,6 +9272,36 @@ third_party_rust_binary(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     deps = [":unicase"],
+)
+
+third_party_rust_library(
+    name = "miniz_oxide-0.3.7",
+    srcs = [
+        "miniz_oxide-0.3.7/src/deflate/buffer.rs",
+        "miniz_oxide-0.3.7/src/deflate/core.rs",
+        "miniz_oxide-0.3.7/src/deflate/mod.rs",
+        "miniz_oxide-0.3.7/src/deflate/stream.rs",
+        "miniz_oxide-0.3.7/src/inflate/core.rs",
+        "miniz_oxide-0.3.7/src/inflate/mod.rs",
+        "miniz_oxide-0.3.7/src/inflate/output_buffer.rs",
+        "miniz_oxide-0.3.7/src/inflate/stream.rs",
+        "miniz_oxide-0.3.7/src/lib.rs",
+        "miniz_oxide-0.3.7/src/shared.rs",
+    ],
+    archive = ":miniz_oxide-0.3.7--archive",
+    crate = "miniz_oxide",
+    crate_root = "miniz_oxide-0.3.7/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":adler32-1.2.0"],
 )
 
 third_party_rust_library(
@@ -8551,6 +9496,28 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "mio-named-pipes-0.1.7",
+    srcs = [
+        "mio-named-pipes-0.1.7/src/from_raw_arc.rs",
+        "mio-named-pipes-0.1.7/src/lib.rs",
+    ],
+    archive = ":mio-named-pipes-0.1.7--archive",
+    crate = "mio_named_pipes",
+    crate_root = "mio-named-pipes-0.1.7/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
+)
+
+third_party_rust_library(
     name = "mio-uds-0.6.8",
     srcs = [
         "mio-uds-0.6.8/src/datagram.rs",
@@ -8631,6 +9598,173 @@ third_party_rust_library(
         ":safemem-0.3.3",
         ":tempfile",
         ":twoway-0.1.8",
+    ],
+)
+
+third_party_rust_library(
+    name = "mysql_async",
+    srcs = [
+        "mysql_async-0.23.1/src/conn/mod.rs",
+        "mysql_async-0.23.1/src/conn/pool/futures/disconnect_pool.rs",
+        "mysql_async-0.23.1/src/conn/pool/futures/get_conn.rs",
+        "mysql_async-0.23.1/src/conn/pool/futures/mod.rs",
+        "mysql_async-0.23.1/src/conn/pool/mod.rs",
+        "mysql_async-0.23.1/src/conn/pool/recycler.rs",
+        "mysql_async-0.23.1/src/conn/pool/ttl_check_inerval.rs",
+        "mysql_async-0.23.1/src/conn/stmt_cache.rs",
+        "mysql_async-0.23.1/src/connection_like/mod.rs",
+        "mysql_async-0.23.1/src/connection_like/read_packet.rs",
+        "mysql_async-0.23.1/src/connection_like/write_packet.rs",
+        "mysql_async-0.23.1/src/error.rs",
+        "mysql_async-0.23.1/src/io/async_tls.rs",
+        "mysql_async-0.23.1/src/io/futures/connecting_tcp_stream.rs",
+        "mysql_async-0.23.1/src/io/futures/mod.rs",
+        "mysql_async-0.23.1/src/io/futures/write_packet.rs",
+        "mysql_async-0.23.1/src/io/mod.rs",
+        "mysql_async-0.23.1/src/io/socket.rs",
+        "mysql_async-0.23.1/src/lib.rs",
+        "mysql_async-0.23.1/src/local_infile_handler/builtin.rs",
+        "mysql_async-0.23.1/src/local_infile_handler/mod.rs",
+        "mysql_async-0.23.1/src/macros.rs",
+        "mysql_async-0.23.1/src/opts.rs",
+        "mysql_async-0.23.1/src/queryable/mod.rs",
+        "mysql_async-0.23.1/src/queryable/query_result/mod.rs",
+        "mysql_async-0.23.1/src/queryable/stmt.rs",
+        "mysql_async-0.23.1/src/queryable/transaction.rs",
+    ],
+    archive = ":mysql_async-0.23.1--archive",
+    crate = "mysql_async",
+    crate_root = "mysql_async-0.23.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":bytes-05",
+        ":crossbeam-0.7.3",
+        ":futures-core",
+        ":futures-sink",
+        ":futures-util",
+        ":lazy_static",
+        ":mio-named-pipes-0.1.7",
+        ":mysql_common",
+        ":native-tls",
+        ":percent-encoding",
+        ":pin-project",
+        ":serde",
+        ":serde_json",
+        ":thiserror",
+        ":tokio-02",
+        ":tokio-tls",
+        ":tokio-util-0.2.0",
+        ":twox-hash",
+        ":url",
+    ],
+)
+
+third_party_rust_library(
+    name = "mysql_common",
+    srcs = [
+        "mysql_common-0.22.2/src/constants.rs",
+        "mysql_common-0.22.2/src/crypto/der.rs",
+        "mysql_common-0.22.2/src/crypto/mod.rs",
+        "mysql_common-0.22.2/src/crypto/rsa.rs",
+        "mysql_common-0.22.2/src/io.rs",
+        "mysql_common-0.22.2/src/lib.rs",
+        "mysql_common-0.22.2/src/misc.rs",
+        "mysql_common-0.22.2/src/named_params.rs",
+        "mysql_common-0.22.2/src/packets.rs",
+        "mysql_common-0.22.2/src/params.rs",
+        "mysql_common-0.22.2/src/proto/codec/error.rs",
+        "mysql_common-0.22.2/src/proto/codec/mod.rs",
+        "mysql_common-0.22.2/src/proto/mod.rs",
+        "mysql_common-0.22.2/src/proto/sync_framed.rs",
+        "mysql_common-0.22.2/src/row/convert.rs",
+        "mysql_common-0.22.2/src/row/mod.rs",
+        "mysql_common-0.22.2/src/scramble.rs",
+        "mysql_common-0.22.2/src/value/convert/bigdecimal.rs",
+        "mysql_common-0.22.2/src/value/convert/bigint.rs",
+        "mysql_common-0.22.2/src/value/convert/decimal.rs",
+        "mysql_common-0.22.2/src/value/convert/mod.rs",
+        "mysql_common-0.22.2/src/value/json/mod.rs",
+        "mysql_common-0.22.2/src/value/json/serde_integration.rs",
+        "mysql_common-0.22.2/src/value/mod.rs",
+    ],
+    archive = ":mysql_common-0.22.2--archive",
+    crate = "mysql_common",
+    crate_root = "mysql_common-0.22.2/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":base64-0.12.3",
+        ":bigdecimal-0.1.2",
+        ":bitflags",
+        ":byteorder",
+        ":bytes-05",
+        ":chrono",
+        ":failure-deprecated",
+        ":flate2",
+        ":lazy_static",
+        ":lexical-5.2.0",
+        ":num-bigint-0.2.6",
+        ":num-traits",
+        ":rand",
+        ":regex",
+        ":rust_decimal-1.8.1",
+        ":serde",
+        ":serde_json",
+        ":sha1",
+        ":sha2",
+        ":time",
+        ":twox-hash",
+        ":uuid",
+    ],
+)
+
+third_party_rust_library(
+    name = "native-tls",
+    srcs = [
+        "native-tls-0.2.4/src/imp/openssl.rs",
+        "native-tls-0.2.4/src/imp/schannel.rs",
+        "native-tls-0.2.4/src/imp/security_framework.rs",
+        "native-tls-0.2.4/src/lib.rs",
+        "native-tls-0.2.4/src/test.rs",
+    ],
+    archive = ":native-tls-0.2.4--archive",
+    crate = "native_tls",
+    crate_root = "native-tls-0.2.4/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "--cfg=have_min_max_version",
+    ],
+    deps = [
+        ":log",
+        ":openssl",
+        ":openssl-probe-0.1.2",
+        ":openssl-sys",
     ],
 )
 
@@ -8847,6 +9981,93 @@ third_party_rust_library(
         ":cfg-if-1.0.0",
         ":libc",
     ],
+)
+
+third_party_rust_library(
+    name = "num-bigint-0.2.6",
+    srcs = [
+        "num-bigint-0.2.6/src/algorithms.rs",
+        "num-bigint-0.2.6/src/bigint.rs",
+        "num-bigint-0.2.6/src/bigrand.rs",
+        "num-bigint-0.2.6/src/biguint.rs",
+        "num-bigint-0.2.6/src/lib.rs",
+        "num-bigint-0.2.6/src/macros.rs",
+        "num-bigint-0.2.6/src/monty.rs",
+    ],
+    archive = ":num-bigint-0.2.6--archive",
+    crate = "num_bigint",
+    crate_root = "num-bigint-0.2.6/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "i128",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :num-bigint-0.2.6-build-script-build-args)",
+    ],
+    deps = [
+        ":num-integer-0.1.44",
+        ":num-traits",
+    ],
+)
+
+third_party_rust_binary(
+    name = "num-bigint-0.2.6-build-script-build",
+    srcs = [
+        "num-bigint-0.2.6/benches/bigint.rs",
+        "num-bigint-0.2.6/benches/factorial.rs",
+        "num-bigint-0.2.6/benches/gcd.rs",
+        "num-bigint-0.2.6/benches/roots.rs",
+        "num-bigint-0.2.6/benches/shootout-pidigits.rs",
+        "num-bigint-0.2.6/build.rs",
+        "num-bigint-0.2.6/src/algorithms.rs",
+        "num-bigint-0.2.6/src/bigint.rs",
+        "num-bigint-0.2.6/src/bigrand.rs",
+        "num-bigint-0.2.6/src/biguint.rs",
+        "num-bigint-0.2.6/src/lib.rs",
+        "num-bigint-0.2.6/src/macros.rs",
+        "num-bigint-0.2.6/src/monty.rs",
+        "num-bigint-0.2.6/tests/bigint.rs",
+        "num-bigint-0.2.6/tests/bigint_bitwise.rs",
+        "num-bigint-0.2.6/tests/bigint_scalar.rs",
+        "num-bigint-0.2.6/tests/biguint.rs",
+        "num-bigint-0.2.6/tests/biguint_scalar.rs",
+        "num-bigint-0.2.6/tests/consts/mod.rs",
+        "num-bigint-0.2.6/tests/macros/mod.rs",
+        "num-bigint-0.2.6/tests/modpow.rs",
+        "num-bigint-0.2.6/tests/quickcheck.rs",
+        "num-bigint-0.2.6/tests/rand.rs",
+        "num-bigint-0.2.6/tests/roots.rs",
+        "num-bigint-0.2.6/tests/serde.rs",
+        "num-bigint-0.2.6/tests/torture.rs",
+    ],
+    archive = ":num-bigint-0.2.6--archive",
+    crate = "build_script_build",
+    crate_root = "num-bigint-0.2.6/build.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "i128",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -9186,6 +10407,122 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "openssl",
+    srcs = [
+        "openssl-0.10.35/src/aes.rs",
+        "openssl-0.10.35/src/asn1.rs",
+        "openssl-0.10.35/src/base64.rs",
+        "openssl-0.10.35/src/bio.rs",
+        "openssl-0.10.35/src/bn.rs",
+        "openssl-0.10.35/src/cms.rs",
+        "openssl-0.10.35/src/conf.rs",
+        "openssl-0.10.35/src/derive.rs",
+        "openssl-0.10.35/src/dh.rs",
+        "openssl-0.10.35/src/dsa.rs",
+        "openssl-0.10.35/src/ec.rs",
+        "openssl-0.10.35/src/ecdsa.rs",
+        "openssl-0.10.35/src/encrypt.rs",
+        "openssl-0.10.35/src/envelope.rs",
+        "openssl-0.10.35/src/error.rs",
+        "openssl-0.10.35/src/ex_data.rs",
+        "openssl-0.10.35/src/fips.rs",
+        "openssl-0.10.35/src/hash.rs",
+        "openssl-0.10.35/src/lib.rs",
+        "openssl-0.10.35/src/macros.rs",
+        "openssl-0.10.35/src/memcmp.rs",
+        "openssl-0.10.35/src/nid.rs",
+        "openssl-0.10.35/src/ocsp.rs",
+        "openssl-0.10.35/src/pkcs12.rs",
+        "openssl-0.10.35/src/pkcs5.rs",
+        "openssl-0.10.35/src/pkcs7.rs",
+        "openssl-0.10.35/src/pkey.rs",
+        "openssl-0.10.35/src/rand.rs",
+        "openssl-0.10.35/src/rsa.rs",
+        "openssl-0.10.35/src/sha.rs",
+        "openssl-0.10.35/src/sign.rs",
+        "openssl-0.10.35/src/srtp.rs",
+        "openssl-0.10.35/src/ssl/bio.rs",
+        "openssl-0.10.35/src/ssl/callbacks.rs",
+        "openssl-0.10.35/src/ssl/connector.rs",
+        "openssl-0.10.35/src/ssl/error.rs",
+        "openssl-0.10.35/src/ssl/mod.rs",
+        "openssl-0.10.35/src/ssl/test/mod.rs",
+        "openssl-0.10.35/src/ssl/test/server.rs",
+        "openssl-0.10.35/src/stack.rs",
+        "openssl-0.10.35/src/string.rs",
+        "openssl-0.10.35/src/symm.rs",
+        "openssl-0.10.35/src/util.rs",
+        "openssl-0.10.35/src/version.rs",
+        "openssl-0.10.35/src/x509/extension.rs",
+        "openssl-0.10.35/src/x509/mod.rs",
+        "openssl-0.10.35/src/x509/store.rs",
+        "openssl-0.10.35/src/x509/tests.rs",
+        "openssl-0.10.35/src/x509/verify.rs",
+        "openssl-0.10.35/test/aia_test_cert.pem",
+        "openssl-0.10.35/test/alt_name_cert.pem",
+        "openssl-0.10.35/test/cert.pem",
+        "openssl-0.10.35/test/certs.pem",
+        "openssl-0.10.35/test/cms.p12",
+        "openssl-0.10.35/test/cms_pubkey.der",
+        "openssl-0.10.35/test/dhparams.pem",
+        "openssl-0.10.35/test/identity.p12",
+        "openssl-0.10.35/test/key.der",
+        "openssl-0.10.35/test/key.der.pub",
+        "openssl-0.10.35/test/key.pem",
+        "openssl-0.10.35/test/key.pem.pub",
+        "openssl-0.10.35/test/keystore-empty-chain.p12",
+        "openssl-0.10.35/test/nid_test_cert.pem",
+        "openssl-0.10.35/test/nid_uid_test_cert.pem",
+        "openssl-0.10.35/test/pkcs1.pem.pub",
+        "openssl-0.10.35/test/pkcs8.der",
+        "openssl-0.10.35/test/pkcs8-nocrypt.der",
+        "openssl-0.10.35/test/root-ca.pem",
+        "openssl-0.10.35/test/rsa.pem",
+        "openssl-0.10.35/test/rsa.pem.pub",
+        "openssl-0.10.35/test/rsa-encrypted.pem",
+    ],
+    archive = ":openssl-0.10.35--archive",
+    crate = "openssl",
+    crate_root = "openssl-0.10.35/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+        "ffi": ":openssl-sys",
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "--cfg=ossl101",
+        "--cfg=ossl102",
+        "--cfg=ossl102f",
+        "--cfg=ossl102h",
+        "--cfg=ossl110",
+        "--cfg=ossl110f",
+        "--cfg=ossl110g",
+        "--cfg=osslconf=\"OPENSSL_NO_BUF_FREELISTS\"",
+        "--cfg=osslconf=\"OPENSSL_NO_COMP\"",
+        "--cfg=osslconf=\"OPENSSL_NO_EC\"",
+        "--cfg=osslconf=\"OPENSSL_NO_EC2M\"",
+        "--cfg=osslconf=\"OPENSSL_NO_ENGINE\"",
+        "--cfg=osslconf=\"OPENSSL_NO_KRB5\"",
+        "--cfg=osslconf=\"OPENSSL_NO_SHA\"",
+        "--cfg=osslconf=\"OPENSSL_NO_SSL3_METHOD\"",
+        "--cfg=osslconf=\"OPENSSL_NO_TLSEXT\"",
+    ],
+    deps = [
+        ":bitflags",
+        ":cfg-if-1.0.0",
+        ":foreign-types",
+        ":libc",
+        ":once_cell",
+    ],
+)
+
+third_party_rust_library(
     name = "openssl-probe-0.1.2",
     srcs = ["openssl-probe-0.1.2/src/lib.rs"],
     archive = ":openssl-probe-0.1.2--archive",
@@ -9202,6 +10539,80 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     deps = [],
+)
+
+third_party_rust_library(
+    name = "openssl-sys",
+    srcs = [
+        "openssl-sys-0.9.65/src/aes.rs",
+        "openssl-sys-0.9.65/src/asn1.rs",
+        "openssl-sys-0.9.65/src/bio.rs",
+        "openssl-sys-0.9.65/src/bn.rs",
+        "openssl-sys-0.9.65/src/cms.rs",
+        "openssl-sys-0.9.65/src/conf.rs",
+        "openssl-sys-0.9.65/src/crypto.rs",
+        "openssl-sys-0.9.65/src/dh.rs",
+        "openssl-sys-0.9.65/src/dsa.rs",
+        "openssl-sys-0.9.65/src/dtls1.rs",
+        "openssl-sys-0.9.65/src/ec.rs",
+        "openssl-sys-0.9.65/src/err.rs",
+        "openssl-sys-0.9.65/src/evp.rs",
+        "openssl-sys-0.9.65/src/hmac.rs",
+        "openssl-sys-0.9.65/src/lib.rs",
+        "openssl-sys-0.9.65/src/macros.rs",
+        "openssl-sys-0.9.65/src/obj_mac.rs",
+        "openssl-sys-0.9.65/src/object.rs",
+        "openssl-sys-0.9.65/src/ocsp.rs",
+        "openssl-sys-0.9.65/src/ossl_typ.rs",
+        "openssl-sys-0.9.65/src/pem.rs",
+        "openssl-sys-0.9.65/src/pkcs12.rs",
+        "openssl-sys-0.9.65/src/pkcs7.rs",
+        "openssl-sys-0.9.65/src/rand.rs",
+        "openssl-sys-0.9.65/src/rsa.rs",
+        "openssl-sys-0.9.65/src/safestack.rs",
+        "openssl-sys-0.9.65/src/sha.rs",
+        "openssl-sys-0.9.65/src/srtp.rs",
+        "openssl-sys-0.9.65/src/ssl.rs",
+        "openssl-sys-0.9.65/src/ssl3.rs",
+        "openssl-sys-0.9.65/src/stack.rs",
+        "openssl-sys-0.9.65/src/tls1.rs",
+        "openssl-sys-0.9.65/src/types.rs",
+        "openssl-sys-0.9.65/src/x509.rs",
+        "openssl-sys-0.9.65/src/x509_vfy.rs",
+        "openssl-sys-0.9.65/src/x509v3.rs",
+    ],
+    archive = ":openssl-sys-0.9.65--archive",
+    crate = "openssl_sys",
+    crate_root = "openssl-sys-0.9.65/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "--cfg=ossl101",
+        "--cfg=ossl102",
+        "--cfg=ossl102f",
+        "--cfg=ossl102h",
+        "--cfg=ossl110",
+        "--cfg=ossl110f",
+        "--cfg=ossl110g",
+        "--cfg=osslconf=\"OPENSSL_NO_BUF_FREELISTS\"",
+        "--cfg=osslconf=\"OPENSSL_NO_COMP\"",
+        "--cfg=osslconf=\"OPENSSL_NO_EC\"",
+        "--cfg=osslconf=\"OPENSSL_NO_EC2M\"",
+        "--cfg=osslconf=\"OPENSSL_NO_ENGINE\"",
+        "--cfg=osslconf=\"OPENSSL_NO_KRB5\"",
+        "--cfg=osslconf=\"OPENSSL_NO_SHA\"",
+        "--cfg=osslconf=\"OPENSSL_NO_SSL3_METHOD\"",
+        "--cfg=osslconf=\"OPENSSL_NO_TLSEXT\"",
+    ],
+    deps = [":libc"],
 )
 
 third_party_rust_library(
@@ -11398,6 +12809,38 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "rust_decimal-1.8.1",
+    srcs = [
+        "rust_decimal-1.8.1/src/decimal.rs",
+        "rust_decimal-1.8.1/src/error.rs",
+        "rust_decimal-1.8.1/src/lib.rs",
+        "rust_decimal-1.8.1/src/postgres.rs",
+        "rust_decimal-1.8.1/src/serde_types.rs",
+    ],
+    archive = ":rust_decimal-1.8.1--archive",
+    crate = "rust_decimal",
+    crate_root = "rust_decimal-1.8.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "serde",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":num-traits",
+        ":serde",
+    ],
+)
+
+third_party_rust_library(
     name = "rustc-demangle",
     srcs = [
         "rustc-demangle-0.1.20/src/legacy.rs",
@@ -12114,6 +13557,7 @@ third_party_rust_library(
         "--cfg=limb_width_64",
     ],
     deps = [
+        ":indexmap",
         ":itoa-0.4.6",
         ":ryu-1.0.5",
         ":serde",
@@ -12244,6 +13688,28 @@ third_party_rust_library(
         ":digest-0.9.0",
         ":opaque-debug-0.3.0",
     ],
+)
+
+third_party_rust_library(
+    name = "sha1",
+    srcs = [
+        "sha1-0.6.0/src/lib.rs",
+        "sha1-0.6.0/src/simd.rs",
+    ],
+    archive = ":sha1-0.6.0--archive",
+    crate = "sha1",
+    crate_root = "sha1-0.6.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [],
 )
 
 third_party_rust_library(
@@ -12614,6 +14080,69 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "standback-0.2.10",
+    srcs = [
+        "standback-0.2.10/src/lib.rs",
+        "standback-0.2.10/src/v1_32.rs",
+        "standback-0.2.10/src/v1_33.rs",
+        "standback-0.2.10/src/v1_33/pin.rs",
+        "standback-0.2.10/src/v1_34.rs",
+        "standback-0.2.10/src/v1_34/try_from.rs",
+        "standback-0.2.10/src/v1_35.rs",
+        "standback-0.2.10/src/v1_36.rs",
+        "standback-0.2.10/src/v1_36/iterator_copied.rs",
+        "standback-0.2.10/src/v1_36/maybe_uninit.rs",
+        "standback-0.2.10/src/v1_36/poll.rs",
+        "standback-0.2.10/src/v1_36/waker.rs",
+        "standback-0.2.10/src/v1_37.rs",
+        "standback-0.2.10/src/v1_38.rs",
+        "standback-0.2.10/src/v1_40.rs",
+        "standback-0.2.10/src/v1_41.rs",
+        "standback-0.2.10/src/v1_42.rs",
+        "standback-0.2.10/src/v1_43.rs",
+        "standback-0.2.10/src/v1_44.rs",
+        "standback-0.2.10/src/v1_45.rs",
+        "standback-0.2.10/src/v1_46.rs",
+    ],
+    archive = ":standback-0.2.10--archive",
+    crate = "standback",
+    crate_root = "standback-0.2.10/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["std"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :standback-0.2.10-build-script-build-args)",
+    ],
+    deps = [],
+)
+
+third_party_rust_binary(
+    name = "standback-0.2.10-build-script-build",
+    srcs = ["standback-0.2.10/build.rs"],
+    archive = ":standback-0.2.10--archive",
+    crate = "build_script_build",
+    crate_root = "standback-0.2.10/build.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["std"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":version_check-0.9.2"],
+)
+
+third_party_rust_library(
     name = "static_assertions",
     srcs = [
         "static_assertions-1.1.0/src/assert_cfg.rs",
@@ -12893,12 +14422,12 @@ third_party_rust_binary(
 third_party_rust_library(
     name = "synstructure",
     srcs = [
-        "synstructure-0.12.4/src/lib.rs",
-        "synstructure-0.12.4/src/macros.rs",
+        "synstructure-0.12.5/src/lib.rs",
+        "synstructure-0.12.5/src/macros.rs",
     ],
-    archive = ":synstructure-0.12.4--archive",
+    archive = ":synstructure-0.12.5--archive",
     crate = "synstructure",
-    crate_root = "synstructure-0.12.4/src/lib.rs",
+    crate_root = "synstructure-0.12.5/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -13218,6 +14747,100 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "time",
+    srcs = [
+        "time-0.2.22/src/date.rs",
+        "time-0.2.22/src/duration.rs",
+        "time-0.2.22/src/error.rs",
+        "time-0.2.22/src/ext.rs",
+        "time-0.2.22/src/format/date.rs",
+        "time-0.2.22/src/format/deferred_format.rs",
+        "time-0.2.22/src/format/format.rs",
+        "time-0.2.22/src/format/mod.rs",
+        "time-0.2.22/src/format/offset.rs",
+        "time-0.2.22/src/format/parse.rs",
+        "time-0.2.22/src/format/parse_items.rs",
+        "time-0.2.22/src/format/time.rs",
+        "time-0.2.22/src/format/well_known.rs",
+        "time-0.2.22/src/instant.rs",
+        "time-0.2.22/src/internals.rs",
+        "time-0.2.22/src/lib.rs",
+        "time-0.2.22/src/offset_date_time.rs",
+        "time-0.2.22/src/primitive_date_time.rs",
+        "time-0.2.22/src/rand.rs",
+        "time-0.2.22/src/serde/date.rs",
+        "time-0.2.22/src/serde/duration.rs",
+        "time-0.2.22/src/serde/mod.rs",
+        "time-0.2.22/src/serde/primitive_date_time.rs",
+        "time-0.2.22/src/serde/sign.rs",
+        "time-0.2.22/src/serde/time.rs",
+        "time-0.2.22/src/serde/timestamp.rs",
+        "time-0.2.22/src/serde/utc_offset.rs",
+        "time-0.2.22/src/serde/weekday.rs",
+        "time-0.2.22/src/sign.rs",
+        "time-0.2.22/src/time_mod.rs",
+        "time-0.2.22/src/utc_offset.rs",
+        "time-0.2.22/src/util.rs",
+        "time-0.2.22/src/weekday.rs",
+    ],
+    archive = ":time-0.2.22--archive",
+    crate = "time",
+    crate_root = "time-0.2.22/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "deprecated",
+        "libc",
+        "std",
+        "stdweb",
+        "winapi",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :time-0.2.22-build-script-build-args)",
+    ],
+    deps = [
+        ":const_fn-0.4.2",
+        ":libc",
+        ":standback-0.2.10",
+        ":time-macros-0.1.1",
+    ],
+)
+
+third_party_rust_binary(
+    name = "time-0.2.22-build-script-build",
+    srcs = ["time-0.2.22/build.rs"],
+    archive = ":time-0.2.22--archive",
+    crate = "build_script_build",
+    crate_root = "time-0.2.22/build.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "deprecated",
+        "libc",
+        "std",
+        "stdweb",
+        "winapi",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":version_check-0.9.2"],
+)
+
+third_party_rust_library(
     name = "time-01",
     srcs = [
         "time-0.1.44/src/display.rs",
@@ -13240,6 +14863,61 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     deps = [":libc"],
+)
+
+third_party_rust_library(
+    name = "time-macros-0.1.1",
+    srcs = ["time-macros-0.1.1/src/lib.rs"],
+    archive = ":time-macros-0.1.1--archive",
+    crate = "time_macros",
+    crate_root = "time-macros-0.1.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":proc-macro-hack",
+        ":time-macros-impl-0.1.1",
+    ],
+)
+
+third_party_rust_library(
+    name = "time-macros-impl-0.1.1",
+    srcs = [
+        "time-macros-impl-0.1.1/src/date.rs",
+        "time-macros-impl-0.1.1/src/ext.rs",
+        "time-macros-impl-0.1.1/src/lib.rs",
+        "time-macros-impl-0.1.1/src/offset.rs",
+        "time-macros-impl-0.1.1/src/time.rs",
+        "time-macros-impl-0.1.1/src/time_crate/date.rs",
+        "time-macros-impl-0.1.1/src/time_crate/mod.rs",
+    ],
+    archive = ":time-macros-impl-0.1.1--archive",
+    crate = "time_macros_impl",
+    crate_root = "time-macros-impl-0.1.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":proc-macro-hack",
+        ":proc-macro2",
+        ":quote",
+        ":standback-0.2.10",
+        ":syn",
+    ],
 )
 
 third_party_rust_library(
@@ -13952,6 +15630,61 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "tokio-io",
+    srcs = [
+        "tokio-io-0.1.13/src/_tokio_codec/decoder.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/encoder.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/framed.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/framed_read.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/framed_write.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/mod.rs",
+        "tokio-io-0.1.13/src/allow_std.rs",
+        "tokio-io-0.1.13/src/async_read.rs",
+        "tokio-io-0.1.13/src/async_write.rs",
+        "tokio-io-0.1.13/src/codec/bytes_codec.rs",
+        "tokio-io-0.1.13/src/codec/decoder.rs",
+        "tokio-io-0.1.13/src/codec/encoder.rs",
+        "tokio-io-0.1.13/src/codec/lines_codec.rs",
+        "tokio-io-0.1.13/src/codec/mod.rs",
+        "tokio-io-0.1.13/src/framed.rs",
+        "tokio-io-0.1.13/src/framed_read.rs",
+        "tokio-io-0.1.13/src/framed_write.rs",
+        "tokio-io-0.1.13/src/io/copy.rs",
+        "tokio-io-0.1.13/src/io/flush.rs",
+        "tokio-io-0.1.13/src/io/mod.rs",
+        "tokio-io-0.1.13/src/io/read.rs",
+        "tokio-io-0.1.13/src/io/read_exact.rs",
+        "tokio-io-0.1.13/src/io/read_to_end.rs",
+        "tokio-io-0.1.13/src/io/read_until.rs",
+        "tokio-io-0.1.13/src/io/shutdown.rs",
+        "tokio-io-0.1.13/src/io/write_all.rs",
+        "tokio-io-0.1.13/src/length_delimited.rs",
+        "tokio-io-0.1.13/src/lib.rs",
+        "tokio-io-0.1.13/src/lines.rs",
+        "tokio-io-0.1.13/src/split.rs",
+        "tokio-io-0.1.13/src/window.rs",
+    ],
+    archive = ":tokio-io-0.1.13--archive",
+    crate = "tokio_io",
+    crate_root = "tokio-io-0.1.13/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":bytes-old",
+        ":futures-old",
+        ":log",
+    ],
+)
+
+third_party_rust_library(
     name = "tokio-macros",
     srcs = [
         "tokio-macros-0.2.6/src/entry.rs",
@@ -14113,6 +15846,28 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "tokio-tls",
+    srcs = ["tokio-tls-0.3.1/src/lib.rs"],
+    archive = ":tokio-tls-0.3.1--archive",
+    crate = "tokio_tls",
+    crate_root = "tokio-tls-0.3.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":native-tls",
+        ":tokio-02",
+    ],
+)
+
+third_party_rust_library(
     name = "tokio-tungstenite-0.13.0",
     srcs = [
         "tokio-tungstenite-0.13.0/src/compat.rs",
@@ -14214,6 +15969,49 @@ third_party_rust_library(
         ":pin-project-lite-0.2.6",
         ":slab-0.4.2",
         ":tokio",
+    ],
+)
+
+third_party_rust_library(
+    name = "tokio-util-0.2.0",
+    srcs = [
+        "tokio-util-0.2.0/src/cfg.rs",
+        "tokio-util-0.2.0/src/codec/bytes_codec.rs",
+        "tokio-util-0.2.0/src/codec/decoder.rs",
+        "tokio-util-0.2.0/src/codec/encoder.rs",
+        "tokio-util-0.2.0/src/codec/framed.rs",
+        "tokio-util-0.2.0/src/codec/framed_read.rs",
+        "tokio-util-0.2.0/src/codec/framed_write.rs",
+        "tokio-util-0.2.0/src/codec/length_delimited.rs",
+        "tokio-util-0.2.0/src/codec/lines_codec.rs",
+        "tokio-util-0.2.0/src/codec/mod.rs",
+        "tokio-util-0.2.0/src/lib.rs",
+        "tokio-util-0.2.0/src/udp/frame.rs",
+        "tokio-util-0.2.0/src/udp/mod.rs",
+    ],
+    archive = ":tokio-util-0.2.0--archive",
+    crate = "tokio_util",
+    crate_root = "tokio-util-0.2.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "codec",
+        "default",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":bytes-05",
+        ":futures-core",
+        ":futures-sink",
+        ":log",
+        ":pin-project-lite-0.1.11",
+        ":tokio-02",
     ],
 )
 
@@ -14900,6 +16698,35 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "twox-hash",
+    srcs = [
+        "twox-hash-1.5.0/src/digest_support.rs",
+        "twox-hash-1.5.0/src/lib.rs",
+        "twox-hash-1.5.0/src/sixty_four.rs",
+        "twox-hash-1.5.0/src/std_support.rs",
+        "twox-hash-1.5.0/src/thirty_two.rs",
+    ],
+    archive = ":twox-hash-1.5.0--archive",
+    crate = "twox_hash",
+    crate_root = "twox-hash-1.5.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "rand",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [":rand"],
+)
+
+third_party_rust_library(
     name = "typenum",
     srcs = [
         "typenum-1.12.0/src/array.rs",
@@ -15194,17 +17021,17 @@ third_party_rust_library(
 third_party_rust_library(
     name = "url",
     srcs = [
-        "url-2.2.0/src/host.rs",
-        "url-2.2.0/src/lib.rs",
-        "url-2.2.0/src/origin.rs",
-        "url-2.2.0/src/parser.rs",
-        "url-2.2.0/src/path_segments.rs",
-        "url-2.2.0/src/quirks.rs",
-        "url-2.2.0/src/slicing.rs",
+        "url-2.2.2/src/host.rs",
+        "url-2.2.2/src/lib.rs",
+        "url-2.2.2/src/origin.rs",
+        "url-2.2.2/src/parser.rs",
+        "url-2.2.2/src/path_segments.rs",
+        "url-2.2.2/src/quirks.rs",
+        "url-2.2.2/src/slicing.rs",
     ],
-    archive = ":url-2.2.0--archive",
+    archive = ":url-2.2.2--archive",
     crate = "url",
-    crate_root = "url-2.2.0/src/lib.rs",
+    crate_root = "url-2.2.2/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -15290,6 +17117,52 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     deps = [],
+)
+
+third_party_rust_library(
+    name = "uuid",
+    srcs = [
+        "uuid-0.8.1/src/adapter/compact.rs",
+        "uuid-0.8.1/src/adapter/mod.rs",
+        "uuid-0.8.1/src/builder/error.rs",
+        "uuid-0.8.1/src/builder/mod.rs",
+        "uuid-0.8.1/src/error.rs",
+        "uuid-0.8.1/src/lib.rs",
+        "uuid-0.8.1/src/parser/error.rs",
+        "uuid-0.8.1/src/parser/mod.rs",
+        "uuid-0.8.1/src/prelude.rs",
+        "uuid-0.8.1/src/serde_support.rs",
+        "uuid-0.8.1/src/slog_support.rs",
+        "uuid-0.8.1/src/test_util.rs",
+        "uuid-0.8.1/src/v1.rs",
+        "uuid-0.8.1/src/v3.rs",
+        "uuid-0.8.1/src/v4.rs",
+        "uuid-0.8.1/src/v5.rs",
+        "uuid-0.8.1/src/winapi_support.rs",
+    ],
+    archive = ":uuid-0.8.1--archive",
+    crate = "uuid",
+    crate_root = "uuid-0.8.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "rand",
+        "serde",
+        "std",
+        "v4",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    deps = [
+        ":rand",
+        ":serde",
+    ],
 )
 
 third_party_rust_library(

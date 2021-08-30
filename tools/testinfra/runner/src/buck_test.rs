@@ -25,8 +25,11 @@ pub struct Test {
     /// The command used to execute the test.
     pub command: Command,
 
-    /// User-facing identifier for this specific test.
-    pub name: String,
+    /// Fully qualified buck test target.
+    pub target: String,
+
+    /// Test unit, defaults to "main" for singleton test targets.
+    pub unit: String,
 
     /// Labels/tags associated to this test.
     pub labels: HashSet<String>,
@@ -57,11 +60,19 @@ pub enum TestKind {
 /// Labels which mark buck test targets for automatic (and silent) exclusion.
 const EXCLUDED_LABELS: &[&str] = &["disabled", "exclude_test_if_transitive_dep"];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub enum TestStatus {
+    Pass,
+    Fail,
+    Disabled,
+}
+
+#[derive(Debug, Clone)]
 pub struct TestResult {
-    pub name: String,
+    pub target: String,
+    pub unit: String,
+    pub status: TestStatus,
     pub attempts: u32,
-    pub passed: bool,
     pub duration: Duration,
     pub stdout: String,
     pub stderr: String,
@@ -90,9 +101,10 @@ impl Test {
                 let mut err = String::new();
                 child.stderr.unwrap().read_to_string(&mut err).unwrap();
                 return TestResult {
-                    name: self.name,
+                    target: self.target,
+                    unit: self.unit,
+                    status: TestStatus::Pass,
                     attempts,
-                    passed: true,
                     duration,
                     stdout: out,
                     stderr: err,
@@ -105,9 +117,10 @@ impl Test {
                     let mut err = String::new();
                     child.stderr.unwrap().read_to_string(&mut err).unwrap();
                     return TestResult {
-                        name: self.name,
+                        target: self.target,
+                        unit: self.unit,
+                        status: TestStatus::Fail,
                         attempts,
-                        passed: false,
                         duration,
                         stdout: out,
                         stderr: err,
@@ -134,7 +147,8 @@ pub mod shell {
         );
         let test = Test {
             command,
-            name: spec.target,
+            target: spec.target,
+            unit: "main".to_string(),
             labels: spec.labels,
             contacts: spec.contacts,
             kind: TestKind::Shell,
