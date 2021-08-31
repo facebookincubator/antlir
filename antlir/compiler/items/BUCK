@@ -267,7 +267,6 @@ python_library(
         ":stat_options",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
-        "//antlir/nspawn_in_subvol:ba_runner",
         "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
@@ -330,7 +329,8 @@ python_library(
     srcs = ["stat_options.py"],
     deps = [
         "//antlir:subvol_utils",
-        "//antlir/nspawn_in_subvol:ba_runner",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
 
@@ -382,7 +382,6 @@ python_library(
         ":tarball",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
-        "//antlir/nspawn_in_subvol:ba_runner",
         "//antlir/nspawn_in_subvol:nspawn",
         third_party.library(
             "pydantic",

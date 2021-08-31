@@ -73,17 +73,6 @@ python_library(
     ],
 )
 
-python_library(
-    name = "ba_runner",
-    srcs = ["ba_runner.py"],
-    deps = [
-        ":args",
-        ":nspawn",
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-    ],
-)
-
 python_binary(
     name = "run",
     srcs = ["run.py"],
