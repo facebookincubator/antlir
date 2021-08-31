@@ -153,7 +153,10 @@ def _get_action_to_names_or_rpms(
 
 
 def _action_to_command(
-    subvol: Subvol, action: RpmAction, nor: Union[str, _LocalRpm]
+    subvol: Subvol,
+    build_appliance: Subvol,
+    action: RpmAction,
+    nor: Union[str, _LocalRpm],
 ) -> Tuple[YumDnfCommand, Union[str, _LocalRpm]]:
     # Vanilla RPM name?
     if not isinstance(nor, _LocalRpm):
@@ -161,11 +164,15 @@ def _action_to_command(
     # Local RPM?
     if action == RpmAction.install:
         try:
-            old = RpmMetadata.from_subvol(subvol, nor.metadata.name)
-        except (RuntimeError, ValueError):
+            old = RpmMetadata.from_subvol(
+                subvol, build_appliance, nor.metadata.name
+            )
+        except (RuntimeError, ValueError) as ex:
             # This can happen if the RPM DB does not exist in the
             # subvolume or the package is not installed.
             old = None
+            # Log the error since this can also mask real problems.
+            log.debug(f"Did not find {nor.metadata.name} in image: {ex}")
         if old is not None and compare_rpm_versions(nor.metadata, old) < 0:
             return YumDnfCommand.local_downgrade, nor
         if old is not None and compare_rpm_versions(nor.metadata, old) == 0:
@@ -188,6 +195,7 @@ def _action_to_command(
 
 def _convert_actions_to_commands(
     subvol: Subvol,
+    build_appliance: Subvol,
     action_to_names_or_rpms: Mapping[RpmAction, Union[str, _LocalRpm]],
 ) -> Mapping[YumDnfCommand, Union[str, _LocalRpm]]:
     """
@@ -202,7 +210,9 @@ def _convert_actions_to_commands(
     cmd_to_names_or_rpms = {}
     for action, names_or_rpms in action_to_names_or_rpms.items():
         for nor in names_or_rpms:
-            cmd, new_nor = _action_to_command(subvol, action, nor)
+            cmd, new_nor = _action_to_command(
+                subvol, build_appliance, action, nor
+            )
             if cmd == YumDnfCommand.noop:
                 continue
             if cmd is None:  # pragma: no cover
@@ -342,7 +352,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
                 # Sort by command for determinism and clearer behaivor.
                 for cmd, nors in sorted(
                     _convert_actions_to_commands(
-                        subvol, action_to_names_or_rpms
+                        subvol, build_appliance, action_to_names_or_rpms
                     ).items(),
                     key=lambda cn: YUM_DNF_COMMAND_ORDER[cn[0]],
                 ):

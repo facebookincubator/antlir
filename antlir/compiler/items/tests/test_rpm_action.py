@@ -231,7 +231,11 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             # make sure the RPM we are installing is older in order to
             # trigger the downgrade
             src_data = RpmMetadata.from_file(src_rpm)
-            subvol_data = RpmMetadata.from_subvol(parent_subvol, src_data.name)
+            subvol_data = RpmMetadata.from_subvol(
+                parent_subvol,
+                layer_resource_subvol(__package__, "test-build-appliance"),
+                src_data.name,
+            )
             assert compare_rpm_versions(src_data, subvol_data) < 0
 
             subvol = temp_subvolumes.snapshot(parent_subvol, "rpm_action")

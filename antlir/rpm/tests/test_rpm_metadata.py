@@ -12,8 +12,14 @@ import unittest
 
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import temp_dir
+from antlir.tests.layer_resource import layer_resource_subvol
 
-from ..rpm_metadata import RpmMetadata, _compare_values, compare_rpm_versions
+from ..rpm_metadata import (
+    RpmMetadata,
+    _compare_values,
+    compare_rpm_versions,
+    _repo_query,
+)
 from .temp_repos import Repo, Rpm, get_test_signing_key, temp_repos_steps
 
 
@@ -33,8 +39,9 @@ class RpmMetadataTestCase(unittest.TestCase):
     def test_rpm_metadata_from_subvol(self):
         layer_path = os.path.join(os.path.dirname(__file__), "child-layer")
         child_subvol = find_built_subvol(layer_path)
+        ba_subvol = layer_resource_subvol(__package__, "test-build-appliance")
 
-        a = RpmMetadata.from_subvol(child_subvol, "rpm-test-mice")
+        a = RpmMetadata.from_subvol(child_subvol, ba_subvol, "rpm-test-mice")
         self.assertEqual(a.name, "rpm-test-mice")
         self.assertEqual(a.epoch, 0)
         self.assertEqual(a.version, "0.1")
@@ -42,13 +49,17 @@ class RpmMetadataTestCase(unittest.TestCase):
 
         # not installed
         with self.assertRaises(RuntimeError):
-            a = RpmMetadata.from_subvol(child_subvol, "rpm-test-carrot")
+            a = RpmMetadata.from_subvol(
+                child_subvol, ba_subvol, "rpm-test-carrot"
+            )
 
         # subvol with no RPM DB
         layer_path = os.path.join(os.path.dirname(__file__), "hello-layer")
         hello_subvol = find_built_subvol(layer_path)
         with self.assertRaisesRegex(ValueError, " does not exist$"):
-            a = RpmMetadata.from_subvol(hello_subvol, "rpm-test-mice")
+            a = RpmMetadata.from_subvol(
+                hello_subvol, ba_subvol, "rpm-test-mice"
+            )
 
     def test_rpm_metadata_from_file(self):
         with temp_repos_steps(
@@ -83,7 +94,12 @@ class RpmMetadataTestCase(unittest.TestCase):
 
     def test_rpm_query_arg_check(self):
         with self.assertRaisesRegex(ValueError, "^Must pass only "):
-            RpmMetadata._repo_query(RpmMetadata, b"dbpath", None, b"path")
+            _repo_query(
+                db_path=b"dbpath",
+                package_name=None,
+                package_path=b"path",
+                check_output_fn="unused",
+            )
 
     def test_rpm_compare_versions(self):
         # name mismatch
