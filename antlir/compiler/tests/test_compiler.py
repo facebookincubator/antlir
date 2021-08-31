@@ -97,6 +97,7 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     fn = unittest.mock.patch.object(ensure_dirs_exist, "run_nspawn")(fn)
     fn = unittest.mock.patch.object(ensure_dirs_exist, "mode_to_octal_str")(fn)
     fn = unittest.mock.patch.object(ba_runner, "run_nspawn")(fn)
+    fn = unittest.mock.patch("antlir.rpm.rpm_metadata.run_nspawn")(fn)
     return fn
 
 

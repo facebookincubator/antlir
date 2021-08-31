@@ -504,6 +504,8 @@ python_library(
         "//antlir:common",
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
 
@@ -517,6 +519,9 @@ python_unittest(
         TEST_IMAGE_PREFIX + "child/layer": "tests/child-layer",
         TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello-layer",
         "//antlir/rpm/third_party:version-compare-tests": "version-compare-tests",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
     },
     deps = [
         ":common",

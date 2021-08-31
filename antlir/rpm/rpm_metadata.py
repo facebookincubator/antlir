@@ -7,10 +7,12 @@
 import os
 import re
 import subprocess
-from typing import NamedTuple
+from typing import List, NamedTuple, Optional
 
 from antlir.common import get_logger
-from antlir.fs_utils import Path
+from antlir.fs_utils import generate_work_dir, MehStr, Path
+from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 
 
@@ -24,62 +26,75 @@ class RpmMetadata(NamedTuple):
     release: str
 
     @classmethod
-    def from_subvol(cls, subvol: Subvol, package_name: str) -> "RpmMetadata":
-        db_path = subvol.path("var/lib/rpm")
-
-        # `rpm` always creates a DB when `--dbpath` is an arg.
-        # We don't want to create one if it does not already exist so check for
-        # that here.
-        if not os.path.exists(db_path):
-            raise ValueError(f"RPM DB path {db_path} does not exist")
-
-        # pyre-fixme[6]: Expected `RpmMetadata` for 1st param but got
-        #  `Type[RpmMetadata]`.
-        return cls._repo_query(cls, db_path, package_name, None)
+    def from_subvol(
+        cls, subvol: Subvol, ba_subvol: Subvol, package_name: str
+    ) -> "RpmMetadata":
+        db_path_src = subvol.path("var/lib/rpm")
+        if not os.path.exists(db_path_src):
+            # If we didn't check for this, `bindmount_ro` would fail.
+            raise ValueError(f"RPM DB path {db_path_src} does not exist")
+        # Rpm query will write to and update rpm database files if it can.
+        # We must use the BA here because using the host `rpm` can cause the
+        # image RPM to become unreadable to the `rpm` from the BA.
+        db_path_dst = generate_work_dir()
+        return _repo_query(
+            db_path=db_path_dst,
+            package_name=package_name,
+            check_output_fn=lambda cmd: run_nspawn(
+                new_nspawn_opts(
+                    cmd=cmd,
+                    layer=ba_subvol,
+                    # Read-only so that `rpm` does not modify the DB or
+                    # create one when it does not already exist.
+                    bindmount_ro=[(db_path_src, db_path_dst)],
+                ),
+                PopenArgs(stdout=subprocess.PIPE),
+            )[0].stdout,
+        )
 
     @classmethod
     def from_file(cls, package_path: Path) -> "RpmMetadata":
         if not package_path.endswith(b".rpm"):
             raise ValueError(f"RPM file {package_path} needs to end with .rpm")
+        return _repo_query(
+            package_path=package_path,
+            check_output_fn=subprocess.check_output,
+        )
 
-        # pyre-fixme[6]: Expected `RpmMetadata` for 1st param but got
-        #  `Type[RpmMetadata]`.
-        return cls._repo_query(cls, None, None, package_path)
 
-    def _repo_query(
-        self, db_path: Path, package_name: str, package_path: Path
-    ) -> "RpmMetadata":
-        query_args = [
-            "rpm",
-            "--query",
-            "--queryformat",
-            "'%{NAME}:%{epochnum}:%{VERSION}:%{RELEASE}'",
-        ]
+def _repo_query(
+    *,
+    db_path: Optional[Path] = None,
+    package_name: Optional[str] = None,
+    package_path: Optional[Path] = None,
+    check_output_fn,
+) -> "RpmMetadata":
+    query_args: List[MehStr] = [
+        "rpm",
+        "--query",
+        "--queryformat",
+        "'%{NAME}:%{epochnum}:%{VERSION}:%{RELEASE}'",
+    ]
 
-        if db_path and package_name and (package_path is None):
-            # pyre-fixme[6]: Expected `Iterable[str]` for 1st param but got
-            #  `Iterable[typing.Union[Path, str]]`.
-            query_args += ["--dbpath", db_path, package_name]
-        elif package_path and (db_path is None and package_name is None):
-            # pyre-fixme[6]: Expected `Iterable[str]` for 1st param but got
-            #  `Iterable[typing.Union[Path, str]]`.
-            query_args += ["--package", package_path]
-        else:
-            raise ValueError(
-                "Must pass only (--dbpath and --package_name) or --package"
-            )
+    if db_path and package_name and (package_path is None):
+        query_args += ["--dbpath", db_path, package_name]
+    elif package_path and (db_path is None and package_name is None):
+        query_args += ["--package", package_path]
+    else:
+        raise ValueError(
+            "Must pass only (--dbpath and --package_name) or --package"
+        )
 
-        try:
-            result = (
-                subprocess.check_output(query_args, stderr=subprocess.PIPE)
-                .decode()
-                .strip("'\"")
-            )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Error querying RPM: {e.stdout}, {e.stderr}")
+    try:
+        result = check_output_fn(query_args).decode().strip("'\"")
+        log.debug(f"RPM query {query_args} returned {result}")
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"Error querying RPM: {query_args}, {e.stdout}, {e.stderr}"
+        )
 
-        n, e, v, r = result.split(":")
-        return RpmMetadata(name=n, epoch=int(e), version=v, release=r)
+    n, e, v, r = result.split(":")
+    return RpmMetadata(name=n, epoch=int(e), version=v, release=r)
 
 
 # This comprises a pure python implementation of rpm version comparison. The
