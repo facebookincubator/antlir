@@ -66,6 +66,10 @@ image.layer(
         systemd.enable_unit("sshd.service", "core-services.target"),
         image.remove("/etc/ssh/sshd_config"),
         image.install("sshd_config", "/etc/ssh/sshd_config"),
+        # TODO: modify this os-release to indicate that it's MetalOS (in ID_LIKE
+        # maybe?), but for now provide an easy indicator that a system is
+        # MetalOS if /etc/metalos-release exists
+        image.ensure_file_symlink("/usr/lib/os-release", "/etc/metalos-release"),
     ],
     runtime = ["systemd"],
     flavor = REPO_CFG.antlir_linux_flavor,
