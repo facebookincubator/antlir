@@ -199,7 +199,12 @@ def _third_party_library(project, rule = None, platform = None):
     if platform == "rust":
         if not rule == project:
             fail("rust dependencies must omit rule or be identical to project")
-        return "//third-party/rust:" + project
+
+        # some projects have different paths if they are vendored out of fbsource
+        return {
+            "starlark": "//third-party/rust/starlark-rust/starlark:starlark",
+            "starlark_derive": "//third-party/rust/starlark-rust/starlark_derive:starlark_derive",
+        }.get(project, "//third-party/rust:" + project)
 
     if platform == "python":
         if not rule == project:
