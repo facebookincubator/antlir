@@ -15,12 +15,6 @@ import unittest.mock
 from contextlib import contextmanager
 
 from antlir import subvol_utils
-from antlir.compiler.items import (
-    ensure_dirs_exist,
-    rpm_action,
-    symlink,
-    tarball,
-)
 from antlir.config import repo_config
 from antlir.flavor_config_t import flavor_config_t
 from antlir.fs_utils import (
@@ -29,7 +23,6 @@ from antlir.fs_utils import (
     temp_dir,
     RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
 )
-from antlir.nspawn_in_subvol import ba_runner
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import get_subvolumes_dir, TempSubvolumes
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
@@ -91,13 +84,18 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
     fn = unittest.mock.patch.object(subvol_utils, "_path_is_btrfs_subvol")(fn)
     fn = unittest.mock.patch.object(subvol_utils, "_query_uuid")(fn)
     fn = unittest.mock.patch.object(subvol_utils.Subvol, "run_as_root")(fn)
-    fn = unittest.mock.patch.object(rpm_action, "run_nspawn")(fn)
-    fn = unittest.mock.patch.object(tarball, "run_nspawn")(fn)
-    fn = unittest.mock.patch.object(symlink, "run_nspawn")(fn)
-    fn = unittest.mock.patch.object(ensure_dirs_exist, "run_nspawn")(fn)
-    fn = unittest.mock.patch.object(ensure_dirs_exist, "mode_to_octal_str")(fn)
-    fn = unittest.mock.patch.object(ba_runner, "run_nspawn")(fn)
-    fn = unittest.mock.patch("antlir.rpm.rpm_metadata.run_nspawn")(fn)
+
+    # IMPORTANT: These mocks are just ignored.
+    for ignored_mock in [
+        "antlir.compiler.items.ensure_dirs_exist.run_nspawn",
+        "antlir.compiler.items.ensure_dirs_exist.mode_to_octal_str",
+        "antlir.compiler.items.rpm_action.run_nspawn",
+        "antlir.compiler.items.stat_options.run_nspawn",
+        "antlir.compiler.items.symlink.run_nspawn",
+        "antlir.compiler.items.tarball.run_nspawn",
+        "antlir.rpm.rpm_metadata.run_nspawn",
+    ]:
+        fn = unittest.mock.patch(ignored_mock)(fn)
     return fn
 
 
@@ -305,7 +303,7 @@ class CompilerTestCase(unittest.TestCase):
         is_btrfs,
         get_uuid,
         run_as_root,
-        *_run_nspawns,
+        *_ignored_mocks,
         include_sample_items=True,
         include_flavor_config=True,
         run_as_root_side_effect=None,
@@ -427,7 +425,7 @@ class CompilerTestCase(unittest.TestCase):
         is_btrfs,
         get_uuid,
         run_as_root,
-        *_run_nspawns,
+        *_ignored_mocks,
     ):
         "Get the commands that each of the *expected* sample items would run"
         lexists.side_effect = _os_path_lexists

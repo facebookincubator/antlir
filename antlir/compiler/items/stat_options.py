@@ -8,10 +8,14 @@
 Helpers for setting `stat (2)` options on files, directories, etc, which
 we are creating inside the image.
 """
+
 import os
+import pwd
 from typing import Union
 
-from antlir.nspawn_in_subvol.ba_runner import BuildAppliance
+from antlir.fs_utils import generate_work_dir
+from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 
 
@@ -122,78 +126,66 @@ def build_stat_options(
         #  param but got `Path`.
         subvol.path()
     ), "{self}: A symlink to {full_target_path} would point outside the image"
-    rel_path = os.path.relpath(full_target_path, subvol.path())
+
+    if build_appliance:
+        work_dir = generate_work_dir()
+
+        # Fall back to using the host passwd if `subvol` doesn't have the DBs.
+        etc_passwd = subvol.path("/etc/passwd")
+        etc_group = subvol.path("/etc/group")
+        if not (etc_passwd.exists() and etc_group.exists()):
+            etc_passwd = "/etc/passwd"
+            etc_group = "/etc/group"
+
+        def run(cmd, **kwargs):
+            run_nspawn(
+                new_nspawn_opts(
+                    cmd=cmd,
+                    layer=build_appliance,
+                    bindmount_rw=[(subvol.path(), work_dir)],
+                    bindmount_ro=[
+                        (etc_passwd, "/etc/passwd"),
+                        (etc_group, "/etc/group"),
+                    ],
+                    user=pwd.getpwnam("root"),
+                    **kwargs,
+                ),
+                PopenArgs(),
+            )
+
+        target_path_for_run = work_dir / os.path.relpath(
+            full_target_path, subvol.path()
+        )
+    else:
+        run = subvol.run_as_root
+        target_path_for_run = full_target_path
+
     # `chmod` lacks a --no-dereference flag to protect us from following
     # `full_target_path` if it's a symlink.  As far as I know, this should
     # never occur, so just let the exception fly.
-    if build_appliance:
-        ba = BuildAppliance(subvol, build_appliance)
-        ba.run(["test", "!", "-L", ba.path(rel_path)])
-    else:
-        subvol.run_as_root(["test", "!", "-L", full_target_path])
+    run(["test", "!", "-L", target_path_for_run])
+
     if do_not_set_mode:
         assert getattr(item, "mode", None) is None, item
     else:
         # -R is not a problem since it cannot be the case that we are
         # creating a directory that already has something inside it.  On the
         # plus side, it helps with nested directory creation.
-        if build_appliance:
-            ba.run(
-                [
-                    "chmod",
-                    "--recursive",
-                    mode_to_str(item.mode),
-                    ba.path(rel_path),
-                ]
-            )
-        else:
-            subvol.run_as_root(
-                [
-                    "chmod",
-                    "--recursive",
-                    mode_to_str(item.mode),
-                    full_target_path,
-                ]
-            )
-
-    if build_appliance:
-        use_subvol_passwd = (
-            subvol.path("/etc/passwd").exists()
-            and subvol.path("/etc/group").exists()
-        )
-
-        ba.run(
+        run(
             [
-                "chown",
-                "--no-dereference",
+                "chmod",
                 "--recursive",
-                item.user_group,
-                ba.path(rel_path),
-            ],
-            # This will fall back to using the host passwd
-            # if the subvol doesn't have one.
-            bindmount_ro=[
-                (
-                    subvol.path("/etc/passwd")
-                    if use_subvol_passwd
-                    else "/etc/passwd",
-                    "/etc/passwd",
-                ),
-                (
-                    subvol.path("/etc/group")
-                    if use_subvol_passwd
-                    else "/etc/group",
-                    "/etc/group",
-                ),
-            ],
-        )
-    else:
-        subvol.run_as_root(
-            [
-                "chown",
-                "--no-dereference",
-                "--recursive",
-                item.user_group,
-                full_target_path,
+                mode_to_str(item.mode),
+                target_path_for_run,
             ]
         )
+
+    run(
+        [
+            "chown",
+            "--no-dereference",
+            "--recursive",
+            item.user_group,
+            target_path_for_run,
+        ],
+    )
