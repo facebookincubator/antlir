@@ -12,31 +12,29 @@ load(":kernel.bzl", "kernel_t", "normalize_kernel")
 _vm_emulator_t = shape.shape(
     # The actual emulator binary to invoke
     binary = shape.target(),
-    # Bios to use for booting
-    bios = shape.target(),
-    # Directory from where the emulator can load firmware roms
-    roms_dir = shape.target(default = "//antlir/vm:roms"),
+    # Firmware to use for booting
+    firmware = shape.target(),
     # Utility to manage disk images
     img_util = shape.target(),
 )
 
 def _new_vm_emulator(
         binary = None,
-        bios = None,
+        firmware = None,
         img_util = None,
         **kwargs):
     # These defaults have to be set here due to the use of the
     # `third_party.library` function.  It must be invoked inside of
     # either a rule definition or another function, it cannot be used
     # at the top-level of an included .bzl file (where the type def is).
-    bios = bios or third_party.library("qemu", "share/qemu/bios-256k.bin")
+    firmware = firmware or "//antlir/vm:efi-code"
     binary = binary or third_party.library("qemu")
     img_util = img_util or third_party.library("qemu", "qemu-img")
 
     return shape.new(
         _vm_emulator_t,
         binary = binary,
-        bios = bios,
+        firmware = firmware,
         img_util = img_util,
         **kwargs
     )

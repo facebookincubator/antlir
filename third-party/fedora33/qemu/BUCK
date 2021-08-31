@@ -123,17 +123,13 @@ hoist(
 
 [
     hoist(
-        name = "share/qemu/{}".format(rom),
-        out = rom,
+        name = "share/qemu/{}".format(firmware),
+        out = firmware,
         layer = "build",
-        path = "/output/share/qemu/{}".format(rom),
+        path = "/output/share/qemu/{}".format(firmware),
         visibility = vm_visibility,
     )
-    for rom in [
-        "bios-256k.bin",
-        "efi-virtio.rom",
-        "kvmvapic.bin",
-        "linuxboot_dma.bin",
-        "vgabios-stdvga.bin",
+    for firmware in [
+        "edk2-x86_64-code.fd",
     ]
 ]
