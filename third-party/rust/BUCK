@@ -1,5 +1,5 @@
 # @generated
-load("//antlir/bzl:oss_shim.bzl", "cpp_library", "rust_library")  # @unused
+load("//antlir/bzl:oss_shim.bzl", "cpp_library")
 load(":defs.bzl", "archive", "third_party_rust_binary", "third_party_rust_library")  # @unused
 
 # This BUCK file serves as the preamble of the full generated BUCK file, and
