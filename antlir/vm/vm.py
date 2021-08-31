@@ -407,11 +407,17 @@ async def vm(
         "virtserialport,chardev=notify,name=notify-host",
     ] + list(tapdev.qemu_args)
 
-    # The bios to boot the emulator with
-    args.extend(["-bios", str(opts.runtime.emulator.bios.path)])
-
-    # Set the path for loading additional roms
-    args.extend(["-L", str(opts.runtime.emulator.roms_dir.path)])
+    # The firmware to boot the emulator with
+    args.extend(
+        [
+            "--drive",
+            "if=pflash,"
+            "format=raw,"
+            "unit=0,"
+            f"file={opts.runtime.emulator.firmware.path},"
+            "readonly=on",
+        ]
+    )
 
     if os.access("/dev/kvm", os.R_OK | os.W_OK):
         args.append("-enable-kvm")
