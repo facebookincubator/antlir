@@ -26,8 +26,10 @@ use starlark::values::{AllocValue, Heap, StarlarkAttrs, Value};
     StarlarkAttrs,
     Builder
 )]
-#[builder(setter(into))]
+#[builder(setter(into), build_fn(validate = "Self::validate"))]
 pub struct Host {
+    // 32-char hex identifier
+    pub id: String,
     pub hostname: String,
     pub network: Network,
     #[cfg(feature = "facebook")]
@@ -35,6 +37,21 @@ pub struct Host {
     pub facebook: crate::facebook::HostFacebook,
 }
 simple_data_struct!(Host);
+
+impl HostBuilder {
+    fn validate(&self) -> Result<(), String> {
+        match &self.id {
+            Some(id) => match id.len() == 32 {
+                true => match id.chars().all(|c| c.is_ascii_hexdigit()) {
+                    true => Ok(()),
+                    false => Err("id must be exactly 32 hex chars".to_owned()),
+                },
+                false => Err("id must be exactly 32 hex chars".to_owned()),
+            },
+            None => Err("id must be set".to_owned()),
+        }
+    }
+}
 
 /// Wrap std::net::IpAddr to make it easy to expose to Starlark. Note that this
 /// simply exposes the string value of the address, and does not provide any
@@ -148,6 +165,7 @@ mod tests {
     impl Default for Host {
         fn default() -> Self {
             Host::builder()
+                .id(format!("{:032x}", 42))
                 .hostname("host001.01.abc0.facebook.com")
                 .network(
                     Network::builder()
@@ -178,7 +196,7 @@ mod tests {
         let mut a = Assert::new();
         a.globals_add(|gb| gb.set("input", Host::default()));
         a.eq("input.hostname", "\"host001.01.abc0.facebook.com\"");
-        let expected_dir = "\"hostname\", \"network\"";
+        let expected_dir = "\"hostname\", \"id\", \"network\"";
         if cfg!(feature = "facebook") {
             a.eq(
                 "set(dir(input))",
