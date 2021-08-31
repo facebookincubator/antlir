@@ -1,5 +1,5 @@
 # @generated
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "cpp_library", "export_file", "rust_library")
+load("//antlir/bzl:oss_shim.bzl", "cpp_library", "rust_library")  # @unused
 load(":defs.bzl", "archive", "third_party_rust_binary", "third_party_rust_library")  # @unused
 
 # This BUCK file serves as the preamble of the full generated BUCK file, and
@@ -8,108 +8,6 @@ load(":defs.bzl", "archive", "third_party_rust_binary", "third_party_rust_librar
 # written out to ../BUCK to be shipped in the OSS repo.
 # This file is intentionally named 'BUCK' so that syntax highlighting and
 # auto-formatting work as expected.
-
-export_file(
-    name = "starlark-rust/starlark/src/syntax/grammar.lalrpop",
-)
-
-buck_genrule(
-    name = "starlark-grammar",
-    out = ".",
-    cmd = """
-        cd $TMP
-        mkdir syntax
-        cp $(location :starlark-rust/starlark/src/syntax/grammar.lalrpop) ./syntax/
-        $(exe :lalrpop-lalrpop) --out-dir $OUT ./syntax/grammar.lalrpop
-    """,
-)
-
-rust_library(
-    name = "starlark",
-    srcs = glob(["starlark-rust/starlark/src/**/*.rs"]),
-    env = {
-        "OUT_DIR": "$(location :starlark-grammar)",
-    },
-    rustc_flags = [
-        "-Aunused_braces",
-        "-Wbare_trait_objects",
-        "-Wellipsis_inclusive_range_patterns",
-        "-Dnon_fmt_panic",
-        "-Dunconditional_recursion",
-    ],
-    unittests = False,
-    deps = [
-        ":annotate-snippets",
-        ":anyhow",
-        ":bumpalo",
-        ":derivative",
-        ":either",
-        ":gazebo",
-        ":hashbrown",
-        ":indexmap",
-        ":itertools",
-        ":lalrpop-util",
-        ":logos",
-        ":maplit",
-        ":once_cell",
-        ":paste",
-        ":regex",
-        ":rustyline",
-        ":serde",
-        ":starlark_derive",
-        ":static_assertions",
-        ":textwrap",
-        ":thiserror",
-    ],
-)
-
-rust_library(
-    name = "starlark_derive",
-    srcs = glob(["starlark-rust/starlark_derive/src/**/*.rs"]),
-    proc_macro = True,
-    rustc_flags = [
-        "-Aunused_braces",
-        "-Wbare_trait_objects",
-        "-Wellipsis_inclusive_range_patterns",
-        "-Dnon_fmt_panic",
-        "-Dunconditional_recursion",
-    ],
-    unittests = False,
-    deps = [
-        ":gazebo",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
-    ],
-)
-
-rust_library(
-    name = "gazebo",
-    srcs = glob(
-        ["gazebo/gazebo/src/**/*.rs"],
-    ),
-    edition = "2018",
-    features = ["str_pattern_extensions"],
-    test_srcs = ["gazebo/gazebo/src/test.rs"],
-    deps = [
-        ":gazebo_derive",
-    ],
-)
-
-rust_library(
-    name = "gazebo_derive",
-    srcs = glob(
-        ["gazebo/gazebo_derive/src/**/*.rs"],
-    ),
-    edition = "2018",
-    proc_macro = True,
-    unittests = False,
-    deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
-    ],
-)
 
 cpp_library(
     name = "cxx-core",
@@ -461,21 +359,21 @@ archive(
 )
 
 archive(
-    name = "cxx-1.0.52--archive",
-    sha256 = "1466c2983a24f17f1138b375127b44127e96fbf55dd292e071817a5edcf40c9a",
-    url = "https://static.crates.io/crates/cxx/cxx-1.0.52.crate",
+    name = "cxx-1.0.54--archive",
+    sha256 = "8431240a7c50efe7610cbddd167ea5737a053947940fc815f72cd2864c0af36b",
+    url = "https://static.crates.io/crates/cxx/cxx-1.0.54.crate",
 )
 
 archive(
-    name = "cxxbridge-cmd-1.0.52--archive",
-    sha256 = "164ad53dd137c29d83a377b8c61473b9b5b90f50b729d241d3ec5fcbc89c5525",
-    url = "https://static.crates.io/crates/cxxbridge-cmd/cxxbridge-cmd-1.0.52.crate",
+    name = "cxxbridge-cmd-1.0.54--archive",
+    sha256 = "1755fc5081a7dc962329d6473f75262de283477acdf044252d1411c4485f65ce",
+    url = "https://static.crates.io/crates/cxxbridge-cmd/cxxbridge-cmd-1.0.54.crate",
 )
 
 archive(
-    name = "cxxbridge-macro-1.0.52--archive",
-    sha256 = "0d75224fc5397490a22abac11c6ee28815263e3f4418a85ae37f93895c86b100",
-    url = "https://static.crates.io/crates/cxxbridge-macro/cxxbridge-macro-1.0.52.crate",
+    name = "cxxbridge-macro-1.0.54--archive",
+    sha256 = "0ac15d8552d84daf53d8a195bf45f2ca529d099465228146eb59e75bbbfdde5c",
+    url = "https://static.crates.io/crates/cxxbridge-macro/cxxbridge-macro-1.0.54.crate",
 )
 
 archive(
@@ -1655,6 +1553,12 @@ archive(
 )
 
 archive(
+    name = "strsim-0.10.0--archive",
+    sha256 = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623",
+    url = "https://static.crates.io/crates/strsim/strsim-0.10.0.crate",
+)
+
+archive(
     name = "strsim-0.8.0--archive",
     sha256 = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a",
     url = "https://static.crates.io/crates/strsim/strsim-0.8.0.crate",
@@ -1685,9 +1589,9 @@ archive(
 )
 
 archive(
-    name = "synstructure-0.12.4--archive",
-    sha256 = "b834f2d66f734cb897113e34aaff2f1ab4719ca946f9a7358dba8f8064148701",
-    url = "https://static.crates.io/crates/synstructure/synstructure-0.12.4.crate",
+    name = "synstructure-0.12.5--archive",
+    sha256 = "474aaa926faa1603c40b7885a9eaea29b444d1cb2850cb7c0e37bb1a4182f4fa",
+    url = "https://static.crates.io/crates/synstructure/synstructure-0.12.5.crate",
 )
 
 archive(
@@ -1949,9 +1853,9 @@ archive(
 )
 
 archive(
-    name = "url-2.2.0--archive",
-    sha256 = "5909f2b0817350449ed73e8bcd81c8c3c8d9a7a5d8acba4b27db277f1868976e",
-    url = "https://static.crates.io/crates/url/url-2.2.0.crate",
+    name = "url-2.2.2--archive",
+    sha256 = "a507c383b2d33b5fc35d1861e77e6b383d158b2da5e14fe51b83dfedf6fd578c",
+    url = "https://static.crates.io/crates/url/url-2.2.2.crate",
 )
 
 archive(
@@ -2045,7 +1949,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":gimli"],
+    unittests = False,
+    deps = ["//third-party/rust:gimli"],
 )
 
 third_party_rust_library(
@@ -2067,6 +1972,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2102,9 +2008,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":getrandom-0.2.2",
-        ":once_cell",
+        "//third-party/rust:getrandom-0.2.2",
+        "//third-party/rust:once_cell",
     ],
 )
 
@@ -2149,7 +2056,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":memchr-2.4.1"],
+    unittests = False,
+    deps = ["//third-party/rust:memchr-2.4.1"],
 )
 
 third_party_rust_library(
@@ -2179,7 +2087,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":unicode-width"],
+    unittests = False,
+    deps = ["//third-party/rust:unicode-width"],
 )
 
 third_party_rust_library(
@@ -2207,6 +2116,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2242,6 +2152,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "--cfg=backtrace",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -2261,6 +2172,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2285,7 +2197,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":term-0.5.2"],
+    unittests = False,
+    deps = ["//third-party/rust:term-0.5.2"],
 )
 
 third_party_rust_library(
@@ -2314,10 +2227,11 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :async-trait-0.1.51-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -2337,6 +2251,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2356,7 +2271,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -2380,6 +2296,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2404,6 +2321,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2457,13 +2375,14 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":addr2line-0.13.0",
-        ":cfg-if",
-        ":libc",
-        ":miniz_oxide-0.4.2",
-        ":object-0.20.0",
-        ":rustc-demangle",
+        "//third-party/rust:addr2line-0.13.0",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:libc",
+        "//third-party/rust:miniz_oxide-0.4.2",
+        "//third-party/rust:object-0.20.0",
+        "//third-party/rust:rustc-demangle",
     ],
 )
 
@@ -2497,6 +2416,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2533,6 +2453,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2570,6 +2491,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2596,6 +2518,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2618,7 +2541,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":bit-vec"],
+    unittests = False,
+    deps = ["//third-party/rust:bit-vec"],
 )
 
 third_party_rust_library(
@@ -2640,6 +2564,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2665,6 +2590,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :bitflags-1.2.1-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -2688,6 +2614,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2707,11 +2634,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":block-padding-0.1.5",
-        ":byte-tools-0.3.1",
-        ":byteorder",
-        ":generic-array-0.12.4",
+        "//third-party/rust:block-padding-0.1.5",
+        "//third-party/rust:byte-tools-0.3.1",
+        "//third-party/rust:byteorder",
+        "//third-party/rust:generic-array-0.12.4",
     ],
 )
 
@@ -2731,7 +2659,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":generic-array"],
+    unittests = False,
+    deps = ["//third-party/rust:generic-array"],
 )
 
 third_party_rust_library(
@@ -2750,7 +2679,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":byte-tools-0.3.1"],
+    unittests = False,
+    deps = ["//third-party/rust:byte-tools-0.3.1"],
 )
 
 third_party_rust_library(
@@ -2779,9 +2709,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":memchr-2.4.1",
-        ":safemem-0.3.3",
+        "//third-party/rust:memchr-2.4.1",
+        "//third-party/rust:safemem-0.3.3",
     ],
 )
 
@@ -2801,7 +2732,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":bytes"],
+    unittests = False,
+    deps = ["//third-party/rust:bytes"],
 )
 
 third_party_rust_library(
@@ -2833,6 +2765,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2852,6 +2785,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2881,6 +2815,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :byteorder-1.3.4-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -2909,6 +2844,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -2952,7 +2888,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":serde"],
+    unittests = False,
+    deps = ["//third-party/rust:serde"],
 )
 
 third_party_rust_library(
@@ -2995,7 +2932,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":serde"],
+    unittests = False,
+    deps = ["//third-party/rust:serde"],
 )
 
 third_party_rust_library(
@@ -3014,6 +2952,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -3033,6 +2972,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -3087,12 +3027,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":libc",
-        ":num-integer-0.1.44",
-        ":num-traits",
-        ":serde",
-        ":time-01",
+        "//third-party/rust:libc",
+        "//third-party/rust:num-integer-0.1.44",
+        "//third-party/rust:num-traits",
+        "//third-party/rust:serde",
+        "//third-party/rust:time-01",
     ],
 )
 
@@ -3164,15 +3105,16 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":ansi_term-0.11.0",
-        ":atty",
-        ":bitflags",
-        ":strsim-0.8.0",
-        ":term_size",
-        ":textwrap",
-        ":unicode-width",
-        ":vec_map",
+        "//third-party/rust:ansi_term-0.11.0",
+        "//third-party/rust:atty",
+        "//third-party/rust:bitflags",
+        "//third-party/rust:strsim-0.8.0",
+        "//third-party/rust:term_size",
+        "//third-party/rust:textwrap",
+        "//third-party/rust:unicode-width",
+        "//third-party/rust:vec_map",
     ],
 )
 
@@ -3200,9 +3142,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":termcolor",
-        ":unicode-width",
+        "//third-party/rust:termcolor",
+        "//third-party/rust:unicode-width",
     ],
 )
 
@@ -3222,6 +3165,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -3249,6 +3193,7 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -3269,6 +3214,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -3288,6 +3234,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -3328,9 +3275,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if-1.0.0",
-        ":crossbeam-utils-0.8.0",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:crossbeam-utils-0.8.0",
     ],
 )
 
@@ -3367,9 +3315,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":crossbeam-utils-0.7.2",
-        ":maybe-uninit-2.0.0",
+        "//third-party/rust:crossbeam-utils-0.7.2",
+        "//third-party/rust:maybe-uninit-2.0.0",
     ],
 )
 
@@ -3397,10 +3346,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if-1.0.0",
-        ":crossbeam-epoch-0.9.1",
-        ":crossbeam-utils-0.8.0",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:crossbeam-epoch-0.9.1",
+        "//third-party/rust:crossbeam-utils-0.8.0",
     ],
 )
 
@@ -3436,13 +3386,14 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if-1.0.0",
-        ":const_fn-0.4.2",
-        ":crossbeam-utils-0.8.0",
-        ":lazy_static",
-        ":memoffset",
-        ":scopeguard",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:const_fn-0.4.2",
+        "//third-party/rust:crossbeam-utils-0.8.0",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:memoffset",
+        "//third-party/rust:scopeguard",
     ],
 )
 
@@ -3483,9 +3434,10 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :crossbeam-utils-0.7.2-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":cfg-if",
-        ":lazy_static",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:lazy_static",
     ],
 )
 
@@ -3531,7 +3483,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":autocfg-1.0.1"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -3571,10 +3524,11 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :crossbeam-utils-0.8.0-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":cfg-if-1.0.0",
-        ":const_fn-0.4.2",
-        ":lazy_static",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:const_fn-0.4.2",
+        "//third-party/rust:lazy_static",
     ],
 )
 
@@ -3598,7 +3552,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":autocfg-1.0.1"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -3617,46 +3572,47 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":sct-0.6.0"],
+    unittests = False,
+    deps = ["//third-party/rust:sct-0.6.0"],
 )
 
 third_party_rust_library(
     name = "cxx",
     srcs = [
-        "cxx-1.0.52/src/cxx_string.rs",
-        "cxx-1.0.52/src/cxx_vector.rs",
-        "cxx-1.0.52/src/exception.rs",
-        "cxx-1.0.52/src/extern_type.rs",
-        "cxx-1.0.52/src/fmt.rs",
-        "cxx-1.0.52/src/function.rs",
-        "cxx-1.0.52/src/lib.rs",
-        "cxx-1.0.52/src/macros/assert.rs",
-        "cxx-1.0.52/src/macros/concat.rs",
-        "cxx-1.0.52/src/macros/mod.rs",
-        "cxx-1.0.52/src/memory.rs",
-        "cxx-1.0.52/src/opaque.rs",
-        "cxx-1.0.52/src/result.rs",
-        "cxx-1.0.52/src/rust_slice.rs",
-        "cxx-1.0.52/src/rust_str.rs",
-        "cxx-1.0.52/src/rust_string.rs",
-        "cxx-1.0.52/src/rust_type.rs",
-        "cxx-1.0.52/src/rust_vec.rs",
-        "cxx-1.0.52/src/shared_ptr.rs",
-        "cxx-1.0.52/src/symbols/exception.rs",
-        "cxx-1.0.52/src/symbols/mod.rs",
-        "cxx-1.0.52/src/symbols/rust_slice.rs",
-        "cxx-1.0.52/src/symbols/rust_str.rs",
-        "cxx-1.0.52/src/symbols/rust_string.rs",
-        "cxx-1.0.52/src/symbols/rust_vec.rs",
-        "cxx-1.0.52/src/type_id.rs",
-        "cxx-1.0.52/src/unique_ptr.rs",
-        "cxx-1.0.52/src/unwind.rs",
-        "cxx-1.0.52/src/vector.rs",
-        "cxx-1.0.52/src/weak_ptr.rs",
+        "cxx-1.0.54/src/cxx_string.rs",
+        "cxx-1.0.54/src/cxx_vector.rs",
+        "cxx-1.0.54/src/exception.rs",
+        "cxx-1.0.54/src/extern_type.rs",
+        "cxx-1.0.54/src/fmt.rs",
+        "cxx-1.0.54/src/function.rs",
+        "cxx-1.0.54/src/lib.rs",
+        "cxx-1.0.54/src/macros/assert.rs",
+        "cxx-1.0.54/src/macros/concat.rs",
+        "cxx-1.0.54/src/macros/mod.rs",
+        "cxx-1.0.54/src/memory.rs",
+        "cxx-1.0.54/src/opaque.rs",
+        "cxx-1.0.54/src/result.rs",
+        "cxx-1.0.54/src/rust_slice.rs",
+        "cxx-1.0.54/src/rust_str.rs",
+        "cxx-1.0.54/src/rust_string.rs",
+        "cxx-1.0.54/src/rust_type.rs",
+        "cxx-1.0.54/src/rust_vec.rs",
+        "cxx-1.0.54/src/shared_ptr.rs",
+        "cxx-1.0.54/src/symbols/exception.rs",
+        "cxx-1.0.54/src/symbols/mod.rs",
+        "cxx-1.0.54/src/symbols/rust_slice.rs",
+        "cxx-1.0.54/src/symbols/rust_str.rs",
+        "cxx-1.0.54/src/symbols/rust_string.rs",
+        "cxx-1.0.54/src/symbols/rust_vec.rs",
+        "cxx-1.0.54/src/type_id.rs",
+        "cxx-1.0.54/src/unique_ptr.rs",
+        "cxx-1.0.54/src/unwind.rs",
+        "cxx-1.0.54/src/vector.rs",
+        "cxx-1.0.54/src/weak_ptr.rs",
     ],
-    archive = ":cxx-1.0.52--archive",
+    archive = ":cxx-1.0.54--archive",
     crate = "cxx",
-    crate_root = "cxx-1.0.52/src/lib.rs",
+    crate_root = "cxx-1.0.54/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -3667,19 +3623,20 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cxx-core",
-        ":cxxbridge-macro-1.0.52",
-        ":link-cplusplus-1.0.3",
+        "//third-party/rust:cxx-core",
+        "//third-party/rust:cxxbridge-macro-1.0.54",
+        "//third-party/rust:link-cplusplus-1.0.3",
     ],
 )
 
 third_party_rust_library(
     name = "cxxbridge-cmd",
-    srcs = ["cxxbridge-cmd-1.0.52/src/lib.rs"],
-    archive = ":cxxbridge-cmd-1.0.52--archive",
+    srcs = ["cxxbridge-cmd-1.0.54/src/lib.rs"],
+    archive = ":cxxbridge-cmd-1.0.54--archive",
     crate = "cxxbridge_cmd",
-    crate_root = "cxxbridge-cmd-1.0.52/src/lib.rs",
+    crate_root = "cxxbridge-cmd-1.0.54/src/lib.rs",
     edition = "2018",
     env = {
         "CARGO_PKG_AUTHORS": "",
@@ -3691,69 +3648,70 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":clap",
-        ":codespan-reporting-0.11.0",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:clap",
+        "//third-party/rust:codespan-reporting-0.11.0",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
 third_party_rust_binary(
     name = "cxxbridge-cmd-cxxbridge",
     srcs = [
-        "cxxbridge-cmd-1.0.52/src/app.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/block.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/builtin.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/check.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/error.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/file.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/fs.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/ifndef.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/include.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/include/cxx.h",
-        "cxxbridge-cmd-1.0.52/src/gen/mod.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/namespace.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/nested.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/out.rs",
-        "cxxbridge-cmd-1.0.52/src/gen/write.rs",
-        "cxxbridge-cmd-1.0.52/src/main.rs",
-        "cxxbridge-cmd-1.0.52/src/output.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/atom.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/attrs.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/check.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/derive.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/discriminant.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/doc.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/error.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/file.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/ident.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/impls.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/improper.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/instantiate.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/mangle.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/map.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/mod.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/names.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/namespace.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/parse.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/pod.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/qualified.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/report.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/resolve.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/set.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/symbol.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/tokens.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/toposort.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/trivial.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/types.rs",
-        "cxxbridge-cmd-1.0.52/src/syntax/visit.rs",
-        "cxxbridge-cmd-1.0.52/src/test.rs",
+        "cxxbridge-cmd-1.0.54/src/app.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/block.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/builtin.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/check.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/error.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/file.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/fs.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/ifndef.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/include.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/include/cxx.h",
+        "cxxbridge-cmd-1.0.54/src/gen/mod.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/namespace.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/nested.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/out.rs",
+        "cxxbridge-cmd-1.0.54/src/gen/write.rs",
+        "cxxbridge-cmd-1.0.54/src/main.rs",
+        "cxxbridge-cmd-1.0.54/src/output.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/atom.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/attrs.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/check.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/derive.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/discriminant.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/doc.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/error.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/file.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/ident.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/impls.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/improper.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/instantiate.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/mangle.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/map.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/mod.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/names.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/namespace.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/parse.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/pod.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/qualified.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/report.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/resolve.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/set.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/symbol.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/tokens.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/toposort.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/trivial.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/types.rs",
+        "cxxbridge-cmd-1.0.54/src/syntax/visit.rs",
+        "cxxbridge-cmd-1.0.54/src/test.rs",
     ],
-    archive = ":cxxbridge-cmd-1.0.52--archive",
+    archive = ":cxxbridge-cmd-1.0.54--archive",
     crate = "cxxbridge",
-    crate_root = "cxxbridge-cmd-1.0.52/src/main.rs",
+    crate_root = "cxxbridge-cmd-1.0.54/src/main.rs",
     edition = "2018",
     env = {
         "CARGO_PKG_AUTHORS": "",
@@ -3765,59 +3723,60 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":clap",
-        ":codespan-reporting-0.11.0",
-        ":cxxbridge-cmd",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:clap",
+        "//third-party/rust:codespan-reporting-0.11.0",
+        "//third-party/rust:cxxbridge-cmd",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
 third_party_rust_library(
-    name = "cxxbridge-macro-1.0.52",
+    name = "cxxbridge-macro-1.0.54",
     srcs = [
-        "cxxbridge-macro-1.0.52/src/clang.rs",
-        "cxxbridge-macro-1.0.52/src/derive.rs",
-        "cxxbridge-macro-1.0.52/src/expand.rs",
-        "cxxbridge-macro-1.0.52/src/generics.rs",
-        "cxxbridge-macro-1.0.52/src/lib.rs",
-        "cxxbridge-macro-1.0.52/src/load.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/atom.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/attrs.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/check.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/derive.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/discriminant.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/doc.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/error.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/file.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/ident.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/impls.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/improper.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/instantiate.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/mangle.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/map.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/mod.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/names.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/namespace.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/parse.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/pod.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/qualified.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/report.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/resolve.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/set.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/symbol.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/tokens.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/toposort.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/trivial.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/types.rs",
-        "cxxbridge-macro-1.0.52/src/syntax/visit.rs",
-        "cxxbridge-macro-1.0.52/src/type_id.rs",
+        "cxxbridge-macro-1.0.54/src/clang.rs",
+        "cxxbridge-macro-1.0.54/src/derive.rs",
+        "cxxbridge-macro-1.0.54/src/expand.rs",
+        "cxxbridge-macro-1.0.54/src/generics.rs",
+        "cxxbridge-macro-1.0.54/src/lib.rs",
+        "cxxbridge-macro-1.0.54/src/load.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/atom.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/attrs.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/check.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/derive.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/discriminant.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/doc.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/error.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/file.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/ident.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/impls.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/improper.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/instantiate.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/mangle.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/map.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/mod.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/names.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/namespace.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/parse.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/pod.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/qualified.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/report.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/resolve.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/set.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/symbol.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/tokens.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/toposort.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/trivial.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/types.rs",
+        "cxxbridge-macro-1.0.54/src/syntax/visit.rs",
+        "cxxbridge-macro-1.0.54/src/type_id.rs",
     ],
-    archive = ":cxxbridge-macro-1.0.52--archive",
+    archive = ":cxxbridge-macro-1.0.54--archive",
     crate = "cxxbridge_macro",
-    crate_root = "cxxbridge-macro-1.0.52/src/lib.rs",
+    crate_root = "cxxbridge-macro-1.0.54/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -3828,10 +3787,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -3857,9 +3817,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":darling_core-0.10.2",
-        ":darling_macro-0.10.2",
+        "//third-party/rust:darling_core-0.10.2",
+        "//third-party/rust:darling_macro-0.10.2",
     ],
 )
 
@@ -3938,13 +3899,14 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":fnv",
-        ":ident_case-1.0.1",
-        ":proc-macro2",
-        ":quote",
-        ":strsim-0.9.3",
-        ":syn",
+        "//third-party/rust:fnv",
+        "//third-party/rust:ident_case-1.0.1",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:strsim-0.9.3",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -3964,10 +3926,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":darling_core-0.10.2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:darling_core-0.10.2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -3991,6 +3954,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4023,10 +3987,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -4054,12 +4019,13 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":darling-0.10.2",
-        ":derive_builder_core-0.9.0",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:darling-0.10.2",
+        "//third-party/rust:derive_builder_core-0.9.0",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -4092,11 +4058,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":darling-0.10.2",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:darling-0.10.2",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -4116,6 +4083,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4141,7 +4109,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":generic-array-0.12.4"],
+    unittests = False,
+    deps = ["//third-party/rust:generic-array-0.12.4"],
 )
 
 third_party_rust_library(
@@ -4172,7 +4141,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":generic-array"],
+    unittests = False,
+    deps = ["//third-party/rust:generic-array"],
 )
 
 third_party_rust_library(
@@ -4197,9 +4167,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if",
-        ":dirs-sys-0.3.5",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:dirs-sys-0.3.5",
     ],
 )
 
@@ -4226,7 +4197,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -4251,9 +4223,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if-1.0.0",
-        ":dirs-sys-next-0.1.2",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:dirs-sys-next-0.1.2",
     ],
 )
 
@@ -4276,7 +4249,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -4298,7 +4272,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -4325,11 +4300,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":lazy_static",
-        ":regex",
-        ":serde",
-        ":strsim-0.9.3",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:regex",
+        "//third-party/rust:serde",
+        "//third-party/rust:strsim-0.9.3",
     ],
 )
 
@@ -4356,6 +4332,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4383,7 +4360,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":log"],
+    unittests = False,
+    deps = ["//third-party/rust:log"],
 )
 
 third_party_rust_library(
@@ -4402,11 +4380,12 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":heck",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:heck",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -4446,12 +4425,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":atty",
-        ":humantime",
-        ":log",
-        ":regex",
-        ":termcolor",
+        "//third-party/rust:atty",
+        "//third-party/rust:humantime",
+        "//third-party/rust:log",
+        "//third-party/rust:regex",
+        "//third-party/rust:termcolor",
     ],
 )
 
@@ -4483,7 +4463,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":serde"],
+    unittests = False,
+    deps = ["//third-party/rust:serde"],
 )
 
 third_party_rust_library(
@@ -4524,9 +4505,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":backtrace",
-        ":failure_derive",
+        "//third-party/rust:backtrace",
+        "//third-party/rust:failure_derive",
     ],
 )
 
@@ -4549,11 +4531,12 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :failure_derive-0.1.8-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
-        ":synstructure",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
+        "//third-party/rust:synstructure",
     ],
 )
 
@@ -4581,6 +4564,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4613,11 +4597,12 @@ third_party_rust_library(
         "-Dnon_fmt_panic",
         "-Dunconditional_recursion",
     ],
+    unittests = False,
     deps = [
-        ":anyhow",
-        ":failure-deprecated",
-        ":futures-old",
-        ":slog",
+        "//third-party/rust:anyhow",
+        "//third-party/rust:failure-deprecated",
+        "//third-party/rust:futures-old",
+        "//third-party/rust:slog",
     ],
 )
 
@@ -4637,6 +4622,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4662,6 +4648,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4692,9 +4679,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if",
-        ":libc",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:libc",
     ],
 )
 
@@ -4717,6 +4705,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4739,6 +4728,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4761,9 +4751,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":matches-0.1.8",
-        ":percent-encoding",
+        "//third-party/rust:matches-0.1.8",
+        "//third-party/rust:percent-encoding",
     ],
 )
 
@@ -4787,7 +4778,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -4814,14 +4806,15 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":futures-channel",
-        ":futures-core",
-        ":futures-executor-0.3.13",
-        ":futures-io-0.3.13",
-        ":futures-sink",
-        ":futures-task-0.3.13",
-        ":futures-util",
+        "//third-party/rust:futures-channel",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-executor-0.3.13",
+        "//third-party/rust:futures-io-0.3.13",
+        "//third-party/rust:futures-sink",
+        "//third-party/rust:futures-task-0.3.13",
+        "//third-party/rust:futures-util",
     ],
 )
 
@@ -4854,9 +4847,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":futures-core",
-        ":futures-sink",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-sink",
     ],
 )
 
@@ -4888,6 +4882,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4913,10 +4908,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":futures-core",
-        ":futures-task-0.3.13",
-        ":futures-util",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-task-0.3.13",
+        "//third-party/rust:futures-util",
     ],
 )
 
@@ -4939,6 +4935,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -4962,11 +4959,12 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro-hack",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro-hack",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -5096,6 +5094,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -5119,6 +5118,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -5149,6 +5149,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -5348,23 +5349,24 @@ third_party_rust_library(
     mapped_srcs = {
     },
     named_deps = {
-        "futures_01": ":futures-old",
+        "futures_01": "//third-party/rust:futures-old",
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":futures-channel",
-        ":futures-core",
-        ":futures-io-0.3.13",
-        ":futures-macro-0.3.13",
-        ":futures-sink",
-        ":futures-task-0.3.13",
-        ":memchr-2.4.1",
-        ":pin-project-lite-0.2.6",
-        ":pin-utils-0.1.0",
-        ":proc-macro-hack",
-        ":proc-macro-nested-0.1.6",
-        ":slab-0.4.2",
+        "//third-party/rust:futures-channel",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-io-0.3.13",
+        "//third-party/rust:futures-macro-0.3.13",
+        "//third-party/rust:futures-sink",
+        "//third-party/rust:futures-task-0.3.13",
+        "//third-party/rust:memchr-2.4.1",
+        "//third-party/rust:pin-project-lite-0.2.6",
+        "//third-party/rust:pin-utils-0.1.0",
+        "//third-party/rust:proc-macro-hack",
+        "//third-party/rust:proc-macro-nested-0.1.6",
+        "//third-party/rust:slab-0.4.2",
     ],
 )
 
@@ -5396,7 +5398,8 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :generic-array-0.14.4-build-script-build-args)",
     ],
-    deps = [":typenum"],
+    unittests = False,
+    deps = ["//third-party/rust:typenum"],
 )
 
 third_party_rust_library(
@@ -5424,7 +5427,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":typenum"],
+    unittests = False,
+    deps = ["//third-party/rust:typenum"],
 )
 
 third_party_rust_binary(
@@ -5459,7 +5463,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":version_check-0.9.2"],
+    unittests = False,
+    deps = ["//third-party/rust:version_check-0.9.2"],
 )
 
 third_party_rust_library(
@@ -5504,9 +5509,10 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :getrandom-0.1.15-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":cfg-if",
-        ":libc",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:libc",
     ],
 )
 
@@ -5526,6 +5532,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -5568,9 +5575,10 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :getrandom-0.2.2-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":cfg-if-1.0.0",
-        ":libc",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:libc",
     ],
 )
 
@@ -5590,6 +5598,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -5616,10 +5625,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -5688,10 +5698,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":fallible-iterator-0.2.0",
-        ":indexmap",
-        ":stable_deref_trait",
+        "//third-party/rust:fallible-iterator-0.2.0",
+        "//third-party/rust:indexmap",
+        "//third-party/rust:stable_deref_trait",
     ],
 )
 
@@ -5766,10 +5777,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":log",
-        ":plain",
-        ":scroll",
+        "//third-party/rust:log",
+        "//third-party/rust:plain",
+        "//third-party/rust:scroll",
     ],
 )
 
@@ -5840,19 +5852,20 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bytes",
-        ":fnv",
-        ":futures-core",
-        ":futures-sink",
-        ":futures-util",
-        ":http",
-        ":indexmap",
-        ":slab-0.4.2",
-        ":tokio",
-        ":tokio-util",
-        ":tracing",
-        ":tracing-futures",
+        "//third-party/rust:bytes",
+        "//third-party/rust:fnv",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-sink",
+        "//third-party/rust:futures-util",
+        "//third-party/rust:http",
+        "//third-party/rust:indexmap",
+        "//third-party/rust:slab-0.4.2",
+        "//third-party/rust:tokio",
+        "//third-party/rust:tokio-util",
+        "//third-party/rust:tracing",
+        "//third-party/rust:tracing-futures",
     ],
 )
 
@@ -5908,13 +5921,14 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":log",
-        ":pest",
-        ":pest_derive",
-        ":quick-error-2.0.0",
-        ":serde",
-        ":serde_json",
+        "//third-party/rust:log",
+        "//third-party/rust:pest",
+        "//third-party/rust:pest_derive",
+        "//third-party/rust:quick-error-2.0.0",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_json",
     ],
 )
 
@@ -5965,9 +5979,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":ahash",
-        ":serde",
+        "//third-party/rust:ahash",
+        "//third-party/rust:serde",
     ],
 )
 
@@ -6065,15 +6080,16 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":base64-0.12.3",
-        ":bitflags",
-        ":bytes-05",
-        ":headers-core-0.2.0",
-        ":http",
-        ":mime",
-        ":sha-1",
-        ":time-01",
+        "//third-party/rust:base64-0.12.3",
+        "//third-party/rust:bitflags",
+        "//third-party/rust:bytes-05",
+        "//third-party/rust:headers-core-0.2.0",
+        "//third-party/rust:http",
+        "//third-party/rust:mime",
+        "//third-party/rust:sha-1",
+        "//third-party/rust:time-01",
     ],
 )
 
@@ -6093,7 +6109,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":http"],
+    unittests = False,
+    deps = ["//third-party/rust:http"],
 )
 
 third_party_rust_library(
@@ -6120,7 +6137,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":unicode-segmentation"],
+    unittests = False,
+    deps = ["//third-party/rust:unicode-segmentation"],
 )
 
 third_party_rust_library(
@@ -6143,9 +6161,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":libc",
-        ":match_cfg-0.1.0",
+        "//third-party/rust:libc",
+        "//third-party/rust:match_cfg-0.1.0",
     ],
 )
 
@@ -6187,10 +6206,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bytes-05",
-        ":fnv",
-        ":itoa-0.4.6",
+        "//third-party/rust:bytes-05",
+        "//third-party/rust:fnv",
+        "//third-party/rust:itoa-0.4.6",
     ],
 )
 
@@ -6214,9 +6234,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bytes",
-        ":http",
+        "//third-party/rust:bytes",
+        "//third-party/rust:http",
     ],
 )
 
@@ -6250,6 +6271,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :httparse-1.4.1-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -6283,6 +6305,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -6305,6 +6328,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -6329,7 +6353,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":quick-error-1.2.3"],
+    unittests = False,
+    deps = ["//third-party/rust:quick-error-1.2.3"],
 )
 
 third_party_rust_library(
@@ -6427,23 +6452,24 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bytes",
-        ":futures-channel",
-        ":futures-core",
-        ":futures-util",
-        ":h2-0.3.0",
-        ":http",
-        ":http-body-0.4.0",
-        ":httparse-1.4.1",
-        ":httpdate-1.0.0",
-        ":itoa-0.4.6",
-        ":pin-project-1.0.2",
-        ":socket2-0.4.0",
-        ":tokio",
-        ":tower-service",
-        ":tracing",
-        ":want-0.3.0",
+        "//third-party/rust:bytes",
+        "//third-party/rust:futures-channel",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-util",
+        "//third-party/rust:h2-0.3.0",
+        "//third-party/rust:http",
+        "//third-party/rust:http-body-0.4.0",
+        "//third-party/rust:httparse-1.4.1",
+        "//third-party/rust:httpdate-1.0.0",
+        "//third-party/rust:itoa-0.4.6",
+        "//third-party/rust:pin-project-1.0.2",
+        "//third-party/rust:socket2-0.4.0",
+        "//third-party/rust:tokio",
+        "//third-party/rust:tower-service",
+        "//third-party/rust:tracing",
+        "//third-party/rust:want-0.3.0",
     ],
 )
 
@@ -6473,16 +6499,17 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":ct-logs-0.8.0",
-        ":futures-util",
-        ":hyper",
-        ":log",
-        ":rustls",
-        ":rustls-native-certs",
-        ":tokio",
-        ":tokio-rustls",
-        ":webpki-0.21.3",
+        "//third-party/rust:ct-logs-0.8.0",
+        "//third-party/rust:futures-util",
+        "//third-party/rust:hyper",
+        "//third-party/rust:log",
+        "//third-party/rust:rustls",
+        "//third-party/rust:rustls-native-certs",
+        "//third-party/rust:tokio",
+        "//third-party/rust:tokio-rustls",
+        "//third-party/rust:webpki-0.21.3",
     ],
 )
 
@@ -6502,6 +6529,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -6526,10 +6554,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":matches-0.1.8",
-        ":unicode-bidi-0.3.4",
-        ":unicode-normalization-0.1.13",
+        "//third-party/rust:matches-0.1.8",
+        "//third-party/rust:unicode-bidi-0.3.4",
+        "//third-party/rust:unicode-normalization-0.1.13",
     ],
 )
 
@@ -6571,10 +6600,11 @@ third_party_rust_library(
         "--cap-lints=allow",
         "--cfg=has_std",
     ],
+    unittests = False,
     deps = [
-        ":hashbrown",
-        ":rayon",
-        ":serde",
+        "//third-party/rust:hashbrown",
+        "//third-party/rust:rayon",
+        "//third-party/rust:serde",
     ],
 )
 
@@ -6594,7 +6624,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":bytes"],
+    unittests = False,
+    deps = ["//third-party/rust:bytes"],
 )
 
 third_party_rust_library(
@@ -6617,7 +6648,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":cfg-if"],
+    unittests = False,
+    deps = ["//third-party/rust:cfg-if"],
 )
 
 third_party_rust_library(
@@ -6644,7 +6676,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -6669,6 +6702,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -6738,7 +6772,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":either"],
+    unittests = False,
+    deps = ["//third-party/rust:either"],
 )
 
 third_party_rust_library(
@@ -6798,7 +6833,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":either"],
+    unittests = False,
+    deps = ["//third-party/rust:either"],
 )
 
 third_party_rust_library(
@@ -6823,6 +6859,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -6959,24 +6996,25 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":ascii-canvas-2.0.0",
-        ":atty",
-        ":bit-set",
-        ":diff",
-        ":docopt-1.1.0",
-        ":ena-0.14.0",
-        ":itertools-0.9.0",
-        ":lalrpop-util",
-        ":petgraph-0.5.1",
-        ":regex",
-        ":regex-syntax-0.6.21",
-        ":serde",
-        ":serde_derive",
-        ":sha2",
-        ":string_cache",
-        ":term-0.5.2",
-        ":unicode-xid-0.2.1",
+        "//third-party/rust:ascii-canvas-2.0.0",
+        "//third-party/rust:atty",
+        "//third-party/rust:bit-set",
+        "//third-party/rust:diff",
+        "//third-party/rust:docopt-1.1.0",
+        "//third-party/rust:ena-0.14.0",
+        "//third-party/rust:itertools-0.9.0",
+        "//third-party/rust:lalrpop-util",
+        "//third-party/rust:petgraph-0.5.1",
+        "//third-party/rust:regex",
+        "//third-party/rust:regex-syntax-0.6.21",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_derive",
+        "//third-party/rust:sha2",
+        "//third-party/rust:string_cache",
+        "//third-party/rust:term-0.5.2",
+        "//third-party/rust:unicode-xid-0.2.1",
     ],
 )
 
@@ -7113,25 +7151,26 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":ascii-canvas-2.0.0",
-        ":atty",
-        ":bit-set",
-        ":diff",
-        ":docopt-1.1.0",
-        ":ena-0.14.0",
-        ":itertools-0.9.0",
-        ":lalrpop",
-        ":lalrpop-util",
-        ":petgraph-0.5.1",
-        ":regex",
-        ":regex-syntax-0.6.21",
-        ":serde",
-        ":serde_derive",
-        ":sha2",
-        ":string_cache",
-        ":term-0.5.2",
-        ":unicode-xid-0.2.1",
+        "//third-party/rust:ascii-canvas-2.0.0",
+        "//third-party/rust:atty",
+        "//third-party/rust:bit-set",
+        "//third-party/rust:diff",
+        "//third-party/rust:docopt-1.1.0",
+        "//third-party/rust:ena-0.14.0",
+        "//third-party/rust:itertools-0.9.0",
+        "//third-party/rust:lalrpop",
+        "//third-party/rust:lalrpop-util",
+        "//third-party/rust:petgraph-0.5.1",
+        "//third-party/rust:regex",
+        "//third-party/rust:regex-syntax-0.6.21",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_derive",
+        "//third-party/rust:sha2",
+        "//third-party/rust:string_cache",
+        "//third-party/rust:term-0.5.2",
+        "//third-party/rust:unicode-xid-0.2.1",
     ],
 )
 
@@ -7155,6 +7194,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -7181,7 +7221,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":spin-0.5.2"],
+    unittests = False,
+    deps = ["//third-party/rust:spin-0.5.2"],
 )
 
 third_party_rust_library(
@@ -7385,6 +7426,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :libc-0.2.98-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -7588,6 +7630,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -7727,6 +7770,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -7746,6 +7790,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -7773,9 +7818,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":serde",
-        ":serde_test",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_test",
     ],
 )
 
@@ -7800,7 +7846,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":scopeguard"],
+    unittests = False,
+    deps = ["//third-party/rust:scopeguard"],
 )
 
 third_party_rust_library(
@@ -7842,9 +7889,10 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :log-0.4.11-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":cfg-if",
-        ":serde",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:serde",
     ],
 )
 
@@ -7887,6 +7935,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -7916,7 +7965,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":logos-derive-0.11.5"],
+    unittests = False,
+    deps = ["//third-party/rust:logos-derive-0.11.5"],
 )
 
 third_party_rust_library(
@@ -7962,14 +8012,15 @@ third_party_rust_library(
         "--cap-lints=allow",
         "--extern=proc_macro",
     ],
+    unittests = False,
     deps = [
-        ":beef-0.4.4",
-        ":fnv",
-        ":proc-macro2",
-        ":quote",
-        ":regex-syntax-0.6.21",
-        ":syn",
-        ":utf8-ranges-1.0.4",
+        "//third-party/rust:beef-0.4.4",
+        "//third-party/rust:fnv",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:regex-syntax-0.6.21",
+        "//third-party/rust:syn",
+        "//third-party/rust:utf8-ranges-1.0.4",
     ],
 )
 
@@ -7992,7 +8043,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":linked-hash-map"],
+    unittests = False,
+    deps = ["//third-party/rust:linked-hash-map"],
 )
 
 third_party_rust_library(
@@ -8020,10 +8072,11 @@ third_party_rust_library(
         "-Dnon_fmt_panic",
         "-Dunconditional_recursion",
     ],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -8043,6 +8096,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -8065,6 +8119,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -8087,6 +8142,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -8112,6 +8168,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :maybe-uninit-2.0.0-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -8136,6 +8193,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -8196,6 +8254,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :memchr-2.4.1-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -8219,6 +8278,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -8246,6 +8306,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :memoffset-0.6.4-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -8271,7 +8332,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":autocfg-1.0.1"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -8293,6 +8355,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -8322,9 +8385,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":mime",
-        ":unicase",
+        "//third-party/rust:mime",
+        "//third-party/rust:unicase",
     ],
 )
 
@@ -8356,7 +8420,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":unicase"],
+    unittests = False,
+    deps = ["//third-party/rust:unicase"],
 )
 
 third_party_rust_library(
@@ -8386,7 +8451,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":adler-0.2.3"],
+    unittests = False,
+    deps = ["//third-party/rust:adler-0.2.3"],
 )
 
 third_party_rust_library(
@@ -8469,9 +8535,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":libc",
-        ":log",
+        "//third-party/rust:libc",
+        "//third-party/rust:log",
     ],
 )
 
@@ -8540,13 +8607,14 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if",
-        ":iovec-0.1.4",
-        ":libc",
-        ":log",
-        ":net2-0.2.37",
-        ":slab-0.4.2",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:iovec-0.1.4",
+        "//third-party/rust:libc",
+        "//third-party/rust:log",
+        "//third-party/rust:net2-0.2.37",
+        "//third-party/rust:slab-0.4.2",
     ],
 )
 
@@ -8572,10 +8640,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":iovec-0.1.4",
-        ":libc",
-        ":mio-06",
+        "//third-party/rust:iovec-0.1.4",
+        "//third-party/rust:libc",
+        "//third-party/rust:mio-06",
     ],
 )
 
@@ -8620,17 +8689,18 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":buf_redux-0.8.4",
-        ":httparse-1.4.1",
-        ":log",
-        ":mime",
-        ":mime_guess-2.0.3",
-        ":quick-error-1.2.3",
-        ":rand-0.6.5",
-        ":safemem-0.3.3",
-        ":tempfile",
-        ":twoway-0.1.8",
+        "//third-party/rust:buf_redux-0.8.4",
+        "//third-party/rust:httparse-1.4.1",
+        "//third-party/rust:log",
+        "//third-party/rust:mime",
+        "//third-party/rust:mime_guess-2.0.3",
+        "//third-party/rust:quick-error-1.2.3",
+        "//third-party/rust:rand-0.6.5",
+        "//third-party/rust:safemem-0.3.3",
+        "//third-party/rust:tempfile",
+        "//third-party/rust:twoway-0.1.8",
     ],
 )
 
@@ -8669,9 +8739,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if",
-        ":libc",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:libc",
     ],
 )
 
@@ -8691,6 +8762,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -8765,10 +8837,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bitflags",
-        ":cfg-if-1.0.0",
-        ":libc",
+        "//third-party/rust:bitflags",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:libc",
     ],
 )
 
@@ -8842,10 +8915,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bitflags",
-        ":cfg-if-1.0.0",
-        ":libc",
+        "//third-party/rust:bitflags",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:libc",
     ],
 )
 
@@ -8868,10 +8942,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -8902,7 +8977,8 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :num-integer-0.1.44-build-script-build-args)",
     ],
-    deps = [":num-traits"],
+    unittests = False,
+    deps = ["//third-party/rust:num-traits"],
 )
 
 third_party_rust_binary(
@@ -8935,7 +9011,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":autocfg-1.0.1"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -8980,7 +9057,8 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :num-traits-0.2.14-build-script-build-args)",
     ],
-    deps = [":libm"],
+    unittests = False,
+    deps = ["//third-party/rust:libm"],
 )
 
 third_party_rust_binary(
@@ -9024,7 +9102,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":autocfg-1.0.1"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -9046,7 +9125,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -9114,6 +9194,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9144,6 +9225,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9163,6 +9245,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9182,6 +9265,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9201,6 +9285,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9224,9 +9309,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":num-traits",
-        ":serde",
+        "//third-party/rust:num-traits",
+        "//third-party/rust:serde",
     ],
 )
 
@@ -9260,10 +9346,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":instant-0.1.7",
-        ":lock_api-0.4.1",
-        ":parking_lot_core-0.8.0",
+        "//third-party/rust:instant-0.1.7",
+        "//third-party/rust:lock_api-0.4.1",
+        "//third-party/rust:parking_lot_core-0.8.0",
     ],
 )
 
@@ -9301,11 +9388,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if",
-        ":instant-0.1.7",
-        ":libc",
-        ":smallvec",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:instant-0.1.7",
+        "//third-party/rust:libc",
+        "//third-party/rust:smallvec",
     ],
 )
 
@@ -9330,6 +9418,7 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9349,6 +9438,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9388,7 +9478,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":ucd-trie-0.1.3"],
+    unittests = False,
+    deps = ["//third-party/rust:ucd-trie-0.1.3"],
 )
 
 third_party_rust_library(
@@ -9407,9 +9498,10 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":pest",
-        ":pest_generator-2.1.3",
+        "//third-party/rust:pest",
+        "//third-party/rust:pest_generator-2.1.3",
     ],
 )
 
@@ -9433,12 +9525,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":pest",
-        ":pest_meta-2.1.3",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:pest",
+        "//third-party/rust:pest_meta-2.1.3",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -9471,9 +9564,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":maplit",
-        ":pest",
+        "//third-party/rust:maplit",
+        "//third-party/rust:pest",
     ],
 )
 
@@ -9533,9 +9627,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":fixedbitset-0.2.0",
-        ":indexmap",
+        "//third-party/rust:fixedbitset-0.2.0",
+        "//third-party/rust:indexmap",
     ],
 )
 
@@ -9558,7 +9653,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":siphasher"],
+    unittests = False,
+    deps = ["//third-party/rust:siphasher"],
 )
 
 third_party_rust_library(
@@ -9577,7 +9673,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":pin-project-internal-0.4.24"],
+    unittests = False,
+    deps = ["//third-party/rust:pin-project-internal-0.4.24"],
 )
 
 third_party_rust_library(
@@ -9596,7 +9693,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":pin-project-internal-1.0.2"],
+    unittests = False,
+    deps = ["//third-party/rust:pin-project-internal-1.0.2"],
 )
 
 third_party_rust_library(
@@ -9626,10 +9724,11 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :pin-project-internal-0.4.24-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -9649,6 +9748,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9676,10 +9776,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -9699,6 +9800,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9718,6 +9820,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9741,6 +9844,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9766,6 +9870,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9795,6 +9900,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9814,6 +9920,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9845,11 +9952,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro-error-attr-1.0.4",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro-error-attr-1.0.4",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -9876,9 +9984,10 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :proc-macro-error-attr-1.0.4-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
     ],
 )
 
@@ -9898,7 +10007,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":version_check-0.9.2"],
+    unittests = False,
+    deps = ["//third-party/rust:version_check-0.9.2"],
 )
 
 third_party_rust_library(
@@ -9926,6 +10036,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :proc-macro-hack-0.5.19-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -9945,6 +10056,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9966,6 +10078,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -9989,6 +10102,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -10022,7 +10136,8 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :proc-macro2-1.0.26-build-script-build-args)",
     ],
-    deps = [":unicode-xid-0.2.1"],
+    unittests = False,
+    deps = ["//third-party/rust:unicode-xid-0.2.1"],
 )
 
 third_party_rust_binary(
@@ -10045,6 +10160,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -10064,6 +10180,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -10083,6 +10200,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -10113,11 +10231,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":env_logger",
-        ":log",
-        ":rand",
-        ":rand_core",
+        "//third-party/rust:env_logger",
+        "//third-party/rust:log",
+        "//third-party/rust:rand",
+        "//third-party/rust:rand_core",
     ],
 )
 
@@ -10148,7 +10267,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":proc-macro2"],
+    unittests = False,
+    deps = ["//third-party/rust:proc-macro2"],
 )
 
 third_party_rust_library(
@@ -10209,15 +10329,16 @@ third_party_rust_library(
     mapped_srcs = {
     },
     named_deps = {
-        "getrandom_package": ":getrandom-0.1.15",
+        "getrandom_package": "//third-party/rust:getrandom-0.1.15",
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":libc",
-        ":rand_chacha",
-        ":rand_core",
-        ":rand_pcg",
+        "//third-party/rust:libc",
+        "//third-party/rust:rand_chacha",
+        "//third-party/rust:rand_core",
+        "//third-party/rust:rand_pcg",
     ],
 )
 
@@ -10282,16 +10403,17 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :rand-0.6.5-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":libc",
-        ":rand_chacha-0.1.1",
-        ":rand_core-0.4.2",
-        ":rand_hc-0.1.0",
-        ":rand_isaac-0.1.1",
-        ":rand_jitter-0.1.4",
-        ":rand_os-0.1.3",
-        ":rand_pcg-0.1.2",
-        ":rand_xorshift-0.1.1",
+        "//third-party/rust:libc",
+        "//third-party/rust:rand_chacha-0.1.1",
+        "//third-party/rust:rand_core-0.4.2",
+        "//third-party/rust:rand_hc-0.1.0",
+        "//third-party/rust:rand_isaac-0.1.1",
+        "//third-party/rust:rand_jitter-0.1.4",
+        "//third-party/rust:rand_os-0.1.3",
+        "//third-party/rust:rand_pcg-0.1.2",
+        "//third-party/rust:rand_xorshift-0.1.1",
     ],
 )
 
@@ -10361,7 +10483,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":autocfg-0.1.7"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-0.1.7"],
 )
 
 third_party_rust_library(
@@ -10415,10 +10538,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":libc",
-        ":rand_chacha-0.3.0",
-        ":rand_core-0.6.1",
+        "//third-party/rust:libc",
+        "//third-party/rust:rand_chacha-0.3.0",
+        "//third-party/rust:rand_core-0.6.1",
     ],
 )
 
@@ -10446,9 +10570,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":ppv-lite86-0.2.9",
-        ":rand_core",
+        "//third-party/rust:ppv-lite86-0.2.9",
+        "//third-party/rust:rand_core",
     ],
 )
 
@@ -10474,7 +10599,8 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :rand_chacha-0.1.1-build-script-build-args)",
     ],
-    deps = [":rand_core-0.3.1"],
+    unittests = False,
+    deps = ["//third-party/rust:rand_core-0.3.1"],
 )
 
 third_party_rust_binary(
@@ -10497,7 +10623,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":autocfg-0.1.7"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-0.1.7"],
 )
 
 third_party_rust_library(
@@ -10523,9 +10650,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":ppv-lite86-0.2.9",
-        ":rand_core-0.6.1",
+        "//third-party/rust:ppv-lite86-0.2.9",
+        "//third-party/rust:rand_core-0.6.1",
     ],
 )
 
@@ -10556,7 +10684,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":getrandom-0.1.15"],
+    unittests = False,
+    deps = ["//third-party/rust:getrandom-0.1.15"],
 )
 
 third_party_rust_library(
@@ -10584,7 +10713,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":rand_core-0.4.2"],
+    unittests = False,
+    deps = ["//third-party/rust:rand_core-0.4.2"],
 )
 
 third_party_rust_library(
@@ -10612,6 +10742,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -10642,7 +10773,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":getrandom-0.2.2"],
+    unittests = False,
+    deps = ["//third-party/rust:getrandom-0.2.2"],
 )
 
 third_party_rust_library(
@@ -10664,7 +10796,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":rand_core-0.3.1"],
+    unittests = False,
+    deps = ["//third-party/rust:rand_core-0.3.1"],
 )
 
 third_party_rust_library(
@@ -10688,7 +10821,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":rand_core-0.3.1"],
+    unittests = False,
+    deps = ["//third-party/rust:rand_core-0.3.1"],
 )
 
 third_party_rust_library(
@@ -10712,7 +10846,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":rand_core-0.4.2"],
+    unittests = False,
+    deps = ["//third-party/rust:rand_core-0.4.2"],
 )
 
 third_party_rust_library(
@@ -10749,9 +10884,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":libc",
-        ":rand_core-0.4.2",
+        "//third-party/rust:libc",
+        "//third-party/rust:rand_core-0.4.2",
     ],
 )
 
@@ -10778,9 +10914,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":rand_core",
-        ":serde",
+        "//third-party/rust:rand_core",
+        "//third-party/rust:serde",
     ],
 )
 
@@ -10807,7 +10944,8 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :rand_pcg-0.1.2-build-script-build-args)",
     ],
-    deps = [":rand_core-0.4.2"],
+    unittests = False,
+    deps = ["//third-party/rust:rand_core-0.4.2"],
 )
 
 third_party_rust_binary(
@@ -10833,7 +10971,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":autocfg-0.1.7"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-0.1.7"],
 )
 
 third_party_rust_library(
@@ -10852,7 +10991,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":rand_core-0.3.1"],
+    unittests = False,
+    deps = ["//third-party/rust:rand_core-0.3.1"],
 )
 
 third_party_rust_library(
@@ -10963,10 +11103,11 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :rayon-1.5.0-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":crossbeam-deque-0.8.0",
-        ":either",
-        ":rayon-core-1.9.0",
+        "//third-party/rust:crossbeam-deque-0.8.0",
+        "//third-party/rust:either",
+        "//third-party/rust:rayon-core-1.9.0",
     ],
 )
 
@@ -10986,7 +11127,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":autocfg-1.0.1"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -11032,12 +11174,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":crossbeam-channel",
-        ":crossbeam-deque-0.8.0",
-        ":crossbeam-utils-0.8.0",
-        ":lazy_static",
-        ":num_cpus",
+        "//third-party/rust:crossbeam-channel",
+        "//third-party/rust:crossbeam-deque-0.8.0",
+        "//third-party/rust:crossbeam-utils-0.8.0",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:num_cpus",
     ],
 )
 
@@ -11064,7 +11207,8 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :ref-cast-1.0.6-build-script-build-args)",
     ],
-    deps = [":ref-cast-impl-1.0.6"],
+    unittests = False,
+    deps = ["//third-party/rust:ref-cast-impl-1.0.6"],
 )
 
 third_party_rust_binary(
@@ -11083,6 +11227,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -11102,10 +11247,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -11168,11 +11314,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":aho-corasick",
-        ":memchr-2.4.1",
-        ":regex-syntax-0.6.21",
-        ":thread_local-1.0.1",
+        "//third-party/rust:aho-corasick",
+        "//third-party/rust:memchr-2.4.1",
+        "//third-party/rust:regex-syntax-0.6.21",
+        "//third-party/rust:thread_local-1.0.1",
     ],
 )
 
@@ -11234,6 +11381,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -11256,6 +11404,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -11283,9 +11432,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":hostname",
-        ":quick-error-1.2.3",
+        "//third-party/rust:hostname",
+        "//third-party/rust:quick-error-1.2.3",
     ],
 )
 
@@ -11388,12 +11538,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":libc",
-        ":once_cell",
-        ":ring-0.16.20-ring-c-asm-elf",
-        ":spin-0.5.2",
-        ":untrusted-0.7.1",
+        "//third-party/rust:libc",
+        "//third-party/rust:once_cell",
+        "//third-party/rust:ring-0.16.20-ring-c-asm-elf",
+        "//third-party/rust:spin-0.5.2",
+        "//third-party/rust:untrusted-0.7.1",
     ],
 )
 
@@ -11417,6 +11568,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -11535,12 +11687,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":base64-0.13.0",
-        ":log",
-        ":ring-0.16.20",
-        ":sct-0.6.0",
-        ":webpki-0.21.3",
+        "//third-party/rust:base64-0.13.0",
+        "//third-party/rust:log",
+        "//third-party/rust:ring-0.16.20",
+        "//third-party/rust:sct-0.6.0",
+        "//third-party/rust:webpki-0.21.3",
     ],
 )
 
@@ -11569,9 +11722,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":openssl-probe-0.1.2",
-        ":rustls",
+        "//third-party/rust:openssl-probe-0.1.2",
+        "//third-party/rust:rustls",
     ],
 )
 
@@ -11622,18 +11776,19 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bitflags",
-        ":cfg-if-1.0.0",
-        ":dirs-next-2.0.0",
-        ":fs2",
-        ":libc",
-        ":log",
-        ":memchr-2.4.1",
-        ":nix-0.19.1",
-        ":unicode-segmentation",
-        ":unicode-width",
-        ":utf8parse-0.2.0",
+        "//third-party/rust:bitflags",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:dirs-next-2.0.0",
+        "//third-party/rust:fs2",
+        "//third-party/rust:libc",
+        "//third-party/rust:log",
+        "//third-party/rust:memchr-2.4.1",
+        "//third-party/rust:nix-0.19.1",
+        "//third-party/rust:unicode-segmentation",
+        "//third-party/rust:unicode-width",
+        "//third-party/rust:utf8parse-0.2.0",
     ],
 )
 
@@ -11670,6 +11825,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :ryu-1.0.5-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -11689,6 +11845,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -11711,6 +11868,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -11730,6 +11888,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -11752,6 +11911,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -11786,7 +11946,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":scroll_derive-0.10.2"],
+    unittests = False,
+    deps = ["//third-party/rust:scroll_derive-0.10.2"],
 )
 
 third_party_rust_library(
@@ -11805,10 +11966,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -11865,9 +12027,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":ring-0.16.20",
-        ":untrusted-0.7.1",
+        "//third-party/rust:ring-0.16.20",
+        "//third-party/rust:untrusted-0.7.1",
     ],
 )
 
@@ -11917,7 +12080,8 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :serde-1.0.126-build-script-build-args)",
     ],
-    deps = [":serde_derive"],
+    unittests = False,
+    deps = ["//third-party/rust:serde_derive"],
 )
 
 third_party_rust_binary(
@@ -11964,6 +12128,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12004,10 +12169,11 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :serde_derive-1.0.126-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -12046,6 +12212,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12113,10 +12280,12 @@ third_party_rust_library(
         "--cap-lints=allow",
         "--cfg=limb_width_64",
     ],
+    unittests = False,
     deps = [
-        ":itoa-0.4.6",
-        ":ryu-1.0.5",
-        ":serde",
+        "//third-party/rust:indexmap",
+        "//third-party/rust:itoa-0.4.6",
+        "//third-party/rust:ryu-1.0.5",
+        "//third-party/rust:serde",
     ],
 )
 
@@ -12144,7 +12313,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":serde"],
+    unittests = False,
+    deps = ["//third-party/rust:serde"],
 )
 
 third_party_rust_library(
@@ -12171,11 +12341,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":form_urlencoded-1.0.0",
-        ":itoa-0.4.6",
-        ":ryu-1.0.5",
-        ":serde",
+        "//third-party/rust:form_urlencoded-1.0.0",
+        "//third-party/rust:itoa-0.4.6",
+        "//third-party/rust:ryu-1.0.5",
+        "//third-party/rust:serde",
     ],
 )
 
@@ -12203,11 +12374,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":block-buffer-0.7.3",
-        ":digest",
-        ":fake-simd-0.1.2",
-        ":opaque-debug-0.2.3",
+        "//third-party/rust:block-buffer-0.7.3",
+        "//third-party/rust:digest",
+        "//third-party/rust:fake-simd-0.1.2",
+        "//third-party/rust:opaque-debug-0.2.3",
     ],
 )
 
@@ -12237,12 +12409,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":block-buffer-0.9.0",
-        ":cfg-if-1.0.0",
-        ":cpuid-bool-0.1.2",
-        ":digest-0.9.0",
-        ":opaque-debug-0.3.0",
+        "//third-party/rust:block-buffer-0.9.0",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:cpuid-bool-0.1.2",
+        "//third-party/rust:digest-0.9.0",
+        "//third-party/rust:opaque-debug-0.3.0",
     ],
 )
 
@@ -12273,11 +12446,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":block-buffer-0.7.3",
-        ":digest",
-        ":fake-simd-0.1.2",
-        ":opaque-debug-0.2.3",
+        "//third-party/rust:block-buffer-0.7.3",
+        "//third-party/rust:digest",
+        "//third-party/rust:fake-simd-0.1.2",
+        "//third-party/rust:opaque-debug-0.2.3",
     ],
 )
 
@@ -12300,7 +12474,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -12328,6 +12503,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12347,6 +12523,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12382,7 +12559,8 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :slog-2.5.2-build-script-build-args)",
     ],
-    deps = [":erased-serde"],
+    unittests = False,
+    deps = ["//third-party/rust:erased-serde"],
 )
 
 third_party_rust_binary(
@@ -12419,6 +12597,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12438,11 +12617,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":crossbeam-channel-0.4.4",
-        ":slog",
-        ":take_mut",
-        ":thread_local-1.0.1",
+        "//third-party/rust:crossbeam-channel-0.4.4",
+        "//third-party/rust:slog",
+        "//third-party/rust:take_mut",
+        "//third-party/rust:thread_local-1.0.1",
     ],
 )
 
@@ -12462,12 +12642,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":atty",
-        ":chrono",
-        ":slog",
-        ":term-0.6.1",
-        ":thread_local-1.0.1",
+        "//third-party/rust:atty",
+        "//third-party/rust:chrono",
+        "//third-party/rust:slog",
+        "//third-party/rust:term-0.6.1",
+        "//third-party/rust:thread_local-1.0.1",
     ],
 )
 
@@ -12499,15 +12680,16 @@ third_party_rust_library(
         "-Dnon_fmt_panic",
         "-Dunconditional_recursion",
     ],
+    unittests = False,
     deps = [
-        ":anyhow",
-        ":chrono",
-        ":failure_ext",
-        ":hostname",
-        ":itertools",
-        ":nix",
-        ":slog",
-        ":slog-term",
+        "//third-party/rust:anyhow",
+        "//third-party/rust:chrono",
+        "//third-party/rust:failure_ext",
+        "//third-party/rust:hostname",
+        "//third-party/rust:itertools",
+        "//third-party/rust:nix",
+        "//third-party/rust:slog",
+        "//third-party/rust:slog-term",
     ],
 )
 
@@ -12537,7 +12719,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":serde"],
+    unittests = False,
+    deps = ["//third-party/rust:serde"],
 )
 
 third_party_rust_library(
@@ -12563,7 +12746,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -12587,6 +12771,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12610,6 +12795,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12640,6 +12826,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12665,13 +12852,34 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":lazy_static",
-        ":new_debug_unreachable-1.0.4",
-        ":phf_shared-0.8.0",
-        ":precomputed-hash-0.1.1",
-        ":serde",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:new_debug_unreachable-1.0.4",
+        "//third-party/rust:phf_shared-0.8.0",
+        "//third-party/rust:precomputed-hash-0.1.1",
+        "//third-party/rust:serde",
     ],
+)
+
+third_party_rust_library(
+    name = "strsim",
+    srcs = ["strsim-0.10.0/src/lib.rs"],
+    archive = ":strsim-0.10.0--archive",
+    crate = "strsim",
+    crate_root = "strsim-0.10.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
 )
 
 third_party_rust_library(
@@ -12690,6 +12898,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12709,6 +12918,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12728,10 +12938,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":clap",
-        ":lazy_static",
-        ":structopt-derive",
+        "//third-party/rust:clap",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:structopt-derive",
     ],
 )
 
@@ -12758,12 +12969,13 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":heck",
-        ":proc-macro-error",
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:heck",
+        "//third-party/rust:proc-macro-error",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -12851,10 +13063,11 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :syn-1.0.75-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":unicode-xid-0.2.1",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:unicode-xid-0.2.1",
     ],
 )
 
@@ -12887,18 +13100,19 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
 third_party_rust_library(
     name = "synstructure",
     srcs = [
-        "synstructure-0.12.4/src/lib.rs",
-        "synstructure-0.12.4/src/macros.rs",
+        "synstructure-0.12.5/src/lib.rs",
+        "synstructure-0.12.5/src/macros.rs",
     ],
-    archive = ":synstructure-0.12.4--archive",
+    archive = ":synstructure-0.12.5--archive",
     crate = "synstructure",
-    crate_root = "synstructure-0.12.4/src/lib.rs",
+    crate_root = "synstructure-0.12.5/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -12912,11 +13126,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
-        ":unicode-xid-0.2.1",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
+        "//third-party/rust:unicode-xid-0.2.1",
     ],
 )
 
@@ -12939,6 +13154,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -12970,10 +13186,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":filetime",
-        ":libc",
-        ":xattr",
+        "//third-party/rust:filetime",
+        "//third-party/rust:libc",
+        "//third-party/rust:xattr",
     ],
 )
 
@@ -13004,11 +13221,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if",
-        ":libc",
-        ":rand",
-        ":remove_dir_all-0.5.3",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:libc",
+        "//third-party/rust:rand",
+        "//third-party/rust:remove_dir_all-0.5.3",
     ],
 )
 
@@ -13036,9 +13254,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":byteorder",
-        ":dirs-1.0.5",
+        "//third-party/rust:byteorder",
+        "//third-party/rust:dirs-1.0.5",
     ],
 )
 
@@ -13066,7 +13285,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":dirs"],
+    unittests = False,
+    deps = ["//third-party/rust:dirs"],
 )
 
 third_party_rust_library(
@@ -13091,7 +13311,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -13110,6 +13331,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -13133,9 +13355,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":term_size",
-        ":unicode-width",
+        "//third-party/rust:term_size",
+        "//third-party/rust:unicode-width",
     ],
 )
 
@@ -13159,7 +13382,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":thiserror-impl-1.0.23"],
+    unittests = False,
+    deps = ["//third-party/rust:thiserror-impl-1.0.23"],
 )
 
 third_party_rust_library(
@@ -13186,10 +13410,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -13214,7 +13439,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":lazy_static"],
+    unittests = False,
+    deps = ["//third-party/rust:lazy_static"],
 )
 
 third_party_rust_library(
@@ -13239,7 +13465,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -13266,6 +13493,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -13576,17 +13804,18 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bytes",
-        ":libc",
-        ":memchr-2.4.1",
-        ":mio",
-        ":num_cpus",
-        ":once_cell",
-        ":parking_lot-0.11.0",
-        ":pin-project-lite-0.2.6",
-        ":signal-hook-registry-1.4.0",
-        ":tokio-macros-1.1.0",
+        "//third-party/rust:bytes",
+        "//third-party/rust:libc",
+        "//third-party/rust:memchr-2.4.1",
+        "//third-party/rust:mio",
+        "//third-party/rust:num_cpus",
+        "//third-party/rust:once_cell",
+        "//third-party/rust:parking_lot-0.11.0",
+        "//third-party/rust:pin-project-lite-0.2.6",
+        "//third-party/rust:signal-hook-registry-1.4.0",
+        "//third-party/rust:tokio-macros-1.1.0",
     ],
 )
 
@@ -13933,21 +14162,22 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bytes-05",
-        ":fnv",
-        ":futures-core",
-        ":iovec-0.1.4",
-        ":lazy_static",
-        ":libc",
-        ":memchr-2.4.1",
-        ":mio-06",
-        ":mio-uds-0.6.8",
-        ":num_cpus",
-        ":pin-project-lite-0.1.11",
-        ":signal-hook-registry-1.4.0",
-        ":slab-0.4.2",
-        ":tokio-macros",
+        "//third-party/rust:bytes-05",
+        "//third-party/rust:fnv",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:iovec-0.1.4",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:libc",
+        "//third-party/rust:memchr-2.4.1",
+        "//third-party/rust:mio-06",
+        "//third-party/rust:mio-uds-0.6.8",
+        "//third-party/rust:num_cpus",
+        "//third-party/rust:pin-project-lite-0.1.11",
+        "//third-party/rust:signal-hook-registry-1.4.0",
+        "//third-party/rust:slab-0.4.2",
+        "//third-party/rust:tokio-macros",
     ],
 )
 
@@ -13971,10 +14201,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -13998,10 +14229,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -14032,10 +14264,11 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":rustls",
-        ":tokio",
-        ":webpki-0.21.3",
+        "//third-party/rust:rustls",
+        "//third-party/rust:tokio",
+        "//third-party/rust:webpki-0.21.3",
     ],
 )
 
@@ -14104,11 +14337,12 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":futures-core",
-        ":pin-project-lite-0.2.6",
-        ":tokio",
-        ":tokio-util",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:pin-project-lite-0.2.6",
+        "//third-party/rust:tokio",
+        "//third-party/rust:tokio-util",
     ],
 )
 
@@ -14134,12 +14368,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":futures-util",
-        ":log",
-        ":pin-project-1.0.2",
-        ":tokio",
-        ":tungstenite-0.12.0",
+        "//third-party/rust:futures-util",
+        "//third-party/rust:log",
+        "//third-party/rust:pin-project-1.0.2",
+        "//third-party/rust:tokio",
+        "//third-party/rust:tungstenite-0.12.0",
     ],
 )
 
@@ -14205,15 +14440,16 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bytes",
-        ":futures-core",
-        ":futures-io-0.3.13",
-        ":futures-sink",
-        ":log",
-        ":pin-project-lite-0.2.6",
-        ":slab-0.4.2",
-        ":tokio",
+        "//third-party/rust:bytes",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-io-0.3.13",
+        "//third-party/rust:futures-sink",
+        "//third-party/rust:log",
+        "//third-party/rust:pin-project-lite-0.2.6",
+        "//third-party/rust:slab-0.4.2",
+        "//third-party/rust:tokio",
     ],
 )
 
@@ -14230,9 +14466,9 @@ third_party_rust_library(
     mapped_srcs = {
     },
     named_deps = {
-        "tokio_02": ":tokio-02",
-        "tokio_1x": ":tokio",
-        "tokio_1x_stream": ":tokio-stream",
+        "tokio_02": "//third-party/rust:tokio-02",
+        "tokio_1x": "//third-party/rust:tokio",
+        "tokio_1x_stream": "//third-party/rust:tokio-stream",
     },
     proc_macro = False,
     rustc_flags = [
@@ -14242,10 +14478,11 @@ third_party_rust_library(
         "-Dnon_fmt_panic",
         "-Dunconditional_recursion",
     ],
+    unittests = False,
     deps = [
-        ":futures",
-        ":pin-project",
-        ":thiserror",
+        "//third-party/rust:futures",
+        "//third-party/rust:pin-project",
+        "//third-party/rust:thiserror",
     ],
 )
 
@@ -14275,7 +14512,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":serde"],
+    unittests = False,
+    deps = ["//third-party/rust:serde"],
 )
 
 third_party_rust_library(
@@ -14413,19 +14651,20 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":futures-core",
-        ":futures-util",
-        ":indexmap",
-        ":pin-project-1.0.2",
-        ":rand-0.8.3",
-        ":slab-0.4.2",
-        ":tokio",
-        ":tokio-stream",
-        ":tokio-util",
-        ":tower-layer-0.3.1",
-        ":tower-service",
-        ":tracing",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-util",
+        "//third-party/rust:indexmap",
+        "//third-party/rust:pin-project-1.0.2",
+        "//third-party/rust:rand-0.8.3",
+        "//third-party/rust:slab-0.4.2",
+        "//third-party/rust:tokio",
+        "//third-party/rust:tokio-stream",
+        "//third-party/rust:tokio-util",
+        "//third-party/rust:tower-layer-0.3.1",
+        "//third-party/rust:tower-service",
+        "//third-party/rust:tracing",
     ],
 )
 
@@ -14450,6 +14689,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -14469,6 +14709,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -14504,12 +14745,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if-1.0.0",
-        ":log",
-        ":pin-project-lite-0.2.6",
-        ":tracing-attributes-0.1.11",
-        ":tracing-core",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:log",
+        "//third-party/rust:pin-project-lite-0.2.6",
+        "//third-party/rust:tracing-attributes-0.1.11",
+        "//third-party/rust:tracing-core",
     ],
 )
 
@@ -14529,10 +14771,11 @@ third_party_rust_library(
     },
     proc_macro = True,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":proc-macro2",
-        ":quote",
-        ":syn",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
     ],
 )
 
@@ -14572,7 +14815,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":lazy_static"],
+    unittests = False,
+    deps = ["//third-party/rust:lazy_static"],
 )
 
 third_party_rust_library(
@@ -14603,9 +14847,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":pin-project",
-        ":tracing",
+        "//third-party/rust:pin-project",
+        "//third-party/rust:tracing",
     ],
 )
 
@@ -14712,23 +14957,24 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":async-trait",
-        ":cfg-if-1.0.0",
-        ":data-encoding",
-        ":enum-as-inner-0.3.3",
-        ":futures-channel",
-        ":futures-io-0.3.13",
-        ":futures-util",
-        ":idna-0.2.0",
-        ":ipnet-2.3.0",
-        ":lazy_static",
-        ":log",
-        ":rand-0.8.3",
-        ":smallvec",
-        ":thiserror",
-        ":tokio",
-        ":url",
+        "//third-party/rust:async-trait",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:data-encoding",
+        "//third-party/rust:enum-as-inner-0.3.3",
+        "//third-party/rust:futures-channel",
+        "//third-party/rust:futures-io-0.3.13",
+        "//third-party/rust:futures-util",
+        "//third-party/rust:idna-0.2.0",
+        "//third-party/rust:ipnet-2.3.0",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:log",
+        "//third-party/rust:rand-0.8.3",
+        "//third-party/rust:smallvec",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:tokio",
+        "//third-party/rust:url",
     ],
 )
 
@@ -14787,18 +15033,19 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":cfg-if-1.0.0",
-        ":futures-util",
-        ":lazy_static",
-        ":log",
-        ":lru-cache",
-        ":parking_lot-0.11.0",
-        ":resolv-conf-0.7.0",
-        ":smallvec",
-        ":thiserror",
-        ":tokio",
-        ":trust-dns-proto-0.20.0",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:futures-util",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:log",
+        "//third-party/rust:lru-cache",
+        "//third-party/rust:parking_lot-0.11.0",
+        "//third-party/rust:resolv-conf-0.7.0",
+        "//third-party/rust:smallvec",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:tokio",
+        "//third-party/rust:trust-dns-proto-0.20.0",
     ],
 )
 
@@ -14818,6 +15065,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -14855,18 +15103,19 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":base64-0.13.0",
-        ":byteorder",
-        ":bytes",
-        ":http",
-        ":httparse-1.4.1",
-        ":input_buffer-0.4.0",
-        ":log",
-        ":rand-0.8.3",
-        ":sha-1-0.9.4",
-        ":url",
-        ":utf-8-0.7.5",
+        "//third-party/rust:base64-0.13.0",
+        "//third-party/rust:byteorder",
+        "//third-party/rust:bytes",
+        "//third-party/rust:http",
+        "//third-party/rust:httparse-1.4.1",
+        "//third-party/rust:input_buffer-0.4.0",
+        "//third-party/rust:log",
+        "//third-party/rust:rand-0.8.3",
+        "//third-party/rust:sha-1-0.9.4",
+        "//third-party/rust:url",
+        "//third-party/rust:utf-8-0.7.5",
     ],
 )
 
@@ -14896,7 +15145,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":memchr-2.4.1"],
+    unittests = False,
+    deps = ["//third-party/rust:memchr-2.4.1"],
 )
 
 third_party_rust_library(
@@ -14929,6 +15179,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -14954,6 +15205,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -14980,6 +15232,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15007,6 +15260,7 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :unicase-2.6.0-build-script-build-args)",
     ],
+    unittests = False,
     deps = [],
 )
 
@@ -15032,7 +15286,8 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":version_check-0.9.2"],
+    unittests = False,
+    deps = ["//third-party/rust:version_check-0.9.2"],
 )
 
 third_party_rust_library(
@@ -15061,7 +15316,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":matches-0.1.8"],
+    unittests = False,
+    deps = ["//third-party/rust:matches-0.1.8"],
 )
 
 third_party_rust_library(
@@ -15096,7 +15352,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":tinyvec-0.3.4"],
+    unittests = False,
+    deps = ["//third-party/rust:tinyvec-0.3.4"],
 )
 
 third_party_rust_library(
@@ -15123,6 +15380,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15146,6 +15404,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15169,6 +15428,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15188,23 +15448,24 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
 third_party_rust_library(
     name = "url",
     srcs = [
-        "url-2.2.0/src/host.rs",
-        "url-2.2.0/src/lib.rs",
-        "url-2.2.0/src/origin.rs",
-        "url-2.2.0/src/parser.rs",
-        "url-2.2.0/src/path_segments.rs",
-        "url-2.2.0/src/quirks.rs",
-        "url-2.2.0/src/slicing.rs",
+        "url-2.2.2/src/host.rs",
+        "url-2.2.2/src/lib.rs",
+        "url-2.2.2/src/origin.rs",
+        "url-2.2.2/src/parser.rs",
+        "url-2.2.2/src/path_segments.rs",
+        "url-2.2.2/src/quirks.rs",
+        "url-2.2.2/src/slicing.rs",
     ],
-    archive = ":url-2.2.0--archive",
+    archive = ":url-2.2.2--archive",
     crate = "url",
-    crate_root = "url-2.2.0/src/lib.rs",
+    crate_root = "url-2.2.2/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -15215,12 +15476,13 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":form_urlencoded-1.0.0",
-        ":idna-0.2.0",
-        ":matches-0.1.8",
-        ":percent-encoding",
-        ":serde",
+        "//third-party/rust:form_urlencoded-1.0.0",
+        "//third-party/rust:idna-0.2.0",
+        "//third-party/rust:matches-0.1.8",
+        "//third-party/rust:percent-encoding",
+        "//third-party/rust:serde",
     ],
 )
 
@@ -15244,6 +15506,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15266,6 +15529,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15289,6 +15553,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15308,6 +15573,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15332,6 +15598,7 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15351,9 +15618,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":log",
-        ":try-lock-0.2.3",
+        "//third-party/rust:log",
+        "//third-party/rust:try-lock-0.2.3",
     ],
 )
 
@@ -15428,30 +15696,31 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":bytes",
-        ":futures",
-        ":headers-0.3.2",
-        ":http",
-        ":hyper",
-        ":log",
-        ":mime",
-        ":mime_guess-2.0.3",
-        ":multipart-0.17.0",
-        ":percent-encoding",
-        ":pin-project-1.0.2",
-        ":scoped-tls-1.0.0",
-        ":serde",
-        ":serde_json",
-        ":serde_urlencoded-0.7.0",
-        ":tokio",
-        ":tokio-rustls",
-        ":tokio-stream",
-        ":tokio-tungstenite-0.13.0",
-        ":tokio-util",
-        ":tower-service",
-        ":tracing",
-        ":tracing-futures",
+        "//third-party/rust:bytes",
+        "//third-party/rust:futures",
+        "//third-party/rust:headers-0.3.2",
+        "//third-party/rust:http",
+        "//third-party/rust:hyper",
+        "//third-party/rust:log",
+        "//third-party/rust:mime",
+        "//third-party/rust:mime_guess-2.0.3",
+        "//third-party/rust:multipart-0.17.0",
+        "//third-party/rust:percent-encoding",
+        "//third-party/rust:pin-project-1.0.2",
+        "//third-party/rust:scoped-tls-1.0.0",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_json",
+        "//third-party/rust:serde_urlencoded-0.7.0",
+        "//third-party/rust:tokio",
+        "//third-party/rust:tokio-rustls",
+        "//third-party/rust:tokio-stream",
+        "//third-party/rust:tokio-tungstenite-0.13.0",
+        "//third-party/rust:tokio-util",
+        "//third-party/rust:tower-service",
+        "//third-party/rust:tracing",
+        "//third-party/rust:tracing-futures",
     ],
 )
 
@@ -15498,9 +15767,10 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [
-        ":ring-0.16.20",
-        ":untrusted-0.7.1",
+        "//third-party/rust:ring-0.16.20",
+        "//third-party/rust:untrusted-0.7.1",
     ],
 )
 
@@ -15533,7 +15803,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -15574,7 +15845,8 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
-    deps = [":zstd-safe-4.0.0+zstd.1.4.9"],
+    unittests = False,
+    deps = ["//third-party/rust:zstd-safe-4.0.0+zstd.1.4.9"],
 )
 
 third_party_rust_library(
@@ -15602,9 +15874,10 @@ third_party_rust_library(
         "--cap-lints=allow",
         "@$(location :zstd-safe-4.0.0+zstd.1.4.9-build-script-build-args)",
     ],
+    unittests = False,
     deps = [
-        ":libc",
-        ":zstd-sys",
+        "//third-party/rust:libc",
+        "//third-party/rust:zstd-sys",
     ],
 )
 
@@ -15631,6 +15904,7 @@ third_party_rust_binary(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
     deps = [],
 )
 
@@ -15666,5 +15940,6 @@ third_party_rust_library(
         "--cap-lints=allow",
         "-lzstd",
     ],
-    deps = [":libc"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
