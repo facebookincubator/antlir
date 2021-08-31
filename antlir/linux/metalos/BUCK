@@ -29,6 +29,15 @@ image.layer(
             # we don't even use it anyway
             "dracut",
         ]),
+        # remove any reference to rpm repositories (upstream or antlir)
+        image.remove("/etc/yum.repos.d"),
+        image.remove(
+            "/etc/dnf/dnf.conf",
+            must_exist = False,
+        ),
+        # recreate an empty /etc/yum.repos.d for any tooling that expects it to
+        # always exist
+        image.ensure_subdirs_exist("/etc", "yum.repos.d"),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
 )
