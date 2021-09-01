@@ -8,7 +8,7 @@ fake_macro_library(
     deps = [
         ":kernel",
         "//antlir/bzl:flavor_helpers",
-        "//antlir/bzl:image",
+        "//antlir/bzl:image_bzl",
         "//antlir/bzl:shape",
     ],
 )
@@ -30,7 +30,7 @@ fake_macro_library(
         "initrd.bzl",
     ],
     deps = [
-        "//antlir/bzl:image",
+        "//antlir/bzl:image_bzl",
         "//antlir/bzl:shape",
         "//antlir/bzl:systemd",
     ],
@@ -65,7 +65,7 @@ fake_macro_library(
         ":build_vm_run_target",
         ":types",
         "//antlir/bzl:constants",
-        "//antlir/bzl:image",
+        "//antlir/bzl:image_bzl",
         "//antlir/bzl:image_unittest_helpers",
         "//antlir/bzl:shape",
     ],
