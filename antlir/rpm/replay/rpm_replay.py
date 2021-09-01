@@ -82,6 +82,12 @@ def _install_rpms_into_subvol(
             ],
             bindmount_rw=[(install_subvol.path(), "/i")],
             user=pwd.getpwnam("root"),
+            # We strip env vars upon container entry, and the default locale
+            # is `C`.  However, `dnf` internally falls back to `C.UTF-8`, so
+            # scriptlets act on the filesystem in that locale (for example,
+            # `/root/.viminfo` as written by `vim-enhanced`, stores the
+            # encoding).  Set this to ensure we match `dnf` behavior.
+            setenv=["LC_ALL=C.UTF-8"],
             cmd=[
                 *_RPM_INSTALL_CMD,
                 "--root=/i",
