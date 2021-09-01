@@ -33,7 +33,6 @@ rust_binary(
                 "slog",
                 "slog-async",
                 "slog-term",
-                "slog_glog_fmt",
                 "toml",  # load config files
                 "serde",  # load config files
                 "zstd",  # os images are zstd-compressed btrfs sendstreams
@@ -50,7 +49,13 @@ rust_binary(
                 "trust-dns-resolver",
             ],
             platform = "rust",
-        ),
+        ) + [
+            third_party.library(
+                "shed",
+                "slog_glog_fmt",
+                platform = "rust",
+            ),
+        ],
 )
 
 export_file(

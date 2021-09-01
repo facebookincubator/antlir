@@ -95,6 +95,12 @@ archive(
 )
 
 archive(
+    name = "adler32-1.2.0--archive",
+    sha256 = "aae1277d39aeec15cb388266ecc24b11c80469deae6067e17a1a7aa9e5c1f234",
+    url = "https://static.crates.io/crates/adler32/adler32-1.2.0.crate",
+)
+
+archive(
     name = "ahash-0.7.4--archive",
     sha256 = "43bb833f0bf979d8475d38fbf09ed3b8a55e1885fe93ad3f93239fc6a4f17b98",
     url = "https://static.crates.io/crates/ahash/ahash-0.7.4.crate",
@@ -131,6 +137,12 @@ archive(
 )
 
 archive(
+    name = "arrayvec-0.5.2--archive",
+    sha256 = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b",
+    url = "https://static.crates.io/crates/arrayvec/arrayvec-0.5.2.crate",
+)
+
+archive(
     name = "ascii-canvas-2.0.0--archive",
     sha256 = "ff8eb72df928aafb99fe5d37b383f2fe25bd2a765e3e5f7c365916b6f2463a29",
     url = "https://static.crates.io/crates/ascii-canvas/ascii-canvas-2.0.0.crate",
@@ -146,6 +158,12 @@ archive(
     name = "atty-0.2.14--archive",
     sha256 = "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8",
     url = "https://static.crates.io/crates/atty/atty-0.2.14.crate",
+)
+
+archive(
+    name = "auto_impl-0.4.1--archive",
+    sha256 = "42cbf586c80ada5e5ccdecae80d3ef0854f224e2dd74435f8d87e6831b8d0a38",
+    url = "https://static.crates.io/crates/auto_impl/auto_impl-0.4.1.crate",
 )
 
 archive(
@@ -188,6 +206,18 @@ archive(
     name = "beef-0.4.4--archive",
     sha256 = "474a626a67200bd107d44179bb3d4fc61891172d11696609264589be6a0e6a43",
     url = "https://static.crates.io/crates/beef/beef-0.4.4.crate",
+)
+
+archive(
+    name = "bigdecimal-0.1.2--archive",
+    sha256 = "1374191e2dd25f9ae02e3aa95041ed5d747fc77b3c102b49fe2dd9a8117a6244",
+    url = "https://static.crates.io/crates/bigdecimal/bigdecimal-0.1.2.crate",
+)
+
+archive(
+    name = "bindgen-0.53.3--archive",
+    sha256 = "c72a978d268b1d70b0e963217e60fdabd9523a941457a6c42a7315d15c7e89e5",
+    url = "https://static.crates.io/crates/bindgen/bindgen-0.53.3.crate",
 )
 
 archive(
@@ -257,6 +287,12 @@ archive(
 )
 
 archive(
+    name = "bytes-0.4.12--archive",
+    sha256 = "206fdffcfa2df7cbe15601ef46c813fce0965eb3286db6b56c583b814b51c81c",
+    url = "https://static.crates.io/crates/bytes/bytes-0.4.12.crate",
+)
+
+archive(
     name = "bytes-0.5.6--archive",
     sha256 = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38",
     url = "https://static.crates.io/crates/bytes/bytes-0.5.6.crate",
@@ -266,6 +302,12 @@ archive(
     name = "bytes-1.0.0--archive",
     sha256 = "ad1f8e949d755f9d79112b5bb46938e0ef9d3804a0b16dfab13aafcaa5f0fa72",
     url = "https://static.crates.io/crates/bytes/bytes-1.0.0.crate",
+)
+
+archive(
+    name = "cexpr-0.4.0--archive",
+    sha256 = "f4aedb84272dbe89af497cf81375129abda4fc0a9e7c5d317498c15cc30c0d27",
+    url = "https://static.crates.io/crates/cexpr/cexpr-0.4.0.crate",
 )
 
 archive(
@@ -284,6 +326,12 @@ archive(
     name = "chrono-0.4.19--archive",
     sha256 = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73",
     url = "https://static.crates.io/crates/chrono/chrono-0.4.19.crate",
+)
+
+archive(
+    name = "clang-sys-0.29.3--archive",
+    sha256 = "fe6837df1d5cba2397b835c8530f51723267e16abbf83892e9e5af4f0e5dd10a",
+    url = "https://static.crates.io/crates/clang-sys/clang-sys-0.29.3.crate",
 )
 
 archive(
@@ -317,6 +365,18 @@ archive(
 )
 
 archive(
+    name = "crc32fast-1.2.0--archive",
+    sha256 = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1",
+    url = "https://static.crates.io/crates/crc32fast/crc32fast-1.2.0.crate",
+)
+
+archive(
+    name = "crossbeam-0.7.3--archive",
+    sha256 = "69323bff1fb41c635347b8ead484a5ca6c3f11914d784170b158d8449ab07f8e",
+    url = "https://static.crates.io/crates/crossbeam/crossbeam-0.7.3.crate",
+)
+
+archive(
     name = "crossbeam-channel-0.4.4--archive",
     sha256 = "b153fe7cbef478c567df0f972e02e6d736db11affe43dfc9c56a9374d1adfb87",
     url = "https://static.crates.io/crates/crossbeam-channel/crossbeam-channel-0.4.4.crate",
@@ -329,15 +389,33 @@ archive(
 )
 
 archive(
+    name = "crossbeam-deque-0.7.3--archive",
+    sha256 = "9f02af974daeee82218205558e51ec8768b48cf524bd01d550abe5573a608285",
+    url = "https://static.crates.io/crates/crossbeam-deque/crossbeam-deque-0.7.3.crate",
+)
+
+archive(
     name = "crossbeam-deque-0.8.0--archive",
     sha256 = "94af6efb46fef72616855b036a624cf27ba656ffc9be1b9a3c931cfc7749a9a9",
     url = "https://static.crates.io/crates/crossbeam-deque/crossbeam-deque-0.8.0.crate",
 )
 
 archive(
+    name = "crossbeam-epoch-0.8.2--archive",
+    sha256 = "058ed274caafc1f60c4997b5fc07bf7dc7cca454af7c6e81edffe5f33f70dace",
+    url = "https://static.crates.io/crates/crossbeam-epoch/crossbeam-epoch-0.8.2.crate",
+)
+
+archive(
     name = "crossbeam-epoch-0.9.1--archive",
     sha256 = "a1aaa739f95311c2c7887a76863f500026092fb1dce0161dab577e559ef3569d",
     url = "https://static.crates.io/crates/crossbeam-epoch/crossbeam-epoch-0.9.1.crate",
+)
+
+archive(
+    name = "crossbeam-queue-0.2.3--archive",
+    sha256 = "774ba60a54c213d409d5353bda12d49cd68d14e45036a285234c8d6f91f92570",
+    url = "https://static.crates.io/crates/crossbeam-queue/crossbeam-queue-0.2.3.crate",
 )
 
 archive(
@@ -527,6 +605,12 @@ archive(
 )
 
 archive(
+    name = "fallible-streaming-iterator-0.1.9--archive",
+    sha256 = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a",
+    url = "https://static.crates.io/crates/fallible-streaming-iterator/fallible-streaming-iterator-0.1.9.crate",
+)
+
+archive(
     name = "filetime-0.2.12--archive",
     sha256 = "3ed85775dcc68644b5c950ac06a2b23768d3bc9390464151aaf27136998dcf9e",
     url = "https://static.crates.io/crates/filetime/filetime-0.2.12.crate",
@@ -539,9 +623,27 @@ archive(
 )
 
 archive(
+    name = "flate2-1.0.14--archive",
+    sha256 = "2cfff41391129e0a856d6d822600b8d71179d46879e310417eb9c762eb178b42",
+    url = "https://static.crates.io/crates/flate2/flate2-1.0.14.crate",
+)
+
+archive(
     name = "fnv-1.0.7--archive",
     sha256 = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1",
     url = "https://static.crates.io/crates/fnv/fnv-1.0.7.crate",
+)
+
+archive(
+    name = "foreign-types-0.3.2--archive",
+    sha256 = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1",
+    url = "https://static.crates.io/crates/foreign-types/foreign-types-0.3.2.crate",
+)
+
+archive(
+    name = "foreign-types-shared-0.1.1--archive",
+    sha256 = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b",
+    url = "https://static.crates.io/crates/foreign-types-shared/foreign-types-shared-0.1.1.crate",
 )
 
 archive(
@@ -650,6 +752,12 @@ archive(
     name = "gimli-0.22.0--archive",
     sha256 = "aaf91faf136cb47367fa430cd46e37a788775e7fa104f8b4bcb3861dc389b724",
     url = "https://static.crates.io/crates/gimli/gimli-0.22.0.crate",
+)
+
+archive(
+    name = "glob-0.3.0--archive",
+    sha256 = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574",
+    url = "https://static.crates.io/crates/glob/glob-0.3.0.crate",
 )
 
 archive(
@@ -821,6 +929,24 @@ archive(
 )
 
 archive(
+    name = "lazycell-1.3.0--archive",
+    sha256 = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55",
+    url = "https://static.crates.io/crates/lazycell/lazycell-1.3.0.crate",
+)
+
+archive(
+    name = "lexical-5.2.0--archive",
+    sha256 = "a28ff8a57641758c89a37b2d28556a68978b3ea3f709f39953e153acea3dbacf",
+    url = "https://static.crates.io/crates/lexical/lexical-5.2.0.crate",
+)
+
+archive(
+    name = "lexical-core-0.7.6--archive",
+    sha256 = "6607c62aa161d23d17a9072cc5da0be67cdfc89d3afb1e8d9c842bebc2525ffe",
+    url = "https://static.crates.io/crates/lexical-core/lexical-core-0.7.6.crate",
+)
+
+archive(
     name = "libc-0.2.98--archive",
     sha256 = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790",
     url = "https://static.crates.io/crates/libc/libc-0.2.98.crate",
@@ -830,6 +956,18 @@ archive(
     name = "libm-0.2.1--archive",
     sha256 = "c7d73b3f436185384286bd8098d17ec07c9a7d2388a6599f824d8502b529702a",
     url = "https://static.crates.io/crates/libm/libm-0.2.1.crate",
+)
+
+archive(
+    name = "libsqlite3-sys-0.18.0--archive",
+    sha256 = "1e704a02bcaecd4a08b93a23f6be59d0bd79cd161e0963e9499165a0a35df7bd",
+    url = "https://static.crates.io/crates/libsqlite3-sys/libsqlite3-sys-0.18.0.crate",
+)
+
+archive(
+    name = "libz-sys-1.1.2--archive",
+    sha256 = "602113192b08db8f38796c4e85c39e960c145965140e918018bcde1952429655",
+    url = "https://static.crates.io/crates/libz-sys/libz-sys-1.1.2.crate",
 )
 
 archive(
@@ -905,6 +1043,12 @@ archive(
 )
 
 archive(
+    name = "memoffset-0.5.6--archive",
+    sha256 = "043175f069eda7b85febe4a74abbaeff828d9f8b448515d3151a14a3542811aa",
+    url = "https://static.crates.io/crates/memoffset/memoffset-0.5.6.crate",
+)
+
+archive(
     name = "memoffset-0.6.4--archive",
     sha256 = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9",
     url = "https://static.crates.io/crates/memoffset/memoffset-0.6.4.crate",
@@ -920,6 +1064,12 @@ archive(
     name = "mime_guess-2.0.3--archive",
     sha256 = "2684d4c2e97d99848d30b324b00c8fcc7e5c897b7cbb5819b09e7c90e8baf212",
     url = "https://static.crates.io/crates/mime_guess/mime_guess-2.0.3.crate",
+)
+
+archive(
+    name = "miniz_oxide-0.3.7--archive",
+    sha256 = "791daaae1ed6889560f8c4359194f56648355540573244a5448a83ba1ecc7435",
+    url = "https://static.crates.io/crates/miniz_oxide/miniz_oxide-0.3.7.crate",
 )
 
 archive(
@@ -941,6 +1091,12 @@ archive(
 )
 
 archive(
+    name = "mio-named-pipes-0.1.7--archive",
+    sha256 = "0840c1c50fd55e521b247f949c241c9997709f23bd7f023b9762cd561e935656",
+    url = "https://static.crates.io/crates/mio-named-pipes/mio-named-pipes-0.1.7.crate",
+)
+
+archive(
     name = "mio-uds-0.6.8--archive",
     sha256 = "afcb699eb26d4332647cc848492bbc15eafb26f08d0304550d5aa1f612e066f0",
     url = "https://static.crates.io/crates/mio-uds/mio-uds-0.6.8.crate",
@@ -950,6 +1106,24 @@ archive(
     name = "multipart-0.17.0--archive",
     sha256 = "8209c33c951f07387a8497841122fc6f712165e3f9bda3e6be4645b58188f676",
     url = "https://static.crates.io/crates/multipart/multipart-0.17.0.crate",
+)
+
+archive(
+    name = "mysql_async-0.23.1--archive",
+    sha256 = "2437d3b8ce11d743be7adfbdc5092f6046141b78677b1e3bc9e914d3d1a4c744",
+    url = "https://static.crates.io/crates/mysql_async/mysql_async-0.23.1.crate",
+)
+
+archive(
+    name = "mysql_common-0.22.2--archive",
+    sha256 = "c529a525c62e4788cff3a4557b652e2efd04eb3171da4ae2792031499f96442f",
+    url = "https://static.crates.io/crates/mysql_common/mysql_common-0.22.2.crate",
+)
+
+archive(
+    name = "native-tls-0.2.4--archive",
+    sha256 = "2b0d88c06fe90d5ee94048ba40409ef1d9315d86f6f38c2efdaad4fb50c58b2d",
+    url = "https://static.crates.io/crates/native-tls/native-tls-0.2.4.crate",
 )
 
 archive(
@@ -974,6 +1148,18 @@ archive(
     name = "nix-0.20.0--archive",
     sha256 = "fa9b4819da1bc61c0ea48b63b7bc8604064dd43013e7cc325df098d49cd7c18a",
     url = "https://static.crates.io/crates/nix/nix-0.20.0.crate",
+)
+
+archive(
+    name = "nom-5.1.2--archive",
+    sha256 = "ffb4262d26ed83a1c0a33a38fe2bb15797329c85770da05e6b828ddb782627af",
+    url = "https://static.crates.io/crates/nom/nom-5.1.2.crate",
+)
+
+archive(
+    name = "num-bigint-0.2.6--archive",
+    sha256 = "090c7f9998ee0ff65aa5b723e4009f7b217707f1fb5ea551329cc4d6231fb304",
+    url = "https://static.crates.io/crates/num-bigint/num-bigint-0.2.6.crate",
 )
 
 archive(
@@ -1025,9 +1211,21 @@ archive(
 )
 
 archive(
+    name = "openssl-0.10.35--archive",
+    sha256 = "549430950c79ae24e6d02e0b7404534ecf311d94cc9f861e9e4020187d13d885",
+    url = "https://static.crates.io/crates/openssl/openssl-0.10.35.crate",
+)
+
+archive(
     name = "openssl-probe-0.1.2--archive",
     sha256 = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de",
     url = "https://static.crates.io/crates/openssl-probe/openssl-probe-0.1.2.crate",
+)
+
+archive(
+    name = "openssl-sys-0.9.65--archive",
+    sha256 = "7a7907e3bfa08bb85105209cdfcb6c63d109f8f6c1ed6ca318fff5c1853fbc1d",
+    url = "https://static.crates.io/crates/openssl-sys/openssl-sys-0.9.65.crate",
 )
 
 archive(
@@ -1052,6 +1250,12 @@ archive(
     name = "paste-1.0.2--archive",
     sha256 = "ba7ae1a2180ed02ddfdb5ab70c70d596a26dd642e097bb6fe78b1bde8588ed97",
     url = "https://static.crates.io/crates/paste/paste-1.0.2.crate",
+)
+
+archive(
+    name = "peeking_take_while-0.1.2--archive",
+    sha256 = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099",
+    url = "https://static.crates.io/crates/peeking_take_while/peeking_take_while-0.1.2.crate",
 )
 
 archive(
@@ -1367,9 +1571,27 @@ archive(
 )
 
 archive(
+    name = "rusqlite-0.23.1--archive",
+    sha256 = "45d0fd62e1df63d254714e6cb40d0a0e82e7a1623e7a27f679d851af092ae58b",
+    url = "https://static.crates.io/crates/rusqlite/rusqlite-0.23.1.crate",
+)
+
+archive(
+    name = "rust_decimal-1.8.1--archive",
+    sha256 = "c9e81662973c7a8d9663e64a0de4cd642b89a21d64966e3d99606efdc5fb0cc6",
+    url = "https://static.crates.io/crates/rust_decimal/rust_decimal-1.8.1.crate",
+)
+
+archive(
     name = "rustc-demangle-0.1.20--archive",
     sha256 = "dead70b0b5e03e9c814bcb6b01e03e68f7c57a80aa48c72ec92152ab3e818d49",
     url = "https://static.crates.io/crates/rustc-demangle/rustc-demangle-0.1.20.crate",
+)
+
+archive(
+    name = "rustc-hash-1.1.0--archive",
+    sha256 = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2",
+    url = "https://static.crates.io/crates/rustc-hash/rustc-hash-1.1.0.crate",
 )
 
 archive(
@@ -1475,9 +1697,21 @@ archive(
 )
 
 archive(
+    name = "sha1-0.6.0--archive",
+    sha256 = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d",
+    url = "https://static.crates.io/crates/sha1/sha1-0.6.0.crate",
+)
+
+archive(
     name = "sha2-0.8.2--archive",
     sha256 = "a256f46ea78a0c0d9ff00077504903ac881a1dafdc20da66545699e7776b3e69",
     url = "https://static.crates.io/crates/sha2/sha2-0.8.2.crate",
+)
+
+archive(
+    name = "shlex-0.1.1--archive",
+    sha256 = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2",
+    url = "https://static.crates.io/crates/shlex/shlex-0.1.1.crate",
 )
 
 archive(
@@ -1538,6 +1772,12 @@ archive(
     name = "stable_deref_trait-1.2.0--archive",
     sha256 = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3",
     url = "https://static.crates.io/crates/stable_deref_trait/stable_deref_trait-1.2.0.crate",
+)
+
+archive(
+    name = "standback-0.2.10--archive",
+    sha256 = "33a71ea1ea5f8747d1af1979bfb7e65c3a025a70609f04ceb78425bc5adad8e6",
+    url = "https://static.crates.io/crates/standback/standback-0.2.10.crate",
 )
 
 archive(
@@ -1667,6 +1907,24 @@ archive(
 )
 
 archive(
+    name = "time-0.2.22--archive",
+    sha256 = "55b7151c9065e80917fbf285d9a5d1432f60db41d170ccafc749a136b41a93af",
+    url = "https://static.crates.io/crates/time/time-0.2.22.crate",
+)
+
+archive(
+    name = "time-macros-0.1.1--archive",
+    sha256 = "957e9c6e26f12cb6d0dd7fc776bb67a706312e7299aed74c8dd5b17ebb27e2f1",
+    url = "https://static.crates.io/crates/time-macros/time-macros-0.1.1.crate",
+)
+
+archive(
+    name = "time-macros-impl-0.1.1--archive",
+    sha256 = "e5c3be1edfad6027c69f5491cf4cb310d1a71ecd6af742788c6ff8bced86b8fa",
+    url = "https://static.crates.io/crates/time-macros-impl/time-macros-impl-0.1.1.crate",
+)
+
+archive(
     name = "tinyvec-0.3.4--archive",
     sha256 = "238ce071d267c5710f9d31451efec16c5ee22de34df17cc05e56cbc92e967117",
     url = "https://static.crates.io/crates/tinyvec/tinyvec-0.3.4.crate",
@@ -1679,9 +1937,15 @@ archive(
 )
 
 archive(
-    name = "tokio-1.7.1--archive",
-    sha256 = "5fb2ed024293bb19f7a5dc54fe83bf86532a44c12a2bb8ba40d64a4509395ca2",
-    url = "https://static.crates.io/crates/tokio/tokio-1.7.1.crate",
+    name = "tokio-1.10.1--archive",
+    sha256 = "92036be488bb6594459f2e03b60e42df6f937fe6ca5c5ffdcb539c6b84dc40f5",
+    url = "https://static.crates.io/crates/tokio/tokio-1.10.1.crate",
+)
+
+archive(
+    name = "tokio-io-0.1.13--archive",
+    sha256 = "57fc868aae093479e3131e3d165c93b1c7474109d13c90ec0dda2a1bbfff0674",
+    url = "https://static.crates.io/crates/tokio-io/tokio-io-0.1.13.crate",
 )
 
 archive(
@@ -1709,9 +1973,21 @@ archive(
 )
 
 archive(
+    name = "tokio-tls-0.3.1--archive",
+    sha256 = "9a70f4fcd7b3b24fb194f837560168208f669ca8cb70d0c4b862944452396343",
+    url = "https://static.crates.io/crates/tokio-tls/tokio-tls-0.3.1.crate",
+)
+
+archive(
     name = "tokio-tungstenite-0.13.0--archive",
     sha256 = "e1a5f475f1b9d077ea1017ecbc60890fda8e54942d680ca0b1d2b47cfa2d861b",
     url = "https://static.crates.io/crates/tokio-tungstenite/tokio-tungstenite-0.13.0.crate",
+)
+
+archive(
+    name = "tokio-util-0.2.0--archive",
+    sha256 = "571da51182ec208780505a32528fc5512a8fe1443ab960b3f2f3ef093cd16930",
+    url = "https://static.crates.io/crates/tokio-util/tokio-util-0.2.0.crate",
 )
 
 archive(
@@ -1799,6 +2075,12 @@ archive(
 )
 
 archive(
+    name = "twox-hash-1.5.0--archive",
+    sha256 = "3bfd5b7557925ce778ff9b9ef90e3ade34c524b5ff10e239c69a42d546d2af56",
+    url = "https://static.crates.io/crates/twox-hash/twox-hash-1.5.0.crate",
+)
+
+archive(
     name = "typenum-1.12.0--archive",
     sha256 = "373c8a200f9e67a0c95e62a4f52fbf80c23b4381c05a17845531982fa99e6b33",
     url = "https://static.crates.io/crates/typenum/typenum-1.12.0.crate",
@@ -1874,6 +2156,12 @@ archive(
     name = "utf8parse-0.2.0--archive",
     sha256 = "936e4b492acfd135421d8dca4b1aa80a7bfc26e702ef3af710e0752684df5372",
     url = "https://static.crates.io/crates/utf8parse/utf8parse-0.2.0.crate",
+)
+
+archive(
+    name = "uuid-0.8.1--archive",
+    sha256 = "9fde2f6a4bea1d6e007c4ad38c6839fa71cbb63b6dbf5b595aa38dc9b1093c11",
+    url = "https://static.crates.io/crates/uuid/uuid-0.8.1.crate",
 )
 
 archive(
@@ -1966,6 +2254,29 @@ third_party_rust_library(
     env = {
     },
     features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "adler32-1.2.0",
+    srcs = ["adler32-1.2.0/src/lib.rs"],
+    archive = ":adler32-1.2.0--archive",
+    crate = "adler32",
+    crate_root = "adler32-1.2.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
     mapped_srcs = {
     },
     named_deps = {
@@ -2177,6 +2488,37 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "arrayvec",
+    srcs = [
+        "arrayvec-0.5.2/src/array.rs",
+        "arrayvec-0.5.2/src/array_string.rs",
+        "arrayvec-0.5.2/src/char.rs",
+        "arrayvec-0.5.2/src/errors.rs",
+        "arrayvec-0.5.2/src/lib.rs",
+        "arrayvec-0.5.2/src/maybe_uninit.rs",
+    ],
+    archive = ":arrayvec-0.5.2--archive",
+    crate = "arrayvec",
+    crate_root = "arrayvec-0.5.2/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "array-sizes-33-128",
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
     name = "ascii-canvas-2.0.0",
     srcs = [
         "ascii-canvas-2.0.0/src/lib.rs",
@@ -2273,6 +2615,37 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = ["//third-party/rust:libc"],
+)
+
+third_party_rust_library(
+    name = "auto_impl",
+    srcs = [
+        "auto_impl-0.4.1/src/analyze.rs",
+        "auto_impl-0.4.1/src/attr.rs",
+        "auto_impl-0.4.1/src/gen.rs",
+        "auto_impl-0.4.1/src/lib.rs",
+        "auto_impl-0.4.1/src/proxy.rs",
+    ],
+    archive = ":auto_impl-0.4.1--archive",
+    crate = "auto_impl",
+    crate_root = "auto_impl-0.4.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:proc-macro-error",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
+    ],
 )
 
 third_party_rust_library(
@@ -2520,6 +2893,309 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = [],
+)
+
+third_party_rust_library(
+    name = "bigdecimal-0.1.2",
+    srcs = [
+        "bigdecimal-0.1.2/src/lib.rs",
+        "bigdecimal-0.1.2/src/macros.rs",
+    ],
+    archive = ":bigdecimal-0.1.2--archive",
+    crate = "bigdecimal",
+    crate_root = "bigdecimal-0.1.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = ["serde"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:num-bigint-0.2.6",
+        "//third-party/rust:num-integer-0.1.44",
+        "//third-party/rust:num-traits",
+        "//third-party/rust:serde",
+    ],
+)
+
+third_party_rust_library(
+    name = "bindgen",
+    srcs = [
+        "bindgen-0.53.3/src/callbacks.rs",
+        "bindgen-0.53.3/src/clang.rs",
+        "bindgen-0.53.3/src/codegen/bitfield_unit.rs",
+        "bindgen-0.53.3/src/codegen/bitfield_unit_tests.rs",
+        "bindgen-0.53.3/src/codegen/error.rs",
+        "bindgen-0.53.3/src/codegen/helpers.rs",
+        "bindgen-0.53.3/src/codegen/impl_debug.rs",
+        "bindgen-0.53.3/src/codegen/impl_partialeq.rs",
+        "bindgen-0.53.3/src/codegen/mod.rs",
+        "bindgen-0.53.3/src/codegen/struct_layout.rs",
+        "bindgen-0.53.3/src/extra_assertions.rs",
+        "bindgen-0.53.3/src/features.rs",
+        "bindgen-0.53.3/src/ir/analysis/derive.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_destructor.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_float.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_type_param_in_array.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_vtable.rs",
+        "bindgen-0.53.3/src/ir/analysis/mod.rs",
+        "bindgen-0.53.3/src/ir/analysis/sizedness.rs",
+        "bindgen-0.53.3/src/ir/analysis/template_params.rs",
+        "bindgen-0.53.3/src/ir/annotations.rs",
+        "bindgen-0.53.3/src/ir/comment.rs",
+        "bindgen-0.53.3/src/ir/comp.rs",
+        "bindgen-0.53.3/src/ir/context.rs",
+        "bindgen-0.53.3/src/ir/derive.rs",
+        "bindgen-0.53.3/src/ir/dot.rs",
+        "bindgen-0.53.3/src/ir/enum_ty.rs",
+        "bindgen-0.53.3/src/ir/function.rs",
+        "bindgen-0.53.3/src/ir/int.rs",
+        "bindgen-0.53.3/src/ir/item.rs",
+        "bindgen-0.53.3/src/ir/item_kind.rs",
+        "bindgen-0.53.3/src/ir/layout.rs",
+        "bindgen-0.53.3/src/ir/mod.rs",
+        "bindgen-0.53.3/src/ir/module.rs",
+        "bindgen-0.53.3/src/ir/objc.rs",
+        "bindgen-0.53.3/src/ir/template.rs",
+        "bindgen-0.53.3/src/ir/traversal.rs",
+        "bindgen-0.53.3/src/ir/ty.rs",
+        "bindgen-0.53.3/src/ir/var.rs",
+        "bindgen-0.53.3/src/lib.rs",
+        "bindgen-0.53.3/src/log_stubs.rs",
+        "bindgen-0.53.3/src/main.rs",
+        "bindgen-0.53.3/src/options.rs",
+        "bindgen-0.53.3/src/parse.rs",
+        "bindgen-0.53.3/src/regex_set.rs",
+        "bindgen-0.53.3/src/time.rs",
+    ],
+    archive = ":bindgen-0.53.3--archive",
+    crate = "bindgen",
+    crate_root = "bindgen-0.53.3/src/lib.rs",
+    edition = "2015",
+    env = {
+        "CARGO_MANIFEST_DIR": "$(location :bindgen-0.53.3--archive)/bindgen-0.53.3",
+        "CARGO_PKG_NAME": "bindgen",
+        "CARGO_PKG_VERSION": "0.53.3",
+        "CARGO_PKG_VERSION_MAJOR": "0",
+        "CARGO_PKG_VERSION_MINOR": "53",
+        "CARGO_PKG_VERSION_PATCH": "3",
+        "OUT_DIR": "..",
+    },
+    features = [
+        "clap",
+        "env_logger",
+        "log",
+        "logging",
+        "static",
+    ],
+    mapped_srcs = {
+        "//third-party/rust:bindgen-0.53.3-build-script-build-srcs=host-target.txt": "bindgen-0.53.3/src/host-target.txt",
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:bitflags",
+        "//third-party/rust:cexpr",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:clang-sys-0.29.3",
+        "//third-party/rust:clap",
+        "//third-party/rust:env_logger",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:lazycell-1.3.0",
+        "//third-party/rust:log",
+        "//third-party/rust:peeking_take_while-0.1.2",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:regex",
+        "//third-party/rust:rustc-hash",
+        "//third-party/rust:shlex-0.1.1",
+    ],
+)
+
+third_party_rust_binary(
+    name = "bindgen-0.53.3-build-script-build",
+    srcs = [
+        "bindgen-0.53.3/build.rs",
+        "bindgen-0.53.3/src/callbacks.rs",
+        "bindgen-0.53.3/src/clang.rs",
+        "bindgen-0.53.3/src/codegen/bitfield_unit.rs",
+        "bindgen-0.53.3/src/codegen/bitfield_unit_tests.rs",
+        "bindgen-0.53.3/src/codegen/error.rs",
+        "bindgen-0.53.3/src/codegen/helpers.rs",
+        "bindgen-0.53.3/src/codegen/impl_debug.rs",
+        "bindgen-0.53.3/src/codegen/impl_partialeq.rs",
+        "bindgen-0.53.3/src/codegen/mod.rs",
+        "bindgen-0.53.3/src/codegen/struct_layout.rs",
+        "bindgen-0.53.3/src/extra_assertions.rs",
+        "bindgen-0.53.3/src/features.rs",
+        "bindgen-0.53.3/src/ir/analysis/derive.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_destructor.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_float.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_type_param_in_array.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_vtable.rs",
+        "bindgen-0.53.3/src/ir/analysis/mod.rs",
+        "bindgen-0.53.3/src/ir/analysis/sizedness.rs",
+        "bindgen-0.53.3/src/ir/analysis/template_params.rs",
+        "bindgen-0.53.3/src/ir/annotations.rs",
+        "bindgen-0.53.3/src/ir/comment.rs",
+        "bindgen-0.53.3/src/ir/comp.rs",
+        "bindgen-0.53.3/src/ir/context.rs",
+        "bindgen-0.53.3/src/ir/derive.rs",
+        "bindgen-0.53.3/src/ir/dot.rs",
+        "bindgen-0.53.3/src/ir/enum_ty.rs",
+        "bindgen-0.53.3/src/ir/function.rs",
+        "bindgen-0.53.3/src/ir/int.rs",
+        "bindgen-0.53.3/src/ir/item.rs",
+        "bindgen-0.53.3/src/ir/item_kind.rs",
+        "bindgen-0.53.3/src/ir/layout.rs",
+        "bindgen-0.53.3/src/ir/mod.rs",
+        "bindgen-0.53.3/src/ir/module.rs",
+        "bindgen-0.53.3/src/ir/objc.rs",
+        "bindgen-0.53.3/src/ir/template.rs",
+        "bindgen-0.53.3/src/ir/traversal.rs",
+        "bindgen-0.53.3/src/ir/ty.rs",
+        "bindgen-0.53.3/src/ir/var.rs",
+        "bindgen-0.53.3/src/lib.rs",
+        "bindgen-0.53.3/src/log_stubs.rs",
+        "bindgen-0.53.3/src/main.rs",
+        "bindgen-0.53.3/src/options.rs",
+        "bindgen-0.53.3/src/parse.rs",
+        "bindgen-0.53.3/src/regex_set.rs",
+        "bindgen-0.53.3/src/time.rs",
+    ],
+    archive = ":bindgen-0.53.3--archive",
+    crate = "build_script_build",
+    crate_root = "bindgen-0.53.3/build.rs",
+    edition = "2015",
+    env = {
+        "CARGO_MANIFEST_DIR": "$(location :bindgen-0.53.3--archive)/bindgen-0.53.3",
+        "CARGO_PKG_NAME": "bindgen",
+        "CARGO_PKG_VERSION": "0.53.3",
+        "CARGO_PKG_VERSION_MAJOR": "0",
+        "CARGO_PKG_VERSION_MINOR": "53",
+        "CARGO_PKG_VERSION_PATCH": "3",
+        "OUT_DIR": "..",
+    },
+    features = [
+        "clap",
+        "env_logger",
+        "log",
+        "logging",
+        "static",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_binary(
+    name = "bindgen-bindgen",
+    srcs = [
+        "bindgen-0.53.3/src/callbacks.rs",
+        "bindgen-0.53.3/src/clang.rs",
+        "bindgen-0.53.3/src/codegen/bitfield_unit.rs",
+        "bindgen-0.53.3/src/codegen/bitfield_unit_tests.rs",
+        "bindgen-0.53.3/src/codegen/error.rs",
+        "bindgen-0.53.3/src/codegen/helpers.rs",
+        "bindgen-0.53.3/src/codegen/impl_debug.rs",
+        "bindgen-0.53.3/src/codegen/impl_partialeq.rs",
+        "bindgen-0.53.3/src/codegen/mod.rs",
+        "bindgen-0.53.3/src/codegen/struct_layout.rs",
+        "bindgen-0.53.3/src/extra_assertions.rs",
+        "bindgen-0.53.3/src/features.rs",
+        "bindgen-0.53.3/src/ir/analysis/derive.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_destructor.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_float.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_type_param_in_array.rs",
+        "bindgen-0.53.3/src/ir/analysis/has_vtable.rs",
+        "bindgen-0.53.3/src/ir/analysis/mod.rs",
+        "bindgen-0.53.3/src/ir/analysis/sizedness.rs",
+        "bindgen-0.53.3/src/ir/analysis/template_params.rs",
+        "bindgen-0.53.3/src/ir/annotations.rs",
+        "bindgen-0.53.3/src/ir/comment.rs",
+        "bindgen-0.53.3/src/ir/comp.rs",
+        "bindgen-0.53.3/src/ir/context.rs",
+        "bindgen-0.53.3/src/ir/derive.rs",
+        "bindgen-0.53.3/src/ir/dot.rs",
+        "bindgen-0.53.3/src/ir/enum_ty.rs",
+        "bindgen-0.53.3/src/ir/function.rs",
+        "bindgen-0.53.3/src/ir/int.rs",
+        "bindgen-0.53.3/src/ir/item.rs",
+        "bindgen-0.53.3/src/ir/item_kind.rs",
+        "bindgen-0.53.3/src/ir/layout.rs",
+        "bindgen-0.53.3/src/ir/mod.rs",
+        "bindgen-0.53.3/src/ir/module.rs",
+        "bindgen-0.53.3/src/ir/objc.rs",
+        "bindgen-0.53.3/src/ir/template.rs",
+        "bindgen-0.53.3/src/ir/traversal.rs",
+        "bindgen-0.53.3/src/ir/ty.rs",
+        "bindgen-0.53.3/src/ir/var.rs",
+        "bindgen-0.53.3/src/lib.rs",
+        "bindgen-0.53.3/src/log_stubs.rs",
+        "bindgen-0.53.3/src/main.rs",
+        "bindgen-0.53.3/src/options.rs",
+        "bindgen-0.53.3/src/parse.rs",
+        "bindgen-0.53.3/src/regex_set.rs",
+        "bindgen-0.53.3/src/time.rs",
+    ],
+    archive = ":bindgen-0.53.3--archive",
+    crate = "bindgen",
+    crate_root = "bindgen-0.53.3/src/main.rs",
+    edition = "2015",
+    env = {
+        "CARGO_MANIFEST_DIR": "$(location :bindgen-0.53.3--archive)/bindgen-0.53.3",
+        "CARGO_PKG_NAME": "bindgen",
+        "CARGO_PKG_VERSION": "0.53.3",
+        "CARGO_PKG_VERSION_MAJOR": "0",
+        "CARGO_PKG_VERSION_MINOR": "53",
+        "CARGO_PKG_VERSION_PATCH": "3",
+        "OUT_DIR": "..",
+    },
+    features = [
+        "clap",
+        "env_logger",
+        "log",
+        "logging",
+        "static",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:bindgen",
+        "//third-party/rust:bitflags",
+        "//third-party/rust:cexpr",
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:clang-sys-0.29.3",
+        "//third-party/rust:clap",
+        "//third-party/rust:env_logger",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:lazycell-1.3.0",
+        "//third-party/rust:log",
+        "//third-party/rust:peeking_take_while-0.1.2",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:regex",
+        "//third-party/rust:rustc-hash",
+        "//third-party/rust:shlex-0.1.1",
+    ],
 )
 
 third_party_rust_library(
@@ -2937,6 +3613,76 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "bytes-old",
+    srcs = [
+        "bytes-0.4.12/src/buf/buf.rs",
+        "bytes-0.4.12/src/buf/buf_mut.rs",
+        "bytes-0.4.12/src/buf/chain.rs",
+        "bytes-0.4.12/src/buf/from_buf.rs",
+        "bytes-0.4.12/src/buf/into_buf.rs",
+        "bytes-0.4.12/src/buf/iter.rs",
+        "bytes-0.4.12/src/buf/mod.rs",
+        "bytes-0.4.12/src/buf/reader.rs",
+        "bytes-0.4.12/src/buf/take.rs",
+        "bytes-0.4.12/src/buf/vec_deque.rs",
+        "bytes-0.4.12/src/buf/writer.rs",
+        "bytes-0.4.12/src/bytes.rs",
+        "bytes-0.4.12/src/debug.rs",
+        "bytes-0.4.12/src/either.rs",
+        "bytes-0.4.12/src/lib.rs",
+        "bytes-0.4.12/src/serde.rs",
+    ],
+    archive = ":bytes-0.4.12--archive",
+    crate = "bytes",
+    crate_root = "bytes-0.4.12/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "either",
+        "serde",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:byteorder",
+        "//third-party/rust:either",
+        "//third-party/rust:iovec-0.1.4",
+        "//third-party/rust:serde",
+    ],
+)
+
+third_party_rust_library(
+    name = "cexpr",
+    srcs = [
+        "cexpr-0.4.0/src/expr.rs",
+        "cexpr-0.4.0/src/lib.rs",
+        "cexpr-0.4.0/src/literal.rs",
+        "cexpr-0.4.0/src/token.rs",
+    ],
+    archive = ":cexpr-0.4.0--archive",
+    crate = "cexpr",
+    crate_root = "cexpr-0.4.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:nom-5.1.2"],
+)
+
+third_party_rust_library(
     name = "cfg-if",
     srcs = ["cfg-if-0.1.10/src/lib.rs"],
     archive = ":cfg-if-0.1.10--archive",
@@ -3038,6 +3784,43 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "clang-sys-0.29.3",
+    srcs = [
+        "clang-sys-0.29.3/src/lib.rs",
+        "clang-sys-0.29.3/src/link.rs",
+        "clang-sys-0.29.3/src/support.rs",
+    ],
+    archive = ":clang-sys-0.29.3--archive",
+    crate = "clang_sys",
+    crate_root = "clang-sys-0.29.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "clang_6_0",
+        "gte_clang_3_6",
+        "gte_clang_3_7",
+        "gte_clang_3_8",
+        "gte_clang_3_9",
+        "gte_clang_4_0",
+        "gte_clang_5_0",
+        "gte_clang_6_0",
+        "static",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:glob",
+        "//third-party/rust:libc",
+    ],
+)
+
+third_party_rust_library(
     name = "clap",
     srcs = [
         "clap-2.33.3/src/app/help.rs",
@@ -3116,6 +3899,32 @@ third_party_rust_library(
         "//third-party/rust:unicode-width",
         "//third-party/rust:vec_map",
     ],
+)
+
+third_party_rust_library(
+    name = "cloned",
+    srcs = ["shed/cloned/src/lib.rs"],
+    archive = None,
+    crate = None,
+    crate_root = "shed/cloned/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [],
 )
 
 third_party_rust_library(
@@ -3239,6 +4048,106 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "crc32fast-1.2.0",
+    srcs = [
+        "crc32fast-1.2.0/src/baseline.rs",
+        "crc32fast-1.2.0/src/combine.rs",
+        "crc32fast-1.2.0/src/lib.rs",
+        "crc32fast-1.2.0/src/specialized/aarch64.rs",
+        "crc32fast-1.2.0/src/specialized/mod.rs",
+        "crc32fast-1.2.0/src/specialized/pclmulqdq.rs",
+        "crc32fast-1.2.0/src/table.rs",
+    ],
+    archive = ":crc32fast-1.2.0--archive",
+    crate = "crc32fast",
+    crate_root = "crc32fast-1.2.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :crc32fast-1.2.0-build-script-build-args)",
+    ],
+    unittests = False,
+    deps = ["//third-party/rust:cfg-if"],
+)
+
+third_party_rust_binary(
+    name = "crc32fast-1.2.0-build-script-build",
+    srcs = [
+        "crc32fast-1.2.0/benches/bench.rs",
+        "crc32fast-1.2.0/build.rs",
+        "crc32fast-1.2.0/src/baseline.rs",
+        "crc32fast-1.2.0/src/combine.rs",
+        "crc32fast-1.2.0/src/lib.rs",
+        "crc32fast-1.2.0/src/specialized/aarch64.rs",
+        "crc32fast-1.2.0/src/specialized/mod.rs",
+        "crc32fast-1.2.0/src/specialized/pclmulqdq.rs",
+        "crc32fast-1.2.0/src/table.rs",
+    ],
+    archive = ":crc32fast-1.2.0--archive",
+    crate = "build_script_build",
+    crate_root = "crc32fast-1.2.0/build.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "crossbeam-0.7.3",
+    srcs = ["crossbeam-0.7.3/src/lib.rs"],
+    archive = ":crossbeam-0.7.3--archive",
+    crate = "crossbeam",
+    crate_root = "crossbeam-0.7.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "crossbeam-channel",
+        "crossbeam-deque",
+        "crossbeam-queue",
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:crossbeam-channel-0.4.4",
+        "//third-party/rust:crossbeam-deque-0.7.3",
+        "//third-party/rust:crossbeam-epoch-0.8.2",
+        "//third-party/rust:crossbeam-queue-0.2.3",
+        "//third-party/rust:crossbeam-utils-0.7.2",
+    ],
+)
+
+third_party_rust_library(
     name = "crossbeam-channel",
     srcs = [
         "crossbeam-channel-0.5.0/src/channel.rs",
@@ -3323,6 +4232,30 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "crossbeam-deque-0.7.3",
+    srcs = ["crossbeam-deque-0.7.3/src/lib.rs"],
+    archive = ":crossbeam-deque-0.7.3--archive",
+    crate = "crossbeam_deque",
+    crate_root = "crossbeam-deque-0.7.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:crossbeam-epoch-0.8.2",
+        "//third-party/rust:crossbeam-utils-0.7.2",
+        "//third-party/rust:maybe-uninit-2.0.0",
+    ],
+)
+
+third_party_rust_library(
     name = "crossbeam-deque-0.8.0",
     srcs = [
         "crossbeam-deque-0.8.0/src/deque.rs",
@@ -3352,6 +4285,94 @@ third_party_rust_library(
         "//third-party/rust:crossbeam-epoch-0.9.1",
         "//third-party/rust:crossbeam-utils-0.8.0",
     ],
+)
+
+third_party_rust_library(
+    name = "crossbeam-epoch-0.8.2",
+    srcs = [
+        "crossbeam-epoch-0.8.2/src/atomic.rs",
+        "crossbeam-epoch-0.8.2/src/collector.rs",
+        "crossbeam-epoch-0.8.2/src/default.rs",
+        "crossbeam-epoch-0.8.2/src/deferred.rs",
+        "crossbeam-epoch-0.8.2/src/epoch.rs",
+        "crossbeam-epoch-0.8.2/src/guard.rs",
+        "crossbeam-epoch-0.8.2/src/internal.rs",
+        "crossbeam-epoch-0.8.2/src/lib.rs",
+        "crossbeam-epoch-0.8.2/src/sync/list.rs",
+        "crossbeam-epoch-0.8.2/src/sync/mod.rs",
+        "crossbeam-epoch-0.8.2/src/sync/queue.rs",
+    ],
+    archive = ":crossbeam-epoch-0.8.2--archive",
+    crate = "crossbeam_epoch",
+    crate_root = "crossbeam-epoch-0.8.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "lazy_static",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :crossbeam-epoch-0.8.2-build-script-build-args)",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:crossbeam-utils-0.7.2",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:maybe-uninit-2.0.0",
+        "//third-party/rust:memoffset-0.5.6",
+        "//third-party/rust:scopeguard",
+    ],
+)
+
+third_party_rust_binary(
+    name = "crossbeam-epoch-0.8.2-build-script-build",
+    srcs = [
+        "crossbeam-epoch-0.8.2/benches/defer.rs",
+        "crossbeam-epoch-0.8.2/benches/flush.rs",
+        "crossbeam-epoch-0.8.2/benches/pin.rs",
+        "crossbeam-epoch-0.8.2/build.rs",
+        "crossbeam-epoch-0.8.2/examples/sanitize.rs",
+        "crossbeam-epoch-0.8.2/examples/treiber_stack.rs",
+        "crossbeam-epoch-0.8.2/src/atomic.rs",
+        "crossbeam-epoch-0.8.2/src/collector.rs",
+        "crossbeam-epoch-0.8.2/src/default.rs",
+        "crossbeam-epoch-0.8.2/src/deferred.rs",
+        "crossbeam-epoch-0.8.2/src/epoch.rs",
+        "crossbeam-epoch-0.8.2/src/guard.rs",
+        "crossbeam-epoch-0.8.2/src/internal.rs",
+        "crossbeam-epoch-0.8.2/src/lib.rs",
+        "crossbeam-epoch-0.8.2/src/sync/list.rs",
+        "crossbeam-epoch-0.8.2/src/sync/mod.rs",
+        "crossbeam-epoch-0.8.2/src/sync/queue.rs",
+    ],
+    archive = ":crossbeam-epoch-0.8.2--archive",
+    crate = "build_script_build",
+    crate_root = "crossbeam-epoch-0.8.2/build.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "lazy_static",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -3394,6 +4415,38 @@ third_party_rust_library(
         "//third-party/rust:lazy_static",
         "//third-party/rust:memoffset",
         "//third-party/rust:scopeguard",
+    ],
+)
+
+third_party_rust_library(
+    name = "crossbeam-queue-0.2.3",
+    srcs = [
+        "crossbeam-queue-0.2.3/src/array_queue.rs",
+        "crossbeam-queue-0.2.3/src/err.rs",
+        "crossbeam-queue-0.2.3/src/lib.rs",
+        "crossbeam-queue-0.2.3/src/seg_queue.rs",
+    ],
+    archive = ":crossbeam-queue-0.2.3--archive",
+    crate = "crossbeam_queue",
+    crate_root = "crossbeam-queue-0.2.3/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:crossbeam-utils-0.7.2",
+        "//third-party/rust:maybe-uninit-2.0.0",
     ],
 )
 
@@ -4653,6 +5706,58 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "fallible-streaming-iterator-0.1.9",
+    srcs = ["fallible-streaming-iterator-0.1.9/src/lib.rs"],
+    archive = ":fallible-streaming-iterator-0.1.9--archive",
+    crate = "fallible_streaming_iterator",
+    crate_root = "fallible-streaming-iterator-0.1.9/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "fbinit",
+    srcs = [
+        "shed/fbinit/src/lib.rs",
+        "shed/fbinit/src/oss.rs",
+    ],
+    archive = None,
+    crate = None,
+    crate_root = "shed/fbinit/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:macros",
+        "//third-party/rust:quickcheck",
+    ],
+)
+
+third_party_rust_library(
     name = "filetime",
     srcs = [
         "filetime-0.2.12/src/lib.rs",
@@ -4710,6 +5815,65 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "flate2",
+    srcs = [
+        "flate2-1.0.14/src/bufreader.rs",
+        "flate2-1.0.14/src/crc.rs",
+        "flate2-1.0.14/src/deflate/bufread.rs",
+        "flate2-1.0.14/src/deflate/mod.rs",
+        "flate2-1.0.14/src/deflate/read.rs",
+        "flate2-1.0.14/src/deflate/write.rs",
+        "flate2-1.0.14/src/ffi/c.rs",
+        "flate2-1.0.14/src/ffi/mod.rs",
+        "flate2-1.0.14/src/ffi/rust.rs",
+        "flate2-1.0.14/src/gz/bufread.rs",
+        "flate2-1.0.14/src/gz/mod.rs",
+        "flate2-1.0.14/src/gz/read.rs",
+        "flate2-1.0.14/src/gz/write.rs",
+        "flate2-1.0.14/src/lib.rs",
+        "flate2-1.0.14/src/mem.rs",
+        "flate2-1.0.14/src/zio.rs",
+        "flate2-1.0.14/src/zlib/bufread.rs",
+        "flate2-1.0.14/src/zlib/mod.rs",
+        "flate2-1.0.14/src/zlib/read.rs",
+        "flate2-1.0.14/src/zlib/write.rs",
+    ],
+    archive = ":flate2-1.0.14--archive",
+    crate = "flate2",
+    crate_root = "flate2-1.0.14/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "any_zlib",
+        "default",
+        "futures",
+        "libz-sys",
+        "miniz_oxide",
+        "rust_backend",
+        "tokio",
+        "tokio-io",
+        "zlib",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:crc32fast-1.2.0",
+        "//third-party/rust:futures-old",
+        "//third-party/rust:libc",
+        "//third-party/rust:libz-sys-1.1.2",
+        "//third-party/rust:miniz_oxide-0.3.7",
+        "//third-party/rust:tokio-io",
+    ],
+)
+
+third_party_rust_library(
     name = "fnv",
     srcs = ["fnv-1.0.7/lib.rs"],
     archive = ":fnv-1.0.7--archive",
@@ -4722,6 +5886,46 @@ third_party_rust_library(
         "default",
         "std",
     ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "foreign-types",
+    srcs = ["foreign-types-0.3.2/src/lib.rs"],
+    archive = ":foreign-types-0.3.2--archive",
+    crate = "foreign_types",
+    crate_root = "foreign-types-0.3.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:foreign-types-shared-0.1.1"],
+)
+
+third_party_rust_library(
+    name = "foreign-types-shared-0.1.1",
+    srcs = ["foreign-types-shared-0.1.1/src/lib.rs"],
+    archive = ":foreign-types-shared-0.1.1--archive",
+    crate = "foreign_types_shared",
+    crate_root = "foreign-types-shared-0.1.1/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
     mapped_srcs = {
     },
     named_deps = {
@@ -5371,6 +6575,137 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "futures_01_ext",
+    srcs = [
+        "shed/futures_01_ext/src/bounded_traversal/common.rs",
+        "shed/futures_01_ext/src/bounded_traversal/dag.rs",
+        "shed/futures_01_ext/src/bounded_traversal/mod.rs",
+        "shed/futures_01_ext/src/bounded_traversal/stream.rs",
+        "shed/futures_01_ext/src/bounded_traversal/tests.rs",
+        "shed/futures_01_ext/src/bounded_traversal/tree.rs",
+        "shed/futures_01_ext/src/bytes_stream/bytes_stream_future.rs",
+        "shed/futures_01_ext/src/bytes_stream/mod.rs",
+        "shed/futures_01_ext/src/decode.rs",
+        "shed/futures_01_ext/src/encode.rs",
+        "shed/futures_01_ext/src/futures_ordered.rs",
+        "shed/futures_01_ext/src/io.rs",
+        "shed/futures_01_ext/src/lib.rs",
+        "shed/futures_01_ext/src/select_all.rs",
+        "shed/futures_01_ext/src/split_err.rs",
+        "shed/futures_01_ext/src/stream_wrappers/collect_no_consume.rs",
+        "shed/futures_01_ext/src/stream_wrappers/collect_to.rs",
+        "shed/futures_01_ext/src/stream_wrappers/mod.rs",
+        "shed/futures_01_ext/src/streamfork.rs",
+    ],
+    archive = None,
+    crate = None,
+    crate_root = "shed/futures_01_ext/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+        "bytes_old": "//third-party/rust:bytes-old",
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:futures-old",
+        "//third-party/rust:tokio-io",
+    ],
+)
+
+third_party_rust_library(
+    name = "futures_ext",
+    srcs = [
+        "shed/futures_ext/src/future/abort_handle_ref.rs",
+        "shed/futures_ext/src/future/conservative_receiver.rs",
+        "shed/futures_ext/src/future/mod.rs",
+        "shed/futures_ext/src/future/on_cancel.rs",
+        "shed/futures_ext/src/future/on_cancel_with_data.rs",
+        "shed/futures_ext/src/future/try_shared.rs",
+        "shed/futures_ext/src/lib.rs",
+        "shed/futures_ext/src/stream/mod.rs",
+        "shed/futures_ext/src/stream/return_remainder.rs",
+        "shed/futures_ext/src/stream/stream_with_timeout.rs",
+        "shed/futures_ext/src/stream/weight_limited_buffered_stream.rs",
+        "shed/futures_ext/src/stream/yield_periodically.rs",
+    ],
+    archive = None,
+    crate = None,
+    crate_root = "shed/futures_ext/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:anyhow",
+        "//third-party/rust:futures",
+        "//third-party/rust:pin-project",
+        "//third-party/rust:shared_error",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:tokio_shim",
+    ],
+)
+
+third_party_rust_library(
+    name = "futures_stats",
+    srcs = [
+        "shed/futures_stats/src/futures01.rs",
+        "shed/futures_stats/src/futures03.rs",
+        "shed/futures_stats/src/lib.rs",
+    ],
+    archive = None,
+    crate = None,
+    crate_root = "shed/futures_stats/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+        "futures_old": "//third-party/rust:futures-old",
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:futures",
+        "//third-party/rust:futures_01_ext",
+        "//third-party/rust:futures_ext",
+    ],
+)
+
+third_party_rust_library(
     name = "generic-array",
     srcs = [
         "generic-array-0.14.4/src/arr.rs",
@@ -5704,6 +7039,26 @@ third_party_rust_library(
         "//third-party/rust:indexmap",
         "//third-party/rust:stable_deref_trait",
     ],
+)
+
+third_party_rust_library(
+    name = "glob",
+    srcs = ["glob-0.3.0/src/lib.rs"],
+    archive = ":glob-0.3.0--archive",
+    crate = "glob",
+    crate_root = "glob-0.3.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
 )
 
 third_party_rust_library(
@@ -7226,6 +8581,206 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "lazycell-1.3.0",
+    srcs = [
+        "lazycell-1.3.0/src/lib.rs",
+        "lazycell-1.3.0/src/serde_impl.rs",
+    ],
+    archive = ":lazycell-1.3.0--archive",
+    crate = "lazycell",
+    crate_root = "lazycell-1.3.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "lexical-5.2.0",
+    srcs = ["lexical-5.2.0/src/lib.rs"],
+    archive = ":lexical-5.2.0--archive",
+    crate = "lexical",
+    crate_root = "lexical-5.2.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "correct",
+        "default",
+        "ryu",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:cfg-if",
+        "//third-party/rust:lexical-core",
+    ],
+)
+
+third_party_rust_library(
+    name = "lexical-core",
+    srcs = [
+        "lexical-core-0.7.6/src/atof/algorithm/alias.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/bhcomp.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/bigcomp.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/bignum.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/cached.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/cached_float160.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/cached_float80.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/correct.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/errors.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/exponent.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/generic.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/ignore.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/interface.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/mod.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/permissive.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/standard.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/traits.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/trim.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/format/validate.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/incorrect.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/large_powers.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/large_powers_32.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/large_powers_64.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/math.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/mod.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/small_powers.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/small_powers_32.rs",
+        "lexical-core-0.7.6/src/atof/algorithm/small_powers_64.rs",
+        "lexical-core-0.7.6/src/atof/api.rs",
+        "lexical-core-0.7.6/src/atof/mod.rs",
+        "lexical-core-0.7.6/src/atoi/api.rs",
+        "lexical-core-0.7.6/src/atoi/exponent.rs",
+        "lexical-core-0.7.6/src/atoi/generic.rs",
+        "lexical-core-0.7.6/src/atoi/mantissa.rs",
+        "lexical-core-0.7.6/src/atoi/mod.rs",
+        "lexical-core-0.7.6/src/atoi/shared.rs",
+        "lexical-core-0.7.6/src/float/convert.rs",
+        "lexical-core-0.7.6/src/float/float.rs",
+        "lexical-core-0.7.6/src/float/mantissa.rs",
+        "lexical-core-0.7.6/src/float/mod.rs",
+        "lexical-core-0.7.6/src/float/rounding.rs",
+        "lexical-core-0.7.6/src/float/shift.rs",
+        "lexical-core-0.7.6/src/ftoa/api.rs",
+        "lexical-core-0.7.6/src/ftoa/grisu2.rs",
+        "lexical-core-0.7.6/src/ftoa/grisu3.rs",
+        "lexical-core-0.7.6/src/ftoa/mod.rs",
+        "lexical-core-0.7.6/src/ftoa/radix.rs",
+        "lexical-core-0.7.6/src/ftoa/ryu.rs",
+        "lexical-core-0.7.6/src/itoa/api.rs",
+        "lexical-core-0.7.6/src/itoa/decimal.rs",
+        "lexical-core-0.7.6/src/itoa/generic.rs",
+        "lexical-core-0.7.6/src/itoa/mod.rs",
+        "lexical-core-0.7.6/src/itoa/naive.rs",
+        "lexical-core-0.7.6/src/lib.rs",
+        "lexical-core-0.7.6/src/util/algorithm.rs",
+        "lexical-core-0.7.6/src/util/assert.rs",
+        "lexical-core-0.7.6/src/util/cast.rs",
+        "lexical-core-0.7.6/src/util/config.rs",
+        "lexical-core-0.7.6/src/util/consume.rs",
+        "lexical-core-0.7.6/src/util/div128.rs",
+        "lexical-core-0.7.6/src/util/error.rs",
+        "lexical-core-0.7.6/src/util/format.rs",
+        "lexical-core-0.7.6/src/util/format/feature_format.rs",
+        "lexical-core-0.7.6/src/util/format/not_feature_format.rs",
+        "lexical-core-0.7.6/src/util/index.rs",
+        "lexical-core-0.7.6/src/util/iterator.rs",
+        "lexical-core-0.7.6/src/util/mask.rs",
+        "lexical-core-0.7.6/src/util/mod.rs",
+        "lexical-core-0.7.6/src/util/num.rs",
+        "lexical-core-0.7.6/src/util/perftools.rs",
+        "lexical-core-0.7.6/src/util/pow.rs",
+        "lexical-core-0.7.6/src/util/primitive.rs",
+        "lexical-core-0.7.6/src/util/result.rs",
+        "lexical-core-0.7.6/src/util/rounding.rs",
+        "lexical-core-0.7.6/src/util/sequence.rs",
+        "lexical-core-0.7.6/src/util/sign.rs",
+        "lexical-core-0.7.6/src/util/skip_value.rs",
+        "lexical-core-0.7.6/src/util/table.rs",
+        "lexical-core-0.7.6/src/util/test.rs",
+        "lexical-core-0.7.6/src/util/traits.rs",
+        "lexical-core-0.7.6/src/util/wrapped.rs",
+    ],
+    archive = ":lexical-core-0.7.6--archive",
+    crate = "lexical_core",
+    crate_root = "lexical-core-0.7.6/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "arrayvec",
+        "correct",
+        "default",
+        "format",
+        "ryu",
+        "static_assertions",
+        "std",
+        "table",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :lexical-core-0.7.6-build-script-build-args)",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:arrayvec",
+        "//third-party/rust:bitflags",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:ryu-1.0.5",
+        "//third-party/rust:static_assertions",
+    ],
+)
+
+third_party_rust_binary(
+    name = "lexical-core-0.7.6-build-script-build",
+    srcs = ["lexical-core-0.7.6/build.rs"],
+    archive = ":lexical-core-0.7.6--archive",
+    crate = "build_script_build",
+    crate_root = "lexical-core-0.7.6/build.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "arrayvec",
+        "correct",
+        "default",
+        "format",
+        "ryu",
+        "static_assertions",
+        "std",
+        "table",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
     name = "libc",
     srcs = [
         "libc-0.2.98/src/fixed_width_ints.rs",
@@ -7775,6 +9330,61 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "libsqlite3-sys-0.18.0",
+    srcs = [
+        "libsqlite3-sys-0.18.0/src/error.rs",
+        "libsqlite3-sys-0.18.0/src/lib.rs",
+    ],
+    archive = ":libsqlite3-sys-0.18.0--archive",
+    crate = "libsqlite3_sys",
+    crate_root = "libsqlite3-sys-0.18.0/src/lib.rs",
+    edition = "2018",
+    env = {
+        "OUT_DIR": ".",
+    },
+    features = [
+        "default",
+        "min_sqlite_version_3_6_8",
+        "min_sqlite_version_3_7_7",
+        "pkg-config",
+        "vcpkg",
+    ],
+    mapped_srcs = {
+        "fixups/libsqlite3-sys/overlay-platform009/src/bindgen.rs": "libsqlite3-sys-0.18.0/src/bindgen.rs",
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "libz-sys-1.1.2",
+    srcs = ["libz-sys-1.1.2/src/lib.rs"],
+    archive = ":libz-sys-1.1.2--archive",
+    crate = "libz_sys",
+    crate_root = "libz-sys-1.1.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "libc",
+        "stock-zlib",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
+)
+
+third_party_rust_library(
     name = "link-cplusplus-1.0.3",
     srcs = ["link-cplusplus-1.0.3/src/lib.rs"],
     archive = ":link-cplusplus-1.0.3--archive",
@@ -8310,6 +9920,60 @@ third_party_rust_library(
     deps = [],
 )
 
+third_party_rust_library(
+    name = "memoffset-0.5.6",
+    srcs = [
+        "memoffset-0.5.6/src/lib.rs",
+        "memoffset-0.5.6/src/offset_of.rs",
+        "memoffset-0.5.6/src/raw_field.rs",
+        "memoffset-0.5.6/src/span_of.rs",
+    ],
+    archive = ":memoffset-0.5.6--archive",
+    crate = "memoffset",
+    crate_root = "memoffset-0.5.6/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :memoffset-0.5.6-build-script-build-args)",
+    ],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_binary(
+    name = "memoffset-0.5.6-build-script-build",
+    srcs = [
+        "memoffset-0.5.6/build.rs",
+        "memoffset-0.5.6/src/lib.rs",
+        "memoffset-0.5.6/src/offset_of.rs",
+        "memoffset-0.5.6/src/raw_field.rs",
+        "memoffset-0.5.6/src/span_of.rs",
+    ],
+    archive = ":memoffset-0.5.6--archive",
+    crate = "build_script_build",
+    crate_root = "memoffset-0.5.6/build.rs",
+    edition = "2015",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-1.0.1"],
+)
+
 third_party_rust_binary(
     name = "memoffset-0.6.4-build-script-build",
     srcs = [
@@ -8422,6 +10086,37 @@ third_party_rust_binary(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = ["//third-party/rust:unicase"],
+)
+
+third_party_rust_library(
+    name = "miniz_oxide-0.3.7",
+    srcs = [
+        "miniz_oxide-0.3.7/src/deflate/buffer.rs",
+        "miniz_oxide-0.3.7/src/deflate/core.rs",
+        "miniz_oxide-0.3.7/src/deflate/mod.rs",
+        "miniz_oxide-0.3.7/src/deflate/stream.rs",
+        "miniz_oxide-0.3.7/src/inflate/core.rs",
+        "miniz_oxide-0.3.7/src/inflate/mod.rs",
+        "miniz_oxide-0.3.7/src/inflate/output_buffer.rs",
+        "miniz_oxide-0.3.7/src/inflate/stream.rs",
+        "miniz_oxide-0.3.7/src/lib.rs",
+        "miniz_oxide-0.3.7/src/shared.rs",
+    ],
+    archive = ":miniz_oxide-0.3.7--archive",
+    crate = "miniz_oxide",
+    crate_root = "miniz_oxide-0.3.7/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:adler32-1.2.0"],
 )
 
 third_party_rust_library(
@@ -8619,6 +10314,29 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "mio-named-pipes-0.1.7",
+    srcs = [
+        "mio-named-pipes-0.1.7/src/from_raw_arc.rs",
+        "mio-named-pipes-0.1.7/src/lib.rs",
+    ],
+    archive = ":mio-named-pipes-0.1.7--archive",
+    crate = "mio_named_pipes",
+    crate_root = "mio-named-pipes-0.1.7/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
     name = "mio-uds-0.6.8",
     srcs = [
         "mio-uds-0.6.8/src/datagram.rs",
@@ -8701,6 +10419,205 @@ third_party_rust_library(
         "//third-party/rust:safemem-0.3.3",
         "//third-party/rust:tempfile",
         "//third-party/rust:twoway-0.1.8",
+    ],
+)
+
+third_party_rust_library(
+    name = "mysql_async",
+    srcs = [
+        "mysql_async-0.23.1/src/conn/mod.rs",
+        "mysql_async-0.23.1/src/conn/pool/futures/disconnect_pool.rs",
+        "mysql_async-0.23.1/src/conn/pool/futures/get_conn.rs",
+        "mysql_async-0.23.1/src/conn/pool/futures/mod.rs",
+        "mysql_async-0.23.1/src/conn/pool/mod.rs",
+        "mysql_async-0.23.1/src/conn/pool/recycler.rs",
+        "mysql_async-0.23.1/src/conn/pool/ttl_check_inerval.rs",
+        "mysql_async-0.23.1/src/conn/stmt_cache.rs",
+        "mysql_async-0.23.1/src/connection_like/mod.rs",
+        "mysql_async-0.23.1/src/connection_like/read_packet.rs",
+        "mysql_async-0.23.1/src/connection_like/write_packet.rs",
+        "mysql_async-0.23.1/src/error.rs",
+        "mysql_async-0.23.1/src/io/async_tls.rs",
+        "mysql_async-0.23.1/src/io/futures/connecting_tcp_stream.rs",
+        "mysql_async-0.23.1/src/io/futures/mod.rs",
+        "mysql_async-0.23.1/src/io/futures/write_packet.rs",
+        "mysql_async-0.23.1/src/io/mod.rs",
+        "mysql_async-0.23.1/src/io/socket.rs",
+        "mysql_async-0.23.1/src/lib.rs",
+        "mysql_async-0.23.1/src/local_infile_handler/builtin.rs",
+        "mysql_async-0.23.1/src/local_infile_handler/mod.rs",
+        "mysql_async-0.23.1/src/macros.rs",
+        "mysql_async-0.23.1/src/opts.rs",
+        "mysql_async-0.23.1/src/queryable/mod.rs",
+        "mysql_async-0.23.1/src/queryable/query_result/mod.rs",
+        "mysql_async-0.23.1/src/queryable/stmt.rs",
+        "mysql_async-0.23.1/src/queryable/transaction.rs",
+    ],
+    archive = ":mysql_async-0.23.1--archive",
+    crate = "mysql_async",
+    crate_root = "mysql_async-0.23.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:bytes-05",
+        "//third-party/rust:crossbeam-0.7.3",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-sink",
+        "//third-party/rust:futures-util",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:mio-named-pipes-0.1.7",
+        "//third-party/rust:mysql_common",
+        "//third-party/rust:native-tls",
+        "//third-party/rust:percent-encoding",
+        "//third-party/rust:pin-project",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_json",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:tokio-02",
+        "//third-party/rust:tokio-tls",
+        "//third-party/rust:tokio-util-0.2.0",
+        "//third-party/rust:twox-hash",
+        "//third-party/rust:url",
+    ],
+)
+
+third_party_rust_library(
+    name = "mysql_common",
+    srcs = [
+        "mysql_common-0.22.2/src/constants.rs",
+        "mysql_common-0.22.2/src/crypto/der.rs",
+        "mysql_common-0.22.2/src/crypto/mod.rs",
+        "mysql_common-0.22.2/src/crypto/rsa.rs",
+        "mysql_common-0.22.2/src/io.rs",
+        "mysql_common-0.22.2/src/lib.rs",
+        "mysql_common-0.22.2/src/misc.rs",
+        "mysql_common-0.22.2/src/named_params.rs",
+        "mysql_common-0.22.2/src/packets.rs",
+        "mysql_common-0.22.2/src/params.rs",
+        "mysql_common-0.22.2/src/proto/codec/error.rs",
+        "mysql_common-0.22.2/src/proto/codec/mod.rs",
+        "mysql_common-0.22.2/src/proto/mod.rs",
+        "mysql_common-0.22.2/src/proto/sync_framed.rs",
+        "mysql_common-0.22.2/src/row/convert.rs",
+        "mysql_common-0.22.2/src/row/mod.rs",
+        "mysql_common-0.22.2/src/scramble.rs",
+        "mysql_common-0.22.2/src/value/convert/bigdecimal.rs",
+        "mysql_common-0.22.2/src/value/convert/bigint.rs",
+        "mysql_common-0.22.2/src/value/convert/decimal.rs",
+        "mysql_common-0.22.2/src/value/convert/mod.rs",
+        "mysql_common-0.22.2/src/value/json/mod.rs",
+        "mysql_common-0.22.2/src/value/json/serde_integration.rs",
+        "mysql_common-0.22.2/src/value/mod.rs",
+    ],
+    archive = ":mysql_common-0.22.2--archive",
+    crate = "mysql_common",
+    crate_root = "mysql_common-0.22.2/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["default"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:base64-0.12.3",
+        "//third-party/rust:bigdecimal-0.1.2",
+        "//third-party/rust:bitflags",
+        "//third-party/rust:byteorder",
+        "//third-party/rust:bytes-05",
+        "//third-party/rust:chrono",
+        "//third-party/rust:failure-deprecated",
+        "//third-party/rust:flate2",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:lexical-5.2.0",
+        "//third-party/rust:num-bigint-0.2.6",
+        "//third-party/rust:num-traits",
+        "//third-party/rust:rand",
+        "//third-party/rust:regex",
+        "//third-party/rust:rust_decimal-1.8.1",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_json",
+        "//third-party/rust:sha1",
+        "//third-party/rust:sha2",
+        "//third-party/rust:time",
+        "//third-party/rust:twox-hash",
+        "//third-party/rust:uuid",
+    ],
+)
+
+third_party_rust_library(
+    name = "mysql_derive",
+    srcs = ["shed/sql/derive/lib.rs"],
+    archive = None,
+    crate = None,
+    crate_root = "shed/sql/derive/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
+    ],
+)
+
+third_party_rust_library(
+    name = "native-tls",
+    srcs = [
+        "native-tls-0.2.4/src/imp/openssl.rs",
+        "native-tls-0.2.4/src/imp/schannel.rs",
+        "native-tls-0.2.4/src/imp/security_framework.rs",
+        "native-tls-0.2.4/src/lib.rs",
+        "native-tls-0.2.4/src/test.rs",
+    ],
+    archive = ":native-tls-0.2.4--archive",
+    crate = "native_tls",
+    crate_root = "native-tls-0.2.4/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "--cfg=have_min_max_version",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:log",
+        "//third-party/rust:openssl",
+        "//third-party/rust:openssl-probe-0.1.2",
+        "//third-party/rust:openssl-sys",
     ],
 )
 
@@ -8921,6 +10838,187 @@ third_party_rust_library(
         "//third-party/rust:cfg-if-1.0.0",
         "//third-party/rust:libc",
     ],
+)
+
+third_party_rust_library(
+    name = "nom-5.1.2",
+    srcs = [
+        "nom-5.1.2/src/bits/complete.rs",
+        "nom-5.1.2/src/bits/macros.rs",
+        "nom-5.1.2/src/bits/mod.rs",
+        "nom-5.1.2/src/bits/streaming.rs",
+        "nom-5.1.2/src/branch/macros.rs",
+        "nom-5.1.2/src/branch/mod.rs",
+        "nom-5.1.2/src/bytes/complete.rs",
+        "nom-5.1.2/src/bytes/macros.rs",
+        "nom-5.1.2/src/bytes/mod.rs",
+        "nom-5.1.2/src/bytes/streaming.rs",
+        "nom-5.1.2/src/character/complete.rs",
+        "nom-5.1.2/src/character/macros.rs",
+        "nom-5.1.2/src/character/mod.rs",
+        "nom-5.1.2/src/character/streaming.rs",
+        "nom-5.1.2/src/combinator/macros.rs",
+        "nom-5.1.2/src/combinator/mod.rs",
+        "nom-5.1.2/src/error.rs",
+        "nom-5.1.2/src/internal.rs",
+        "nom-5.1.2/src/lib.rs",
+        "nom-5.1.2/src/methods.rs",
+        "nom-5.1.2/src/multi/macros.rs",
+        "nom-5.1.2/src/multi/mod.rs",
+        "nom-5.1.2/src/number/complete.rs",
+        "nom-5.1.2/src/number/macros.rs",
+        "nom-5.1.2/src/number/mod.rs",
+        "nom-5.1.2/src/number/streaming.rs",
+        "nom-5.1.2/src/regexp.rs",
+        "nom-5.1.2/src/sequence/macros.rs",
+        "nom-5.1.2/src/sequence/mod.rs",
+        "nom-5.1.2/src/str.rs",
+        "nom-5.1.2/src/traits.rs",
+        "nom-5.1.2/src/util.rs",
+        "nom-5.1.2/src/whitespace.rs",
+    ],
+    archive = ":nom-5.1.2--archive",
+    crate = "nom",
+    crate_root = "nom-5.1.2/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "alloc",
+        "default",
+        "lexical",
+        "lexical-core",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :nom-5.1.2-build-script-build-args)",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:lexical-core",
+        "//third-party/rust:memchr-2.4.1",
+    ],
+)
+
+third_party_rust_binary(
+    name = "nom-5.1.2-build-script-build",
+    srcs = ["nom-5.1.2/build.rs"],
+    archive = ":nom-5.1.2--archive",
+    crate = "build_script_build",
+    crate_root = "nom-5.1.2/build.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "alloc",
+        "default",
+        "lexical",
+        "lexical-core",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:version_check-0.9.2"],
+)
+
+third_party_rust_library(
+    name = "num-bigint-0.2.6",
+    srcs = [
+        "num-bigint-0.2.6/src/algorithms.rs",
+        "num-bigint-0.2.6/src/bigint.rs",
+        "num-bigint-0.2.6/src/bigrand.rs",
+        "num-bigint-0.2.6/src/biguint.rs",
+        "num-bigint-0.2.6/src/lib.rs",
+        "num-bigint-0.2.6/src/macros.rs",
+        "num-bigint-0.2.6/src/monty.rs",
+    ],
+    archive = ":num-bigint-0.2.6--archive",
+    crate = "num_bigint",
+    crate_root = "num-bigint-0.2.6/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "i128",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :num-bigint-0.2.6-build-script-build-args)",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:num-integer-0.1.44",
+        "//third-party/rust:num-traits",
+    ],
+)
+
+third_party_rust_binary(
+    name = "num-bigint-0.2.6-build-script-build",
+    srcs = [
+        "num-bigint-0.2.6/benches/bigint.rs",
+        "num-bigint-0.2.6/benches/factorial.rs",
+        "num-bigint-0.2.6/benches/gcd.rs",
+        "num-bigint-0.2.6/benches/roots.rs",
+        "num-bigint-0.2.6/benches/shootout-pidigits.rs",
+        "num-bigint-0.2.6/build.rs",
+        "num-bigint-0.2.6/src/algorithms.rs",
+        "num-bigint-0.2.6/src/bigint.rs",
+        "num-bigint-0.2.6/src/bigrand.rs",
+        "num-bigint-0.2.6/src/biguint.rs",
+        "num-bigint-0.2.6/src/lib.rs",
+        "num-bigint-0.2.6/src/macros.rs",
+        "num-bigint-0.2.6/src/monty.rs",
+        "num-bigint-0.2.6/tests/bigint.rs",
+        "num-bigint-0.2.6/tests/bigint_bitwise.rs",
+        "num-bigint-0.2.6/tests/bigint_scalar.rs",
+        "num-bigint-0.2.6/tests/biguint.rs",
+        "num-bigint-0.2.6/tests/biguint_scalar.rs",
+        "num-bigint-0.2.6/tests/consts/mod.rs",
+        "num-bigint-0.2.6/tests/macros/mod.rs",
+        "num-bigint-0.2.6/tests/modpow.rs",
+        "num-bigint-0.2.6/tests/quickcheck.rs",
+        "num-bigint-0.2.6/tests/rand.rs",
+        "num-bigint-0.2.6/tests/roots.rs",
+        "num-bigint-0.2.6/tests/serde.rs",
+        "num-bigint-0.2.6/tests/torture.rs",
+    ],
+    archive = ":num-bigint-0.2.6--archive",
+    crate = "build_script_build",
+    crate_root = "num-bigint-0.2.6/build.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "i128",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:autocfg-1.0.1"],
 )
 
 third_party_rust_library(
@@ -9270,6 +11368,123 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "openssl",
+    srcs = [
+        "openssl-0.10.35/src/aes.rs",
+        "openssl-0.10.35/src/asn1.rs",
+        "openssl-0.10.35/src/base64.rs",
+        "openssl-0.10.35/src/bio.rs",
+        "openssl-0.10.35/src/bn.rs",
+        "openssl-0.10.35/src/cms.rs",
+        "openssl-0.10.35/src/conf.rs",
+        "openssl-0.10.35/src/derive.rs",
+        "openssl-0.10.35/src/dh.rs",
+        "openssl-0.10.35/src/dsa.rs",
+        "openssl-0.10.35/src/ec.rs",
+        "openssl-0.10.35/src/ecdsa.rs",
+        "openssl-0.10.35/src/encrypt.rs",
+        "openssl-0.10.35/src/envelope.rs",
+        "openssl-0.10.35/src/error.rs",
+        "openssl-0.10.35/src/ex_data.rs",
+        "openssl-0.10.35/src/fips.rs",
+        "openssl-0.10.35/src/hash.rs",
+        "openssl-0.10.35/src/lib.rs",
+        "openssl-0.10.35/src/macros.rs",
+        "openssl-0.10.35/src/memcmp.rs",
+        "openssl-0.10.35/src/nid.rs",
+        "openssl-0.10.35/src/ocsp.rs",
+        "openssl-0.10.35/src/pkcs12.rs",
+        "openssl-0.10.35/src/pkcs5.rs",
+        "openssl-0.10.35/src/pkcs7.rs",
+        "openssl-0.10.35/src/pkey.rs",
+        "openssl-0.10.35/src/rand.rs",
+        "openssl-0.10.35/src/rsa.rs",
+        "openssl-0.10.35/src/sha.rs",
+        "openssl-0.10.35/src/sign.rs",
+        "openssl-0.10.35/src/srtp.rs",
+        "openssl-0.10.35/src/ssl/bio.rs",
+        "openssl-0.10.35/src/ssl/callbacks.rs",
+        "openssl-0.10.35/src/ssl/connector.rs",
+        "openssl-0.10.35/src/ssl/error.rs",
+        "openssl-0.10.35/src/ssl/mod.rs",
+        "openssl-0.10.35/src/ssl/test/mod.rs",
+        "openssl-0.10.35/src/ssl/test/server.rs",
+        "openssl-0.10.35/src/stack.rs",
+        "openssl-0.10.35/src/string.rs",
+        "openssl-0.10.35/src/symm.rs",
+        "openssl-0.10.35/src/util.rs",
+        "openssl-0.10.35/src/version.rs",
+        "openssl-0.10.35/src/x509/extension.rs",
+        "openssl-0.10.35/src/x509/mod.rs",
+        "openssl-0.10.35/src/x509/store.rs",
+        "openssl-0.10.35/src/x509/tests.rs",
+        "openssl-0.10.35/src/x509/verify.rs",
+        "openssl-0.10.35/test/aia_test_cert.pem",
+        "openssl-0.10.35/test/alt_name_cert.pem",
+        "openssl-0.10.35/test/cert.pem",
+        "openssl-0.10.35/test/certs.pem",
+        "openssl-0.10.35/test/cms.p12",
+        "openssl-0.10.35/test/cms_pubkey.der",
+        "openssl-0.10.35/test/dhparams.pem",
+        "openssl-0.10.35/test/identity.p12",
+        "openssl-0.10.35/test/key.der",
+        "openssl-0.10.35/test/key.der.pub",
+        "openssl-0.10.35/test/key.pem",
+        "openssl-0.10.35/test/key.pem.pub",
+        "openssl-0.10.35/test/keystore-empty-chain.p12",
+        "openssl-0.10.35/test/nid_test_cert.pem",
+        "openssl-0.10.35/test/nid_uid_test_cert.pem",
+        "openssl-0.10.35/test/pkcs1.pem.pub",
+        "openssl-0.10.35/test/pkcs8.der",
+        "openssl-0.10.35/test/pkcs8-nocrypt.der",
+        "openssl-0.10.35/test/root-ca.pem",
+        "openssl-0.10.35/test/rsa.pem",
+        "openssl-0.10.35/test/rsa.pem.pub",
+        "openssl-0.10.35/test/rsa-encrypted.pem",
+    ],
+    archive = ":openssl-0.10.35--archive",
+    crate = "openssl",
+    crate_root = "openssl-0.10.35/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+        "ffi": "//third-party/rust:openssl-sys",
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "--cfg=ossl101",
+        "--cfg=ossl102",
+        "--cfg=ossl102f",
+        "--cfg=ossl102h",
+        "--cfg=ossl110",
+        "--cfg=ossl110f",
+        "--cfg=ossl110g",
+        "--cfg=osslconf=\"OPENSSL_NO_BUF_FREELISTS\"",
+        "--cfg=osslconf=\"OPENSSL_NO_COMP\"",
+        "--cfg=osslconf=\"OPENSSL_NO_EC\"",
+        "--cfg=osslconf=\"OPENSSL_NO_EC2M\"",
+        "--cfg=osslconf=\"OPENSSL_NO_ENGINE\"",
+        "--cfg=osslconf=\"OPENSSL_NO_KRB5\"",
+        "--cfg=osslconf=\"OPENSSL_NO_SHA\"",
+        "--cfg=osslconf=\"OPENSSL_NO_SSL3_METHOD\"",
+        "--cfg=osslconf=\"OPENSSL_NO_TLSEXT\"",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:bitflags",
+        "//third-party/rust:cfg-if-1.0.0",
+        "//third-party/rust:foreign-types",
+        "//third-party/rust:libc",
+        "//third-party/rust:once_cell",
+    ],
+)
+
+third_party_rust_library(
     name = "openssl-probe-0.1.2",
     srcs = ["openssl-probe-0.1.2/src/lib.rs"],
     archive = ":openssl-probe-0.1.2--archive",
@@ -9287,6 +11502,81 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = [],
+)
+
+third_party_rust_library(
+    name = "openssl-sys",
+    srcs = [
+        "openssl-sys-0.9.65/src/aes.rs",
+        "openssl-sys-0.9.65/src/asn1.rs",
+        "openssl-sys-0.9.65/src/bio.rs",
+        "openssl-sys-0.9.65/src/bn.rs",
+        "openssl-sys-0.9.65/src/cms.rs",
+        "openssl-sys-0.9.65/src/conf.rs",
+        "openssl-sys-0.9.65/src/crypto.rs",
+        "openssl-sys-0.9.65/src/dh.rs",
+        "openssl-sys-0.9.65/src/dsa.rs",
+        "openssl-sys-0.9.65/src/dtls1.rs",
+        "openssl-sys-0.9.65/src/ec.rs",
+        "openssl-sys-0.9.65/src/err.rs",
+        "openssl-sys-0.9.65/src/evp.rs",
+        "openssl-sys-0.9.65/src/hmac.rs",
+        "openssl-sys-0.9.65/src/lib.rs",
+        "openssl-sys-0.9.65/src/macros.rs",
+        "openssl-sys-0.9.65/src/obj_mac.rs",
+        "openssl-sys-0.9.65/src/object.rs",
+        "openssl-sys-0.9.65/src/ocsp.rs",
+        "openssl-sys-0.9.65/src/ossl_typ.rs",
+        "openssl-sys-0.9.65/src/pem.rs",
+        "openssl-sys-0.9.65/src/pkcs12.rs",
+        "openssl-sys-0.9.65/src/pkcs7.rs",
+        "openssl-sys-0.9.65/src/rand.rs",
+        "openssl-sys-0.9.65/src/rsa.rs",
+        "openssl-sys-0.9.65/src/safestack.rs",
+        "openssl-sys-0.9.65/src/sha.rs",
+        "openssl-sys-0.9.65/src/srtp.rs",
+        "openssl-sys-0.9.65/src/ssl.rs",
+        "openssl-sys-0.9.65/src/ssl3.rs",
+        "openssl-sys-0.9.65/src/stack.rs",
+        "openssl-sys-0.9.65/src/tls1.rs",
+        "openssl-sys-0.9.65/src/types.rs",
+        "openssl-sys-0.9.65/src/x509.rs",
+        "openssl-sys-0.9.65/src/x509_vfy.rs",
+        "openssl-sys-0.9.65/src/x509v3.rs",
+    ],
+    archive = ":openssl-sys-0.9.65--archive",
+    crate = "openssl_sys",
+    crate_root = "openssl-sys-0.9.65/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "--cfg=ossl101",
+        "--cfg=ossl102",
+        "--cfg=ossl102f",
+        "--cfg=ossl102h",
+        "--cfg=ossl110",
+        "--cfg=ossl110f",
+        "--cfg=ossl110g",
+        "--cfg=osslconf=\"OPENSSL_NO_BUF_FREELISTS\"",
+        "--cfg=osslconf=\"OPENSSL_NO_COMP\"",
+        "--cfg=osslconf=\"OPENSSL_NO_EC\"",
+        "--cfg=osslconf=\"OPENSSL_NO_EC2M\"",
+        "--cfg=osslconf=\"OPENSSL_NO_ENGINE\"",
+        "--cfg=osslconf=\"OPENSSL_NO_KRB5\"",
+        "--cfg=osslconf=\"OPENSSL_NO_SHA\"",
+        "--cfg=osslconf=\"OPENSSL_NO_SSL3_METHOD\"",
+        "--cfg=osslconf=\"OPENSSL_NO_TLSEXT\"",
+    ],
+    unittests = False,
+    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
@@ -9423,6 +11713,26 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "peeking_take_while-0.1.2",
+    srcs = ["peeking_take_while-0.1.2/src/lib.rs"],
+    archive = ":peeking_take_while-0.1.2--archive",
+    crate = "peeking_take_while",
+    crate_root = "peeking_take_while-0.1.2/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
     name = "percent-encoding",
     srcs = ["percent-encoding-2.1.0/lib.rs"],
     archive = ":percent-encoding-2.1.0--archive",
@@ -9438,6 +11748,32 @@ third_party_rust_library(
     },
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "perthread",
+    srcs = ["shed/perthread/src/lib.rs"],
+    archive = None,
+    crate = None,
+    crate_root = "shed/perthread/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
     unittests = False,
     deps = [],
 )
@@ -11549,6 +13885,110 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "rusqlite",
+    srcs = [
+        "rusqlite-0.23.1/src/backup.rs",
+        "rusqlite-0.23.1/src/blob.rs",
+        "rusqlite-0.23.1/src/busy.rs",
+        "rusqlite-0.23.1/src/cache.rs",
+        "rusqlite-0.23.1/src/collation.rs",
+        "rusqlite-0.23.1/src/column.rs",
+        "rusqlite-0.23.1/src/config.rs",
+        "rusqlite-0.23.1/src/context.rs",
+        "rusqlite-0.23.1/src/error.rs",
+        "rusqlite-0.23.1/src/functions.rs",
+        "rusqlite-0.23.1/src/hooks.rs",
+        "rusqlite-0.23.1/src/inner_connection.rs",
+        "rusqlite-0.23.1/src/lib.rs",
+        "rusqlite-0.23.1/src/limits.rs",
+        "rusqlite-0.23.1/src/load_extension_guard.rs",
+        "rusqlite-0.23.1/src/pragma.rs",
+        "rusqlite-0.23.1/src/raw_statement.rs",
+        "rusqlite-0.23.1/src/row.rs",
+        "rusqlite-0.23.1/src/session.rs",
+        "rusqlite-0.23.1/src/statement.rs",
+        "rusqlite-0.23.1/src/trace.rs",
+        "rusqlite-0.23.1/src/transaction.rs",
+        "rusqlite-0.23.1/src/types/chrono.rs",
+        "rusqlite-0.23.1/src/types/from_sql.rs",
+        "rusqlite-0.23.1/src/types/mod.rs",
+        "rusqlite-0.23.1/src/types/serde_json.rs",
+        "rusqlite-0.23.1/src/types/time.rs",
+        "rusqlite-0.23.1/src/types/to_sql.rs",
+        "rusqlite-0.23.1/src/types/url.rs",
+        "rusqlite-0.23.1/src/types/value.rs",
+        "rusqlite-0.23.1/src/types/value_ref.rs",
+        "rusqlite-0.23.1/src/unlock_notify.rs",
+        "rusqlite-0.23.1/src/util/mod.rs",
+        "rusqlite-0.23.1/src/util/param_cache.rs",
+        "rusqlite-0.23.1/src/util/small_cstr.rs",
+        "rusqlite-0.23.1/src/util/sqlite_string.rs",
+        "rusqlite-0.23.1/src/version.rs",
+        "rusqlite-0.23.1/src/vtab/array.rs",
+        "rusqlite-0.23.1/src/vtab/csvtab.rs",
+        "rusqlite-0.23.1/src/vtab/mod.rs",
+        "rusqlite-0.23.1/src/vtab/series.rs",
+    ],
+    archive = ":rusqlite-0.23.1--archive",
+    crate = "rusqlite",
+    crate_root = "rusqlite-0.23.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["blob"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:bitflags",
+        "//third-party/rust:fallible-iterator-0.2.0",
+        "//third-party/rust:fallible-streaming-iterator-0.1.9",
+        "//third-party/rust:libsqlite3-sys-0.18.0",
+        "//third-party/rust:lru-cache",
+        "//third-party/rust:memchr-2.4.1",
+        "//third-party/rust:smallvec",
+        "//third-party/rust:time-01",
+    ],
+)
+
+third_party_rust_library(
+    name = "rust_decimal-1.8.1",
+    srcs = [
+        "rust_decimal-1.8.1/src/decimal.rs",
+        "rust_decimal-1.8.1/src/error.rs",
+        "rust_decimal-1.8.1/src/lib.rs",
+        "rust_decimal-1.8.1/src/postgres.rs",
+        "rust_decimal-1.8.1/src/serde_types.rs",
+    ],
+    archive = ":rust_decimal-1.8.1--archive",
+    crate = "rust_decimal",
+    crate_root = "rust_decimal-1.8.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "serde",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:num-traits",
+        "//third-party/rust:serde",
+    ],
+)
+
+third_party_rust_library(
     name = "rustc-demangle",
     srcs = [
         "rustc-demangle-0.1.20/src/legacy.rs",
@@ -11562,6 +14002,29 @@ third_party_rust_library(
     env = {
     },
     features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
+    name = "rustc-hash",
+    srcs = ["rustc-hash-1.1.0/src/lib.rs"],
+    archive = ":rustc-hash-1.1.0--archive",
+    crate = "rustc_hash",
+    crate_root = "rustc-hash-1.1.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [
+        "default",
+        "std",
+    ],
     mapped_srcs = {
     },
     named_deps = {
@@ -12420,6 +14883,29 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "sha1",
+    srcs = [
+        "sha1-0.6.0/src/lib.rs",
+        "sha1-0.6.0/src/simd.rs",
+    ],
+    archive = ":sha1-0.6.0--archive",
+    crate = "sha1",
+    crate_root = "sha1-0.6.0/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_library(
     name = "sha2",
     srcs = [
         "sha2-0.8.2/src/aarch64.rs",
@@ -12453,6 +14939,59 @@ third_party_rust_library(
         "//third-party/rust:fake-simd-0.1.2",
         "//third-party/rust:opaque-debug-0.2.3",
     ],
+)
+
+third_party_rust_library(
+    name = "shared_error",
+    srcs = [
+        "shed/shared_error/src/anyhow.rs",
+        "shed/shared_error/src/lib.rs",
+        "shed/shared_error/src/std.rs",
+    ],
+    archive = None,
+    crate = None,
+    crate_root = "shed/shared_error/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:anyhow",
+        "//third-party/rust:thiserror",
+    ],
+)
+
+third_party_rust_library(
+    name = "shlex-0.1.1",
+    srcs = ["shlex-0.1.1/src/lib.rs"],
+    archive = ":shlex-0.1.1--archive",
+    crate = "shlex",
+    crate_root = "shlex-0.1.1/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [],
 )
 
 third_party_rust_library(
@@ -12776,6 +15315,100 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "sql",
+    srcs = [
+        "shed/sql/src/lib.rs",
+        "shed/sql/src/tests.rs",
+    ],
+    archive = None,
+    crate = None,
+    crate_root = "shed/sql/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:anyhow",
+        "//third-party/rust:cloned",
+        "//third-party/rust:futures",
+        "//third-party/rust:futures-util",
+        "//third-party/rust:futures_ext",
+        "//third-party/rust:mysql_async",
+        "//third-party/rust:rusqlite",
+        "//third-party/rust:sql_common",
+    ],
+)
+
+third_party_rust_library(
+    name = "sql_common",
+    srcs = [
+        "shed/sql/common/deprecated_mysql/ext.rs",
+        "shed/sql/common/deprecated_mysql/imp.rs",
+        "shed/sql/common/deprecated_mysql/mod.rs",
+        "shed/sql/common/error.rs",
+        "shed/sql/common/ext.rs",
+        "shed/sql/common/lib.rs",
+        "shed/sql/common/mysql/facebook/mod.rs",
+        "shed/sql/common/mysql/facebook/mysql_wrapper.rs",
+        "shed/sql/common/mysql/mod.rs",
+        "shed/sql/common/mysql/mysql_stub/mod.rs",
+        "shed/sql/common/sqlite.rs",
+        "shed/sql/common/transaction.rs",
+    ],
+    archive = None,
+    crate = None,
+    crate_root = "shed/sql/common/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+        "futures_ext": "//third-party/rust:futures_01_ext",
+        "futures_old": "//third-party/rust:futures-old",
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:anyhow",
+        "//third-party/rust:auto_impl",
+        "//third-party/rust:cloned",
+        "//third-party/rust:failure_ext",
+        "//third-party/rust:futures",
+        "//third-party/rust:futures_stats",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:mysql_async",
+        "//third-party/rust:mysql_derive",
+        "//third-party/rust:rusqlite",
+        "//third-party/rust:stats",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:time_ext",
+        "//third-party/rust:tokio_shim",
+    ],
+)
+
+third_party_rust_library(
     name = "stable_deref_trait",
     srcs = ["stable_deref_trait-1.2.0/src/lib.rs"],
     archive = ":stable_deref_trait-1.2.0--archive",
@@ -12797,6 +15430,71 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = [],
+)
+
+third_party_rust_library(
+    name = "standback-0.2.10",
+    srcs = [
+        "standback-0.2.10/src/lib.rs",
+        "standback-0.2.10/src/v1_32.rs",
+        "standback-0.2.10/src/v1_33.rs",
+        "standback-0.2.10/src/v1_33/pin.rs",
+        "standback-0.2.10/src/v1_34.rs",
+        "standback-0.2.10/src/v1_34/try_from.rs",
+        "standback-0.2.10/src/v1_35.rs",
+        "standback-0.2.10/src/v1_36.rs",
+        "standback-0.2.10/src/v1_36/iterator_copied.rs",
+        "standback-0.2.10/src/v1_36/maybe_uninit.rs",
+        "standback-0.2.10/src/v1_36/poll.rs",
+        "standback-0.2.10/src/v1_36/waker.rs",
+        "standback-0.2.10/src/v1_37.rs",
+        "standback-0.2.10/src/v1_38.rs",
+        "standback-0.2.10/src/v1_40.rs",
+        "standback-0.2.10/src/v1_41.rs",
+        "standback-0.2.10/src/v1_42.rs",
+        "standback-0.2.10/src/v1_43.rs",
+        "standback-0.2.10/src/v1_44.rs",
+        "standback-0.2.10/src/v1_45.rs",
+        "standback-0.2.10/src/v1_46.rs",
+    ],
+    archive = ":standback-0.2.10--archive",
+    crate = "standback",
+    crate_root = "standback-0.2.10/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["std"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :standback-0.2.10-build-script-build-args)",
+    ],
+    unittests = False,
+    deps = [],
+)
+
+third_party_rust_binary(
+    name = "standback-0.2.10-build-script-build",
+    srcs = ["standback-0.2.10/build.rs"],
+    archive = ":standback-0.2.10--archive",
+    crate = "build_script_build",
+    crate_root = "standback-0.2.10/build.rs",
+    edition = "2018",
+    env = {
+    },
+    features = ["std"],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:version_check-0.9.2"],
 )
 
 third_party_rust_library(
@@ -12828,6 +15526,152 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = [],
+)
+
+third_party_rust_library(
+    name = "stats",
+    srcs = [
+        "shed/stats/src/lib.rs",
+        "shed/stats/src/macros.rs",
+        "shed/stats/src/noop_stats.rs",
+        "shed/stats/src/thread_local_aggregator.rs",
+    ],
+    archive = None,
+    crate = None,
+    crate_root = "shed/stats/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:fbinit",
+        "//third-party/rust:futures",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:perthread",
+        "//third-party/rust:stats_facebook",
+        "//third-party/rust:stats_traits",
+        "//third-party/rust:tokio_shim",
+    ],
+)
+
+third_party_rust_library(
+    name = "stats_facebook",
+    srcs = ["shed/stats/facebook///common/rust/shed/stats/facebook:stats_facebook/pub_use_star"],
+    archive = None,
+    crate = None,
+    crate_root = "shed/stats/facebook/",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+        "dep": "//third-party/rust:stats_facebook@rust",
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = ["//third-party/rust:stats_facebook@link"],
+)
+
+third_party_rust_library(
+    name = "stats_facebook@rust",
+    srcs = [
+        "shed/stats/facebook/src/ffi.rs",
+        "shed/stats/facebook/src/lib.rs",
+        "shed/stats/facebook/src/service_data.rs",
+        "shed/stats/facebook/src/singleton_counter.rs",
+        "shed/stats/facebook/src/test_dynamic_stat_types.rs",
+        "shed/stats/facebook/src/test_macros.rs",
+        "shed/stats/facebook/src/test_stat_types.rs",
+        "shed/stats/facebook/src/thread_local_stats.rs",
+        "shed/stats/facebook/src/tl_counter.rs",
+        "shed/stats/facebook/src/tl_histogram.rs",
+        "shed/stats/facebook/src/tl_timeseries.rs",
+    ],
+    archive = None,
+    crate = "stats_facebook",
+    crate_root = "shed/stats/facebook/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:cxx",
+        "//third-party/rust:fbinit",
+        "//third-party/rust:lazy_static",
+        "//third-party/rust:libc",
+        "//third-party/rust:stats-ffi",
+        "//third-party/rust:stats_facebook-bridge",
+        "//third-party/rust:stats_traits",
+    ],
+)
+
+third_party_rust_library(
+    name = "stats_traits",
+    srcs = [
+        "shed/stats/traits/dynamic_stat_types.rs",
+        "shed/stats/traits/lib.rs",
+        "shed/stats/traits/stat_types.rs",
+        "shed/stats/traits/stats_manager.rs",
+    ],
+    archive = None,
+    crate = None,
+    crate_root = "shed/stats/traits/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:auto_impl",
+        "//third-party/rust:fbinit",
+    ],
 )
 
 third_party_rust_library(
@@ -13444,6 +16288,102 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "time",
+    srcs = [
+        "time-0.2.22/src/date.rs",
+        "time-0.2.22/src/duration.rs",
+        "time-0.2.22/src/error.rs",
+        "time-0.2.22/src/ext.rs",
+        "time-0.2.22/src/format/date.rs",
+        "time-0.2.22/src/format/deferred_format.rs",
+        "time-0.2.22/src/format/format.rs",
+        "time-0.2.22/src/format/mod.rs",
+        "time-0.2.22/src/format/offset.rs",
+        "time-0.2.22/src/format/parse.rs",
+        "time-0.2.22/src/format/parse_items.rs",
+        "time-0.2.22/src/format/time.rs",
+        "time-0.2.22/src/format/well_known.rs",
+        "time-0.2.22/src/instant.rs",
+        "time-0.2.22/src/internals.rs",
+        "time-0.2.22/src/lib.rs",
+        "time-0.2.22/src/offset_date_time.rs",
+        "time-0.2.22/src/primitive_date_time.rs",
+        "time-0.2.22/src/rand.rs",
+        "time-0.2.22/src/serde/date.rs",
+        "time-0.2.22/src/serde/duration.rs",
+        "time-0.2.22/src/serde/mod.rs",
+        "time-0.2.22/src/serde/primitive_date_time.rs",
+        "time-0.2.22/src/serde/sign.rs",
+        "time-0.2.22/src/serde/time.rs",
+        "time-0.2.22/src/serde/timestamp.rs",
+        "time-0.2.22/src/serde/utc_offset.rs",
+        "time-0.2.22/src/serde/weekday.rs",
+        "time-0.2.22/src/sign.rs",
+        "time-0.2.22/src/time_mod.rs",
+        "time-0.2.22/src/utc_offset.rs",
+        "time-0.2.22/src/util.rs",
+        "time-0.2.22/src/weekday.rs",
+    ],
+    archive = ":time-0.2.22--archive",
+    crate = "time",
+    crate_root = "time-0.2.22/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "deprecated",
+        "libc",
+        "std",
+        "stdweb",
+        "winapi",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "--cap-lints=allow",
+        "@$(location :time-0.2.22-build-script-build-args)",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:const_fn-0.4.2",
+        "//third-party/rust:libc",
+        "//third-party/rust:standback-0.2.10",
+        "//third-party/rust:time-macros-0.1.1",
+    ],
+)
+
+third_party_rust_binary(
+    name = "time-0.2.22-build-script-build",
+    srcs = ["time-0.2.22/build.rs"],
+    archive = ":time-0.2.22--archive",
+    crate = "build_script_build",
+    crate_root = "time-0.2.22/build.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "deprecated",
+        "libc",
+        "std",
+        "stdweb",
+        "winapi",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:version_check-0.9.2"],
+)
+
+third_party_rust_library(
     name = "time-01",
     srcs = [
         "time-0.1.44/src/display.rs",
@@ -13467,6 +16407,92 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = ["//third-party/rust:libc"],
+)
+
+third_party_rust_library(
+    name = "time-macros-0.1.1",
+    srcs = ["time-macros-0.1.1/src/lib.rs"],
+    archive = ":time-macros-0.1.1--archive",
+    crate = "time_macros",
+    crate_root = "time-macros-0.1.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:proc-macro-hack",
+        "//third-party/rust:time-macros-impl-0.1.1",
+    ],
+)
+
+third_party_rust_library(
+    name = "time-macros-impl-0.1.1",
+    srcs = [
+        "time-macros-impl-0.1.1/src/date.rs",
+        "time-macros-impl-0.1.1/src/ext.rs",
+        "time-macros-impl-0.1.1/src/lib.rs",
+        "time-macros-impl-0.1.1/src/offset.rs",
+        "time-macros-impl-0.1.1/src/time.rs",
+        "time-macros-impl-0.1.1/src/time_crate/date.rs",
+        "time-macros-impl-0.1.1/src/time_crate/mod.rs",
+    ],
+    archive = ":time-macros-impl-0.1.1--archive",
+    crate = "time_macros_impl",
+    crate_root = "time-macros-impl-0.1.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:proc-macro-hack",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:standback-0.2.10",
+        "//third-party/rust:syn",
+    ],
+)
+
+third_party_rust_library(
+    name = "time_ext",
+    srcs = ["shed/time_ext/src/lib.rs"],
+    archive = None,
+    crate = None,
+    crate_root = "shed/time_ext/src/lib.rs",
+    edition = None,
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = [
+        "-Aunused_braces",
+        "-Wbare_trait_objects",
+        "-Wellipsis_inclusive_range_patterns",
+        "-Dnon_fmt_panic",
+        "-Dunconditional_recursion",
+    ],
+    unittests = False,
+    deps = [
+        "//third-party/rust:anyhow",
+        "//third-party/rust:thiserror",
+    ],
 )
 
 third_party_rust_library(
@@ -13500,274 +16526,285 @@ third_party_rust_library(
 third_party_rust_library(
     name = "tokio",
     srcs = [
-        "tokio-1.7.1/src/blocking.rs",
-        "tokio-1.7.1/src/coop.rs",
-        "tokio-1.7.1/src/doc/mod.rs",
-        "tokio-1.7.1/src/doc/os.rs",
-        "tokio-1.7.1/src/doc/winapi.rs",
-        "tokio-1.7.1/src/fs/canonicalize.rs",
-        "tokio-1.7.1/src/fs/copy.rs",
-        "tokio-1.7.1/src/fs/create_dir.rs",
-        "tokio-1.7.1/src/fs/create_dir_all.rs",
-        "tokio-1.7.1/src/fs/dir_builder.rs",
-        "tokio-1.7.1/src/fs/file.rs",
-        "tokio-1.7.1/src/fs/hard_link.rs",
-        "tokio-1.7.1/src/fs/metadata.rs",
-        "tokio-1.7.1/src/fs/mod.rs",
-        "tokio-1.7.1/src/fs/open_options.rs",
-        "tokio-1.7.1/src/fs/read.rs",
-        "tokio-1.7.1/src/fs/read_dir.rs",
-        "tokio-1.7.1/src/fs/read_link.rs",
-        "tokio-1.7.1/src/fs/read_to_string.rs",
-        "tokio-1.7.1/src/fs/remove_dir.rs",
-        "tokio-1.7.1/src/fs/remove_dir_all.rs",
-        "tokio-1.7.1/src/fs/remove_file.rs",
-        "tokio-1.7.1/src/fs/rename.rs",
-        "tokio-1.7.1/src/fs/set_permissions.rs",
-        "tokio-1.7.1/src/fs/symlink.rs",
-        "tokio-1.7.1/src/fs/symlink_dir.rs",
-        "tokio-1.7.1/src/fs/symlink_file.rs",
-        "tokio-1.7.1/src/fs/symlink_metadata.rs",
-        "tokio-1.7.1/src/fs/write.rs",
-        "tokio-1.7.1/src/future/block_on.rs",
-        "tokio-1.7.1/src/future/maybe_done.rs",
-        "tokio-1.7.1/src/future/mod.rs",
-        "tokio-1.7.1/src/future/poll_fn.rs",
-        "tokio-1.7.1/src/future/ready.rs",
-        "tokio-1.7.1/src/future/trace.rs",
-        "tokio-1.7.1/src/future/try_join.rs",
-        "tokio-1.7.1/src/io/async_buf_read.rs",
-        "tokio-1.7.1/src/io/async_fd.rs",
-        "tokio-1.7.1/src/io/async_read.rs",
-        "tokio-1.7.1/src/io/async_seek.rs",
-        "tokio-1.7.1/src/io/async_write.rs",
-        "tokio-1.7.1/src/io/blocking.rs",
-        "tokio-1.7.1/src/io/driver/interest.rs",
-        "tokio-1.7.1/src/io/driver/mod.rs",
-        "tokio-1.7.1/src/io/driver/platform.rs",
-        "tokio-1.7.1/src/io/driver/ready.rs",
-        "tokio-1.7.1/src/io/driver/registration.rs",
-        "tokio-1.7.1/src/io/driver/scheduled_io.rs",
-        "tokio-1.7.1/src/io/mod.rs",
-        "tokio-1.7.1/src/io/poll_evented.rs",
-        "tokio-1.7.1/src/io/read_buf.rs",
-        "tokio-1.7.1/src/io/seek.rs",
-        "tokio-1.7.1/src/io/split.rs",
-        "tokio-1.7.1/src/io/stderr.rs",
-        "tokio-1.7.1/src/io/stdin.rs",
-        "tokio-1.7.1/src/io/stdio_common.rs",
-        "tokio-1.7.1/src/io/stdout.rs",
-        "tokio-1.7.1/src/io/util/async_buf_read_ext.rs",
-        "tokio-1.7.1/src/io/util/async_read_ext.rs",
-        "tokio-1.7.1/src/io/util/async_seek_ext.rs",
-        "tokio-1.7.1/src/io/util/async_write_ext.rs",
-        "tokio-1.7.1/src/io/util/buf_reader.rs",
-        "tokio-1.7.1/src/io/util/buf_stream.rs",
-        "tokio-1.7.1/src/io/util/buf_writer.rs",
-        "tokio-1.7.1/src/io/util/chain.rs",
-        "tokio-1.7.1/src/io/util/copy.rs",
-        "tokio-1.7.1/src/io/util/copy_bidirectional.rs",
-        "tokio-1.7.1/src/io/util/copy_buf.rs",
-        "tokio-1.7.1/src/io/util/empty.rs",
-        "tokio-1.7.1/src/io/util/flush.rs",
-        "tokio-1.7.1/src/io/util/lines.rs",
-        "tokio-1.7.1/src/io/util/mem.rs",
-        "tokio-1.7.1/src/io/util/mod.rs",
-        "tokio-1.7.1/src/io/util/read.rs",
-        "tokio-1.7.1/src/io/util/read_buf.rs",
-        "tokio-1.7.1/src/io/util/read_exact.rs",
-        "tokio-1.7.1/src/io/util/read_int.rs",
-        "tokio-1.7.1/src/io/util/read_line.rs",
-        "tokio-1.7.1/src/io/util/read_to_end.rs",
-        "tokio-1.7.1/src/io/util/read_to_string.rs",
-        "tokio-1.7.1/src/io/util/read_until.rs",
-        "tokio-1.7.1/src/io/util/repeat.rs",
-        "tokio-1.7.1/src/io/util/shutdown.rs",
-        "tokio-1.7.1/src/io/util/sink.rs",
-        "tokio-1.7.1/src/io/util/split.rs",
-        "tokio-1.7.1/src/io/util/take.rs",
-        "tokio-1.7.1/src/io/util/vec_with_initialized.rs",
-        "tokio-1.7.1/src/io/util/write.rs",
-        "tokio-1.7.1/src/io/util/write_all.rs",
-        "tokio-1.7.1/src/io/util/write_all_buf.rs",
-        "tokio-1.7.1/src/io/util/write_buf.rs",
-        "tokio-1.7.1/src/io/util/write_int.rs",
-        "tokio-1.7.1/src/io/util/write_vectored.rs",
-        "tokio-1.7.1/src/lib.rs",
-        "tokio-1.7.1/src/loom/mocked.rs",
-        "tokio-1.7.1/src/loom/mod.rs",
-        "tokio-1.7.1/src/loom/std/atomic_ptr.rs",
-        "tokio-1.7.1/src/loom/std/atomic_u16.rs",
-        "tokio-1.7.1/src/loom/std/atomic_u32.rs",
-        "tokio-1.7.1/src/loom/std/atomic_u64.rs",
-        "tokio-1.7.1/src/loom/std/atomic_u8.rs",
-        "tokio-1.7.1/src/loom/std/atomic_usize.rs",
-        "tokio-1.7.1/src/loom/std/mod.rs",
-        "tokio-1.7.1/src/loom/std/mutex.rs",
-        "tokio-1.7.1/src/loom/std/parking_lot.rs",
-        "tokio-1.7.1/src/loom/std/unsafe_cell.rs",
-        "tokio-1.7.1/src/macros/cfg.rs",
-        "tokio-1.7.1/src/macros/join.rs",
-        "tokio-1.7.1/src/macros/loom.rs",
-        "tokio-1.7.1/src/macros/mod.rs",
-        "tokio-1.7.1/src/macros/pin.rs",
-        "tokio-1.7.1/src/macros/ready.rs",
-        "tokio-1.7.1/src/macros/scoped_tls.rs",
-        "tokio-1.7.1/src/macros/select.rs",
-        "tokio-1.7.1/src/macros/support.rs",
-        "tokio-1.7.1/src/macros/thread_local.rs",
-        "tokio-1.7.1/src/macros/try_join.rs",
-        "tokio-1.7.1/src/net/addr.rs",
-        "tokio-1.7.1/src/net/lookup_host.rs",
-        "tokio-1.7.1/src/net/mod.rs",
-        "tokio-1.7.1/src/net/tcp/listener.rs",
-        "tokio-1.7.1/src/net/tcp/mod.rs",
-        "tokio-1.7.1/src/net/tcp/socket.rs",
-        "tokio-1.7.1/src/net/tcp/split.rs",
-        "tokio-1.7.1/src/net/tcp/split_owned.rs",
-        "tokio-1.7.1/src/net/tcp/stream.rs",
-        "tokio-1.7.1/src/net/udp.rs",
-        "tokio-1.7.1/src/net/unix/datagram/mod.rs",
-        "tokio-1.7.1/src/net/unix/datagram/socket.rs",
-        "tokio-1.7.1/src/net/unix/listener.rs",
-        "tokio-1.7.1/src/net/unix/mod.rs",
-        "tokio-1.7.1/src/net/unix/socketaddr.rs",
-        "tokio-1.7.1/src/net/unix/split.rs",
-        "tokio-1.7.1/src/net/unix/split_owned.rs",
-        "tokio-1.7.1/src/net/unix/stream.rs",
-        "tokio-1.7.1/src/net/unix/ucred.rs",
-        "tokio-1.7.1/src/net/windows/mod.rs",
-        "tokio-1.7.1/src/net/windows/named_pipe.rs",
-        "tokio-1.7.1/src/park/either.rs",
-        "tokio-1.7.1/src/park/mod.rs",
-        "tokio-1.7.1/src/park/thread.rs",
-        "tokio-1.7.1/src/process/kill.rs",
-        "tokio-1.7.1/src/process/mod.rs",
-        "tokio-1.7.1/src/process/unix/driver.rs",
-        "tokio-1.7.1/src/process/unix/mod.rs",
-        "tokio-1.7.1/src/process/unix/orphan.rs",
-        "tokio-1.7.1/src/process/unix/reap.rs",
-        "tokio-1.7.1/src/process/windows.rs",
-        "tokio-1.7.1/src/runtime/basic_scheduler.rs",
-        "tokio-1.7.1/src/runtime/blocking/mod.rs",
-        "tokio-1.7.1/src/runtime/blocking/pool.rs",
-        "tokio-1.7.1/src/runtime/blocking/schedule.rs",
-        "tokio-1.7.1/src/runtime/blocking/shutdown.rs",
-        "tokio-1.7.1/src/runtime/blocking/task.rs",
-        "tokio-1.7.1/src/runtime/builder.rs",
-        "tokio-1.7.1/src/runtime/context.rs",
-        "tokio-1.7.1/src/runtime/driver.rs",
-        "tokio-1.7.1/src/runtime/enter.rs",
-        "tokio-1.7.1/src/runtime/handle.rs",
-        "tokio-1.7.1/src/runtime/mod.rs",
-        "tokio-1.7.1/src/runtime/park.rs",
-        "tokio-1.7.1/src/runtime/queue.rs",
-        "tokio-1.7.1/src/runtime/shell.rs",
-        "tokio-1.7.1/src/runtime/spawner.rs",
-        "tokio-1.7.1/src/runtime/task/core.rs",
-        "tokio-1.7.1/src/runtime/task/error.rs",
-        "tokio-1.7.1/src/runtime/task/harness.rs",
-        "tokio-1.7.1/src/runtime/task/join.rs",
-        "tokio-1.7.1/src/runtime/task/mod.rs",
-        "tokio-1.7.1/src/runtime/task/raw.rs",
-        "tokio-1.7.1/src/runtime/task/stack.rs",
-        "tokio-1.7.1/src/runtime/task/state.rs",
-        "tokio-1.7.1/src/runtime/task/waker.rs",
-        "tokio-1.7.1/src/runtime/tests/loom_basic_scheduler.rs",
-        "tokio-1.7.1/src/runtime/tests/loom_blocking.rs",
-        "tokio-1.7.1/src/runtime/tests/loom_oneshot.rs",
-        "tokio-1.7.1/src/runtime/tests/loom_pool.rs",
-        "tokio-1.7.1/src/runtime/tests/loom_queue.rs",
-        "tokio-1.7.1/src/runtime/tests/loom_shutdown_join.rs",
-        "tokio-1.7.1/src/runtime/tests/mod.rs",
-        "tokio-1.7.1/src/runtime/tests/queue.rs",
-        "tokio-1.7.1/src/runtime/tests/task.rs",
-        "tokio-1.7.1/src/runtime/thread_pool/atomic_cell.rs",
-        "tokio-1.7.1/src/runtime/thread_pool/idle.rs",
-        "tokio-1.7.1/src/runtime/thread_pool/mod.rs",
-        "tokio-1.7.1/src/runtime/thread_pool/worker.rs",
-        "tokio-1.7.1/src/signal/ctrl_c.rs",
-        "tokio-1.7.1/src/signal/mod.rs",
-        "tokio-1.7.1/src/signal/registry.rs",
-        "tokio-1.7.1/src/signal/reusable_box.rs",
-        "tokio-1.7.1/src/signal/unix.rs",
-        "tokio-1.7.1/src/signal/unix/driver.rs",
-        "tokio-1.7.1/src/signal/windows.rs",
-        "tokio-1.7.1/src/sync/barrier.rs",
-        "tokio-1.7.1/src/sync/batch_semaphore.rs",
-        "tokio-1.7.1/src/sync/broadcast.rs",
-        "tokio-1.7.1/src/sync/mod.rs",
-        "tokio-1.7.1/src/sync/mpsc/block.rs",
-        "tokio-1.7.1/src/sync/mpsc/bounded.rs",
-        "tokio-1.7.1/src/sync/mpsc/chan.rs",
-        "tokio-1.7.1/src/sync/mpsc/error.rs",
-        "tokio-1.7.1/src/sync/mpsc/list.rs",
-        "tokio-1.7.1/src/sync/mpsc/mod.rs",
-        "tokio-1.7.1/src/sync/mpsc/unbounded.rs",
-        "tokio-1.7.1/src/sync/mutex.rs",
-        "tokio-1.7.1/src/sync/notify.rs",
-        "tokio-1.7.1/src/sync/once_cell.rs",
-        "tokio-1.7.1/src/sync/oneshot.rs",
-        "tokio-1.7.1/src/sync/rwlock.rs",
-        "tokio-1.7.1/src/sync/rwlock/owned_read_guard.rs",
-        "tokio-1.7.1/src/sync/rwlock/owned_write_guard.rs",
-        "tokio-1.7.1/src/sync/rwlock/owned_write_guard_mapped.rs",
-        "tokio-1.7.1/src/sync/rwlock/read_guard.rs",
-        "tokio-1.7.1/src/sync/rwlock/write_guard.rs",
-        "tokio-1.7.1/src/sync/rwlock/write_guard_mapped.rs",
-        "tokio-1.7.1/src/sync/semaphore.rs",
-        "tokio-1.7.1/src/sync/task/atomic_waker.rs",
-        "tokio-1.7.1/src/sync/task/mod.rs",
-        "tokio-1.7.1/src/sync/tests/atomic_waker.rs",
-        "tokio-1.7.1/src/sync/tests/loom_atomic_waker.rs",
-        "tokio-1.7.1/src/sync/tests/loom_broadcast.rs",
-        "tokio-1.7.1/src/sync/tests/loom_list.rs",
-        "tokio-1.7.1/src/sync/tests/loom_mpsc.rs",
-        "tokio-1.7.1/src/sync/tests/loom_notify.rs",
-        "tokio-1.7.1/src/sync/tests/loom_oneshot.rs",
-        "tokio-1.7.1/src/sync/tests/loom_rwlock.rs",
-        "tokio-1.7.1/src/sync/tests/loom_semaphore_batch.rs",
-        "tokio-1.7.1/src/sync/tests/loom_watch.rs",
-        "tokio-1.7.1/src/sync/tests/mod.rs",
-        "tokio-1.7.1/src/sync/tests/semaphore_batch.rs",
-        "tokio-1.7.1/src/sync/watch.rs",
-        "tokio-1.7.1/src/task/blocking.rs",
-        "tokio-1.7.1/src/task/local.rs",
-        "tokio-1.7.1/src/task/mod.rs",
-        "tokio-1.7.1/src/task/spawn.rs",
-        "tokio-1.7.1/src/task/task_local.rs",
-        "tokio-1.7.1/src/task/unconstrained.rs",
-        "tokio-1.7.1/src/task/yield_now.rs",
-        "tokio-1.7.1/src/time/clock.rs",
-        "tokio-1.7.1/src/time/driver/entry.rs",
-        "tokio-1.7.1/src/time/driver/handle.rs",
-        "tokio-1.7.1/src/time/driver/mod.rs",
-        "tokio-1.7.1/src/time/driver/sleep.rs",
-        "tokio-1.7.1/src/time/driver/tests/mod.rs",
-        "tokio-1.7.1/src/time/driver/wheel/level.rs",
-        "tokio-1.7.1/src/time/driver/wheel/mod.rs",
-        "tokio-1.7.1/src/time/driver/wheel/stack.rs",
-        "tokio-1.7.1/src/time/error.rs",
-        "tokio-1.7.1/src/time/instant.rs",
-        "tokio-1.7.1/src/time/interval.rs",
-        "tokio-1.7.1/src/time/mod.rs",
-        "tokio-1.7.1/src/time/tests/mod.rs",
-        "tokio-1.7.1/src/time/tests/test_sleep.rs",
-        "tokio-1.7.1/src/time/timeout.rs",
-        "tokio-1.7.1/src/util/bit.rs",
-        "tokio-1.7.1/src/util/error.rs",
-        "tokio-1.7.1/src/util/linked_list.rs",
-        "tokio-1.7.1/src/util/mod.rs",
-        "tokio-1.7.1/src/util/pad.rs",
-        "tokio-1.7.1/src/util/rand.rs",
-        "tokio-1.7.1/src/util/slab.rs",
-        "tokio-1.7.1/src/util/trace.rs",
-        "tokio-1.7.1/src/util/try_lock.rs",
-        "tokio-1.7.1/src/util/wake.rs",
+        "tokio-1.10.1/src/blocking.rs",
+        "tokio-1.10.1/src/coop.rs",
+        "tokio-1.10.1/src/doc/mod.rs",
+        "tokio-1.10.1/src/doc/os.rs",
+        "tokio-1.10.1/src/doc/winapi.rs",
+        "tokio-1.10.1/src/fs/canonicalize.rs",
+        "tokio-1.10.1/src/fs/copy.rs",
+        "tokio-1.10.1/src/fs/create_dir.rs",
+        "tokio-1.10.1/src/fs/create_dir_all.rs",
+        "tokio-1.10.1/src/fs/dir_builder.rs",
+        "tokio-1.10.1/src/fs/file.rs",
+        "tokio-1.10.1/src/fs/file/tests.rs",
+        "tokio-1.10.1/src/fs/hard_link.rs",
+        "tokio-1.10.1/src/fs/metadata.rs",
+        "tokio-1.10.1/src/fs/mocks.rs",
+        "tokio-1.10.1/src/fs/mod.rs",
+        "tokio-1.10.1/src/fs/open_options.rs",
+        "tokio-1.10.1/src/fs/open_options/mock_open_options.rs",
+        "tokio-1.10.1/src/fs/read.rs",
+        "tokio-1.10.1/src/fs/read_dir.rs",
+        "tokio-1.10.1/src/fs/read_link.rs",
+        "tokio-1.10.1/src/fs/read_to_string.rs",
+        "tokio-1.10.1/src/fs/remove_dir.rs",
+        "tokio-1.10.1/src/fs/remove_dir_all.rs",
+        "tokio-1.10.1/src/fs/remove_file.rs",
+        "tokio-1.10.1/src/fs/rename.rs",
+        "tokio-1.10.1/src/fs/set_permissions.rs",
+        "tokio-1.10.1/src/fs/symlink.rs",
+        "tokio-1.10.1/src/fs/symlink_dir.rs",
+        "tokio-1.10.1/src/fs/symlink_file.rs",
+        "tokio-1.10.1/src/fs/symlink_metadata.rs",
+        "tokio-1.10.1/src/fs/write.rs",
+        "tokio-1.10.1/src/future/block_on.rs",
+        "tokio-1.10.1/src/future/maybe_done.rs",
+        "tokio-1.10.1/src/future/mod.rs",
+        "tokio-1.10.1/src/future/poll_fn.rs",
+        "tokio-1.10.1/src/future/ready.rs",
+        "tokio-1.10.1/src/future/trace.rs",
+        "tokio-1.10.1/src/future/try_join.rs",
+        "tokio-1.10.1/src/io/async_buf_read.rs",
+        "tokio-1.10.1/src/io/async_fd.rs",
+        "tokio-1.10.1/src/io/async_read.rs",
+        "tokio-1.10.1/src/io/async_seek.rs",
+        "tokio-1.10.1/src/io/async_write.rs",
+        "tokio-1.10.1/src/io/blocking.rs",
+        "tokio-1.10.1/src/io/driver/interest.rs",
+        "tokio-1.10.1/src/io/driver/mod.rs",
+        "tokio-1.10.1/src/io/driver/platform.rs",
+        "tokio-1.10.1/src/io/driver/ready.rs",
+        "tokio-1.10.1/src/io/driver/registration.rs",
+        "tokio-1.10.1/src/io/driver/scheduled_io.rs",
+        "tokio-1.10.1/src/io/mod.rs",
+        "tokio-1.10.1/src/io/poll_evented.rs",
+        "tokio-1.10.1/src/io/read_buf.rs",
+        "tokio-1.10.1/src/io/seek.rs",
+        "tokio-1.10.1/src/io/split.rs",
+        "tokio-1.10.1/src/io/stderr.rs",
+        "tokio-1.10.1/src/io/stdin.rs",
+        "tokio-1.10.1/src/io/stdio_common.rs",
+        "tokio-1.10.1/src/io/stdout.rs",
+        "tokio-1.10.1/src/io/util/async_buf_read_ext.rs",
+        "tokio-1.10.1/src/io/util/async_read_ext.rs",
+        "tokio-1.10.1/src/io/util/async_seek_ext.rs",
+        "tokio-1.10.1/src/io/util/async_write_ext.rs",
+        "tokio-1.10.1/src/io/util/buf_reader.rs",
+        "tokio-1.10.1/src/io/util/buf_stream.rs",
+        "tokio-1.10.1/src/io/util/buf_writer.rs",
+        "tokio-1.10.1/src/io/util/chain.rs",
+        "tokio-1.10.1/src/io/util/copy.rs",
+        "tokio-1.10.1/src/io/util/copy_bidirectional.rs",
+        "tokio-1.10.1/src/io/util/copy_buf.rs",
+        "tokio-1.10.1/src/io/util/empty.rs",
+        "tokio-1.10.1/src/io/util/fill_buf.rs",
+        "tokio-1.10.1/src/io/util/flush.rs",
+        "tokio-1.10.1/src/io/util/lines.rs",
+        "tokio-1.10.1/src/io/util/mem.rs",
+        "tokio-1.10.1/src/io/util/mod.rs",
+        "tokio-1.10.1/src/io/util/read.rs",
+        "tokio-1.10.1/src/io/util/read_buf.rs",
+        "tokio-1.10.1/src/io/util/read_exact.rs",
+        "tokio-1.10.1/src/io/util/read_int.rs",
+        "tokio-1.10.1/src/io/util/read_line.rs",
+        "tokio-1.10.1/src/io/util/read_to_end.rs",
+        "tokio-1.10.1/src/io/util/read_to_string.rs",
+        "tokio-1.10.1/src/io/util/read_until.rs",
+        "tokio-1.10.1/src/io/util/repeat.rs",
+        "tokio-1.10.1/src/io/util/shutdown.rs",
+        "tokio-1.10.1/src/io/util/sink.rs",
+        "tokio-1.10.1/src/io/util/split.rs",
+        "tokio-1.10.1/src/io/util/take.rs",
+        "tokio-1.10.1/src/io/util/vec_with_initialized.rs",
+        "tokio-1.10.1/src/io/util/write.rs",
+        "tokio-1.10.1/src/io/util/write_all.rs",
+        "tokio-1.10.1/src/io/util/write_all_buf.rs",
+        "tokio-1.10.1/src/io/util/write_buf.rs",
+        "tokio-1.10.1/src/io/util/write_int.rs",
+        "tokio-1.10.1/src/io/util/write_vectored.rs",
+        "tokio-1.10.1/src/lib.rs",
+        "tokio-1.10.1/src/loom/mocked.rs",
+        "tokio-1.10.1/src/loom/mod.rs",
+        "tokio-1.10.1/src/loom/std/atomic_ptr.rs",
+        "tokio-1.10.1/src/loom/std/atomic_u16.rs",
+        "tokio-1.10.1/src/loom/std/atomic_u32.rs",
+        "tokio-1.10.1/src/loom/std/atomic_u64.rs",
+        "tokio-1.10.1/src/loom/std/atomic_u8.rs",
+        "tokio-1.10.1/src/loom/std/atomic_usize.rs",
+        "tokio-1.10.1/src/loom/std/mod.rs",
+        "tokio-1.10.1/src/loom/std/mutex.rs",
+        "tokio-1.10.1/src/loom/std/parking_lot.rs",
+        "tokio-1.10.1/src/loom/std/unsafe_cell.rs",
+        "tokio-1.10.1/src/macros/cfg.rs",
+        "tokio-1.10.1/src/macros/join.rs",
+        "tokio-1.10.1/src/macros/loom.rs",
+        "tokio-1.10.1/src/macros/mod.rs",
+        "tokio-1.10.1/src/macros/pin.rs",
+        "tokio-1.10.1/src/macros/ready.rs",
+        "tokio-1.10.1/src/macros/scoped_tls.rs",
+        "tokio-1.10.1/src/macros/select.rs",
+        "tokio-1.10.1/src/macros/support.rs",
+        "tokio-1.10.1/src/macros/thread_local.rs",
+        "tokio-1.10.1/src/macros/try_join.rs",
+        "tokio-1.10.1/src/net/addr.rs",
+        "tokio-1.10.1/src/net/lookup_host.rs",
+        "tokio-1.10.1/src/net/mod.rs",
+        "tokio-1.10.1/src/net/tcp/listener.rs",
+        "tokio-1.10.1/src/net/tcp/mod.rs",
+        "tokio-1.10.1/src/net/tcp/socket.rs",
+        "tokio-1.10.1/src/net/tcp/split.rs",
+        "tokio-1.10.1/src/net/tcp/split_owned.rs",
+        "tokio-1.10.1/src/net/tcp/stream.rs",
+        "tokio-1.10.1/src/net/udp.rs",
+        "tokio-1.10.1/src/net/unix/datagram/mod.rs",
+        "tokio-1.10.1/src/net/unix/datagram/socket.rs",
+        "tokio-1.10.1/src/net/unix/listener.rs",
+        "tokio-1.10.1/src/net/unix/mod.rs",
+        "tokio-1.10.1/src/net/unix/socketaddr.rs",
+        "tokio-1.10.1/src/net/unix/split.rs",
+        "tokio-1.10.1/src/net/unix/split_owned.rs",
+        "tokio-1.10.1/src/net/unix/stream.rs",
+        "tokio-1.10.1/src/net/unix/ucred.rs",
+        "tokio-1.10.1/src/net/windows/mod.rs",
+        "tokio-1.10.1/src/net/windows/named_pipe.rs",
+        "tokio-1.10.1/src/park/either.rs",
+        "tokio-1.10.1/src/park/mod.rs",
+        "tokio-1.10.1/src/park/thread.rs",
+        "tokio-1.10.1/src/process/kill.rs",
+        "tokio-1.10.1/src/process/mod.rs",
+        "tokio-1.10.1/src/process/unix/driver.rs",
+        "tokio-1.10.1/src/process/unix/mod.rs",
+        "tokio-1.10.1/src/process/unix/orphan.rs",
+        "tokio-1.10.1/src/process/unix/reap.rs",
+        "tokio-1.10.1/src/process/windows.rs",
+        "tokio-1.10.1/src/runtime/basic_scheduler.rs",
+        "tokio-1.10.1/src/runtime/blocking/mod.rs",
+        "tokio-1.10.1/src/runtime/blocking/pool.rs",
+        "tokio-1.10.1/src/runtime/blocking/schedule.rs",
+        "tokio-1.10.1/src/runtime/blocking/shutdown.rs",
+        "tokio-1.10.1/src/runtime/blocking/task.rs",
+        "tokio-1.10.1/src/runtime/builder.rs",
+        "tokio-1.10.1/src/runtime/context.rs",
+        "tokio-1.10.1/src/runtime/driver.rs",
+        "tokio-1.10.1/src/runtime/enter.rs",
+        "tokio-1.10.1/src/runtime/handle.rs",
+        "tokio-1.10.1/src/runtime/mod.rs",
+        "tokio-1.10.1/src/runtime/park.rs",
+        "tokio-1.10.1/src/runtime/queue.rs",
+        "tokio-1.10.1/src/runtime/spawner.rs",
+        "tokio-1.10.1/src/runtime/task/core.rs",
+        "tokio-1.10.1/src/runtime/task/error.rs",
+        "tokio-1.10.1/src/runtime/task/harness.rs",
+        "tokio-1.10.1/src/runtime/task/inject.rs",
+        "tokio-1.10.1/src/runtime/task/join.rs",
+        "tokio-1.10.1/src/runtime/task/list.rs",
+        "tokio-1.10.1/src/runtime/task/mod.rs",
+        "tokio-1.10.1/src/runtime/task/raw.rs",
+        "tokio-1.10.1/src/runtime/task/state.rs",
+        "tokio-1.10.1/src/runtime/task/waker.rs",
+        "tokio-1.10.1/src/runtime/tests/loom_basic_scheduler.rs",
+        "tokio-1.10.1/src/runtime/tests/loom_blocking.rs",
+        "tokio-1.10.1/src/runtime/tests/loom_local.rs",
+        "tokio-1.10.1/src/runtime/tests/loom_oneshot.rs",
+        "tokio-1.10.1/src/runtime/tests/loom_pool.rs",
+        "tokio-1.10.1/src/runtime/tests/loom_queue.rs",
+        "tokio-1.10.1/src/runtime/tests/loom_shutdown_join.rs",
+        "tokio-1.10.1/src/runtime/tests/mod.rs",
+        "tokio-1.10.1/src/runtime/tests/queue.rs",
+        "tokio-1.10.1/src/runtime/tests/task.rs",
+        "tokio-1.10.1/src/runtime/tests/task_combinations.rs",
+        "tokio-1.10.1/src/runtime/thread_pool/atomic_cell.rs",
+        "tokio-1.10.1/src/runtime/thread_pool/idle.rs",
+        "tokio-1.10.1/src/runtime/thread_pool/mod.rs",
+        "tokio-1.10.1/src/runtime/thread_pool/worker.rs",
+        "tokio-1.10.1/src/signal/ctrl_c.rs",
+        "tokio-1.10.1/src/signal/mod.rs",
+        "tokio-1.10.1/src/signal/registry.rs",
+        "tokio-1.10.1/src/signal/reusable_box.rs",
+        "tokio-1.10.1/src/signal/unix.rs",
+        "tokio-1.10.1/src/signal/unix/driver.rs",
+        "tokio-1.10.1/src/signal/windows.rs",
+        "tokio-1.10.1/src/signal/windows/stub.rs",
+        "tokio-1.10.1/src/signal/windows/sys.rs",
+        "tokio-1.10.1/src/sync/barrier.rs",
+        "tokio-1.10.1/src/sync/batch_semaphore.rs",
+        "tokio-1.10.1/src/sync/broadcast.rs",
+        "tokio-1.10.1/src/sync/mod.rs",
+        "tokio-1.10.1/src/sync/mpsc/block.rs",
+        "tokio-1.10.1/src/sync/mpsc/bounded.rs",
+        "tokio-1.10.1/src/sync/mpsc/chan.rs",
+        "tokio-1.10.1/src/sync/mpsc/error.rs",
+        "tokio-1.10.1/src/sync/mpsc/list.rs",
+        "tokio-1.10.1/src/sync/mpsc/mod.rs",
+        "tokio-1.10.1/src/sync/mpsc/unbounded.rs",
+        "tokio-1.10.1/src/sync/mutex.rs",
+        "tokio-1.10.1/src/sync/notify.rs",
+        "tokio-1.10.1/src/sync/once_cell.rs",
+        "tokio-1.10.1/src/sync/oneshot.rs",
+        "tokio-1.10.1/src/sync/rwlock.rs",
+        "tokio-1.10.1/src/sync/rwlock/owned_read_guard.rs",
+        "tokio-1.10.1/src/sync/rwlock/owned_write_guard.rs",
+        "tokio-1.10.1/src/sync/rwlock/owned_write_guard_mapped.rs",
+        "tokio-1.10.1/src/sync/rwlock/read_guard.rs",
+        "tokio-1.10.1/src/sync/rwlock/write_guard.rs",
+        "tokio-1.10.1/src/sync/rwlock/write_guard_mapped.rs",
+        "tokio-1.10.1/src/sync/semaphore.rs",
+        "tokio-1.10.1/src/sync/task/atomic_waker.rs",
+        "tokio-1.10.1/src/sync/task/mod.rs",
+        "tokio-1.10.1/src/sync/tests/atomic_waker.rs",
+        "tokio-1.10.1/src/sync/tests/loom_atomic_waker.rs",
+        "tokio-1.10.1/src/sync/tests/loom_broadcast.rs",
+        "tokio-1.10.1/src/sync/tests/loom_list.rs",
+        "tokio-1.10.1/src/sync/tests/loom_mpsc.rs",
+        "tokio-1.10.1/src/sync/tests/loom_notify.rs",
+        "tokio-1.10.1/src/sync/tests/loom_oneshot.rs",
+        "tokio-1.10.1/src/sync/tests/loom_rwlock.rs",
+        "tokio-1.10.1/src/sync/tests/loom_semaphore_batch.rs",
+        "tokio-1.10.1/src/sync/tests/loom_watch.rs",
+        "tokio-1.10.1/src/sync/tests/mod.rs",
+        "tokio-1.10.1/src/sync/tests/semaphore_batch.rs",
+        "tokio-1.10.1/src/sync/watch.rs",
+        "tokio-1.10.1/src/task/blocking.rs",
+        "tokio-1.10.1/src/task/builder.rs",
+        "tokio-1.10.1/src/task/local.rs",
+        "tokio-1.10.1/src/task/mod.rs",
+        "tokio-1.10.1/src/task/spawn.rs",
+        "tokio-1.10.1/src/task/task_local.rs",
+        "tokio-1.10.1/src/task/unconstrained.rs",
+        "tokio-1.10.1/src/task/yield_now.rs",
+        "tokio-1.10.1/src/time/clock.rs",
+        "tokio-1.10.1/src/time/driver/entry.rs",
+        "tokio-1.10.1/src/time/driver/handle.rs",
+        "tokio-1.10.1/src/time/driver/mod.rs",
+        "tokio-1.10.1/src/time/driver/sleep.rs",
+        "tokio-1.10.1/src/time/driver/tests/mod.rs",
+        "tokio-1.10.1/src/time/driver/wheel/level.rs",
+        "tokio-1.10.1/src/time/driver/wheel/mod.rs",
+        "tokio-1.10.1/src/time/driver/wheel/stack.rs",
+        "tokio-1.10.1/src/time/error.rs",
+        "tokio-1.10.1/src/time/instant.rs",
+        "tokio-1.10.1/src/time/interval.rs",
+        "tokio-1.10.1/src/time/mod.rs",
+        "tokio-1.10.1/src/time/tests/mod.rs",
+        "tokio-1.10.1/src/time/tests/test_sleep.rs",
+        "tokio-1.10.1/src/time/timeout.rs",
+        "tokio-1.10.1/src/util/bit.rs",
+        "tokio-1.10.1/src/util/error.rs",
+        "tokio-1.10.1/src/util/linked_list.rs",
+        "tokio-1.10.1/src/util/mod.rs",
+        "tokio-1.10.1/src/util/pad.rs",
+        "tokio-1.10.1/src/util/rand.rs",
+        "tokio-1.10.1/src/util/slab.rs",
+        "tokio-1.10.1/src/util/sync_wrapper.rs",
+        "tokio-1.10.1/src/util/trace.rs",
+        "tokio-1.10.1/src/util/try_lock.rs",
+        "tokio-1.10.1/src/util/vec_deque_cell.rs",
+        "tokio-1.10.1/src/util/wake.rs",
     ],
-    archive = ":tokio-1.7.1--archive",
+    archive = ":tokio-1.10.1--archive",
     crate = "tokio",
-    crate_root = "tokio-1.7.1/src/lib.rs",
+    crate_root = "tokio-1.10.1/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -14182,6 +17219,62 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "tokio-io",
+    srcs = [
+        "tokio-io-0.1.13/src/_tokio_codec/decoder.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/encoder.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/framed.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/framed_read.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/framed_write.rs",
+        "tokio-io-0.1.13/src/_tokio_codec/mod.rs",
+        "tokio-io-0.1.13/src/allow_std.rs",
+        "tokio-io-0.1.13/src/async_read.rs",
+        "tokio-io-0.1.13/src/async_write.rs",
+        "tokio-io-0.1.13/src/codec/bytes_codec.rs",
+        "tokio-io-0.1.13/src/codec/decoder.rs",
+        "tokio-io-0.1.13/src/codec/encoder.rs",
+        "tokio-io-0.1.13/src/codec/lines_codec.rs",
+        "tokio-io-0.1.13/src/codec/mod.rs",
+        "tokio-io-0.1.13/src/framed.rs",
+        "tokio-io-0.1.13/src/framed_read.rs",
+        "tokio-io-0.1.13/src/framed_write.rs",
+        "tokio-io-0.1.13/src/io/copy.rs",
+        "tokio-io-0.1.13/src/io/flush.rs",
+        "tokio-io-0.1.13/src/io/mod.rs",
+        "tokio-io-0.1.13/src/io/read.rs",
+        "tokio-io-0.1.13/src/io/read_exact.rs",
+        "tokio-io-0.1.13/src/io/read_to_end.rs",
+        "tokio-io-0.1.13/src/io/read_until.rs",
+        "tokio-io-0.1.13/src/io/shutdown.rs",
+        "tokio-io-0.1.13/src/io/write_all.rs",
+        "tokio-io-0.1.13/src/length_delimited.rs",
+        "tokio-io-0.1.13/src/lib.rs",
+        "tokio-io-0.1.13/src/lines.rs",
+        "tokio-io-0.1.13/src/split.rs",
+        "tokio-io-0.1.13/src/window.rs",
+    ],
+    archive = ":tokio-io-0.1.13--archive",
+    crate = "tokio_io",
+    crate_root = "tokio-io-0.1.13/src/lib.rs",
+    edition = "2015",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:bytes-old",
+        "//third-party/rust:futures-old",
+        "//third-party/rust:log",
+    ],
+)
+
+third_party_rust_library(
     name = "tokio-macros",
     srcs = [
         "tokio-macros-0.2.6/src/entry.rs",
@@ -14347,6 +17440,29 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "tokio-tls",
+    srcs = ["tokio-tls-0.3.1/src/lib.rs"],
+    archive = ":tokio-tls-0.3.1--archive",
+    crate = "tokio_tls",
+    crate_root = "tokio-tls-0.3.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:native-tls",
+        "//third-party/rust:tokio-02",
+    ],
+)
+
+third_party_rust_library(
     name = "tokio-tungstenite-0.13.0",
     srcs = [
         "tokio-tungstenite-0.13.0/src/compat.rs",
@@ -14450,6 +17566,50 @@ third_party_rust_library(
         "//third-party/rust:pin-project-lite-0.2.6",
         "//third-party/rust:slab-0.4.2",
         "//third-party/rust:tokio",
+    ],
+)
+
+third_party_rust_library(
+    name = "tokio-util-0.2.0",
+    srcs = [
+        "tokio-util-0.2.0/src/cfg.rs",
+        "tokio-util-0.2.0/src/codec/bytes_codec.rs",
+        "tokio-util-0.2.0/src/codec/decoder.rs",
+        "tokio-util-0.2.0/src/codec/encoder.rs",
+        "tokio-util-0.2.0/src/codec/framed.rs",
+        "tokio-util-0.2.0/src/codec/framed_read.rs",
+        "tokio-util-0.2.0/src/codec/framed_write.rs",
+        "tokio-util-0.2.0/src/codec/length_delimited.rs",
+        "tokio-util-0.2.0/src/codec/lines_codec.rs",
+        "tokio-util-0.2.0/src/codec/mod.rs",
+        "tokio-util-0.2.0/src/lib.rs",
+        "tokio-util-0.2.0/src/udp/frame.rs",
+        "tokio-util-0.2.0/src/udp/mod.rs",
+    ],
+    archive = ":tokio-util-0.2.0--archive",
+    crate = "tokio_util",
+    crate_root = "tokio-util-0.2.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "codec",
+        "default",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:bytes-05",
+        "//third-party/rust:futures-core",
+        "//third-party/rust:futures-sink",
+        "//third-party/rust:log",
+        "//third-party/rust:pin-project-lite-0.1.11",
+        "//third-party/rust:tokio-02",
     ],
 )
 
@@ -15150,6 +18310,36 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
+    name = "twox-hash",
+    srcs = [
+        "twox-hash-1.5.0/src/digest_support.rs",
+        "twox-hash-1.5.0/src/lib.rs",
+        "twox-hash-1.5.0/src/sixty_four.rs",
+        "twox-hash-1.5.0/src/std_support.rs",
+        "twox-hash-1.5.0/src/thirty_two.rs",
+    ],
+    archive = ":twox-hash-1.5.0--archive",
+    crate = "twox_hash",
+    crate_root = "twox-hash-1.5.0/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "rand",
+        "std",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = ["//third-party/rust:rand"],
+)
+
+third_party_rust_library(
     name = "typenum",
     srcs = [
         "typenum-1.12.0/src/array.rs",
@@ -15555,6 +18745,53 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = [],
+)
+
+third_party_rust_library(
+    name = "uuid",
+    srcs = [
+        "uuid-0.8.1/src/adapter/compact.rs",
+        "uuid-0.8.1/src/adapter/mod.rs",
+        "uuid-0.8.1/src/builder/error.rs",
+        "uuid-0.8.1/src/builder/mod.rs",
+        "uuid-0.8.1/src/error.rs",
+        "uuid-0.8.1/src/lib.rs",
+        "uuid-0.8.1/src/parser/error.rs",
+        "uuid-0.8.1/src/parser/mod.rs",
+        "uuid-0.8.1/src/prelude.rs",
+        "uuid-0.8.1/src/serde_support.rs",
+        "uuid-0.8.1/src/slog_support.rs",
+        "uuid-0.8.1/src/test_util.rs",
+        "uuid-0.8.1/src/v1.rs",
+        "uuid-0.8.1/src/v3.rs",
+        "uuid-0.8.1/src/v4.rs",
+        "uuid-0.8.1/src/v5.rs",
+        "uuid-0.8.1/src/winapi_support.rs",
+    ],
+    archive = ":uuid-0.8.1--archive",
+    crate = "uuid",
+    crate_root = "uuid-0.8.1/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "default",
+        "rand",
+        "serde",
+        "std",
+        "v4",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = False,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
+        "//third-party/rust:rand",
+        "//third-party/rust:serde",
+    ],
 )
 
 third_party_rust_library(

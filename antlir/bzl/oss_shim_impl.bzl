@@ -197,6 +197,9 @@ def _third_party_library(project, rule = None, platform = None):
         platform = _DEFAULT_NATIVE_PLATFORM
 
     if platform == "rust":
+        if project == "shed":
+            return "//third-party/rust:" + rule
+
         if not rule == project:
             fail("rust dependencies must omit rule or be identical to project")
 

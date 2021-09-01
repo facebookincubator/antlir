@@ -13,5 +13,9 @@ rust_binary(
             "structopt",
         ],
         platform = "rust",
-    ),
+    ) + [third_party.library(
+        "shed",
+        "sql",
+        platform = "rust",
+    )],
 )

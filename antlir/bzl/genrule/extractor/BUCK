@@ -13,10 +13,13 @@ rust_binary(
                 "goblin",
                 "once_cell",
                 "slog",
-                "slog_glog_fmt",
                 "structopt",
                 "regex",
             ],
             platform = "rust",
-        ),
+        ) + [third_party.library(
+            "shed",
+            "slog_glog_fmt",
+            platform = "rust",
+        )],
 )
