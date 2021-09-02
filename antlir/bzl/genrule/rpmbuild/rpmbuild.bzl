@@ -126,7 +126,6 @@ def private_image_rpmbuild_impl(
         ] + (setup_features or []),
         visibility = [],
         antlir_rule = "user-internal",
-        flavor = flavor,
     )
 
     # Figure out which build command to use to install dependencies in the
@@ -167,7 +166,6 @@ def private_image_rpmbuild_impl(
         ),
         antlir_rule = "user-internal",
         visibility = [],
-        flavor = flavor,
         **image_layer_kwargs
     )
 
@@ -191,7 +189,6 @@ def private_image_rpmbuild_impl(
         ],
         antlir_rule = "user-facing",
         visibility = visibility,
-        flavor = flavor,
         **image_layer_kwargs
     )
 
