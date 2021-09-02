@@ -96,7 +96,6 @@ image.layer(
         ),
         "//antlir/features:build_artifact_cleanup",
     ],
-    flavor = "antlir_test",
     runtime = ["systemd"],
     visibility = ["//antlir/..."],
 )
@@ -167,7 +166,6 @@ image.genrule_layer(
         shadow_paths = [("/shadow_me", "/rpm_test/milk.txt")],
         # The `internal_only_*` things are covered by the stuff that uses them.
     ),
-    flavor = "antlir_test",
     parent_layer = ":validates-dnf-build-appliance",
     rule_type = "test_genrule_layer",
     user = "root",
@@ -182,7 +180,6 @@ image.genrule_layer(
         "-c",
         "/bin/mount > /GENRULE_LAYER_MOUNTS",
     ],
-    flavor = "antlir_test",
     parent_layer = ":test-layer-with-mounts",
     rule_type = "test_genrule_layer",
     user = "root",
@@ -199,7 +196,6 @@ image.genrule_layer(
         "-c",
         "test -e $(location :shadow_me)",
     ],
-    flavor = "antlir_test",
     parent_layer = ":test-layer",
     rule_type = "test_genrule_layer",
     bind_repo_ro = True,
@@ -435,7 +431,6 @@ image.layer(
             "/sendstream_meownt",
         ),
     ],
-    flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )
 
@@ -555,7 +550,6 @@ image.layer(
     name = "installed-executables",
     parent_layer = ":test-layer",
     features = [":feature_install_files"],
-    flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )
 
@@ -684,7 +678,6 @@ image.layer(
         ":feature_addremove_conflict_remove",
         ":feature_repeated_removal",
     ],
-    flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -781,7 +774,6 @@ image.layer(
         image.tarball(":hello_world.tar", "/foo/extracted_hello"),
         image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
     ],
-    flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )
 

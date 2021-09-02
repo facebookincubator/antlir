@@ -56,7 +56,6 @@ image.python_unittest(
 # parent_layer, we need to import it before we install the RPM (below).
 image_import_rpm_public_key_layer(
     name = "install-rpm-pubkey",
-    flavor = "antlir_test",
     # Inherit from the BA so that we have users and utilities set up for the
     # unit test below.
     parent_layer = "//antlir/compiler/test_images:build_appliance_testing",
