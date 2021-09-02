@@ -9,6 +9,7 @@ rust_binary(
     deps =
         third_party.libraries(
             [
+                "serde_json",
                 "anyhow",
                 "goblin",
                 "once_cell",
