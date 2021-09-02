@@ -5972,6 +5972,7 @@ third_party_rust_library(
         "ahash",
         "default",
         "inline-more",
+        "nightly",
         "raw",
         "serde",
     ],
@@ -11442,7 +11443,7 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
-    name = "ring-0.16.20",
+    name = "ring",
     srcs = [
         "ring-0.16.20/src/aead.rs",
         "ring-0.16.20/src/aead/aes.rs",
@@ -11693,7 +11694,7 @@ third_party_rust_library(
     deps = [
         "//third-party/rust:base64-0.13.0",
         "//third-party/rust:log",
-        "//third-party/rust:ring-0.16.20",
+        "//third-party/rust:ring",
         "//third-party/rust:sct-0.6.0",
         "//third-party/rust:webpki-0.21.3",
     ],
@@ -12031,7 +12032,7 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = [
-        "//third-party/rust:ring-0.16.20",
+        "//third-party/rust:ring",
         "//third-party/rust:untrusted-0.7.1",
     ],
 )
@@ -15782,7 +15783,7 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = [
-        "//third-party/rust:ring-0.16.20",
+        "//third-party/rust:ring",
         "//third-party/rust:untrusted-0.7.1",
     ],
 )

@@ -62,6 +62,7 @@ rust_library(
         "src/eval/fragment/expr.rs",
         "src/eval/fragment/known.rs",
         "src/eval/fragment/mod.rs",
+        "src/eval/fragment/module.rs",
         "src/eval/fragment/stmt.rs",
         "src/eval/mod.rs",
         "src/eval/runtime/arguments.rs",
