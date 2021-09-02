@@ -57,6 +57,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
+load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
 
 def _buck_binary_tmp_dst(real_dst):
     if paths.is_absolute(real_dst):
@@ -72,9 +73,9 @@ def _extract(
         # files into.
         dest = "/"):
     binaries = binaries or []
-
-    layer_hash = sha256_b64(normalize_target(source) + " ".join(binaries) + dest)
-    base_extract_layer = "image-extract-setup--{}".format(layer_hash)
+    normalized_source = normalize_target(source)
+    name = sha256_b64(normalized_source + " ".join(binaries) + dest)
+    base_extract_layer = "image-extract-setup--{}".format(name)
     image.layer(
         name = base_extract_layer,
         parent_layer = source,
@@ -93,7 +94,8 @@ def _extract(
             binary,
         ])
 
-    work_layer = "image-extract-work--{}".format(layer_hash)
+    work_layer = "image-extract-work--{}".format(name)
+    output_dir = "/output"
     image.genrule_layer(
         name = work_layer,
         rule_type = "extract",
@@ -104,18 +106,32 @@ def _extract(
             "--src-dir",
             "/",
             "--dst-dir",
-            "/output",
+            dest,
+            "--output-dir",
+            output_dir,
+            "--target",
+            normalized_source,
         ] + binaries_args,
         antlir_rule = "user-internal",
     )
 
-    # The output is an image.clone feature that clones
-    # the extracted files into `dest`
-    return image.clone(
-        ":" + work_layer,
-        "output/",
-        dest,
+    private_do_not_use_feature_json_genrule(
+        name = name,
+        deps = ["//antlir/bzl/genrule/extractor:extract"],
+        output_feature_cmd = """
+# locate source layer path
+binary_path=( $(exe //antlir:find-built-subvol) )
+layer_loc="$(location {work_layer})"
+source_layer_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
+cp "${{source_layer_path}}{output_dir}/feature.json" "$OUT"
+        """.format(
+            work_layer = ":" + work_layer,
+            output_dir = output_dir,
+        ),
+        visibility = [],
     )
+
+    return normalize_target(":" + name)
 
 # Helper to create a layer to use as 'source' for 'extract.extract', that
 # already has dependencies likely to be required by the binaries being

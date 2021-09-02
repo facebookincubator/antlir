@@ -7,16 +7,17 @@
 
 #![deny(warnings)]
 
-use std::collections::{BTreeSet, HashMap};
-use std::fs;
-use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf};
-use std::process::Command;
-
 use anyhow::{Context, Result};
 use goblin::elf::Elf;
 use once_cell::sync::Lazy;
+use serde_json::json;
 use slog::{debug, o, warn};
+use std::collections::{BTreeSet, HashMap};
+use std::fs;
+use std::fs::File;
+use std::os::unix::fs::PermissionsExt;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use structopt::StructOpt;
 
 static LOGGER: Lazy<slog::Logger> = Lazy::new(|| slog_glog_fmt::facebook_logger().unwrap());
@@ -193,12 +194,22 @@ struct ExtractOpts {
     /// into the same location in --dst-dir.
     #[structopt(long = "binary")]
     binaries: Vec<String>,
+
+    /// Full target name of the source target layer to extract from
+    #[structopt(long)]
+    target: String,
+
+    /// Directory to put the end result json file
+    #[structopt(long)]
+    output_dir: String,
 }
 
 fn main() -> Result<()> {
     let opt = ExtractOpts::from_args();
     let top_src_dir = opt.src_dir;
     let top_dst_dir = opt.dst_dir;
+    let target = opt.target;
+    let output_dir = opt.output_dir;
 
     let binaries: Vec<Binary> = opt
         .binaries
@@ -220,17 +231,15 @@ fn main() -> Result<()> {
         .into_iter()
         .map(|ex| {
             let dst = top_dst_dir.force_join(ex.to);
-            (dst, ex.from)
+            let src = fs::canonicalize(ex.from)
+                .unwrap()
+                .strip_prefix(top_src_dir.clone())
+                .unwrap()
+                .to_path_buf();
+            (dst, src)
         })
         .collect();
 
-    for (dst, src) in &copy_files {
-        debug!(LOGGER, "copying {:?} -> {:?}", src, dst);
-        fs::create_dir_all(dst.parent().unwrap()).context("failed to create dest dir")?;
-        fs::copy(src, dst)?;
-    }
-    // do a bottom-up traversal of all the destination directories, copying the
-    // permission bits from the source where possible
     let copied_dirs: BTreeSet<_> = copy_files
         .keys()
         .flat_map(|k| k.parents())
@@ -238,32 +247,75 @@ fn main() -> Result<()> {
         .filter_map(|k| k.strip_prefix(&top_dst_dir).ok().map(|p| p.to_path_buf()))
         .map(|k| (k.components().count(), k))
         .collect();
+
+    let mut features = vec![];
+    // "clone" feature for each files to copy
+    for (dst, src) in &copy_files {
+        features.push(json!({
+            "clone": [
+                {
+                    "dest": dst,
+                    "omit_outer_dir": false,
+                    "pre_existing_dest": false,
+                    "source": {
+                    "content_hash": null,
+                    "generator": null,
+                    "generator_args": [],
+                    "layer": {
+                        "__BUCK_LAYER_TARGET": target
+                    },
+                    "path": src,
+                    "source": null
+                    },
+                    "source_layer": {
+                    "__BUCK_LAYER_TARGET": target
+                    }
+                }
+            ],
+            "target": target
+        }));
+    }
+
+    // "ensure_subdirs_exist" feature for each dirs to copy
     for (_, dst_rel) in copied_dirs.iter().rev() {
+        if dst_rel.as_os_str().is_empty() {
+            continue;
+        }
         let dst_dir = top_dst_dir.force_join(&dst_rel);
         let maybe_src_dir = top_src_dir.force_join(dst_rel);
-        // Only copy mode bits from directories that match the source directory
-        // This prevents incorrect modes when a single file is copied into a
-        // directory from a directory with "bad" permissions
+        let mut mode = json!(null);
+        // do a bottom-up traversal of all the destination directories, copying the
+        // permission bits from the source where possible
         if maybe_src_dir.exists() {
             let meta = fs::metadata(&maybe_src_dir).with_context(|| {
                 format!("failed to get permissions from src {:?}", &maybe_src_dir)
             })?;
-            debug!(
-                LOGGER,
-                "setting mode of {:?} to {:o} (copied from {:?})",
-                dst_dir,
-                meta.permissions().mode(),
-                maybe_src_dir,
-            );
-            fs::set_permissions(&dst_dir, meta.permissions())
-                .with_context(|| format!("failed to set permissions on {:?}", dst_dir))?;
+            mode = json!(meta.permissions().mode() & 0o7777);
         } else {
             warn!(
                 LOGGER,
                 "leaving default mode for {:?}, because {:?} did not exist", dst_dir, maybe_src_dir
             );
         }
+        features.push(json!({
+            "ensure_subdirs_exist": [
+                {
+                    "into_dir": dst_dir.parent().unwrap(),
+                    "mode": mode,
+                    "subdirs_to_create": dst_dir.file_name().unwrap().to_str().unwrap(),
+                    "user_group": null
+                }
+            ],
+            "target": target
+        }));
     }
 
+    serde_json::to_writer(
+        &File::create(Path::new(&output_dir).force_join("feature.json"))?,
+        &json!({
+            "features": features,
+            "target": target
+        }),
+    )?;
     Ok(())
 }
