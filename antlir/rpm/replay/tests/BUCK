@@ -92,7 +92,6 @@ image.layer(
 image.layer(
     name = "custom",
     parent_layer = ":base-plus-one",
-    flavor = "antlir_test",
     # Removal triggers the "custom image" code path.
     features = [image.remove("/new/dir/")],
 )
@@ -107,7 +106,6 @@ image.layer(
 image.layer(
     name = "custom-local-rpm",
     parent_layer = ":base-plus-one",
-    flavor = "antlir_test",
     features = [image.rpms_install([
         "//antlir/compiler/test_images:rpm-test-cheese-2-1.rpm",
     ])],
@@ -116,7 +114,6 @@ image.layer(
 image.layer(
     name = "non-custom",
     parent_layer = ":base-plus-one",
-    flavor = "antlir_test",
     # Another non-custom feature.  This is a sibling of `custom` to show
     # that the depth does not trigger custom vs non-custom behavior.
     features = [image.ensure_dirs_exist("/another/dir/")],

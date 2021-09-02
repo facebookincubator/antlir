@@ -157,7 +157,6 @@ image.layer(
         ),  # Tests write here
         image.ensure_subdirs_exist("/", "other_dir"),
     ],
-    flavor = "antlir_test",
 )
 
 image.layer(
@@ -169,7 +168,6 @@ image.layer(
             must_exist = True,
         ),
     ],
-    flavor = "antlir_test",
 )
 
 python_unittest(
@@ -195,7 +193,6 @@ image.layer(
         image.install("tests/shadow_me", "rpm_test/carrot.txt"),
         image.install("tests/i_will_shadow", "i_will_shadow"),
     ],
-    flavor = "antlir_test",
 )
 
 # This test isn't here for line coverage, but to cover the integration
@@ -239,5 +236,4 @@ image.layer(
     name = "no-antlir-build-appliance-testing",
     parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [image.remove(ANTLIR_DIR)],
-    flavor = "antlir_test",
 )

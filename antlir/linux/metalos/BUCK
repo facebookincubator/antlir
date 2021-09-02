@@ -39,7 +39,6 @@ image.layer(
         # always exist
         image.ensure_subdirs_exist("/etc", "yum.repos.d"),
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
 )
 
 export_file(name = "eth.network")
@@ -81,7 +80,6 @@ image.layer(
         image.ensure_file_symlink("/usr/lib/os-release", "/etc/metalos-release"),
     ],
     runtime = ["systemd"],
-    flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
         "//antlir/...",
     ],
