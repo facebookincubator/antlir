@@ -1,6 +1,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:test_rpms.bzl", "add_test_rpms")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
 load("//antlir/bzl/genrule/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
 
@@ -71,7 +72,7 @@ image.layer(
     name = "install-signed-toy-rpm",
     parent_layer = ":install-rpm-pubkey",
     features = [
-        image.rpms_install([
+        add_test_rpms([
             image.source(
                 ":toy-rpm",
                 path = "toy.rpm",
@@ -86,9 +87,6 @@ image.layer(
             "/antlir/toy.rpm",
         ),
     ],
-    # The test BA has yum/dnf conf with gpgcheck=1 and localpkg_gpgcheck=1 so
-    # installing an unsigned RPM will fail.
-    flavor = "antlir_test",
 )
 
 # Check the result of installing the RPM we built.
