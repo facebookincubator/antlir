@@ -23,6 +23,6 @@ fbthrift_util-02 = { path = "../util" }
 futures = { version = "0.3.13", features = ["async-await", "compat"] }
 tokio = { version = "0.2.25", features = ["full", "test-util"] }
 tokio-tower = "0.4"
-tokio-uds-compat = { path = "../../../tokio-uds-compat" }
+tokio-uds-compat-02 = { path = "../../../tokio-uds-compat/tokio-uds-compat-02" }
 tokio-util = { version = "0.3", features = ["codec", "udp"] }
 tower-service = "0.3"
