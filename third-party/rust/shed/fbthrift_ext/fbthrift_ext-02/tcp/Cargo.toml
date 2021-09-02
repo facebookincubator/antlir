@@ -12,6 +12,7 @@ license = "MIT OR Apache-2.0"
 [lib]
 name = "fbthrift_tcp"
 path = "lib.rs"
+doc = false
 
 [dependencies]
 anyhow = "1.0"

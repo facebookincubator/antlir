@@ -13,6 +13,7 @@ license = "MIT OR Apache-2.0"
 [lib]
 name = "fbthrift_util"
 path = "lib.rs"
+doc = false
 
 [dependencies]
 tokio = { version = "0.2.25", features = ["full", "test-util"] }
