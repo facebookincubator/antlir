@@ -59,11 +59,14 @@ def compile_image_features(
             extra_deps = [flavor_config.build_appliance],
         ))
 
+    # This is the list of supported flavors for the features of the layer.
+    # A value of `None` specifies that no flavor field was provided for the layer.
+    flavors = [flavor] if flavor else None
+
     # Outputs the feature JSON for the given layer to disk so that it can be
     # parsed by other tooling.
     #
     # Keep in sync with `bzl_const.py`.
-    flavors = [flavor] if flavor else REPO_CFG.flavor_available
     features_for_layer = name + BZL_CONST.layer_feature_suffix
     feature_new(
         name = features_for_layer,

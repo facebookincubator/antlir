@@ -162,7 +162,10 @@ def _normalize_feature_and_get_deps(feature, flavors):
         flavor_to_version_set = {}
 
         for flavor, version_set in rpm_item.get("flavor_to_version_set", {}).items():
-            if flavor in flavors:
+            # If flavors are not provided, we are reading the flavor
+            # from the parent layer, so we should include all possible flavors
+            # for the rpm as the final flavor is not known until we are in python.
+            if not flavors or flavor in flavors:
                 flavor_to_version_set[flavor] = version_set
             elif version_set != BZL_CONST.version_set_allow_all_versions:
                 target = extract_tagged_target(version_set)
@@ -223,9 +226,10 @@ def normalize_features(
             feature_dict["target"] = human_readable_target
             inline_features.append(feature_dict)
 
-    if rpm_install_flavors and sorted(rpm_install_flavors.keys()) != sorted(flavors):
-        missing_flavors = [flavor for flavor in flavors if flavor not in rpm_install_flavors]
-        fail("Missing `rpms_install` for flavors `{}`. Expected `{}`".format(missing_flavors, flavors))
+    required_flavors = flavors or REPO_CFG.flavor_available
+    missing_flavors = [flavor for flavor in required_flavors if flavor not in rpm_install_flavors]
+    if rpm_install_flavors and missing_flavors:
+        fail("Missing `rpms_install` for flavors `{}`. Expected `{}`".format(missing_flavors, required_flavors))
 
     return struct(
         targets = targets,
@@ -281,7 +285,6 @@ def feature_new(
     or directories, copy executable or data files, declare mounts).
     """
     visibility = visibility or []
-    flavors = flavors or REPO_CFG.flavor_available
 
     # (1) Normalizes & annotates Buck target names so that they can be
     #     automatically enumerated from our JSON output.

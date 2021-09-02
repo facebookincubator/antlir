@@ -4,6 +4,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
+load("//antlir/bzl:test_rpms.bzl", "add_test_rpms", "remove_test_rpms")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -323,13 +324,10 @@ defs.sign_rpm_test_file(
 image.layer(
     name = "layer-with-non-default-snapshot-no-rpms",
     parent_layer = ":layer-with-non-default-snapshot-rpm",
-    features = [
-        image.rpms_remove_if_exists([
-            "rpm-test-cake",
-            "rpm-test-cheese",
-        ]),
-    ],
-    flavor = "antlir_test",
+    features = remove_test_rpms([
+        "rpm-test-cake",
+        "rpm-test-cheese",
+    ]),
     visibility = ["//antlir/compiler/items/..."],
 )
 
@@ -349,13 +347,11 @@ image.layer(
 image.layer(
     name = "layer-with-only-one-locally-installed-rpm",
     parent_layer = ":layer-with-non-default-snapshot-no-rpms",
-    features = [
-        image.rpms_install([
-            # A drive-by test that `image.source` syntax works in "rpms".  This
-            # could have been just a target path, as in `feature_tar_and_rpms`.
-            image.source(":rpm-test-cheese-2-1.rpm"),
-        ]),
-    ],
+    features = add_test_rpms([
+        # A drive-by test that `image.source` syntax works in "rpms".  This
+        # could have been just a target path, as in `feature_tar_and_rpms`.
+        image.source(":rpm-test-cheese-2-1.rpm"),
+    ]),
     flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
 )
@@ -751,9 +747,7 @@ image.layer(
         ),
         # NB: `host_{dir,file}_mount` is exercised in test-layer-with-mounts
         image.layer_mount(":hello_world_base", "/mounted_hello"),
-        image.rpms_install(["rpm-test-carrot"]),  # Compact syntax for RPM installation.
-    ],
-    flavor = "antlir_test",
+    ] + add_test_rpms(["rpm-test-carrot"]),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
     visibility = ["//antlir/compiler/..."],
@@ -762,11 +756,7 @@ image.layer(
 image.layer(
     name = "parent_layer_with_cheese",
     parent_layer = ":parent_layer",
-    features = [
-        # This is included only so the gpg keys get imported for the local RPM
-        # install in the child layer (via `feature_tar_and_rpms`).
-        image.rpms_install(["rpm-test-cheese"]),
-    ],
+    features = add_test_rpms(["rpm-test-cheese"]),
     flavor = "antlir_test",
     flavor_config_override = image.opts(
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
@@ -821,10 +811,7 @@ image.package(
 image.layer(
     name = "base_cheese_layer",
     parent_layer = ":layer-with-non-default-snapshot-no-rpms",
-    features = [
-        image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
-    ],
-    flavor = "antlir_test",
+    features = add_test_rpms([":rpm-test-cheese-2-1.rpm"]),
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -832,10 +819,7 @@ image.layer(
 image.layer(
     name = "older_cheese_layer",
     parent_layer = ":base_cheese_layer",
-    features = [
-        image.rpms_install([":rpm-test-cheese-1-1.rpm"]),
-    ],
-    flavor = "antlir_test",
+    features = add_test_rpms([":rpm-test-cheese-1-1.rpm"]),
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -843,10 +827,7 @@ image.layer(
 image.layer(
     name = "newer_cheese_layer",
     parent_layer = ":base_cheese_layer",
-    features = [
-        image.rpms_install([":rpm-test-cheese-3-1.rpm"]),
-    ],
-    flavor = "antlir_test",
+    features = add_test_rpms([":rpm-test-cheese-3-1.rpm"]),
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -854,10 +835,7 @@ image.layer(
 image.layer(
     name = "reinstall_cheese_layer",
     parent_layer = ":base_cheese_layer",
-    features = [
-        image.rpms_install([":rpm-test-cheese-2-1.rpm"]),
-    ],
-    flavor = "antlir_test",
+    features = add_test_rpms([":rpm-test-cheese-2-1.rpm"]),
     visibility = ["//antlir/compiler/..."],
 )
 

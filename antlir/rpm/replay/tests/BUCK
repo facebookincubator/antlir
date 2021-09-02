@@ -1,6 +1,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//antlir/bzl:test_rpms.bzl", "add_test_rpms", "remove_test_rpms")
 load("//antlir/rpm/replay:queries.bzl", "ANTLIR_BUILD_PKG_LABEL", "test_env_map")
 
 python_unittest(
@@ -80,12 +81,10 @@ image.layer_from_package(
 image.layer(
     name = "base-plus-one",
     parent_layer = ":base",
-    flavor = "antlir_test",
-    features = [
+    features = add_test_rpms(["rpm-test-milk"]) + [
         # All of these are "non-custom" as far as `extract_nested_features`
         # is concerned.
         image.ensure_dirs_exist("/new/dir/"),
-        image.rpms_install(["rpm-test-milk"]),
         image.layer_mount(":potato", "/vegetable"),
     ],
 )
@@ -101,8 +100,7 @@ image.layer(
 image.layer(
     name = "custom-remove-rpm",
     parent_layer = ":base-plus-one",
-    flavor = "antlir_test",
-    features = [image.rpms_remove_if_exists(["rpm-test-milk"])],
+    features = remove_test_rpms(["rpm-test-milk"]),
 )
 
 # TODO(lesha): Fold this into `non-custom` soon
@@ -149,12 +147,11 @@ python_unittest(
 image.layer(
     name = "leaf",
     parent_layer = ":base",
-    features = [
-        image.rpms_install([
-            "rpm-test-has-epoch",
-            "rpm-test-second",
-            "rpm-test-fifth",
-        ]),
+    features = add_test_rpms([
+        "rpm-test-has-epoch",
+        "rpm-test-second",
+        "rpm-test-fifth",
+    ]) + [
         image.ensure_subdirs_exist("/", "hello/there"),
     ],
     flavor = "antlir_test",
@@ -168,10 +165,7 @@ image.layer(
 image.layer(
     name = "test-subvol-rpm-compare-leaf",
     parent_layer = ":leaf",
-    features = [
-        image.rpms_remove_if_exists(["rpm-test-milk"]),
-        image.rpms_install(["rpm-test-mice"]),
-    ],
+    features = remove_test_rpms(["rpm-test-milk"]) + add_test_rpms(["rpm-test-mice"]),
     flavor = "antlir_test",
     flavor_config_override = image.opts(
         rpm_repo_snapshot = "//antlir/rpm:rpm-replay-repo-snapshot-for-tests",
