@@ -13,7 +13,7 @@ use starlark::environment::{GlobalsBuilder, Module};
 use starlark::eval::Evaluator;
 use starlark::starlark_module;
 use starlark::syntax::{AstModule, Dialect};
-use starlark::values::{list::ListOf, OwnedFrozenValue, Value};
+use starlark::values::{list::ListOf, OwnedFrozenValue, Value, ValueLike};
 
 use crate::Host;
 
