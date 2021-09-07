@@ -1,7 +1,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:test_rpms.bzl", "add_test_rpms")
+load("//antlir/bzl:test_rpms.bzl", "test_rpms")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
 load("//antlir/bzl/genrule/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
 
@@ -71,7 +71,7 @@ image.layer(
     name = "install-signed-toy-rpm",
     parent_layer = ":install-rpm-pubkey",
     features = [
-        add_test_rpms([
+        test_rpms.add([
             image.source(
                 ":toy-rpm",
                 path = "toy.rpm",
