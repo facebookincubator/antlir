@@ -12,6 +12,7 @@ image.layer(
             "btrfs-progs",
             "iproute",
             "openssh-server",
+            "sudo",
             "systemd",
             "systemd-udev",
         ]),
