@@ -6512,7 +6512,7 @@ third_party_rust_library(
         "//third-party/rust:rustls-native-certs",
         "//third-party/rust:tokio",
         "//third-party/rust:tokio-rustls",
-        "//third-party/rust:webpki-0.21.3",
+        "//third-party/rust:webpki",
     ],
 )
 
@@ -11696,7 +11696,7 @@ third_party_rust_library(
         "//third-party/rust:log",
         "//third-party/rust:ring",
         "//third-party/rust:sct-0.6.0",
-        "//third-party/rust:webpki-0.21.3",
+        "//third-party/rust:webpki",
     ],
 )
 
@@ -14282,7 +14282,7 @@ third_party_rust_library(
     deps = [
         "//third-party/rust:rustls",
         "//third-party/rust:tokio",
-        "//third-party/rust:webpki-0.21.3",
+        "//third-party/rust:webpki",
     ],
 )
 
@@ -15739,7 +15739,7 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
-    name = "webpki-0.21.3",
+    name = "webpki",
     srcs = [
         "webpki-0.21.3/src/calendar.rs",
         "webpki-0.21.3/src/cert.rs",
