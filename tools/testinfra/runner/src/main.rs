@@ -253,8 +253,16 @@ fn report<P: AsRef<Path>>(tests: &[TestResult], path: P) -> Result<()> {
                 test.duration.as_millis() as f32 / 1e3
             )?;
             match test.status {
-                TestStatus::Disabled | TestStatus::Pass => {
+                TestStatus::Pass => {
                     writeln!(xml, " />")?;
+                }
+                TestStatus::Disabled => {
+                    writeln!(xml, r#">"#)?;
+                    writeln!(
+                        xml,
+                        r#"      <skipped message="Automatically disabled by the test runner"/>"#
+                    )?;
+                    writeln!(xml, r#"    </testcase>"#)?;
                 }
                 TestStatus::Fail => {
                     writeln!(xml, r#">"#)?;
@@ -320,8 +328,9 @@ async fn commit_test_results(
             let insert_test = "INSERT IGNORE INTO tests (target, test, disabled)
                 VALUES (:target, :test, false)";
 
-            let insert_result = "INSERT IGNORE INTO results (revision, target, test, passed)
-                VALUES (:revision, :target, :test, :passed)";
+            let insert_result = "INSERT INTO results (revision, target, test, passed)
+                VALUES (:revision, :target, :test, :passed)
+                ON DUPLICATE KEY UPDATE passed = :passed";
 
             let select_last_3 = "
                 SELECT test.passed as passed
@@ -340,8 +349,8 @@ async fn commit_test_results(
             let mut db = db
                 .drop_exec(
                     "INSERT INTO runs (revision)
-                VALUES (:revision)
-                ON DUPLICATE KEY UPDATE time = CURRENT_TIMESTAMP",
+                    VALUES (:revision)
+                    ON DUPLICATE KEY UPDATE time = CURRENT_TIMESTAMP",
                     params! {
                         "revision" => &revision,
                     },
@@ -384,7 +393,7 @@ async fn commit_test_results(
                     .await?;
 
                 // auto-disable tests which, after this run, have failed 3 or more times in a row
-                let result = db
+                let results = db
                     .prep_exec(
                         select_last_3,
                         params! {
@@ -393,9 +402,9 @@ async fn commit_test_results(
                         },
                     )
                     .await?;
-                let (db_, fails) = result.map_and_drop(mysql_async::from_row).await?;
+                let (db_, results) = results.map_and_drop(mysql_async::from_row).await?;
                 db = db_;
-                let disabled = fails.into_iter().filter(|passed: &bool| !passed).count() >= 3;
+                let disabled = results.into_iter().filter(|passed: &bool| !passed).count() >= 3;
                 db = db
                     .drop_exec(
                         update_disabled,
