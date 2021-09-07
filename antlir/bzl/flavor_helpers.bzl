@@ -4,63 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-A flavor is a string identifier that controls build configurations.
-Options contained in a flavor can include `build_appliance` as well
-as `rpm_installer`.
-
-This allows us to specify compability between
-different images. For example, we can make sure that `centos7` images
-do not depend on `centos8` images, which is a breaking version.
-
-It also allows to reuse common build opts throughout the codebase
-with less duplication.
-
-Flavors are strings instead of functions because a flavor must have
-a stable identity as the source tree evolves. We must be able to
-compare flavors between old revs and new. The container runtime must
-also be able to rely on stable flavor IDs. Flavors names must
-follow two critical rules:
-    - Never change a flavor name
-    - Never reuse a flavor name
-
-## Using Flavors
-
-To create a flavor add a mapping to `antlir/bzl/oss_shim_impl.bzl`
-
-```
-shim = struct(
-    do_not_use_repo_cfg = {
-        "flavor_to_config": {
-            "your_flavor_here": {
-                "build_appliance": "//path/to/your/build/appliance",
-                "rpm_installer": "your_rpm_installer",
-            },
-        },
-    },
-
-)
-```
-
-Then, you can pass the flavor to images. You can also override the
-default value in the flavor with custom ones.
-
-```
-image.layer(
-    flavor = "your_flavor_here",
-    flavor_config_overrides = image.opts(
-        build_appliance = "//your/override/build/appliance",
-        ...
-    )
-)
-```
-
-## In progress
-
-The flavor of an image is written to the `/.meta`
-directory of the image. This allows you to check the compatibility
-of sendstreams, as a sendstream could have been built on
-an older revision with a different build appliance than what
-is in the repo currently.
+This provides helpers useful for working with flavors. For more
+information check out [the flavor docs](/docs/concepts/rpms/overview).
 """
 
 load(":check_flavor_exists.bzl", "check_flavor_exists")
@@ -69,7 +14,7 @@ load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
 
 def _get_flavor_config(flavor, flavor_config_override):
-    '''
+    """
     Arguments
     - `flavor`: The name of the flavor to fetch the config.
     - `flavor_config_override`: An opts that contains any overrides for
@@ -82,7 +27,7 @@ def _get_flavor_config(flavor, flavor_config_override):
     flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
     build_appliance = flavor_config["build_appliance"]
     ```
-    '''
+    """
     if not flavor and flavor_config_override:
         fail("Please specify the flavor when overriding the flavor config")
 
@@ -106,12 +51,23 @@ def _get_flavor_config(flavor, flavor_config_override):
     return new_flavor_config(**flavor_config)
 
 def _get_build_appliance(flavor):
+    """
+    Arguments
+    - `flavor`: The flavor of the build appliance to return.
+    """
     return REPO_CFG.flavor_to_config[flavor].build_appliance
 
 def _get_rpm_installer(flavor):
+    """
+    Arguments
+    - `flavor`: The flavor of the rpm installer to return.
+    """
     return REPO_CFG.flavor_to_config[flavor].rpm_installer
 
 def _get_rpm_installers_supported():
+    """
+    Returns all possible rpm installers in `REPO_CFG.flavor_to_config` deduplicated.
+    """
     rpm_installers = {}
     for _, config in REPO_CFG.flavor_to_config.items():
         if config.rpm_installer:

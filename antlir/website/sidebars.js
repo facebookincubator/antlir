@@ -65,6 +65,10 @@ module.exports = {
             },
             'concepts/pre-built-artifacts/fetched-artifacts',
           ],
+          'Flavors': [
+            'concepts/flavors/overview',
+            'concepts/flavors/inheritance-in-parent-layers',
+          ]
         },
       ],
     },
@@ -82,6 +86,7 @@ module.exports = {
         'api/shape',
         ...fbInternalOnly(['api/genrule/facebook/chef_solo/chef_solo']),
         'api/flavor_helpers',
+        'api/test_rpms',
       ],
     },
     {
