@@ -96,14 +96,14 @@ async fn main() -> Result<()> {
     }
 
     // connect to DB when provided. we handle errors manually to avoid leaking credentials
-    let mut db = match options.conn {
+    let db = match options.conn {
         None => None,
         Some(ref uri) => match Conn::from_url(uri).await {
             Ok(connection) => Some(connection),
             Err(_) => panic!("Couldn't connect to specified test DB"),
         },
     };
-    let disabled = query_disabled(&mut db).await;
+    let (db, disabled) = query_disabled(db).await;
 
     // run tests in parallel (retries share the same thread)
     let total = tests.len();
@@ -190,12 +190,7 @@ async fn main() -> Result<()> {
         report(&tests, path)?;
     }
     if let Some(revision) = options.revision {
-        commit_test_results(&mut db, revision, &tests).await?;
-    }
-
-    // drop connection and disconnect the pool
-    if let Some(connection) = db {
-        connection.disconnect().await?;
+        commit_test_results(db, revision, &tests).await?;
     }
 
     exit(failed as i32);
@@ -296,25 +291,27 @@ fn xml_escape_text(unescaped: &String) -> String {
     return unescaped.replace("<", "&lt;").replace("&", "&amp;");
 }
 
-async fn query_disabled(db: &mut Option<Conn>) -> HashSet<(String, String)> {
+async fn query_disabled(db: Option<Conn>) -> (Option<Conn>, HashSet<(String, String)>) {
     match db {
-        None => HashSet::new(),
-        Some(db) => db
-            .query("SELECT target, test FROM tests WHERE disabled = true")
-            .await
-            .unwrap()
-            .into_iter()
-            .collect(),
+        None => (db, HashSet::new()),
+        Some(db) => {
+            let result = db
+                .prep_exec("SELECT target, test FROM tests WHERE disabled = true", ())
+                .await
+                .unwrap();
+            let (db, disabled) = result.map_and_drop(mysql_async::from_row).await.unwrap();
+            return (Some(db), disabled.into_iter().collect());
+        }
     }
 }
 
 async fn commit_test_results(
-    db: &mut Option<Conn>,
+    db: Option<Conn>,
     revision: String,
     tests: &[TestResult],
-) -> Result<()> {
+) -> Result<Option<Conn>> {
     match db {
-        None => Ok(()),
+        None => Ok(db),
         Some(db) => {
             // NOTE: INSERT IGNORE and ON DUPLICATE are MySQL-specific ways to upsert
             let insert_target = "INSERT IGNORE INTO targets (target)
@@ -326,32 +323,30 @@ async fn commit_test_results(
             let insert_result = "INSERT IGNORE INTO results (revision, target, test, passed)
                 VALUES (:revision, :target, :test, :passed)";
 
-            let count_fail_in_last_3 = "
-                SELECT count(*) AS count
-                FROM (
-                    SELECT test.passed as passed
-                    FROM results test, runs run
-                    WHERE test.target = :target
-                    AND test.test = :test
-                    AND run.revision = test.revision
-                    ORDER BY run.time DESC
-                    LIMIT 3
-                ) WHERE passed = false";
+            let select_last_3 = "
+                SELECT test.passed as passed
+                FROM results test, runs run
+                WHERE test.target = :target
+                AND test.test = :test
+                AND run.revision = test.revision
+                ORDER BY run.time DESC
+                LIMIT 3";
 
             let update_disabled = "UPDATE tests
                 SET disabled = :disabled
                 WHERE target = :target
                 AND test = :test";
 
-            db.drop_exec(
-                "INSERT INTO runs (revision)
+            let mut db = db
+                .drop_exec(
+                    "INSERT INTO runs (revision)
                 VALUES (:revision)
                 ON DUPLICATE KEY UPDATE time = CURRENT_TIMESTAMP",
-                params! {
-                    "revision" => &revision,
-                },
-            )
-            .await?;
+                    params! {
+                        "revision" => &revision,
+                    },
+                )
+                .await?;
 
             for test in tests {
                 let passed = match test.status {
@@ -359,55 +354,61 @@ async fn commit_test_results(
                     _ => false,
                 };
 
-                db.drop_exec(
-                    insert_target,
-                    params! {
-                        "target" => &test.target,
-                    },
-                )
-                .await?;
-                db.drop_exec(
-                    insert_test,
-                    params! {
-                        "target" => &test.target,
-                        "test" => &test.unit,
-                    },
-                )
-                .await?;
-                db.drop_exec(
-                    insert_result,
-                    params! {
-                        "revision" => &revision,
-                        "target" => &test.target,
-                        "test" => &test.unit,
-                        "passed" => passed,
-                    },
-                )
-                .await?;
+                db = db
+                    .drop_exec(
+                        insert_target,
+                        params! {
+                            "target" => &test.target,
+                        },
+                    )
+                    .await?;
+                db = db
+                    .drop_exec(
+                        insert_test,
+                        params! {
+                            "target" => &test.target,
+                            "test" => &test.unit,
+                        },
+                    )
+                    .await?;
+                db = db
+                    .drop_exec(
+                        insert_result,
+                        params! {
+                            "revision" => &revision,
+                            "target" => &test.target,
+                            "test" => &test.unit,
+                            "passed" => passed,
+                        },
+                    )
+                    .await?;
 
                 // auto-disable tests which, after this run, have failed 3 or more times in a row
-                let (db, disabled) = db
-                    .first_exec(
-                        count_fail_in_last_3,
+                let result = db
+                    .prep_exec(
+                        select_last_3,
                         params! {
                             "target" => &test.target,
                             "test" => &test.unit
                         },
                     )
                     .await?;
-                let disabled = disabled.unwrap_or(0) >= 3;
-                db.drop_exec(
-                    update_disabled,
-                    params! {
-                        "target" => &test.target,
-                        "test" => &test.unit,
-                        "disabled" => disabled
-                    },
-                )
-                .await?;
+                let (db_, fails) = result.map_and_drop(mysql_async::from_row).await?;
+                db = db_;
+                let disabled = fails.into_iter().filter(|passed: &bool| !passed).count() >= 3;
+                db = db
+                    .drop_exec(
+                        update_disabled,
+                        params! {
+                            "target" => &test.target,
+                            "test" => &test.unit,
+                            "disabled" => disabled
+                        },
+                    )
+                    .await?;
             }
 
-            Ok(())
+            Ok(Some(db))
         }
     }
 }
