@@ -3,14 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image.bzl", "image")
-
-# buildifier: disable=no-effect
 """
 This provides helpers useful for installing rpms on layers with flavor `antlir_test`. For more
 information check out [the flavor docs](/docs/concepts/flavors/inheritance-in-parent-layers).
 """
+
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image.bzl", "image")
 
 def _add(rpmlist):
     """
