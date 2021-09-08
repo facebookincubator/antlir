@@ -21,8 +21,8 @@ a stable identity as the source tree evolves. We must be able to
 compare flavors between old revs and new. The container runtime must
 also be able to rely on stable flavor IDs. Flavors names must
 follow two critical rules:
-    - Never change a flavor name
-    - Never reuse a flavor name
+- Never change a flavor name
+- Never reuse a flavor name
 
 ## Using Flavors
 
@@ -50,6 +50,15 @@ image.layer(
     flavor = "your_flavor_here",
     flavor_config_overrides = image.opts(
         build_appliance = "//your/override/build/appliance",
+        rpm_version_set_overrides = [
+            image.rpm.nevra(
+                name = "fuse",
+                epoch = "0",
+                version = "2.9.7",
+                release = "14.fb5",
+                arch = "x86_64",
+            ),
+        ],
         ...
     )
 )
@@ -57,5 +66,6 @@ image.layer(
 
 The flavor of an image is written as a string to the file
 `/.meta/flavor` in the image. This allows you to check the compatibility
-of layers. We use this to load sendstreams built on a different revision
-with a possibly different build appliance.
+of different layers. We use the flavor file to check the compatibility between cached layers
+built on older revisions and layers built on the current revision. We also use
+the flavor file to deduce the flavor of the child layer from the parent.

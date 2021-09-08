@@ -31,7 +31,7 @@ to specify the flavor everywhere.
 
 ## RPMs in inherited flavors
 
-Due to limitation in BUCK, we cannot read the flavor information
+Due to BUCK limitations, we cannot read the flavor information
 from the BUCK target. We also cannot do file I/O in `.bzl` to read
 the flavor information. The flavor information is only available
 in `python`.
