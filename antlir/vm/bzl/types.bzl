@@ -16,12 +16,15 @@ _vm_emulator_t = shape.shape(
     firmware = shape.target(),
     # Utility to manage disk images
     img_util = shape.target(),
+    # Location of various roms
+    roms_dir = shape.target(),
 )
 
 def _new_vm_emulator(
         binary = None,
         firmware = None,
         img_util = None,
+        roms_dir = None,
         **kwargs):
     # These defaults have to be set here due to the use of the
     # `third_party.library` function.  It must be invoked inside of
@@ -30,12 +33,14 @@ def _new_vm_emulator(
     firmware = firmware or "//antlir/vm:efi-code"
     binary = binary or third_party.library("qemu")
     img_util = img_util or third_party.library("qemu", "qemu-img")
+    roms_dir = roms_dir or "//antlir/vm:roms"
 
     return shape.new(
         _vm_emulator_t,
         binary = binary,
         firmware = firmware,
         img_util = img_util,
+        roms_dir = roms_dir,
         **kwargs
     )
 

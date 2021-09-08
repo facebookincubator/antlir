@@ -131,5 +131,9 @@ hoist(
     )
     for firmware in [
         "edk2-x86_64-code.fd",
+        "kvmvapic.bin",
+        "linuxboot_dma.bin",
+        "vgabios-stdvga.bin",
+        "efi-virtio.rom",
     ]
 ]

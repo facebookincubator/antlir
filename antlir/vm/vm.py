@@ -418,6 +418,8 @@ async def vm(
             "readonly=on",
         ]
     )
+    # Additional roms path
+    args.extend(["-L", str(opts.runtime.emulator.roms_dir.path)])
 
     if os.access("/dev/kvm", os.R_OK | os.W_OK):
         args.append("-enable-kvm")
