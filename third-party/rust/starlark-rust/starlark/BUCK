@@ -126,7 +126,7 @@ rust_library(
         "src/values/layout/pointer.rs",
         "src/values/layout/pointer_i32.rs",
         "src/values/layout/value.rs",
-        "src/values/layout/value_ref.rs",
+        "src/values/layout/value_captured.rs",
         "src/values/mod.rs",
         "src/values/owned.rs",
         "src/values/stack_guard.rs",
