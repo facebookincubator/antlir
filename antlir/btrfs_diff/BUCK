@@ -1,3 +1,5 @@
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest")
 
 python_library(
@@ -182,12 +184,16 @@ python_binary(
     deps = [":testlib_demo_sendstreams"],
 )
 
-python_unittest(
+image.python_unittest(
     name = "test-send-stream",
     srcs = [
         "tests/test_parse_dump.py",
         "tests/test_parse_send_stream.py",
     ],
+    # some operations require capabilities that are disabled in certain
+    # environments, specifically CAP_LINUX_IMMUTABLE is required for some chattr
+    # operations
+    run_as_user = "root",
     needed_coverage = [(
         100,
         ":parse_send_stream",
@@ -198,6 +204,7 @@ python_unittest(
         "//antlir:fs_utils",
         "//antlir:testlib_common",
     ],
+    layer = flavor_helpers.default_flavor_build_appliance,
 )
 
 python_library(
@@ -283,7 +290,7 @@ python_library(
     ],
 )
 
-python_unittest(
+image.python_unittest(
     name = "test-sendstream-to-subvolume-set-integration",
     srcs = ["tests/test_sendstream_to_subvolume_set_integration.py"],
     needed_coverage = [(
@@ -297,4 +304,5 @@ python_unittest(
         "//antlir:fs_utils",
         "//antlir:testlib_common",
     ],
+    layer = flavor_helpers.default_flavor_build_appliance,
 )
