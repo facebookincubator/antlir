@@ -116,7 +116,7 @@ export_file(
     src = "mount-generator",
     visibility = [
         vm_image_path,
-        "//antlir/linux/initrd/vmtest/...",
+        "//antlir/linux/...",
         "//antlir/vm/tests/...",
     ],
 )
