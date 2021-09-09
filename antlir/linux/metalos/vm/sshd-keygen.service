@@ -1,0 +1,11 @@
+[Unit]
+Description=OpenSSH Server Key Generation
+ConditionFileNotEmpty=|!/run/sshd/ssh_host_ed25519_key
+PartOf=sshd.service
+After=systemd-tmpfiles-setup.service
+Requires=systemd-tmpfiles-setup.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ssh-keygen -t ed25519 -N '' -f /run/sshd/ssh_host_ed25519_key -q
+RemainAfterExit=yes

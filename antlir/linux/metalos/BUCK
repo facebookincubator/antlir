@@ -5,31 +5,9 @@ load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 
 image.layer(
-    name = "basesystem",
-    features = [
-        image.rpms_install([
-            "basesystem",
-            "btrfs-progs",
-            "iproute",
-            "openssh-server",
-            "sudo",
-            "systemd",
-            "systemd-udev",
-        ]),
-    ],
-    visibility = [],
-    flavor = REPO_CFG.antlir_linux_flavor,
-)
-
-image.layer(
     name = "basesystem-strip",
-    parent_layer = ":basesystem",
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
-        image.rpms_remove_if_exists([
-            # dracut installs a bunch of systemd units that log warnings, and
-            # we don't even use it anyway
-            "dracut",
-        ]),
         # remove any reference to rpm repositories (upstream or antlir)
         image.remove("/etc/yum.repos.d"),
         image.remove(
@@ -44,8 +22,6 @@ image.layer(
 
 export_file(name = "eth.network")
 
-# TODO: this should eventually be put into a stable fbpkg layer if it is
-# depended on more broadly
 image.layer(
     name = "metalos",
     parent_layer = ":basesystem-strip",
@@ -93,5 +69,4 @@ image.package(
     visibility = [
         "//antlir/...",
     ],
-    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
 )
