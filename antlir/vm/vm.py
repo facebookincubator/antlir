@@ -38,7 +38,7 @@ from antlir.shape import Shape
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.common import insertstack
 from antlir.vm.guest_ssh import GuestSSHConnection
-from antlir.vm.share import BtrfsSeedRootDisk, Plan9Export, Share
+from antlir.vm.share import BtrfsSeedRootDisk, Plan9Export, Share, QCow2RootDisk
 from antlir.vm.tap import VmTap
 from antlir.vm.vm_opts_t import vm_opts_t
 
@@ -280,11 +280,19 @@ async def vm(
     repo_cfg = repo_config()
 
     # Setup the root disk fist since without this, nothing works
-    assert opts.disk.seed, "Only seed devices are supported currently"
-    root_disk = BtrfsSeedRootDisk(
-        path=opts.disk.package.path,
-        stack=stack,
-    )
+    if opts.disk.seed:
+        root_disk = BtrfsSeedRootDisk(
+            path=opts.disk.package.path,
+            qemu_img=opts.runtime.emulator.img_util.path,
+            stack=stack,
+        )
+    else:
+        root_disk = QCow2RootDisk(
+            path=opts.disk.package.path,
+            qemu_img=opts.runtime.emulator.img_util.path,
+            stack=stack,
+        )
+
     # Root disk is always first
     shares.insert(0, root_disk)
 
@@ -317,12 +325,12 @@ async def vm(
                     ],
                 )
             )
-        else:
+        else:  # pragma: no cover
             logger.warn(
                 f"non-host mount found: {mount}. "
                 "`antlir.vm` does not yet support "
                 "non-host mounts"
-            )  # pragma: no cover
+            )
 
     if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host

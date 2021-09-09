@@ -152,6 +152,32 @@ python_binary(
 )
 
 vm.run(
+    name = "default-stable-qcow2",
+    vm_opts = vm.types.opts.new(
+        kernel = kernel_get.default,
+        disk = vm.types.disk.new(
+            seed = False,
+            layer = vm.artifacts.rootfs.layer.stable,
+        ),
+    ),
+)
+
+vm.run(
+    name = "default-stable-qcow2-debug",
+    vm_opts = vm.types.opts.new(
+        kernel = kernel_get.default,
+        disk = vm.types.disk.new(
+            seed = False,
+            layer = vm.artifacts.rootfs.layer.stable,
+        ),
+        initrd = "{}:{}-initrd-debug".format(
+            kernel_get.base_target,
+            kernel_get.default.uname,
+        ),
+    ),
+)
+
+vm.run(
     name = "default-stable",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,

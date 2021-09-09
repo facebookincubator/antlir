@@ -12,8 +12,11 @@ from contextlib import AsyncExitStack, contextmanager
 from dataclasses import dataclass, field
 from typing import Generator, Iterable, Optional, Tuple
 
+from antlir.common import get_logger
 from antlir.fs_utils import Path, temp_dir
 
+
+log = get_logger()
 
 __next_tag_index = 0
 # We have 2 drives for the root disk (seed + child) so we start all others
@@ -152,7 +155,7 @@ class BtrfsDisk(Share):
         return (
             self._systemd_escape_mount(self.mountpoint),
             f"""[Unit]
-Description=Mount {self.dev} ({self.path!s} from host) at {self.mountpoint}
+Description=Mount {self.dev} ({self.path!s} from host) at {self.mountpoint!s}
 Before=local-fs.target
 
 [Mount]
@@ -172,11 +175,70 @@ Options=subvol={self.subvol},{ro_rw}
         readonly = "on" if self.readonly else "off"
         return (
             "--blockdev",
-            f"driver=raw,node-name=dev-{self.dev},read-only={readonly},"
-            f"file.driver=file,file.filename={self.path!s}",
+            (
+                f"driver=raw,node-name=dev-{self.dev},read-only={readonly},"
+                f"file.driver=file,file.filename={self.path!s}"
+            ),
             "--device",
             f"virtio-blk,drive=dev-{self.dev}",
         )
+
+
+def _tmp_qcow2_disk(
+    qemu_img: Path,
+    stack: AsyncExitStack,
+    size_mb: int = 1024,
+) -> Path:
+    """
+    Create a qcow2 scratch disk using qemu-img.  The default size is 256MB.
+    """
+    disk = stack.enter_context(
+        tempfile.NamedTemporaryFile(
+            prefix="vm_",
+            suffix="_rw.qcow2",
+            # If available, create this temporary disk image in a temporary
+            # directory that we know will be on disk, instead of /tmp which
+            # may be a space-constrained tmpfs whichcan cause sporadic
+            # failures depending on how much VMs decide to write to the
+            # root partition multiplied by however many VMs are running
+            # concurrently. If DISK_TEMP is not set, Python will follow the
+            # normal mechanism to determine where to create this file as
+            # described in:
+            # https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
+            dir=os.getenv("DISK_TEMP"),
+        )
+    )
+
+    cmd = [
+        qemu_img,
+        "create",
+        "-f",  # format
+        "qcow2",
+        disk.name,
+        f"{size_mb}M",
+    ]
+    log.debug(f"Creating tmp qcow2 img: {cmd}")
+
+    try:
+        # Combine stdout and stderr.
+        ret = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=True,
+        )
+        log.debug(f"qemu-img complete: {ret}")
+
+    except subprocess.CalledProcessError as e:  # pragma: no cover
+        log.error(
+            "Failed to create qemu disk image. "
+            f'Command: "{cmd}"; '
+            f"Return value: {e.returncode}; "
+            f"Output:\n {e.output.decode('utf-8')}"
+        )
+        raise
+
+    return Path(disk.name)
 
 
 @dataclass(frozen=True)
@@ -186,6 +248,7 @@ class BtrfsSeedRootDisk(Share):
     """
 
     path: Path
+    qemu_img: Path
     stack: AsyncExitStack
     subvol: str = "volume"
     # Note: these are hard coded for virtio and to be the 1st
@@ -199,43 +262,35 @@ class BtrfsSeedRootDisk(Share):
     child_disk: Optional[Path] = None
 
     def __post_init__(self) -> None:
-        child_disk = self.stack.enter_context(
-            tempfile.NamedTemporaryFile(
-                prefix="vm_",
-                suffix="_rw.img",
-                # If available, create this temporary disk image in a temporary
-                # directory that we know will be on disk, instead of /tmp which
-                # may be a space-constrained tmpfs whichcan cause sporadic
-                # failures depending on how much VMs decide to write to the
-                # root partition multiplied by however many VMs are running
-                # concurrently. If DISK_TEMP is not set, Python will follow the
-                # normal mechanism to determine where to create this file as
-                # described in:
-                # https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
-                dir=os.getenv("DISK_TEMP"),
-            )
+        # Reaching into the object like this is lame.
+        # TODO: Convert these to Pydantic types so we can use
+        # validators
+        object.__setattr__(
+            self,
+            "child_disk",
+            _tmp_qcow2_disk(
+                qemu_img=self.qemu_img,
+                stack=self.stack,
+            ),
         )
-
-        # TODO: should this size be configurable (or is it possible to
-        # dynamically grow)?
-        child_disk.truncate(4 * 1024 * 1024 * 1024)
-
-        # This sucks
-        object.__setattr__(self, "child_disk", Path(child_disk.name))
 
     @property
     def qemu_args(self) -> Iterable[str]:
         return (
             # Seed device
             "--blockdev",
-            "driver=raw,node-name=seed,read-only=on,"
-            f"file.driver=file,file.filename={self.path!s}",
+            (
+                "driver=raw,node-name=seed,read-only=on,"
+                f"file.driver=file,file.filename={self.path!s}"
+            ),
             "--device",
             "virtio-blk,drive=seed",
             # Child device
             "--blockdev",
-            "driver=raw,node-name=child,read-only=off,"
-            f"file.driver=file,file.filename={self.child_disk!s}",
+            (
+                "driver=qcow2,node-name=child,read-only=off,"
+                f"file.driver=file,file.filename={self.child_disk!s}"
+            ),
             "--device",
             "virtio-blk,drive=child",
         )
@@ -245,6 +300,53 @@ class BtrfsSeedRootDisk(Share):
         return (
             f"metalos.seed_device=/dev/{self.child_dev}",
             f"root=/dev/{self.seed_dev}",
+            f"rootflags=subvol={self.subvol},ro",
+            "rootfstype=btrfs",
+        )
+
+
+@dataclass(frozen=True)
+class QCow2RootDisk(Share):
+    """
+    Share a btrfs filesystem to a Qemu instance as a
+    qcow2 disk via the virtio interface.
+    """
+
+    path: Path
+    qemu_img: Path
+    stack: AsyncExitStack
+    subvol: str = "volume"
+    dev: str = "vda"
+    cow_disk: Optional[Path] = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "cow_disk",
+            _tmp_qcow2_disk(
+                qemu_img=self.qemu_img,
+                stack=self.stack,
+            ),
+        )
+
+    @property
+    def qemu_args(self) -> Iterable[str]:
+        return (
+            "--blockdev",
+            (
+                "driver=qcow2,node-name=root-drive,"
+                f"file.driver=file,file.filename={self.cow_disk!s},"
+                "backing.driver=raw,backing.file.driver=file,"
+                f"backing.file.filename={self.path!s}"
+            ),
+            "--device",
+            "virtio-blk,drive=root-drive",
+        )
+
+    @property
+    def kernel_args(self) -> Iterable[str]:
+        return (
+            f"root=/dev/{self.dev}",
             f"rootflags=subvol={self.subvol},ro",
             "rootfstype=btrfs",
         )

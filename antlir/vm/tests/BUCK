@@ -29,7 +29,15 @@ python_unittest(
         "test_vm.py",
     ],
     env = {
-        "test-vm-json": shape.do_not_cache_me_json(
+        "test-vm-qcow2-json": shape.do_not_cache_me_json(
+            vm.types.opts.new(
+                disk = vm.types.disk.new(
+                    seed = False,
+                    layer = ":vmtest-custom-layer",
+                ),
+            ),
+        ),
+        "test-vm-seed-json": shape.do_not_cache_me_json(
             vm.types.opts.new(
                 runtime = vm.types.runtime.new(
                     connection = vm.types.connection.new(
