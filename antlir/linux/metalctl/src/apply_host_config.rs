@@ -65,7 +65,7 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
     }
     let body = resp.into_body();
     let mut child = Command::new("metalos-host-config-evaluator")
-        .args(&["-", "/usr/lib/metalos/generators.tar.zst", "--root"])
+        .args(&["-", "--root"])
         .arg(&opts.root)
         .stdin(Stdio::piped())
         .spawn()
