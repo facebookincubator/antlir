@@ -89,6 +89,7 @@ _PYTHON_LIBRARY_KWARGS = _make_rule_kwargs_dict(
         "resources",
         "runtime_deps",
         "srcs",
+        "tags",
         "visibility",
     ],
 )
