@@ -1,10 +1,8 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "rust_binary", "rust_library", "third_party")
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 # @oss-disable: load("//antlir/linux/metalos/host_configs/evalctx/facebook:deps.bzl", fb_deps = "deps") 
-
-buck_filegroup(
-    name = "generators",
-    srcs = glob(["generators/*.star"]),
-)
 
 # The facebook extension to the evalctx crate adds some additional dependencies
 # on internal code
@@ -43,9 +41,21 @@ rust_binary(
             "anyhow",
             "serde_json",
             "structopt",
-            "tar",
-            "zstd",
         ],
         platform = "rust",
     ),
+)
+
+feature.new(
+    name = "generators",
+    features = [
+        image.ensure_subdirs_exist("/usr/lib/metalos", "generators"),
+    ] + [
+        image.install(
+            generator,
+            "/usr/lib/metalos/generators/{}".format(paths.basename(generator)),
+        )
+        for generator in glob(["generators/*.star"])
+    ],
+    visibility = ["//antlir/linux/..."],
 )
