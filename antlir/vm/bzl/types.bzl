@@ -64,22 +64,22 @@ def _new_vm_disk(
     if package and layer:
         fail("disk.new() accepts `package` OR `layer`, not both")
 
-    if not seed and not package:
-        fail("disk.new(seed=False, ...) requires `package`")
-
     if layer:
         # Convert the provided layer name into something that we can safely use
         # as the base for a new target name.  This is only used for the
         # vm being constructed here, so it doesn't have to be pretty.
         layer_name = layer.lstrip(":").lstrip("//").replace("/", "_").replace(":", "__")
-        package_target = "{}=image.btrfs".format(layer_name)
+        package_target = "{}={}image.btrfs".format(
+            layer_name,
+            "seed-" if seed else "",
+        )
         if not native.rule_exists(package_target):
             image_package(
                 name = package_target,
                 layer = layer,
                 format = "btrfs",
                 loopback_opts = struct(
-                    seed_device = True,
+                    seed_device = seed,
                     writable_subvolume = True,
                 ),
                 visibility = [],
