@@ -47,20 +47,18 @@ class AntlirTestCase(unittest.IsolatedAsyncioTestCase):
         with to_patch as patched:
             yield patched.return_value.__enter__.return_value
 
-    def set_context_manager_retval(self, patched_ctx_mgr, return_value):
-        """Sets return value for a given 'entered' context manager to the
-        provided value.
+    def mock_enter_context(self, patched_ctx_mgr):
+        """Returns 'entered' mocked context manager for further mocking.
 
-        Example:
+        Example usage:
 
         ### Mocking in the following way:
         with mock.patch.object(mod, "attr") as patched:
-            self.set_context_manager_retval(patched, 123)
+            self.mock_enter_context(patched).return_value = 123
 
         ### Will cause the following to be true in the system under test
         from mod import attr
 
         with attr() as x: assert x == 123
         """
-        patched_ctx_mgr.return_value.__enter__.return_value = return_value
-        return patched_ctx_mgr
+        return patched_ctx_mgr.return_value.__enter__
