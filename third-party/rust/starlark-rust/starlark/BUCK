@@ -76,6 +76,7 @@ rust_library(
         "src/eval/runtime/slots.rs",
         "src/eval/runtime/stmt_profile.rs",
         "src/eval/tests/basic.rs",
+        "src/eval/tests/before_stmt.rs",
         "src/eval/tests/call.rs",
         "src/eval/tests/comprehension.rs",
         "src/eval/tests/def.rs",

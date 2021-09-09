@@ -1645,15 +1645,15 @@ archive(
 )
 
 archive(
-    name = "thiserror-1.0.23--archive",
-    sha256 = "76cc616c6abf8c8928e2fdcc0dbfab37175edd8fb49a4641066ad1364fdab146",
-    url = "https://static.crates.io/crates/thiserror/thiserror-1.0.23.crate",
+    name = "thiserror-1.0.29--archive",
+    sha256 = "602eca064b2d83369e2b2f34b09c70b605402801927c65c11071ac911d299b88",
+    url = "https://static.crates.io/crates/thiserror/thiserror-1.0.29.crate",
 )
 
 archive(
-    name = "thiserror-impl-1.0.23--archive",
-    sha256 = "9be73a2caec27583d0046ef3796c3794f868a5bc813db689eed00c7631275cd1",
-    url = "https://static.crates.io/crates/thiserror-impl/thiserror-impl-1.0.23.crate",
+    name = "thiserror-impl-1.0.29--archive",
+    sha256 = "bad553cc2c78e8de258400763a647e80e6d1b31ee237275d756f6836d204494c",
+    url = "https://static.crates.io/crates/thiserror-impl/thiserror-impl-1.0.29.crate",
 )
 
 archive(
@@ -13368,13 +13368,13 @@ third_party_rust_library(
 third_party_rust_library(
     name = "thiserror",
     srcs = [
-        "thiserror-1.0.23/src/aserror.rs",
-        "thiserror-1.0.23/src/display.rs",
-        "thiserror-1.0.23/src/lib.rs",
+        "thiserror-1.0.29/src/aserror.rs",
+        "thiserror-1.0.29/src/display.rs",
+        "thiserror-1.0.29/src/lib.rs",
     ],
-    archive = ":thiserror-1.0.23--archive",
+    archive = ":thiserror-1.0.29--archive",
     crate = "thiserror",
-    crate_root = "thiserror-1.0.23/src/lib.rs",
+    crate_root = "thiserror-1.0.29/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -13386,23 +13386,24 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
-    deps = ["//third-party/rust:thiserror-impl-1.0.23"],
+    deps = ["//third-party/rust:thiserror-impl-1.0.29"],
 )
 
 third_party_rust_library(
-    name = "thiserror-impl-1.0.23",
+    name = "thiserror-impl-1.0.29",
     srcs = [
-        "thiserror-impl-1.0.23/src/ast.rs",
-        "thiserror-impl-1.0.23/src/attr.rs",
-        "thiserror-impl-1.0.23/src/expand.rs",
-        "thiserror-impl-1.0.23/src/fmt.rs",
-        "thiserror-impl-1.0.23/src/lib.rs",
-        "thiserror-impl-1.0.23/src/prop.rs",
-        "thiserror-impl-1.0.23/src/valid.rs",
+        "thiserror-impl-1.0.29/src/ast.rs",
+        "thiserror-impl-1.0.29/src/attr.rs",
+        "thiserror-impl-1.0.29/src/expand.rs",
+        "thiserror-impl-1.0.29/src/fmt.rs",
+        "thiserror-impl-1.0.29/src/generics.rs",
+        "thiserror-impl-1.0.29/src/lib.rs",
+        "thiserror-impl-1.0.29/src/prop.rs",
+        "thiserror-impl-1.0.29/src/valid.rs",
     ],
-    archive = ":thiserror-impl-1.0.23--archive",
+    archive = ":thiserror-impl-1.0.29--archive",
     crate = "thiserror_impl",
-    crate_root = "thiserror-impl-1.0.23/src/lib.rs",
+    crate_root = "thiserror-impl-1.0.29/src/lib.rs",
     edition = "2018",
     env = {
     },
