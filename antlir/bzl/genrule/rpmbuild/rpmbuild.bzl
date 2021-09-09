@@ -16,10 +16,10 @@ load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
+load("//antlir/bzl/image/feature:tarball.bzl", "feature_tarball")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:install.bzl", "image_install")
 load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
-load("//antlir/bzl/image_actions:tarball.bzl", "image_tarball")
 
 RPMBUILD_LAYER_SUFFIX = "rpmbuild-build"
 
@@ -122,7 +122,7 @@ def private_image_rpmbuild_impl(
             image_ensure_subdirs_exist("/rpmbuild", "RPMS"),
             image_ensure_subdirs_exist("/rpmbuild", "SOURCES"),
             image_ensure_subdirs_exist("/rpmbuild", "SPECS"),
-            image_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
+            feature_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
         ] + (setup_features or []),
         visibility = [],
         antlir_rule = "user-internal",

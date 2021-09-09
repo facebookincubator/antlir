@@ -17,3 +17,12 @@ fake_macro_library(
         "//antlir/bzl:target_tagger",
     ],
 )
+
+fake_macro_library(
+    name = "tarball",
+    srcs = ["tarball.bzl"],
+    deps = [
+        "//antlir/bzl:maybe_export_file",
+        "//antlir/bzl:target_tagger",
+    ],
+)

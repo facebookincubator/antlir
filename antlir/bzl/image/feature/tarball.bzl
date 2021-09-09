@@ -19,7 +19,7 @@ tarball_t = shape.shape(
     source = target_tagged_image_source_shape,
 )
 
-def image_tarball(source, dest, force_root_ownership = False):
+def feature_tarball(source, dest, force_root_ownership = False):
     """
 `image.tarball("files/xyz.tar", "/a/b")` extracts tarball located at `files/xyz.tar` to `/a/b` in the image --
 - `source` is one of:
@@ -45,5 +45,5 @@ def image_tarball(source, dest, force_root_ownership = False):
         target_tagger,
         items = struct(tarballs = [tarball]),
         # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image_actions:tarball"],
+        extra_deps = ["//antlir/bzl/image/feature:tarball"],
     )
