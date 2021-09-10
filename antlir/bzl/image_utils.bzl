@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load(":oss_shim.bzl", "target_utils")
 
 def _wrap_bash_build_in_common_boilerplate(
@@ -99,20 +100,13 @@ def _wrap_bash_build_in_common_boilerplate(
     )
 
 def _current_target(target_name):
-    return target_utils.to_label(
-        # Note: we don't use the `config.get_current_repo_name()` here because
-        # currently in the OSS setup the current repo ends up being `@`, which
-        # doesn't work when we compile the layer. It doesn't work because
-        # a target like `//antlir/compiler/test_images:parent_layer` is not
-        # equivalent to `@//antlir/compiler/test_images:parent_layer`.
-        # Technically we should use the current repo name when constructing
-        # __all__ target labels. That would require a hefty refactor for all
-        # usages of hard coded targets. This should be done but can wait until
-        # the OSS repository is ready to be embedded/included in other projects
-        # as a proper repo/cell.
-        "",
-        native.package_name(),
-        target_name,
+    return normalize_target(
+        target_utils.to_label(
+            "",
+            # @lint-ignore BUCKLINT
+            native.package_name(),
+            target_name,
+        ),
     )
 
 image_utils = struct(
