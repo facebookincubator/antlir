@@ -12,6 +12,7 @@ load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":shape.bzl", "shape")
+load(":target_helpers.bzl", "antlir_dep")
 load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 
 genrule_layer_t = shape.shape(
@@ -105,7 +106,7 @@ Optional arguments:
                         bind_repo_ro = bind_repo_ro,
                     )),
                 ]),
-                extra_deps = ["//antlir/bzl:image_genrule_layer"],
+                extra_deps = [antlir_dep("bzl:image_genrule_layer")],
             )],
             flavor = flavor,
             flavor_config_override = flavor_config_override,
