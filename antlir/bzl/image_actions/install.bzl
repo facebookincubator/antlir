@@ -58,6 +58,7 @@ directory output by a Buck-runnable target, then you should use
 load("//antlir/bzl:add_stat_options.bzl", "add_stat_options", "mode_t")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(
     "//antlir/bzl:target_tagger.bzl",
     "extract_tagged_target",
@@ -142,7 +143,7 @@ binary to be unusable in image tests in @mode/dev.
         target_tagger,
         items = struct(install_files = [install_files]),
         # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image_actions:install"],
+        extra_deps = [antlir_dep("bzl/image_actions:install")],
     )
 
 def image_install(source, dest, mode = None, user = None, group = None):
@@ -198,5 +199,5 @@ image) is used. The default for `user` and `group` is `root`.
         target_tagger,
         items = struct(install_files = [install_files]),
         # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image_actions:install"],
+        extra_deps = [antlir_dep("bzl/image_actions:install")],
     )
