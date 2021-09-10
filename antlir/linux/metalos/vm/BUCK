@@ -87,5 +87,19 @@ image.layer(
         ssh,
         systemd_workaround,
     ],
-    visibility = ["//antlir/..."],
+    # Any vm unittest or run target can have a custom layer
+    # built on top of this.
+    visibility = ["PUBLIC"],
+)
+
+image.package(
+    name = "base.btrfs",
+    layer = ":base",
+    format = "btrfs",
+    loopback_opts = image.opts(
+        seed_device = True,
+        writable_subvolume = True,
+    ),
+    # Any vm run target can use this
+    visibility = ["PUBLIC"],
 )
