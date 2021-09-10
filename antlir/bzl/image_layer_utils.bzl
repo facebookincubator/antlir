@@ -37,7 +37,7 @@ def _add_fail_with_message_target(name, kind, message):
     target = name + "-" + kind
     buck_command_alias(
         name = target,
-        exe = "//antlir/bzl:fail-with-message",
+        exe = antlir_dep("bzl:fail-with-message"),
         args = ["--message", message],
         antlir_rule = "user-internal",
     )
