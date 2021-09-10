@@ -392,7 +392,7 @@ feature.new(
             ],
             flavors = ["antlir_test"],
         ),
-        image.tarball(
+        feature.tarball(
             image.source(
                 # Check hash validation
                 ":hello_world.tar",
@@ -400,7 +400,7 @@ feature.new(
             ),
             "foo/borf",
         ),
-        image.tarball(
+        feature.tarball(
             ":hello_world.tar",  # Hash validation is optional
             "foo",
         ),
@@ -691,7 +691,7 @@ image.layer(
 image.layer(
     name = "hello_world_base",
     features = [
-        image.tarball(
+        feature.tarball(
             image.source(
                 generator = ":hello_world_tar_generator.sh",
                 # Most generators would not have this API wart of externally
@@ -771,8 +771,8 @@ image.layer(
             "more_extracted_hello",
             mode = 0o711,
         ),
-        image.tarball(":hello_world.tar", "/foo/extracted_hello"),
-        image.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
+        feature.tarball(":hello_world.tar", "/foo/extracted_hello"),
+        feature.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
     ],
     visibility = ["//antlir/..."],
 )

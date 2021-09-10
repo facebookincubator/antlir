@@ -6,10 +6,12 @@
 "This provides a more friendly UI to the feature.* macros."
 
 load("//antlir/bzl/image/feature:new.bzl", "feature_new")
+load("//antlir/bzl/image/feature:tarball.bzl", "feature_tarball")
 load("//antlir/bzl/image/feature:usergroup.bzl", "feature_group_add", "feature_user_add")
 
 feature = struct(
     group_add = feature_group_add,
     new = feature_new,
     user_add = feature_user_add,
+    tarball = feature_tarball,
 )

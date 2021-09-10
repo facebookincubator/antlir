@@ -21,7 +21,7 @@ tarball_t = shape.shape(
 
 def feature_tarball(source, dest, force_root_ownership = False):
     """
-`image.tarball("files/xyz.tar", "/a/b")` extracts tarball located at `files/xyz.tar` to `/a/b` in the image --
+`feature.tarball("files/xyz.tar", "/a/b")` extracts tarball located at `files/xyz.tar` to `/a/b` in the image --
 - `source` is one of:
     - an `image.source` (docs in `image_source.bzl`), or
     - the path of a target outputting a tarball target path,
