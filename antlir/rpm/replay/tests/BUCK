@@ -23,8 +23,8 @@ python_library(
     visibility = ["//tupperware/cm/antlir/tests/..."],
     deps = [
         "//antlir:fs_utils",
+        "//antlir:serialize-targets-and-outputs-library",
         "//antlir/rpm/replay:extract_nested_features",
-        "//antlir/rpm/replay:replay_util",
     ],
 )
 
