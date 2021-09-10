@@ -5,7 +5,6 @@
 
 "This provides a more friendly UI to the image_* macros."
 
-load("//antlir/bzl/image/feature:tarball.bzl", "feature_tarball")
 load("//antlir/bzl/image_actions:clone.bzl", "image_clone")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_dirs_exist", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:install.bzl", "image_install", "image_install_buck_runnable")
@@ -53,7 +52,6 @@ image = struct(
     rpms_install = image_rpms_install,
     rpms_remove_if_exists = image_rpms_remove_if_exists,
     source = image_source,
-    tarball = feature_tarball,
     test_rpm_names = image_test_rpm_names,
     gpt = image_gpt,
     gpt_partition = image_gpt_partition,
