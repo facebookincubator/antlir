@@ -196,11 +196,11 @@ image_layer(
     ...
 )
 
-image_package(
+package_new(
     name='child_from_parent.sendstream',
     layer=':child',
     # If `:parent` lacked `sendstream_hash`, we would not know it is a
-    # "release" image, and this `image_package` would fail to build.
+    # "release" image, and this `package_new` would fail to build.
     incremental_to=':parent',
 )
 ```
@@ -546,7 +546,7 @@ def parse_args(argv):
         "--build-appliance", help="Build appliance layer to use when packaging"
     )
     # Future: To add support for incremental send-streams, we'd want to
-    # use this (see `--ancestor-jsons` in `image_package.bzl`)
+    # use this (see `--ancestor-jsons` in `image/package/new.bzl`)
     #
     # parser.add_argument(
     #     '--ancestor-jsons',

@@ -4,9 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image_package.bzl", "image_package")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image/package:new.bzl", "package_new")
 load(":kernel.bzl", "kernel_t", "normalize_kernel")
 
 _vm_emulator_t = shape.shape(
@@ -74,7 +74,7 @@ def _new_vm_disk(
             "seed-" if seed else "",
         )
         if not native.rule_exists(package_target):
-            image_package(
+            package_new(
                 name = package_target,
                 layer = layer,
                 format = "btrfs",

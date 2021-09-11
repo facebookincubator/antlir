@@ -64,7 +64,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             self._render_sendstream_path(path2),
         )
 
-    # This tests `image_package.bzl` by consuming its output.
+    # This tests `image/package/new.bzl` by consuming its output.
     def test_packaged_sendstream_matches_original(self):
         self._assert_sendstream_files_equal(
             self._sibling_path("create_ops-original.sendstream"),

@@ -28,7 +28,7 @@ def _wrap_bash_build_in_common_boilerplate(
     # The benefit of using \\$(exe) is that it does not bake an absolute
     # paths into our command.  This means the Buck cache continues working
     # even if the user moves the repo.  `exe` vs `location` is explained in
-    # `image_package.bzl`.  We need `binary_path` because the `exe` macro
+    # `image/package/new.bzl`.  We need `binary_path` because the `exe` macro
     # won't get expanded inside a \\$( ...  ) context.
     binary_path=( $(exe {artifacts_dir}) )
     artifacts_dir=\\$( "${{binary_path[@]}}" )

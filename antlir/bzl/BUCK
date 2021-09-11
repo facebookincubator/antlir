@@ -140,7 +140,6 @@ fake_macro_library(
         ":image_layer_alias",
         ":image_layer_from_package",
         ":image_layer_utils",
-        ":image_package",
         ":image_packaged_layer",
         ":image_python_unittest",
         ":image_rust_unittest",
@@ -186,7 +185,7 @@ fake_macro_library(
     name = "image_packaged_layer",
     srcs = ["image_packaged_layer.bzl"],
     deps = [
-        ":image_package",
+        "//antlir/bzl/image/package:new",
     ],
 )
 
@@ -215,12 +214,6 @@ fake_macro_library(
         ":target_helpers",
         "//antlir/bzl/image/feature:new",
     ],
-)
-
-fake_macro_library(
-    name = "image_package",
-    srcs = ["image_package.bzl"],
-    deps = [":image_utils"],
 )
 
 fake_macro_library(
