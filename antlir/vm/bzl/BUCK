@@ -53,8 +53,8 @@ fake_macro_library(
     ],
     deps = [
         ":kernel",
-        "//antlir/bzl:image_package",
         "//antlir/bzl:shape",
+        "//antlir/bzl/image/package:new",
     ],
 )
 

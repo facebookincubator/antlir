@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:partial.bzl", "partial")
-load("//antlir/bzl:image_package.bzl", "image_package")
+load("//antlir/bzl/image/package:new.bzl", "package_new")
 
 def image_packaged_layer(
         layer_name,
@@ -32,7 +32,7 @@ Args:
         should publish the targets in `path_actions` to an artifact store.
     """
     img_pkg_name = "{}=layer.sqfs".format(layer_name)
-    image_package(
+    package_new(
         name = img_pkg_name,
         layer = ":" + layer_name,
         format = "squashfs",

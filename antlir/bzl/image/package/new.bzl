@@ -8,17 +8,16 @@ The `image_package` rule serializes an `image_layer` target into one or more
 files, as described by the specified `format`.
 """
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load(":loopback_opts.bzl", "loopback_opts_t", "normalize_loopback_opts")
-load(":constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
-load(":image_utils.bzl", "image_utils")
-load(":oss_shim.bzl", "buck_genrule")
-load(":shape.bzl", "shape")
+load("//antlir/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
+load("//antlir/bzl:image_utils.bzl", "image_utils")
+load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:shape.bzl", "shape")
 
 _IMAGE_PACKAGE = "image_package"
 
-def image_package(
+def package_new(
         name,
         layer,
         visibility = None,
@@ -54,7 +53,7 @@ def image_package(
         # This is very temporary to work around an FB-internal issue.
         cacheable = False,
         bash = image_utils.wrap_bash_build_in_common_boilerplate(
-            self_dependency = "//antlir/bzl:image_package",
+            self_dependency = "//antlir/bzl/image/package:new",
             # We don't need to hold any subvolume lock because we trust
             # that (a) Buck will keep our input JSON alive, and (b) the
             # existence of the JSON will keep the refcount above 1,

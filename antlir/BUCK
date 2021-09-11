@@ -468,7 +468,7 @@ python_binary(
     ],
 )
 
-# Also tests the Buck macro `image_package.bzl`, but we cannot assert coverage.
+# Also tests the Buck macro `image/package/new.bzl`, but we cannot assert coverage.
 python_unittest(
     name = "test-package-image",
     srcs = ["tests/test_package_image.py"],
