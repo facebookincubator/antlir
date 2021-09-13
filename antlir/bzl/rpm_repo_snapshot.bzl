@@ -7,9 +7,9 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl/genrule/yum_dnf_cache:yum_dnf_cache.bzl", "image_yum_dnf_make_snapshot_cache")
+load("//antlir/bzl/image/feature:remove.bzl", "feature_remove")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:install.bzl", "image_install")
-load("//antlir/bzl/image_actions:remove.bzl", "image_remove")
 load("//antlir/bzl/image_actions:symlink.bzl", "image_ensure_dir_symlink")
 load(":image_layer.bzl", "image_layer")
 load(":maybe_export_file.bzl", "maybe_export_file")
@@ -250,7 +250,7 @@ def default_rpm_repo_snapshot_for(prog, snapshot):
         # Silently replace the parent's default because there's not an
         # obvious scenario in which this is an error, and so forcing the
         # user to pass an explicit `replace_existing` flag seems unhelpful.
-        image_remove(link_name, must_exist = False),
+        feature_remove(link_name, must_exist = False),
         image_ensure_dir_symlink(snapshot_install_dir(snapshot), link_name),
     ]
 

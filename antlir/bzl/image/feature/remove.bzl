@@ -11,7 +11,7 @@ remove_paths_t = shape.shape(
     must_exist = bool,
 )
 
-def image_remove(dest, must_exist = True):
+def feature_remove(dest, must_exist = True):
     """
 `image.remove("/a/b")` recursively removes the file or directory `/a/b` --
 
@@ -33,5 +33,5 @@ though this can be avoided by setting `must_exist` to `False`.
         new_target_tagger(),
         items = struct(remove_paths = [remove_spec]),
         # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image_actions:remove"],
+        extra_deps = ["//antlir/bzl/image/feature:remove"],
     )
