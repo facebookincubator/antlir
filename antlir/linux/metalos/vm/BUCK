@@ -1,5 +1,6 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
@@ -60,7 +61,7 @@ ssh = [
     image.install("sshd.tmpfiles.conf", "/usr/lib/tmpfiles.d/sshd.tmpfiles.conf"),
     # Install a custom sshd-keygen.service that only generates a single key type
     # and stores it in /run/sshd.
-    image.remove("/usr/lib/systemd/system/sshd-keygen.service"),
+    feature.remove("/usr/lib/systemd/system/sshd-keygen.service"),
     systemd.install_unit("sshd-keygen.service"),
     # Install a drop-in that updates the cmd line to include the
     # custom hostkey location.

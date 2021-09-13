@@ -47,7 +47,6 @@ image = struct(
     package = package_new,
     packaged_layer = image_packaged_layer,
     python_unittest = image_python_unittest,
-    remove = feature_remove,
     rpm = struct(nevra = new_nevra),
     rpms_install = image_rpms_install,
     rpms_remove_if_exists = image_rpms_remove_if_exists,

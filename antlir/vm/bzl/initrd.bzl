@@ -9,6 +9,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 DEFAULT_MODULE_LIST = [
     "drivers/block/virtio_blk.ko",
@@ -117,8 +118,8 @@ def initrd(kernel, module_list = None, visibility = None):
 
             # The switchroot behavior is different for the vmtest based initrd so
             # lets remove the metalos-switch-root.service and install our own
-            image.remove("/usr/lib/systemd/system/metalos-switch-root.service"),
-            image.remove("/usr/lib/systemd/system/initrd-switch-root.target.requires/metalos-switch-root.service"),
+            feature.remove("/usr/lib/systemd/system/metalos-switch-root.service"),
+            feature.remove("/usr/lib/systemd/system/initrd-switch-root.target.requires/metalos-switch-root.service"),
             systemd.install_unit("//antlir/vm/initrd:initrd-switch-root.service"),
             systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
 

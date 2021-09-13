@@ -4,6 +4,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "rust_binary", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
@@ -176,7 +177,7 @@ image.layer(
         ssh.test_only_login(),
         console.autologin(),
         generator.mounts(),
-        image.remove("/etc/hosts"),
+        feature.remove("/etc/hosts"),
         network.host(),
         notify.install(),
         # Technically, sshd.service is already enabled in the base metalos

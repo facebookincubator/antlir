@@ -12,11 +12,11 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 feature.new(
     name = "rpm_cleanup",
     features = [
-        image.remove(
+        feature.remove(
             "/var/cache/yum",
             must_exist = False,
         ),
-        image.remove(
+        feature.remove(
             "/var/cache/dnf",
             must_exist = False,
         ),
@@ -40,7 +40,7 @@ feature.new(
     # %post script, which leaves a concrete /etc/machine-id file around.
     # We should truncate it here and ship an empty file instead.
     features = [
-        image.remove(
+        feature.remove(
             "/etc/machine-id",
             must_exist = False,
         ),

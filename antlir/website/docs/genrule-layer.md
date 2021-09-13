@@ -66,7 +66,7 @@ image.genrule_layer(
 image.layer(
     name = 'foo',
     parent_layer = ':_translate_foo',  # provides '/output/FOO'
-    features = [image.remove('/output/_temp_foo')],  # clean up temporary state
+    features = [feature.remove('/output/_temp_foo')],  # clean up temporary state
 )
 ```
 
