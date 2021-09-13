@@ -1,6 +1,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
@@ -46,7 +47,7 @@ image.layer(
         image.install("hostname", "/etc/hostname"),
         # We want to allow logins before the system is finished booting
         # up.
-        image.remove("/usr/lib/tmpfiles.d/systemd-nologin.conf"),
+        feature.remove("/usr/lib/tmpfiles.d/systemd-nologin.conf"),
         # systemd-networkd isn't enabled by default in fedora.
         systemd.enable_unit("systemd-networkd.service"),
     ],

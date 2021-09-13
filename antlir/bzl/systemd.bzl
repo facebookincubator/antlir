@@ -5,6 +5,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", "target_utils")
 load(":shape.bzl", "shape")
@@ -83,7 +84,7 @@ def _unmask_units(
         _fail_if_path(unit, "Unmask Unit")
 
         remove_actions.append(
-            image.remove(
+            feature.remove(
                 paths.join(ADMIN_ROOT, unit),
             ),
         )

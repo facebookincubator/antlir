@@ -589,12 +589,12 @@ image.layer(
 feature.new(
     name = "feature_kitchen_sink",
     features = [
-        image.remove("/path/to/remove"),
-        image.remove(
+        feature.remove("/path/to/remove"),
+        feature.remove(
             "/path/to/remove",
             must_exist = False,
         ),
-        image.remove("/another/path/to/remove"),
+        feature.remove("/another/path/to/remove"),
         ":feature_bad_dir",
         ":feature_bad_dir_mode_mismatch",
         ":feature_dirs",
@@ -627,7 +627,7 @@ feature.new(
 feature.new(
     name = "feature_addremove_conflict_remove",
     features = [
-        image.remove("/a"),
+        feature.remove("/a"),
     ],
     visibility = ["//antlir/compiler/..."],
 )
@@ -635,7 +635,7 @@ feature.new(
 feature.new(
     name = "feature_remove_nonexistent",
     features = [
-        image.remove(
+        feature.remove(
             "/does/not/exist",
             must_exist = False,
         ),

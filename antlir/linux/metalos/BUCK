@@ -3,14 +3,15 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 image.layer(
     name = "basesystem-strip",
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
         # remove any reference to rpm repositories (upstream or antlir)
-        image.remove("/etc/yum.repos.d"),
-        image.remove(
+        feature.remove("/etc/yum.repos.d"),
+        feature.remove(
             "/etc/dnf/dnf.conf",
             must_exist = False,
         ),
@@ -34,7 +35,7 @@ image.layer(
         systemd.install_unit("workload-pre.target"),
         systemd.install_unit("workload.target"),
         # in the default CentOS packages, this points to graphical.target which makes no sense in our context
-        image.remove(paths.join(SYSTEMD_PROVIDER_ROOT, "default.target")),
+        feature.remove(paths.join(SYSTEMD_PROVIDER_ROOT, "default.target")),
         systemd.set_default_target("workload.target"),
         # networking config to use DHCP is a generic workload-pre.target
         # dependency
@@ -49,7 +50,7 @@ image.layer(
         # post-switch-root root fs.
         systemd.enable_unit("systemd-udev-trigger.service", "core-services.target"),
         systemd.enable_unit("sshd.service", "core-services.target"),
-        image.remove("/etc/ssh/sshd_config"),
+        feature.remove("/etc/ssh/sshd_config"),
         image.install("sshd_config", "/etc/ssh/sshd_config"),
         # TODO: modify this os-release to indicate that it's MetalOS (in ID_LIKE
         # maybe?), but for now provide an easy indicator that a system is

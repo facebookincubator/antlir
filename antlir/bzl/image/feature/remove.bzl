@@ -13,7 +13,7 @@ remove_paths_t = shape.shape(
 
 def feature_remove(dest, must_exist = True):
     """
-`image.remove("/a/b")` recursively removes the file or directory `/a/b` --
+`feature.remove("/a/b")` recursively removes the file or directory `/a/b` --
 
 These are allowed to remove paths inherited from the parent layer, or those
 installed by RPMs even in this layer. However, removing other items

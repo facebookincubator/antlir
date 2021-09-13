@@ -2,6 +2,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load("//antlir/bzl:test_rpms.bzl", "test_rpms")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/rpm/replay:queries.bzl", "ANTLIR_BUILD_PKG_LABEL", "test_env_map")
 
 python_unittest(
@@ -93,7 +94,7 @@ image.layer(
     name = "custom",
     parent_layer = ":base-plus-one",
     # Removal triggers the "custom image" code path.
-    features = [image.remove("/new/dir/")],
+    features = [feature.remove("/new/dir/")],
 )
 
 image.layer(

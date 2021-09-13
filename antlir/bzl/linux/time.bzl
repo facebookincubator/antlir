@@ -5,6 +5,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _timezone(zone, timezone_dir = "/usr/share/zoneinfo"):
     """
@@ -18,7 +19,7 @@ def _timezone(zone, timezone_dir = "/usr/share/zoneinfo"):
     dest = "/etc/localtime"
 
     return [
-        image.remove(
+        feature.remove(
             dest,
             must_exist = False,
         ),
