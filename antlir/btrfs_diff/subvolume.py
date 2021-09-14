@@ -329,6 +329,7 @@ class Subvolume(NamedTuple):
             for child_path in sorted(child_paths):
                 child_results[
                     os.path.relpath(child_path, top_path)
+                    # pyre-fixme[16]: `Coroutine` has no attribute `__iter__`.
                 ] = yield from self.gather_bottom_up(child_path)
         # pyre-fixme[7]: what even?!
         return (  # noqa: B901
