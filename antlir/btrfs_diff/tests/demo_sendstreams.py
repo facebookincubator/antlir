@@ -60,10 +60,13 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Tuple
+from typing import Optional, Tuple
 
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol, TempSubvolumes
+
+
+PYTHON = sys.executable or "python3"
 
 
 def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:
@@ -96,7 +99,7 @@ def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:
     run(["mkfifo", p("fifo")])  # mkfifo
     run(
         [
-            "python3",
+            PYTHON,
             "-c",
             (
                 "import os, sys, socket as s\n"
@@ -280,8 +283,10 @@ def _populate_sendstream_dict(d):
 
 # Takes `path_in_repo` because this is part of the library interface, and
 # thus must work in @mode/opt, and thus we cannot use `__file__` here.
-def make_demo_sendstreams(path_in_repo: Path):
-    with TempSubvolumes(path_in_repo) as subvols:
+def make_demo_sendstreams(
+    path_in_repo: Optional[Path] = None, volume_tmp_dir: Optional[Path] = None
+):
+    with TempSubvolumes(path_in_repo, volume_tmp_dir) as subvols:
         res = {}
 
         with _populate_sendstream_dict(res.setdefault("create_ops", {})) as d:

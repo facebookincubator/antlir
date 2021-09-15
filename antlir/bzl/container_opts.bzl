@@ -28,6 +28,10 @@ container_opts_t = shape.shape(
     # centric feature in FB container image tests.  A future refactor should
     # take this away and put it into a FB-internal overlay.
     internal_only_logs_tmpfs = shape.field(bool, default = False),
+    # mknod really should not be required in a container. It is only included
+    # here for an internal Antlir test that needs to cover the interaction with
+    # `mknod` and btrfs sendstreams
+    internal_only_allow_mknod = shape.field(bool, default = False),
 )
 
 def _new_container_opts_t(

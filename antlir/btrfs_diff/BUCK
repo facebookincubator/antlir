@@ -205,6 +205,9 @@ image.python_unittest(
         "//antlir:testlib_common",
     ],
     layer = flavor_helpers.default_flavor_build_appliance,
+    container_opts = image.opts(
+        internal_only_allow_mknod = True,
+    ),
 )
 
 python_library(
@@ -293,6 +296,7 @@ python_library(
 image.python_unittest(
     name = "test-sendstream-to-subvolume-set-integration",
     srcs = ["tests/test_sendstream_to_subvolume_set_integration.py"],
+    run_as_user = "root",
     needed_coverage = [(
         100,
         ":inode_utils",
@@ -305,4 +309,7 @@ image.python_unittest(
         "//antlir:testlib_common",
     ],
     layer = flavor_helpers.default_flavor_build_appliance,
+    container_opts = image.opts(
+        internal_only_allow_mknod = True,
+    ),
 )
