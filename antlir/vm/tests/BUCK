@@ -1,5 +1,4 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary", "third_party")
@@ -191,10 +190,11 @@ vm.rust_unittest(
         ),
     ),
     crate_root = "test_with_sidecar.rs",
-    deps = [
-        third_party.library(
+    deps = third_party.libraries(
+        [
+            "anyhow",
             "tokio",
-            platform = "rust",
-        ),
-    ],
+        ],
+        platform = "rust",
+    ),
 )
