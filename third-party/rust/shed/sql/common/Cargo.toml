@@ -24,7 +24,7 @@ futures_stats = { path = "../../futures_stats" }
 lazy_static = "1.0"
 mysql_async = "0.23"
 mysql_derive = { path = "../derive" }
-rusqlite = { version = "0.23", features = ["blob"] }
+rusqlite = { version = "0.23", features = ["backup", "blob"] }
 stats = { path = "../../stats" }
 thiserror = "1.0.29"
 time_ext = { path = "../../time_ext" }
