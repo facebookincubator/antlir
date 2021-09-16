@@ -1093,9 +1093,9 @@ archive(
 )
 
 archive(
-    name = "pin-project-0.4.24--archive",
-    sha256 = "f48fad7cfbff853437be7cf54d7b993af21f53be7f0988cbfe4a51535aa77205",
-    url = "https://static.crates.io/crates/pin-project/pin-project-0.4.24.crate",
+    name = "pin-project-0.4.28--archive",
+    sha256 = "918192b5c59119d51e0cd221f4d49dde9112824ba717369e903c97d076083d0f",
+    url = "https://static.crates.io/crates/pin-project/pin-project-0.4.28.crate",
 )
 
 archive(
@@ -1105,9 +1105,9 @@ archive(
 )
 
 archive(
-    name = "pin-project-internal-0.4.24--archive",
-    sha256 = "24c6d293bdd3ca5a1697997854c6cf7855e43fb6a0ba1c47af57a5bcafd158ae",
-    url = "https://static.crates.io/crates/pin-project-internal/pin-project-internal-0.4.24.crate",
+    name = "pin-project-internal-0.4.28--archive",
+    sha256 = "3be26700300be6d9d23264c73211d8190e755b6b5ca7a1b28230025511b52a5e",
+    url = "https://static.crates.io/crates/pin-project-internal/pin-project-internal-0.4.28.crate",
 )
 
 archive(
@@ -9610,10 +9610,10 @@ third_party_rust_library(
 
 third_party_rust_library(
     name = "pin-project",
-    srcs = ["pin-project-0.4.24/src/lib.rs"],
-    archive = ":pin-project-0.4.24--archive",
+    srcs = ["pin-project-0.4.28/src/lib.rs"],
+    archive = ":pin-project-0.4.28--archive",
     crate = "pin_project",
-    crate_root = "pin-project-0.4.24/src/lib.rs",
+    crate_root = "pin-project-0.4.28/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -9625,7 +9625,7 @@ third_party_rust_library(
     proc_macro = False,
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
-    deps = ["//third-party/rust:pin-project-internal-0.4.24"],
+    deps = ["//third-party/rust:pin-project-internal-0.4.28"],
 )
 
 third_party_rust_library(
@@ -9649,19 +9649,19 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
-    name = "pin-project-internal-0.4.24",
+    name = "pin-project-internal-0.4.28",
     srcs = [
-        "pin-project-internal-0.4.24/src/lib.rs",
-        "pin-project-internal-0.4.24/src/pin_project/attribute.rs",
-        "pin-project-internal-0.4.24/src/pin_project/derive.rs",
-        "pin-project-internal-0.4.24/src/pin_project/mod.rs",
-        "pin-project-internal-0.4.24/src/pinned_drop.rs",
-        "pin-project-internal-0.4.24/src/project.rs",
-        "pin-project-internal-0.4.24/src/utils.rs",
+        "pin-project-internal-0.4.28/src/lib.rs",
+        "pin-project-internal-0.4.28/src/pin_project/attribute.rs",
+        "pin-project-internal-0.4.28/src/pin_project/derive.rs",
+        "pin-project-internal-0.4.28/src/pin_project/mod.rs",
+        "pin-project-internal-0.4.28/src/pinned_drop.rs",
+        "pin-project-internal-0.4.28/src/project.rs",
+        "pin-project-internal-0.4.28/src/utils.rs",
     ],
-    archive = ":pin-project-internal-0.4.24--archive",
+    archive = ":pin-project-internal-0.4.28--archive",
     crate = "pin_project_internal",
-    crate_root = "pin-project-internal-0.4.24/src/lib.rs",
+    crate_root = "pin-project-internal-0.4.28/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -9673,7 +9673,7 @@ third_party_rust_library(
     proc_macro = True,
     rustc_flags = [
         "--cap-lints=allow",
-        "@$(location :pin-project-internal-0.4.24-build-script-build-args)",
+        "@$(location :pin-project-internal-0.4.28-build-script-build-args)",
     ],
     unittests = False,
     deps = [
@@ -9684,11 +9684,11 @@ third_party_rust_library(
 )
 
 third_party_rust_binary(
-    name = "pin-project-internal-0.4.24-build-script-build",
-    srcs = ["pin-project-internal-0.4.24/build.rs"],
-    archive = ":pin-project-internal-0.4.24--archive",
+    name = "pin-project-internal-0.4.28-build-script-build",
+    srcs = ["pin-project-internal-0.4.28/build.rs"],
+    archive = ":pin-project-internal-0.4.28--archive",
     crate = "build_script_build",
-    crate_root = "pin-project-internal-0.4.24/build.rs",
+    crate_root = "pin-project-internal-0.4.28/build.rs",
     edition = "2018",
     env = {
     },
