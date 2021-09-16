@@ -5,8 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::ffi::OsStr;
+use std::fs;
+use std::io::Write;
 use std::ops::Deref;
-use std::path::PathBuf;
+use std::os::unix::fs::PermissionsExt;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use starlark::environment::{GlobalsBuilder, Module};
@@ -15,6 +19,7 @@ use starlark::starlark_module;
 use starlark::syntax::{AstModule, Dialect};
 use starlark::values::{list::ListOf, OwnedFrozenValue, Value, ValueLike};
 
+use crate::path::PathExt;
 use crate::Host;
 
 // Macro-away all the Starlark boilerplate for structs that are _only_ returned
@@ -132,6 +137,31 @@ impl Generator {
         })
     }
 
+    /// Recursively load a directory of .star generators or individual file paths
+    pub fn load(path: &Path) -> Result<Vec<Self>> {
+        match std::fs::metadata(path)?.is_dir() {
+            true => Ok(std::fs::read_dir(path)
+                .with_context(|| format!("failed to list generators in {}", path.display()))?
+                .into_iter()
+                .filter_map(Result::ok)
+                .filter(|entry| entry.file_type().map(|t| !t.is_symlink()).unwrap_or(false))
+                .map(|entry| Self::load(&entry.path()))
+                .collect::<Result<Vec<_>>>()?
+                .into_iter()
+                .flatten()
+                .collect()),
+            false => match path.extension() == Some(OsStr::new("star")) {
+                true => {
+                    let src = std::fs::read_to_string(path).with_context(|| {
+                        format!("failed to open generator file {}", path.display())
+                    })?;
+                    Self::compile(path.display().to_string(), src).map(|gen| vec![gen])
+                }
+                false => Ok(vec![]),
+            },
+        }
+    }
+
     pub fn eval(&self, host: &Host) -> Result<GeneratorOutput> {
         let module = Module::new();
         let globals = crate::globals();
@@ -144,6 +174,25 @@ impl Generator {
             .context("expected 'generator' to return 'metalos.GeneratorOutput'")?
             .deref()
             .clone())
+    }
+}
+
+impl GeneratorOutput {
+    // TODO: write a proper unit test for this
+    #[allow(dead_code)]
+    pub fn apply(self, root: impl PathExt) -> Result<()> {
+        for file in self.files {
+            let dst = root.force_join(file.path);
+            let mut f = fs::File::create(&dst)
+                .with_context(|| format!("failed to create {}", dst.display()))?;
+            f.write_all(&file.contents)
+                .with_context(|| format!("failed to write {}", dst.display()))?;
+            let mut perms = f.metadata()?.permissions();
+            perms.set_mode(file.mode);
+            f.set_permissions(perms)
+                .with_context(|| format!("failed to set mode of {}", dst.display()))?;
+        }
+        Ok(())
     }
 }
 

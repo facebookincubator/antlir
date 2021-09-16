@@ -23,34 +23,36 @@ rust_binary(
     # For example, when parsing the kernel cmdline, just adding a
     # dependency on `regex` bloats the end binary by 1.1M, compared to
     # almost nothing for 50 lines of code to parse it manually.
-    deps =
-        third_party.libraries(
-            [
-                "anyhow",  # ~9.5k, very helpful for error handling
-                "nix",  # ~5k: access to syscalls (mount, etc)
-                "structopt",  # ~300k, but makes iterating development much easier
-                # all the slog crates together add about 50k
-                "slog",
-                "slog-async",
-                "slog-term",
-                "slog_glog_fmt",
-                "toml",  # load config files
-                "serde",  # load config files
-                "zstd",  # os images are zstd-compressed btrfs sendstreams
-                # Needed for HTTPS requests to download images
-                "bytes",
-                "futures-core",
-                "futures-util",
-                "hyper",
-                "hyper-rustls",
-                "rustls",
-                "rustls-native-certs",
-                "tokio",  # async runtime for http client
-                "tower",
-                "trust-dns-resolver",
-            ],
-            platform = "rust",
-        ),
+    deps = [
+        "//antlir/linux/metalos/host_configs:evalctx",
+    ] + third_party.libraries(
+        [
+            "anyhow",  # ~9.5k, very helpful for error handling
+            "nix",  # ~5k: access to syscalls (mount, etc)
+            "structopt",  # ~300k, but makes iterating development much easier
+            # all the slog crates together add about 50k
+            "slog",
+            "slog-async",
+            "slog-term",
+            "slog_glog_fmt",
+            "toml",  # load config files
+            "serde",  # load config files
+            "serde_json",  # load host config manifest
+            "zstd",  # os images are zstd-compressed btrfs sendstreams
+            # Needed for HTTPS requests to download images
+            "bytes",
+            "futures-core",
+            "futures-util",
+            "hyper",
+            "hyper-rustls",
+            "rustls",
+            "rustls-native-certs",
+            "tokio",  # async runtime for http client
+            "tower",
+            "trust-dns-resolver",
+        ],
+        platform = "rust",
+    ),
 )
 
 export_file(

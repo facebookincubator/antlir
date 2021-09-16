@@ -5,22 +5,24 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
+use bytes::Buf;
 use hyper::header::LOCATION;
 use hyper::{StatusCode, Uri};
 use slog::{debug, info, o, Logger};
 use structopt::StructOpt;
+
+use evalctx::{Generator, Host};
+
+use crate::http::https_trustdns_connector;
 
 #[derive(StructOpt)]
 pub struct Opts {
     host_config_uri: Uri,
     root: PathBuf,
 }
-
-use crate::http::{drain_stream, https_trustdns_connector};
 
 pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
     let log = log.new(o!("host-config-uri" => opts.host_config_uri.to_string(), "root" => opts.root.display().to_string()));
@@ -63,14 +65,16 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
     if status != StatusCode::OK {
         bail!("http response was not OK: {:?}", status);
     }
-    let body = resp.into_body();
-    let mut child = Command::new("metalos-host-config-evaluator")
-        .args(&["-", "--root"])
-        .arg(&opts.root)
-        .stdin(Stdio::piped())
-        .spawn()
-        .context("metalos-host-config-evaluator receive command failed to start")?;
-    let mut stdin = child.stdin.take().unwrap();
-    drain_stream(body, &mut stdin).await?;
+    let body = hyper::body::aggregate(resp.into_body())
+        .await
+        .context("failed to load json body")?;
+    let host: Host =
+        serde_json::from_reader(body.reader()).context("failed to deserialize host json")?;
+    let generators = Generator::load(Path::new("/usr/lib/metalos/generators"))
+        .context("failed to load generators from /usr/lib/metalos/generators")?;
+    for gen in generators {
+        let output = gen.eval(&host)?;
+        output.apply(&opts.root)?;
+    }
     Ok(())
 }
