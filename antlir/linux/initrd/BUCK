@@ -1,7 +1,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "kernel_get", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -146,11 +146,4 @@ image.package(
     layer = ":base",
     visibility = ["PUBLIC"],
     build_appliance = flavor_helpers.default_flavor_build_appliance,
-)
-
-python_unittest(
-    name = "base-size",
-    srcs = ["tests/check_size.py"],
-    env = {"BASE_PACKAGE": "$(location :base.cpio.gz)"},
-    deps = ["//antlir:config"],
 )
