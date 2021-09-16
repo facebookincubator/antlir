@@ -85,6 +85,7 @@ rust_library(
         "src/eval/tests/interop.rs",
         "src/eval/tests/mod.rs",
         "src/eval/tests/runtime.rs",
+        "src/eval/tests/type_is.rs",
         "src/lib.rs",
         "src/macros/mod.rs",
         "src/stdlib/breakpoint.rs",

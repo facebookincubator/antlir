@@ -529,12 +529,6 @@ archive(
 )
 
 archive(
-    name = "filetime-0.2.12--archive",
-    sha256 = "3ed85775dcc68644b5c950ac06a2b23768d3bc9390464151aaf27136998dcf9e",
-    url = "https://static.crates.io/crates/filetime/filetime-0.2.12.crate",
-)
-
-archive(
     name = "fixedbitset-0.2.0--archive",
     sha256 = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d",
     url = "https://static.crates.io/crates/fixedbitset/fixedbitset-0.2.0.crate",
@@ -1603,12 +1597,6 @@ archive(
 )
 
 archive(
-    name = "tar-0.4.30--archive",
-    sha256 = "489997b7557e9a43e192c527face4feacc78bfbe6eed67fd55c4c9e381cba290",
-    url = "https://static.crates.io/crates/tar/tar-0.4.30.crate",
-)
-
-archive(
     name = "tempfile-3.1.0--archive",
     sha256 = "7a6e24d9338a0a5be79593e2fa15a648add6138caa803e2d5bc782c371732ca9",
     url = "https://static.crates.io/crates/tempfile/tempfile-3.1.0.crate",
@@ -1747,27 +1735,27 @@ archive(
 )
 
 archive(
-    name = "tracing-0.1.22--archive",
-    sha256 = "9f47026cdc4080c07e49b37087de021820269d996f581aac150ef9e5583eefe3",
-    url = "https://static.crates.io/crates/tracing/tracing-0.1.22.crate",
+    name = "tracing-0.1.27--archive",
+    sha256 = "c2ba9ab62b7d6497a8638dfda5e5c4fb3b2d5a7fca4118f2b96151c8ef1a437e",
+    url = "https://static.crates.io/crates/tracing/tracing-0.1.27.crate",
 )
 
 archive(
-    name = "tracing-attributes-0.1.11--archive",
-    sha256 = "80e0ccfc3378da0cce270c946b676a376943f5cd16aeba64568e7939806f4ada",
-    url = "https://static.crates.io/crates/tracing-attributes/tracing-attributes-0.1.11.crate",
+    name = "tracing-attributes-0.1.16--archive",
+    sha256 = "98863d0dd09fa59a1b79c6750ad80dbda6b75f4e71c437a6a1a8cb91a8bcbd77",
+    url = "https://static.crates.io/crates/tracing-attributes/tracing-attributes-0.1.16.crate",
 )
 
 archive(
-    name = "tracing-core-0.1.17--archive",
-    sha256 = "f50de3927f93d202783f4513cda820ab47ef17f624b03c096e86ef00c67e6b5f",
-    url = "https://static.crates.io/crates/tracing-core/tracing-core-0.1.17.crate",
+    name = "tracing-core-0.1.20--archive",
+    sha256 = "46125608c26121c81b0c6d693eab5a420e416da7e43c426d2e8f7df8da8a3acf",
+    url = "https://static.crates.io/crates/tracing-core/tracing-core-0.1.20.crate",
 )
 
 archive(
-    name = "tracing-futures-0.2.4--archive",
-    sha256 = "ab7bb6f14721aa00656086e9335d363c5c8747bae02ebe32ea2c7dece5689b4c",
-    url = "https://static.crates.io/crates/tracing-futures/tracing-futures-0.2.4.crate",
+    name = "tracing-futures-0.2.5--archive",
+    sha256 = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2",
+    url = "https://static.crates.io/crates/tracing-futures/tracing-futures-0.2.5.crate",
 )
 
 archive(
@@ -1906,12 +1894,6 @@ archive(
     name = "webpki-0.21.3--archive",
     sha256 = "ab146130f5f790d45f82aeeb09e55a256573373ec64409fc19a6fb82fb1032ae",
     url = "https://static.crates.io/crates/webpki/webpki-0.21.3.crate",
-)
-
-archive(
-    name = "xattr-0.2.2--archive",
-    sha256 = "244c3741f4240ef46274860397c7c74e50eb23624996930e484c16679633a54c",
-    url = "https://static.crates.io/crates/xattr/xattr-0.2.2.crate",
 )
 
 archive(
@@ -4652,40 +4634,6 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = [],
-)
-
-third_party_rust_library(
-    name = "filetime",
-    srcs = [
-        "filetime-0.2.12/src/lib.rs",
-        "filetime-0.2.12/src/redox.rs",
-        "filetime-0.2.12/src/unix/android.rs",
-        "filetime-0.2.12/src/unix/linux.rs",
-        "filetime-0.2.12/src/unix/macos.rs",
-        "filetime-0.2.12/src/unix/mod.rs",
-        "filetime-0.2.12/src/unix/utimensat.rs",
-        "filetime-0.2.12/src/unix/utimes.rs",
-        "filetime-0.2.12/src/wasm.rs",
-        "filetime-0.2.12/src/windows.rs",
-    ],
-    archive = ":filetime-0.2.12--archive",
-    crate = "filetime",
-    crate_root = "filetime-0.2.12/src/lib.rs",
-    edition = "2018",
-    env = {
-    },
-    features = [],
-    mapped_srcs = {
-    },
-    named_deps = {
-    },
-    proc_macro = False,
-    rustc_flags = ["--cap-lints=allow"],
-    unittests = False,
-    deps = [
-        "//third-party/rust:cfg-if",
-        "//third-party/rust:libc",
-    ],
 )
 
 third_party_rust_library(
@@ -13162,42 +13110,6 @@ third_party_rust_library(
 )
 
 third_party_rust_library(
-    name = "tar",
-    srcs = [
-        "tar-0.4.30/src/archive.rs",
-        "tar-0.4.30/src/builder.rs",
-        "tar-0.4.30/src/entry.rs",
-        "tar-0.4.30/src/entry_type.rs",
-        "tar-0.4.30/src/error.rs",
-        "tar-0.4.30/src/header.rs",
-        "tar-0.4.30/src/lib.rs",
-        "tar-0.4.30/src/pax.rs",
-    ],
-    archive = ":tar-0.4.30--archive",
-    crate = "tar",
-    crate_root = "tar-0.4.30/src/lib.rs",
-    edition = "2018",
-    env = {
-    },
-    features = [
-        "default",
-        "xattr",
-    ],
-    mapped_srcs = {
-    },
-    named_deps = {
-    },
-    proc_macro = False,
-    rustc_flags = ["--cap-lints=allow"],
-    unittests = False,
-    deps = [
-        "//third-party/rust:filetime",
-        "//third-party/rust:libc",
-        "//third-party/rust:xattr",
-    ],
-)
-
-third_party_rust_library(
     name = "tempfile",
     srcs = [
         "tempfile-3.1.0/src/dir.rs",
@@ -14192,12 +14104,12 @@ third_party_rust_library(
         "//third-party/rust:pin-project-lite-0.1.11",
         "//third-party/rust:signal-hook-registry-1.4.0",
         "//third-party/rust:slab-0.4.2",
-        "//third-party/rust:tokio-macros",
+        "//third-party/rust:tokio-macros-0.2.6",
     ],
 )
 
 third_party_rust_library(
-    name = "tokio-macros",
+    name = "tokio-macros-0.2.6",
     srcs = [
         "tokio-macros-0.2.6/src/entry.rs",
         "tokio-macros-0.2.6/src/lib.rs",
@@ -14731,26 +14643,25 @@ third_party_rust_library(
 third_party_rust_library(
     name = "tracing",
     srcs = [
-        "tracing-0.1.22/src/dispatcher.rs",
-        "tracing-0.1.22/src/field.rs",
-        "tracing-0.1.22/src/instrument.rs",
-        "tracing-0.1.22/src/level_filters.rs",
-        "tracing-0.1.22/src/lib.rs",
-        "tracing-0.1.22/src/macros.rs",
-        "tracing-0.1.22/src/span.rs",
-        "tracing-0.1.22/src/stdlib.rs",
-        "tracing-0.1.22/src/subscriber.rs",
+        "tracing-0.1.27/src/dispatcher.rs",
+        "tracing-0.1.27/src/field.rs",
+        "tracing-0.1.27/src/instrument.rs",
+        "tracing-0.1.27/src/level_filters.rs",
+        "tracing-0.1.27/src/lib.rs",
+        "tracing-0.1.27/src/macros.rs",
+        "tracing-0.1.27/src/span.rs",
+        "tracing-0.1.27/src/stdlib.rs",
+        "tracing-0.1.27/src/subscriber.rs",
     ],
-    archive = ":tracing-0.1.22--archive",
+    archive = ":tracing-0.1.27--archive",
     crate = "tracing",
-    crate_root = "tracing-0.1.22/src/lib.rs",
+    crate_root = "tracing-0.1.27/src/lib.rs",
     edition = "2018",
     env = {
     },
     features = [
         "attributes",
         "default",
-        "log",
         "std",
         "tracing-attributes",
     ],
@@ -14765,17 +14676,17 @@ third_party_rust_library(
         "//third-party/rust:cfg-if-1.0.0",
         "//third-party/rust:log",
         "//third-party/rust:pin-project-lite-0.2.6",
-        "//third-party/rust:tracing-attributes-0.1.11",
+        "//third-party/rust:tracing-attributes-0.1.16",
         "//third-party/rust:tracing-core",
     ],
 )
 
 third_party_rust_library(
-    name = "tracing-attributes-0.1.11",
-    srcs = ["tracing-attributes-0.1.11/src/lib.rs"],
-    archive = ":tracing-attributes-0.1.11--archive",
+    name = "tracing-attributes-0.1.16",
+    srcs = ["tracing-attributes-0.1.16/src/lib.rs"],
+    archive = ":tracing-attributes-0.1.16--archive",
     crate = "tracing_attributes",
-    crate_root = "tracing-attributes-0.1.11/src/lib.rs",
+    crate_root = "tracing-attributes-0.1.16/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -14797,25 +14708,25 @@ third_party_rust_library(
 third_party_rust_library(
     name = "tracing-core",
     srcs = [
-        "tracing-core-0.1.17/src/callsite.rs",
-        "tracing-core-0.1.17/src/dispatcher.rs",
-        "tracing-core-0.1.17/src/event.rs",
-        "tracing-core-0.1.17/src/field.rs",
-        "tracing-core-0.1.17/src/lazy_static/core_lazy.rs",
-        "tracing-core-0.1.17/src/lazy_static/mod.rs",
-        "tracing-core-0.1.17/src/lib.rs",
-        "tracing-core-0.1.17/src/metadata.rs",
-        "tracing-core-0.1.17/src/parent.rs",
-        "tracing-core-0.1.17/src/span.rs",
-        "tracing-core-0.1.17/src/spin/mod.rs",
-        "tracing-core-0.1.17/src/spin/mutex.rs",
-        "tracing-core-0.1.17/src/spin/once.rs",
-        "tracing-core-0.1.17/src/stdlib.rs",
-        "tracing-core-0.1.17/src/subscriber.rs",
+        "tracing-core-0.1.20/src/callsite.rs",
+        "tracing-core-0.1.20/src/dispatcher.rs",
+        "tracing-core-0.1.20/src/event.rs",
+        "tracing-core-0.1.20/src/field.rs",
+        "tracing-core-0.1.20/src/lazy_static/core_lazy.rs",
+        "tracing-core-0.1.20/src/lazy_static/mod.rs",
+        "tracing-core-0.1.20/src/lib.rs",
+        "tracing-core-0.1.20/src/metadata.rs",
+        "tracing-core-0.1.20/src/parent.rs",
+        "tracing-core-0.1.20/src/span.rs",
+        "tracing-core-0.1.20/src/spin/mod.rs",
+        "tracing-core-0.1.20/src/spin/mutex.rs",
+        "tracing-core-0.1.20/src/spin/once.rs",
+        "tracing-core-0.1.20/src/stdlib.rs",
+        "tracing-core-0.1.20/src/subscriber.rs",
     ],
-    archive = ":tracing-core-0.1.17--archive",
+    archive = ":tracing-core-0.1.20--archive",
     crate = "tracing_core",
-    crate_root = "tracing-core-0.1.17/src/lib.rs",
+    crate_root = "tracing-core-0.1.20/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -14837,16 +14748,16 @@ third_party_rust_library(
 third_party_rust_library(
     name = "tracing-futures",
     srcs = [
-        "tracing-futures-0.2.4/src/executor/futures_01.rs",
-        "tracing-futures-0.2.4/src/executor/futures_03.rs",
-        "tracing-futures-0.2.4/src/executor/futures_preview.rs",
-        "tracing-futures-0.2.4/src/executor/mod.rs",
-        "tracing-futures-0.2.4/src/lib.rs",
-        "tracing-futures-0.2.4/src/stdlib.rs",
+        "tracing-futures-0.2.5/src/executor/futures_01.rs",
+        "tracing-futures-0.2.5/src/executor/futures_03.rs",
+        "tracing-futures-0.2.5/src/executor/futures_preview.rs",
+        "tracing-futures-0.2.5/src/executor/mod.rs",
+        "tracing-futures-0.2.5/src/lib.rs",
+        "tracing-futures-0.2.5/src/stdlib.rs",
     ],
-    archive = ":tracing-futures-0.2.4--archive",
+    archive = ":tracing-futures-0.2.5--archive",
     crate = "tracing_futures",
-    crate_root = "tracing-futures-0.2.4/src/lib.rs",
+    crate_root = "tracing-futures-0.2.5/src/lib.rs",
     edition = "2018",
     env = {
     },
@@ -14864,7 +14775,7 @@ third_party_rust_library(
     rustc_flags = ["--cap-lints=allow"],
     unittests = False,
     deps = [
-        "//third-party/rust:pin-project",
+        "//third-party/rust:pin-project-1.0.2",
         "//third-party/rust:tracing",
     ],
 )
@@ -15787,39 +15698,6 @@ third_party_rust_library(
         "//third-party/rust:ring",
         "//third-party/rust:untrusted-0.7.1",
     ],
-)
-
-third_party_rust_library(
-    name = "xattr",
-    srcs = [
-        "xattr-0.2.2/src/error.rs",
-        "xattr-0.2.2/src/lib.rs",
-        "xattr-0.2.2/src/sys/bsd.rs",
-        "xattr-0.2.2/src/sys/linux_macos/linux.rs",
-        "xattr-0.2.2/src/sys/linux_macos/macos.rs",
-        "xattr-0.2.2/src/sys/linux_macos/mod.rs",
-        "xattr-0.2.2/src/sys/mod.rs",
-        "xattr-0.2.2/src/sys/unsupported.rs",
-        "xattr-0.2.2/src/util.rs",
-    ],
-    archive = ":xattr-0.2.2--archive",
-    crate = "xattr",
-    crate_root = "xattr-0.2.2/src/lib.rs",
-    edition = "2015",
-    env = {
-    },
-    features = [
-        "default",
-        "unsupported",
-    ],
-    mapped_srcs = {
-    },
-    named_deps = {
-    },
-    proc_macro = False,
-    rustc_flags = ["--cap-lints=allow"],
-    unittests = False,
-    deps = ["//third-party/rust:libc"],
 )
 
 third_party_rust_library(
