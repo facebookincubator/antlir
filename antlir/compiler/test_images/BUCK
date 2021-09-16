@@ -9,6 +9,7 @@ load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
+load("//antlir/bzl/image/package:defs.bzl", "package")
 load(":defs.bzl", "defs")
 
 # While the reproducible-builds.org instructions (see below) ensure that a
@@ -443,7 +444,7 @@ image.layer(
     visibility = ["//antlir/compiler/items/..."],
 )
 
-image.package(
+package.new(
     name = "small-layer-with-mounts.btrfs",
     format = "btrfs",
     layer = ":small-layer-with-mounts",
@@ -777,19 +778,19 @@ image.layer(
     visibility = ["//antlir/..."],
 )
 
-image.package(
+package.new(
     name = "child/layer.sendstream",
     format = "sendstream",
     layer = ":child/layer",
 )
 
-image.package(
+package.new(
     name = "child/layer.btrfs",
     format = "btrfs",
     layer = ":child/layer",
 )
 
-image.package(
+package.new(
     name = "child-sized/layer.btrfs",
     layer = ":child/layer",
     format = "btrfs",
@@ -861,7 +862,7 @@ image.layer_from_package(
     flavor = "antlir_test",
 )
 
-image.package(
+package.new(
     name = op + ".sendstream",
     layer = ":" + op,
     format = "sendstream",
@@ -920,7 +921,7 @@ image.layer_alias(
 
 image.layer("empty")  # Just ensure this builds, not checking contents :)
 
-image.package(
+package.new(
     name = "create_ops.tar.gz",
     format = "tar.gz",
     layer = ":create_ops",
@@ -935,14 +936,14 @@ image.layer_from_package(
     flavor = "antlir_test",
 )
 
-image.package(
+package.new(
     name = "create_ops_cpio_gz",
     layer = ":create_ops",
     format = "cpio.gz",
     visibility = ["//antlir/..."],
 )
 
-image.package(
+package.new(
     name = "create_ops_squashfs",
     layer = ":create_ops",
     format = "squashfs",
@@ -1028,7 +1029,7 @@ image.layer(
     visibility = ["//antlir/..."],
 )
 
-image.package(
+package.new(
     name = "vfat-test.vfat",
     layer = ":vfat-test.layer",
     format = "vfat",
@@ -1039,7 +1040,7 @@ image.package(
     visibility = ["//antlir/..."],
 )
 
-image.package(
+package.new(
     name = "create_ops_ext3",
     layer = ":create_ops",
     format = "ext3",

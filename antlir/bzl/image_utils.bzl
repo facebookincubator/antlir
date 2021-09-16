@@ -74,7 +74,7 @@ def _wrap_bash_build_in_common_boilerplate(
       # We have two special reasons that make it even more terrible:
       #  - [image_layer] Uses a hardlink-based refcounting scheme, as
       #    and keeps subvolumes in a special location.
-      #  - [image_package] Speeds up the build for the `sendstream_stack`
+      #  - [package] Speeds up the build for the `sendstream_stack`
       #    format by hardlinking duplicated outputs between targets.
       #
       # Not using "chmod -R" since Buck cleanup is fragile and cannot handle

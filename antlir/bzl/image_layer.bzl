@@ -42,7 +42,7 @@ thoroughly.
 ### Output
 
 We mark `image.layer` uncacheable, because there's no easy way to teach Buck
-to serialize a btrfs subvolume (for that, we have `image.package`).
+to serialize a btrfs subvolume (for that, we have `package.new`).
 
 That said, we should still follow best practices to avoid problems if e.g.
 the user renames their repo, or similar.  These practices include:

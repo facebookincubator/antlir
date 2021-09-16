@@ -5,10 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-This is a poor man's port of set_up_volume.sh to allow `image_package` to
-emit btrfs loopbacks.  In ~1 weeks' time, this will be replaced by a
-better-tested, more robust, and more coherent framework for handling images
-and loopbacks.
+This is a poor man's port of set_up_volume.sh to allow `package.new` to
+emit btrfs loopbacks.
 """
 import os
 import subprocess

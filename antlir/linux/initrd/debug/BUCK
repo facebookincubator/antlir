@@ -6,6 +6,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
+load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
@@ -99,7 +100,7 @@ image.layer(
     flavor = REPO_CFG.antlir_linux_flavor,
 )
 
-image.package(
+package.new(
     name = "debug-append.cpio.gz",
     format = "cpio.gz",
     layer = ":debug-append",
