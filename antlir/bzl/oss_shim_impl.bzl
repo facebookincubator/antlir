@@ -227,7 +227,7 @@ def _wrap_internal(fn, args, kwargs):
         "SUFFIX-<name>" intermediate rules, or `image.{feature,layer}`.
 
       - "user-facing": Allowed in user packages, and builds artifacts that
-        the end user can use directly, e.g. `image.package`.
+        the end user can use directly, e.g. `package.new`.
 
     Rules are private by default to force Antlir devs to explicitly annotate
     "user-internal" and "user-facing" rules.

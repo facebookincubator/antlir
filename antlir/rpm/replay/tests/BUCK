@@ -3,6 +3,7 @@ load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load("//antlir/bzl:test_rpms.bzl", "test_rpms")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/rpm/replay:queries.bzl", "ANTLIR_BUILD_PKG_LABEL", "test_env_map")
 
 python_unittest(
@@ -64,7 +65,7 @@ image.layer(
     flavor = "antlir_test",
 )
 
-image.package(
+package.new(
     name = "base.sendstream",
     format = "sendstream",
     layer = ":base-original",

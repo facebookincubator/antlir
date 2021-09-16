@@ -5,6 +5,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "rust_binary", "
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
@@ -94,7 +95,7 @@ image.layer(
     flavor = REPO_CFG.antlir_linux_flavor,
 )
 
-image.package(
+package.new(
     name = "initrd-vmtest--append.cpio.gz",
     format = "cpio.gz",
     layer = ":initrd-vmtest",
@@ -156,7 +157,7 @@ image.layer(
     flavor = REPO_CFG.antlir_linux_flavor,
 )
 
-image.package(
+package.new(
     name = "switch-root-initrd-base.cpio.gz",
     layer = ":switch-root-initrd",
     format = "cpio.gz",
@@ -188,7 +189,7 @@ image.layer(
     flavor = REPO_CFG.antlir_linux_flavor,
 )
 
-image.package(
+package.new(
     name = "metalos-vmtest.sendstream.zst",
     layer = ":metalos-vmtest",
     format = "sendstream.zst",

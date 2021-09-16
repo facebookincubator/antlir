@@ -50,8 +50,8 @@ _vm_emulator_api = struct(
 )
 
 # A disk device type.  The `package` attribute of this shape must be either
-# an `image.layer` target that will be transiently packaged via `image.package`
-# or an existing `image.package` target.  The `seed` attribute
+# an `image.layer` target that will be transiently packaged via `package.new`
+# or an existing `package.new` target.  The `seed` attribute
 _vm_disk_t = shape.shape(
     seed = shape.field(bool, default = False),
     package = shape.target(),

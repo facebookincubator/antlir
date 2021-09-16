@@ -10,6 +10,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/package:defs.bzl", "package")
 
 DEFAULT_MODULE_LIST = [
     "drivers/block/virtio_blk.ko",
@@ -162,7 +163,7 @@ def initrd(kernel, module_list = None, visibility = None):
         visibility = [],
     )
 
-    image.package(
+    package.new(
         name = name,
         layer = ":" + name + "--layer",
         format = "cpio.gz",

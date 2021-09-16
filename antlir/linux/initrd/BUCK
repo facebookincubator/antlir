@@ -6,6 +6,7 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
+load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load(":initrd_release.bzl", "initrd_release")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
@@ -140,7 +141,7 @@ image.layer(
 # CPIO archive to which environment specific overlays are appended. For
 # example, vmtest appends units that load required kernel modules and sets up
 # the BTRFS seed device on /
-image.package(
+package.new(
     name = "base.cpio.gz",
     format = "cpio.gz",
     layer = ":base",

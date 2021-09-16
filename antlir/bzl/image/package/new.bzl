@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-The `image_package` rule serializes an `image_layer` target into one or more
+The `package.new` rule serializes an `image_layer` target into one or more
 files, as described by the specified `format`.
 """
 
@@ -21,7 +21,7 @@ def package_new(
         name,
         layer,
         visibility = None,
-        # Since `image.package` produces a real Buck-visible build artifact,
+        # Since `package` produces a real Buck-visible build artifact,
         # "user-facing" is the only sane default.  See comments in
         # `oss_shim.bzl` for how this works.
         antlir_rule = "user-facing",
@@ -39,7 +39,7 @@ def package_new(
     build_appliance = build_appliance or REPO_CFG.artifact["build_appliance.newest"]
 
     if not format:
-        fail("`format` is required for image.package")
+        fail("`format` is required for package.new")
 
     if format in ("ext3", "vfat") and not loopback_opts:
         fail("loopback_opts are required when using format: {}".format(format))
