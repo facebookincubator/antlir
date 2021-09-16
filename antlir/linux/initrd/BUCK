@@ -34,11 +34,6 @@ image.layer(
             "/usr/bin/metalctl",
             mode = "a+rx",
         ),
-        image.install(
-            "//antlir/linux/metalos/host_configs:evaluator",
-            "/usr/bin/metalos-host-config-evaluator",
-            mode = "a+rx",
-        ),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
 )
@@ -115,7 +110,6 @@ image.layer(
             binaries = SYSTEMD_BINARIES + [
                 "/usr/sbin/btrfs",
                 "/usr/bin/metalctl",
-                "/usr/bin/metalos-host-config-evaluator",
             ],
             dest = "/",
             source = ":deps",
