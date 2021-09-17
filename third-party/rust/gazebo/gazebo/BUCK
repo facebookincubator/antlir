@@ -38,7 +38,7 @@ rust_library(
         "-Aunused_braces",
         "-Wbare_trait_objects",
         "-Wellipsis_inclusive_range_patterns",
-        "-Dnon_fmt_panic",
+        "-Dnon_fmt_panics",
         "-Dunconditional_recursion",
     ],
     unittests = False,
