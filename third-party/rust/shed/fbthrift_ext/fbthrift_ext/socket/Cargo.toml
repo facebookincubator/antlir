@@ -20,7 +20,7 @@ fbthrift = { path = "../../../../../../thrift/lib/rust" }
 fbthrift_framed = { path = "../framed" }
 fbthrift_util = { path = "../util" }
 futures = { version = "0.3.13", features = ["async-await", "compat"] }
-tokio = { version = "1.10", features = ["full", "test-util"] }
+tokio = { version = "1.10", features = ["full", "test-util", "tracing"] }
 tokio-tower = "0.6"
 tokio-uds-compat = { path = "../../../tokio-uds-compat/tokio-uds-compat" }
 tokio-util = { version = "0.6", features = ["full"] }
