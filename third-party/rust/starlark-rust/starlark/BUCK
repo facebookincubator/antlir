@@ -175,6 +175,7 @@ rust_library(
         "//third-party/rust:anyhow",
         "//third-party/rust:bumpalo",
         "//third-party/rust:derivative",
+        "//third-party/rust:derive_more",
         "//third-party/rust:either",
         "//third-party/rust:hashbrown",
         "//third-party/rust:indexmap",
