@@ -421,6 +421,12 @@ archive(
 )
 
 archive(
+    name = "derive_more-0.99.10--archive",
+    sha256 = "1dcfabdab475c16a93d669dddfc393027803e347d09663f524447f642fbb84ba",
+    url = "https://static.crates.io/crates/derive_more/derive_more-0.99.10.crate",
+)
+
+archive(
     name = "diff-0.1.12--archive",
     sha256 = "0e25ea47919b1560c4e3b7fe0aaab9becf5b84a10325ddf7db0f0ba5e1026499",
     url = "https://static.crates.io/crates/diff/diff-0.1.12.crate",
@@ -4046,6 +4052,79 @@ third_party_rust_library(
     unittests = False,
     deps = [
         "//third-party/rust:darling-0.10.2",
+        "//third-party/rust:proc-macro2",
+        "//third-party/rust:quote",
+        "//third-party/rust:syn",
+    ],
+)
+
+third_party_rust_library(
+    name = "derive_more",
+    srcs = [
+        "derive_more-0.99.10/src/add_assign_like.rs",
+        "derive_more-0.99.10/src/add_helpers.rs",
+        "derive_more-0.99.10/src/add_like.rs",
+        "derive_more-0.99.10/src/as_mut.rs",
+        "derive_more-0.99.10/src/as_ref.rs",
+        "derive_more-0.99.10/src/constructor.rs",
+        "derive_more-0.99.10/src/deref.rs",
+        "derive_more-0.99.10/src/deref_mut.rs",
+        "derive_more-0.99.10/src/display.rs",
+        "derive_more-0.99.10/src/error.rs",
+        "derive_more-0.99.10/src/from.rs",
+        "derive_more-0.99.10/src/from_str.rs",
+        "derive_more-0.99.10/src/index.rs",
+        "derive_more-0.99.10/src/index_mut.rs",
+        "derive_more-0.99.10/src/into.rs",
+        "derive_more-0.99.10/src/into_iterator.rs",
+        "derive_more-0.99.10/src/lib.rs",
+        "derive_more-0.99.10/src/mul_assign_like.rs",
+        "derive_more-0.99.10/src/mul_helpers.rs",
+        "derive_more-0.99.10/src/mul_like.rs",
+        "derive_more-0.99.10/src/not_like.rs",
+        "derive_more-0.99.10/src/parsing.rs",
+        "derive_more-0.99.10/src/sum_like.rs",
+        "derive_more-0.99.10/src/try_into.rs",
+        "derive_more-0.99.10/src/utils.rs",
+    ],
+    archive = ":derive_more-0.99.10--archive",
+    crate = "derive_more",
+    crate_root = "derive_more-0.99.10/src/lib.rs",
+    edition = "2018",
+    env = {
+    },
+    features = [
+        "add",
+        "add_assign",
+        "as_mut",
+        "as_ref",
+        "constructor",
+        "default",
+        "deref",
+        "deref_mut",
+        "display",
+        "error",
+        "from",
+        "from_str",
+        "index",
+        "index_mut",
+        "into",
+        "into_iterator",
+        "iterator",
+        "mul",
+        "mul_assign",
+        "not",
+        "sum",
+        "try_into",
+    ],
+    mapped_srcs = {
+    },
+    named_deps = {
+    },
+    proc_macro = True,
+    rustc_flags = ["--cap-lints=allow"],
+    unittests = False,
+    deps = [
         "//third-party/rust:proc-macro2",
         "//third-party/rust:quote",
         "//third-party/rust:syn",
