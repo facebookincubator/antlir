@@ -6,8 +6,3 @@
   path = third-party/cxx/googletest
   url = https://github.com/google/googletest.git
   ignore = untracked
-[submodule "generated"]
-  path = generated
-  url = https://github.com/facebookincubator/antlir.git
-  ignore = untracked
-  shallow = true
