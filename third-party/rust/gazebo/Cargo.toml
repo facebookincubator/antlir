@@ -1,5 +1,0 @@
-[workspace]
-members = [
-    "gazebo",
-    "gazebo_derive",
-]
