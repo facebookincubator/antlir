@@ -10,4 +10,3 @@
   path = generated
   url = https://github.com/facebookincubator/antlir.git
   ignore = untracked
-  shallow = true
