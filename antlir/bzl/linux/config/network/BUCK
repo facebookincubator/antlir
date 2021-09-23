@@ -5,6 +5,7 @@ template(
     srcs = ["resolv.jinja2"],
     visibility = [
         "//antlir/linux/...",
+        "//ee_provisioning/images/...",
         "//images/...",
         "//tupperware/image/vmtest/impl/...",
     ],

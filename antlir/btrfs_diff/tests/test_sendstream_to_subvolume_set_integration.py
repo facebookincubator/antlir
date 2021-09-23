@@ -22,7 +22,6 @@ filesystems.
 
 In effect, we jointly test the Linux kernel, btrfs-progs, and this library.
 """
-import os
 import sys
 
 from antlir.fs_utils import Path
@@ -43,8 +42,7 @@ class SendstreamToSubvolumeSetIntegrationTestCase(AntlirTestCase):
         # new kernels and `btrfs-progs` get rolled out.  Besides checking
         # the infra, this also indirectly validates that our subvolume
         # rendering is stable and independent of the send-stream specifics.
-        os.makedirs("/subvols", exist_ok=True)
-        stream_dict = make_demo_sendstreams(volume_tmp_dir=Path("/subvols"))
+        stream_dict = make_demo_sendstreams(Path(sys.argv[1]))
         subvols = SubvolumeSet.new()
         for d in stream_dict.values():
             render_sv.add_sendstream_to_subvol_set(subvols, d["sendstream"])
