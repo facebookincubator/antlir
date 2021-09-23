@@ -27,7 +27,7 @@ to `buck build`.
 
 Once satisfied, build a sendstream package and upload it to S3
 ```
-$ buck build --show-output //images/appliance:ap-build-appliance.sendstream.zst
+$ buck build --show-output //images/appliance:rc-build-appliance.sendstream.zst
 $ sendstream="buck-out/gen/images/appliance/rc-build-appliance.sendstream.zst/layer.sendstream.zst"
 $ aws s3 cp "$sendstream" "s3://antlir/images/appliance/stable-build-appliance.sendstream.zst.$(sha256sum $sendstream)"
 ```

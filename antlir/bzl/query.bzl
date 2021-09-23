@@ -94,12 +94,39 @@ def _diff(queries):
     """
     return "(" + " - ".join(queries) + ")"
 
+def _intersect(queries):
+    """
+    Builds an expression using the ^ operator
+    """
+    return "(" + " ^ ".join(queries) + ")"
+
+def _kind(kind, expr):
+    """
+    Build a `kind(...)` type query expression.
+
+    `kind` is a regex that matches on the rule type.
+    `epxr` is a query expression of any supported type.
+    """
+    return "kind('{}', {})".format(kind, expr)
+
+def _filter(regex, expr):
+    """
+    Build an `filter(<regex>, <expr>)` type query expression.
+
+    `regex` is a regex matched on the rule names from `expr`
+    `expr` is a query expression of any supported type.
+    """
+    return "filter('{}', {})".format(regex, expr)
+
 # The API for constructing buck queries
 query = struct(
     attrfilter = _attrfilter,
     attrregexfilter = _attrregexfilter,
     deps = _deps,
     diff = _diff,
+    filter = _filter,
+    intersect = _intersect,
+    kind = _kind,
     set = _set,
     union = _union,
     UNBOUNDED = -1,

@@ -4,18 +4,27 @@ load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 # @oss-disable: load("//antlir/linux/metalos/host_configs/evalctx/facebook:deps.bzl", fb_deps = "deps") 
 
+# @oss-disable: oss = False 
+
+oss = True # @oss-enable
+
+# Introduce a buckconfig option that will be used only at query time so that we
+# can control the target graph before running shipit at all.
+# If this becomes used by more than this one TARGETS file (and it really should
+# not), it should be extracted to REPO_CFG.
+oss_ci = read_config("antlir", "oss-ci-query", "") != ""
+
 # The facebook extension to the evalctx crate adds some additional dependencies
 # on internal code
 maybe_fb_deps = []
 
-# @oss-disable: maybe_fb_deps.extend(fb_deps) 
+# @oss-disable: maybe_fb_deps.extend(fb_deps if not (oss or oss_ci) else []) 
 
 rust_library(
     name = "evalctx",
     srcs = glob(["evalctx/**/*.rs"]),
-    features = [
-        # @oss-disable: "facebook", 
-    ],
+    features =
+        ["facebook"] if (not oss and not oss_ci) else [],
     test_srcs = ["generators/hostname.star"],
     deps = maybe_fb_deps + third_party.libraries(
         [

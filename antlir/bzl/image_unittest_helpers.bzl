@@ -93,7 +93,6 @@ def _nspawn_wrapper_properties(
             "shadow_paths",
             "shadow_proxied_binaries",
             "internal_only_unprotect_antlir_dir",  # Unavailable in tests
-            "internal_only_allow_mknod",
         ]
     ]
     if unsupported_opts:
@@ -168,14 +167,12 @@ def nspawn_in_subvol_args():
         *{targets_and_outputs},
         '--append-console',
         '--attach-antlir-dir-mode=off',
-        *[{maybe_allow_mknod}],
         '--', {binary_path_repr},
     ]
 EOF
 mv $TMP/out "$OUT"
         """.format(
             binary_path_repr = repr(binary_path),
-            maybe_allow_mknod = ("'--allow-mknod'" if container_opts.internal_only_allow_mknod else ""),
             maybe_boot = "'--boot'" if boot else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
             # The next 3 would be nice to pass as `container_opts_t`, but

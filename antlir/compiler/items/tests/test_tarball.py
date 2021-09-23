@@ -69,12 +69,14 @@ class TarballItemTestCase(BaseItemTestCase):
         with temp_filesystem() as fs_path, tempfile.TemporaryDirectory() as td:
             tar_path = os.path.join(td, "test.tar")
             zst_path = os.path.join(td, "test.tar.zst")
+            bzip2_path = os.path.join(td, "test.tar.bz2")
 
             with tarfile.TarFile(tar_path, "w") as tar_obj:
                 tar_obj.add(fs_path, filter=_tarinfo_strip_dir_prefix(fs_path))
             subprocess.check_call(["zstd", tar_path, "-o", zst_path])
+            subprocess.check_call(["bzip2", "-zk", tar_path])
 
-            for path in (tar_path, zst_path):
+            for path in (tar_path, zst_path, bzip2_path):
                 self._check_item(
                     _tarball_item(path, "y"),
                     temp_filesystem_provides("y"),

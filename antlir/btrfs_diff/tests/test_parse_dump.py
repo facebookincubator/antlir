@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import io
-import os
+import sys
 from typing import List, Sequence
 
 from antlir.fs_utils import Path
@@ -79,8 +79,7 @@ class ParseBtrfsDumpTestCase(AntlirTestCase):
         )
 
         # Now check that `demo_sendstream.py` also exercises those operations.
-        os.makedirs("/subvols", exist_ok=True)
-        stream_dict = make_demo_sendstreams(volume_tmp_dir=Path("/subvols"))
+        stream_dict = make_demo_sendstreams(Path(sys.argv[0]))
         out_lines = [
             *stream_dict["create_ops"]["dump"],
             *stream_dict["mutate_ops"]["dump"],
