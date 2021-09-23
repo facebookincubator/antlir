@@ -77,8 +77,7 @@ image.layer(
         image.ensure_dirs_exist("/etc/systemd/system"),
         # Some fixups for vmtest features in the limited initrd environment
         image.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
-        # Set a static IP when running in vmtest
-        image.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
+        systemd.install_dropin("after-network.conf", "sshd.service"),
         # We want to stay in the initrd, so mask out the units that switch-root
         # into the base os
         systemd.mask_units([
@@ -127,6 +126,28 @@ vm.rust_unittest(
     ),
     srcs = ["test_boots.rs"],
     crate_root = "test_boots.rs",
+)
+
+vm.rust_unittest(
+    name = "slaac",
+    vm_opts = vm.types.opts.new(
+        initrd = ":vmtest-initrd.cpio.gz",
+        kernel = TEST_KERNEL,
+    ),
+    srcs = ["test_slaac.rs"],
+    crate_root = "test_slaac.rs",
+    deps = [
+        third_party.library(
+            name,
+            platform = "rust",
+        )
+        for name in [
+            "nix",
+        ]
+    ],
+    # TODO(vmagro): re-enable this when the container runtime environment is
+    # done and the sidecars can reliably run on Sandcastle
+    tags = ["local_only"],
 )
 
 # This needs to be as close as possible the prod initrd, with only the bare
@@ -250,7 +271,9 @@ vm.rust_unittest(
         initrd = ":vmtest-initrd.cpio.gz",
         kernel = TEST_KERNEL,
         runtime = vm.types.runtime.new(
-            sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"],
+            sidecar_services = [
+                "$(exe :images-sidecar) $(location :image_packages)",
+            ],
         ),
     ),
     srcs = ["test_images.rs"],
