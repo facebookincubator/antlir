@@ -56,7 +56,7 @@ buck fetch //...
 A quick test to confirm that your environment is setup correctly:
 
 ```
-buck run //images/appliance:stable-build-appliance=container
+buck run //images/appliance:rc-build-appliance=container
 ```
 
 This will give you a shell in the container that Antlir uses for container

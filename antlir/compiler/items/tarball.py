@@ -137,7 +137,7 @@ class TarballItem(tarball_t, ImageItem):
         import tarfile  # Lazy since only this method needs it.
 
         with open_for_read_decompress(self.source) as tf, tarfile.open(
-            fileobj=tf, mode="r|"
+            fileobj=tf, mode="r|*"
         ) as f:
             for item in f:
                 path = self.into_dir / make_path_normal_relative(

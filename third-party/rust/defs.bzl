@@ -1,51 +1,13 @@
-load(
-    "//antlir/bzl:oss_shim.bzl",
-    "buck_genrule",
-    "http_archive",
-    "rust_binary",
-    "rust_library",
-)
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "rust_binary", "rust_library")
+# @lint-ignore-every BUCKLINT
 
-def archive(name, sha256, url):
-    http_archive(
-        name = name,
-        urls = [url],
-        sha256 = sha256,
-        type = "tar.gz",
-    )
-
-def _extract_file(archive, src):
-    name = archive[1:] + "/" + src
-    if not native.rule_exists(name):
-        buck_genrule(
-            name = "{}/{}".format(archive[1:], src),
-            out = src,
-            cmd = "mkdir -p `dirname $OUT`; cp $(location {})/{} $OUT".format(archive, src),
-        )
-    return ":" + name
-
-def third_party_rust_library(name, archive, srcs, mapped_srcs = None, **kwargs):
+def third_party_rust_library(*args, **kwargs):
     kwargs["unittests"] = False
-    if archive:
-        src_targets = {}
-        for src in srcs:
-            src_targets[_extract_file(archive, src)] = src
-
-        for target, src in mapped_srcs.items():
-            src_targets[extract_buildscript_src(target)] = src
-        rust_library(
-            name = name,
-            srcs = [],
-            mapped_srcs = src_targets,
-            **kwargs
-        )
-    else:
-        rust_library(
-            name = name,
-            srcs = srcs,
-            mapped_srcs = mapped_srcs,
-            **kwargs
-        )
+    extract_buildscript_mapped_srcs(kwargs.get("mapped_srcs", {}))
+    rust_library(
+        *args,
+        **kwargs
+    )
 
 def _get_native_host_triple():
     return "x86_64-unknown-linux-gnu"
@@ -111,30 +73,15 @@ def _make_preamble(
 def _is_buildscript(crate, crate_root):
     return crate == "build_script_build" or crate_root.endswith("build.rs") or crate_root.endswith("build/main.rs")
 
-def third_party_rust_binary(name, archive, srcs, mapped_srcs = None, **kwargs):
-    kwargs.pop("proc_macro")
+def third_party_rust_binary(name, *args, **kwargs):
     kwargs["unittests"] = False
+    extract_buildscript_mapped_srcs(kwargs.get("mapped_srcs", {}))
 
-    if archive:
-        src_targets = {}
-        for src in srcs:
-            src_targets[_extract_file(archive, src)] = src
-
-        for target, src in mapped_srcs.items():
-            src_targets[extract_buildscript_src(target)] = src
-        rust_binary(
-            name = name,
-            srcs = [],
-            mapped_srcs = src_targets,
-            **kwargs
-        )
-    else:
-        rust_binary(
-            name = name,
-            srcs = srcs,
-            mapped_srcs = mapped_srcs,
-            **kwargs
-        )
+    rust_binary(
+        name = name,
+        *args,
+        **kwargs
+    )
 
     if _is_buildscript(kwargs["crate"], kwargs["crate_root"]):
         pre = _make_preamble(
@@ -146,6 +93,8 @@ def third_party_rust_binary(name, archive, srcs, mapped_srcs = None, **kwargs):
             None,
             None,
         )
+
+        # TODO(vmagro): this should really be a cxx_genrule
         buck_genrule(
             name = name + "-args",
             out = "args",
@@ -161,20 +110,25 @@ def third_party_rust_binary(name, archive, srcs, mapped_srcs = None, **kwargs):
             None,
             None,
         )
+
+        # TODO(vmagro): this should really be a cxx_genrule
         buck_genrule(
             name = name + "-srcs",
             out = ".",
             cmd = "mkdir -p $OUT; cd $OUT;" + pre + "$(exe :{})".format(name),
         )
 
-def extract_buildscript_src(target):
-    buildscript_srcs, src = target.rsplit("=", 1)
-    if not buildscript_srcs.startswith("//third-party/rust:"):
-        fail("buildscript-srcs must start with //third-party/rust:")
-    buildscript_srcs = buildscript_srcs[len("//third-party/rust:"):]
-    buck_genrule(
-        name = buildscript_srcs + "=" + src,
-        out = "unused",
-        cmd = "cp $(location :{})/{} $OUT".format(buildscript_srcs, src),
-    )
-    return ":" + buildscript_srcs + "=" + src
+def extract_buildscript_mapped_srcs(mapped_srcs):
+    for target, src in mapped_srcs.items():
+        buildscript_srcs, src = target.rsplit("=", 1)
+        if not buildscript_srcs.startswith("//generated/third-party/rust:"):
+            fail("buildscript-srcs must start with //generated/third-party/rust:")
+        buildscript_srcs = buildscript_srcs[len("//generated/third-party/rust:"):]
+        buck_genrule(
+            name = buildscript_srcs + "=" + src,
+            out = "unused",
+            cmd = "cp $(location :{})/{} $OUT".format(buildscript_srcs, src),
+        )
+
+third_party_cxx_binary = native.cxx_binary
+third_party_cxx_library = native.cxx_library

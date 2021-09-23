@@ -1346,20 +1346,14 @@ class TempSubvolumes:
         it would require using an `Unshare` object throughout `Subvol`.
     """
 
-    def __init__(
-        self,
-        path_in_repo: Optional[Path] = None,
-        volume_tmp_dir: Optional[Path] = None,
-    ):
+    def __init__(self, path_in_repo: Optional[Path] = None):
         super().__init__()
-        if volume_tmp_dir is None:
-            # The 'tmp' subdirectory simplifies cleanup of leaked temp
-            # subvolumes
-            volume_tmp_dir = volume_dir(path_in_repo) / "tmp"
-            try:
-                os.mkdir(volume_tmp_dir)
-            except FileExistsError:
-                pass
+        # The 'tmp' subdirectory simplifies cleanup of leaked temp subvolumes
+        volume_tmp_dir = volume_dir(path_in_repo) / "tmp"
+        try:
+            os.mkdir(volume_tmp_dir)
+        except FileExistsError:
+            pass
         self._stack = ExitStack()
         self._temp_dir_ctx = temp_dir(
             dir=volume_tmp_dir.decode(), prefix=self.__class__.__name__ + "_"

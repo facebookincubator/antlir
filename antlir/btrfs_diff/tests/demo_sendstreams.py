@@ -60,13 +60,10 @@ import shlex
 import subprocess
 import sys
 import time
-from typing import Optional, Tuple
+from typing import Tuple
 
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol, TempSubvolumes
-
-
-PYTHON = sys.executable or "python3"
 
 
 def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:
@@ -99,7 +96,7 @@ def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:
     run(["mkfifo", p("fifo")])  # mkfifo
     run(
         [
-            PYTHON,
+            "python3",
             "-c",
             (
                 "import os, sys, socket as s\n"
@@ -249,7 +246,7 @@ def _make_mutate_ops_subvolume(
     # failing the moment it is supported -- that will remind us to update
     # the mock VFS.  NB: The absolute path to `chattr` is a clowny hack to
     # work around a clowny hack, to work around clowny hacks.  Don't ask.
-    run(["/usr/bin/chattr", "+a", p("hello_renamed/een")])
+    run(["/usr/bin/chattr", "+Ac", p("hello_renamed/een")])
     # Besides files with trailing holes, one can also get `truncate`
     # sendstream commands in incremental sendstreams by having a snapshot
     # truncate relative a file relative to the parent.
@@ -283,10 +280,8 @@ def _populate_sendstream_dict(d):
 
 # Takes `path_in_repo` because this is part of the library interface, and
 # thus must work in @mode/opt, and thus we cannot use `__file__` here.
-def make_demo_sendstreams(
-    path_in_repo: Optional[Path] = None, volume_tmp_dir: Optional[Path] = None
-):
-    with TempSubvolumes(path_in_repo, volume_tmp_dir) as subvols:
+def make_demo_sendstreams(path_in_repo: Path):
+    with TempSubvolumes(path_in_repo) as subvols:
         res = {}
 
         with _populate_sendstream_dict(res.setdefault("create_ops", {})) as d:
