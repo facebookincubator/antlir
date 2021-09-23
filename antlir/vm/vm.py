@@ -6,6 +6,7 @@
 
 import argparse
 import asyncio
+import importlib.resources
 import os
 import socket
 import subprocess
@@ -21,7 +22,6 @@ from typing import (
     Any,
     AsyncGenerator,
     Iterable,
-    NamedTuple,
     Optional,
     List,
     Tuple,
@@ -358,23 +358,33 @@ async def vm(
         f"{' '.join(cast(List[str], ns.nsenter_as_user('/bin/bash')))}"
     )
 
+    # tap device must be created before sidecars, which may require an interface
+    # to already exist and have an IP address
+    tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
+    sidecar_procs = []
+    with importlib.resources.path(__package__, "router-advertiser") as rad:
+        sidecar_procs.append(
+            await asyncio.create_subprocess_exec(*ns.nsenter_as_root(str(rad)))
+        )
+
     logger.debug(
         f"Starting sidecars {opts.runtime.sidecar_services} before QEMU"
     )
-    sidecar_procs = await asyncio.gather(
-        # Execing in the shell is not the safest thing, but it makes it easy to
-        # pass extra arguments from the TARGETS files that define tests which
-        # require sidecars as well as easily handling the `$(exe)` expansion of
-        # `python_binary` rules into `python3 -Es $par`
-        *(
-            asyncio.create_subprocess_exec(
-                *ns.nsenter_as_user("/bin/sh", "-c", sidecar)
+    sidecar_procs.extend(
+        await asyncio.gather(
+            # Execing in the shell is not the safest thing, but it makes it easy
+            # to pass extra arguments from the TARGETS files that define tests
+            # which require sidecars as well as easily handling the `$(exe)`
+            # expansion of `python_binary` rules into `python3 -Es $par`
+            *(
+                asyncio.create_subprocess_exec(
+                    *ns.nsenter_as_user("/bin/sh", "-c", sidecar)
+                )
+                for sidecar in opts.runtime.sidecar_services
             )
-            for sidecar in opts.runtime.sidecar_services
         )
     )
 
-    tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
     args = [
         "-no-reboot",
         "-display",
