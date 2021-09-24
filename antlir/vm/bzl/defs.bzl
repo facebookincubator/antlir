@@ -59,7 +59,6 @@ with the options allowed there.  The key differences with
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")

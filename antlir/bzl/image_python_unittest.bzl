@@ -3,9 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":constants.bzl", "REPO_CFG")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "get_visibility", "python_unittest")
+load(":oss_shim.bzl", "python_unittest")
 
 # This exists to hack around a complex FB-internal migration. *sigh*
 # It should be removable when this is done:  https://fburl.com/nxc3u5mk

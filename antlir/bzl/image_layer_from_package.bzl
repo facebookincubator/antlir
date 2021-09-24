@@ -4,8 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load(":compile_image_features.bzl", "compile_image_features")
-load(":constants.bzl", "REPO_CFG")
-load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")

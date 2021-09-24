@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")

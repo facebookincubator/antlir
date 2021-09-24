@@ -6,7 +6,6 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
-load(":constants.bzl", "REPO_CFG")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_utils.bzl", "image_utils")
 

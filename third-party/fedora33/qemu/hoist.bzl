@@ -1,4 +1,4 @@
-load('//antlir/bzl:oss_shim.bzl', 'buck_genrule')
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 
 def hoist(name, out, layer, path, **buck_genrule_kwargs):
     """Creates a rule to lift an artifact out of the image it was built in."""
@@ -11,7 +11,7 @@ def hoist(name, out, layer, path, **buck_genrule_kwargs):
             sv_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
             cp "$sv_path{path}" --no-clobber "$OUT"
         '''.format(
-            layer = ':' + layer,
+            layer = ":" + layer,
             path = path,
         ),
         **buck_genrule_kwargs

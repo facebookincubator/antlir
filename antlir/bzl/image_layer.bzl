@@ -90,7 +90,6 @@ The consequences of this information hiding are:
 """
 
 load(":compile_image_features.bzl", "compile_image_features")
-load(":constants.bzl", "REPO_CFG")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 

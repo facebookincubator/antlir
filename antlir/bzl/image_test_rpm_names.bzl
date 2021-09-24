@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
-load(":constants.bzl", "REPO_CFG")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule")

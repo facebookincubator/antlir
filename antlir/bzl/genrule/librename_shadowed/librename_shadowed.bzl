@@ -36,7 +36,6 @@ More discussion of the problem space and other approaches can be found in
 the commit message for D21390244.
 """
 
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 
 def image_build_librename_shadowed(
