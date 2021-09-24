@@ -686,9 +686,9 @@ def _python_data(
 
     python_src = "from typing import *\nfrom antlir.shape import *\n"
     python_src += "\n".join(_codegen_shape(shape, classname))
-    python_src += "\ndata = {classname}.parse_raw('{shape_json}')".format(
+    python_src += "\ndata = {classname}.parse_raw({shape_json})".format(
         classname = classname,
-        shape_json = instance.to_json(),
+        shape_json = repr(instance.to_json()),
     )
 
     if not module:
