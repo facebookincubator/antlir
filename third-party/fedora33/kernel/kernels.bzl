@@ -12,6 +12,6 @@ kernels = {
             variant = 301,
             rc = None,
             flavor = "",
-        )
+        ),
     ),
 }

@@ -6,9 +6,7 @@
 "See the docs in antlir/website/docs/genrule-layer.md"
 
 load(":compile_image_features.bzl", "compile_image_features")
-load(":constants.bzl", "REPO_CFG")
 load(":container_opts.bzl", "container_opts_t", "normalize_container_opts")
-load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":shape.bzl", "shape")

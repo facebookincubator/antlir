@@ -3,9 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":constants.bzl", "REPO_CFG")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "buck_genrule", "cpp_unittest", "get_visibility", "python_binary")
+load(":oss_shim.bzl", "buck_genrule", "cpp_unittest", "python_binary")
 
 def image_cpp_unittest(
         name,

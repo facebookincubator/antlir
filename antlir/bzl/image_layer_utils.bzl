@@ -72,7 +72,7 @@ def _image_layer_impl(
         # must be set from outside.
         mount_config = None,
         # Most use-cases should never need to set this.  A string is used
-        # instead of int because Skylark supports only 32-bit integers.
+        # instead of int because Starlark supports only 32-bit integers.
         # Future:
         #  (i) Should we determine this dynamically from the installed
         #      artifacts (by totaling up the bytes needed for copied files,

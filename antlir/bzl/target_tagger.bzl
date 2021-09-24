@@ -25,7 +25,6 @@ targets whose paths the `image_layer` converter would need to resolve.
 
 load(":image_source.bzl", "image_source")
 load(":shape.bzl", "shape")
-load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
 load(":wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 

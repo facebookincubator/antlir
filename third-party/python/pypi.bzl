@@ -8,15 +8,15 @@ def prebuilt_python_library(**kwargs):
     native.prebuilt_python_library(**kwargs)
 
 def pypi_package(
-    name,
-    url,
-    sha256,
-    deps=None):
+        name,
+        url,
+        sha256,
+        deps = None):
     http_file(
         name = "{}-download".format(name),
         sha256 = sha256,
         urls = [url],
-        visibility = []
+        visibility = [],
     )
 
     prebuilt_python_library(
