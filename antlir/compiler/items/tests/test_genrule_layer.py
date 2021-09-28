@@ -115,3 +115,12 @@ class GenruleLayerItemTestCase(unittest.TestCase):
         with self._temp_resource_subvol("genrule-layer-busybox-base") as sv:
             _builder(["/bin/sh", "-c", "echo ohai"])(sv)
             self.assertFalse(os.path.exists(sv.path("/__antlir__")))
+
+    def test_genrule_layer_boot(self):
+        with self._temp_resource_subvol("genrule-layer-base") as subvol:
+            # this will fail if the genrule layer is not running in a booted
+            # systemd container
+            item = _item(["/bin/bash", "-c", "systemctl status > /status"])
+            item = item.copy(update={"boot": True})
+            GenruleLayerItem.get_phase_builder([item], DUMMY_LAYER_OPTS)(subvol)
+            self.assertTrue(subvol.path("/status").exists())

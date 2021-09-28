@@ -24,6 +24,7 @@ genrule_layer_t = shape.shape(
     user = str,
     container_opts = container_opts_t,
     bind_repo_ro = shape.field(bool, default = False),
+    boot = shape.field(bool, default = False),
 )
 
 def image_genrule_layer(
@@ -36,6 +37,7 @@ def image_genrule_layer(
         flavor_config_override = None,
         container_opts = None,
         bind_repo_ro = False,
+        boot = False,
         **image_layer_kwargs):
     """
 ### Danger! Danger! Danger!
@@ -70,6 +72,9 @@ Optional arguments:
     generally not advised as it creates the possibility of subverting the
     buck dependency graph and generally wreaking havok.  Use with extreme
     caution.
+  - `boot`: Run `cmd` in a container booted with systemd. This should generally
+    not be required except in cases where a `cmd` has assumptions about running
+    in an environment where a running systemd is available.
   - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
     for supported, but less commonly used, kwargs.
     """
@@ -102,6 +107,7 @@ Optional arguments:
                         user = user,
                         container_opts = container_opts,
                         bind_repo_ro = bind_repo_ro,
+                        boot = boot,
                     )),
                 ]),
                 extra_deps = [antlir_dep("bzl:image_genrule_layer")],
