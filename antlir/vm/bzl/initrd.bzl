@@ -109,7 +109,7 @@ def initrd(kernel, module_list = None, visibility = None):
     # for the repository, kernel modules, and others.
     image.layer(
         name = name + "--layer",
-        parent_layer = "//antlir/linux/initrd:base",
+        parent_layer = "//metalos/initrd:base",
         features = [
             # The metalctl generator will instantiate this template with the
             # seed device provided on the kernel command line as metalos.seed_device.
@@ -176,7 +176,7 @@ def initrd(kernel, module_list = None, visibility = None):
     buck_genrule(
         name = name + "-debug",
         out = "initrd.cpio.gz",
-        cmd = "cat $(location :{}) $(location //antlir/linux/initrd/debug:debug-append.cpio.gz) > $OUT".format(name),
+        cmd = "cat $(location :{}) $(location //metalos/initrd/debug:debug-append.cpio.gz) > $OUT".format(name),
         antlir_rule = "user-internal",
         visibility = visibility,
     )

@@ -156,7 +156,7 @@ vm.rust_unittest(
 # close to the base as possible.
 image.layer(
     name = "switch-root-initrd",
-    parent_layer = "//antlir/linux/initrd:base",
+    parent_layer = "//metalos/initrd:base",
     features = [
         image.ensure_subdirs_exist("/usr/lib", "udev/rules.d"),
         image.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),

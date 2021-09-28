@@ -14,7 +14,7 @@ template(
     ],
     visibility = [
         kernel_get.base_target + "/...",
-        "//antlir/linux/...",
+        "//metalos/...",
         "//scripts/dschatzberg/vm:",
     ],
     deps = [":unit"],

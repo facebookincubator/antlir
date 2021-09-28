@@ -12,7 +12,7 @@ load("//antlir/bzl/linux:defs.bzl", "linux")
 
 image.layer(
     name = "debug-deps",
-    parent_layer = "//antlir/linux/initrd:system-deps",
+    parent_layer = "//metalos/initrd:system-deps",
     features = [
         image.rpms_install([
             "busybox",
@@ -106,7 +106,7 @@ package.new(
     layer = ":debug-append",
     visibility = [
         kernel_get.base_target + "/...",
-        "//antlir/linux/...",
+        "//metalos/...",
         "//scripts/dschatzberg/vm/...",
     ],
     build_appliance = flavor_helpers.default_flavor_build_appliance,

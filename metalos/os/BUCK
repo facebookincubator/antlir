@@ -29,7 +29,7 @@ image.layer(
     parent_layer = ":basesystem-strip",
     features = [
         image.install_buck_runnable(
-            "//antlir/linux/metalctl:metalctl",
+            "//metalos/metalctl:metalctl",
             "/usr/bin/metalctl",
         ),
         systemd.install_unit("core-services.target"),
@@ -60,7 +60,7 @@ image.layer(
     ],
     runtime = ["systemd"],
     visibility = [
-        "//antlir/...",
+        "//metalos/...",
     ],
 )
 
@@ -69,6 +69,6 @@ package.new(
     layer = ":metalos",
     format = "sendstream.zst",
     visibility = [
-        "//antlir/...",
+        "//metalos/...",
     ],
 )

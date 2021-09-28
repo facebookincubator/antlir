@@ -77,7 +77,7 @@ systemd_workaround = [
 
 image.layer(
     name = "base",
-    parent_layer = "//antlir/linux/metalos:metalos",
+    parent_layer = "//metalos/os:metalos",
     features = [
         console.autologin(),
         hostname,

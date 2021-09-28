@@ -2,7 +2,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-# @oss-disable: load("//antlir/linux/metalos/host_configs/evalctx/facebook:deps.bzl", fb_deps = "deps") 
+# @oss-disable: load("//metalos/host_configs/evalctx/facebook:deps.bzl", fb_deps = "deps") 
 
 # @oss-disable: oss = False 
 
@@ -47,7 +47,7 @@ rust_library(
 # through vmtest
 # Usage:
 #   construct a host json input (by hand or download it from the proxy service in facebook/service)
-#   buck run //antlir/linux/metalos/host_configs:evaluator -- host.json path/to/generator.star
+#   buck run //metalos/host_configs:evaluator -- host.json path/to/generator.star
 rust_binary(
     name = "evaluator",
     srcs = glob(["evaluator/**/*.rs"]),
@@ -73,5 +73,5 @@ feature.new(
         )
         for generator in glob(["generators/*.star"])
     ],
-    visibility = ["//antlir/linux/..."],
+    visibility = ["//metalos/..."],
 )
