@@ -60,6 +60,7 @@ class GenruleLayerItem(genrule_layer_t):
                 # Make sure we give nspawn the target -> outputs mapping
                 targets_and_outputs=layer_opts.target_to_path,
                 bind_repo_ro=item.bind_repo_ro,
+                boot=item.boot,
             )
             run_nspawn(  # NB: stdout redirects to stderr by default
                 opts,
