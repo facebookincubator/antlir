@@ -22,7 +22,7 @@ extract.source_layer(
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
-        "//antlir/linux/initrd/debug/...",
+        "//metalos/initrd/debug/...",
     ],
 )
 
@@ -31,7 +31,7 @@ image.layer(
     parent_layer = ":system-deps",
     features = [
         image.install(
-            "//antlir/linux/metalctl:metalctl",
+            "//metalos/metalctl:metalctl",
             "/usr/bin/metalctl",
             mode = "a+rx",
         ),
@@ -117,7 +117,7 @@ image.layer(
             dest = "/",
             source = ":deps",
         ),
-        image.install("//antlir/linux/metalctl:default-config.toml", "/etc/metalctl.toml"),
+        image.install("//metalos/metalctl:default-config.toml", "/etc/metalctl.toml"),
         # metalctl provides a few utility binaries that systemd calls so we can
         # avoid importing busybox for just a few tiny commands
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mkdir"),
@@ -130,12 +130,12 @@ image.layer(
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
         # generic metalos generators to be applied to the root fs
-        "//antlir/linux/metalos/host_configs:generators",
+        "//metalos/host_configs:generators",
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
         kernel_get.base_target + "/...",
-        "//antlir/linux/...",
+        "//metalos/...",
         "//scripts/dschatzberg/vm:",
     ],
 )

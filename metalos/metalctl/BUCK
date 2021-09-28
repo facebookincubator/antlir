@@ -24,7 +24,7 @@ rust_binary(
     # dependency on `regex` bloats the end binary by 1.1M, compared to
     # almost nothing for 50 lines of code to parse it manually.
     deps = [
-        "//antlir/linux/metalos/host_configs:evalctx",
+        "//metalos/host_configs:evalctx",
     ] + third_party.libraries(
         [
             "anyhow",  # ~9.5k, very helpful for error handling

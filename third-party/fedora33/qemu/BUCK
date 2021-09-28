@@ -100,8 +100,8 @@ image.genrule_layer(
 )
 
 vm_visibility = [
-    "//antlir/linux/...",
     "//antlir/vm/...",
+    "//metalos/...",
     "//third-party/...",
 ]
 

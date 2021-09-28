@@ -4,6 +4,6 @@ template(
     name = "nsswitch",
     srcs = ["nsswitch.jinja2"],
     visibility = [
-        "//antlir/linux/...",
+        "//metalos/...",
     ],
 )

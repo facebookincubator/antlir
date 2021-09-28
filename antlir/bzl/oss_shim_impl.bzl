@@ -251,6 +251,7 @@ def _wrap_internal(fn, args, kwargs):
     kwargs["visibility"] = _normalize_visibility(kwargs.pop("visibility", None)) + [
         "//antlir/...",
         "//bot_generated/antlir/...",
+        "//metalos/...",
     ]
 
     fn(*args, **kwargs)

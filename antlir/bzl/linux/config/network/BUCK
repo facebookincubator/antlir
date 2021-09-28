@@ -4,9 +4,10 @@ template(
     name = "resolv",
     srcs = ["resolv.jinja2"],
     visibility = [
-        "//antlir/linux/...",
+        "//antlir/linux/vm/...",
         "//ee_provisioning/images/...",
         "//images/...",
+        "//metalos/...",
         "//tupperware/image/vmtest/impl/...",
     ],
 )
