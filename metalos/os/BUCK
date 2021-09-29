@@ -53,10 +53,25 @@ image.layer(
         systemd.enable_unit("sshd.service", "core-services.target"),
         feature.remove("/etc/ssh/sshd_config"),
         image.install("sshd_config", "/etc/ssh/sshd_config"),
+        # Add a cool metalos motd
+        image.install("metalos-motd.sh", "/etc/profile.d/metalos-motd.sh"),
         # TODO: modify this os-release to indicate that it's MetalOS (in ID_LIKE
         # maybe?), but for now provide an easy indicator that a system is
         # MetalOS if /etc/metalos-release exists
         image.ensure_file_symlink("/usr/lib/os-release", "/etc/metalos-release"),
+        # Ensure the root cgroup has all controllers enabled
+        systemd.install_unit("systemd-workaround.service"),
+        systemd.enable_unit("systemd-workaround.service", "core-services.target"),
+        # Mask out some units that aren't needed in MetalOS. There are
+        # probably more we can mask. See D20987301 for ideas.
+        systemd.mask_units([
+            # There is really no need to rebuild the ld cache with a
+            # pre-built image
+            "ldconfig.service",
+            # The hwdb should be pre-built in the image, negating
+            # the need to udpate it at runtime.
+            "systemd-hwdb-update.service",
+        ]),
     ],
     runtime = ["systemd"],
     visibility = [
