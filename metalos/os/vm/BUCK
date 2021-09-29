@@ -8,13 +8,6 @@ load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", _ssh = "ssh")
 
-motd = [
-    image.install(
-        source = "interactive-motd.sh",
-        dest = "/etc/profile.d/interactive_motd.sh",
-    ),
-]
-
 hostname = [image.install("hostname", "/etc/hostname")]
 
 # Future: we might be able to further streamline boot by eliminating other
@@ -28,14 +21,10 @@ mask_units = [
         "systemd-journal-flush.service",
         # Don't save a random seed for a later boot that will never come
         "systemd-random-seed.service",
-        # These units have ConditionNeedsUpdate=/etc and are very expensive,
-        # sometimes taking minutes on boot, causing test timeouts
-        "systemd-hwdb-update.service",
         # We don't need to run the update service
         "systemd-update-utmp.service",
         "systemd-update-utmp-runlevel.service",
         "systemd-update-done.service",
-        "ldconfig.service",
         # We don't want the drm module loaded, so stop trying
         "modprobe@drm.service",
     ]),
@@ -69,12 +58,6 @@ ssh = [
     systemd.install_dropin("sshd-hostkey.conf", "sshd.service"),
 ]
 
-systemd_workaround = [
-    # ensure root cgroup has all controllers enabled
-    systemd.install_unit("systemd-workaround.service"),
-    #     systemd.enable_unit("systemd-workaround.service"),
-]
-
 image.layer(
     name = "base",
     parent_layer = "//metalos/os:metalos",
@@ -83,11 +66,9 @@ image.layer(
         hostname,
         generator.mounts(),
         mask_units,
-        motd,
         networking,
         notify.install(),
         ssh,
-        systemd_workaround,
     ],
     # Any vm unittest or run target can have a custom layer
     # built on top of this.
