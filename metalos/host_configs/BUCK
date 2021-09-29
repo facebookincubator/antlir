@@ -1,6 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party", "thrift_library")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:thrift_library.bzl", "thrift_library")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 # @oss-disable: oss = False 

@@ -10,3 +10,7 @@
   path = generated
   url = https://github.com/facebookincubator/antlir.git
   ignore = untracked
+[submodule "third-party/tools/fbthrift"]
+  path = third-party/tools/fbthrift
+  url = https://github.com/facebook/fbthrift.git
+  ignore = untracked
