@@ -11,17 +11,20 @@
 # This only works because radvd does not have any other dependencies that exist
 # only in the container.
 
+from antlir.fs_utils import temp_dir
 from antlir.tests.layer_resource import layer_resource_subvol
 
 
 def start_router_advertisements():
     radvd_layer = layer_resource_subvol(__package__, "radvd-layer")
-    with radvd_layer.popen_as_root(
+    with temp_dir() as td, radvd_layer.popen_as_root(
         [
             radvd_layer.path("/usr/sbin/radvd"),
             "--nodaemon",
             "--config",
             radvd_layer.path("/etc/radvd.conf"),
+            "--pidfile",
+            td / "radvd.pid",
         ]
     ) as proc:
         proc.wait()
