@@ -207,7 +207,7 @@ mod tests {
     fn hostname_generator() {
         let gen = Generator::compile("hostname.star", include_str!("../generators/hostname.star"))
             .unwrap();
-        let host = Host::default();
+        let host = Host::example_host_for_tests();
         let output = gen.eval(&host).unwrap();
         assert_eq!(
             output,
