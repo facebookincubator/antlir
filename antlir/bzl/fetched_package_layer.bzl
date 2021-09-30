@@ -62,8 +62,8 @@ every build is a potentially expensive, and definitely wasteful, operation.
 
     fetched_package_layers_from_json_dir_db(
         fetcher = {
-            "extra_deps": ["`image.source` "generator" to download package"],
-            "fetch_package": "writes `tarball`/`install_files` JSON to stdout",
+            "fetch_package": "downloads package to $1 and writes its filename to stdout",
+            "print_package_feature": "writes `tarball`/`install_files` JSON to stdout",
             "print_mount_config": "adds package address to `runtime_source`",
         },
         package_db_dir = "db/",
@@ -85,12 +85,15 @@ load(":image_layer.bzl", "image_layer")
 load(":target_helpers.bzl", "normalize_target")
 
 _PackageFetcherInfo = provider(fields = [
+    # This executable target downloads the package to $1 and
+    # prints its filename.
+    "fetch_package",
     # This executable target prints a feature JSON responsible for
     # configuring the entire layer to represent the fetched package,
     # including file data, owner, mode, etc.
     #
     # See each fetcher's in-source docblock for the details of its contract.
-    "fetch_package",
+    "print_package_feature",
     # The analog of `fetch_package` for `nondeterministic_fs_metadata_suffix`.
     # Ought to behave the same as `fetch_package` as far as reasonably
     # possible (of course, VFS metadata like ownership cannot be faithfully
@@ -99,11 +102,6 @@ _PackageFetcherInfo = provider(fields = [
     # This fetcher should define its contract in the docblock of the
     # target's main source file.
     "fetch_with_nondeterministic_fs_metadata",
-    # The executable target `fetch_package` may reference other targets
-    # (usually tagged via __BUCK_TARGET or similar) in their features.  Any
-    # such target must ALSO be manually added to `extra_deps` so that
-    # `image_layer.bzl` can resolve those dependencies correctly.
-    "extra_deps",
     # An executable target that defines `runtime_source` and
     # `default_mountpoint` for the `mount_config` of the package layer.
     "print_mount_config",
@@ -180,6 +178,32 @@ def _fetched_package_layer(
         visibility):
     visibility = get_visibility(visibility, name)
 
+    fetched_pkg_target_name = name + "-fetched-package"
+    buck_genrule(
+        name = fetched_pkg_target_name,
+        out = "out",
+        # Uncacheable for the same reasons as _fetched_package_with_nondeterministic_fs_metadata
+        cacheable = False,
+        bash = """
+        # {deps}
+        set -ue -o pipefail
+        mkdir -p "$OUT"/pkg
+        printf "pkg/" > "$OUT"/fetched_pkg_name.txt
+        {print_how_to_fetch_json} |
+            $(exe {fetch_package}) {quoted_package} "$OUT"/pkg >> "$OUT"/fetched_pkg_name.txt
+        """.format(
+            deps = [
+                # We want to re-fetch packages if the fetching mechanics change.
+                # `def fake_macro_library` has more details.
+                "//antlir/bzl:fetched_package_layer",
+            ],
+            fetch_package = fetcher.fetch_package,
+            print_how_to_fetch_json = print_how_to_fetch_json,
+            quoted_package = shell.quote(package),
+        ),
+        antlir_rule = "user-internal",
+    )
+
     package_feature = name + "-fetched-package-feature"
     private_do_not_use_feature_json_genrule(
         name = package_feature,
@@ -187,15 +211,20 @@ def _fetched_package_layer(
             # We want to re-fetch packages if the fetching mechanics change.
             # `def fake_macro_library` has more details.
             "//antlir/bzl:fetched_package_layer",
-        ] + fetcher.extra_deps,
+            ":" + fetched_pkg_target_name,
+        ],
         output_feature_cmd = """
         {print_how_to_fetch_json} |
-            $(exe {fetch_package}) {quoted_package} {quoted_target} > "$OUT"
+            $(exe {print_package_feature}) \
+                {quoted_package} {quoted_target} \
+                $(location {fetched_pkg_target}) \
+                {fetched_pkg_target} > "$OUT"
         """.format(
-            fetch_package = fetcher.fetch_package,
+            print_package_feature = fetcher.print_package_feature,
             quoted_package = shell.quote(package),
             quoted_target = shell.quote(normalize_target(":" + name)),
             print_how_to_fetch_json = print_how_to_fetch_json,
+            fetched_pkg_target = shell.quote(normalize_target(":" + fetched_pkg_target_name)),
         ),
         visibility = visibility,
     )
