@@ -127,6 +127,14 @@ You have to use a bash array because `$(exe)` expands to multiple shell words,
 Because Buck (TM). E.g. for PARs, the expansion of `$(exe)` might look like
 something like `python3 "/path to/the actual/binary"`.
 
+## In genrules, prefer `out = "out"`
+
+The `out` field is not user-visible, it is just an implementation detail of
+the filesystem layout under `buck-out`.  As such, its value does not matter.
+Unfortunately, Buck requires it.  To minimize cognitive overhead and naming
+discussions, we prefer for it to always say `out = "out"`.  Feel free to
+update legacy callsites as you find them -- there is no risk.
+
 ## Use `maybe_export_file` when appropriate
 
 If your macro takes an argument that is a target, and that target might
