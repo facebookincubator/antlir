@@ -307,29 +307,15 @@ def _vm_multi_kernel_python_unittest(
         **kwargs
     )
 
-def _rootfs_disk_rc():
-    return api.disk.new(
-        package = REPO_CFG.artifact["vm.rootfs.btrfs.rc"],
-    )
-
-def rootfs_disk_stable():
-    return api.disk.new(
-        package = REPO_CFG.artifact["vm.rootfs.btrfs.stable"],
-    )
-
 vm = struct(
     cpp_unittest = _vm_cpp_unittest,
     # This nested structure is for looking up the default set of artifacts
     # used for this subsystem.
     artifacts = struct(
         rootfs = struct(
-            layer = struct(
-                rc = REPO_CFG.artifact["vm.rootfs.layer.rc"],
-                stable = REPO_CFG.artifact["vm.rootfs.layer.stable"],
-            ),
-            disk = struct(
-                rc = _rootfs_disk_rc,
-                stable = rootfs_disk_stable,
+            layer = REPO_CFG.artifact["vm.rootfs.layer"],
+            disk = api.disk.new(
+                package = REPO_CFG.artifact["vm.rootfs.btrfs"],
             ),
         ),
     ),

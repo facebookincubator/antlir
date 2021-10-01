@@ -88,7 +88,7 @@ def _new_vm_disk(
         package = ":" + package_target
 
     elif not package:
-        package = REPO_CFG.artifact["vm.rootfs.btrfs.stable"]
+        package = REPO_CFG.artifact["vm.rootfs.btrfs"]
 
     return shape.new(
         _vm_disk_t,

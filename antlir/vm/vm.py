@@ -314,7 +314,7 @@ async def vm(
 
     # Process all the mounts from the root image we are using
     mounts = mounts_from_image_meta(opts.disk.package.path)
-    for mount in mounts:
+    for mount in mounts:  # pragma: no cover
         if mount.build_source.type == "host":
             shares.append(
                 Plan9Export(

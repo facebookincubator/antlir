@@ -13,10 +13,8 @@ do_not_use_repo_cfg = {
             "build_appliance.newest": "//images/appliance:stable-build-appliance",
             "extractor.common_deps": "//images/appliance:stable-build-appliance",
             "metalos.layer.base": "//images/base:fedora.vm",
-            "vm.rootfs.btrfs.rc": "//images/base:fedora.vm.btrfs",
-            "vm.rootfs.btrfs.stable": "//images/base:fedora.vm.btrfs",
-            "vm.rootfs.layer.rc": "//images/base:fedora.vm",
-            "vm.rootfs.layer.stable": "//images/base:fedora.vm",
+            "vm.rootfs.btrfs": "//images/base:fedora.vm.btrfs",
+            "vm.rootfs.layer": "//images/base:fedora.vm",
         }.items()
     ]),
     "flavor_available": " ".join(["fedora33"]),
