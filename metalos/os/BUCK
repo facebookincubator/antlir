@@ -28,9 +28,10 @@ image.layer(
     name = "metalos",
     parent_layer = ":basesystem-strip",
     features = [
-        image.install_buck_runnable(
+        image.install(
             "//metalos/metalctl:metalctl",
             "/usr/bin/metalctl",
+            mode = "a+rx",
         ),
         systemd.install_unit("core-services.target"),
         systemd.install_unit("workload-pre.target"),

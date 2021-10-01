@@ -11,34 +11,6 @@ load("//antlir/bzl/linux:defs.bzl", "linux")
 load(":initrd_release.bzl", "initrd_release")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
 
-extract.source_layer(
-    name = "system-deps",
-    features = [
-        image.rpms_install([
-            "btrfs-progs",
-            "systemd",
-            "systemd-udev",
-        ]),
-    ],
-    flavor = REPO_CFG.antlir_linux_flavor,
-    visibility = [
-        "//metalos/initrd/debug/...",
-    ],
-)
-
-image.layer(
-    name = "deps",
-    parent_layer = ":system-deps",
-    features = [
-        image.install(
-            "//metalos/metalctl:metalctl",
-            "/usr/bin/metalctl",
-            mode = "a+rx",
-        ),
-    ],
-    flavor = REPO_CFG.antlir_linux_flavor,
-)
-
 # Generate /etc/initrd-release based on scm/fbpkg revision info
 initrd_release(
     name = "initrd-release",
@@ -75,7 +47,7 @@ image.layer(
     name = "base",
     features = [
         linux.filesystem.install(),
-        clone_systemd_configs(":deps"),
+        clone_systemd_configs("//metalos/os:metalos"),
         image.ensure_file_symlink("/usr/lib/systemd/systemd", "/init"),
         # Systemd uses the presence of /etc/initrd-release to determine if it
         # is running in an initrd, however there are cases where it only parses
@@ -115,7 +87,7 @@ image.layer(
                 "/usr/bin/metalctl",
             ],
             dest = "/",
-            source = ":deps",
+            source = "//metalos/os:metalos",
         ),
         image.install("//metalos/metalctl:default-config.toml", "/etc/metalctl.toml"),
         # metalctl provides a few utility binaries that systemd calls so we can

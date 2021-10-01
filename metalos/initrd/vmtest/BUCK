@@ -15,19 +15,6 @@ load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 load("//antlir/vm/bzl:initrd.bzl", "initrd")
 
-# TODO: we probably will want dropbear in the base initrd for remote debugging
-# purposes, but for now isolate it to vmtest only
-extract.source_layer(
-    name = "deps",
-    features = [
-        image.rpms_install([
-            "dropbear",
-            "systemd",
-        ]),
-    ],
-    flavor = REPO_CFG.antlir_linux_flavor,
-)
-
 binaries = extract.extract(
     binaries = [
         "/usr/sbin/dropbear",
@@ -37,7 +24,7 @@ binaries = extract.extract(
         "/usr/bin/systemd-run",
     ],
     dest = "/",
-    source = ":deps",
+    source = "//metalos/initrd/debug:debug-deps",
 )
 
 ssh_server = [
