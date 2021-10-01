@@ -4,6 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _test_only_login():
     """
@@ -27,6 +29,22 @@ def _test_only_login():
         ),
     ]
 
+def _hostkey_setup():
+    # This section customizes the generation of ssh host keys to reduce the startup
+    # time by ~2 full seconds by:
+    #   - Generating only one host key and
+    #   - Using /run/sshd to store the host key
+
+    return [
+        image.install("//antlir/linux/vm/ssh:sshd.tmpfiles.conf", "/usr/lib/tmpfiles.d/sshd.tmpfiles.conf"),
+        feature.remove("/usr/lib/systemd/system/sshd-keygen.service"),
+        systemd.install_unit("//antlir/linux/vm/ssh:sshd-keygen.service"),
+        # Install a drop-in that updates the cmd line to include the
+        # custom hostkey location.
+        systemd.install_dropin("//antlir/linux/vm/ssh:sshd-hostkey.conf", "sshd.service"),
+    ]
+
 ssh = struct(
     test_only_login = _test_only_login,
+    hostkey_setup = _hostkey_setup,
 )

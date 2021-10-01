@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -159,7 +158,6 @@ def initrd(kernel, module_list = None, visibility = None):
             image.ensure_subdirs_exist("/usr/lib", "modules-load.d"),
             image.install(":" + name + "--modules-load.conf", "/usr/lib/modules-load.d/initrd-modules.conf"),
         ],
-        flavor = REPO_CFG.antlir_linux_flavor,
         visibility = [],
     )
 

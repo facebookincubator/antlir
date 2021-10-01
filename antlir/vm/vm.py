@@ -415,6 +415,7 @@ async def vm(
             " cgroup_no_v1=all"
             " systemd.unified_cgroup_hierarchy=1"
             " rd.emergency=poweroff "
+            " systemd.hostname=vmtest "
             + " ".join(root_disk.kernel_args)
             + " ".join(opts.append)
         ),
