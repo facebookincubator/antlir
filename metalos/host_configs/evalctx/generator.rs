@@ -13,6 +13,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use derive_more::Display;
 use starlark::environment::{GlobalsBuilder, Module};
 use starlark::eval::Evaluator;
 use starlark::starlark_module;
@@ -34,20 +35,23 @@ macro_rules! output_only_struct {
     };
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Display, PartialEq, Eq, Clone)]
+#[display(fmt = "{:?}", self)]
 pub struct GeneratorOutput {
     pub files: Vec<File>,
 }
 output_only_struct!(GeneratorOutput);
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Display)]
+#[display(fmt = "{:?}", self)]
 pub struct Dir {
     path: PathBuf,
     mode: u32,
 }
 output_only_struct!(Dir);
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(Display, PartialEq, Eq, Clone)]
+#[display(fmt = "{:?}", self)]
 pub struct File {
     pub path: PathBuf,
     pub contents: Vec<u8>,

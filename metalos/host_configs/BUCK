@@ -30,6 +30,7 @@ rust_library(
         [
             "anyhow",
             "derive_builder",
+            "derive_more",
             "paste",
             "handlebars",
             "once_cell",

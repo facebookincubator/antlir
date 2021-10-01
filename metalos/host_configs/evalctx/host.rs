@@ -8,6 +8,7 @@
 use std::net::AddrParseError;
 
 use derive_builder::Builder;
+use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use starlark::values::{AllocValue, Heap, StarlarkAttrs, Value};
 
@@ -18,6 +19,7 @@ use starlark::values::{AllocValue, Heap, StarlarkAttrs, Value};
 /// external service and provided directly to a MetalOS host's initrd.
 #[derive(
     Debug,
+    Display,
     PartialEq,
     Eq,
     Clone,
@@ -27,6 +29,7 @@ use starlark::values::{AllocValue, Heap, StarlarkAttrs, Value};
     Builder
 )]
 #[builder(setter(into), build_fn(validate = "Self::validate"))]
+#[display(fmt = "{:?}", self)]
 pub struct Host {
     // 32-char hex identifier
     pub id: String,
@@ -92,6 +95,7 @@ impl<'v> AllocValue<'v> for IpAddr {
 /// Top-level network settings.
 #[derive(
     Debug,
+    Display,
     PartialEq,
     Eq,
     Clone,
@@ -101,6 +105,7 @@ impl<'v> AllocValue<'v> for IpAddr {
     Builder
 )]
 #[builder(setter(into))]
+#[display(fmt = "{:?}", self)]
 pub struct Network {
     pub dns: DNS,
     pub interfaces: Vec<NetworkInterface>,
@@ -110,6 +115,7 @@ simple_data_struct!(Network);
 /// Configuration for DNS resolvers
 #[derive(
     Debug,
+    Display,
     PartialEq,
     Eq,
     Clone,
@@ -119,6 +125,7 @@ simple_data_struct!(Network);
     Builder
 )]
 #[builder(setter(into))]
+#[display(fmt = "{:?}", self)]
 pub struct DNS {
     pub servers: Vec<IpAddr>,
     #[builder(default)]
@@ -130,6 +137,7 @@ simple_data_struct!(DNS);
 /// Configuration for a single network interface, keyed by MAC Address.
 #[derive(
     Debug,
+    Display,
     PartialEq,
     Eq,
     Clone,
@@ -139,6 +147,7 @@ simple_data_struct!(DNS);
     Builder
 )]
 #[builder(setter(into), build_fn(validate = "Self::validate"))]
+#[display(fmt = "{:?}", self)]
 pub struct NetworkInterface {
     pub mac: String,
     pub addrs: Vec<IpAddr>,

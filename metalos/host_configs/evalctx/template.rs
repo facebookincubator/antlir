@@ -11,6 +11,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::RwLock;
 
 use anyhow::{bail, Context, Result};
+use derive_more::Display;
 use handlebars::Handlebars;
 use once_cell::sync::Lazy;
 use starlark::codemap::Span;
@@ -36,7 +37,7 @@ static HANDLEBARS: Lazy<RwLock<Handlebars>> = Lazy::new(|| {
 /// hello = metalos.template("Hello {{who}}!")
 /// hello(who="world") == "Hello world!"
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Display)]
 pub struct Template(String);
 starlark_simple_value!(Template);
 
