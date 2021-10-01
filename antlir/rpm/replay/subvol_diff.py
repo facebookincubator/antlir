@@ -19,9 +19,12 @@ _PATHS_EXPECTED_TO_DIFFER = set()
 for p in [
     "etc/shadow",  # FIXME: Only "days since pwd change may differ"
     "etc/ld.so.cache",
+    "etc/dnf/modules.d",
     "usr/lib/fontconfig/cache",
     "usr/share/fonts/.uuid",
     "usr/share/fonts/dejavu/.uuid",
+    "usr/share/fonts/gnu-free/.uuid",
+    "usr/share/X11/fonts/Type1/.uuid",
     "var/cache/ldconfig/aux-cache",
     "var/lib/rpm",
     "var/lib/yum",
