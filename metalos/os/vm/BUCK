@@ -1,74 +1,21 @@
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:systemd.bzl", "systemd")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
-load("//antlir/linux/vm/ssh:defs.bzl", _ssh = "ssh")
-
-hostname = [image.install("hostname", "/etc/hostname")]
-
-# Future: we might be able to further streamline boot by eliminating other
-# services.  See D20987301 for some ideas.
-mask_units = [
-    systemd.mask_units([
-        # We don't want to rebuild the dnf caches
-        "dnf-makecache.service",
-        "dnf-makecache.timer",
-        # we don't even have persistent storage
-        "systemd-journal-flush.service",
-        # Don't save a random seed for a later boot that will never come
-        "systemd-random-seed.service",
-        # We don't need to run the update service
-        "systemd-update-utmp.service",
-        "systemd-update-utmp-runlevel.service",
-        "systemd-update-done.service",
-        # We don't want the drm module loaded, so stop trying
-        "modprobe@drm.service",
-    ]),
-]
-
-# Setup networking for the VM. This will mask some units that are slow
-# or not needed beyond having a link-local address that can be used between
-# the guest and the host.
-# It also installs support for other networking tools.
-networking = [
-    network.host(),
-    systemd.mask_units([
-        "systemd-resolved.service",
-        "systemd-time-wait-sync.service",
-        "rdisc.service",
-    ]),
-]
-
-ssh = [
-    _ssh.test_only_login(),
-    # This section customizes the generation of ssh host keys to reduce the startup
-    # time by ~2 full seconds by not generating more host keys than we need.
-    # Install tmpfiles config for sshd-keygen and sshd
-    image.install("sshd.tmpfiles.conf", "/usr/lib/tmpfiles.d/sshd.tmpfiles.conf"),
-    # Install a custom sshd-keygen.service that only generates a single key type
-    # and stores it in /run/sshd.
-    feature.remove("/usr/lib/systemd/system/sshd-keygen.service"),
-    systemd.install_unit("sshd-keygen.service"),
-    # Install a drop-in that updates the cmd line to include the
-    # custom hostkey location.
-    systemd.install_dropin("sshd-hostkey.conf", "sshd.service"),
-]
+load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 
 image.layer(
     name = "base",
     parent_layer = "//metalos/os:metalos",
     features = [
         console.autologin(),
-        hostname,
         generator.mounts(),
-        mask_units,
-        networking,
+        network.host(),
         notify.install(),
-        ssh,
+        ssh.test_only_login(),
+        ssh.hostkey_setup(),
     ],
     # Any vm unittest or run target can have a custom layer
     # built on top of this.

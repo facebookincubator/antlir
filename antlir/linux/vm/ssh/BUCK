@@ -12,3 +12,15 @@ export_file(
     src = "id_ecdsa.pub",
     visibility = ["PUBLIC"],
 )
+
+export_file(
+    name = "sshd-hostkey.conf",
+)
+
+export_file(
+    name = "sshd-keygen.service",
+)
+
+export_file(
+    name = "sshd.tmpfiles.conf",
+)
