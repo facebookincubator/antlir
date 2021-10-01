@@ -12,7 +12,7 @@ load("//antlir/bzl/linux:defs.bzl", "linux")
 
 image.layer(
     name = "debug-deps",
-    parent_layer = "//metalos/initrd:system-deps",
+    parent_layer = "//metalos/os:metalos",
     features = [
         image.rpms_install([
             "busybox",
@@ -20,6 +20,7 @@ image.layer(
             "dropbear",
         ]),
     ],
+    visibility = ["//metalos/initrd/..."],
 )
 
 # Some systemd units and binaries that are only useful for debugging and not
