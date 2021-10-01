@@ -116,7 +116,7 @@ test_env_vars = {
 
 image.layer(
     name = "vmtest-custom-layer",
-    parent_layer = vm.artifacts.rootfs.layer.rc,
+    parent_layer = vm.artifacts.rootfs.layer,
     features = [
         image.install(
             ":resource.txt",

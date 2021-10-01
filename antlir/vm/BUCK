@@ -180,23 +180,23 @@ python_binary(
 )
 
 vm.run(
-    name = "default-stable-qcow2",
+    name = "default-qcow2",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
         disk = vm.types.disk.new(
             seed = False,
-            layer = vm.artifacts.rootfs.layer.stable,
+            layer = vm.artifacts.rootfs.layer,
         ),
     ),
 )
 
 vm.run(
-    name = "default-stable-qcow2-debug",
+    name = "default-qcow2-debug",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
         disk = vm.types.disk.new(
             seed = False,
-            layer = vm.artifacts.rootfs.layer.stable,
+            layer = vm.artifacts.rootfs.layer,
         ),
         initrd = "{}:{}-initrd-debug".format(
             kernel_get.base_target,
@@ -206,49 +206,25 @@ vm.run(
 )
 
 vm.run(
-    name = "default-stable",
+    name = "default",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
-        disk = vm.artifacts.rootfs.disk.stable(),
+        disk = vm.artifacts.rootfs.disk,
     ),
 )
 
 vm.run(
-    name = "default-rc",
+    name = "default-initrd-debug",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
-        disk = vm.artifacts.rootfs.disk.rc(),
-    ),
-)
-
-vm.run(
-    name = "default-stable-initrd-debug",
-    vm_opts = vm.types.opts.new(
-        kernel = kernel_get.default,
-        disk = vm.artifacts.rootfs.disk.stable(),
+        disk = vm.artifacts.rootfs.disk,
         initrd = "{}:{}-initrd-debug".format(
             kernel_get.base_target,
             kernel_get.default.uname,
         ),
     ),
     args = [
-        "--console",
-        "--shell=console",
-    ],
-)
-
-vm.run(
-    name = "default-rc-initrd-debug",
-    vm_opts = vm.types.opts.new(
-        kernel = kernel_get.default,
-        disk = vm.artifacts.rootfs.disk.rc(),
-        initrd = "{}:{}-initrd-debug".format(
-            kernel_get.base_target,
-            kernel_get.default.uname,
-        ),
-    ),
-    args = [
-        "--console",
+        "--append-console",
         "--shell=console",
     ],
 )
