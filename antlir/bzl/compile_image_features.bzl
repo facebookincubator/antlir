@@ -6,10 +6,9 @@
 # Implementation detail for `image/layer/layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
-load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:new.bzl", "feature_new", "normalize_features")
-load(":constants.bzl", "BZL_CONST", "REPO_CFG")
+load(":constants.bzl", "BZL_CONST", "REPO_CFG", "version_set_override_name")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
@@ -90,7 +89,7 @@ def compile_image_features(
 
     vset_override_name = None
     if flavor_config and flavor_config.rpm_version_set_overrides:
-        vset_override_name = "vset-override-" + sha256_b64(current_target)
+        vset_override_name = version_set_override_name(current_target)
         buck_genrule(
             name = vset_override_name,
             out = "unused",

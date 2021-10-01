@@ -10,6 +10,7 @@
 # could easily move everything into the struct.
 #
 load("//antlir/bzl:oss_shim.bzl", "do_not_use_repo_cfg")
+load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
 load(":target_helpers.bzl", "normalize_target")
@@ -30,6 +31,9 @@ BZL_CONST = shape.new(
     PRIVATE_feature_suffix = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN",
     version_set_allow_all_versions = "__VERSION_SET_ALLOW_ALL_VERSIONS__",
 )
+
+def version_set_override_name(current_target):
+    return "vset-override-" + sha256_b64(current_target)
 
 # Use `_get_str_cfg` or `_get_str_list_cfg` instead.
 def _do_not_use_directly_get_cfg(name, default = None):
