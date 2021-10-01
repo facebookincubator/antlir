@@ -50,10 +50,7 @@ fn instantiate_template<U: AsRef<str>, I: AsRef<str>>(
     Ok(instance_unit)
 }
 
-fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
-    let cmdline =
-        MetalosCmdline::from_kernel().context("invalid kernel cmdline options for MetalOS")?;
-
+fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Result<()> {
     if let Some(os_package) = cmdline.os_package() {
         info!(
             log,
@@ -115,14 +112,20 @@ fn generator_maybe_err(log: Logger, opts: Opts) -> Result<()> {
             .with_context(|| format!("failed to open {:?} for writing", rootdisk_unit_path))?;
         let root_src = crate::mount::source_to_device_path(&root.root)
             .with_context(|| format!("unable to understand root={}", root.root))?;
-        write!(
-            unit,
-            "[Unit]\nBefore=initrd-root-fs.target\n[Mount]\nWhat={}\nWhere=/rootdisk\nOptions={}\nType={}\n",
-            root_src.to_string_lossy(),
-            root.flags.unwrap_or_else(|| "".to_string()),
-            root.fstype.unwrap_or(""),
-        )
-        .context("failed to write rootdisk.mount")?;
+
+        match root.fstype {
+            Some(fstype) => write!(unit,
+                "[Unit]\nBefore=initrd-root-fs.target\n[Mount]\nWhat={}\nWhere=/rootdisk\nOptions={}\nType={}\n",
+                root_src.to_string_lossy(),
+                root.flags.unwrap_or_else(|| "".to_string()),
+                fstype,
+            ).context("failed to write rootdisk.mount")?,
+            None => write!(unit,
+                "[Unit]\nBefore=initrd-root-fs.target\n[Mount]\nWhat={}\nWhere=/rootdisk\nOptions={}\n",
+                root_src.to_string_lossy(),
+                root.flags.unwrap_or_else(|| "".to_string())
+            ).context("failed to write rootdisk.mount")?
+        }
         let requires_dir = opts.normal_dir.join("initrd-root-fs.target.requires");
         fs::create_dir(&requires_dir)?;
         symlink(&rootdisk_unit_path, requires_dir.join("rootdisk.mount"))?;
@@ -176,7 +179,18 @@ pub fn generator(log: Logger, opts: Opts) -> Result<()> {
 
     let sublog = log.new(o!());
 
-    match generator_maybe_err(sublog, opts) {
+    let cmdline = match MetalosCmdline::from_kernel() {
+        Ok(c) => Ok(c),
+        Err(e) => {
+            error!(
+                log,
+                "invalid kernel cmdline options for MetalOS. error was: `{:?}`", e,
+            );
+            Err(e)
+        }
+    }?;
+
+    match generator_maybe_err(cmdline, sublog, opts) {
         Ok(()) => Ok(()),
         Err(e) => {
             error!(log, "{}", e.to_string());
@@ -202,6 +216,135 @@ mod tests {
             tmpdir.join("hello@world.service").read_link()?,
             Path::new(PROVIDER_ROOT).join("hello@.service"),
         );
+        std::fs::remove_dir_all(&tmpdir)?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_generator() -> Result<()> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
+        let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
+        let tmpdir = std::env::temp_dir().join(format!("test_generator{:?}", ts));
+        std::fs::create_dir(&tmpdir)?;
+        let opts = Opts {
+            normal_dir: tmpdir.clone(),
+            early_dir: tmpdir.clone(),
+            late_dir: tmpdir.clone(),
+        };
+        // here we pass rootfstype=btrfs
+        let cmdline: MetalosCmdline =
+            "metalos.host-config-uri=\"https://server:8000/v1/host/host001.01.abc0.domain.com\" \
+            metalos.os_package=\"somePackage\" \
+            metalos.package_format_uri=\"someURI\" \
+            metalos.seed_device=\"seedDevice\" \
+            rootfstype=btrfs \
+            root=LABEL=/"
+                .parse()?;
+
+        generator_maybe_err(cmdline, log, opts)?;
+
+        assert_eq!(
+            tmpdir
+                .join("metalos-fetch-image@somePackage.service")
+                .read_link()?,
+            Path::new(PROVIDER_ROOT).join("metalos-fetch-image@.service"),
+        );
+        assert_eq!(
+            tmpdir
+                .join("seedroot-device-add@seedDevice.service")
+                .read_link()?,
+            Path::new(PROVIDER_ROOT).join("seedroot-device-add@.service"),
+        );
+
+        let file = tmpdir.join("metalos-switch-root.service.d/host_config_uri.conf");
+        assert!(file.exists());
+        let content = std::fs::read_to_string(file.clone())
+            .context(format!("Can't read file {}", file.display()))?;
+        assert_eq!(
+            content,
+            "[Service]\nEnvironment=HOST_CONFIG_URI=https://server:8000/v1/host/host001.01.abc0.domain.com\n"
+        );
+
+        let file = tmpdir.join("metalos-switch-root.service.d/os_subvol.conf");
+        assert!(file.exists());
+        let content = std::fs::read_to_string(file.clone())
+            .context(format!("Can't read file {}", file.display()))?;
+        assert_eq!(
+            content,
+            "[Unit]\n\
+            After=metalos-fetch-image@somePackage.service\n\
+            Requires=metalos-fetch-image@somePackage.service\n\
+            [Service]\n\
+            Environment=OS_SUBVOL=var/lib/metalos/image/somePackage/volume\n"
+        );
+
+        let file = tmpdir.join("seedroot.service.d/device-add.conf");
+        assert!(file.exists());
+        let content = std::fs::read_to_string(file.clone())
+            .context(format!("Can't read file {}", file.display()))?;
+        assert_eq!(
+            content,
+            "[Unit]\n\
+            Requires=seedroot-device-add@seedDevice.service\n\
+            After=seedroot-device-add@seedDevice.service"
+        );
+
+        let file = tmpdir.join("rootdisk.mount");
+        assert!(file.exists());
+        let content = std::fs::read_to_string(file.clone())
+            .context(format!("Can't read file {}", file.display()))?;
+        assert_eq!(
+            content,
+            "[Unit]\n\
+            Before=initrd-root-fs.target\n\
+            [Mount]\n\
+            What=/dev/disk/by-label/\\x2f\n\
+            Where=/rootdisk\n\
+            Options=\n\
+            Type=btrfs\n"
+        );
+
+        std::fs::remove_dir_all(&tmpdir)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_generator_no_rootfstype() -> Result<()> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
+        let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
+        let tmpdir = std::env::temp_dir().join(format!("test_generator_nofstype{:?}", ts));
+        std::fs::create_dir(&tmpdir)?;
+        let opts = Opts {
+            normal_dir: tmpdir.clone(),
+            early_dir: tmpdir.clone(),
+            late_dir: tmpdir.clone(),
+        };
+        // here we do not pass rootfstype=btrfs
+        let cmdline: MetalosCmdline =
+            "metalos.host-config-uri=\"https://server:8000/v1/host/host001.01.abc0.domain.com\" \
+            metalos.os_package=\"somePackage\" \
+            metalos.package_format_uri=\"someURI\" \
+            metalos.seed_device=\"seedDevice\" \
+            root=LABEL=/"
+                .parse()?;
+
+        generator_maybe_err(cmdline, log, opts)?;
+
+        let file = tmpdir.join("rootdisk.mount");
+        assert!(file.exists());
+        let content = std::fs::read_to_string(file.clone())
+            .context(format!("Can't read file {}", file.display()))?;
+        assert_eq!(
+            content,
+            "[Unit]\n\
+            Before=initrd-root-fs.target\n\
+            [Mount]\n\
+            What=/dev/disk/by-label/\\x2f\n\
+            Where=/rootdisk\n\
+            Options=\n"
+        );
+
         std::fs::remove_dir_all(&tmpdir)?;
         Ok(())
     }
