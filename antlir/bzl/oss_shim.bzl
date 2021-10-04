@@ -142,6 +142,7 @@ kernel_get = shim.kernel_get
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 rpm_vset = shim.rpm_vset
 rust_binary = shim.rust_binary
+rust_bindgen_library = shim.rust_bindgen_library
 rust_library = shim.rust_library
 rust_unittest = shim.rust_unittest
 target_utils = shim.target_utils

@@ -30,13 +30,13 @@ def image_rust_unittest(
     )
 
     rust_unittest(
-        name = helpers.hidden_test_name(name).lower().replace("--", "-"),
+        name = helpers.hidden_test_name(name, "rust"),
         antlir_rule = "user-internal",
         labels = helpers.tags_to_hide_test(),
         **wrapper_props.inner_test_kwargs
     )
 
-    wrapper_binary = name + "__test-wrapper"
+    wrapper_binary = name + "_test-wrapper"
     python_binary(
         name = wrapper_binary,
         main_module = "antlir.nspawn_in_subvol.run_test",
@@ -50,7 +50,7 @@ def image_rust_unittest(
 
     buck_sh_test(
         name = name,
-        env = wrapper_props.outer_test_kwargs.pop("env"),
+        env = wrapper_props.outer_test_kwargs.pop("env", {}),
         antlir_rule = "user-facing",
         test = ":" + wrapper_binary,
         type = "rust",
