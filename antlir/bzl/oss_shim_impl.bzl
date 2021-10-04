@@ -447,6 +447,19 @@ def _rust_library(*args, **kwargs):
     if test_kwargs:
         _rust_unittest(**test_kwargs)
 
+def _rust_bindgen_library(name, *args, **kwargs):
+    print("{}: rust_bindgen_library not yet supported in oss".format(name))
+
+    # generate a target so that the target graph for //antlir/... is not broken,
+    # but crates that require this will definitely not compile
+    _rust_library(
+        name = name,
+        mapped_srcs = {
+            "//antlir:empty": "src/lib.rs",
+        },
+        unittests = False,
+    )
+
 # Use = in the default filename to avoid clashing with RPM names.
 # The constant must match `update_allowed_versions.py`.
 # Omits `_wrap_internal` due to perf paranoia -- we have a callsite per RPM.
@@ -578,6 +591,7 @@ shim = struct(
     rust_binary = _rust_binary,
     rust_library = _rust_library,
     rust_unittest = _rust_unittest,
+    rust_bindgen_library = _rust_bindgen_library,
     rpm_vset = _rpm_vset,  # Not wrapped due to perf paranoia.
     target_utils = struct(
         parse_target = _parse_target,

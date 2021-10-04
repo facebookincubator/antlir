@@ -1,0 +1,49 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "rust_bindgen_library", "rust_library", "third_party")
+
+rust_bindgen_library(
+    name = "btrfsutil-sys",
+    cpp_deps = [
+        third_party.library("btrfs-progs", "btrfsutil"),
+    ],
+    generate = ("types", "functions", "vars"),
+    header = "btrfsutil-sys/bridge.h",
+    visibility = ["//antlir/..."],
+)
+
+btrfs_lib_kwargs = {
+    "deps": [
+        ":btrfsutil-sys",
+    ] + third_party.libraries(
+        [
+            "anyhow",
+            "uuid",
+            "libc",
+        ],
+        platform = "rust",
+    ),
+    "srcs": glob(["src/*.rs"]),
+}
+
+rust_library(
+    name = "btrfs",
+    srcs = btrfs_lib_kwargs["srcs"],
+    tests = [":btrfs-unittest"],
+    unittests = False,
+    deps = btrfs_lib_kwargs["deps"],
+)
+
+image.layer(
+    name = "test-layer",
+    parent_layer = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+    flavor = REPO_CFG.antlir_linux_flavor,
+)
+
+image.rust_unittest(
+    name = "btrfs-unittest",
+    layer = ":test-layer",
+    run_as_user = "root",
+    srcs = btrfs_lib_kwargs["srcs"],
+    deps = btrfs_lib_kwargs["deps"],
+)

@@ -15,8 +15,13 @@ load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "targets_and_outputs_arg_list")
 
-def _hidden_test_name(name):
+def _hidden_test_name(name, test_type = None):
     # This is the test binary that is supposed to run inside the image.
+    if test_type == "rust":
+        # without special casing rust names, the rust compiler complains that
+        # the crate name has two adjacent underscores and is not proper
+        # snake_case, so give in to its demands
+        return name + "_test_binary"
     return name + "__test_binary"
 
 def _tags_to_hide_test():
@@ -116,7 +121,7 @@ def _nspawn_wrapper_properties(
 
     # Make a test-specific image containing the test binary.
     binary_path = "/layer-test-binary.par"
-    inner_test_target = ":" + _hidden_test_name(name)
+    inner_test_target = ":" + _hidden_test_name(name, test_type)
     if test_type == "rust":
         # for the rust linter warning that the crate is not snake_case
         inner_test_target = inner_test_target.lower().replace("--", "-")
