@@ -80,8 +80,8 @@ def initrd(kernel, module_list = None, visibility = None):
             unit = shape.new(
                 systemd.units.unit,
                 description = "Full set of kernel modules",
-                requires = ["seedroot.service", "systemd-modules-load.service"],
-                after = ["seedroot.service", "systemd-modules-load.service"],
+                requires = ["remount-rootdisk.service", "systemd-modules-load.service"],
+                after = ["remount-rootdisk.service", "systemd-modules-load.service"],
                 before = ["initrd-fs.target"],
             ),
             what = "kernel-modules",
@@ -113,8 +113,8 @@ def initrd(kernel, module_list = None, visibility = None):
             # The metalctl generator will instantiate this template with the
             # seed device provided on the kernel command line as metalos.seed_device.
             systemd.install_unit("//antlir/vm/initrd:seedroot-device-add@.service"),
-            systemd.install_unit("//antlir/vm/initrd:seedroot.service"),
-            systemd.enable_unit("seedroot.service", target = "initrd-fs.target"),
+            systemd.install_unit("//antlir/vm/initrd:remount-rootdisk.service"),
+            systemd.enable_unit("remount-rootdisk.service", target = "initrd-fs.target"),
 
             # The switchroot behavior is different for the vmtest based initrd so
             # lets remove the metalos-switch-root.service and install our own

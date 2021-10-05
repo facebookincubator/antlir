@@ -58,7 +58,7 @@ _vm_disk_t = shape.shape(
 )
 
 def _new_vm_disk(
-        seed = True,
+        seed = False,
         package = None,
         layer = None):
     if package and layer:

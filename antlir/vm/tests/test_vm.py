@@ -19,8 +19,8 @@ from antlir.vm.vm_opts_t import vm_opts_t
 
 class TestAntlirVM(AntlirTestCase):
     def test_parse_cli(self):
-        opts_instance = vm_opts_t.from_env("test-vm-seed-json")
-        opts_cli_arg = "--opts={}".format(os.environ["test-vm-seed-json"])
+        opts_instance = vm_opts_t.from_env("test-vm-json")
+        opts_cli_arg = "--opts={}".format(os.environ["test-vm-json"])
         # Test defaults of everything that has a default
         self.assertEqual(
             VMExecOpts(
@@ -94,10 +94,11 @@ class TestAntlirVM(AntlirTestCase):
         )
 
     async def test_api_ssh(self):
-        opts_instance = vm_opts_t.from_env("test-vm-qcow2-json")
+        opts_instance = vm_opts_t.from_env("test-vm-json")
 
         async with vm(
             opts=opts_instance,
+            console=2,
         ) as (instance, boottime_ms, timeout_ms):
             proc = await instance.run(
                 cmd=["/bin/hostnamectl", "status", "--transient"],
@@ -135,7 +136,7 @@ class TestAntlirVM(AntlirTestCase):
             self.assertEqual(proc.returncode, 0)
 
     async def test_api_console(self):
-        opts_instance = vm_opts_t.from_env("test-vm-seed-json")
+        opts_instance = vm_opts_t.from_env("test-vm-json")
 
         with tempfile.NamedTemporaryFile() as tf:
             async with vm(
@@ -156,7 +157,7 @@ class TestAntlirVM(AntlirTestCase):
             self.assertIn(b"TEST CONSOLE", tf.read())
 
     async def test_api_kernel_panic(self):
-        opts_instance = vm_opts_t.from_env("test-vm-seed-json")
+        opts_instance = vm_opts_t.from_env("test-vm-json")
 
         with tempfile.NamedTemporaryFile() as console_f:
             async with vm(
@@ -189,6 +190,7 @@ class TestAntlirVM(AntlirTestCase):
 
         async with vm(
             opts=opts_instance,
+            console=2,
         ) as (instance, boottime_ms, timeout_ms):
             pass
 

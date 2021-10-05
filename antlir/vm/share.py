@@ -187,7 +187,7 @@ Options=subvol={self.subvol},{ro_rw}
 def _tmp_qcow2_disk(
     qemu_img: Path,
     stack: AsyncExitStack,
-    size_mb: int = 1024,
+    size_mb: int = 2048,
 ) -> Path:
     """
     Create a qcow2 scratch disk using qemu-img.  The default size is 256MB.
