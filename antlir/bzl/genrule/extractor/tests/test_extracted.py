@@ -52,8 +52,16 @@ class TestExtracted(unittest.TestCase):
                     stat.filemode(src.st_mode), stat.filemode(dst.st_mode)
                 )
 
-    def test_repo_built_binary_runs(self):
+    def test_binaries_run(self):
         subvol = layer_resource_subvol(__package__, "layer")
+        # repo built binary
         subvol.run_as_root(
             [subvol.path("/usr/bin/repo-built-binary")], check=True
         )
+
+        # binaries from rpms
+        for binary in (
+            "/usr/lib/systemd/systemd",
+            "/usr/bin/strace",
+        ):
+            subvol.run_as_root([subvol.path(binary), "--help"], check=True)

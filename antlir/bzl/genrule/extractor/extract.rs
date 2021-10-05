@@ -251,29 +251,42 @@ fn main() -> Result<()> {
     let mut features = vec![];
     // "clone" feature for each files to copy
     for (dst, src) in &copy_files {
-        features.push(json!({
-            "clone": [
-                {
-                    "dest": dst,
-                    "omit_outer_dir": false,
-                    "pre_existing_dest": false,
-                    "source": {
-                    "content_hash": null,
-                    "generator": null,
-                    "generator_args": [],
-                    "layer": {
-                        "__BUCK_LAYER_TARGET": target
-                    },
-                    "path": src,
-                    "source": null
-                    },
-                    "source_layer": {
-                    "__BUCK_LAYER_TARGET": target
+        features.push(json!(
+            {
+                "remove_paths": [
+                    {
+                        "must_exist": false,
+                        "path": dst
                     }
-                }
-            ],
-            "target": target
-        }));
+                ],
+                "target": target
+            }
+        ));
+        features.push(json!(
+            {
+                "clone": [
+                    {
+                        "dest": dst,
+                        "omit_outer_dir": false,
+                        "pre_existing_dest": false,
+                        "source": {
+                            "content_hash": null,
+                            "generator": null,
+                            "generator_args": [],
+                            "layer": {
+                                    "__BUCK_LAYER_TARGET": target
+                            },
+                            "path": src,
+                            "source": null
+                        },
+                        "source_layer": {
+                        "__BUCK_LAYER_TARGET": target
+                        }
+                    }
+                ],
+                "target": target
+            }
+        ));
     }
 
     // "ensure_subdirs_exist" feature for each dirs to copy
