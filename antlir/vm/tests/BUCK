@@ -27,15 +27,7 @@ python_unittest(
         "test_vm.py",
     ],
     env = {
-        "test-vm-qcow2-json": shape.do_not_cache_me_json(
-            vm.types.opts.new(
-                disk = vm.types.disk.new(
-                    seed = False,
-                    layer = ":vmtest-custom-layer",
-                ),
-            ),
-        ),
-        "test-vm-seed-json": shape.do_not_cache_me_json(
+        "test-vm-json": shape.do_not_cache_me_json(
             vm.types.opts.new(
                 runtime = vm.types.runtime.new(
                     connection = vm.types.connection.new(
@@ -45,6 +37,17 @@ python_unittest(
                             "ServerAliveInterval": "1",
                         },
                     ),
+                ),
+                disk = vm.types.disk.new(
+                    layer = ":vmtest-custom-layer",
+                ),
+            ),
+        ),
+        "test-vm-seed-json": shape.do_not_cache_me_json(
+            vm.types.opts.new(
+                disk = vm.types.disk.new(
+                    seed = True,
+                    layer = ":vmtest-custom-layer",
                 ),
             ),
         ),
@@ -135,7 +138,7 @@ vm.python_unittest(
     vm_opts = vm.types.opts.new(
         cpus = 4,
         disk = vm.types.disk.new(
-            seed = True,
+            seed = False,
             layer = ":vmtest-custom-layer",
         ),
     ),

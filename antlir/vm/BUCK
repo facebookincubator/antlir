@@ -180,36 +180,21 @@ python_binary(
 )
 
 vm.run(
-    name = "default-qcow2",
-    vm_opts = vm.types.opts.new(
-        kernel = kernel_get.default,
-        disk = vm.types.disk.new(
-            seed = False,
-            layer = vm.artifacts.rootfs.layer,
-        ),
-    ),
-)
-
-vm.run(
-    name = "default-qcow2-debug",
-    vm_opts = vm.types.opts.new(
-        kernel = kernel_get.default,
-        disk = vm.types.disk.new(
-            seed = False,
-            layer = vm.artifacts.rootfs.layer,
-        ),
-        initrd = "{}:{}-initrd-debug".format(
-            kernel_get.base_target,
-            kernel_get.default.uname,
-        ),
-    ),
-)
-
-vm.run(
     name = "default",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
         disk = vm.artifacts.rootfs.disk,
+    ),
+)
+
+vm.run(
+    name = "default-seed",
+    vm_opts = vm.types.opts.new(
+        kernel = kernel_get.default,
+        disk = vm.types.disk.new(
+            seed = True,
+            layer = vm.artifacts.rootfs.layer,
+        ),
     ),
 )
 
