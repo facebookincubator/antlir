@@ -4,12 +4,14 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
+load("//antlir/vm/bzl:install_kernel_modules.bzl", "install_kernel_modules")
 
 DEFAULT_MODULE_LIST = [
     "drivers/block/virtio_blk.ko",
@@ -39,40 +41,6 @@ def initrd(kernel, module_list = None, visibility = None):
     module_list = module_list or DEFAULT_MODULE_LIST
     visibility = get_visibility(visibility, name)
 
-    # This intermediate genrule is here to create a dir hierarchy
-    # of kernel modules that are needed for the initrd.  This
-    # provides a single dir that can be cloned into the initrd
-    # layer and allows for kernel modules that might be missing
-    # from different kernel builds.
-    buck_genrule(
-        name = name + "--modules",
-        out = ".",
-        cmd = """
-            mkdir -p $OUT
-            pushd $OUT 2>/dev/null
-
-            # copy the needed modules out of the module layer
-            binary_path=( $(exe //antlir:find-built-subvol) )
-            layer_loc="$(location {module_layer})"
-            mod_layer_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
-
-            mods="{module_list}"
-            for mod in $mods; do
-                mod_src="$mod_layer_path/kernel/$mod"
-                if [[ -f "$mod_src" ]]; then
-                    mod_dir=\\$(dirname "$mod")
-                    mkdir -p "$mod_dir"
-                    cp "$mod_src" "$mod_dir"
-                fi
-            done
-        """.format(
-            module_layer = kernel.artifacts.modules,
-            module_list = " ".join(module_list),
-        ),
-        antlir_rule = "user-internal",
-        visibility = [],
-    )
-
     systemd.units.mount_file(
         name = name + "--modules.mount",
         mount = shape.new(
@@ -91,17 +59,6 @@ def initrd(kernel, module_list = None, visibility = None):
         ),
     )
     mount_unit_name = systemd.escape("/rootdisk/usr/lib/modules/{}.mount".format(kernel.uname), path = True)
-
-    buck_genrule(
-        name = name + "--modules-load.conf",
-        out = "unused",
-        cmd = "echo '{}' > $OUT".format("\n".join([
-            paths.basename(module).rsplit(".")[0]
-            for module in module_list
-        ])),
-        antlir_rule = "user-internal",
-        visibility = [],
-    )
 
     # Build an initrd specifically for operating as a VM. This is built on top of the
     # MetalOS initrd and modified to support btrfs seed devices and 9p shared mounts
@@ -122,41 +79,11 @@ def initrd(kernel, module_list = None, visibility = None):
             feature.remove("/usr/lib/systemd/system/initrd-switch-root.target.requires/metalos-switch-root.service"),
             systemd.install_unit("//antlir/vm/initrd:initrd-switch-root.service"),
             systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
-
+            install_kernel_modules(kernel, module_list),
             # mount kernel modules over 9p in the initrd so they are available
             # immediately in the base os.
             systemd.install_unit(":" + name + "--modules.mount", mount_unit_name),
             systemd.enable_unit(mount_unit_name, target = "initrd-fs.target"),
-
-            # Install the initrd modules specified in VM_MODULE_LIST above into the
-            # layer
-            image.ensure_subdirs_exist("/usr/lib", paths.join("modules", kernel.uname)),
-            image.install(
-                image.source(
-                    source = ":" + name + "--modules",
-                    path = ".",
-                ),
-                paths.join("/usr/lib/modules", kernel.uname, "kernel"),
-            ),
-            [
-                [
-                    image.clone(
-                        kernel.artifacts.modules,
-                        paths.join("/modules.{}".format(f)),
-                        paths.join("/usr/lib/modules", kernel.uname, "modules.{}".format(f)),
-                    ),
-                    image.clone(
-                        kernel.artifacts.modules,
-                        paths.join("/modules.{}.bin".format(f)),
-                        paths.join("/usr/lib/modules", kernel.uname, "modules.{}.bin".format(f)),
-                    ),
-                ]
-                for f in ("dep", "symbols", "alias", "builtin")
-            ],
-
-            # Ensure the kernel modules are loaded by systemd when the initrd is started
-            image.ensure_subdirs_exist("/usr/lib", "modules-load.d"),
-            image.install(":" + name + "--modules-load.conf", "/usr/lib/modules-load.d/initrd-modules.conf"),
         ],
         visibility = [],
     )
