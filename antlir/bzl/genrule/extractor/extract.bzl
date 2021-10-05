@@ -50,6 +50,13 @@ this symlink farm structure rely on the fact that $0 resolves to a path within
 `buck-out`.  So if we use a symlink it would break this assumption.  This
 doesn't mean that parsing is the only option, but the most obvious alternative
 (symlinks) won't work with the current way buck builds these binaries.
+
+IMPORTANT NOTE:
+extract.extract will first `image_remove` all file paths to be exported,
+then `image_clone` the same paths to destination layer.
+
+The reason for this is to avoid conflicts on .so files that were potentially already
+exported by a parent layer which also includes an extract.extract feature.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")

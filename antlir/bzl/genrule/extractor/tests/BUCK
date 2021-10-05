@@ -5,7 +5,7 @@ load("//antlir/bzl:oss_shim.bzl", "python_unittest", "rust_binary")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 
 image.layer(
-    name = "extracted",
+    name = "deps",
     features = [
         extract.extract(
             binaries = [
@@ -18,10 +18,27 @@ image.layer(
     visibility = ["//antlir/bzl/genrule/extractor/tests/..."],
 )
 
+image.layer(
+    name = "extracted",
+    parent_layer = ":deps",
+    features = [
+        extract.extract(
+            binaries = [
+                "/usr/bin/strace",
+            ],
+            source = ":source",
+        ),
+    ],
+    visibility = ["//antlir/bzl/genrule/extractor/tests/..."],
+)
+
 extract.source_layer(
     name = "source",
     features = [
-        image.rpms_install(["systemd"]),
+        image.rpms_install([
+            "systemd",
+            "strace",
+        ]),
         image.install(
             ":repo-built-binary",
             "/usr/bin/repo-built-binary",
