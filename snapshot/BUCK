@@ -1,9 +1,13 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "export_file")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
-load(":defs.bzl", "fedora_storage_config")
+load(":defs.bzl", "centos_storage_config", "fedora_storage_config")
 
 export_file(
     name = "fedora33/dnf.conf",
+)
+
+export_file(
+    name = "centos8-stream/dnf.conf",
 )
 
 rpm_repo_snapshot(
@@ -27,6 +31,31 @@ buck_command_alias(
         "--one-universe-for-all-repos=fedora33",
         "--dnf-conf=$(location //snapshot:fedora33/dnf.conf)",
         "--yum-conf=$(location //snapshot:fedora33/dnf.conf)",
+    ],
+    exe = "//antlir/rpm:snapshot-repos",
+)
+
+rpm_repo_snapshot(
+    name = "centos8-stream",
+    src = "centos8-stream",
+    rpm_installers = ("dnf",),
+    storage = centos_storage_config('8-stream'),
+)
+
+# Command to snapshot the specified Fedora repos.
+# Currently just snapshot the Fedora33 Everything 'os' repository, but this will be
+# expanded to support more Fedora versions and repos.
+buck_command_alias(
+    name = "snapshot-centos8-stream",
+    args = [
+        "--snapshot-dir=snapshot/centos8-stream",
+        "--gpg-key-allowlist-dir=snapshot/centos8-stream/repos/hyperscale-hotfixes/gpg_keys",
+        '--db={"kind": "sqlite", "db_path": "snapshot/snapshots.sql3"}',
+        "--threads=16",
+        "--storage={}".format(repr(centos_storage_config('8-stream'))),
+        "--one-universe-for-all-repos=centos8stream",
+        "--dnf-conf=$(location //snapshot:centos8-stream/dnf.conf)",
+        "--yum-conf=$(location //snapshot:centos8-stream/dnf.conf)",
     ],
     exe = "//antlir/rpm:snapshot-repos",
 )

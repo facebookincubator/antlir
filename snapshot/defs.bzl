@@ -11,3 +11,12 @@ def fedora_storage_config(release):
         "prefix": "snapshots/fedora/{}".format(release),
         "region": "us-east-2",
     }
+
+def centos_storage_config(release):
+    return {
+        "bucket": "antlir",
+        "key": "s3",
+        "kind": "s3",
+        "prefix": "snapshots/centos/{}".format(release),
+        "region": "us-east-2",
+    }
