@@ -13,7 +13,7 @@ from antlir.subvol_utils import TempSubvolumes
 from ..subvol_diff import subvol_diff
 
 
-class ExtractNestedFeaturesTestCase(unittest.TestCase):
+class SubvolDiffTestCase(unittest.TestCase):
     def mock_subvol_run_as_root_and_assert_raises(
         self,
         exception,
@@ -66,6 +66,10 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
             # test different dirs get caught
             left_subvol.run_as_root(["mkdir", "-p", left_subvol.path("foo")])
             right_subvol.run_as_root(["mkdir", "-p", right_subvol.path("bar")])
+            # test files with prefixes that are discarded get caught
+            right_subvol.run_as_root(
+                ["mkdir", "-p", right_subvol.path("var/lib/rpmsign")]
+            )
 
             # test files of same path with different contents get caught
             left_subvol.overwrite_path_as_root(Path("foo.txt"), "leftcontent")
@@ -78,8 +82,26 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
             right_subvol.run_as_root(
                 ["mkdir", "-p", right_subvol.path("var/lib/dnf")]
             )
+            right_subvol.run_as_root(
+                ["mkdir", "-p", right_subvol.path("etc/dnf/modules.d")]
+            )
+            right_subvol.run_as_root(
+                ["touch", right_subvol.path("etc/dnf/modules.d/foomodule")]
+            )
+            left_subvol.run_as_root(
+                ["mkdir", "-p", left_subvol.path("etc/dnf")]
+            )
+            left_subvol.run_as_root(
+                ["mkdir", "-p", left_subvol.path("usr/share/fonts/abc")]
+            )
+            left_subvol.run_as_root(
+                ["touch", left_subvol.path("usr/share/fonts/abc/.uuid")]
+            )
+            right_subvol.run_as_root(
+                ["mkdir", "-p", right_subvol.path("usr/share/fonts/abc")]
+            )
 
             self.assertEqual(
                 list(subvol_diff(left_subvol, right_subvol)),
-                [b"./bar", b"./foo", b"foo.txt"],
+                [b"./bar", b"./foo", b"foo.txt", b"var/lib/rpmsign"],
             )

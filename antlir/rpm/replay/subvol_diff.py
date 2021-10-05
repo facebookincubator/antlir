@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 "See the `subvol_diff()` docblock."
+import fnmatch
 import os
 import re
 import subprocess
@@ -15,16 +16,17 @@ from antlir.subvol_utils import Subvol
 
 log = get_logger()
 
-_PATHS_EXPECTED_TO_DIFFER = set()
+# See _match_or_child to understand how these are matched with paths
+_PATH_PATTERNS_EXPECTED_TO_DIFFER = set()
 for p in [
     "etc/shadow",  # FIXME: Only "days since pwd change may differ"
     "etc/ld.so.cache",
     "etc/dnf/modules.d",
     "usr/lib/fontconfig/cache",
     "usr/share/fonts/.uuid",
-    "usr/share/fonts/dejavu/.uuid",
-    "usr/share/fonts/gnu-free/.uuid",
-    "usr/share/X11/fonts/Type1/.uuid",
+    "usr/share/fonts/*/.uuid",
+    "usr/share/X11/fonts/.uuid",
+    "usr/share/X11/fonts/*/.uuid",
     "var/cache/ldconfig/aux-cache",
     "var/lib/rpm",
     "var/lib/yum",
@@ -36,7 +38,7 @@ for p in [
     "var/log/dnf.rpm.log",
 ]:
     assert not p.startswith("/"), p
-    _PATHS_EXPECTED_TO_DIFFER.add(p.encode())
+    _PATH_PATTERNS_EXPECTED_TO_DIFFER.add(p.encode())
 
 
 def _parse_diff_output(
@@ -45,17 +47,17 @@ def _parse_diff_output(
     out: bytes,
 ) -> Iterator[bytes]:
     """
-    Parse the output of `LANG=C diff --brief --recursive` as a quick and
-    dirty comparison of filesystem contents.  See `subvol_diff` for what
-    should be the long-term approach to replace this.
+    Parse the output of `LANG=C diff --brief --recursive` as a quick and dirty
+    comparison of filesystem contents.  See `subvol_diff` for what should be the
+    long-term approach to replace this.
 
     In this mode, `diff` only outputs 2 types of lines. We match for both:
       - "Files left/x and right/x differ" -- yield "x"
-      - "Only in left_or_right/foo: bar" -- yield "foo/bar".  This could
-        also defensibly return "foo", but the upside of returning "foo/bar"
-        is that our fuzzy matching (_PATHS_EXPECTED_TO_DIFFER) can then
-        ignore stuff that exists only in one image (i.e.  we don't care if
-        it exists or not).
+      - "Only in left_or_right/foo: bar" -- yield "foo/bar".  This could also
+        defensibly return "foo", but the upside of returning "foo/bar" is that
+        our fuzzy matching (_PATH_PATTERNS_EXPECTED_TO_DIFFER) can then ignore
+        stuff that exists only in one image (i.e.  we don't care if it exists or
+        not).
     """
     left_base = left_base.rstrip(b"/") + b"/"
     right_base = right_base.rstrip(b"/") + b"/"
@@ -97,10 +99,10 @@ def _parse_diff_output(
         raise NotImplementedError(f"diff line {l}")
 
 
-def _equal_or_child(child: bytes, potential_parent: bytes) -> bool:
+def _match_or_child(child: bytes, potential_parent: bytes) -> bool:
     child = child.rstrip(b"/")
     parent = potential_parent.rstrip(b"/")
-    return child == parent or child.startswith(parent + b"/")
+    return fnmatch.fnmatch(child, parent) or child.startswith(parent + b"/")
 
 
 def _discard_path_expected_to_differ(
@@ -108,8 +110,8 @@ def _discard_path_expected_to_differ(
 ) -> Iterator[Path]:
     for p in diff_paths:
         if any(
-            _equal_or_child(p, expected_p)
-            for expected_p in _PATHS_EXPECTED_TO_DIFFER
+            _match_or_child(p, expected_p)
+            for expected_p in _PATH_PATTERNS_EXPECTED_TO_DIFFER
         ):
             continue
         yield Path(p)
