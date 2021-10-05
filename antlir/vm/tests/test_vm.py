@@ -100,7 +100,7 @@ class TestAntlirVM(AntlirTestCase):
             opts=opts_instance,
         ) as (instance, boottime_ms, timeout_ms):
             proc = await instance.run(
-                cmd=["/bin/hostnamectl", "status", "--static"],
+                cmd=["/bin/hostnamectl", "status", "--transient"],
                 timeout_ms=timeout_ms,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
