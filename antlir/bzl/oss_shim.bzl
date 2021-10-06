@@ -55,7 +55,7 @@ def cpp_library(*args, **kwargs):
     shim.cpp_library(**kwargs)
 
 _CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
-    ["name", "deps", "env", "headers", "srcs", "tags", "use_default_test_main", "visibility", "external_deps", "owner"],
+    ["name", "deps", "env", "headers", "srcs", "tags", "visibility", "external_deps", "owner"],
 )
 
 def cpp_unittest(*args, **kwargs):
