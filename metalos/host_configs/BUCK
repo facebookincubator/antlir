@@ -1,8 +1,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party", "thrift_library")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-# @oss-disable: load("//metalos/host_configs/evalctx/facebook:deps.bzl", fb_deps = "deps") 
 
 # @oss-disable: oss = False 
 
@@ -14,11 +13,30 @@ oss = True # @oss-enable
 # not), it should be extracted to REPO_CFG.
 oss_ci = read_config("antlir", "oss-ci-query", "") != ""
 
-# The facebook extension to the evalctx crate adds some additional dependencies
-# on internal code
-maybe_fb_deps = []
-
-# @oss-disable: maybe_fb_deps.extend(fb_deps if not (oss or oss_ci) else []) 
+thrift_library(
+    name = "host",
+    languages = ["rust"],
+    rust_crate_name = "host",
+    rust_deps = [":metalos_derive"] + third_party.libraries(
+        [
+            "derive_builder",
+            "paste",
+            "starlark",
+            "starlark_derive",
+        ],
+        platform = "rust",
+    ),
+    rust_features = [
+        # @oss-disable: "facebook", 
+    ],
+    rust_include_srcs = ["host_thrift.rs"],
+    rust_unittests = True,
+    thrift_rust_options = "serde",
+    thrift_srcs = {"host.thrift": None},
+    deps = [
+        "//metalos/host_configs/facebook:host-facebook",
+    ] if not (oss or oss_ci) else [],
+)
 
 rust_library(
     name = "evalctx",
@@ -26,7 +44,7 @@ rust_library(
     features =
         ["facebook"] if (not oss and not oss_ci) else [],
     test_srcs = ["generators/hostname.star"],
-    deps = maybe_fb_deps + third_party.libraries(
+    deps = [":host-rust"] + third_party.libraries(
         [
             "anyhow",
             "derive_builder",
@@ -75,4 +93,18 @@ feature.new(
         for generator in glob(["generators/*.star"])
     ],
     visibility = ["//metalos/..."],
+)
+
+rust_library(
+    name = "metalos_derive",
+    srcs = glob(["metalos_derive/*.rs"]),
+    proc_macro = True,
+    deps = third_party.libraries(
+        [
+            "proc-macro2",
+            "quote",
+            "syn",
+        ],
+        platform = "rust",
+    ),
 )

@@ -8,34 +8,12 @@
 #![deny(warnings)]
 use starlark::environment::{Globals, GlobalsBuilder};
 
-/// Helper macro for a simple struct that is just exposing fields to Starlark.
-/// It handles the boilerplate of Starlark impls that are required for this
-/// basic case.
-macro_rules! simple_data_struct {
-    ($x:ident) => {
-        starlark::starlark_simple_value!($x);
-        impl<'v> starlark::values::StarlarkValue<'v> for $x {
-            starlark::starlark_type!(stringify!($x));
-            starlark::values::starlark_attrs!();
-        }
-
-        paste::paste! {
-            impl $x {
-                #[allow(dead_code)]
-                pub fn builder() -> [< $x Builder >] {
-                    [< $x Builder >]::default()
-                }
-            }
-        }
-    };
-}
-
 pub mod generator;
 pub use generator::Generator;
-pub mod host;
-pub use host::Host;
+pub use host;
 #[cfg(feature = "facebook")]
-pub mod facebook;
+pub use host::facebook;
+pub use host::Host;
 mod path;
 mod template;
 
