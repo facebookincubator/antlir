@@ -1,4 +1,3 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party", "vm_image_path")
@@ -123,7 +122,7 @@ python_binary(
 
 image.layer(
     name = "radvd",
-    parent_layer = REPO_CFG.flavor_to_config[REPO_CFG.flavor_default].build_appliance,
+    parent_layer = vm.artifacts.rootfs.layer,
     features = [
         image.rpms_install(["radvd"]),
         feature.remove("/etc/radvd.conf"),
