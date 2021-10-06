@@ -138,7 +138,6 @@ int main(int argc, char **argv) {{
         name = name,
         srcs = [":" + exec_wrapper_c],
         env = env,
-        use_default_test_main = False,
         visibility = visibility,
         **wrapper_props.outer_test_kwargs
     )
