@@ -22,6 +22,9 @@ for p in [
     "etc/shadow",  # FIXME: Only "days since pwd change may differ"
     "etc/ld.so.cache",
     "etc/dnf/modules.d",
+    # Needed for git-lfs RPM; TODO: Add fuzzy matching with ConfigParser to
+    # handle cases like this (files are equivalent but order is different)
+    "etc/gitconfig",
     "usr/lib/fontconfig/cache",
     "usr/share/fonts/.uuid",
     "usr/share/fonts/*/.uuid",
