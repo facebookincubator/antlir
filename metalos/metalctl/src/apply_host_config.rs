@@ -16,8 +16,6 @@ use structopt::StructOpt;
 
 use evalctx::{Generator, Host};
 
-use crate::http::https_trustdns_connector;
-
 #[derive(StructOpt)]
 pub struct Opts {
     host_config_uri: Uri,
@@ -27,8 +25,7 @@ pub struct Opts {
 pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
     let log = log.new(o!("host-config-uri" => opts.host_config_uri.to_string(), "root" => opts.root.display().to_string()));
 
-    let https = https_trustdns_connector()?;
-    let client: hyper::Client<_, hyper::Body> = hyper::Client::builder().build(https);
+    let client = crate::http::client(log.clone()).context("failed to create https client")?;
 
     // hyper is a low level client (which is good for our dns connector), but
     // then we have to do things like follow redirects manually

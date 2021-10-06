@@ -26,7 +26,7 @@ pub struct Opts {
     decompress_download: bool,
 }
 
-use crate::http::{drain_stream, https_trustdns_connector};
+use crate::http::drain_stream;
 
 pub async fn fetch_image(log: Logger, config: crate::Config, opts: Opts) -> Result<()> {
     let log = log.new(o!("package" => opts.package.clone(), "dest" => format!("{:?}", opts.dest)));
@@ -36,8 +36,7 @@ pub async fn fetch_image(log: Logger, config: crate::Config, opts: Opts) -> Resu
     let mut uri = config.download.package_uri(opts.package)?;
     debug!(log, "downloading from {}", uri);
 
-    let https = https_trustdns_connector()?;
-    let client: hyper::Client<_, hyper::Body> = hyper::Client::builder().build(https);
+    let client = crate::http::client(log.clone()).context("failed to create https client")?;
 
     // hyper is a low level client (which is good for our dns connector), but
     // then we have to do things like follow redirects manually
