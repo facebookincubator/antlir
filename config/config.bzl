@@ -12,13 +12,13 @@ do_not_use_repo_cfg = {
         for k, v in {
             "build_appliance.newest": "//images/appliance:stable-build-appliance",
             "extractor.common_deps": "//images/appliance:stable-build-appliance",
-            "metalos.layer.base": "//images/base:fedora.vm",
-            "vm.rootfs.btrfs": "//images/base:fedora.vm.btrfs",
-            "vm.rootfs.layer": "//images/base:fedora.vm",
+            "metalos.layer.base": "//images/base:centos.vm",
+            "vm.rootfs.btrfs": "//images/base:centos.vm.btrfs",
+            "vm.rootfs.layer": "//images/base:centos.vm",
         }.items()
     ]),
     "flavor_available": " ".join(["fedora33"]),
-    "flavor_default": "fedora33",
+    "flavor_default": "centos8-stream",
     # KEEP THIS DICTIONARY SMALL.
     #
     # For each `feature`, we have to emit as many targets as there are
@@ -31,9 +31,15 @@ do_not_use_repo_cfg = {
             "build_appliance": "//antlir/compiler/test_images:build_appliance_testing",
             "rpm_installer": "dnf",
         },
+        "centos8": {
+            "build_appliance": "//images/appliance:stable-build-appliance",
+            "rpm_installer": "dnf",
+            "rpm_repo_snapshot": "//snapshot:centos8-stream",
+        },
         "fedora33": {
             "build_appliance": "//images/appliance:stable-build-appliance",
             "rpm_installer": "dnf",
+            "rpm_repo_snapshot": "//snapshot:fedora33",
         },
     },
     "host_mounts_allowed_in_targets": " ".join([

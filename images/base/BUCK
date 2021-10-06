@@ -10,8 +10,6 @@ load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 
 snapshot_fedora_override = image.opts(
-    # This is the default, but I am making it explicit since the target is
-    # named fedora
     rpm_repo_snapshot = "//snapshot:fedora33",
 )
 
@@ -27,31 +25,33 @@ image.layer(
     visibility = ["//images/..."],
 )
 
+vm_features = [
+    image.rpms_install([
+        "btrfs-progs",
+        "iproute",
+        "openssh-server",
+        "sudo",
+    ]),
+    console.autologin(),
+    network.host(),
+    generator.mounts(),
+    notify.install(),
+    ssh.test_only_login(),
+    # Set a default hostname
+    # NOTE: this will ultimately become dynamic, this is temporary
+    # to unblock work.
+    image.install("hostname", "/etc/hostname"),
+    # We want to allow logins before the system is finished booting
+    # up.
+    feature.remove("/usr/lib/tmpfiles.d/systemd-nologin.conf"),
+    # systemd-networkd isn't enabled by default in fedora.
+    systemd.enable_unit("systemd-networkd.service"),
+]
+
 image.layer(
     name = "fedora.vm",
     parent_layer = ":fedora",
-    features = [
-        image.rpms_install([
-            "btrfs-progs",
-            "iproute",
-            "openssh-server",
-            "sudo",
-        ]),
-        console.autologin(),
-        network.host(),
-        generator.mounts(),
-        notify.install(),
-        ssh.test_only_login(),
-        # Set a default hostname
-        # NOTE: this will ultimately become dynamic, this is temporary
-        # to unblock work.
-        image.install("hostname", "/etc/hostname"),
-        # We want to allow logins before the system is finished booting
-        # up.
-        feature.remove("/usr/lib/tmpfiles.d/systemd-nologin.conf"),
-        # systemd-networkd isn't enabled by default in fedora.
-        systemd.enable_unit("systemd-networkd.service"),
-    ],
+    features = vm_features,
     flavor = "fedora33",
     flavor_config_override = snapshot_fedora_override,
     runtime = ["systemd"],
@@ -61,6 +61,47 @@ package.new(
     name = "fedora.vm.btrfs",
     format = "btrfs",
     layer = ":fedora.vm",
+    loopback_opts = image.opts(
+        seed_device = True,
+        writable_subvolume = True,
+    ),
+    visibility = [
+        "//antlir/vm/...",
+        kernel_get.base_target + "/...",
+    ],
+)
+
+snapshot_centos_override = image.opts(
+    # This is the default, but I am making it explicit since the target is
+    # named centos
+    rpm_repo_snapshot = "//snapshot:centos8-stream",
+)
+
+image.layer(
+    name = "centos",
+    features = [
+        image.rpms_install([
+            "basesystem",
+            "coreutils",
+        ]),
+    ],
+    flavor_config_override = snapshot_centos_override,
+    visibility = ["//images/..."],
+)
+
+image.layer(
+    name = "centos.vm",
+    parent_layer = ":centos",
+    features = vm_features,
+    flavor = "centos8",
+    flavor_config_override = snapshot_fedora_override,
+    runtime = ["systemd"],
+)
+
+package.new(
+    name = "centos.vm.btrfs",
+    format = "btrfs",
+    layer = ":centos.vm",
     loopback_opts = image.opts(
         seed_device = True,
         writable_subvolume = True,
