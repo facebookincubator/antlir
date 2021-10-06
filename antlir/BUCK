@@ -12,6 +12,7 @@ python_library(
     srcs = ["common.py"],
     visibility = [
         "//antlir/...",
+        "//metalos/initrd/facebook/...",
         "//tupperware/cm/antlir/...",
         "//tupperware/image/scripts/...",
     ],
@@ -32,6 +33,7 @@ python_library(
     srcs = ["tests/common.py"],
     visibility = [
         "//antlir/...",
+        "//metalos/initrd/facebook/...",
         "//tupperware/cm/antlir/...",
     ],
 )
@@ -55,6 +57,7 @@ python_library(
     srcs = ["fs_utils.py"],
     visibility = [
         "//antlir/...",
+        "//metalos/initrd/facebook/...",
         "//scripts/jtru/tw:mixin-check",
         "//scripts/jtru/tw:mixin-check-library",
         "//tupperware/cm/antlir/...",
@@ -117,6 +120,7 @@ python_library(
     srcs = ["tests/layer_resource.py"],
     visibility = [
         "//antlir/...",
+        "//metalos/initrd/facebook/...",
         "//tupperware/cm/antlir/tests/...",
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
