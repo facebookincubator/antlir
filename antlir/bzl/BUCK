@@ -106,9 +106,9 @@ fake_macro_library(
         ":snapshot_install_dir",
         ":target_helpers",
         ":wrap_runtime_deps",
+        "//antlir/bzl/image/feature:install",
         "//antlir/bzl/image/feature:remove",
         "//antlir/bzl/image_actions:ensure_dirs_exist",
-        "//antlir/bzl/image_actions:install",
         "//antlir/bzl/image_actions:symlink",
     ],
 )
@@ -146,11 +146,11 @@ fake_macro_library(
         ":image_source",
         ":image_test_rpm_names",
         ":image_utils",
+        "//antlir/bzl/image/feature:install",
         "//antlir/bzl/image/feature:remove",
         "//antlir/bzl/image/feature:tarball",
         "//antlir/bzl/image_actions:clone",
         "//antlir/bzl/image_actions:ensure_dirs_exist",
-        "//antlir/bzl/image_actions:install",
         "//antlir/bzl/image_actions:mount",
         "//antlir/bzl/image_actions:rpms",
         "//antlir/bzl/image_actions:symlink",
@@ -232,7 +232,7 @@ fake_macro_library(
         ":image_utils",
         ":snapshot_install_dir",
         ":structs",
-        "//antlir/bzl/image_actions:install",
+        "//antlir/bzl/image/feature:install",
     ],
 )
 

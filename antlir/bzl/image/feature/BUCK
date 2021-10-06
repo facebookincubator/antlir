@@ -1,6 +1,16 @@
 load("//antlir/bzl:defs.bzl", "fake_macro_library")
 
 fake_macro_library(
+    name = "install",
+    srcs = ["install.bzl"],
+    deps = [
+        "//antlir/bzl:add_stat_options",
+        "//antlir/bzl:maybe_export_file",
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+fake_macro_library(
     name = "new",
     srcs = ["new.bzl"],
     deps = [
