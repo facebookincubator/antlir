@@ -472,6 +472,17 @@ def _rpm_vset(name, src = "empty=rpm=vset"):
         visibility = ["PUBLIC"],
     )
 
+def _thrift_library(name, *args, languages = (), **kwargs):
+    print("thrift_library not yet supported in oss")
+
+    # generate an empty target so that the target graph in oss tests is not
+    # broken, it will just fail to build things that depend on this
+    if "rust" in languages:
+        _rust_library(
+            name = name + "-rust",
+            mapped_srcs = {"//antlir:empty": "src/lib.rs"},
+        )
+
 ### BEGIN COPY-PASTA (@fbcode_macros//build_defs/lib:rule_target_types.bzl)
 # @lint-ignore BUILDIFIERLINT
 _RuleTargetProvider = provider(fields = [
@@ -593,6 +604,7 @@ shim = struct(
     rust_unittest = _rust_unittest,
     rust_bindgen_library = _rust_bindgen_library,
     rpm_vset = _rpm_vset,  # Not wrapped due to perf paranoia.
+    thrift_library = _thrift_library,
     target_utils = struct(
         parse_target = _parse_target,
         to_label = _to_label,
