@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:oss_shim.bzl", "buck_command_alias")
-load("//antlir/bzl/image_actions:install.bzl", "image_install_buck_runnable")
+load("//antlir/bzl/image/feature:install.bzl", "image_install_buck_runnable")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_utils.bzl", "container_target_name")
