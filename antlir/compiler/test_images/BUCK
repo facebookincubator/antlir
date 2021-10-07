@@ -622,7 +622,7 @@ feature.new(
     features = [
         image.ensure_subdirs_exist("/", "a/b"),
     ],
-    visibility = ["//antlir/compiler/..."],
+    visibility = ["//antlir/..."],
 )
 
 feature.new(
@@ -630,7 +630,7 @@ feature.new(
     features = [
         feature.remove("/a"),
     ],
-    visibility = ["//antlir/compiler/..."],
+    visibility = ["//antlir/..."],
 )
 
 feature.new(
@@ -659,7 +659,7 @@ feature.new(
         ":feature_addremove_conflict_add",
         ":feature_addremove_conflict_remove",
     ],
-    visibility = ["//antlir/compiler/..."],
+    visibility = ["//antlir/..."],
 )
 
 image.layer(

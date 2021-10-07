@@ -243,28 +243,14 @@ python_unittest(
     name = "test-add-remove-conflict",
     srcs = ["tests/test_add_remove_conflict.py"],
     resources = {
-        TEST_IMAGE_PREFIX + READ_MY_DOC_image_feature_target(
-            "feature_addremove_conflict_add",
-        ): "tests/feature_add",
-        TEST_IMAGE_PREFIX + READ_MY_DOC_image_feature_target(
-            "feature_addremove_conflict_remove",
-        ): "tests/feature_remove",
-        TEST_IMAGE_PREFIX + READ_MY_DOC_image_feature_target(
-            "feature_addremove_conflict_both",
-        ): "tests/feature_both",
         layer_resource(
             TEST_IMAGE_PREFIX + "addremove_conflict_child",
         ): "tests/child",
         layer_resource(
             TEST_IMAGE_PREFIX + "addremove_conflict_parent",
         ): "tests/parent",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/test-build-appliance",
     },
     deps = [
-        ":compiler",
-        "//antlir:subvol_utils",
         "//antlir:testlib_flavor_helpers",
         "//antlir:testlib_layer_resource",
         "//antlir:testlib_subvol_helpers",
