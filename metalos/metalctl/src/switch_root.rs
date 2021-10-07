@@ -44,7 +44,7 @@ pub fn switch_root(log: Logger, opts: Opts) -> Result<()> {
     mount(MountOpts {
         source: device.clone(),
         target: "/sysroot".into(),
-        fstype: "btrfs".into(),
+        fstype: Some(String::from("btrfs")),
         options: options.clone(),
     })
     .with_context(|| {

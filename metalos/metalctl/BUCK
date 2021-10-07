@@ -23,6 +23,13 @@ rust_binary(
     # For example, when parsing the kernel cmdline, just adding a
     # dependency on `regex` bloats the end binary by 1.1M, compared to
     # almost nothing for 50 lines of code to parse it manually.
+    test_deps = third_party.libraries(
+        [
+            "mockall",
+            "tempfile",
+        ],
+        platform = "rust",
+    ),
     deps = [
         "//metalos/host_configs:evalctx",
     ] + third_party.libraries(
