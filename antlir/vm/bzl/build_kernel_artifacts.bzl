@@ -7,6 +7,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":kernel.bzl", "kernel_artifacts_t", "kernel_t")
 
 def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = True):
@@ -84,7 +85,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = Tru
     image.layer(
         name = "{}-modules".format(uname),
         features = [
-            image.install(
+            feature.install(
                 image.source(
                     ":{}--precursor-of-modules".format(uname),
                     path = "lib/modules/{uname}/{part}".format(

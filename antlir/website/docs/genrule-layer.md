@@ -51,7 +51,7 @@ image.layer(
     features = [
         # `genrule_layer` runs as `nobody` by default
         image.ensure_subdirs_exist('/', 'output', user='nobody'),
-        image.install(':untranslated-foo', '/output/_temp_foo'),
+        feature.install(':untranslated-foo', '/output/_temp_foo'),
     ],
 )
 

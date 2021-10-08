@@ -1,7 +1,6 @@
 # This file is intended to become a collection of utility features commonly
 # used in constructing images.
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 # To remove a path in this feature it should match these criteria:
@@ -44,7 +43,7 @@ feature.new(
             "/etc/machine-id",
             must_exist = False,
         ),
-        image.install("empty-machine-id", "/etc/machine-id"),
+        feature.install("empty-machine-id", "/etc/machine-id"),
     ],
     flavors = REPO_CFG.flavor_available + ["antlir_test"],
     visibility = ["PUBLIC"],

@@ -32,7 +32,7 @@ ssh_server = [
     ssh.test_only_login(),
 ]
 
-par_support = image.install(
+par_support = feature.install(
     "bash",
     "/usr/bin/bash",
     mode = "a+rx",
@@ -53,7 +53,7 @@ image.layer(
         notify.install(),
         # initrd-specific things below:
         binaries,
-        image.install("metalctl.toml", "/etc/metalctl.toml"),
+        feature.install("metalctl.toml", "/etc/metalctl.toml"),
         # This is just appended to the base initrd, so make sure all the
         # directories that are needed get created
         image.ensure_subdirs_exist("/usr/lib", "systemd"),
@@ -63,7 +63,7 @@ image.layer(
         image.ensure_subdirs_exist("/usr/lib", "udev/rules.d"),
         image.ensure_dirs_exist("/etc/systemd/system"),
         # Some fixups for vmtest features in the limited initrd environment
-        image.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
+        feature.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
         systemd.install_dropin("after-network.conf", "sshd.service"),
         # We want to stay in the initrd, so mask out the units that switch-root
         # into the base os
@@ -146,7 +146,7 @@ image.layer(
     parent_layer = "//metalos/initrd:base",
     features = [
         image.ensure_subdirs_exist("/usr/lib", "udev/rules.d"),
-        image.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
+        feature.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
         image.ensure_subdirs_exist("/etc", "systemd/system"),
         # to avoid having to unmount this when switch-rooting, just don't mount
         # it in the first place - it should be mounted later by the generator

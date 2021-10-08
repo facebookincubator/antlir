@@ -152,7 +152,7 @@ def _install_unit(
     _fail_if_path(dest, "Install Unit Dest")
     _assert_unit_suffix(dest)
 
-    return image.install(
+    return feature.install(
         source,
         paths.join(install_root, dest),
     )
@@ -206,7 +206,7 @@ def _install_dropin(
 
     return [
         image.ensure_subdirs_exist(install_root, unit + ".d"),
-        image.install(
+        feature.install(
             source,
             paths.join(install_root, unit + ".d", dest),
         ),

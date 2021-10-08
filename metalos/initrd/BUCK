@@ -23,16 +23,16 @@ networking = [
     systemd.enable_unit("systemd-networkd-wait-online.service"),
     # There is some opportunity to consolidate with the MetalOS root network
     # unit, but for right now we only want to use SLAAC in the initrd.
-    image.install("units/eth.network", "/usr/lib/systemd/network/50-eth.network"),
+    feature.install("units/eth.network", "/usr/lib/systemd/network/50-eth.network"),
 ]
 
 nss = linux.config.glibc.nsswitch.install(linux.config.glibc.nsswitch.default)
 
 users = [
-    image.install("group", "/etc/group"),
-    image.install("passwd", "/etc/passwd"),
-    image.install("//antlir:empty", "/etc/shadow"),
-    image.install("//antlir:empty", "/usr/bin/nologin"),
+    feature.install("group", "/etc/group"),
+    feature.install("passwd", "/etc/passwd"),
+    feature.install("//antlir:empty", "/etc/shadow"),
+    feature.install("//antlir:empty", "/usr/bin/nologin"),
     feature.group_add("systemd-network"),
     feature.user_add(
         "systemd-network",
@@ -52,7 +52,7 @@ image.layer(
         # Systemd uses the presence of /etc/initrd-release to determine if it
         # is running in an initrd, however there are cases where it only parses
         # /{etc,usr/lib}/os-release, so just cover all our bases with symlinks
-        image.install(":initrd-release", "/usr/lib/initrd-release"),
+        feature.install(":initrd-release", "/usr/lib/initrd-release"),
         image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/initrd-release"),
         image.ensure_file_symlink("/usr/lib/initrd-release", "/usr/lib/os-release"),
         image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/os-release"),
@@ -78,7 +78,7 @@ image.layer(
         nss,
         users,
         image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
-        image.install("udev.rules", "/usr/lib/udev/rules.d/10-metalos.rules"),
+        feature.install("udev.rules", "/usr/lib/udev/rules.d/10-metalos.rules"),
         # Due to limitations in the current extractor implementation, we have to
         # extract systemd at the same time as metalctl.
         extract.extract(
@@ -89,7 +89,7 @@ image.layer(
             dest = "/",
             source = "//metalos/os:metalos",
         ),
-        image.install("//metalos/metalctl:default-config.toml", "/etc/metalctl.toml"),
+        feature.install("//metalos/metalctl:default-config.toml", "/etc/metalctl.toml"),
         # metalctl provides a few utility binaries that systemd calls so we can
         # avoid importing busybox for just a few tiny commands
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mkdir"),

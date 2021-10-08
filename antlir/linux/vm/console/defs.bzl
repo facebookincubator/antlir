@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _autologin():
     """
@@ -13,7 +14,7 @@ def _autologin():
 
     # Enable auto-login of root user on ttyS0
     return [
-        image.install(
+        feature.install(
             "//antlir/linux/vm/console:autologin-root.conf",
             "/usr/lib/systemd/system/serial-getty@ttyS0.service.d/autologin-root.conf",
         ),

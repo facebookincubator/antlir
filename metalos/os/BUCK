@@ -28,7 +28,7 @@ image.layer(
     name = "metalos",
     parent_layer = ":basesystem-strip",
     features = [
-        image.install(
+        feature.install(
             "//metalos/metalctl:metalctl",
             "/usr/bin/metalctl",
             mode = "a+rx",
@@ -41,10 +41,10 @@ image.layer(
         systemd.set_default_target("workload.target"),
         # networking config to use DHCP is a generic workload-pre.target
         # dependency
-        image.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
+        feature.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
         systemd.enable_unit("systemd-networkd.service", "core-services.target"),
         systemd.enable_unit("systemd-resolved.service", "core-services.target"),
-        image.install("systemd-resolved.tmpfiles.conf", "/usr/lib/tmpfiles.d/systemd-resolved.conf"),
+        feature.install("systemd-resolved.tmpfiles.conf", "/usr/lib/tmpfiles.d/systemd-resolved.conf"),
         systemd.enable_unit("systemd-tmpfiles-setup.service", "core-services.target"),
         systemd.enable_unit("dbus.service", "core-services.target"),
         # Use the hostname service to manage the hostname
@@ -55,9 +55,9 @@ image.layer(
         systemd.enable_unit("systemd-udev-trigger.service", "core-services.target"),
         systemd.enable_unit("sshd.service", "core-services.target"),
         feature.remove("/etc/ssh/sshd_config"),
-        image.install("sshd_config", "/etc/ssh/sshd_config"),
+        feature.install("sshd_config", "/etc/ssh/sshd_config"),
         # Add a cool metalos motd
-        image.install("metalos-motd.sh", "/etc/profile.d/metalos-motd.sh"),
+        feature.install("metalos-motd.sh", "/etc/profile.d/metalos-motd.sh"),
         # TODO: modify this os-release to indicate that it's MetalOS (in ID_LIKE
         # maybe?), but for now provide an easy indicator that a system is
         # MetalOS if /etc/metalos-release exists

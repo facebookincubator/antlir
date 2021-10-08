@@ -86,7 +86,7 @@ feature.new(
     features = [
         image.ensure_subdirs_exist("/usr/lib/metalos", "generators"),
     ] + [
-        image.install(
+        feature.install(
             generator,
             "/usr/lib/metalos/generators/{}".format(paths.basename(generator)),
         )

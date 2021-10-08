@@ -2,6 +2,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
 # Future: when we run a VM the tap device is actually created
@@ -121,7 +122,7 @@ image.layer(
     name = "vmtest-custom-layer",
     parent_layer = vm.artifacts.rootfs.layer,
     features = [
-        image.install(
+        feature.install(
             ":resource.txt",
             "/etc/i_am_a_custom_rootfs",
         ),

@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def install_kernel_modules(kernel, module_list):
     # This intermediate genrule is here to create a dir hierarchy
@@ -54,7 +55,7 @@ def install_kernel_modules(kernel, module_list):
         # Install the kernel modules specified in module_list above into the
         # layer
         image.ensure_subdirs_exist("/usr/lib", paths.join("modules", kernel.uname)),
-        image.install(
+        feature.install(
             image.source(
                 source = ":" + kernel.uname + "-selected--modules",
                 path = ".",
@@ -79,5 +80,5 @@ def install_kernel_modules(kernel, module_list):
 
         # Ensure the kernel modules are loaded by systemd when the initrd is started
         image.ensure_subdirs_exist("/usr/lib", "modules-load.d"),
-        image.install(":" + kernel.uname + "selected--modules-load.conf", "/usr/lib/modules-load.d/initrd-modules.conf"),
+        feature.install(":" + kernel.uname + "selected--modules-load.conf", "/usr/lib/modules-load.d/initrd-modules.conf"),
     ]

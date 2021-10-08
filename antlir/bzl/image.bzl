@@ -5,7 +5,7 @@
 
 "This provides a more friendly UI to the image_* macros."
 
-load("//antlir/bzl/image/feature:install.bzl", "image_install", "image_install_buck_runnable")
+load("//antlir/bzl/image/feature:install.bzl", "image_install_buck_runnable")
 load("//antlir/bzl/image_actions:clone.bzl", "image_clone")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_dirs_exist", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:mount.bzl", "image_host_dir_mount", "image_host_file_mount", "image_layer_mount")
@@ -35,7 +35,6 @@ image = struct(
     genrule_layer = image_genrule_layer,
     host_dir_mount = image_host_dir_mount,
     host_file_mount = image_host_file_mount,
-    install = image_install,
     install_buck_runnable = image_install_buck_runnable,
     layer = image_layer,
     layer_alias = image_layer_alias,

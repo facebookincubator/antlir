@@ -7,6 +7,6 @@ image.layer(
     features = [
         # this is provided in the base image, so must be removed first
         feature.remove("/etc/motd"),
-        image.install("motd", "/etc/motd"),
+        feature.install("motd", "/etc/motd"),
     ],
 )
