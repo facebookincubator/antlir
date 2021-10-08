@@ -2,6 +2,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
 load("//antlir/bzl:test_rpms.bzl", "test_rpms")
 load("//antlir/bzl/genrule/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 export_file(name = "toy_srcs")
 
@@ -76,7 +77,7 @@ image.layer(
             ),
         ]),
         image.ensure_dirs_exist("/antlir"),
-        image.install(
+        feature.install(
             image.source(
                 ":toy-rpm",
                 path = "toy.rpm",

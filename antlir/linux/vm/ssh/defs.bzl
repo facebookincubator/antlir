@@ -20,7 +20,7 @@ def _test_only_login():
             group = "root",
             mode = "u+rx",
         ),
-        image.install(
+        feature.install(
             "//antlir/linux/vm/ssh:pubkey",
             "/root/.ssh/authorized_keys",
             user = "root",
@@ -36,7 +36,7 @@ def _hostkey_setup():
     #   - Using /run/sshd to store the host key
 
     return [
-        image.install("//antlir/linux/vm/ssh:sshd.tmpfiles.conf", "/usr/lib/tmpfiles.d/sshd.tmpfiles.conf"),
+        feature.install("//antlir/linux/vm/ssh:sshd.tmpfiles.conf", "/usr/lib/tmpfiles.d/sshd.tmpfiles.conf"),
         feature.remove("/usr/lib/systemd/system/sshd-keygen.service"),
         systemd.install_unit("//antlir/linux/vm/ssh:sshd-keygen.service"),
         # Install a drop-in that updates the cmd line to include the

@@ -16,7 +16,7 @@ load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load("//antlir/bzl/image/feature:install.bzl", "image_install")
+load("//antlir/bzl/image/feature:install.bzl", "feature_install")
 load("//antlir/bzl/image/feature:remove.bzl", "feature_remove")
 load("//antlir/bzl/image/feature:tarball.bzl", "feature_tarball")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
@@ -115,7 +115,7 @@ def private_image_rpmbuild_impl(
         name = setup_layer,
         parent_layer = parent_layer,
         features = [
-            image_install(specfile, specfile_path),
+            feature_install(specfile, specfile_path),
             image_ensure_subdirs_exist("/", "rpmbuild"),
             image_ensure_subdirs_exist("/rpmbuild", "BUILD"),
             image_ensure_subdirs_exist("/rpmbuild", "BUILDROOT"),
@@ -250,7 +250,7 @@ def image_import_rpm_public_key_layer(
     install_keys = []
     for src in pubkeys:
         dest = gpg_key_dir + "/RPM-GPG-KEY-" + sha256_b64(str(src))
-        install_keys.append(image_install(src, dest))
+        install_keys.append(feature_install(src, dest))
 
     if not install_keys:
         fail("cannot import an empty set of keys")

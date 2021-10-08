@@ -18,7 +18,7 @@ this point, and it is recommended to batch all binaries to be extracted into
 a single call to `extract.extract`.
 
 An important note: If you are using buck compiled binaries, you *must*
-use `image.install(...)` to insert them into your `source` layer and *not*
+use `feature.install(...)` to insert them into your `source` layer and *not*
 `image.install_buck_runnable(...)`. This is the exact opposite of the
 suggested usage in the rest of the API, and here's why:
 
@@ -28,10 +28,10 @@ installed into the target `image.layer` is a shell script that exec's
 the *actual* binary from the `buck-out` path contained somewhere in the
 repo. Since this is a shell script, we can't easily do ELF extraction
 without doing some nasty file parsing, and right now we'd rather not
-do that because it's possible that we can fix it correctly and `image.install`
+do that because it's possible that we can fix it correctly and `feature.install`
 is good enough.
 
-The caveat to using `image.install` is that the compiled binary must be
+The caveat to using `feature.install` is that the compiled binary must be
 *mostly* static (meaning it only depends on the glibc it is compiled against)
 __or__ it must *not* use relative references to shared objects that cannot
 be resolved in the `source`. These restrictions, especially the last one, are

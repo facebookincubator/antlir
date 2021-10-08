@@ -126,7 +126,7 @@ image.layer(
     features = [
         image.rpms_install(["radvd"]),
         feature.remove("/etc/radvd.conf"),
-        image.install("radvd.conf", "/etc/radvd.conf"),
+        feature.install("radvd.conf", "/etc/radvd.conf"),
     ],
 )
 

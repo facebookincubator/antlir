@@ -1,5 +1,6 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":hoist.bzl", "hoist")
 
 # these need to be updated manually based on the downloaded version
@@ -77,11 +78,11 @@ image.layer(
         image.ensure_dirs_exist("/_temp_qemu"),
         image.ensure_dirs_exist("/output"),
         # put sources and build script in the base layer
-        image.install("build.sh", "/_temp_qemu/build.sh"),
-        image.install("meson.build.patch", "/_temp_qemu/meson.build.patch"),
-        image.install(":source", "/_temp_qemu/source.tar.xz"),
-        image.install(":pixman", "/_temp_qemu/pixman.tar.gz"),
-        image.install(":libcap-ng", "/_temp_qemu/libcap-ng.tar.gz"),
+        feature.install("build.sh", "/_temp_qemu/build.sh"),
+        feature.install("meson.build.patch", "/_temp_qemu/meson.build.patch"),
+        feature.install(":source", "/_temp_qemu/source.tar.xz"),
+        feature.install(":pixman", "/_temp_qemu/pixman.tar.gz"),
+        feature.install(":libcap-ng", "/_temp_qemu/libcap-ng.tar.gz"),
     ],
 )
 

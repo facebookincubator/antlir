@@ -7,7 +7,7 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl/genrule/yum_dnf_cache:yum_dnf_cache.bzl", "image_yum_dnf_make_snapshot_cache")
-load("//antlir/bzl/image/feature:install.bzl", "image_install")
+load("//antlir/bzl/image/feature:install.bzl", "feature_install")
 load("//antlir/bzl/image/feature:remove.bzl", "feature_remove")
 load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
 load("//antlir/bzl/image_actions:symlink.bzl", "image_ensure_dir_symlink")
@@ -237,7 +237,7 @@ def install_rpm_repo_snapshot(snapshot):
     caches are properly populated.  Otherwise, RPM installs will be slow.
     """
 
-    return _set_up_rpm_repo_snapshots() + [image_install(snapshot, snapshot_install_dir(snapshot))]
+    return _set_up_rpm_repo_snapshots() + [feature_install(snapshot, snapshot_install_dir(snapshot))]
 
 def default_rpm_repo_snapshot_for(prog, snapshot):
     """

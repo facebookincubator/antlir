@@ -5,6 +5,7 @@
 
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _install():
     """
@@ -24,7 +25,7 @@ def _install():
             "rules.d",
             0o755,
         ),
-        image.install(
+        feature.install(
             "//antlir/linux/vm/notify:notify-host.rules",
             "/usr/lib/udev/rules.d/99-notify-host.rules",
         ),

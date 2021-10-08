@@ -139,7 +139,7 @@ defs.export_file(name = "shadow_me")
     image.layer(
         name = "validates-{}-build-appliance".format(rpm_installer),
         features = [
-            image.install(":shadow_me", "/shadow_me"),
+            feature.install(":shadow_me", "/shadow_me"),
             image.rpms_install(["rpm-test-milk"]),
         ],
         flavor = "antlir_test",
@@ -251,11 +251,11 @@ feature.new(
         # because the {User,Group}Items require them
         # explicitly.
         image.ensure_subdirs_exist("/", "etc"),
-        image.install(
+        feature.install(
             ":shadow_me",
             "/etc/passwd",
         ),
-        image.install(
+        feature.install(
             ":shadow_me",
             "/etc/group",
         ),
@@ -277,7 +277,7 @@ feature.new(
 feature.new(
     name = "feature_symlinks",
     features = [
-        image.install(":hello_world.tar", "/foo/hello_world.tar"),
+        feature.install(":hello_world.tar", "/foo/hello_world.tar"),
         image.ensure_dir_symlink("/foo/bar", "/foo/fighter"),
         image.ensure_dir_symlink("/foo/bar", "/foo/face"),
         image.ensure_dir_symlink("/foo/bar", "/foo/bar/baz/"),  # / -> "bar" basename
@@ -512,12 +512,12 @@ feature.new(
     features = [
         ":feature_dirs",  # We use /foo/bar for a couple of installs.
         image.ensure_subdirs_exist("/foo/bar", "installed"),  # Most things will go here.
-        image.install(":hello_world.tar", "/foo/bar/hello_world.tar"),
-        image.install(
+        feature.install(":hello_world.tar", "/foo/bar/hello_world.tar"),
+        feature.install(
             ":hello_world.tar",
             "/foo/bar/hello_world_again.tar",
         ),
-        image.install(
+        feature.install(
             image.source(
                 ":dir-print-ok",
                 path = "kitteh",
@@ -535,8 +535,8 @@ feature.new(
         # Test installing a directory.  Also test a non-`buck run`nable
         # executable both as part of a directory, and solo (these are
         # different code paths)
-        image.install(":dir-with-script", "/foo/bar/installed/script-dir"),
-        image.install(
+        feature.install(":dir-with-script", "/foo/bar/installed/script-dir"),
+        feature.install(
             image.source(
                 ":dir-with-script",
                 path = "subdir/exe.sh",
@@ -729,10 +729,10 @@ image.layer(
         # Test nested lists of features (in lieu of concatenation).
         [
             [
-                image.install(":hello_world.tar", "/foo/bar/even_more_hello_world.tar"),
+                feature.install(":hello_world.tar", "/foo/bar/even_more_hello_world.tar"),
             ],
         ],
-        image.install(
+        feature.install(
             ":hello_world.tar",
             # This directory comes from `rpm-test-carrot`.  This tests
             # that our dependency engine sees RPM contents as a
@@ -897,7 +897,7 @@ image.layer_from_package(
 image.layer(
     name = "create_ops-layer",
     features = [
-        image.install(":create_ops-original.sendstream", "/sendstream"),
+        feature.install(":create_ops-original.sendstream", "/sendstream"),
     ],
 )
 
@@ -1006,7 +1006,7 @@ image.layer(
             primary_group = "newuser",
             home_dir = "/home/newuser",
         ),
-        image.install(
+        feature.install(
             ":shadow_me",
             "/shadow_me_chown",
             user = "newuser",
@@ -1020,7 +1020,7 @@ image.layer(
     name = "vfat-test.layer",
     features = [
         image.ensure_dirs_exist("/EFI/BOOT"),
-        image.install(
+        feature.install(
             ":shadow_me",
             "/EFI/BOOT/shadow_me",
             mode = "a+rx",
@@ -1073,10 +1073,10 @@ image.layer(
         # to the fix for this, /etc/passwd would then also attempt to bind mount
         # /etc/group into the build appliance chroot, which made it impossible
         # to install an actual /etc/group
-        image.install("passwd", "/etc/passwd"),
-        image.install("group", "/etc/group"),
+        feature.install("passwd", "/etc/passwd"),
+        feature.install("group", "/etc/group"),
         image.ensure_dirs_exist("/sbin"),
-        image.install("//antlir:empty", SHELL_NOLOGIN),
+        feature.install("//antlir:empty", SHELL_NOLOGIN),
         feature.group_add("example"),
         feature.user_add("example", "example", "/", SHELL_NOLOGIN),
     ],

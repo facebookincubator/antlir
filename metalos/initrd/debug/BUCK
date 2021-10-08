@@ -6,6 +6,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
@@ -44,9 +45,9 @@ systemd_debug = [
 ssh_server = [
     image.clone(":debug-deps", "/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/dropbear.service"),
     image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
-    image.install("dropbear.tmpfiles.conf", "/usr/lib/tmpfiles.d/dropbear.conf"),
+    feature.install("dropbear.tmpfiles.conf", "/usr/lib/tmpfiles.d/dropbear.conf"),
     image.ensure_dirs_exist("/etc/sysconfig"),
-    image.install("dropbear", "/etc/sysconfig/dropbear"),
+    feature.install("dropbear", "/etc/sysconfig/dropbear"),
     systemd.install_unit("dropbear-keygen.service"),
     systemd.enable_unit(
         "dropbear.service",

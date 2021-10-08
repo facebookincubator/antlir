@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 _conf = shape.shape(
     search_domains = shape.list(str),
@@ -33,7 +33,7 @@ def _install(instance = None, **kwargs):
         name = name,
         instance = instance,
     )
-    return image.install(
+    return feature.install(
         file,
         "/etc/resolv.conf",
     )

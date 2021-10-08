@@ -37,6 +37,7 @@ the commit message for D21390244.
 """
 
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def image_build_librename_shadowed(
         name,
@@ -45,7 +46,7 @@ def image_build_librename_shadowed(
 
     # Build as root, since this gets installed using `image.clone`, and this
     # should be installed as owned by `root`.  Future: this is a use-case
-    # for `image.install` supporting installs from image sources.
+    # for `feature.install` supporting installs from image sources.
     user = "root"
     setup_layer = "SETUP__image_build_librename_shadowed__" + name
     image.layer(
@@ -53,7 +54,7 @@ def image_build_librename_shadowed(
         parent_layer = parent_layer,
         features = [
             image.ensure_subdirs_exist("/", "build", user = user),
-            image.install(
+            feature.install(
                 "//antlir/bzl/genrule/librename_shadowed:rename_shadowed.c",
                 "/build/rename_shadowed.c",
             ),

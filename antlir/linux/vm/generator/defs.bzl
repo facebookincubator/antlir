@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _mounts():
     """
@@ -12,7 +12,7 @@ def _mounts():
     """
 
     return [
-        image.install(
+        feature.install(
             "//antlir/vm:mount-generator",
             "/usr/lib/systemd/system-generators/mount-generator",
             mode = "a+rx",

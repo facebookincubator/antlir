@@ -45,7 +45,7 @@ image.layer(
         # Set a default hostname
         # NOTE: this will ultimately become dynamic, this is temporary
         # to unblock work.
-        image.install("hostname", "/etc/hostname"),
+        feature.install("hostname", "/etc/hostname"),
         # We want to allow logins before the system is finished booting
         # up.
         feature.remove("/usr/lib/tmpfiles.d/systemd-nologin.conf"),

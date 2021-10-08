@@ -139,15 +139,15 @@ image.layer(
     features = [
         # We'll set up shadowing both via links and directly, and both work.
         image.ensure_subdirs_exist("/", "real"),
-        image.install(
+        feature.install(
             "tests/shadow_me",
             "real/shadow_me",
             # The user "nobody" will update this via the shadow root.
             user = "nobody",
             mode = "u+rw,og+r",
         ),
-        image.install("tests/i_will_shadow", "real_i_will_shadow"),
-        image.install("tests/i_will_shadow", "other_file"),
+        feature.install("tests/i_will_shadow", "real_i_will_shadow"),
+        feature.install("tests/i_will_shadow", "other_file"),
         image.ensure_subdirs_exist("/", "link"),
         image.ensure_file_symlink("real/shadow_me", "link/shadow_me"),
         image.ensure_file_symlink("real_i_will_shadow", "link/i_will_shadow"),
@@ -191,8 +191,8 @@ image.layer(
     features = [
         # We'll set up shadowing both via links and directly, and both work.
         image.ensure_subdirs_exist("/", "rpm_test/"),
-        image.install("tests/shadow_me", "rpm_test/carrot.txt"),
-        image.install("tests/i_will_shadow", "i_will_shadow"),
+        feature.install("tests/shadow_me", "rpm_test/carrot.txt"),
+        feature.install("tests/i_will_shadow", "i_will_shadow"),
     ],
 )
 

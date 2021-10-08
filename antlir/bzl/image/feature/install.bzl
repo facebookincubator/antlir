@@ -82,7 +82,7 @@ install_files_t = shape.shape(
 def _forbid_layer_source(source_dict):
     if source_dict["layer"] != None:
         fail(
-            "Cannot use image.source(layer=...) with `image.install*` " +
+            "Cannot use image.source(layer=...) with `feature.install*` " +
             "actions: {}".format(source_dict),
         )
 
@@ -146,9 +146,9 @@ binary to be unusable in image tests in @mode/dev.
         extra_deps = [antlir_dep("bzl/image/feature:install")],
     )
 
-def image_install(source, dest, mode = None, user = None, group = None):
+def feature_install(source, dest, mode = None, user = None, group = None):
     """
-`image.install("//path/fs:data", "dir/bar")` installs file or directory
+`feature.install("//path/fs:data", "dir/bar")` installs file or directory
 `data` to `dir/bar` in the image. `dir/bar` must not exist, otherwise
 the operation fails.
 
