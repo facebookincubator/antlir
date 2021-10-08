@@ -64,9 +64,6 @@ class UnshareTestCase(unittest.TestCase):
         ]
         in_ns, out_ns = [
             dict(
-                # pyre-fixme[6]: Expected `SupportsKeysAndGetItem[Variable[_KT],
-                #  Variable[_VT]]` for 1st param but got
-                #  `Generator[typing.List[str], None, None]`.
                 ns_ino.split(":")
                 for ns_ino in subprocess.check_output(cmd)
                 .decode()
