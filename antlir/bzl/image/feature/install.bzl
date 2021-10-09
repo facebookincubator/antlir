@@ -86,9 +86,9 @@ def _forbid_layer_source(source_dict):
             "actions: {}".format(source_dict),
         )
 
-def image_install_buck_runnable(source, dest, mode = None, user = None, group = None):
+def feature_install_buck_runnable(source, dest, mode = None, user = None, group = None):
     """
-`image.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
+`feature.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
 buck-runnable artifact `exe` to `dir/foo` in the image. Unlike `install`,
 this supports only single files -- though you can extract a file from a
 buck-runnable directory via `image.source`, see below.

@@ -524,8 +524,8 @@ feature.new(
             ),
             "/foo/bar/installed/yittal-kitteh",
         ),
-        image.install_buck_runnable(":print-ok", "/foo/bar/installed/print-ok"),
-        image.install_buck_runnable(
+        feature.install_buck_runnable(":print-ok", "/foo/bar/installed/print-ok"),
+        feature.install_buck_runnable(
             image.source(
                 ":dir-print-ok",
                 path = "subdir/print-ok",

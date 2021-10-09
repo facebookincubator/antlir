@@ -60,7 +60,7 @@ you to compose independent pieces of the filesystem at *runtime*, without
 incurring the cost of publishing images with a lot of duplicated content.
 
 If you're trying to copy the output of a regular Buck target, instead use
-`feature.install` or `image.install_buck_runnable`. These rewrite filesystem
+`feature.install` or `feature.install_buck_runnable`. These rewrite filesystem
 metadata to a deterministic state, while the state of the on-disk metadata in
 `buck-out` is undefined.
     """

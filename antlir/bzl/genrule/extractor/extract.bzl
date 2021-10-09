@@ -8,7 +8,7 @@ WARNING: you probably don't actually want this
 extract.bzl exists for very stripped down environments (for example, building
 an initrd) that need a binary (most likely from an RPM) and its library
 dependencies. In almost every case _other_ than building an initrd, you
-either want `image.rpms_install` or `image.install_buck_runnable`
+either want `image.rpms_install` or `feature.install_buck_runnable`
 
 If you're still here, `extract.extract` works by parsing the ELF information
 in the given binaries.
@@ -19,10 +19,10 @@ a single call to `extract.extract`.
 
 An important note: If you are using buck compiled binaries, you *must*
 use `feature.install(...)` to insert them into your `source` layer and *not*
-`image.install_buck_runnable(...)`. This is the exact opposite of the
+`feature.install_buck_runnable(...)`. This is the exact opposite of the
 suggested usage in the rest of the API, and here's why:
 
-If `image.install_buck_runnable(...)` is built in the case where
+If `feature.install_buck_runnable(...)` is built in the case where
 `REPO_CFG.artifacts_require_repo == True`, then what is *actually*
 installed into the target `image.layer` is a shell script that exec's
 the *actual* binary from the `buck-out` path contained somewhere in the
@@ -64,6 +64,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
 
 def _buck_binary_tmp_dst(real_dst):
@@ -88,7 +89,7 @@ def _extract(
         parent_layer = source,
         features = [
             image.ensure_dirs_exist("/output"),
-            image.install_buck_runnable("//antlir/bzl/genrule/extractor:extract", "/extract"),
+            feature.install_buck_runnable("//antlir/bzl/genrule/extractor:extract", "/extract"),
         ],
         visibility = [],
     )
