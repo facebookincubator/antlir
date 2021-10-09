@@ -11,7 +11,7 @@ Usage:
     image.layer(
         name = "your-layer-rpms-with-reason",
         parent_layer = ":your-layer",
-        features = [image.install_buck_runnable(
+        features = [feature.install_buck_runnable(
             "//antlir/bzl/tests:rpms-with-reason",
             "/rpms-with-reason",
         )],
