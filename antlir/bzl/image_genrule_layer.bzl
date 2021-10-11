@@ -52,7 +52,7 @@ Mandatory arguments:
     docs](/docs/genrule-layer) for details on the constraints.  **PLEASE
     KEEP THIS DETERMINISTIC.**
   - `rule_type`: The resulting Buck target node will have type
-    `image_genrule_layer_{rule_type}`, which allows `buck query`ing for this
+    `image_layer_genrule_{rule_type}`, which allows `buck query`ing for this
     specific kind of genrule layer.  Required because the intended usage for
     genrule layers is the creation of new macros, and type-tagging lets
     Antlir maintainers survey this ecosystem without resorting to `grep`.
@@ -91,7 +91,7 @@ Optional arguments:
 
     target_tagger = new_target_tagger()
     image_layer_utils.image_layer_impl(
-        _rule_type = "image_genrule_layer_" + rule_type,
+        _rule_type = "image_layer_genrule_" + rule_type,
         _layer_name = name,
         # Build a new layer. It may be empty.
         _make_subvol_cmd = compile_image_features(
