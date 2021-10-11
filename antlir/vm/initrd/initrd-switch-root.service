@@ -1,8 +1,6 @@
 [Unit]
 Description=Switch Root
 DefaultDependencies=no
-Requires=seedroot.service
-After=seedroot.service
 OnFailure=emergency.target
 OnFailureJobMode=replace-irreversibly
 AllowIsolate=yes

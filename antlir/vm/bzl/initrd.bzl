@@ -28,8 +28,7 @@ DEFAULT_MODULE_LIST = [
 def initrd(kernel, module_list = None, visibility = None):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
-    kernel in a virtual machine and setup the root disk as a btrfs seed device
-    with the second disk for writes to go to.
+    kernel in a virtual machine.
 
     The init is built "from scratch" with busybox which allows us easier
     customization as well as much faster build time than using dracut.
@@ -46,8 +45,8 @@ def initrd(kernel, module_list = None, visibility = None):
             unit = shape.new(
                 systemd.units.unit,
                 description = "Full set of kernel modules",
-                requires = ["remount-rootdisk.service", "systemd-modules-load.service"],
-                after = ["remount-rootdisk.service", "systemd-modules-load.service"],
+                requires = ["systemd-modules-load.service"],
+                after = ["systemd-modules-load.service"],
                 before = ["initrd-fs.target"],
             ),
             what = "kernel-modules",
@@ -59,18 +58,12 @@ def initrd(kernel, module_list = None, visibility = None):
     mount_unit_name = systemd.escape("/rootdisk/usr/lib/modules/{}.mount".format(kernel.uname), path = True)
 
     # Build an initrd specifically for operating as a VM. This is built on top of the
-    # MetalOS initrd and modified to support btrfs seed devices and 9p shared mounts
-    # for the repository, kernel modules, and others.
+    # MetalOS initrd and modified to support 9p shared mounts for the repository,
+    # kernel modules, and others.
     image.layer(
         name = name + "--layer",
         parent_layer = "//metalos/initrd:base",
         features = [
-            # The metalctl generator will instantiate this template with the
-            # seed device provided on the kernel command line as metalos.seed_device.
-            systemd.install_unit("//antlir/vm/initrd:seedroot-device-add@.service"),
-            systemd.install_unit("//antlir/vm/initrd:remount-rootdisk.service"),
-            systemd.enable_unit("remount-rootdisk.service", target = "initrd-fs.target"),
-
             # The switchroot behavior is different for the vmtest based initrd so
             # lets remove the metalos-switch-root.service and install our own
             feature.remove("/usr/lib/systemd/system/metalos-switch-root.service"),

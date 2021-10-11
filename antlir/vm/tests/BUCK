@@ -44,14 +44,6 @@ python_unittest(
                 ),
             ),
         ),
-        "test-vm-seed-json": shape.do_not_cache_me_json(
-            vm.types.opts.new(
-                disk = vm.types.disk.new(
-                    seed = True,
-                    layer = ":vmtest-custom-layer",
-                ),
-            ),
-        ),
         "test-vm-sidecar-json": shape.do_not_cache_me_json(
             vm.types.opts.new(
                 runtime = vm.types.runtime.new(
@@ -139,7 +131,6 @@ vm.python_unittest(
     vm_opts = vm.types.opts.new(
         cpus = 4,
         disk = vm.types.disk.new(
-            seed = False,
             layer = ":vmtest-custom-layer",
         ),
     ),

@@ -51,14 +51,12 @@ _vm_emulator_api = struct(
 
 # A disk device type.  The `package` attribute of this shape must be either
 # an `image.layer` target that will be transiently packaged via `package.new`
-# or an existing `package.new` target.  The `seed` attribute
+# or an existing `package.new` target.
 _vm_disk_t = shape.shape(
-    seed = shape.field(bool, default = False),
     package = shape.target(),
 )
 
 def _new_vm_disk(
-        seed = False,
         package = None,
         layer = None):
     if package and layer:
@@ -69,17 +67,13 @@ def _new_vm_disk(
         # as the base for a new target name.  This is only used for the
         # vm being constructed here, so it doesn't have to be pretty.
         layer_name = layer.lstrip(":").lstrip("//").replace("/", "_").replace(":", "__")
-        package_target = "{}={}image.btrfs".format(
-            layer_name,
-            "seed-" if seed else "",
-        )
+        package_target = "{}=image.btrfs".format(layer_name)
         if not native.rule_exists(package_target):
             package_new(
                 name = package_target,
                 layer = layer,
                 format = "btrfs",
                 loopback_opts = struct(
-                    seed_device = seed,
                     writable_subvolume = True,
                 ),
                 visibility = [],
@@ -92,7 +86,6 @@ def _new_vm_disk(
 
     return shape.new(
         _vm_disk_t,
-        seed = seed,
         package = package,
     )
 
@@ -160,8 +153,7 @@ _vm_opts_t = shape.shape(
     append = shape.list(str, default = []),
     # Amount of memory in mb
     mem_mb = shape.field(int, default = 4096),
-    # Disk for the vm.  This contains the root filesystem and must be a
-    # btrfs 'seed' volume.
+    # Root disk for the VM
     disk = shape.field(_vm_disk_t),
     # Runtime details about how to run the VM
     runtime = shape.field(_vm_runtime_t),

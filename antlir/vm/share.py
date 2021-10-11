@@ -19,9 +19,7 @@ from antlir.fs_utils import Path, temp_dir
 log = get_logger()
 
 __next_tag_index = 0
-# We have 2 drives for the root disk (seed + child) so we start all others
-# after those 2
-__next_drive_index = 2
+__next_drive_index = 1
 
 
 def _next_tag() -> str:
@@ -242,70 +240,6 @@ def _tmp_qcow2_disk(
 
 
 @dataclass(frozen=True)
-class BtrfsSeedRootDisk(Share):
-    """
-    A btrfs seed disk + a child disk for use in qemu.
-    """
-
-    path: Path
-    qemu_img: Path
-    stack: AsyncExitStack
-    subvol: str = "volume"
-    # Note: these are hard coded for virtio and to be the 1st
-    # and 2nd drive presented to qemu.  This is handled in `//antlir/vm:vm`
-    # where this Share is inserted at the beginning of the list of shares
-    # provided to qemu.
-    # Future: This should support other interface formats like sata and nvme
-    seed_dev: str = "vda"
-    child_dev: str = "vdb"
-    # This is dynamically created during the __post_init__
-    child_disk: Optional[Path] = None
-
-    def __post_init__(self) -> None:
-        # Reaching into the object like this is lame.
-        # TODO: Convert these to Pydantic types so we can use
-        # validators
-        object.__setattr__(
-            self,
-            "child_disk",
-            _tmp_qcow2_disk(
-                qemu_img=self.qemu_img,
-                stack=self.stack,
-            ),
-        )
-
-    @property
-    def qemu_args(self) -> Iterable[str]:
-        return (
-            # Seed device
-            "--blockdev",
-            (
-                "driver=raw,node-name=seed,read-only=on,"
-                f"file.driver=file,file.filename={self.path!s}"
-            ),
-            "--device",
-            "virtio-blk,drive=seed",
-            # Child device
-            "--blockdev",
-            (
-                "driver=qcow2,node-name=child,read-only=off,"
-                f"file.driver=file,file.filename={self.child_disk!s}"
-            ),
-            "--device",
-            "virtio-blk,drive=child",
-        )
-
-    @property
-    def kernel_args(self) -> Iterable[str]:
-        return (
-            f"metalos.seed_device=/dev/{self.child_dev}",
-            f"root=/dev/{self.seed_dev}",
-            f"rootflags=subvol={self.subvol},ro",
-            "rootfstype=btrfs",
-        )
-
-
-@dataclass(frozen=True)
 class QCow2RootDisk(Share):
     """
     Share a btrfs filesystem to a Qemu instance as a
@@ -347,6 +281,6 @@ class QCow2RootDisk(Share):
     def kernel_args(self) -> Iterable[str]:
         return (
             f"root=/dev/{self.dev}",
-            f"rootflags=subvol={self.subvol},ro",
+            f"rootflags=subvol={self.subvol},rw",
             "rootfstype=btrfs",
         )

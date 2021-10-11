@@ -187,17 +187,6 @@ vm.run(
 )
 
 vm.run(
-    name = "default-seed",
-    vm_opts = vm.types.opts.new(
-        kernel = kernel_get.default,
-        disk = vm.types.disk.new(
-            seed = True,
-            layer = vm.artifacts.rootfs.layer,
-        ),
-    ),
-)
-
-vm.run(
     name = "default-initrd-debug",
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
