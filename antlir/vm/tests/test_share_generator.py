@@ -112,11 +112,11 @@ Options=version=9p2000.L,posixacl,cache=none,rw
         BtrfsDisk(path=Path("/tmp/image.btrfs"), mountpoint=Path("/mnt/guest")),
         "mnt-guest.mount",
         """[Unit]
-Description=Mount vdc (/tmp/image.btrfs from host) at /mnt/guest
+Description=Mount vdb (/tmp/image.btrfs from host) at /mnt/guest
 Before=local-fs.target
 
 [Mount]
-What=/dev/vdc
+What=/dev/vdb
 Where=/mnt/guest
 Type=btrfs
 Options=subvol=volume,ro
