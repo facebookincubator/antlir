@@ -20,6 +20,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use nix::mount::MsFlags;
+use slog::{warn, Logger};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use structopt::StructOpt;
@@ -95,16 +96,27 @@ impl Mounter for RealMounter {
 }
 
 // this is the public facing mount function used by the main and switch_root
-pub fn mount(opts: Opts) -> Result<()> {
+pub fn mount(log: Logger, opts: Opts) -> Result<()> {
     let fs_types = parse_proc_file_systems_file(PathBuf::from("/proc/filesystems"))?;
-    _mount(opts, &fs_types, RealMounter {})
+    _mount(log, opts, &fs_types, RealMounter {})
 }
 
-fn _mount(opts: Opts, fstypes: &[String], mounter: impl Mounter) -> Result<()> {
+fn _mount(log: Logger, opts: Opts, fstypes: &[String], mounter: impl Mounter) -> Result<()> {
     let (data, flags) = parse_options(opts.options);
-    let source = source_to_device_path(opts.source)?;
-
-    match opts.fstype {
+    let source = opts.source;
+    let source = blkid::evaluate_spec(&source)
+        .with_context(|| format!("no device matches blkid spec '{}'", &source))?;
+    let fstype = opts.fstype.or_else(|| match blkid::probe_fstype(&source) {
+        Ok(fstype) => Some(fstype),
+        Err(e) => {
+            warn!(
+                log,
+                "blkid could not determine fstype, trying all available filesystems: {:?}", e
+            );
+            None
+        }
+    });
+    match fstype {
         None => {
             for fstype in fstypes {
                 match mounter.mount(
@@ -121,7 +133,7 @@ fn _mount(opts: Opts, fstypes: &[String], mounter: impl Mounter) -> Result<()> {
             bail!(
                 "Filesystem type not provided. I tried many filesystem types I know about with no success: {:?}. Stopping.",
                 fstypes,
-            )
+            );
         }
         Some(fstype) => mounter
             .mount(
@@ -135,45 +147,9 @@ fn _mount(opts: Opts, fstypes: &[String], mounter: impl Mounter) -> Result<()> {
     }
 }
 
-/// Parse the source argument into a path where the source device should be
-/// mounted. This handles things like LABELs as well as full paths.
-pub fn source_to_device_path<S: AsRef<str>>(src: S) -> Result<PathBuf> {
-    if let Some(label) = src.as_ref().strip_prefix("LABEL=") {
-        // This is a very rudimentary level of support for disk labels.
-        // It should probably be using libblkid proper, but this works for the
-        // current system setups at least.
-        return Ok(format!("/dev/disk/by-label/{}", blkid_encode_string(label)).into());
-    }
-    // Assume that src is some opaque value that the kernel will know what to do
-    // with.
-    Ok(src.as_ref().into())
-}
-
-// blkid encodes certain tags in a safe encoding that hex-escapes "unsafe"
-// characters. This is not a complete implementation and panics when given
-// non-ASCII input. See note above: this could be replaced with libblkid
-// directly if the need arises.
-fn blkid_encode_string<S: AsRef<str>>(s: S) -> String {
-    if s.as_ref().chars().any(|ch| !ch.is_ascii()) {
-        unimplemented!("this version of blkid_encode_string only supports ASCII");
-    }
-    let mut encoded = String::with_capacity(s.as_ref().len());
-    for ch in s.as_ref().chars() {
-        if ch.is_ascii_alphanumeric() {
-            encoded.push(ch);
-            continue;
-        }
-        encoded.push_str(format!("\\x{:x}", ch as u8).as_str());
-    }
-    encoded
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{
-        blkid_encode_string, parse_options, parse_proc_file_systems_file, source_to_device_path,
-        MockMounter, Opts, _mount,
-    };
+    use super::{parse_options, parse_proc_file_systems_file, MockMounter, Opts, _mount};
     use anyhow::anyhow;
     use anyhow::Result;
     use mockall::predicate::*;
@@ -211,24 +187,6 @@ mod tests {
                 MsFlags::MS_RDONLY | MsFlags::MS_REMOUNT
             )
         );
-    }
-
-    #[test]
-    fn blkid_encode_string_samples() {
-        assert_eq!("\\x2f", blkid_encode_string("/"));
-        assert_eq!("\\x2fboot", blkid_encode_string("/boot"));
-        assert_eq!("test\\x20string", blkid_encode_string("test string"));
-    }
-
-    #[test]
-    fn sources() -> Result<()> {
-        assert_eq!(Path::new("/dev/sda"), source_to_device_path("/dev/sda")?);
-        assert_eq!(Path::new("sda"), source_to_device_path("sda")?);
-        assert_eq!(
-            Path::new("/dev/disk/by-label/\\x2f"),
-            source_to_device_path("LABEL=/")?
-        );
-        Ok(())
     }
 
     #[test]
@@ -295,6 +253,7 @@ nodev   rpc_pipefs\n",
 
     #[test]
     fn test_mount_cycle_all_fstypes_then_find_btrfs() -> Result<()> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
         let tmpdir = TempDir::new()?;
         std::fs::create_dir_all(tmpdir.path().join("proc"))?;
         let fake_proc_filesystems_path = tmpdir.path().join("proc/filesystems");
@@ -372,7 +331,7 @@ nodev   rpc_pipefs\n",
             .expect_mount()
             .returning(|_, _, _, _, _| Err(anyhow!("boom")));
 
-        _mount(opts, &fs_types, mock_mounter)?;
+        _mount(log, opts, &fs_types, mock_mounter)?;
         std::fs::remove_dir_all(&tmpdir)?;
         Ok(())
     }

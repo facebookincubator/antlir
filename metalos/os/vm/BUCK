@@ -29,6 +29,7 @@ package.new(
     loopback_opts = image.opts(
         seed_device = False,
         writable_subvolume = True,
+        label = "/",
     ),
     # Any vm run target can use this
     visibility = ["PUBLIC"],

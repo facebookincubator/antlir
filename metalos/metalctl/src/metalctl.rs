@@ -98,7 +98,7 @@ async fn main() -> Result<()> {
         Subcommand::MetalosGenerator(opts) => generator::generator(log, opts),
         Subcommand::FetchImage(opts) => fetch_image::fetch_image(log, config, opts).await,
         Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
-        Subcommand::Mount(opts) => mount::mount(opts),
+        Subcommand::Mount(opts) => mount::mount(log, opts),
         Subcommand::Umount(opts) => umount::umount(opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts),
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
