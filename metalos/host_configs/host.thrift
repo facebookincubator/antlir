@@ -18,7 +18,7 @@ struct Host {
   3: Network network;
   // @oss-disable: 4: host.HostFacebook facebook;
 } (
-  rust.derive = "starlark::values::StarlarkAttrs, metalos_derive::StarlarkInput",
+  rust.derive = "starlark::values::StarlarkAttrs, metalos_macros::StarlarkInput",
 )
 
 // Top-level network settings.
@@ -26,7 +26,7 @@ struct Network {
   1: DNS dns;
   2: list<NetworkInterface> interfaces;
 } (
-  rust.derive = "starlark::values::StarlarkAttrs, metalos_derive::StarlarkInput",
+  rust.derive = "starlark::values::StarlarkAttrs, metalos_macros::StarlarkInput",
 )
 
 // Configuration for DNS resolvers.
@@ -34,7 +34,7 @@ struct DNS {
   1: list<string> servers;
   2: list<string> search_domains;
 } (
-  rust.derive = "starlark::values::StarlarkAttrs, metalos_derive::StarlarkInput",
+  rust.derive = "starlark::values::StarlarkAttrs, metalos_macros::StarlarkInput",
 )
 
 // Configuration for a single network interface, keyed by MAC Address.
@@ -43,5 +43,5 @@ struct NetworkInterface {
   2: list<string> addrs;
   3: optional string name;
 } (
-  rust.derive = "starlark::values::StarlarkAttrs, metalos_derive::StarlarkInput",
+  rust.derive = "starlark::values::StarlarkAttrs, metalos_macros::StarlarkInput",
 )

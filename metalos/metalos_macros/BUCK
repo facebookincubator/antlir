@@ -1,0 +1,13 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "metalos_macros",
+    srcs = glob(["src/*.rs"]),
+    proc_macro = True,
+    deps = [
+        "proc-macro-error",
+        "proc-macro2",
+        "quote",
+        "syn",
+    ],
+)

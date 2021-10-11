@@ -55,8 +55,7 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "facebook")]
-    #[test]
+    #[cfg_attr(feature = "facebook", test)]
     fn facebook_exposed() {
         let mut a = Assert::new();
         a.globals_add(|gb| gb.set("input", Host::default()));

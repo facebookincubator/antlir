@@ -105,7 +105,7 @@ mod tests {
     use hyper::Uri;
     use tower::Service;
 
-    #[tokio::test]
+    #[test]
     async fn resolves_raw_ip() -> Result<()> {
         let mut resolver = Resolver::new()?;
         let addrs: Vec<_> = resolver.call("::1".parse().unwrap()).await?.collect();
@@ -113,7 +113,7 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
+    #[test]
     async fn connect_to_raw_ip() -> Result<()> {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
         let client = super::client(log)?;
