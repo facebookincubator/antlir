@@ -110,7 +110,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
         let rootdisk_unit_path = opts.normal_dir.join("rootdisk.mount");
         let mut unit = fs::File::create(&rootdisk_unit_path)
             .with_context(|| format!("failed to open {:?} for writing", rootdisk_unit_path))?;
-        let root_src = crate::mount::source_to_device_path(&root.root)
+        let root_src = blkid::evaluate_spec(&root.root)
             .with_context(|| format!("unable to understand root={}", root.root))?;
 
         match root.fstype {
@@ -238,7 +238,7 @@ mod tests {
             metalos.package_format_uri=\"someURI\" \
             metalos.seed_device=\"seedDevice\" \
             rootfstype=btrfs \
-            root=LABEL=/"
+            root=/dev/somedisk"
                 .parse()?;
 
         generator_maybe_err(cmdline, log, opts)?;
@@ -298,7 +298,7 @@ mod tests {
             "[Unit]\n\
             Before=initrd-root-fs.target\n\
             [Mount]\n\
-            What=/dev/disk/by-label/\\x2f\n\
+            What=/dev/somedisk\n\
             Where=/rootdisk\n\
             Options=\n\
             Type=btrfs\n"
@@ -326,7 +326,7 @@ mod tests {
             metalos.os_package=\"somePackage\" \
             metalos.package_format_uri=\"someURI\" \
             metalos.seed_device=\"seedDevice\" \
-            root=LABEL=/"
+            root=/dev/somedisk"
                 .parse()?;
 
         generator_maybe_err(cmdline, log, opts)?;
@@ -340,7 +340,7 @@ mod tests {
             "[Unit]\n\
             Before=initrd-root-fs.target\n\
             [Mount]\n\
-            What=/dev/disk/by-label/\\x2f\n\
+            What=/dev/somedisk\n\
             Where=/rootdisk\n\
             Options=\n"
         );

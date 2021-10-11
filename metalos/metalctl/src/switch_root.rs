@@ -41,12 +41,15 @@ pub fn switch_root(log: Logger, opts: Opts) -> Result<()> {
     };
     std::fs::create_dir("/sysroot").context("failed to mkdir /sysroot")?;
     debug!(log, "mounting subvolume on {}", device);
-    mount(MountOpts {
-        source: device.clone(),
-        target: "/sysroot".into(),
-        fstype: Some(String::from("btrfs")),
-        options: options.clone(),
-    })
+    mount(
+        log.clone(),
+        MountOpts {
+            source: device.clone(),
+            target: "/sysroot".into(),
+            fstype: Some("btrfs".into()),
+            options: options.clone(),
+        },
+    )
     .with_context(|| {
         format!(
             "failed to mount subvol '{}' on '{}' at /sysroot {:?}",

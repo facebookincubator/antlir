@@ -30,6 +30,7 @@ rust_binary(
     ],
     deps = [
         "//metalos/host_configs:evalctx",
+        "//metalos/lib/blkid:blkid",
         "anyhow",  # ~9.5k, very helpful for error handling
         "nix",  # ~5k: access to syscalls (mount, etc)
         "structopt",  # ~300k, but makes iterating development much easier
