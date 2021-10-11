@@ -235,15 +235,16 @@ impl Drop for SubvolIterator {
 mod tests {
     use super::*;
     use anyhow::Result;
+    use metalos_macros::containertest;
 
-    #[test]
+    #[containertest]
     fn get_root() -> Result<()> {
         let subvol = Subvolume::get("/")?;
         assert!(subvol.info().id != 0);
         Ok(())
     }
 
-    #[test]
+    #[containertest]
     fn iter_root() -> Result<()> {
         let subvol = Subvolume::get("/")?;
         Subvolume::create("/example")?;
@@ -253,7 +254,7 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[containertest]
     fn uuid_map() -> Result<()> {
         let subvol = Subvolume::get("/")?;
         let all_subvols = Subvolume::all_subvols_by_uuid()?;

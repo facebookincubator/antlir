@@ -1,7 +1,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -14,6 +14,7 @@ load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 load("//antlir/vm/bzl:initrd.bzl", "initrd")
+load("//metalos:defs.bzl", "rust_binary")
 
 binaries = extract.extract(
     binaries = [
@@ -234,14 +235,11 @@ rust_binary(
     name = "images-sidecar",
     srcs = ["images_sidecar.rs"],
     crate_root = "images_sidecar.rs",
-    deps = third_party.libraries(
-        [
-            "anyhow",
-            "tokio",
-            "warp",
-        ],
-        platform = "rust",
-    ),
+    deps = [
+        "anyhow",
+        "tokio",
+        "warp",
+    ],
 )
 
 buck_genrule(

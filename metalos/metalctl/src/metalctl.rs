@@ -7,6 +7,10 @@
 
 #![deny(warnings)]
 
+#[cfg(test)]
+#[macro_use]
+extern crate metalos_macros;
+
 use std::collections::VecDeque;
 use std::path::PathBuf;
 
