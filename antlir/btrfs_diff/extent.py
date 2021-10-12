@@ -280,7 +280,8 @@ class Extent(NamedTuple):
             if idx == len(calls):
                 stack.pop()
                 continue
-            # pyre-fixme[6]: calls can be int!
+            # pyre-fixme[58]: `+` is not supported for operand types
+            #  `Union[List[Tuple[Extent, int, Optional[int]]], int]` and `int`.
             stack[-1][0] += 1
 
             # pyre-fixme[16]: calls can be int!
