@@ -13,13 +13,20 @@ from antlir.fs_utils import Path
 
 PROV_ROOT = Path("/usr/lib/systemd/system")
 ADMIN_ROOT = Path("/etc/systemd/system")
+USER_PROV_ROOT = Path("/usr/lib/systemd/user")
 TMPFILES_ROOT = Path("/etc/tmpfiles.d")
 
 # tuple of the form:
-# ( <unit name>, <enabled target>, <target dep type>, <masked bool>, <dropin name>)
+# ( <unit name>,
+#   <installed dir>,
+#   <enabled target>,
+#   <target dep type>,
+#   <masked bool>,
+#   <dropin name> )
 unit_test_specs = [
     (
         "cheese-file.service",
+        PROV_ROOT,
         "default.target",
         "wants",
         False,
@@ -27,6 +34,7 @@ unit_test_specs = [
     ),
     (
         "cheese-requires.service",
+        PROV_ROOT,
         "example.target",
         "requires",
         False,
@@ -34,6 +42,7 @@ unit_test_specs = [
     ),
     (
         "cheese-export.service",
+        PROV_ROOT,
         "sysinit.target",
         "wants",
         False,
@@ -41,13 +50,36 @@ unit_test_specs = [
     ),
     (
         "cheese-export-with-dest.service",
+        PROV_ROOT,
         "default.target",
         "wants",
         False,
         "cheese-dropin-with-dest.conf",
     ),
-    ("cheese-generated.service", None, None, False, "cheese-dropin.conf"),
-    ("cheese-source.service", None, None, True, "cheese-dropin.conf"),
+    (
+        "cheese-generated.service",
+        PROV_ROOT,
+        None,
+        None,
+        False,
+        "cheese-dropin.conf",
+    ),
+    (
+        "cheese-source.service",
+        PROV_ROOT,
+        None,
+        None,
+        True,
+        "cheese-dropin.conf",
+    ),
+    (
+        "cheese-user.service",
+        USER_PROV_ROOT,
+        "default.target",
+        "wants",
+        False,
+        None,
+    ),
 ]
 
 
@@ -58,24 +90,26 @@ def _tdep(target, dep):
 
 class TestSystemdFeatures(unittest.TestCase):
     def test_units_installed(self):
-        for unit, *_ in unit_test_specs:
-            unit_file = PROV_ROOT / unit
+        for unit, installed_root, *_ in unit_test_specs:
+            unit_file = installed_root / unit
 
             self.assertTrue(os.path.exists(unit_file), unit_file)
 
     def test_units_enabled(self):
-        # Get a list of the available .wants dirs for all targets to validate
-        available_targets = [
-            Path(avail)
-            for avail in glob.glob(PROV_ROOT / "*.wants")
-            + glob.glob(PROV_ROOT / "*.requires")
-        ]
-
         # spec[1] is the target name, skip if None
-        for unit, target, target_dep, *_ in unit_test_specs:
+        for unit, installed_root, target, target_dep, *_ in unit_test_specs:
+            # Get a list of available .wants dirs for all targets to validate
+            available_targets = [
+                Path(avail)
+                for avail in glob.glob(installed_root / "*.wants")
+                + glob.glob(installed_root / "*.requires")
+            ]
+
             # Make sure it's enabled where it should be
             if target:
-                enabled_in_target = PROV_ROOT / _tdep(target, target_dep) / unit
+                enabled_in_target = (
+                    installed_root / _tdep(target, target_dep) / unit
+                )
 
                 self.assertTrue(
                     os.path.islink(enabled_in_target), enabled_in_target
@@ -101,7 +135,7 @@ class TestSystemdFeatures(unittest.TestCase):
                 )
 
     def test_units_masked(self):
-        for unit, _, _, masked, *_ in unit_test_specs:
+        for unit, _, _, _, masked, *_ in unit_test_specs:
             if masked:
                 masked_unit = ADMIN_ROOT / unit
 
@@ -113,7 +147,7 @@ class TestSystemdFeatures(unittest.TestCase):
         )
 
     def test_dropins(self):
-        for unit, _, _, _, dropin in unit_test_specs:
+        for unit, _, _, _, _, dropin in unit_test_specs:
             if not dropin:
                 continue
             dropin_file = PROV_ROOT / (unit + ".d") / dropin
