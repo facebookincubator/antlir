@@ -2,9 +2,20 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "third_party", antlir_rust_binary = "rust_binary", antlir_rust_library = "rust_library", antlir_rust_unittest = "rust_unittest")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
 _unittest_flavors = ("plain", "container", "vm")
+
+container_unittest_opts_t = shape.shape(
+    layer = shape.target(
+        default = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+    ),
+)
+
+unittest_opts_t = shape.shape(
+    container = shape.field(container_unittest_opts_t, optional = True),
+)
 
 # Nicer rust wrapping logic with a few nice-to-have features.
 # 1. Easier access to third-party dependencies.
@@ -31,6 +42,7 @@ def _rust_common(
         srcs = (),
         test_srcs = (),
         unittests = True,
+        unittest_opts = None,
         deps = (),
         test_deps = (),
         tests = (),
@@ -56,6 +68,10 @@ def _rust_common(
         features = features,
         **kwargs
     )
+
+    if not unittest_opts:
+        unittest_opts = shape.new(unittest_opts_t, container = shape.new(container_unittest_opts_t))
+
     features = list(features)
     test_kwargs = dict(kwargs)
     test_kwargs.pop("link_style", None)
@@ -80,7 +96,7 @@ def _rust_common(
             crate = crate,
             deps = deps + test_deps,
             features = features + ["metalos_container_test"],
-            layer = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+            layer = unittest_opts.container.layer,
             run_as_user = "root",
             **test_kwargs
         )

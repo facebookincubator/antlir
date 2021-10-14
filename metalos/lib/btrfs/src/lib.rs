@@ -92,6 +92,10 @@ impl Subvolume {
         })
     }
 
+    pub fn root() -> Result<Self> {
+        Self::get("/")
+    }
+
     pub fn create(path: impl AsRef<Path>) -> Result<Self> {
         let cpath = CString::new(path.as_ref().as_os_str().as_bytes())
             .context("failed to convert path to CString")?;

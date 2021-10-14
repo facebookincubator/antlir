@@ -19,6 +19,7 @@ use starlark::eval::Evaluator;
 use starlark::starlark_module;
 use starlark::syntax::{AstModule, Dialect};
 use starlark::values::{list::ListOf, OwnedFrozenValue, Value, ValueLike};
+use xattr::FileExt;
 
 use crate::path::PathExt;
 use crate::Host;
@@ -195,6 +196,9 @@ impl GeneratorOutput {
             perms.set_mode(file.mode);
             f.set_permissions(perms)
                 .with_context(|| format!("failed to set mode of {}", dst.display()))?;
+            // try to mark the file as metalos-generated, but swallow the error
+            // if we can't
+            let _ = f.set_xattr("user.metalos.generator", &[1]);
         }
         Ok(())
     }
