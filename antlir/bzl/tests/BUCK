@@ -203,6 +203,10 @@ image.layer(
         systemd.mask_units(["cheese-source.service"]),
         # Mask a tmpfiles.d config
         systemd.mask_tmpfiles(["testconfig.conf"]),
+
+        # Install and enable a user service
+        systemd.install_user_unit("cheese-user.service"),
+        systemd.enable_user_unit("cheese-user.service"),
     ],
 )
 

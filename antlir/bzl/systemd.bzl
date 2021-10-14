@@ -10,6 +10,7 @@ load(":image.bzl", "image")
 load(":oss_shim.bzl", "target_utils")
 load(":shape.bzl", "shape")
 
+USER_PROVIDER_ROOT = "/usr/lib/systemd/user"
 PROVIDER_ROOT = "/usr/lib/systemd/system"
 ADMIN_ROOT = "/etc/systemd/system"
 TMPFILES_ROOT = "/etc/tmpfiles.d"
@@ -92,27 +93,49 @@ def _unmask_units(
     return remove_actions
 
 # Generate an image feature that enables a unit in the specified systemd target.
-def _enable_unit(
+def _enable_impl(
         # The name of the systemd unit to enable.  This should be in the
         # full form of the service, ie:  unit.service, unit.mount, unit.socket, etc..
         unit,
         # The systemd target to enable the unit in.
-        target = "default.target",
+        target,
         # Dependency type to create.
-        dep_type = "wants"):
-    _fail_if_path(unit, "Enable Unit")
+        dep_type,
+        # The dir the systemd unit was installed in.  In most cases this doesn't need
+        # to be changed.
+        installed_root,
+        # Informational string that describes what is being enabled. Prepended
+        # to an error message on path verification failure.
+        description):
+    _fail_if_path(unit, description)
     if dep_type not in ("wants", "requires"):
         fail("dep_type must be one of {wants, requires}")
 
     return [
-        image.ensure_subdirs_exist(PROVIDER_ROOT, target + "." + dep_type, mode = 0o755),
+        image.ensure_subdirs_exist(installed_root, target + "." + dep_type, mode = 0o755),
         image.ensure_file_symlink(
-            paths.join(PROVIDER_ROOT, unit),
-            paths.join(PROVIDER_ROOT, target + "." + dep_type, unit),
+            paths.join(installed_root, unit),
+            paths.join(installed_root, target + "." + dep_type, unit),
         ),
     ]
 
-def _install_unit(
+# Image feature to enable a system unit
+def _enable_unit(
+        unit,
+        target = "default.target",
+        dep_type = "wants",
+        installed_root = PROVIDER_ROOT):
+    return _enable_impl(unit, target, dep_type, installed_root, "Enable System Unit")
+
+# Image feature to enable a user unit
+def _enable_user_unit(
+        unit,
+        target = "default.target",
+        dep_type = "wants",
+        installed_root = USER_PROVIDER_ROOT):
+    return _enable_impl(unit, target, dep_type, installed_root, "Enable User Unit")
+
+def _install_impl(
         # The source for the unit to be installed. This can be one of:
         #   - A Buck target definition, ie: //some/dir:target or :local-target.
         #   - A filename relative to the current TARGETS file.
@@ -121,11 +144,15 @@ def _install_unit(
         # The destination service name.  This should be only a single filename,
         # not a path.  The dir the source file is installed into is determinted by
         # the `install_root` parameter.
-        dest = None,
+        dest,
 
         # The dir to install the systemd unit into.  In most cases this doesn't need
         # to be changed.
-        install_root = PROVIDER_ROOT):
+        install_root,
+
+        # Informational string that describes what is being installed. Prepended
+        # to an error message on path verification failure.
+        description):
     # We haven't been provided an explicit dest so let's try and derive one from the
     # source
     if dest == None:
@@ -149,13 +176,27 @@ def _install_unit(
         else:
             fail("Unable to derive `dest` from source: " + source)
 
-    _fail_if_path(dest, "Install Unit Dest")
+    _fail_if_path(dest, description + " Dest")
     _assert_unit_suffix(dest)
 
     return feature.install(
         source,
         paths.join(install_root, dest),
     )
+
+# Image feature to install a system unit
+def _install_unit(
+        source,
+        dest = None,
+        install_root = PROVIDER_ROOT):
+    return _install_impl(source, dest, install_root, "Install System Unit")
+
+# Image feature to install a user unit
+def _install_user_unit(
+        source,
+        dest = None,
+        install_root = USER_PROVIDER_ROOT):
+    return _install_impl(source, dest, install_root, "Install User Unit")
 
 def _install_dropin(
         # The source for the unit to be installed. This can be one of:
@@ -315,7 +356,9 @@ def _mount_unit_file(name, mount):
 
 systemd = struct(
     enable_unit = _enable_unit,
+    enable_user_unit = _enable_user_unit,
     install_unit = _install_unit,
+    install_user_unit = _install_user_unit,
     install_dropin = _install_dropin,
     mask_tmpfiles = _mask_tmpfiles,
     mask_units = _mask_units,
