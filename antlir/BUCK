@@ -3,7 +3,7 @@ load("//antlir/bzl:image_gpt.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:loopback_opts.bzl", "loopback_opts_t")
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file", "python_binary", "python_library", "python_unittest", "rust_library", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
@@ -706,6 +706,21 @@ python_library(
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
     ],
     deps = [":config"],
+)
+
+# Some rust dependencies are only used in OSS, add this target to be able to easily
+# bring in third-party crates that will show up in `buck query` within fbcode
+rust_library(
+    name = "extra_oss_deps",
+    mapped_srcs = {
+        "//antlir:empty": "src/lib.rs",
+    },
+    deps = third_party.libraries(
+        [
+            "libloading",
+        ],
+        platform = "rust",
+    ),
 )
 
 export_file(
