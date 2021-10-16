@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
@@ -42,6 +43,23 @@ users = [
     ),
 ]
 
+udev = [
+    image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
+] + [
+    image.clone(
+        "//metalos/os:metalos",
+        paths.join("usr/lib/udev/rules.d/", f),
+        paths.join("usr/lib/udev/rules.d/", f),
+    )
+    for f in [
+        "50-udev-default.rules",
+        "60-block.rules",
+        "60-persistent-storage.rules",
+        "64-btrfs.rules",
+        "80-drivers.rules",
+    ]
+]
+
 # Kernel-agnostic base initrd
 image.layer(
     name = "base",
@@ -77,8 +95,7 @@ image.layer(
         networking,
         nss,
         users,
-        image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
-        feature.install("udev.rules", "/usr/lib/udev/rules.d/10-metalos.rules"),
+        udev,
         # Due to limitations in the current extractor implementation, we have to
         # extract systemd at the same time as metalctl.
         extract.extract(
