@@ -8,6 +8,7 @@ load("//antlir/vm/bzl:defs.bzl", "vm")
 _unittest_flavors = ("plain", "container", "vm")
 
 container_unittest_opts_t = shape.shape(
+    boot = shape.field(bool, default = False),
     layer = shape.target(
         default = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
     ),
@@ -58,6 +59,9 @@ def _rust_common(
     tests = list(tests)
     tests += [":" + name + _unittest_suffix(flavor) for flavor in unittests]
     crate = kwargs.pop("crate", name.replace("-", "_"))
+    if len(srcs) == 1 and not kwargs.get("crate_root", None):
+        kwargs["crate_root"] = srcs[0]
+
     rule(
         name = name,
         srcs = srcs,
@@ -98,6 +102,7 @@ def _rust_common(
             features = features + ["metalos_container_test"],
             layer = unittest_opts.container.layer,
             run_as_user = "root",
+            boot = unittest_opts.container.boot,
             **test_kwargs
         )
     if "vm" in unittests:

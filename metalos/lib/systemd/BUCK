@@ -1,0 +1,65 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:systemd.bzl", "systemd")
+load("//metalos:defs.bzl", "container_unittest_opts_t", "rust_library", "unittest_opts_t")
+
+image.layer(
+    name = "test-layer",
+    parent_layer = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+    features = [
+        # otherwise we have to wait for this to timeout
+        systemd.mask_units(["systemd-networkd-wait-online.service"]),
+    ],
+)
+
+rust_library(
+    name = "systemd",
+    srcs = glob(["src/*.rs"]),
+    test_deps = [
+        "anyhow",
+        "byteorder",
+        "itertools",
+        "maplit",
+        "slog_glog_fmt",
+    ],
+    unittest_opts = shape.new(
+        unittest_opts_t,
+        container = shape.new(
+            container_unittest_opts_t,
+            boot = True,
+            layer = ":test-layer",
+        ),
+    ),
+    unittests = [
+        "plain",
+        "container",
+    ],
+    deps = [
+        "bitflags",
+        "nix",
+        "once_cell",
+        "serde",
+        "slog",
+        "thiserror",
+        "tokio",
+        "zbus",
+        "zvariant",
+        ":macros",
+    ],
+)
+
+rust_library(
+    name = "macros",
+    srcs = ["macros.rs"],
+    crate = "systemd_macros",
+    proc_macro = True,
+    unittests = False,
+    deps = [
+        "convert_case",
+        "paste",
+        "proc-macro2",
+        "quote",
+        "syn",
+    ],
+)

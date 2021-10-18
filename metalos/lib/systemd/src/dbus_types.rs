@@ -1,0 +1,134 @@
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+use std::convert::{TryFrom, TryInto};
+use std::marker::PhantomData;
+use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Deserializer, Serialize};
+use zvariant::{OwnedValue, Signature, Type};
+
+use crate::Result;
+
+#[derive(Debug, Serialize)]
+pub struct FilePath(Path);
+
+impl Type for FilePath {
+    fn signature() -> Signature<'static> {
+        String::signature()
+    }
+}
+
+impl std::ops::Deref for FilePath {
+    type Target = Path;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct OwnedFilePath(PathBuf);
+
+impl Type for OwnedFilePath {
+    fn signature() -> Signature<'static> {
+        String::signature()
+    }
+}
+
+impl std::ops::Deref for OwnedFilePath {
+    type Target = Path;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl TryFrom<OwnedValue> for OwnedFilePath {
+    type Error = zvariant::Error;
+
+    fn try_from(v: OwnedValue) -> zvariant::Result<Self> {
+        v.try_into().map(|s: String| OwnedFilePath(s.into()))
+    }
+}
+
+/// [zbus]'s default object path types have no notion of the type of proxy they
+/// are meant to represent. This is mostly fine for methods that get a single
+/// object path back, as zbus can convert those responses, but objects will
+/// frequently reference other objects by path, or methods will return lists of
+/// paths, and we should have a safe way to load Proxys from them.
+#[derive(Debug)]
+pub struct TypedObjectPath<T>(zvariant::OwnedObjectPath, PhantomData<T>);
+
+impl<'de, T> Deserialize<'de> for TypedObjectPath<T> {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Deserialize::deserialize(deserializer).map(|p| TypedObjectPath(p, PhantomData))
+    }
+}
+
+impl<T> PartialEq for TypedObjectPath<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<T> Eq for TypedObjectPath<T> {}
+
+impl<T> Type for TypedObjectPath<T> {
+    fn signature() -> Signature<'static> {
+        zvariant::OwnedObjectPath::signature()
+    }
+}
+
+impl<T> TryFrom<OwnedValue> for TypedObjectPath<T> {
+    type Error = zvariant::Error;
+
+    fn try_from(v: OwnedValue) -> zvariant::Result<Self> {
+        v.try_into()
+            .map(|p: zvariant::OwnedObjectPath| TypedObjectPath(p, PhantomData))
+    }
+}
+
+impl<T> TypedObjectPath<T>
+where
+    T: From<zbus::Proxy<'static>> + zbus::ProxyDefault,
+{
+    /// Load an object of the specified type from this path, using an existing
+    /// connection.
+    pub async fn load(&self, conn: &zbus::Connection) -> Result<T> {
+        Ok(zbus::ProxyBuilder::new(conn)
+            // This can only fail if the input cannot be converted to a path. In
+            // this case it obviously is already a path... what a dumb api
+            .path(self.0.clone())?
+            // we can't cache properties because systemd has some
+            // properties that change but do not emit change signals
+            .cache_properties(false)
+            .build()
+            .await?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Systemd;
+    use anyhow::Result;
+
+    #[containertest]
+    async fn test_typed_path() -> Result<()> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
+        let sd = Systemd::connect(log).await?;
+        let units = sd.list_units().await?;
+        assert!(units.len() > 0);
+        let root = units.iter().find(|u| u.name == "-.mount".into()).unwrap();
+        let unit = root.unit.load(sd.connection()).await?;
+        assert_eq!(unit.id().await?, root.name);
+        Ok(())
+    }
+}
