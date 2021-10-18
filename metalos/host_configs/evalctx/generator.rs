@@ -125,11 +125,11 @@ impl Generator {
             AstModule::parse(name.as_ref(), src.as_ref().to_owned(), &Dialect::Extended)?;
         let module = Module::new();
         let globals = crate::globals();
-        let mut evaluator: Evaluator = Evaluator::new(&module, &globals);
+        let mut evaluator: Evaluator = Evaluator::new(&module);
         let name = name.as_ref().to_owned();
 
         evaluator
-            .eval_module(ast)
+            .eval_module(ast, &globals)
             .with_context(|| format!("failed to evaluate starlark module '{}'", &name))?;
 
         let module = module.freeze()?;
@@ -169,8 +169,7 @@ impl Generator {
 
     pub fn eval(&self, host: &Host) -> Result<GeneratorOutput> {
         let module = Module::new();
-        let globals = crate::globals();
-        let mut evaluator = Evaluator::new(&module, &globals);
+        let mut evaluator = Evaluator::new(&module);
         let host_value = evaluator.heap().alloc(host.clone());
         let output =
             evaluator.eval_function(self.starlark_func.value(), &[], &[("host", host_value)])?;
