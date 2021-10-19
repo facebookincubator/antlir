@@ -569,10 +569,9 @@ trait Manager {
     fn set_default_target(&self, name: &UnitName, force: bool)
         -> zbus::Result<Vec<UnitFileChange>>;
 
-    /// Alter the environment block that is passed to all spawned processes. It
-    /// takes a string array of environment variable assignments. Any previously
-    /// set environment variables will be overridden.
-    fn set_environment(&self, assignments: &[&str]) -> zbus::Result<()>;
+    /// Alter the environment block that is passed to all spawned processes.
+    /// Any previously set environment variables will be overridden.
+    fn set_environment(&self, assignments: &Environment) -> zbus::Result<()>;
 
     /// May be used to modify certain unit properties at runtime. Not all
     /// properties may be changed at runtime, but many resource management
@@ -658,7 +657,11 @@ trait Manager {
     /// contains variables to unset, the second one contains assignments to set.
     /// If a variable is listed in both, the variable is set after this method
     /// returns, i.e. the set list overrides the unset list.
-    fn unset_and_set_environment(&self, names: &[&str], assignments: &[&str]) -> zbus::Result<()>;
+    fn unset_and_set_environment(
+        &self,
+        names: &[&str],
+        assignments: &Environment,
+    ) -> zbus::Result<()>;
 
     /// Unset environment variables. It takes a string array of environment
     /// variable names. All variables specified will be unset (if they have been
@@ -756,7 +759,7 @@ trait Manager {
 
     /// Environment property
     #[dbus_proxy(property)]
-    fn environment(&self) -> zbus::Result<Vec<String>>;
+    fn environment(&self) -> zbus::Result<Environment>;
 
     /// Features encodes the features that have been enabled and disabled for
     /// this build. Enabled options are prefixed with +, disabled options with
