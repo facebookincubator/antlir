@@ -10,7 +10,7 @@ use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use zvariant::{OwnedValue, Signature, Type};
 
 use crate::Result;
@@ -125,6 +125,33 @@ impl<'de> Deserialize<'de> for MonotonicTimestamp {
         D: Deserializer<'de>,
     {
         Deserialize::deserialize(deserializer).map(|t| Self(Duration::from_secs(t)))
+    }
+}
+
+/// Unix signal that can be sent to a process
+#[derive(Debug, PartialEq)]
+pub struct Signal(nix::sys::signal::Signal);
+
+impl Type for Signal {
+    fn signature() -> Signature<'static> {
+        i32::signature()
+    }
+}
+
+impl std::ops::Deref for Signal {
+    type Target = nix::sys::signal::Signal;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Serialize for Signal {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_i32(self.0 as i32)
     }
 }
 
