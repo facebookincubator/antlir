@@ -30,7 +30,6 @@ class DoNotFreeze:
     pass
 
 
-# pyre-fixme[39]: `Tuple[str, ...]` is not a valid parent class.
 class frozendict(Mapping, tuple, DoNotFreeze):
     __slots__ = ()
 
