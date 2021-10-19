@@ -453,9 +453,8 @@ trait Manager {
     /// See [ManagerProxy::reboot]
     fn kexec(&self) -> zbus::Result<()>;
 
-    /// Kill (i.e. send a signal to) all processes of a unit. It takes the unit
-    /// name, an enum who and a UNIX signal number to send.
-    fn kill_unit(&self, name: &UnitName, whom: &KillWhom, signal: i32) -> zbus::Result<()>;
+    /// Kill (i.e. send a signal to) all processes of a unit.
+    fn kill_unit(&self, name: &UnitName, whom: &KillWhom, signal: Signal) -> zbus::Result<()>;
 
     /// LinkUnitFiles() links unit files (that are located outside of the usual
     /// unit search paths) into the unit search path.
