@@ -8,6 +8,7 @@
 use std::convert::{TryFrom, TryInto};
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Deserializer, Serialize};
 use zvariant::{OwnedValue, Signature, Type};
@@ -53,6 +54,77 @@ impl TryFrom<OwnedValue> for OwnedFilePath {
 
     fn try_from(v: OwnedValue) -> zvariant::Result<Self> {
         v.try_into().map(|s: String| OwnedFilePath(s.into()))
+    }
+}
+
+/// Systemd timestamp corresponding to CLOCK_REALTIME.
+#[derive(Debug, PartialEq)]
+pub struct Timestamp(SystemTime);
+
+impl Type for Timestamp {
+    fn signature() -> Signature<'static> {
+        u64::signature()
+    }
+}
+
+impl std::ops::Deref for Timestamp {
+    type Target = SystemTime;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl TryFrom<OwnedValue> for Timestamp {
+    type Error = zvariant::Error;
+
+    fn try_from(v: OwnedValue) -> zvariant::Result<Self> {
+        v.try_into()
+            .map(|t: u64| Self(UNIX_EPOCH + Duration::from_secs(t)))
+    }
+}
+
+impl<'de> Deserialize<'de> for Timestamp {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Deserialize::deserialize(deserializer).map(|t| Self(UNIX_EPOCH + Duration::from_secs(t)))
+    }
+}
+
+/// Systemd timestamp corresponding to CLOCK_MONOTONIC.
+#[derive(Debug, PartialEq)]
+pub struct MonotonicTimestamp(Duration);
+
+impl Type for MonotonicTimestamp {
+    fn signature() -> Signature<'static> {
+        u64::signature()
+    }
+}
+
+impl std::ops::Deref for MonotonicTimestamp {
+    type Target = Duration;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl TryFrom<OwnedValue> for MonotonicTimestamp {
+    type Error = zvariant::Error;
+
+    fn try_from(v: OwnedValue) -> zvariant::Result<Self> {
+        v.try_into().map(|t: u64| Self(Duration::from_secs(t)))
+    }
+}
+
+impl<'de> Deserialize<'de> for MonotonicTimestamp {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Deserialize::deserialize(deserializer).map(|t| Self(Duration::from_secs(t)))
     }
 }
 
@@ -117,8 +189,13 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::{MonotonicTimestamp, Timestamp};
     use crate::Systemd;
     use anyhow::Result;
+    use byteorder::LE;
+    use std::time::{Duration, UNIX_EPOCH};
+    use zvariant::EncodingContext as Context;
+    use zvariant::{from_slice, to_bytes};
 
     #[containertest]
     async fn test_typed_path() -> Result<()> {
@@ -129,6 +206,20 @@ mod tests {
         let root = units.iter().find(|u| u.name == "-.mount".into()).unwrap();
         let unit = root.unit.load(sd.connection()).await?;
         assert_eq!(unit.id().await?, root.name);
+        Ok(())
+    }
+
+    #[test]
+    fn test_timestamps() -> Result<()> {
+        let ctxt = Context::<LE>::new_dbus(0);
+
+        let encoded = to_bytes(ctxt, &100u64)?;
+        let decoded: Timestamp = from_slice(&encoded, ctxt)?;
+        assert_eq!(*decoded, UNIX_EPOCH + Duration::from_secs(100));
+
+        let encoded = to_bytes(ctxt, &100u64)?;
+        let decoded: MonotonicTimestamp = from_slice(&encoded, ctxt)?;
+        assert_eq!(*decoded, Duration::from_secs(100));
         Ok(())
     }
 }
