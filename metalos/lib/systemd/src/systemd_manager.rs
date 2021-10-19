@@ -718,18 +718,20 @@ trait Manager {
     /// firmware (if known), in the boot loader (if known), in the kernel
     /// initialization phase, in the initrd (if known), in userspace and in
     /// total. These values may also be calculated from the
-    /// FirmwareTimestampMonotonic, LoaderTimestampMonotonic,
-    /// InitRDTimestampMonotonic, UserspaceTimestampMonotonic, and
-    /// FinishTimestampMonotonic properties.
+    /// [ManagerProxy::firmware_timestamp_monotonic],
+    /// [ManagerProxy::loader_timestamp_monotonic],
+    /// [ManagerProxy::initrd_timestamp_monotonic,
+    /// [ManagerProxy::userspace_timestamp_monotonic], and
+    /// [ManagerProxy::finish_timestamp_monotonic] properties.
     #[dbus_proxy(signal)]
     fn startup_finished(
         &self,
-        firmware: u64,
-        loader: u64,
-        kernel: u64,
-        initrd: u64,
-        userspace: u64,
-        total: u64,
+        firmware: MonotonicTimestamp,
+        loader: MonotonicTimestamp,
+        kernel: MonotonicTimestamp,
+        initrd: MonotonicTimestamp,
+        userspace: MonotonicTimestamp,
+        total: MonotonicTimestamp,
     ) -> zbus::Result<()>;
 
     /// Sent out each time the list of enabled or masked unit files on disk have
@@ -794,6 +796,36 @@ trait Manager {
     /// shared-kernel virtualization (containers).
     #[dbus_proxy(property)]
     fn virtualization(&self) -> zbus::Result<Virtualization>;
+
+    #[dbus_proxy(property)]
+    fn firmware_timestamp_monotonic(&self) -> zbus::Result<MonotonicTimestamp>;
+    #[dbus_proxy(property)]
+    fn firmware_timestamp(&self) -> zbus::Result<Timestamp>;
+
+    #[dbus_proxy(property)]
+    fn loader_timestamp_monotonic(&self) -> zbus::Result<MonotonicTimestamp>;
+    #[dbus_proxy(property)]
+    fn loader_timestamp(&self) -> zbus::Result<Timestamp>;
+
+    #[dbus_proxy(property)]
+    fn kernel_timestamp_monotonic(&self) -> zbus::Result<MonotonicTimestamp>;
+    #[dbus_proxy(property)]
+    fn kernel_timestamp(&self) -> zbus::Result<Timestamp>;
+
+    #[dbus_proxy(property, name = "InitRDTimestampMonotonic")]
+    fn initrd_timestamp_monotonic(&self) -> zbus::Result<MonotonicTimestamp>;
+    #[dbus_proxy(property, name = "InitRDTimestamp")]
+    fn initrd_timestamp(&self) -> zbus::Result<Timestamp>;
+
+    #[dbus_proxy(property)]
+    fn userspace_timestamp_monotonic(&self) -> zbus::Result<MonotonicTimestamp>;
+    #[dbus_proxy(property)]
+    fn userspace_timestamp(&self) -> zbus::Result<Timestamp>;
+
+    #[dbus_proxy(property)]
+    fn finished_timestamp_monotonic(&self) -> zbus::Result<MonotonicTimestamp>;
+    #[dbus_proxy(property)]
+    fn finished_timestamp(&self) -> zbus::Result<Timestamp>;
 }
 
 #[dbus_proxy(
