@@ -5,12 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{ser::SerializeSeq, Deserialize, Deserializer, Serialize, Serializer};
 use zvariant::{OwnedValue, Signature, Type};
 
 use crate::Result;
@@ -155,12 +156,78 @@ impl Serialize for Signal {
     }
 }
 
+/// Map of environment variables that can be set for a process.
+#[derive(Debug, PartialEq)]
+pub struct Environment(HashMap<String, String>);
+
+impl Type for Environment {
+    fn signature() -> Signature<'static> {
+        <&[&str]>::signature()
+    }
+}
+
+impl std::ops::Deref for Environment {
+    type Target = HashMap<String, String>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl TryFrom<Vec<String>> for Environment {
+    type Error = String;
+
+    fn try_from(v: Vec<String>) -> std::result::Result<Self, Self::Error> {
+        v.into_iter()
+            .map(|e| {
+                e.split_once("=")
+                    .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                    .ok_or_else(|| format!("invalid env pair {}", e))
+            })
+            .collect::<std::result::Result<_, String>>()
+            .map(Self)
+    }
+}
+
+impl Serialize for Environment {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
+        for (key, val) in self.0.iter() {
+            seq.serialize_element(&format!("{}={}", key, val))?;
+        }
+        seq.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Environment {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Deserialize::deserialize(deserializer).and_then(|environs: Vec<String>| {
+            environs.try_into().map_err(::serde::de::Error::custom)
+        })
+    }
+}
+
+impl TryFrom<OwnedValue> for Environment {
+    type Error = zvariant::Error;
+
+    fn try_from(v: OwnedValue) -> zvariant::Result<Self> {
+        v.try_into()
+            .and_then(|environs: Vec<String>| environs.try_into().map_err(zvariant::Error::Message))
+    }
+}
+
 /// [zbus]'s default object path types have no notion of the type of proxy they
 /// are meant to represent. This is mostly fine for methods that get a single
 /// object path back, as zbus can convert those responses, but objects will
 /// frequently reference other objects by path, or methods will return lists of
 /// paths, and we should have a safe way to load Proxys from them.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypedObjectPath<T>(zvariant::OwnedObjectPath, PhantomData<T>);
 
 impl<'de, T> Deserialize<'de> for TypedObjectPath<T> {
@@ -216,10 +283,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{MonotonicTimestamp, Timestamp};
+    use super::{Environment, MonotonicTimestamp, Timestamp};
     use crate::Systemd;
     use anyhow::Result;
     use byteorder::LE;
+    use maplit::{hashmap, hashset};
+    use std::collections::HashSet;
+    use std::iter::FromIterator;
     use std::time::{Duration, UNIX_EPOCH};
     use zvariant::EncodingContext as Context;
     use zvariant::{from_slice, to_bytes};
@@ -247,6 +317,26 @@ mod tests {
         let encoded = to_bytes(ctxt, &100u64)?;
         let decoded: MonotonicTimestamp = from_slice(&encoded, ctxt)?;
         assert_eq!(*decoded, Duration::from_secs(100));
+        Ok(())
+    }
+
+    #[test]
+    fn test_environment() -> Result<()> {
+        let ctxt = Context::<LE>::new_dbus(0);
+
+        let encoded = to_bytes(ctxt, &vec!["HELLO=world", "FOO=bar"])?;
+        let decoded: Environment = from_slice(&encoded, ctxt)?;
+        assert_eq!(
+            *decoded,
+            hashmap! {"HELLO".into() => "world".into(), "FOO".into() => "bar".into()}
+        );
+
+        let encoded = to_bytes(ctxt, &decoded)?;
+        let decoded: Vec<String> = from_slice(&encoded, ctxt)?;
+        assert_eq!(
+            HashSet::from_iter(decoded.into_iter()),
+            hashset!["FOO=bar".into(), "HELLO=world".into()]
+        );
         Ok(())
     }
 }
