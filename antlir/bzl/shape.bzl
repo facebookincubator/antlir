@@ -529,7 +529,6 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
     python_src += "\n".join(_codegen_shape(shape, classname))
     buck_genrule(
         name = "{}.py".format(name),
-        out = "unused.py",
         cmd = "echo {} > $OUT".format(shell.quote(python_src)),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
@@ -696,7 +695,6 @@ def _python_data(
 
     buck_genrule(
         name = "{}.py".format(name),
-        out = "unused.py",
         cmd = "echo {} >> $OUT".format(shell.quote(python_src)),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
@@ -728,7 +726,6 @@ def _json_file(name, instance, visibility = None):  # pragma: no cover
     instance = _safe_to_serialize_instance(instance).to_json()
     buck_genrule(
         name = name,
-        out = "out.json",
         cmd = "echo {} > $OUT".format(shell.quote(instance)),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
@@ -766,7 +763,6 @@ def _render_template(name, instance, template):  # pragma: no cover
 
     buck_genrule(
         name = name,
-        out = "unused",
         cmd = "$(exe {}-render) <$(location :{}--data.json) > $OUT".format(template, name),
         antlir_rule = "user-internal",
     )

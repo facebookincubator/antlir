@@ -245,7 +245,6 @@ def private_do_not_use_feature_json_genrule(
     name = PRIVATE_DO_NOT_USE_feature_target_name(name)
     buck_genrule(
         name = name,
-        out = "feature.json",
         type = "image_feature",  # For queries
         # Future: It'd be nice to refactor `image_utils.bzl` and to use the
         # log-on-error wrapper here (for `fetched_package_layer`).

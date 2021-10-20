@@ -265,6 +265,8 @@ def _filegroup(*args, **kwargs):
 def _genrule(*args, **kwargs):
     # For future use to support target platforms
     kwargs.pop("flavor_config", None)
+    if "out" not in kwargs:
+        kwargs["out"] = "out"
     _wrap_internal(native.genrule, args, kwargs)
 
 def _http_file(*args, **kwargs):

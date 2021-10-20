@@ -147,7 +147,6 @@ def _nspawn_wrapper_properties(
     test_spec_py = name + "__layer-test-spec-py"
     buck_genrule(
         name = test_spec_py,
-        out = "unused_name.py",
         bash = """
 cat > "$TMP/out" << EOF
 import os

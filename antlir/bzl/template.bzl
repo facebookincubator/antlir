@@ -45,8 +45,8 @@ root template from JSON data provided on stdin.
 
         buck_genrule(
             name = compiled_src,
-            out = python_file_name,
             cmd = "$(exe //antlir:compile-template) $(location :{}) {} > $OUT".format(raw_src, src),
+            out = python_file_name,
         )
         compiled_srcs[":" + compiled_src] = python_file_name
 
@@ -67,7 +67,6 @@ root template from JSON data provided on stdin.
     root_template_target = name + "__root_template_name"
     buck_genrule(
         name = root_template_target,
-        out = "unused",
         cmd = "printf {} > $OUT".format(shell.quote(paths.replace_extension(root, ""))),
         visibility = [],
     )

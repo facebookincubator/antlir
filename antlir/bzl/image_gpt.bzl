@@ -33,7 +33,6 @@ def image_gpt(
     gpt = shape.new(gpt_t, name = name, table = table)
     buck_genrule(
         name = name,
-        out = "image.gpt",
         bash = image_utils.wrap_bash_build_in_common_boilerplate(
             self_dependency = "//antlir/bzl:image_gpt",
             bash = '''

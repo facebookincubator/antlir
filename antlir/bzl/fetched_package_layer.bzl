@@ -232,7 +232,6 @@ def _fetched_package_layer(
     mount_config = name + "-fetched-package-mount-config"
     buck_genrule(
         name = mount_config,
-        out = "partial_mountconfig.json",  # It lacks `build_source`, e.g.
         bash = '''
         {print_how_to_fetch_json} |
             $(exe {print_mount_config}) {quoted_package} > "$OUT"
@@ -262,7 +261,6 @@ def _fetched_package_with_nondeterministic_fs_metadata(
         visibility):
     buck_genrule(
         name = name,
-        out = "package",
         # (i) Fbpkg is essentially a cache, it's reasonably fast. No need
         #     to burn RAM cache on this.
         # (ii) Fbpkgs are often huge, and would cache poorly in the Buck

@@ -92,7 +92,6 @@ def compile_image_features(
         vset_override_name = version_set_override_name(current_target)
         buck_genrule(
             name = vset_override_name,
-            out = "unused",
             bash = """
 cat > "$OUT" << 'EOF'
 {envra_file_contents}

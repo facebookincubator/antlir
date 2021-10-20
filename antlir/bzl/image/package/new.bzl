@@ -72,7 +72,7 @@ def package_new(
               --format {format} \
               --output-path "$OUT" \
               {maybe_build_appliance} \
-              {maybe_loopback_opts} 
+              {maybe_loopback_opts}
             '''.format(
                 format = format,
                 layer = layer,

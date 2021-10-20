@@ -23,7 +23,6 @@ def _yum_or_dnf_wrapper(yum_or_dnf, snapshot_name):
     name = "{}-for-snapshot--{}".format(yum_or_dnf, snapshot_name)
     buck_genrule(
         name = name,
-        out = "ignored",
         bash = 'echo {} > "$OUT" && chmod u+rx "$OUT"'.format(shell.quote(
             """\
 #!/bin/sh
@@ -167,7 +166,6 @@ mkdir -p "$OUT"/{prog}/var/cache/{prog}
 
     buck_genrule(
         name = name,
-        out = "ignored",
         bash = '''\
 set -ue -o pipefail -o noclobber
 

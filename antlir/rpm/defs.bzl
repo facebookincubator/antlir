@@ -11,7 +11,6 @@ def test_rpm_repo_snapshot(name, kind, rpm_installers, repo_server_ports):
     bare_snapshot_dir = "__bare_snapshot_dir_for__" + name
     buck_genrule(
         name = bare_snapshot_dir,
-        out = "unused",
         bash = """
         set -ue
         logfile=\\$(mktemp)

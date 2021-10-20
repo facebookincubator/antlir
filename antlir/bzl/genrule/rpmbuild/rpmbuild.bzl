@@ -194,7 +194,6 @@ def private_image_rpmbuild_impl(
 
     buck_genrule(
         name = name,
-        out = "signed_rpms",
         bash = '''
             set -ue -o pipefail
             mkdir "$OUT"
