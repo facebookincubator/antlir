@@ -11,6 +11,10 @@ load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
+VISIBILITY = [
+    "//metalos/initrd/...",
+]
+
 image.layer(
     name = "debug-deps",
     parent_layer = "//metalos/os:metalos",
@@ -26,78 +30,90 @@ image.layer(
 
 # Some systemd units and binaries that are only useful for debugging and not
 # during normal boots
-systemd_debug = [
-    # We don't have to use the extractor here, since the libraries loaded by
-    # the systemd binaries that we want will already be present in the base
-    # initrd.
-    image.clone(":debug-deps", "/usr/bin/systemd-analyze", "/usr/bin/systemd-analyze"),
-    image.ensure_subdirs_exist(
-        "/usr/lib",
-        paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib"),
-    ),
-    image.clone(
-        ":debug-deps",
-        paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service"),
-        paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service"),
-    ),
-]
-
-ssh_server = [
-    image.clone(":debug-deps", "/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/dropbear.service"),
-    image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
-    feature.install("dropbear.tmpfiles.conf", "/usr/lib/tmpfiles.d/dropbear.conf"),
-    image.ensure_dirs_exist("/etc/sysconfig"),
-    feature.install("dropbear", "/etc/sysconfig/dropbear"),
-    systemd.install_unit("dropbear-keygen.service"),
-    systemd.enable_unit(
-        "dropbear.service",
-        target = "initrd.target",
-    ),
-    # vmtest synchronizes on sshd.service, so alias it to dropbear
-    image.ensure_file_symlink("/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/sshd.service"),
-    image.ensure_dirs_exist(
-        "/root/.ssh",
-        user = "root",
-        group = "root",
-        mode = "u+rx",
-    ),
-]
-
-debug_features = [
-    linux.busybox.install(
-        ":debug-deps",
-        sets.difference(
-            DEFAULT_APPLETS,
-            # these are implemented in metalctl
-            sets.make([
-                "mkdir",
-                "mount",
-                "umount",
-            ]),
+feature.new(
+    name = "systemd-debug",
+    features = [
+        # We don't have to use the extractor here, since the libraries loaded by
+        # the systemd binaries that we want will already be present in the base
+        # initrd.
+        image.clone(":debug-deps", "/usr/bin/systemd-analyze", "/usr/bin/systemd-analyze"),
+        image.ensure_subdirs_exist(
+            "/usr/lib",
+            paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib"),
         ),
-        src_path = "/usr/sbin/busybox",
-    ),
-    systemd_debug,
-    systemd.enable_unit("debug-shell.service"),
-    systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
-    systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
-    ssh_server,
-    extract.extract(
-        binaries = [
-            "/usr/sbin/dropbear",
-            "/usr/bin/dropbearkey",
-            "/usr/bin/strace",
-        ],
-        dest = "/",
-        source = ":debug-deps",
-    ),
-]
+        image.clone(
+            ":debug-deps",
+            paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service"),
+            paths.join(SYSTEMD_PROVIDER_ROOT, "debug-shell.service"),
+        ),
+        systemd.enable_unit("debug-shell.service"),
+        systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
+        systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
+    ],
+    visibility = VISIBILITY,
+)
+
+feature.new(
+    name = "dropbear-ssh-server",
+    features = [
+        image.clone(":debug-deps", "/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/dropbear.service"),
+        image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
+        feature.install("dropbear.tmpfiles.conf", "/usr/lib/tmpfiles.d/dropbear.conf"),
+        image.ensure_dirs_exist("/etc/sysconfig"),
+        feature.install("dropbear", "/etc/sysconfig/dropbear"),
+        systemd.install_unit("dropbear-keygen.service"),
+        systemd.enable_unit(
+            "dropbear.service",
+            target = "initrd.target",
+        ),
+        # vmtest synchronizes on sshd.service, so alias it to dropbear
+        image.ensure_file_symlink("/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/sshd.service"),
+        image.ensure_dirs_exist(
+            "/root/.ssh",
+            user = "root",
+            group = "root",
+            mode = "u+rx",
+        ),
+    ],
+    visibility = VISIBILITY,
+)
+
+feature.new(
+    name = "binaries",
+    features = [
+        linux.filesystem.install(),
+        linux.busybox.install(
+            ":debug-deps",
+            sets.difference(
+                DEFAULT_APPLETS,
+                # these are implemented in metalctl
+                sets.make([
+                    "mkdir",
+                    "mount",
+                    "umount",
+                ]),
+            ),
+            src_path = "/usr/sbin/busybox",
+        ),
+        extract.extract(
+            binaries = [
+                "/usr/sbin/dropbear",
+                "/usr/bin/dropbearkey",
+                "/usr/bin/strace",
+            ],
+            dest = "/",
+            source = ":debug-deps",
+        ),
+    ],
+    visibility = VISIBILITY,
+)
 
 image.layer(
     name = "debug-append",
     features = [
-        linux.filesystem.install(),
-        debug_features,
+        ":binaries",
+        ":systemd-debug",
+        ":dropbear-ssh-server",
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
 )
