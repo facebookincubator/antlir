@@ -251,7 +251,6 @@ template(
 # shape.bzl as a valid python source file
 buck_genrule(
     name = "shape_bzl.py",
-    out = "shape_bzl.py",
     cmd = """
     echo "from .shape_bzl_shims import *" > $OUT
     # small hack to keep line numbers the same as the original source, just

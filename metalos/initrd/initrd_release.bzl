@@ -21,7 +21,6 @@ def initrd_release(name):
 
     buck_genrule(
         name = name,
-        out = "initrd-release",
         cmd = """
             echo "NAME='MetalOS'" > $OUT
             echo "ID='metalos'" >> $OUT

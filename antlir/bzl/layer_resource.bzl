@@ -34,7 +34,6 @@ def layer_resource(target):
     if not exists:
         buck_genrule(
             name = wrapped_target,
-            out = "location",
             bash = 'echo -n "$(location {})" > "$OUT"'.format(target),
             cacheable = False,
             type = "wrapped_layer_resource",

@@ -26,7 +26,6 @@ def fake_macro_library(name, srcs, deps = None, visibility = None):
     buck_genrule(
         name = name,
         srcs = srcs,
-        out = name,
         # The point of this command is to convince Buck that this rule
         # depends on its sources, and the transitive closure of its
         # dependencies.  The output is a recursive hash, so it should change

@@ -22,7 +22,6 @@ def build_vm_run_target(
     vm_opts = vm_opts or api.opts.new()
     buck_genrule(
         name = name,
-        out = "run",
         antlir_rule = "user-internal",
         bash = """
 cat > "$TMP/out" << 'EOF'

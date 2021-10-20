@@ -43,7 +43,6 @@ def image_test_rpm_names(
     py_name = fn_name + ".py"
     buck_genrule(
         name = py_name,
-        out = py_name,
         bash = """\
 cat > "$OUT" <<'A Hilariously Unlikely Yet Cheeky Sigil'
 import unittest

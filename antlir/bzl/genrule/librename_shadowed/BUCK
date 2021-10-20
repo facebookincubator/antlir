@@ -16,7 +16,6 @@ export_file(
 # `-fvisibility=hidden` so that tests can access internal functions.
 buck_genrule(
     name = "librename_shadowed_for_test.so",
-    out = "unused",
     bash = '''
         cc -shared -o "$OUT" -Wall -Werror -O2 \\
             -ldl -fPIC $(location :rename_shadowed.c)

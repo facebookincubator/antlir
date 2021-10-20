@@ -117,7 +117,6 @@ export_file(name = "cheese-source.service")
 
 buck_genrule(
     name = "cheese-generator",
-    out = "dir",
     bash = """
     mkdir -p ${OUT}
     cat > ${OUT}/cheese-generated.service <<'EOF'
@@ -134,7 +133,6 @@ export_file(name = "cheese-dropin.conf")
 
 buck_genrule(
     name = "cheese-dropin-generator",
-    out = "dir",
     bash = """
     mkdir -p ${OUT}
     cp $(location :cheese-dropin.conf) $OUT/

@@ -147,7 +147,6 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
     if not REPO_CFG.artifacts_require_repo:
         buck_genrule(
             name = name,
-            out = "dummyfile",
             bash = 'touch "$OUT"',
             antlir_rule = "user-internal",
         )
@@ -173,7 +172,6 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
     # https://github.com/facebook/buck/tree/master/test/com/facebook/buck/cli/configurations/testdata/exe_target
     buck_genrule(
         name = name,
-        out = "wrapper.sh",
         bash = '''
 cat >> "$TMP/out" <<'EOF'
 #!/bin/bash

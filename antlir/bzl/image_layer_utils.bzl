@@ -101,7 +101,6 @@ def _image_layer_impl(
     # IMPORTANT: If you touch this genrule, update `image_layer_alias`.
     buck_genrule(
         name = _layer_name,
-        out = "layer",
         bash = image_utils.wrap_bash_build_in_common_boilerplate(
             self_dependency = antlir_dep("bzl:image_layer"),
             bash = '''

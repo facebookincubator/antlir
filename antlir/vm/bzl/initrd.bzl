@@ -91,7 +91,6 @@ def initrd(kernel, module_list = None, visibility = None):
     # to be using that in production.
     buck_genrule(
         name = name + "-debug",
-        out = "initrd.cpio.gz",
         cmd = "cat $(location :{}) $(location //metalos/initrd/debug:debug-append.cpio.gz) > $OUT".format(name),
         antlir_rule = "user-internal",
         visibility = visibility,

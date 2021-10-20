@@ -35,7 +35,6 @@ def image_layer_alias(name, layer, visibility = None):
     # IMPORTANT: If you touch this genrule, update `_image_layer_impl`.
     buck_genrule(
         name = name,
-        out = "layer",
         # This should definitely not count towards CI dependency distance
         # between sources & build nodes.
         antlir_rule = "user-internal",

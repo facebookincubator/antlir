@@ -43,7 +43,6 @@ def install_kernel_modules(kernel, module_list):
     )
     buck_genrule(
         name = kernel.uname + "selected--modules-load.conf",
-        out = "unused",
         cmd = "echo '{}' > $OUT".format("\n".join([
             paths.basename(module).rsplit(".")[0]
             for module in module_list
