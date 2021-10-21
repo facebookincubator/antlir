@@ -18,7 +18,7 @@ resolve_path() {
 repo_root_dir() {
   CWD="$(resolve_path "$(pwd)")"
   while [[ "$CWD" != "/" ]]; do
-    if [[ -r "$CWD"/.git ]]; then
+    if [[ -e "$CWD"/.buckversion ]]; then
       echo "$CWD"
       return
     fi

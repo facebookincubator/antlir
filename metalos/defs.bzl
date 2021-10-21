@@ -81,6 +81,7 @@ def _rust_common(
     test_kwargs.pop("link_style", None)
     test_kwargs.pop("allocator", None)
     test_kwargs.pop("linker_flags", None)
+    test_kwargs.pop("proc_macro", None)
     srcs = list(srcs)
     test_srcs = list(test_srcs) if test_srcs else []
 

@@ -321,6 +321,15 @@ def _impl_cpp_unittest(name, tags = None, **kwargs):
 def _cpp_unittest(*args, **kwargs):
     _wrap_internal(_impl_cpp_unittest, args, kwargs)
 
+def _cxx_genrule(*args, **kwargs):
+    _wrap_internal(_impl_cxx_genrule, args, kwargs)
+
+def _impl_cxx_genrule(tags = None, **kwargs):
+    native.cxx_genrule(
+        labels = tags or [],
+        **kwargs
+    )
+
 def _export_file(*args, **kwargs):
     _wrap_internal(native.export_file, args, kwargs)
 
@@ -425,6 +434,8 @@ def _split_rust_kwargs(kwargs):
     return kwargs, test_kwargs
 
 def _rust_unittest(*args, **kwargs):
+    kwargs.pop("allocator", None)
+    kwargs.pop("nodefaultlibs", None)
     _wrap_internal(native.rust_test, args, kwargs)
 
 def _rust_binary(*args, **kwargs):
@@ -579,6 +590,7 @@ shim = struct(
     cpp_binary = _cpp_binary,
     cpp_library = _cpp_library,
     cpp_unittest = _cpp_unittest,
+    cxx_genrule = _cxx_genrule,
     #
     # Constants
     #
