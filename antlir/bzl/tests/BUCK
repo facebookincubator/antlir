@@ -205,6 +205,10 @@ image.layer(
         # Install and enable a user service
         systemd.install_user_unit("cheese-user.service"),
         systemd.enable_user_unit("cheese-user.service"),
+
+        # Install and enable a template unit
+        systemd.install_unit("cheese-template@.service"),
+        systemd.enable_unit("cheese-template@foo.service"),
     ],
 )
 
