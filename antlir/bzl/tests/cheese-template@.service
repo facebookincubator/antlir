@@ -1,0 +1,5 @@
+[Unit]
+Description=Another Cheesy Test Service that is a template unit. Instance name: %i
+
+[Service]
+ExecStart=/bin/true

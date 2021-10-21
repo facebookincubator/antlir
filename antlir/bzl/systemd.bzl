@@ -108,13 +108,27 @@ def _enable_impl(
         # to an error message on path verification failure.
         description):
     _fail_if_path(unit, description)
+    _assert_unit_suffix(unit)
     if dep_type not in ("wants", "requires"):
         fail("dep_type must be one of {wants, requires}")
+
+    num_template_seps = unit.count("@")
+    if num_template_seps == 0:
+        link_target = unit
+    elif num_template_seps == 1:
+        # From systemd.unit(5) man page:
+        # systemctl enable getty@tty2.service creates a
+        # getty.target.wants/getty@tty2.service link to getty@.service.
+        name_prefix, suffix = paths.split_extension(unit)
+        unit_name, sep, instance_name = name_prefix.rpartition("@")
+        link_target = unit_name + sep + suffix
+    else:
+        fail("unit contains too many @ characters: " + unit)
 
     return [
         image.ensure_subdirs_exist(installed_root, target + "." + dep_type, mode = 0o755),
         image.ensure_file_symlink(
-            paths.join(installed_root, unit),
+            paths.join(installed_root, link_target),
             paths.join(installed_root, target + "." + dep_type, unit),
         ),
     ]

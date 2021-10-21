@@ -7,6 +7,8 @@
 import glob
 import os
 import unittest
+from dataclasses import dataclass
+from typing import List, Optional
 
 from antlir.fs_utils import Path
 
@@ -16,69 +18,61 @@ ADMIN_ROOT = Path("/etc/systemd/system")
 USER_PROV_ROOT = Path("/usr/lib/systemd/user")
 TMPFILES_ROOT = Path("/etc/tmpfiles.d")
 
-# tuple of the form:
-# ( <unit name>,
-#   <installed dir>,
-#   <enabled target>,
-#   <target dep type>,
-#   <masked bool>,
-#   <dropin name> )
-unit_test_specs = [
-    (
+
+@dataclass(frozen=True)
+class SystemdUnitTestSpec:
+    name: str
+    installed_root: Path = PROV_ROOT
+    enabled_target: Optional[str] = None
+    target_dep_type: Optional[str] = None
+    enabled_link_name: Optional[str] = None
+    dropin_name: Optional[str] = None
+    is_masked: bool = False
+
+
+unit_test_specs: List[SystemdUnitTestSpec] = [
+    SystemdUnitTestSpec(
         "cheese-file.service",
-        PROV_ROOT,
-        "default.target",
-        "wants",
-        False,
-        "cheese-dropin.conf",
+        enabled_target="default.target",
+        target_dep_type="wants",
+        dropin_name="cheese-dropin.conf",
     ),
-    (
+    SystemdUnitTestSpec(
         "cheese-requires.service",
-        PROV_ROOT,
-        "example.target",
-        "requires",
-        False,
-        None,
+        enabled_target="example.target",
+        target_dep_type="requires",
     ),
-    (
+    SystemdUnitTestSpec(
         "cheese-export.service",
-        PROV_ROOT,
-        "sysinit.target",
-        "wants",
-        False,
-        "cheese-dropin.conf",
+        enabled_target="sysinit.target",
+        target_dep_type="wants",
+        dropin_name="cheese-dropin.conf",
     ),
-    (
+    SystemdUnitTestSpec(
         "cheese-export-with-dest.service",
-        PROV_ROOT,
-        "default.target",
-        "wants",
-        False,
-        "cheese-dropin-with-dest.conf",
+        enabled_target="default.target",
+        target_dep_type="wants",
+        dropin_name="cheese-dropin-with-dest.conf",
     ),
-    (
-        "cheese-generated.service",
-        PROV_ROOT,
-        None,
-        None,
-        False,
-        "cheese-dropin.conf",
+    SystemdUnitTestSpec(
+        "cheese-generated.service", dropin_name="cheese-dropin.conf"
     ),
-    (
+    SystemdUnitTestSpec(
         "cheese-source.service",
-        PROV_ROOT,
-        None,
-        None,
-        True,
-        "cheese-dropin.conf",
+        dropin_name="cheese-dropin.conf",
+        is_masked=True,
     ),
-    (
+    SystemdUnitTestSpec(
         "cheese-user.service",
-        USER_PROV_ROOT,
-        "default.target",
-        "wants",
-        False,
-        None,
+        installed_root=USER_PROV_ROOT,
+        enabled_target="default.target",
+        target_dep_type="wants",
+    ),
+    SystemdUnitTestSpec(
+        "cheese-template@.service",
+        enabled_target="default.target",
+        target_dep_type="wants",
+        enabled_link_name="cheese-template@foo.service",
     ),
 ]
 
@@ -90,25 +84,31 @@ def _tdep(target, dep):
 
 class TestSystemdFeatures(unittest.TestCase):
     def test_units_installed(self):
-        for unit, installed_root, *_ in unit_test_specs:
-            unit_file = installed_root / unit
+        for unit in unit_test_specs:
+            unit_file = unit.installed_root / unit.name
 
             self.assertTrue(os.path.exists(unit_file), unit_file)
 
     def test_units_enabled(self):
-        # spec[1] is the target name, skip if None
-        for unit, installed_root, target, target_dep, *_ in unit_test_specs:
+        for unit in unit_test_specs:
             # Get a list of available .wants dirs for all targets to validate
             available_targets = [
                 Path(avail)
-                for avail in glob.glob(installed_root / "*.wants")
-                + glob.glob(installed_root / "*.requires")
+                for avail in glob.glob(unit.installed_root / "*.wants")
+                + glob.glob(unit.installed_root / "*.requires")
             ]
 
             # Make sure it's enabled where it should be
-            if target:
+            if unit.enabled_target:
+                link_name = (
+                    unit.enabled_link_name
+                    if unit.enabled_link_name
+                    else unit.name
+                )
                 enabled_in_target = (
-                    installed_root / _tdep(target, target_dep) / unit
+                    unit.installed_root
+                    / _tdep(unit.enabled_target, unit.target_dep_type)
+                    / link_name
                 )
 
                 self.assertTrue(
@@ -122,22 +122,23 @@ class TestSystemdFeatures(unittest.TestCase):
             for avail_target in [
                 avail
                 for avail in available_targets
-                if target
+                if unit.enabled_target
                 and (
-                    avail.basename() != _tdep(target, "wants")
-                    and avail.basename() != _tdep(target, "requires")
+                    avail.basename() != _tdep(unit.enabled_target, "wants")
+                    and avail.basename()
+                    != _tdep(unit.enabled_target, "requires")
                 )
             ]:
-                unit_in_target_wants = avail_target / unit
+                unit_in_target_wants = avail_target / link_name
 
                 self.assertFalse(
-                    os.path.exists(avail_target / unit), unit_in_target_wants
+                    os.path.exists(unit_in_target_wants), unit_in_target_wants
                 )
 
     def test_units_masked(self):
-        for unit, _, _, _, masked, *_ in unit_test_specs:
-            if masked:
-                masked_unit = ADMIN_ROOT / unit
+        for unit in unit_test_specs:
+            if unit.is_masked:
+                masked_unit = ADMIN_ROOT / unit.name
 
                 # Yes, systemd (at least in v243) is OK with a relative link
                 self.assertEqual(os.readlink(masked_unit), b"../../../dev/null")
@@ -147,8 +148,8 @@ class TestSystemdFeatures(unittest.TestCase):
         )
 
     def test_dropins(self):
-        for unit, _, _, _, _, dropin in unit_test_specs:
-            if not dropin:
+        for unit in unit_test_specs:
+            if unit.dropin_name is None:
                 continue
-            dropin_file = PROV_ROOT / (unit + ".d") / dropin
+            dropin_file = PROV_ROOT / (unit.name + ".d") / unit.dropin_name
             self.assertTrue(os.path.exists(dropin_file), dropin_file)
