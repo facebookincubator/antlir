@@ -62,6 +62,14 @@ def cpp_unittest(*args, **kwargs):
     _check_args("cpp_unittest", args, kwargs, _CPP_UNITTEST_KWARGS)
     shim.cpp_unittest(**kwargs)
 
+_CXX_GENRULE_KWARGS = _make_rule_kwargs_dict(
+    ["name", "srcs", "cmd", "type", "out", "visibility", "tags"],
+)
+
+def cxx_genrule(*args, **kwargs):
+    _check_args("cxx_genrule", args, kwargs, _CXX_GENRULE_KWARGS)
+    shim.cxx_genrule(**kwargs)
+
 _PYTHON_BINARY_KWARGS = _make_rule_kwargs_dict(
     [
         "name",
