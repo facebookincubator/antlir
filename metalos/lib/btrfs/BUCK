@@ -17,6 +17,7 @@ rust_library(
     unittests = ["container"],
     deps = [
         "anyhow",
+        "bitflags",
         "libc",
         "uuid",
         ":btrfsutil-sys",
