@@ -11,15 +11,17 @@ use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Error, Result};
+use bitflags::bitflags;
 use libc::c_void;
 use uuid::Uuid;
 
 use btrfsutil_sys::{
-    btrfs_util_create_subvolume, btrfs_util_create_subvolume_iterator,
+    btrfs_util_create_snapshot, btrfs_util_create_subvolume, btrfs_util_create_subvolume_iterator,
     btrfs_util_destroy_subvolume_iterator, btrfs_util_error,
     btrfs_util_error_BTRFS_UTIL_ERROR_STOP_ITERATION as BTRFS_UTIL_ERROR_STOP_ITERATION,
     btrfs_util_strerror, btrfs_util_subvolume_id, btrfs_util_subvolume_info,
     btrfs_util_subvolume_iterator, btrfs_util_subvolume_iterator_next_info,
+    BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY, BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE,
 };
 
 pub static BTRFS_FS_TREE_OBJECTID: u64 = 5;
@@ -71,6 +73,13 @@ pub struct Subvolume {
     info: SubvolumeInfo,
 }
 
+bitflags! {
+    pub struct SnapshotFlags: i32 {
+        const RECURSIVE = BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE as i32;
+        const READONLY = BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY as i32;
+    }
+}
+
 impl Subvolume {
     pub fn get(path: impl AsRef<Path>) -> Result<Self> {
         // The path stored in the Subvolume may be referenced later, so for
@@ -108,6 +117,24 @@ impl Subvolume {
             )
         })
         .with_context(|| format!("failed to create subvol at {}", path.as_ref().display()))?;
+        Self::get(path)
+    }
+
+    pub fn snapshot(&self, path: impl AsRef<Path>, flags: SnapshotFlags) -> Result<Self> {
+        let snapshot_path = CString::new(path.as_ref().as_os_str().as_bytes())
+            .context("failed to convert path to CString")?;
+        let self_path = CString::new(self.path.as_os_str().as_bytes())
+            .context("failed to convert path to CString")?;
+        check!({
+            btrfs_util_create_snapshot(
+                self_path.as_ptr(),
+                snapshot_path.as_ptr(),
+                flags.bits(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+            )
+        })
+        .with_context(|| format!("failed to create snapshot at {}", path.as_ref().display()))?;
         Self::get(path)
     }
 
@@ -263,6 +290,15 @@ mod tests {
         let subvol = Subvolume::get("/")?;
         let all_subvols = Subvolume::all_subvols_by_uuid()?;
         assert!(all_subvols.contains_key(&subvol.info().uuid));
+        Ok(())
+    }
+
+    #[containertest]
+    fn snapshot() -> Result<()> {
+        let subvol = Subvolume::get("/")?;
+        let snap = subvol.snapshot("/snapshot", SnapshotFlags::empty())?;
+        assert_eq!(snap.path(), Path::new("/snapshot"));
+        assert!(snap.path().join("/etc/machine-id").exists());
         Ok(())
     }
 }
