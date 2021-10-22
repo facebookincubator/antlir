@@ -196,7 +196,7 @@ impl From<btrfsutil_sys::btrfs_util_subvolume_info> for SubvolumeInfo {
 
 pub struct SubvolIterator(PathBuf, *mut btrfs_util_subvolume_iterator);
 
-impl std::iter::Iterator for SubvolIterator {
+impl Iterator for SubvolIterator {
     type Item = Result<Subvolume>;
 
     fn next(&mut self) -> Option<Self::Item> {

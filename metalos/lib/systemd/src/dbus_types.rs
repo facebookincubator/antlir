@@ -6,7 +6,6 @@
  */
 
 use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -289,7 +288,6 @@ mod tests {
     use byteorder::LE;
     use maplit::{hashmap, hashset};
     use std::collections::HashSet;
-    use std::iter::FromIterator;
     use std::time::{Duration, UNIX_EPOCH};
     use zvariant::EncodingContext as Context;
     use zvariant::{from_slice, to_bytes};
