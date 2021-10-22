@@ -6,7 +6,6 @@
  */
 
 use std::collections::BTreeSet;
-use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 use bitflags::bitflags;

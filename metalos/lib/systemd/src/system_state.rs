@@ -6,7 +6,6 @@
  */
 
 use std::cmp::Ordering;
-use std::convert::TryFrom;
 
 use systemd_macros::SystemdEnum;
 
