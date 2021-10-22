@@ -6,9 +6,9 @@ load(":rust.bzl", "rustc_toolchain")
 linux_x86_64_toolchain = rustc_toolchain(
     arch = "x86_64",
     channel = "nightly",
-    sha256 = "bf1b041c95324caa94bc3d02fe32cce0160e0a4a430cf1072614287d9e4dfcff",
+    sha256 = "2ef8c51d46e5d6cf5fc1649255c40d00166027cff96e598cdfe5f69aa4fb4ea8",
     target = "unknown-linux-gnu",
-    version = "2021-08-23",
+    version = "2021-10-22",
 )
 
 buck_command_alias(
