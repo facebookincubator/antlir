@@ -23,11 +23,14 @@ extern crate metalos_macros;
 
 mod dbus_types;
 mod machined_manager;
+mod property_stream;
 mod system_state;
 mod systemd_manager;
+mod transient_unit;
 pub use machined_manager::{ManagerProxy as MachinedManagerProxy, *};
 pub use system_state::{SystemState, WaitableSystemState};
 pub use systemd_manager::{ManagerProxy as SystemdManagerProxy, *};
+pub use transient_unit::Opts as TransientUnitOpts;
 
 #[derive(Debug)]
 pub struct ConnectOpts {
@@ -59,6 +62,10 @@ pub enum Error {
     SystemState(SystemState, &'static str),
     #[error("error interacting with dbus")]
     Dbus(#[from] zbus::Error),
+    #[error("error in property stream: {0}")]
+    PropertyStream(String),
+    #[error("transient unit failure: {0:?}")]
+    TransientUnit(#[from] transient_unit::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -117,6 +124,12 @@ where
             .map_err(Error::Connect)?;
 
         Ok(Self { log, proxy })
+    }
+
+    pub fn logger(&self) -> Logger {
+        // according to slog docs, cloning existing loggers and creating new
+        // ones is cheap, so just make it easy
+        self.log.clone()
     }
 }
 

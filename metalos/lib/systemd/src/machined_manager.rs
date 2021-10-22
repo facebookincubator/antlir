@@ -256,7 +256,7 @@ trait Manager {
         user: &str,
         path: &FilePath,
         args: &[&str],
-        environment: &[&str],
+        environment: &Environment,
     ) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
     fn remove_image(&self, name: &ImageName) -> zbus::Result<()>;
@@ -365,7 +365,7 @@ trait Machine {
         user: &str,
         path: &FilePath,
         args: &[&str],
-        environment: &[&str],
+        environment: &Environment,
     ) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
     /// See [MachineProxy::terminate_machine]

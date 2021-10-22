@@ -599,14 +599,16 @@ trait Manager {
     /// Interface](http://www.freedesktop.org/wiki/Software/systemd/ControlGroupInterface/)
     /// for more information how to make use of this functionality for
     /// resource control purposes.
-    #[dbus_proxy(object = "Job")]
     fn start_transient_unit(
         &self,
         name: &UnitName,
         mode: &StartMode,
         properties: &[(&str, zbus::zvariant::Value<'_>)],
         aux: &[(&str, &[(&str, zbus::zvariant::Value<'_>)])],
-    );
+    ) -> zbus::Result<TypedObjectPath<JobProxy<'_>>>;
+
+    /// Decrement unit reference count.
+    fn unref_unit(&self, name: &UnitName) -> zbus::Result<()>;
 
     /// Enqueue a start job and possibly depending jobs.
     #[dbus_proxy(object = "Job")]
@@ -889,6 +891,9 @@ trait Unit {
 
     /// See [ManagerProxy::reset_failed_unit]
     fn reset_failed(&self) -> zbus::Result<()>;
+
+    /// See [ManagerProxy::unref_unit]
+    fn unref(&self) -> zbus::Result<()>;
 
     /// See [ManagerProxy::set_unit_properties]
     fn set_properties(&self) -> zbus::Result<()>;
