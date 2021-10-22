@@ -5,6 +5,7 @@
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:oss_shim.bzl", "python_unittest")
+load("//antlir/bzl/image/feature:install.bzl", "TEST_ONLY_wrap_buck_runnable")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 
 TEST_IMAGE_PREFIX = "//antlir/compiler/test_images:"
@@ -19,7 +20,12 @@ def READ_MY_DOC_image_feature_target(name):
     """
     return PRIVATE_DO_NOT_USE_feature_target_name(name)
 
-def image_feature_python_unittest(test_image_feature_transitive_deps, deps = None, env = None, **kwargs):
+def image_feature_python_unittest(
+        test_image_feature_transitive_deps,
+        test_image_feature_wrapped_transitive_deps,
+        deps = None,
+        env = None,
+        **kwargs):
     env = env or {}
     env.update({
         "test_image_feature_path_to_" + t: "$(location {})".format(
@@ -27,6 +33,14 @@ def image_feature_python_unittest(test_image_feature_transitive_deps, deps = Non
         )
         for t in test_image_feature_transitive_deps
     })
+
+    env.update({
+        "test_image_feature_path_to_" + TEST_ONLY_wrap_buck_runnable(TEST_IMAGE_PREFIX + t): "$(location {})".format(
+            TEST_IMAGE_PREFIX + TEST_ONLY_wrap_buck_runnable(TEST_IMAGE_PREFIX + t),
+        )
+        for t in test_image_feature_wrapped_transitive_deps
+    })
+
     env["test_image_feature_built_artifacts_require_repo"] = \
         str(int(REPO_CFG.artifacts_require_repo))
 
