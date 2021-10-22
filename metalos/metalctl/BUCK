@@ -1,10 +1,16 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file")
-load("//metalos:defs.bzl", "rust_binary")
+load("//antlir/bzl:shape.bzl", "shape")
+load("//metalos:defs.bzl", "container_unittest_opts_t", "rust_binary", "unittest_opts_t")
+
+srcs = glob(["src/**/*.rs"])
+
+facebook = "src/facebook/mod.rs" in srcs
 
 rust_binary(
     name = "metalctl",
-    srcs = glob(["src/*.rs"]),
+    srcs = srcs,
     allocator = "malloc",
+    features = ["facebook"] if facebook else [],
     link_style = "static",
     linker_flags = [
         "-Wl,--strip-all",
@@ -15,6 +21,23 @@ rust_binary(
         "-C",
         "opt-level=z",
     ],
+    test_deps = [
+        "mockall",
+        "tempfile",
+    ],
+    test_srcs = glob(["tests/**/*.rs"]),
+    unittest_opts = shape.new(
+        unittest_opts_t,
+        container = shape.new(
+            container_unittest_opts_t,
+            boot = True,
+            layer = "//metalos/metalctl/tests/facebook:test-layer" if facebook else "//metalos/os:metalos",
+        ),
+    ),
+    unittests = [
+        "plain",
+        "container",
+    ],
     # WARNING: adding any dependencies can significantly increase the size of
     # the resulting binary.
     # STRONGLY lean towards re-implementing something if it is a small
@@ -24,13 +47,10 @@ rust_binary(
     # For example, when parsing the kernel cmdline, just adding a
     # dependency on `regex` bloats the end binary by 1.1M, compared to
     # almost nothing for 50 lines of code to parse it manually.
-    test_deps = [
-        "mockall",
-        "tempfile",
-    ],
     deps = [
         "//metalos/host_configs:evalctx",
         "//metalos/lib/blkid:blkid",
+        "//metalos/lib/systemd:systemd",
         "anyhow",  # ~9.5k, very helpful for error handling
         "nix",  # ~5k: access to syscalls (mount, etc)
         "structopt",  # ~300k, but makes iterating development much easier

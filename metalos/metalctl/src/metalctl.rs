@@ -21,6 +21,8 @@ use structopt::StructOpt;
 
 mod apply_host_config;
 mod config;
+#[cfg(feature = "facebook")]
+mod facebook;
 mod fetch_image;
 mod generator;
 mod http;
@@ -49,6 +51,9 @@ enum Subcommand {
     SwitchRoot(switch_root::Opts),
     /// Generate and apply a structured host config
     ApplyHostConfig(apply_host_config::Opts),
+    #[cfg(feature = "facebook")]
+    #[structopt(flatten)]
+    Facebook(facebook::Subcommand),
 }
 
 #[derive(StructOpt)]
@@ -102,5 +107,7 @@ async fn main() -> Result<()> {
         Subcommand::Umount(opts) => umount::umount(opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts),
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
+        #[cfg(feature = "facebook")]
+        Subcommand::Facebook(fb) => fb.subcommand(log).await,
     }
 }
