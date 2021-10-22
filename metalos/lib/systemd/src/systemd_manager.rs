@@ -958,7 +958,7 @@ mod tests {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
         let sd = Systemd::connect(log).await?;
         let units = sd.list_units().await?;
-        assert!(units.len() > 0);
+        assert!(!units.is_empty());
         let root = units.iter().find(|u| u.name == "-.mount".into()).unwrap();
         assert_eq!(root.active_state, ActiveState::Active);
         assert_eq!(root.load_state, LoadState::Loaded);
