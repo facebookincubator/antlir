@@ -36,6 +36,7 @@ rust_library(
         "container",
     ],
     deps = [
+        "async-trait",
         "bitflags",
         "nix",
         "once_cell",
@@ -43,6 +44,7 @@ rust_library(
         "slog",
         "thiserror",
         "tokio",
+        "uuid",
         "zbus",
         "zvariant",
         ":macros",

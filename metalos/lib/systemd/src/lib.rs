@@ -22,9 +22,11 @@ use zbus::{Proxy, ProxyBuilder};
 extern crate metalos_macros;
 
 mod dbus_types;
+mod machined_manager;
 mod system_state;
-pub use system_state::{SystemState, WaitableSystemState};
 mod systemd_manager;
+pub use machined_manager::{ManagerProxy as MachinedManagerProxy, *};
+pub use system_state::{SystemState, WaitableSystemState};
 pub use systemd_manager::{ManagerProxy as SystemdManagerProxy, *};
 
 #[derive(Debug)]
@@ -166,6 +168,8 @@ impl Systemd {
         }
     }
 }
+
+pub type Machined = DbusService<MachinedManagerProxy<'static>>;
 
 #[cfg(test)]
 mod tests {

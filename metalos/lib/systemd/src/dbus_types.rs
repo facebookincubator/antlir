@@ -58,7 +58,7 @@ impl TryFrom<OwnedValue> for OwnedFilePath {
 }
 
 /// Systemd timestamp corresponding to CLOCK_REALTIME.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Timestamp(SystemTime);
 
 impl Type for Timestamp {
@@ -94,7 +94,7 @@ impl<'de> Deserialize<'de> for Timestamp {
 }
 
 /// Systemd timestamp corresponding to CLOCK_MONOTONIC.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct MonotonicTimestamp(Duration);
 
 impl Type for MonotonicTimestamp {
@@ -297,7 +297,7 @@ mod tests {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
         let sd = Systemd::connect(log).await?;
         let units = sd.list_units().await?;
-        assert!(units.len() > 0);
+        assert!(!units.is_empty());
         let root = units.iter().find(|u| u.name == "-.mount".into()).unwrap();
         let unit = root.unit.load(sd.connection()).await?;
         assert_eq!(unit.id().await?, root.name);
