@@ -59,6 +59,7 @@ def mangle_target(target, min_abbrev = 15):
         # project to trigger a birthday collision.  We don't need all 43 bytes.
     ) + "__" + sha256_b64(target)[:20]
 
+# KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`
 def wrap_target(target, wrap_suffix):
     target = normalize_target(target)
     _, name = target.split(":")

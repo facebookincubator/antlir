@@ -58,7 +58,7 @@ directory output by a Buck-runnable target, then you should use
 load("//antlir/bzl:add_stat_options.bzl", "add_stat_options", "mode_t")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "wrap_target")
 load(
     "//antlir/bzl:target_tagger.bzl",
     "extract_tagged_target",
@@ -79,12 +79,18 @@ install_files_t = shape.shape(
     data_mode = shape.union(mode_t, optional = True),
 )
 
+_BUCK_RUNNABLE_WRAP_SUFFIX = "install_buck_runnable_wrap_source"
+
 def _forbid_layer_source(source_dict):
     if source_dict["layer"] != None:
         fail(
             "Cannot use image.source(layer=...) with `feature.install*` " +
             "actions: {}".format(source_dict),
         )
+
+# KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`
+def TEST_ONLY_wrap_buck_runnable(target):
+    return wrap_target(target, _BUCK_RUNNABLE_WRAP_SUFFIX)[1]
 
 def feature_install_buck_runnable(source, dest, mode = None, user = None, group = None):
     """
@@ -119,7 +125,7 @@ binary to be unusable in image tests in @mode/dev.
             target_tagger = target_tagger,
             # Peel back target tagging since this helper expects untagged.
             target = extract_tagged_target(tagged_source.pop("source")),
-            wrap_suffix = "install_buck_runnable_wrap_source",
+            wrap_suffix = _BUCK_RUNNABLE_WRAP_SUFFIX,
             visibility = None,
             # NB: Buck makes it hard to execute something out of an
             # output that is a directory, but it is possible so long as

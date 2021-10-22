@@ -22,6 +22,17 @@ from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
 from antlir.compiler.items.user import UserItem
 from antlir.fs_utils import Path
+from antlir.rpm.find_snapshot import mangle_target
+
+
+# KEEP IN SYNC with its partial copy `wrap_target` in `bzl/target_helpers.bzl`
+# This hard codes the wrap_suffix used since we only need this for the
+# buck runnable case.
+###
+def wrap_buck_runnable_target(normalized_target: str) -> str:
+    wrap_suffix = "install_buck_runnable_wrap_source"
+    _, name = normalized_target.split(":")
+    return name + "__" + wrap_suffix + "-" + mangle_target(normalized_target)
 
 
 _NONPORTABLE_ARTIFACTS = int(
@@ -41,17 +52,13 @@ T_MOUNT = f"{T_BASE}:feature_mount"
 T_SYMLINKS = f"{T_BASE}:feature_symlinks"
 T_TAR = f"{T_BASE}:feature_tar_and_rpms"
 T_PRINT_OK = f"{T_BASE}:print-ok"
-T_EXE_WRAP_PRINT_OK = (
-    f"{T_BASE}:"
-    + "print-ok__"
-    + "install_buck_runnable_wrap_source-print-ok__tZD0yB-oR8iaa7Q8gX1u"
+T_EXE_WRAP_PRINT_OK = f"{T_BASE}:" + wrap_buck_runnable_target(
+    f"{T_BASE}:print-ok"
 )
 T_DIR_PRINT_OK = f"{T_BASE}:dir-print-ok"
 T_DIR_WITH_SCRIPT = f"{T_BASE}:dir-with-script"
-T_EXE_WRAP_DIR_PRINT_OK = (
-    f"{T_BASE}:"
-    + "dir-print-ok__"
-    + "install_buck_runnable_wrap_source-dir-print-ok__aSw-wLLqmDSnGfAZQzPs"
+T_EXE_WRAP_DIR_PRINT_OK = f"{T_BASE}:" + wrap_buck_runnable_target(
+    f"{T_BASE}:dir-print-ok"
 )
 T_INSTALL_FILES = f"{T_BASE}:feature_install_files"
 T_KITCHEN_SINK = f"{T_BASE}:feature_kitchen_sink"
@@ -66,6 +73,7 @@ TARGET_TO_PATH = {
     for target, path in os.environ.items()
     if target.startswith(TARGET_ENV_VAR_PREFIX)
 }
+
 # We rely on Buck setting the environment via the `env =` directive.
 assert T_HELLO_WORLD_TAR in TARGET_TO_PATH, "You must use `buck test`"
 
