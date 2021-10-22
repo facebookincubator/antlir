@@ -36,8 +36,9 @@
   should_remap_host_platform = true
 
 [rust]
-  default_edition = 2018
+  default_edition = 2021
   compiler = //tools/build:rustc
+  rustc_flags = -Zunstable-options
 
 [project]
   ignore = .git, .hg, buck-image-out
