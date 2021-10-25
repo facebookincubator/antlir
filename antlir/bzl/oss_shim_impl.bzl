@@ -626,5 +626,4 @@ shim = struct(
     third_party = struct(
         library = _third_party_library,
     ),
-    vm_image_path = "//images/base:",
 )
