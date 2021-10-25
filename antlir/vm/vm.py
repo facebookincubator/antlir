@@ -409,6 +409,7 @@ async def vm(
             " rd.emergency=poweroff "
             " systemd.hostname=vmtest "
             + " ".join(root_disk.kernel_args)
+            + " "
             + " ".join(opts.append)
         ),
         # socket/serial device pair (for use by _wait_for_boot)
