@@ -1,6 +1,6 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party", "vm_image_path")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/vm/bzl:defs.bzl", "vm")
@@ -141,7 +141,6 @@ export_file(
     name = "mount-generator",
     src = "mount-generator",
     visibility = [
-        vm_image_path,
         "//antlir/linux/vm/...",
         "//antlir/vm/tests/...",
         "//metalos/...",

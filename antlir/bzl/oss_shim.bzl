@@ -159,4 +159,3 @@ third_party = struct(
     libraries = _third_party_libraries,
 )
 thrift_library = shim.thrift_library
-vm_image_path = shim.vm_image_path
