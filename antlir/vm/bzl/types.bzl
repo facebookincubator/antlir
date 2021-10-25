@@ -58,7 +58,8 @@ _vm_disk_t = shape.shape(
 
 def _new_vm_disk(
         package = None,
-        layer = None):
+        layer = None,
+        layer_size_mb = None):
     if package and layer:
         fail("disk.new() accepts `package` OR `layer`, not both")
 
@@ -74,6 +75,7 @@ def _new_vm_disk(
                 layer = layer,
                 format = "btrfs",
                 loopback_opts = struct(
+                    size_mb = layer_size_mb,
                     writable_subvolume = True,
                 ),
                 visibility = [],

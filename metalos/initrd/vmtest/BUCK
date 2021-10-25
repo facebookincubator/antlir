@@ -222,7 +222,10 @@ vm.rust_unittest(
         runtime = vm.types.runtime.new(
             sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"],
         ),
-        disk = vm.types.disk.new(layer = ":empty-layer"),
+        disk = vm.types.disk.new(
+            layer = ":empty-layer",
+            layer_size_mb = 2048,
+        ),
     ),
     srcs = ["test_switch_root.rs"],
     crate_root = "test_switch_root.rs",
