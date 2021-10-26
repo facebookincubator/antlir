@@ -1,0 +1,18 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_library", "third_party")
+
+rust_library(
+    name = "buck_query",
+    srcs = [
+        "lib.rs",
+        "query.rs",
+        "targets.rs",
+    ],
+    deps = third_party.libraries(
+        [
+            "anyhow",
+            "serde",
+            "serde_json",
+        ],
+        platform = "rust",
+    ),
+)
