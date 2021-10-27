@@ -28,17 +28,6 @@ pub fn switch_root(log: Logger, opts: Opts) -> Result<()> {
     let (device, options) = find_rootdisk_device().context("failed to find /rootdisk device")?;
     let options: Vec<_> = options.split(',').map(|s| s.to_string()).collect();
     let options = replace_subvol(options, &opts.snapshot);
-    // TODO: for vmtest, no matter how we mount the rootfs, /proc/mounts will
-    // always report that the device is /dev/vda. There are ways to work around
-    // this to generically find the writable device (/dev/vdb) if this hack
-    // stops working at some point, but for now this is way easier. For example:
-    // we can mount /dev/vdb instead of just remounting /dev/vda,
-    // and then /sys/fs/btrfs/$uuid/devices will show the correct writable
-    // device
-    let device = match device.as_str() {
-        "/dev/vda" => "/dev/vdb".into(),
-        _ => device,
-    };
     std::fs::create_dir("/sysroot").context("failed to mkdir /sysroot")?;
     debug!(log, "mounting subvolume on {}", device);
     mount(
