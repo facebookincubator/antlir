@@ -5,10 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use maplit::btreemap;
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::{BufWriter, Write};
 use std::os::unix::fs::symlink;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use slog::{error, info, o, Drain, Logger};
@@ -50,6 +52,174 @@ fn instantiate_template<U: AsRef<str>, I: AsRef<str>>(
     Ok(instance_unit)
 }
 
+trait Render {
+    fn render(&self) -> String;
+
+    fn add_header(target: &mut String, name: &str) {
+        target.push_str(&format!("[{}]\n", name));
+    }
+    fn add_kv(target: &mut String, key: &str, value: &str) {
+        target.push_str(&format!("{}={}\n", key, value));
+    }
+    fn add_optional_kv<T: Into<String>>(target: &mut String, key: &str, value: Option<T>) {
+        if let Some(value) = value {
+            target.push_str(&format!("{}={}\n", key, value.into()));
+        }
+    }
+    fn add_optional_renderable<T: Render>(target: &mut String, thing: Option<&T>) {
+        if let Some(thing) = thing {
+            target.push_str(&thing.render());
+        }
+    }
+}
+
+struct ServiceSection {
+    environment: Option<BTreeMap<String, String>>,
+}
+
+impl Render for ServiceSection {
+    fn render(&self) -> String {
+        let mut out = String::new();
+        out.push_str("[Service]\n");
+        if let Some(env) = &self.environment {
+            for (k, v) in env.iter() {
+                Self::add_kv(&mut out, "Environment", &format!("{}={}", k, v));
+            }
+        }
+        out
+    }
+}
+
+struct UnitSection {
+    before: Option<String>,
+    after: Option<String>,
+    requires: Option<String>,
+}
+
+impl Render for UnitSection {
+    fn render(&self) -> String {
+        let mut out = String::new();
+        Self::add_header(&mut out, "Unit");
+        Self::add_optional_kv(&mut out, "Before", self.before.as_ref());
+        Self::add_optional_kv(&mut out, "After", self.after.as_ref());
+        Self::add_optional_kv(&mut out, "Requires", self.requires.as_ref());
+        out
+    }
+}
+
+struct MountSection {
+    what: PathBuf,
+    where_: PathBuf,
+    options: Option<String>,
+    type_: Option<String>,
+}
+
+impl Render for MountSection {
+    fn render(&self) -> String {
+        let mut out = String::new();
+        Self::add_header(&mut out, "Mount");
+        Self::add_kv(&mut out, "What", &self.what.to_string_lossy());
+        Self::add_kv(&mut out, "Where", &self.where_.to_string_lossy());
+        Self::add_kv(
+            &mut out,
+            "Options",
+            match &self.options {
+                Some(opts) => opts,
+                None => "",
+            },
+        );
+        Self::add_optional_kv(&mut out, "Type", self.type_.as_ref());
+        out
+    }
+}
+
+enum UnitBody {
+    Service(ServiceSection),
+    Mount(MountSection),
+}
+
+impl Render for UnitBody {
+    fn render(&self) -> String {
+        match self {
+            Self::Service(s) => s.render(),
+            Self::Mount(s) => s.render(),
+        }
+    }
+}
+
+struct Unit {
+    unit: Option<UnitSection>,
+    body: Option<UnitBody>,
+}
+
+impl Unit {
+    fn write_to_disk(
+        &self,
+        log: Logger,
+        base_dir: &Path,
+        unit_name: &str,
+        filename: &Path,
+    ) -> Result<()> {
+        let unit_file_path = base_dir.join(filename);
+        let mut file = std::fs::File::create(&unit_file_path).context(format!(
+            "Failed to create unit file {:?} in {:?}",
+            filename, base_dir
+        ))?;
+
+        if let Some(unit) = &self.unit {
+            if let Some(before) = &unit.before {
+                let requires_dir = base_dir.join(PathBuf::from(format!("{}.requires", before)));
+                std::fs::create_dir(&requires_dir)
+                    .context(format!("Failed to create requires dir for {}", before))?;
+                symlink(&unit_file_path, requires_dir.join(unit_name))?;
+            }
+        }
+
+        let content = self.render();
+        info!(log, "Writing to {:?}:\n{}", unit_file_path, content);
+        write!(file, "{}", content).context("Failed to write rendered content to file")?;
+        Ok(())
+    }
+}
+
+impl Render for Unit {
+    fn render(&self) -> String {
+        let mut out = String::new();
+        Self::add_optional_renderable(&mut out, self.unit.as_ref());
+        Self::add_optional_renderable(&mut out, self.body.as_ref());
+        out
+    }
+}
+
+struct Dropin {
+    target: String,
+    unit: Unit,
+}
+
+impl Dropin {
+    fn write_to_disk(&self, log: Logger, base_dir: &Path, filename: &Path) -> Result<()> {
+        let dropin_path: PathBuf = format!("{}.d", self.target).into();
+        let service_dir: PathBuf = base_dir.join(&dropin_path);
+        std::fs::create_dir_all(&service_dir)
+            .context(format!("failed to create .d/ for {}", self.target))?;
+
+        info!(log, "Writing drop-in {:?} for {}", filename, self.target);
+
+        if let Some(unit_section) = &self.unit.unit {
+            if let Some(after) = &unit_section.after {
+                info!(log, "{} will wait for {}", self.target, after);
+            }
+            if let Some(before) = &unit_section.before {
+                info!(log, "{} will apply before {}", self.target, before);
+            }
+        }
+
+        self.unit
+            .write_to_disk(log, base_dir, &self.target, &service_dir.join(filename))?;
+        Ok(())
+    }
+}
+
 fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Result<()> {
     if let Some(os_package) = cmdline.os_package() {
         info!(
@@ -61,80 +231,83 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             "metalos-fetch-image@.service",
             os_package,
         )?;
-        fs::create_dir_all(&opts.normal_dir.join("metalos-switch-root.service.d"))
-            .context("failed to create .d/ for metalos-switch-root.service")?;
-        let mut subvol_conf = fs::File::create(
-            opts.normal_dir
-                .join("metalos-switch-root.service.d")
-                .join("os_subvol.conf"),
-        )
-        .context("failed to create drop-in for metalos-switch-root.service")?;
-        info!(
-            log,
-            "Writing drop-in to switch-root into subvol for {}", &os_package,
-        );
-        info!(
-            log,
-            "metalos-switch-root.service will wait for {}", &fetch_unit,
-        );
-        write!(
-            subvol_conf,
-            "[Unit]\nAfter={}\nRequires={}\n[Service]\nEnvironment=OS_SUBVOL=var/lib/metalos/image/{}/volume\n",
-            fetch_unit,
-            fetch_unit,
-            systemd::escape(os_package)?
-        )?;
+
+        let switch_root_dropin = Dropin {
+            target: "metalos-switch-root.service".into(),
+            unit: Unit {
+                unit: Some(UnitSection {
+                    before: None,
+                    after: Some(fetch_unit.clone()),
+                    requires: Some(fetch_unit),
+                }),
+                body: Some(UnitBody::Service(ServiceSection {
+                    environment: Some(btreemap! {
+                        "OS_SUBVOL".to_string() => format!(
+                            "var/lib/metalos/image/{}/volume",
+                            systemd::escape(os_package)?
+                        ),
+                    }),
+                })),
+            },
+        };
+        switch_root_dropin
+            .write_to_disk(log.clone(), &opts.normal_dir, "os_subvol.conf".as_ref())
+            .context("Failed to write os_subvol.conf")?;
     }
 
     if let Some(host_config_uri) = cmdline.host_config_uri() {
-        fs::create_dir_all(&opts.normal_dir.join("metalos-switch-root.service.d"))
-            .context("failed to create .d/ for metalos-switch-root.service")?;
-        let mut uri_dropin = fs::File::create(
-            opts.normal_dir
-                .join("metalos-switch-root.service.d")
-                .join("host_config_uri.conf"),
-        )
-        .context("failed to create drop-in for metalos-switch-root.service")?;
-        info!(
-            log,
-            "Writing drop-in to apply {} before switch-root", &host_config_uri
-        );
-        write!(
-            uri_dropin,
-            "[Service]\nEnvironment=HOST_CONFIG_URI={}\n",
-            host_config_uri
-        )?;
+        let uri_dropin = Dropin {
+            target: "metalos-switch-root.service".to_string(),
+            unit: Unit {
+                unit: None,
+                body: Some(UnitBody::Service(ServiceSection {
+                    environment: Some(btreemap! {
+                        "HOST_CONFIG_URI".to_string() => host_config_uri.to_string()
+                    }),
+                })),
+            },
+        };
+        uri_dropin
+            .write_to_disk(
+                log.clone(),
+                &opts.normal_dir,
+                "host_config_uri.conf".as_ref(),
+            )
+            .context("Failed to write host_config_uri.conf")?;
     }
 
     if let Some(root) = cmdline.root() {
-        let rootdisk_unit_path = opts.normal_dir.join("rootdisk.mount");
-        let mut unit = fs::File::create(&rootdisk_unit_path)
-            .with_context(|| format!("failed to open {:?} for writing", rootdisk_unit_path))?;
         let root_src = blkid::evaluate_spec(&root.root)
             .with_context(|| format!("unable to understand root={}", root.root))?;
 
-        match root.fstype {
-            Some(fstype) => write!(unit,
-                "[Unit]\nBefore=initrd-root-fs.target\n[Mount]\nWhat={}\nWhere=/rootdisk\nOptions={}\nType={}\n",
-                root_src.to_string_lossy(),
-                root.flags.unwrap_or_else(|| "".to_string()),
-                fstype,
-            ).context("failed to write rootdisk.mount")?,
-            None => write!(unit,
-                "[Unit]\nBefore=initrd-root-fs.target\n[Mount]\nWhat={}\nWhere=/rootdisk\nOptions={}\n",
-                root_src.to_string_lossy(),
-                root.flags.unwrap_or_else(|| "".to_string())
-            ).context("failed to write rootdisk.mount")?
-        }
-        let requires_dir = opts.normal_dir.join("initrd-root-fs.target.requires");
-        fs::create_dir(&requires_dir)?;
-        symlink(&rootdisk_unit_path, requires_dir.join("rootdisk.mount"))?;
+        let unit = Unit {
+            unit: Some(UnitSection {
+                before: Some("initrd-root-fs.target".to_string()),
+                after: None,
+                requires: None,
+            }),
+            body: Some(UnitBody::Mount(MountSection {
+                what: (*root_src.to_string_lossy()).into(),
+                where_: "/rootdisk".into(),
+                options: root.flags,
+                type_: root.fstype.map(|s| s.to_string()),
+            })),
+        };
+
+        unit.write_to_disk(
+            log.clone(),
+            &opts.normal_dir,
+            "rootdisk.mount",
+            "rootdisk.mount".as_ref(),
+        )
+        .context("Failed to write rootdisk.mount")?;
     }
 
     if let Some(seed_device) = cmdline.seed_device() {
         info!(log, "Enabling seed device: {}", &seed_device);
 
         let seed_device_escaped = systemd::escape_path(&seed_device)?;
+        let seedroot_service = format!("seedroot-device-add@{}.service", seed_device_escaped);
 
         instantiate_template(
             opts.normal_dir.clone(),
@@ -142,17 +315,20 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             seed_device_escaped.clone(),
         )?;
 
-        let seedroot_dropin_dir = opts.normal_dir.join("seedroot.service.d");
-        fs::create_dir(&seedroot_dropin_dir)?;
-        let seedroot_dropin_path = seedroot_dropin_dir.join("device-add.conf");
-        let mut unit = fs::File::create(&seedroot_dropin_path)
-            .with_context(|| format!("failed to open {:?} for writing", seedroot_dropin_path))?;
-        write!(
-            unit,
-            "[Unit]\nRequires=seedroot-device-add@{}.service\nAfter=seedroot-device-add@{}.service",
-            seed_device_escaped, seed_device_escaped,
-        )
-        .context("failed to write seedroot.service dropin")?;
+        let seedroot_dropin = Dropin {
+            target: "seedroot.service".into(),
+            unit: Unit {
+                unit: Some(UnitSection {
+                    before: None,
+                    after: Some(seedroot_service.clone()),
+                    requires: Some(seedroot_service),
+                }),
+                body: None,
+            },
+        };
+        seedroot_dropin
+            .write_to_disk(log.clone(), &opts.normal_dir, "device-add.conf".as_ref())
+            .context("Failed to write device-add.conf")?;
     }
 
     Ok(())
@@ -285,8 +461,8 @@ mod tests {
         assert_eq!(
             content,
             "[Unit]\n\
-            Requires=seedroot-device-add@seedDevice.service\n\
-            After=seedroot-device-add@seedDevice.service"
+            After=seedroot-device-add@seedDevice.service\n\
+            Requires=seedroot-device-add@seedDevice.service\n"
         );
 
         let file = tmpdir.join("rootdisk.mount");
