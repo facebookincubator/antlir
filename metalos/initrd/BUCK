@@ -52,11 +52,13 @@ udev = [
         paths.join("usr/lib/udev/rules.d/", f),
     )
     for f in [
+        "10-dm.rules",
         "50-udev-default.rules",
         "60-block.rules",
         "60-persistent-storage.rules",
         "64-btrfs.rules",
         "80-drivers.rules",
+        "95-dm-notify.rules",
     ]
 ]
 
@@ -131,7 +133,6 @@ image.layer(
         systemd.install_unit("units/metalos-fetch-image@.service"),
         systemd.install_unit("units/metalos-switch-root.service"),
         systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
-        image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
         # generic metalos generators to be applied to the root fs
