@@ -25,6 +25,8 @@ TARGETS = [
     "sysinit.target",
     "sysinit.target.wants",
     "umount.target",
+    "cryptsetup.target",
+    "cryptsetup-pre.target",
 ]
 
 UNITS = [
@@ -52,7 +54,9 @@ BINARIES = [
     "/usr/bin/systemd-escape",
     "/usr/bin/systemd-tmpfiles",
     "/usr/bin/udevadm",
+    "/usr/sbin/dmsetup",
     "/usr/lib/systemd/systemd",
+    "/usr/lib/systemd/systemd-cryptsetup",
     "/usr/lib/systemd/systemd-journald",
     "/usr/lib/systemd/systemd-modules-load",
     "/usr/lib/systemd/systemd-networkd",
@@ -60,6 +64,7 @@ BINARIES = [
     "/usr/lib/systemd/systemd-shutdown",
     "/usr/lib/systemd/systemd-sysctl",
     "/usr/lib/systemd/systemd-udevd",
+    "/usr/lib/systemd/system-generators/systemd-cryptsetup-generator",
     # Make NSS play nice with systemd user features
     "/usr/lib64/libnss_systemd.so.2",
     # libnss_files is not a part of systemd, so should not _really_ be here,
@@ -81,6 +86,7 @@ CONFIG_FILES = [
 def clone_systemd_configs(src):
     units = [
         image.ensure_subdirs_exist("/usr/lib", paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib")),
+        image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
     ] + [
         image.clone(
             src,
