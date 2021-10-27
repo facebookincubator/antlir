@@ -32,7 +32,7 @@ pub fn switch_root(log: Logger, opts: Opts) -> Result<()> {
     // always report that the device is /dev/vda. There are ways to work around
     // this to generically find the writable device (/dev/vdb) if this hack
     // stops working at some point, but for now this is way easier. For example:
-    // seedroot.service can mount /dev/vdb instead of just remounting /dev/vda,
+    // we can mount /dev/vdb instead of just remounting /dev/vda,
     // and then /sys/fs/btrfs/$uuid/devices will show the correct writable
     // device
     let device = match device.as_str() {

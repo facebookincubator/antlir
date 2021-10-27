@@ -156,7 +156,6 @@ image.layer(
             "/rootdisk/usr/lib/modules/{}.mount".format(TEST_KERNEL.uname),
             path = True,
         )]),
-        systemd.install_dropin("after-seedroot.conf", "metalos-fetch-image@.service"),
         systemd.enable_unit("systemd-modules-load.service", "initrd-switch-root.target"),
         # the default kernel-specific vm initrd includes this unit to
         # switch-root into /sysroot, which we don't want for MetalOS

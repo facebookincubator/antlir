@@ -30,10 +30,6 @@ pub fn escape<S: AsRef<str>>(s: S) -> Result<String> {
     run_systemd_escape(&[s.as_ref()])
 }
 
-pub fn escape_path<S: AsRef<str>>(s: S) -> Result<String> {
-    run_systemd_escape(&["--path", s.as_ref()])
-}
-
 pub fn template_unit_name<T: AsRef<str>, I: AsRef<str>>(
     template: T,
     instance: I,
@@ -43,7 +39,7 @@ pub fn template_unit_name<T: AsRef<str>, I: AsRef<str>>(
 
 #[cfg(test)]
 mod tests {
-    use super::{escape, escape_path, template_unit_name};
+    use super::{escape, template_unit_name};
     use anyhow::Result;
 
     #[test]
@@ -53,12 +49,6 @@ mod tests {
             escape("https://[2401:db00:2120:20f2:face:0:9:0]:3000/initrd")?,
             "https:--\\x5b2401:db00:2120:20f2:face:0:9:0\\x5d:3000-initrd"
         );
-        Ok(())
-    }
-
-    #[test]
-    fn test_escape_path() -> Result<()> {
-        assert_eq!(escape_path("/dev/sda")?, "dev-sda");
         Ok(())
     }
 
