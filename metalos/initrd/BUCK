@@ -60,9 +60,9 @@ udev = [
     ]
 ]
 
-# Kernel-agnostic base initrd
+# A bare layer with only systemd essentials included
 image.layer(
-    name = "base",
+    name = "bare-systemd",
     features = [
         linux.filesystem.install(),
         clone_systemd_configs("//metalos/os:metalos"),
@@ -92,15 +92,30 @@ image.layer(
             "dropins/udevd-before-trigger.conf",
             unit = "systemd-udevd.service",
         ),
-        networking,
         nss,
         users,
         udev,
-        # Due to limitations in the current extractor implementation, we have to
-        # extract systemd at the same time as metalctl.
         extract.extract(
             binaries = SYSTEMD_BINARIES + [
                 "/usr/sbin/btrfs",
+            ],
+            dest = "/",
+            source = "//metalos/os:metalos",
+        ),
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+    visibility = [
+        "//ti/platform/edgeos/...",
+    ],
+)
+
+# Kernel-agnostic base initrd
+image.layer(
+    name = "base",
+    parent_layer = ":bare-systemd",
+    features = [
+        extract.extract(
+            binaries = [
                 "/usr/bin/metalctl",
             ],
             dest = "/",
@@ -112,6 +127,7 @@ image.layer(
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mkdir"),
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/umount"),
+        networking,
         systemd.install_unit("units/metalos-fetch-image@.service"),
         systemd.install_unit("units/metalos-switch-root.service"),
         systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),

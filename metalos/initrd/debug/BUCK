@@ -13,6 +13,7 @@ load("//antlir/bzl/linux:defs.bzl", "linux")
 
 VISIBILITY = [
     "//metalos/initrd/...",
+    "//ti/platform/edgeos/...",
 ]
 
 image.layer(

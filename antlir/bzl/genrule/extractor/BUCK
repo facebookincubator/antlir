@@ -6,6 +6,11 @@ rust_binary(
     # this is installed in a wide variety of containers, so do as much static
     # linkage as possible
     link_style = "static",
+    visibility = [
+        "//antlir/...",
+        "//metalos/...",
+        "//ti/platform/edgeos/...",
+    ],
     deps =
         third_party.libraries(
             [
