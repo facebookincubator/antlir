@@ -56,9 +56,9 @@ udev = [
         "50-udev-default.rules",
         "60-block.rules",
         "60-persistent-storage.rules",
-        "64-btrfs.rules",
         "80-drivers.rules",
         "95-dm-notify.rules",
+        "99-systemd.rules",
     ]
 ]
 

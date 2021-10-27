@@ -79,7 +79,6 @@ CONFIG_FILES = [
     # parent      create dirs   file
     ("/usr/lib", "tmpfiles.d", "systemd.conf"),
     ("/usr/lib", "tmpfiles.d", "tmp.conf"),
-    ("/usr/lib", "udev/rules.d", "99-systemd.rules"),
     ("/usr/lib", "systemd/network", "99-default.link"),
 ]
 
