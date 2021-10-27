@@ -16,6 +16,7 @@ template(
         kernel_get.base_target + "/...",
         "//metalos/...",
         "//scripts/dschatzberg/vm:",
+        "//ti/platform/edgeos/...",
     ],
     deps = [":unit"],
 )
