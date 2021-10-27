@@ -303,34 +303,6 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
         .context("Failed to write rootdisk.mount")?;
     }
 
-    if let Some(seed_device) = cmdline.seed_device() {
-        info!(log, "Enabling seed device: {}", &seed_device);
-
-        let seed_device_escaped = systemd::escape_path(&seed_device)?;
-        let seedroot_service = format!("seedroot-device-add@{}.service", seed_device_escaped);
-
-        instantiate_template(
-            opts.normal_dir.clone(),
-            "seedroot-device-add@.service",
-            seed_device_escaped.clone(),
-        )?;
-
-        let seedroot_dropin = Dropin {
-            target: "seedroot.service".into(),
-            unit: Unit {
-                unit: Some(UnitSection {
-                    before: None,
-                    after: Some(seedroot_service.clone()),
-                    requires: Some(seedroot_service),
-                }),
-                body: None,
-            },
-        };
-        seedroot_dropin
-            .write_to_disk(log.clone(), &opts.normal_dir, "device-add.conf".as_ref())
-            .context("Failed to write device-add.conf")?;
-    }
-
     Ok(())
 }
 
@@ -412,7 +384,6 @@ mod tests {
             "metalos.host-config-uri=\"https://server:8000/v1/host/host001.01.abc0.domain.com\" \
             metalos.os_package=\"somePackage\" \
             metalos.package_format_uri=\"someURI\" \
-            metalos.seed_device=\"seedDevice\" \
             rootfstype=btrfs \
             root=/dev/somedisk"
                 .parse()?;
@@ -424,12 +395,6 @@ mod tests {
                 .join("metalos-fetch-image@somePackage.service")
                 .read_link()?,
             Path::new(PROVIDER_ROOT).join("metalos-fetch-image@.service"),
-        );
-        assert_eq!(
-            tmpdir
-                .join("seedroot-device-add@seedDevice.service")
-                .read_link()?,
-            Path::new(PROVIDER_ROOT).join("seedroot-device-add@.service"),
         );
 
         let file = tmpdir.join("metalos-switch-root.service.d/host_config_uri.conf");
@@ -452,17 +417,6 @@ mod tests {
             Requires=metalos-fetch-image@somePackage.service\n\
             [Service]\n\
             Environment=OS_SUBVOL=var/lib/metalos/image/somePackage/volume\n"
-        );
-
-        let file = tmpdir.join("seedroot.service.d/device-add.conf");
-        assert!(file.exists());
-        let content = std::fs::read_to_string(file.clone())
-            .context(format!("Can't read file {}", file.display()))?;
-        assert_eq!(
-            content,
-            "[Unit]\n\
-            After=seedroot-device-add@seedDevice.service\n\
-            Requires=seedroot-device-add@seedDevice.service\n"
         );
 
         let file = tmpdir.join("rootdisk.mount");
@@ -501,7 +455,6 @@ mod tests {
             "metalos.host-config-uri=\"https://server:8000/v1/host/host001.01.abc0.domain.com\" \
             metalos.os_package=\"somePackage\" \
             metalos.package_format_uri=\"someURI\" \
-            metalos.seed_device=\"seedDevice\" \
             root=/dev/somedisk"
                 .parse()?;
 

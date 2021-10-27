@@ -91,11 +91,6 @@ impl MetalosCmdline {
                 }
             })
     }
-
-    pub fn seed_device(&self) -> Option<&str> {
-        self.arg("metalos.seed_device")
-            .and_then(|opt| opt.as_value())
-    }
 }
 
 #[derive(Debug, PartialEq)]
