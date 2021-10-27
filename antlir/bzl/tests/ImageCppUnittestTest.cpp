@@ -11,7 +11,6 @@
 #include <set>
 #include <string>
 
-
 TEST(ImageCppUnittest, TestContainer) {
   ASSERT_STREQ("nobody", ::getenv("USER"));
   // Future: add more assertions about the container setup as needed
