@@ -61,14 +61,14 @@
 //     bind mount.
 
 #ifndef _GNU_SOURCE
-    #define _GNU_SOURCE 1
+#define _GNU_SOURCE 1
 #endif
 #include <dlfcn.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>  // With _GNU_SOURCE gives us the GNU `basename`
+#include <string.h> // With _GNU_SOURCE gives us the GNU `basename`
 #include <sys/stat.h>
 
 #ifdef __cplusplus
@@ -79,20 +79,20 @@ static char* g_shadowed_paths_root = NULL;
 static size_t g_len_shadowed_paths_root = 0;
 
 __attribute__((__constructor__)) static void __init__() {
-    // Grabbing the root for shadowed paths from the environment is less
-    // robust than hardcoding it (something can unset the env var), but in
-    // our current usage, there is nothing between `yum-dnf-from-snapshot`
-    // and `yum` or `dnf` that would do that.  And we have tests.
-    //
-    // The upside is that it makes our tests cleaner, and eliminates the
-    // need to rebuild the `.so` (and with it, the BA) to change the root.
-    //
-    // As far as security, we're an `LD_PRELOAD` library, so we already
-    // trust the environment roughly 100%.
-    g_shadowed_paths_root = getenv("ANTLIR_SHADOWED_PATHS_ROOT");
-    if (g_shadowed_paths_root) {
-        g_len_shadowed_paths_root = strlen(g_shadowed_paths_root);
-    }
+  // Grabbing the root for shadowed paths from the environment is less
+  // robust than hardcoding it (something can unset the env var), but in
+  // our current usage, there is nothing between `yum-dnf-from-snapshot`
+  // and `yum` or `dnf` that would do that.  And we have tests.
+  //
+  // The upside is that it makes our tests cleaner, and eliminates the
+  // need to rebuild the `.so` (and with it, the BA) to change the root.
+  //
+  // As far as security, we're an `LD_PRELOAD` library, so we already
+  // trust the environment roughly 100%.
+  g_shadowed_paths_root = getenv("ANTLIR_SHADOWED_PATHS_ROOT");
+  if (g_shadowed_paths_root) {
+    g_len_shadowed_paths_root = strlen(g_shadowed_paths_root);
+  }
 }
 
 // If the parent directory of `path` exists, and the environment variable
@@ -104,46 +104,47 @@ __attribute__((__constructor__)) static void __init__() {
 // This is not `static` so our tests can see it.  In production builds, it
 // gets hidden via `-fvisibility=hidden`.
 char* get_shadowed_original(const char* path) {
-    // No shadow paths root? Don't alter any `rename` calls.
-    if (!g_shadowed_paths_root) {
-        return NULL;
-    }
+  // No shadow paths root? Don't alter any `rename` calls.
+  if (!g_shadowed_paths_root) {
+    return NULL;
+  }
 
-    const char* base = basename(path);
-    const int len_base = strlen(base);
-    const int len_path = strlen(path);
+  const char* base = basename(path);
+  const int len_base = strlen(base);
+  const int len_path = strlen(path);
 
-    char* dirname = (len_base == len_path)
-        ? strdup(".")  // Otherwise path == "a" would make bad dirname == ""
-        : strndup(path, len_path - len_base);  // Keep trailing / for path == /a
-    if (!dirname) {
-        return NULL;
-    }
-    // `rename` does not follow symlinks in the last component
-    char* realdir = canonicalize_file_name(dirname);
+  char* dirname = (len_base == len_path)
+      ? strdup(".") // Otherwise path == "a" would make bad dirname == ""
+      : strndup(path, len_path - len_base); // Keep trailing / for path == /a
+  if (!dirname) {
+    return NULL;
+  }
+  // `rename` does not follow symlinks in the last component
+  char* realdir = canonicalize_file_name(dirname);
 
-    char* orig = NULL;
-    if (realdir && realdir[0] == '/') {
-        const size_t len_orig =
-            g_len_shadowed_paths_root + strlen(realdir) + 1 + len_base;
-        orig = malloc(len_orig + 1);
-        if (orig) {
-            snprintf(
-                orig, len_orig + 1, "%s%s%s%s",
-                g_shadowed_paths_root,
-                realdir,
-                // Don't emit an extra / for `realdir == "/"`
-                (realdir[1] == '\0' ? "" : "/"),
-                base
-            );
-        }
+  char* orig = NULL;
+  if (realdir && realdir[0] == '/') {
+    const size_t len_orig =
+        g_len_shadowed_paths_root + strlen(realdir) + 1 + len_base;
+    orig = malloc(len_orig + 1);
+    if (orig) {
+      snprintf(
+          orig,
+          len_orig + 1,
+          "%s%s%s%s",
+          g_shadowed_paths_root,
+          realdir,
+          // Don't emit an extra / for `realdir == "/"`
+          (realdir[1] == '\0' ? "" : "/"),
+          base);
     }
+  }
 
-    if (realdir) {
-        free(realdir);
-    }
-    free(dirname);
-    return orig;
+  if (realdir) {
+    free(realdir);
+  }
+  free(dirname);
+  return orig;
 }
 
 // For us to decide to redirect a `rename`'s `new` to its shadow location,
@@ -158,69 +159,70 @@ char* get_shadowed_original(const char* path) {
 // This is not `static` so our tests can see it.  In production builds, it
 // gets hidden via `-fvisibility=hidden`.
 char* get_shadowed_rename_dest(const char* old, const char* new) {
-    // We don't support shadowing directories.
-    struct stat st;
-    if (0 != lstat(new, &st)) {
-        return NULL;
-    }
-    if (S_ISDIR(st.st_mode)) {
-        return NULL;
-    }
+  // We don't support shadowing directories.
+  struct stat st;
+  if (0 != lstat(new, &st)) {
+    return NULL;
+  }
+  if (S_ISDIR(st.st_mode)) {
+    return NULL;
+  }
 
-    struct stat st_old;
-    if (0 != lstat(old, &st_old)) {
-        return NULL;
-    }
-    // `rename` should be a no-op if `old` and `new` are the same.  However,
-    // if we were to rewrite the destination path, then `rename` would fail
-    // because `old`, a shadowed path, would be a read-only bind mount.
-    if (st.st_ino == st_old.st_ino && st.st_dev == st_old.st_dev) {
-        return NULL;
-    }
+  struct stat st_old;
+  if (0 != lstat(old, &st_old)) {
+    return NULL;
+  }
+  // `rename` should be a no-op if `old` and `new` are the same.  However,
+  // if we were to rewrite the destination path, then `rename` would fail
+  // because `old`, a shadowed path, would be a read-only bind mount.
+  if (st.st_ino == st_old.st_ino && st.st_dev == st_old.st_dev) {
+    return NULL;
+  }
 
-    char* replaced_new = get_shadowed_original(new);
-    if (!replaced_new) {
-        return NULL;
-    }
+  char* replaced_new = get_shadowed_original(new);
+  if (!replaced_new) {
+    return NULL;
+  }
 
-    if (0 != lstat(replaced_new, &st) || S_ISDIR(st.st_mode)) {
-        free(replaced_new);
-        return NULL;
-    }
+  if (0 != lstat(replaced_new, &st) || S_ISDIR(st.st_mode)) {
+    free(replaced_new);
+    return NULL;
+  }
 
-    return replaced_new;
+  return replaced_new;
 }
 
-__attribute__ ((visibility ("default")))
-int rename(const char *old, const char *new)
-{
-    static int (*memoized_real_rename)(const char *, const char *) = NULL;
-    // In a multi-threaded environment this is subject to a race, so use
-    // GCC/CLANG an atomic load/stores to avoid pointer shear.
-    int (*real_rename)(const char *, const char *) = NULL;
-    __atomic_load(&memoized_real_rename, &real_rename, __ATOMIC_ACQUIRE);
-    if (!real_rename) {
-        real_rename = dlsym(RTLD_NEXT, "rename");
-        // We don't mind if several threads race to store a value here, it
-        // would presumably be the same anyway.
-        __atomic_store(&memoized_real_rename, &real_rename, __ATOMIC_RELEASE);
-    }
+__attribute__((visibility("default"))) int rename(
+    const char* old,
+    const char* new) {
+  static int (*memoized_real_rename)(const char*, const char*) = NULL;
+  // In a multi-threaded environment this is subject to a race, so use
+  // GCC/CLANG an atomic load/stores to avoid pointer shear.
+  int (*real_rename)(const char*, const char*) = NULL;
+  __atomic_load(&memoized_real_rename, &real_rename, __ATOMIC_ACQUIRE);
+  if (!real_rename) {
+    real_rename = dlsym(RTLD_NEXT, "rename");
+    // We don't mind if several threads race to store a value here, it
+    // would presumably be the same anyway.
+    __atomic_store(&memoized_real_rename, &real_rename, __ATOMIC_RELEASE);
+  }
 
-    char* original = get_shadowed_rename_dest(old, new);
-    int ret;
-    if (original) {
-        fprintf(
-            stderr,
-            "`rename(%s, %s)` will replace shadowed original `%s`\n",
-            old, new, original
-        );
-        ret = real_rename(old, original);
-        free(original);
-    } else {
-        ret = real_rename(old, new);
-    }
+  char* original = get_shadowed_rename_dest(old, new);
+  int ret;
+  if (original) {
+    fprintf(
+        stderr,
+        "`rename(%s, %s)` will replace shadowed original `%s`\n",
+        old,
+        new,
+        original);
+    ret = real_rename(old, original);
+    free(original);
+  } else {
+    ret = real_rename(old, new);
+  }
 
-    return ret;
+  return ret;
 }
 
 #ifdef __cplusplus

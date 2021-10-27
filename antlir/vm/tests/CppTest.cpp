@@ -5,9 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#include <gtest/gtest.h>
 #include <unistd.h>
 #include <fstream>
-#include <gtest/gtest.h>
 
 TEST(CppTest, TestRunningAsRoot) {
   EXPECT_EQ(getuid(), 0);
