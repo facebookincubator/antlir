@@ -10,10 +10,10 @@ import json
 import os
 import sys
 from contextlib import contextmanager
-from typing import AnyStr, Iterator, Mapping
+from typing import AnyStr, Iterable, Iterator, Mapping, Optional
 
 from antlir.common import init_logging
-from antlir.fs_utils import Path
+from antlir.fs_utils import Path, MehStr
 
 
 def _load_targets_and_outputs(arg: AnyStr) -> Mapping[AnyStr, Path]:
@@ -52,7 +52,9 @@ class CLI:
 
 # Future: This should get some tests if it gets any more elaborate.
 @contextmanager
-def init_cli(description: str) -> Iterator[CLI]:
+def init_cli(
+    description: str, argv: Optional[Iterable[MehStr]] = None
+) -> Iterator[CLI]:
     cli = CLI()
     cli.parser = argparse.ArgumentParser(
         description=description,
@@ -60,5 +62,7 @@ def init_cli(description: str) -> Iterator[CLI]:
     )
     yield cli
     add_antlir_debug_arg(cli.parser)
-    cli.args = Path.parse_args(cli.parser, sys.argv[1:])
+    cli.args = Path.parse_args(
+        cli.parser, argv if argv is not None else sys.argv[1:]
+    )
     init_logging(debug=cli.args.debug)
