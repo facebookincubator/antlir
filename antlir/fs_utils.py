@@ -240,7 +240,7 @@ class Path(bytes):
 
     @classmethod
     def parse_args(
-        cls, parser: argparse.ArgumentParser, argv: Iterable[Union[str, "Path"]]
+        cls, parser: argparse.ArgumentParser, argv: Iterable[MehStr]
     ) -> argparse.Namespace:
         """
         Use this instead of `ArgumentParser.parse_args` because,
