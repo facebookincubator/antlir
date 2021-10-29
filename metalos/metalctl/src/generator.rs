@@ -232,8 +232,8 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             os_package,
         )?;
 
-        let switch_root_dropin = Dropin {
-            target: "metalos-switch-root.service".into(),
+        let snapshot_root_dropin = Dropin {
+            target: "metalos-snapshot-root.service".into(),
             unit: Unit {
                 unit: Some(UnitSection {
                     before: None,
@@ -250,14 +250,14 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
                 })),
             },
         };
-        switch_root_dropin
+        snapshot_root_dropin
             .write_to_disk(log.clone(), &opts.normal_dir, "os_subvol.conf".as_ref())
             .context("Failed to write os_subvol.conf")?;
     }
 
     if let Some(host_config_uri) = cmdline.host_config_uri() {
         let uri_dropin = Dropin {
-            target: "metalos-switch-root.service".to_string(),
+            target: "metalos-apply-host-config.service".to_string(),
             unit: Unit {
                 unit: None,
                 body: Some(UnitBody::Service(ServiceSection {
@@ -397,7 +397,7 @@ mod tests {
             Path::new(PROVIDER_ROOT).join("metalos-fetch-image@.service"),
         );
 
-        let file = tmpdir.join("metalos-switch-root.service.d/host_config_uri.conf");
+        let file = tmpdir.join("metalos-apply-host-config.service.d/host_config_uri.conf");
         assert!(file.exists());
         let content = std::fs::read_to_string(file.clone())
             .context(format!("Can't read file {}", file.display()))?;
@@ -406,7 +406,7 @@ mod tests {
             "[Service]\nEnvironment=HOST_CONFIG_URI=https://server:8000/v1/host/host001.01.abc0.domain.com\n"
         );
 
-        let file = tmpdir.join("metalos-switch-root.service.d/os_subvol.conf");
+        let file = tmpdir.join("metalos-snapshot-root.service.d/os_subvol.conf");
         assert!(file.exists());
         let content = std::fs::read_to_string(file.clone())
             .context(format!("Can't read file {}", file.display()))?;

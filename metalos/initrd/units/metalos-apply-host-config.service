@@ -1,0 +1,21 @@
+[Unit]
+Description=Setup host configs if they are provided
+DefaultDependencies=no
+OnFailure=emergency.target
+OnFailureJobMode=replace-irreversibly
+AllowIsolate=yes
+
+# We must have the snapshot already made for us
+Requires=metalos-snapshot-root.service
+After=metalos-snapshot-root.service
+
+# We only want this to run if we have been given a HOST_CONFIG_URI
+# which comes from metalctl adding this with `metalos-generator`.
+# However we can't check this directly because ConditionKernelCommandLine
+# won't check this units Environment entries so as a hack we depend on
+# the kernel parameter which we know metalctl will read.
+ConditionKernelCommandLine=metalos.host-config-uri
+
+[Service]
+Type=oneshot
+ExecStart=metalctl apply-host-config ${HOST_CONFIG_URI} /rootdisk/var/lib/metalos/boot/%b

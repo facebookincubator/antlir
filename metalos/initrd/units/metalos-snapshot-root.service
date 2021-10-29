@@ -1,0 +1,16 @@
+[Unit]
+Description=Make a new os snapshot for this boot
+DefaultDependencies=no
+OnFailure=emergency.target
+OnFailureJobMode=replace-irreversibly
+AllowIsolate=yes
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStartPre=mkdir -p /rootdisk/var/lib/metalos/boot
+# create a rw snapshot of the os image for this boot id (the subvol var is set
+# by a drop-in placed by `metalos-generator`)
+ExecStartPre=btrfs subvolume snapshot /rootdisk/${OS_SUBVOL} /rootdisk/var/lib/metalos/boot/%b
+ExecStart=btrfs property set -ts /rootdisk/var/lib/metalos/boot/%b ro false
