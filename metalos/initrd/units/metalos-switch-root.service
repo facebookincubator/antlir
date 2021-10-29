@@ -4,19 +4,20 @@ DefaultDependencies=no
 OnFailure=emergency.target
 OnFailureJobMode=replace-irreversibly
 AllowIsolate=yes
-Requires=network-online.target
-After=network-online.target
+
+# We must have a new shapshot to boot into already
+Requires=metalos-snapshot-root.service
+After=metalos-snapshot-root.service
+
+# We also require that the config to be already setup for us properly
+# as this is the last step in the process
+Requires=metalos-apply-host-config.service
+After=metalos-apply-host-config.service
+
 # Forcibly stop this service so that the systemd in the post-switch-root os will
 # restart it and process the rules that are in the rootfs
 Conflicts=systemd-tmpfiles-setup.service
 
 [Service]
 Type=oneshot
-ExecStartPre=mkdir -p /rootdisk/var/lib/metalos/boot
-# create a rw snapshot of the os image for this boot id (the subvol var is set
-# by a drop-in placed by `metalos-generator`)
-ExecStartPre=btrfs subvolume snapshot /rootdisk/${OS_SUBVOL} /rootdisk/var/lib/metalos/boot/%b
-ExecStartPre=btrfs property set -ts /rootdisk/var/lib/metalos/boot/%b ro false
-# TODO: move this to a separate unit when the full flow becomes slightly clearer
-ExecStartPre=metalctl apply-host-config ${HOST_CONFIG_URI} /rootdisk/var/lib/metalos/boot/%b
 ExecStart=metalctl switch-root /var/lib/metalos/boot/%b
