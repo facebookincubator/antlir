@@ -18,7 +18,7 @@
 /// initrd environment.
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use nix::mount::MsFlags;
 use slog::{warn, Logger};
 use std::fs::File;
@@ -91,7 +91,33 @@ impl Mounter for RealMounter {
         flags: MsFlags,
         data: Option<&str>,
     ) -> Result<()> {
-        nix::mount::mount(Some(source), target, fstype, flags, data).context("mount failed")
+        match nix::mount::mount(Some(source), target, fstype, flags, data) {
+            Ok(()) => Ok(()),
+            Err(nix::errno::Errno::ENOENT) => {
+                if !target.exists() {
+                    Err(anyhow!(
+                        "No such file or directory: Mount target {:?} doesn't exist",
+                        target
+                    ))
+                } else if !source.exists() {
+                    Err(anyhow!(
+                        "No such file or directory: Mount source {:?} doesn't exist",
+                        source
+                    ))
+                } else {
+                    Err(anyhow!(
+                        "No such file or directory: \
+                        Unknown reason - both source/target exist"
+                    ))
+                }
+            }
+            Err(e) => Err(e.into()),
+        }
+        .context(format!(
+            "mounting {} to {} failed",
+            source.display(),
+            target.display()
+        ))
     }
 }
 
