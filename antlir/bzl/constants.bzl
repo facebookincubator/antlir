@@ -270,7 +270,7 @@ REPO_CFG = shape.new(
     artifacts_require_repo = (
         (native.read_config("defaults.cxx_library", "type") == "shared") or
         (native.read_config("python", "package_style") == "inplace")
-    ),
+    ) and native.read_config("antlir", "require_repo", "true") == "true",
 
     # This is a dictionary that allow for looking up configurable artifact
     # targets by a key.
