@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
+load("//antlir/bzl:oss_shim.bzl", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -60,22 +60,35 @@ def initrd(kernel, module_list = None, visibility = None):
     # Build an initrd specifically for operating as a VM. This is built on top of the
     # MetalOS initrd and modified to support 9p shared mounts for the repository,
     # kernel modules, and others.
+    initrd_vm_features = [
+        # The switchroot behavior is different for the vmtest based initrd so
+        # lets remove the metalos-switch-root.service and install our own
+        feature.remove("/usr/lib/systemd/system/metalos-switch-root.service"),
+        feature.remove("/usr/lib/systemd/system/initrd-switch-root.target.requires/metalos-switch-root.service"),
+        systemd.install_unit("//antlir/vm/initrd:initrd-switch-root.service"),
+        systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
+        install_kernel_modules(kernel, module_list),
+        # mount kernel modules over 9p in the initrd so they are available
+        # immediately in the base os.
+        systemd.install_unit(":" + name + "--modules.mount", mount_unit_name),
+        systemd.enable_unit(mount_unit_name, target = "initrd-fs.target"),
+    ]
+
     image.layer(
         name = name + "--layer",
         parent_layer = "//metalos/initrd:base",
-        features = [
-            # The switchroot behavior is different for the vmtest based initrd so
-            # lets remove the metalos-switch-root.service and install our own
-            feature.remove("/usr/lib/systemd/system/metalos-switch-root.service"),
-            feature.remove("/usr/lib/systemd/system/initrd-switch-root.target.requires/metalos-switch-root.service"),
-            systemd.install_unit("//antlir/vm/initrd:initrd-switch-root.service"),
-            systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
-            install_kernel_modules(kernel, module_list),
-            # mount kernel modules over 9p in the initrd so they are available
-            # immediately in the base os.
-            systemd.install_unit(":" + name + "--modules.mount", mount_unit_name),
-            systemd.enable_unit(mount_unit_name, target = "initrd-fs.target"),
-        ],
+        # Do not add features directly here, instead add them to
+        # initrd_vm_features so they are shared with the debug initrd.
+        features = initrd_vm_features,
+        visibility = [],
+    )
+
+    image.layer(
+        name = name + "--layer--debug",
+        parent_layer = "//metalos/initrd/debug:debug",
+        # Do not add features directly here, instead add them to
+        # initrd_vm_features so they are shared with the debug initrd.
+        features = initrd_vm_features,
         visibility = [],
     )
 
@@ -86,12 +99,9 @@ def initrd(kernel, module_list = None, visibility = None):
         visibility = visibility,
     )
 
-    # Build the debug version of the initrd by the cpio concat method.
-    # TODO: Refactor this to not use the concat method since we aren't going
-    # to be using that in production.
-    buck_genrule(
+    package.new(
         name = name + "-debug",
-        cmd = "cat $(location :{}) $(location //metalos/initrd/debug:debug-append.cpio.gz) > $OUT".format(name),
-        antlir_rule = "user-internal",
+        layer = ":" + name + "--layer--debug",
+        format = "cpio.gz",
         visibility = visibility,
     )
