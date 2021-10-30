@@ -82,7 +82,6 @@ feature.new(
 feature.new(
     name = "binaries",
     features = [
-        linux.filesystem.install(),
         linux.busybox.install(
             ":debug-deps",
             sets.difference(
@@ -110,23 +109,27 @@ feature.new(
 )
 
 image.layer(
-    name = "debug-append",
+    name = "debug",
+    parent_layer = "//metalos/initrd:base",
     features = [
         ":binaries",
         ":systemd-debug",
         ":dropbear-ssh-server",
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
-)
-
-package.new(
-    name = "debug-append.cpio.gz",
-    format = "cpio.gz",
-    layer = ":debug-append",
     visibility = [
         kernel_get.base_target + "/...",
         "//metalos/...",
         "//scripts/dschatzberg/vm/...",
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+)
+
+package.new(
+    name = "debug.cpio.gz",
+    format = "cpio.gz",
+    layer = ":debug",
+    visibility = [
+        "//metalos/...",
     ],
     build_appliance = flavor_helpers.default_flavor_build_appliance,
 )
