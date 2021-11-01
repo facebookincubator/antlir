@@ -159,12 +159,25 @@ def ensure_per_repo_artifacts_dir_exists(
     except FileExistsError:
         pass  # May race with another mkdir from a concurrent artifacts_dir.py
 
-    ensure_clean_sh_exists(artifacts_dir)
+    ensure_clean_sh_exists(
+        artifacts_dir,
+        buck_cell_root,
+        is_eden_repo=True if shutil.which("edenfsctl") else False,
+    )
     return artifacts_dir
 
 
-def ensure_clean_sh_exists(artifacts_dir: Path) -> None:
+def ensure_clean_sh_exists(
+    artifacts_dir: Path,
+    buck_cell_root: Path,
+    is_eden_repo: bool,
+) -> None:
+    # Ensure these are abs
+    buck_cell_root = buck_cell_root.realpath()
+    artifacts_dir = artifacts_dir.realpath()
+
     clean_sh_path = artifacts_dir / "clean.sh"
+
     with populate_temp_file_and_rename(
         clean_sh_path, overwrite=True, mode="w"
     ) as f:
@@ -172,27 +185,33 @@ def ensure_clean_sh_exists(artifacts_dir: Path) -> None:
         # debugging value far exceeds the disk waste
         f.write(
             textwrap.dedent(
-                """\
-            #!/bin/bash
-            set -ue -o pipefail
-            buck clean
-            sudo umount -l buck-image-out/volume || true
-            rm -f buck-image-out/image.btrfs
-            # Just try to remove empty checkout dirs if they exist
-            # Leave any checkouts as they may still be mounted by Eden
-            REPOS="buck-image-out/eden/repos"
-            mkdir -p "$REPOS"
-            # Remove leftover lock files
-            find "$REPOS" -maxdepth 2 -depth -type f -print0 -path ".lock_*" | xargs -0 rm 2>/dev/null || true
-            # Remove empty checkout dirs
-            find "$REPOS" -maxdepth 2 -depth -type d -print0 | xargs -0 rmdir 2>/dev/null || true
-            if [ -d "$REPOS" ]; then
-                echo "Eden checkouts remain in $REPOS and were not cleaned up"
-            else
-                rm -rf buck-image-out/eden
-            fi
-        """  # noqa: E501
+                f"""\
+                #!/bin/bash
+                set -ue -o pipefail
+
+                # We must clean buck first to reset the state
+                echo "Cleansing with Buck..."
+                pushd {buck_cell_root} >/dev/null
+                buck clean
+                popd >/dev/null
+
+                # Now it is safe to unmount and remove
+                echo "Removing Btrfs Build Volume..."
+                sudo umount -l "{artifacts_dir}/volume" || true
+                rm -f "{artifacts_dir}/image.btrfs"
+
+            """
             )
+            + textwrap.dedent(
+                f"""\
+                # Deal with eden checkoutsa
+                echo "Removing all Antlir managed Eden checkouts..."
+                REPOS="$(basename {artifacts_dir})/eden/repos"
+                edenfsctl list | grep "$REPOS" | xargs -n1 -r edenfsctl rm -y
+            """
+            )
+            if is_eden_repo
+            else ""
         )
     os.chmod(
         clean_sh_path,
