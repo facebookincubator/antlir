@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":image_utils.bzl", "image_utils")
@@ -98,6 +97,9 @@ def _image_layer_impl(
     if mount_config == None:
         mount_config = {}
 
+    # The buck-out dir can contain multiple dirs, we only need the top level one
+    buck_out_base_dir = config.get_buck_out_path().split("/")[0]
+
     # IMPORTANT: If you touch this genrule, update `image_layer_alias`.
     buck_genrule(
         name = _layer_name,
@@ -165,10 +167,23 @@ def _image_layer_impl(
                 layer_target_quoted = shell.quote(
                     image_utils.current_target(_layer_name),
                 ),
-                refcounts_dir_quoted = paths.join(
-                    "$GEN_DIR",
-                    shell.quote(config.get_project_root_from_gen_dir()),
-                    "buck-out/.volume-refcount-hardlinks/",
+                # The `buck-out` path is configurable in buck and we should not
+                # hard code it. Unfortunately there is no good way to discover
+                # the full abs path of this configured dir from bzl. So we use a
+                # bash parameter expansion to figure this out via the provided
+                # GEN_DIR environment variable. The tricky thing is that you
+                # can't have nested substitutions in starlark, and to use a bash
+                # parameter expansion it must be wrapped with ${}. To work
+                # around this we awkwardly construct the "inner" parameter
+                # expansion, hug it with `{` and `}`, and then finally insert
+                # it into the full expression to yield something that looks
+                # like (assuming `buck-out` is the configured path):
+                # ${GEN_DIR%%/buck-out/*}/buck-out/.volume-refcount-hardlinks/
+                refcounts_dir_quoted = "${parameter_expand}/{buck_out}/.volume-refcount-hardlinks/".format(
+                    parameter_expand = "{" + "GEN_DIR%%/{buck_out}/*".format(
+                        buck_out = buck_out_base_dir,
+                    ) + "}",
+                    buck_out = buck_out_base_dir,
                 ),
                 make_subvol_cmd = _make_subvol_cmd,
                 # To make layers "image-mountable", provide `mountconfig.json`.
