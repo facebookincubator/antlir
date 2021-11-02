@@ -50,8 +50,9 @@ class ArtifactsDirTests(unittest.TestCase):
 
     def test_ensure_per_repo_artifacts_dir_exists(self):
         with temp_dir() as td:
-            # Make the td the buck cell root
+            # Make the td the buck cell root and the repo root
             (td / b".buckconfig").touch()
+            os.makedirs(td / b".hg")
 
             repo_subdir = td / "i/am/a/subdir/of/the/repo"
             os.makedirs(repo_subdir)
@@ -60,6 +61,9 @@ class ArtifactsDirTests(unittest.TestCase):
             self.assertEqual(td / "buck-image-out", artifacts_dir)
             self.assertTrue(artifacts_dir.exists())
             self.assertTrue((artifacts_dir / "clean.sh").exists())
+
+            # Call it again to make sure we don't fail on the already exists
+            ensure_per_repo_artifacts_dir_exists(repo_subdir)
 
     def test_find_buck_cell_root(self):
         with temp_dir() as td:

@@ -274,7 +274,10 @@ python_library(
     name = "artifacts_dir",
     srcs = ["artifacts_dir.py"],
     visibility = ["PUBLIC"],
-    deps = [":fs_utils"],
+    deps = [
+        ":common",
+        ":fs_utils",
+    ],
 )
 
 python_unittest(
