@@ -47,11 +47,9 @@ rust_library(
     test_srcs = ["generators/hostname.star"],
     deps = [
         "anyhow",
-        "derive_builder",
         "derive_more",
         "handlebars",
         "once_cell",
-        "paste",
         "serde",
         "serde_json",
         "starlark",
