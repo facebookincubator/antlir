@@ -16,47 +16,56 @@ from typing import Optional
 from .fs_utils import Path, populate_temp_file_and_rename
 
 
-def _maybe_make_symlink_to_scratch(
-    symlink_path: Path,
-    target_in_scratch: Path,
-    target_in_repo: Path,
-) -> Path:
+def _is_edenfs(repo_root: Path) -> bool:
     """
-    IMPORTANT: This must be safe against races with other concurrent copies
-    of `artifacts_dir.py`.
+    The "official" way of determining if a repository is using edenfs is to
+    look for a `.eden` dir at the root of the repo.  Additionally the
+    `.eden/root` symlink should point to the repository root.
     """
-    scratch_bin = shutil.which("mkscratch")
-    if scratch_bin is None:
-        return symlink_path
+    eden_dir = repo_root / ".eden"
+    eden_root = eden_dir / "root"
 
-    target_path = Path(
-        subprocess.check_output(
-            [scratch_bin, "path", "--subdir", target_in_scratch, target_in_repo]
-        ).rstrip()
+    return eden_dir.exists() and eden_root.readlink() == repo_root
+
+
+def _is_edenfs_redirection(artifacts_dir: Path) -> bool:
+    return (
+        artifacts_dir.islink()
+        and b"edenfsZredirections" in artifacts_dir.realpath()
     )
 
-    # Atomically ensure the desired symlink exists.
-    try:
-        os.symlink(target_path, symlink_path)
-    except FileExistsError:
-        pass
 
-    # These two error conditions should never happen under normal usage, so
-    # they are left as exceptions instead of auto-remediations.
-    if not symlink_path.islink():
+def _make_eden_redirection(
+    artifacts_dir: Path,
+    repo_root: Path,
+) -> None:
+
+    if artifacts_dir.exists() and not _is_edenfs_redirection(artifacts_dir):
         raise RuntimeError(
-            f"{symlink_path} is not a symlink. Clean up whatever is there "
-            "and try again?"
+            f"{artifacts_dir} is not a proper Edenfs redirection.\n\n"
+            "Please run `buck-image-out/clean.sh` and then remove "
+            "`buck-image-out` before moving forward."
         )
 
-    real_target = symlink_path.realpath()
-    if real_target != target_path:
-        raise RuntimeError(
-            f"{symlink_path} points at {real_target}, but should point "
-            f"at {target_path}. Clean this up, and try again?"
-        )
-
-    return target_path
+    ret = subprocess.run(
+        [
+            "edenfsctl",
+            "redirect",
+            "add",
+            artifacts_dir,
+            "symlink",
+        ],
+        cwd=repo_root,
+        stderr=subprocess.PIPE,
+    )
+    # Unfortunately, edenfsctl fails with an exit code of 1 if the symlink
+    # already exists. It's possible that this may race with other concurrent
+    # attempts. So lets check the return code here and ignore both 0 or 1 and
+    # otherwise we raise the error.
+    if ret.returncode > 1:
+        # Let the api raise
+        print(ret.stderr, file=sys.stderr)
+        ret.check_returncode()
 
 
 def _first_parent_containing_sigil(
@@ -137,32 +146,30 @@ def ensure_per_repo_artifacts_dir_exists(
     path_in_repo: Optional[Path] = None,
 ) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
+    repo_root = find_repo_root(path_in_repo=path_in_repo)
     buck_cell_root = find_buck_cell_root(path_in_repo=path_in_repo)
     artifacts_dir = find_artifacts_dir(path_in_repo=path_in_repo)
 
     # On Facebook infra, the repo might be hosted on an Eden filesystem,
     # which is not intended as a backing store for a large sparse loop
-    # device filesystem.  So, we will put our artifacts in a blessed scratch
-    # space instead.
-    #
-    # The location in the scratch directory is a hardcoded path because
-    # this really must be a per-repo singleton.
-    real_dir = _maybe_make_symlink_to_scratch(
-        artifacts_dir,
-        # pyre-fixme[6]: Expected `Path` for 2nd param but got `str`.
-        "buck-image-out",
-        buck_cell_root,
-    )
-
-    try:
-        os.mkdir(real_dir)
-    except FileExistsError:
-        pass  # May race with another mkdir from a concurrent artifacts_dir.py
+    # device filesystem.  We can utitlize a feature of edenfs called
+    # redirections to create a suitable path for us.
+    maybe_edenfs = _is_edenfs(repo_root)
+    if maybe_edenfs:
+        _make_eden_redirection(
+            artifacts_dir,
+            repo_root,
+        )
+    else:
+        try:
+            os.mkdir(artifacts_dir)
+        except FileExistsError:
+            pass  # We might race with another instance
 
     ensure_clean_sh_exists(
         artifacts_dir,
         buck_cell_root,
-        is_eden_repo=True if shutil.which("edenfsctl") else False,
+        is_eden_repo=maybe_edenfs,
     )
     return artifacts_dir
 
