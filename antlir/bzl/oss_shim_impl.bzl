@@ -550,20 +550,6 @@ def _get_buck_out_path():
         return config_out.replace("buck-out", base_dir)
     return config_out
 
-def _get_gen_path():
-    # repository_name() always starts with "@"
-    cell = native.repository_name()[1:]
-    if cell == "":
-        return paths.join(_get_buck_out_path(), "gen")
-    return paths.join(_get_buck_out_path(), "cells", cell, "gen")
-
-### END COPY-PASTA
-
-### BEGIN COPY-PASTA (@fbcode_macros//build_defs:custom_rule.bzl)
-
-def _get_project_root_from_gen_dir():
-    return ".." + _get_gen_path().count("/") * "/.."
-
 ### END COPY-PASTA
 
 def _get_antlir_cell_name():
@@ -584,8 +570,8 @@ shim = struct(
     # Utility functions -- use `_assert_package()`, if at all possible.
     #
     config = struct(
+        get_buck_out_path = _get_buck_out_path,
         get_antlir_cell_name = _get_antlir_cell_name,
-        get_project_root_from_gen_dir = _get_project_root_from_gen_dir,
     ),
     cpp_binary = _cpp_binary,
     cpp_library = _cpp_library,
