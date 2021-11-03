@@ -14,5 +14,8 @@ buck_filegroup(
             "**/fbpkg/**",
         ],
     ),
-    visibility = ["//antlir/facebook/oss-ci:oss-view"],
+    visibility = [
+        "//antlir/facebook/oss-ci:generated",
+        "//antlir/facebook/oss-ci:oss-view",
+    ],
 )
