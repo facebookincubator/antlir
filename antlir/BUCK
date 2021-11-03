@@ -280,6 +280,26 @@ python_library(
     ],
 )
 
+rust_library(
+    name = "find_root",
+    srcs = ["find_root.rs"],
+    crate_root = "find_root.rs",
+    test_deps = third_party.libraries(
+        [
+            "tempdir",
+            "anyhow",
+        ],
+        platform = "rust",
+    ),
+    visibility = ["PUBLIC"],
+    deps = third_party.libraries(
+        [
+            "thiserror",
+        ],
+        platform = "rust",
+    ),
+)
+
 python_unittest(
     name = "test-artifacts-dir",
     srcs = ["tests/test_artifacts_dir.py"],
