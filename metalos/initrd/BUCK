@@ -33,7 +33,7 @@ users = [
     feature.install("group", "/etc/group"),
     feature.install("passwd", "/etc/passwd"),
     feature.install("//antlir:empty", "/etc/shadow"),
-    feature.install("//antlir:empty", "/usr/bin/nologin"),
+    feature.install("//antlir:empty", "/usr/sbin/nologin"),
     feature.group_add("systemd-network"),
     feature.user_add(
         "systemd-network",
