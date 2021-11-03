@@ -221,7 +221,7 @@ impl Dropin {
 }
 
 fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Result<()> {
-    if let Some(os_package) = cmdline.os_package() {
+    if let Some(os_package) = &cmdline.os_package {
         info!(
             log,
             "instantiating metalos-fetch-image@{}.service", &os_package
@@ -255,7 +255,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             .context("Failed to write os_subvol.conf")?;
     }
 
-    if let Some(host_config_uri) = cmdline.host_config_uri() {
+    if let Some(host_config_uri) = &cmdline.host_config_uri {
         let uri_dropin = Dropin {
             target: "metalos-apply-host-config.service".to_string(),
             unit: Unit {
@@ -276,9 +276,9 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             .context("Failed to write host_config_uri.conf")?;
     }
 
-    if let Some(root) = cmdline.root() {
-        let root_src = blkid::evaluate_spec(&root.root)
-            .with_context(|| format!("unable to understand root={}", root.root))?;
+    if let Some(root) = &cmdline.root.root {
+        let root_src = blkid::evaluate_spec(&root)
+            .with_context(|| format!("unable to understand root={}", root))?;
 
         let unit = Unit {
             unit: Some(UnitSection {
@@ -289,8 +289,8 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             body: Some(UnitBody::Mount(MountSection {
                 what: (*root_src.to_string_lossy()).into(),
                 where_: "/rootdisk".into(),
-                options: root.flags,
-                type_: root.fstype.map(|s| s.to_string()),
+                options: cmdline.root.join_flags(),
+                type_: cmdline.root.fstype,
             })),
         };
 
@@ -383,7 +383,7 @@ mod tests {
         let cmdline: MetalosCmdline =
             "metalos.host-config-uri=\"https://server:8000/v1/host/host001.01.abc0.domain.com\" \
             metalos.os_package=\"somePackage\" \
-            metalos.package_format_uri=\"someURI\" \
+            metalos.package_format_uri=\"https://unittest_server/{package}\" \
             rootfstype=btrfs \
             root=/dev/somedisk"
                 .parse()?;
@@ -454,7 +454,7 @@ mod tests {
         let cmdline: MetalosCmdline =
             "metalos.host-config-uri=\"https://server:8000/v1/host/host001.01.abc0.domain.com\" \
             metalos.os_package=\"somePackage\" \
-            metalos.package_format_uri=\"someURI\" \
+            metalos.package_format_uri=\"https://unittest_server/{package}\" \
             root=/dev/somedisk"
                 .parse()?;
 
