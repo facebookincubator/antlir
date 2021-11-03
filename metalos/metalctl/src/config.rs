@@ -13,7 +13,7 @@ use serde::{de, Deserialize, Deserializer};
 
 use crate::kernel_cmdline::MetalosCmdline;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct PackageFormatUri(String);
 
 impl FromStr for PackageFormatUri {
@@ -72,8 +72,8 @@ impl Config {
     }
 
     fn apply_overrides(&mut self, cmdline: MetalosCmdline) -> Result<()> {
-        if let Some(uri) = cmdline.package_format_uri() {
-            self.download.package_format_uri = uri?;
+        if let Some(uri) = cmdline.package_format_uri {
+            self.download.package_format_uri = uri;
         }
         Ok(())
     }

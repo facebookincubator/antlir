@@ -65,6 +65,8 @@ rust_binary(
         "zstd",  # os images are zstd-compressed btrfs sendstreams
         "maplit",  # Should be macros only so little to no difference in output binary
         "shlex",
+        "strum",
+        "strum_macros",  # I <3 zero cost abstractions!
         # Needed for HTTPS requests to download images
         "bytes",
         "futures-core",
