@@ -64,6 +64,7 @@ rust_binary(
         "serde_json",  # load host config manifest
         "zstd",  # os images are zstd-compressed btrfs sendstreams
         "maplit",  # Should be macros only so little to no difference in output binary
+        "shlex",
         # Needed for HTTPS requests to download images
         "bytes",
         "futures-core",
