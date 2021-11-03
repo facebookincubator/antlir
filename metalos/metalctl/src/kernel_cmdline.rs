@@ -129,12 +129,6 @@ fn parse_opt(src: &str) -> KernelCmdlineOpt {
     }
 }
 
-#[derive(PartialEq)]
-enum ParserState {
-    Push,
-    Quoted,
-}
-
 impl std::str::FromStr for MetalosCmdline {
     type Err = Error;
 
@@ -142,33 +136,8 @@ impl std::str::FromStr for MetalosCmdline {
     /// selected options are available when they have significance for MetalOS
     /// code, for example 'metalos.os_uri'.
     fn from_str(s: &str) -> Result<Self> {
-        // strip leading and trailing whitespace
-        let s = s.trim();
-        let mut state = ParserState::Push;
-        let mut args = vec![];
-        let mut current = String::new();
-        for ch in s.chars() {
-            if ch.is_whitespace() {
-                match state {
-                    ParserState::Push => {
-                        args.push(current);
-                        current = String::new();
-                    }
-                    ParserState::Quoted => current.push(ch),
-                };
-            } else if ch == '"' {
-                state = match state {
-                    ParserState::Push => ParserState::Quoted,
-                    ParserState::Quoted => ParserState::Push,
-                }
-            } else {
-                current.push(ch);
-            }
-        }
-        // last arg does not have the trailing whitespace to trigger the push in
-        // the above loop
-        args.push(current);
-        Self::from_iter_safe(args).context("failed to parse")
+        Self::from_iter_safe(shlex::split(s).context("Failed to split args")?)
+            .context("Failed to parse args")
     }
 }
 
