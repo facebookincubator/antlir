@@ -116,7 +116,7 @@ impl<'v> StarlarkValue<'v> for Template {
 
 #[starlark_module]
 pub fn module(registry: &mut GlobalsBuilder) {
-    #[starlark_type("template")]
+    #[starlark(type("template"))]
     fn template(src: &str) -> Template {
         Template::compile(src)
     }
