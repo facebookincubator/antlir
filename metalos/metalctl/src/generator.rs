@@ -18,6 +18,7 @@ use slog_glog_fmt::kv_categorizer::ErrorCategorizer;
 use structopt::StructOpt;
 
 use crate::kernel_cmdline::MetalosCmdline;
+use crate::mount::evaluate_device_spec;
 use crate::systemd::{self, PROVIDER_ROOT};
 
 #[derive(StructOpt)]
@@ -277,7 +278,9 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
     }
 
     if let Some(root) = &cmdline.root.root {
-        let root_src = blkid::evaluate_spec(&root)
+        // if we don't have blkid available, we have to hope that the given
+        // root= parameter is specified enough (aka, is an absolute device path)
+        let root_src = evaluate_device_spec(root)
             .with_context(|| format!("unable to understand root={}", root))?;
 
         let unit = Unit {

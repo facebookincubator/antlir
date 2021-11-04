@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "container_unittest_opts_t", "rust_binary", "unittest_opts_t")
 
@@ -6,11 +6,17 @@ srcs = glob(["src/**/*.rs"])
 
 facebook = "src/facebook/mod.rs" in srcs
 
+# we don't yet have blkid support in oss
+have_blkid = third_party.library("util-linux", "blkid") != None
+
 rust_binary(
     name = "metalctl",
     srcs = srcs,
     allocator = "malloc",
-    features = ["facebook"] if facebook else [],
+    features = (
+        (["facebook"] if facebook else []) +
+        (["blkid"] if have_blkid else [])
+    ),
     link_style = "static",
     linker_flags = [
         "-Wl,--strip-all",
@@ -49,7 +55,6 @@ rust_binary(
     # almost nothing for 50 lines of code to parse it manually.
     deps = [
         "//metalos/host_configs:evalctx",
-        "//metalos/lib/blkid:blkid",
         "//metalos/lib/systemd:systemd",
         "anyhow",  # ~9.5k, very helpful for error handling
         "nix",  # ~5k: access to syscalls (mount, etc)
@@ -78,7 +83,7 @@ rust_binary(
         "tokio",  # async runtime for http client
         "tower",
         "trust-dns-resolver",
-    ],
+    ] + (["//metalos/lib/blkid:blkid"] if have_blkid else []),
 )
 
 export_file(
