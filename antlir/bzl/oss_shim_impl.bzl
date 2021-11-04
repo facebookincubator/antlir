@@ -8,6 +8,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("@config//:config.bzl", _do_not_use_repo_cfg = "do_not_use_repo_cfg")
 load("//third-party/fedora33/kernel:kernels.bzl", "kernels")
 # @lint-ignore-every BUCKLINT
+# @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
 _RULE_TYPE_KWARG = "antlir_rule"
 
@@ -211,6 +212,11 @@ def _third_party_library(project, rule = None, platform = None):
         if not rule == project:
             fail("python projects must omit rule or be identical to project")
         return "//third-party/python:" + project
+
+    # We don't yet have this in OSS
+    if project == "util-linux":
+        if rule == "blkid":
+            return None
 
     return "//third-party/" + platform + "/" + project + ":" + rule
 

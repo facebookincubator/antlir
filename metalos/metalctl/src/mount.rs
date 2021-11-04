@@ -129,10 +129,10 @@ pub fn mount(log: Logger, opts: Opts) -> Result<()> {
 
 fn _mount(log: Logger, opts: Opts, fstypes: &[String], mounter: impl Mounter) -> Result<()> {
     let (data, flags) = parse_options(opts.options);
-    let source = opts.source;
-    let source = blkid::evaluate_spec(&source)
-        .with_context(|| format!("no device matches blkid spec '{}'", &source))?;
-    let fstype = opts.fstype.or_else(|| match blkid::probe_fstype(&source) {
+    let source = evaluate_device_spec(&opts.source)?;
+    let fstype = opts.fstype;
+    #[cfg(feature = "blkid")]
+    let fstype = fstype.or_else(|| match blkid::probe_fstype(&source) {
         Ok(fstype) => Some(fstype),
         Err(e) => {
             warn!(
@@ -171,6 +171,18 @@ fn _mount(log: Logger, opts: Opts, fstypes: &[String], mounter: impl Mounter) ->
             )
             .context("mount failed"),
     }
+}
+
+/// Attempt to evaluate a device spec. If blkid is enabled, it will be used,
+/// otherwise we have no choice but to assume that the spec is a full device
+/// path.
+pub fn evaluate_device_spec(spec: &str) -> Result<PathBuf> {
+    #[cfg(feature = "blkid")]
+    return blkid::evaluate_spec(spec)
+        .with_context(|| format!("no device matches blkid spec '{}'", spec));
+
+    #[cfg(not(feature = "blkid"))]
+    return Ok(spec.into());
 }
 
 #[cfg(test)]
