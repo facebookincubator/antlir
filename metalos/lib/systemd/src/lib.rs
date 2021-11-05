@@ -24,12 +24,14 @@ extern crate metalos_macros;
 mod dbus_types;
 mod escape;
 mod machined_manager;
+mod networkd_manager;
 mod property_stream;
 mod system_state;
 mod systemd_manager;
 mod transient_unit;
 pub use escape::*;
 pub use machined_manager::{ManagerProxy as MachinedManagerProxy, *};
+pub use networkd_manager::{ManagerProxy as NetworkdManagerProxy, *};
 pub use system_state::{SystemState, WaitableSystemState};
 pub use systemd_manager::{ManagerProxy as SystemdManagerProxy, *};
 pub use transient_unit::Opts as TransientUnitOpts;
@@ -185,6 +187,7 @@ impl Systemd {
 }
 
 pub type Machined = DbusService<MachinedManagerProxy<'static>>;
+pub type Networkd = DbusService<NetworkdManagerProxy<'static>>;
 
 #[cfg(test)]
 mod tests {
