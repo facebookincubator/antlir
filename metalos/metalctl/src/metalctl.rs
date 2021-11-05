@@ -30,7 +30,6 @@ mod kernel_cmdline;
 mod mkdir;
 mod mount;
 mod switch_root;
-mod systemd;
 mod umount;
 
 pub use config::Config;

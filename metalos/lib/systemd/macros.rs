@@ -127,13 +127,26 @@ fn expand_transparent_zvariant(input: DeriveInput) -> syn::Result<proc_macro2::T
                     // is String so that we have a From<&str> impl
                     let s: Type = syn::parse_str("String").unwrap();
                     let fqs: Type = syn::parse_str("std::string::String").unwrap();
-                    let mut maybe_from_str = quote! {};
+                    let mut maybe_str_special = quote! {};
                     if ty == &s || ty == &fqs {
-                        maybe_from_str = quote! {
+                        maybe_str_special = quote! {
                             impl From<&str> for #name {
                                 #[inline]
                                 fn from(s: &str) -> Self {
                                     Self(s.to_owned())
+                                }
+                            }
+
+                            impl ::std::cmp::PartialEq<&str> for #name {
+                                #[inline]
+                                fn eq(&self, s: &&str) -> bool {
+                                    self.0 == *s
+                                }
+                            }
+
+                            impl ::std::convert::AsRef<str> for #name {
+                                fn as_ref(&self) -> &str {
+                                    self.0.as_str()
                                 }
                             }
                         };
@@ -182,13 +195,37 @@ fn expand_transparent_zvariant(input: DeriveInput) -> syn::Result<proc_macro2::T
                             }
                         }
 
+                        impl Into<#ty> for #name {
+                            fn into(self) -> #ty {
+                                self.0
+                            }
+                        }
+
                         impl ::std::fmt::Display for #name {
                             fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                                 self.0.fmt(f)
                             }
                         }
 
-                        #maybe_from_str
+                        impl ::std::cmp::PartialEq<#ty> for #name {
+                            fn eq(&self, o: &#ty) -> bool {
+                                self.0 == *o
+                            }
+                        }
+
+                        impl ::std::cmp::PartialEq<#name> for #ty {
+                            fn eq(&self, o: &#name) -> bool {
+                                *self == o.0
+                            }
+                        }
+
+                        impl ::std::convert::AsRef<#ty> for #name {
+                            fn as_ref(&self) -> &#ty {
+                                &self.0
+                            }
+                        }
+
+                        #maybe_str_special
                     })
                 }
                 _ => Err(Error::new(input_span, "struct must have one unnamed field")),

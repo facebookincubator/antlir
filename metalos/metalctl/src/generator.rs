@@ -19,7 +19,7 @@ use structopt::StructOpt;
 
 use crate::kernel_cmdline::MetalosCmdline;
 use crate::mount::evaluate_device_spec;
-use crate::systemd::{self, PROVIDER_ROOT};
+use systemd::{self, UnitName, PROVIDER_ROOT};
 
 #[derive(StructOpt)]
 pub struct Opts {
@@ -36,14 +36,16 @@ pub struct Opts {
 // over dbus, not filesystem mangling. See the systemd generator docs for more
 // details about the limitations imposed on generators.
 // https://www.freedesktop.org/software/systemd/man/systemd.generator.html#Notes%20about%20writing%20generators
-fn instantiate_template<U: AsRef<str>, I: AsRef<str>>(
+fn instantiate_template(
     normal_dir: PathBuf,
-    unit: U,
-    instance: I,
-) -> Result<String> {
-    let instance_unit = systemd::template_unit_name(&unit, instance)?;
+    unit: impl AsRef<str>,
+    instance: impl AsRef<str>,
+    suffix: impl AsRef<str>,
+) -> Result<UnitName> {
+    let instance_unit = systemd::template_unit_name(&unit, instance, &suffix);
     let instance_file = normal_dir.join(&instance_unit);
-    let template_src = PathBuf::from(PROVIDER_ROOT).join(unit.as_ref());
+    let template_src =
+        PathBuf::from(PROVIDER_ROOT).join(format!("{}@.{}", unit.as_ref(), suffix.as_ref()));
     symlink(&template_src, &instance_file).with_context(|| {
         format!(
             "failed to symlink {:?} -> {:?}",
@@ -59,12 +61,12 @@ trait Render {
     fn add_header(target: &mut String, name: &str) {
         target.push_str(&format!("[{}]\n", name));
     }
-    fn add_kv(target: &mut String, key: &str, value: &str) {
+    fn add_kv<T: std::fmt::Display>(target: &mut String, key: &str, value: T) {
         target.push_str(&format!("{}={}\n", key, value));
     }
-    fn add_optional_kv<T: Into<String>>(target: &mut String, key: &str, value: Option<T>) {
+    fn add_optional_kv<T: std::fmt::Display>(target: &mut String, key: &str, value: Option<T>) {
         if let Some(value) = value {
-            target.push_str(&format!("{}={}\n", key, value.into()));
+            target.push_str(&format!("{}={}\n", key, value));
         }
     }
     fn add_optional_renderable<T: Render>(target: &mut String, thing: Option<&T>) {
@@ -92,9 +94,9 @@ impl Render for ServiceSection {
 }
 
 struct UnitSection {
-    before: Option<String>,
-    after: Option<String>,
-    requires: Option<String>,
+    before: Option<UnitName>,
+    after: Option<UnitName>,
+    requires: Option<UnitName>,
 }
 
 impl Render for UnitSection {
@@ -229,8 +231,9 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
         );
         let fetch_unit = instantiate_template(
             opts.normal_dir.clone(),
-            "metalos-fetch-image@.service",
+            "metalos-fetch-image",
             os_package,
+            "service",
         )?;
 
         let snapshot_root_dropin = Dropin {
@@ -245,7 +248,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
                     environment: Some(btreemap! {
                         "OS_SUBVOL".to_string() => format!(
                             "var/lib/metalos/image/{}/volume",
-                            systemd::escape(os_package)?
+                            systemd::escape(os_package)
                         ),
                     }),
                 })),
@@ -285,7 +288,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
 
         let unit = Unit {
             unit: Some(UnitSection {
-                before: Some("initrd-root-fs.target".to_string()),
+                before: Some("initrd-root-fs.target".into()),
                 after: None,
                 requires: None,
             }),
@@ -353,16 +356,16 @@ pub fn generator(log: Logger, opts: Opts) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::systemd::PROVIDER_ROOT;
     use std::path::Path;
     use std::time::SystemTime;
+    use systemd::PROVIDER_ROOT;
 
     #[test]
     fn instantiate_example_template() -> Result<()> {
         let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
         let tmpdir = std::env::temp_dir().join(format!("instantiate_template_{:?}", ts));
         std::fs::create_dir(&tmpdir)?;
-        instantiate_template(tmpdir.clone(), "hello@.service", "world")?;
+        instantiate_template(tmpdir.clone(), "hello", "world", "service")?;
         assert_eq!(
             tmpdir.join("hello@world.service").read_link()?,
             Path::new(PROVIDER_ROOT).join("hello@.service"),
