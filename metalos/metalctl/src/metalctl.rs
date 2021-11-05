@@ -12,10 +12,13 @@
 extern crate metalos_macros;
 
 use std::collections::VecDeque;
+use std::fs;
+use std::io::BufWriter;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use slog::{o, warn};
+use slog::{error, o, warn, Drain, Logger};
+use slog_glog_fmt::kv_categorizer::ErrorCategorizer;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
@@ -64,18 +67,40 @@ struct MetalCtl {
     command: Subcommand,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    let mut args: VecDeque<_> = std::env::args_os().collect();
+fn setup_kmsg_logger(log: Logger) -> Result<Logger> {
+    // metalos-generator has an additional logging drain setup that is not as
+    // pretty looking as other slog drain formats, but is usable with /dev/kmsg.
+    // Otherwise, the regular drain that logs to stderr silently disappears when
+    // systemd runs the generator.
+    let kmsg = fs::OpenOptions::new()
+        .write(true)
+        .open("/dev/kmsg")
+        .context("failed to open /dev/kmsg for logging")?;
+    let kmsg = BufWriter::new(kmsg);
+
+    let decorator = slog_term::PlainDecorator::new(kmsg);
+    let drain = slog_glog_fmt::GlogFormat::new(decorator, ErrorCategorizer).fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
+
+    Ok(slog::Logger::root(
+        slog::Duplicate::new(log, drain).fuse(),
+        o!(),
+    ))
+}
+
+async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Result<()> {
     // Yeah, expect() is not the best thing to do, but really what else can we
     // do besides panic?
     let bin_path: PathBuf = args
         .pop_front()
-        .expect("metalctl: must have argv[0]")
+        .context(format!("metalctl must have args[0] found: {:?}", args))?
         .into();
-    let bin_name = bin_path
-        .file_name()
-        .expect("metalctl: argv[0] must be a file path");
+
+    let bin_name = bin_path.file_name().context(format!(
+        "metalctl: argv[0] must be a file path found: {:?}",
+        bin_path
+    ))?;
+
     // If argv[0] is a symlink for a multicall utility, push the file name back
     // into the args array so that structopt will parse it correctly
     if bin_name != "metalctl" {
@@ -83,8 +108,6 @@ async fn main() -> Result<()> {
     }
 
     let options = MetalCtl::from_iter(args);
-
-    let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
 
     let mut config: config::Config = match std::fs::read_to_string(&options.config) {
         Ok(config_str) => toml::from_str(&config_str).context("invalid config")?,
@@ -108,5 +131,34 @@ async fn main() -> Result<()> {
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
         #[cfg(feature = "facebook")]
         Subcommand::Facebook(fb) => fb.subcommand(log).await,
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let args: VecDeque<std::ffi::OsString> = std::env::args_os().collect();
+
+    let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
+    let log = if args
+        .iter()
+        .any(|a| a.to_string_lossy().contains("generator"))
+    {
+        match setup_kmsg_logger(log) {
+            Ok(log) => log,
+            Err(e) => {
+                eprintln!("Failed to setup kmsg logger: {:?}", e);
+                slog::Logger::root(slog_glog_fmt::default_drain(), o!())
+            }
+        }
+    } else {
+        log
+    };
+
+    match run_command(args, log.clone()).await {
+        Ok(r) => Ok(r),
+        Err(e) => {
+            error!(log, "{}", e);
+            Err(e)
+        }
     }
 }

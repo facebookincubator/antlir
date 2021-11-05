@@ -7,14 +7,12 @@
 
 use maplit::btreemap;
 use std::collections::BTreeMap;
-use std::fs;
-use std::io::{BufWriter, Write};
+use std::io::Write;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use slog::{error, info, o, Drain, Logger};
-use slog_glog_fmt::kv_categorizer::ErrorCategorizer;
+use slog::{error, info, o, Logger};
 use structopt::StructOpt;
 
 use crate::kernel_cmdline::MetalosCmdline;
@@ -313,22 +311,6 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
 }
 
 pub fn generator(log: Logger, opts: Opts) -> Result<()> {
-    // metalos-generator has an additional logging drain setup that is not as
-    // pretty looking as other slog drain formats, but is usable with /dev/kmsg.
-    // Otherwise, the regular drain that logs to stderr silently disappears when
-    // systemd runs the generator.
-    let kmsg = fs::OpenOptions::new()
-        .write(true)
-        .open("/dev/kmsg")
-        .context("failed to open /dev/kmsg for logging")?;
-    let kmsg = BufWriter::new(kmsg);
-
-    let decorator = slog_term::PlainDecorator::new(kmsg);
-    let drain = slog_glog_fmt::GlogFormat::new(decorator, ErrorCategorizer).fuse();
-    let drain = slog_async::Async::new(drain).build().fuse();
-
-    let log = slog::Logger::root(slog::Duplicate::new(log, drain).fuse(), o!());
-
     info!(log, "metalos-generator starting");
 
     let sublog = log.new(o!());
