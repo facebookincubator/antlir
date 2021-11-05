@@ -51,6 +51,12 @@ feature.new(
         systemd.enable_unit("debug-shell.service"),
         systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
         systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
+        image.clone(
+            ":debug-deps",
+            paths.join(SYSTEMD_PROVIDER_ROOT, "emergency.service"),
+            paths.join(SYSTEMD_PROVIDER_ROOT, "emergency.service"),
+        ),
+        systemd.install_dropin("emergency.conf", "emergency.service"),
     ],
     visibility = VISIBILITY,
 )
