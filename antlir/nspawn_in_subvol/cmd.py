@@ -31,6 +31,10 @@ from .args import PopenArgs, _NspawnOpts
 from .common import find_cgroup2_mountpoint, parse_cgroup2_path
 
 
+# For test mocking
+_load_repo_config = repo_config
+
+
 def _colon_quote_path(path: AnyStr) -> Path:
     return Path(re.sub(b"[\\\\:]", lambda m: b"\\" + m.group(0), Path(path)))
 
@@ -252,13 +256,13 @@ def _extra_nspawn_args_and_env(
             bind_args(
                 # Buck seems to operate with `realpath` when it resolves
                 # `$(location)` macros, so this is what we should mount.
-                os.path.realpath(repo_config().repo_root)
+                os.path.realpath(_load_repo_config().repo_root)
             )
         )
 
         # insert additional host mounts that are always required when
         # using repository artifacts.
-        for mount in repo_config().host_mounts_for_repo_artifacts:
+        for mount in _load_repo_config().host_mounts_for_repo_artifacts:
             extra_nspawn_args.extend(bind_args(mount))
 
         # Future: we **may** also need to mount the scratch directory

@@ -21,6 +21,7 @@ from antlir.compiler.requires_provides import (
     ProvidesDoNotAccess,
     RequireDirectory,
 )
+from antlir.config import antlir_dep
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import Subvol
@@ -116,7 +117,7 @@ class MountItem(ImageItem):
         kwargs["build_source"] = BuildSource(**cfg.pop("build_source"))
         if kwargs["build_source"].type == "host" and not (
             kwargs["from_target"] in layer_opts.allowed_host_mount_targets
-            or kwargs["from_target"].startswith("//antlir/compiler/test")
+            or kwargs["from_target"].startswith(antlir_dep("compiler/test"))
         ):
             raise AssertionError(
                 "Host mounts cause containers to be non-hermetic and "

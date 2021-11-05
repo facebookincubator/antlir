@@ -149,6 +149,7 @@ http_archive = shim.http_archive
 kernel_get = shim.kernel_get
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 rpm_vset = shim.rpm_vset
+repository_name = shim.repository_name
 rust_binary = shim.rust_binary
 rust_bindgen_library = shim.rust_bindgen_library
 rust_library = shim.rust_library

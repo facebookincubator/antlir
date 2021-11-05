@@ -8,6 +8,7 @@ import os
 import subprocess
 import unittest
 
+from antlir.config import antlir_dep
 from antlir.fs_utils import temp_dir
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
@@ -16,7 +17,7 @@ from antlir.tests.flavor_helpers import get_rpm_installers_supported
 class ImageUnittestTestRepoServer(unittest.TestCase):
     def test_install_rpm(self):
         snapshot_dir = snapshot_install_dir(
-            "//antlir/rpm:repo-snapshot-for-tests"
+            antlir_dep("rpm:repo-snapshot-for-tests")
         )
         for prog in get_rpm_installers_supported():
             with temp_dir() as td:

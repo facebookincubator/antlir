@@ -7,7 +7,7 @@ import os
 import unittest
 
 from antlir.compiler.items_for_features import ItemFactory
-from antlir.config import repo_config
+from antlir.config import repo_config, antlir_dep
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -49,7 +49,7 @@ class RpmReplayTestCase(unittest.TestCase):
                 repo_config().flavor_to_config["antlir_test"].rpm_installer
             ),
             rpm_repo_snapshot=snapshot_install_dir(
-                "//antlir/rpm:rpm-replay-repo-snapshot-for-tests"
+                antlir_dep("rpm:rpm-replay-repo-snapshot-for-tests")
             ),
         )
 

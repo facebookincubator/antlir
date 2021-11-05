@@ -15,7 +15,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
 from antlir.compiler.items.mount import mounts_from_meta
-from antlir.config import repo_config
+from antlir.config import repo_config, antlir_dep
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.tests.flavor_helpers import (
@@ -65,7 +65,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 "is_directory": True,
                 "build_source": {
                     "type": "layer",
-                    "source": "//antlir/compiler/test_images:" + target,
+                    "source": antlir_dep("compiler/test_images:" + target),
                 },
             }
             if mount_config:
@@ -209,7 +209,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 {
                     "build_source": {
                         "type": "layer",
-                        "source": "//antlir/compiler/test_images:create_ops",
+                        "source": antlir_dep("compiler/test_images:create_ops"),
                     }
                 },
             ),

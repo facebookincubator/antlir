@@ -7,6 +7,7 @@
 import os
 import unittest
 
+from antlir.config import antlir_dep
 from antlir.rpm.replay.tests.test_utils import (
     build_env_map,
     extract_features_from_env_map,
@@ -85,7 +86,7 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         self.assertEqual(set(), ef.features_needing_custom_image)
 
         def feature_target(layer_name):
-            return f"//antlir/rpm/replay/tests:{layer_name}__layer-feature"
+            return antlir_dep(f"rpm/replay/tests:{layer_name}__layer-feature")
 
         self.assertEqual(
             {
