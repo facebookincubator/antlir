@@ -130,7 +130,7 @@ fn expand_transparent_zvariant(input: DeriveInput) -> syn::Result<proc_macro2::T
                     let mut maybe_str_special = quote! {};
                     if ty == &s || ty == &fqs {
                         maybe_str_special = quote! {
-                            impl From<&str> for #name {
+                            impl ::std::convert::From<&str> for #name {
                                 #[inline]
                                 fn from(s: &str) -> Self {
                                     Self(s.to_owned())
@@ -141,6 +141,13 @@ fn expand_transparent_zvariant(input: DeriveInput) -> syn::Result<proc_macro2::T
                                 #[inline]
                                 fn eq(&self, s: &&str) -> bool {
                                     self.0 == *s
+                                }
+                            }
+
+                            impl ::std::cmp::PartialEq<#name> for &str {
+                                #[inline]
+                                fn eq(&self, o: &#name) -> bool {
+                                    *self == o.0
                                 }
                             }
 
@@ -189,15 +196,15 @@ fn expand_transparent_zvariant(input: DeriveInput) -> syn::Result<proc_macro2::T
                             }
                         }
 
-                        impl From<#ty> for #name {
+                        impl ::std::convert::From<#ty> for #name {
                             fn from(x: #ty) -> Self {
                                 Self(x)
                             }
                         }
 
-                        impl Into<#ty> for #name {
-                            fn into(self) -> #ty {
-                                self.0
+                        impl ::std::convert::From<#name> for #ty {
+                            fn from(x: #name) -> #ty {
+                                x.0
                             }
                         }
 
