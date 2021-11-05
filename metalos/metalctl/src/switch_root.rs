@@ -5,12 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::os::unix::process::CommandExt;
-use std::process::Command;
-
 use anyhow::{Context, Error, Result};
 use slog::{debug, o, Logger};
 use structopt::StructOpt;
+use systemd::{FilePath, Systemd};
 
 use crate::mount::{mount, Opts as MountOpts};
 
@@ -23,7 +21,7 @@ pub struct Opts {
 /// Mainly, we need to fiddle with mounts so that /sysroot is the rw snapshot for
 /// the current bootid. This is necessary so that the newly invoked systemd has
 /// the correct root mount point.
-pub fn switch_root(log: Logger, opts: Opts) -> Result<()> {
+pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
     let log = log.new(o!("snapshot" => opts.snapshot.clone()));
     let (device, options) = find_rootdisk_device().context("failed to find /rootdisk device")?;
     let options: Vec<_> = options.split(',').map(|s| s.to_string()).collect();
@@ -45,29 +43,23 @@ pub fn switch_root(log: Logger, opts: Opts) -> Result<()> {
             opts.snapshot, device, options,
         )
     })?;
+
+    let sd = Systemd::connect(log.clone()).await?;
     // systemctl daemon-reload is necessary after mounting the
     // to-switch-root-into snapshot at /sysroot, since systemd will
     // automatically reload some unit configuration from /sysroot when running
     // inside the initrd, and this behavior is necessary to pass the correct
     // state of units into the new systemd in the root fs.
-    // TODO: it would be nice to handle communication with systemd
-    // post-generator with the dbus api
-    Command::new("systemctl")
-        .arg("daemon-reload")
-        .spawn()
-        .context("failed to spawn 'systemctl daemon-reload'")?
-        .wait()
-        .context("'systemctl daemon-reload' failed")?;
+    sd.reload()
+        .await
+        .context("failed to reload systemd units (systemctl daemon-reload)")?;
 
     debug!(log, "switch-rooting into /sysroot");
-    let error = Command::new("systemctl")
-        .args(&["--no-block", "switch-root", "/sysroot"])
-        .exec();
-    // We'll attempt to return an nice Err result, but the process may be in a
-    // corrupt state and if the main binary attempts any cleanup it may fail
-    // even more (but we've already lost, so might as well try).
-    // https://doc.rust-lang.org/std/os/unix/process/trait.CommandExt.html#notes
-    Err(Error::new(error))
+
+    // ask systemd to switch-root to the new root fs
+    sd.switch_root(FilePath::new("/sysroot"), FilePath::new(""))
+        .await
+        .context("failed to trigger switch-root (systemctl switch-root /syroot)")
 }
 
 fn replace_subvol<S: AsRef<str>, T: AsRef<str>>(options: Vec<S>, new: T) -> Vec<String> {

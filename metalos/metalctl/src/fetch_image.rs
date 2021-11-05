@@ -96,7 +96,7 @@ pub async fn fetch_image(log: Logger, config: crate::Config, opts: Opts) -> Resu
         };
     } else {
         info!(log, "receiving image as a zstd-compressed sendstream");
-        let mut child = Command::new("btrfs")
+        let mut child = Command::new("/sbin/btrfs")
             .args(&[&"receive".into(), &opts.dest])
             .stdin(Stdio::piped())
             .spawn()

@@ -6,6 +6,7 @@
  */
 
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -16,6 +17,7 @@ use zvariant::{OwnedValue, Signature, Type};
 use crate::Result;
 
 #[derive(Debug, Serialize)]
+#[repr(transparent)]
 pub struct FilePath(Path);
 
 impl Type for FilePath {
@@ -29,6 +31,12 @@ impl std::ops::Deref for FilePath {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl FilePath {
+    pub fn new<S: AsRef<OsStr> + ?Sized>(s: &S) -> &Self {
+        unsafe { &*(s.as_ref() as *const OsStr as *const FilePath) }
     }
 }
 
