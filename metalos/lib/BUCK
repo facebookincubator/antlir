@@ -1,0 +1,17 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "find_root_disk",
+    srcs = ["find_root_disk.rs"],
+    crate_root = "find_root_disk.rs",
+    test_deps = [
+        "tempfile",
+    ],
+    unittests = [
+        "vm",
+    ],
+    deps = [
+        "anyhow",
+        "udev",
+    ],
+)

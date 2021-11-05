@@ -274,7 +274,7 @@ class QCow2RootDisk(Share):
                 f"backing.file.filename={self.path!s}"
             ),
             "--device",
-            "virtio-blk,drive=root-drive",
+            "virtio-blk,drive=root-drive,serial=ROOT_DISK_SERIAL",
         )
 
     @property
