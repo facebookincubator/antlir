@@ -22,15 +22,19 @@ use zbus::{Proxy, ProxyBuilder};
 extern crate metalos_macros;
 
 mod dbus_types;
+mod escape;
 mod machined_manager;
 mod property_stream;
 mod system_state;
 mod systemd_manager;
 mod transient_unit;
+pub use escape::*;
 pub use machined_manager::{ManagerProxy as MachinedManagerProxy, *};
 pub use system_state::{SystemState, WaitableSystemState};
 pub use systemd_manager::{ManagerProxy as SystemdManagerProxy, *};
 pub use transient_unit::Opts as TransientUnitOpts;
+
+pub static PROVIDER_ROOT: &str = "/usr/lib/systemd/system";
 
 #[derive(Debug)]
 pub struct ConnectOpts {

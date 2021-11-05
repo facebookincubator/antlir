@@ -298,7 +298,7 @@ mod tests {
         let sd = Systemd::connect(log).await?;
         let units = sd.list_units().await?;
         assert!(!units.is_empty());
-        let root = units.iter().find(|u| u.name == "-.mount".into()).unwrap();
+        let root = units.iter().find(|u| u.name == "-.mount").unwrap();
         let unit = root.unit.load(sd.connection()).await?;
         assert_eq!(unit.id().await?, root.name);
         Ok(())

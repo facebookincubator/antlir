@@ -6,6 +6,7 @@
  */
 
 use std::collections::BTreeSet;
+use std::path::Path;
 use std::str::FromStr;
 
 use bitflags::bitflags;
@@ -19,6 +20,12 @@ use systemd_macros::{SystemdEnum, TransparentZvariant};
 
 #[derive(Debug, PartialEq, Eq, Clone, TransparentZvariant)]
 pub struct UnitName(String);
+
+impl AsRef<Path> for UnitName {
+    fn as_ref(&self) -> &Path {
+        self.0.as_ref()
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone, TransparentZvariant)]
 pub struct JobId(u32);
@@ -964,7 +971,7 @@ mod tests {
         let sd = Systemd::connect(log).await?;
         let units = sd.list_units().await?;
         assert!(!units.is_empty());
-        let root = units.iter().find(|u| u.name == "-.mount".into()).unwrap();
+        let root = units.iter().find(|u| u.name == "-.mount").unwrap();
         assert_eq!(root.active_state, ActiveState::Active);
         assert_eq!(root.load_state, LoadState::Loaded);
         assert_eq!(root.sub_state, "mounted");
