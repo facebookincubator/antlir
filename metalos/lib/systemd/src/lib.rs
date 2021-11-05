@@ -35,7 +35,6 @@ pub use transient_unit::Opts as TransientUnitOpts;
 #[derive(Debug)]
 pub struct ConnectOpts {
     connection_timeout: Duration,
-    method_timeout: Duration,
     dbus_addr: String,
     retry_interval: Duration,
 }
@@ -45,7 +44,6 @@ impl Default for ConnectOpts {
         // very arbitrary default timeouts
         Self {
             connection_timeout: Duration::from_secs(2),
-            method_timeout: Duration::from_secs(5),
             dbus_addr: "unix:path=/run/dbus/system_bus_socket".to_owned(),
             retry_interval: Duration::from_millis(50),
         }
