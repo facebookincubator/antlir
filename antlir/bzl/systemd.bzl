@@ -21,6 +21,7 @@ _ALLOWED_UNIT_SUFFIXES = (
     ".mount",
     ".path",
     ".service",
+    ".socket",
     ".target",
     ".timer",
 )

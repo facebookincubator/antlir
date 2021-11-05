@@ -38,6 +38,7 @@ feature.new(
         # the systemd binaries that we want will already be present in the base
         # initrd.
         image.clone(":debug-deps", "/usr/bin/systemd-analyze", "/usr/bin/systemd-analyze"),
+        image.clone(":debug-deps", "/usr/bin/networkctl", "/usr/bin/networkctl"),
         image.ensure_subdirs_exist(
             "/usr/lib",
             paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib"),

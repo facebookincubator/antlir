@@ -22,6 +22,7 @@ TARGETS = [
     "network-online.target",
     "poweroff.target",
     "shutdown.target",
+    "sockets.target",
     "sysinit.target",
     "sysinit.target.wants",
     "umount.target",
@@ -30,6 +31,8 @@ TARGETS = [
 ]
 
 UNITS = [
+    "dbus.service",
+    "dbus.socket",
     "initrd-cleanup.service",
     "initrd-udevadm-cleanup-db.service",
     "systemd-journald-dev-log.socket",
@@ -48,8 +51,8 @@ UNITS = [
 ]
 
 BINARIES = [
+    "/usr/bin/dbus-daemon",
     "/usr/bin/journalctl",
-    "/usr/bin/networkctl",
     "/usr/bin/systemctl",
     "/usr/bin/systemd-escape",
     "/usr/bin/systemd-tmpfiles",
@@ -80,6 +83,11 @@ CONFIG_FILES = [
     ("/usr/lib", "tmpfiles.d", "systemd.conf"),
     ("/usr/lib", "tmpfiles.d", "tmp.conf"),
     ("/usr/lib", "systemd/network", "99-default.link"),
+    ("/", "usr/share/dbus-1", "system.conf"),
+    ("/", "usr/share/dbus-1/system-services", "org.freedesktop.systemd1.service"),
+    ("/", "usr/share/dbus-1/system-services", "org.freedesktop.network1.service"),
+    ("/", "usr/share/dbus-1/system.d", "org.freedesktop.systemd1.conf"),
+    ("/", "usr/share/dbus-1/system.d", "org.freedesktop.network1.conf"),
 ]
 
 def clone_systemd_configs(src):

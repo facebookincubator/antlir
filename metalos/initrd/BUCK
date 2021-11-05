@@ -17,6 +17,12 @@ initrd_release(
     name = "initrd-release",
 )
 
+dbus = [
+    feature.group_add("dbus"),
+    feature.user_add("dbus", "dbus", "/", SHELL_NOLOGIN),
+    systemd.enable_unit("dbus.socket", "sockets.target"),
+]
+
 networking = [
     # Explicitly enable systemd-networkd to configure the network links
     # early in boot
@@ -94,6 +100,7 @@ image.layer(
             "dropins/udevd-before-trigger.conf",
             unit = "systemd-udevd.service",
         ),
+        dbus,
         nss,
         users,
         udev,
