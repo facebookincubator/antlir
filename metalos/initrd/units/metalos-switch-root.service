@@ -18,6 +18,10 @@ After=metalos-apply-host-config.service
 # restart it and process the rules that are in the rootfs
 Conflicts=systemd-tmpfiles-setup.service
 
+# We must communicate with the systemd manager over dbus
+Requires=dbus.service
+After=dbus.service
+
 [Service]
 Type=oneshot
 ExecStart=metalctl switch-root /var/lib/metalos/boot/%b

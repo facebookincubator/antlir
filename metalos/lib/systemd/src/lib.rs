@@ -29,6 +29,7 @@ mod property_stream;
 mod system_state;
 mod systemd_manager;
 mod transient_unit;
+pub use dbus_types::*;
 pub use escape::*;
 pub use machined_manager::{ManagerProxy as MachinedManagerProxy, *};
 pub use networkd_manager::{ManagerProxy as NetworkdManagerProxy, *};

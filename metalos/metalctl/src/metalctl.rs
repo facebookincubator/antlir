@@ -104,7 +104,7 @@ async fn main() -> Result<()> {
         Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
         Subcommand::Mount(opts) => mount::mount(log, opts),
         Subcommand::Umount(opts) => umount::umount(opts),
-        Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts),
+        Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts).await,
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
         #[cfg(feature = "facebook")]
         Subcommand::Facebook(fb) => fb.subcommand(log).await,
