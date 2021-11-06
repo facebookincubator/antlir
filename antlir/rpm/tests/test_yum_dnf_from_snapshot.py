@@ -11,6 +11,7 @@ import uuid
 from contextlib import contextmanager
 from unittest import mock
 
+from antlir.config import antlir_dep
 from antlir.fs_utils import META_DIR, Path, create_ro, temp_dir
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
@@ -25,7 +26,7 @@ from antlir.tests.subvol_helpers import (
 from .. import yum_dnf_from_snapshot
 
 _INSTALL_ARGS = ["install", "--assumeyes", "rpm-test-carrot", "rpm-test-milk"]
-_SNAPSHOT_DIR = snapshot_install_dir("//antlir/rpm:repo-snapshot-for-tests")
+_SNAPSHOT_DIR = snapshot_install_dir(antlir_dep("rpm:repo-snapshot-for-tests"))
 
 
 def _temp_subvol(name: str):

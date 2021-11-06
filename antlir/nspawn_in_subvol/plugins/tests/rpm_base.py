@@ -8,13 +8,16 @@ import shlex
 import tempfile
 import textwrap
 
+from antlir.config import antlir_dep
 from antlir.nspawn_in_subvol.tests.base import NspawnTestBase
 from antlir.rpm.find_snapshot import snapshot_install_dir
 
 
 class RpmNspawnTestBase(NspawnTestBase):
 
-    _SNAPSHOT_DIR = snapshot_install_dir("//antlir/rpm:repo-snapshot-for-tests")
+    _SNAPSHOT_DIR = snapshot_install_dir(
+        antlir_dep("rpm:repo-snapshot-for-tests")
+    )
 
     def _yum_or_dnf_install(
         self,

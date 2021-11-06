@@ -5,6 +5,7 @@
 
 import unittest
 
+from antlir.config import antlir_dep
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
@@ -32,7 +33,7 @@ class SubvolRpmCompareTestImpl:
             leaf=leaf,
             rpm_installer=self._YUM_DNF,
             rpm_repo_snapshot=snapshot_install_dir(
-                "//antlir/rpm:rpm-replay-repo-snapshot-for-tests"
+                antlir_dep("rpm:rpm-replay-repo-snapshot-for-tests")
             ),
         )
 

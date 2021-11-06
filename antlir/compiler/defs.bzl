@@ -5,10 +5,11 @@
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:oss_shim.bzl", "python_unittest")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl/image/feature:install.bzl", "TEST_ONLY_wrap_buck_runnable")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 
-TEST_IMAGE_PREFIX = "//antlir/compiler/test_images:"
+TEST_IMAGE_PREFIX = antlir_dep("compiler/test_images:")
 
 def READ_MY_DOC_image_feature_target(name):
     """

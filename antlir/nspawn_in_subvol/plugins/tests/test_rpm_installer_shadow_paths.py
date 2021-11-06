@@ -6,6 +6,7 @@
 
 import functools
 
+from antlir.config import antlir_dep
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -18,7 +19,7 @@ class TestImpl:
     _SHADOW_BA_PAIR = (__package__, "shadow-build-appliance")
 
     _NONDEFAULT_SNAPSHOT_DIR = snapshot_install_dir(
-        "//antlir/rpm:non-default-repo-snapshot-for-tests"
+        antlir_dep("rpm:non-default-repo-snapshot-for-tests")
     )
 
     def test_install_via_default_shadowed_installer(self):

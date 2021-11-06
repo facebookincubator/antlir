@@ -12,6 +12,7 @@ from unittest import mock
 
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import pipe
+from antlir.config import _unmemoized_repo_config, antlir_dep
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import temp_dir, Path
 from antlir.subvol_utils import with_temp_subvols
@@ -27,7 +28,7 @@ from .base import (
 )
 
 
-TEST_IMAGE_PREFIX = "//antlir/compiler/test_images:"
+TEST_IMAGE_PREFIX = antlir_dep("compiler/test_images:")
 
 
 class NspawnTestCase(NspawnTestBase):
@@ -85,9 +86,13 @@ class NspawnTestCase(NspawnTestBase):
             ),
         )
 
+    @mock.patch("antlir.nspawn_in_subvol.cmd._load_repo_config")
     @mock.patch("antlir.config.find_repo_root")
-    def test_extra_nspawn_args_bind_repo_opts(self, root_mock):
+    def test_extra_nspawn_args_bind_repo_opts(
+        self, root_mock, load_repo_config
+    ):
         root_mock.return_value = "/repo/root"
+        load_repo_config.return_value = _unmemoized_repo_config()
         # opts.bind_repo_ro
         self.assertIn(
             "/repo/root:/repo/root",
@@ -108,10 +113,11 @@ class NspawnTestCase(NspawnTestBase):
             ),
         )
 
+    @mock.patch("antlir.nspawn_in_subvol.cmd._load_repo_config")
     @mock.patch("antlir.config.find_repo_root")
     @mock.patch("antlir.config.find_artifacts_dir")
     def test_extra_nspawn_args_bind_repo_buck_image_out(
-        self, artifacts_dir_mock, root_mock
+        self, artifacts_dir_mock, root_mock, load_repo_config
     ):
         root_mock.return_value = "/repo/root"
 
@@ -121,6 +127,8 @@ class NspawnTestCase(NspawnTestBase):
             os.symlink(mock_backing_dir, mock_artifact_dir)
 
             artifacts_dir_mock.return_value = mock_artifact_dir
+
+            load_repo_config.return_value = _unmemoized_repo_config()
 
             # opts.bind_repo_ro
             self.assertIn(

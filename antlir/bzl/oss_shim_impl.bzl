@@ -52,7 +52,7 @@ def _assert_package():
     # implicit loads of native rules is disabled) for consistency. Everything
     # in the main cell except the above exception(s) are allowed to use
     # oss_shim.bzl
-    cell = native.repository_name()
+    cell = _repository_name()
 
     # TODO: if antlir is intended to _only_ be used as a Buck cell, the '@'
     # check should be disabled. This is not currently the way the project is
@@ -558,6 +558,9 @@ def _get_buck_out_path():
 
 ### END COPY-PASTA
 
+def _repository_name():
+    return "@"
+
 def _get_antlir_cell_name():
     return ""
 
@@ -605,6 +608,7 @@ shim = struct(
     python_binary = _python_binary,
     python_library = _python_library,
     python_unittest = _python_unittest,
+    repository_name = _repository_name,
     rust_binary = _rust_binary,
     rust_library = _rust_library,
     rust_unittest = _rust_unittest,

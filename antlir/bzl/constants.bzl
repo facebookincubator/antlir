@@ -9,7 +9,7 @@
 # Note that there's no deep reason for this struct / non-struct split, so we
 # could easily move everything into the struct.
 #
-load("//antlir/bzl:oss_shim.bzl", "do_not_use_repo_cfg")
+load("//antlir/bzl:oss_shim.bzl", "config", "do_not_use_repo_cfg")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
@@ -258,6 +258,7 @@ repo_config_t = shape.shape(
     flavor_default = str,
     flavor_to_config = shape.dict(str, _flavor_config_t),
     antlir_linux_flavor = str,
+    antlir_cell_name = str,
 )
 
 REPO_CFG = shape.new(
@@ -300,4 +301,5 @@ REPO_CFG = shape.new(
     # including `image.layer` will use.  This would be fixable if Buck
     # supported providers like Bazel does.
     antlir_linux_flavor = _get_str_cfg("antlir_linux_flavor", allow_none = True),
+    antlir_cell_name = config.get_antlir_cell_name(),
 )
