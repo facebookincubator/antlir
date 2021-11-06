@@ -9,6 +9,7 @@ import unittest.mock
 
 from antlir.artifacts_dir import find_repo_root
 from antlir.config import (
+    antlir_dep,
     base_repo_config_t,
     repo_config,
     repo_config_t,
@@ -31,6 +32,7 @@ class RepoConfigTestCase(unittest.TestCase):
             "flavor_available": ["no_vset", "with_vset"],
             "flavor_default": "no_vset",
             "antlir_linux_flavor": "no_vset",
+            "antlir_cell_name": "test",
             "flavor_to_config": {
                 "no_vset": {
                     "name": "no_vset",
@@ -114,3 +116,17 @@ class RepoConfigTestCase(unittest.TestCase):
                 mock_backing_dir,
                 _unmemoized_repo_config().host_mounts_for_repo_artifacts,
             )
+
+    def test_antlir_dep(self):
+        with self.assertRaisesRegex(RuntimeError, "Antlir deps should be "):
+            antlir_dep("//bad/antlir/dep")
+
+        self.assertEqual(
+            f"{repo_config().antlir_cell_name}//antlir:some-target",
+            antlir_dep(":some-target"),
+        )
+
+        self.assertEqual(
+            f"{repo_config().antlir_cell_name}//antlir/another:target",
+            antlir_dep("another:target"),
+        )

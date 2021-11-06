@@ -53,9 +53,25 @@ def _unmemoized_repo_config(*, path_in_repo=None) -> repo_config_t:
     return repo_config_t(
         repo_root=repo_root,
         host_mounts_for_repo_artifacts=host_mounts_for_repo_artifacts,
-        **data
+        **data,
     )
 
 
 # Memoize so that most callers can just use `repo_config().field`
 repo_config = functools.lru_cache(maxsize=None)(_unmemoized_repo_config)
+
+
+# Keep in sync with `antlir_dep` in `bzl/target_helpers.bzl`.
+# And see the doc block there for a discussion of this
+def antlir_dep(target: str) -> str:
+    if "//" in target or target.startswith("/"):
+        raise RuntimeError(
+            "Antlir deps should be expressed as a target relative to the "
+            "root Antlir directory, e.g. instead of `<cell>//antlir/foo:bar` "
+            "the dep should be expressed as `foo:bar`."
+        )
+
+    if target.startswith(":"):
+        return f"{repo_config().antlir_cell_name}//antlir{target}"
+
+    return f"{repo_config().antlir_cell_name}//antlir/{target}"

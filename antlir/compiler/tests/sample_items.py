@@ -21,6 +21,7 @@ from antlir.compiler.items.rpm_action import (
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
 from antlir.compiler.items.user import UserItem
+from antlir.config import antlir_dep
 from antlir.fs_utils import Path
 from antlir.rpm.find_snapshot import mangle_target
 
@@ -42,7 +43,7 @@ _NONPORTABLE_ARTIFACTS = int(
     os.environ.get("test_image_feature_built_artifacts_require_repo")
 )
 
-T_BASE = "//antlir/compiler/test_images"
+T_BASE = antlir_dep("compiler/test_images")
 # Use the "debug", human-readable forms of the `feature`s targets here,
 # since that's what we are testing.
 T_DIRS = f"{T_BASE}:feature_dirs"

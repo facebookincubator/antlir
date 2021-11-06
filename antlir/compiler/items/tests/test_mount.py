@@ -17,6 +17,7 @@ from antlir.compiler.requires_provides import (
     RequireDirectory,
 )
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
+from antlir.config import antlir_dep
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -351,8 +352,7 @@ class MountItemTestCase(BaseItemTestCase):
             Mount(
                 build_source=BuildSource(
                     type="layer",
-                    source="//antlir/compiler/test_images:"
-                    + "hello_world_base",
+                    source=antlir_dep("compiler/test_images:hello_world_base"),
                 ),
                 is_directory=True,
                 mountpoint="meownt",

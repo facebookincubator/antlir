@@ -12,6 +12,7 @@ import unittest
 from contextlib import contextmanager
 from typing import AnyStr, Iterable
 
+from antlir.config import antlir_dep
 from antlir.fs_utils import Path
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.subvol_utils import TempSubvolumes
@@ -78,7 +79,7 @@ class GenruleLayerItemTestCase(unittest.TestCase):
             self._check_protected_dir(subvol, "/__antlir__")
 
             snapshot_dir = snapshot_install_dir(
-                "//antlir/rpm:repo-snapshot-for-tests"
+                antlir_dep("rpm:repo-snapshot-for-tests")
             )
             GenruleLayerItem.get_phase_builder(
                 [
