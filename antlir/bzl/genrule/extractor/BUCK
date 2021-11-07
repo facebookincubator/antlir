@@ -8,6 +8,7 @@ rust_binary(
     link_style = "static",
     visibility = [
         "//antlir/...",
+        "//holograms/mesher_mstereo_sandbox/...",
         "//metalos/...",
         "//ti/platform/edgeos/...",
     ],
