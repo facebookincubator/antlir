@@ -5,13 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::convert::{TryFrom, TryInto};
-
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use slog::Logger;
 use zbus::dbus_proxy;
-use zvariant::{derive::Type, OwnedValue, Signature, Type};
+use zvariant::{derive::Type, Signature, Type};
 
 use crate::{dbus_types::*, systemd_manager::UnitName, ConnectOpts, Result, Systemd};
 use systemd_macros::{SystemdEnum, TransparentZvariant};
@@ -50,6 +48,7 @@ pub struct MachineName(String);
 #[derive(Debug, PartialEq, Eq, Clone, TransparentZvariant)]
 pub struct ImageName(String);
 
+/// PID of a machine's leader process.
 #[derive(Debug, PartialEq, Eq, Clone, TransparentZvariant)]
 pub struct Leader(u32);
 
@@ -66,6 +65,7 @@ impl Size {
     }
 }
 
+/// Virtualization technology used by a machine.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, SystemdEnum)]
 pub enum Class {
     /// Real VMs based on virtualized hardware
@@ -74,6 +74,8 @@ pub enum Class {
     Container,
 }
 
+/// The running state of a registered machine as reported by
+/// [MachineProxy::state].
 #[derive(Debug, PartialEq, Eq, Clone, SystemdEnum)]
 pub enum MachineState {
     Opening,
@@ -85,6 +87,7 @@ pub enum MachineState {
     Unknown(String),
 }
 
+/// Some info about a machine as returned by [ManagerProxy::list_machines].
 #[derive(Debug, PartialEq, Eq, Deserialize, Type)]
 pub struct ListedMachine {
     pub name: MachineName,
@@ -93,6 +96,7 @@ pub struct ListedMachine {
     pub path: TypedObjectPath<MachineProxy<'static>>,
 }
 
+/// Some info about an image as returned by [ManagerProxy::list_images].
 #[derive(Debug, PartialEq, Eq, Deserialize, Type)]
 pub struct ListedImage {
     pub name: ImageName,
@@ -103,12 +107,15 @@ pub struct ListedImage {
     pub path: TypedObjectPath<ImageProxy<'static>>,
 }
 
+/// When sending a signal to a machine, control which processe(s) get sent the
+/// signal.
 #[derive(Debug, PartialEq, Eq, Clone, SystemdEnum)]
 pub enum KillWho {
     Leader,
     All,
 }
 
+/// IP Address assigned to a machine.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Address(std::net::IpAddr);
@@ -116,28 +123,6 @@ pub struct Address(std::net::IpAddr);
 impl Type for Address {
     fn signature() -> Signature<'static> {
         <Vec<u8> as Type>::signature()
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct Uuid(uuid::Uuid);
-
-impl Type for Uuid {
-    fn signature() -> Signature<'static> {
-        <Vec<u8> as Type>::signature()
-    }
-}
-
-impl TryFrom<OwnedValue> for Uuid {
-    type Error = zvariant::Error;
-
-    fn try_from(v: OwnedValue) -> zvariant::Result<Self> {
-        v.try_into()
-            .and_then(|u: Vec<u8>| {
-                uuid::Uuid::from_slice(&u).map_err(|e| zvariant::Error::Message(format!("{:?}", e)))
-            })
-            .map(Self)
     }
 }
 
@@ -246,9 +231,13 @@ trait Manager {
         name: &MachineName,
     ) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
+    /// Return a file descriptor of the machine's root directory. See
+    /// [MachineProxy::root_directory].
+    fn open_machine_root_directory(&self, name: &MachineName) -> zbus::Result<zbus::zvariant::Fd>;
+
     /// Allocates a pseudo TTY in the container, as the specified user, and
     /// invokes the executable at the specified path with a list of arguments
-    /// (starting from argv[0]) and an environment block. It then returns the
+    /// (starting from argv\[0\]) and an environment block. It then returns the
     /// file descriptor of the PTY and the PTY path.
     fn open_machine_shell(
         &self,
@@ -259,8 +248,10 @@ trait Manager {
         environment: &Environment,
     ) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
+    /// Delete a registered image.
     fn remove_image(&self, name: &ImageName) -> zbus::Result<()>;
 
+    /// Change the name of an image.
     fn rename_image(&self, name: &ImageName, new_name: &ImageName) -> zbus::Result<()>;
 
     /// Set a per-image quota limit.
@@ -341,25 +332,25 @@ trait Machine {
     /// See [ManagerProxy::copy_to_machine]
     fn copy_to(&self, source: &FilePath, destination: &FilePath) -> zbus::Result<()>;
 
-    /// See [MachineProxy::get_addresses]
+    /// See [ManagerProxy::get_machine_addresses]
     fn get_addresses(&self) -> zbus::Result<Vec<(i32, Address)>>;
 
-    /// See [MachineProxy::get_machine_osrelease]
+    /// See [ManagerProxy::get_machine_osrelease]
     fn get_osrelease(&self) -> zbus::Result<std::collections::HashMap<String, String>>;
 
-    /// See [MachineProxy::terminate]
+    /// See [ManagerProxy::kill_machine]
     fn kill(&self, who: &KillWho, signal: Signal) -> zbus::Result<()>;
 
-    /// See [MachineProxy::open_machine_login]
+    /// See [ManagerProxy::open_machine_login]
     fn open_login(&self) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
-    /// See [MachineProxy::open_machine_pty]
+    /// See [ManagerProxy::open_machine_pty]
     fn open_pty(&self) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
-    /// See [MachineProxy::open_machine_root_directory]
+    /// See [ManagerProxy::open_machine_root_directory]
     fn open_root_directory(&self) -> zbus::Result<zbus::zvariant::Fd>;
 
-    /// See [MachineProxy::open_machine_shell]
+    /// See [ManagerProxy::open_machine_shell]
     fn open_shell(
         &self,
         user: &str,
@@ -368,7 +359,7 @@ trait Machine {
         environment: &Environment,
     ) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
-    /// See [MachineProxy::terminate_machine]
+    /// See [ManagerProxy::terminate_machine]
     fn terminate(&self) -> zbus::Result<()>;
 
     #[dbus_proxy(property)]
