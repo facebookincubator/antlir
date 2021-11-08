@@ -126,6 +126,7 @@ def _vm_unittest(
         # should not be undone by the test fixture (ie, rebooting or setting
         # a sysctl that cannot be undone for example).
         run_as_bundle = False,
+        timeout_secs = None,
         **kwargs):
     if kwargs.pop("layer", None):
         fail("Please provide the `layer` attribute as part of `vm_opts`.")
@@ -184,13 +185,17 @@ def _vm_unittest(
                 ),
             )
             for var_name, var_value in env.items()
-        ] + ([
-            # Future: This devel layer is just another mount to configure the VM with.
-            # it's not special except that we don't hvae clean abstraction (yet) to
-            # provide aribtrary mounts that should be setup by the VM.  For now we
-            # provide this flag so the vmtest binary can setup the devel mount.
-            "--devel-layer",
-        ] if vm_opts.devel else []),
+        ] + (
+            [
+                # Future: This devel layer is just another mount to configure the VM with.
+                # it's not special except that we don't hvae clean abstraction (yet) to
+                # provide aribtrary mounts that should be setup by the VM.  For now we
+                # provide this flag so the vmtest binary can setup the devel mount.
+                "--devel-layer",
+            ] if vm_opts.devel else []
+        ) + ([
+            "--timeout={}".format(timeout_secs),
+        ] if timeout_secs else []),
         exe_target = "//antlir/vm:vmtest",
         vm_opts = vm_opts,
     )
