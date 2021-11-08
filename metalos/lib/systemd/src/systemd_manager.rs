@@ -30,6 +30,7 @@ impl AsRef<Path> for UnitName {
 #[derive(Debug, PartialEq, Eq, Copy, Clone, TransparentZvariant)]
 pub struct JobId(u32);
 
+/// Install state of a unit file.
 #[derive(Debug, PartialEq, Eq, SystemdEnum)]
 pub enum UnitFileState {
     /// Unit file is permanently enabled.
@@ -60,6 +61,7 @@ pub enum UnitFileState {
     Unknown(String),
 }
 
+/// Virtualization technology being used by the running system.
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Virtualization {
@@ -215,6 +217,9 @@ impl<'de> Deserialize<'de> for TaintSet {
     }
 }
 
+/// Reflects whether a unit is currently active or not.
+/// See also [UnitProxy::sub_state] for more fine-grained unit-type specific
+/// active states.
 #[derive(Debug, PartialEq, Eq, SystemdEnum)]
 pub enum ActiveState {
     /// Unit is active (obviously).
@@ -292,6 +297,7 @@ pub enum JobType {
     Unknown(String),
 }
 
+/// Some information about a unit as reported by [ManagerProxy::list_units].
 #[derive(Debug, PartialEq, Eq, Deserialize, Type)]
 pub struct ListedUnit {
     /// The primary unit name
@@ -319,7 +325,8 @@ pub struct ListedUnit {
     pub job: TypedObjectPath<JobProxy<'static>>,
 }
 
-/// Note that LoadState is fully orthogonal to #[ActiveState] as units without
+/// Reflects whether the configuration for a unit has been loaded.
+/// Note that LoadState is fully orthogonal to [ActiveState] as units without
 /// valid loaded configuration might be active (because configuration might have
 /// been reloaded at a time where a unit was already active).
 #[derive(Debug, PartialEq, Eq, Clone, SystemdEnum)]
@@ -441,7 +448,8 @@ trait Manager {
     #[dbus_proxy(object = "Unit")]
     fn get_unit(&self, name: &UnitName);
 
-    /// See [ManagerProxy::get_unit_path]
+    /// See [ManagerProxy::get_unit]. Returns a specialized #[ServiceProxy] for
+    /// the requested unit object.
     #[dbus_proxy(object = "Service", name = "GetUnit")]
     fn get_service_unit(&self, name: &UnitName);
 
@@ -932,6 +940,11 @@ trait Unit {
     /// Reflects whether the unit is currently active or not
     #[dbus_proxy(property)]
     fn active_state(&self) -> zbus::Result<ActiveState>;
+
+    /// Follows states of the same state machine that [ActiveState] covers, but
+    /// knows more fine-grained states that are unit-type-specific
+    #[dbus_proxy(property)]
+    fn sub_state(&self) -> zbus::Result<ActiveState>;
 }
 
 #[dbus_proxy(

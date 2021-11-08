@@ -12,7 +12,7 @@ use systemd_macros::SystemdEnum;
 use crate::{Error, Result};
 
 /// The running state of the system as reported by
-/// #[systemd::SystemdManager::system_state].
+/// [ManagerProxy::system_state](crate::systemd_manager::ManagerProxy::system_state).
 #[derive(Debug, PartialEq, Eq, Copy, Clone, SystemdEnum)]
 pub enum SystemState {
     // Early bootup, before basic.target is reached or the maintenance state
@@ -38,7 +38,7 @@ pub enum SystemState {
 }
 
 /// A subset of SystemStates that are desirable for waiting on with
-/// #[systemd::Systemd::wait].
+/// [Systemd::wait](crate::Systemd::wait).
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum WaitableSystemState {
     Initializing,

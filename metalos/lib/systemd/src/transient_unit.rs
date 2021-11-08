@@ -72,17 +72,16 @@ impl Opts {
 
 impl Systemd {
     /// Transient units are created with
-    /// [crate::systemd_manager::ManagerProxy::start_transient_unit] and are
-    /// automatically unloaded by systemd when they are finished and the dbus
-    /// connection which created them is closed, or
-    /// [crate::systemd_manager::UnitProxy::unref] is called.
-    /// This abstraction will unload the unit when it is finished.
-    /// [Systemd::run_transient_unit] will create a transient unit and wait for
-    /// it to finish, where it will return the
-    /// [crate::systemd_manager::ServiceProxy::result] of the service unit. If
-    /// the service result was not
-    /// [crate::systemd_manager::ServiceResult::Success], this method will
-    /// return an `Err` Result.
+    /// [ManagerProxy::start_transient_unit](crate::systemd_manager::ManagerProxy::start_transient_unit)
+    /// and are automatically unloaded by systemd when they are finished and the
+    /// dbus connection which created them is closed, or
+    /// [UnitProxy::unref](crate::systemd_manager::UnitProxy::unref) is called.
+    /// This abstraction will unload the unit when it is finished.  This method
+    /// will create a transient unit and wait for it to finish, where it will
+    /// return the result of the service unit. If the service finished, but the
+    /// result was not
+    /// [Success](crate::systemd_manager::ServiceResult::Success), this method
+    /// will return [Error::Failed] with the final service result.
     pub async fn run_transient_unit(&self, opts: Opts) -> Result<ServiceResult> {
         let unit_name = opts.unit_name;
         let mut argv = vec![opts.program.clone()];

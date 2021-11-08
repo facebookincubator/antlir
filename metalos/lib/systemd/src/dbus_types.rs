@@ -235,6 +235,28 @@ impl TryFrom<OwnedValue> for Environment {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Uuid(uuid::Uuid);
+
+impl Type for Uuid {
+    fn signature() -> Signature<'static> {
+        <Vec<u8> as Type>::signature()
+    }
+}
+
+impl TryFrom<OwnedValue> for Uuid {
+    type Error = zvariant::Error;
+
+    fn try_from(v: OwnedValue) -> zvariant::Result<Self> {
+        v.try_into()
+            .and_then(|u: Vec<u8>| {
+                uuid::Uuid::from_slice(&u).map_err(|e| zvariant::Error::Message(format!("{:?}", e)))
+            })
+            .map(Self)
+    }
+}
+
 /// [zbus]'s default object path types have no notion of the type of proxy they
 /// are meant to represent. This is mostly fine for methods that get a single
 /// object path back, as zbus can convert those responses, but objects will

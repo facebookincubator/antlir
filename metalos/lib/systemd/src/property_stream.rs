@@ -98,7 +98,7 @@ where
 /// method. For convenience, the current property value is put into the stream
 /// so that caller code does not have to poll for the initial value.
 /// Sure, macros are not the prettiest, but this is actually safe at compile
-/// time, compared to the stringly-typed generic api that is exposed by #[zbus],
+/// time, compared to the stringly-typed generic api that is exposed by [zbus],
 /// that would not know if a property even existed at compile time, let alone
 /// what type it contains.
 macro_rules! property_stream {

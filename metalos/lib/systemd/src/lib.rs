@@ -36,7 +36,7 @@ pub use machined_manager::{ManagerProxy as MachinedManagerProxy, *};
 pub use networkd_manager::{ManagerProxy as NetworkdManagerProxy, *};
 pub use system_state::{SystemState, WaitableSystemState};
 pub use systemd_manager::{ManagerProxy as SystemdManagerProxy, *};
-pub use transient_unit::Opts as TransientUnitOpts;
+pub use transient_unit::{Error as TransientUnitError, Opts as TransientUnitOpts};
 
 pub static PROVIDER_ROOT: &str = "/usr/lib/systemd/system";
 
