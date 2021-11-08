@@ -65,6 +65,12 @@ impl TryFrom<OwnedValue> for OwnedFilePath {
     }
 }
 
+impl From<OwnedFilePath> for PathBuf {
+    fn from(o: OwnedFilePath) -> Self {
+        o.0
+    }
+}
+
 /// Systemd timestamp corresponding to CLOCK_REALTIME.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Timestamp(SystemTime);

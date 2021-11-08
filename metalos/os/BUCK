@@ -5,6 +5,7 @@ load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
+load("//metalos/os/tests:defs.bzl", "analyze_all_units")
 
 image.layer(
     name = "basesystem-strip",
@@ -19,6 +20,7 @@ image.layer(
         # recreate an empty /etc/yum.repos.d for any tooling that expects it to
         # always exist
         image.ensure_subdirs_exist("/etc", "yum.repos.d"),
+        image.rpms_remove_if_exists(["dracut"]),
     ],
 )
 
@@ -80,6 +82,12 @@ image.layer(
     visibility = [
         "//metalos/...",
     ],
+)
+
+analyze_all_units(
+    name = "analyze",
+    expected_problems = "expected-unit-problems.toml",
+    layer = ":metalos",
 )
 
 package.new(

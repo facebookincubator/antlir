@@ -1,0 +1,5 @@
+load("//antlir/bzl:oss_shim.bzl", "export_file")
+
+export_file(
+    name = "analyze_all_units.rs",
+)
