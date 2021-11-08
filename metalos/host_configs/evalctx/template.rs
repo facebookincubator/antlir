@@ -17,7 +17,7 @@ use once_cell::sync::Lazy;
 use starlark::codemap::Span;
 use starlark::environment::GlobalsBuilder;
 use starlark::eval::{Arguments, Evaluator};
-use starlark::values::{dict::DictOf, StarlarkValue, UnpackValue, Value, ValueLike};
+use starlark::values::{dict::DictOf, StarlarkValue, UnpackValue, Value};
 use starlark::{starlark_module, starlark_simple_value, starlark_type};
 
 static HANDLEBARS: Lazy<RwLock<Handlebars>> = Lazy::new(|| {
