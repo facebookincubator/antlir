@@ -18,7 +18,7 @@ use crate::dbus_types::*;
 use crate::system_state::SystemState;
 use systemd_macros::{SystemdEnum, TransparentZvariant};
 
-#[derive(Debug, PartialEq, Eq, Clone, TransparentZvariant)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, TransparentZvariant)]
 pub struct UnitName(String);
 
 impl AsRef<Path> for UnitName {

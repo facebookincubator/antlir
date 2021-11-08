@@ -21,6 +21,7 @@ use zbus::{Proxy, ProxyBuilder};
 #[macro_use]
 extern crate metalos_macros;
 
+pub mod analyze;
 mod dbus_types;
 mod escape;
 mod machined_manager;
