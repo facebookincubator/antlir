@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 use std::io::Write;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use slog::{error, info, o, Logger};
@@ -91,10 +92,12 @@ impl Render for ServiceSection {
     }
 }
 
+#[derive(Default)]
 struct UnitSection {
     before: Option<UnitName>,
     after: Option<UnitName>,
     requires: Option<UnitName>,
+    timeout: Option<Duration>,
 }
 
 impl Render for UnitSection {
@@ -104,6 +107,13 @@ impl Render for UnitSection {
         Self::add_optional_kv(&mut out, "Before", self.before.as_ref());
         Self::add_optional_kv(&mut out, "After", self.after.as_ref());
         Self::add_optional_kv(&mut out, "Requires", self.requires.as_ref());
+        if let Some(timeout) = &self.timeout {
+            Self::add_kv(
+                &mut out,
+                "JobRunningTimeoutSec",
+                &timeout.as_secs().to_string(),
+            );
+        }
         out
     }
 }
@@ -238,9 +248,9 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             target: "metalos-snapshot-root.service".into(),
             unit: Unit {
                 unit: Some(UnitSection {
-                    before: None,
                     after: Some(fetch_unit.clone()),
                     requires: Some(fetch_unit),
+                    ..Default::default()
                 }),
                 body: Some(UnitBody::Service(ServiceSection {
                     environment: Some(btreemap! {
@@ -287,8 +297,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
         let unit = Unit {
             unit: Some(UnitSection {
                 before: Some("initrd-root-fs.target".into()),
-                after: None,
-                requires: None,
+                ..Default::default()
             }),
             body: Some(UnitBody::Mount(MountSection {
                 what: (*root_src.to_string_lossy()).into(),
