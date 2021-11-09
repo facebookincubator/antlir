@@ -10,15 +10,17 @@ use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 use std::sync::RwLock;
 
-use anyhow::{bail, Context, Result};
+use anyhow::bail;
 use derive_more::Display;
-use handlebars::Handlebars;
+use handlebars::{Handlebars, RenderError};
 use once_cell::sync::Lazy;
 use starlark::codemap::Span;
 use starlark::environment::GlobalsBuilder;
 use starlark::eval::{Arguments, Evaluator};
 use starlark::values::{dict::DictOf, StarlarkValue, UnpackValue, Value};
 use starlark::{starlark_module, starlark_simple_value, starlark_type};
+
+use crate::{Error, Result};
 
 static HANDLEBARS: Lazy<RwLock<Handlebars>> = Lazy::new(|| {
     let mut h = Handlebars::new();
@@ -46,8 +48,7 @@ impl Template {
         let mut hasher = DefaultHasher::new();
         source.as_ref().hash(&mut hasher);
         let name = format!("tmpl_{}", hasher.finish());
-        let tmpl =
-            handlebars::Template::compile(source.as_ref()).context("failed to compile template")?;
+        let tmpl = handlebars::Template::compile(source.as_ref())?;
         HANDLEBARS
             .write()
             .expect("failed to lock handlebars registry")
@@ -65,9 +66,11 @@ impl<'v> StarlarkValue<'v> for Template {
         _location: Option<Span>,
         args: Arguments<'v, '_>,
         eval: &mut Evaluator<'v, '_>,
-    ) -> Result<Value<'v>> {
+    ) -> anyhow::Result<Value<'v>> {
         if !args.pos.is_empty() || args.args.is_some() {
-            bail!("template rendering only accepts kwargs");
+            bail!(Error::TemplateRender(RenderError::new(
+                "template rendering only accepts kwargs",
+            )));
         }
         let mut context: BTreeMap<String, serde_json::Value> = args
             .names
@@ -76,29 +79,45 @@ impl<'v> StarlarkValue<'v> for Template {
             .map(|(name, param)| {
                 Ok((
                     name.0.as_str().to_owned(),
-                    serde_json::from_str(&param.to_json().with_context(|| {
-                        format!(
-                            "template kwarg {} does not support to_json",
-                            name.0.as_str()
-                        )
+                    serde_json::from_str(&param.to_json().map_err(|_| {
+                        Error::TemplateRender(RenderError::new(format!(
+                            "template kwarg '{}' does not support to_json",
+                            name.0.as_str(),
+                        )))
                     })?)
-                    .unwrap(),
+                    .map_err(|e| {
+                        Error::TemplateRender(RenderError::new(format!(
+                            "failed to convert template arg '{}' to json: {:?}",
+                            name.0.as_str(),
+                            e
+                        )))
+                    })?,
                 ))
             })
             .collect::<Result<_>>()?;
 
         if let Some(kwargs) = args.kwargs {
             let mut kwargs = DictOf::<String, Value>::unpack_value(kwargs)
-                .context("kwargs must be dict with string keys")?
+                .ok_or_else(|| {
+                    Error::TemplateRender(RenderError::new("kwargs must be dict with string keys"))
+                })?
                 .to_dict()
                 .into_iter()
                 .map(|(k, v)| {
                     Ok((
                         k.clone(),
-                        serde_json::from_str(&v.to_json().with_context(|| {
-                            format!("template kwarg {} does not support to_json", k)
+                        serde_json::from_str(&v.to_json().map_err(|_| {
+                            Error::TemplateRender(RenderError::new(format!(
+                                "template kwarg '{}' does not support to_json",
+                                &k
+                            )))
                         })?)
-                        .unwrap(),
+                        .map_err(|e| {
+                            Error::TemplateRender(RenderError::new(format!(
+                                "failed to convert template arg '{}' to json: {:?}",
+                                &k, e
+                            )))
+                        })?,
                     ))
                 })
                 .collect::<Result<_>>()?;
@@ -108,8 +127,7 @@ impl<'v> StarlarkValue<'v> for Template {
         let out = HANDLEBARS
             .read()
             .expect("failed to read handlebars registry")
-            .render(&self.0, &context)
-            .context("failed to render")?;
+            .render(&self.0, &context)?;
         Ok(eval.heap().alloc(out))
     }
 }
@@ -118,7 +136,7 @@ impl<'v> StarlarkValue<'v> for Template {
 pub fn module(registry: &mut GlobalsBuilder) {
     #[starlark(type("template"))]
     fn template(src: &str) -> Template {
-        Template::compile(src)
+        Template::compile(src).map_err(|e| e.into())
     }
 }
 

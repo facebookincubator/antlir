@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io::{self};
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Error, Result};
 use structopt::StructOpt;
 
 use evalctx::{Generator, Host};
@@ -43,7 +43,11 @@ fn main() -> Result<()> {
     let generators: Vec<_> = opts
         .generators
         .into_iter()
-        .map(|path| Generator::load(&path))
+        .map(|path| {
+            Generator::load(&path)
+                .map_err(|e| Error::msg(format!("{:?}", e)))
+                .with_context(|| format!("failed to load generators in {:?}", path))
+        })
         .collect::<Result<Vec<_>>>()?
         .into_iter()
         .flatten()
@@ -55,8 +59,9 @@ fn main() -> Result<()> {
     }
     if dry_run {
         for gen in generators {
+            let name = gen.name.clone();
             let output = gen.eval(&host)?;
-            println!("{}\n{:#?}", gen.name, output);
+            println!("{}\n{:#?}", name, output);
         }
         return Ok(());
     }

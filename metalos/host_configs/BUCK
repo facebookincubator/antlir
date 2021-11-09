@@ -54,6 +54,7 @@ rust_library(
         "serde_json",
         "starlark",
         "starlark_derive",
+        "thiserror",
         "xattr",
         ":host-rust",
     ],
