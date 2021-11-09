@@ -12,7 +12,7 @@ use std::ops::Deref;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 use derive_more::Display;
 use starlark::environment::{GlobalsBuilder, Module};
 use starlark::eval::Evaluator;
@@ -22,7 +22,7 @@ use starlark::values::{list::ListOf, OwnedFrozenValue, Value, ValueLike};
 use xattr::FileExt;
 
 use crate::path::PathExt;
-use crate::Host;
+use crate::{Error, Host, Result};
 
 // Macro-away all the Starlark boilerplate for structs that are _only_ returned
 // from Starlark, and are not expected to be able to be read/used from the
@@ -104,7 +104,7 @@ pub fn module(registry: &mut GlobalsBuilder) {
                         .with_context(|| format!("{:?} is not a File", v))
                         .map(|f| f.deref().clone())
                 })
-                .collect::<Result<_>>()?,
+                .collect::<anyhow::Result<_>>()?,
             None => vec![],
         };
         Ok(GeneratorOutput { files })
@@ -122,7 +122,8 @@ pub struct Generator {
 impl Generator {
     pub fn compile<'a, N: AsRef<str>, S: AsRef<str>>(name: N, src: S) -> Result<Self> {
         let ast: AstModule =
-            AstModule::parse(name.as_ref(), src.as_ref().to_owned(), &Dialect::Extended)?;
+            AstModule::parse(name.as_ref(), src.as_ref().to_owned(), &Dialect::Extended)
+                .map_err(Error::Parse)?;
         let module = Module::new();
         let globals = crate::globals();
         let mut evaluator: Evaluator = Evaluator::new(&module);
@@ -130,12 +131,10 @@ impl Generator {
 
         evaluator
             .eval_module(ast, &globals)
-            .with_context(|| format!("failed to evaluate starlark module '{}'", &name))?;
+            .map_err(Error::EvalModule)?;
 
-        let module = module.freeze()?;
-        let starlark_func = module
-            .get("generator")
-            .with_context(|| format!("module '{}' must have 'generator' function", &name))?;
+        let module = module.freeze().map_err(Error::Starlark)?;
+        let starlark_func = module.get("generator").ok_or(Error::NotGenerator)?;
         Ok(Self {
             name,
             starlark_func,
@@ -144,11 +143,11 @@ impl Generator {
 
     /// Recursively load a directory of .star generators or individual file paths
     pub fn load(path: &Path) -> Result<Vec<Self>> {
-        match std::fs::metadata(path)?.is_dir() {
+        match std::fs::metadata(path).map_err(Error::Load)?.is_dir() {
             true => Ok(std::fs::read_dir(path)
-                .with_context(|| format!("failed to list generators in {}", path.display()))?
+                .map_err(Error::Load)?
                 .into_iter()
-                .filter_map(Result::ok)
+                .filter_map(std::io::Result::ok)
                 .filter(|entry| entry.file_type().map(|t| !t.is_symlink()).unwrap_or(false))
                 .map(|entry| Self::load(&entry.path()))
                 .collect::<Result<Vec<_>>>()?
@@ -157,9 +156,7 @@ impl Generator {
                 .collect()),
             false => match path.extension() == Some(OsStr::new("star")) {
                 true => {
-                    let src = std::fs::read_to_string(path).with_context(|| {
-                        format!("failed to open generator file {}", path.display())
-                    })?;
+                    let src = std::fs::read_to_string(path).map_err(Error::Load)?;
                     Self::compile(path.display().to_string(), src).map(|gen| vec![gen])
                 }
                 false => Ok(vec![]),
@@ -171,32 +168,32 @@ impl Generator {
         let module = Module::new();
         let mut evaluator = Evaluator::new(&module);
         let host_value = evaluator.heap().alloc(host.clone());
-        let output =
-            evaluator.eval_function(self.starlark_func.value(), &[], &[("host", host_value)])?;
+        let output = evaluator
+            .eval_function(self.starlark_func.value(), &[], &[("host", host_value)])
+            .map_err(Error::EvalGenerator)?;
         // clone the result off the heap so that the Evaluator and Module can be safely dropped
         Ok(GeneratorOutput::from_value(output)
-            .context("expected 'generator' to return 'metalos.GeneratorOutput'")?
+            .context("expected 'generator' to return 'metalos.GeneratorOutput'")
+            .map_err(Error::EvalGenerator)?
             .deref()
             .clone())
     }
 }
 
 impl GeneratorOutput {
-    // TODO: write a proper unit test for this
-    #[allow(dead_code)]
     pub fn apply(self, root: impl PathExt) -> Result<()> {
         for file in self.files {
             let dst = root.force_join(file.path);
-            let mut f = fs::File::create(&dst)
-                .with_context(|| format!("failed to create {}", dst.display()))?;
-            f.write_all(&file.contents)
-                .with_context(|| format!("failed to write {}", dst.display()))?;
-            let mut perms = f.metadata()?.permissions();
+            let mut f = fs::File::create(&dst).map_err(Error::Apply)?;
+            f.write_all(&file.contents).map_err(Error::Apply)?;
+            let mut perms = f.metadata().map_err(Error::Apply)?.permissions();
             perms.set_mode(file.mode);
-            f.set_permissions(perms)
-                .with_context(|| format!("failed to set mode of {}", dst.display()))?;
-            // try to mark the file as metalos-generated, but swallow the error
-            // if we can't
+            f.set_permissions(perms).map_err(Error::Apply)?;
+            // Try to mark the file as metalos-generated, but swallow the error
+            // if we can't. It's ok to fail silently here, because the only use
+            // case for this xattr is debugging tools, and it's better to have
+            // debug tools miss some files that come from generators, rather
+            // than fail to apply configs entirely
             let _ = f.set_xattr("user.metalos.generator", &[1]);
         }
         Ok(())
