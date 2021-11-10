@@ -6,6 +6,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl/image/package:new.bzl", "package_new")
 load(":kernel.bzl", "kernel_t", "normalize_kernel")
 
@@ -30,10 +31,10 @@ def _new_vm_emulator(
     # `third_party.library` function.  It must be invoked inside of
     # either a rule definition or another function, it cannot be used
     # at the top-level of an included .bzl file (where the type def is).
-    firmware = firmware or "//antlir/vm:efi-code"
+    firmware = firmware or antlir_dep("vm:efi-code")
     binary = binary or third_party.library("qemu")
     img_util = img_util or third_party.library("qemu", "qemu-img")
-    roms_dir = roms_dir or "//antlir/vm:roms"
+    roms_dir = roms_dir or antlir_dep("vm:roms")
 
     return shape.new(
         _vm_emulator_t,

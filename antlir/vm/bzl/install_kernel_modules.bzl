@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def install_kernel_modules(kernel, module_list):
@@ -22,7 +23,7 @@ def install_kernel_modules(kernel, module_list):
             pushd $OUT 2>/dev/null
 
             # copy the needed modules out of the module layer
-            binary_path=( $(exe //antlir:find-built-subvol) )
+            binary_path=( $(exe {find_built_subvol}) )
             layer_loc="$(location {module_layer})"
             mod_layer_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
 
@@ -38,6 +39,7 @@ def install_kernel_modules(kernel, module_list):
         """.format(
             module_layer = kernel.artifacts.modules,
             module_list = " ".join(module_list),
+            find_built_subvol = antlir_dep(":find-built-subvol"),
         ),
         antlir_rule = "user-internal",
     )

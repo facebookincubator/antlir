@@ -7,6 +7,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/vm/bzl:install_kernel_modules.bzl", "install_kernel_modules")
@@ -65,7 +66,7 @@ def initrd(kernel, module_list = None, visibility = None):
         # lets remove the metalos-switch-root.service and install our own
         feature.remove("/usr/lib/systemd/system/metalos-switch-root.service"),
         feature.remove("/usr/lib/systemd/system/initrd-switch-root.target.requires/metalos-switch-root.service"),
-        systemd.install_unit("//antlir/vm/initrd:initrd-switch-root.service"),
+        systemd.install_unit(antlir_dep("vm/initrd:initrd-switch-root.service")),
         systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
         install_kernel_modules(kernel, module_list),
         # mount kernel modules over 9p in the initrd so they are available

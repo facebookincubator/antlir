@@ -62,6 +62,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":build_vm_run_target.bzl", "build_vm_run_target")
 load(":types.bzl", "api")
 
@@ -165,7 +166,7 @@ def _vm_unittest(
         name = "{}=vmtest".format(name),
         args = [
             "--test-binary $(location {})".format(shell.quote(":" + actual_test_binary)),
-            "--test-binary-wrapper $(location {})".format("//antlir/vm:wrap-in-vm-test-exec"),
+            "--test-binary-wrapper $(location {})".format(antlir_dep("vm:wrap-in-vm-test-exec")),
             "--test-type {}".format(shell.quote(_RULE_TO_TEST_TYPE[unittest_rule])),
             # Always enable debug + console logging for better debugging
             # --append-console is a tricky one: it has to be before --debug so that any
@@ -196,7 +197,7 @@ def _vm_unittest(
         ) + ([
             "--timeout={}".format(timeout_secs),
         ] if timeout_secs else []),
-        exe_target = "//antlir/vm:vmtest",
+        exe_target = antlir_dep("vm:vmtest"),
         vm_opts = vm_opts,
     )
 
