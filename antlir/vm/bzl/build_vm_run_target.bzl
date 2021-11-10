@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":types.bzl", "api")
 
 def build_vm_run_target(
@@ -18,7 +19,7 @@ def build_vm_run_target(
         # properly formatted.
         args = None,
         # The exe target to execute.
-        exe_target = "//antlir/vm:run"):
+        exe_target = antlir_dep("vm:run")):
     vm_opts = vm_opts or api.opts.new()
     buck_genrule(
         name = name,
