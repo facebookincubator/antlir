@@ -17,6 +17,8 @@ load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "RPM_SNAPSHOT_BASE_DIR", "snapshot_install_dir")
 load(":wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 
+_FB_INTERNAL_STORAGE = "manifold"
+
 def _yum_or_dnf_wrapper(yum_or_dnf, snapshot_name):
     if yum_or_dnf not in ("yum", "dnf"):
         fail("{} must be `yum` or `dnf`".format(yum_or_dnf))
@@ -124,7 +126,9 @@ def rpm_repo_snapshot(
     # Future: remove this in favor of linking it with `repo_servers.py`.
     # See the comment in that file for more info.
     _, repo_server_wrapper = maybe_wrap_executable_target(
-        target = "//antlir/rpm:repo-server",
+        target = "//antlir/rpm{fb_dir}:repo-server".format(
+            fb_dir = "/facebook" if cli_storage["kind"] == _FB_INTERNAL_STORAGE else "",
+        ),
         wrap_suffix = "rpm_repo_snapshot",
         visibility = [],
     )
@@ -178,7 +182,7 @@ mkdir "$OUT"
 # Copy the basic snapshot, e.g. `snapshot.storage_id`, `repos`, `yum|dnf.conf`
 cp --no-target-directory -r $(location {src}) "$OUT/snapshot"
 
-$(exe //antlir/rpm/storage:cli) --storage {quoted_cli_storage_cfg} \\
+$(exe //antlir/rpm/storage{fb_dir}:cli) --storage {quoted_cli_storage_cfg} \\
     get "\\$(cat "$OUT"/snapshot/snapshot.storage_id)" \\
         > "$OUT"/snapshot/snapshot.sql3
 # Write-protect the SQLite DB because it's common to use the `sqlite3` to
@@ -203,6 +207,7 @@ echo {quoted_storage_cfg} > "$OUT"/snapshot/storage.json
             quoted_repo_server_ports = quoted_repo_server_ports,
             quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
             per_installer_cmds = "\n".join(per_installer_cmds),
+            fb_dir = "/facebook" if cli_storage["kind"] == _FB_INTERNAL_STORAGE else "",
         ),
         # This rule is not cacheable due to `maybe_wrap_executable_target`
         # above.  Technically, we could make it cacheable in @mode/opt, but

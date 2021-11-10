@@ -158,7 +158,6 @@ python_library(
         ":repo_objects",
         "//antlir:fs_utils",
         "//antlir/rpm/storage:storage",
-        "//antlir/rpm/storage/facebook:storage",
     ],
 )
 
@@ -200,7 +199,6 @@ python_library(
         ":repo_snapshot",
         "//antlir:fs_utils",
         "//antlir/rpm/storage:storage",
-        "//antlir/rpm/storage/facebook:storage",
     ],
 )
 
@@ -236,7 +234,6 @@ python_library(
         "//antlir/rpm:db_connection",
         "//antlir/rpm/facebook:db_connection",
         "//antlir/rpm/storage:storage",
-        "//antlir/rpm/storage/facebook:storage",
     ],
 )
 
@@ -271,7 +268,6 @@ python_library(
         "//antlir/rpm/downloader:logger",
         "//antlir/rpm/downloader:repo_downloader",
         "//antlir/rpm/storage:storage",
-        "//antlir/rpm/storage/facebook:storage",
     ],
 )
 
