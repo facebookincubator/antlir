@@ -90,7 +90,6 @@ python_binary(
         "//antlir:fs_utils",
         "//antlir/rpm:common",
         "//antlir/rpm/storage:storage",
-        "//antlir/rpm/storage/facebook:storage",
     ],
 )
 
