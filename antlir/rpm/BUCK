@@ -232,7 +232,6 @@ python_library(
         ":common",
         "//antlir:fs_utils",
         "//antlir/rpm:db_connection",
-        "//antlir/rpm/facebook:db_connection",
         "//antlir/rpm/storage:storage",
     ],
 )
@@ -274,7 +273,10 @@ python_library(
 python_binary(
     name = "snapshot-repo",
     main_module = "antlir.rpm.snapshot_repo",
-    deps = [":snapshot_repo"],
+    deps = [
+        ":snapshot_repo",
+        "//antlir/rpm/facebook:db_connection",
+    ],
 )
 
 python_unittest(
@@ -477,7 +479,10 @@ python_library(
 python_binary(
     name = "snapshot-repos",
     main_module = "antlir.rpm.snapshot_repos",
-    deps = [":snapshot_repos"],
+    deps = [
+        ":snapshot_repos",
+        "//antlir/rpm/facebook:db_connection",
+    ],
 )
 
 python_unittest(
