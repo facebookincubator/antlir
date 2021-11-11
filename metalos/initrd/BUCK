@@ -118,6 +118,19 @@ image.layer(
     ],
 )
 
+image.layer(
+    name = "with-metalctl",
+    parent_layer = "//metalos/os:metalos",
+    features = [
+        feature.remove("/usr/bin/metalctl"),
+        feature.install(
+            "//metalos/metalctl:metalctl-initrd",
+            "/usr/bin/metalctl",
+            mode = "a+rx",
+        ),
+    ],
+)
+
 # Kernel-agnostic base initrd
 image.layer(
     name = "base",
@@ -128,7 +141,7 @@ image.layer(
                 "/usr/bin/metalctl",
             ],
             dest = "/",
-            source = "//metalos/os:metalos",
+            source = ":with-metalctl",
         ),
         feature.install("//metalos/metalctl:default-config.toml", "/etc/metalctl.toml"),
         # metalctl provides a few utility binaries that systemd calls so we can

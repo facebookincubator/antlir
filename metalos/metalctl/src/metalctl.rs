@@ -24,9 +24,10 @@ use structopt::StructOpt;
 
 mod apply_host_config;
 mod config;
-#[cfg(feature = "facebook")]
+#[cfg(facebook)]
 mod facebook;
 mod fetch_image;
+#[cfg(initrd)]
 mod generator;
 mod http;
 mod kernel_cmdline;
@@ -40,6 +41,7 @@ pub use config::Config;
 #[derive(StructOpt)]
 enum Subcommand {
     /// Systemd unit generator
+    #[cfg(initrd)]
     MetalosGenerator(generator::Opts),
     /// Download an image over HTTPS
     FetchImage(fetch_image::Opts),
@@ -53,7 +55,7 @@ enum Subcommand {
     SwitchRoot(switch_root::Opts),
     /// Generate and apply a structured host config
     ApplyHostConfig(apply_host_config::Opts),
-    #[cfg(feature = "facebook")]
+    #[cfg(facebook)]
     #[structopt(flatten)]
     Facebook(facebook::Subcommand),
 }
@@ -122,6 +124,7 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
     config.apply_kernel_cmdline_overrides().unwrap();
 
     match options.command {
+        #[cfg(initrd)]
         Subcommand::MetalosGenerator(opts) => generator::generator(log, opts),
         Subcommand::FetchImage(opts) => fetch_image::fetch_image(log, config, opts).await,
         Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
@@ -129,7 +132,7 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::Umount(opts) => umount::umount(opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts).await,
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
-        #[cfg(feature = "facebook")]
+        #[cfg(facebook)]
         Subcommand::Facebook(fb) => fb.subcommand(log).await,
     }
 }

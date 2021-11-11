@@ -20,7 +20,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Context, Result};
 use nix::mount::MsFlags;
-use slog::{warn, Logger};
+use slog::Logger;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use structopt::StructOpt;
@@ -131,13 +131,14 @@ fn _mount(log: Logger, opts: Opts, fstypes: &[String], mounter: impl Mounter) ->
     let (data, flags) = parse_options(opts.options);
     let source = evaluate_device_spec(&opts.source)?;
     let fstype = opts.fstype;
-    #[cfg(feature = "blkid")]
+    #[cfg(blkid)]
     let fstype = fstype.or_else(|| match blkid::probe_fstype(&source) {
         Ok(fstype) => Some(fstype),
         Err(e) => {
-            warn!(
+            slog::warn!(
                 log,
-                "blkid could not determine fstype, trying all available filesystems: {:?}", e
+                "blkid could not determine fstype, trying all available filesystems: {:?}",
+                e
             );
             None
         }
@@ -177,11 +178,11 @@ fn _mount(log: Logger, opts: Opts, fstypes: &[String], mounter: impl Mounter) ->
 /// otherwise we have no choice but to assume that the spec is a full device
 /// path.
 pub fn evaluate_device_spec(spec: &str) -> Result<PathBuf> {
-    #[cfg(feature = "blkid")]
+    #[cfg(blkid)]
     return blkid::evaluate_spec(spec)
         .with_context(|| format!("no device matches blkid spec '{}'", spec));
 
-    #[cfg(not(feature = "blkid"))]
+    #[cfg(not(blkid))]
     return Ok(spec.into());
 }
 

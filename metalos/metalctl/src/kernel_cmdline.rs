@@ -89,7 +89,7 @@ pub struct Root {
 }
 
 impl Root {
-    pub fn get_flags(&self) -> Vec<String> {
+    fn get_flags(&self) -> Vec<String> {
         let mut flags = self.flags.clone().unwrap_or_else(Vec::new);
         if self.ro {
             flags.push("ro".to_string());
@@ -101,6 +101,7 @@ impl Root {
         flags
     }
 
+    #[cfg_attr(not(initrd), allow(dead_code))]
     pub fn join_flags(&self) -> Option<String> {
         let flags = self.get_flags();
         match flags.is_empty() {
