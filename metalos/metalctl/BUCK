@@ -1,22 +1,12 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file", "third_party")
-load("//antlir/bzl:shape.bzl", "shape")
-load("//metalos:defs.bzl", "container_unittest_opts_t", "rust_binary", "unittest_opts_t")
+load("//antlir/bzl:oss_shim.bzl", "export_file")
+load(":metalctl.bzl", "metalctl")
 
-srcs = glob(["src/**/*.rs"])
-
-facebook = "src/facebook/mod.rs" in srcs
-
-# we don't yet have blkid support in oss
-have_blkid = third_party.library("util-linux", "blkid") != None
-
-rust_binary(
-    name = "metalctl",
-    srcs = srcs,
+# metalctl is split into two binary targets, so that code that requires features
+# only found in the rootfs, or larger dependencies can be excluded from the
+# initrd.
+metalctl(
+    name = "metalctl-initrd",
     allocator = "malloc",
-    features = (
-        (["facebook"] if facebook else []) +
-        (["blkid"] if have_blkid else [])
-    ),
     link_style = "static",
     linker_flags = [
         "-Wl,--strip-all",
@@ -26,64 +16,12 @@ rust_binary(
     rustc_flags = [
         "-C",
         "opt-level=z",
+        "--cfg=initrd",
     ],
-    test_deps = [
-        "mockall",
-        "tempfile",
-    ],
-    test_srcs = glob(["tests/**/*.rs"]),
-    unittest_opts = shape.new(
-        unittest_opts_t,
-        container = shape.new(
-            container_unittest_opts_t,
-            boot = True,
-            layer = "//metalos/metalctl/tests/facebook:test-layer" if facebook else "//metalos/os:metalos",
-        ),
-    ),
-    unittests = [
-        "plain",
-        "container",
-    ],
-    # WARNING: adding any dependencies can significantly increase the size of
-    # the resulting binary.
-    # STRONGLY lean towards re-implementing something if it is a small
-    # amount of code. Be prepared to justify any new dependencies with a
-    # comparison of stripped binary size (`cargo bloat --release --crates`
-    # might be useful to evaluate changes).
-    # For example, when parsing the kernel cmdline, just adding a
-    # dependency on `regex` bloats the end binary by 1.1M, compared to
-    # almost nothing for 50 lines of code to parse it manually.
-    deps = [
-        "//metalos/host_configs:evalctx",
-        "//metalos/lib/systemd:systemd",
-        "anyhow",  # ~9.5k, very helpful for error handling
-        "nix",  # ~5k: access to syscalls (mount, etc)
-        "structopt",  # ~300k, but makes iterating development much easier
-        # all the slog crates together add about 50k
-        "slog",
-        "slog-async",
-        "slog-term",
-        "slog_glog_fmt",
-        "toml",  # load config files
-        "serde",  # load config files
-        "serde_json",  # load host config manifest
-        "zstd",  # os images are zstd-compressed btrfs sendstreams
-        "maplit",  # Should be macros only so little to no difference in output binary
-        "shlex",
-        "strum",
-        "strum_macros",  # I <3 zero cost abstractions!
-        # Needed for HTTPS requests to download images
-        "bytes",
-        "futures-core",
-        "futures-util",
-        "hyper",
-        "hyper-rustls",
-        "rustls",
-        "rustls-native-certs",
-        "tokio",  # async runtime for http client
-        "tower",
-        "trust-dns-resolver",
-    ] + (["//metalos/lib/blkid:blkid"] if have_blkid else []),
+)
+
+metalctl(
+    name = "metalctl",
 )
 
 export_file(
