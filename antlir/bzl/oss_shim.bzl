@@ -153,6 +153,7 @@ repository_name = shim.repository_name
 rust_binary = shim.rust_binary
 rust_bindgen_library = shim.rust_bindgen_library
 rust_library = shim.rust_library
+rust_python_extension = shim.rust_python_extension
 rust_unittest = shim.rust_unittest
 target_utils = shim.target_utils
 third_party = struct(

@@ -479,6 +479,87 @@ def _rust_bindgen_library(name, *args, **kwargs):
         unittests = False,
     )
 
+# This is heavily inspired by the fbcode rust bindgen rule but isn't exactly the same.
+# A few differences are:
+#  - removed other platform related stuff like windows rules
+#  - changed the -sym to use exported_linker_flags because we transform that automatically in fbcode
+def _rust_python_extension(
+        name,
+        base_module = None,
+        module_name = None,
+        deps = None,
+        types = (),
+        visibility = None,
+        **kwargs):
+    real_deps = []
+    real_deps.append("//generated/third-party/rust:cpython")
+    if deps != None:
+        real_deps.extend(deps)
+
+    visibility = visibility or []
+
+    _rust_library(
+        name = name + "-lib",
+        visibility = ["//{}:{}".format(native.package_name(), name)] + visibility,
+        # Make sure we get linked into the otherwise empty C++ python extension
+        # below.
+        preferred_linkage = "static",
+        # Disable unit tests -- a Python extension is never meant to be compiled
+        # as a standalone executable, and will be missing symbols like
+        # _Py_Dealloc normally provided into it by Python if you try to link
+        # it as one.
+        unittests = False,
+        deps = real_deps,
+        **kwargs
+    )
+
+    # TODO Currently, Rust rules don't support `link_whole`, so use
+    # a workaround to propagate an undefined symbol to force the above library
+    # to get linked into the extension below.
+    symbol_name = "PyInit_{}".format(module_name or name)
+    _cpp_library(
+        name = name + "-sym",
+        exported_linker_flags = ["-u" + symbol_name],
+        preferred_linkage = "static",
+        visibility = ["//{}:{}".format(native.package_name(), name)] + visibility,
+    )
+
+    _cpp_python_extension(
+        name = name,
+        base_module = base_module,
+        module_name = module_name,
+        types = types,
+        # We're just here to wrap the rust library above.
+        deps = [
+            ":" + name + "-lib",
+            ":" + name + "-sym",
+        ],
+    )
+
+# Again very heavily inspired by the fbcode version of this function. Mostly just
+# removed extra stuff that wasn't needed for our more narror usecase
+def _cpp_python_extension(
+        name,
+        deps = (),
+        types = (),
+        base_module = None,
+        **kwargs):
+    if types:
+        _python_library(
+            name = name + "__types_subs",
+            srcs = types,
+            base_moduel = base_module,
+        )
+        deps = list(deps)
+        deps.append(":" + name + "__types_stubs")
+
+    native.cxx_python_extension(
+        name = name,
+        deps = deps,
+        base_module = base_module,
+        **kwargs
+    )
+
 # Use = in the default filename to avoid clashing with RPM names.
 # The constant must match `update_allowed_versions.py`.
 # Omits `_wrap_internal` due to perf paranoia -- we have a callsite per RPM.
@@ -610,9 +691,10 @@ shim = struct(
     python_unittest = _python_unittest,
     repository_name = _repository_name,
     rust_binary = _rust_binary,
-    rust_library = _rust_library,
-    rust_unittest = _rust_unittest,
     rust_bindgen_library = _rust_bindgen_library,
+    rust_library = _rust_library,
+    rust_python_extension = _rust_python_extension,
+    rust_unittest = _rust_unittest,
     rpm_vset = _rpm_vset,  # Not wrapped due to perf paranoia.
     thrift_library = _thrift_library,
     target_utils = struct(
