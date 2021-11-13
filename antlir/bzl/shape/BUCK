@@ -1,0 +1,27 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+
+rust_binary(
+    name = "bzl-codegen",
+    srcs = [
+        "gen.rs",
+        "ir.rs",
+        "main.rs",
+        "parse.rs",
+        "templates/enum.bzl.handlebars",
+        "templates/preamble.bzl.handlebars",
+        "templates/struct.bzl.handlebars",
+        "templates/union.bzl.handlebars",
+    ],
+    deps = third_party.libraries(
+        [
+            "anyhow",
+            "handlebars",
+            "itertools",
+            "serde",
+            "serde_json",
+        ],
+        platform = "rust",
+    ) + [
+        "//common/rust/shed/serde_starlark:serde_starlark",
+    ],
+)

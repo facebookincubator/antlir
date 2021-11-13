@@ -1,0 +1,43 @@
+# {{name}} Struct
+def {{name}}(
+    *,
+    {{~#each fields}}
+    {{name}} = None,
+    {{~/each}}
+    err_context=None,
+):
+    {{#if docstring ~}}
+    """
+    {{docstring}}
+    """
+    {{/if~}}
+    # prepare a dictionary with all the shape fields, starting with any default values
+    data = {
+        {{~#each fields~}}
+        {{#if default_value}}
+        "{{name}}": {{ default_value }},
+        {{~/if~}}
+        {{~/each}}
+    }
+
+    {{~#each fields}}
+    {{~#if default_value}}
+
+    if {{name}} != None:
+        data["{{name}}"] = {{name}}
+    {{~else}}
+
+    data["{{name}}"] = {{name}}
+    {{~/if~}}
+    {{~/each}}
+
+    s = struct(__type__ = {{name}}, **data)
+    __typecheck_{{name}}(s, _add_context("Constructing struct '{{name}}'", err_context))
+    return s
+
+def __typecheck_{{name}}(object, err_context=None):
+    {{~#each fields}}
+
+    {{name}} = object.{{name}}
+{{ type_check }}
+    {{~/each}}

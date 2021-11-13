@@ -1,0 +1,23 @@
+load("@fbcode_macros//build_defs:export_files.bzl", "export_file")
+load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule")
+
+export_file(
+    name = "example.thrift",
+)
+
+buck_genrule(
+    name = "example.json",
+    out = "example.json",
+    cmd = """
+        $(exe //thrift/compiler:thrift) --out $TMP --gen json_experimental $(location :example.thrift)
+        mv $TMP/* $OUT
+    """,
+)
+
+buck_genrule(
+    name = "example.bzl",
+    out = "example.bzl",
+    cmd = """
+        cat $(location :example.json) | $(exe //antlir/bzl/shape:bzl-codegen) > $OUT
+    """,
+)

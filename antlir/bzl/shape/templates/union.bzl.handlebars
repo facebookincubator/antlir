@@ -1,0 +1,54 @@
+# {{name}} Union
+def {{name}}(
+    *,
+    {{~#each fields}}
+    {{name}} = None,
+    {{~/each}}
+    err_context=None,
+):
+    {{#if docstring}}
+    """
+    {{docstring}}
+    """
+    {{/if~}}
+
+    data = {}
+
+    {{~#each fields}}
+
+    if {{name}} != None:
+        data["{{name}}"] = {{name}}
+    {{~/each}}
+
+    u = struct(__type__ = {{name}}, **data)
+    __typecheck_{{name}}(u, _add_context("Constructing union '{{name}}'", err_context))
+    return u
+
+
+def __typecheck_{{name}}(object, err_context=None):
+    seen = []
+    {{~#each fields}}
+
+    if hasattr(object, "{{name}}") and object.{{name}} != None:
+        seen.append("{{name}}")
+    {{~/each}}
+
+    if len(seen) == 0:
+        _fail_with_context(
+            "All fields for union {{name}} were None", context=err_context
+        )
+
+    if len(seen) > 1:
+        _fail_with_context(
+            "Multiple different values provided for union {{name}}: {}".format(
+                ",".join(seen)
+            ),
+            context=err_context,
+        )
+
+    {{~#each fields}}
+
+    if hasattr(object, "{{name}}") and object.{{name}} != None:
+        {{name}} = object.{{name}}
+{{ type_check}}
+    {{~/each~}}

@@ -1,0 +1,66 @@
+# {{name}} Enum
+{{name}}Variants = struct(
+    {{~#each options}}
+    {{name}} = {{value}},
+    {{~/each}}
+)
+
+__{{name}}_name_to_value = {
+    {{~#each options}}
+    "{{name}}": {{value}},
+    {{~/each}}
+}
+__{{name}}_value_to_name = {
+    {{~#each options}}
+    {{value}}: "{{name}}",
+    {{~/each}}
+}
+
+# Construct a new instance of the {{name}} enum, checking that it is a valid
+# variant name or value. Returns a struct with .name and .value
+def {{name}}(name_or_value, context=None):
+    {{#if docstring ~}}
+    """
+    {{docstring}}
+    """
+    {{/if~}}
+    if types.is_int(name_or_value):
+        value = name_or_value
+        if value not in __{{name}}_value_to_name:
+            _fail_with_context(
+                "{} not one of ({{#each options~}}{{value}}, {{/each}})".format(value),
+                context=context,
+            )
+        name = __{{name}}_value_to_name[value]
+    elif types.is_string(name_or_value):
+        name = name_or_value.upper()
+        if name not in __{{name}}_name_to_value:
+            _fail_with_context(
+                "{} not one of ({{#each options~}}{{name}}, {{/each}})".format(name),
+                context=context,
+            )
+
+        value = __{{name}}_name_to_value[name]
+    else:
+        _fail_with_context(
+            "Provided value {} to {{name}} constructor was neither an int or string".format(name_or_value),
+            context=context,
+        )
+
+    return struct(
+        name = name,
+        value = value,
+        __type__ = {{name}},
+    )
+
+def __typecheck_{{name}}(e, err_context=None):
+    if not hasattr(e, "__type__"):
+        _fail_with_context(
+            "Provided value {} is not a struct or enum".format(e),
+            context=err_context,
+        )
+    if e.__type__ != {{name}}:
+        _fail_with_context(
+            "Provided value {} is not an instance of this enum: {}".format(e, e.__type__),
+            context=err_context,
+        )
