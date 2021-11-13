@@ -16,16 +16,25 @@ use std::fs::File;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use structopt::StructOpt;
+use structopt::{clap::arg_enum, StructOpt};
 
-use gen::render;
+use gen::{render, Bzl, Pyo3};
 use ir::AllTypes;
 use parse::ParsedTop;
 
 #[derive(StructOpt)]
 struct Opts {
     input: PathBuf,
+    target: RenderTarget,
     output: PathBuf,
+}
+
+arg_enum! {
+    #[derive(Debug)]
+    enum RenderTarget {
+        Bzl,
+        Pyo3,
+    }
 }
 
 fn main() -> Result<()> {
@@ -36,7 +45,11 @@ fn main() -> Result<()> {
     let types: AllTypes = input
         .try_into()
         .context("Failed to convert from parsed format to internal format")?;
-    let code = render(&types).context("Trying to render output code")?;
+    let code = match opts.target {
+        RenderTarget::Bzl => render::<Bzl>(&types),
+        RenderTarget::Pyo3 => render::<Pyo3>(&types),
+    }
+    .context("Trying to render output code")?;
     std::fs::write(&opts.output, code)
         .with_context(|| format!("failed to write to {}", opts.output.display()))?;
     Ok(())

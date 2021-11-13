@@ -85,6 +85,16 @@ pub(crate) enum ComplexType {
     Union(Union),
 }
 
+impl ComplexType {
+    pub fn name(&self) -> &TypeName {
+        match self {
+            Self::Enum(e) => &e.name,
+            Self::Struct(s) => &s.name,
+            Self::Union(u) => &u.name,
+        }
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct EnumConstant {
     pub name: FieldName,

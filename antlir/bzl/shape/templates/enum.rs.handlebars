@@ -1,0 +1,19 @@
+{{#if docstring ~}}
+#[doc(r######"{{docstring}}"######)]
+{{/if~}}
+#[pyclass(subclass)]
+struct {{name}} {
+    inner: shape::{{name}},
+}
+
+impl From<shape::{{name}}> for {{name}} {
+    fn from(inner: shape::{{name}}) -> Self {
+        Self { inner }
+    }
+}
+
+impl From<&shape::{{name}}> for {{name}} {
+    fn from(inner: &shape::{{name}}) -> Self {
+        Self { inner: inner.clone() }
+    }
+}

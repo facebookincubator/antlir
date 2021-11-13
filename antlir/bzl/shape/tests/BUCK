@@ -1,6 +1,22 @@
 load("//antlir/bzl/shape:shape.bzl", "shape")
 
 shape(
-    name = "example.bzl",
+    name = "example",
     thrift = "example.thrift",
+)
+
+rust_unittest(
+    name = "test-example-rust",
+    srcs = ["test_example.rs"],
+    crate_root = "test_example.rs",
+    deps = [":example-rust"],
+)
+
+python_unittest(
+    name = "test-example-py",
+    srcs = ["test_example.py"],
+    deps = [
+        ":example-python",
+        # ":example-thrift-py3-types",
+    ],
 )

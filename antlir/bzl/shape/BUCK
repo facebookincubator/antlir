@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_sh_binary", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_sh_binary", "export_file", "rust_binary", "third_party")
 
 rust_binary(
     name = "bzl-codegen",
@@ -8,13 +8,18 @@ rust_binary(
         "main.rs",
         "parse.rs",
         "templates/enum.bzl.handlebars",
+        "templates/enum.rs.handlebars",
         "templates/preamble.bzl.handlebars",
+        "templates/preamble.rs.handlebars",
         "templates/struct.bzl.handlebars",
+        "templates/struct.rs.handlebars",
         "templates/union.bzl.handlebars",
+        "templates/union.rs.handlebars",
     ],
     deps = third_party.libraries(
         [
             "anyhow",
+            "derive_more",
             "handlebars",
             "itertools",
             "md-5",
@@ -31,4 +36,12 @@ rust_binary(
 buck_sh_binary(
     name = "test-up-to-date",
     main = "test-up-to-date.sh",
+)
+
+export_file(
+    name = "shape.rs",
+)
+
+export_file(
+    name = "shape_py.rs",
 )

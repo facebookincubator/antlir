@@ -1,0 +1,34 @@
+{{#if docstring ~}}
+#[doc(r######"{{docstring}}"######)]
+{{/if~}}
+#[pyclass(subclass)]
+struct {{name}} {
+    inner: shape::{{name}},
+}
+
+#[pymethods]
+impl {{name}} {
+    {{~#each fields}}
+    #[getter]
+    fn {{name}}(&self) -> PyResult<{{pyo3_type}}> {
+        Ok(self.inner.{{name}}.clone().into())
+    }
+    {{~/each}}
+
+    #[staticmethod]
+    fn from_json_str(s: &str) -> PyResult<Self> {
+        serde_json::from_str(s)
+    }
+}
+
+impl From<shape::{{name}}> for {{name}} {
+    fn from(inner: shape::{{name}}) -> Self {
+        Self { inner }
+    }
+}
+
+impl From<&shape::{{name}}> for {{name}} {
+    fn from(inner: &shape::{{name}}) -> Self {
+        Self { inner: inner.clone() }
+    }
+}

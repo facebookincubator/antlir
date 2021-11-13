@@ -6,6 +6,7 @@
  */
 
 use anyhow::{anyhow, Context, Result};
+use derive_more::{AsRef, Deref};
 use handlebars::{no_escape, Handlebars};
 use itertools::{join, Itertools};
 use md5::{Digest, Md5};
@@ -13,6 +14,7 @@ use serde::Serialize;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::ops::Deref;
 
 use crate::ir::{
     AllTypes, ComplexType, DocString, Enum, Field, FieldName, Primitive, Struct, Type, TypeName,
@@ -21,10 +23,22 @@ use crate::ir::{
 
 static INDENT: &str = "    ";
 
-pub trait Render {
+#[derive(Debug, AsRef, Deref, Clone, PartialEq, Eq)]
+#[deref(forward)]
+#[as_ref(forward)]
+#[repr(transparent)]
+pub struct Bzl(String);
+
+#[derive(Debug, AsRef, Deref, Clone, PartialEq, Eq)]
+#[deref(forward)]
+#[as_ref(forward)]
+#[repr(transparent)]
+pub struct Pyo3(String);
+
+pub trait Render<T> {
     fn setup_handlebars(hb: Handlebars<'static>) -> Result<Handlebars<'static>>;
 
-    fn render(&self, hb: &Handlebars<'static>) -> Result<String>;
+    fn render(&self, hb: &Handlebars<'static>) -> Result<T>;
 }
 
 pub trait RenderLiteral {
@@ -35,11 +49,18 @@ pub trait RenderChecker {
     fn render_typecheck(&self, name: &str, context_name: &str, indent: usize) -> Result<String>;
 }
 
-pub(crate) fn render(types: &AllTypes) -> Result<String> {
-    let hb = setup_handlebars().context("When setting up handlebars")?;
-    let code = types
-        .render(&hb)?
-        .replace("@_generated", concat!('@', "generated"));
+pub(crate) fn render<T>(types: &AllTypes) -> Result<String>
+where
+    T: Deref<Target = str>,
+    AllTypes: Render<T>,
+    ComplexType: Render<T>,
+    Enum: Render<T>,
+    Struct: Render<T>,
+    Union: Render<T>,
+{
+    let hb = setup_handlebars::<T>().context("When setting up handlebars")?;
+    let code: T = types.render(&hb)?;
+    let code = code.replace("@_generated", concat!('@', "generated"));
     let digest = format!("{:x}", Md5::digest(code.as_bytes()));
     Ok(code.replace(
         "<<SignedSource::*O*zOeWoEQle#+L!plEphiEmie@IsG>>",
@@ -47,27 +68,34 @@ pub(crate) fn render(types: &AllTypes) -> Result<String> {
     ))
 }
 
-fn setup_handlebars() -> Result<Handlebars<'static>> {
+fn setup_handlebars<T>() -> Result<Handlebars<'static>>
+where
+    AllTypes: Render<T>,
+    ComplexType: Render<T>,
+    Enum: Render<T>,
+    Struct: Render<T>,
+    Union: Render<T>,
+{
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
     handlebars.register_escape_fn(no_escape);
 
-    let handlebars = AllTypes::setup_handlebars(handlebars)
+    let handlebars = <AllTypes as Render<T>>::setup_handlebars(handlebars)
         .context("When setting up handlebars for AllTypes")?;
-    let handlebars = ComplexType::setup_handlebars(handlebars)
+    let handlebars = <ComplexType as Render<T>>::setup_handlebars(handlebars)
         .context("When setting up handlebars for ComplexType")?;
-    let handlebars =
-        Enum::setup_handlebars(handlebars).context("When setting up handlebars for Enum")?;
-    let handlebars =
-        Struct::setup_handlebars(handlebars).context("When setting up handlebars for Struct")?;
-    let handlebars =
-        Union::setup_handlebars(handlebars).context("When setting up handlebars for Union")?;
+    let handlebars = <Enum as Render<T>>::setup_handlebars(handlebars)
+        .context("When setting up handlebars for Enum")?;
+    let handlebars = <Struct as Render<T>>::setup_handlebars(handlebars)
+        .context("When setting up handlebars for Struct")?;
+    let handlebars = <Union as Render<T>>::setup_handlebars(handlebars)
+        .context("When setting up handlebars for Union")?;
     Ok(handlebars)
 }
 
 static PREAMBLE_TYPES: &[&str] = &["bool", "int", "string", "dict", "list"];
 
-impl Render for AllTypes {
+impl Render<Bzl> for AllTypes {
     fn setup_handlebars(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
         hb.register_template_string(
             "preamble",
@@ -77,7 +105,7 @@ impl Render for AllTypes {
         Ok(hb)
     }
 
-    fn render(&self, hb: &Handlebars<'static>) -> Result<String> {
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Bzl> {
         let mut output = String::new();
 
         output.push_str(
@@ -88,23 +116,48 @@ impl Render for AllTypes {
         output.push('\n');
 
         for (name, typ) in self.into_iter().sorted_by_key(|(t, _)| &t.0) {
-            output.push_str(
-                &*typ
-                    .render(hb)
-                    .context(format!("Attempting to render {}", name.0))?,
-            );
+            let typ_rendered: Bzl = typ
+                .render(hb)
+                .with_context(|| format!("Attempting to render {}", name.0))?;
+            output.push_str(&typ_rendered);
             output.push('\n');
         }
-        Ok(output)
+        Ok(Bzl(output))
     }
 }
 
-impl Render for ComplexType {
+impl Render<Pyo3> for AllTypes {
+    fn setup_handlebars(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+        hb.register_template_string("preamble", include_str!("templates/preamble.rs.handlebars"))
+            .context("Trying to register preamble template")?;
+        Ok(hb)
+    }
+
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Pyo3> {
+        let mut output = String::new();
+
+        output.push_str(
+            &hb.render("preamble", &())
+                .context("Failed to render the preamble")?,
+        );
+
+        for (name, typ) in self.into_iter().sorted_by_key(|(t, _)| &t.0) {
+            let typ_rendered: Pyo3 = typ
+                .render(hb)
+                .with_context(|| format!("Attempting to render {}", name.0))?;
+            output.push_str(&typ_rendered);
+            output.push('\n');
+        }
+        Ok(Pyo3(output))
+    }
+}
+
+impl Render<Bzl> for ComplexType {
     fn setup_handlebars(hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
         Ok(hb)
     }
 
-    fn render(&self, hb: &Handlebars<'static>) -> Result<String> {
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Bzl> {
         match self {
             Self::Enum(e) => e.render(hb),
             Self::Struct(s) => s.render(hb),
@@ -113,16 +166,45 @@ impl Render for ComplexType {
     }
 }
 
-impl Render for Enum {
+impl Render<Pyo3> for ComplexType {
+    fn setup_handlebars(hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+        Ok(hb)
+    }
+
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Pyo3> {
+        match self {
+            Self::Enum(e) => e.render(hb),
+            Self::Struct(s) => s.render(hb),
+            Self::Union(u) => u.render(hb),
+        }
+    }
+}
+
+impl Render<Bzl> for Enum {
     fn setup_handlebars(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
         hb.register_template_string("enum", include_str!("templates/enum.bzl.handlebars"))
             .context("Trying to register enum template")?;
         Ok(hb)
     }
 
-    fn render(&self, hb: &Handlebars<'static>) -> Result<String> {
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Bzl> {
         hb.render("enum", self)
             .context(format!("When rendering template for {}", self.name.0))
+            .map(Bzl)
+    }
+}
+
+impl Render<Pyo3> for Enum {
+    fn setup_handlebars(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+        hb.register_template_string("enum", include_str!("templates/enum.rs.handlebars"))
+            .context("Trying to register enum template")?;
+        Ok(hb)
+    }
+
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Pyo3> {
+        hb.render("enum", self)
+            .context(format!("When rendering template for {}", self.name.0))
+            .map(Pyo3)
     }
 }
 
@@ -194,6 +276,7 @@ pub struct FieldContext {
     // don't depend on any other field names or types).
     type_check: String,
     required: bool,
+    pyo3_type: TypeName,
 }
 
 impl FieldContext {
@@ -219,7 +302,41 @@ impl FieldContext {
                     "While trying to render typecheck for field {}",
                     f.name.0
                 ))?,
+            pyo3_type: f.typ.into_pyo3_type(),
         })
+    }
+}
+
+impl Type {
+    fn into_pyo3_type(&self) -> TypeName {
+        match self {
+            Self::Primitive(p) => TypeName(
+                match p {
+                    Primitive::Bool => "bool",
+                    Primitive::Byte => "u8",
+                    Primitive::I16 => "i16",
+                    Primitive::I32 => "i32",
+                    Primitive::I64 => "i64",
+                    Primitive::Float => "f32",
+                    Primitive::Double => "f64",
+                    Primitive::Binary => "&[u8]",
+                    Primitive::String => "String",
+                }
+                .to_string(),
+            ),
+            Self::List { inner_type } => {
+                TypeName(format!("Vec<{}>", inner_type.into_pyo3_type().0))
+            }
+            Self::Map {
+                key_type,
+                value_type,
+            } => TypeName(format!(
+                "::std::collections::BTreeMap<{}, {}>",
+                key_type.into_pyo3_type().0,
+                value_type.into_pyo3_type().0,
+            )),
+            Self::Complex(complex) => complex.name().clone(),
+        }
     }
 }
 
@@ -277,37 +394,75 @@ impl TryFrom<&Union> for StructOrUnionContext {
     }
 }
 
-impl Render for Struct {
+impl Render<Bzl> for Struct {
     fn setup_handlebars(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
         hb.register_template_string("struct", include_str!("templates/struct.bzl.handlebars"))
             .context("Trying to register struct template")?;
         Ok(hb)
     }
 
-    fn render(&self, hb: &Handlebars<'static>) -> Result<String> {
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Bzl> {
         let ctx: StructOrUnionContext = self
             .try_into()
             .context("When trying to build context for struct template")?;
 
         hb.render("struct", &ctx)
             .context(format!("When rendering template for {}", self.name.0))
+            .map(Bzl)
     }
 }
 
-impl Render for Union {
+impl Render<Pyo3> for Struct {
+    fn setup_handlebars(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+        hb.register_template_string("struct", include_str!("templates/struct.rs.handlebars"))
+            .context("Trying to register struct template")?;
+        Ok(hb)
+    }
+
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Pyo3> {
+        let ctx: StructOrUnionContext = self
+            .try_into()
+            .context("When trying to build context for struct template")?;
+
+        hb.render("struct", &ctx)
+            .context(format!("When rendering template for {}", self.name.0))
+            .map(Pyo3)
+    }
+}
+
+impl Render<Bzl> for Union {
     fn setup_handlebars(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
         hb.register_template_string("union", include_str!("templates/union.bzl.handlebars"))
             .context("Trying to register union template")?;
         Ok(hb)
     }
 
-    fn render(&self, hb: &Handlebars<'static>) -> Result<String> {
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Bzl> {
         let ctx: StructOrUnionContext = self
             .try_into()
             .context("When trying to build context for union template")?;
 
         hb.render("union", &ctx)
             .context(format!("When rendering template for {}", self.name.0))
+            .map(Bzl)
+    }
+}
+
+impl Render<Pyo3> for Union {
+    fn setup_handlebars(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+        hb.register_template_string("union", include_str!("templates/union.rs.handlebars"))
+            .context("Trying to register union template")?;
+        Ok(hb)
+    }
+
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Pyo3> {
+        let ctx: StructOrUnionContext = self
+            .try_into()
+            .context("When trying to build context for union template")?;
+
+        hb.render("union", &ctx)
+            .context(format!("When rendering template for {}", self.name.0))
+            .map(Pyo3)
     }
 }
 

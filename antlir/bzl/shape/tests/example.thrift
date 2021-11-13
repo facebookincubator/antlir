@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+namespace py3 antlir.bzl.shape.tests
+
 /// Groupings in which a character may belong.
 struct Affiliations {
   1: string faction;
