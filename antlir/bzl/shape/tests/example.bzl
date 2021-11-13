@@ -1,4 +1,4 @@
-# @generated
+# @generated SignedSource<<d00a9143811760482ab9f0a9109e406e>>
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl/shape:defs.bzl", "fail_with_context", "add_context")

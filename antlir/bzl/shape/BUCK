@@ -17,6 +17,7 @@ rust_binary(
             "anyhow",
             "handlebars",
             "itertools",
+            "md-5",
             "serde",
             "serde_json",
             "structopt",

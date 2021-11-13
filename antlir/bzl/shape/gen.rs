@@ -8,6 +8,7 @@
 use anyhow::{anyhow, Context, Result};
 use handlebars::{no_escape, Handlebars};
 use itertools::{join, Itertools};
+use md5::{Digest, Md5};
 use serde::Serialize;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -36,9 +37,14 @@ pub trait RenderChecker {
 
 pub(crate) fn render(types: &AllTypes) -> Result<String> {
     let hb = setup_handlebars().context("When setting up handlebars")?;
-    let code = types.render(&hb)?;
-    let code = code.replace("@_generated", concat!("@", "generated"));
-    Ok(code)
+    let code = types
+        .render(&hb)?
+        .replace("@_generated", concat!('@', "generated"));
+    let digest = format!("{:x}", Md5::digest(code.as_bytes()));
+    Ok(code.replace(
+        "<<SignedSource::*O*zOeWoEQle#+L!plEphiEmie@IsG>>",
+        &format!("SignedSource<<{}>>", digest),
+    ))
 }
 
 fn setup_handlebars() -> Result<Handlebars<'static>> {
