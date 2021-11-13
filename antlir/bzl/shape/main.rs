@@ -11,21 +11,33 @@ mod gen;
 mod ir;
 mod parse;
 
-use anyhow::{Context, Result};
 use std::convert::TryInto;
+use std::fs::File;
+use std::path::PathBuf;
+
+use anyhow::{Context, Result};
+use structopt::StructOpt;
 
 use gen::render;
 use ir::AllTypes;
 use parse::ParsedTop;
 
+#[derive(StructOpt)]
+struct Opts {
+    input: PathBuf,
+    output: PathBuf,
+}
+
 fn main() -> Result<()> {
-    let input = ParsedTop::from_reader(std::io::stdin().lock())?;
-    eprintln!("{:#?}", input);
+    let opts = Opts::from_args();
+    let f = File::open(&opts.input)
+        .with_context(|| format!("failed to open {}", opts.input.display()))?;
+    let input = ParsedTop::from_reader(f)?;
     let types: AllTypes = input
         .try_into()
         .context("Failed to convert from parsed format to internal format")?;
-    eprintln!("{:#?}", types);
     let code = render(&types).context("Trying to render output code")?;
-    println!("{}", code);
+    std::fs::write(&opts.output, code)
+        .with_context(|| format!("failed to write to {}", opts.output.display()))?;
     Ok(())
 }

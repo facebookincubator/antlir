@@ -36,7 +36,9 @@ pub trait RenderChecker {
 
 pub(crate) fn render(types: &AllTypes) -> Result<String> {
     let hb = setup_handlebars().context("When setting up handlebars")?;
-    types.render(&hb)
+    let code = types.render(&hb)?;
+    let code = code.replace("@_generated", concat!("@", "generated"));
+    Ok(code)
 }
 
 fn setup_handlebars() -> Result<Handlebars<'static>> {
