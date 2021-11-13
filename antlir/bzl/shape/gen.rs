@@ -560,7 +560,7 @@ impl RenderLiteral for Primitive {
 
 impl RenderChecker for Primitive {
     fn render_typecheck(&self, name: &str, context_str: &str, indent: usize) -> Result<String> {
-        let add_context_str = format!("_add_context(\"Validating '{}'\", {})", name, context_str);
+        let add_context_str = format!("add_context(\"Validating '{}'\", {})", name, context_str);
         match self {
             Self::Bool => Ok(format!(
                 "{}_check_bool({}, context={})",

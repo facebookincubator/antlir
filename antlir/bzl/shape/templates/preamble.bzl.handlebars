@@ -1,27 +1,11 @@
 # @_generated
+
 load("@bazel_skylib//lib:types.bzl", "types")
-
-def _fail_with_context(msg, context):
-    if types.is_none(context):
-        fail(msg)
-    elif types.is_string(context):
-        fail("{}{}".format(context + ":" if context else "", msg))
-    elif types.is_list(context):
-        stack = [msg] + context[::-1] if context else [msg]
-        fail("\n When: ".join(stack))
-    else:
-        fail("Provided invalid context {} when trying to render error: {}".format(context, msg))
-
-def _add_context(msg, context=None):
-    if msg == None:
-        return context
-    context = context or []
-    return context + [msg]
-
+load("//antlir/bzl/shape:defs.bzl", "fail_with_context", "add_context")
 
 {{#each this ~}}
 def _check_{{this}}(x, context=None):
     if not types.is_{{this}}(x):
-        _fail_with_context(msg="{} is not a {{this}}".format(repr(x)), context=context)
+        fail_with_context(msg="{} is not a {{this}}".format(repr(x)), context=context)
 
 {{/each}}

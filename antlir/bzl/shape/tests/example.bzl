@@ -1,43 +1,27 @@
 # @generated
+
 load("@bazel_skylib//lib:types.bzl", "types")
-
-def _fail_with_context(msg, context):
-    if types.is_none(context):
-        fail(msg)
-    elif types.is_string(context):
-        fail("{}{}".format(context + ":" if context else "", msg))
-    elif types.is_list(context):
-        stack = [msg] + context[::-1] if context else [msg]
-        fail("\n When: ".join(stack))
-    else:
-        fail("Provided invalid context {} when trying to render error: {}".format(context, msg))
-
-def _add_context(msg, context=None):
-    if msg == None:
-        return context
-    context = context or []
-    return context + [msg]
-
+load("//antlir/bzl/shape:defs.bzl", "fail_with_context", "add_context")
 
 def _check_bool(x, context=None):
     if not types.is_bool(x):
-        _fail_with_context(msg="{} is not a bool".format(repr(x)), context=context)
+        fail_with_context(msg="{} is not a bool".format(repr(x)), context=context)
 
 def _check_int(x, context=None):
     if not types.is_int(x):
-        _fail_with_context(msg="{} is not a int".format(repr(x)), context=context)
+        fail_with_context(msg="{} is not a int".format(repr(x)), context=context)
 
 def _check_string(x, context=None):
     if not types.is_string(x):
-        _fail_with_context(msg="{} is not a string".format(repr(x)), context=context)
+        fail_with_context(msg="{} is not a string".format(repr(x)), context=context)
 
 def _check_dict(x, context=None):
     if not types.is_dict(x):
-        _fail_with_context(msg="{} is not a dict".format(repr(x)), context=context)
+        fail_with_context(msg="{} is not a dict".format(repr(x)), context=context)
 
 def _check_list(x, context=None):
     if not types.is_list(x):
-        _fail_with_context(msg="{} is not a list".format(repr(x)), context=context)
+        fail_with_context(msg="{} is not a list".format(repr(x)), context=context)
 
 
 
@@ -67,7 +51,7 @@ def __typecheck_Affiliations(object, err_context=None):
     if faction == None:
         _fail_with_context("faction: required but is None", context=err_context)
     else:
-        _check_string(faction, context=_add_context("Validating 'faction'", err_context))
+        _check_string(faction, context=add_context("Validating 'faction'", err_context))
 
 # Character Struct
 def Character(
@@ -126,7 +110,7 @@ def __typecheck_Character(object, err_context=None):
         _check_list(appears_in, context=err_context)
         for (i, appears_in_item) in enumerate(appears_in):
             inner_context = err_context + ["Checking index {} for field 'appears_in'".format(i)]
-            _check_int(appears_in_item, context=_add_context("Validating 'appears_in_item'", inner_context))
+            _check_int(appears_in_item, context=add_context("Validating 'appears_in_item'", inner_context))
 
     friends = object.friends
     if friends == None:
@@ -144,14 +128,14 @@ def __typecheck_Character(object, err_context=None):
         _check_dict(metadata, context=err_context)
         for metadata_key, metadata_value in metadata.items():
             inner_context = err_context + ["Checking key '{}' for field 'metadata'".format(metadata_key)]
-            _check_string(metadata_key, context=_add_context("Validating 'metadata_key'", inner_context))
-            _check_string(metadata_value, context=_add_context("Validating 'metadata_value'", inner_context))
+            _check_string(metadata_key, context=add_context("Validating 'metadata_key'", inner_context))
+            _check_string(metadata_value, context=add_context("Validating 'metadata_value'", inner_context))
 
     name = object.name
     if name == None:
         _fail_with_context("name: required but is None", context=err_context)
     else:
-        _check_string(name, context=_add_context("Validating 'name'", err_context))
+        _check_string(name, context=add_context("Validating 'name'", err_context))
 
     weapon = object.weapon
     if weapon != None:
@@ -185,7 +169,7 @@ def Color(name_or_value, context=None):
     if types.is_int(name_or_value):
         value = name_or_value
         if value not in __Color_value_to_name:
-            _fail_with_context(
+            fail_with_context(
                 "{} not one of (2, 1, 3, )".format(value),
                 context=context,
             )
@@ -193,14 +177,14 @@ def Color(name_or_value, context=None):
     elif types.is_string(name_or_value):
         name = name_or_value.upper()
         if name not in __Color_name_to_value:
-            _fail_with_context(
+            fail_with_context(
                 "{} not one of (BLUE, GREEN, RED, )".format(name),
                 context=context,
             )
 
         value = __Color_name_to_value[name]
     else:
-        _fail_with_context(
+        fail_with_context(
             "Provided value {} to Color constructor was neither an int or string".format(name_or_value),
             context=context,
         )
@@ -213,12 +197,12 @@ def Color(name_or_value, context=None):
 
 def __typecheck_Color(e, err_context=None):
     if not hasattr(e, "__type__"):
-        _fail_with_context(
+        fail_with_context(
             "Provided value {} is not a struct or enum".format(e),
             context=err_context,
         )
     if e.__type__ != Color:
-        _fail_with_context(
+        fail_with_context(
             "Provided value {} is not an instance of this enum: {}".format(e, e.__type__),
             context=err_context,
         )
@@ -245,7 +229,7 @@ def __typecheck_Friend(object, err_context=None):
     if name == None:
         _fail_with_context("name: required but is None", context=err_context)
     else:
-        _check_string(name, context=_add_context("Validating 'name'", err_context))
+        _check_string(name, context=add_context("Validating 'name'", err_context))
 
 # Lightsaber Struct
 def Lightsaber(
@@ -282,7 +266,7 @@ def __typecheck_Lightsaber(object, err_context=None):
     if handmedown == None:
         _fail_with_context("handmedown: required but is None", context=err_context)
     else:
-        _check_bool(handmedown, context=_add_context("Validating 'handmedown'", err_context))
+        _check_bool(handmedown, context=add_context("Validating 'handmedown'", err_context))
 
 # Weapon Union
 def Weapon(
@@ -300,7 +284,7 @@ def Weapon(
         data["other"] = other
 
     u = struct(__type__ = Weapon, **data)
-    __typecheck_Weapon(u, _add_context("Constructing union 'Weapon'", err_context))
+    __typecheck_Weapon(u, add_context("Constructing union 'Weapon'", err_context))
     return u
 
 
@@ -314,12 +298,12 @@ def __typecheck_Weapon(object, err_context=None):
         seen.append("other")
 
     if len(seen) == 0:
-        _fail_with_context(
+        fail_with_context(
             "All fields for union Weapon were None", context=err_context
         )
 
     if len(seen) > 1:
-        _fail_with_context(
+        fail_with_context(
             "Multiple different values provided for union Weapon: {}".format(
                 ",".join(seen)
             ),
@@ -338,4 +322,4 @@ def __typecheck_Weapon(object, err_context=None):
         if other == None:
             _fail_with_context("other: required but is None", context=err_context)
         else:
-            _check_string(other, context=_add_context("Validating 'other'", err_context))
+            _check_string(other, context=add_context("Validating 'other'", err_context))

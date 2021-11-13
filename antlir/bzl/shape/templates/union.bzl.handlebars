@@ -21,7 +21,7 @@ def {{name}}(
     {{~/each}}
 
     u = struct(__type__ = {{name}}, **data)
-    __typecheck_{{name}}(u, _add_context("Constructing union '{{name}}'", err_context))
+    __typecheck_{{name}}(u, add_context("Constructing union '{{name}}'", err_context))
     return u
 
 
@@ -34,12 +34,12 @@ def __typecheck_{{name}}(object, err_context=None):
     {{~/each}}
 
     if len(seen) == 0:
-        _fail_with_context(
+        fail_with_context(
             "All fields for union {{name}} were None", context=err_context
         )
 
     if len(seen) > 1:
-        _fail_with_context(
+        fail_with_context(
             "Multiple different values provided for union {{name}}: {}".format(
                 ",".join(seen)
             ),
