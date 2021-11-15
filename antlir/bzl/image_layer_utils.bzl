@@ -6,7 +6,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":image_utils.bzl", "image_utils")
-load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config")
+load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config", "is_buck2")
 load(":query.bzl", "layer_deps_query")
 load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
 
@@ -126,7 +126,7 @@ def _image_layer_impl(
 
             # Do not touch $OUT until the very end so that if we
             # accidentally exit early with code 0, the rule still fails.
-            mkdir "$TMP/out"
+            mkdir -p "$TMP/out"
             {print_mount_config} |
                 $(exe {layer_mount_config}) {layer_target_quoted} \
                     > "$TMP/out/mountconfig.json"
@@ -184,7 +184,7 @@ def _image_layer_impl(
                         buck_out = buck_out_base_dir,
                     ) + "}",
                     buck_out = buck_out_base_dir,
-                ),
+                ) if not is_buck2() else "buck-out/.volume-refcount-hardlinks",
                 make_subvol_cmd = _make_subvol_cmd,
                 # To make layers "image-mountable", provide `mountconfig.json`.
                 print_mount_config = (

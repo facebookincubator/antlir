@@ -645,6 +645,9 @@ def _repository_name():
 def _get_antlir_cell_name():
     return ""
 
+def _is_buck2():
+    return False
+
 # Please keep each section lexicographically sorted.
 shim = struct(
     #
@@ -679,6 +682,7 @@ shim = struct(
     get_visibility = _normalize_visibility,
     http_file = _http_file,
     http_archive = _http_archive,
+    is_buck2 = _is_buck2,
     kernel_get = struct(
         base_target = "//third-party/fedora33/kernel",
         default = _kernel("5.8.15-301.fc33.x86_64"),

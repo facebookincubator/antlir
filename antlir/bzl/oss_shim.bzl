@@ -146,6 +146,7 @@ export_file = shim.export_file
 get_visibility = shim.get_visibility
 http_file = shim.http_file
 http_archive = shim.http_archive
+is_buck2 = shim.is_buck2
 kernel_get = shim.kernel_get
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 rpm_vset = shim.rpm_vset
