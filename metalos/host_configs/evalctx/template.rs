@@ -17,7 +17,7 @@ use once_cell::sync::Lazy;
 use starlark::codemap::Span;
 use starlark::environment::GlobalsBuilder;
 use starlark::eval::{Arguments, Evaluator};
-use starlark::values::{dict::DictOf, StarlarkValue, UnpackValue, Value};
+use starlark::values::{StarlarkValue, Value};
 use starlark::{starlark_module, starlark_simple_value, starlark_type};
 
 use crate::{Error, Result};
@@ -67,63 +67,33 @@ impl<'v> StarlarkValue<'v> for Template {
         args: Arguments<'v, '_>,
         eval: &mut Evaluator<'v, '_>,
     ) -> anyhow::Result<Value<'v>> {
-        if !args.pos.is_empty() || args.args.is_some() {
+        if args.no_positional_args(eval.heap()).is_err() {
             bail!(Error::TemplateRender(RenderError::new(
                 "template rendering only accepts kwargs",
             )));
         }
-        let mut context: BTreeMap<String, serde_json::Value> = args
-            .names
+        let context: BTreeMap<String, serde_json::Value> = args
+            .names_map()?
             .iter()
-            .zip(args.named.iter())
             .map(|(name, param)| {
                 Ok((
-                    name.0.as_str().to_owned(),
+                    name.as_str().to_owned(),
                     serde_json::from_str(&param.to_json().map_err(|_| {
                         Error::TemplateRender(RenderError::new(format!(
                             "template kwarg '{}' does not support to_json",
-                            name.0.as_str(),
+                            name.as_str(),
                         )))
                     })?)
                     .map_err(|e| {
                         Error::TemplateRender(RenderError::new(format!(
                             "failed to convert template arg '{}' to json: {:?}",
-                            name.0.as_str(),
+                            name.as_str(),
                             e
                         )))
                     })?,
                 ))
             })
             .collect::<Result<_>>()?;
-
-        if let Some(kwargs) = args.kwargs {
-            let mut kwargs = DictOf::<String, Value>::unpack_value(kwargs)
-                .ok_or_else(|| {
-                    Error::TemplateRender(RenderError::new("kwargs must be dict with string keys"))
-                })?
-                .to_dict()
-                .into_iter()
-                .map(|(k, v)| {
-                    Ok((
-                        k.clone(),
-                        serde_json::from_str(&v.to_json().map_err(|_| {
-                            Error::TemplateRender(RenderError::new(format!(
-                                "template kwarg '{}' does not support to_json",
-                                &k
-                            )))
-                        })?)
-                        .map_err(|e| {
-                            Error::TemplateRender(RenderError::new(format!(
-                                "failed to convert template arg '{}' to json: {:?}",
-                                &k, e
-                            )))
-                        })?,
-                    ))
-                })
-                .collect::<Result<_>>()?;
-            context.append(&mut kwargs);
-        }
-
         let out = HANDLEBARS
             .read()
             .expect("failed to read handlebars registry")
