@@ -116,15 +116,6 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                     wrong_inner, subvols
                 )
 
-            bad_host = good.copy()
-            bad_host[subvolume_on_disk._HOSTNAME] = f"NOT_{_MY_HOST}"
-            with self.assertRaisesRegex(
-                RuntimeError, "did not come from current host"
-            ):
-                subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
-                    bad_host, subvols
-                )
-
             bad_uuid = good.copy()
             bad_uuid[subvolume_on_disk._BTRFS_UUID] = "BAD_UUID"
             with self.assertRaisesRegex(

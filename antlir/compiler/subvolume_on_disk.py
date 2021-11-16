@@ -169,13 +169,6 @@ class SubvolumeOnDisk(
                 f"Subvolume wrapper {outer_dir} contained {outer_dir_content} "
                 f"instead of {[inner_dir]}"
             )
-        # Check that the subvolume matches the description.
-        cur_host = socket.gethostname()
-        # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute `hostname`.
-        if cur_host != self.hostname:
-            raise RuntimeError(
-                f"Subvolume {self} did not come from current host {cur_host}"
-            )
         # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute `btrfs_uuid`.
         if volume_props["UUID"] != self.btrfs_uuid:
             raise RuntimeError(
