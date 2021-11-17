@@ -1,0 +1,28 @@
+# (c) Facebook, Inc. and its affiliates. Confidential and proprietary.
+
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:third_party.bzl", "third_party")
+
+BASE_FEATURES = [
+    image.rpms_install([
+        # build deps
+        "clang",
+        "meson",
+        # static deps
+        "glibc-static",
+        "glib2-static",
+    ]),
+]
+
+third_party.build(
+    name = "build",
+    base_features = BASE_FEATURES,
+    bash = """
+        set -eo pipefail
+        export MAKEFLAGS=-j
+
+        meson _build . -Ddefault_library=static -Dprefix="${STAGE}"
+        meson compile -C _build
+        meson install -C _build
+    """,
+)

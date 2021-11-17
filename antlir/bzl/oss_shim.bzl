@@ -159,6 +159,7 @@ rust_unittest = shim.rust_unittest
 target_utils = shim.target_utils
 third_party = struct(
     library = shim.third_party.library,
+    source = shim.third_party.source,
     libraries = _third_party_libraries,
 )
 thrift_library = shim.thrift_library

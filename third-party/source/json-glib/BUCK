@@ -1,0 +1,25 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+
+src = {
+    "sha256": "bf4d1cd6c343ce13b9258e6703a0411a3b659887b65877e85a2aa488ae18b865",
+    "version": "1.6.6",
+}
+
+# NOTE: this fails because gitlab.gnome.org refuses the UA and there's no way to set it from buck
+# http_file(
+#     name = "tarball",
+#     sha256 = src["sha256"],
+#     urls = ["https://gitlab.gnome.org/GNOME/json-glib/-/archive/{v}/json-glib-{v}.tar.gz".format(v = src["version"])],
+# )
+
+buck_genrule(
+    name = "tarball",
+    out = "json-glib.tar.gz",
+    cmd = """
+        curl https://gitlab.gnome.org/GNOME/json-glib/-/archive/{v}/json-glib-{v}.tar.gz -o $OUT &>/dev/null
+        echo "{h} $OUT" | sha256sum --check
+    """.format(
+        v = src["version"],
+        h = src["sha256"],
+    ),
+)
