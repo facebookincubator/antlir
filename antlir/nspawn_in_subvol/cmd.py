@@ -439,11 +439,10 @@ def _nspawn_setup(
         # _NspawnSetup, None, None]`.
         yield _NspawnSetup(
             subvol=nspawn_subvol,
+            # pyre-fixme[60]: Concatenation not yet support for multiple variadic
+            #  tuples: `*antlir.nspawn_in_subvol.cmd._nspawn_cmd(nspawn_subvol,
+            #  temp_cgroup, temp_bind_rootfs, ns), *nspawn_args`.
             nspawn_cmd=(
-                # pyre-fixme[60]: Concatenation not yet support for multiple
-                #  variadic tuples:
-                #  `*antlir.nspawn_in_subvol.cmd._nspawn_cmd(nspawn_subvol,
-                #  temp_cgroup, temp_bind_rootfs, ns), *nspawn_args`.
                 *_nspawn_cmd(nspawn_subvol, temp_cgroup, temp_bind_rootfs, ns),
                 *nspawn_args,
             ),

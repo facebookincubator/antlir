@@ -329,10 +329,14 @@ class Subvolume(NamedTuple):
             for child_path in sorted(child_paths):
                 child_results[
                     os.path.relpath(child_path, top_path)
-                    # pyre-fixme[16]: `Coroutine` has no attribute `__iter__`.
+                    # pyre-fixme[7]: Expected `Coroutine[Tuple[bytes,
+                    #  Union[IncompleteInode, Inode], Optional[Mapping[bytes,
+                    #  typing.Any]]], typing.Any, typing.Any]` but got
+                    #  `Generator[typing.Any, None, typing.Any]`.
                 ] = yield from self.gather_bottom_up(child_path)
         # pyre-fixme[7]: what even?!
         return (  # noqa: B901
+            # pyre-fixme[7]: Expected `Coroutine[Tuple[bytes, Union[IncompleteInode, ...
             yield (top_path, self.id_to_inode[ino_id], child_results)
         )
 

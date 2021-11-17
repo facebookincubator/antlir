@@ -327,11 +327,11 @@ class ShadowPaths(NspawnPlugin):
             # The bind-mounts are only applied later, at popen time, so
             # they do not interfere with the copying we do below.
             opts._replace(
+                # pyre-fixme[60]: Concatenation not yet support for multiple
+                #  variadic tuples: `*opts.bindmount_ro, *comprehension((s, d) for
+                #  generators(generator((d, s) in container_dest_to_real_src.items() if
+                #  )))`.
                 bindmount_ro=(
-                    # pyre-fixme[60]: Concatenation not yet support for multiple
-                    #  variadic tuples: `*opts.bindmount_ro, *comprehension((s,
-                    #  d) generators(generator((d, s) in
-                    #  container_dest_to_real_src.items() if )))`.
                     *opts.bindmount_ro,
                     *((s, d) for d, s in container_dest_to_real_src.items()),
                 )

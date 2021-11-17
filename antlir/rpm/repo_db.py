@@ -605,6 +605,7 @@ class RepoDBContext(AbstractContextManager):
             # pyre-fixme[16]: `StorageTable` has no attribute `NAME`.
             table_name = table.NAME
             cursor.execute(
+                # pyre-fixme[16]: `StorageTable` has no attribute `KEY_COLUMNS`.
                 f"""
                 SELECT {self._identifiers(table.column_names())}, `storage_id`
                 FROM `{table_name}`

@@ -102,9 +102,8 @@ def rpm_nspawn_plugins(
             if plugin_args.attach_antlir_dir == AttachAntlirDirMode.DEFAULT_ON:
                 shadow_paths_allow_unmatched.append(prog_name)
 
+    # pyre-fixme[60]: Concatenation not yet support for multiple variadic tuples: `*[...
     return (
-        # pyre-fixme[60]: Concatenation not yet support for multiple variadic
-        # tuples:...
         *(
             [AttachAntlirDir()]
             # In default-on mode, do NOT try to attach the BA's `ANTLIR_DIR`
