@@ -98,6 +98,8 @@ def rewrite_testpilot_python_cmd(
         # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
         #  `Generator[Tuple[List[str], List[Variable[_T]]], None, None]`.
         yield cmd, []
+        # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
+        #  `Generator[typing.Any, typing.Any, None]`.
         return
 
     # we don't expect both --output and --list-tests
@@ -152,6 +154,8 @@ def rewrite_tpx_gtest_cmd(
         # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
         #  `Generator[Tuple[List[str], List[Variable[_T]]], None, None]`.
         yield cmd, []
+        # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
+        #  `Generator[typing.Any, typing.Any, None]`.
         return
 
     # TPX only uses XML output, so fail on anything else.

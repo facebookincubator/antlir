@@ -131,12 +131,11 @@ class YumDnfVersionlock(NspawnPlugin):
                 setup_ctx(
                     subvol,
                     opts._replace(
+                        # pyre-fixme[60]: Concatenation not yet support for multiple
+                        #  variadic tuples: `*opts.bindmount_ro, *comprehension((s, d)
+                        #  for generators(generator((d, s) in dest_to_src.items() if
+                        #  )))`.
                         bindmount_ro=(
-                            # pyre-fixme[60]: Concatenation not yet support for
-                            # multiple variadic tuples: `*opts.bindmount_ro,
-                            # *comprehension((s, d) for generators(
-                            # generator((d, s) in self.dest_to_src.items()
-                            # if )))`.
                             *opts.bindmount_ro,
                             *((s, d) for d, s in dest_to_src.items()),
                         )
