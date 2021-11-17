@@ -1,0 +1,12 @@
+load("//antlir/bzl:oss_shim.bzl", "http_file")
+
+src = {
+    "sha256": "4eb7df26edc64d27580c8b920a2b9d8d0958eb45720fda835fde3531a4ca6a73",
+    "version": "0.7.9",
+}
+
+http_file(
+    name = "tarball",
+    sha256 = src["sha256"],
+    urls = ["https://github.com/stefanberger/libtpms/archive/refs/tags/v{}.tar.gz".format(src["version"])],
+)

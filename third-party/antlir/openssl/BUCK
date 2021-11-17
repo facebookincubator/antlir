@@ -10,10 +10,7 @@ BASE_FEATURES = [
     image.rpms_install([
         # build deps
         "clang",
-        "meson",
-        # static deps
-        "glibc-static",
-        "glib2-static",
+        "perl",
     ]),
 ]
 
@@ -24,8 +21,14 @@ third_party.build(
         set -eo pipefail
         export MAKEFLAGS=-j
 
-        meson _build . -Ddefault_library=static -Dprefix="${STAGE}"
-        meson compile -C _build
-        meson install -C _build
+        ./Configure no-shared --prefix="${STAGE}" -fno-omit-frame-pointer linux-x86_64-clang
+        make
+        make install
+
+        # some symlinks here trip an image.install later on so remove them
+        # because they're not being used anyway (just keep include, lib)
+        for n in bin share ssl; do
+                rm -rf "${STAGE}/$n"
+        done
     """,
 )
