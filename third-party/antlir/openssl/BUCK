@@ -14,21 +14,22 @@ BASE_FEATURES = [
     ]),
 ]
 
-third_party.build(
-    name = "build",
+third_party.native_build(
     base_features = BASE_FEATURES,
-    bash = """
-        set -eo pipefail
-        export MAKEFLAGS=-j
+    script = third_party.script(
+        prepare = """
+            export MAKEFLAGS=-j
+            ./Configure no-shared --prefix="${STAGE}" -fno-omit-frame-pointer linux-x86_64-clang
+        """,
+        build = "make",
+        install = """
+            make install
 
-        ./Configure no-shared --prefix="${STAGE}" -fno-omit-frame-pointer linux-x86_64-clang
-        make
-        make install
-
-        # some symlinks here trip an image.install later on so remove them
-        # because they're not being used anyway (just keep include, lib)
-        for n in bin share ssl; do
-                rm -rf "${STAGE}/$n"
-        done
-    """,
+            # some symlinks here trip an image.install later on so remove them
+            # because they're not being used anyway (just keep include, lib)
+            for n in bin share ssl; do
+                    rm -rf "${STAGE}/$n"
+            done
+        """,
+    ),
 )
