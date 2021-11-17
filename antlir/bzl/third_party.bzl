@@ -10,11 +10,12 @@ load(":image.bzl", "image")
 load(":oss_shim.bzl", "buck_genrule", third_party_shim = "third_party")
 load(":shape.bzl", "shape")
 
-PREFIX = "/build"
-SRC_TGZ = PREFIX + "/source.tar.gz"
-SRC_DIR = PREFIX + "/src"
-DEPS_DIR = PREFIX + "/deps"
-STAGE_DIR = PREFIX + "/stage"
+PREFIX = "/third_party_build"
+SRC_TGZ = paths.join(PREFIX, "source.tar.gz")
+SRC_DIR = paths.join(PREFIX, "src")
+DEPS_DIR = paths.join(PREFIX, "deps")
+STAGE_DIR = paths.join(PREFIX, "stage")
+OUT_DIR = paths.join(PREFIX, "out")
 
 def _hoist(name, out, layer, path, **buck_genrule_kwargs):
     """Creates a rule to lift an artifact out of the image it was built in."""
@@ -25,7 +26,7 @@ def _hoist(name, out, layer, path, **buck_genrule_kwargs):
             binary_path=( $(exe //antlir:find-built-subvol) )
             layer_loc="$(location {layer})"
             sv_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
-            cp -r "$sv_path{path}" --no-clobber "$OUT"
+            cp --reflink=auto -r "$sv_path"{path} --no-clobber "$OUT"
         '''.format(
             layer = ":" + layer,
             path = path,
@@ -33,20 +34,7 @@ def _hoist(name, out, layer, path, **buck_genrule_kwargs):
         **buck_genrule_kwargs
     )
 
-def _cmd_for_dependency_setup(dependency):
-    return " && ".join([
-        "cp -r {stage}/{name}/{path} {deps}".format(
-            stage = STAGE_DIR,
-            name = dependency.name,
-            path = path,
-            deps = DEPS_DIR,
-        )
-        for path in dependency.paths
-    ])
-
-def _build(base_features, bash, *, version = "latest", name = "build", dependencies = [], project = None):
-    if not project:
-        project = paths.basename(package_name())
+def _prepare_layer(name, project, base_features, dependencies = []):
     source_target = third_party_shim.source(project)
 
     image.layer(
@@ -55,55 +43,53 @@ def _build(base_features, bash, *, version = "latest", name = "build", dependenc
             image.ensure_dirs_exist(SRC_DIR),
             image.ensure_dirs_exist(DEPS_DIR),
             image.ensure_dirs_exist(STAGE_DIR),
+            image.ensure_dirs_exist(OUT_DIR),
             feature.install(source_target, SRC_TGZ),
-            image.rpms_install(["tar"]),
+            image.rpms_install(["tar", "fuse", "fuse-overlayfs"]),
         ] + base_features,
         flavor = REPO_CFG.antlir_linux_flavor,
     )
 
     image.layer(
-        name = "deps-layer",
+        name = name,
         parent_layer = ":base-layer",
         features = [
-            feature.install(dep.source, "{}/{}".format(STAGE_DIR, dep.name))
+            feature.install(dep.source, paths.join(DEPS_DIR, dep.name))
             for dep in dependencies
         ],
     )
 
-    image.genrule_layer(
-        name = "unpack-layer",
-        parent_layer = ":deps-layer",
-        rule_type = "third_party_build",
-        antlir_rule = "user-internal",
-        user = "root",
-        cmd = [
-            "tar",
-            "xzf",
-            SRC_TGZ,
-            "--strip-components=1",
-            "--directory=" + SRC_DIR,
-        ],
+def _cmd_prepare_dependency(dependency):
+    """move the dependencies in the right places"""
+    return "\n".join([
+        "cp --reflink=auto -r {deps}/{name}/{path} {stage}".format(
+            deps = DEPS_DIR,
+            stage = STAGE_DIR,
+            name = dependency.name,
+            path = path,
+        )
+        for path in dependency.paths
+    ])
+
+def _native_build(base_features, script, dependencies = [], project = None):
+    if not project:
+        project = paths.basename(package_name())
+
+    _prepare_layer(
+        name = "setup-layer",
+        base_features = base_features,
+        dependencies = dependencies,
+        project = project,
     )
 
-    image.genrule_layer(
-        name = "deps-unpack-layer",
-        parent_layer = ":unpack-layer",
-        rule_type = "third_party_build",
-        antlir_rule = "user-internal",
-        user = "root",
-        cmd = [
-            "bash",
-            "-uec",
-            " && ".join([
-                _cmd_for_dependency_setup(dep)
-                for dep in dependencies
-            ]),
-        ],
-    )
+    prepare_deps = "\n".join([
+        _cmd_prepare_dependency(dep)
+        for dep in dependencies
+    ])
 
     image.genrule_layer(
         name = "build-layer",
-        parent_layer = ":deps-unpack-layer",
+        parent_layer = ":setup-layer",
         rule_type = "third_party_build",
         antlir_rule = "user-internal",
         user = "root",
@@ -111,27 +97,66 @@ def _build(base_features, bash, *, version = "latest", name = "build", dependenc
             "bash",
             "-uec",
             """
-            cd {src_dir}
+            set -eo pipefail
 
-            export DEPS={deps_dir}
-            export STAGE={stage_dir}
-            {script}
+            # copy all specified dependencies
+            {prepare_deps}
+
+            # unpack the source in build dir
+            cd "{src_dir}"
+            tar xzf {src} --strip-components=1
+
+            export STAGE="{stage_dir}"
+            {prepare}
+            {build}
+
+            # trick the fs layer so that we can collect the installed files without
+            # dependencies mixed in; while keeping correct paths in pkg-config
+            mkdir {fswork_dir}
+            mv {stage_dir} {stage_ro_dir}
+            mkdir {stage_dir}
+            fuse-overlayfs -o lowerdir="{stage_ro_dir}",upperdir="{out_dir}",workdir={fswork_dir} "{stage_dir}"
+
+            {install}
+
+            # unmount the overlay and remove whiteout files because we only want the
+            # newly created ones by the install
+            fusermount -u "{stage_dir}"
+            find "{out_dir}" \\( -name ".wh.*" -o -type c \\) -delete
             """.format(
-                project = project,
-                version = version,
+                src = SRC_TGZ,
+                prepare_deps = prepare_deps,
+                prepare = script.prepare,
+                build = script.build,
+                install = script.install,
                 src_dir = SRC_DIR,
-                deps_dir = DEPS_DIR,
                 stage_dir = STAGE_DIR,
-                script = bash,
+                stage_ro_dir = paths.join(PREFIX, "stage_ro"),
+                fswork_dir = paths.join(PREFIX, "fswork"),
+                out_dir = OUT_DIR,
             ),
         ],
     )
 
     _hoist(
-        name = name,
-        out = "out",
+        name = project,
+        out = ".",
         layer = "build-layer",
-        path = STAGE_DIR,
+        path = paths.join(OUT_DIR, "*"),
+    )
+
+_script_t = shape.shape(
+    prepare = str,
+    build = str,
+    install = str,
+)
+
+def _new_script(build, install, prepare = ""):
+    return shape.new(
+        _script_t,
+        prepare = prepare,
+        build = build,
+        install = install,
     )
 
 _dep_t = shape.shape(
@@ -144,16 +169,19 @@ def _library(name, *, include_path = "include", lib_path = "lib"):
     return shape.new(
         _dep_t,
         name = name,
-        source = third_party_shim.library(name, "build", "antlir"),
+        source = third_party_shim.library(name, name, "antlir"),
         paths = [include_path, lib_path],
     )
 
-def _oss_build(*, project = None, name = "build"):
+def _oss_build(*, project = None, name = None):
     if not project:
         project = paths.basename(package_name())
 
+    if not name:
+        name = project
+
     buck_genrule(
-        name = "build",
+        name = project,
         out = "out",
         bash = """
             cp --reflink=auto -r $(location //antlir/third-party/{project}:{name}) "$OUT"
@@ -164,7 +192,8 @@ def _oss_build(*, project = None, name = "build"):
     )
 
 third_party = struct(
-    build = _build,
+    native_build = _native_build,
+    script = _new_script,
     library = _library,
     oss_build = _oss_build,
 )

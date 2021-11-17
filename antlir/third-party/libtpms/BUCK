@@ -26,26 +26,26 @@ BASE_FEATURES = [
     ]),
 ]
 
-third_party.build(
-    name = "build",
+third_party.native_build(
     base_features = BASE_FEATURES,
     dependencies = [
         third_party.library("openssl"),
     ],
-    bash = """
-        set -eo pipefail
-        export MAKEFLAGS=-j
+    script = third_party.script(
+        prepare = """
+            export MAKEFLAGS=-j
 
-        export CFLAGS="-I${DEPS}/include"
-        export LDFLAGS="-L${DEPS}/lib"
-        export PKG_CONFIG_PATH="${DEPS}/lib/pkgconfig"
+            export CFLAGS="-I${STAGE}/include"
+            export LDFLAGS="-L${STAGE}/lib"
+            export PKG_CONFIG_PATH="${STAGE}/lib/pkgconfig"
 
-        # need to fix a global symbol otherwise it collides
-        # later on due to static linkage
-        sed -i 's/char state_directory/static char state_directory/' ./src/tpm12/tpm_nvfile.c
+            # need to fix a global symbol otherwise it collides
+            # later on due to static linkage
+            sed -i 's/char state_directory/static char state_directory/' ./src/tpm12/tpm_nvfile.c
 
-        ./autogen.sh --with-openssl --prefix="${STAGE}" --with-tpm2 --disable-shared
-        make
-        make install
-    """,
+            ./autogen.sh --with-openssl --prefix="${STAGE}" --with-tpm2 --disable-shared
+        """,
+        build = "make",
+        install = "make install",
+    ),
 )
