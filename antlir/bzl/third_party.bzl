@@ -8,6 +8,13 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":constants.bzl", "REPO_CFG")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", "buck_genrule", third_party_shim = "third_party")
+load(":shape.bzl", "shape")
+
+PREFIX = "/build"
+SRC_TGZ = PREFIX + "/source.tar.gz"
+SRC_DIR = PREFIX + "/src"
+DEPS_DIR = PREFIX + "/deps"
+STAGE_DIR = PREFIX + "/stage"
 
 def _hoist(name, out, layer, path, **buck_genrule_kwargs):
     """Creates a rule to lift an artifact out of the image it was built in."""
@@ -26,12 +33,18 @@ def _hoist(name, out, layer, path, **buck_genrule_kwargs):
         **buck_genrule_kwargs
     )
 
-def _build(base_features, bash, *, version = "latest", name = "build", dependencies = [], project = None):
-    PREFIX = "/build"
-    SRC_DIR = PREFIX + "/src"
-    DEPS_DIR = PREFIX + "/deps"
-    STAGE_DIR = PREFIX + "/stage"
+def _cmd_for_dependency_setup(dependency):
+    return " && ".join([
+        "cp -r {stage}/{name}/{path} {deps}".format(
+            stage = STAGE_DIR,
+            name = dependency.name,
+            path = path,
+            deps = DEPS_DIR,
+        )
+        for path in dependency.paths
+    ])
 
+def _build(base_features, bash, *, version = "latest", name = "build", dependencies = [], project = None):
     if not project:
         project = paths.basename(package_name())
     source_target = third_party_shim.source(project)
@@ -42,7 +55,7 @@ def _build(base_features, bash, *, version = "latest", name = "build", dependenc
             image.ensure_dirs_exist(SRC_DIR),
             image.ensure_dirs_exist(DEPS_DIR),
             image.ensure_dirs_exist(STAGE_DIR),
-            feature.install(source_target, "source.tar.gz"),
+            feature.install(source_target, SRC_TGZ),
             image.rpms_install(["tar"]),
         ] + base_features,
         flavor = REPO_CFG.antlir_linux_flavor,
@@ -52,8 +65,8 @@ def _build(base_features, bash, *, version = "latest", name = "build", dependenc
         name = "deps-layer",
         parent_layer = ":base-layer",
         features = [
-            feature.install(target, "{}/{}".format(DEPS_DIR, dep))
-            for target, dep in dependencies
+            feature.install(dep.source, "{}/{}".format(STAGE_DIR, dep.name))
+            for dep in dependencies
         ],
     )
 
@@ -66,15 +79,31 @@ def _build(base_features, bash, *, version = "latest", name = "build", dependenc
         cmd = [
             "tar",
             "xzf",
-            "/source.tar.gz",
+            SRC_TGZ,
             "--strip-components=1",
             "--directory=" + SRC_DIR,
         ],
     )
 
     image.genrule_layer(
-        name = "build-layer",
+        name = "deps-unpack-layer",
         parent_layer = ":unpack-layer",
+        rule_type = "third_party_build",
+        antlir_rule = "user-internal",
+        user = "root",
+        cmd = [
+            "bash",
+            "-uec",
+            " && ".join([
+                _cmd_for_dependency_setup(dep)
+                for dep in dependencies
+            ]),
+        ],
+    )
+
+    image.genrule_layer(
+        name = "build-layer",
+        parent_layer = ":deps-unpack-layer",
         rule_type = "third_party_build",
         antlir_rule = "user-internal",
         user = "root",
@@ -100,11 +129,42 @@ def _build(base_features, bash, *, version = "latest", name = "build", dependenc
 
     _hoist(
         name = name,
-        out = ".",
+        out = "out",
         layer = "build-layer",
         path = STAGE_DIR,
     )
 
+_dep_t = shape.shape(
+    name = str,
+    source = shape.target(),
+    paths = shape.list(str),
+)
+
+def _library(name, *, include_path = "include", lib_path = "lib"):
+    return shape.new(
+        _dep_t,
+        name = name,
+        source = third_party_shim.library(name, "build", "antlir"),
+        paths = [include_path, lib_path],
+    )
+
+def _oss_build(*, project = None, name = "build"):
+    if not project:
+        project = paths.basename(package_name())
+
+    buck_genrule(
+        name = "build",
+        out = "out",
+        bash = """
+            cp --reflink=auto -r $(location //antlir/third-party/{project}:{name}) "$OUT"
+        """.format(
+            project = project,
+            name = name,
+        ),
+    )
+
 third_party = struct(
     build = _build,
+    library = _library,
+    oss_build = _oss_build,
 )

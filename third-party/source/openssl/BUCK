@@ -1,0 +1,12 @@
+load("//antlir/bzl:oss_shim.bzl", "http_file")
+
+src = {
+    "sha256": "dac036669576e83e8523afdb3971582f8b5d33993a2d6a5af87daa035f529b4f",
+    "version": "1_1_1l",
+}
+
+http_file(
+    name = "tarball",
+    sha256 = src["sha256"],
+    urls = ["https://github.com/openssl/openssl/archive/refs/tags/OpenSSL_{}.tar.gz".format(src["version"])],
+)
