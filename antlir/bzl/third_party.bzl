@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":constants.bzl", "REPO_CFG")
+load(":hoist.bzl", "hoist")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", "buck_genrule", third_party_shim = "third_party")
 load(":shape.bzl", "shape")
@@ -16,23 +17,6 @@ SRC_DIR = paths.join(PREFIX, "src")
 DEPS_DIR = paths.join(PREFIX, "deps")
 STAGE_DIR = paths.join(PREFIX, "stage")
 OUT_DIR = paths.join(PREFIX, "out")
-
-def _hoist(name, out, layer, path, **buck_genrule_kwargs):
-    """Creates a rule to lift an artifact out of the image it was built in."""
-    buck_genrule(
-        name = name,
-        out = out,
-        bash = '''
-            binary_path=( $(exe //antlir:find-built-subvol) )
-            layer_loc="$(location {layer})"
-            sv_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
-            cp --reflink=auto -r "$sv_path"{path} --no-clobber "$OUT"
-        '''.format(
-            layer = ":" + layer,
-            path = path,
-        ),
-        **buck_genrule_kwargs
-    )
 
 def _prepare_layer(name, project, base_features, dependencies = []):
     source_target = third_party_shim.source(project)
@@ -138,11 +122,19 @@ def _native_build(base_features, script, dependencies = [], project = None):
         ],
     )
 
-    _hoist(
+    hoist(
         name = project,
-        out = ".",
         layer = "build-layer",
-        path = paths.join(OUT_DIR, "*"),
+        path = OUT_DIR.lstrip("/"),
+        selector = [
+            "-mindepth 1",
+            "-maxdepth 1",
+        ],
+        force_dir = True,
+        visibility = [
+            "//antlir/...",
+            "//metalos/...",
+        ],
     )
 
 _script_t = shape.shape(
