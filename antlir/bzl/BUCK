@@ -1,5 +1,6 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
 load(":defs.bzl", "fake_macro_library")
+load(":test_hoist.bzl", "test_hoist")
 
 # IMPORTANT: If you add new `.bzl` files or dependencies in `antlir/`,
 # make sure their dependency structure is reflected below.  Just run `grep
@@ -312,4 +313,8 @@ python_binary(
     main_module = "antlir.bzl.fail_with_message",
     visibility = ["PUBLIC"],
     deps = ["//antlir:cli"],
+)
+
+test_hoist(
+    name = "test-hoist",
 )
