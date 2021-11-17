@@ -220,6 +220,21 @@ def _third_party_library(project, rule = None, platform = None):
 
     return "//third-party/" + platform + "/" + project + ":" + rule
 
+def _third_party_source(project, rule = "tarball"):
+    """
+    Generate a target for a third-party source tarball. This will return a target
+    that is normalized into the form (see the README in `//third-party/...`
+    more info on these targets):
+
+        //third-party/<platform>/<project>:<rule>
+
+    If `platform` is not provided it is assumed to be `fedora33`.
+
+    If `rule` is not provided it is assumed to be `tarball`.
+    """
+
+    return "//third-party/source/{}:{}".format(project, rule)
+
 def _wrap_internal(fn, args, kwargs):
     """
     Wrap a build target rule with support for the `antlir_rule` kwarg.
@@ -707,5 +722,6 @@ shim = struct(
     ),
     third_party = struct(
         library = _third_party_library,
+        source = _third_party_source,
     ),
 )
