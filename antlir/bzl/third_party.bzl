@@ -134,6 +134,7 @@ def _native_build(base_features, script, dependencies = [], project = None):
         visibility = [
             "//antlir/...",
             "//metalos/...",
+            "//third-party/...",
         ],
     )
 
@@ -184,8 +185,26 @@ def _oss_build(*, project = None, name = None):
     )
 
 third_party = struct(
+    # The native build target is the main mechanism of building third-party
+    # packages directly from sources, inside an isolated btrfs layer.
+    #
+    # The source tarball is figured out by the third_party oss shim based on
+    # the project name, unpacked along with dependencies in the layer and then
+    # a script shape is used to provide the generic configure, make and install
+    # operations (these are similar to gnu make concepts)
+    # See //antlir/third-party subfolders for usage examples.
     native_build = _native_build,
+
+    # This method constructs a build script to be used with native_build
     script = _new_script,
+
+    # In order to specify build dependencies that were built with native_build,
+    # the library call can be used. By default it will present the "include" and
+    # "lib" folder from the target.
+    # Note that native_build uses a mechanism to provide correct paths for
+    # projects that use pkg-config, so it's usually just necessary to provide the
+    # PKG_CONFIG_PATH and most prepare scripts should work.
+    # See //antlir/third-party subfolders for usage examples.
     library = _library,
     oss_build = _oss_build,
 )

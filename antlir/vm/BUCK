@@ -143,6 +143,7 @@ export_file(
     visibility = [
         "//antlir/linux/vm/...",
         "//antlir/vm/tests/...",
+        "//images/...",
         "//metalos/...",
     ],
 )
