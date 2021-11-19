@@ -21,7 +21,7 @@ impl FromStr for PackageFormatUri {
 
     fn from_str(s: &str) -> Result<Self> {
         if !s.contains("{package}") {
-            bail!("package_format_uri must contain the placeholder '{package}'");
+            bail!("package_format_uri must contain the placeholder '{{package}}'");
         }
         match s.replace("{package}", "placeholder").parse::<Uri>() {
             Ok(u) => {
