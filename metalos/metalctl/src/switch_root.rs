@@ -14,7 +14,7 @@ use crate::mount::{mount, Opts as MountOpts};
 
 #[derive(StructOpt)]
 pub struct Opts {
-    snapshot: String,
+    snapshot: Option<String>,
 }
 
 /// Prior to invoking `systemctl switch-root`, some setup work is required.
@@ -22,10 +22,13 @@ pub struct Opts {
 /// the current bootid. This is necessary so that the newly invoked systemd has
 /// the correct root mount point.
 pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
-    let log = log.new(o!("snapshot" => opts.snapshot.clone()));
     let (device, options) = find_rootdisk_device().context("failed to find /rootdisk device")?;
-    let options: Vec<_> = options.split(',').map(|s| s.to_string()).collect();
-    let options = replace_subvol(options, &opts.snapshot);
+    let mut options: Vec<_> = options.split(',').map(|s| s.to_string()).collect();
+    let mut log = log.new(o!());
+    if let Some(snapshot) = opts.snapshot {
+        log = log.new(o!("snapshot" => snapshot.clone()));
+        options = replace_subvol(options, &snapshot);
+    }
     std::fs::create_dir("/sysroot").context("failed to mkdir /sysroot")?;
     debug!(log, "mounting subvolume on {}", device);
     mount(
@@ -37,12 +40,7 @@ pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
             options: options.clone(),
         },
     )
-    .with_context(|| {
-        format!(
-            "failed to mount subvol '{}' on '{}' at /sysroot {:?}",
-            opts.snapshot, device, options,
-        )
-    })?;
+    .with_context(|| format!("failed to mount '{}' on /sysroot {:?}", device, options))?;
 
     let sd = Systemd::connect(log.clone()).await?;
     // systemctl daemon-reload is necessary after mounting the

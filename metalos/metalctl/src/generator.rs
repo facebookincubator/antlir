@@ -233,6 +233,60 @@ impl Dropin {
 
 fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Result<()> {
     if let Some(os_package) = &cmdline.os_package {
+        // MetalOS doesn't support booting from disk yet, so only enable
+        // MetalOS specific services (metalos-setup-root.service and friends)
+        // if an os_package was specified. (Otherwise we assume we're booting
+        // a non-MetalOS image.
+
+        // Define OS_BOOT_SUBVOL[_DIR] for systemd units:
+        // .../metalos-apply-host-config.service.d/os-boot-subvol.conf
+        // .../metalos-snapshot-root.service.d/os-boot-subvol.conf
+        // .../metalos-switch-root.service.d/os-boot-subvol.conf
+        let conf = "os-boot-subvol.conf";
+        for target in [
+            "metalos-apply-host-config.service",
+            "metalos-snapshot-root.service",
+            "metalos-switch-root.service",
+        ] {
+            info!(log, "Creating {} dropin: {}", target, conf);
+            Dropin {
+                target: target.into(),
+                unit: Unit {
+                    unit: None,
+                    body: Some(UnitBody::Service(ServiceSection {
+                        environment: Some(btreemap! {
+                            "OS_BOOT_SUBVOL_DIR".to_string() =>
+                                "/var/lib/metalos/boot".to_string(),
+                            "OS_BOOT_SUBVOL".to_string() =>
+                                "/var/lib/metalos/boot/%b".to_string()
+                        }),
+                    })),
+                },
+            }
+            .write_to_disk(log.clone(), &opts.normal_dir, conf.as_ref())
+            .context(format!("Failed to write {}", conf))?;
+        }
+
+        // Create a metalos-switch-root dependency on metalos-setup-root
+        // .../metalos-switch-root.service.d/metalos-snapshot-root-dependency.conf
+        let conf = "metalos-snapshot-root-dependency.conf";
+        let target = "metalos-switch-root.service";
+        info!(log, "Creating {} dropin: {}", target, conf);
+        Dropin {
+            target: target.into(),
+            unit: Unit {
+                unit: Some(UnitSection {
+                    before: None,
+                    after: Some("metalos-snapshot-root.service".into()),
+                    requires: Some("metalos-snapshot-root.service".into()),
+                    timeout: None,
+                }),
+                body: None,
+            },
+        }
+        .write_to_disk(log.clone(), &opts.normal_dir, conf.as_ref())
+        .context(format!("Failed to write {}", conf))?;
+
         info!(
             log,
             "instantiating metalos-fetch-image@{}.service", &os_package
@@ -401,6 +455,34 @@ mod tests {
         assert_eq!(
             content,
             "[Service]\nEnvironment=HOST_CONFIG_URI=https://server:8000/v1/host/host001.01.abc0.domain.com\n"
+        );
+
+        for file in [
+            tmpdir.join("metalos-apply-host-config.service.d/os-boot-subvol.conf"),
+            tmpdir.join("metalos-snapshot-root.service.d/os-boot-subvol.conf"),
+            tmpdir.join("metalos-switch-root.service.d/os-boot-subvol.conf"),
+        ] {
+            assert!(file.exists());
+            let content = std::fs::read_to_string(file.clone())
+                .context(format!("Can't read file {}", file.display()))?;
+            assert_eq!(
+                content,
+                "[Service]\n\
+                Environment=OS_BOOT_SUBVOL=/var/lib/metalos/boot/%b\n\
+                Environment=OS_BOOT_SUBVOL_DIR=/var/lib/metalos/boot\n"
+            );
+        }
+
+        let file =
+            tmpdir.join("metalos-switch-root.service.d/metalos-snapshot-root-dependency.conf");
+        assert!(file.exists());
+        let content = std::fs::read_to_string(file.clone())
+            .context(format!("Can't read file {}", file.display()))?;
+        assert_eq!(
+            content,
+            "[Unit]\n\
+            After=metalos-snapshot-root.service\n\
+            Requires=metalos-snapshot-root.service\n"
         );
 
         let file = tmpdir.join("metalos-snapshot-root.service.d/os_subvol.conf");

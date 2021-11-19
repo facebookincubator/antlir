@@ -4,15 +4,8 @@ DefaultDependencies=no
 OnFailure=emergency.target
 OnFailureJobMode=replace-irreversibly
 AllowIsolate=yes
-
-# We must have a new shapshot to boot into already
-Requires=metalos-snapshot-root.service
-After=metalos-snapshot-root.service
-
-# We also require that the config to be already setup for us properly
-# as this is the last step in the process
-Requires=metalos-apply-host-config.service
-After=metalos-apply-host-config.service
+Requires=rootdisk.mount
+After=rootdisk.mount
 
 # Forcibly stop this service so that the systemd in the post-switch-root os will
 # restart it and process the rules that are in the rootfs
@@ -24,4 +17,4 @@ After=dbus.service
 
 [Service]
 Type=oneshot
-ExecStart=metalctl switch-root /var/lib/metalos/boot/%b
+ExecStart=metalctl switch-root ${OS_BOOT_SUBVOL}

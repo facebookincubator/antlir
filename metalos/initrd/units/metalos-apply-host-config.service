@@ -18,4 +18,4 @@ ConditionKernelCommandLine=metalos.host-config-uri
 
 [Service]
 Type=oneshot
-ExecStart=metalctl apply-host-config ${HOST_CONFIG_URI} /rootdisk/var/lib/metalos/boot/%b
+ExecStart=metalctl apply-host-config ${HOST_CONFIG_URI} /rootdisk${OS_BOOT_SUBVOL}
