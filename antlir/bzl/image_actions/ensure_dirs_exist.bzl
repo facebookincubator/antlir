@@ -11,7 +11,7 @@ load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_fe
 ensure_subdirs_exist_t = shape.shape(
     into_dir = str,
     subdirs_to_create = str,
-    mode = shape.union(mode_t, optional = True),
+    mode = shape.field(mode_t, optional = True),
     user_group = shape.field(str, optional = True),
 )
 
