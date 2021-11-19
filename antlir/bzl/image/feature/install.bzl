@@ -72,11 +72,11 @@ load(
 install_files_t = shape.shape(
     dest = shape.path(),
     source = target_tagged_image_source_shape,
-    mode = shape.union(mode_t, optional = True),
+    mode = shape.field(mode_t, optional = True),
     user_group = shape.field(str, optional = True),
-    dir_mode = shape.union(mode_t, optional = True),
-    exe_mode = shape.union(mode_t, optional = True),
-    data_mode = shape.union(mode_t, optional = True),
+    dir_mode = shape.field(mode_t, optional = True),
+    exe_mode = shape.field(mode_t, optional = True),
+    data_mode = shape.field(mode_t, optional = True),
 )
 
 _BUCK_RUNNABLE_WRAP_SUFFIX = "install_buck_runnable_wrap_source"
