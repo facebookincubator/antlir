@@ -45,7 +45,7 @@ as opposed to a sheared mix of the repo at various points in time) if:
   - `repomd.xml` is replaced atomically (i.e.  via `rename`) after making
     available all the new RPMs & repodatas.
 """
-from typing import Iterable, Iterator, Tuple
+from typing import Iterable, Iterator, Tuple, Callable
 
 from antlir.common import get_logger, not_none
 from antlir.rpm.downloader.common import DownloadConfig, DownloadResult
@@ -91,6 +91,7 @@ def download_repos(
     *,
     cfg: DownloadConfig,
     visitors: Iterable[RepoObjectVisitor] = (),
+    log_sample: Callable = lambda *_, **__: None,
 ) -> Iterator[Tuple[YumDnfConfRepo, RepoSnapshot]]:
     all_snapshot_universes = frozenset(u for _, u in repos_and_universes)
     with cfg.new_db_ctx(readonly=False) as rw_repo_db:
@@ -102,7 +103,12 @@ def download_repos(
     repomd_results = list(gen_repomds_from_repos(repos_and_universes, cfg))
     repodata_results = list(gen_repodatas_from_repomds(repomd_results, cfg))
     rpm_results = list(
-        gen_rpms_from_repodatas(repodata_results, cfg, all_snapshot_universes)
+        gen_rpms_from_repodatas(
+            repodata_results,
+            cfg,
+            all_snapshot_universes,
+            log_sample=log_sample,
+        )
     )
 
     # All downloads have completed - we now want to atomically persist repomds.

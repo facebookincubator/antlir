@@ -9,7 +9,6 @@ import os
 import textwrap
 
 from antlir.fs_utils import Path, populate_temp_dir_and_rename, temp_dir
-from antlir.rpm.downloader.logger import init_sample_logging
 
 from ..common import RpmShard
 from ..snapshot_repos import snapshot_repos
@@ -91,8 +90,6 @@ def make_temp_snapshot(
 
 if __name__ == "__main__":
     import argparse
-
-    init_sample_logging(is_test=True)
 
     kind_to_steps = {
         "sample-step-0": SAMPLE_STEPS[0],  # Used by most tests

@@ -264,7 +264,6 @@ python_library(
         ":yum_dnf_conf",
         "//antlir:fs_utils",
         "//antlir/rpm/downloader:common",
-        "//antlir/rpm/downloader:logger",
         "//antlir/rpm/downloader:repo_downloader",
         "//antlir/rpm/storage:storage",
     ],
@@ -380,7 +379,6 @@ python_binary(
         ":db_connection",
         ":snapshot_repos",
         ":temp_repos",
-        "//antlir/rpm/downloader:logger",
         "//antlir/rpm/storage:storage",
     ],
 )
@@ -470,7 +468,6 @@ python_library(
         ":yum_dnf_conf",
         "//antlir:fs_utils",
         "//antlir/rpm/downloader:common",
-        "//antlir/rpm/downloader:logger",
         "//antlir/rpm/downloader:repo_downloader",
         "//antlir/rpm/facebook:validate_universe_name",
     ],

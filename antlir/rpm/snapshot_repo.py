@@ -15,7 +15,6 @@ import sys
 from antlir.common import get_logger, init_logging
 from antlir.fs_utils import Path, populate_temp_dir_and_rename
 from antlir.rpm.downloader.common import DownloadConfig
-from antlir.rpm.downloader.logger import init_sample_logging
 from antlir.rpm.downloader.repo_downloader import download_repos
 
 from .common_args import add_standard_args
@@ -98,5 +97,4 @@ def snapshot_repo(argv):
 
 
 if __name__ == "__main__":  # pragma: no cover
-    init_sample_logging()
     snapshot_repo(sys.argv[1:])
