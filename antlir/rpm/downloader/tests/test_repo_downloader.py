@@ -34,7 +34,6 @@ from antlir.rpm.downloader import (
     repodata_downloader,
     rpm_downloader,
 )
-from antlir.rpm.downloader.logger import init_sample_logging
 from antlir.rpm.downloader.repomd_downloader import REPOMD_MAX_RETRY_S
 from antlir.rpm.repo_db import RepodataTable, RepoDBContext
 from antlir.rpm.repo_snapshot import (
@@ -107,9 +106,11 @@ _EMPTY_EEL = temp_repos.Repo([])
 
 
 class DownloadReposTestCase(unittest.TestCase):
+    def log_sample(self, *args, **kwargs):
+        pass
+
     @classmethod
     def setUpClass(cls):
-        init_sample_logging(is_test=True)
         cls.multi_repo_dict = {
             "good_dog": _GOOD_DOG,
             "good_dog2": _GOOD_DOG2,
@@ -168,6 +169,7 @@ class DownloadReposTestCase(unittest.TestCase):
                 rpm_shard=rpm_shard or RpmShard(shard=0, modulo=1),
                 threads=_THREADS,
             ),
+            log_sample=self.log_sample,
         )
 
     @contextmanager
@@ -801,6 +803,7 @@ class DownloadReposTestCase(unittest.TestCase):
                         rpm_shard=RpmShard(shard=0, modulo=1),
                         threads=_THREADS,
                     ),
+                    log_sample=self.log_sample,
                 )
             )
             # Each snapshot will have unique repomds

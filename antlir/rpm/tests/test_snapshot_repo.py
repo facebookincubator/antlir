@@ -10,7 +10,6 @@ import sqlite3
 import unittest
 
 from antlir.fs_utils import Path, temp_dir
-from antlir.rpm.downloader.logger import init_sample_logging
 
 from ..repo_snapshot import RepoSnapshot
 from ..snapshot_repo import snapshot_repo
@@ -19,10 +18,6 @@ from . import temp_repos
 
 
 class SnapshotRepoTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        init_sample_logging(is_test=True)
-
     def test_snapshot(self):
         with temp_repos.temp_repos_steps(
             gpg_signing_key=temp_repos.get_test_signing_key(),

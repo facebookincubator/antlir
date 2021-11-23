@@ -11,7 +11,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 from types import MappingProxyType
-from typing import Dict, FrozenSet, Iterable, Iterator, Set, Tuple
+from typing import Dict, FrozenSet, Iterable, Iterator, Set, Tuple, Callable
 
 from antlir.common import get_logger, not_none, retryable, shuffled
 from antlir.rpm.common import read_chunks
@@ -29,7 +29,6 @@ from antlir.rpm.downloader.common import (
     verify_chunk_stream,
 )
 from antlir.rpm.downloader.deleted_mutable_rpms import deleted_mutable_rpms
-from antlir.rpm.downloader.logger import log_sample
 from antlir.rpm.repo_db import RpmTable
 from antlir.rpm.repo_objects import CANONICAL_HASH, Checksum, Rpm
 from antlir.rpm.repo_snapshot import (
@@ -182,6 +181,7 @@ def _handle_rpm(
     rpm_table: RpmTable,
     all_snapshot_universes: Set[str],
     cfg: DownloadConfig,
+    log_sample: Callable,
 ) -> Tuple[Rpm, MaybeStorageID, float]:
     """Fetches the specified RPM from the repo DB and downloads it if needed.
 
@@ -247,6 +247,7 @@ def _download_rpms(
     rpms: Iterable[Rpm],
     all_snapshot_universes: FrozenSet[str],
     cfg: DownloadConfig,
+    log_sample: Callable,
 ) -> Tuple[Dict[MaybeStorageID, Rpm], float]:
     storage_id_to_rpm = {}
     duplicate_rpms = 0
@@ -263,6 +264,7 @@ def _download_rpms(
                 rpm_table,
                 all_snapshot_universes,
                 cfg,
+                log_sample,
             )
             # Download in random order to reduce collisions from racing writers.
             for rpm in shuffled(rpms)
@@ -332,6 +334,8 @@ def gen_rpms_from_repodatas(
     repodata_results: Iterable[DownloadResult],
     cfg: DownloadConfig,
     all_snapshot_universes: FrozenSet[str],
+    *,
+    log_sample: Callable = lambda *_, **__: None,
 ) -> Iterator[DownloadResult]:
     for res in repodata_results:
         res_rpms = not_none(res.rpms, "rpms")
@@ -350,6 +354,7 @@ def gen_rpms_from_repodatas(
                 res_rpms,
                 all_snapshot_universes,
                 cfg,
+                log_sample,
             )
             yield res._replace(
                 storage_id_to_rpm=MappingProxyType(storage_id_to_rpm)

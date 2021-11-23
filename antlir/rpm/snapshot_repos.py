@@ -38,7 +38,6 @@ from typing import Callable, Dict, FrozenSet, Iterable, List
 from antlir.common import get_logger, init_logging
 from antlir.fs_utils import Path, create_ro, populate_temp_dir_and_rename
 from antlir.rpm.downloader.common import DownloadConfig
-from antlir.rpm.downloader.logger import init_sample_logging
 from antlir.rpm.downloader.repo_downloader import download_repos
 
 from .common import RpmShard
@@ -125,6 +124,7 @@ def snapshot_repos(
     gpg_key_allowlist_dir: str,
     exclude: FrozenSet[str],
     threads: int,
+    log_sample: Callable = lambda *_, **__: None,
 ):
     all_repos_sizer = RepoSizer()
     shard_sizer = RepoSizer()
@@ -159,6 +159,7 @@ def snapshot_repos(
                 threads=threads,
             ),
             visitors=[all_repos_sizer],
+            log_sample=log_sample,
         ):
             snapshot.visit(shard_sizer).to_sqlite(repo.name, db)
             # This is done outside of the repo snapshot as we only want to
@@ -186,7 +187,9 @@ def snapshot_repos(
     log.info(shard_sizer.get_report(f"This {rpm_shard} snapshot weighs"))
 
 
-def snapshot_repos_from_args(argv: List[str]):
+def snapshot_repos_from_args(
+    argv: List[str], *, log_sample: Callable = lambda *_, **__: None
+):
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -264,9 +267,9 @@ def snapshot_repos_from_args(argv: List[str]):
             gpg_key_allowlist_dir=args.gpg_key_allowlist_dir,
             exclude=frozenset(args.exclude),
             threads=args.threads,
+            log_sample=log_sample,
         )
 
 
 if __name__ == "__main__":  # pragma: no cover
-    init_sample_logging()
     snapshot_repos_from_args(sys.argv[1:])

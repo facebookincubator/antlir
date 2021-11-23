@@ -12,7 +12,6 @@ import unittest.mock
 from typing import FrozenSet
 
 from antlir.fs_utils import Path, temp_dir
-from antlir.rpm.downloader.logger import init_sample_logging
 
 from .. import repo_db
 from ..repo_snapshot import RepoSnapshot
@@ -30,10 +29,6 @@ def _read_conf_headers(conf_path: Path) -> FrozenSet[str]:
 
 
 class SnapshotReposTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        init_sample_logging(is_test=True)
-
     def setUp(self):
         self.maxDiff = 12345
 
