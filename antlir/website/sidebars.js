@@ -126,6 +126,10 @@ module.exports = {
         type: 'doc',
         id: 'fb/vision-containers-as-build-artifacts',
       },
+      {
+        type: 'doc',
+        id: 'fb/oss-testing',
+      },
     ]),
   ],
 };
