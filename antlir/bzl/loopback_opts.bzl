@@ -28,6 +28,8 @@ loopback_opts_t = shape.shape(
     seed_device = shape.field(bool, default = False),
     default_subvolume = shape.field(bool, default = False),
     subvol_name = shape.field(str, optional = True),
+    # vfat-only options
+    fat_size = shape.field(int, optional = True),
 )
 
 def _new_loopback_opts_t(

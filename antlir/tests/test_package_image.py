@@ -447,7 +447,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         # Verify the explicit format version from the bzl
         self._verify_package_as_cpio(self._sibling_path("create_ops_cpio_gz"))
 
-    def _verify_package_as_vfat(self, pkg_path, label=""):
+    def _verify_package_as_vfat(self, pkg_path, label="", fat_size=0):
         with Unshare(
             [Namespace.MOUNT, Namespace.PID]
         ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
@@ -464,6 +464,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 )
             )
             self._verify_vfat_mount(unshare, mount_dir, label)
+        # mkfs.vfat auto-selects fat size, only assert if we force a value
+        if fat_size:
+            fat_info = subprocess.check_output(["file", "-b", pkg_path])
+            self.assertIn(f"({fat_size} bit)", str(fat_info))
 
     def test_package_image_as_vfat(self):
         with self._package_image(
@@ -474,6 +478,17 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             ),
         ) as pkg_path:
             self._verify_package_as_vfat(pkg_path)
+
+        # Verify different fat size works
+        with self._package_image(
+            self._sibling_path("vfat-test.layer"),
+            format="vfat",
+            loopback_opts=loopback_opts_t(
+                size_mb=32,
+                fat_size=16,
+            ),
+        ) as pkg_path:
+            self._verify_package_as_vfat(pkg_path, fat_size=16)
 
         # Verify the explicit format version from the bzl
         self._verify_package_as_vfat(
