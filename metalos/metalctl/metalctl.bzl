@@ -44,6 +44,7 @@ def metalctl(name, rustc_flags = None, **kwargs):
         "tokio",  # async runtime for http client
         "tower",
         "trust-dns-resolver",
+        "tempfile",
     ]
 
     rustc_flags = rustc_flags or []

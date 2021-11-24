@@ -11,15 +11,17 @@ use std::net::SocketAddr;
 use std::pin::Pin;
 use std::task::Poll;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use bytes::{Buf, Bytes};
 use futures_core::stream::Stream;
 use futures_util::StreamExt;
 use hyper::client::connect::dns::Name;
 use hyper::client::{Client, HttpConnector};
+use hyper::header::{CONTENT_LENGTH, LOCATION};
+use hyper::{Body, StatusCode, Uri};
 use hyper_rustls::HttpsConnector;
 use rustls::ClientConfig;
-use slog::{warn, Logger};
+use slog::{debug, info, warn, Logger};
 use tower::Service;
 use trust_dns_resolver::TokioAsyncResolver;
 
@@ -96,6 +98,51 @@ pub async fn drain_stream<S: Stream<Item = hyper::Result<Bytes>>, W: Write>(
         copy(&mut chunk.reader(), &mut writer).context("failed to write chunk")?;
     }
     Ok(())
+}
+
+pub async fn download_file(log: Logger, mut uri: Uri) -> Result<Body> {
+    let client = client(log.clone()).context("failed to create https client")?;
+
+    // hyper is a low level client (which is good for our dns connector), but
+    // then we have to do things like follow redirects manually
+    let mut redirects = 0u8;
+    let resp = loop {
+        let resp = client.get(uri.clone()).await?;
+        if resp.status().is_redirection() {
+            let mut new_uri = resp.headers()[LOCATION]
+                .to_str()?
+                .parse::<Uri>()
+                .context("invalid redirect uri")?
+                .into_parts();
+            if new_uri.scheme.is_none() {
+                new_uri.scheme = uri.scheme().map(|s| s.to_owned());
+            }
+            if new_uri.authority.is_none() {
+                new_uri.authority = uri.authority().map(|a| a.to_owned());
+            }
+            let new_uri = Uri::from_parts(new_uri)?;
+            debug!(log, "redirected from {:?} to {:?}", uri, new_uri);
+            uri = new_uri;
+            redirects += 1;
+            if redirects > 10 {
+                bail!("too many redirects");
+            }
+            continue;
+        }
+        info!(log, "downloading image from {:?}", uri);
+        break resp;
+    };
+
+    let status = resp.status();
+    if status != StatusCode::OK {
+        bail!("http response was not OK: {:?}", status);
+    }
+    if let Some(content_len) = resp.headers().get(CONTENT_LENGTH) {
+        if let Ok(len) = content_len.to_str().unwrap_or("").parse::<u64>() {
+            debug!(log, "image is {} bytes", len);
+        }
+    }
+    Ok(resp.into_body())
 }
 
 #[cfg(test)]
