@@ -457,9 +457,13 @@ class VfatImage(Format, format_name="vfat"):
             #  `(image_path: Any, work_dir: Any) -> str`.
             lambda *, image_path, work_dir: (
                 "/usr/bin/truncate -s {image_size_mb}M {image_path}; "
-                "/usr/sbin/mkfs.vfat {maybe_label} {image_path}; "
+                "/usr/sbin/mkfs.vfat {maybe_fat_size} {maybe_label} "
+                "{image_path}; "
                 "/usr/bin/mcopy -v -i {image_path} -sp {work_dir}/* ::"
             ).format(
+                maybe_fat_size=f"-F{opts.loopback_opts.fat_size}"
+                if opts.loopback_opts.fat_size
+                else "",
                 maybe_label=f"-n {opts.loopback_opts.label}"
                 if opts.loopback_opts.label
                 else "",
