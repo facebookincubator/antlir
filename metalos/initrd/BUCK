@@ -1,6 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -176,5 +175,4 @@ package.new(
     format = "cpio.gz",
     layer = ":base",
     visibility = ["PUBLIC"],
-    build_appliance = flavor_helpers.default_flavor_build_appliance,
 )

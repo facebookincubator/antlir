@@ -221,14 +221,16 @@ import os
 import pwd
 import stat
 import subprocess
-from typing import Mapping, NamedTuple, Optional, Callable
+from typing import AnyStr, Callable, Mapping, NamedTuple, Optional
 
+from antlir.cli import add_targets_and_outputs_arg, init_cli
+from antlir.config import repo_config
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
 
 from .common import check_popen_returncode, init_logging
 from .find_built_subvol import find_built_subvol
-from .fs_utils import Path, create_ro, generate_work_dir
+from .fs_utils import META_FLAVOR_FILE, Path, create_ro, generate_work_dir
 from .loopback_opts_t import loopback_opts_t
 from .subvol_utils import Subvol
 
@@ -506,61 +508,6 @@ class Ext3Image(Format, format_name="ext3"):
         )
 
 
-def parse_args(argv):
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--subvolumes-dir",
-        required=True,
-        type=Path.from_argparse,
-        help="A directory on a btrfs volume, where all the subvolume wrapper "
-        "directories reside.",
-    )
-    parser.add_argument(
-        "--layer-path",
-        required=True,
-        help="A directory output from the `image_layer` we need to package",
-    )
-    parser.add_argument(
-        "--format",
-        choices=Format.NAME_TO_CLASS.keys(),
-        required=True,
-        help=f"""
-        Brief format descriptions -- see the code docblocks for more detail:
-            {'; '.join(
-                '"' + k + '" -- ' + v.__doc__
-                    for k, v in Format.NAME_TO_CLASS.items()
-            )}
-        """,
-    )
-    parser.add_argument(
-        "--output-path",
-        required=True,
-        help="Write the image package file(s) to this path -- must not exist",
-    )
-    parser.add_argument(
-        "--loopback-opts",
-        type=loopback_opts_t.parse_raw,
-        help="Inline serialized loopback_opts_t instance containing "
-        "configuration options for loopback formats",
-    )
-    parser.add_argument(
-        "--build-appliance", help="Build appliance layer to use when packaging"
-    )
-    # Future: To add support for incremental send-streams, we'd want to
-    # use this (see `--ancestor-jsons` in `image/package/new.bzl`)
-    #
-    # parser.add_argument(
-    #     '--ancestor-jsons',
-    #     nargs=argparse.REMAINDER, metavar=['PATH'], required=True,
-    #     help='Consumes the remaining arguments on the command-line. '
-    #         'A list of image_layer JSON output files.',
-    # )
-    return Path.parse_args(parser, argv)
-
-
 # Future: For incremental snapshots, an important sanity check is to verify
 # that base subvolume is actually an ancestor of the subvolume being
 # packaged, since `btrfs send` does not check this.  The function below
@@ -594,31 +541,93 @@ def parse_args(argv):
 #     return subvol_stack
 
 
-def package_image(argv):
-    args = parse_args(argv)
-    assert not os.path.exists(args.output_path)
-    Format.make(args.format).package_full(
-        find_built_subvol(args.layer_path, subvolumes_dir=args.subvolumes_dir),
-        output_path=args.output_path,
+def _get_build_appliance_from_layer_flavor_config(
+    layer: Subvol, targets_and_outputs: Mapping[AnyStr, Path]
+) -> Path:
+    return targets_and_outputs[
+        repo_config()
+        .flavor_to_config[layer.read_path_text(META_FLAVOR_FILE)]
+        .build_appliance
+    ]
+
+
+def package_image(args):
+    with init_cli(description=__doc__, argv=args) as cli:
+        cli.parser.add_argument(
+            "--subvolumes-dir",
+            required=True,
+            type=Path.from_argparse,
+            help="A directory on a btrfs volume, where all the subvolume "
+            "wrapper directories reside.",
+        )
+        cli.parser.add_argument(
+            "--layer-path",
+            required=True,
+            help="A directory output from the `image_layer` we need to package",
+        )
+        cli.parser.add_argument(
+            "--format",
+            choices=Format.NAME_TO_CLASS.keys(),
+            required=True,
+            help=f"""
+            Brief format descriptions -- see the code docblocks for more detail:
+                {'; '.join(
+                    '"' + k + '" -- ' + v.__doc__
+                        for k, v in Format.NAME_TO_CLASS.items()
+                )}
+            """,
+        )
+        cli.parser.add_argument(
+            "--output-path",
+            required=True,
+            help="Write the image package file(s) to this path. This "
+            "path must not already exist.",
+        )
+        cli.parser.add_argument(
+            "--loopback-opts",
+            type=loopback_opts_t.parse_raw,
+            default=loopback_opts_t(),
+            help="Inline serialized loopback_opts_t instance containing "
+            "configuration options for loopback formats",
+        )
+
+        add_targets_and_outputs_arg(cli.parser)
+
+        # Future: To add support for incremental send-streams, we'd want to
+        # use this (see `--ancestor-jsons` in `image/package/new.bzl`)
+        #
+        # parser.add_argument(
+        #     '--ancestor-jsons',
+        #     nargs=argparse.REMAINDER, metavar=['PATH'], required=True,
+        #     help='Consumes the remaining arguments on the command-line. '
+        #         'A list of image_layer JSON output files.',
+        # )
+
+    # Buck should remove this path if the target needs to be rebuilt.
+    # This is a safety check to make sure we're not doing anything behind buck's
+    # back.
+    assert not os.path.exists(cli.args.output_path)
+
+    layer = find_built_subvol(
+        cli.args.layer_path, subvolumes_dir=cli.args.subvolumes_dir
+    )
+
+    build_appliance = find_built_subvol(
+        _get_build_appliance_from_layer_flavor_config(
+            layer=layer, targets_and_outputs=cli.args.targets_and_outputs
+        )
+    )
+
+    Format.make(cli.args.format).package_full(
+        output_path=cli.args.output_path,
         opts=_Opts(
-            build_appliance=find_built_subvol(args.build_appliance)
-            if args.build_appliance
-            else None,
-            loopback_opts=args.loopback_opts
-            if args.loopback_opts
-            else loopback_opts_t(),
+            build_appliance=build_appliance,
+            loopback_opts=cli.args.loopback_opts,
         ),
-    )
-    # Paranoia: images are read-only after being built
-    os.chmod(
-        args.output_path,
-        stat.S_IMODE(os.stat(args.output_path).st_mode)
-        & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH),
+        subvol=layer,
     )
 
 
+# This is covered by integration tests using `package.bzl`
 if __name__ == "__main__":  # pragma: no cover
-    import sys
-
-    init_logging()
-    package_image(sys.argv[1:])
+    package_image(None)

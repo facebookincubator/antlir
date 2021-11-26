@@ -9,12 +9,12 @@ files, as described by the specified `format`.
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE", "REPO_CFG")
 load("//antlir/bzl:image_utils.bzl", "image_utils")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:query.bzl", "layer_deps_query")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
 
 _IMAGE_PACKAGE = "image_package"
 
@@ -26,8 +26,6 @@ def package_new(
         # "user-facing" is the only sane default.  See comments in
         # `oss_shim.bzl` for how this works.
         antlir_rule = "user-facing",
-        # Build appliance to use when creating packages
-        build_appliance = None,
         # The format to use
         # For supported formats, see `--format` here:
         #     buck run //antlir:package-image -- --help
@@ -37,7 +35,6 @@ def package_new(
         # Opts are required when format == ext3 | vfat | btrfs
         loopback_opts = None):
     visibility = visibility or []
-    build_appliance = build_appliance or REPO_CFG.artifact["build_appliance.newest"]
 
     if not format:
         fail("`format` is required for package.new")
@@ -72,14 +69,20 @@ def package_new(
               --layer-path $(query_outputs {layer}) \
               --format {format} \
               --output-path "$OUT" \
-              {maybe_build_appliance} \
+              {targets_and_outputs} \
               {maybe_loopback_opts}
             '''.format(
                 format = format,
                 layer = layer,
-                maybe_build_appliance = "--build-appliance $(query_outputs {})".format(
-                    build_appliance,
-                ) if build_appliance != DO_NOT_USE_BUILD_APPLIANCE else "",
+                # We build a list of targets -> outputs using the basic
+                # layer_deps_query to ensure that we can always find the
+                # build appliance that built the layer in the first place.
+                # This build appliance will be the one used to package the
+                # layer.
+                targets_and_outputs = " ".join(targets_and_outputs_arg_list(
+                    name = name,
+                    query = layer_deps_query(layer),
+                )),
                 maybe_loopback_opts = "--loopback-opts {}".format(
                     shell.quote(shape.do_not_cache_me_json(loopback_opts)),
                 ) if loopback_opts else "",
@@ -93,6 +96,8 @@ def package_new(
                 # This could replace `--subvolume-json`, though also
                 # specifying it would make `get_subvolume_on_disk_stack`
                 # more efficient.
+                # NOTE: With the addition of `targets_and_outputs`
+                # we now have this ancestor history available.
                 package_image = antlir_dep(":package-image"),
             ),
             rule_type = _IMAGE_PACKAGE,

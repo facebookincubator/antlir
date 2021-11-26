@@ -791,7 +791,7 @@ package.new(
 )
 
 package.new(
-    name = "child-sized/layer.btrfs",
+    name = "fixed-size.btrfs",
     layer = ":child/layer",
     format = "btrfs",
     loopback_opts = image.opts(

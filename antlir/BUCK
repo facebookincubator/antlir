@@ -4,6 +4,7 @@ load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:loopback_opts.bzl", "loopback_opts_t")
 load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file", "python_binary", "python_library", "python_unittest", "rust_library", "third_party")
+load("//antlir/bzl:query.bzl", "query")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
@@ -495,25 +496,38 @@ python_binary(
     ],
 )
 
+TEST_PACKAGE_RESOURCES = {
+    TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
+    TEST_IMAGE_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
+    TEST_IMAGE_PREFIX + "create_ops": "tests/create_ops.layer",
+    TEST_IMAGE_PREFIX + "create_ops_cpio_gz": "tests/create_ops_cpio_gz",
+    TEST_IMAGE_PREFIX + "create_ops_squashfs": "tests/create_ops_squashfs",
+    TEST_IMAGE_PREFIX + "create_ops_ext3": "tests/create_ops_ext3",
+    TEST_IMAGE_PREFIX + "create_ops-layer-via-tarball-package": "tests/create_ops-layer-via-tarball-package",
+    TEST_IMAGE_PREFIX + "vfat-test.layer": "tests/vfat-test.layer",
+    TEST_IMAGE_PREFIX + "vfat-test.vfat": "tests/vfat-test.vfat",
+    TEST_IMAGE_PREFIX + "fixed-size.btrfs": "tests/fixed-size.btrfs",
+    layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance-testing",
+}
+
 # Also tests the Buck macro `image/package/new.bzl`, but we cannot assert coverage.
 python_unittest(
     name = "test-package-image",
     srcs = ["tests/test_package_image.py"],
-    needed_coverage = [(100, ":package-image-library")],
-    resources = {
-        # Same comment re: mutate_ops as in `test_layer_from_demo_sendstreams`.
-        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
-        TEST_IMAGE_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
-        TEST_IMAGE_PREFIX + "create_ops": "tests/create_ops.layer",
-        TEST_IMAGE_PREFIX + "create_ops_cpio_gz": "tests/create_ops_cpio_gz",
-        TEST_IMAGE_PREFIX + "create_ops_squashfs": "tests/create_ops_squashfs",
-        TEST_IMAGE_PREFIX + "create_ops_ext3": "tests/create_ops_ext3",
-        TEST_IMAGE_PREFIX + "create_ops-layer-via-tarball-package": "tests/create_ops-layer-via-tarball-package",
-        TEST_IMAGE_PREFIX + "vfat-test.layer": "tests/vfat-test.layer",
-        TEST_IMAGE_PREFIX + "vfat-test.vfat": "tests/vfat-test.vfat",
-        TEST_IMAGE_PREFIX + "child-sized/layer.btrfs": "tests/fixed-size.btrfs",
-        layer_resource(REPO_CFG.artifact["build_appliance.newest"]): "tests/build-appliance",
+    env = {
+        "target_map": "$(query_targets_and_outputs '{}')".format(
+            query.attrregexfilter(
+                expr = query.deps(
+                    expr = query.set(TEST_PACKAGE_RESOURCES.keys()),
+                    depth = query.UNBOUNDED,
+                ),
+                label = "type",
+                pattern = "image_layer*",
+            ),
+        ),
     },
+    needed_coverage = [(100, ":package-image-library")],
+    resources = TEST_PACKAGE_RESOURCES,
     deps = [
         ":find_built_subvol",
         ":fs_utils",
@@ -524,6 +538,7 @@ python_unittest(
         ":testlib_layer_resource",
         ":testlib_subvol_helpers",
         ":unshare",
+        "//antlir:serialize-targets-and-outputs-library",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
