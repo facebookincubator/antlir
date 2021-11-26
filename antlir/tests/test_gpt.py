@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 from contextlib import contextmanager
 
+from antlir.fs_utils import temp_dir
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource
 
@@ -19,8 +20,8 @@ from ..unshare import Namespace, Unshare, nsenter_as_root
 class GptTestCase(ImagePackageTestCaseBase):
     @contextmanager
     def _make_gpt(self):
-        with tempfile.TemporaryDirectory() as td:
-            out_path = os.path.join(td, "image.gpt")
+        with temp_dir() as td:
+            out_path = td / "image.gpt"
             make_gpt(
                 [
                     "--build-appliance",
@@ -55,7 +56,7 @@ class GptTestCase(ImagePackageTestCaseBase):
             sector_size = 512
             part_offsets = [int(o.split()[0]) * sector_size for o in res]
             part_sizes = [int(o.split()[1]) * sector_size for o in res]
-            with tempfile.TemporaryDirectory() as mount_dir:
+            with temp_dir() as mount_dir:
                 subprocess.check_call(
                     nsenter_as_root(
                         unshare,
@@ -72,7 +73,7 @@ class GptTestCase(ImagePackageTestCaseBase):
                 )
                 self._verify_vfat_mount(unshare, mount_dir, "cats")
 
-            with tempfile.TemporaryDirectory() as mount_dir:
+            with temp_dir() as mount_dir:
                 subprocess.check_call(
                     nsenter_as_root(
                         unshare,

@@ -9,12 +9,14 @@ import os
 import subprocess
 import tempfile
 
+from antlir.fs_utils import Path
 from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.subvol_helpers import (
     get_meta_dir_contents,
     pop_path,
     render_sendstream,
     render_subvol,
+    RenderedTree,
 )
 
 from ..unshare import Unshare, nsenter_as_root
@@ -25,13 +27,13 @@ class ImagePackageTestCaseBase(AntlirTestCase):
     def setUp(self):
         super().setUp()
         # Works in @mode/opt since the files of interest are baked into the XAR
-        self.my_dir = os.path.dirname(__file__)
+        self.my_dir = Path(__file__).dirname()
 
-    def _sibling_path(self, rel_path: str):
-        return os.path.join(self.my_dir, rel_path)
+    def _sibling_path(self, rel_path: str) -> Path:
+        return self.my_dir / rel_path
 
-    def _render_sendstream_path(self, path):
-        if path.endswith(".zst"):
+    def _render_sendstream_path(self, path: Path) -> RenderedTree:
+        if path.endswith(b".zst"):
             data = subprocess.check_output(
                 ["zstd", "--decompress", "--stdout", path]
             )
@@ -41,7 +43,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
         return render_sendstream(data)
 
     def _assert_filesystem_label(
-        self, unshare: Unshare, mount_dir: str, label: str
+        self, unshare: Unshare, mount_dir: Path, label: str
     ):
         self.assertEqual(
             subprocess.check_output(
@@ -119,7 +121,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
                 "--sparse",
                 "--xattrs",
                 "--acls",
-                mount_dir + "/",
+                f"{mount_dir}/",
                 subvol.path(),
             )
         )
@@ -138,7 +140,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
 
             self._assert_meta_valid_and_sendstreams_equal(
                 original_render,
-                self._render_sendstream_path(temp_sendstream.name),
+                self._render_sendstream_path(Path(temp_sendstream.name)),
             )
 
     @with_temp_subvols
@@ -150,7 +152,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
                 unshare,
                 "cp",
                 "-a",
-                mount_dir + "/.",
+                mount_dir / ".",
                 subvol.path(),
             )
         )
