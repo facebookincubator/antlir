@@ -15,7 +15,12 @@ from typing import Iterator
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_gnu_tar,
 )
-from antlir.fs_utils import generate_work_dir, open_for_read_decompress
+from antlir.fs_utils import (
+    generate_work_dir,
+    open_for_read_decompress,
+    temp_dir,
+    Path,
+)
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir, MiB
@@ -35,8 +40,8 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         format: str,
         loopback_opts: loopback_opts_t = None,
     ) -> Iterator[str]:
-        with tempfile.TemporaryDirectory() as td:
-            out_path = os.path.join(td, format)
+        with temp_dir() as td:
+            out_path = td / format
             package_image(
                 [
                     "--build-appliance",
@@ -58,7 +63,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             )
             yield out_path
 
-    def _assert_sendstream_files_equal(self, path1: str, path2: str):
+    def _assert_sendstream_files_equal(self, path1: Path, path2: Path):
         self._assert_meta_valid_and_sendstreams_equal(
             self._render_sendstream_path(path1),
             self._render_sendstream_path(path2),
@@ -90,7 +95,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, tempfile.TemporaryDirectory() as mount_dir, tempfile.NamedTemporaryFile() as temp_sendstream:  # noqa: E501
+        ) as unshare, temp_dir() as mount_dir, tempfile.NamedTemporaryFile() as temp_sendstream:  # noqa: E501
             # Future: use a LoopbackMount object here once that's checked in.
             subprocess.check_call(
                 nsenter_as_root(
@@ -122,12 +127,12 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                         "send",
                         "-f",
                         temp_sendstream.name,
-                        os.path.join(mount_dir, "create_ops"),
+                        mount_dir / "create_ops",
                     )
                 )
                 self._assert_sendstream_files_equal(
                     self._sibling_path("create_ops-original.sendstream"),
-                    temp_sendstream.name,
+                    Path(temp_sendstream.name),
                 )
             finally:
                 nsenter_as_root(unshare, "umount", mount_dir)
@@ -159,7 +164,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
+        ) as unshare, temp_dir() as mount_dir:
             os.chmod(
                 out_path,
                 stat.S_IMODE(os.stat(out_path).st_mode)
@@ -182,7 +187,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     nsenter_as_root(
                         unshare,
                         "touch",
-                        os.path.join(mount_dir, "create_ops", "foo"),
+                        mount_dir / "create_ops" / "foo",
                     )
                 )
             finally:
@@ -350,7 +355,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     "--sparse",
                     "--acls",
                     "--xattrs",
-                    mount_dir + "/",
+                    f"{mount_dir}/",
                     subvol.path(),
                 )
             )
@@ -373,7 +378,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
 
             self._assert_meta_valid_and_sendstreams_equal(
                 original_render,
-                self._render_sendstream_path(temp_sendstream.name),
+                self._render_sendstream_path(Path(temp_sendstream.name)),
             )
 
     def test_package_image_as_squashfs(self):
@@ -435,7 +440,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
 
             self._assert_meta_valid_and_sendstreams_equal(
                 original_render,
-                self._render_sendstream_path(temp_sendstream.name),
+                self._render_sendstream_path(Path(temp_sendstream.name)),
             )
 
     def test_package_image_as_cpio(self):
@@ -450,7 +455,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
     def _verify_package_as_vfat(self, pkg_path, label="", fat_size=0):
         with Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
+        ) as unshare, temp_dir() as mount_dir:
             subprocess.check_call(
                 nsenter_as_root(
                     unshare,
@@ -505,7 +510,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
     def _verify_package_as_ext3(self, pkg_path, label=""):
         with Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
+        ) as unshare, temp_dir() as mount_dir:
             subprocess.check_call(
                 nsenter_as_root(
                     unshare,
