@@ -1,5 +1,4 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -87,7 +86,6 @@ package.new(
     format = "cpio.gz",
     layer = ":initrd-vmtest",
     visibility = [],
-    build_appliance = flavor_helpers.default_flavor_build_appliance,
 )
 
 # Create the default Antlir Linux initrd for this test kernel.
@@ -168,7 +166,6 @@ package.new(
     layer = ":switch-root-initrd",
     format = "cpio.gz",
     visibility = [],
-    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
 )
 
 buck_genrule(
@@ -199,11 +196,11 @@ package.new(
     name = "metalos-vmtest.sendstream.zst",
     layer = ":metalos-vmtest",
     format = "sendstream.zst",
-    build_appliance = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
 )
 
 image.layer(
     name = "empty-layer",
+    flavor = REPO_CFG.antlir_linux_flavor,
 )
 
 vm.rust_unittest(

@@ -23,6 +23,7 @@ from antlir.fs_utils import (
 )
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
+from antlir.serialize_targets_and_outputs import make_target_path_map
 from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir, MiB
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
@@ -40,12 +41,15 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         format: str,
         loopback_opts: loopback_opts_t = None,
     ) -> Iterator[str]:
+        target_map = make_target_path_map(os.environ["target_map"].split())
         with temp_dir() as td:
             out_path = td / format
+            targets_and_outputs = td / "t_and_o.json"
+            with targets_and_outputs.open("w") as f:
+                f.write(Path.json_dumps(target_map))
+
             package_image(
                 [
-                    "--build-appliance",
-                    layer_resource(__package__, "build-appliance"),
                     "--subvolumes-dir",
                     get_subvolumes_dir(),
                     "--layer-path",
@@ -59,6 +63,8 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                         if loopback_opts
                         else []
                     ),
+                    "--targets-and-outputs",
+                    targets_and_outputs,
                 ]
             )
             yield out_path
@@ -406,7 +412,9 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     # -S to properly handle sparse files on extract
                     "/bin/bsdtar --file - --extract -S;",
                 ],
-                layer=layer_resource_subvol(__package__, "build-appliance"),
+                layer=layer_resource_subvol(
+                    __package__, "build-appliance-testing"
+                ),
                 bindmount_rw=[(extract_sv.path(), work_dir)],
                 user=pwd.getpwnam("root"),
                 allow_mknod=True,  # cpio archives support device files
