@@ -76,9 +76,17 @@ def make_gpt(argv):
     image_size_mb = 2
     sgdisk_opts = []
     for p in partitions:
+        ops = []
+        # set partition size
         p_size_mb = int(os.path.getsize(p.package.path.decode()) / MiB)
+        ops.append(f"-n 0:0:+{p_size_mb}M")
+        # set partition type
         p_type_code = SgdiskTypeCodes.ESP if p.is_esp else SgdiskTypeCodes.LINUX
-        sgdisk_opts.append(f"-n 0:0:+{p_size_mb}M -t 0:{p_type_code.value}")
+        ops.append(f"-t 0:{p_type_code.value}")
+        if p.name:
+            # optionally set partition name
+            ops.append(f"-c 0:{p.name}")
+        sgdisk_opts.append(" ".join(ops))
         image_size_mb += p_size_mb
 
     cmd = [

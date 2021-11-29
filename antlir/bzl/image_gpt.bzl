@@ -12,6 +12,7 @@ load(":image_utils.bzl", "image_utils")
 gpt_partition_t = shape.shape(
     package = shape.target(),
     is_esp = bool,
+    name = shape.field(str, optional = True),
 )
 
 gpt_t = shape.shape(
@@ -19,8 +20,8 @@ gpt_t = shape.shape(
     table = shape.list(gpt_partition_t),
 )
 
-def image_gpt_partition(package, is_esp = False):
-    return shape.new(gpt_partition_t, package = package, is_esp = is_esp)
+def image_gpt_partition(package, is_esp = False, name = None):
+    return shape.new(gpt_partition_t, package = package, is_esp = is_esp, name = name)
 
 def image_gpt(
         name,
