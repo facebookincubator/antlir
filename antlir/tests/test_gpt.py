@@ -6,7 +6,6 @@
 
 import os
 import subprocess
-import tempfile
 from contextlib import contextmanager
 
 from antlir.fs_utils import temp_dir
@@ -36,6 +35,27 @@ class GptTestCase(ImagePackageTestCaseBase):
 
     def _verify_gpt_image(self, image_path):
         with Unshare([Namespace.MOUNT, Namespace.PID]) as unshare:
+            # verify name of second partition has been set to "create_ops_ext3"
+            res = (
+                subprocess.check_output(
+                    nsenter_as_root(
+                        unshare,
+                        "partx",
+                        "-n",
+                        "2",
+                        "-o",
+                        "NAME",
+                        "-g",
+                        "--raw",
+                        image_path,
+                    )
+                )
+                .decode()
+                .strip()
+            )
+            self.assertEqual(res, "create_ops_ext3")
+
+            # verify partitiion contents
             res = (
                 subprocess.check_output(
                     nsenter_as_root(

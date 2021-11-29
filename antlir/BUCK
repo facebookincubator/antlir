@@ -563,6 +563,7 @@ python_unittest(
                         gpt_partition_t,
                         package = TEST_IMAGE_PREFIX + "create_ops_ext3",
                         is_esp = False,
+                        name = "create_ops_ext3",
                     ),
                 ],
             ),
