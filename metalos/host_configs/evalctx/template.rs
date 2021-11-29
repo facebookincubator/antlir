@@ -14,7 +14,6 @@ use anyhow::bail;
 use derive_more::Display;
 use handlebars::{Handlebars, RenderError};
 use once_cell::sync::Lazy;
-use starlark::codemap::Span;
 use starlark::environment::GlobalsBuilder;
 use starlark::eval::{Arguments, Evaluator};
 use starlark::values::{StarlarkValue, Value};
@@ -63,7 +62,6 @@ impl<'v> StarlarkValue<'v> for Template {
     fn invoke(
         &self,
         _me: Value<'v>,
-        _location: Option<Span>,
         args: Arguments<'v, '_>,
         eval: &mut Evaluator<'v, '_>,
     ) -> anyhow::Result<Value<'v>> {
