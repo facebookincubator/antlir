@@ -4,7 +4,7 @@ load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load("//antlir/bzl:test_rpms.bzl", "test_rpms")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
-load("//antlir/rpm/replay:queries.bzl", "ANTLIR_INTERNAL_BUILD_PKG_LABEL", "test_env_map")
+load("//antlir/rpm/replay:queries.bzl", "ANTLIR_BUILD_PKG_LABEL", "test_env_map")
 
 python_unittest(
     name = "test-fake-pty",
@@ -69,7 +69,7 @@ package.new(
     name = "base.sendstream",
     format = "sendstream",
     layer = ":base-original",
-    labels = [ANTLIR_INTERNAL_BUILD_PKG_LABEL],
+    labels = [ANTLIR_BUILD_PKG_LABEL],
 )
 
 image.layer_from_package(
