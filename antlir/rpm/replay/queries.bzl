@@ -12,7 +12,7 @@ def layer_features_json_query(layer):
             label = "type",
             value = "image_feature",
             expr = query.deps(
-                expr = query.set(layer),
+                expr = query.set([layer]),
                 # Limit depth to 1 to get just the `__layer-feature` target.
                 # All other features are at distance 2+.
                 depth = 1,
@@ -34,7 +34,7 @@ def layer_included_features_query(layer):
                 "fetched_package_with_nondeterministic_fs_metadata",
             ]),
             expr = query.deps(
-                expr = query.set(layer),
+                expr = query.set([layer]),
                 depth = query.UNBOUNDED,
             ),
         ),
@@ -52,7 +52,7 @@ def layer_included_builders_query(layer):
             label = "labels",
             value = ANTLIR_BUILD_PKG_LABEL,
             expr = query.deps(
-                expr = query.set(layer),
+                expr = query.set([layer]),
                 depth = query.UNBOUNDED,
             ),
         ),

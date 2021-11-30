@@ -71,8 +71,8 @@ def _set(targets):
     if not targets:
         return "set()"
 
-    if not types.is_list(targets):
-        targets = [targets]
+    if types.is_string(targets):
+        fail("`query.set()` expects a list")
 
     # This does not currently escape double-quotes since Buck docs say they
     # cannot occur: https://buck.build/concept/build_target.html
