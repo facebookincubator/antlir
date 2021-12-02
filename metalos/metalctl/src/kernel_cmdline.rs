@@ -14,7 +14,7 @@ use structopt::StructOpt;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-use crate::config::PackageFormatUri;
+use crate::config::{EventBackendBaseUri, PackageFormatUri};
 
 // This enum looks a bit weird to have here but it plays an important role in
 // ensuring correctness. The exhaustive match in `flag_name` means that we have a valid
@@ -34,6 +34,7 @@ enum KnownArgs {
     RootFlags,
     RootFlagRo,
     RootFlagRw,
+    EventBackendBaseUri,
 }
 
 impl KnownArgs {
@@ -47,6 +48,7 @@ impl KnownArgs {
             Self::RootFlags => "--rootflags",
             Self::RootFlagRo => "--ro",
             Self::RootFlagRw => "--rw",
+            Self::EventBackendBaseUri => "--metalos.event_backend_base_uri",
         }
     }
 }
@@ -65,6 +67,9 @@ pub struct MetalosCmdline {
 
     #[structopt(long = &KnownArgs::PackageFormatUri.flag_name())]
     pub package_format_uri: Option<PackageFormatUri>,
+
+    #[structopt(long = &KnownArgs::EventBackendBaseUri.flag_name())]
+    pub event_backend_base_uri: Option<EventBackendBaseUri>,
 
     #[structopt(flatten)]
     pub root: Root,
@@ -250,6 +255,7 @@ mod tests {
                 os_package: None,
                 host_config_uri: None,
                 package_format_uri: None,
+                event_backend_base_uri: None,
                 root: Root {
                     root: Some("LABEL=/".to_string()),
                     flags: None,
