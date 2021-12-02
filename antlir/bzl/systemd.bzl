@@ -276,6 +276,12 @@ def _set_default_target(
         paths.join(PROVIDER_ROOT, "default.target"),
     )
 
+def _alias(unit, alias):
+    return image.ensure_file_symlink(
+        paths.join(PROVIDER_ROOT, unit),
+        paths.join(ADMIN_ROOT, alias),
+    )
+
 _ALPHA = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _NUM = "1234567890"
 _SPECIAL = ":_.\\"
@@ -370,6 +376,7 @@ def _mount_unit_file(name, mount):
     )
 
 systemd = struct(
+    alias = _alias,
     enable_unit = _enable_unit,
     enable_user_unit = _enable_user_unit,
     install_unit = _install_unit,
