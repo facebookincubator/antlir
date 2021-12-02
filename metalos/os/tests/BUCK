@@ -1,5 +1,13 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 
 export_file(
-    name = "analyze_all_units.rs",
+    name = "systemd_expectations.rs",
+)
+
+export_file(
+    name = "skip-network-wait.conf",
+)
+
+export_file(
+    name = "systemd-expectations.toml",
 )

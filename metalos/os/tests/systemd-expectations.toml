@@ -1,9 +1,23 @@
-[["quotaon.service"]]
+['ldconfig.service']
+state = 'masked'
+
+['systemd-hwdb-update.service']
+state = 'masked'
+
+['systemd-networkd.service']
+state = 'enabled'
+
+['systemd-resolved.service']
+state = 'enabled'
+
+# systemd-analyze verify problems that are allowlisted
+
+[[problem."quotaon.service"]]
 kind = 'NotExecutable'
 path = '/usr/sbin/quotaon'
 reason = 'No such file or directory'
 
-[["rc-local.service"]]
+[[problem."rc-local.service"]]
 kind = 'NotExecutable'
 path = '/etc/rc.d/rc.local'
 reason = 'No such file or directory'
@@ -11,6 +25,6 @@ reason = 'No such file or directory'
 # AFAICT this is not a real problem, it just so happens that syslog.service is
 # not loaded in the container image when we check, but it should be totally fine
 # at runtime
-[["syslog.socket"]]
+[[problem."syslog.socket"]]
 kind = 'Uncategorized'
 raw = 'service syslog.service not loaded, socket cannot be started.'

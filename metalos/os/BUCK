@@ -5,7 +5,7 @@ load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
-load("//metalos/os/tests:defs.bzl", "analyze_all_units")
+load("//metalos/os/tests:defs.bzl", "systemd_expectations_test")
 
 image.layer(
     name = "basesystem-strip",
@@ -46,6 +46,7 @@ image.layer(
         feature.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
         systemd.enable_unit("systemd-networkd.service", "core-services.target"),
         systemd.enable_unit("systemd-resolved.service", "core-services.target"),
+        systemd.alias("systemd-resolved.service", "dbus-org.freedesktop.resolve1.service"),
         feature.install("systemd-resolved.tmpfiles.conf", "/usr/lib/tmpfiles.d/systemd-resolved.conf"),
         systemd.enable_unit("systemd-tmpfiles-setup.service", "core-services.target"),
         systemd.enable_unit("dbus.service", "core-services.target"),
@@ -84,9 +85,9 @@ image.layer(
     ],
 )
 
-analyze_all_units(
-    name = "analyze",
-    expected_problems = "expected-unit-problems.toml",
+systemd_expectations_test(
+    name = "systemd-expectations",
+    expectations = "//metalos/os/tests:systemd-expectations.toml",
     layer = ":metalos",
 )
 
