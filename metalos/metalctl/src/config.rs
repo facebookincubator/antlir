@@ -56,10 +56,52 @@ impl<'de> Deserialize<'de> for PackageFormatUri {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct EventBackendBaseUri(String);
+
+impl FromStr for EventBackendBaseUri {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s.parse::<Uri>() {
+            Ok(u) => {
+                match u.scheme_str() {
+                    Some("http") | Some("https") => {}
+                    _ => bail!("event_backend_base_uri must be http(s) only"),
+                };
+            }
+            Err(e) => {
+                bail!("'{}' is not a valid URL: {}", s, e);
+            }
+        }
+        Ok(Self(s.to_string()))
+    }
+}
+
+impl EventBackendBaseUri {
+    fn uri(&self) -> Result<Uri> {
+        self.0
+            .parse::<Uri>()
+            .with_context(|| format!("'{}' is not a valid url", self.0))
+    }
+}
+
+impl<'de> Deserialize<'de> for EventBackendBaseUri {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        FromStr::from_str(&s).map_err(de::Error::custom)
+    }
+}
+
 #[derive(Default, Debug, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub download: Download,
+    #[serde(default)]
+    pub event_backend: EventBackend,
 }
 
 impl Config {
@@ -74,6 +116,9 @@ impl Config {
     fn apply_overrides(&mut self, cmdline: MetalosCmdline) -> Result<()> {
         if let Some(uri) = cmdline.package_format_uri {
             self.download.package_format_uri = uri;
+        }
+        if let Some(uri) = cmdline.event_backend_base_uri {
+            self.event_backend.event_backend_base_uri = uri;
         }
         Ok(())
     }
@@ -98,6 +143,25 @@ impl Default for Download {
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct EventBackend {
+    event_backend_base_uri: EventBackendBaseUri,
+}
+
+impl EventBackend {
+    pub fn event_backend_base_uri(&self) -> Result<Uri> {
+        self.event_backend_base_uri.uri()
+    }
+}
+
+impl Default for EventBackend {
+    fn default() -> Self {
+        Self {
+            event_backend_base_uri: "https://metalos/sendEvent".parse().unwrap(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
@@ -110,12 +174,22 @@ mod tests {
             config.download.package_format_uri.0,
             "https://metalos/package/{package}"
         );
+        assert_eq!(
+            config.event_backend.event_backend_base_uri.0,
+            "https://metalos/sendEvent"
+        );
         let cmdline: MetalosCmdline =
-            "metalos.package_format_uri=\"https://package-host/pkg/{package}\"".parse()?;
+            "metalos.package_format_uri=\"https://package-host/pkg/{package}\" \
+            metalos.event_backend_base_uri=\"https://event-host/sendEvent\""
+                .parse()?;
         config.apply_overrides(cmdline)?;
         assert_eq!(
             config.download.package_format_uri.0,
             "https://package-host/pkg/{package}"
+        );
+        assert_eq!(
+            config.event_backend.event_backend_base_uri.0,
+            "https://event-host/sendEvent"
         );
         Ok(())
     }
