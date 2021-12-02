@@ -34,6 +34,7 @@ def metalctl(name, rustc_flags = None, **kwargs):
         "strum",
         "strum_macros",  # I <3 zero cost abstractions!
         # Needed for HTTPS requests to download images
+        "url",
         "bytes",
         "futures-core",
         "futures-util",

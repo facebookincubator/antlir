@@ -18,7 +18,7 @@ use futures_util::StreamExt;
 use hyper::client::connect::dns::Name;
 use hyper::client::{Client, HttpConnector};
 use hyper::header::{CONTENT_LENGTH, LOCATION};
-use hyper::{Body, StatusCode, Uri};
+use hyper::{body, Body, Response, StatusCode, Uri};
 use hyper_rustls::HttpsConnector;
 use rustls::ClientConfig;
 use slog::{debug, info, warn, Logger};
@@ -100,9 +100,9 @@ pub async fn drain_stream<S: Stream<Item = hyper::Result<Bytes>>, W: Write>(
     Ok(())
 }
 
-pub async fn download_file(log: Logger, mut uri: Uri) -> Result<Body> {
+// deals with making the http request and redirection retries.
+async fn _http_get(log: Logger, mut uri: Uri) -> Result<Response<Body>> {
     let client = client(log.clone()).context("failed to create https client")?;
-
     // hyper is a low level client (which is good for our dns connector), but
     // then we have to do things like follow redirects manually
     let mut redirects = 0u8;
@@ -129,17 +129,39 @@ pub async fn download_file(log: Logger, mut uri: Uri) -> Result<Body> {
             }
             continue;
         }
-        info!(log, "downloading image from {:?}", uri);
+        info!(log, "making http request for {:?}", uri);
         break resp;
     };
+    Ok(resp)
+}
 
+pub async fn download_file(log: Logger, uri: Uri) -> Result<Body> {
+    let resp = _http_get(log.clone(), uri).await?;
     let status = resp.status();
     if status != StatusCode::OK {
-        bail!("http response was not OK: {:?}", status);
+        let body_bytes = body::to_bytes(resp.into_body()).await?;
+        let body = String::from_utf8(body_bytes.to_vec()).expect("response was not valid utf-8");
+        bail!("http response was not OK: {:?}.\n{}", status, body);
     }
     if let Some(content_len) = resp.headers().get(CONTENT_LENGTH) {
         if let Ok(len) = content_len.to_str().unwrap_or("").parse::<u64>() {
-            debug!(log, "image is {} bytes", len);
+            debug!(log, "response body size is {} bytes", len);
+        }
+    }
+    Ok(resp.into_body())
+}
+
+pub async fn get(log: Logger, uri: Uri) -> Result<Body> {
+    let resp = _http_get(log.clone(), uri).await?;
+    let status = resp.status();
+    if status != StatusCode::OK {
+        let body_bytes = body::to_bytes(resp.into_body()).await?;
+        let body = String::from_utf8(body_bytes.to_vec()).expect("response was not valid utf-8");
+        bail!("http response was not OK: {:?}.\n{}", status, body);
+    }
+    if let Some(content_len) = resp.headers().get(CONTENT_LENGTH) {
+        if let Ok(len) = content_len.to_str().unwrap_or("").parse::<u64>() {
+            debug!(log, "response body size is {} bytes", len);
         }
     }
     Ok(resp.into_body())

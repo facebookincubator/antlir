@@ -13,7 +13,7 @@ use serde::{de, Deserialize, Deserializer};
 
 use crate::kernel_cmdline::MetalosCmdline;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct PackageFormatUri(String);
 
 impl FromStr for PackageFormatUri {
@@ -56,7 +56,7 @@ impl<'de> Deserialize<'de> for PackageFormatUri {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct EventBackendBaseUri(String);
 
 impl FromStr for EventBackendBaseUri {
@@ -96,7 +96,7 @@ impl<'de> Deserialize<'de> for EventBackendBaseUri {
     }
 }
 
-#[derive(Default, Debug, Deserialize)]
+#[derive(Default, Debug, Deserialize, Clone)]
 pub struct Config {
     #[serde(default)]
     pub download: Download,
@@ -124,7 +124,7 @@ impl Config {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Download {
     package_format_uri: PackageFormatUri,
 }
@@ -143,7 +143,7 @@ impl Default for Download {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct EventBackend {
     event_backend_base_uri: EventBackendBaseUri,
 }
