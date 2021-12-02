@@ -8,7 +8,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:new.bzl", "feature_new", "normalize_features")
-load(":constants.bzl", "BZL_CONST", "REPO_CFG", "version_set_override_name")
+load(":constants.bzl", "ANTLIR_INTERNAL_TREAT_AS_IMAGE_FEATURE_LABEL", "BZL_CONST", "REPO_CFG", "version_set_override_name")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
@@ -114,14 +114,24 @@ EOF
             query.set(normalized_features.direct_deps),
             # We will query the deps of the features that are targets.
             query.deps(
-                expr = query.attrfilter(
-                    label = "type",
-                    value = "image_feature",
-                    expr = query.deps(
-                        expr = query.set(normalized_features.targets),
-                        depth = query.UNBOUNDED,
+                expr = query.union([
+                    query.attrfilter(
+                        label = "type",
+                        value = "image_feature",
+                        expr = query.deps(
+                            expr = query.set(normalized_features.targets),
+                            depth = query.UNBOUNDED,
+                        ),
                     ),
-                ),
+                    query.attrfilter(
+                        label = "labels",
+                        value = ANTLIR_INTERNAL_TREAT_AS_IMAGE_FEATURE_LABEL,
+                        expr = query.deps(
+                            expr = query.set(normalized_features.targets),
+                            depth = query.UNBOUNDED,
+                        ),
+                    ),
+                ]),
                 depth = 1,
             ),
         ] + ([
