@@ -33,6 +33,8 @@ mod http;
 mod kernel_cmdline;
 mod mkdir;
 mod mount;
+mod net_utils;
+mod send_event;
 mod switch_root;
 mod umount;
 
@@ -55,6 +57,8 @@ enum Subcommand {
     SwitchRoot(switch_root::Opts),
     /// Generate and apply a structured host config
     ApplyHostConfig(apply_host_config::Opts),
+    /// Send an event to the event endpoint
+    SendEvent(send_event::Opts),
     #[cfg(facebook)]
     #[structopt(flatten)]
     Facebook(facebook::Subcommand),
@@ -132,6 +136,7 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::Umount(opts) => umount::umount(opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts).await,
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
+        Subcommand::SendEvent(opts) => send_event::send_event(log, config, opts).await,
         #[cfg(facebook)]
         Subcommand::Facebook(fb) => fb.subcommand(log).await,
     }
