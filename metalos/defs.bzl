@@ -48,6 +48,7 @@ def _rust_common(
         test_deps = (),
         tests = (),
         features = (),
+        vm_opts = (),
         **kwargs):
     if types.is_bool(unittests):
         unittests = ["plain"] if unittests else []
@@ -82,6 +83,7 @@ def _rust_common(
     test_kwargs.pop("allocator", None)
     test_kwargs.pop("linker_flags", None)
     test_kwargs.pop("proc_macro", None)
+
     srcs = list(srcs)
     test_srcs = list(test_srcs) if test_srcs else []
 
@@ -113,6 +115,7 @@ def _rust_common(
             crate = crate,
             deps = deps + test_deps,
             features = features + ["metalos_vm_test"],
+            vm_opts = vm_opts,
             **test_kwargs
         )
 
