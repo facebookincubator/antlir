@@ -22,6 +22,8 @@ pub struct Opts {
     download_only: bool,
     #[structopt(long)]
     decompress_download: bool,
+    #[structopt(long, default_value = "download")]
+    download_filename: String,
 }
 
 use crate::http::drain_stream;
@@ -38,7 +40,7 @@ pub async fn fetch_image(log: Logger, config: crate::Config, opts: Opts) -> Resu
 
     if opts.download_only {
         debug!(log, "downloading image as file");
-        let dst = fs::File::create(opts.dest.join("download"))?;
+        let dst = fs::File::create(opts.dest.join(&opts.download_filename))?;
         let mut dst = BufWriter::new(dst);
         match opts.decompress_download {
             true => {
