@@ -54,7 +54,10 @@ def _rust_common(
         unittests = ["plain"] if unittests else []
     for flavor in unittests:
         if flavor not in _unittest_flavors:
-            fail("'{}' is not a supported rust unittest flavor".format(flavor))
+            fail(
+                "'{}' is not a supported rust unittest flavor. Options are {}"
+                    .format(flavor, ", ".join(_unittest_flavors)),
+            )
     deps = [_normalize_rust_dep(d) for d in deps]
     test_deps = [_normalize_rust_dep(d) for d in test_deps] + ["//metalos/metalos_macros:metalos_macros"]
     tests = list(tests)
