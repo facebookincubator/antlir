@@ -1,4 +1,3 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -6,7 +5,7 @@ load("//metalos:defs.bzl", "container_unittest_opts_t", "rust_library", "unittes
 
 image.layer(
     name = "test-layer",
-    parent_layer = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+    parent_layer = "//metalos/os:metalos",
     features = [
         # otherwise we have to wait for this to timeout
         systemd.mask_units(["systemd-networkd-wait-online.service"]),
