@@ -1,5 +1,4 @@
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "third_party", antlir_rust_binary = "rust_binary", antlir_rust_library = "rust_library", antlir_rust_unittest = "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -10,7 +9,7 @@ _unittest_flavors = ("plain", "container", "vm")
 container_unittest_opts_t = shape.shape(
     boot = shape.field(bool, default = False),
     layer = shape.target(
-        default = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+        default = "//metalos/os:metalos",
     ),
 )
 
