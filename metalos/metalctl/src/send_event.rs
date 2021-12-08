@@ -8,6 +8,7 @@
 use crate::net_utils::get_mac;
 use anyhow::{bail, Result};
 use hyper::{body, Uri};
+use serde_json;
 use slog::{info, Logger};
 use std::net::IpAddr;
 use structopt::StructOpt;
@@ -15,20 +16,22 @@ use url::Url;
 
 #[derive(StructOpt, Debug, Clone)]
 pub struct Opts {
-    event_name: String,
-    sender: String,
+    // struct fields have public visibility so that the struct can used by
+    // code outside this crate that want to reuse the send_event function.
+    pub event_name: String,
+    pub sender: String,
 
     #[structopt(long, conflicts_with_all = &["mac_address", "ip_address"])]
-    asset_id: Option<i64>,
+    pub asset_id: Option<i64>,
 
     #[structopt(long, conflicts_with_all = &["asset_id", "ip_address"])]
-    mac_address: Option<String>,
+    pub mac_address: Option<String>,
 
     #[structopt(long, conflicts_with_all = &["asset_id", "mac_address"])]
-    ip_address: Option<String>,
+    pub ip_address: Option<String>,
 
-    #[structopt(long)]
-    payload: Option<String>,
+    #[structopt(long, parse(try_from_str = serde_json::from_str))]
+    pub payload: Option<serde_json::Value>,
 }
 
 pub fn get_uri(log: Logger, config: crate::Config, opts: Opts) -> Result<Uri> {
@@ -38,7 +41,8 @@ pub fn get_uri(log: Logger, config: crate::Config, opts: Opts) -> Result<Uri> {
         .append_pair("sender", &opts.sender);
 
     if let Some(p) = opts.payload {
-        url.query_pairs_mut().append_pair("payload", &p);
+        url.query_pairs_mut()
+            .append_pair("payload", &serde_json::to_string(&p).unwrap());
     }
     match (opts.asset_id, opts.mac_address, opts.ip_address) {
         (Some(asset_id), None, None) => {
@@ -104,14 +108,14 @@ mod tests {
             sender: "metalctl-test".to_string(),
             ip_address: None,
             mac_address: None,
-            payload: Some("foopayload".to_string()),
+            payload: Some(serde_json::to_value("foopayload").unwrap()),
         };
 
         // asset ID test
         let mut asset_id_opts = base_opts.clone();
         asset_id_opts.asset_id = Some(1234);
         assert_eq!(
-            Url::parse("https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=foopayload&assetID=1234")?.as_str(),
+            Url::parse("https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=\"foopayload\"&assetID=1234")?.as_str(),
             get_uri(log.clone(), config.clone(), asset_id_opts)?,
         );
 
@@ -119,7 +123,7 @@ mod tests {
         let mut mac_opts = base_opts.clone();
         mac_opts.mac_address = Some("11:22:33:44:55:66".to_string());
         let mut expected = Url::parse(
-            "https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=foopayload",
+            "https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=\"foopayload\"",
         )?;
         expected
             .query_pairs_mut()
@@ -133,7 +137,7 @@ mod tests {
         let mut ip_opts = base_opts;
         ip_opts.ip_address = Some("1.2.3.4".to_string());
         assert_eq!(
-            Url::parse("https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=foopayload&ip=1.2.3.4")?.as_str(),
+            Url::parse("https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=\"foopayload\"&ip=1.2.3.4")?.as_str(),
             get_uri(log.clone(), config, ip_opts)?,
         );
 
@@ -151,7 +155,7 @@ mod tests {
             sender: "metalctl-test".to_string(),
             ip_address: Some("1.2.3.4".to_string()),
             mac_address: Some("11:22:33:44:55:66".to_string()),
-            payload: Some("foo_payload".to_string()),
+            payload: Some(serde_json::to_value("foo_payload").unwrap()),
         };
         get_uri(log, config, opts).unwrap();
     }
@@ -162,23 +166,21 @@ mod tests {
         let config = Config::default();
 
 
-        let json_payload = r#"{
-                   "chef.run_exception": "LGTM"
-                   }"#;
+        let json_payload = serde_json::json!(r#"{"chef.run_exception": "LGTM"}"#);
         let opts = Opts {
             asset_id: Some(1234),
             event_name: "EVENT_NAME".to_string(),
             sender: "metalctl-test".to_string(),
             ip_address: None,
             mac_address: None,
-            payload: Some(json_payload.to_string()),
+            payload: Some(serde_json::to_value(&json_payload).unwrap()),
         };
 
         let mut expected =
             Url::parse("https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test")?;
         expected
             .query_pairs_mut()
-            .append_pair("payload", json_payload)
+            .append_pair("payload", &serde_json::to_string(&json_payload).unwrap())
             .append_pair("assetID", "1234");
 
         assert_eq!(
