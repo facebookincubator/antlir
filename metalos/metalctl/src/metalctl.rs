@@ -34,6 +34,8 @@ mod kernel_cmdline;
 mod mkdir;
 mod mount;
 mod net_utils;
+#[cfg(initrd)]
+mod network_cleanup;
 mod send_event;
 mod switch_root;
 mod umount;
@@ -53,6 +55,9 @@ enum Subcommand {
     Umount(umount::Opts),
     /// Simple implementation of /bin/mkdir
     Mkdir(mkdir::Opts),
+    /// Cleanup networking in preperation for switchroot
+    #[cfg(initrd)]
+    NetworkCleanup(network_cleanup::Opts),
     /// Setup the new rootfs and switch-root into it
     SwitchRoot(switch_root::Opts),
     /// Generate and apply a structured host config
@@ -109,7 +114,16 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
 
     // If argv[0] is a symlink for a multicall utility, push the file name back
     // into the args array so that structopt will parse it correctly
-    if bin_name != "metalctl" {
+    if !bin_name
+        .to_str()
+        .context(format!(
+            "Failed to decode binary path \
+             (path likely contains non-Unicode characters): \
+             {}",
+            bin_name.to_string_lossy()
+        ))?
+        .starts_with("metalctl")
+    {
         args.push_front(bin_name.to_owned());
     }
 
@@ -134,6 +148,8 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
         Subcommand::Mount(opts) => mount::mount(log, opts),
         Subcommand::Umount(opts) => umount::umount(opts),
+        #[cfg(initrd)]
+        Subcommand::NetworkCleanup(opts) => network_cleanup::network_cleanup(log, opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts).await,
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
         Subcommand::SendEvent(opts) => send_event::send_event(log, config, opts).await,

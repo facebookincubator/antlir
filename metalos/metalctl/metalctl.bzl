@@ -2,7 +2,7 @@ load("//antlir/bzl:oss_shim.bzl", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "container_unittest_opts_t", "rust_binary", "unittest_opts_t")
 
-def metalctl(name, rustc_flags = None, **kwargs):
+def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     srcs = native.glob(["src/**/*.rs"])
 
     facebook = "src/facebook/mod.rs" in srcs
@@ -46,7 +46,7 @@ def metalctl(name, rustc_flags = None, **kwargs):
         "tower",
         "trust-dns-resolver",
         "tempfile",
-    ]
+    ] + extra_deps
 
     rustc_flags = rustc_flags or []
     if facebook:

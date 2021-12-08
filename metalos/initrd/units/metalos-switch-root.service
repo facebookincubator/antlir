@@ -7,9 +7,15 @@ AllowIsolate=yes
 Requires=rootdisk.mount
 After=rootdisk.mount
 
+# Disable systemd-networkd.service because we're going to cleanup the
+# network configuration before doing the switch-root.
+Conflicts=systemd-networkd.service
+After=systemd-networkd.service
+
 # Forcibly stop this service so that the systemd in the post-switch-root os will
 # restart it and process the rules that are in the rootfs
 Conflicts=systemd-tmpfiles-setup.service
+After=systemd-tmpfiles-setup.service
 
 # We must communicate with the systemd manager over dbus
 Requires=dbus.service
@@ -17,4 +23,5 @@ After=dbus.service
 
 [Service]
 Type=oneshot
+ExecStartPre=metalctl network-cleanup
 ExecStart=metalctl switch-root ${OS_BOOT_SUBVOL}
