@@ -138,7 +138,7 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
         Subcommand::SendEvent(opts) => send_event::send_event(log, config, opts).await,
         #[cfg(facebook)]
-        Subcommand::Facebook(fb) => fb.subcommand(log).await,
+        Subcommand::Facebook(fb) => fb.subcommand(log, config).await,
     }
 }
 

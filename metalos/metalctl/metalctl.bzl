@@ -51,6 +51,8 @@ def metalctl(name, rustc_flags = None, **kwargs):
     rustc_flags = rustc_flags or []
     if facebook:
         rustc_flags.append("--cfg=facebook")
+        deps.append("//common/rust/fbwhoami:fbwhoami")
+        deps.append("//common/rust/asset_gating/device:asset_gating_device")
     if have_blkid:
         rustc_flags.append("--cfg=blkid")
         deps.append("//metalos/lib/blkid:blkid")
