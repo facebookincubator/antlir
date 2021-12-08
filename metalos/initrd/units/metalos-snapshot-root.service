@@ -4,8 +4,6 @@ DefaultDependencies=no
 OnFailure=emergency.target
 OnFailureJobMode=replace-irreversibly
 AllowIsolate=yes
-Requires=network-online.target
-After=network-online.target
 
 [Service]
 Type=oneshot

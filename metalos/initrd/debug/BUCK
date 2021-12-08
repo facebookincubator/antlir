@@ -103,9 +103,10 @@ feature.new(
         ),
         extract.extract(
             binaries = [
-                "/usr/sbin/dropbear",
                 "/usr/bin/dropbearkey",
+                "/usr/bin/networkctl",
                 "/usr/bin/strace",
+                "/usr/sbin/dropbear",
             ],
             dest = "/",
             source = ":debug-deps",

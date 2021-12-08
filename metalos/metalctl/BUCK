@@ -7,6 +7,9 @@ load(":metalctl.bzl", "metalctl")
 metalctl(
     name = "metalctl-initrd",
     allocator = "malloc",
+    extra_deps = [
+        "//metalos/lib/netlink:netlink",
+    ],
     link_style = "static",
     linker_flags = [
         "-Wl,--strip-all",
