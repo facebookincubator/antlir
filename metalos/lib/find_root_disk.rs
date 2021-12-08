@@ -9,7 +9,8 @@
 // to something like: third-party/rust/fixups/libparted-sys/fixups.toml
 
 use anyhow::{anyhow, Context, Result};
-use udev::{Device, Enumerator};
+use std::path::{Path, PathBuf};
+use udev::Enumerator;
 
 const IGNORED_PREFIXES: &[&str] = &["/sys/devices/virtual/"];
 
@@ -22,19 +23,53 @@ const POSSIBLE_SERIAL_PROPERTIES: &[&str] = &[
     "ID_SERIAL",
 ];
 
+pub trait DiskPath {
+    fn dev_node(&self) -> Result<PathBuf>;
+    fn sys_path(&self) -> &Path;
+}
+
+impl DiskPath for udev::Device {
+    fn dev_node(&self) -> Result<PathBuf> {
+        self.devnode().map(|p| p.to_path_buf()).context(format!(
+            "No dev path found for device at {:?}",
+            self.sys_path()
+        ))
+    }
+
+    fn sys_path(&self) -> &Path {
+        self.syspath()
+    }
+}
+
+/// A trait to enumerate all disks on the machine. This is used to logically split the
+/// responsibility of finding all disks from picking the right one. They are linked together
+/// by the DiskPath trait above which is used as the common language for information about disks.
+pub trait DiskDiscovery {
+    type Output: DiskPath;
+
+    /// This returns all valid disk devices on the system that you can pick from
+    fn discover_devices() -> Result<Vec<Self::Output>>;
+}
+
 /// Responsible for finding the root disk on the system. There are potentially a bunch of different
-/// ways of doing this however this interface is reasonably fixed to the `udev` crate because we
-/// return it's Device type. If this becomes an issue we can wrap a generic `Device` struct in here
-/// but that felt overkill for now.
+/// ways of doing this and so you must provide the `Output` type that we can get some minimum info from
+/// that is needed for the other functions or the common usages of the library so we don't get too
+/// bound to the `udev` crate.
 pub trait FindRootDisk {
+    /// The type we return for the root disk. This is a compromise for having the interface be
+    /// bound to the `udev` crate but still being able to use other types if you want too as most
+    /// users will only want to be able to get the path from the struct.
+    type Output: DiskPath;
+
+    /// The source of disks on the host
+    type Discovery: DiskDiscovery<Output = Self::Output>;
+
     /// This is the main entry point for getting the root disk for the finder
     /// and is likely the only function you will need to use. It's also unlikely
     /// you will want to overwirte this function if you are making your own impl
     /// of this trait.
-    fn get_root_device(&self) -> Result<Device> {
-        let devices = self
-            .discover_devices()
-            .context("failed to discover devices")?;
+    fn get_root_device(&self) -> Result<Self::Output> {
+        let devices = Self::Discovery::discover_devices().context("failed to discover devices")?;
 
         let devices = self
             .filter_unusable(devices)
@@ -44,9 +79,31 @@ pub trait FindRootDisk {
             .context("Failed to select suitable root device")
     }
 
-    /// This returns all valid "disk" (DEVTYPE == "disk") devices that are found on the
-    /// system with no other filtering applied.
-    fn discover_devices(&self) -> Result<Vec<Device>> {
+    /// This attempts to filter out other block devices like /dev/loop and /dev/ram devices.
+    /// It's currently pretty dumb so it's in it's own function in case you want to remove or
+    /// overwite this functionality for your type
+    fn filter_unusable(&self, devices: Vec<Self::Output>) -> Result<Vec<Self::Output>> {
+        Ok(devices
+            .into_iter()
+            .filter(|device| {
+                !IGNORED_PREFIXES
+                    .iter()
+                    .any(|p| device.sys_path().starts_with(p))
+            })
+            .collect())
+    }
+
+    /// The main (and probably only) function you should impl if you are building your own
+    /// finder type. It takes in all devices (after filtering) and must return the one device
+    /// that we are going to use as our root device.
+    fn find_root_disk(&self, devices: Vec<Self::Output>) -> Result<Self::Output>;
+}
+
+pub struct UdevDiscovery {}
+impl DiskDiscovery for UdevDiscovery {
+    type Output = udev::Device;
+
+    fn discover_devices() -> Result<Vec<Self::Output>> {
         let mut enumerator = Enumerator::new().context("failed to build enumerator")?;
         enumerator
             .match_property("DEVTYPE", "disk")
@@ -57,25 +114,6 @@ pub trait FindRootDisk {
             .context("failed to scan devices")?;
         Ok(devices.into_iter().collect())
     }
-
-    /// This attempts to filter out other block devices like /dev/loop and /dev/ram devices.
-    /// It's currently pretty dumb so it's in it's own function in case you want to remove or
-    /// overwite this functionality for your type
-    fn filter_unusable(&self, devices: Vec<Device>) -> Result<Vec<Device>> {
-        Ok(devices
-            .into_iter()
-            .filter(|device| {
-                !IGNORED_PREFIXES
-                    .iter()
-                    .any(|p| device.syspath().starts_with(p))
-            })
-            .collect())
-    }
-
-    /// The main (and probably only) function you should impl if you are building your own
-    /// finder type. It takes in all devices (after filtering) and must return the one device
-    /// that we are going to use as our root device.
-    fn find_root_disk(&self, devices: Vec<Device>) -> Result<Device>;
 }
 
 /// Finds the root disk assuming there is only a single device on the system
@@ -89,7 +127,10 @@ impl SingleDiskFinder {
 }
 
 impl FindRootDisk for SingleDiskFinder {
-    fn find_root_disk(&self, devices: Vec<Device>) -> Result<Device> {
+    type Output = udev::Device;
+    type Discovery = UdevDiscovery;
+
+    fn find_root_disk(&self, devices: Vec<Self::Output>) -> Result<Self::Output> {
         match devices.len() {
             0 => Err(anyhow!("Found no valid root devices")),
             1 => Ok(devices.into_iter().next().unwrap()),
@@ -114,7 +155,7 @@ impl SerialDiskFinder {
         Self { serial }
     }
 
-    fn get_serial(device: &Device) -> Result<Option<&str>> {
+    fn get_serial(device: &udev::Device) -> Result<Option<&str>> {
         for prop in POSSIBLE_SERIAL_PROPERTIES {
             if let Some(value) = device.property_value(prop) {
                 return Ok(Some(
@@ -129,7 +170,10 @@ impl SerialDiskFinder {
 }
 
 impl FindRootDisk for SerialDiskFinder {
-    fn find_root_disk(&self, devices: Vec<Device>) -> Result<Device> {
+    type Output = udev::Device;
+    type Discovery = UdevDiscovery;
+
+    fn find_root_disk(&self, devices: Vec<Self::Output>) -> Result<Self::Output> {
         for device in devices {
             if let Some(serial) = Self::get_serial(&device)? {
                 if serial == self.serial {
@@ -153,7 +197,7 @@ mod tests {
             .get_root_device()
             .context("Failed to select root device")?;
         assert_eq!(
-            dev.devnode()
+            dev.dev_node()
                 .context("expected to find devnode for returned device")?,
             Path::new("/dev/vda")
         );
