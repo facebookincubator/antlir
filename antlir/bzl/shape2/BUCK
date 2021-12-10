@@ -1,0 +1,34 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
+
+rust_library(
+    name = "ir",
+    srcs = ["ir.rs"],
+    deps = third_party.libraries(
+        [
+            "derive_more",
+            "serde",
+            "serde_json",
+            "structopt",
+        ],
+        platform = "rust",
+    ),
+)
+
+rust_binary(
+    name = "ir2code",
+    srcs = ["ir2code.rs"] + glob(["templates/*.handlebars"]),
+    visibility = ["PUBLIC"],
+    deps = [":ir"] +
+           third_party.libraries(
+               [
+                   "anyhow",
+                   "derive_more",
+                   "handlebars",
+                   "itertools",
+                   "serde",
+                   "serde_json",
+                   "structopt",
+               ],
+               platform = "rust",
+           ),
+)

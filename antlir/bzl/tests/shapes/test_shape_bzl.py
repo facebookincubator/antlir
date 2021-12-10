@@ -10,7 +10,6 @@ import unittest
 from .shape_bzl import (
     Fail,
     _check_type,
-    _codegen_shape,
     shape,
     struct,
     structs,
@@ -93,7 +92,7 @@ class TestShapeBzl(unittest.TestCase):
         # Test the `include_dunder_shape=True` branch.  It isn't actually
         # used for anything (yet), but the `opts` field exists for the sake
         # of making the API clear.
-        self.assertEquals(
+        self.assertEqual(
             _recursive_copy_transform(
                 actual,
                 t,
@@ -211,69 +210,6 @@ class TestShapeBzl(unittest.TestCase):
             shape.new(b, b=False),
         ):
             shape.new(t, u=v)
-
-    def test_codegen(self):
-        # the generated code is tested in test_shape.py, but this is our
-        # opportunity to test it as text
-        nested = shape.shape(inner=bool)
-        t = shape.shape(
-            hello=str,
-            world=shape.field(str, optional=True),
-            answer=shape.field(int, default=42),
-            enum=shape.enum("hello", "world"),
-            file=shape.path(),
-            location=shape.target(),
-            nested=shape.field(nested, default=shape.new(nested, inner=True)),
-            dct=shape.dict(str, str),
-            lst=shape.list(int),
-            tup=shape.tuple(bool, int, str),
-            nested_lst=shape.list(shape.shape(inner_lst=bool)),
-            nested_dct=shape.dict(str, shape.shape(inner_dct=bool)),
-            dct_of_lst_of_shape=shape.dict(
-                str, shape.list(shape.shape(answer=int))
-            ),
-            union_of_things=shape.union(int, str),
-        )
-        code = "\n".join(_codegen_shape(t, "shape"))
-        self.assertEqual(
-            code,
-            """class shape(Shape):
-  __GENERATED_SHAPE__ = True
-  hello: str
-  world: Optional[str] = None
-  answer: int = 42
-  class Hello_World(Enum):
-    HELLO = 'hello'
-    WORLD = 'world'
-  enum: Hello_World
-  file: Path
-  location: Target
-  class _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ(Shape):
-    __GENERATED_SHAPE__ = True
-    inner: bool
-  nested: _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ = _2UNYP6wnsQdfqkEJEKDmwaEjpoGm8_8tlX3BIHNt_sQ(**{'inner': True})
-  dct: Mapping[str, str]
-  lst: Tuple[int, ...]
-  tup: Tuple[bool, int, str]
-  class _NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0(Shape):
-    __GENERATED_SHAPE__ = True
-    inner_lst: bool
-  nested_lst: Tuple[_NRjZd_W5gdohVquSVb4iz3YwOUh_dtUKmLgIHb4h_m0, ...]
-  class _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0(Shape):
-    __GENERATED_SHAPE__ = True
-    inner_dct: bool
-  nested_dct: Mapping[str, _ZOuD9rKDIF_qItVd5ib0hWFXRe4UKS1dPdfwP_rEGl0]
-  class __wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE(Shape):
-    __GENERATED_SHAPE__ = True
-    answer: int
-  dct_of_lst_of_shape: Mapping[str, Tuple[__wWKYeDaABhdYr5uCMdTzSclY0GG2FUB0OvzGPn42OE, ...]]
-  union_of_things: Union[int, str]""",  # noqa: E501
-        )
-
-    def test_codegen_with_empty_union_type(self):
-        for t in (shape.shape(empty_list=[]), shape.shape(empty_tuple=())):
-            with self.assertRaises(Fail):
-                _codegen_shape(t)
 
     def test_location_serialization(self):
         target_t = shape.shape(target=shape.target())
@@ -413,3 +349,9 @@ class TestShapeBzl(unittest.TestCase):
                 # Identical to above, except this is `dict` and not `shape.new`
                 nested={"is_in": {"hello": "world"}},
             )
+
+    def test_optional_with_default(self):
+        with self.assertRaisesRegex(
+            Fail, "default_value must not be specified with optional"
+        ):
+            shape.field(str, optional=True, default="def")

@@ -21,8 +21,9 @@ character_t = shape.shape(
     friends = shape.list(shape.shape(
         name = str,
     )),
-    lightsaber = shape.field(
+    weapon = shape.union(
         lightsaber_t,
+        str,
         optional = True,
     ),
     callsign = shape.tuple(
@@ -102,7 +103,7 @@ characters = [
                 name = "C-3PO",
             ),
         ],
-        lightsaber = shape.new(
+        weapon = shape.new(
             lightsaber_t,
             color = "green",
             target = ":luke-lightsaber",
@@ -123,7 +124,7 @@ characters = [
             6,
         ],
         friends = [],
-        lightsaber = shape.new(
+        weapon = shape.new(
             lightsaber_t,
             color = "red",
             target = ":vader-lightsaber",

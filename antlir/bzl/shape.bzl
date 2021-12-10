@@ -112,7 +112,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":oss_shim.bzl", "buck_genrule", "python_library", "target_utils", "third_party")
+load(":oss_shim.bzl", "buck_genrule", "python_library", "target_utils")
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
@@ -127,47 +127,6 @@ _SERIALIZING_LOCATION_MSG = (
 )
 
 _NO_DEFAULT = struct(no_default = True)
-
-def _python_type(t):
-    if t == int:
-        return "int"
-    if t == bool:
-        return "bool"
-    if t == str:
-        return "str"
-    if _is_collection(t):
-        if t.collection == dict:
-            k, v = t.item_type
-            return "Mapping[{}, {}]".format(_python_type(k), _python_type(v))
-        if t.collection == list:
-            # list input is codegened as a homogenous tuple so that the
-            # resulting field in the python class reflects the readonly nature
-            # of the source
-            return "Tuple[{}, ...]".format(_python_type(t.item_type))
-        if t.collection == tuple:
-            return "Tuple[{}]".format(", ".join([_python_type(x) for x in t.item_type]))
-    if _is_enum(t):
-        return "_".join([str(v.capitalize()) for v in t.enum])
-    if _is_field(t):
-        python_type = _python_type(t.type)
-        if t.optional:
-            python_type = "Optional[{}]".format(python_type)
-        return python_type
-    if _is_shape(t):
-        # deterministically name the class based on the shape field names and types
-        # to allow for buck caching and proper starlark runtime compatibility
-        return "_" + sha256_b64(
-            str({key: _python_type(field) for key, field in t.fields.items()}),
-        ).replace("-", "_")
-    if _is_union(t):
-        type_names = [_python_type(union_t) for union_t in t.union_types]
-        return "Union[{}]".format(", ".join(type_names))
-
-    # If t is a string, then it should be the name of a type that will exist in
-    # the Shape generated code context
-    if types.is_string(t):
-        return t
-    fail("unknown type {}".format(t))  # pragma: no cover
 
 # Poor man's debug pretty-printing. Better version coming on a stack.
 def _pretty(x):
@@ -299,71 +258,14 @@ def _check_collection_type(x, t):
         return error
     return "unsupported collection type {}".format(t.collection)  # pragma: no cover
 
-def _shapes_for_field(field_or_type):
-    # recursively codegen classes for every shape that is contained in this
-    # field, or any level of nesting beneath
-    src = []
-    if _is_field(field_or_type):
-        field = field_or_type
-        if _is_shape(field.type):
-            src.extend(_codegen_shape(field.type))
-        if _is_collection(field.type):
-            item_types = []
-
-            # some collections have multiple types and some have only one
-            if types.is_list(field.type.item_type) or types.is_tuple(field.type.item_type):
-                item_types = list(field.type.item_type)
-            else:
-                item_types = [field.type.item_type]
-
-            for t in item_types:
-                src.extend(_shapes_for_field(t))
-        if _is_enum(field.type):
-            src.extend(_codegen_enum(field.type))
-    elif _is_shape(field_or_type):
-        src.extend(_codegen_shape(field_or_type))
-    return src
-
-def _codegen_field(name, field):
-    # for nested shapes, the class definitions must be listed in the body
-    # before the fields, so that forward references are avoided
-    src = []
-    python_type = _python_type(field)
-    src.extend(_shapes_for_field(field))
-
-    if field.default == _NO_DEFAULT:
-        src.append("{}: {}".format(name, python_type))
-    else:
-        default_repr = repr(field.default)
-        if structs.is_struct(field.default):
-            default_repr = "{}(**{})".format(python_type, repr(
-                _as_serializable_dict(field.default),
-            ))
-        src.append("{}: {} = {}".format(name, python_type, default_repr))
-    return src
-
-def _codegen_shape(shape, classname = None):
-    if classname == None:
-        classname = _python_type(shape)
-    src = [
-        "class {}(Shape):".format(classname),
-        "  __GENERATED_SHAPE__ = True",
-    ]
-
-    for name, field in shape.fields.items():
-        src.extend(["  " + line for line in _codegen_field(name, field)])
-    return src
-
-def _codegen_enum(enum):
-    classname = _python_type(enum)
-    src = [
-        "class {}(Enum):".format(classname),
-    ]
-    src.extend(["  {} = {}".format(value.upper(), repr(value)) for value in enum.enum])
-    return src
-
 def _field(type, optional = False, default = _NO_DEFAULT):
-    if optional and default == _NO_DEFAULT:
+    # there isn't a great reason to have a runtime language type be
+    # `typing.Optional[T]` or `Option<T>`, while still having a default value,
+    # and it makes code generation have more weird branches to keep track of, so
+    # make that explicitly unsupported
+    if optional and default != _NO_DEFAULT:
+        fail("default_value must not be specified with optional")
+    if optional:
         default = None
     return struct(
         type = type,
@@ -521,15 +423,176 @@ def _new_shape(shape, **fields):
 
     return struct(__shape__ = shape, **with_defaults)
 
+def _mangle_name(t):  # pragma: no cover
+    if _is_field(t):
+        t = t.type
+    if _is_shape(t):
+        # deterministically name the class based on the shape field names
+        # and types to allow for buck caching and proper starlark runtime
+        # compatibility
+        return "_" + sha256_b64(
+            str({key: _mangle_name(field.type) for key, field in t.fields.items()}),
+        ).replace("-", "_")
+    if _is_enum(t):
+        return "_".join([str(v.capitalize()) for v in t.enum])
+    if _is_union(t):
+        return "union_" + "_".join([_mangle_name(t) for t in t.union_types])
+    if _is_collection(t):
+        if t.collection == dict:
+            return "dict_{}_to_{}".format(_mangle_name(t.item_type[0]), _mangle_name(t.item_type[1]))
+        if t.collection == list:
+            return "list_{}".format(_mangle_name(t.item_type))
+        if t.collection == tuple:
+            return "tuple_" + "_".join([_mangle_name(i) for i in t.item_type])
+    if t == int:
+        return "int"
+    if t == bool:
+        return "bool"
+    if t == str:
+        return "str"
+    if types.is_string(t):
+        return t
+    fail("can't convert {} to mangled type name".format(repr(t)))
+
+def _serialize_default_ir(value):  # pragma: no cover
+    if _is_any_instance(value):
+        return _safe_to_serialize_instance(value)
+    return value
+
+def _ir_type(t, module, renames):  # pragma: no cover
+    if _is_field(t):
+        t = t.type
+    t_name = _mangle_name(t)
+    if t_name in renames:
+        t_name = renames[t_name]
+    if t_name in module["types"]:
+        return module["types"][t_name]
+    if t == int:
+        return struct(primitive = "i32")
+    if t == bool:
+        return struct(primitive = "bool")
+    if t == str:
+        return struct(primitive = "string")
+    if _is_collection(t):
+        if t.collection == dict:
+            return struct(map = struct(
+                key_type = _ir_type(t.item_type[0], module, renames),
+                value_type = _ir_type(t.item_type[1], module, renames),
+            ))
+        if t.collection == list:
+            return struct(list = struct(
+                item_type = _ir_type(t.item_type, module, renames),
+            ))
+        if t.collection == tuple:
+            return struct(tuple = struct(
+                item_types = [_ir_type(i, module, renames) for i in t.item_type],
+            ))
+
+    # TODO: can the "Target" special case be handled any more cleanly? It
+    # probably requires a simpler approach to re-using the same definitions of
+    # shapes, which would be a fairly large refactor
+    if t == "Target":
+        return struct(complex = struct(
+            struct = struct(
+                name = "Target",
+                # Technically these fields will not end up being generated, but
+                # include them in the IR anyway, for any intermediate usage and
+                # in preparation for when this can actually reference a concrete
+                # shape via `target`
+                fields = {
+                    "name": struct(name = "name", type = struct(primitive = "string"), required = True),
+                    "path": struct(name = "path", type = struct(primitive = "path"), required = True),
+                },
+                target = "//antlir/bzl/shape2:target",
+            ),
+        ))
+    if t == "Path":
+        return struct(primitive = "path")
+    fail("{} ({}) was not defined".format(t_name, repr(t)))
+
+def _add_to_ir(t, module, target, renames):  # pragma: no cover
+    if _is_field(t):
+        t = t.type
+    t_name = _mangle_name(t)
+    if t_name in renames:
+        t_name = renames[t_name]
+    if _is_shape(t):
+        # register any field types in the IR first, so we can pull out
+        # references when serializing this shape
+        for field in t.fields.values():
+            _add_to_ir(field.type, module, target, renames)
+        fields = {
+            key: struct(
+                name = key,
+                type = _ir_type(field.type, module, renames),
+                default_value = _serialize_default_ir(field.default) if field.default != _NO_DEFAULT else None,
+                required = not field.optional,
+            )
+            for key, field in t.fields.items()
+        }
+        module["types"][t_name] = struct(
+            complex = struct(
+                struct = struct(
+                    name = t_name,
+                    fields = fields,
+                    target = target,
+                ),
+            ),
+        )
+    elif _is_enum(t):
+        module["types"][t_name] = struct(
+            complex = struct(
+                enum = struct(
+                    name = t_name,
+                    options = {
+                        v.upper(): v
+                        for v in t.enum
+                    },
+                    target = target,
+                ),
+            ),
+        )
+    elif _is_union(t):
+        for opt in t.union_types:
+            _add_to_ir(opt, module, target, renames)
+        module["types"][t_name] = struct(
+            complex = struct(
+                union = struct(
+                    name = t_name,
+                    types = [_ir_type(opt, module, renames) for opt in t.union_types],
+                    target = target,
+                ),
+            ),
+        )
+    elif _is_collection(t):
+        if t.collection == dict:
+            _add_to_ir(t.item_type[0], module, target, renames)
+            _add_to_ir(t.item_type[1], module, target, renames)
+        if t.collection == list:
+            _add_to_ir(t.item_type, module, target, renames)
+        if t.collection == tuple:
+            for i in t.item_type:
+                _add_to_ir(i, module, target, renames)
+
 def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
     """codegen a fully type-hinted python source file to load the given shape"""
     if not _is_shape(shape):
         fail("expected shape type, got {}".format(shape))
-    python_src = "from typing import *\nfrom antlir.shape import *\n"
-    python_src += "\n".join(_codegen_shape(shape, classname))
+    target = normalize_target(":" + name)
+
+    ir = {"name": name, "target": target, "types": {}}
+    top_name = _mangle_name(shape)
+    _add_to_ir(shape, ir, target, renames = {top_name: classname})
+    ir = struct(**ir)
     buck_genrule(
         name = "{}.py".format(name),
-        cmd = "echo {} > $OUT".format(shell.quote(python_src)),
+        cmd = """
+            echo {ir} > $TMP/ir.json
+            $(exe {ir2code}) pydantic $TMP/ir.json > $OUT
+        """.format(
+            ir = shell.quote(ir.to_json()),
+            ir2code = antlir_dep("bzl/shape2:ir2code"),
+        ),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
@@ -537,7 +600,9 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
     python_library(
         name = name,
         srcs = {":{}.py".format(name): "{}.py".format(name)},
-        deps = [antlir_dep(":shape")],
+        deps = [
+            antlir_dep(":shape"),
+        ],
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
@@ -683,29 +748,40 @@ def _python_data(
     shape = instance.__shape__
     instance = _safe_to_serialize_instance(instance)
 
-    python_src = "from typing import *\nfrom antlir.shape import *\n"
-    python_src += "\n".join(_codegen_shape(shape, classname))
-    python_src += "\ndata = {classname}.parse_raw({shape_json})".format(
-        classname = classname,
-        shape_json = repr(instance.to_json()),
-    )
-
     if not module:
         module = name
 
+    target = normalize_target(":" + name)
+
+    ir = {"name": module, "target": target, "types": {}}
+    top_name = _mangle_name(shape)
+    _add_to_ir(shape, ir, target, renames = {top_name: classname})
+    ir = struct(**ir)
     buck_genrule(
         name = "{}.py".format(name),
-        cmd = "echo {} >> $OUT".format(shell.quote(python_src)),
+        cmd = """
+            echo {ir} > $TMP/ir.json
+            $(exe {ir2code}) pydantic $TMP/ir.json > $OUT
+
+            echo {data} >> $OUT
+        """.format(
+            ir = shell.quote(ir.to_json()),
+            data = shell.quote("data = {classname}.parse_raw({shape_json})".format(
+                classname = classname,
+                shape_json = repr(instance.to_json()),
+            )),
+            ir2code = antlir_dep("bzl/shape2:ir2code"),
+        ),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
     )
+
     python_library(
         name = name,
         srcs = {":{}.py".format(name): "{}.py".format(module)},
         deps = [
             antlir_dep(":shape"),
-            third_party.library("pydantic", platform = "python"),
         ],
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
