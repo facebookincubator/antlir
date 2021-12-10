@@ -15,3 +15,17 @@ rust_library(
         "udev",
     ],
 )
+
+rust_library(
+    name = "expand_partition",
+    srcs = ["expand_partition.rs"],
+    crate_root = "expand_partition.rs",
+    unittests = [
+        "vm",
+    ],
+    deps = [
+        "anyhow",
+        "gpt",
+        "nix",
+    ],
+)
