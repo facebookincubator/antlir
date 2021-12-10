@@ -82,6 +82,7 @@ image.layer(
     runtime = ["systemd"],
     visibility = [
         "//metalos/...",
+        "//netos/...",
     ],
 )
 
