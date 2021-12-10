@@ -105,9 +105,3 @@ class types(object):
     @staticmethod
     def is_tuple(x):
         return type(x) == tuple
-
-
-def sha256_b64(s):
-    m = hashlib.sha256()
-    m.update(s.encode())
-    return base64.b64encode(m.digest(), altchars=b"-_").rstrip(b"=").decode()
