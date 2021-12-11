@@ -26,7 +26,6 @@ from typing import (
     List,
     Tuple,
     Union,
-    Tuple,
 )
 
 from antlir.common import init_logging, get_logger, not_none
@@ -408,6 +407,7 @@ async def vm(
             " systemd.unified_cgroup_hierarchy=1"
             " rd.emergency=poweroff "
             " systemd.hostname=vmtest "
+            f" root=LABEL={opts.root_label} "
             + " ".join(root_disk.kernel_args)
             + " "
             + " ".join(opts.append)

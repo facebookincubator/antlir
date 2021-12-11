@@ -60,7 +60,8 @@ _vm_disk_t = shape.shape(
 def _new_vm_disk(
         package = None,
         layer = None,
-        layer_size_mb = None):
+        layer_size_mb = None,
+        layer_label = "/"):
     if package and layer:
         fail("disk.new() accepts `package` OR `layer`, not both")
 
@@ -76,6 +77,7 @@ def _new_vm_disk(
                 layer = layer,
                 format = "btrfs",
                 loopback_opts = struct(
+                    label = layer_label,
                     size_mb = layer_size_mb,
                     writable_subvolume = True,
                 ),
@@ -160,6 +162,11 @@ _vm_opts_t = shape.shape(
     disk = shape.field(_vm_disk_t),
     # Runtime details about how to run the VM
     runtime = shape.field(_vm_runtime_t),
+    # What label to pass to the root kernel parameter
+    root_label = shape.field(
+        str,
+        default = "/",
+    ),
 )
 
 def _new_vm_opts(
