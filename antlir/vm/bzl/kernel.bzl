@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:shape.bzl", "shape")
 
 kernel_artifacts_t = shape.shape(
@@ -19,6 +21,9 @@ kernel_t = shape.shape(
 )
 
 def normalize_kernel(kernel):
+    if types.is_string(kernel):
+        return kernel_get.get(kernel)
+
     # Convert from a struct kernel struct format
     # into a kernel shape instance.  Note, if the provided `kernel` attr
     # is already a shape instance, this just makes another one. Wasteful, yes
