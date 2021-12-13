@@ -10,15 +10,23 @@ affiliations_t = shape.shape(faction = str)
 
 # A shape that references buck targets
 lightsaber_t = shape.shape(
-    color = shape.enum("red", "green", "blue"),
+    __typename__ = "Lightsaber",
+    color = shape.enum(
+        "red",
+        "green",
+        "blue",
+        __typename__ = "Color",
+    ),
     target = shape.target(optional = True),
 )
 
 # Test data adapted from the GraphQL Star Wars examples
 character_t = shape.shape(
+    __typename__ = "Character",
     name = str,
     appears_in = shape.list(int),
     friends = shape.list(shape.shape(
+        __typename__ = "Friend",
         name = str,
     )),
     weapon = shape.union(

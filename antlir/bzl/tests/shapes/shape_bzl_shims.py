@@ -32,6 +32,7 @@ def struct(**kwargs):
         "struct",
         [(k, type(v)) for k, v in kwargs.items()],
         namespace={"__eq__": __dataclass_eq, "to_json": __struct_to_json},
+        frozen=True,
     )
     return cls(**kwargs)
 
@@ -105,3 +106,9 @@ class types(object):
     @staticmethod
     def is_tuple(x):
         return type(x) == tuple
+
+
+def sha256_b64(s):
+    m = hashlib.sha256()
+    m.update(s.encode())
+    return base64.b64encode(m.digest(), altchars=b"-_").rstrip(b"=").decode()

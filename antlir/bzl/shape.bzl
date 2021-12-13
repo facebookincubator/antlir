@@ -281,6 +281,9 @@ def _dict(key_type, val_type, **field_kwargs):
         type = struct(
             collection = dict,
             item_type = (key_type, val_type),
+            # __typename__ is only used for composing into other type names, so don't
+            # allow the user to override it
+            __typename__ = "dict_{}_to_{}".format(_type_name(key_type), _type_name(val_type)),
         ),
         **field_kwargs
     )
@@ -290,6 +293,9 @@ def _list(item_type, **field_kwargs):
         type = struct(
             collection = list,
             item_type = item_type,
+            # __typename__ is only used for composing into other type names, so don't
+            # allow the user to override it
+            __typename__ = "list_of_{}".format(_type_name(item_type)),
         ),
         **field_kwargs
     )
@@ -299,17 +305,20 @@ def _tuple(*item_types, **field_kwargs):
         type = struct(
             collection = tuple,
             item_type = item_types,
+            # __typename__ is only used for composing into other type names, so don't
+            # allow the user to override it
+            __typename__ = "tuple_" + "_".join([_type_name(i) for i in item_types]),
         ),
         **field_kwargs
     )
 
 def _is_collection(x):
-    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["collection", "item_type"])
+    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["collection", "item_type", "__typename__"])
 
 def _is_union(x):
-    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["union_types"])
+    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["union_types", "__typename__"])
 
-def _union_type(*union_types):
+def _union_type(*union_types, __typename__ = None):
     """
     Define a new union type that can be used when defining a field. Most
     useful when a union type is meant to be typedef'd and reused. To define
@@ -324,31 +333,37 @@ def _union_type(*union_types):
     ```
     """
     if len(union_types) == 0:
-        fail("union must specify at one type")
+        fail("union must specify at least one type")
+    if not __typename__:
+        __typename__ = "union_" + "_".join([_type_name(t) for t in union_types])
     return struct(
+        __typename__ = __typename__,
         union_types = union_types,
     )
 
-def _union(*union_types, **field_kwargs):
+def _union(*union_types, __typename__ = None, **field_kwargs):
     return _field(
-        type = _union_type(*union_types),
+        type = _union_type(__typename__ = __typename__, *union_types),
         **field_kwargs
     )
 
-def _enum(*values, **field_kwargs):
+def _enum(*values, __typename__ = None, **field_kwargs):
     # since enum values go into class member names, they must be strings
     for val in values:
         if not types.is_string(val):
             fail("all enum values must be strings, got {}".format(_pretty(val)))
+    if not __typename__:
+        __typename__ = "_".join([str(v.capitalize()) for v in values])
     return _field(
         type = struct(
+            __typename__ = __typename__,
             enum = tuple(values),
         ),
         **field_kwargs
     )
 
 def _is_enum(t):
-    return structs.is_struct(t) and sorted(structs.to_dict(t).keys()) == sorted(["enum"])
+    return structs.is_struct(t) and sorted(structs.to_dict(t).keys()) == sorted(["enum", "__typename__"])
 
 def _path(**field_kwargs):
     return _field(type = "Path", **field_kwargs)
@@ -359,7 +374,7 @@ def _path(**field_kwargs):
 def _target(**field_kwargs):
     return _field(type = "Target", **field_kwargs)
 
-def _shape(**fields):
+def _shape(__typename__ = None, **fields):
     """
     Define a new shape type with the fields as given by the kwargs.
 
@@ -369,7 +384,7 @@ def _shape(**fields):
     ```
     """
     for name, f in fields.items():
-        # Avoid colliding with `__shape__`. Also, in Python, `_name` is private.
+        # Avoid colliding with `__shape__`. Also, in Python, `_name` is "private".
         if name.startswith("_"):
             fail("Shape field name {} must not start with _: {}".format(
                 name,
@@ -380,7 +395,16 @@ def _shape(**fields):
         # the rich field type for internal use
         if not hasattr(f, "type") or _is_union(f):
             fields[name] = _field(f)
+    if not __typename__:
+        # deterministically name the class based on the shape field names
+        # and types to allow for buck caching and proper starlark runtime
+        # compatibility
+        __typename__ = "_shape_" + sha256_b64(
+            str({key: _type_name(field.type) for key, field in fields.items()}),
+        ).replace("-", "_")
+
     return struct(
+        __typename__ = __typename__,
         fields = fields,
         # for external usage, make the fields top-level attributes
         **{key: f.type for key, f in fields.items()}
@@ -391,7 +415,7 @@ def _is_shape(x):
         return False
     if not hasattr(x, "fields"):
         return False
-    return sorted(structs.to_dict(x).keys()) == sorted(["fields"] + list(x.fields.keys()))
+    return sorted(structs.to_dict(x).keys()) == sorted(["fields", "__typename__"] + list(x.fields.keys()))
 
 def _shape_defaults_dict(shape):
     defaults = {}
@@ -423,27 +447,11 @@ def _new_shape(shape, **fields):
 
     return struct(__shape__ = shape, **with_defaults)
 
-def _mangle_name(t):  # pragma: no cover
+def _type_name(t):  # pragma: no cover
     if _is_field(t):
         t = t.type
-    if _is_shape(t):
-        # deterministically name the class based on the shape field names
-        # and types to allow for buck caching and proper starlark runtime
-        # compatibility
-        return "_" + sha256_b64(
-            str({key: _mangle_name(field.type) for key, field in t.fields.items()}),
-        ).replace("-", "_")
-    if _is_enum(t):
-        return "_".join([str(v.capitalize()) for v in t.enum])
-    if _is_union(t):
-        return "union_" + "_".join([_mangle_name(t) for t in t.union_types])
-    if _is_collection(t):
-        if t.collection == dict:
-            return "dict_{}_to_{}".format(_mangle_name(t.item_type[0]), _mangle_name(t.item_type[1]))
-        if t.collection == list:
-            return "list_{}".format(_mangle_name(t.item_type))
-        if t.collection == tuple:
-            return "tuple_" + "_".join([_mangle_name(i) for i in t.item_type])
+    if hasattr(t, "__typename__"):
+        return t.__typename__
     if t == int:
         return "int"
     if t == bool:
@@ -462,7 +470,7 @@ def _serialize_default_ir(value):  # pragma: no cover
 def _ir_type(t, module, renames):  # pragma: no cover
     if _is_field(t):
         t = t.type
-    t_name = _mangle_name(t)
+    t_name = _type_name(t)
     if t_name in renames:
         t_name = renames[t_name]
     if t_name in module["types"]:
@@ -513,7 +521,7 @@ def _ir_type(t, module, renames):  # pragma: no cover
 def _add_to_ir(t, module, target, renames):  # pragma: no cover
     if _is_field(t):
         t = t.type
-    t_name = _mangle_name(t)
+    t_name = _type_name(t)
     if t_name in renames:
         t_name = renames[t_name]
     if _is_shape(t):
@@ -581,7 +589,7 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
     target = normalize_target(":" + name)
 
     ir = {"name": name, "target": target, "types": {}}
-    top_name = _mangle_name(shape)
+    top_name = _type_name(shape)
     _add_to_ir(shape, ir, target, renames = {top_name: classname})
     ir = struct(**ir)
     buck_genrule(
@@ -754,7 +762,7 @@ def _python_data(
     target = normalize_target(":" + name)
 
     ir = {"name": module, "target": target, "types": {}}
-    top_name = _mangle_name(shape)
+    top_name = _type_name(shape)
     _add_to_ir(shape, ir, target, renames = {top_name: classname})
     ir = struct(**ir)
     buck_genrule(
