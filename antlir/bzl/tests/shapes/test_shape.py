@@ -134,8 +134,8 @@ class TestShape(unittest.TestCase):
             },
         )
 
-        # Shapes don't have nice classnames, so the repr is customized to be
-        # human-readable. While this has no functional impact on the code, it
+        # Shapes don't always have nice classnames, so the repr is customized to
+        # be human-readable. While this has no functional impact on the code, it
         # is critical for usability, so ensure there are unit tests.
         self.assertEqual(
             repr(characters[0].copy(update={"weapon": lightsaber_fixed})),
