@@ -5,7 +5,13 @@
 
 import asyncio
 import contextlib
+import logging
+import os
+import subprocess
 from functools import wraps
+from typing import Awaitable
+
+logger = logging.getLogger(__name__)
 
 
 def async_wrapper(f):
@@ -34,3 +40,59 @@ def insertstack(f):
                 yield r
 
     return contextlib.asynccontextmanager(wrapper)
+
+
+class SidecarProcess:
+    """
+    Encapsulated class for sidecar processes that are using the async
+    stack and can spawn their own children.
+    Unless requiring specific customization, should only be created
+    by the create_sidecar_subprocess() func
+    """
+
+    def __init__(self, proc):
+        # asyncio.Process is not exported, so can't type the proc here
+        self._proc = proc
+
+    async def kill(self):
+        subprocess.run(
+            [
+                "sudo",
+                "kill",
+                "-KILL",
+                "--",
+                "-{}".format(self.pid),
+            ]
+        )
+
+        # dont leak resources
+        await self.wait()
+        logger.debug(f"Killed sidecar, pid: {self.pid}")
+
+    async def wait(self):
+        await self._proc.wait()
+
+    @property
+    def pid(self):
+        return self._proc.pid
+
+
+async def create_sidecar_subprocess(
+    program: str, *args, stdin=None, stdout=None, stderr=None, **kwargs
+) -> SidecarProcess:
+    # NOTE(aeh): in order to end all the process tree for the sidecars,
+    # the exec below sets each one as a process group leader; the kill
+    # then sends the signal to all of the children that the sidecar
+    # process might have spawned
+    proc = await asyncio.create_subprocess_exec(
+        program,
+        preexec_fn=os.setpgrp,
+        *args,
+        stdin=stdin,
+        stdout=stdout,
+        stderr=stderr,
+        **kwargs,
+    )
+
+    logger.debug(f"Started sidecar, pid: {proc.pid}")
+    return SidecarProcess(proc)

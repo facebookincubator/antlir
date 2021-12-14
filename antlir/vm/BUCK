@@ -114,7 +114,11 @@ python_library(
 python_library(
     name = "tpm",
     srcs = ["tpm.py"],
-    deps = ["//antlir:fs_utils"],
+    deps = [
+        ":common",
+        "//antlir:fs_utils",
+        "//antlir:unshare",
+    ],
 )
 
 python_binary(
