@@ -2,10 +2,12 @@ load("//antlir/bzl:oss_shim.bzl", "export_file")
 
 export_file(
     name = "systemd_expectations.rs",
+    visibility = ["PUBLIC"],
 )
 
 export_file(
     name = "skip-network-wait.conf",
+    visibility = ["PUBLIC"],
 )
 
 export_file(
