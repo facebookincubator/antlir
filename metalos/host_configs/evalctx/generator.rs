@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::ffi::OsStr;
 use std::fs;
 use std::io::Write;
 use std::ops::Deref;
@@ -17,10 +16,10 @@ use derive_more::Display;
 use starlark::environment::{GlobalsBuilder, Module};
 use starlark::eval::Evaluator;
 use starlark::starlark_module;
-use starlark::syntax::{AstModule, Dialect};
 use starlark::values::{list::ListOf, OwnedFrozenValue, Value, ValueLike};
 use xattr::FileExt;
 
+use crate::loader::{Loader, ModuleId};
 use crate::path::PathExt;
 use crate::{Error, Host, Result};
 
@@ -115,56 +114,38 @@ pub fn module(registry: &mut GlobalsBuilder) {
 }
 
 pub struct Generator {
-    pub name: String,
+    id: ModuleId,
     starlark_func: OwnedFrozenValue,
 }
 
 impl Generator {
-    pub fn compile<'a, N: AsRef<str>, S: AsRef<str>>(name: N, src: S) -> Result<Self> {
-        let ast: AstModule =
-            AstModule::parse(name.as_ref(), src.as_ref().to_owned(), &Dialect::Extended)
-                .map_err(Error::Parse)?;
-        let module = Module::new();
-        let globals = crate::globals();
-        let mut evaluator: Evaluator = Evaluator::new(&module);
-        let name = name.as_ref().to_owned();
-
-        evaluator
-            .eval_module(ast, &globals)
-            .map_err(Error::EvalModule)?;
-
-        let module = module.freeze().map_err(Error::Starlark)?;
-        let starlark_func = module.get("generator").ok_or(Error::NotGenerator)?;
-        Ok(Self {
-            name,
-            starlark_func,
-        })
+    /// Recursively load a directory of starlark generators. These files must
+    /// end in '.star' and define a function 'generator' that accepts a single
+    /// ['metalos.Host'](crate::Host) parameter. Starlark files in the
+    /// directory are available to be `load()`ed by generators.
+    pub fn load(path: impl AsRef<Path>) -> Result<Vec<Self>> {
+        Loader::load(path)?
+            .into_iter()
+            .map(|(id, module)| {
+                let starlark_func = module.get("generator").ok_or(Error::NotGenerator)?;
+                Ok(Self { id, starlark_func })
+            })
+            .filter(|r| match r {
+                Err(Error::NotGenerator) => false,
+                _ => true,
+            })
+            .collect()
     }
 
-    /// Recursively load a directory of .star generators or individual file paths
-    pub fn load(path: &Path) -> Result<Vec<Self>> {
-        match std::fs::metadata(path).map_err(Error::Load)?.is_dir() {
-            true => Ok(std::fs::read_dir(path)
-                .map_err(Error::Load)?
-                .into_iter()
-                .filter_map(std::io::Result::ok)
-                .filter(|entry| entry.file_type().map(|t| !t.is_symlink()).unwrap_or(false))
-                .map(|entry| Self::load(&entry.path()))
-                .collect::<Result<Vec<_>>>()?
-                .into_iter()
-                .flatten()
-                .collect()),
-            false => match path.extension() == Some(OsStr::new("star")) {
-                true => {
-                    let src = std::fs::read_to_string(path).map_err(Error::Load)?;
-                    Self::compile(path.display().to_string(), src).map(|gen| vec![gen])
-                }
-                false => Ok(vec![]),
-            },
-        }
+    pub fn id(&self) -> &ModuleId {
+        &self.id
     }
 
-    pub fn eval(&self, host: &Host) -> Result<GeneratorOutput> {
+    pub fn name(&self) -> String {
+        self.id.to_string()
+    }
+
+    pub fn eval(self, host: &Host) -> Result<GeneratorOutput> {
         let module = Module::new();
         let mut evaluator = Evaluator::new(&module);
         let host_value = evaluator.heap().alloc(host.clone());
@@ -204,15 +185,22 @@ impl GeneratorOutput {
 mod tests {
     use super::{File, GeneratorOutput};
     use crate::{Generator, Host};
+    use tempfile::TempDir;
 
     // The hostname.star generator is super simple, so use that to test the
     // generator runtime implementation.
     #[test]
-    fn hostname_generator() {
-        let gen = Generator::compile("hostname.star", include_str!("../generators/hostname.star"))
-            .unwrap();
+    fn hostname_generator() -> anyhow::Result<()> {
+        let tmp_dir = TempDir::new()?;
+        std::fs::write(
+            tmp_dir.path().join("hostname.star"),
+            include_str!("../generators/hostname.star"),
+        )?;
+        let mut generators = Generator::load(tmp_dir.path())?;
+        assert_eq!(1, generators.len());
+        let gen = generators.remove(0);
         let host = Host::example_host_for_tests();
-        let output = gen.eval(&host).unwrap();
+        let output = gen.eval(&host)?;
         assert_eq!(
             output,
             GeneratorOutput {
@@ -223,5 +211,6 @@ mod tests {
                 }]
             }
         );
+        Ok(())
     }
 }

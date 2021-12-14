@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::{bail, Context, Result};
 use bytes::Buf;
@@ -67,7 +67,7 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
         .context("failed to load json body")?;
     let host: Host =
         serde_json::from_reader(body.reader()).context("failed to deserialize host json")?;
-    let generators = Generator::load(Path::new("/usr/lib/metalos/generators"))
+    let generators = Generator::load("/usr/lib/metalos/generators")
         .context("failed to load generators from /usr/lib/metalos/generators")?;
     for gen in generators {
         let output = gen.eval(&host)?;

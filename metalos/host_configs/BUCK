@@ -44,6 +44,10 @@ rust_library(
     srcs = glob(["evalctx/**/*.rs"]),
     features =
         ["facebook"] if (not oss and not oss_ci) else [],
+    test_deps = [
+        "maplit",
+        "tempfile",
+    ],
     test_srcs = ["generators/hostname.star"],
     deps = [
         "anyhow",
@@ -55,6 +59,7 @@ rust_library(
         "starlark",
         "starlark_derive",
         "thiserror",
+        "walkdir",
         "xattr",
         ":host-rust",
     ],
@@ -84,10 +89,10 @@ feature.new(
         image.ensure_subdirs_exist("/usr/lib/metalos", "generators"),
     ] + [
         feature.install(
-            generator,
-            "/usr/lib/metalos/generators/{}".format(paths.basename(generator)),
+            src,
+            "/usr/lib/metalos/generators/{}".format(paths.basename(src)),
         )
-        for generator in glob(["generators/*.star"])
+        for src in glob(["generators/*.star"])
     ],
     visibility = ["//metalos/..."],
 )
