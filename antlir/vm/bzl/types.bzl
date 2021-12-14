@@ -19,6 +19,8 @@ _vm_emulator_t = shape.shape(
     img_util = shape.target(),
     # Location of various roms
     roms_dir = shape.target(),
+    # Software TPM binary to invoke
+    tpm_binary = shape.target(),
 )
 
 def _new_vm_emulator(
@@ -26,6 +28,7 @@ def _new_vm_emulator(
         firmware = None,
         img_util = None,
         roms_dir = None,
+        tpm_binary = None,
         **kwargs):
     # These defaults have to be set here due to the use of the
     # `third_party.library` function.  It must be invoked inside of
@@ -35,6 +38,7 @@ def _new_vm_emulator(
     binary = binary or third_party.library("qemu")
     img_util = img_util or third_party.library("qemu", "qemu-img")
     roms_dir = roms_dir or antlir_dep("vm:roms")
+    tpm_binary = tpm_binary or third_party.library("swtpm", "bin", "antlir")
 
     return shape.new(
         _vm_emulator_t,
@@ -42,6 +46,7 @@ def _new_vm_emulator(
         firmware = firmware,
         img_util = img_util,
         roms_dir = roms_dir,
+        tpm_binary = tpm_binary,
         **kwargs
     )
 
@@ -160,6 +165,8 @@ _vm_opts_t = shape.shape(
     mem_mb = shape.field(int, default = 4096),
     # Root disk for the VM
     disk = shape.field(_vm_disk_t),
+    # Attach a TPM software emulator
+    tpm = shape.field(bool, default = True),
     # Runtime details about how to run the VM
     runtime = shape.field(_vm_runtime_t),
     # What label to pass to the root kernel parameter
@@ -175,6 +182,7 @@ def _new_vm_opts(
         kernel = None,
         initrd = None,
         disk = None,
+        tpm = True,
         runtime = None,
         **kwargs):
     # Don't allow an invalid cpu count
@@ -202,6 +210,7 @@ def _new_vm_opts(
         kernel = kernel,
         disk = disk,
         runtime = runtime,
+        tpm = tpm,
         **kwargs
     )
 

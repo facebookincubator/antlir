@@ -63,6 +63,7 @@ python_unittest(
     deps = [
         "//antlir:fs_utils",
         "//antlir:testlib_common",
+        "//antlir:unshare",
         "//antlir/vm:share",
         "//antlir/vm:vm",
     ],

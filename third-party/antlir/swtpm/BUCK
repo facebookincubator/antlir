@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:third_party.bzl", "third_party")
 
 BASE_FEATURES = [
@@ -65,4 +66,10 @@ third_party.native_build(
             rm -rf "${STAGE}/var"
         """,
     ),
+)
+
+buck_genrule(
+    name = "bin",
+    out = "swtpm",
+    bash = "cp $(location :swtpm)/bin/swtpm $OUT",
 )

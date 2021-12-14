@@ -8,7 +8,6 @@ import argparse
 import asyncio
 import importlib.resources
 import os
-import socket
 import subprocess
 import sys
 import tempfile
@@ -19,9 +18,7 @@ from enum import Enum
 from itertools import chain
 from typing import (
     cast,
-    Any,
     AsyncGenerator,
-    Iterable,
     Optional,
     List,
     Tuple,
@@ -39,6 +36,7 @@ from antlir.vm.common import insertstack
 from antlir.vm.guest_ssh import GuestSSHConnection
 from antlir.vm.share import Plan9Export, Share, QCow2RootDisk
 from antlir.vm.tap import VmTap
+from antlir.vm.tpm import VmTPM
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
@@ -249,6 +247,36 @@ class VMExecOpts(Shape):
         return cls(**args.__dict__)
 
 
+async def _create_tpm(
+    stack: AsyncExitStack,
+    ns: Unshare,
+    binary: str,
+    timeout_ms: int,
+):
+    tpm_context_path = Path(
+        stack.enter_context(tempfile.TemporaryDirectory(prefix="vm_tpm_state_"))
+    )
+    tpm_sock = tpm_context_path / "tpm_ctrl.sock"
+    tpm_state = tpm_context_path / "tpm_state"
+    os.mkdir(tpm_state)
+
+    tpmdev = VmTPM(tpm_sock, tpm_state)
+
+    logger.debug(f"Starting software TPM... [context: {tpm_context_path}]")
+    proc = await asyncio.create_subprocess_exec(
+        *ns.nsenter_as_user(binary, *tpmdev.sidecar_args)
+    )
+
+    try:
+        tpm_sock.wait_for(timeout_ms=timeout_ms)
+    except FileNotFoundError:
+        raise VMBootError(
+            f"Software TPM device failed to create socket in: {timeout_ms}ms"
+        )
+
+    return tpmdev, proc
+
+
 @insertstack
 @asynccontextmanager
 async def vm(
@@ -417,7 +445,18 @@ async def vm(
         f"socket,path={notify_sockfile},id=notify,server",
         "-device",
         "virtserialport,chardev=notify,name=notify-host",
-    ] + list(tapdev.qemu_args)
+    ]
+    args.extend(tapdev.qemu_args)
+
+    if opts.tpm:
+        tpmdev, tpm_sidecar = await _create_tpm(
+            stack,
+            ns,
+            binary=opts.runtime.emulator.tpm_binary.path,
+            timeout_ms=timeout_ms,
+        )
+        args.extend(tpmdev.qemu_args)
+        sidecar_procs.append(tpm_sidecar)
 
     # The firmware to boot the emulator with
     args.extend(
@@ -583,3 +622,6 @@ async def vm(
                     *[str(proc.pid) for proc in sidecar_procs],
                 ]
             )
+
+            # dont leak resources
+            await asyncio.wait([proc.wait() for proc in sidecar_procs])

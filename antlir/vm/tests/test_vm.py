@@ -4,16 +4,22 @@
 # LICENSE file in the root directory of this source tree.
 
 import asyncio
+import contextlib
 import os
-import socket
 import subprocess
 import tempfile
-import threading
-import unittest
 
 from antlir.fs_utils import Path
 from antlir.tests.common import AntlirTestCase
-from antlir.vm.vm import _wait_for_boot, ShellMode, VMBootError, VMExecOpts, vm
+from antlir.unshare import Namespace, Unshare
+from antlir.vm.vm import (
+    _wait_for_boot,
+    ShellMode,
+    VMBootError,
+    VMExecOpts,
+    vm,
+    _create_tpm,
+)
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
@@ -271,3 +277,11 @@ class TestAntlirVM(AntlirTestCase):
                     VMBootError, "Timeout waiting for boot notify"
                 ):
                     await _wait_for_boot(tempsock, timeout_ms=100)
+
+    async def test_create_tpm_timeout(self):
+        timeout = 50  # ms
+
+        async with contextlib.AsyncExitStack() as stack:
+            with Unshare([Namespace.NETWORK, Namespace.PID]) as ns:
+                with self.assertRaises(VMBootError):
+                    await _create_tpm(stack, ns, "/bin/ls", timeout)

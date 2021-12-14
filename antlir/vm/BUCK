@@ -79,6 +79,7 @@ python_library(
         ":guest-ssh",
         ":share",
         ":tap",
+        ":tpm",
         ":vm_opts_t",
         "//antlir:common",
         "//antlir:config",
@@ -108,6 +109,12 @@ python_library(
     deps = [
         "//antlir:unshare",
     ],
+)
+
+python_library(
+    name = "tpm",
+    srcs = ["tpm.py"],
+    deps = ["//antlir:fs_utils"],
 )
 
 python_binary(
