@@ -1,0 +1,31 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:third_party.bzl", "third_party")
+
+BASE_FEATURES = [
+    image.rpms_install([
+        # build deps
+        "clang",
+        "autoconf",
+        "automake",
+        "libtool",
+        "texinfo",
+    ]),
+]
+
+third_party.native_build(
+    base_features = BASE_FEATURES,
+    script = third_party.script(
+        prepare = """
+            export MAKEFLAGS=-j
+            ./autogen.sh
+            ./configure --disable-shared --prefix="${STAGE}"
+        """,
+        build = "make",
+        install = "make install",
+    ),
+)
