@@ -8,7 +8,7 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":constants.bzl", "REPO_CFG")
 load(":hoist.bzl", "hoist")
 load(":image.bzl", "image")
-load(":oss_shim.bzl", "buck_genrule", third_party_shim = "third_party")
+load(":oss_shim.bzl", third_party_shim = "third_party")
 load(":shape.bzl", "shape")
 
 PREFIX = "/third_party_build"
@@ -166,24 +166,6 @@ def _library(name, *, include_path = "include", lib_path = "lib"):
         paths = [include_path, lib_path],
     )
 
-def _oss_build(*, project = None, name = None):
-    if not project:
-        project = paths.basename(package_name())
-
-    if not name:
-        name = project
-
-    buck_genrule(
-        name = project,
-        out = "out",
-        bash = """
-            cp --reflink=auto -r $(location //antlir/third-party/{project}:{name}) "$OUT"
-        """.format(
-            project = project,
-            name = name,
-        ),
-    )
-
 third_party = struct(
     # The native build target is the main mechanism of building third-party
     # packages directly from sources, inside an isolated btrfs layer.
@@ -206,5 +188,4 @@ third_party = struct(
     # PKG_CONFIG_PATH and most prepare scripts should work.
     # See //antlir/third-party subfolders for usage examples.
     library = _library,
-    oss_build = _oss_build,
 )
