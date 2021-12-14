@@ -15,6 +15,7 @@ pub use host;
 #[cfg(feature = "facebook")]
 pub use host::facebook;
 pub use host::Host;
+mod loader;
 mod path;
 mod template;
 
@@ -26,6 +27,12 @@ pub enum Error {
     /// The starlark module had valid syntax, but failed during evaluation.
     #[error("could not evaluate starlark module: {0}")]
     EvalModule(anyhow::Error),
+    /// The starlark module had valid syntax, but contained an invalid load().
+    #[error("'{src}' attempted to import non-existent module '{missing}'")]
+    MissingImport {
+        src: loader::ModuleId,
+        missing: loader::ModuleId,
+    },
     /// The generator was parsed and the module was evaluated, but it failed or
     /// returned the wrong type of output.
     #[error("could not evaluate generator function: {0}")]

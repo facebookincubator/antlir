@@ -59,7 +59,7 @@ fn main() -> Result<()> {
     }
     if dry_run {
         for gen in generators {
-            let name = gen.name.clone();
+            let name = gen.name();
             let output = gen.eval(&host)?;
             println!("{}\n{:#?}", name, output);
         }
