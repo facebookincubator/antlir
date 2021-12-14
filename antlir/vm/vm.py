@@ -32,11 +32,15 @@ from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.shape import Shape
 from antlir.unshare import Namespace, Unshare
-from antlir.vm.common import insertstack
+from antlir.vm.common import (
+    insertstack,
+    SidecarProcess,
+    create_sidecar_subprocess,
+)
 from antlir.vm.guest_ssh import GuestSSHConnection
 from antlir.vm.share import Plan9Export, Share, QCow2RootDisk
 from antlir.vm.tap import VmTap
-from antlir.vm.tpm import VmTPM
+from antlir.vm.tpm import VmTPM, TPMError
 from antlir.vm.vm_opts_t import vm_opts_t
 
 
@@ -256,23 +260,12 @@ async def _create_tpm(
     tpm_context_path = Path(
         stack.enter_context(tempfile.TemporaryDirectory(prefix="vm_tpm_state_"))
     )
-    tpm_sock = tpm_context_path / "tpm_ctrl.sock"
-    tpm_state = tpm_context_path / "tpm_state"
-    os.mkdir(tpm_state)
 
-    tpmdev = VmTPM(tpm_sock, tpm_state)
-
-    logger.debug(f"Starting software TPM... [context: {tpm_context_path}]")
-    proc = await asyncio.create_subprocess_exec(
-        *ns.nsenter_as_user(binary, *tpmdev.sidecar_args)
-    )
-
+    tpmdev = VmTPM(tpm_context_path)
     try:
-        tpm_sock.wait_for(timeout_ms=timeout_ms)
-    except FileNotFoundError:
-        raise VMBootError(
-            f"Software TPM device failed to create socket in: {timeout_ms}ms"
-        )
+        proc = await tpmdev.start_sidecar(ns, binary, timeout_ms)
+    except TPMError as e:
+        raise VMBootError(e)
 
     return tpmdev, proc
 
@@ -380,14 +373,14 @@ async def vm(
     # tap device must be created before sidecars, which may require an interface
     # to already exist and have an IP address
     tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
-    sidecar_procs = []
+    sidecar_procs: List[SidecarProcess] = []
     with importlib.resources.path(__package__, "router-advertiser") as rad:
         sidecar_procs.append(
-            await asyncio.create_subprocess_exec(*ns.nsenter_as_root(str(rad)))
+            await create_sidecar_subprocess(*ns.nsenter_as_root(str(rad)))
         )
 
     logger.debug(
-        f"Starting sidecars {opts.runtime.sidecar_services} before QEMU"
+        f"Starting custom sidecars {opts.runtime.sidecar_services} before QEMU"
     )
     sidecar_procs.extend(
         await asyncio.gather(
@@ -396,7 +389,7 @@ async def vm(
             # which require sidecars as well as easily handling the `$(exe)`
             # expansion of `python_binary` rules into `python3 -Es $par`
             *(
-                asyncio.create_subprocess_exec(
+                create_sidecar_subprocess(
                     *ns.nsenter_as_user("/bin/sh", "-c", sidecar)
                 )
                 for sidecar in opts.runtime.sidecar_services
@@ -613,15 +606,4 @@ async def vm(
         logger.debug(f"VM exited with: {proc.returncode}")
 
         if sidecar_procs:
-            subprocess.run(
-                [
-                    "sudo",
-                    "kill",
-                    "-KILL",
-                    "--",
-                    *[str(proc.pid) for proc in sidecar_procs],
-                ]
-            )
-
-            # dont leak resources
-            await asyncio.wait([proc.wait() for proc in sidecar_procs])
+            await asyncio.wait([proc.kill() for proc in sidecar_procs])
