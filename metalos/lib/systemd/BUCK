@@ -33,6 +33,9 @@ rust_library(
         "plain",
         "container",
     ],
+    visibility = [
+        "PUBLIC",
+    ],
     deps = [
         "anyhow",
         "async-trait",
