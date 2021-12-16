@@ -1,0 +1,7 @@
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum {{name}} {
+    {{#each types}}
+    {{union-name this}}({{type this}}),
+    {{/each}}
+}

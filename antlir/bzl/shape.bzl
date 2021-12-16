@@ -112,7 +112,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":oss_shim.bzl", "buck_genrule", "python_library", "target_utils")
+load(":oss_shim.bzl", "buck_genrule", "python_library", "rust_library", "target_utils", "third_party")
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
@@ -593,17 +593,23 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
     _add_to_ir(shape, ir, target, renames = {top_name: classname})
     ir = struct(**ir)
     buck_genrule(
-        name = "{}.py".format(name),
-        cmd = """
-            echo {ir} > $TMP/ir.json
-            $(exe {ir2code}) pydantic $TMP/ir.json > $OUT
-        """.format(
-            ir = shell.quote(ir.to_json()),
-            ir2code = antlir_dep("bzl/shape2:ir2code"),
-        ),
+        name = "{}--ir.json".format(name),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
+        cmd = """
+            echo {} > $OUT
+        """.format(shell.quote(ir.to_json())),
+    )
+    buck_genrule(
+        name = "{}.py".format(name),
+        antlir_rule = "user-internal",
+        cmd = """
+            $(exe {ir2code}) pydantic $(location :{name}--ir.json) > $OUT
+        """.format(
+            name = name,
+            ir2code = antlir_dep("bzl/shape2:ir2code"),
+        ),
     )
     python_library(
         name = name,
@@ -611,11 +617,34 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
         deps = [
             antlir_dep(":shape"),
         ],
-        # Antlir users should not directly use `shape`, but we do use it
-        # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
         **kwargs
     )
+
+    buck_genrule(
+        name = "{}.rs".format(name),
+        antlir_rule = "user-internal",
+        cmd = """
+            $(exe {ir2code}) rust $(location :{name}--ir.json) > $OUT
+        """.format(
+            name = name,
+            ir2code = antlir_dep("bzl/shape2:ir2code"),
+        ),
+    )
+    rust_library(
+        name = name + "-rust",
+        crate = name,
+        mapped_srcs = {":{}.rs".format(name): "src/lib.rs"},
+        deps = [
+            antlir_dep("bzl/shape2:shape-rust"),
+        ] + third_party.libraries(["serde", "serde_json"], platform = "rust"),
+        antlir_rule = "user-internal",
+        unittests = False,
+        **kwargs
+    )
+
+    # TODO(vmagro): clean this up and make all targets here use
+    # language-specific target names
     return normalize_target(":" + name)
 
 # Does a recursive (deep) copy of `val` which is expected to be of type
