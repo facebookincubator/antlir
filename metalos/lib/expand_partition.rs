@@ -75,6 +75,10 @@ pub fn expand_last_partition(device: &Path) -> Result<PartitionDelta> {
         .context("failed to load gpt table")?;
 
     new_gpt_table
+        .update_guid(Some(primary_header.disk_guid))
+        .context("failed to copy over guid")?;
+
+    new_gpt_table
         .update_partitions(new_partitions)
         .context("failed to add updated partitions to gpt_table")?;
 
@@ -231,11 +235,20 @@ pub mod tests {
     use super::*;
     use metalos_macros::vmtest;
 
+    fn get_guid(disk_path: &Path) -> Result<String> {
+        let cfg = gpt::GptConfig::new().writable(false);
+        let disk = cfg.open(disk_path).context("failed to open disk")?;
+
+        Ok(disk.guid().to_hyphenated_ref().to_string())
+    }
+
     #[vmtest]
     fn test_expand_last_partition() -> Result<()> {
         let (lo, _) = setup_test_device().context("failed to setup loopback device")?;
+        let start_guid = get_guid(Path::new(&lo)).context("failed to get starting guid")?;
         let delta =
             expand_last_partition(&Path::new(&lo)).context("failed to expand last partition")?;
+        let ending_guid = get_guid(Path::new(&lo)).context("failed to get starting guid")?;
 
         println!("{:#?}", delta);
         assert_eq!(delta.partition_num, 2);
@@ -248,6 +261,9 @@ pub mod tests {
         // start of 3rd part should be sector 201 (102912 bytes).and with the new end
         // at 97951 (50150912) so end size should be 50150912 - 102912 = 50048000
         assert_eq!(delta.new_size, 50048000);
+
+        // Ensure this conversion didn't mess up the guid
+        assert_eq!(start_guid, ending_guid);
 
         Ok(())
     }

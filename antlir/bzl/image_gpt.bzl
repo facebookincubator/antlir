@@ -17,6 +17,10 @@ gpt_partition_t = shape.shape(
 
 gpt_t = shape.shape(
     name = str,
+    disk_guid = shape.field(
+        str,
+        optional = True,
+    ),
     table = shape.list(gpt_partition_t),
 )
 
@@ -26,12 +30,13 @@ def image_gpt_partition(package, is_esp = False, name = None):
 def image_gpt(
         name,
         table,
+        disk_guid = None,
         visibility = None,
         build_appliance = None):
     visibility = visibility or []
     build_appliance = build_appliance or flavor_helpers.default_flavor_build_appliance
 
-    gpt = shape.new(gpt_t, name = name, table = table)
+    gpt = shape.new(gpt_t, name = name, table = table, disk_guid = disk_guid)
     buck_genrule(
         name = name,
         bash = image_utils.wrap_bash_build_in_common_boilerplate(

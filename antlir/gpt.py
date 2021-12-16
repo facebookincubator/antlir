@@ -75,6 +75,8 @@ def make_gpt(argv):
     # won't cause trouble in my experiments
     image_size_mb = 2
     sgdisk_opts = []
+    if args.gpt.disk_guid:
+        sgdisk_opts.append(f"--disk-guid={args.gpt.disk_guid}")
     for p in partitions:
         ops = []
         # set partition size
