@@ -1,0 +1,7 @@
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+pub enum {{name}} {
+    {{#each options}}
+    #[serde(rename = "{{this}}")]
+    {{@key}},
+    {{/each}}
+}

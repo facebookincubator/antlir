@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest", "rust_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
 
@@ -284,4 +284,27 @@ python_unittest(
     needed_coverage = [
         (100, ":shape_bzl"),
     ],
+)
+
+rust_unittest(
+    name = "test-shape-rs",
+    srcs = ["test_shape.rs"],
+    crate_root = "test_shape.rs",
+    env = {
+        "characters": shape.do_not_cache_me_json(
+            shape.new(
+                character_collection_t,
+                characters = characters,
+            ),
+        ),
+    },
+    deps = [
+        ":character_collection_t-rust",
+    ] + third_party.libraries(
+        [
+            "anyhow",
+            "serde_json",
+        ],
+        platform = "rust",
+    ),
 )

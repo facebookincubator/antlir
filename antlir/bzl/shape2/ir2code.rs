@@ -26,6 +26,8 @@ arg_enum! {
     enum RenderFormat {
         // classic style shapes with very limited type safety
         Pydantic,
+        // plain rust structs with serde
+        Rust,
     }
 }
 
@@ -44,6 +46,7 @@ pub fn main() -> Result<()> {
         .with_context(|| format!("failed to deserialize {}", opts.ir.display()))?;
     let code = match opts.format {
         RenderFormat::Pydantic => render::<Pydantic>(&ir),
+        RenderFormat::Rust => render::<Rust>(&ir),
     }
     .context("failed to render code")?;
     println!("{}", code);
@@ -57,6 +60,12 @@ pub fn main() -> Result<()> {
 #[repr(transparent)]
 pub struct Pydantic(String);
 
+#[derive(Debug, AsRef, Deref, Clone, PartialEq, Eq, From)]
+#[deref(forward)]
+#[from(forward)]
+#[as_ref(forward)]
+#[repr(transparent)]
+pub struct Rust(String);
 pub trait RegisterTemplates<T> {
     fn register_templates(hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
         Ok(hb)
@@ -181,6 +190,8 @@ impl RegisterTemplates<Pydantic> for Module {
 
 trait TypeExt {
     fn py_type_hint(&self) -> TypeName;
+    fn rs_type(&self) -> TypeName;
+    fn rs_union_name(&self) -> TypeName;
     fn transitive_dependency_count(&self) -> usize;
 }
 
@@ -217,6 +228,74 @@ impl TypeExt for Type {
                 "typing.Mapping[{}, {}]",
                 key_type.py_type_hint(),
                 value_type.py_type_hint(),
+            )),
+            Self::Complex(complex) => complex.name().clone(),
+        }
+    }
+
+    fn rs_type(&self) -> TypeName {
+        match self {
+            Self::Primitive(p) => TypeName(
+                match p {
+                    Primitive::Bool => "bool",
+                    Primitive::Byte => "u8",
+                    Primitive::I16 => "i16",
+                    Primitive::I32 => "i32",
+                    Primitive::I64 => "i64",
+                    Primitive::Float => "f32",
+                    Primitive::Double => "f64",
+                    Primitive::Binary => "Vec<u8>",
+                    Primitive::String => "String",
+                    Primitive::Path => "PathBuf",
+                }
+                .to_string(),
+            ),
+            Self::Tuple { item_types } => TypeName(format!(
+                "({},)",
+                item_types.iter().map(|i| i.rs_type()).join(",")
+            )),
+            Self::List { item_type } => TypeName(format!("Vec<{}>", item_type.rs_type())),
+            Self::Map {
+                key_type,
+                value_type,
+            } => TypeName(format!(
+                "BTreeMap<{}, {}>",
+                key_type.rs_type(),
+                value_type.rs_type(),
+            )),
+            Self::Complex(complex) => complex.name().clone(),
+        }
+    }
+
+    fn rs_union_name(&self) -> TypeName {
+        match self {
+            Self::Primitive(p) => TypeName(
+                match p {
+                    Primitive::Bool => "Bool",
+                    Primitive::Byte => "Byte",
+                    Primitive::I16 => "I16",
+                    Primitive::I32 => "I32",
+                    Primitive::I64 => "I64",
+                    Primitive::Float => "Float",
+                    Primitive::Double => "Double",
+                    Primitive::Binary => "Binary",
+                    Primitive::String => "String",
+                    Primitive::Path => "Path",
+                }
+                .to_string(),
+            ),
+            Self::Tuple { item_types } => TypeName(format!(
+                "Tuple_{}",
+                item_types.iter().map(|i| i.rs_union_name()).join("_")
+            )),
+            Self::List { item_type } => TypeName(format!("ListOf_{}", item_type.rs_union_name())),
+            Self::Map {
+                key_type,
+                value_type,
+            } => TypeName(format!(
+                "Dict_{}_To_{}",
+                key_type.rs_union_name(),
+                value_type.rs_union_name(),
             )),
             Self::Complex(complex) => complex.name().clone(),
         }
@@ -312,6 +391,41 @@ impl Render<Pydantic> for Module {
     }
 }
 
+impl RegisterTemplates<Rust> for Module {
+    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+        hb.register_template_string("lib", include_str!("templates/lib.rs.handlebars"))
+            .context("Trying to register preamble template")?;
+        hb.register_helper("type", Box::new(rs_type));
+        hb.register_helper("union-name", Box::new(rs_union_name));
+        hb.register_helper("json", Box::new(json_helper));
+        hb.register_helper("has-default-value", Box::new(has_default_value));
+        Ok(hb)
+    }
+}
+
+handlebars_helper!(rs_type: |ty: Type| ty.rs_type().to_string());
+handlebars_helper!(rs_union_name: |ty: Type| ty.rs_union_name().to_string());
+handlebars_helper!(json_helper: |v: Value| v.to_string());
+
+impl Render<Rust> for Module {
+    const ENTRYPOINT: &'static str = "lib";
+
+    fn render(&self, hb: &Handlebars<'static>) -> Result<Rust> {
+        let mut output = String::new();
+
+        output.push_str(
+            &hb.render("lib", &())
+                .context("failed to render the module preamble")?,
+        );
+
+        output.push('\n');
+
+        let types: Rust = self.render_types(hb)?;
+        output.push_str(&types);
+        Ok(Rust(output))
+    }
+}
+
 impl<T> RegisterTemplates<T> for ComplexType {}
 
 impl<T> Render<T> for ComplexType
@@ -340,6 +454,14 @@ impl RegisterTemplates<Pydantic> for Enum {
     }
 }
 
+impl RegisterTemplates<Rust> for Enum {
+    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+        hb.register_template_string("enum", include_str!("templates/enum.rs.handlebars"))
+            .context("Trying to register enum template")?;
+        Ok(hb)
+    }
+}
+
 impl<T> Render<T> for Enum
 where
     Enum: RegisterTemplates<T>,
@@ -359,6 +481,14 @@ impl RegisterTemplates<Pydantic> for Struct {
     }
 }
 
+impl RegisterTemplates<Rust> for Struct {
+    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+        hb.register_template_string("struct", include_str!("templates/struct.rs.handlebars"))
+            .context("Trying to register struct template")?;
+        Ok(hb)
+    }
+}
+
 impl<T> Render<T> for Struct
 where
     Struct: RegisterTemplates<T>,
@@ -370,6 +500,14 @@ where
 impl RegisterTemplates<Pydantic> for Union {
     fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
         hb.register_template_string("union", include_str!("templates/union.pydantic.handlebars"))
+            .context("Trying to register union template")?;
+        Ok(hb)
+    }
+}
+
+impl RegisterTemplates<Rust> for Union {
+    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+        hb.register_template_string("union", include_str!("templates/union.rs.handlebars"))
             .context("Trying to register union template")?;
         Ok(hb)
     }

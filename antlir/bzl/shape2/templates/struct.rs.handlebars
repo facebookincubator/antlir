@@ -1,0 +1,23 @@
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+pub struct {{name}} {
+    {{#each fields}}
+    {{#if (has-default-value this)}}
+    #[serde(default = "{{../name}}::default_{{name}}")]
+    {{/if}}
+    {{#if required}}
+    pub {{name}}: {{type type}},
+    {{else}}
+    pub {{name}}: Option<{{type type}}>,
+    {{/if}}
+    {{/each}}
+}
+
+impl {{name}} {
+    {{#each fields}}
+    {{#if (has-default-value this)}}
+    fn default_{{name}}() -> {{type type}} {
+        serde_json::from_str(r###"{{json default_value}}"###).expect("default json is always good")
+    }
+    {{/if}}
+    {{/each}}
+}
