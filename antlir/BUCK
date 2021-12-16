@@ -566,6 +566,7 @@ python_unittest(
                         name = "create_ops_ext3",
                     ),
                 ],
+                disk_guid = "93fb3e53-4350-44ee-a98b-6a1e8fe7488f",
             ),
         ),
     },
