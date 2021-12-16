@@ -30,7 +30,10 @@ pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
         options = replace_subvol(options, &snapshot);
     }
     std::fs::create_dir("/sysroot").context("failed to mkdir /sysroot")?;
-    debug!(log, "mounting subvolume on {}", device);
+    debug!(
+        log,
+        "mounting subvolume on {} with options {:?}", device, options
+    );
     mount(
         log.clone(),
         MountOpts {
@@ -48,6 +51,7 @@ pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
     // automatically reload some unit configuration from /sysroot when running
     // inside the initrd, and this behavior is necessary to pass the correct
     // state of units into the new systemd in the root fs.
+    debug!(log, "requesting systemd reload");
     sd.reload()
         .await
         .context("failed to reload systemd units (systemctl daemon-reload)")?;
