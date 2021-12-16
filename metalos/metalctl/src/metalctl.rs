@@ -22,6 +22,8 @@ use slog_glog_fmt::kv_categorizer::ErrorCategorizer;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
+#[cfg(initrd)]
+mod apply_disk_image;
 mod apply_host_config;
 mod config;
 #[cfg(facebook)]
@@ -64,6 +66,10 @@ enum Subcommand {
     ApplyHostConfig(apply_host_config::Opts),
     /// Send an event to the event endpoint
     SendEvent(send_event::Opts),
+    /// Apply a provided disk image to a specified disk and then
+    /// upsize it to the maximum size
+    #[cfg(initrd)]
+    ApplyDiskImage(apply_disk_image::Opts),
     #[cfg(facebook)]
     #[structopt(flatten)]
     Facebook(facebook::Subcommand),
@@ -153,6 +159,8 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts).await,
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
         Subcommand::SendEvent(opts) => send_event::send_event(log, config, opts).await,
+        #[cfg(initrd)]
+        Subcommand::ApplyDiskImage(opts) => apply_disk_image::apply_disk_image(log, opts).await,
         #[cfg(facebook)]
         Subcommand::Facebook(fb) => fb.subcommand(log, config).await,
     }

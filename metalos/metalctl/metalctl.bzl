@@ -17,8 +17,10 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     deps = [
         "//metalos/host_configs:evalctx",
         "//metalos/lib/systemd:systemd",
+        "//metalos/lib:expand_partition",
         "anyhow",  # ~9.5k, very helpful for error handling
         "nix",  # ~5k: access to syscalls (mount, etc)
+        "libc",
         "structopt",  # ~300k, but makes iterating development much easier
         # all the slog crates together add about 50k
         "slog",
