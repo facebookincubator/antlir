@@ -324,26 +324,6 @@ async def vm(
         )
     )
 
-    # Process all the mounts from the root image we are using
-    mounts = mounts_from_image_meta(opts.disk.package.path)
-    for mount in mounts:  # pragma: no cover
-        if mount.build_source.type == "host":
-            shares.append(
-                Plan9Export(
-                    path=Path(mount.build_source.source),
-                    mountpoint=Path("/") / mount.mountpoint,
-                    mount_tag=str(mount.build_source.source).replace("/", "-")[
-                        1:
-                    ],
-                )
-            )
-        else:  # pragma: no cover
-            logger.warn(
-                f"non-host mount found: {mount}. "
-                "`antlir.vm` does not yet support "
-                "non-host mounts"
-            )
-
     if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
