@@ -1,0 +1,14 @@
+load("//antlir/fbpkg:fbpkg.bzl", "fbpkg")
+load("//metalos/disk:disk.bzl", "build_root_disk")
+
+# this is here mostly for testing reasons. We want to have an image
+# that is as small as possible to distribute here but in other places
+# we need to have a disk image with enough spare space to include the
+# metalos image too.
+build_root_disk(None)
+
+fbpkg.builder(
+    name = "metalos.base.root-disk",
+    path_actions = {"metalos.img": ":metalos-gpt-image"},
+    pre_compressed = True,
+)
