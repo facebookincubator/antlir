@@ -27,10 +27,14 @@ rust_library(
         "anyhow",
         "bitflags",
         "derive_more",
-        "fbsource//third-party/rust:num-derive",
-        "fbsource//third-party/rust:num-traits",
         "libc",
         "nix",
         ":netlink-sys",
-    ],
+    ] + third_party.libraries(
+        [
+            "num-derive",
+            "num-traits",
+        ],
+        platform = "rust",
+    ),
 )
