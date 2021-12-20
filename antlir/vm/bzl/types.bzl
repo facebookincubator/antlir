@@ -166,7 +166,7 @@ _vm_opts_t = shape.shape(
     # Root disk for the VM
     disk = shape.field(_vm_disk_t),
     # Attach a TPM software emulator
-    tpm = shape.field(bool, default = True),
+    tpm = shape.field(bool, default = False),
     # Runtime details about how to run the VM
     runtime = shape.field(_vm_runtime_t),
     # What label to pass to the root kernel parameter
