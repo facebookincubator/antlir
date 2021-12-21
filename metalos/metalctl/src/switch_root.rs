@@ -5,12 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{Context, Error, Result};
+use anyhow::{anyhow, Context, Result};
 use slog::{debug, o, Logger};
 use structopt::StructOpt;
 use systemd::{FilePath, Systemd};
 
 use crate::mount::{mount, Opts as MountOpts};
+
+pub const ROOTDISK_DIR: &str = "/rootdisk";
 
 #[derive(StructOpt)]
 pub struct Opts {
@@ -27,7 +29,8 @@ pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
     let mut log = log.new(o!());
     if let Some(snapshot) = opts.snapshot {
         log = log.new(o!("snapshot" => snapshot.clone()));
-        options = replace_subvol(options, &snapshot);
+        options = replace_subvol(options, &snapshot)
+            .context("failed to replace subvolume in mount options")?;
     }
     std::fs::create_dir("/sysroot").context("failed to mkdir /sysroot")?;
     debug!(
@@ -64,25 +67,35 @@ pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
         .context("failed to trigger switch-root (systemctl switch-root /syroot)")
 }
 
-fn replace_subvol<S: AsRef<str>, T: AsRef<str>>(options: Vec<S>, new: T) -> Vec<String> {
-    options
-        .into_iter()
-        .filter_map(|opt| {
-            if opt.as_ref().starts_with("subvolid=") {
-                return None;
+fn replace_subvol<S: AsRef<str>, T: AsRef<str>>(options: Vec<S>, new: T) -> Result<Vec<String>> {
+    let mut out = Vec::new();
+    for opt in options.into_iter() {
+        if opt.as_ref().starts_with("subvolid=") {
+            continue;
+        }
+        let new_op = match opt.as_ref().strip_prefix("subvol=") {
+            Some(subvol) => {
+                // the subvolume that we are switch-rooting into is guaranteed
+                // to be nested under whatever subvolume is already mounted at
+                // /rootdisk. So we want to strip off the /rootdisk so that we
+                // can get the path relative to the top of the volume
+                let new = match new.as_ref().strip_prefix(ROOTDISK_DIR) {
+                    Some(subvol) => subvol.trim_start_matches('/'),
+                    None => {
+                        return Err(anyhow!(
+                            "Found subvolume ({}) option but it didn't start with {}",
+                            new.as_ref(),
+                            ROOTDISK_DIR
+                        ));
+                    }
+                };
+                format!("subvol={}/{}", subvol, new)
             }
-            match opt.as_ref().strip_prefix("subvol=") {
-                Some(subvol) => {
-                    // the subvolume that we are switch-rooting into is guaranteed
-                    // to be nested under whatever subvolume is already mounted at
-                    // /sysroot
-                    let new = new.as_ref().trim_start_matches('/');
-                    Some(format!("subvol={}/{}", subvol, new))
-                }
-                None => Some(opt.as_ref().into()),
-            }
-        })
-        .collect()
+            None => opt.as_ref().into(),
+        };
+        out.push(new_op);
+    }
+    Ok(out)
 }
 
 fn find_rootdisk_device() -> Result<(String, String)> {
@@ -102,12 +115,12 @@ fn parse_rootdisk_device(mounts: String) -> Result<(String, String)> {
         .filter_map(|l| {
             let fields: Vec<_> = l.split_whitespace().collect();
             match fields[1] {
-                "/rootdisk" => Some((fields[0].into(), fields[3].into())),
+                ROOTDISK_DIR => Some((fields[0].into(), fields[3].into())),
                 _ => None,
             }
         })
         .next()
-        .ok_or(Error::msg("/rootdisk not in mounts"))?;
+        .ok_or_else(|| anyhow!("{} not in mounts", ROOTDISK_DIR))?;
 
     // /proc/mounts escapes characters with octal
     if dev.contains('\\') {
@@ -194,13 +207,14 @@ kernel-modules /rootdisk/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b3
                     "subvolid=256",
                     "subvol=volume"
                 ],
-                "/var/lib/antlir/boot/per-boot-subvol"
-            ),
+                "/rootdisk/run/boot/0:bootid",
+            )
+            .expect("Failed to call replace_subvol"),
             vec![
                 "rw",
                 "relatime",
                 "space_cache",
-                "subvol=volume/var/lib/antlir/boot/per-boot-subvol"
+                "subvol=volume/run/boot/0:bootid",
             ],
         )
     }

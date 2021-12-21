@@ -149,7 +149,7 @@ image.layer(
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/umount"),
         networking,
-        systemd.install_unit("units/metalos-fetch-image@.service"),
+        systemd.install_unit("units/metalos-fetch-image-rootfs.service"),
         systemd.install_unit("units/metalos-snapshot-root.service"),
         systemd.install_unit("units/metalos-apply-host-config.service"),
         systemd.install_unit("units/metalos-switch-root.service"),

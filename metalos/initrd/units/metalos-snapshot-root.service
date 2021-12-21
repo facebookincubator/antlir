@@ -5,10 +5,19 @@ OnFailure=emergency.target
 OnFailureJobMode=replace-irreversibly
 AllowIsolate=yes
 
+Requires=rootdisk.mount
+After=rootdisk.mount
+
+# This lists all the packages require for assembling
+# the boot. Currently this is only the rootfs.
+Requires=metalos-fetch-image-rootfs.service
+After=metalos-fetch-image-rootfs.service
+
 [Service]
+EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
-ExecStartPre=mkdir -p /rootdisk${OS_BOOT_SUBVOL_DIR}
+ExecStartPre=mkdir -p ${METALOS_BOOTS_DIR}
 # create a rw snapshot of the os image for this boot id (the subvol var is set
 # by a drop-in placed by `metalos-generator`)
-ExecStartPre=btrfs subvolume snapshot /rootdisk/${OS_SUBVOL} /rootdisk${OS_BOOT_SUBVOL}
-ExecStart=btrfs property set -ts /rootdisk${OS_BOOT_SUBVOL} ro false
+ExecStartPre=btrfs subvolume snapshot ${METALOS_IMAGES_DIR}/rootfs/metalos/${METALOS_OS_PKG}/volume ${METALOS_CURRENT_BOOT_DIR}
+ExecStart=btrfs property set -ts ${METALOS_CURRENT_BOOT_DIR} ro false

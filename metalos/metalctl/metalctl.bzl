@@ -16,6 +16,9 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     # brought in by large dependencies.
     deps = [
         "//metalos/host_configs:evalctx",
+        "//metalos/lib:expand_partition",
+        "//metalos/lib:find_root_disk",
+        "//metalos/lib:generator_lib",
         "//metalos/lib/systemd:systemd",
         "//metalos/lib:expand_partition",
         "anyhow",  # ~9.5k, very helpful for error handling

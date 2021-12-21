@@ -1,0 +1,17 @@
+# Template service unit to download a btrfs sendstream image from the given
+# URI. This is used in the initrd to download an OS based on a kernel cmdline
+# arg, but can also be used by other units in the future.
+[Unit]
+Description=Fetch the rootfs image
+Requires=network-online.target
+After=network-online.target
+
+Requires=rootdisk.mount
+After=rootdisk.mount
+
+[Service]
+EnvironmentFile=/run/systemd/generator/metalos_environment
+Type=oneshot
+RemainAfterExit=true
+ExecStartPre=btrfs subvolume create ${METALOS_IMAGES_DIR}/rootfs/metalos/${METALOS_OS_PKG}
+ExecStart=metalctl fetch-image ${METALOS_OS_PKG} ${METALOS_IMAGES_DIR}/rootfs/metalos/${METALOS_OS_PKG}

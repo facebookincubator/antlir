@@ -17,5 +17,6 @@ After=metalos-snapshot-root.service
 ConditionKernelCommandLine=metalos.host-config-uri
 
 [Service]
+EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
-ExecStart=metalctl apply-host-config ${HOST_CONFIG_URI} /rootdisk${OS_BOOT_SUBVOL}
+ExecStart=metalctl apply-host-config ${HOST_CONFIG_URI} ${METALOS_CURRENT_BOOT_DIR}

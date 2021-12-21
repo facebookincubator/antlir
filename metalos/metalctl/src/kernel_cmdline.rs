@@ -84,13 +84,13 @@ pub struct Root {
     pub fstype: Option<String>,
 
     #[structopt(long = &KnownArgs::RootFlags.flag_name())]
-    flags: Option<Vec<String>>,
+    pub(crate) flags: Option<Vec<String>>,
 
     #[structopt(long = &KnownArgs::RootFlagRo.flag_name())]
-    ro: bool,
+    pub(crate) ro: bool,
 
     #[structopt(long = &KnownArgs::RootFlagRw.flag_name())]
-    rw: bool,
+    pub(crate) rw: bool,
 }
 
 impl Root {
