@@ -4,4 +4,7 @@ load("//metalos/disk:disk.bzl", "build_root_disk")
 # that is as small as possible to distribute here but in other places
 # we need to have a disk image with enough spare space to include the
 # metalos image too.
-build_root_disk(None)
+build_root_disk(
+    name = "metalos-gpt-image",
+    root_size_mb = None,
+)

@@ -5,372 +5,209 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use maplit::btreemap;
-use std::collections::BTreeMap;
-use std::io::Write;
-use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
+use serde::Serialize;
 use slog::{error, info, o, Logger};
 use structopt::StructOpt;
 
-use crate::kernel_cmdline::MetalosCmdline;
-use crate::mount::evaluate_device_spec;
-use systemd::{self, UnitName, PROVIDER_ROOT};
+use crate::kernel_cmdline::{MetalosCmdline, Root};
+use crate::switch_root::ROOTDISK_DIR;
+use generator_lib::{
+    materialize_boot_info, Environment, ExtraDependencies, ExtraDependency, MountUnit,
+};
+use systemd::render::{MountSection, UnitSection};
 
 #[derive(StructOpt)]
+#[cfg_attr(test, derive(Clone))]
 pub struct Opts {
     normal_dir: PathBuf,
     #[allow(unused)]
     early_dir: PathBuf,
     #[allow(unused)]
     late_dir: PathBuf,
+
+    /// What directory to place the environment file in.
+    #[structopt(default_value = "/run/systemd/generator/")]
+    environment_dir: PathBuf,
 }
 
-// This unit file helper intentionally not implemented in systemd.rs. The
-// generator has to operate on files since systemd might not be ready while the
-// generator is running. Post-generator interactions with systemd should happen
-// over dbus, not filesystem mangling. See the systemd generator docs for more
-// details about the limitations imposed on generators.
-// https://www.freedesktop.org/software/systemd/man/systemd.generator.html#Notes%20about%20writing%20generators
-fn instantiate_template(
-    normal_dir: PathBuf,
-    unit: impl AsRef<str>,
-    instance: impl AsRef<str>,
-    suffix: impl AsRef<str>,
-) -> Result<UnitName> {
-    let instance_unit = systemd::template_unit_name(&unit, instance, &suffix);
-    let instance_file = normal_dir.join(&instance_unit);
-    let template_src =
-        PathBuf::from(PROVIDER_ROOT).join(format!("{}@.{}", unit.as_ref(), suffix.as_ref()));
-    symlink(&template_src, &instance_file).with_context(|| {
-        format!(
-            "failed to symlink {:?} -> {:?}",
-            instance_file, template_src
-        )
-    })?;
-    Ok(instance_unit)
+#[derive(Debug, PartialEq)]
+pub enum BootMode {
+    // We are running metalos but DON'T want to reimage the disk.
+    MetalOSExisting,
+    // We are booting in legacy mode, no metalos at all
+    Legacy,
 }
 
-trait Render {
-    fn render(&self) -> String;
+#[derive(Serialize, Debug)]
+#[cfg_attr(test, derive(Clone, PartialEq, PartialOrd))]
+struct LegacyEnvironment {}
+impl Environment for LegacyEnvironment {}
 
-    fn add_header(target: &mut String, name: &str) {
-        target.push_str(&format!("[{}]\n", name));
-    }
-    fn add_kv<T: std::fmt::Display>(target: &mut String, key: &str, value: T) {
-        target.push_str(&format!("{}={}\n", key, value));
-    }
-    fn add_optional_kv<T: std::fmt::Display>(target: &mut String, key: &str, value: Option<T>) {
-        if let Some(value) = value {
-            target.push_str(&format!("{}={}\n", key, value));
-        }
-    }
-    fn add_optional_renderable<T: Render>(target: &mut String, thing: Option<&T>) {
-        if let Some(thing) = thing {
-            target.push_str(&thing.render());
-        }
-    }
+#[derive(Serialize, Debug)]
+#[cfg_attr(test, derive(Clone, PartialEq, PartialOrd))]
+struct MetalosEnvironment {
+    #[serde(rename = "HOST_CONFIG_URI")]
+    host_config_uri: Option<String>,
+
+    // ROOTDISK_DIR is the absolute path to the location where the initrd
+    // will/has mounted the root disk specified on the kernel parameters.
+    #[serde(rename = "ROOTDISK_DIR")]
+    rootdisk_dir: PathBuf,
+
+    // METALOS_BOOTS_DIR is the directory that contains all of the boot instances
+    // but is not a specific boot instance itself
+    #[serde(rename = "METALOS_BOOTS_DIR")]
+    metalos_boots_dir: PathBuf,
+
+    // METALOS_CURRENT_BOOT_DIR is the directory that we are currently building up
+    // for this boot specifically. It will always be beneath METALOS_BOOTS_DIR.
+    #[serde(rename = "METALOS_CURRENT_BOOT_DIR")]
+    metalos_current_boot_dir: PathBuf,
+
+    // METALOS_IMAGES_DIR is the directory containing all the different image types
+    // that metalos can download
+    #[serde(rename = "METALOS_IMAGES_DIR")]
+    metalos_images_dir: PathBuf,
+
+    // METALOS_OS_PKG is the package name and version that should be
+    // downloaded and used as the base operating system image for this boot
+    #[serde(rename = "METALOS_OS_PKG")]
+    os_package: String,
 }
+impl Environment for MetalosEnvironment {}
 
-struct ServiceSection {
-    environment: Option<BTreeMap<String, String>>,
-}
-
-impl Render for ServiceSection {
-    fn render(&self) -> String {
-        let mut out = String::new();
-        out.push_str("[Service]\n");
-        if let Some(env) = &self.environment {
-            for (k, v) in env.iter() {
-                Self::add_kv(&mut out, "Environment", &format!("{}={}", k, v));
-            }
-        }
-        out
-    }
-}
-
-#[derive(Default)]
-struct UnitSection {
-    before: Option<UnitName>,
-    after: Option<UnitName>,
-    requires: Option<UnitName>,
-    timeout: Option<Duration>,
-}
-
-impl Render for UnitSection {
-    fn render(&self) -> String {
-        let mut out = String::new();
-        Self::add_header(&mut out, "Unit");
-        Self::add_optional_kv(&mut out, "Before", self.before.as_ref());
-        Self::add_optional_kv(&mut out, "After", self.after.as_ref());
-        Self::add_optional_kv(&mut out, "Requires", self.requires.as_ref());
-        if let Some(timeout) = &self.timeout {
-            Self::add_kv(
-                &mut out,
-                "JobRunningTimeoutSec",
-                &timeout.as_secs().to_string(),
-            );
-        }
-        out
-    }
-}
-
-struct MountSection {
-    what: PathBuf,
-    where_: PathBuf,
-    options: Option<String>,
-    type_: Option<String>,
-}
-
-impl Render for MountSection {
-    fn render(&self) -> String {
-        let mut out = String::new();
-        Self::add_header(&mut out, "Mount");
-        Self::add_kv(&mut out, "What", &self.what.to_string_lossy());
-        Self::add_kv(&mut out, "Where", &self.where_.to_string_lossy());
-        Self::add_kv(
-            &mut out,
-            "Options",
-            match &self.options {
-                Some(opts) => opts,
-                None => "",
-            },
-        );
-        Self::add_optional_kv(&mut out, "Type", self.type_.as_ref());
-        out
-    }
-}
-
-enum UnitBody {
-    Service(ServiceSection),
-    Mount(MountSection),
-}
-
-impl Render for UnitBody {
-    fn render(&self) -> String {
-        match self {
-            Self::Service(s) => s.render(),
-            Self::Mount(s) => s.render(),
-        }
-    }
-}
-
-struct Unit {
-    unit: Option<UnitSection>,
-    body: Option<UnitBody>,
-}
-
-impl Unit {
-    fn write_to_disk(
-        &self,
-        log: Logger,
-        base_dir: &Path,
-        unit_name: &str,
-        filename: &Path,
-    ) -> Result<()> {
-        let unit_file_path = base_dir.join(filename);
-        let mut file = std::fs::File::create(&unit_file_path).context(format!(
-            "Failed to create unit file {:?} in {:?}",
-            filename, base_dir
-        ))?;
-
-        if let Some(unit) = &self.unit {
-            if let Some(before) = &unit.before {
-                let requires_dir = base_dir.join(PathBuf::from(format!("{}.requires", before)));
-                std::fs::create_dir(&requires_dir)
-                    .context(format!("Failed to create requires dir for {}", before))?;
-                symlink(&unit_file_path, requires_dir.join(unit_name))?;
-            }
-        }
-
-        let content = self.render();
-        info!(log, "Writing to {:?}:\n{}", unit_file_path, content);
-        write!(file, "{}", content).context("Failed to write rendered content to file")?;
-        Ok(())
-    }
-}
-
-impl Render for Unit {
-    fn render(&self) -> String {
-        let mut out = String::new();
-        Self::add_optional_renderable(&mut out, self.unit.as_ref());
-        Self::add_optional_renderable(&mut out, self.body.as_ref());
-        out
-    }
-}
-
-struct Dropin {
-    target: String,
-    unit: Unit,
-}
-
-impl Dropin {
-    fn write_to_disk(&self, log: Logger, base_dir: &Path, filename: &Path) -> Result<()> {
-        let dropin_path: PathBuf = format!("{}.d", self.target).into();
-        let service_dir: PathBuf = base_dir.join(&dropin_path);
-        std::fs::create_dir_all(&service_dir)
-            .context(format!("failed to create .d/ for {}", self.target))?;
-
-        info!(log, "Writing drop-in {:?} for {}", filename, self.target);
-
-        if let Some(unit_section) = &self.unit.unit {
-            if let Some(after) = &unit_section.after {
-                info!(log, "{} will wait for {}", self.target, after);
-            }
-            if let Some(before) = &unit_section.before {
-                info!(log, "{} will apply before {}", self.target, before);
-            }
-        }
-
-        self.unit
-            .write_to_disk(log, base_dir, &self.target, &service_dir.join(filename))?;
-        Ok(())
-    }
-}
-
-fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Result<()> {
-    if let Some(os_package) = &cmdline.os_package {
-        // MetalOS doesn't support booting from disk yet, so only enable
-        // MetalOS specific services (metalos-setup-root.service and friends)
-        // if an os_package was specified. (Otherwise we assume we're booting
-        // a non-MetalOS image.
-
-        // Define OS_BOOT_SUBVOL[_DIR] for systemd units:
-        // .../metalos-apply-host-config.service.d/os-boot-subvol.conf
-        // .../metalos-snapshot-root.service.d/os-boot-subvol.conf
-        // .../metalos-switch-root.service.d/os-boot-subvol.conf
-        let conf = "os-boot-subvol.conf";
-        for target in [
-            "metalos-apply-host-config.service",
-            "metalos-snapshot-root.service",
-            "metalos-switch-root.service",
-        ] {
-            info!(log, "Creating {} dropin: {}", target, conf);
-            Dropin {
-                target: target.into(),
-                unit: Unit {
-                    unit: None,
-                    body: Some(UnitBody::Service(ServiceSection {
-                        environment: Some(btreemap! {
-                            "OS_BOOT_SUBVOL_DIR".to_string() =>
-                                "/var/lib/metalos/boot".to_string(),
-                            "OS_BOOT_SUBVOL".to_string() =>
-                                "/var/lib/metalos/boot/%b".to_string()
-                        }),
-                    })),
-                },
-            }
-            .write_to_disk(log.clone(), &opts.normal_dir, conf.as_ref())
-            .context(format!("Failed to write {}", conf))?;
-        }
-
-        // Create a metalos-switch-root dependency on metalos-setup-root
-        // .../metalos-switch-root.service.d/metalos-snapshot-root-dependency.conf
-        let conf = "metalos-snapshot-root-dependency.conf";
-        let target = "metalos-switch-root.service";
-        info!(log, "Creating {} dropin: {}", target, conf);
-        Dropin {
-            target: target.into(),
-            unit: Unit {
-                unit: Some(UnitSection {
-                    before: None,
-                    after: Some("metalos-snapshot-root.service".into()),
-                    requires: Some("metalos-snapshot-root.service".into()),
-                    timeout: None,
-                }),
-                body: None,
-            },
-        }
-        .write_to_disk(log.clone(), &opts.normal_dir, conf.as_ref())
-        .context(format!("Failed to write {}", conf))?;
-
-        info!(
-            log,
-            "instantiating metalos-fetch-image@{}.service", &os_package
-        );
-        let fetch_unit = instantiate_template(
-            opts.normal_dir.clone(),
-            "metalos-fetch-image",
-            os_package,
-            "service",
-        )?;
-
-        let snapshot_root_dropin = Dropin {
-            target: "metalos-snapshot-root.service".into(),
-            unit: Unit {
-                unit: Some(UnitSection {
-                    after: Some(fetch_unit.clone()),
-                    requires: Some(fetch_unit),
+fn make_mount_unit(root: Root, rootdisk: &Path) -> Result<MountUnit> {
+    if let Some(what) = &root.root {
+        if what.starts_with("LABEL=") {
+            Ok(MountUnit {
+                unit_section: UnitSection {
                     ..Default::default()
-                }),
-                body: Some(UnitBody::Service(ServiceSection {
-                    environment: Some(btreemap! {
-                        "OS_SUBVOL".to_string() => format!(
-                            "var/lib/metalos/image/{}/volume",
-                            systemd::escape(os_package)
-                        ),
-                    }),
-                })),
-            },
-        };
-        snapshot_root_dropin
-            .write_to_disk(log.clone(), &opts.normal_dir, "os_subvol.conf".as_ref())
-            .context("Failed to write os_subvol.conf")?;
+                },
+                mount_section: MountSection {
+                    what: what.into(),
+                    where_: rootdisk.to_path_buf(),
+                    options: root.join_flags(),
+                    type_: root.fstype,
+                },
+            })
+        } else {
+            Err(anyhow!(
+                "Not writing rootdisk.mount root (\"{}\") doesn't start with LABEL=",
+                what
+            ))
+        }
+    } else {
+        Err(anyhow!(
+            "Not writing rootdisk.mount because no root kernel parameter was provided"
+        ))
     }
+}
 
-    if let Some(host_config_uri) = &cmdline.host_config_uri {
-        let uri_dropin = Dropin {
-            target: "metalos-apply-host-config.service".to_string(),
-            unit: Unit {
-                unit: None,
-                body: Some(UnitBody::Service(ServiceSection {
-                    environment: Some(btreemap! {
-                        "HOST_CONFIG_URI".to_string() => host_config_uri.to_string()
-                    }),
-                })),
-            },
-        };
-        uri_dropin
-            .write_to_disk(
-                log.clone(),
-                &opts.normal_dir,
-                "host_config_uri.conf".as_ref(),
+fn get_boot_id() -> Result<String> {
+    let content = std::fs::read_to_string(Path::new("/proc/sys/kernel/random/boot_id"))
+        .context("Can't read /proc/sys/kernel/random/boot_id")?;
+
+    Ok(content.trim().replace("-", ""))
+}
+
+fn metalos_existing_boot_info(
+    root: Root,
+    host_config_uri: Option<String>,
+    os_package: String,
+) -> Result<(MetalosEnvironment, ExtraDependencies, MountUnit)> {
+    let rootdisk: &Path = Path::new(ROOTDISK_DIR);
+    let boot_id = get_boot_id().context("Failed to get boot id")?;
+    let env = MetalosEnvironment {
+        host_config_uri,
+        rootdisk_dir: ROOTDISK_DIR.into(),
+        metalos_boots_dir: rootdisk.join("run/boot"),
+        metalos_current_boot_dir: rootdisk.join(format!("run/boot/{}:{}", 0, boot_id)),
+        metalos_images_dir: rootdisk.join("image"),
+        os_package,
+    };
+
+    let mut extra_deps = ExtraDependencies::new();
+
+    // This is the main link into the whole metalos flow. The snapshot
+    // target needs to download images and things in order to work so it
+    // will pull in everything it needs to get the root read for switch
+    // root
+    extra_deps.insert(
+        "metalos_boot".to_string(),
+        ExtraDependency {
+            source: "metalos-switch-root.service".into(),
+            requires: "metalos-snapshot-root.service".into(),
+        },
+    );
+
+    let mount_unit = make_mount_unit(root, rootdisk).context("Failed to build mount unit")?;
+
+    Ok((env, extra_deps, mount_unit))
+}
+
+fn legacy_boot_info(root: Root) -> Result<(LegacyEnvironment, ExtraDependencies, MountUnit)> {
+    Ok((
+        LegacyEnvironment {},
+        ExtraDependencies::new(),
+        make_mount_unit(root, Path::new(ROOTDISK_DIR)).context("Failed to build mount unit")?,
+    ))
+}
+
+fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Result<BootMode> {
+    let boot_mode = detect_mode(&cmdline).context("failed to detect boot mode")?;
+    info!(log, "Booting with mode: {:?}", boot_mode);
+
+    match &boot_mode {
+        BootMode::MetalOSExisting => {
+            let (env, extra_deps, mount_units) = metalos_existing_boot_info(
+                cmdline.root,
+                cmdline.host_config_uri,
+                cmdline
+                    .os_package
+                    .context("OS package must be provided for metalos boots")?,
             )
-            .context("Failed to write host_config_uri.conf")?;
+            .context("Failed to build normal metalos info")?;
+
+            materialize_boot_info(
+                log,
+                &opts.normal_dir,
+                &opts.environment_dir,
+                env,
+                extra_deps,
+                mount_units,
+            )
+        }
+        BootMode::Legacy => {
+            let (env, extra_deps, mount_units) =
+                legacy_boot_info(cmdline.root).context("failed to build legacy info")?;
+
+            materialize_boot_info(
+                log,
+                &opts.normal_dir,
+                &opts.environment_dir,
+                env,
+                extra_deps,
+                mount_units,
+            )
+        }
     }
+    .context("Failed to materialize_boot_info")?;
 
-    if let Some(root) = &cmdline.root.root {
-        // if we don't have blkid available, we have to hope that the given
-        // root= parameter is specified enough (aka, is an absolute device path)
-        let root_src = evaluate_device_spec(root)
-            .with_context(|| format!("unable to understand root={}", root))?;
+    Ok(boot_mode)
+}
 
-        let unit = Unit {
-            unit: Some(UnitSection {
-                before: Some("initrd-root-fs.target".into()),
-                ..Default::default()
-            }),
-            body: Some(UnitBody::Mount(MountSection {
-                what: (*root_src.to_string_lossy()).into(),
-                where_: "/rootdisk".into(),
-                options: cmdline.root.join_flags(),
-                type_: cmdline.root.fstype,
-            })),
-        };
-
-        unit.write_to_disk(
-            log.clone(),
-            &opts.normal_dir,
-            "rootdisk.mount",
-            "rootdisk.mount".as_ref(),
-        )
-        .context("Failed to write rootdisk.mount")?;
+/// This functions job is to discover what type of boot we should be doing.
+/// We want this to be the only place where this logic lives and we want very little
+/// to no branching logic inside of the other generator methods
+fn detect_mode(cmdline: &MetalosCmdline) -> Result<BootMode> {
+    if cmdline.os_package.is_some() {
+        Ok(BootMode::MetalOSExisting)
+    } else {
+        Ok(BootMode::Legacy)
     }
-
-    Ok(())
 }
 
 pub fn generator(log: Logger, opts: Opts) -> Result<()> {
@@ -390,7 +227,7 @@ pub fn generator(log: Logger, opts: Opts) -> Result<()> {
     }?;
 
     match generator_maybe_err(cmdline, sublog, opts) {
-        Ok(()) => Ok(()),
+        Ok(_) => Ok(()),
         Err(e) => {
             error!(log, "{}", e.to_string());
             Err(e)
@@ -401,159 +238,376 @@ pub fn generator(log: Logger, opts: Opts) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::anyhow;
+    use maplit::btreemap;
+    use std::collections::BTreeMap;
     use std::path::Path;
     use std::time::SystemTime;
-    use systemd::PROVIDER_ROOT;
+
+    use generator_lib::{ENVIRONMENT_FILENAME, ROOTDISK_MOUNT_SERVICE};
+
+    fn setup_generator_test(name: &'static str) -> Result<(Logger, PathBuf, Opts, String)> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
+        let ts = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .context("Failed to get timestamp")?;
+        let tmpdir = std::env::temp_dir().join(format!("test_generator_{}_{:?}", name, ts));
+
+        let normal = tmpdir.join("normal");
+        let early = tmpdir.join("early");
+        let late = tmpdir.join("late");
+        let env = tmpdir.join("env");
+
+        std::fs::create_dir(&tmpdir).context("failed to create tmpdir")?;
+        std::fs::create_dir(&normal).context("failed to create normal dir")?;
+        std::fs::create_dir(&early).context("failed to create early dir")?;
+        std::fs::create_dir(&late).context("failed to create late dir")?;
+        std::fs::create_dir(&env).context("failed to create env dir")?;
+
+        let opts = Opts {
+            normal_dir: normal,
+            early_dir: early,
+            late_dir: late,
+            environment_dir: env,
+        };
+
+        let boot_id = get_boot_id().context("Failed to get boot id")?;
+
+        Ok((log, tmpdir, opts, boot_id))
+    }
+
+    fn compare_dir_inner(
+        base_dir: &Path,
+        expected_contents: &mut BTreeMap<PathBuf, String>,
+    ) -> Result<()> {
+        for entry in std::fs::read_dir(base_dir).context("failed to read base dir")? {
+            let entry = entry.context("failed to read next entry from base dir")?;
+            let path = entry.path();
+            if path.is_dir() {
+                compare_dir_inner(&path, expected_contents)
+                    .context(format!("Failed to process directory {:?}", path))?;
+            } else {
+                match expected_contents.remove(&path) {
+                    Some(expected_content) => {
+                        let content = std::fs::read_to_string(&path)
+                            .context(format!("Can't read file {:?}", path))?;
+
+                        if expected_content != content {
+                            return Err(anyhow!(
+                                "File contents for {:?} differs from expected:\ncontents: {:?}\nexpected: {:?}\n",
+                                path,
+                                content,
+                                expected_content,
+                            ));
+                        }
+                    }
+                    None => {
+                        return Err(anyhow!(
+                            "Found unexpected file {:?} in directory {:?}",
+                            entry.path(),
+                            base_dir
+                        ));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn compare_dir(
+        base_dir: &Path,
+        mut expected_contents: BTreeMap<PathBuf, String>,
+    ) -> Result<()> {
+        compare_dir_inner(base_dir, &mut expected_contents)?;
+        if expected_contents.is_empty() {
+            Ok(())
+        } else {
+            let keys: Vec<PathBuf> = expected_contents.into_iter().map(|(k, _)| k).collect();
+            Err(anyhow!(
+                "At least one file not found in {:?}: {:?}",
+                base_dir,
+                keys
+            ))
+        }
+    }
 
     #[test]
-    fn instantiate_example_template() -> Result<()> {
-        let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-        let tmpdir = std::env::temp_dir().join(format!("instantiate_template_{:?}", ts));
-        std::fs::create_dir(&tmpdir)?;
-        instantiate_template(tmpdir.clone(), "hello", "world", "service")?;
-        assert_eq!(
-            tmpdir.join("hello@world.service").read_link()?,
-            Path::new(PROVIDER_ROOT).join("hello@.service"),
-        );
-        std::fs::remove_dir_all(&tmpdir)?;
+    fn test_generator_metalos_existing() -> Result<()> {
+        let (log, tmpdir, opts, boot_id) =
+            setup_generator_test("metalos_existing").context("failed to setup test environment")?;
+
+        let cmdline: MetalosCmdline = "\
+            metalos.host-config-uri=\"https://server:8000/config\" \
+            metalos.os_package=\"somePackage\" \
+            rootfstype=btrfs \
+            root=LABEL=unittest\
+            "
+        .parse()?;
+
+        let boot_mode =
+            generator_maybe_err(cmdline, log, opts.clone()).context("failed to run generator")?;
+
+        assert_eq!(boot_mode, BootMode::MetalOSExisting);
+
+        compare_dir(
+            &tmpdir,
+            btreemap! {
+                opts.normal_dir.join(ROOTDISK_MOUNT_SERVICE) => "\
+                    [Unit]\n\
+                    [Mount]\n\
+                    What=LABEL=unittest\n\
+                    Where=/rootdisk\n\
+                    Options=\n\
+                    Type=btrfs\n\
+                ".to_string(),
+                opts.normal_dir.join("metalos-switch-root.service.d/metalos_boot.conf") => "\
+                    [Unit]\n\
+                    After=metalos-snapshot-root.service\n\
+                    Requires=metalos-snapshot-root.service\n\
+                    ".to_string(),
+                opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
+                    HOST_CONFIG_URI=https://server:8000/config\n\
+                    METALOS_BOOTS_DIR=/rootdisk/run/boot\n\
+                    METALOS_CURRENT_BOOT_DIR=/rootdisk/run/boot/0:{}\n\
+                    METALOS_IMAGES_DIR=/rootdisk/image\n\
+                    METALOS_OS_PKG=somePackage\n\
+                    ROOTDISK_DIR=/rootdisk\n\
+                    ",
+                    boot_id
+                )
+            },
+        )
+        .context("Failed to ensure tmpdir is setup correctly")?;
+
         Ok(())
     }
 
     #[test]
-    fn test_generator() -> Result<()> {
-        let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
-        let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-        let tmpdir = std::env::temp_dir().join(format!("test_generator{:?}", ts));
-        std::fs::create_dir(&tmpdir)?;
-        let opts = Opts {
-            normal_dir: tmpdir.clone(),
-            early_dir: tmpdir.clone(),
-            late_dir: tmpdir.clone(),
-        };
-        // here we pass rootfstype=btrfs
-        let cmdline: MetalosCmdline =
-            "metalos.host-config-uri=\"https://server:8000/v1/host/host001.01.abc0.domain.com\" \
-            metalos.os_package=\"somePackage\" \
-            metalos.package_format_uri=\"https://unittest_server/{package}\" \
-            rootfstype=btrfs \
-            root=/dev/somedisk"
-                .parse()?;
+    fn test_generator_legacy() -> Result<()> {
+        let (log, tmpdir, opts, _) =
+            setup_generator_test("legacy").context("failed to setup test environment")?;
 
-        generator_maybe_err(cmdline, log, opts)?;
+        let cmdline: MetalosCmdline = "\
+            root=LABEL=unittest \
+            rootflags=f1,f2,f3 \
+            ro\
+            "
+        .parse()?;
+
+        let boot_mode =
+            generator_maybe_err(cmdline, log, opts.clone()).context("failed to run generator")?;
+
+        assert_eq!(boot_mode, BootMode::Legacy);
+
+        compare_dir(
+            &tmpdir,
+            btreemap! {
+                opts.normal_dir.join(ROOTDISK_MOUNT_SERVICE) => "\
+                    [Unit]\n\
+                    [Mount]\n\
+                    What=LABEL=unittest\n\
+                    Where=/rootdisk\n\
+                    Options=f1,f2,f3,ro\n\
+                ".to_string(),
+                opts.environment_dir.join(ENVIRONMENT_FILENAME) => "".to_string(),
+            },
+        )
+        .context("Failed to ensure tmpdir is setup correctly")?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_metalos_existing_boot_info() -> Result<()> {
+        let (env, extra_deps, mount_unit) = metalos_existing_boot_info(
+            Root {
+                root: Some("LABEL=unittest".to_string()),
+                fstype: Some("testfs".to_string()),
+                flags: Some(vec!["f1".to_string(), "f2".to_string(), "f3".to_string()]),
+                ro: false,
+                rw: true,
+            },
+            Some("test_config_uri".to_string()),
+            "test_package:123".to_string(),
+        )
+        .context("failed to get boot info")?;
+
+        let boot_id = get_boot_id().context("failed to get boot id")?;
 
         assert_eq!(
-            tmpdir
-                .join("metalos-fetch-image@somePackage.service")
-                .read_link()?,
-            Path::new(PROVIDER_ROOT).join("metalos-fetch-image@.service"),
+            env,
+            MetalosEnvironment {
+                host_config_uri: Some("test_config_uri".to_string()),
+                rootdisk_dir: "/rootdisk".into(),
+                metalos_boots_dir: "/rootdisk/run/boot".into(),
+                metalos_current_boot_dir: format!("/rootdisk/run/boot/0:{}", boot_id).into(),
+                metalos_images_dir: "/rootdisk/image".into(),
+                os_package: "test_package:123".into(),
+            }
         );
 
-        let file = tmpdir.join("metalos-apply-host-config.service.d/host_config_uri.conf");
-        assert!(file.exists());
-        let content = std::fs::read_to_string(file.clone())
-            .context(format!("Can't read file {}", file.display()))?;
         assert_eq!(
-            content,
-            "[Service]\nEnvironment=HOST_CONFIG_URI=https://server:8000/v1/host/host001.01.abc0.domain.com\n"
+            extra_deps,
+            btreemap! {
+                "metalos_boot".to_string() => ExtraDependency {
+                    source: "metalos-switch-root.service".into(),
+                    requires: "metalos-snapshot-root.service".into(),
+                },
+            }
         );
 
-        for file in [
-            tmpdir.join("metalos-apply-host-config.service.d/os-boot-subvol.conf"),
-            tmpdir.join("metalos-snapshot-root.service.d/os-boot-subvol.conf"),
-            tmpdir.join("metalos-switch-root.service.d/os-boot-subvol.conf"),
-        ] {
-            assert!(file.exists());
-            let content = std::fs::read_to_string(file.clone())
-                .context(format!("Can't read file {}", file.display()))?;
-            assert_eq!(
-                content,
-                "[Service]\n\
-                Environment=OS_BOOT_SUBVOL=/var/lib/metalos/boot/%b\n\
-                Environment=OS_BOOT_SUBVOL_DIR=/var/lib/metalos/boot\n"
-            );
+        assert_eq!(
+            mount_unit,
+            MountUnit {
+                unit_section: UnitSection::default(),
+                mount_section: MountSection {
+                    what: "LABEL=unittest".into(),
+                    where_: "/rootdisk".into(),
+                    options: Some("f1,f2,f3,rw".to_string()),
+                    type_: Some("testfs".to_string()),
+                }
+            }
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_legacy_boot_info() -> Result<()> {
+        let (env, extra_deps, mount_unit) = legacy_boot_info(Root {
+            root: Some("LABEL=unittest".to_string()),
+            fstype: Some("testfs".to_string()),
+            flags: Some(vec!["f1".to_string(), "f2".to_string(), "f3".to_string()]),
+            ro: false,
+            rw: true,
+        })
+        .context("failed to get boot info")?;
+
+        assert_eq!(env, LegacyEnvironment {});
+        assert_eq!(extra_deps, ExtraDependencies::new());
+
+        assert_eq!(
+            mount_unit,
+            MountUnit {
+                unit_section: UnitSection::default(),
+                mount_section: MountSection {
+                    what: "LABEL=unittest".into(),
+                    where_: "/rootdisk".into(),
+                    options: Some("f1,f2,f3,rw".to_string()),
+                    type_: Some("testfs".to_string()),
+                }
+            }
+        );
+
+        Ok(())
+    }
+
+    #[containertest]
+    fn test_get_boot_id() -> Result<()> {
+        let output = std::process::Command::new("journalctl")
+            .arg("--list-boots")
+            .output()
+            .context("Failed to run journalctl --list-boots")?;
+
+        if !output.status.success() {
+            return Err(anyhow!("journalctl command filed: {:?}", output));
         }
 
-        let file =
-            tmpdir.join("metalos-switch-root.service.d/metalos-snapshot-root-dependency.conf");
-        assert!(file.exists());
-        let content = std::fs::read_to_string(file.clone())
-            .context(format!("Can't read file {}", file.display()))?;
-        assert_eq!(
-            content,
-            "[Unit]\n\
-            After=metalos-snapshot-root.service\n\
-            Requires=metalos-snapshot-root.service\n"
-        );
+        let stdout =
+            std::str::from_utf8(&output.stdout).context("Failed to convert stdout to str")?;
 
-        let file = tmpdir.join("metalos-snapshot-root.service.d/os_subvol.conf");
-        assert!(file.exists());
-        let content = std::fs::read_to_string(file.clone())
-            .context(format!("Can't read file {}", file.display()))?;
-        assert_eq!(
-            content,
-            "[Unit]\n\
-            After=metalos-fetch-image@somePackage.service\n\
-            Requires=metalos-fetch-image@somePackage.service\n\
-            [Service]\n\
-            Environment=OS_SUBVOL=var/lib/metalos/image/somePackage/volume\n"
-        );
+        for line in stdout.lines() {
+            let line = line.trim();
+            println!("line: '{}'", line);
+            if line.starts_with("0 ") {
+                let (_, line) = line.split_once(" ").context("boot entry had no space")?;
+                let (boot_id, _) = line
+                    .split_once(" ")
+                    .context("second half of boot entry has no space")?;
 
-        let file = tmpdir.join("rootdisk.mount");
-        assert!(file.exists());
-        let content = std::fs::read_to_string(file.clone())
-            .context(format!("Can't read file {}", file.display()))?;
-        assert_eq!(
-            content,
-            "[Unit]\n\
-            Before=initrd-root-fs.target\n\
-            [Mount]\n\
-            What=/dev/somedisk\n\
-            Where=/rootdisk\n\
-            Options=\n\
-            Type=btrfs\n"
-        );
+                assert_eq!(get_boot_id().context("Failed to get boot id")?, boot_id,);
 
-        std::fs::remove_dir_all(&tmpdir)?;
+                return Ok(());
+            }
+        }
 
-        Ok(())
+        Err(anyhow!("Unable to find bootid from journalctl: {}", stdout))
     }
 
     #[test]
-    fn test_generator_no_rootfstype() -> Result<()> {
-        let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
-        let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-        let tmpdir = std::env::temp_dir().join(format!("test_generator_nofstype{:?}", ts));
-        std::fs::create_dir(&tmpdir)?;
-        let opts = Opts {
-            normal_dir: tmpdir.clone(),
-            early_dir: tmpdir.clone(),
-            late_dir: tmpdir.clone(),
-        };
-        // here we do not pass rootfstype=btrfs
-        let cmdline: MetalosCmdline =
-            "metalos.host-config-uri=\"https://server:8000/v1/host/host001.01.abc0.domain.com\" \
-            metalos.os_package=\"somePackage\" \
-            metalos.package_format_uri=\"https://unittest_server/{package}\" \
-            root=/dev/somedisk"
-                .parse()?;
-
-        generator_maybe_err(cmdline, log, opts)?;
-
-        let file = tmpdir.join("rootdisk.mount");
-        assert!(file.exists());
-        let content = std::fs::read_to_string(file.clone())
-            .context(format!("Can't read file {}", file.display()))?;
+    fn test_make_mount_unit() -> Result<()> {
         assert_eq!(
-            content,
-            "[Unit]\n\
-            Before=initrd-root-fs.target\n\
-            [Mount]\n\
-            What=/dev/somedisk\n\
-            Where=/rootdisk\n\
-            Options=\n"
+            make_mount_unit(
+                Root {
+                    root: Some("LABEL=unittest".to_string()),
+                    fstype: Some("testfs".to_string()),
+                    flags: Some(vec!["f1".to_string(), "f2".to_string(), "f3".to_string()]),
+                    ro: false,
+                    rw: true,
+                },
+                Path::new("/test_rootdisk"),
+            )
+            .context("failed to write moot disk")?,
+            MountUnit {
+                unit_section: UnitSection::default(),
+                mount_section: MountSection {
+                    what: "LABEL=unittest".into(),
+                    where_: "/test_rootdisk".into(),
+                    options: Some("f1,f2,f3,rw".to_string()),
+                    type_: Some("testfs".to_string()),
+                }
+            }
+        );
+        assert_eq!(
+            make_mount_unit(
+                Root {
+                    root: Some("LABEL=unittest".to_string()),
+                    fstype: None,
+                    flags: None,
+                    ro: true,
+                    rw: false,
+                },
+                Path::new("/test_rootdisk"),
+            )
+            .context("failed to write moot disk")?,
+            MountUnit {
+                unit_section: UnitSection::default(),
+                mount_section: MountSection {
+                    what: "LABEL=unittest".into(),
+                    where_: "/test_rootdisk".into(),
+                    options: Some("ro".to_string()),
+                    type_: None,
+                }
+            }
         );
 
-        std::fs::remove_dir_all(&tmpdir)?;
+        assert!(
+            make_mount_unit(
+                Root {
+                    root: None,
+                    fstype: None,
+                    flags: None,
+                    ro: true,
+                    rw: false,
+                },
+                Path::new("/test_rootdisk"),
+            )
+            .is_err()
+        );
+
+        assert!(
+            make_mount_unit(
+                Root {
+                    root: Some("/dev/vda".into()),
+                    fstype: None,
+                    flags: None,
+                    ro: true,
+                    rw: false,
+                },
+                Path::new("/test_rootdisk"),
+            )
+            .is_err()
+        );
         Ok(())
     }
 }

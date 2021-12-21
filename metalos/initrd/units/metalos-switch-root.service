@@ -4,6 +4,9 @@ DefaultDependencies=no
 OnFailure=emergency.target
 OnFailureJobMode=replace-irreversibly
 AllowIsolate=yes
+
+# We require this mount because we only sometimes will depend on
+# metalos-snapshot-root.target which is controlled by the generator
 Requires=rootdisk.mount
 After=rootdisk.mount
 
@@ -22,6 +25,7 @@ Requires=dbus.service
 After=dbus.service
 
 [Service]
+EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
 ExecStartPre=metalctl network-cleanup
-ExecStart=metalctl switch-root ${OS_BOOT_SUBVOL}
+ExecStart=metalctl switch-root ${METALOS_CURRENT_BOOT_DIR}

@@ -14,6 +14,7 @@ load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 load("//antlir/vm/bzl:initrd.bzl", "initrd")
 load("//metalos:defs.bzl", "rust_binary")
+load("//metalos/disk:disk.bzl", "build_root_disk")
 
 binaries = extract.extract(
     binaries = [
@@ -203,6 +204,15 @@ image.layer(
     flavor = REPO_CFG.antlir_linux_flavor,
 )
 
+# We need to build a new gpt image for the switch-root
+# test so that the image is sized correctly. Otherwise we
+# keep the image minimal and expand at runtime which we don't
+# do for existing boots
+build_root_disk(
+    name = "metalos-gpt-image",
+    root_size_mb = 1024 * 2,
+)
+
 vm.rust_unittest(
     name = "switch-root",
     vm_opts = vm.types.opts.new(
@@ -217,11 +227,10 @@ vm.rust_unittest(
             sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"],
         ),
         disk = vm.types.disk.new(
-            layer = ":empty-layer",
-            layer_label = "/",
-            layer_size_mb = 2048,
+            package = ":metalos-gpt-image",
         ),
     ),
+    timeout_secs = 600,
     srcs = ["test_switch_root.rs"],
     crate_root = "test_switch_root.rs",
     # TODO(vmagro): re-enable this when the container runtime environment is
@@ -258,7 +267,23 @@ vm.rust_unittest(
                 "$(exe :images-sidecar) $(location :image_packages)",
             ],
         ),
+        disk = vm.types.disk.new(
+            layer = ":root-disk-layer",
+            layer_size_mb = 2048,
+        ),
     ),
+    deps = [
+        "//metalos/lib:generator_lib",
+    ] + [
+        third_party.library(
+            name,
+            platform = "rust",
+        )
+        for name in [
+            "serde",
+            "anyhow",
+        ]
+    ],
     srcs = ["test_images.rs"],
     crate_root = "test_images.rs",
 )

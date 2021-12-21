@@ -5,7 +5,9 @@ IMAGE_DIR = "/image"
 
 RUN_DIR = "/run"
 
-def build_root_disk(root_size_mb = None):
+def build_root_disk(
+        name = "metalos-gpt-image",
+        root_size_mb = None):
     image.layer(
         name = "root-disk-layer",
         features = [
@@ -51,7 +53,7 @@ def build_root_disk(root_size_mb = None):
             size_mb = 256,
             label = "metalos-efi",
         ),
-        visibility = ["//metalos/..."],
+        visibility = [],
     )
 
     package.new(
@@ -62,11 +64,11 @@ def build_root_disk(root_size_mb = None):
             size_mb = 512,
             label = "metalos-boot",
         ),
-        visibility = ["//metalos/..."],
+        visibility = [],
     )
 
     image.gpt(
-        name = "metalos-gpt-image",
+        name = name,
         table = [
             image.gpt_partition(
                 package = ":efi-package",
