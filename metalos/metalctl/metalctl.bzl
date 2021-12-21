@@ -81,7 +81,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
                 layer = "//metalos/metalctl/tests/facebook:test-layer" if facebook else "//metalos/os:metalos",
             ),
         ),
-        unittests = ["plain", "container"],
+        unittests = ["plain", "container", "vm"],
         rustc_flags = rustc_flags,
         **kwargs
     )
