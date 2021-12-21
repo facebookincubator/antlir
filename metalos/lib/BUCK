@@ -29,3 +29,20 @@ rust_library(
         "nix",
     ],
 )
+
+rust_library(
+    name = "generator_lib",
+    srcs = ["generator_lib.rs"],
+    crate_root = "generator_lib.rs",
+    test_deps = [
+        "maplit",
+        "slog_glog_fmt",
+    ],
+    deps = [
+        "anyhow",
+        "serde",
+        "serde_json",
+        "slog",
+        "//metalos/lib/systemd:systemd",
+    ],
+)
