@@ -27,6 +27,7 @@ mod escape;
 mod machined_manager;
 mod networkd_manager;
 mod property_stream;
+pub mod render;
 mod system_state;
 mod systemd_manager;
 mod transient_unit;
