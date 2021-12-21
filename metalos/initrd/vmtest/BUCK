@@ -238,6 +238,40 @@ vm.rust_unittest(
     tags = ["local_only"],
 )
 
+vm.rust_unittest(
+    name = "switch-root-reimage",
+    vm_opts = vm.types.opts.new(
+        initrd = ":switch-root-initrd.cpio.gz",
+        kernel = TEST_KERNEL,
+        append = [
+            "metalos.package-format-uri=http://vmtest-host:8000/package/{package}",
+            "metalos.os-package=metalos:1",
+            "metalos.write-root-disk-package=metalos_root:1",
+            "rd.systemd.journald.forward_to_console=1",
+        ],
+        runtime = vm.types.runtime.new(
+            sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"],
+        ),
+        disk = vm.types.disk.new(
+            layer = ":empty-layer",
+            layer_size_mb = 1024 * 3,
+            # because this isn't actually the partition we want to mount we give this a
+            # label that isn't / and then still mount / which should find the newly
+            # imaged partition
+            layer_label = "empty_root_disk",
+        ),
+        root_label = "/",
+    ),
+    # unfortunately this test is REAL slow because it takes so long to download
+    # the two images and write them to disk
+    timeout_secs = 600,
+    srcs = ["test_switch_root.rs"],
+    crate_root = "test_switch_root.rs",
+    # TODO(vmagro): re-enable this when the container runtime environment is
+    # done and the sidecars can reliably run on Sandcastle
+    tags = ["local_only"],
+)
+
 rust_binary(
     name = "images-sidecar",
     srcs = ["images_sidecar.rs"],
@@ -254,6 +288,7 @@ buck_genrule(
     out = ".",
     cmd = """
         cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:1
+        zstd -i $(location //metalos/disk:metalos-gpt-image) -o $OUT/metalos_root:1
     """,
 )
 

@@ -26,6 +26,7 @@ use crate::config::{EventBackendBaseUri, PackageFormatUri};
 // which should be easy to enforce).
 #[derive(EnumIter)]
 enum KnownArgs {
+    RootDiskPackage,
     OsPackage,
     HostConfigUri,
     PackageFormatUri,
@@ -40,6 +41,7 @@ enum KnownArgs {
 impl KnownArgs {
     fn flag_name(&self) -> &'static str {
         match self {
+            Self::RootDiskPackage => "--metalos.write_root_disk_package",
             Self::OsPackage => "--metalos.os_package",
             Self::HostConfigUri => "--metalos.host_config_uri",
             Self::PackageFormatUri => "--metalos.package_format_uri",
@@ -58,6 +60,9 @@ impl KnownArgs {
 pub struct MetalosCmdline {
     #[structopt(parse(from_str = parse_opt))]
     non_metalos_opts: Vec<KernelCmdlineOpt>,
+
+    #[structopt(long = &KnownArgs::RootDiskPackage.flag_name())]
+    pub root_disk_package: Option<String>,
 
     #[structopt(long = &KnownArgs::OsPackage.flag_name())]
     pub os_package: Option<String>,
@@ -252,6 +257,7 @@ mod tests {
                     kv("console", "tty0"),
                     kv("console", "ttyS0,115200")
                 ],
+                root_disk_package: None,
                 os_package: None,
                 host_config_uri: None,
                 package_format_uri: None,
