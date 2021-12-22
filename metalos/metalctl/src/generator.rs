@@ -54,7 +54,7 @@ impl Environment for LegacyEnvironment {}
 #[cfg_attr(test, derive(Clone, PartialEq, PartialOrd))]
 struct MetalosEnvironment {
     #[serde(rename = "HOST_CONFIG_URI")]
-    host_config_uri: Option<String>,
+    host_config_uri: String,
 
     // ROOTDISK_DIR is the absolute path to the location where the initrd
     // will/has mounted the root disk specified on the kernel parameters.
@@ -137,7 +137,7 @@ fn get_boot_id() -> Result<String> {
 
 fn metalos_existing_boot_info(
     root: Root,
-    host_config_uri: Option<String>,
+    host_config_uri: String,
     os_package: String,
 ) -> Result<(MetalosEnvironment, ExtraDependencies, MountUnit)> {
     let rootdisk: &Path = Path::new(ROOTDISK_DIR);
@@ -165,6 +165,16 @@ fn metalos_existing_boot_info(
         },
     );
 
+    // We also need to make sure the host config is applied correctly before
+    // we switch into it.
+    extra_deps.insert(
+        "apply_host_config".to_string(),
+        ExtraDependency {
+            source: "metalos-switch-root.service".into(),
+            requires: "metalos-apply-host-config.service".into(),
+        },
+    );
+
     let mount_unit = make_mount_unit(root, rootdisk).context("Failed to build mount unit")?;
 
     Ok((env, extra_deps, mount_unit))
@@ -172,7 +182,7 @@ fn metalos_existing_boot_info(
 
 fn metalos_reimage_boot_info<FD: FindRootDisk>(
     root: Root,
-    host_config_uri: Option<String>,
+    host_config_uri: String,
     os_package: String,
     disk_image_package: String,
     disk_finder: &FD,
@@ -227,7 +237,9 @@ fn generator_maybe_err<FD: FindRootDisk>(
         BootMode::MetalOSExisting => {
             let (env, extra_deps, mount_units) = metalos_existing_boot_info(
                 cmdline.root,
-                cmdline.host_config_uri,
+                cmdline
+                    .host_config_uri
+                    .context("host-config-uri must be provided for metalos boots")?,
                 cmdline
                     .os_package
                     .context("OS package must be provided for metalos boots")?,
@@ -246,7 +258,9 @@ fn generator_maybe_err<FD: FindRootDisk>(
         BootMode::MetalOSReimage => {
             let (env, extra_deps, mount_units) = metalos_reimage_boot_info(
                 cmdline.root,
-                cmdline.host_config_uri,
+                cmdline
+                    .host_config_uri
+                    .context("host-config-uri must be provided for metalos boots")?,
                 cmdline
                     .os_package
                     .context("OS package must be provided for metalos boots")?,
@@ -510,6 +524,11 @@ mod tests {
                     After=metalos-snapshot-root.service\n\
                     Requires=metalos-snapshot-root.service\n\
                     ".to_string(),
+                opts.normal_dir.join("metalos-switch-root.service.d/apply_host_config.conf") => "\
+                    [Unit]\n\
+                    After=metalos-apply-host-config.service\n\
+                    Requires=metalos-apply-host-config.service\n\
+                    ".to_string(),
                 opts.normal_dir.join("rootdisk.mount.d/metalos_reimage_boot.conf") => "\
                     [Unit]\n\
                     After=metalos-image-root-disk.service\n\
@@ -574,6 +593,11 @@ mod tests {
                     [Unit]\n\
                     After=metalos-snapshot-root.service\n\
                     Requires=metalos-snapshot-root.service\n\
+                    ".to_string(),
+                opts.normal_dir.join("metalos-switch-root.service.d/apply_host_config.conf") => "\
+                    [Unit]\n\
+                    After=metalos-apply-host-config.service\n\
+                    Requires=metalos-apply-host-config.service\n\
                     ".to_string(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
                     HOST_CONFIG_URI=https://server:8000/config\n\
@@ -643,7 +667,7 @@ mod tests {
                 ro: false,
                 rw: true,
             },
-            Some("test_config_uri".to_string()),
+            "test_config_uri".to_string(),
             "test_package:123".to_string(),
             "test_reimage_package:123".to_string(),
             &MockDiskFinder {
@@ -660,7 +684,7 @@ mod tests {
             env,
             MetalosReimageEnvironment {
                 metalos_common: MetalosEnvironment {
-                    host_config_uri: Some("test_config_uri".to_string()),
+                    host_config_uri: "test_config_uri".to_string(),
                     rootdisk_dir: "/rootdisk".into(),
                     metalos_boots_dir: "/rootdisk/run/boot".into(),
                     metalos_current_boot_dir: format!("/rootdisk/run/boot/0:{}", boot_id).into(),
@@ -682,6 +706,10 @@ mod tests {
                 "metalos_reimage_boot".to_string() => ExtraDependency {
                     source: "rootdisk.mount".into(),
                     requires: "metalos-image-root-disk.service".into(),
+                },
+                "apply_host_config".to_string() => ExtraDependency {
+                    source: "metalos-switch-root.service".into(),
+                    requires: "metalos-apply-host-config.service".into(),
                 },
             }
         );
@@ -712,7 +740,7 @@ mod tests {
                 ro: false,
                 rw: true,
             },
-            Some("test_config_uri".to_string()),
+            "test_config_uri".to_string(),
             "test_package:123".to_string(),
         )
         .context("failed to get boot info")?;
@@ -722,7 +750,7 @@ mod tests {
         assert_eq!(
             env,
             MetalosEnvironment {
-                host_config_uri: Some("test_config_uri".to_string()),
+                host_config_uri: "test_config_uri".to_string(),
                 rootdisk_dir: "/rootdisk".into(),
                 metalos_boots_dir: "/rootdisk/run/boot".into(),
                 metalos_current_boot_dir: format!("/rootdisk/run/boot/0:{}", boot_id).into(),
@@ -737,6 +765,10 @@ mod tests {
                 "metalos_boot".to_string() => ExtraDependency {
                     source: "metalos-switch-root.service".into(),
                     requires: "metalos-snapshot-root.service".into(),
+                },
+                "apply_host_config".to_string() => ExtraDependency {
+                    source: "metalos-switch-root.service".into(),
+                    requires: "metalos-apply-host-config.service".into(),
                 },
             }
         );
