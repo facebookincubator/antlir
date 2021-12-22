@@ -3,7 +3,7 @@ NETWORK_TEMPLATE = metalos.template("""
 MACAddress={{mac}}
 
 [Network]
-{{~#each ipv6_addrs}}
+{{#each ipv6_addrs}}
 Address={{this.addr}}/{{this.prefix}}
 {{/each~}}
 {{~#each ipv4_addrs}}
