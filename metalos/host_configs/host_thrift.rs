@@ -13,6 +13,7 @@ impl Host {
         Host {
             id: format!("{:032x}", 1),
             hostname: "host001.01.abc0.facebook.com".to_owned(),
+            root_pw_hash: "$0$unit_test_hash".to_string(),
             network: Network {
                 dns: DNS {
                     servers: vec!["2606:4700:4700::1111".parse().unwrap()],
@@ -39,7 +40,8 @@ mod tests {
         let mut a = Assert::new();
         a.globals_add(|gb| gb.set("input", Host::example_host_for_tests()));
         a.eq("input.hostname", "\"host001.01.abc0.facebook.com\"");
-        let expected_dir = "\"hostname\", \"id\", \"network\"";
+        a.eq("input.root_pw_hash", "\"$0$unit_test_hash\"");
+        let expected_dir = "\"hostname\", \"id\", \"network\", \"root_pw_hash\"";
         if cfg!(feature = "facebook") {
             a.eq(
                 "set(dir(input))",
