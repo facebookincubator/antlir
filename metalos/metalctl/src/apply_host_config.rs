@@ -71,7 +71,7 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
         .context("failed to load generators from /usr/lib/metalos/generators")?;
     for gen in generators {
         let output = gen.eval(&host)?;
-        output.apply(&opts.root)?;
+        output.apply(log.clone(), &opts.root)?;
     }
     Ok(())
 }

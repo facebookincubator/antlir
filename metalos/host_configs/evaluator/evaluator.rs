@@ -29,6 +29,7 @@ struct Opts {
 }
 
 fn main() -> Result<()> {
+    let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
     let opts = Opts::from_args();
     let host: Host = {
         if opts.host == Path::new("-") {
@@ -70,7 +71,7 @@ fn main() -> Result<()> {
         .expect("not running in --dry-run mode, --root must be given");
     for gen in generators {
         let output = gen.eval(&host)?;
-        output.apply(&root)?;
+        output.apply(log.clone(), &root)?;
     }
     Ok(())
 }
