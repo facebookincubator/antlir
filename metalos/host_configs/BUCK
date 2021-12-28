@@ -56,6 +56,8 @@ rust_library(
         "once_cell",
         "serde",
         "serde_json",
+        "slog",
+        "slog_glog_fmt",
         "starlark",
         "starlark_derive",
         "thiserror",
@@ -78,6 +80,8 @@ rust_binary(
     deps = [
         "anyhow",
         "serde_json",
+        "slog",
+        "slog_glog_fmt",
         "structopt",
         ":evalctx",
     ],

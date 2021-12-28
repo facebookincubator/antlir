@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use derive_more::Display;
+use slog::{info, Logger};
 use starlark::environment::{GlobalsBuilder, Module};
 use starlark::eval::Evaluator;
 use starlark::starlark_module;
@@ -162,9 +163,10 @@ impl Generator {
 }
 
 impl GeneratorOutput {
-    pub fn apply(self, root: impl PathExt) -> Result<()> {
+    pub fn apply(self, log: Logger, root: &Path) -> Result<()> {
         for file in self.files {
             let dst = root.force_join(file.path);
+            info!(log, "Writing file: {:?}", dst);
             let mut f = fs::File::create(&dst).map_err(Error::Apply)?;
             f.write_all(&file.contents).map_err(Error::Apply)?;
             let mut perms = f.metadata().map_err(Error::Apply)?.permissions();
