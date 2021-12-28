@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
 use std::ops::Deref;
@@ -13,11 +14,12 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use derive_more::Display;
+use shadow::{ShadowFile, ShadowRecord};
 use slog::{info, Logger};
 use starlark::environment::{GlobalsBuilder, Module};
 use starlark::eval::Evaluator;
 use starlark::starlark_module;
-use starlark::values::{list::ListOf, OwnedFrozenValue, Value, ValueLike};
+use starlark::values::{dict::DictOf, list::ListOf, OwnedFrozenValue, Value, ValueLike};
 use xattr::FileExt;
 
 use crate::loader::{Loader, ModuleId};
@@ -36,10 +38,14 @@ macro_rules! output_only_struct {
     };
 }
 
+type Username = String;
+type PWHash = String;
+
 #[derive(Debug, Display, PartialEq, Eq, Clone)]
 #[display(fmt = "{:?}", self)]
 pub struct GeneratorOutput {
     pub files: Vec<File>,
+    pub pw_hashes: Option<BTreeMap<Username, PWHash>>,
 }
 output_only_struct!(GeneratorOutput);
 
@@ -94,7 +100,10 @@ pub fn module(registry: &mut GlobalsBuilder) {
     }
 
     #[starlark(type("GeneratorOutput"))]
-    fn GeneratorOutput(files: Option<ListOf<Value>>) -> GeneratorOutput {
+    fn GeneratorOutput(
+        files: Option<ListOf<Value>>,
+        pw_hashes: Option<DictOf<Value, Value>>,
+    ) -> GeneratorOutput {
         let files: Vec<File> = match files {
             Some(files) => files
                 .to_vec()
@@ -107,7 +116,27 @@ pub fn module(registry: &mut GlobalsBuilder) {
                 .collect::<anyhow::Result<_>>()?,
             None => vec![],
         };
-        Ok(GeneratorOutput { files })
+        let pw_hashes: Option<BTreeMap<Username, PWHash>> = match pw_hashes {
+            Some(hashes) => Some(
+                hashes
+                    .collect_entries()
+                    .into_iter()
+                    .map(|(k, v)| {
+                        Ok((
+                            k.unpack_str()
+                                .context(format!("provided key {:?} was not a string", k))?
+                                .to_string(),
+                            v.unpack_str()
+                                .context(format!("provided value {:?} was not a string", v))?
+                                .to_string(),
+                        ))
+                    })
+                    .collect::<anyhow::Result<_>>()
+                    .context("Failed to convert PW hashes from starlark to BTreeMap")?,
+            ),
+            None => None,
+        };
+        Ok(GeneratorOutput { files, pw_hashes })
     }
 
     // this must match the type name returned by the Host struct
@@ -179,6 +208,41 @@ impl GeneratorOutput {
             // than fail to apply configs entirely
             let _ = f.set_xattr("user.metalos.generator", &[1]);
         }
+
+        if let Some(pw_hashes) = self.pw_hashes {
+            Self::apply_pw_hashes(log, pw_hashes, root).map_err(Error::PWHashError)?;
+        }
+        Ok(())
+    }
+
+    fn apply_pw_hashes(
+        log: Logger,
+        pw_hashes: BTreeMap<Username, PWHash>,
+        root: &Path,
+    ) -> anyhow::Result<()> {
+        let shadow_file = root.join("etc/shadow");
+        let mut shadow =
+            ShadowFile::from_file(&shadow_file).context("Failed to load existing shadows file")?;
+
+        for (user, hash) in pw_hashes.into_iter() {
+            info!(log, "Updating hash for {} to {}", user, hash);
+            let record =
+                ShadowRecord::new(user, hash).context("failed to create shadow record for")?;
+            shadow.update_record(record);
+        }
+        info!(
+            log,
+            "Shadow file {:?} internal data: {:?}", shadow_file, shadow
+        );
+
+        let content = shadow
+            .write_to_file(&shadow_file)
+            .context("failed to write mutated shadow file")?;
+        info!(
+            log,
+            "Writing shadow file {:?} with content: {:?}", shadow_file, content
+        );
+
         Ok(())
     }
 }
@@ -210,7 +274,8 @@ mod tests {
                     path: "/etc/hostname".into(),
                     contents: "host001.01.abc0.facebook.com\n".into(),
                     mode: 0o444,
-                }]
+                }],
+                pw_hashes: None,
             }
         );
         Ok(())
