@@ -15,8 +15,9 @@
 struct Host {
   1: string id;
   2: string hostname;
-  3: Network network;
-  // @oss-disable: 4: host.HostFacebook facebook;
+  3: string root_pw_hash;
+  4: Network network;
+  // @oss-disable: 5: host.HostFacebook facebook;
 } (
   rust.exhaustive,
   rust.derive = "starlark::values::StarlarkAttrs, metalos_macros::StarlarkInput",
