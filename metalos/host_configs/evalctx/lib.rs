@@ -57,6 +57,8 @@ pub enum Error {
     /// A template could not be rendered.
     #[error("could not render handlebars template")]
     TemplateRender(#[from] handlebars::RenderError),
+    #[error("Failed to update shadow file with provided hashes: {0:?}")]
+    PWHashError(anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

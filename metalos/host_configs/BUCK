@@ -64,6 +64,7 @@ rust_library(
         "walkdir",
         "xattr",
         ":host-rust",
+        "//metalos/lib:shadow",
     ],
 )
 
