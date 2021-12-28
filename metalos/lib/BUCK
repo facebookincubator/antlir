@@ -46,3 +46,12 @@ rust_library(
         "//metalos/lib/systemd:systemd",
     ],
 )
+
+rust_library(
+    name = "shadow",
+    srcs = ["shadow.rs"],
+    crate_root = "shadow.rs",
+    deps = [
+        "anyhow",
+    ],
+)
