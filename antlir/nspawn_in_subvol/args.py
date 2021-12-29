@@ -43,7 +43,7 @@ from antlir.fs_utils import Path
 from antlir.subvol_utils import find_subvolume_on_disk
 
 
-_DEFAULT_SHELL = "/bin/bash"
+_DEFAULT_LOGIN_SHELL = ["/bin/bash", "--login"]
 _NOBODY_USER = pwd.getpwnam("nobody")
 T = TypeVar("T")
 # This typehint marks values that accept the types that are allowed by
@@ -307,12 +307,12 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         # internal users **must** set a `cmd`, while the CLIs start a shell.
         "cmd",
         nargs="*",
-        default=[_DEFAULT_SHELL],
+        default=_DEFAULT_LOGIN_SHELL,
         help="The command to run in the container. The command is run using "
         "`nsenter` inside the cgroups & namespaces of the `systemd-nspawn` "
         "container -- we use `nspawn` for container setup only, it is not "
         "suitable for terminal management, see systemd PR 17070.  If a command "
-        "is not specified the default is to start `bash`.",
+        "is not specified the default is to start `bash` as a login shell.",
     )
     assert defaults["forward_fd"] == ()  # The argparse default must be mutable
     parser.add_argument(
