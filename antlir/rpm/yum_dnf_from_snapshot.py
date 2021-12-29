@@ -669,6 +669,8 @@ def yum_dnf_from_snapshot(
         must_exist=protected_paths,
         may_exist=optional_protected_paths,
     ) as protected_path_to_dummy, (
+        # pyre-fixme[16]: Item `Path` of `Union[nullcontext[None], Path]` has no
+        #  attribute `__enter__`.
         nullcontext()
         if is_makecache
         else _set_up_yum_dnf_cache(yum_dnf, install_root, snapshot_dir)
