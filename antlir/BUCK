@@ -786,3 +786,25 @@ buck_filegroup(
         "//antlir/facebook/oss-ci:oss-view",
     ],
 )
+
+python_binary(
+    name = "vcs",
+    srcs = ["vcs.py"],
+    main_module = "antlir.vcs",
+    deps = [
+        ":artifacts_dir",
+        ":fs_utils",
+    ],
+)
+
+# Note: there is no coverage metric for this because this supports
+# both git and hg, but internally at Meta we can only guarantee
+# that hg is present, and externally we can only guarantee that
+# git is present
+# For both variations we have CI that should confirm the expected
+# output.
+python_unittest(
+    name = "test-vcs",
+    srcs = ["tests/test_vcs.py"],
+    deps = [":vcs-library"],
+)
