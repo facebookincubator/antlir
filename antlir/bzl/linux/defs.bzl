@@ -6,6 +6,7 @@
 load("//antlir/bzl/linux/config:config.bzl", "config")
 load(":busybox.bzl", "busybox")
 load(":filesystem.bzl", "filesystem")
+load(":release.bzl", "release")
 load(":time.bzl", "time")
 
 # This exposed struct provides a clean API for clients
@@ -15,4 +16,5 @@ linux = struct(
     config = config,
     filesystem = filesystem,
     time = time,
+    release = release,
 )

@@ -8,13 +8,7 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
-load(":initrd_release.bzl", "initrd_release")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
-
-# Generate /etc/initrd-release based on scm/fbpkg revision info
-initrd_release(
-    name = "initrd-release",
-)
 
 dbus = [
     feature.group_add("dbus"),
@@ -77,10 +71,15 @@ image.layer(
         # Systemd uses the presence of /etc/initrd-release to determine if it
         # is running in an initrd, however there are cases where it only parses
         # /{etc,usr/lib}/os-release, so just cover all our bases with symlinks
-        feature.install(":initrd-release", "/usr/lib/initrd-release"),
+        linux.release.install(
+            path = "/usr/lib/initrd-release",
+            layer = ":bare-systemd",
+            os_name = "MetalOS",
+            variant = "Initrd",
+        ),
         image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/initrd-release"),
-        image.ensure_file_symlink("/usr/lib/initrd-release", "/usr/lib/os-release"),
         image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/os-release"),
+        image.ensure_file_symlink("/usr/lib/initrd-release", "/usr/lib/os-release"),
         # This is automatically the target that systemd tries to reach when it
         # detects /etc/initrd-release, but explicitly symlinking it makes
         # systemd-analyze work as expected too
