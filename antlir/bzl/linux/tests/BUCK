@@ -82,3 +82,25 @@ image.python_unittest(
     srcs = ["test_time.py"],
     layer = ":test-layer-timezone-us-pacific",
 )
+
+image.layer(
+    name = "test-layer-os-release",
+    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    features = [
+        linux.release.install(
+            path = "/usr/lib/os-release",
+            layer = ":test-layer-os-release",
+            os_name = "AntlirTest",
+            variant = "Test",
+        ),
+    ],
+)
+
+image.python_unittest(
+    name = "test-os-release",
+    srcs = ["test_os_release.py"],
+    layer = ":test-layer-os-release",
+    deps = [
+        "//antlir:fs_utils",
+    ],
+)

@@ -5,6 +5,7 @@ load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
+load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//metalos/os/tests:defs.bzl", "systemd_expectations_test")
 
 image.layer(
@@ -61,9 +62,16 @@ image.layer(
         feature.install("sshd_config", "/etc/ssh/sshd_config"),
         # Add a cool metalos motd
         feature.install("metalos-motd.sh", "/etc/profile.d/metalos-motd.sh"),
-        # TODO: modify this os-release to indicate that it's MetalOS (in ID_LIKE
-        # maybe?), but for now provide an easy indicator that a system is
-        # MetalOS if /etc/metalos-release exists
+        # Install a MetalOS specific os-release
+        linux.release.install(
+            "/usr/lib/os-release",
+            os_name = "MetalOS",
+            # The layer we are inserting into, this is a bit of a wart but there
+            # is currently no way to know this from within the macro so we
+            # have to provide it explicitly.
+            layer = ":metalos",
+            variant = "MetalOS",
+        ),
         image.ensure_file_symlink("/usr/lib/os-release", "/etc/metalos-release"),
         # Ensure the root cgroup has all controllers enabled
         systemd.install_unit("systemd-workaround.service"),
