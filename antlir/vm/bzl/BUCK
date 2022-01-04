@@ -39,7 +39,7 @@ fake_macro_library(
 fake_macro_library(
     name = "kernel",
     srcs = [
-        "kernel.bzl",
+        "kernel.shape.bzl",
     ],
     deps = [
         "//antlir/bzl:shape",

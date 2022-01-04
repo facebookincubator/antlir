@@ -5,11 +5,7 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-
-symlink_t = shape.shape(
-    dest = shape.path(),
-    source = shape.path(),
-)
+load(":symlink.shape.bzl", "symlink_t")
 
 def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
     symlink_spec = shape.new(

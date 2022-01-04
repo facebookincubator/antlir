@@ -10,6 +10,7 @@ load(":hoist.bzl", "hoist")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", third_party_shim = "third_party")
 load(":shape.bzl", "shape")
+load(":third_party.shape.bzl", "dep_t", "script_t")
 
 PREFIX = "/third_party_build"
 SRC_TGZ = paths.join(PREFIX, "source.tar.gz")
@@ -138,29 +139,17 @@ def _native_build(base_features, script, dependencies = [], project = None):
         ],
     )
 
-_script_t = shape.shape(
-    prepare = str,
-    build = str,
-    install = str,
-)
-
 def _new_script(build, install, prepare = ""):
     return shape.new(
-        _script_t,
+        script_t,
         prepare = prepare,
         build = build,
         install = install,
     )
 
-_dep_t = shape.shape(
-    name = str,
-    source = shape.target(),
-    paths = shape.list(str),
-)
-
 def _library(name, *, include_path = "include", lib_path = "lib"):
     return shape.new(
-        _dep_t,
+        dep_t,
         name = name,
         source = third_party_shim.library(name, name, "antlir"),
         paths = [include_path, lib_path],

@@ -7,20 +7,12 @@ load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:shape.bzl", "shape")
 load(
     "//antlir/bzl:target_tagger.bzl",
-    "image_source_as_target_tagged_shape",
+    "image_source_as_target_tagged_t",
     "new_target_tagger",
     "tag_target",
-    "target_tagged_image_source_shape",
     "target_tagger_to_feature",
 )
-
-clone_t = shape.shape(
-    dest = shape.path(),
-    omit_outer_dir = bool,
-    pre_existing_dest = bool,
-    source = target_tagged_image_source_shape,
-    source_layer = shape.dict(str, str),
-)
+load(":clone.shape.bzl", "clone_t")
 
 def image_clone(src_layer, src_path, dest_path):
     """
@@ -83,7 +75,7 @@ metadata to a deterministic state, while the state of the on-disk metadata in
         dest = dest_path,
         omit_outer_dir = omit_outer_dir,
         pre_existing_dest = pre_existing_dest,
-        source = image_source_as_target_tagged_shape(
+        source = image_source_as_target_tagged_t(
             target_tagger,
             image_source(layer = src_layer, path = src_path),
         ),

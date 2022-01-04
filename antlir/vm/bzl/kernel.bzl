@@ -6,19 +6,7 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:shape.bzl", "shape")
-
-kernel_artifacts_t = shape.shape(
-    vmlinuz = shape.target(),
-    # devel and modules may not exist, such as in the case of a vmlinuz with
-    # all necessary features compiled with =y
-    devel = shape.target(optional = True),
-    modules = shape.target(optional = True),
-)
-
-kernel_t = shape.shape(
-    uname = str,
-    artifacts = shape.field(kernel_artifacts_t),
-)
+load(":kernel.shape.bzl", "kernel_artifacts_t", "kernel_t")
 
 def normalize_kernel(kernel):
     if types.is_string(kernel):

@@ -5,11 +5,7 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-
-remove_paths_t = shape.shape(
-    path = shape.path(),
-    must_exist = bool,
-)
+load(":remove.shape.bzl", "remove_paths_t")
 
 def feature_remove(dest, must_exist = True):
     """

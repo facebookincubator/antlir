@@ -7,22 +7,8 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":flavor_helpers.bzl", "flavor_helpers")
+load(":gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 load(":image_utils.bzl", "image_utils")
-
-gpt_partition_t = shape.shape(
-    package = shape.target(),
-    is_esp = bool,
-    name = shape.field(str, optional = True),
-)
-
-gpt_t = shape.shape(
-    name = str,
-    disk_guid = shape.field(
-        str,
-        optional = True,
-    ),
-    table = shape.list(gpt_partition_t),
-)
 
 def image_gpt_partition(package, is_esp = False, name = None):
     return shape.new(gpt_partition_t, package = package, is_esp = is_esp, name = name)

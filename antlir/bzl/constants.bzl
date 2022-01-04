@@ -12,6 +12,7 @@
 load("//antlir/bzl:oss_shim.bzl", "config", "do_not_use_repo_cfg")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
+load(":constants.shape.bzl", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_config_t")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
 load(":target_helpers.bzl", "normalize_target")
 
@@ -23,11 +24,7 @@ DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
 CONFIG_KEY = "antlir"
 
 BZL_CONST = shape.new(
-    shape.shape(
-        layer_feature_suffix = str,
-        PRIVATE_feature_suffix = str,
-        version_set_allow_all_versions = str,
-    ),
+    bzl_const_t,
     layer_feature_suffix = "__layer-feature",
     # Do NOT use this outside of Antlir internals.  See "Why are `feature`s
     # forbidden as dependencies?" in `bzl/image/feature/new.bzl` for a
@@ -92,40 +89,14 @@ def _get_artifact_key_to_path():
 
     return key_to_path
 
-_nevra_t = shape.shape(
-    name = shape.field(str),
-    # TODO: Codemod all callsites and update this to be `int`.
-    epoch = shape.field(str),
-    version = shape.field(str),
-    release = shape.field(str),
-    arch = shape.field(str),
-)
-
 def new_nevra(**kwargs):
-    return shape.new(_nevra_t, **kwargs)
-
-# These are configuration keys that can be grouped under a specific common
-# name called flavor.  This way, during run-time, we can choose default
-# values for set of configuration keys based on selected flavor name.
-_flavor_config_t = shape.shape(
-    name = shape.field(str),
-    # FIXME: Ideally, remove `optional = True`.  This field is not optional,
-    # per `new_flavor_config` below, but expressing that requires changing
-    # the wire format for `DO_NOT_USE_BUILD_APPLIANCE` to be a string
-    # instead of `None` -- see `new_flavor_config`. This needs a Python fix.
-    build_appliance = shape.field(str, optional = True),
-    rpm_installer = shape.field(str, optional = True),
-    rpm_repo_snapshot = shape.field(str, optional = True),
-    version_set_path = shape.field(str, optional = True),
-    rpm_version_set_overrides = shape.list(_nevra_t, optional = True),
-    unsafe_bypass_flavor_check = shape.field(bool, optional = True),
-)
+    return shape.new(nevra_t, **kwargs)
 
 # This keeps the type private, so one cannot instantiate unvalidated flavors.
 def flavor_config_t_shape_loader():
     shape.loader(
         name = "flavor_config_t",
-        shape = _flavor_config_t,
+        shape = flavor_config_t,
         classname = "flavor_config_t",
         visibility = ["//antlir/...", "//tupperware/cm/antlir/..."],
     )
@@ -180,7 +151,7 @@ def new_flavor_config(
         build_appliance = normalize_target(build_appliance)
 
     return shape.new(
-        _flavor_config_t,
+        flavor_config_t,
         name = name,
         build_appliance = build_appliance,
         rpm_installer = rpm_installer,
@@ -215,55 +186,6 @@ def _get_flavor_to_config():
         flavor_to_config[flavor] = new_flavor_config(**flavor_config)
 
     return flavor_to_config
-
-#
-# These are repo-specific configuration keys, which can be overridden via
-# the Buck CLI for debugging / development purposes.
-#
-# We do not want to simply use `.buckconfig` for these, because in FBCode,
-# the CI cost to updating `.buckconfig` is quite high (every project
-# potentially needs to be tested and rebuilt).
-#
-# Instead, we keep the per-repo configuration in `oss_shim_impl.bzl`, and
-# the global defaults here, in `constants.bzl`.
-#
-# Our underlying configs use the simple type signature of `Mapping[str,
-# str]` because we want to support overrides via `buck -c`.  So, some very
-# simple parsing of structured configuration keys happens in this file.
-#
-# Configuration sources have the following precedence order:
-#   - `buck -c antlir.CONFIG_NAME='foo bar'` -- note that our lists are
-#     generally space-separated, so you'll want to bash quote those.
-#   - `.buckconfig` -- DO NOT PUT OUR CONFIGS THERE!
-#   - `do_not_use_repo_cfg` loaded via `oss_shim.bzl`
-#   - the defaults below -- these have to be reasonable since this is what a
-#     clean open-source install will use
-#
-# A note on naming: please put the "topic" of the constant before the
-# details, so that buildifier-required lexicographic ordering of dictionary
-# keys results in related keys being grouped together.
-#
-#
-# DANGER! ACHTUNG! PELIGRO! PERICRLRM!
-# Modifications to this shape's attributes or the values in the instance
-# of it below (`REPO_CFG`) could (and likely will) cause excessive
-# rebuilding and incur significant build cost. These attributes and values
-# are effectively global and should be treated with extreme caution.
-# Don't be careless.
-repo_config_t = shape.shape(
-    artifacts_require_repo = bool,
-    artifact = shape.dict(str, str),
-    host_mounts_allowed_in_targets = shape.list(shape.path()),
-    host_mounts_for_repo_artifacts = shape.list(shape.path()),
-    # This holds the default flavors that a feature should cover.
-    # Compared to `flavor_to_config`, it does not contain the
-    # `antlir_test` flavor, which shouldn't be always defined.
-    flavor_available = shape.list(str),
-    flavor_default = str,
-    flavor_to_config = shape.dict(str, _flavor_config_t),
-    antlir_linux_flavor = str,
-    antlir_cell_name = str,
-)
 
 REPO_CFG = shape.new(
     repo_config_t,

@@ -4,31 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load(":container_opts.shape.bzl", "container_opts_t")
 load(":shape.bzl", "shape")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
-
-# Forward container runtime configuration to the Python implementation.
-# This currently maps to `NspawnPluginArgs`.
-#
-# Prefer to keep this default-initializable to avoid having to update a
-# bunch of tests and other Python callsites.
-container_opts_t = shape.shape(
-    shadow_proxied_binaries = shape.field(bool, default = False),
-    serve_rpm_snapshots = shape.list(shape.path(), default = []),
-    # See `--shadow-path` in `args.py`.
-    shadow_paths = shape.list(
-        shape.tuple(shape.path(), shape.path()),
-        default = [],
-    ),
-    # Do not use this, it is only exposed so that Antlir can populate the
-    # repodata caches for the RPM snapshots.
-    internal_only_unprotect_antlir_dir = shape.field(bool, default = False),
-    # This is exposed here only because we need some way to enable this FB-
-    # centric feature in FB container image tests.  A future refactor should
-    # take this away and put it into a FB-internal overlay.
-    internal_only_logs_tmpfs = shape.field(bool, default = False),
-)
 
 def _new_container_opts_t(
         # List of target or /__antlir__ paths, see `snapshot_install_dir` doc.

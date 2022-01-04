@@ -5,20 +5,9 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:shape.bzl", "shape")
+load(":image_source.shape.bzl", "image_source_t")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":structs.bzl", "structs")
-
-_image_source_t = shape.shape(
-    source = shape.field("Target", optional = True),
-    layer = shape.field("Target", optional = True),
-    path = shape.field("Path", optional = True),
-    generator = shape.field("Path", optional = True),
-    generator_args = shape.field(
-        shape.list(str),
-        optional = True,
-    ),
-    content_hash = shape.field(str, optional = True),
-)
 
 # Note to users: all callsites accepting `image.source` objects also accept
 # plain strings, which are interpreted as `image.source(<the string>)`.
@@ -113,7 +102,7 @@ def _image_source_impl(
         )
 
     return shape.new(
-        _image_source_t,
+        image_source_t,
         source = maybe_export_file(source),
         layer = layer,
         path = path,
@@ -129,7 +118,7 @@ def image_source_shape(source = None, **kwargs):
         return _image_source_impl(source = source, **kwargs)
     if kwargs:
         fail("Got struct source {} with other args".format(source))
-    if shape.is_instance(source, _image_source_t):
+    if shape.is_instance(source, image_source_t):
         # The shape is private to this .bzl file, so barring misuse of
         # `.__shape__`, we know this has already been validated.
         return source

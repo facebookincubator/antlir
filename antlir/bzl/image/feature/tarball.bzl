@@ -7,17 +7,11 @@ load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 load(
     "//antlir/bzl:target_tagger.bzl",
-    "image_source_as_target_tagged_shape",
+    "image_source_as_target_tagged_t",
     "new_target_tagger",
-    "target_tagged_image_source_shape",
     "target_tagger_to_feature",
 )
-
-tarball_t = shape.shape(
-    force_root_ownership = shape.field(bool, optional = True),
-    into_dir = shape.path(),
-    source = target_tagged_image_source_shape,
-)
+load(":tarball.shape.bzl", "tarball_t")
 
 def feature_tarball(source, dest, force_root_ownership = False):
     """
@@ -35,7 +29,7 @@ def feature_tarball(source, dest, force_root_ownership = False):
         tarball_t,
         force_root_ownership = force_root_ownership,
         into_dir = dest,
-        source = image_source_as_target_tagged_shape(
+        source = image_source_as_target_tagged_t(
             target_tagger,
             maybe_export_file(source),
         ),
