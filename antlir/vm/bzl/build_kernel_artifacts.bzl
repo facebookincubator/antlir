@@ -8,7 +8,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load(":kernel.bzl", "kernel_artifacts_t", "kernel_t")
+load(":kernel.shape.bzl", "kernel_artifacts_t", "kernel_t")
 
 def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = True):
     """

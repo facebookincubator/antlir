@@ -6,29 +6,10 @@
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-
-_action = shape.shape(
-    status = shape.enum("success", "notfound", "unavail", "tryagain"),
-    action = shape.enum("return", "continue", "merge"),
-)
-
-_service = shape.shape(
-    name = str,
-    action = shape.field(_action, optional = True),
-)
-
-_database = shape.shape(
-    # not an exhaustive list, but does contain the things we care about
-    name = shape.enum("group", "hosts", "passwd", "shadow"),
-    services = shape.list(_service),
-)
-
-_conf = shape.shape(
-    databases = shape.list(_database),
-)
+load(":nsswitch.shape.bzl", "action_t", "conf_t", "database_t", "service_t")
 
 def _new(**kwargs):
-    return shape.new(_conf, **kwargs)
+    return shape.new(conf_t, **kwargs)
 
 def _render(name, instance):
     return shape.render_template(
@@ -42,7 +23,7 @@ def _install(instance = None, **kwargs):
     name = "nsswitch.conf--" + contents_hash
 
     if not instance:
-        instance = shape.new(_conf, **kwargs)
+        instance = shape.new(conf_t, **kwargs)
 
     file = _render(
         name = name,
@@ -55,49 +36,49 @@ def _install(instance = None, **kwargs):
 
 # exported api to instantiate an nsswitch config
 nsswitch = struct(
-    t = _conf,
+    t = conf_t,
     new = _new,
     install = _install,
     default = shape.new(
-        _conf,
+        conf_t,
         databases = [
             shape.new(
-                _database,
+                database_t,
                 name = "passwd",
                 services = [
-                    shape.new(_service, name = "files"),
-                    shape.new(_service, name = "systemd"),
+                    shape.new(service_t, name = "files"),
+                    shape.new(service_t, name = "systemd"),
                 ],
             ),
             shape.new(
-                _database,
+                database_t,
                 name = "group",
                 services = [
                     shape.new(
-                        _service,
+                        service_t,
                         name = "files",
                         action = shape.new(
-                            _action,
+                            action_t,
                             status = "success",
                             action = "merge",
                         ),
                     ),
-                    shape.new(_service, name = "systemd"),
+                    shape.new(service_t, name = "systemd"),
                 ],
             ),
             shape.new(
-                _database,
+                database_t,
                 name = "shadow",
                 services = [
-                    shape.new(_service, name = "files"),
+                    shape.new(service_t, name = "files"),
                 ],
             ),
             shape.new(
-                _database,
+                database_t,
                 name = "hosts",
                 services = [
-                    shape.new(_service, name = "files"),
-                    shape.new(_service, name = "dns"),
+                    shape.new(service_t, name = "files"),
+                    shape.new(service_t, name = "dns"),
                 ],
             ),
         ],

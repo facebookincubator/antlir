@@ -6,26 +6,13 @@
 "See the docs in antlir/website/docs/genrule-layer.md"
 
 load(":compile_image_features.bzl", "compile_image_features")
-load(":container_opts.bzl", "container_opts_t", "normalize_container_opts")
+load(":container_opts.bzl", "normalize_container_opts")
+load(":genrule_layer.shape.bzl", "genrule_layer_t")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":image_utils.bzl", "image_utils")
 load(":shape.bzl", "shape")
 load(":target_helpers.bzl", "antlir_dep")
 load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-
-genrule_layer_t = shape.shape(
-    # IMPORTANT: Be very cautious about adding keys here, specifically
-    # rejecting any options that might compromise determinism / hermeticity.
-    # Genrule layers effectively run arbitrary code, so we should never
-    # allow access to the network, nor read-write access to files outside of
-    # the layer.  If you need something from the genrule layer, build it,
-    # then reach into it with `image.source`.
-    cmd = shape.list(str),
-    user = str,
-    container_opts = container_opts_t,
-    bind_repo_ro = shape.field(bool, default = False),
-    boot = shape.field(bool, default = False),
-)
 
 def image_genrule_layer(
         name,

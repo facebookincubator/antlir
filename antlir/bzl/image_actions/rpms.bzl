@@ -7,25 +7,10 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
-load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_shape", "new_target_tagger", "tag_target", "target_tagged_image_source_shape", "target_tagger_to_feature")
+load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_t", "new_target_tagger", "tag_target", "target_tagger_to_feature")
+load(":rpms.shape.bzl", "rpm_action_item_t")
 
 RPM_INSTALL_INFO_DUMMY_ACTION_ITEM = "__RPM_INSTALL_INFO_DUMMY_ACTION_ITEM__"
-
-rpm_action_item_t = shape.shape(
-    action = shape.enum("install", "remove_if_exists"),
-    flavor_to_version_set = shape.field(
-        shape.dict(
-            str,
-            shape.union(
-                # This string corresponds to `version_set_allow_all_versions`.
-                str,
-                shape.dict(str, str),
-            ),
-        ),
-    ),
-    source = shape.field(target_tagged_image_source_shape, optional = True),
-    name = shape.field(str, optional = True),
-)
 
 def _rpm_name_or_source(name_source):
     # Normal RPM names cannot have a colon, whereas target paths
@@ -75,7 +60,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
         name = None
         vs_name = None
         if _rpm_name_or_source(path) == "source":
-            source = image_source_as_target_tagged_shape(target_tagger, path)
+            source = image_source_as_target_tagged_t(target_tagger, path)
         else:
             name = path
             if needs_version_set:

@@ -1,78 +1,11 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest", "rust_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
+load(":test.shape.bzl", "affiliations_t", "character_collection_t", "character_t", "hashable_t", "lightsaber_t")
 
 # There are a lot of shapes that are used in test cases.
 # This would rapidly clutter targets in antlir/bzl/tests, so define them all
 # here in a file dedicated to shape test cases
-
-affiliations_t = shape.shape(faction = str)
-
-# A shape that references buck targets
-lightsaber_t = shape.shape(
-    __typename__ = "Lightsaber",
-    color = shape.enum(
-        "red",
-        "green",
-        "blue",
-        __typename__ = "Color",
-    ),
-    target = shape.target(optional = True),
-)
-
-# Test data adapted from the GraphQL Star Wars examples
-character_t = shape.shape(
-    __typename__ = "Character",
-    name = str,
-    appears_in = shape.list(int),
-    friends = shape.list(shape.shape(
-        __typename__ = "Friend",
-        name = str,
-    )),
-    weapon = shape.union(
-        lightsaber_t,
-        str,
-        optional = True,
-    ),
-    callsign = shape.tuple(
-        str,
-        int,
-        optional = True,
-    ),
-    metadata = shape.dict(
-        str,
-        str,
-        default = {"species": "human"},
-    ),
-    affiliations = shape.field(
-        affiliations_t,
-        default = shape.new(
-            affiliations_t,
-            faction = "Rebellion",
-        ),
-    ),
-    personnel_file = shape.path(optional = True),
-)
-
-# TODO when read-only dicts land just use character_t
-hashable_t = shape.shape(
-    name = str,
-    appears_in = shape.list(int),
-    lightsaber_color = shape.field(
-        str,
-        optional = True,
-    ),
-    callsign = shape.tuple(
-        str,
-        int,
-        optional = True,
-    ),
-    metadata = shape.dict(
-        str,
-        str,
-        default = {"species": "human"},
-    ),
-)
 
 buck_genrule(
     name = "luke-lightsaber",
@@ -162,8 +95,6 @@ characters = [
         metadata = {"Droid-Function": "Protocol"},
     ),
 ]
-
-character_collection_t = shape.shape(characters = shape.list(character_t))
 
 shape.loader(
     name = "hashable_t",

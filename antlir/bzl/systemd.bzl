@@ -9,6 +9,7 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", "target_utils")
 load(":shape.bzl", "shape")
+load(":systemd.shape.bzl", "mount_t", "unit_t")
 
 USER_PROVIDER_ROOT = "/usr/lib/systemd/user"
 PROVIDER_ROOT = "/usr/lib/systemd/system"
@@ -348,25 +349,6 @@ def _escape(unescaped, path = False):
         else:
             fail("'{}' cannot be escaped".format(char))
     return escaped
-
-# Define shapes for systemd units. This is not intended to be an exhaustive
-# list of every systemd unit setting from the start, but should be added to as
-# more use cases generate units with these shapes.
-unit_t = shape.shape(
-    description = str,
-    requires = shape.list(str, default = []),
-    after = shape.list(str, default = []),
-    before = shape.list(str, default = []),
-)
-
-mount_t = shape.shape(
-    unit = unit_t,
-    what = str,
-    where = shape.path(),
-    # add more filesystem types here as required
-    type = shape.enum("btrfs", "9p", optional = True),
-    options = shape.list(str, default = []),
-)
 
 def _mount_unit_file(name, mount):
     return shape.render_template(

@@ -3,19 +3,9 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "third_party", antlir_rust_binary = "rust_binary", antlir_rust_library = "rust_library", antlir_rust_unittest = "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/vm/bzl:defs.bzl", "vm")
+load(":metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
 _unittest_flavors = ("plain", "container", "vm")
-
-container_unittest_opts_t = shape.shape(
-    boot = shape.field(bool, default = False),
-    layer = shape.target(
-        default = "//metalos/os:metalos",
-    ),
-)
-
-unittest_opts_t = shape.shape(
-    container = shape.field(container_unittest_opts_t, optional = True),
-)
 
 # Nicer rust wrapping logic with a few nice-to-have features.
 # 1. Easier access to third-party dependencies.

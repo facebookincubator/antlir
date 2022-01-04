@@ -5,16 +5,7 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-
-user_t = shape.shape(
-    name = str,
-    id = shape.field(int, optional = True),
-    primary_group = str,
-    supplementary_groups = shape.list(str),
-    shell = shape.path(),
-    home_dir = shape.path(),
-    comment = shape.field(str, optional = True),
-)
+load(":usergroup.shape.bzl", "group_t", "user_t")
 
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
@@ -74,11 +65,6 @@ user's initial login group or home directory.
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image/feature:usergroup"],
     )
-
-group_t = shape.shape(
-    name = str,
-    id = shape.field(int, optional = True),
-)
 
 def feature_group_add(groupname, gid = None):
     """

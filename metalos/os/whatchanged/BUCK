@@ -1,7 +1,8 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
-load("//metalos:defs.bzl", "container_unittest_opts_t", "rust_binary", "unittest_opts_t")
+load("//metalos:defs.bzl", "rust_binary")
+load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
 image.layer(
     name = "test-layer-parent",

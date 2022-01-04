@@ -1,6 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//metalos:defs.bzl", "container_unittest_opts_t", "rust_binary", "unittest_opts_t")
+load("//metalos:defs.bzl", "rust_binary")
+load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
 def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     srcs = native.glob(["src/**/*.rs"])

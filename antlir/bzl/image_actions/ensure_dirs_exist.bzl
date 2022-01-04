@@ -3,17 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:add_stat_options.bzl", "add_stat_options", "mode_t")
+load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-
-ensure_subdirs_exist_t = shape.shape(
-    into_dir = str,
-    subdirs_to_create = str,
-    mode = shape.field(mode_t, optional = True),
-    user_group = shape.field(str, optional = True),
-)
+load(":ensure_subdirs_exist.shape.bzl", "ensure_subdirs_exist_t")
 
 def image_ensure_dirs_exist(path, mode = None, user = None, group = None):
     """Equivalent to `image.ensure_subdirs_exist("/", path, ...)`."""

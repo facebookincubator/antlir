@@ -55,7 +55,7 @@ directory output by a Buck-runnable target, then you should use
 `install`, even though the underlying rule is executable.
 """
 
-load("//antlir/bzl:add_stat_options.bzl", "add_stat_options", "mode_t")
+load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "wrap_target")
@@ -65,19 +65,10 @@ load(
     "image_source_as_target_tagged_dict",
     "new_target_tagger",
     "tag_and_maybe_wrap_executable_target",
-    "target_tagged_image_source_shape",
     "target_tagger_to_feature",
 )
-
-install_files_t = shape.shape(
-    dest = shape.path(),
-    source = target_tagged_image_source_shape,
-    mode = shape.field(mode_t, optional = True),
-    user_group = shape.field(str, optional = True),
-    dir_mode = shape.field(mode_t, optional = True),
-    exe_mode = shape.field(mode_t, optional = True),
-    data_mode = shape.field(mode_t, optional = True),
-)
+load("//antlir/bzl:target_tagger.shape.bzl", "target_tagged_image_source_t")
+load(":install.shape.bzl", "install_files_t")
 
 _BUCK_RUNNABLE_WRAP_SUFFIX = "install_buck_runnable_wrap_source"
 
@@ -140,7 +131,7 @@ binary to be unusable in image tests in @mode/dev.
 
     install_spec = {
         "dest": dest,
-        "source": shape.new(target_tagged_image_source_shape, **tagged_source),
+        "source": shape.new(target_tagged_image_source_t, **tagged_source),
     }
     add_stat_options(install_spec, mode, user, group)
 
@@ -190,7 +181,7 @@ image) is used. The default for `user` and `group` is `root`.
 
     install_spec = {
         "dest": dest,
-        "source": shape.new(target_tagged_image_source_shape, **source_dict),
+        "source": shape.new(target_tagged_image_source_t, **source_dict),
     }
     add_stat_options(install_spec, mode, user, group)
 
