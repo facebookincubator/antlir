@@ -107,6 +107,10 @@ thrift_library(
     languages = ["rust"],
     thrift_rust_options = "serde",
     thrift_srcs = {"package_manifest.thrift": None},
+    visibility = [
+        "//metalos/lib/image:image",
+        "//metalos/lib/image:image-unittest",
+    ],
 )
 
 thrift_library(

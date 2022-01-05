@@ -1,0 +1,15 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "image",
+    srcs = glob(["src/*.rs"]),
+    test_deps = [
+        "anyhow",
+    ],
+    deps = [
+        "async-trait",
+        "derive_more",
+        "thiserror",
+        "//metalos/host_configs:package-manifest-rust",
+    ],
+)

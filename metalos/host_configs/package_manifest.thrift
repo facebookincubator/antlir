@@ -23,15 +23,15 @@ struct Image {
   1: string name;
   2: string id;
   3: Kind kind;
-}
+} (rust.exhaustive)
 
 // Returned when an image could not be downloaded.
 safe transient server exception DownloadError {
   1: Image image;
   2: string message;
-}
+} (rust.exhaustive)
 
 // Complete Manifest of software to be downloaded.
 struct Manifest {
   1: list<Image> image;
-}
+} (rust.exhaustive)
