@@ -563,7 +563,7 @@ def _cpp_python_extension(
         _python_library(
             name = name + "__types_subs",
             srcs = types,
-            base_moduel = base_module,
+            base_module = base_module,
         )
         deps = list(deps)
         deps.append(":" + name + "__types_stubs")
