@@ -101,3 +101,20 @@ feature.new(
     ],
     visibility = ["//metalos/..."],
 )
+
+thrift_library(
+    name = "package-manifest",
+    languages = ["rust"],
+    thrift_rust_options = "serde",
+    thrift_srcs = {"package_manifest.thrift": None},
+)
+
+thrift_library(
+    name = "runtime-config",
+    languages = ["rust"],
+    thrift_rust_options = "serde",
+    thrift_srcs = {"runtime_config.thrift": None},
+    deps = [
+        ":package-manifest",
+    ],
+)
