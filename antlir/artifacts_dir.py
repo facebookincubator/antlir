@@ -57,6 +57,7 @@ def _make_eden_redirection(
         ],
         cwd=repo_root,
         stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
     )
     # Unfortunately, edenfsctl fails with an exit code of 1 if the symlink
     # already exists. It's possible that this may race with other concurrent
