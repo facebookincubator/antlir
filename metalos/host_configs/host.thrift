@@ -5,6 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// This is the main host configuration description used by MetalOS. Eventually a
+// core part of this should be marked as the "host identity" and used for
+// attestation, but for now this is a mix of what will become the "host
+// identity" and some other assorted settings that are needed to setup a
+// function system.
+
 // @oss-disable: include "metalos/host_configs/facebook/host.thrift"
 
 // Host is the main entrypoint to the Starlark config generator runtime. It is
