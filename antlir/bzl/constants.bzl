@@ -16,10 +16,6 @@ load(":constants.shape.bzl", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
 load(":target_helpers.bzl", "normalize_target")
 
-# A label for non image feature targets to mirror the behaviour of `type = "image_feature"` in
-# `private_do_not_use_feature_json_genrule` which allows the target to be queried.
-ANTLIR_INTERNAL_TREAT_AS_IMAGE_FEATURE_LABEL = "antlir_internal__treat_as_image_feature_for_deps"
-
 DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
 CONFIG_KEY = "antlir"
 
