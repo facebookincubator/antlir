@@ -91,7 +91,7 @@ python_library(
     resources = {
         third_party.library("busybox", "bin/busybox"): "tests/busybox",
         layer_resource(flavor_helpers.default_flavor_build_appliance): "tests/build-appliance",
-        ":gpg-test-signing-key": "tests/signing_key",
+        "//antlir/rpm/tests/gpg_test_keypair:gpg-test-signing-key": "tests/signing_key",
     },
     deps = [
         "//antlir:fs_utils",
@@ -335,40 +335,6 @@ python_binary(
         "//antlir:fs_utils",
         "//antlir/nspawn_in_subvol/plugins:shadow_paths",
     ],
-)
-
-# The static test keys were generated with the following commands:
-#
-# export GNUPGHOME=$(mktemp -d)
-# cat > "$GNUPGHOME/genkeyparams" <<EOF
-#     Key-Type: 1
-#     Key-Length: 2048
-#     Name-Real: Test Key
-#     Name-Email: key@example.com
-#     Expire-Date: 0
-#     %no-protection
-# EOF
-# gpg --batch --gen-key --verbose --debug-all "$GNUPGHOME/genkeyparams"
-# gpg --output private.key --armor --export-secret-key key@example.com
-# gpg --output public.key --armor --export key@example.com
-export_file(
-    name = "gpg-test-keypair",
-    src = "tests/gpg_test_keypair/",
-    # The only other uses of this file are the compiler test images.
-    # Let's keep it limited to just that.
-    visibility = ["//antlir/compiler/test_images/..."],
-)
-
-export_file(
-    name = "gpg-test-signing-key",
-    src = "tests/gpg_test_keypair/private.key",
-    visibility = ["//antlir/bzl/genrule/rpmbuild/..."],
-)
-
-export_file(
-    name = "gpg-test-public-key",
-    src = "tests/gpg_test_keypair/public.key",
-    visibility = ["PUBLIC"],
 )
 
 python_binary(

@@ -338,8 +338,8 @@ image.layer(
 # is already a part of //antlir/rpm:non-default-repo-snapshot-for-tests so it
 # is signed and has its gpgkey set up in the yum/dnf config. The key is imported
 # on installation. Then we sign the local files using those same keys (from
-# //antlir/rpm:gpg-test-keypair) and install the signed local files
-# into the layer.
+# //antlir/rpm/tests/gpg_test_keypair:gpg-test-keypair) and install the signed
+# local files into the layer.
 #
 image.layer(
     name = "layer-with-only-one-locally-installed-rpm",
