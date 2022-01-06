@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import threading
 from collections import OrderedDict
 from typing import AnyStr, Dict, Generator, List, NamedTuple
 
@@ -112,6 +113,11 @@ def _write_group_file(subvol: Subvol, contents: AnyStr):
     subvol.overwrite_path_as_root(GROUP_FILE_PATH, str(contents))
 
 
+# because group always operate on the same static file path, a single global
+# lock is sufficient to prevent race conditions of concurrent modifications
+_LOCK = threading.Lock()
+
+
 class GroupItem(group_t, ImageItem):
     def requires(self) -> Generator[Requirement, None, None]:
         # The root group is *always* available, even without a
@@ -124,8 +130,10 @@ class GroupItem(group_t, ImageItem):
 
     # pyre-fixme[9]: layer_opts has type `LayerOpts`; used as `None`.
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
-        group_file = GroupFile(_read_group_file(subvol))
-        gid = self.id or group_file.next_group_id()
-        group_file.add(self.name, gid)
-        # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got `GroupFile`.
-        _write_group_file(subvol, group_file)
+        with _LOCK:
+            group_file = GroupFile(_read_group_file(subvol))
+            gid = self.id or group_file.next_group_id()
+            group_file.add(self.name, gid)
+            # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got
+            # `GroupFile`.
+            _write_group_file(subvol, group_file)

@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import itertools
 import sys
 import unittest
 
@@ -122,8 +123,10 @@ class ImageFeatureTestCase(unittest.TestCase):
         with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("subvol")
             doi = list(
-                dg.gen_dependency_order_items(
-                    PhasesProvideItem(from_target="t", subvol=subvol)
+                itertools.chain(
+                    *dg.gen_dependency_order_items(
+                        PhasesProvideItem(from_target="t", subvol=subvol)
+                    )
                 )
             )
         self.assertEqual(set(si.ID_TO_ITEM.values()), set(doi + phase_items))
