@@ -6,6 +6,7 @@
 
 import collections
 import re
+import threading
 from dataclasses import dataclass
 from typing import (
     AnyStr,
@@ -286,6 +287,12 @@ def _write_shadow_file(subvol: Subvol, contents: AnyStr):
     subvol.overwrite_path_as_root(SHADOW_FILE_PATH, str(contents))
 
 
+# because user modifications always operate on the same static set of files, a
+# single global lock is sufficient to prevent race conditions of concurrent
+# modifications
+_LOCK = threading.Lock()
+
+
 class UserItem(user_t, ImageItem):
     @validator("name")
     def _validate_name(cls, name):  # noqa B902
@@ -314,45 +321,48 @@ class UserItem(user_t, ImageItem):
 
     # pyre-fixme[9]: layer_opts has type `LayerOpts`; used as `None`.
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
-        group_file = GroupFile(_read_group_file(subvol))
+        with _LOCK:
+            group_file = GroupFile(_read_group_file(subvol))
 
-        # this should already be checked by requires/provides
-        assert (
-            self.primary_group in group_file.nameToGID
-        ), f"primary_group `{self.primary_group}` missing from /etc/group"
+            # this should already be checked by requires/provides
+            assert (
+                self.primary_group in group_file.nameToGID
+            ), f"primary_group `{self.primary_group}` missing from /etc/group"
 
-        for groupname in self.supplementary_groups:
-            group_file.join(groupname, self.name)
-        # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got `GroupFile`.
-        _write_group_file(subvol, group_file)
+            for groupname in self.supplementary_groups:
+                group_file.join(groupname, self.name)
+            # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got
+            # `GroupFile`.
+            _write_group_file(subvol, group_file)
 
-        passwd_file = PasswdFile(_read_passwd_file(subvol))
-        uid = self.id or passwd_file.next_user_id()
-        passwd_file.add(
-            PasswdFileLine(
-                name=self.name,
-                uid=uid,
-                gid=group_file.nameToGID[self.primary_group],
-                # pyre-fixme[6]: Expected `str` for 4th param but got
-                # `Optional[str]`.
-                comment=self.comment,
-                directory=self.home_dir,
-                shell=self.shell,
-            )
-        )
-        # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got `PasswdFile`.
-        _write_passwd_file(subvol, passwd_file)
-        # Read in our current shadow file
-        # If we don't already have a shadow file, make one from passwd
-        if subvol.path(SHADOW_FILE_PATH).exists():
-            shadow_file = ShadowFile(_read_shadow_file(subvol))
-            shadow_file.add(
-                ShadowFileLine(
+            passwd_file = PasswdFile(_read_passwd_file(subvol))
+            uid = self.id or passwd_file.next_user_id()
+            passwd_file.add(
+                PasswdFileLine(
                     name=self.name,
+                    uid=uid,
+                    gid=group_file.nameToGID[self.primary_group],
+                    # pyre-fixme[6]: Expected `str` for 4th param but got
+                    # `Optional[str]`.
+                    comment=self.comment,
+                    directory=self.home_dir,
+                    shell=self.shell,
                 )
             )
-        else:
-            shadow_file = pwconv(passwd_file)
-        # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got
-        #  `Union[ShadowFile, str]`.
-        _write_shadow_file(subvol, shadow_file)
+            # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got
+            # `PasswdFile`.
+            _write_passwd_file(subvol, passwd_file)
+            # Read in our current shadow file
+            # If we don't already have a shadow file, make one from passwd
+            if subvol.path(SHADOW_FILE_PATH).exists():
+                shadow_file = ShadowFile(_read_shadow_file(subvol))
+                shadow_file.add(
+                    ShadowFileLine(
+                        name=self.name,
+                    )
+                )
+            else:
+                shadow_file = pwconv(passwd_file)
+            # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got
+            #  `Union[ShadowFile, str]`.
+            _write_shadow_file(subvol, shadow_file)

@@ -16,6 +16,7 @@ and invokes `.build()` to apply each item to actually construct the subvol.
 """
 
 import argparse
+import concurrent.futures
 import os
 import stat
 import sys
@@ -130,13 +131,16 @@ def compile_items_to_subvol(
         for builder_maker, items in dep_graph.ordered_phases()
     ]:
         builder(subvol)
+
     # We cannot validate or sort `ImageItem`s until the phases are
     # materialized since the items may depend on the output of the phases.
-    for item in dep_graph.gen_dependency_order_items(
+    for par_items in dep_graph.gen_dependency_order_items(
         PhasesProvideItem(from_target=layer_opts.layer_target, subvol=subvol)
     ):
-        # pyre-fixme[16]: `ImageItem` has no attribute `build`.
-        item.build(subvol, layer_opts)
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(par_items)
+        ) as executor:
+            executor.map(lambda item: item.build(subvol, layer_opts), par_items)
 
 
 def get_parent_layer_flavor_config(parent_layer: Subvol) -> flavor_config_t:

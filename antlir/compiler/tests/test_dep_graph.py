@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import itertools
 import sys
 import unittest
 import unittest.mock
@@ -1024,7 +1025,13 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         )
         res = tuple(dg.gen_dependency_order_items(self.provides_root))
         self.assertNotIn(self.provides_root, res)
-        res = (self.provides_root, self.root_u, self.root_g, *res)
+        res = (
+            self.provides_root,
+            self.root_u,
+            self.root_g,
+            # serialize items for the tests that check dependency order
+            *itertools.chain(*res),
+        )
 
         for item, items_it_requires in self.item_to_items_it_reqs.items():
             for item_it_requires in items_it_requires:
@@ -1068,7 +1075,7 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         self.assertEqual(_fs_root_phases(first), list(dg_bad.ordered_phases()))
 
         self.assertEqual(
-            [second, third],
+            [{second}, {third}],
             list(dg_ok.gen_dependency_order_items(self.provides_root)),
         )
         with self.assertRaisesRegex(AssertionError, "^Cycle in "):
@@ -1096,6 +1103,28 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         )
         self.assertEqual(
             rest,
+            list(
+                itertools.chain(
+                    *dg.gen_dependency_order_items(self.provides_root)
+                )
+            ),
+        )
+
+    def test_parallel_items(self):
+        def requires_provides_directory_class(requires_dir, provides_dirs):
+            return TestImageItem(
+                reqs=[RequireDirectory(path=Path(requires_dir))],
+                provs=[ProvidesDirectory(path=Path(d)) for d in provides_dirs],
+            )
+
+        a = requires_provides_directory_class("/", ["a"])
+        a_children = {
+            requires_provides_directory_class("/a", [f"/a/{x}"])
+            for x in ("b", "c", "d")
+        }
+        dg = DependencyGraph([a, *a_children], layer_target="t")
+        self.assertEqual(
+            [{a}, a_children],
             list(dg.gen_dependency_order_items(self.provides_root)),
         )
 

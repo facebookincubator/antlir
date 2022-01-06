@@ -479,39 +479,56 @@ class DependencyGraph:
 
     def gen_dependency_order_items(
         self, phases_provide: PhasesProvideItem
-    ) -> Iterator[ImageItem]:
+    ) -> Iterator[List[ImageItem]]:
         if not self.items:
             # Skip evaluating `PhasesProvideItem` if there's no work to be
             # done in the final phase.  This is useful because otherwise
             # `PhasesProvideItem` would `stat` the entire layer FS.
             return
         ns = self._prep_item_predecessors(phases_provide)
-        yield_idx = 0
+        yield_index = 0
         while ns.items_without_predecessors:
-            # "Install" an item that has no unsatisfied dependencies.
-            item = ns.items_without_predecessors.pop()
-            # `_prep_item_predecessors` ensures that we will encounter
-            # `phases_provide` whose `provides` describes the state of the
-            # layer after the phases had run (before we build items).
-            if item is phases_provide:
-                # This item deliberately lacks `build()`, so don't yield it.
-                assert yield_idx == 0, f"{item}: PhasesProvideItem must be 1st"
-            else:
-                yield item
-            yield_idx += 1
+            items = ns.items_without_predecessors.copy()
+            ns.items_without_predecessors.clear()
+            if yield_index == 0:
+                assert (
+                    len(items) == 1
+                ), f"PhasesProvideItem must be alone in the first step: {items}"
+                item = next(iter(items))
+                assert (
+                    item is phases_provide
+                ), f"{item}: PhasesProvideItem must be 1st"
 
-            # All items, which had `item` was a dependency, must have their
-            # "predecessors" sets updated
-            for requiring_item in ns.predecessor_to_items[item]:
-                predecessors = ns.item_to_predecessors[requiring_item]
-                predecessors.remove(item)
-                if not predecessors:
-                    ns.items_without_predecessors.add(requiring_item)
-                    # With no more predecessors, this will no longer be used.
-                    del ns.item_to_predecessors[requiring_item]
+            for item in items:
+                # `_prep_item_predecessors` ensures that we will encounter
+                # `phases_provide` whose `provides` describes the state of the
+                # layer after the phases had run (before we build items).
+                if yield_index != 0:
+                    assert (
+                        item is not phases_provide
+                    ), f"{item}: PhasesProvideItem must be 1st"
 
-            # We won't need this value again, and this lets us detect cycles.
-            del ns.predecessor_to_items[item]
+                # All items, which had `item` was a dependency, must have their
+                # "predecessors" sets updated
+                for requiring_item in ns.predecessor_to_items[item]:
+                    predecessors = ns.item_to_predecessors[requiring_item]
+                    predecessors.remove(item)
+                    if not predecessors:
+                        ns.items_without_predecessors.add(requiring_item)
+                        # With no more predecessors, this will no longer be
+                        # used.
+                        del ns.item_to_predecessors[requiring_item]
+
+                # We won't need this value again, and this lets us detect
+                # cycles.
+                del ns.predecessor_to_items[item]
+
+            # Don't yield PhasesProvideItem, it lacks `build()`
+            if yield_index > 0:
+                # All of these items have no predecessors, so by definition they
+                # can run in parallel
+                yield items
+            yield_index += 1
 
         # Initially, every item was indexed here. If there's anything left,
         # we must have a cycle. Future: print a cycle to simplify debugging.
