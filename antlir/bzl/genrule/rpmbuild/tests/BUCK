@@ -28,7 +28,7 @@ python_binary(
     srcs = ["rpm_sign_with_test_key.py"],
     main_module = "antlir.bzl.genrule.rpmbuild.tests.rpm_sign_with_test_key",
     resources = {
-        "//antlir/rpm:gpg-test-signing-key": "gpg-test-signing-key",
+        "//antlir/rpm/tests/gpg_test_keypair:gpg-test-signing-key": "gpg-test-signing-key",
     },
     visibility = [
         "//antlir/bzl/genrule/rpmbuild/facebook/...",
@@ -60,7 +60,7 @@ image_import_rpm_public_key_layer(
     parent_layer = "//antlir/compiler/test_images:build_appliance_testing",
     pubkeys = [
         image.source(
-            "//antlir/rpm:gpg-test-public-key",
+            "//antlir/rpm/tests/gpg_test_keypair:gpg-test-public-key",
         ),
     ],
 )

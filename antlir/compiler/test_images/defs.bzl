@@ -56,7 +56,7 @@ def _sign_rpm_test_file(name, filename):
         set -ue -o pipefail
         export GNUPGHOME=\\$(mktemp -d)
         cp $(location :{filename}) "$OUT"
-        keypair_path=$(location //antlir/rpm:gpg-test-keypair)
+        keypair_path=$(location //antlir/rpm/tests/gpg_test_keypair:gpg-test-keypair)
         gpg --import "$keypair_path/private.key"
         rpmsign --addsign --define="_gpg_name Test Key" "$OUT"
         '''.format(filename = filename),

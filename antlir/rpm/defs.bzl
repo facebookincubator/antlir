@@ -14,7 +14,7 @@ def test_rpm_repo_snapshot(name, kind, rpm_installers, repo_server_ports):
         bash = """
         set -ue
         logfile=\\$(mktemp)
-        keypair_dir=$(location //antlir/rpm:gpg-test-keypair)
+        keypair_dir=$(location //antlir/rpm/tests/gpg_test_keypair:gpg-test-keypair)
         # Only print the logs on error.
         $(exe //antlir/rpm:temp-snapshot) --kind {quoted_kind} "$OUT" \
             --gpg-keypair-dir "$keypair_dir" \
