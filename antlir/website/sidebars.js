@@ -65,10 +65,10 @@ module.exports = {
             },
             'concepts/pre-built-artifacts/fetched-artifacts',
           ],
-          'Flavors': [
+          Flavors: [
             'concepts/flavors/overview',
             'concepts/flavors/inheritance-in-parent-layers',
-          ]
+          ],
         },
       ],
     },
@@ -106,6 +106,7 @@ module.exports = {
             'contributing/todos/compiler',
           ],
         },
+        'contributing/profiling',
       ],
     },
     ...fbContent({

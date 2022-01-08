@@ -17,10 +17,11 @@ and invokes `.build()` to apply each item to actually construct the subvol.
 
 import argparse
 import concurrent.futures
+import cProfile
 import os
 import stat
 import sys
-from contextlib import ExitStack
+from contextlib import ExitStack, nullcontext
 from typing import Iterator
 
 from antlir.cli import add_targets_and_outputs_arg
@@ -109,6 +110,13 @@ def parse_args(args) -> argparse.Namespace:
         "We will read the flavor from the parent layer to deduce the flavor "
         "of the child layer",
     )
+    parser.add_argument(
+        "--profile",
+        default=os.environ.get("ANTLIR_PROFILE"),
+        dest="profile_dir",
+        type=Path.from_argparse,
+        help="Profile this image build and write pstats files into the given directory.",
+    )
 
     add_targets_and_outputs_arg(parser)
     return Path.parse_args(parser, args)
@@ -120,6 +128,7 @@ def compile_items_to_subvol(
     subvol: Subvol,
     layer_opts: LayerOpts,
     iter_items: Iterator[ImageItem],
+    use_threads: bool = True,
 ) -> None:
     dep_graph = DependencyGraph(
         iter_items=iter_items,
@@ -137,10 +146,18 @@ def compile_items_to_subvol(
     for par_items in dep_graph.gen_dependency_order_items(
         PhasesProvideItem(from_target=layer_opts.layer_target, subvol=subvol)
     ):
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=len(par_items)
-        ) as executor:
-            executor.map(lambda item: item.build(subvol, layer_opts), par_items)
+        if use_threads:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=len(par_items)
+            ) as executor:
+                executor.map(
+                    lambda item: item.build(subvol, layer_opts), par_items
+                )
+        else:  # pragma: no cover (only used for profiling)
+            for item in par_items:
+                # pyre-fixme[16]: `antlir.compiler.items.common.ImageItem` has
+                # no attribute `build`.
+                item.build(subvol, layer_opts)
 
 
 def get_parent_layer_flavor_config(parent_layer: Subvol) -> flavor_config_t:
@@ -207,6 +224,9 @@ def build_image(args):
                 features_or_paths=args.child_feature_json,
                 layer_opts=layer_opts,
             ),
+            # use threads to speed up normal builds, but not while profiling
+            # because multithreaded profiling is terrible
+            use_threads=not args.profile_dir,
         )
         # Build artifacts should never change. Run this BEFORE the exit_stack
         # cleanup to enforce that the cleanup does not touch the image.
@@ -231,4 +251,11 @@ if __name__ == "__main__":  # pragma: no cover
 
     args = parse_args(sys.argv[1:])
     init_logging(debug=args.debug)
-    build_image(args).to_json_file(sys.stdout)
+
+    with (cProfile.Profile() if args.profile_dir else nullcontext()) as pr:
+        build_image(args).to_json_file(sys.stdout)
+    if args.profile_dir:
+        assert pr is not None
+        filename = args.child_layer_target.replace("/", "_") + ".pstat"
+        os.makedirs(args.profile_dir, exist_ok=True)
+        pr.dump_stats(args.profile_dir / filename)
