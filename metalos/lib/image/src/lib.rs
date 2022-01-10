@@ -6,6 +6,11 @@ use thiserror::Error;
 /// Type parameters for [Image].
 pub mod kinds;
 pub use kinds::{ConfigImage, KernelImage, Kind, RootfsImage, ServiceImage, WdsImage};
+pub mod download;
+
+#[cfg(test)]
+#[macro_use]
+extern crate metalos_macros;
 
 use package_manifest::types::Image as ThriftImage;
 
@@ -13,12 +18,16 @@ pub(crate) mod __private {
     pub trait Sealed {}
 }
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug)]
 pub enum Error {
     #[error("unknown image kind ({0})")]
     UnknownKind(i32),
     #[error("wrong image kind (wanted {wanted}, got {actual})")]
     WrongKind { wanted: Kind, actual: Kind },
+    #[error("download error {0:?}")]
+    Download(#[from] download::Error),
+    #[error("btrfs error {0:?}")]
+    BtrfsError(#[from] btrfs::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

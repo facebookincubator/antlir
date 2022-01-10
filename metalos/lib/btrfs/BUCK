@@ -17,9 +17,18 @@ rust_library(
     unittests = ["container"],
     deps = [
         "anyhow",
+        "async-compression",
+        "async-trait",
         "bitflags",
+        "bytes",
+        "futures",
         "libc",
+        "nix",
+        "thiserror",
+        "tokio",
+        "tokio-util",
         "uuid",
+        "zstd",
         ":btrfsutil-sys",
     ],
 )
