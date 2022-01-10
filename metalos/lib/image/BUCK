@@ -3,13 +3,19 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "image",
     srcs = glob(["src/*.rs"]),
-    test_deps = [
-        "anyhow",
-    ],
+    test_deps = ["url"],
     deps = [
+        "anyhow",
         "async-trait",
+        "bytes",
         "derive_more",
+        "futures",
+        "reqwest",
+        "slog",
         "thiserror",
+        "tokio",
+        "zstd",
         "//metalos/host_configs:package-manifest-rust",
+        "//metalos/lib/btrfs:btrfs",
     ],
 )

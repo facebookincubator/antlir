@@ -5,34 +5,53 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(exit_status_error)]
+
 use std::collections::BTreeMap;
 use std::ffi::{CStr, CString, OsStr};
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Error, Result};
+use anyhow::Context;
 use bitflags::bitflags;
 use libc::c_void;
+use thiserror::Error;
 use uuid::Uuid;
+
+pub mod sendstream;
+pub use sendstream::{Sendstream, SendstreamExt};
 
 use btrfsutil_sys::{
     btrfs_util_create_snapshot, btrfs_util_create_subvolume, btrfs_util_create_subvolume_iterator,
     btrfs_util_destroy_subvolume_iterator, btrfs_util_error,
     btrfs_util_error_BTRFS_UTIL_ERROR_STOP_ITERATION as BTRFS_UTIL_ERROR_STOP_ITERATION,
-    btrfs_util_strerror, btrfs_util_subvolume_id, btrfs_util_subvolume_info,
-    btrfs_util_subvolume_iterator, btrfs_util_subvolume_iterator_next_info,
+    btrfs_util_set_subvolume_read_only, btrfs_util_strerror, btrfs_util_subvolume_id,
+    btrfs_util_subvolume_info, btrfs_util_subvolume_iterator,
+    btrfs_util_subvolume_iterator_next_info, BTRFS_SUBVOL_RDONLY,
     BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY, BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE,
 };
 
 pub static BTRFS_FS_TREE_OBJECTID: u64 = 5;
 
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("btrfsutil error {0:?}")]
+    Btrfs(#[from] BtrfsUtilError),
+    #[error("sendstream error {0:?}")]
+    Sendstream(#[from] sendstream::Error),
+    #[error(transparent)]
+    Uncategorized(#[from] anyhow::Error),
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug)]
-pub struct BtrfsError {
+pub struct BtrfsUtilError {
     pub code: btrfs_util_error,
     pub msg: String,
 }
 
-impl From<btrfs_util_error> for BtrfsError {
+impl From<btrfs_util_error> for BtrfsUtilError {
     fn from(err: btrfs_util_error) -> Self {
         let msg = unsafe {
             let msg = btrfs_util_strerror(err);
@@ -45,13 +64,13 @@ impl From<btrfs_util_error> for BtrfsError {
     }
 }
 
-impl std::fmt::Display for BtrfsError {
+impl std::fmt::Display for BtrfsUtilError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "btrfs_util_error({}, {})", self.code, self.msg)
     }
 }
 
-impl std::error::Error for BtrfsError {}
+impl std::error::Error for BtrfsUtilError {}
 
 /// Convenience macro to call btrfs_util functions that return a
 /// btrfs_util_error. Code inside the macro call will be evaluated and a
@@ -61,7 +80,7 @@ macro_rules! check {
         let ret = unsafe { $code };
         match ret {
             0 => Ok(()),
-            _ => Err(BtrfsError::from(ret)),
+            _ => Err(BtrfsUtilError::from(ret)),
         }
     }};
 }
@@ -123,11 +142,9 @@ impl Subvolume {
     pub fn snapshot(&self, path: impl AsRef<Path>, flags: SnapshotFlags) -> Result<Self> {
         let snapshot_path = CString::new(path.as_ref().as_os_str().as_bytes())
             .context("failed to convert path to CString")?;
-        let self_path = CString::new(self.path.as_os_str().as_bytes())
-            .context("failed to convert path to CString")?;
         check!({
             btrfs_util_create_snapshot(
-                self_path.as_ptr(),
+                self.path_cstr()?.as_ptr(),
                 snapshot_path.as_ptr(),
                 flags.bits(),
                 std::ptr::null_mut(),
@@ -144,6 +161,11 @@ impl Subvolume {
 
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    fn path_cstr(&self) -> anyhow::Result<CString> {
+        CString::new(self.path.as_os_str().as_bytes())
+            .with_context(|| format!("failed to convert {:?} to CString", self.path))
     }
 
     pub fn info(&self) -> &SubvolumeInfo {
@@ -170,6 +192,18 @@ impl Subvolume {
     pub fn children(&self) -> Result<SubvolIterator> {
         Self::create_iterator(&self.path, self.id)
     }
+
+    pub fn is_readonly(&self) -> bool {
+        self.info.flags.contains(SubvolumeInfoFlags::READONLY)
+    }
+
+    pub fn set_readonly(&mut self, ro: bool) -> Result<()> {
+        let path = self.path_cstr()?;
+        check!({ btrfs_util_set_subvolume_read_only(path.as_ptr(), ro) })
+            .with_context(|| format!("while setting subvolid={} ro={}", self.id, ro))?;
+        self.info.flags.set(SubvolumeInfoFlags::READONLY, true);
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -177,7 +211,7 @@ pub struct SubvolumeInfo {
     pub id: u64,
     pub parent_id: Option<u64>,
     pub dir_id: Option<u64>,
-    pub flags: u64,
+    pub flags: SubvolumeInfoFlags,
     pub uuid: Uuid,
     pub parent_uuid: Option<Uuid>,
     pub received_uuid: Option<Uuid>,
@@ -186,6 +220,12 @@ pub struct SubvolumeInfo {
     pub otransid: u64,
     pub stransid: Option<u64>,
     pub rtransid: Option<u64>,
+}
+
+bitflags! {
+    pub struct SubvolumeInfoFlags: u64 {
+        const READONLY = BTRFS_SUBVOL_RDONLY as u64;
+    }
 }
 
 fn optional_u64(x: u64) -> Option<u64> {
@@ -208,7 +248,9 @@ impl From<btrfsutil_sys::btrfs_util_subvolume_info> for SubvolumeInfo {
             id: i.id,
             parent_id: optional_u64(i.parent_id),
             dir_id: optional_u64(i.dir_id),
-            flags: i.flags,
+            // Some flags may be undefined, but we should preserve extra bits
+            // even if we don't have proper names for them, hence the unsafe
+            flags: unsafe { SubvolumeInfoFlags::from_bits_unchecked(i.flags) },
             uuid: uuid(i.uuid).expect("subvol uuid should be nonzero"),
             parent_uuid: uuid(i.parent_uuid),
             received_uuid: uuid(i.received_uuid),
@@ -248,7 +290,7 @@ impl Iterator for SubvolIterator {
             }
             Err(e) => match e.code {
                 BTRFS_UTIL_ERROR_STOP_ITERATION => None,
-                _ => Some(Err(Error::msg(e))),
+                _ => Some(Err(Error::Uncategorized(anyhow::Error::msg(e)))),
             },
         }
     }
@@ -262,10 +304,13 @@ impl Drop for SubvolIterator {
     }
 }
 
+pub(crate) mod __private {
+    pub trait Sealed {}
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::Result;
     use metalos_macros::containertest;
 
     #[containertest]
