@@ -15,8 +15,8 @@ import unittest.mock
 from contextlib import contextmanager
 
 from antlir import subvol_utils
+from antlir.bzl.constants import flavor_config_t
 from antlir.config import repo_config
-from antlir.flavor_config_t import flavor_config_t
 from antlir.fs_utils import (
     META_FLAVOR_FILE,
     Path,

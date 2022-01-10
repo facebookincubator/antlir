@@ -12,10 +12,12 @@ load("//antlir/bzl:shape.bzl", "shape")
 # bunch of tests and other Python callsites.
 container_opts_t = shape.shape(
     shadow_proxied_binaries = shape.field(bool, default = False),
-    serve_rpm_snapshots = shape.list(shape.path(), default = []),
+    serve_rpm_snapshots = shape.field(shape.list(shape.path), default = []),
     # See `--shadow-path` in `args.py`.
-    shadow_paths = shape.list(
-        shape.tuple(shape.path(), shape.path()),
+    shadow_paths = shape.field(
+        shape.list(
+            shape.tuple(shape.path, shape.path),
+        ),
         default = [],
     ),
     # Do not use this, it is only exposed so that Antlir can populate the

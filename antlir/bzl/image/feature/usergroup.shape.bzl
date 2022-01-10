@@ -10,8 +10,8 @@ user_t = shape.shape(
     id = shape.field(int, optional = True),
     primary_group = str,
     supplementary_groups = shape.list(str),
-    shell = shape.path(),
-    home_dir = shape.path(),
+    shell = shape.path,
+    home_dir = shape.path,
     comment = shape.field(str, optional = True),
 )
 

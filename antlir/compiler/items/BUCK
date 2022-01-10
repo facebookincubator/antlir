@@ -1,31 +1,15 @@
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:genrule_layer.shape.bzl", "genrule_layer_t")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
-load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl/image/feature:install.shape.bzl", "install_files_t")
-load("//antlir/bzl/image/feature:remove.shape.bzl", "remove_paths_t")
-load("//antlir/bzl/image/feature:tarball.shape.bzl", "tarball_t")
-load("//antlir/bzl/image/feature:usergroup.shape.bzl", "group_t", "user_t")
-load("//antlir/bzl/image_actions:clone.shape.bzl", "clone_t")
-load("//antlir/bzl/image_actions:ensure_subdirs_exist.shape.bzl", "ensure_subdirs_exist_t")
-load("//antlir/bzl/image_actions:rpms.shape.bzl", "rpm_action_item_t")
-load("//antlir/bzl/image_actions:symlink.shape.bzl", "symlink_t")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
-
-shape.loader(
-    name = "clone_t",
-    shape = clone_t,
-    classname = "clone_t",
-)
 
 python_library(
     name = "clone",
     srcs = ["clone.py"],
     deps = [
-        ":clone_t",
         ":common",
         ":phases_provide",
+        "//antlir/bzl/image_actions:clone.shape-python",
     ],
 )
 
@@ -79,18 +63,12 @@ python_library(
     ],
 )
 
-shape.loader(
-    name = "group_t",
-    shape = group_t,
-    classname = "group_t",
-)
-
 python_library(
     name = "group",
     srcs = ["group.py"],
     deps = [
         ":common",
-        ":group_t",
+        "//antlir/bzl/image/feature:usergroup.shape-python",
     ],
 )
 
@@ -149,8 +127,8 @@ python_library(
     srcs = ["rpm_action.py"],
     deps = [
         ":common",
-        ":rpm_action_item_t",
         "//antlir:bzl_const",
+        "//antlir/bzl/image_actions:rpms.shape-python",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:rpm",
         "//antlir/rpm:find_snapshot",
@@ -177,12 +155,6 @@ python_library(
     ],
 )
 
-shape.loader(
-    name = "rpm_action_item_t",
-    shape = rpm_action_item_t,
-    classname = "rpm_action_item_t",
-)
-
 python_unittest(
     name = "test-rpm-action",
     srcs = ["tests/test_rpm_action.py"],
@@ -207,18 +179,12 @@ python_unittest(
     ],
 )
 
-shape.loader(
-    name = "genrule_layer_t",
-    shape = genrule_layer_t,
-    classname = "genrule_layer_t",
-)
-
 python_library(
     name = "genrule_layer",
     srcs = ["genrule_layer.py"],
     deps = [
         ":common",
-        ":genrule_layer_t",
+        "//antlir/bzl:genrule_layer.shape-python",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:rpm",
     ],
@@ -252,19 +218,13 @@ python_unittest(
     ],
 )
 
-shape.loader(
-    name = "ensure_subdirs_exist_t",
-    shape = ensure_subdirs_exist_t,
-    classname = "ensure_subdirs_exist_t",
-)
-
 python_library(
     name = "ensure_dirs_exist",
     srcs = ["ensure_dirs_exist.py"],
     deps = [
         ":common",
-        ":ensure_subdirs_exist_t",
         ":stat_options",
+        "//antlir/bzl/image_actions:ensure_subdirs_exist.shape-python",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:nspawn",
@@ -340,23 +300,11 @@ python_unittest(
     deps = [":stat_options"],
 )
 
-shape.loader(
-    name = "install_files_t",
-    shape = install_files_t,
-    classname = "install_files_t",
-)
-
-shape.loader(
-    name = "remove_paths_t",
-    shape = remove_paths_t,
-    classname = "remove_paths_t",
-)
-
 python_library(
     name = "tarball",
     srcs = ["tarball.py"],
     deps = [
-        ":tarball_t",
+        "//antlir/bzl/image/feature:tarball.shape-python",
     ],
 )
 
@@ -372,14 +320,14 @@ python_library(
     ],
     deps = [
         ":common",
-        ":install_files_t",
         ":make_subvol",
         ":mount",
         ":mount_utils",
-        ":remove_paths_t",
         ":stat_options",
-        ":symlink_t",
         ":tarball",
+        "//antlir/bzl/image/feature:install.shape-python",
+        "//antlir/bzl/image/feature:remove.shape-python",
+        "//antlir/bzl/image_actions:symlink.shape-python",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:nspawn",
@@ -451,31 +399,13 @@ python_library(
     ],
 )
 
-shape.loader(
-    name = "tarball_t",
-    shape = tarball_t,
-    classname = "tarball_t",
-)
-
-shape.loader(
-    name = "symlink_t",
-    shape = symlink_t,
-    classname = "symlink_t",
-)
-
-shape.loader(
-    name = "user_t",
-    shape = user_t,
-    classname = "user_t",
-)
-
 python_library(
     name = "user",
     srcs = ["user.py"],
     deps = [
         ":common",
         ":group",
-        ":user_t",
+        "//antlir/bzl/image/feature:usergroup.shape-python",
     ],
 )
 

@@ -5,4 +5,8 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 
-mode_t = shape.union(int, str)
+target_t = shape.shape(
+    __I_AM_TARGET__ = True,
+    name = str,
+    path = shape.path,
+)

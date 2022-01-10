@@ -17,8 +17,8 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 )
 
 from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
+from ..bzl.loopback_opts import loopback_opts_t
 from ..fs_utils import Path, temp_dir
-from ..loopback_opts_t import loopback_opts_t
 from ..subvol_utils import (
     find_subvolume_on_disk,
     MiB,

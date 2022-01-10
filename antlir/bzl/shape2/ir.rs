@@ -41,9 +41,9 @@
 ///     ...
 /// }
 /// ```
-use derive_more::{Deref, Display, From, FromStr};
+use derive_more::{Deref, Display, From};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
 macro_rules! newtype {
@@ -88,20 +88,80 @@ newtype!(
 
 // A buck target that uniquely identifies a shape module and can be used to
 // derive implementation targets or names.
-newtype!(
-    #[derive(FromStr)]
-    pub struct Target(pub String);
-);
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deref,
+    Display
+)]
+#[deref(forward)]
+#[display(forward)]
+#[serde(try_from = "String", into = "String")]
+#[repr(transparent)]
+pub struct Target(String);
+
+impl From<Target> for String {
+    fn from(t: Target) -> Self {
+        t.to_string()
+    }
+}
+
+impl TryFrom<String> for Target {
+    type Error = anyhow::Error;
+
+    fn try_from(s: String) -> anyhow::Result<Self> {
+        // check that the string matches the requirements we have, but don't
+        // make unnecessary copies of the string
+        anyhow::ensure!(s.contains(':'), "target must contain exactly one ':'");
+        anyhow::ensure!(s.ends_with(".shape"), "shape target must end with '.shape'");
+
+        Ok(Self(s))
+    }
+}
+
+impl TryFrom<&str> for Target {
+    type Error = anyhow::Error;
+
+    fn try_from(s: &str) -> anyhow::Result<Self> {
+        s.to_owned().try_into()
+    }
+}
+
+impl Target {
+    /// Basename portion of the target
+    pub fn basename(&self) -> &str {
+        self.0
+            .rsplit_once(':')
+            .expect("already validated")
+            .1
+            .strip_suffix(".shape")
+            .expect("already validated")
+    }
+
+    /// Cell-relative portion of the target
+    pub fn base_target(&self) -> &str {
+        self.0
+            .find("//")
+            .map_or(self.0.as_str(), |idx| &self.0[idx..])
+            .strip_suffix(".shape")
+            .expect("already validated")
+    }
+}
 
 /// A container to hold all the types defined in a thrift module, as well as
 /// pointers to modules that types may be imported from.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Module {
     pub name: String,
     pub target: Target,
-    #[serde(default)]
-    pub imports: Vec<Module>,
     pub types: BTreeMap<TypeName, Rc<Type>>,
+    pub docstring: Option<DocString>,
 }
 
 impl Module {
@@ -110,7 +170,7 @@ impl Module {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Type {
     Primitive(Primitive),
@@ -127,9 +187,13 @@ pub enum Type {
         value_type: Rc<Type>,
     },
     Complex(ComplexType),
+    Foreign {
+        target: Target,
+        name: TypeName,
+    },
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ComplexType {
     Enum(Enum),
@@ -138,71 +202,91 @@ pub enum ComplexType {
 }
 
 impl ComplexType {
-    pub fn name(&self) -> &TypeName {
+    pub fn name(&self) -> Option<&TypeName> {
         match self {
-            Self::Enum(e) => &e.name,
-            Self::Struct(s) => &s.name,
-            Self::Union(u) => &u.name,
+            Self::Enum(x) => x.name.as_ref(),
+            Self::Struct(x) => x.name.as_ref(),
+            Self::Union(x) => x.name.as_ref(),
         }
     }
 
-    pub fn target(&self) -> &Target {
+    pub fn set_name(&mut self, name: TypeName) {
         match self {
-            Self::Enum(e) => &e.target,
-            Self::Struct(s) => &s.target,
-            Self::Union(u) => &u.target,
+            Self::Enum(x) => x.name = Some(name),
+            Self::Struct(x) => x.name = Some(name),
+            Self::Union(x) => x.name = Some(name),
         }
     }
 }
 
 newtype!(
-    pub struct EnumConstant(FieldName);
+    pub struct EnumConstant(String);
 );
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Enum {
-    pub name: TypeName,
-    pub options: BTreeMap<FieldName, EnumConstant>,
+    pub name: Option<TypeName>,
+    pub options: BTreeSet<EnumConstant>,
     pub docstring: Option<DocString>,
-    pub target: Target,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Struct {
-    pub name: TypeName,
+    pub name: Option<TypeName>,
     pub fields: BTreeMap<FieldName, Field>,
     pub docstring: Option<DocString>,
-    pub target: Target,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Union {
-    pub name: TypeName,
+    pub name: Option<TypeName>,
     pub types: Vec<Rc<Type>>,
     pub docstring: Option<DocString>,
-    pub target: Target,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Field {
-    pub name: FieldName,
     #[serde(rename = "type")]
-    pub typ: Rc<Type>,
+    pub ty: Rc<Type>,
     pub default_value: Option<serde_json::Value>,
     pub required: bool,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Primitive {
     Bool,
-    Byte,
-    I16,
     I32,
-    I64,
-    Float,
-    Double,
-    Binary,
     String,
     Path,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Result;
+
+    #[test]
+    fn target() -> Result<()> {
+        assert_eq!(
+            "shape target must end with '.shape'",
+            Target::try_from("//some/target:path")
+                .unwrap_err()
+                .to_string()
+        );
+
+        let t: Target = "//some/target:path.shape".try_into()?;
+        assert_eq!("path", t.basename());
+        assert_eq!("//some/target:path", t.base_target());
+
+        let t: Target = "cell//some/target:path.shape".try_into()?;
+        assert_eq!("path", t.basename());
+        assert_eq!("//some/target:path", t.base_target());
+
+        let t: Target = ":relative.shape".try_into()?;
+        assert_eq!("relative", t.basename());
+        assert_eq!(":relative", t.base_target());
+
+        Ok(())
+    }
 }

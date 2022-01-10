@@ -12,12 +12,9 @@ from antlir.btrfs_diff.freeze import frozendict
 from antlir.fs_utils import Path
 from antlir.shape import Shape, Target
 
-from .character_collection_t import character_collection_t
-from .character_t import character_t
-
 # TODO remove all references to hashable and just use characters once
 # read-only dicts land
-from .hashable_t import hashable_t
+from .test import character_collection_t, character_t, hashable_t
 
 
 # pyre-fixme[16]: `character_t` has no attribute `types`.
@@ -78,10 +75,10 @@ class TestShape(unittest.TestCase):
         self.assertEqual(f, res)
         # lastly, the directly imported python_data version should also be
         # equivalent
-        from .data import data as imp, StormtrooperArgsType
+        from .data import data as imp
 
         self.assertEqual(imp, res)
-        self.assertTrue(isinstance(imp, StormtrooperArgsType))
+        self.assertTrue(isinstance(imp, hashable_t))
 
     def test_hash(self):
         trooper1 = hashable_t(
@@ -156,7 +153,7 @@ class TestShape(unittest.TestCase):
             "weapon=shape("
             + (
                 "color=GREEN, "
-                "target=Target("
+                "target=shape("
                 "name=':luke-lightsaber', path=b'/static/target/path'"
                 ")"
             )

@@ -6,12 +6,12 @@
 
 import subprocess
 
+from antlir.bzl.image_actions.clone import clone_t
 from antlir.compiler.requires_provides import RequireDirectory
 from antlir.fs_utils import CP_CLONE_CMD, Path
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
 
-from .clone_t import clone_t
 from .common import (
     ImageItem,
     LayerOpts,
@@ -26,8 +26,6 @@ class CloneItem(clone_t, ImageItem):
     class Config:
         arbitrary_types_allowed = True
 
-    # pyre-fixme[15]: `source` overrides attribute defined in `clone_t`
-    # inconsistently.
     source: Path
     # pyre-fixme[15]: `source_layer` overrides attribute defined in `clone_t`
     #  inconsistently.

@@ -32,6 +32,7 @@ from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.shape import Shape
 from antlir.unshare import Namespace, Unshare
+from antlir.vm.bzl.vm import vm_opts_t
 from antlir.vm.common import (
     insertstack,
     SidecarProcess,
@@ -41,7 +42,6 @@ from antlir.vm.guest_ssh import GuestSSHConnection
 from antlir.vm.share import Plan9Export, Share, QCow2RootDisk
 from antlir.vm.tap import VmTap
 from antlir.vm.tpm import VmTPM, TPMError
-from antlir.vm.vm_opts_t import vm_opts_t
 
 
 logger = get_logger()

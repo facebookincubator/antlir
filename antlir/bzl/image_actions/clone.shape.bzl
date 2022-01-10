@@ -7,7 +7,7 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.shape.bzl", "target_tagged_image_source_t")
 
 clone_t = shape.shape(
-    dest = shape.path(),
+    dest = shape.path,
     omit_outer_dir = bool,
     pre_existing_dest = bool,
     source = target_tagged_image_source_t,

@@ -19,6 +19,12 @@ from .shape_bzl import (
 
 TestUnionType = shape.union_t(bool, int)
 
+target_t = shape.shape(
+    __I_AM_TARGET__=True,
+    name=str,
+    path=shape.path,
+)
+
 
 class TestShapeBzl(unittest.TestCase):
     def setUp(self):
@@ -39,9 +45,9 @@ class TestShapeBzl(unittest.TestCase):
             (None, shape.field(str, optional=True)),
             ({"a": "b"}, shape.dict(str, str)),
             ("world", shape.enum("hello", "world")),
-            ("/hello/world", shape.path()),
-            ("@cell//project/path:rule", shape.target()),
-            (":rule", shape.target()),
+            ("/hello/world", shape.path),
+            ("@cell//project/path:rule", target_t),
+            (":rule", target_t),
             (1, shape.union(str, int)),
             ("hello", shape.union(str, int)),
             ("hello", shape.union_t(str, int)),
@@ -63,10 +69,11 @@ class TestShapeBzl(unittest.TestCase):
             ("nope", shape.list(str)),
             ("nope", shape.tuple(str)),
             ("goodbye", shape.enum("hello", "world")),
-            (1, shape.path()),
-            (2, shape.target()),
-            ("invalid_target", shape.target()),
-            ("also:invalid_target", shape.target()),
+            (1, shape.path),
+            (2, target_t),
+            ("invalid_target", target_t),
+            ("also:invalid_target", target_t),
+            ("//another//invalid:target", target_t),
             ("nope", shape.union(bool, int)),
         ):
             with self.subTest(x=x, t=t):
@@ -212,25 +219,25 @@ class TestShapeBzl(unittest.TestCase):
             shape.new(t, u=v)
 
     def test_location_serialization(self):
-        target_t = shape.shape(target=shape.target())
-        target = shape.new(target_t, target="//example:target")
+        shape_with_target = shape.shape(target=target_t)
+        target = shape.new(shape_with_target, target="//example:target")
         for i in [
             target,
-            shape.new(shape.shape(nested=target_t), nested=target),
+            shape.new(shape.shape(nested=shape_with_target), nested=target),
             shape.new(
-                shape.shape(lst=shape.list(target_t)),
+                shape.shape(lst=shape.list(shape_with_target)),
                 lst=[target],
             ),
             shape.new(
-                shape.shape(dct=shape.dict(str, target_t)),
+                shape.shape(dct=shape.dict(str, shape_with_target)),
                 dct={"a": target},
             ),
             shape.new(
-                shape.shape(tup=shape.tuple(str, target_t)),
+                shape.shape(tup=shape.tuple(str, shape_with_target)),
                 tup=("a", target),
             ),
             shape.new(
-                shape.shape(uni=shape.union(int, target_t)),
+                shape.shape(uni=shape.union(int, shape_with_target)),
                 uni=target,
             ),
         ]:
@@ -240,14 +247,16 @@ class TestShapeBzl(unittest.TestCase):
                 with self.assertRaisesRegex(Fail, ser_err):
                     shape.json_file("json", i)
                 with self.assertRaisesRegex(Fail, ser_err):
-                    shape.python_data("py", i)
+                    shape.python_data(
+                        name="py", instance=i, shape_impl=":impl", type_name="t"
+                    )
                 # serializing to a json string is allowed as the user is
                 # implicitly acknowledging that they will do the right thing
                 # and not cache the results
                 json.loads(shape.do_not_cache_me_json(i))
 
     def test_as_dict_for_target_tagger(self):
-        t = shape.shape(num=int, targ=shape.shape(inner=shape.target()))
+        t = shape.shape(num=int, targ=shape.shape(inner=target_t))
         i = shape.new(t, num=5, targ=shape.new(t.targ, inner="//foo:bar"))
         self.assertEqual(
             i,
@@ -278,6 +287,10 @@ class TestShapeBzl(unittest.TestCase):
                     shape.new(t, x="a", y=shape.new(t.y, z=z)),
                 ),
             )
+
+    def test_target_is_shape(self):
+        t = shape.shape(__I_AM_TARGET__=True)
+        self.assertTrue(shape.is_shape(t))
 
     def test_is_instance(self):
         t = shape.shape(x=str, y=shape.shape(z=int))
@@ -326,7 +339,7 @@ class TestShapeBzl(unittest.TestCase):
 
     def test_fail_on_dict_coercion(self):
         inner_t = shape.shape(is_in=shape.dict(str, str, optional=True))
-        outer_t = shape.shape(is_out=shape.path(), nested=inner_t)
+        outer_t = shape.shape(is_out=shape.path, nested=inner_t)
         self.assertEqual(
             struct(
                 is_out="/a/path",
@@ -355,3 +368,9 @@ class TestShapeBzl(unittest.TestCase):
             Fail, "default_value must not be specified with optional"
         ):
             shape.field(str, optional=True, default="def")
+
+    def test_target_and_path_unsupported(self):
+        with self.assertRaisesRegex(Fail, "no longer supported"):
+            shape.path()
+        with self.assertRaisesRegex(Fail, "no longer supported"):
+            shape.target()

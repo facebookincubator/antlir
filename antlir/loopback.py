@@ -13,9 +13,9 @@ import subprocess
 import sys
 from typing import Iterable, Optional
 
+from .bzl.loopback_opts import loopback_opts_t
 from .common import get_logger, kernel_version, run_stdout_to_err
 from .fs_utils import Path, temp_dir
-from .loopback_opts_t import loopback_opts_t
 from .unshare import Unshare, nsenter_as_root, nsenter_as_user
 
 log = get_logger()

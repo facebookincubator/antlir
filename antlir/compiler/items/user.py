@@ -16,6 +16,7 @@ from typing import (
     OrderedDict,
 )
 
+from antlir.bzl.image.feature.usergroup import user_t
 from antlir.compiler.requires_provides import (
     Provider,
     RequireGroup,
@@ -35,7 +36,6 @@ from .group import (
     GROUP_FILE_PATH,
     GroupFile,
 )
-from .user_t import user_t
 
 
 # Default values from /etc/login.defs

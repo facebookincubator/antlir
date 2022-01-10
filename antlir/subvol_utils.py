@@ -16,6 +16,7 @@ from typing import AnyStr, BinaryIO, Iterable, Iterator, Optional, TypeVar
 
 from .artifacts_dir import find_artifacts_dir
 from .btrfs_diff.freeze import DoNotFreeze
+from .bzl.loopback_opts import loopback_opts_t
 from .common import (
     check_popen_returncode,
     get_logger,
@@ -26,7 +27,6 @@ from .common import (
 from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path, temp_dir
 from .loopback import BtrfsLoopbackVolume, MIN_CREATE_BYTES
-from .loopback_opts_t import loopback_opts_t
 from .unshare import Namespace, Unshare, nsenter_as_root, nsenter_as_user
 
 

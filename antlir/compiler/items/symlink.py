@@ -7,6 +7,7 @@
 import os
 import pwd
 
+from antlir.bzl.image_actions.symlink import symlink_t
 from antlir.compiler.requires_provides import (
     ProvidesSymlink,
     RequireDirectory,
@@ -24,7 +25,6 @@ from .common import (
     make_path_normal_relative,
     validate_path_field_normal_relative,
 )
-from .symlink_t import symlink_t
 
 
 def _make_rsync_style_dest_path(dest: str, source: str) -> str:

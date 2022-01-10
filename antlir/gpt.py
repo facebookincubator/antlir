@@ -14,7 +14,7 @@ import pwd
 import subprocess
 from enum import Enum
 
-from antlir.gpt_t import gpt_t
+from antlir.bzl.gpt import gpt_t
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 

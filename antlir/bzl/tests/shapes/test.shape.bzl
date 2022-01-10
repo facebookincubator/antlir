@@ -4,46 +4,44 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target.shape.bzl", "target_t")
 
 affiliations_t = shape.shape(
-    __typename__ = "Affiliations",
     faction = str,
+)
+
+color_t = shape.enum(
+    "red",
+    "green",
+    "blue",
 )
 
 # A shape that references buck targets
 lightsaber_t = shape.shape(
-    __typename__ = "Lightsaber",
-    color = shape.enum(
-        "red",
-        "green",
-        "blue",
-        __typename__ = "Color",
-    ),
-    target = shape.target(optional = True),
+    color = color_t,
+    target = shape.field(target_t, optional = True),
 )
+
+weapon_t = shape.union(lightsaber_t, str)
+callsign_t = shape.tuple(str, int)
+metadata_t = shape.dict(str, str)
+friend_t = shape.shape(name = str)
 
 # Test data adapted from the GraphQL Star Wars examples
 character_t = shape.shape(
-    __typename__ = "Character",
     name = str,
     appears_in = shape.list(int),
-    friends = shape.list(shape.shape(
-        __typename__ = "Friend",
-        name = str,
-    )),
-    weapon = shape.union(
-        lightsaber_t,
-        str,
+    friends = shape.list(friend_t),
+    weapon = shape.field(
+        weapon_t,
         optional = True,
     ),
-    callsign = shape.tuple(
-        str,
-        int,
+    callsign = shape.field(
+        callsign_t,
         optional = True,
     ),
-    metadata = shape.dict(
-        str,
-        str,
+    metadata = shape.field(
+        metadata_t,
         default = {"species": "human"},
     ),
     affiliations = shape.field(
@@ -53,7 +51,7 @@ character_t = shape.shape(
             faction = "Rebellion",
         ),
     ),
-    personnel_file = shape.path(optional = True),
+    personnel_file = shape.field(shape.path, True),
 )
 
 character_collection_t = shape.shape(characters = shape.list(character_t))
@@ -66,14 +64,12 @@ hashable_t = shape.shape(
         str,
         optional = True,
     ),
-    callsign = shape.tuple(
-        str,
-        int,
+    callsign = shape.field(
+        callsign_t,
         optional = True,
     ),
-    metadata = shape.dict(
-        str,
-        str,
+    metadata = shape.field(
+        metadata_t,
         default = {"species": "human"},
     ),
 )

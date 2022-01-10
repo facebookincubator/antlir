@@ -7,7 +7,6 @@
 import argparse
 import asyncio
 import contextlib
-import io
 import os.path
 import sys
 import uuid
@@ -17,9 +16,9 @@ from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import get_logger
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
-from antlir.vm.share import BtrfsDisk, Plan9Export
+from antlir.vm.bzl.vm import vm_opts_t
+from antlir.vm.share import Plan9Export
 from antlir.vm.vm import ConsoleRedirect, ShellMode, vm, VMExecOpts
-from antlir.vm.vm_opts_t import vm_opts_t
 
 
 log = get_logger()

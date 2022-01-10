@@ -5,13 +5,12 @@
 
 import functools
 import importlib
-import json
 from typing import Optional
 
 from antlir.artifacts_dir import find_artifacts_dir, find_repo_root
 from antlir.fs_utils import Path
 from antlir.repo_config_t import (
-    shape as base_repo_config_t,
+    repo_config_t as base_repo_config_t,
     data as repo_config_data,
 )
 

@@ -3,7 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":shape.bzl", "shape")
+load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target.shape.bzl", "target_t")
 
 script_t = shape.shape(
     prepare = str,
@@ -13,6 +14,6 @@ script_t = shape.shape(
 
 dep_t = shape.shape(
     name = str,
-    source = shape.target(),
+    source = target_t,
     paths = shape.list(str),
 )

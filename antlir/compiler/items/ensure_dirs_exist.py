@@ -8,6 +8,7 @@ import pwd
 import subprocess
 from typing import Iterator, Optional
 
+from antlir.bzl.image_actions.ensure_subdirs_exist import ensure_subdirs_exist_t
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     RequireDirectory,
@@ -25,7 +26,6 @@ from .common import (
     LayerOpts,
     make_path_normal_relative,
 )
-from .ensure_subdirs_exist_t import ensure_subdirs_exist_t
 from .stat_options import (
     Mode,
     build_stat_options,

@@ -41,8 +41,7 @@ Fields declared with `shape.field(..., default='val')` do not have to be
 instantiated explicitly.
 
 Additionally, fields can be marked optional by using the `optional` kwarg in
-`shape.field` (or any of the collection field types: `shape.list`,
-`shape.tuple`, or `shape.dict`).
+`shape.field`.
 
 For example, `shape.field(int, optional=True)` denotes an integer field that
 may or may not be set in a shape object.
@@ -50,14 +49,20 @@ may or may not be set in a shape object.
 Obviously, optional fields are still subject to the same type validation as
 non-optional fields, but only if they have a non-None value.
 
-## Loaders
-`shape.loader` codegens a type-hinted Python library that is capable of
-parsing and validating a shape object at runtime.
-The return value of shape.loader is the fully-qualified name of the
-`python_library` rule that contains the implementation of this loader.
+## Runtime Implementations
+`shape.impl` codegens runtime parser/validation libraries in Rust and Python.
+The `name` argument must match the name of the `*.shape.bzl` file without the
+'.bzl' suffix.
+
+`shape.impl` behaves like any other Buck target, and requires dependencies to be
+explicitly set.
+
+NOTE: `shape.bzl` can be used strictly for Buck-time safety without any runtime
+library implementation, in which case a separated `.shape.bzl` file and
+`shape.impl` targets are not required.
 
 ## Serialization formats
-shape.bzl provides two mechanisms to pass shape objects to Python runtime code.
+shape.bzl provides two mechanisms to pass shape objects to runtime code.
 
 `shape.json_file` dumps a shape object to an output file. This can be read
 from a file or resource, using `read_resource` or `read_file` of the
@@ -77,7 +82,6 @@ declared (usually snake_case variables).
 
 ## Example usage
 
-Inspired by `image_actions/mount.bzl`:
 ```
 mount_t = shape.shape(
     mount_config=shape.shape(
@@ -112,25 +116,27 @@ See tests/shape_test.bzl for full example usage and selftests.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":oss_shim.bzl", "buck_genrule", "python_library", "rust_library", "target_utils", "third_party")
-load(":sha256.bzl", "sha256_b64")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "rust_library", "target_utils", "third_party")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
-
-_SERIALIZING_LOCATION_MSG = (
-    "shapes with layer/target fields cannot safely be serialized in the" +
-    " output of a buck target.\n" +
-    "For buck_genrule uses, consider passing an argument with the (shell quoted)" +
-    " result of 'shape.do_not_cache_me_json'\n" +
-    "For unit tests, consider setting an environment variable with the same" +
-    " JSON string"
-)
 
 _NO_DEFAULT = struct(no_default = True)
 
 # Poor man's debug pretty-printing. Better version coming on a stack.
 def _pretty(x):
     return structs.to_dict(x) if structs.is_struct(x) else x
+
+# Returns True iff `instance` is a `shape.new(shape, ...)`.
+def _is_instance(instance, shape):
+    if not _is_shape(shape):
+        fail("Checking if {} is a shape instance, but {} is not a shape".format(
+            _pretty(instance),
+            _pretty(shape),
+        ))
+    return (
+        structs.is_struct(instance) and
+        getattr(instance, "__shape__", None) == shape
+    )
 
 def _get_is_instance_error(val, t):
     if not _is_instance(val, t):
@@ -141,7 +147,7 @@ def _get_is_instance_error(val, t):
             ).format(
                 _pretty(val),
                 _pretty(t),
-            )
+            ),
         )
     return None
 
@@ -170,14 +176,20 @@ def _check_type(x, t):
         if x in t.enum:
             return None
         return "expected one of {}, got {}".format(t.enum, x)
-    if t == "Path":
+    if t == _path:
         return _check_type(x, str)
-    if t == "Target":
+    if hasattr(t, "__I_AM_TARGET__"):
         type_error = _check_type(x, str)
         if not type_error:
-            # If parsing the target works, we don't have an error
-            if target_utils.parse_target(x):
+            if x.count(":") != 1:
+                return "expected exactly one ':'"
+            if x.count("//") > 1:
+                return "expected at most one '//'"
+            if x.startswith(":"):
                 return None
+            if x.count("//") != 1:
+                return "expected to start with ':', or contain exactly one '//'"
+            return None
         else:
             return type_error
     if _is_field(t):
@@ -268,9 +280,9 @@ def _field(type, optional = False, default = _NO_DEFAULT):
     if optional:
         default = None
     return struct(
-        type = type,
-        optional = optional,
         default = default,
+        optional = optional,
+        type = type,
     )
 
 def _is_field(x):
@@ -281,9 +293,6 @@ def _dict(key_type, val_type, **field_kwargs):
         type = struct(
             collection = dict,
             item_type = (key_type, val_type),
-            # __typename__ is only used for composing into other type names, so don't
-            # allow the user to override it
-            __typename__ = "dict_{}_to_{}".format(_type_name(key_type), _type_name(val_type)),
         ),
         **field_kwargs
     )
@@ -293,9 +302,6 @@ def _list(item_type, **field_kwargs):
         type = struct(
             collection = list,
             item_type = item_type,
-            # __typename__ is only used for composing into other type names, so don't
-            # allow the user to override it
-            __typename__ = "list_of_{}".format(_type_name(item_type)),
         ),
         **field_kwargs
     )
@@ -305,20 +311,17 @@ def _tuple(*item_types, **field_kwargs):
         type = struct(
             collection = tuple,
             item_type = item_types,
-            # __typename__ is only used for composing into other type names, so don't
-            # allow the user to override it
-            __typename__ = "tuple_" + "_".join([_type_name(i) for i in item_types]),
         ),
         **field_kwargs
     )
 
 def _is_collection(x):
-    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["collection", "item_type", "__typename__"])
+    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["collection", "item_type"])
 
 def _is_union(x):
-    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["union_types", "__typename__"])
+    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["union_types"])
 
-def _union_type(*union_types, __typename__ = None):
+def _union_type(*union_types):
     """
     Define a new union type that can be used when defining a field. Most
     useful when a union type is meant to be typedef'd and reused. To define
@@ -334,47 +337,35 @@ def _union_type(*union_types, __typename__ = None):
     """
     if len(union_types) == 0:
         fail("union must specify at least one type")
-    if not __typename__:
-        __typename__ = "union_" + "_".join([_type_name(t) for t in union_types])
     return struct(
-        __typename__ = __typename__,
         union_types = union_types,
     )
 
-def _union(*union_types, __typename__ = None, **field_kwargs):
+def _union(*union_types, **field_kwargs):
     return _field(
-        type = _union_type(__typename__ = __typename__, *union_types),
+        type = _union_type(*union_types),
         **field_kwargs
     )
 
-def _enum(*values, __typename__ = None, **field_kwargs):
+def _enum(*values, **field_kwargs):
     # since enum values go into class member names, they must be strings
     for val in values:
         if not types.is_string(val):
             fail("all enum values must be strings, got {}".format(_pretty(val)))
-    if not __typename__:
-        __typename__ = "_".join([str(v.capitalize()) for v in values])
     return _field(
         type = struct(
-            __typename__ = __typename__,
             enum = tuple(values),
         ),
         **field_kwargs
     )
 
 def _is_enum(t):
-    return structs.is_struct(t) and sorted(structs.to_dict(t).keys()) == sorted(["enum", "__typename__"])
+    return structs.is_struct(t) and sorted(structs.to_dict(t).keys()) == sorted(["enum"])
 
 def _path(**field_kwargs):
-    return _field(type = "Path", **field_kwargs)
+    fail("shape.path() is no longer supported, use `shape.path` directly, or wrap in `shape.field()`")
 
-# A target is special kind of Path in that it will be resolved to an on-disk location
-# when the shape is rendered to json.  But when the shape instance is being
-# used in bzl macros, the field will be a valid buck target.
-def _target(**field_kwargs):
-    return _field(type = "Target", **field_kwargs)
-
-def _shape(__typename__ = None, **fields):
+def _shape(**fields):
     """
     Define a new shape type with the fields as given by the kwargs.
 
@@ -384,6 +375,9 @@ def _shape(__typename__ = None, **fields):
     ```
     """
     for name, f in fields.items():
+        if name == "__I_AM_TARGET__":
+            continue
+
         # Avoid colliding with `__shape__`. Also, in Python, `_name` is "private".
         if name.startswith("_"):
             fail("Shape field name {} must not start with _: {}".format(
@@ -395,27 +389,34 @@ def _shape(__typename__ = None, **fields):
         # the rich field type for internal use
         if not hasattr(f, "type") or _is_union(f):
             fields[name] = _field(f)
-    if not __typename__:
-        # deterministically name the class based on the shape field names
-        # and types to allow for buck caching and proper starlark runtime
-        # compatibility
-        __typename__ = "_shape_" + sha256_b64(
-            str({key: _type_name(field.type) for key, field in fields.items()}),
-        ).replace("-", "_")
+
+    if "__I_AM_TARGET__" in fields:
+        fields.pop("__I_AM_TARGET__", None)
+        return struct(
+            __I_AM_TARGET__ = True,
+            fields = fields,
+        )
 
     return struct(
-        __typename__ = __typename__,
         fields = fields,
         # for external usage, make the fields top-level attributes
         **{key: f.type for key, f in fields.items()}
     )
+
+# A target is special kind of Path in that it will be resolved to an on-disk location
+# when the shape is rendered to json.  But when the shape instance is being
+# used in bzl macros, the field will be a valid buck target.
+def _target(**field_kwargs):
+    fail("shape.target() is no longer supported, use `target_t` from `//antlir/bzl:target.shape`")
 
 def _is_shape(x):
     if not structs.is_struct(x):
         return False
     if not hasattr(x, "fields"):
         return False
-    return sorted(structs.to_dict(x).keys()) == sorted(["fields", "__typename__"] + list(x.fields.keys()))
+    if hasattr(x, "__I_AM_TARGET__"):
+        return True
+    return sorted(structs.to_dict(x).keys()) == sorted(["fields"] + list(x.fields.keys()))
 
 def _shape_defaults_dict(shape):
     defaults = {}
@@ -447,205 +448,62 @@ def _new_shape(shape, **fields):
 
     return struct(__shape__ = shape, **with_defaults)
 
-def _type_name(t):  # pragma: no cover
-    if _is_field(t):
-        t = t.type
-    if hasattr(t, "__typename__"):
-        return t.__typename__
-    if t == int:
-        return "int"
-    if t == bool:
-        return "bool"
-    if t == str:
-        return "str"
-    if types.is_string(t):
-        return t
-    fail("can't convert {} to mangled type name".format(repr(t)))
-
-def _serialize_default_ir(value):  # pragma: no cover
-    if _is_any_instance(value):
-        return _safe_to_serialize_instance(value)
-    return value
-
-def _ir_type(t, module, renames):  # pragma: no cover
-    if _is_field(t):
-        t = t.type
-    t_name = _type_name(t)
-    if t_name in renames:
-        t_name = renames[t_name]
-    if t_name in module["types"]:
-        return module["types"][t_name]
-    if t == int:
-        return struct(primitive = "i32")
-    if t == bool:
-        return struct(primitive = "bool")
-    if t == str:
-        return struct(primitive = "string")
-    if _is_collection(t):
-        if t.collection == dict:
-            return struct(map = struct(
-                key_type = _ir_type(t.item_type[0], module, renames),
-                value_type = _ir_type(t.item_type[1], module, renames),
-            ))
-        if t.collection == list:
-            return struct(list = struct(
-                item_type = _ir_type(t.item_type, module, renames),
-            ))
-        if t.collection == tuple:
-            return struct(tuple = struct(
-                item_types = [_ir_type(i, module, renames) for i in t.item_type],
-            ))
-
-    # TODO: can the "Target" special case be handled any more cleanly? It
-    # probably requires a simpler approach to re-using the same definitions of
-    # shapes, which would be a fairly large refactor
-    if t == "Target":
-        return struct(complex = struct(
-            struct = struct(
-                name = "Target",
-                # Technically these fields will not end up being generated, but
-                # include them in the IR anyway, for any intermediate usage and
-                # in preparation for when this can actually reference a concrete
-                # shape via `target`
-                fields = {
-                    "name": struct(name = "name", type = struct(primitive = "string"), required = True),
-                    "path": struct(name = "path", type = struct(primitive = "path"), required = True),
-                },
-                target = "//antlir/bzl/shape2:target",
-            ),
-        ))
-    if t == "Path":
-        return struct(primitive = "path")
-    fail("{} ({}) was not defined".format(t_name, repr(t)))
-
-def _add_to_ir(t, module, target, renames):  # pragma: no cover
-    if _is_field(t):
-        t = t.type
-    t_name = _type_name(t)
-    if t_name in renames:
-        t_name = renames[t_name]
-    if _is_shape(t):
-        # register any field types in the IR first, so we can pull out
-        # references when serializing this shape
-        for field in t.fields.values():
-            _add_to_ir(field.type, module, target, renames)
-        fields = {
-            key: struct(
-                name = key,
-                type = _ir_type(field.type, module, renames),
-                default_value = _serialize_default_ir(field.default) if field.default != _NO_DEFAULT else None,
-                required = not field.optional,
-            )
-            for key, field in t.fields.items()
-        }
-        module["types"][t_name] = struct(
-            complex = struct(
-                struct = struct(
-                    name = t_name,
-                    fields = fields,
-                    target = target,
-                ),
-            ),
-        )
-    elif _is_enum(t):
-        module["types"][t_name] = struct(
-            complex = struct(
-                enum = struct(
-                    name = t_name,
-                    options = {
-                        v.upper(): v
-                        for v in t.enum
-                    },
-                    target = target,
-                ),
-            ),
-        )
-    elif _is_union(t):
-        for opt in t.union_types:
-            _add_to_ir(opt, module, target, renames)
-        module["types"][t_name] = struct(
-            complex = struct(
-                union = struct(
-                    name = t_name,
-                    types = [_ir_type(opt, module, renames) for opt in t.union_types],
-                    target = target,
-                ),
-            ),
-        )
-    elif _is_collection(t):
-        if t.collection == dict:
-            _add_to_ir(t.item_type[0], module, target, renames)
-            _add_to_ir(t.item_type[1], module, target, renames)
-        if t.collection == list:
-            _add_to_ir(t.item_type, module, target, renames)
-        if t.collection == tuple:
-            for i in t.item_type:
-                _add_to_ir(i, module, target, renames)
-
-def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
-    """codegen a fully type-hinted python source file to load the given shape"""
-    if not _is_shape(shape):
-        fail("expected shape type, got {}".format(shape))
-    target = normalize_target(":" + name)
-
-    ir = {"name": name, "target": target, "types": {}}
-    top_name = _type_name(shape)
-    _add_to_ir(shape, ir, target, renames = {top_name: classname})
-    ir = struct(**ir)
-    buck_genrule(
-        name = "{}--ir.json".format(name),
-        # Antlir users should not directly use `shape`, but we do use it
-        # as an implementation detail of "builder" / "publisher" targets.
+def _impl(name, deps = (), visibility = None, **kwargs):  # pragma: no cover
+    if not name.endswith(".shape"):
+        fail("shape.impl target must be named with a .shape suffix")
+    export_file(
+        name = name + ".bzl",
         antlir_rule = "user-internal",
+    )
+    buck_genrule(
+        name = name,
         cmd = """
-            echo {} > $OUT
-        """.format(shell.quote(ir.to_json())),
+            $(exe {}) {} $(location :{}.bzl) {} > $OUT
+        """.format(
+            antlir_dep("bzl/shape2:bzl2ir"),
+            normalize_target(":" + name),
+            name,
+            shell.quote(repr({d: "$(location {})".format(d) for d in deps})),
+        ),
+        antlir_rule = "user-internal",
     )
     buck_genrule(
         name = "{}.py".format(name),
+        cmd = "$(exe {}) pydantic $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
         antlir_rule = "user-internal",
-        cmd = """
-            $(exe {ir2code}) pydantic $(location :{name}--ir.json) > $OUT
-        """.format(
-            name = name,
-            ir2code = antlir_dep("bzl/shape2:ir2code"),
-        ),
     )
     python_library(
-        name = name,
-        srcs = {":{}.py".format(name): "{}.py".format(name)},
-        deps = [
-            antlir_dep(":shape"),
-        ],
-        antlir_rule = "user-internal",
-        **kwargs
+        name = "{}-python".format(name),
+        srcs = {":{}.py".format(name): "__init__.py"},
+        base_module = native.package_name() + "." + name.replace(".shape", ""),
+        deps = [antlir_dep(":shape")] + ["{}-python".format(d) for d in deps],
+        visibility = visibility,
+        antlir_rule = "user-facing",
+        **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
     )
-
     buck_genrule(
         name = "{}.rs".format(name),
+        cmd = "$(exe {}) rust $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
         antlir_rule = "user-internal",
-        cmd = """
-            $(exe {ir2code}) rust $(location :{name}--ir.json) > $OUT
-        """.format(
-            name = name,
-            ir2code = antlir_dep("bzl/shape2:ir2code"),
-        ),
     )
     rust_library(
-        name = name + "-rust",
-        crate = name,
+        name = "{}-rust".format(name),
+        crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
         mapped_srcs = {":{}.rs".format(name): "src/lib.rs"},
-        deps = [
-            antlir_dep("bzl/shape2:shape-rust"),
-        ] + third_party.libraries(["serde", "serde_json"], platform = "rust"),
-        antlir_rule = "user-internal",
-        unittests = False,
-        **kwargs
+        deps = [antlir_dep("bzl/shape2:shape-rust")] + ["{}-rust".format(d) for d in deps] + third_party.libraries(["serde", "serde_json"], platform = "rust"),
+        visibility = visibility,
+        antlir_rule = "user-facing",
+        **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
     )
 
-    # TODO(vmagro): clean this up and make all targets here use
-    # language-specific target names
-    return normalize_target(":" + name)
+_SERIALIZING_LOCATION_MSG = (
+    "shapes with layer/target fields cannot safely be serialized in the" +
+    " output of a buck target.\n" +
+    "For buck_genrule uses, consider passing an argument with the (shell quoted)" +
+    " result of 'shape.do_not_cache_me_json'\n" +
+    "For unit tests, consider setting an environment variable with the same" +
+    " JSON string"
+)
 
 # Does a recursive (deep) copy of `val` which is expected to be of type
 # `t` (in the `shape` sense of type compatibility).
@@ -670,8 +528,22 @@ def _loader(name, shape, classname = "shape", **kwargs):  # pragma: no cover
 #       path generated via a `$(location )` macro.  This MUST NOT be
 #       included in cacheable Buck outputs.
 def _recursive_copy_transform(val, t, opts):
-    if _is_shape(t):
-        error = _get_is_instance_error(val, t)
+    if hasattr(t, "__I_AM_TARGET__"):
+        if opts.on_target_fields == "fail":
+            fail(_SERIALIZING_LOCATION_MSG)
+        elif opts.on_target_fields == "uncacheable_location_macro":
+            return struct(
+                name = val,
+                path = "$(location {})".format(val),
+            )
+        elif opts.on_target_fields == "preserve":
+            return val
+        fail(
+            # pragma: no cover
+            "Unknown on_target_fields: {}".format(opts.on_target_fields),
+        )
+    elif _is_shape(t):
+        error = _check_type(val, t)
         if error:  # pragma: no cover -- an internal invariant, not a user error
             fail(error)
         new = {}
@@ -720,21 +592,7 @@ def _recursive_copy_transform(val, t, opts):
         if error:  # pragma: no cover
             fail(error)
         return _recursive_copy_transform(val, matched_type, opts)
-    elif t == "Target":
-        if opts.on_target_fields == "fail":
-            fail(_SERIALIZING_LOCATION_MSG)
-        elif opts.on_target_fields == "uncacheable_location_macro":
-            return struct(
-                name = val,
-                path = "$(location {})".format(val),
-            )
-        elif opts.on_target_fields == "preserve":
-            return val
-        fail(
-            # pragma: no cover
-            "Unknown on_target_fields: {}".format(opts.on_target_fields),
-        )
-    elif t == int or t == bool or t == str or t == "Path" or _is_enum(t):
+    elif t == int or t == bool or t == str or t == _path or _is_enum(t):
         return val
     fail(
         # pragma: no cover
@@ -748,11 +606,66 @@ def _safe_to_serialize_instance(instance):
         struct(include_dunder_shape = False, on_target_fields = "fail"),
     )
 
+def _do_not_cache_me_json(instance):
+    """
+    Serialize the given shape instance to a JSON string, which is the only
+    way to safely refer to other Buck targets' locations in the case where
+    the binary being invoked with a certain shape instance is cached.
+
+    Warning: Do not ever put this into a target that can be cached, it should
+    only be used in cmdline args or environment variables.
+    """
+    return _recursive_copy_transform(
+        instance,
+        instance.__shape__,
+        struct(
+            include_dunder_shape = False,
+            on_target_fields = "uncacheable_location_macro",
+        ),
+    ).to_json()
+
+def _json_file(name, instance, visibility = None):  # pragma: no cover
+    """
+    Serialize the given shape instance to a JSON file that can be used in the
+    `resources` section of a `python_binary` or a `$(location)` macro in a
+    `buck_genrule`.
+
+    Warning: this will fail to serialize any shape type that contains a
+    reference to a target location, as that cannot be safely cached by buck.
+    """
+    instance = _safe_to_serialize_instance(instance).to_json()
+    buck_genrule(
+        name = name,
+        cmd = "echo {} > $OUT".format(shell.quote(instance)),
+        # Antlir users should not directly use `shape`, but we do use it
+        # as an implementation detail of "builder" / "publisher" targets.
+        antlir_rule = "user-internal",
+        visibility = visibility,
+    )
+    return normalize_target(":" + name)
+
+def _render_template(name, instance, template):  # pragma: no cover
+    """
+    Render the given Jinja2 template with the shape instance data to a file.
+
+    Warning: this will fail to serialize any shape type that contains a
+    reference to a target location, as that cannot be safely cached by buck.
+    """
+    _json_file(name + "--data.json", instance)
+
+    buck_genrule(
+        name = name,
+        cmd = "$(exe {}-render) <$(location :{}--data.json) > $OUT".format(template, name),
+        antlir_rule = "user-internal",
+    )
+    return normalize_target(":" + name)
+
 def _python_data(
         name,
         instance,
+        shape_impl,
+        type_name,
         module = None,
-        classname = "shape",
         **python_library_kwargs):  # pragma: no cover
     """
     Codegen a static shape data structure that can be directly 'import'ed by
@@ -784,30 +697,23 @@ def _python_data(
     """
     shape = instance.__shape__
     instance = _safe_to_serialize_instance(instance)
+    module = module or name
 
-    if not module:
-        module = name
+    shape_target = target_utils.parse_target(normalize_target(shape_impl))
+    shape_module = shape_target.base_path.replace("/", ".") + "." + shape_target.name.replace(".shape", "")
 
-    target = normalize_target(":" + name)
-
-    ir = {"name": module, "target": target, "types": {}}
-    top_name = _type_name(shape)
-    _add_to_ir(shape, ir, target, renames = {top_name: classname})
-    ir = struct(**ir)
     buck_genrule(
         name = "{}.py".format(name),
         cmd = """
-            echo {ir} > $TMP/ir.json
-            $(exe {ir2code}) pydantic $TMP/ir.json > $OUT
-
+            echo "from {module} import {type_name}" > $OUT
             echo {data} >> $OUT
         """.format(
-            ir = shell.quote(ir.to_json()),
+            module = shape_module,
+            type_name = type_name,
             data = shell.quote("data = {classname}.parse_raw({shape_json})".format(
-                classname = classname,
+                classname = type_name,
                 shape_json = repr(instance.to_json()),
             )),
-            ir2code = antlir_dep("bzl/shape2:ir2code"),
         ),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
@@ -817,67 +723,11 @@ def _python_data(
     python_library(
         name = name,
         srcs = {":{}.py".format(name): "{}.py".format(module)},
-        deps = [
-            antlir_dep(":shape"),
-        ],
+        deps = [shape_impl + "-python"],
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
         **python_library_kwargs
-    )
-    return normalize_target(":" + name)
-
-def _json_file(name, instance, visibility = None):  # pragma: no cover
-    """
-    Serialize the given shape instance to a JSON file that can be used in the
-    `resources` section of a `python_binary` or a `$(location)` macro in a
-    `buck_genrule`.
-
-    Warning: this will fail to serialize any shape type that contains a
-    reference to a target location, as that cannot be safely cached by buck.
-    """
-    instance = _safe_to_serialize_instance(instance).to_json()
-    buck_genrule(
-        name = name,
-        cmd = "echo {} > $OUT".format(shell.quote(instance)),
-        # Antlir users should not directly use `shape`, but we do use it
-        # as an implementation detail of "builder" / "publisher" targets.
-        antlir_rule = "user-internal",
-        visibility = visibility,
-    )
-    return normalize_target(":" + name)
-
-def _do_not_cache_me_json(instance):
-    """
-    Serialize the given shape instance to a JSON string, which is the only
-    way to safely refer to other Buck targets' locations in the case where
-    the binary being invoked with a certain shape instance is cached.
-
-    Warning: Do not ever put this into a target that can be cached, it should
-    only be used in cmdline args or environment variables.
-    """
-    return _recursive_copy_transform(
-        instance,
-        instance.__shape__,
-        struct(
-            include_dunder_shape = False,
-            on_target_fields = "uncacheable_location_macro",
-        ),
-    ).to_json()
-
-def _render_template(name, instance, template):  # pragma: no cover
-    """
-    Render the given Jinja2 template with the shape instance data to a file.
-
-    Warning: this will fail to serialize any shape type that contains a
-    reference to a target location, as that cannot be safely cached by buck.
-    """
-    _json_file(name + "--data.json", instance)
-
-    buck_genrule(
-        name = name,
-        cmd = "$(exe {}-render) <$(location :{}--data.json) > $OUT".format(template, name),
-        antlir_rule = "user-internal",
     )
     return normalize_target(":" + name)
 
@@ -909,22 +759,6 @@ def _as_dict_for_target_tagger(instance):
             on_target_fields = "preserve",
         ),
     ))
-
-# Returns True iff `instance` is a shape instance of any type.
-def _is_any_instance(instance):
-    return structs.is_struct(instance) and hasattr(instance, "__shape__")
-
-# Returns True iff `instance` is a `shape.new(shape, ...)`.
-def _is_instance(instance, shape):
-    if not _is_shape(shape):
-        fail("Checking if {} is a shape instance, but {} is not a shape".format(
-            _pretty(instance),
-            _pretty(shape),
-        ))
-    return (
-        structs.is_struct(instance) and
-        getattr(instance, "__shape__", None) == shape
-    )
 
 # Converts `shape.new(foo_t, x='a', y=shape.new(bar_t, z=3))` to
 # `{'x': 'a', 'y': shape.new(bar_t, z=3)}`.
@@ -958,41 +792,34 @@ def _as_dict_shallow(instance):
         for field in instance.__shape__.fields
     }
 
+# Returns True iff `instance` is a shape instance of any type.
+def _is_any_instance(instance):
+    return structs.is_struct(instance) and hasattr(instance, "__shape__")
+
 shape = struct(
-    shape = _shape,
-    new = _new_shape,
-    field = _field,
     dict = _dict,
+    enum = _enum,
+    field = _field,
     list = _list,
+    new = _new_shape,
+    path = _path,
+    pretty = _pretty,
+    shape = _shape,
+    target = _target,
     tuple = _tuple,
     union = _union,
     union_t = _union_type,
-    enum = _enum,
-    path = _path,
-    target = _target,
-    loader = _loader,
+    # generate implementation of various client libraries
+    impl = _impl,
+    # output target macros and other conversion helpers
+    as_dict_for_target_tagger = _as_dict_for_target_tagger,
+    as_dict_shallow = _as_dict_shallow,
+    as_serializable_dict = _as_serializable_dict,
+    do_not_cache_me_json = _do_not_cache_me_json,
+    is_any_instance = _is_any_instance,
+    is_instance = _is_instance,
+    is_shape = _is_shape,
     json_file = _json_file,
     python_data = _python_data,
-    do_not_cache_me_json = _do_not_cache_me_json,
     render_template = _render_template,
-    struct = struct,
-    # There is no vanilla "as_dict" because:
-    #
-    #   (a) There are many different possible use-cases, and one size does
-    #       not fit all.  The variants below handle the existing uses, but
-    #       there can be more.  For example, if you want to mutate an
-    #       existing shape, you currently cannot do that correctly without
-    #       recursively constructing a new one.  We would need to provide a
-    #       proper recursive "new from dict" to allow that to happen.
-    #
-    #   (b) It's usually the wrong tool for the job / a sign of tech debt.
-    #       For example, it should be possible to convert all features to
-    #       shape, and make target_tagger a first-class feature of shape.
-    #       At that point, both of the below uses disappear.
-    as_dict_shallow = _as_dict_shallow,
-    as_dict_for_target_tagger = _as_dict_for_target_tagger,
-    as_serializable_dict = _as_serializable_dict,
-    is_instance = _is_instance,
-    is_any_instance = _is_any_instance,
-    pretty = _pretty,
 )

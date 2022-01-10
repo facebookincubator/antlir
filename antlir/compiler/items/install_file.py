@@ -9,6 +9,7 @@ import os
 import stat
 from typing import Iterable, NamedTuple, Optional, Union
 
+from antlir.bzl.image.feature.install import install_files_t
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -21,7 +22,6 @@ from antlir.subvol_utils import Subvol
 from pydantic import PrivateAttr
 
 from .common import ImageItem, LayerOpts, make_path_normal_relative
-from .install_files_t import install_files_t
 from .stat_options import (
     Mode,
     build_stat_options,
@@ -101,8 +101,6 @@ def _recurse_into_source(
 # pyre-fixme[13]: Attribute `source` is never initialized.
 class InstallFileItem(install_files_t, ImageItem):
 
-    # pyre-fixme[15]: `source` overrides attribute defined in `install_files_t`
-    #  inconsistently.
     source: Path
 
     _paths: Optional[Iterable[_InstallablePath]] = PrivateAttr()

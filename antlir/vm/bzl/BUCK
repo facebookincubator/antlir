@@ -1,4 +1,5 @@
 load("//antlir/bzl:defs.bzl", "fake_macro_library")
+load("//antlir/bzl:shape.bzl", "shape")
 
 fake_macro_library(
     name = "build_kernel_artifacts",
@@ -39,11 +40,17 @@ fake_macro_library(
 fake_macro_library(
     name = "kernel",
     srcs = [
+        "kernel.bzl",
         "kernel.shape.bzl",
     ],
     deps = [
         "//antlir/bzl:shape",
     ],
+)
+
+shape.impl(
+    name = "kernel.shape",
+    deps = ["//antlir/bzl:target.shape"],
 )
 
 fake_macro_library(
@@ -68,5 +75,13 @@ fake_macro_library(
         "//antlir/bzl:image_bzl",
         "//antlir/bzl:image_unittest_helpers",
         "//antlir/bzl:shape",
+    ],
+)
+
+shape.impl(
+    name = "vm.shape",
+    deps = [
+        ":kernel.shape",
+        "//antlir/bzl:target.shape",
     ],
 )

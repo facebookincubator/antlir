@@ -26,9 +26,9 @@ from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.serialize_targets_and_outputs import make_target_path_map
 from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir, MiB
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
-from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
+from antlir.tests.layer_resource import layer_resource_subvol
 
-from ..loopback_opts_t import loopback_opts_t
+from ..bzl.loopback_opts import loopback_opts_t
 from ..package_image import Format, package_image
 from ..unshare import Namespace, Unshare, nsenter_as_root
 

@@ -3,9 +3,11 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
 load(":test.shape.bzl", "affiliations_t", "character_collection_t", "character_t", "hashable_t", "lightsaber_t")
 
-# There are a lot of shapes that are used in test cases.
-# This would rapidly clutter targets in antlir/bzl/tests, so define them all
-# here in a file dedicated to shape test cases
+shape.impl(
+    name = "test.shape",
+    deps = ["//antlir/bzl:target.shape"],
+    rust_crate = "test_shape",
+)
 
 buck_genrule(
     name = "luke-lightsaber",
@@ -96,24 +98,6 @@ characters = [
     ),
 ]
 
-shape.loader(
-    name = "hashable_t",
-    shape = hashable_t,
-    classname = "hashable_t",
-)
-
-shape.loader(
-    name = "character_t",
-    shape = character_t,
-    classname = "character_t",
-)
-
-shape.loader(
-    name = "character_collection_t",
-    shape = character_collection_t,
-    classname = "character_collection_t",
-)
-
 python_unittest(
     name = "test-shape",
     srcs = ["test_shape.py"],
@@ -166,9 +150,7 @@ python_unittest(
         ): "template.txt",
     },
     deps = [
-        ":character_collection_t",
-        ":character_t",
-        ":hashable_t",
+        ":test.shape-python",
         shape.python_data(
             name = "data",
             instance = shape.new(
@@ -176,8 +158,9 @@ python_unittest(
                 name = "Stormtrooper",
                 appears_in = [1],
             ),
+            shape_impl = ":test.shape",
             module = "data",
-            classname = "StormtrooperArgsType",
+            type_name = "hashable_t",
         ),
     ],
 )
@@ -230,7 +213,7 @@ rust_unittest(
         ),
     },
     deps = [
-        ":character_collection_t-rust",
+        ":test.shape-rust",
     ] + third_party.libraries(
         [
             "anyhow",
