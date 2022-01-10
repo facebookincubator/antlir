@@ -15,11 +15,13 @@ unit_t = shape.shape(
     before = shape.list(str, default = []),
 )
 
+fstype_t = shape.enum("btrfs", "9p")
+
 mount_t = shape.shape(
     unit = unit_t,
     what = str,
-    where = shape.path(),
+    where = shape.path,
     # add more filesystem types here as required
-    type = shape.enum("btrfs", "9p", optional = True),
+    type = shape.field(fstype_t, optional = True),
     options = shape.list(str, default = []),
 )

@@ -4,12 +4,13 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target.shape.bzl", "target_t")
 
 image_source_t = shape.shape(
-    source = shape.field("Target", optional = True),
-    layer = shape.field("Target", optional = True),
-    path = shape.field("Path", optional = True),
-    generator = shape.field("Path", optional = True),
+    source = shape.field(target_t, optional = True),
+    layer = shape.field(target_t, optional = True),
+    path = shape.field(shape.path, optional = True),
+    generator = shape.field(shape.path, optional = True),
     generator_args = shape.field(
         shape.list(str),
         optional = True,

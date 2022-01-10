@@ -6,6 +6,7 @@
 
 import pwd
 
+from antlir.bzl.image.feature.tarball import tarball_t
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -23,7 +24,6 @@ from .common import (
     make_path_normal_relative,
     validate_path_field_normal_relative,
 )
-from .tarball_t import tarball_t
 
 
 def load_from_tarball(
@@ -126,8 +126,6 @@ def load_from_tarball(
 
 # pyre-fixme[13]: Attribute `source` is never initialized.
 class TarballItem(tarball_t, ImageItem):
-    # pyre-fixme[15]: `source` overrides attribute defined in `tarball_t`
-    #  inconsistently.
     source: Path
 
     _normalize_into_dir = validate_path_field_normal_relative("into_dir")

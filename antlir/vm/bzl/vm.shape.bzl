@@ -4,30 +4,31 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target.shape.bzl", "target_t")
 load(":kernel.shape.bzl", "kernel_t")
 
 emulator_t = shape.shape(
     # The actual emulator binary to invoke
-    binary = shape.target(),
+    binary = target_t,
     # Firmware to use for booting
-    firmware = shape.target(),
+    firmware = target_t,
     # Utility to manage disk images
-    img_util = shape.target(),
+    img_util = target_t,
     # Location of various roms
-    roms_dir = shape.target(),
+    roms_dir = target_t,
     # Software TPM binary to invoke
-    tpm_binary = shape.target(),
+    tpm_binary = target_t,
 )
 
 # A disk device type.  The `package` attribute of this shape must be either
 # an `image.layer` target that will be transiently packaged via `package.new`
 # or an existing `package.new` target.
 disk_t = shape.shape(
-    package = shape.target(),
+    package = target_t,
 )
 
 connection_t = shape.shape(
-    options = shape.dict(str, shape.union(str, int), default = {}),
+    options = shape.field(shape.dict(str, str), default = {}),
 )
 
 runtime_t = shape.shape(
@@ -51,11 +52,11 @@ vm_opts_t = shape.shape(
     # The initrd to boot the vm with.  This target is always derived
     # from the provided kernel version since the initrd must contain
     # modules that match the booted kernel.
-    initrd = shape.target(),
+    initrd = target_t,
     # The kernel to boot the vm with
     kernel = shape.field(kernel_t),
     # Append extra kernel cmdline args
-    append = shape.list(str, default = []),
+    append = shape.field(shape.list(str), default = []),
     # Amount of memory in mb
     mem_mb = shape.field(int, default = 4096),
     # Root disk for the VM
@@ -63,7 +64,7 @@ vm_opts_t = shape.shape(
     # Attach a TPM software emulator
     tpm = shape.field(bool, default = False),
     # Runtime details about how to run the VM
-    runtime = shape.field(runtime_t),
+    runtime = runtime_t,
     # What label to pass to the root kernel parameter
     root_label = shape.field(
         str,

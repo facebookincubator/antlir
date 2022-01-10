@@ -11,9 +11,7 @@ Only the necessary functions used by shape.bzl have been shimmed.
 This technically would allow code that is not valid starlark, but that is
 covered by the other tests that exercise shape.bzl within buck.
 """
-import base64
 import dataclasses
-import hashlib
 import json
 
 
@@ -51,27 +49,6 @@ def fail(msg, attr=None):
     raise Fail(msg)
 
 
-class target_utils(object):
-    @staticmethod
-    def parse_target(target):
-        if target.count(":") != 1:
-            fail(f'rule name must contain exactly one ":" "{target}"')
-
-        repo_base_path, name = target.split(":")
-        if not repo_base_path:
-            return (None, None, name)
-
-        if repo_base_path.count("//") != 1:
-            fail(
-                'absolute rule name must contain one "//" '
-                f'before ":": "{target}"'
-            )
-
-        repo, base_path = repo_base_path.split("//", 1)
-
-        return (repo, base_path, name)
-
-
 class structs(object):
     @staticmethod
     def is_struct(x):
@@ -106,9 +83,3 @@ class types(object):
     @staticmethod
     def is_tuple(x):
         return type(x) == tuple
-
-
-def sha256_b64(s):
-    m = hashlib.sha256()
-    m.update(s.encode())
-    return base64.b64encode(m.digest(), altchars=b"-_").rstrip(b"=").decode()

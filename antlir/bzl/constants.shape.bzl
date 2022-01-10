@@ -33,7 +33,7 @@ flavor_config_t = shape.shape(
     rpm_installer = shape.field(str, optional = True),
     rpm_repo_snapshot = shape.field(str, optional = True),
     version_set_path = shape.field(str, optional = True),
-    rpm_version_set_overrides = shape.list(nevra_t, optional = True),
+    rpm_version_set_overrides = shape.field(shape.list(nevra_t), optional = True),
     unsafe_bypass_flavor_check = shape.field(bool, optional = True),
 )
 
@@ -74,8 +74,8 @@ flavor_config_t = shape.shape(
 repo_config_t = shape.shape(
     artifacts_require_repo = bool,
     artifact = shape.dict(str, str),
-    host_mounts_allowed_in_targets = shape.list(shape.path()),
-    host_mounts_for_repo_artifacts = shape.list(shape.path()),
+    host_mounts_allowed_in_targets = shape.list(shape.path),
+    host_mounts_for_repo_artifacts = shape.list(shape.path),
     # This holds the default flavors that a feature should cover.
     # Compared to `flavor_to_config`, it does not contain the
     # `antlir_test` flavor, which shouldn't be always defined.

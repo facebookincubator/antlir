@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import enum
-import os
 import pwd
 import shlex
 import tempfile
@@ -13,7 +12,6 @@ from contextlib import contextmanager
 from typing import (
     Any,
     Dict,
-    FrozenSet,
     Iterable,
     List,
     Mapping,
@@ -23,6 +21,7 @@ from typing import (
     Union,
 )
 
+from antlir.bzl.image_actions.rpms import rpm_action_item_t
 from antlir.bzl_const import BZL_CONST
 from antlir.common import get_logger, not_none
 from antlir.fs_utils import (
@@ -41,7 +40,6 @@ from antlir.subvol_utils import Subvol
 from pydantic import root_validator
 
 from .common import ImageItem, LayerOpts, PhaseOrder, protected_path_set
-from .rpm_action_item_t import rpm_action_item_t
 
 
 log = get_logger()
@@ -279,8 +277,6 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     action: RpmAction
     flavor_to_version_set: Dict[str, Union[str, Dict[str, str]]]
     name: Optional[str] = None
-    # pyre-fixme[15]: `source` overrides attribute defined in
-    # `rpm_action_item_t` inconsistently.
     source: Optional[Path] = None
 
     def __init__(self, *args: Any, **kwargs: Any):

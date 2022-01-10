@@ -19,7 +19,7 @@ use serde::Serialize;
 use serde_json::Value;
 use structopt::{clap::arg_enum, StructOpt};
 
-use ir::{ComplexType, Enum, Field, Module, Primitive, Struct, Type, TypeName, Union};
+use ir::{ComplexType, Enum, Field, Module, Primitive, Struct, Target, Type, TypeName, Union};
 
 arg_enum! {
     #[derive(Debug)]
@@ -120,6 +120,9 @@ where
     let mut handlebars = Handlebars::new();
     handlebars.set_strict_mode(true);
     handlebars.register_escape_fn(no_escape);
+    handlebars.register_helper("has-default-value", Box::new(has_default_value));
+    handlebars.register_helper("json", Box::new(json_helper));
+    handlebars.register_helper("upper", Box::new(upper_helper));
 
     let handlebars = <Module as RegisterTemplates<T>>::register_templates(handlebars)
         .context("When setting up handlebars for Module")?;
@@ -131,8 +134,11 @@ where
         Struct::register_templates(handlebars).context("When setting up handlebars for Struct")?;
     let handlebars =
         Union::register_templates(handlebars).context("When setting up handlebars for Union")?;
+
     Ok(handlebars)
 }
+
+handlebars_helper!(upper_helper: |x: String| x.to_uppercase());
 
 trait ModuleExt<T>
 where
@@ -183,8 +189,26 @@ impl RegisterTemplates<Pydantic> for Module {
         .context("Trying to register preamble template")?;
         hb.register_helper("type-hint", Box::new(py_type_hint));
         hb.register_helper("literal", Box::new(py_literal));
-        hb.register_helper("has-default-value", Box::new(has_default_value));
         Ok(hb)
+    }
+}
+
+trait TargetExt {
+    fn rust_crate(&self) -> String;
+    fn python_module(&self) -> String;
+}
+
+impl TargetExt for Target {
+    fn rust_crate(&self) -> String {
+        format!("::{}", self.basename())
+    }
+
+    fn python_module(&self) -> String {
+        self.base_target()
+            .replace("/", ".")
+            .replace(":", ".")
+            .trim_start_matches('.')
+            .to_owned()
     }
 }
 
@@ -201,13 +225,7 @@ impl TypeExt for Type {
             Self::Primitive(p) => TypeName(
                 match p {
                     Primitive::Bool => "bool",
-                    Primitive::Byte => "int",
-                    Primitive::I16 => "int",
                     Primitive::I32 => "int",
-                    Primitive::I64 => "int",
-                    Primitive::Float => "float",
-                    Primitive::Double => "float",
-                    Primitive::Binary => "bytes",
                     Primitive::String => "str",
                     Primitive::Path => "Path",
                 }
@@ -229,7 +247,15 @@ impl TypeExt for Type {
                 key_type.py_type_hint(),
                 value_type.py_type_hint(),
             )),
-            Self::Complex(complex) => complex.name().clone(),
+            Self::Complex(c) => c
+                .name()
+                .expect("cannot codegen shape without top-level name")
+                .clone(),
+            Self::Foreign { target, name } => TypeName(format!(
+                "importlib.import_module(\"{}\").{}",
+                target.python_module(),
+                name
+            )),
         }
     }
 
@@ -238,13 +264,7 @@ impl TypeExt for Type {
             Self::Primitive(p) => TypeName(
                 match p {
                     Primitive::Bool => "bool",
-                    Primitive::Byte => "u8",
-                    Primitive::I16 => "i16",
                     Primitive::I32 => "i32",
-                    Primitive::I64 => "i64",
-                    Primitive::Float => "f32",
-                    Primitive::Double => "f64",
-                    Primitive::Binary => "Vec<u8>",
                     Primitive::String => "String",
                     Primitive::Path => "PathBuf",
                 }
@@ -263,7 +283,15 @@ impl TypeExt for Type {
                 key_type.rs_type(),
                 value_type.rs_type(),
             )),
-            Self::Complex(complex) => complex.name().clone(),
+            Self::Complex(c) => TypeName(format!(
+                "crate::{}",
+                c.name()
+                    .expect("cannot codegen shape without top-level name")
+                    .clone()
+            )),
+            Self::Foreign { target, name } => {
+                TypeName(format!("{}::{}", target.rust_crate(), name))
+            }
         }
     }
 
@@ -272,13 +300,7 @@ impl TypeExt for Type {
             Self::Primitive(p) => TypeName(
                 match p {
                     Primitive::Bool => "Bool",
-                    Primitive::Byte => "Byte",
-                    Primitive::I16 => "I16",
                     Primitive::I32 => "I32",
-                    Primitive::I64 => "I64",
-                    Primitive::Float => "Float",
-                    Primitive::Double => "Double",
-                    Primitive::Binary => "Binary",
                     Primitive::String => "String",
                     Primitive::Path => "Path",
                 }
@@ -297,7 +319,13 @@ impl TypeExt for Type {
                 key_type.rs_union_name(),
                 value_type.rs_union_name(),
             )),
-            Self::Complex(complex) => complex.name().clone(),
+            Self::Complex(c) => c
+                .name()
+                .expect("cannot codegen shape without top-level name")
+                .clone(),
+            Self::Foreign { target, name } => {
+                TypeName(format!("{}::{}", target.rust_crate(), name))
+            }
         }
     }
 
@@ -323,21 +351,21 @@ impl TypeExt for Type {
                     ComplexType::Struct(s) => s
                         .fields
                         .values()
-                        .map(|f| f.typ.transitive_dependency_count())
+                        .map(|f| f.ty.transitive_dependency_count())
                         .sum(),
                     ComplexType::Union(u) => u
                         .types
                         .iter()
-                        .map(|typ| typ.transitive_dependency_count())
+                        .map(|ty| ty.transitive_dependency_count())
                         .sum(),
                     ComplexType::Enum(_) => 0,
                 }
             }
+            Self::Foreign { target: _, name: _ } => 1,
         }
     }
 }
 
-handlebars_helper!(is_above_10: |x: u64| x > 10);
 handlebars_helper!(has_default_value: |field: Field| Value::Bool(field.default_value.is_some()));
 handlebars_helper!(py_type_hint: |ty: Type| ty.py_type_hint().to_string());
 
@@ -397,8 +425,6 @@ impl RegisterTemplates<Rust> for Module {
             .context("Trying to register preamble template")?;
         hb.register_helper("type", Box::new(rs_type));
         hb.register_helper("union-name", Box::new(rs_union_name));
-        hb.register_helper("json", Box::new(json_helper));
-        hb.register_helper("has-default-value", Box::new(has_default_value));
         Ok(hb)
     }
 }
@@ -519,4 +545,17 @@ where
     T: From<String>,
 {
     const ENTRYPOINT: &'static str = "union";
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn targetext() -> Result<()> {
+        let t: Target = "cell//some/target:path.shape".try_into()?;
+        assert_eq!("some.target.path", t.python_module());
+        assert_eq!("::path", t.rust_crate());
+        Ok(())
+    }
 }

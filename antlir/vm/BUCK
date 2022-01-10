@@ -1,7 +1,6 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party")
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
@@ -46,12 +45,6 @@ python_library(
     ],
 )
 
-shape.loader(
-    name = "vm_opts_t",
-    classname = "vm_opts_t",
-    shape = vm.types.opts.t,
-)
-
 python_library(
     name = "guest-ssh",
     srcs = [
@@ -80,7 +73,6 @@ python_library(
         ":share",
         ":tap",
         ":tpm",
-        ":vm_opts_t",
         "//antlir:common",
         "//antlir:config",
         "//antlir:find_built_subvol",
@@ -88,6 +80,7 @@ python_library(
         "//antlir:testlib_layer_resource",
         "//antlir:unshare",
         "//antlir/compiler/items:mount",
+        "//antlir/vm/bzl:vm.shape-python",
     ],
 )
 

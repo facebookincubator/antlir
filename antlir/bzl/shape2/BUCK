@@ -5,6 +5,7 @@ rust_library(
     srcs = ["ir.rs"],
     deps = third_party.libraries(
         [
+            "anyhow",
             "derive_more",
             "serde",
             "serde_json",
@@ -12,6 +13,29 @@ rust_library(
         ],
         platform = "rust",
     ),
+)
+
+rust_binary(
+    name = "bzl2ir",
+    srcs = ["bzl2ir.rs"],
+    test_deps = third_party.libraries(
+        ["maplit"],
+        platform = "rust",
+    ),
+    visibility = ["PUBLIC"],
+    deps = [":ir"] +
+           third_party.libraries(
+               [
+                   "anyhow",
+                   "derive_more",
+                   "gazebo",
+                   "serde",
+                   "serde_json",
+                   "starlark",
+                   "structopt",
+               ],
+               platform = "rust",
+           ),
 )
 
 rust_binary(

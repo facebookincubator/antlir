@@ -24,13 +24,13 @@ import sys
 from contextlib import ExitStack, nullcontext
 from typing import Iterator
 
+from antlir.bzl.constants import flavor_config_t
 from antlir.cli import add_targets_and_outputs_arg
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
 from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
-from antlir.flavor_config_t import flavor_config_t
 from antlir.fs_utils import META_FLAVOR_FILE, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol

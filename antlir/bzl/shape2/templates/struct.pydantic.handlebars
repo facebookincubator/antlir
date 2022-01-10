@@ -3,8 +3,8 @@ class {{name}}(Shape):
 
     {{#each fields}}
     {{#if required}}
-    {{name}}: {{type-hint type}} {{#if (has-default-value this)}}= {{literal default_value type}}{{/if}}
+    {{@key}}: {{type-hint type}} {{#if (has-default-value this)}}= {{literal default_value type}}{{/if}}
     {{else}}
-    {{name}}: typing.Optional[{{type-hint type}}] = None
+    {{@key}}: typing.Optional[{{type-hint type}}] = None
     {{/if}}
     {{/each}}

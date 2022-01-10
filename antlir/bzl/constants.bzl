@@ -88,15 +88,6 @@ def _get_artifact_key_to_path():
 def new_nevra(**kwargs):
     return shape.new(nevra_t, **kwargs)
 
-# This keeps the type private, so one cannot instantiate unvalidated flavors.
-def flavor_config_t_shape_loader():
-    shape.loader(
-        name = "flavor_config_t",
-        shape = flavor_config_t,
-        classname = "flavor_config_t",
-        visibility = ["//antlir/...", "//tupperware/cm/antlir/..."],
-    )
-
 def new_flavor_config(
         name,
         build_appliance,

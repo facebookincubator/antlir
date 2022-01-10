@@ -216,10 +216,8 @@ base images. Specific advantages to this include:
  - the ability to pre-warm caches, thus ensuring nearly instant availability
    of the base images.
 """
-import argparse
 import os
 import pwd
-import stat
 import subprocess
 from typing import AnyStr, Callable, Mapping, NamedTuple, Optional
 
@@ -228,10 +226,10 @@ from antlir.config import repo_config
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
 
-from .common import check_popen_returncode, init_logging
+from .bzl.loopback_opts import loopback_opts_t
+from .common import check_popen_returncode
 from .find_built_subvol import find_built_subvol
 from .fs_utils import META_FLAVOR_FILE, Path, create_ro, generate_work_dir
-from .loopback_opts_t import loopback_opts_t
 from .subvol_utils import Subvol
 
 

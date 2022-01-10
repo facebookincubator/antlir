@@ -12,6 +12,7 @@ import tempfile
 from antlir.fs_utils import Path
 from antlir.tests.common import AntlirTestCase
 from antlir.unshare import Namespace, Unshare
+from antlir.vm.bzl.vm import vm_opts_t
 from antlir.vm.vm import (
     _wait_for_boot,
     ShellMode,
@@ -20,7 +21,6 @@ from antlir.vm.vm import (
     vm,
     _create_tpm,
 )
-from antlir.vm.vm_opts_t import vm_opts_t
 
 
 class TestAntlirVM(AntlirTestCase):

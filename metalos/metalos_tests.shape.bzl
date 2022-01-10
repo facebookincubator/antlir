@@ -1,8 +1,10 @@
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target.shape.bzl", "target_t")
 
 container_unittest_opts_t = shape.shape(
     boot = shape.field(bool, default = False),
-    layer = shape.target(
+    layer = shape.field(
+        target_t,
         default = "//metalos/os:metalos",
     ),
 )

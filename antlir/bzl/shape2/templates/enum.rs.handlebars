@@ -2,6 +2,6 @@
 pub enum {{name}} {
     {{#each options}}
     #[serde(rename = "{{this}}")]
-    {{@key}},
+    {{upper this}},
     {{/each}}
 }

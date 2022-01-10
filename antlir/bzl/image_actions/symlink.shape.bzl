@@ -6,6 +6,6 @@
 load("//antlir/bzl:shape.bzl", "shape")
 
 symlink_t = shape.shape(
-    dest = shape.path(),
-    source = shape.path(),
+    dest = shape.path,
+    source = shape.path,
 )

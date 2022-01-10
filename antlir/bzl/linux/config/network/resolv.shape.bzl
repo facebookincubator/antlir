@@ -6,6 +6,6 @@
 load("//antlir/bzl:shape.bzl", "shape")
 
 conf_t = shape.shape(
-    search_domains = shape.list(str),
     nameservers = shape.list(str),
+    search_domains = shape.list(str),
 )

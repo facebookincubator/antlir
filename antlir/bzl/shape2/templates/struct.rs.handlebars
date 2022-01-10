@@ -2,12 +2,12 @@
 pub struct {{name}} {
     {{#each fields}}
     {{#if (has-default-value this)}}
-    #[serde(default = "{{../name}}::default_{{name}}")]
+    #[serde(default = "{{../name}}::default_{{@key}}")]
     {{/if}}
     {{#if required}}
-    pub {{name}}: {{type type}},
+    pub r#{{@key}}: {{type type}},
     {{else}}
-    pub {{name}}: Option<{{type type}}>,
+    pub r#{{@key}}: Option<{{type type}}>,
     {{/if}}
     {{/each}}
 }
@@ -15,7 +15,7 @@ pub struct {{name}} {
 impl {{name}} {
     {{#each fields}}
     {{#if (has-default-value this)}}
-    fn default_{{name}}() -> {{type type}} {
+    fn default_{{@key}}() -> {{type type}} {
         serde_json::from_str(r###"{{json default_value}}"###).expect("default json is always good")
     }
     {{/if}}

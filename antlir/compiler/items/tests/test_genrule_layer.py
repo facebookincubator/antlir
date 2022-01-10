@@ -12,6 +12,7 @@ import unittest
 from contextlib import contextmanager
 from typing import AnyStr, Iterable
 
+from antlir.bzl.genrule_layer import genrule_layer_t
 from antlir.config import antlir_dep
 from antlir.fs_utils import Path
 from antlir.rpm.find_snapshot import snapshot_install_dir
@@ -20,7 +21,6 @@ from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..common import PhaseOrder
 from ..genrule_layer import GenruleLayerItem
-from ..genrule_layer_t import genrule_layer_t
 from ..make_subvol import ParentLayerItem
 from .common import DUMMY_LAYER_OPTS
 

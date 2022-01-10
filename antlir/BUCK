@@ -1,8 +1,7 @@
-load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG", "flavor_config_t_shape_loader")
+load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:loopback_opts.shape.bzl", "loopback_opts_t")
 load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file", "python_binary", "python_library", "python_unittest", "rust_library", "third_party")
 load("//antlir/bzl:query.bzl", "query")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -175,8 +174,8 @@ python_library(
     srcs = ["loopback.py"],
     deps = [
         ":common",
-        ":loopback_opts_t",
         ":unshare",
+        "//antlir/bzl:loopback_opts.shape-python",
     ],
 )
 
@@ -205,9 +204,9 @@ python_library(
         ":common",
         ":fs_utils",
         ":loopback",
-        ":loopback_opts_t",
         ":unshare",
         "//antlir/btrfs_diff:freeze",
+        "//antlir/bzl:loopback_opts.shape-python",
         "//antlir/compiler:subvolume_on_disk",
     ],
 )
@@ -474,14 +473,6 @@ python_unittest(
     deps = [":update_package_db"],
 )
 
-flavor_config_t_shape_loader()
-
-shape.loader(
-    name = "loopback_opts_t",
-    shape = loopback_opts_t,
-    classname = "loopback_opts_t",
-)
-
 python_binary(
     name = "package-image",
     srcs = ["package_image.py"],
@@ -489,8 +480,8 @@ python_binary(
     visibility = ["PUBLIC"],
     deps = [
         ":find_built_subvol",
-        ":loopback_opts_t",
         ":subvol_utils",
+        "//antlir/bzl:loopback_opts.shape-python",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
     ],
@@ -638,6 +629,8 @@ python_library(
         shape.python_data(
             name = "repo_config_t",
             instance = REPO_CFG,
+            shape_impl = "//antlir/bzl:constants.shape",
+            type_name = "repo_config_t",
         ),
     ],
 )
@@ -649,6 +642,8 @@ python_library(
         shape.python_data(
             name = "bzl_const_t",
             instance = BZL_CONST,
+            shape_impl = "//antlir/bzl:constants.shape",
+            type_name = "bzl_const_t",
         ),
     ],
 )
@@ -724,17 +719,11 @@ python_binary(
     deps = [
         ":common",
         ":find_built_subvol",
-        ":gpt_t",
         ":subvol_utils",
+        "//antlir/bzl:gpt.shape-python",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
     ],
-)
-
-shape.loader(
-    name = "gpt_t",
-    classname = "gpt_t",
-    shape = gpt_t,
 )
 
 python_library(

@@ -8,7 +8,7 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.shape.bzl", "target_tagged_image_source_t")
 
 install_files_t = shape.shape(
-    dest = shape.path(),
+    dest = shape.path,
     source = target_tagged_image_source_t,
     mode = shape.field(mode_t, optional = True),
     user_group = shape.field(str, optional = True),

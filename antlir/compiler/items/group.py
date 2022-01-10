@@ -8,6 +8,7 @@ import threading
 from collections import OrderedDict
 from typing import AnyStr, Dict, Generator, List, NamedTuple
 
+from antlir.bzl.image.feature.usergroup import group_t
 from antlir.compiler.requires_provides import (
     Provider,
     ProvidesGroup,
@@ -18,7 +19,6 @@ from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts
-from .group_t import group_t
 
 
 # Default GID_MIN from /etc/login.defs.

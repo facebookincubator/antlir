@@ -10,12 +10,12 @@
 /// long as `serde_json::from_str` is able to load the `character_collection_t`,
 /// everything else that can be done with shapes are safe.
 use anyhow::{Context, Result};
-use character_collection_t::{character_collection_t as coll, Character, Friend};
+use test_shape::{character_collection_t, character_t, friend_t};
 
 #[test]
 fn load() -> Result<()> {
     let characters_str = std::env::var("characters").context("missing 'characters' env var")?;
-    let mut characters: coll = serde_json::from_str(&characters_str)
+    let mut characters: character_collection_t = serde_json::from_str(&characters_str)
         .with_context(|| format!("failed to parse json '{}'", characters_str))?;
     let luke = characters.characters.remove(0);
     assert_eq!(luke.name, "Luke Skywalker");
@@ -24,7 +24,7 @@ fn load() -> Result<()> {
         luke.friends,
         ["Han Solo", "Leia Organa", "C-3PO"]
             .into_iter()
-            .map(|n| Friend { name: n.into() })
+            .map(|n| friend_t { name: n.into() })
             .collect::<Vec<_>>()
     );
     Ok(())
@@ -35,14 +35,14 @@ fn defaults() -> Result<()> {
     // this really checks that the default values are deserialized from a shape
     // input (well-structured from the buck graph)
     let characters_str = std::env::var("characters").context("missing 'characters' env var")?;
-    let mut characters: coll = serde_json::from_str(&characters_str)
+    let mut characters: character_collection_t = serde_json::from_str(&characters_str)
         .with_context(|| format!("failed to parse json '{}'", characters_str))?;
     let c3po = characters.characters.remove(2);
     assert_eq!(c3po.name, "C-3PO");
     assert_eq!(c3po.affiliations.faction, "Rebellion");
 
     // check that the default values are populated even with empty json
-    let c3po: Character =
+    let c3po: character_t =
         serde_json::from_str(r#"{"name": "C-3PO", "appears_in": [1,2,3,4,5,6], "friends": []}"#)
             .context("failed to deserialize json without explicit default values")?;
     assert_eq!(c3po.name, "C-3PO");

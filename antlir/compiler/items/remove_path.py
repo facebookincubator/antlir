@@ -7,6 +7,7 @@
 import os
 from typing import Iterable
 
+from antlir.bzl.image.feature.remove import remove_paths_t
 from antlir.subvol_utils import Subvol
 
 from .common import (
@@ -17,7 +18,6 @@ from .common import (
     protected_path_set,
     validate_path_field_normal_relative,
 )
-from .remove_paths_t import remove_paths_t
 
 
 class RemovePathItem(remove_paths_t, ImageItem):

@@ -1,4 +1,5 @@
 load("//antlir/bzl:defs.bzl", "fake_macro_library")
+load("//antlir/bzl:shape.bzl", "shape")
 
 fake_macro_library(
     name = "install",
@@ -7,6 +8,14 @@ fake_macro_library(
         "//antlir/bzl:add_stat_options",
         "//antlir/bzl:maybe_export_file",
         "//antlir/bzl:target_tagger",
+    ],
+)
+
+shape.impl(
+    name = "install.shape",
+    deps = [
+        "//antlir/bzl:mode.shape",
+        "//antlir/bzl:target_tagger.shape",
     ],
 )
 
@@ -27,6 +36,10 @@ fake_macro_library(
     ],
 )
 
+shape.impl(
+    name = "remove.shape",
+)
+
 fake_macro_library(
     name = "usergroup",
     srcs = ["usergroup.bzl"],
@@ -36,11 +49,22 @@ fake_macro_library(
     ],
 )
 
+shape.impl(
+    name = "usergroup.shape",
+)
+
 fake_macro_library(
     name = "tarball",
     srcs = ["tarball.bzl"],
     deps = [
         "//antlir/bzl:maybe_export_file",
         "//antlir/bzl:target_tagger",
+    ],
+)
+
+shape.impl(
+    name = "tarball.shape",
+    deps = [
+        "//antlir/bzl:target_tagger.shape",
     ],
 )

@@ -6,6 +6,6 @@
 load("//antlir/bzl:shape.bzl", "shape")
 
 remove_paths_t = shape.shape(
-    path = shape.path(),
+    path = shape.path,
     must_exist = bool,
 )

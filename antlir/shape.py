@@ -122,10 +122,10 @@ class Enum(enum.Enum):
     def __repr__(self):
         return self.name
 
-    def __eq__(self, o):
+    def __eq__(self, o):  # pragma: no cover
         # it can sometimes be hard to get the exact same instance of this enum
         # class due to the way the codegen works, so allow comparisons by value
         # as well as the normal identity-based comparison
         if hasattr(o, "value"):
             return self.value == o.value
-        return super().__eq__(o)  # pragma: no cover
+        return super().__eq__(o)

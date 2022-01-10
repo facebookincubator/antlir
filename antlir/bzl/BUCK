@@ -1,4 +1,5 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
+load("//antlir/bzl:shape.bzl", "shape")
 load(":defs.bzl", "fake_macro_library")
 load(":test_hoist.bzl", "test_hoist")
 
@@ -50,6 +51,8 @@ fake_macro_library(
     ],
 )
 
+shape.impl(name = "container_opts.shape")
+
 fake_macro_library(
     name = "layer_resource",
     srcs = ["layer_resource.bzl"],
@@ -65,6 +68,11 @@ fake_macro_library(
     name = "image_source",
     srcs = ["image_source.bzl"],
     deps = [":maybe_export_file"],
+)
+
+shape.impl(
+    name = "image_source.shape",
+    deps = ["//antlir/bzl:target.shape"],
 )
 
 fake_macro_library(
@@ -170,6 +178,11 @@ fake_macro_library(
         ":structs",
         ":target_tagger",
     ],
+)
+
+shape.impl(
+    name = "genrule_layer.shape",
+    deps = [":container_opts.shape"],
 )
 
 fake_macro_library(
@@ -318,3 +331,24 @@ python_binary(
 test_hoist(
     name = "test-hoist",
 )
+
+shape.impl(name = "target.shape")
+
+shape.impl(
+    name = "constants.shape",
+    visibility = [
+        "//antlir/...",
+        "//tupperware/cm/antlir/...",
+    ],
+)
+
+shape.impl(name = "loopback_opts.shape")
+
+shape.impl(
+    name = "gpt.shape",
+    deps = ["//antlir/bzl:target.shape"],
+)
+
+shape.impl(name = "mode.shape")
+
+shape.impl(name = "target_tagger.shape")

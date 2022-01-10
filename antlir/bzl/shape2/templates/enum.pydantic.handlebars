@@ -1,4 +1,4 @@
 class {{name}}(Enum):
     {{#each options}}
-    {{@key}} = "{{this}}"
+    {{upper this}} = "{{this}}"
     {{/each}}

@@ -7,6 +7,7 @@
 import pwd
 from typing import Iterable
 
+from antlir.bzl.genrule_layer import genrule_layer_t
 from antlir.nspawn_in_subvol.args import (
     NspawnPluginArgs,
     PopenArgs,
@@ -17,7 +18,6 @@ from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.subvol_utils import Subvol
 
 from .common import LayerOpts, PhaseOrder
-from .genrule_layer_t import genrule_layer_t
 
 
 class GenruleLayerItem(genrule_layer_t):
