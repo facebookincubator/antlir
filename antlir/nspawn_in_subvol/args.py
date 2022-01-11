@@ -219,6 +219,7 @@ class _NspawnOpts(NamedTuple):
     subvolume_on_disk: Optional[SubvolumeOnDisk] = None
     boot: bool = False
     bind_repo_ro: bool = False  # to support @mode/dev
+    bind_artifacts_dir_rw: bool = False
     # Future: maybe make these `Path`?
     # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
     #  bytes]]`.
@@ -283,6 +284,13 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         "the host. Needed to run in-place binaries. The default is to "
         "make this bind-mount only if `--layer` artifacts need access "
         "to the repo.",
+    )
+    parser.add_argument(
+        "--bind-artifacts-dir-rw",
+        action="store_true",
+        help="Makes a read-write recursive bind-mount of the current artifacts "
+        "directory into the container at the same location as it is on "
+        "the host.",
     )
     assert defaults["bindmount_ro"] == ()  # argparse default must be mutable
     parser.add_argument(

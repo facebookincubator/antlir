@@ -17,6 +17,7 @@ import uuid
 from contextlib import contextmanager, nullcontext
 from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
+from antlir.artifacts_dir import find_artifacts_dir
 from antlir.compiler import procfs_serde
 from antlir.compiler.items.common import META_ARTIFACTS_REQUIRE_REPO
 from antlir.compiler.items.mount import mounts_from_meta
@@ -272,6 +273,14 @@ def _extra_nspawn_args_and_env(
         # code we should be running under `buck test` and `buck run`.  NB:
         # As of this writing, `mkscratch` works incorrectly under `nspawn`,
         # making `artifacts-dir` fail.
+
+    # This has to be below the host_mounts_for_repo_artifacts binding to ensure
+    # the artifacts dir bind isn't overwritten as readonly.
+    # Future: Make a better API for interleaving rw and ro bindings.
+    if opts.bind_artifacts_dir_rw:
+        extra_nspawn_args.extend(
+            bind_args(find_artifacts_dir().realpath(), readonly=False)
+        )
 
     if opts.debug_only_opts.logs_tmpfs:
         extra_nspawn_args.extend(

@@ -113,6 +113,29 @@ class NspawnTestCase(NspawnTestBase):
             ),
         )
 
+    @mock.patch("antlir.nspawn_in_subvol.cmd.find_artifacts_dir")
+    def test_extra_nspawn_args_bind_artifacts_dir_rw_opts(
+        self, artifacts_dir_mock
+    ):
+        with temp_dir() as td:
+            mock_backing_dir = td / "backing-dir"
+            mock_artifact_dir = Path(td / "buck-image-out")
+            os.symlink(mock_backing_dir, mock_artifact_dir)
+
+            artifacts_dir_mock.return_value = mock_artifact_dir
+
+            # opts.bind_artifacts_dir_rw
+            self._assertIsSubseq(
+                ["--bind", f"{mock_backing_dir}:{mock_backing_dir}"],
+                self._wrapper_args_to_nspawn_args(
+                    [
+                        "--layer",
+                        layer_resource(__package__, "test-layer"),
+                        "--bind-artifacts-dir-rw",
+                    ]
+                ),
+            )
+
     @mock.patch("antlir.nspawn_in_subvol.cmd._load_repo_config")
     @mock.patch("antlir.config.find_repo_root")
     @mock.patch("antlir.config.find_artifacts_dir")
