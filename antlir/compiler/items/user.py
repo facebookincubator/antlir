@@ -6,7 +6,6 @@
 
 import collections
 import re
-import threading
 from dataclasses import dataclass
 from typing import (
     AnyStr,
@@ -22,7 +21,6 @@ from antlir.compiler.requires_provides import (
     RequireGroup,
     Requirement,
     ProvidesUser,
-    RequireDirectory,
     RequireFile,
 )
 from antlir.fs_utils import Path
@@ -34,6 +32,7 @@ from .group import (
     _read_group_file,
     _write_group_file,
     GROUP_FILE_PATH,
+    USERGROUP_LOCK,
     GroupFile,
 )
 
@@ -287,12 +286,6 @@ def _write_shadow_file(subvol: Subvol, contents: AnyStr):
     subvol.overwrite_path_as_root(SHADOW_FILE_PATH, str(contents))
 
 
-# because user modifications always operate on the same static set of files, a
-# single global lock is sufficient to prevent race conditions of concurrent
-# modifications
-_LOCK = threading.Lock()
-
-
 class UserItem(user_t, ImageItem):
     @validator("name")
     def _validate_name(cls, name):  # noqa B902
@@ -321,7 +314,7 @@ class UserItem(user_t, ImageItem):
 
     # pyre-fixme[9]: layer_opts has type `LayerOpts`; used as `None`.
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
-        with _LOCK:
+        with USERGROUP_LOCK:
             group_file = GroupFile(_read_group_file(subvol))
 
             # this should already be checked by requires/provides

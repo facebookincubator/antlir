@@ -113,9 +113,9 @@ def _write_group_file(subvol: Subvol, contents: AnyStr):
     subvol.overwrite_path_as_root(GROUP_FILE_PATH, str(contents))
 
 
-# because group always operate on the same static file path, a single global
-# lock is sufficient to prevent race conditions of concurrent modifications
-_LOCK = threading.Lock()
+# Lock around access to /etc/group, /etc/passwd and /etc/shadow, which may be
+# attempted by concurrent UserItem or GroupItem actions.
+USERGROUP_LOCK = threading.Lock()
 
 
 class GroupItem(group_t, ImageItem):
@@ -130,7 +130,7 @@ class GroupItem(group_t, ImageItem):
 
     # pyre-fixme[9]: layer_opts has type `LayerOpts`; used as `None`.
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
-        with _LOCK:
+        with USERGROUP_LOCK:
             group_file = GroupFile(_read_group_file(subvol))
             gid = self.id or group_file.next_group_id()
             group_file.add(self.name, gid)
