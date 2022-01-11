@@ -98,6 +98,7 @@ def _nspawn_wrapper_properties(
             "shadow_paths",
             "shadow_proxied_binaries",
             "internal_only_unprotect_antlir_dir",  # Unavailable in tests
+            "internal_only_bind_artifacts_dir_rw",
         ]
     ]
     if unsupported_opts:
@@ -171,6 +172,7 @@ def nspawn_in_subvol_args():
         *{targets_and_outputs},
         '--append-console',
         '--attach-antlir-dir-mode=off',
+        {maybe_bind_artifacts_dir_rw}
         '--', {binary_path_repr},
     ]
 EOF
@@ -188,6 +190,9 @@ mv $TMP/out "$OUT"
             ),
             maybe_no_shadow_proxied_binaries = (
                 "" if container_opts.shadow_proxied_binaries else "'--no-shadow-proxied-binaries',"
+            ),
+            maybe_bind_artifacts_dir_rw = (
+                "'--bind-artifacts-dir-rw'," if container_opts.internal_only_bind_artifacts_dir_rw else ""
             ),
             pass_through_env_repr = repr(outer_test_kwargs.get("env", [])),
             serve_rpm_snapshots_repr = repr([
