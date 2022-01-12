@@ -21,7 +21,8 @@ def compile_image_features(
         features,
         flavor,
         flavor_config_override,
-        subvol_name = None):
+        subvol_name = None,
+        internal_only_is_genrule_layer = False):
     '''
     Arguments
 
@@ -150,6 +151,7 @@ EOF
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
           {targets_and_outputs} \
+          {internal_only_is_genrule_layer} \
               > "$layer_json"
 
         # Insert the outputs of the queried dependencies to short-circuit
@@ -213,4 +215,5 @@ EOF
         maybe_parent_layer = (
             "--parent-layer $(location {})".format(parent_layer) if parent_layer and not flavor else ""
         ),
+        internal_only_is_genrule_layer = "--internal-only-is-genrule-layer" if internal_only_is_genrule_layer else "",
     )

@@ -117,7 +117,14 @@ def parse_args(args) -> argparse.Namespace:
         type=Path.from_argparse,
         help="Profile this image build and write pstats files into the given directory.",
     )
-
+    parser.add_argument(
+        "--internal-only-is-genrule-layer",
+        action="store_true",
+        help="Indicates whether the layer being compiled is a genrule layer. "
+        "This is a temporary crutch to avoid running the compiler inside a BA "
+        "container when building genrule layers. This should be removed in "
+        "the future.",
+    )
     add_targets_and_outputs_arg(parser)
     return Path.parse_args(parser, args)
 

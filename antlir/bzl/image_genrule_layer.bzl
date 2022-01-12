@@ -101,6 +101,7 @@ Optional arguments:
             )],
             flavor = flavor,
             flavor_config_override = flavor_config_override,
+            internal_only_is_genrule_layer = True,
         ),
         **image_layer_kwargs
     )
