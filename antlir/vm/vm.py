@@ -26,7 +26,6 @@ from typing import (
 )
 
 from antlir.common import init_logging, get_logger, not_none
-from antlir.compiler.items.mount import mounts_from_image_meta
 from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
@@ -421,7 +420,7 @@ async def vm(
     ]
     args.extend(tapdev.qemu_args)
 
-    if opts.tpm:
+    if opts.runtime.tpm:
         tpmdev, tpm_sidecar = await _create_tpm(
             stack,
             ns,

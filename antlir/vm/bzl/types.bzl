@@ -17,6 +17,7 @@ def _new_vm_emulator(
         img_util = None,
         roms_dir = None,
         tpm_binary = None,
+        tpm = False,
         **kwargs):
     # These defaults have to be set here due to the use of the
     # `third_party.library` function.  It must be invoked inside of
@@ -34,7 +35,7 @@ def _new_vm_emulator(
         firmware = firmware,
         img_util = img_util,
         roms_dir = roms_dir,
-        tpm_binary = tpm_binary,
+        tpm_binary = tpm_binary if tpm else None,
         **kwargs
     )
 
@@ -99,13 +100,18 @@ _vm_connection_api = struct(
 def _new_vm_runtime(
         connection = None,
         emulator = None,
-        sidecar_services = None):
-    return shape.new(
+        sidecar_services = None,
+        tpm = False):
+    runtime = shape.new(
         runtime_t,
         connection = connection or _new_vm_connection(),
-        emulator = emulator or _new_vm_emulator(),
+        emulator = emulator or _new_vm_emulator(tpm = tpm),
         sidecar_services = sidecar_services or [],
+        tpm = tpm,
     )
+    if tpm and not runtime.emulator.tpm_binary:
+        fail("tpm=True, but emulator is missing tpm_binary")
+    return runtime
 
 _vm_runtime_api = struct(
     new = _new_vm_runtime,
@@ -118,7 +124,6 @@ def _new_vm_opts(
         kernel = None,
         initrd = None,
         disk = None,
-        tpm = False,
         runtime = None,
         **kwargs):
     # Don't allow an invalid cpu count
@@ -146,7 +151,6 @@ def _new_vm_opts(
         kernel = kernel,
         disk = disk,
         runtime = runtime,
-        tpm = tpm,
         **kwargs
     )
 
