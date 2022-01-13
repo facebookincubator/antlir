@@ -15,6 +15,7 @@ load("//antlir/vm/bzl:defs.bzl", "vm")
 load("//antlir/vm/bzl:initrd.bzl", "initrd")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/disk:disk.bzl", "build_root_disk")
+load("//metalos/host_configs/tests:host.bzl", "host_config")
 
 binaries = extract.extract(
     binaries = [
@@ -137,6 +138,10 @@ vm.rust_unittest(
     tags = ["local_only"],
 )
 
+host_config(
+    name = "host-config",
+)
+
 # This needs to be as close as possible the prod initrd, with only the bare
 # minimum of extra features to get baseline functionality in vmtest. Tests that
 # exercise this initrd are run in the post-switch-root image, so this can be as
@@ -158,6 +163,8 @@ image.layer(
         # switch-root into /sysroot, which we don't want for MetalOS
         systemd.mask_units(["initrd-switch-root.service"]),
         network.host(),
+        image.ensure_subdirs_exist("/", "test"),
+        feature.install(":host-config", "/test/fake-host-config.json"),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
 )
@@ -220,6 +227,9 @@ vm.rust_unittest(
         kernel = TEST_KERNEL,
         append = [
             "metalos.package-format-uri=http://vmtest-host:8000/package/{package}",
+            # this doesn't actually serve anything (yet), but we need to pass
+            # something on the cmdline
+            "metalos.host-config-uri=file:///test/fake-host-config.json",
             "metalos.os-package=metalos:1",
             "rd.systemd.journald.forward_to_console=1",
         ],
@@ -245,6 +255,9 @@ vm.rust_unittest(
         kernel = TEST_KERNEL,
         append = [
             "metalos.package-format-uri=http://vmtest-host:8000/package/{package}",
+            # this doesn't actually serve anything (yet), but we need to pass
+            # something on the cmdline
+            "metalos.host-config-uri=file:///test/fake-host-config.json",
             "metalos.os-package=metalos:1",
             "metalos.write-root-disk-package=metalos_root:1",
             "rd.systemd.journald.forward_to_console=1",
