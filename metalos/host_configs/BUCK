@@ -109,6 +109,9 @@ thrift_library(
     thrift_srcs = {"package_manifest.thrift": None},
     visibility = [
         "//metalos/lib/image/...",
+        # TODO(vmagro) remove visibility from metalctl when this is referenced
+        # from host.thrift exclusively, and not the kernel cmdline
+        "//metalos/metalctl/...",
     ],
 )
 

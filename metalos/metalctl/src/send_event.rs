@@ -5,14 +5,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use crate::net_utils::get_mac;
-use anyhow::{bail, Result};
-use hyper::{body, Uri};
+use std::net::IpAddr;
+
+use anyhow::{bail, Context, Result};
+use reqwest::Url;
 use serde_json;
 use slog::{info, Logger};
-use std::net::IpAddr;
 use structopt::StructOpt;
-use url::Url;
+
+use crate::net_utils::get_mac;
 
 #[derive(StructOpt, Debug, Clone)]
 pub struct Opts {
@@ -34,8 +35,8 @@ pub struct Opts {
     pub payload: Option<serde_json::Value>,
 }
 
-pub fn get_uri(log: Logger, config: crate::Config, opts: Opts) -> Result<Uri> {
-    let mut url = Url::parse(&config.event_backend.event_backend_base_uri()?.to_string())?;
+pub fn get_uri(log: Logger, config: crate::Config, opts: Opts) -> Result<Url> {
+    let mut url = config.event_backend.event_backend_base_uri().clone();
     url.query_pairs_mut()
         .append_pair("name", &opts.event_name)
         .append_pair("sender", &opts.sender);
@@ -70,7 +71,7 @@ pub fn get_uri(log: Logger, config: crate::Config, opts: Opts) -> Result<Uri> {
             bail!("only one of mac_address, ip_address or asset_id can be provided")
         }
     }
-    Ok(url.as_str().parse::<Uri>()?)
+    Ok(url)
 }
 
 /// Send an event to the https endpoint configured in the metalctl.toml config file.
@@ -81,12 +82,18 @@ pub fn get_uri(log: Logger, config: crate::Config, opts: Opts) -> Result<Uri> {
 ///  * /sendEvent?name=<name>&sender=<text>&assetID=<assetID>&payload=<payload>
 ///
 /// This subcommand can be used in scripts, systemd unit files and so on.
-pub(super) async fn send_event(log: Logger, config: crate::Config, opts: Opts) -> Result<()> {
+pub(crate) async fn send_event(log: Logger, config: crate::Config, opts: Opts) -> Result<()> {
     let uri = get_uri(log.clone(), config, opts)?;
-    let resp_body = crate::http::get(log.clone(), uri).await?;
-    let body_bytes = body::to_bytes(resp_body).await?;
-    let body = String::from_utf8(body_bytes.to_vec()).expect("response was not valid utf-8");
-    info!(log, "Event unique identifier: {}", body);
+    let client = crate::http::client()?;
+    let event_id = client
+        .get(uri)
+        .send()
+        .await
+        .context("while sending event GET")?
+        .text()
+        .await
+        .context("while parsing event response as text")?;
+    info!(log, "Event unique identifier: {}", event_id);
     Ok(())
 }
 
@@ -115,30 +122,24 @@ mod tests {
         let mut asset_id_opts = base_opts.clone();
         asset_id_opts.asset_id = Some(1234);
         assert_eq!(
-            Url::parse("https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=\"foopayload\"&assetID=1234")?.as_str(),
-            get_uri(log.clone(), config.clone(), asset_id_opts)?,
+            "https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=%22foopayload%22&assetID=1234",
+            get_uri(log.clone(), config.clone(), asset_id_opts)?.to_string(),
         );
 
         // mac address test
         let mut mac_opts = base_opts.clone();
         mac_opts.mac_address = Some("11:22:33:44:55:66".to_string());
-        let mut expected = Url::parse(
-            "https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=\"foopayload\"",
-        )?;
-        expected
-            .query_pairs_mut()
-            .append_pair("mac", mac_opts.mac_address.as_ref().unwrap());
         assert_eq!(
-            expected.as_str(),
-            get_uri(log.clone(), config.clone(), mac_opts)?,
+            "https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=%22foopayload%22&mac=11%3A22%3A33%3A44%3A55%3A66",
+            get_uri(log.clone(), config.clone(), mac_opts)?.to_string(),
         );
 
         // ip address test
         let mut ip_opts = base_opts;
         ip_opts.ip_address = Some("1.2.3.4".to_string());
         assert_eq!(
-            Url::parse("https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=\"foopayload\"&ip=1.2.3.4")?.as_str(),
-            get_uri(log.clone(), config, ip_opts)?,
+            "https://metalos/sendEvent?name=EVENT_NAME&sender=metalctl-test&payload=%22foopayload%22&ip=1.2.3.4",
+            get_uri(log.clone(), config, ip_opts)?.to_string(),
         );
 
         Ok(())

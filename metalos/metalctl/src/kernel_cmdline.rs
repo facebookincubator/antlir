@@ -14,7 +14,7 @@ use structopt::StructOpt;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-use crate::config::{EventBackendBaseUri, PackageFormatUri};
+use crate::config::EventBackendBaseUri;
 
 // This enum looks a bit weird to have here but it plays an important role in
 // ensuring correctness. The exhaustive match in `flag_name` means that we have a valid
@@ -71,7 +71,7 @@ pub struct MetalosCmdline {
     pub host_config_uri: Option<String>,
 
     #[structopt(long = &KnownArgs::PackageFormatUri.flag_name())]
-    pub package_format_uri: Option<PackageFormatUri>,
+    pub package_format_uri: Option<String>,
 
     #[structopt(long = &KnownArgs::EventBackendBaseUri.flag_name())]
     pub event_backend_base_uri: Option<EventBackendBaseUri>,

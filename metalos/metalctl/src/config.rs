@@ -7,94 +7,11 @@
 
 use std::str::FromStr;
 
-use anyhow::{bail, Context, Error, Result};
-use hyper::Uri;
+use anyhow::{Context, Error, Result};
+use reqwest::Url;
 use serde::{de, Deserialize, Deserializer};
 
 use crate::kernel_cmdline::MetalosCmdline;
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct PackageFormatUri(String);
-
-impl FromStr for PackageFormatUri {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        if !s.contains("{package}") {
-            bail!("package_format_uri must contain the placeholder '{{package}}'");
-        }
-        match s.replace("{package}", "placeholder").parse::<Uri>() {
-            Ok(u) => {
-                match u.scheme_str() {
-                    Some("http") | Some("https") => {}
-                    _ => bail!("package_format_uri must be http(s) only"),
-                };
-            }
-            Err(e) => {
-                bail!("'{}' is not a valid URL: {}", s, e);
-            }
-        }
-        Ok(Self(s.to_string()))
-    }
-}
-
-impl PackageFormatUri {
-    fn uri<S: AsRef<str>>(&self, package: S) -> Result<Uri> {
-        let uri = self.0.replace("{package}", package.as_ref());
-        uri.parse()
-            .with_context(|| format!("'{}' is not a valid url", uri))
-    }
-}
-
-impl<'de> Deserialize<'de> for PackageFormatUri {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        FromStr::from_str(&s).map_err(de::Error::custom)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct EventBackendBaseUri(String);
-
-impl FromStr for EventBackendBaseUri {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s.parse::<Uri>() {
-            Ok(u) => {
-                match u.scheme_str() {
-                    Some("http") | Some("https") => {}
-                    _ => bail!("event_backend_base_uri must be http(s) only"),
-                };
-            }
-            Err(e) => {
-                bail!("'{}' is not a valid URL: {}", s, e);
-            }
-        }
-        Ok(Self(s.to_string()))
-    }
-}
-
-impl EventBackendBaseUri {
-    fn uri(&self) -> Result<Uri> {
-        self.0
-            .parse::<Uri>()
-            .with_context(|| format!("'{}' is not a valid url", self.0))
-    }
-}
-
-impl<'de> Deserialize<'de> for EventBackendBaseUri {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        FromStr::from_str(&s).map_err(de::Error::custom)
-    }
-}
 
 #[derive(Default, Debug, Deserialize, Clone)]
 pub struct Config {
@@ -126,20 +43,41 @@ impl Config {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Download {
-    package_format_uri: PackageFormatUri,
+    package_format_uri: String,
 }
 
 impl Download {
-    pub fn package_uri<S: AsRef<str>>(&self, package: S) -> Result<Uri> {
-        self.package_format_uri.uri(package)
+    pub fn package_format_uri(&self) -> &str {
+        &self.package_format_uri
     }
 }
 
 impl Default for Download {
     fn default() -> Self {
         Self {
-            package_format_uri: "https://metalos/package/{package}".parse().unwrap(),
+            package_format_uri: "https://metalos/package/{package}".into(),
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct EventBackendBaseUri(Url);
+
+impl FromStr for EventBackendBaseUri {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        s.parse().map(Self).context("not valid url")
+    }
+}
+
+impl<'de> Deserialize<'de> for EventBackendBaseUri {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        FromStr::from_str(&s).map_err(de::Error::custom)
     }
 }
 
@@ -149,8 +87,8 @@ pub struct EventBackend {
 }
 
 impl EventBackend {
-    pub fn event_backend_base_uri(&self) -> Result<Uri> {
-        self.event_backend_base_uri.uri()
+    pub fn event_backend_base_uri(&self) -> &Url {
+        &self.event_backend_base_uri.0
     }
 }
 
@@ -171,12 +109,12 @@ mod tests {
     fn overrides() -> Result<()> {
         let mut config = Config::default();
         assert_eq!(
-            config.download.package_format_uri.0,
-            "https://metalos/package/{package}"
+            "https://metalos/package/{package}",
+            config.download.package_format_uri
         );
         assert_eq!(
-            config.event_backend.event_backend_base_uri.0,
-            "https://metalos/sendEvent"
+            "https://metalos/sendEvent",
+            config.event_backend.event_backend_base_uri().to_string()
         );
         let cmdline: MetalosCmdline =
             "metalos.package_format_uri=\"https://package-host/pkg/{package}\" \
@@ -184,12 +122,12 @@ mod tests {
                 .parse()?;
         config.apply_overrides(cmdline)?;
         assert_eq!(
-            config.download.package_format_uri.0,
-            "https://package-host/pkg/{package}"
+            "https://package-host/pkg/{package}",
+            config.download.package_format_uri
         );
         assert_eq!(
-            config.event_backend.event_backend_base_uri.0,
-            "https://event-host/sendEvent"
+            "https://event-host/sendEvent",
+            config.event_backend.event_backend_base_uri().to_string()
         );
         Ok(())
     }

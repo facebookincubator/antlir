@@ -35,9 +35,11 @@ pub struct HttpsDownloader {
 
 impl HttpsDownloader {
     pub fn new(format_uri: String) -> Result<Self> {
+        // TODO: it would be nice to restrict to https only, but we use plain
+        // http for tests, and https doesn't do much for security compared to
+        // something like checking image signatures
         let client = reqwest::Client::builder()
             .trust_dns(true)
-            .https_only(true)
             .user_agent("metalos::image/1")
             .build()
             .map_err(Error::InitClient)?;
@@ -61,7 +63,7 @@ impl HttpsDownloader {
         Ok(Self { client, format_uri })
     }
 
-    fn image_url(&self, img: &AnyImage) -> Result<Url> {
+    pub fn image_url(&self, img: &AnyImage) -> Result<Url> {
         let uri = self
             .format_uri
             .replace("{package}", &format!("{}:{}", img.name, img.id));
@@ -72,6 +74,12 @@ impl HttpsDownloader {
             }
             .into()
         })
+    }
+}
+
+impl From<HttpsDownloader> for Client {
+    fn from(h: HttpsDownloader) -> Client {
+        h.client
     }
 }
 

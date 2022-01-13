@@ -17,11 +17,13 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     # brought in by large dependencies.
     deps = [
         "//metalos/host_configs:evalctx",
+        "//metalos/host_configs:package-manifest-rust",
+        "//metalos/lib/btrfs:btrfs",
+        "//metalos/lib/image:image",
+        "//metalos/lib/systemd:systemd",
         "//metalos/lib:expand_partition",
         "//metalos/lib:find_root_disk",
         "//metalos/lib:generator_lib",
-        "//metalos/lib/systemd:systemd",
-        "//metalos/lib:expand_partition",
         "anyhow",  # ~9.5k, very helpful for error handling
         "nix",  # ~5k: access to syscalls (mount, etc)
         "libc",
@@ -33,8 +35,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         "slog_glog_fmt",
         "toml",  # load config files
         "serde",  # load config files
-        "serde_json",  # load host config manifest
-        "zstd",  # os images are zstd-compressed btrfs sendstreams
+        "serde_json",
         "maplit",  # Should be macros only so little to no difference in output binary
         "shlex",
         "strum",
@@ -44,14 +45,10 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         "bytes",
         "futures-core",
         "futures-util",
-        "hyper",
-        "hyper-rustls",
-        "rustls",
-        "rustls-native-certs",
+        "reqwest",
         "tokio",  # async runtime for http client
-        "tower",
-        "trust-dns-resolver",
         "tempfile",
+        "zstd",
     ] + extra_deps
 
     rustc_flags = rustc_flags or []

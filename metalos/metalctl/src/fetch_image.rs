@@ -5,14 +5,17 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::fs;
-use std::io::{BufWriter, Write};
+use std::fs::File;
+use std::io::{copy, Cursor};
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result};
-use slog::{debug, info, o, Logger};
+use slog::{o, trace, Logger};
 use structopt::StructOpt;
+
+use btrfs::{SendstreamExt, Subvolume};
+use image::download::{Downloader, HttpsDownloader};
+use image::AnyImage;
 
 #[derive(StructOpt)]
 pub struct Opts {
@@ -26,45 +29,74 @@ pub struct Opts {
     download_filename: String,
 }
 
-use crate::http::drain_stream;
-
 pub async fn fetch_image(log: Logger, config: crate::Config, opts: Opts) -> Result<()> {
     let log = log.new(o!("package" => opts.package.clone(), "dest" => format!("{:?}", opts.dest)));
-    fs::create_dir_all(&opts.dest)
-        .with_context(|| format!("failed to create destination dir {:?}", opts.dest))?;
+    // TODO(vmagro): make this an image::Image all the way through
+    let (name, id) = opts
+        .package
+        .split_once(':')
+        .context("package must have ':' separator")?;
+    let image: AnyImage = package_manifest::types::Image {
+        name: name.into(),
+        id: id.into(),
+        kind: package_manifest::types::Kind::ROOTFS,
+    }
+    .try_into()
+    .context("converting image representation")?;
 
-    let uri = config.download.package_uri(opts.package)?;
-    debug!(log, "downloading from {}", uri);
+    std::fs::create_dir_all(
+        opts.dest
+            .parent()
+            .context("cannot receive directly into /")?,
+    )
+    .with_context(|| format!("while creating parent directory for {:?}", opts.dest))?;
 
-    let body = crate::http::download_file(log.clone(), uri).await?;
+    let dl = HttpsDownloader::new(config.download.package_format_uri().to_string())
+        .context("while creating downloader")?;
 
     if opts.download_only {
-        debug!(log, "downloading image as file");
-        let dst = fs::File::create(opts.dest.join(&opts.download_filename))?;
-        let mut dst = BufWriter::new(dst);
-        match opts.decompress_download {
-            true => {
-                let mut decoder = zstd::stream::write::Decoder::new(dst)
-                    .context("failed to initialize decompressor")?;
-                drain_stream(body, &mut decoder).await?;
-                decoder.flush()?;
-            }
-            false => {
-                drain_stream(body, &mut dst).await?;
-            }
-        };
-    } else {
-        info!(log, "receiving image as a zstd-compressed sendstream");
-        let mut child = Command::new("/sbin/btrfs")
-            .args(&[&"receive".into(), &opts.dest])
-            .stdin(Stdio::piped())
-            .spawn()
-            .context("btrfs receive command failed to start")?;
-        let stdin = child.stdin.take().unwrap();
-        let mut decoder = zstd::stream::write::Decoder::new(BufWriter::new(stdin))
-            .context("failed to initialize decompressor")?;
-        drain_stream(body, &mut decoder).await?;
-        decoder.flush()?;
+        let url = dl.image_url(&image).context("while getting image url")?;
+        let client: reqwest::Client = dl.into();
+        let bytes = client
+            .get(url.clone())
+            .send()
+            .await
+            .with_context(|| format!("while opening {}", url))?
+            .bytes()
+            .await
+            .with_context(|| format!("while reading {}", url))?;
+        std::fs::create_dir(&opts.dest).with_context(|| {
+            format!(
+                "while creating parent directory for download {:?}",
+                opts.dest
+            )
+        })?;
+        let outpath = opts.dest.join(opts.download_filename);
+        let mut out = File::create(&outpath)
+            .with_context(|| format!("while creating {}", outpath.display()))?;
+        if opts.decompress_download {
+            zstd::stream::copy_decode(&mut Cursor::new(&bytes), &mut out)
+                .with_context(|| format!("while decompressing to {}", outpath.display()))?;
+        } else {
+            copy(&mut Cursor::new(&bytes), &mut out)
+                .with_context(|| format!("while writing to {}", outpath.display()))?;
+        }
+        return Ok(());
     }
+
+    let dst = Subvolume::create(&opts.dest)
+        .with_context(|| format!("while creating destination subvol {:?}", opts.dest))?;
+    trace!(log, "created destination subvolume");
+
+    trace!(log, "opening sendstream https connection");
+    let sendstream = dl
+        .open_sendstream(&image)
+        .await
+        .with_context(|| format!("while starting sendstream for {:?}", image))?;
+    trace!(log, "receiving sendstream");
+    sendstream
+        .receive_into(&dst)
+        .await
+        .context("while receiving")?;
     Ok(())
 }
