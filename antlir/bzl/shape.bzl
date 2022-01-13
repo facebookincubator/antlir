@@ -493,6 +493,7 @@ def _impl(name, deps = (), visibility = None, **kwargs):  # pragma: no cover
         deps = [antlir_dep("bzl/shape2:shape-rust")] + ["{}-rust".format(d) for d in deps] + third_party.libraries(["serde", "serde_json"], platform = "rust"),
         visibility = visibility,
         antlir_rule = "user-facing",
+        unittests = False,
         **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
     )
 
