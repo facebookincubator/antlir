@@ -7,11 +7,8 @@
 
 use std::path::PathBuf;
 
-use anyhow::{anyhow, bail, Context, Result};
-use bytes::Buf;
-use hyper::header::LOCATION;
-use hyper::{StatusCode, Uri};
-use slog::{debug, info, o, Logger};
+use anyhow::{anyhow, Context, Result};
+use slog::{o, Logger};
 use structopt::StructOpt;
 use url::Url;
 
@@ -28,52 +25,15 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
 
     let host: Host = match opts.host_config_uri.scheme() {
         "http" | "https" => {
-            let client =
-                crate::http::client(log.clone()).context("failed to create https client")?;
-
-            // hyper is a low level client (which is good for our dns connector), but
-            // then we have to do things like follow redirects manually
-            let mut uri: Uri = opts
-                .host_config_uri
-                .as_str()
-                .parse()
-                .context("while converting Url into hyper::Uri")?;
-            let mut redirects = 0u8;
-            let resp = loop {
-                let resp = client.get(uri.clone()).await?;
-                if resp.status().is_redirection() {
-                    let mut new_uri = resp.headers()[LOCATION]
-                        .to_str()?
-                        .parse::<Uri>()
-                        .context("invalid redirect uri")?
-                        .into_parts();
-                    if new_uri.scheme.is_none() {
-                        new_uri.scheme = uri.scheme().map(|s| s.to_owned());
-                    }
-                    if new_uri.authority.is_none() {
-                        new_uri.authority = uri.authority().map(|a| a.to_owned());
-                    }
-                    let new_uri = Uri::from_parts(new_uri)?;
-                    debug!(log, "redirected from {:?} to {:?}", uri, new_uri);
-                    uri = new_uri;
-                    redirects += 1;
-                    if redirects > 10 {
-                        bail!("too many redirects");
-                    }
-                    continue;
-                }
-                info!(log, "downloading image from {:?}", uri);
-                break resp;
-            };
-
-            let status = resp.status();
-            if status != StatusCode::OK {
-                bail!("http response was not OK: {:?}", status);
-            }
-            let body = hyper::body::aggregate(resp.into_body())
+            let client = crate::http::client()?;
+            client
+                .get(opts.host_config_uri.clone())
+                .send()
                 .await
-                .context("failed to load json body")?;
-            serde_json::from_reader(body.reader()).context("failed to deserialize host json")
+                .with_context(|| format!("while GETting {}", opts.host_config_uri))?
+                .json()
+                .await
+                .context("while parsing host json")
         }
         "file" => {
             let f = std::fs::File::open(opts.host_config_uri.path())
