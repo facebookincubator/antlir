@@ -38,11 +38,11 @@ python_unittest(
                             "ServerAliveInterval": "1",
                         },
                     ),
+                    tpm = True,
                 ),
                 disk = vm.types.disk.new(
                     layer = ":vmtest-custom-layer",
                 ),
-                tpm = True,
             ),
         ),
         "test-vm-sidecar-json": shape.do_not_cache_me_json(

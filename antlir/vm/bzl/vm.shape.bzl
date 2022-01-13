@@ -17,7 +17,7 @@ emulator_t = shape.shape(
     # Location of various roms
     roms_dir = target_t,
     # Software TPM binary to invoke
-    tpm_binary = target_t,
+    tpm_binary = shape.field(target_t, optional = True),
 )
 
 # A disk device type.  The `package` attribute of this shape must be either
@@ -40,6 +40,9 @@ runtime_t = shape.shape(
 
     # Shell commands to run before booting the VM
     sidecar_services = shape.list(str),
+
+    # Attach a TPM software emulator
+    tpm = shape.field(bool, default = False),
 )
 
 vm_opts_t = shape.shape(
@@ -61,8 +64,6 @@ vm_opts_t = shape.shape(
     mem_mb = shape.field(int, default = 4096),
     # Root disk for the VM
     disk = shape.field(disk_t),
-    # Attach a TPM software emulator
-    tpm = shape.field(bool, default = False),
     # Runtime details about how to run the VM
     runtime = runtime_t,
     # What label to pass to the root kernel parameter
