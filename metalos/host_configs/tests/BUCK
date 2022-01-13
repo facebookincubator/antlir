@@ -1,0 +1,12 @@
+load("//metalos:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "serialize-host-struct",
+    srcs = ["serialize_host_struct.rs"],
+    deps = [
+        "anyhow",
+        "serde",
+        "serde_json",
+        "//metalos/host_configs:host-rust",
+    ],
+)
