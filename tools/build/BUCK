@@ -3,12 +3,13 @@ load(":rust.bzl", "rustc_toolchain")
 
 # The latest nightly and it's sha can be found in
 # https://static.rust-lang.org/dist/channel-rust-nightly.toml
+# Look for [pkg.rust.target.x86_64-unknown-linux-gnu]
 linux_x86_64_toolchain = rustc_toolchain(
     arch = "x86_64",
     channel = "nightly",
-    sha256 = "2ef8c51d46e5d6cf5fc1649255c40d00166027cff96e598cdfe5f69aa4fb4ea8",
+    sha256 = "6c9450f8be9f4dfda9bbc82095c821f90cabea74f237e0ba6aa53efd03a82f6e",
     target = "unknown-linux-gnu",
-    version = "2021-10-22",
+    version = "2022-01-14",
 )
 
 buck_command_alias(
