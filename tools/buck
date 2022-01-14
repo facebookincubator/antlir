@@ -3,8 +3,7 @@ set -e
 
 # This is a wrapper script for the buck build tool binary.  This will first check
 # to see if the actual buck binary needs to be downloaded and if so, will attempt
-# to do so from the official buck `jitpack.io` repository as described here:
-# https://github.com/facebook/buck#prebuilt-buck-binaries
+# to do so from the Antlir S3 bucket, where we have prebuilt artifacts for buck.
 
 resolve_path() {
   local path="$1"
@@ -32,10 +31,7 @@ _repo_root="$(repo_root_dir)"
 # to be wiped out by the buckd lifecycle
 _buck_bin_dir="${_repo_root}/.tools"
 
-expected_buck_version() {
-  cat "${_repo_root}/.buckversion"
-  return
-}
+source "${_repo_root}/.buckversion"
 
 BUCK="${_buck_bin_dir}/buck-$(expected_buck_version)-java11.pex"
 
@@ -44,15 +40,13 @@ run_buck() {
   exit $?
 }
 
-BUCK_JITPACK_BASE_URL=https://jitpack.io/com/github/facebook/buck
+BUCK_BASE_URL="https://antlir.s3.us-east-2.amazonaws.com/bin/buck"
 get_buck() {
-  _version=$(expected_buck_version)
-
-  # Download a the requested version directly from jitpack
+  # Download a the requested version directly from our s3 bucket
   mkdir -p "${_buck_bin_dir}"
   pushd "${_buck_bin_dir}" > /dev/null
   curl -o "${BUCK}.download" \
-    "${BUCK_JITPACK_BASE_URL}/${_version}/buck-${_version}-java11.pex"
+    "${BUCK_BASE_URL}/buck-${BUCK_VERSION}-java11.pex"
   ret="$?"
   if [ "${ret}" == "0" ]; then
     # Make it executable
