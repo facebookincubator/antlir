@@ -36,8 +36,8 @@ class YumDnfConfTestCaseImpl:
 
         [oleander]
         baseurl=http://example.com/oleander
-        gpgkey=https://example.com/zupa
-        \thttps://example.com/super/safe
+        gpgkey=https://example.com/zupa, https://example.com/list/comma
+        \thttps://example.com/super/safe https://example.com/list/space
         enabled=1
         """
             )
@@ -53,7 +53,9 @@ class YumDnfConfTestCaseImpl:
                     base_url="http://example.com/oleander",
                     gpg_key_urls=(
                         "https://example.com/zupa",
+                        "https://example.com/list/comma",
                         "https://example.com/super/safe",
+                        "https://example.com/list/space",
                     ),
                 ),
             ],

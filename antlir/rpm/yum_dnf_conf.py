@@ -15,6 +15,7 @@ expected to run in read-only or ephemeral build appliance images, never on
 an actual host.
 """
 
+import re
 from configparser import ConfigParser
 from enum import Enum
 from typing import Iterable, Iterator, NamedTuple, TextIO, Tuple
@@ -44,7 +45,7 @@ class YumDnfConfRepo(NamedTuple):
         return YumDnfConfRepo(
             name=name,
             base_url=cfg_sec["baseurl"],
-            gpg_key_urls=tuple(cfg_sec["gpgkey"].split("\n"))
+            gpg_key_urls=tuple(re.findall(r"[^\n\s,]+", cfg_sec["gpgkey"]))
             if "gpgkey" in cfg_sec
             else (),
         )
