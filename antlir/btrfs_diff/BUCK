@@ -1,3 +1,5 @@
+# @autodeps
+
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest")
 
 python_library(
@@ -51,7 +53,10 @@ python_unittest(
 python_library(
     name = "deepcopy_test",
     srcs = ["tests/deepcopy_test.py"],
-    deps = ["//antlir:testlib_common"],
+    deps = [
+        ":coroutine_utils",
+        "//antlir:testlib_common",
+    ],
 )
 
 python_library(
@@ -68,10 +73,9 @@ python_unittest(
         ":inode_id",
     )],
     deps = [
-        ":coroutine_utils",
         ":deepcopy_test",
+        ":freeze",
         ":inode_id",
-        "//antlir:testlib_common",
     ],
 )
 
@@ -92,8 +96,10 @@ python_unittest(
         ":inode",
     )],
     deps = [
+        ":extent",
         ":extents_to_chunks",
         ":inode",
+        ":inode_id",
         "//antlir:testlib_common",
     ],
 )
@@ -105,7 +111,6 @@ python_library(
         ":extent",
         ":freeze",
         ":inode",
-        ":inode_id",
         ":parse_send_stream",
     ],
 )
@@ -117,7 +122,11 @@ python_unittest(
         100,
         ":incomplete_inode",
     )],
-    deps = [":incomplete_inode"],
+    deps = [
+        ":incomplete_inode",
+        ":inode",
+        ":parse_send_stream",
+    ],
 )
 
 python_library(
@@ -138,7 +147,10 @@ python_unittest(
         ":extents_to_chunks",
     )],
     deps = [
+        ":extent",
         ":extents_to_chunks",
+        ":inode",
+        ":inode_id",
         "//antlir:testlib_common",
     ],
 )
@@ -168,6 +180,7 @@ python_library(
         ":gold_demo_sendstreams.pickle": "tests/gold_demo_sendstreams.pickle",
     },
     deps = [
+        ":parse_send_stream",
         ":testlib_render_subvols",
         ":testlib_subvolume_utils",
         "//antlir:fs_utils",
@@ -211,6 +224,7 @@ python_library(
         ":extents_to_chunks",
         ":freeze",
         ":incomplete_inode",
+        ":inode",
         ":inode_id",
         ":parse_send_stream",
     ],
@@ -219,6 +233,9 @@ python_library(
 python_library(
     name = "testlib_subvolume_utils",
     srcs = ["tests/subvolume_utils.py"],
+    deps = [
+        ":subvolume",
+    ],
 )
 
 python_unittest(
@@ -229,7 +246,12 @@ python_unittest(
         ":subvolume",
     )],
     deps = [
+        ":coroutine_utils",
         ":deepcopy_test",
+        ":extent",
+        ":freeze",
+        ":inode_id",
+        ":parse_send_stream",
         ":subvolume",
         ":testlib_subvolume_utils",
     ],
@@ -241,6 +263,8 @@ python_library(
     deps = [
         ":extents_to_chunks",
         ":freeze",
+        ":incomplete_inode",
+        ":inode",
         ":inode_id",
         ":parse_send_stream",
         ":subvolume",
@@ -255,6 +279,9 @@ python_unittest(
         ":subvolume_set",
     )],
     deps = [
+        ":freeze",
+        ":parse_send_stream",
+        ":subvolume",
         ":subvolume_set",
         ":testlib_subvolume_utils",
         "//antlir:testlib_common",
@@ -276,8 +303,10 @@ python_library(
     srcs = ["tests/render_subvols.py"],
     deps = [
         ":freeze",
+        ":inode",
         ":inode_utils",
         ":parse_send_stream",
+        ":subvolume",
         ":subvolume_set",
         ":testlib_subvolume_utils",
     ],
@@ -292,8 +321,10 @@ python_unittest(
     )],
     deps = [
         ":freeze",
+        ":subvolume",
         ":subvolume_set",
         ":testlib_demo_sendstreams",
+        ":testlib_render_subvols",
         "//antlir:fs_utils",
         "//antlir:testlib_common",
     ],
