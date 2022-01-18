@@ -6,15 +6,11 @@
 
 import asyncio
 import sys
-from typing import (
-    Iterable,
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from antlir.common import get_logger
+from antlir.vm.bzl.vm import vm_opts_t
 from antlir.vm.vm import ConsoleRedirect, ShellMode, vm, VMExecOpts
-from antlir.vm.vm_opts_t import vm_opts_t
 
 
 log = get_logger()
