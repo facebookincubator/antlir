@@ -262,8 +262,8 @@ pub enum StartMode {
 pub enum JobResult {
     /// Successful execution of a job.
     Done,
-    /// The job has been canceled (via [ManagerProxy::cancel_job]) before it
-    /// finished execution.
+    /// The job has been canceled (via [cancel_job)](ManagerProxy::cancel_job)
+    /// before it finished execution.
     Canceled,
     /// The job timeout was reached.
     Timeout,
@@ -297,7 +297,7 @@ pub enum JobType {
     Unknown(String),
 }
 
-/// Some information about a unit as reported by [ManagerProxy::list_units].
+/// Some information about a unit as reported by [list_units](ManagerProxy::list_units).
 #[derive(Debug, PartialEq, Eq, Deserialize, Type)]
 pub struct ListedUnit {
     /// The primary unit name
@@ -378,11 +378,12 @@ pub enum ServiceResult {
 #[dbus_proxy(
     interface = "org.freedesktop.systemd1.Manager",
     default_service = "org.freedesktop.systemd1",
-    default_path = "/org/freedesktop/systemd1"
+    default_path = "/org/freedesktop/systemd1",
+    gen_blocking = false
 )]
 trait Manager {
-    /// BindMountUnit() can be used to bind mount new files or directories into
-    /// a running service mount namespace.
+    /// Bind mount new files or directories into a running service's mount
+    /// namespace.
     fn bind_mount_unit(
         &self,
         name: &UnitName,
@@ -392,19 +393,19 @@ trait Manager {
         mkdir: bool,
     ) -> zbus::Result<()>;
 
-    /// Cancel a specific job identified by its numeric ID. This operation is
-    /// also available as [JobProxy::cancel] exists primarily to reduce the
-    /// necessary round trips to execute this operation. Note that this will not
-    /// have any effect on jobs whose execution has already begun.
+    /// Cancel a specific job identified by its numeric ID.
+    /// This operation is also available as [JobProxy::cancel] exists primarily
+    /// to reduce the necessary round trips to execute this operation. Note that
+    /// this will not have any effect on jobs whose execution has already begun.
     fn cancel_job(&self, id: JobId) -> zbus::Result<()>;
 
-    /// Flushes the job queue, removing all jobs that are still queued. Note
-    /// that this does not have any effect on jobs whose execution has already
-    /// begun. It only flushes jobs that are queued and have not yet begun
-    /// execution.
+    /// Flushes the job queue, removing all jobs that are still queued.
+    /// Note that this does not have any effect on jobs whose execution has
+    /// already begun. It only flushes jobs that are queued and have not yet
+    /// begun execution.
     fn clear_jobs(&self) -> zbus::Result<()>;
 
-    /// Inverse of [ManagerProxy::enable_unit_files]
+    /// Inverse of [enable_unit_files](ManagerProxy::enable_unit_files)
     #[dbus_proxy(name = "DisableUnitFilesWithFlags")]
     fn disable_unit_files(
         &self,
@@ -416,8 +417,10 @@ trait Manager {
     /// /etc/ or /run/).
     /// * `files`   - file names or full absolute paths (if the unit files are
     ///      residing outside the usual unit search path)
+    ///
     /// Returns a boolean that signals whether any of the unit files contained
     /// any enablement information (i.e. an \[Install\]) section, and a Vec of
+    /// [UnitFileChange]s made.
     #[dbus_proxy(name = "EnableUnitFilesWithFlags")]
     fn enable_unit_files(
         &self,
@@ -426,9 +429,12 @@ trait Manager {
     ) -> zbus::Result<(bool, Vec<UnitFileChange>)>;
 
     /// Create reload/restart jobs for units which have been appropriately
-    /// marked, see Marks property above. This is equivalent to calling
-    /// [ManagerProxy::try_restart_unit] or
-    /// [ManagerProxy::reload_or_try_restart_unit] for the marked units.
+    /// marked with `Markers` in
+    /// [set_unit_properties)](ManagerProxy::set_unit_properties).
+    /// This is equivalent to calling
+    /// [try_restart_unit](ManagerProxy::try_restart_unit) or
+    /// [reload_or_try_restart_unit](ManagerProxy::reload_or_try_restart_unit)
+    /// for the marked units.
     fn enqueue_marked_jobs(&self) -> zbus::Result<Vec<TypedObjectPath<JobProxy<'_>>>>;
 
     /// Ask the manager to exit. This is not available for the system manager
@@ -438,40 +444,39 @@ trait Manager {
     /// Retrieve the name of the unit to which default.target is aliased.
     fn get_default_target(&self) -> zbus::Result<String>;
 
-    /// GetJob() returns the job object path for a specific job, identified by
-    /// its id.
+    /// Get the [JobProxy] for a specific job, identified by its id.
     #[dbus_proxy(object = "Job")]
     fn get_job(&self, id: JobId);
 
-    /// Get the unit object proxy for a unit name.  If a unit has not been
-    /// loaded yet by this name this method will fail.
+    /// Get the unit object proxy for a unit name.
+    /// If a unit has not been loaded yet by this name this method will fail.
     #[dbus_proxy(object = "Unit")]
     fn get_unit(&self, name: &UnitName);
 
-    /// See [ManagerProxy::get_unit]. Returns a specialized #[ServiceProxy] for
-    /// the requested unit object.
+    /// Get a specialized [ServiceProxy] for the named unit.
+    /// See [get_unit](ManagerProxy::get_unit).
     #[dbus_proxy(object = "Service", name = "GetUnit")]
     fn get_service_unit(&self, name: &UnitName);
 
-    /// Get the unit object of the unit a process ID belongs to.  The PID must
-    /// refer to an existing system process.
+    /// Get the [UnitProxy] that a process ID belongs to.
+    /// The PID must refer to an existing system process.
     #[dbus_proxy(object = "Unit")]
     fn get_unit_by_pid(&self, pid: u32);
 
     /// Get the current enablement status of a specific unit file.
     fn get_unit_file_state(&self, file: &OwnedFilePath) -> zbus::Result<UnitFileState>;
 
-    /// See [ManagerProxy::reboot]
+    /// See [reboot](ManagerProxy::reboot)
     fn halt(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::reboot]
+    /// See [reboot](ManagerProxy::reboot)
     fn kexec(&self) -> zbus::Result<()>;
 
-    /// Kill (i.e. send a signal to) all processes of a unit.
+    /// Send a signal to all processes of a unit.
     fn kill_unit(&self, name: &UnitName, whom: &KillWhom, signal: Signal) -> zbus::Result<()>;
 
-    /// LinkUnitFiles() links unit files (that are located outside of the usual
-    /// unit search paths) into the unit search path.
+    /// Link unit files that are located outside of the usual unit search paths
+    /// into the unit search path.
     fn link_unit_files(
         &self,
         files: &[&FilePath],
@@ -479,38 +484,35 @@ trait Manager {
         force: bool,
     ) -> zbus::Result<Vec<UnitFileChange>>;
 
-    /// ListJobs() returns an array with all currently queued jobs. Returns an
-    /// array consisting of structures with the following elements:
-    ///   The numeric job id
-    ///   The primary unit name for this job
-    ///   The job type as string
-    ///   The job state as string
-    ///   The job object path
-    ///   The unit object path
+    /// Get all currently queued jobs.
+    /// Note that a job is only considered queued while it is starting, not
+    /// while it's running.
     fn list_jobs(&self) -> zbus::Result<Vec<ListedJob>>;
 
     /// Returns an array of unit names and their enablement status. Note that
-    /// [ManagerProxy::list_units] returns a list of units currently loaded
-    /// into memory, while [ManagerProxy::list_unit_files] returns a list of
-    /// unit files that were found on disk. Note that while most units are read
+    /// [list_units](ManagerProxy::list_units) returns a list of units currently
+    /// loaded into memory, while
+    /// [list_unit_files](ManagerProxy::list_unit_files) returns a list of unit
+    /// files that were found on disk. Note that while most units are read
     /// directly from a unit file with the same name, some units are not backed
     /// by files and some files (templates) cannot directly be loaded as units
     /// but need to be instantiated instead.
     fn list_unit_files(&self) -> zbus::Result<Vec<(OwnedFilePath, UnitFileState)>>;
 
-    /// Get an array of all currently loaded units. Note that units may be
-    /// known by multiple names at the same name, and hence there might be more
-    /// unit names loaded than actual units behind them.
+    /// Get an array of all currently loaded units.
+    /// Note that units may be known by multiple names at the same name, and
+    /// hence there might be more unit names loaded than actual units behind
+    /// them.
     fn list_units(&self) -> zbus::Result<Vec<ListedUnit>>;
 
-    /// Similar to [ManagerProxy::get_unit] but will load the unit from disk if
-    /// possible.
+    /// Similar to [get_unit](ManagerProxy::get_unit) but will load the unit
+    /// from disk if possible and necessary.
     #[dbus_proxy(object = "Unit")]
     fn load_unit(&self, name: &UnitName);
 
-    /// Mask unit files
-    /// See [ManagerProxy::enable_unit_files] for a description of the boolean
-    /// flags.
+    /// Mask unit files.
+    /// See [enable_unit_files](ManagerProxy::enable_unit_files) for details on
+    /// the boolean flags.
     fn mask_unit_files(
         &self,
         files: &[&FilePath],
@@ -529,53 +531,51 @@ trait Manager {
         options: &[(&str, &str)],
     ) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::reboot]
+    /// See [reboot](ManagerProxy::reboot)
     fn power_off(&self) -> zbus::Result<()>;
 
-    /// Reboot(), PowerOff(), Halt(), or KExec() may be used to ask for
-    /// immediate reboot, powering down, halt or kexec based reboot of the
-    /// system. Note that this does not shut down any services and immediately
-    /// transitions into the reboot process. These functions are normally only
-    /// called as the last step of shutdown and should not be called directly.
-    /// To shut down the machine, it is generally a better idea to invoke
-    /// Reboot() or PowerOff() on the systemd-logind manager object; see
-    /// org.freedesktop.login1(5) for more information.
+    /// [reboot](ManagerProxy::reboot), [power_off](ManagerProxy::power_off),
+    /// [halt](ManagerProxy::halt), or [kexec](ManagerProxy::kexec) may be used
+    /// to ask for immediate reboot, powering down, halt or kexec based reboot
+    /// of the system. Note that this does not shut down any services and
+    /// immediately transitions into the reboot process. These functions are
+    /// normally only called as the last step of shutdown and should not be
+    /// called directly.  To shut down the machine, it is generally a better
+    /// idea to invoke [reboot](ManagerProxy::reboot) or
+    /// [power_off](ManagerProxy::power_off) on the systemd-logind manager
+    /// object; see org.freedesktop.login1(5) for more information.
     fn reboot(&self) -> zbus::Result<()>;
 
     /// Reexecute the main manager process. It will serialize its state,
     /// reexecute, and deserizalize the state again.  This is useful for
-    /// upgrades and is a more comprehensive version of [ManagerProxy::reload].
+    /// upgrades and is a more comprehensive version of
+    /// [reload](ManagerProxy::reload).
     fn reexecute(&self) -> zbus::Result<()>;
 
     /// Reload all unit files.
     fn reload(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::reload_unit]
+    /// Reload a unit if it supports it, otherwise restart.
+    /// Fails on a service that is not already running.
     #[dbus_proxy(object = "Unit")]
     fn reload_or_restart_unit(&self, name: &UnitName, mode: &StartMode);
 
-    /// See [ManagerProxy::reload_unit]
+    /// Reload a unit if it supports it, otherwise restart.
+    /// No-op if service is not already running.
     #[dbus_proxy(object = "Unit")]
     fn reload_or_try_restart_unit(&self, name: &UnitName, mode: &StartMode);
 
-    /// ReloadUnit(), RestartUnit(), TryRestartUnit(), ReloadOrRestartUnit(), or
-    /// ReloadOrTryRestartUnit() may be used to restart and/or reload a unit.
-    /// These methods take similar arguments as StartUnit(). Reloading is done
-    /// only if the unit is already running and fails otherwise. If a service is
-    /// restarted that isn't running, it will be started unless the "Try" flavor
-    /// is used in which case a service that isn't running is not affected by
-    /// the restart. The "ReloadOrRestart" flavors attempt a reload if the unit
-    /// supports it and use a restart otherwise.
+    /// Reload if the unit is already running, otherwise fail.
     #[dbus_proxy(object = "Unit")]
     fn reload_unit(&self, name: &UnitName, mode: &StartMode);
 
-    /// ResetFailed() resets the "failed" state of all units.
+    /// Reset the "failed" state of all units.
     fn reset_failed(&self) -> zbus::Result<()>;
 
-    /// ResetFailedUnit() resets the "failed" state of a specific unit.
+    /// Resets the "failed" state of a specific unit.
     fn reset_failed_unit(&self, name: &UnitName) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::reload_unit]
+    /// Restart a unit if it is running, otherwise fail.
     #[dbus_proxy(object = "Unit")]
     fn restart_unit(&self, name: &UnitName, mode: &StartMode);
 
@@ -592,7 +592,7 @@ trait Manager {
     /// settings (primarily those listed in systemd.resource-control(5)) may.
     /// The changes are applied instantly and stored on disk for future boots,
     /// unless runtime is true, in which case the settings only apply until the
-    /// next reboot. name is the name of the unit to modify. properties are the
+    /// next reboot. name is the name of the unit to modify. Properties are the
     /// settings to set, encoded as an array of property name and value pairs.
     /// Note that this is not a dictionary!  Also note that when setting array
     /// properties with this method usually results in appending to the
@@ -606,14 +606,13 @@ trait Manager {
     ) -> zbus::Result<()>;
 
     /// Create and start a transient unit which will be released as soon as it
-    /// is not running or referenced anymore or the system is rebooted. name is
-    /// the unit name including its suffix and must be unique. mode is the same
-    /// as in StartUnit(), properties contains properties of the unit, specified
-    /// like in [ManagerProxy::set_unit_properties]. aux is currently unused
-    /// and should be passed as an empty array. See the [New Control Group
+    /// is finished running, not referenced anymore (see
+    /// [ref_unit)](ManagerProxy::ref_unit) or the system is rebooted.
+    /// `aux` is currently unused and should be passed as an empty array. See
+    /// the [New Control Group
     /// Interface](http://www.freedesktop.org/wiki/Software/systemd/ControlGroupInterface/)
-    /// for more information how to make use of this functionality for
-    /// resource control purposes.
+    /// for more information how to make use of this functionality for resource
+    /// control purposes.
     fn start_transient_unit(
         &self,
         name: &UnitName,
@@ -622,6 +621,9 @@ trait Manager {
         aux: &[(&str, &[(&str, zbus::zvariant::Value<'_>)])],
     ) -> zbus::Result<TypedObjectPath<JobProxy<'_>>>;
 
+    /// Increment unit reference count.
+    fn ref_unit(&self, name: &UnitName) -> zbus::Result<()>;
+
     /// Decrement unit reference count.
     fn unref_unit(&self, name: &UnitName) -> zbus::Result<()>;
 
@@ -629,21 +631,20 @@ trait Manager {
     #[dbus_proxy(object = "Job")]
     fn start_unit(&self, name: &UnitName, mode: &StartMode);
 
-    /// Similar to [ManagerProxy::start_unit] but replaces a job that is queued
-    /// for one unit by a job for another unit.
+    /// Similar to [start_unit](ManagerProxy::start_unit) but replaces a job
+    /// that is queued for one unit by a job for another unit.
     #[dbus_proxy(object = "Job")]
     fn start_unit_replace(&self, old_unit: &UnitName, new_unit: &UnitName, mode: &StartMode);
 
-    /// StopUnit() is similar to StartUnit() but stops the specified unit rather
-    /// than starting it. Note that the "isolate" mode is invalid for this
-    /// method.
+    /// Stops the specified unit.
+    /// Note that the "isolate" mode is invalid for this method.
     #[dbus_proxy(object = "Job")]
     fn stop_unit(&self, name: &UnitName, mode: &StartMode);
 
     /// Enable most bus signals to be sent out. Clients which are interested in
     /// signals need to call this method. Signals are only sent out if at least
     /// one client invoked this method.
-    /// See [ManagerProxy::unsubscribe] for unsubscription / closing semantics.
+    /// See [unsubscribe](ManagerProxy::unsubscribe) for unsubscription / closing semantics.
     fn subscribe(&self) -> zbus::Result<()>;
 
     /// Transition to a new root directory. This is intended to be used by
@@ -655,24 +656,25 @@ trait Manager {
     /// and replaces the old PID 1. All state will then be deserialized.
     fn switch_root(&self, new_root: &FilePath, init: &FilePath) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::reload_unit]
+    /// Restart a unit if it's running, otherwise do nothing.
     #[dbus_proxy(object = "Job")]
     fn try_restart_unit(&self, name: &UnitName, mode: &StartMode);
 
     /// Unmask unit files.
-    /// See [ManagerProxy::enable_unit_files] for a description of the boolean
-    /// flags.
+    /// See [enable_unit_files](ManagerProxy::enable_unit_files) for a
+    /// description of the boolean flags.
     fn unmask_unit_files(
         &self,
         files: &[&FilePath],
         runtime: bool,
     ) -> zbus::Result<Vec<UnitFileChange>>;
 
-    /// Combination of [ManagerProxy::unset_environment] and
-    /// [ManagerProxy::set_environment].  It takes two lists. The first list
-    /// contains variables to unset, the second one contains assignments to set.
-    /// If a variable is listed in both, the variable is set after this method
-    /// returns, i.e. the set list overrides the unset list.
+    /// Combination of [unset_environment](ManagerProxy::unset_environment) and
+    /// [set_environment](ManagerProxy::set_environment).  It takes two lists.
+    /// The first list contains variables to unset, the second one contains
+    /// assignments to set.  If a variable is listed in both, the variable is
+    /// set after this method returns, i.e. the set list overrides the unset
+    /// list.
     fn unset_and_set_environment(
         &self,
         names: &[&str],
@@ -686,15 +688,17 @@ trait Manager {
     /// will not fail in that case.
     fn unset_environment(&self, names: &[&str]) -> zbus::Result<()>;
 
-    /// Reverts the signal subscription that [ManagerProxy::subscribe] sets up.
-    /// It is not necessary to invoke [ManagerProxy::unsubscribe] as clients
+    /// Reverts the signal subscription that
+    /// [subscribe](ManagerProxy::subscribe) sets up.  It is not usually
+    /// necessary to invoke [unsubscribe](ManagerProxy::unsubscribe) as clients
     /// are tracked. Signals are no longer sent out as soon as all clients which
-    /// previously asked for [ManagerProxy::subscribe] either closed their
-    /// connection to the bus or invoked [ManagerProxy::unsubscribe].
+    /// previously asked for [subscribe](ManagerProxy::subscribe) either closed
+    /// their connection to the bus or invoked
+    /// [unsubscribe](ManagerProxy::unsubscribe).
     fn unsubscribe(&self) -> zbus::Result<()>;
 
-    /// Sent out each time a new job is enqueued or dequeued. Takes the numeric
-    /// job ID, the bus path and the primary unit name for this job as
+    /// Sent out each time a new job is enqueued or dequeued. Includes the
+    /// numeric job ID, the bus path and the primary unit name for this job as
     /// arguments.
     #[dbus_proxy(signal)]
     fn job_new(
@@ -704,17 +708,8 @@ trait Manager {
         unit: UnitName,
     ) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::job_new], [ManagerProxy::job_removed] also includes
-    /// a result string which is one of "done", "canceled", "timeout", "failed",
-    /// "dependency", or "skipped". "done" indicates successful execution of a
-    /// job. "canceled" indicates that a job has been canceled (via
-    /// [ManagerProxy::cancel_job]) before it finished execution (this doesn't
-    /// necessarily mean though that the job operation is actually cancelled
-    /// too, see above).  "timeout" indicates that the job timeout was reached.
-    /// "failed" indicates that the job failed. "dependency" indicates that a
-    /// job this job depended on failed and the job hence was removed as well.
-    /// "skipped" indicates that a job was skipped because it didn't apply to
-    /// the unit's current state.
+    /// Similar to [job_new](ManagerProxy::job_new), but also includes the
+    /// [JobResult] of the finished job.
     #[dbus_proxy(signal)]
     fn job_removed(
         &self,
@@ -732,15 +727,18 @@ trait Manager {
     fn reloading(&self, active: bool) -> zbus::Result<()>;
 
     /// Sent out when startup finishes. It carries six microsecond timespan
-    /// values, each indicating how much boot time has been spent in the
-    /// firmware (if known), in the boot loader (if known), in the kernel
-    /// initialization phase, in the initrd (if known), in userspace and in
-    /// total. These values may also be calculated from the
-    /// [ManagerProxy::firmware_timestamp_monotonic],
-    /// [ManagerProxy::loader_timestamp_monotonic],
-    /// [ManagerProxy::initrd_timestamp_monotonic,
-    /// [ManagerProxy::userspace_timestamp_monotonic], and
-    /// [ManagerProxy::finish_timestamp_monotonic] properties.
+    /// values, each indicating how much boot time has been spent in each layer
+    /// (firmware, bootloader, kernel, initrd) if known, and the always-known
+    /// timestamps in the userspace layer, and the total time.
+    /// These values may also be calculated from the
+    /// [firmware_timestamp_monotonic](ManagerProxy::firmware_timestamp_monotonic),
+    /// [loader_timestamp_monotonic](ManagerProxy::loader_timestamp_monotonic),
+    /// [initrd_timestamp_monotonic](ManagerProxy::initrd_timestamp_monotonic),
+    /// [userspace_timestamp_monotonic](ManagerProxy::userspace_timestamp_monotonic),
+    /// and
+    /// [finish_timestamp_monotonic](ManagerProxy::finish_timestamp_monotonic)
+    /// properties if the system is already ready without the complexity of
+    /// handling a signal.
     #[dbus_proxy(signal)]
     fn startup_finished(
         &self,
@@ -757,14 +755,15 @@ trait Manager {
     #[dbus_proxy(signal)]
     fn unit_files_changed(&self) -> zbus::Result<()>;
 
-    /// Sent out each time a new unit is loaded or unloaded. Note that this has
-    /// little to do with whether a unit is available on disk or not, and simply
-    /// reflects the units that are currently loaded into memory.
+    /// Sent out each time a new unit is loaded or unloaded.
+    /// Note that this has little to do with whether a unit is available on disk
+    /// or not, and simply reflects the units that are currently loaded into
+    /// memory.
     #[dbus_proxy(signal)]
     fn unit_new(&self, id: UnitName, unit: TypedObjectPath<UnitProxy<'_>>) -> zbus::Result<()>;
 
     /// Sent out each time a new unit is unloaded.
-    /// See [ManagerProxy::unit_new]
+    /// See [unit_new](ManagerProxy::unit_new)
     #[dbus_proxy(signal)]
     fn unit_removed(&self, id: UnitName, unit: TypedObjectPath<UnitProxy<'_>>) -> zbus::Result<()>;
 
@@ -789,14 +788,7 @@ trait Manager {
     /// Encodes a couple of taint flags as a colon-separated list. When systemd
     /// detects it is running on a system with certain problems, it will set an
     /// appropriate taint flag. Taints may be used to lower the chance of bogus
-    /// bug reports. The following taints are currently known: "split-usr",
-    /// "mtab-not-symlink", "cgroups-missing", "local-hwclock".  "split-usr" is
-    /// set if /usr/ is not pre-mounted when systemd is first invoked. See
-    /// Booting Without /usr is Broken for details why this is bad.
-    /// "mtab-not-symlink" indicates that /etc/mtab is not a symlink to
-    /// /proc/self/mounts as required. "cgroups-missing" indicates that control
-    /// groups have not been enabled in the kernel. "local-hwclock" indicates
-    /// that the local RTC is configured to be in local time rather than UTC.
+    /// bug reports.
     #[dbus_proxy(property)]
     fn tainted(&self) -> zbus::Result<TaintSet>;
 
@@ -848,23 +840,20 @@ trait Manager {
 
 #[dbus_proxy(
     interface = "org.freedesktop.systemd1.Job",
-    default_service = "org.freedesktop.systemd1"
+    default_service = "org.freedesktop.systemd1",
+    gen_blocking = false
 )]
 trait Job {
-    /// Cancel the job. Note that this will remove a job from the queue if it
-    /// is not yet executed but generally will not cause a job that is already
-    /// in the process of being executed to be aborted. This operation may also
-    /// be requested via [ManagerProxy::cancel_job] , which is sometimes useful
-    /// to reduce roundtrips.
+    /// See [cancel_job](ManagerProxy::cancel_job)
     fn cancel(&self) -> zbus::Result<()>;
 
-    /// Numeric Id of the job. During the runtime of a systemd instance each
-    /// numeric ID is only assigned once.
+    /// Numeric ID of the job.
+    /// During the runtime of a systemd instance each numeric ID is only
+    /// assigned once.
     #[dbus_proxy(property)]
     fn id(&self) -> zbus::Result<JobId>;
 
-    /// Unit this job belongs to. It is a structure consisting of the name of
-    /// the unit and a bus path to the unit's object
+    /// Unit this job belongs to.
     #[dbus_proxy(property)]
     fn unit(&self) -> zbus::Result<TypedObjectPath<UnitProxy<'_>>>;
 
@@ -877,40 +866,44 @@ trait Job {
 
 #[dbus_proxy(
     interface = "org.freedesktop.systemd1.Unit",
-    default_service = "org.freedesktop.systemd1"
+    default_service = "org.freedesktop.systemd1",
+    gen_blocking = false
 )]
 trait Unit {
-    /// See [ManagerProxy::start_unit]
+    /// See [start_unit](ManagerProxy::start_unit)
     fn start(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::stop_unit]
+    /// See [stop_unit](ManagerProxy::stop_unit)
     fn stop(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::reload_unit]
+    /// See [reload_unit](ManagerProxy::reload_unit)
     fn reload(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::restart_unit]
+    /// See [restart_unit](ManagerProxy::restart_unit)
     fn restart(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::try_restart_unit]
+    /// See [try_restart_unit](ManagerProxy::try_restart_unit)
     fn try_restart(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::reload_or_restart_unit]
+    /// See [reload_or_restart_unit](ManagerProxy::reload_or_restart_unit)
     fn reload_or_restart(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::reload_or_try_restart_unit]
+    /// See [reload_or_try_restart_unit](ManagerProxy::reload_or_try_restart_unit)
     fn reload_or_try_restart(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::kill_unit]
+    /// See [kill_unit](ManagerProxy::kill_unit)
     fn kill(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::reset_failed_unit]
+    /// See [reset_failed_unit](ManagerProxy::reset_failed_unit)
     fn reset_failed(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::unref_unit]
+    /// See [ref_unit](ManagerProxy::ref_unit)
+    fn incref(&self) -> zbus::Result<()>;
+
+    /// See [unref_unit](ManagerProxy::unref_unit)
     fn unref(&self) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::set_unit_properties]
+    /// See [set_unit_properties](ManagerProxy::set_unit_properties)
     fn set_properties(&self) -> zbus::Result<()>;
 
     /// Primary name of the unit.
@@ -918,7 +911,7 @@ trait Unit {
     fn id(&self) -> zbus::Result<UnitName>;
 
     /// All names of the unit, including the primary name that is also exposed
-    /// in Id.
+    /// in [id](UnitProxy::id).
     #[dbus_proxy(property)]
     fn names(&self) -> zbus::Result<Vec<UnitName>>;
 
@@ -930,10 +923,11 @@ trait Unit {
     #[dbus_proxy(property)]
     fn load_state(&self) -> zbus::Result<LoadState>;
 
-    /// If the unit failed to load (as encoded in [UnitProxy::load_state]),
-    /// then this will include a D-Bus error pair consisting of the error ID and
-    /// an explanatory human readable string of what happened. If it loaded
-    /// successfully, this will be a pair of empty strings.
+    /// If the unit failed to load (as encoded in
+    /// [load_state)](UnitProxy::load_state), then this will include a D-Bus
+    /// error pair consisting of the error ID and an explanatory human readable
+    /// string of what happened. If it loaded successfully, this will be a pair
+    /// of empty strings.
     #[dbus_proxy(property)]
     fn load_error(&self) -> zbus::Result<(String, String)>;
 
@@ -949,7 +943,8 @@ trait Unit {
 
 #[dbus_proxy(
     interface = "org.freedesktop.systemd1.Service",
-    default_service = "org.freedesktop.systemd1"
+    default_service = "org.freedesktop.systemd1",
+    gen_blocking = false
 )]
 trait Service {
     #[dbus_proxy(property)]
