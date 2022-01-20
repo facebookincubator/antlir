@@ -18,11 +18,14 @@ rust_binary(
     srcs = ["generate_metalos_apis.rs"],
     unittests = False,
     deps = [
+        "//antlir:find_root",
         "//antlir/buck_query:buck_query",
     ] + third_party.libraries(
         [
             "anyhow",
+            "fs_extra",
             "serde",
+            "serde_json",
         ],
         platform = "rust",
     ),
