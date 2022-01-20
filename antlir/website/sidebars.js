@@ -132,5 +132,14 @@ module.exports = {
         id: 'fb/oss-testing',
       },
     ]),
+    {
+      type: 'category',
+      label: 'MetalOS',
+      collapsed: false,
+      items: [
+        'metalos/overview',
+        'metalos/apis',
+      ],
+    }
   ],
 };

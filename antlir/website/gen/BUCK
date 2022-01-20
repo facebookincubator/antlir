@@ -1,6 +1,6 @@
 # @autodeps
 
-load("//antlir/bzl:oss_shim.bzl", "python_binary")
+load("//antlir/bzl:oss_shim.bzl", "python_binary", "rust_binary", "third_party")
 
 python_binary(
     name = "bzldoc",
@@ -11,4 +11,19 @@ python_binary(
         "//antlir:common",
         "//antlir:fs_utils",
     ],
+)
+
+rust_binary(
+    name = "generate-metalos-apis",
+    srcs = ["generate_metalos_apis.rs"],
+    unittests = False,
+    deps = [
+        "//antlir/buck_query:buck_query",
+    ] + third_party.libraries(
+        [
+            "anyhow",
+            "serde",
+        ],
+        platform = "rust",
+    ),
 )
