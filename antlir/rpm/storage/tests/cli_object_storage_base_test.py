@@ -72,19 +72,23 @@ class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
 
             return proc
 
-    def _test_error_cleanup(self, storage_kind: str):
+    def _test_error_cleanup(self, storage_kind: str, **kwargs):
         # Without a commit, all our failed cleanup is "behind the
         # scenes", and even though it errors and logs, it does not raise
         # an externally visible exception:
         with self.assertLogs(storage.__name__, level="ERROR") as cm:
             # pyre-fixme[16]: `Pluggable` has no attribute `writer`.
-            with Storage.make(key="test", kind=storage_kind).writer() as out:
+            with Storage.make(
+                key="test", kind=storage_kind, **kwargs
+            ).writer() as out:
                 out.write(b"triggers error cleanup via commit-to-delete")
         (msg,) = cm.output
         self.assertRegex(msg, r"Error retrieving ID .* uncommitted blob\.")
 
         # If we do try to commit, error from the underlying CLI will be raised.
-        with Storage.make(key="test", kind=storage_kind).writer() as out:
+        with Storage.make(
+            key="test", kind=storage_kind, **kwargs
+        ).writer() as out:
             out.write(b"something")
             with self.assertRaises(subprocess.CalledProcessError):
                 out.commit()
