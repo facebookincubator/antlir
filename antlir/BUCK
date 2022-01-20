@@ -35,6 +35,7 @@ python_library(
         "//antlir/...",
         "//metalos/initrd/facebook/...",
         "//tupperware/cm/antlir/...",
+        "//tupperware/image/scripts/...",
     ],
 )
 
