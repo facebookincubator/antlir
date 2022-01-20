@@ -26,8 +26,6 @@ pub fn buck_query<T: for<'de> Deserialize<'de>>(query: &str, attrs: bool) -> Res
 
     let proc = Command::new(cmd)
         .arg("query")
-        .arg("-c")
-        .arg("antlir.buck-query=1")
         .arg("--json")
         .args(args)
         .arg(query)
