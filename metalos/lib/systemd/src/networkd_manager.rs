@@ -28,7 +28,8 @@ pub struct ListedLink {
 #[dbus_proxy(
     interface = "org.freedesktop.network1.Manager",
     default_service = "org.freedesktop.network1",
-    default_path = "/org/freedesktop/network1"
+    default_path = "/org/freedesktop/network1",
+    gen_blocking = false
 )]
 trait Manager {
     /// List all links on the system. However do note that some or all of them
@@ -58,7 +59,8 @@ pub enum AdministrativeState {
 
 #[dbus_proxy(
     interface = "org.freedesktop.network1.Link",
-    default_service = "org.freedesktop.network1"
+    default_service = "org.freedesktop.network1",
+    gen_blocking = false
 )]
 trait Link {
     #[dbus_proxy(property)]

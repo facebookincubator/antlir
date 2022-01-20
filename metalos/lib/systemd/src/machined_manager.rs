@@ -74,8 +74,7 @@ pub enum Class {
     Container,
 }
 
-/// The running state of a registered machine as reported by
-/// [MachineProxy::state].
+/// The running state of a registered machine.
 #[derive(Debug, PartialEq, Eq, Clone, SystemdEnum)]
 pub enum MachineState {
     Opening,
@@ -87,7 +86,8 @@ pub enum MachineState {
     Unknown(String),
 }
 
-/// Some info about a machine as returned by [ManagerProxy::list_machines].
+/// Some info about a machine as returned by
+/// [list_machines](ManagerProxy::list_machines).
 #[derive(Debug, PartialEq, Eq, Deserialize, Type)]
 pub struct ListedMachine {
     pub name: MachineName,
@@ -96,7 +96,8 @@ pub struct ListedMachine {
     pub path: TypedObjectPath<MachineProxy<'static>>,
 }
 
-/// Some info about an image as returned by [ManagerProxy::list_images].
+/// Some info about an image as returned by
+/// [list_images](ManagerProxy::list_images).
 #[derive(Debug, PartialEq, Eq, Deserialize, Type)]
 pub struct ListedImage {
     pub name: ImageName,
@@ -129,7 +130,8 @@ impl Type for Address {
 #[dbus_proxy(
     interface = "org.freedesktop.machine1.Manager",
     default_service = "org.freedesktop.machine1",
-    default_path = "/org/freedesktop/machine1"
+    default_path = "/org/freedesktop/machine1",
+    gen_blocking = false
 )]
 trait Manager {
     /// Bind mount a file or directory from the host into the container. Its
@@ -167,7 +169,7 @@ trait Manager {
         destination: &FilePath,
     ) -> zbus::Result<()>;
 
-    /// Inverse of [ManagerProxy::copy_from_machine].
+    /// Inverse of [copy_from_machine](ManagerProxy::copy_from_machine).
     fn copy_to_machine(
         &self,
         name: &MachineName,
@@ -188,8 +190,8 @@ trait Manager {
     /// containers that make use of network namespacing.
     fn get_machine_addresses(&self, name: &MachineName) -> zbus::Result<Vec<(i32, Address)>>;
 
-    /// Similarly, [ManagerProxy::get_machine_by_pid] gets the machine object
-    /// the specified PID belongs to if there is any.
+    /// Similarly, [get_machine_by_pid](ManagerProxy::get_machine_by_pid) gets
+    /// the machine object the specified PID belongs to if there is any.
     #[dbus_proxy(object = "Machine")]
     fn get_machine_by_pid(&self, pid: u32);
 
@@ -232,7 +234,7 @@ trait Manager {
     ) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
     /// Return a file descriptor of the machine's root directory. See
-    /// [MachineProxy::root_directory].
+    /// [root_directory](MachineProxy::root_directory).
     fn open_machine_root_directory(&self, name: &MachineName) -> zbus::Result<zbus::zvariant::Fd>;
 
     /// Allocates a pseudo TTY in the container, as the specified user, and
@@ -264,23 +266,20 @@ trait Manager {
     /// name as its only argument.
     fn terminate_machine(&self, name: &MachineName) -> zbus::Result<()>;
 
-    /// MachineNew and MachineRemoved are sent whenever a new machine is
-    /// registered or removed. These signals carry the machine name and the
-    /// object path to the corresponding org.freedesktop.machine1.Machine
-    /// interface
+    /// Sent whenever a machine is registered.
     #[dbus_proxy(signal)]
     fn machine_new(
         &self,
-        machine: MachineName,
-        path: zbus::zvariant::ObjectPath<'_>,
+        id: MachineName,
+        machine: TypedObjectPath<MachineProxy<'_>>,
     ) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::machine_new]
+    /// Sent whenever a machine is removed.
     #[dbus_proxy(signal)]
     fn machine_removed(
         &self,
-        machine: MachineName,
-        path: zbus::zvariant::ObjectPath<'_>,
+        id: MachineName,
+        machine: TypedObjectPath<MachineProxy<'_>>,
     ) -> zbus::Result<()>;
 
     /// Size limit of the image pool in bytes.
@@ -298,7 +297,8 @@ trait Manager {
 
 #[dbus_proxy(
     interface = "org.freedesktop.machine1.Machine",
-    default_service = "org.freedesktop.machine1"
+    default_service = "org.freedesktop.machine1",
+    gen_blocking = false
 )]
 trait Image {
     #[dbus_proxy(property)]
@@ -314,10 +314,11 @@ trait Image {
 /// DBus interface for individual Machine objects
 #[dbus_proxy(
     interface = "org.freedesktop.machine1.Machine",
-    default_service = "org.freedesktop.machine1"
+    default_service = "org.freedesktop.machine1",
+    gen_blocking = false
 )]
 trait Machine {
-    /// See [ManagerProxy::bind_mount_machine]
+    /// See [bind_mount_machine](ManagerProxy::bind_mount_machine)
     fn bind_mount(
         &self,
         source: &FilePath,
@@ -326,31 +327,31 @@ trait Machine {
         mkdir: bool,
     ) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::copy_from_machine]
+    /// See [copy_from_machine](ManagerProxy::copy_from_machine)
     fn copy_from(&self, source: &FilePath, destination: &FilePath) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::copy_to_machine]
+    /// See [copy_to_machine](ManagerProxy::copy_to_machine)
     fn copy_to(&self, source: &FilePath, destination: &FilePath) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::get_machine_addresses]
+    /// See [get_machine_addresses](ManagerProxy::get_machine_addresses)
     fn get_addresses(&self) -> zbus::Result<Vec<(i32, Address)>>;
 
-    /// See [ManagerProxy::get_machine_osrelease]
+    /// See [get_machine_osrelease](ManagerProxy::get_machine_osrelease)
     fn get_osrelease(&self) -> zbus::Result<std::collections::HashMap<String, String>>;
 
-    /// See [ManagerProxy::kill_machine]
+    /// See [kill_machine](ManagerProxy::kill_machine)
     fn kill(&self, who: &KillWho, signal: Signal) -> zbus::Result<()>;
 
-    /// See [ManagerProxy::open_machine_login]
+    /// See [open_machine_login](ManagerProxy::open_machine_login)
     fn open_login(&self) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
-    /// See [ManagerProxy::open_machine_pty]
+    /// See [open_machine_pty](ManagerProxy::open_machine_pty)
     fn open_pty(&self) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
-    /// See [ManagerProxy::open_machine_root_directory]
+    /// See [open_machine_root_directory](ManagerProxy::open_machine_root_directory)
     fn open_root_directory(&self) -> zbus::Result<zbus::zvariant::Fd>;
 
-    /// See [ManagerProxy::open_machine_shell]
+    /// See [open_machine_shell](ManagerProxy::open_machine_shell)
     fn open_shell(
         &self,
         user: &str,
@@ -359,7 +360,7 @@ trait Machine {
         environment: &Environment,
     ) -> zbus::Result<(zbus::zvariant::Fd, OwnedFilePath)>;
 
-    /// See [ManagerProxy::terminate_machine]
+    /// See [terminate_machine](ManagerProxy::terminate_machine)
     fn terminate(&self) -> zbus::Result<()>;
 
     #[dbus_proxy(property)]
@@ -400,7 +401,7 @@ trait Machine {
     #[dbus_proxy(property)]
     fn timestamp(&self) -> zbus::Result<Timestamp>;
 
-    /// Monotonic version of [MachineProxy::timestamp]
+    /// Monotonic version of [timestamp](MachineProxy::timestamp)
     #[dbus_proxy(property)]
     fn timestamp_monotonic(&self) -> zbus::Result<MonotonicTimestamp>;
 
