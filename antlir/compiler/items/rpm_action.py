@@ -29,14 +29,12 @@ from antlir.fs_utils import (
     generate_work_dir,
 )
 from antlir.nspawn_in_subvol.args import (
+    NspawnPluginArgs,
     PopenArgs,
     new_nspawn_opts,
-    _new_nspawn_debug_only_not_for_prod_opts,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.nspawn_in_subvol.plugins.yum_dnf_versionlock import (
-    YumDnfVersionlock,
-)
+from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
@@ -420,20 +418,17 @@ def _yum_dnf_using_build_appliance(
         bindmount_ro=bind_ros,
         bindmount_rw=[(install_root, work_dir)],
         user=pwd.getpwnam("root"),
-        debug_only_opts=_new_nspawn_debug_only_not_for_prod_opts(
-            # This needs to be set to public so that the rpm repo server
-            # launched by the outer BA container is reachable from the
-            # below nspawn.
-            private_network=False,
-        ),
     )
     run_nspawn(
         opts,
         PopenArgs(),
-        plugins=[
-            YumDnfVersionlock(
-                [(snapshot_dir, versionlock_list)],
-                [snapshot_dir],
-            )
-        ],
+        plugins=rpm_nspawn_plugins(
+            opts=opts,
+            plugin_args=NspawnPluginArgs(
+                serve_rpm_snapshots=[snapshot_dir],
+                snapshots_and_versionlocks=[(snapshot_dir, versionlock_list)],
+                # We'll explicitly call the RPM installer wrapper we need.
+                shadow_proxied_binaries=False,
+            ),
+        ),
     )

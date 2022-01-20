@@ -1,5 +1,4 @@
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -156,15 +155,9 @@ python_library(
     ],
 )
 
-image_python_unittest(
+python_unittest(
     name = "test-rpm-action",
     srcs = ["tests/test_rpm_action.py"],
-    container_opts = {
-        "internal_only_bind_artifacts_dir_rw": True,
-        "serve_rpm_snapshots": ["//antlir/rpm:repo-snapshot-for-tests"],
-        "shadow_proxied_binaries": False,
-    },
-    layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     needed_coverage = [(100, ":rpm_action")],
     resources = {
         layer_resource(
@@ -178,7 +171,6 @@ image_python_unittest(
         ): "tests/test-with-no-rpm",
         TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm": "tests/rpm-test-cheese-2-1.rpm",
     },
-    run_as_user = "root",
     deps = [
         ":rpm_action_base_testlib",
         "//antlir:bzl_const",
