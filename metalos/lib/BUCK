@@ -55,3 +55,23 @@ rust_library(
         "anyhow",
     ],
 )
+
+rust_library(
+    name = "http_test",
+    srcs = ["http_test.rs"],
+    crate_root = "http_test.rs",
+    test_deps = [
+        "anyhow",
+        "maplit",
+        "reqwest",
+    ],
+    unittests = [
+        "container",
+    ],
+    deps = [
+        "http",
+        "hyper",
+        "tokio",
+        "url",
+    ],
+)
