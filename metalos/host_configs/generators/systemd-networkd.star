@@ -1,3 +1,7 @@
+
+# The UseAutonomousPrefix=false config was added because without this our machines would
+# use IPv6 privacy settings and we would send from an IP that rootcanal didn't recognize
+# and so our request for certificates would be denied
 NETWORK_TEMPLATE = metalos.template("""
 [Match]
 MACAddress={{mac}}
@@ -10,6 +14,9 @@ Address={{this.addr}}/{{this.prefix}}
 Address={{this}}
 {{/each~}}
 Domains={{#each search}}{{this}} {{/each}}
+
+[IPv6AcceptRA]
+UseAutonomousPrefix=false
 """)
 
 LINK_TEMPLATE = metalos.template("""
