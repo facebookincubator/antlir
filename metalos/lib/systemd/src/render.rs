@@ -24,6 +24,10 @@ pub trait Render {
             target.push_str(&thing.render());
         }
     }
+
+    fn add_renderable<T: Render>(target: &mut String, thing: &T) {
+        target.push_str(&thing.render());
+    }
 }
 
 #[derive(Debug, Default, PartialEq, PartialOrd)]
@@ -91,6 +95,39 @@ impl Render for Unit {
         let mut out = String::new();
         Self::add_optional_renderable(&mut out, self.unit.as_ref());
         Self::add_optional_renderable(&mut out, self.body.as_ref());
+        out
+    }
+}
+
+/// Represents systemd-networkd's configuration file as per
+/// https://man7.org/linux/man-pages/man8/systemd-networkd.8.html
+#[derive(Debug, Default, PartialEq, PartialOrd)]
+pub struct NetworkUnit {
+    pub match_section: NetworkUnitMatchSection,
+}
+
+impl Render for NetworkUnit {
+    fn render(&self) -> String {
+        let mut out = String::new();
+        Self::add_renderable(&mut out, &self.match_section);
+        out
+    }
+}
+
+#[derive(Debug, Default, PartialEq, PartialOrd)]
+pub struct NetworkUnitMatchSection {
+    pub name: String,
+    pub mac_address: String,
+}
+
+/// Renders NetworkUnit as per
+/// https://man7.org/linux/man-pages/man5/systemd.network.5.html
+impl Render for NetworkUnitMatchSection {
+    fn render(&self) -> String {
+        let mut out = String::new();
+        Self::add_header(&mut out, "Match");
+        Self::add_kv(&mut out, "Name", self.name.clone());
+        Self::add_kv(&mut out, "MACAddress", self.mac_address.clone());
         out
     }
 }
@@ -227,5 +264,23 @@ mod tests {
             Type=btrfs\n\
             "
         );
+    }
+
+    #[test]
+    fn test_render_network_file() {
+        let test = NetworkUnit {
+            match_section: NetworkUnitMatchSection {
+                name: "eth*".to_string(),
+                mac_address: "11:22:33:44:55:66".to_string(),
+            },
+        };
+        assert_eq!(
+            test.render(),
+            "\
+            [Match]\n\
+            Name=eth*\n\
+            MACAddress=11:22:33:44:55:66\n\
+            "
+        )
     }
 }

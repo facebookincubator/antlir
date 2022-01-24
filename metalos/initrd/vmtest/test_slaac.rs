@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::path::Path;
 use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
@@ -74,4 +75,33 @@ fn got_ip_from_ra() {
         sleep(Duration::from_millis(250));
     }
     panic!("could not find slaac-configured address for eth0");
+}
+
+#[test]
+fn is_eth_network_drop_in_in_place() {
+    wait_for_systemd();
+
+    assert!(Path::new("/usr/lib/systemd/network/50-eth.network").exists());
+    assert_eq!(
+        std::fs::read_to_string("/usr/lib/systemd/network/50-eth.network")
+            .expect("Can't read /usr/lib/systemd/network/50-eth.network file"),
+        "\
+        [Network]\n\
+        IPv6AcceptRA=yes\n\n\
+        [IPv6AcceptRA]\n\
+        # Force SLAAC only for early boot, otherwise systemd-networkd will start the\n\
+        # dhcpv6 client after receiving a RA.\n\
+        DHCPv6Client=false\n\
+        "
+    );
+
+    assert_eq!(
+        std::fs::read_to_string("/usr/lib/systemd/network/50-eth.network.d/match.conf")
+            .expect("Can't read /usr/lib/systemd/network/50-eth.network.d/match.conf file"),
+        "\
+        [Match]\n\
+        Name=eth*\n\
+        MACAddress=11:22:33:44:55:66\n\
+        "
+    );
 }
