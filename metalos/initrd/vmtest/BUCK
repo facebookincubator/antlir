@@ -121,6 +121,9 @@ vm.rust_unittest(
     vm_opts = vm.types.opts.new(
         initrd = ":vmtest-initrd.cpio.gz",
         kernel = TEST_KERNEL,
+        append = [
+            "macaddress=11:22:33:44:55:66",
+        ],
     ),
     srcs = ["test_slaac.rs"],
     crate_root = "test_slaac.rs",

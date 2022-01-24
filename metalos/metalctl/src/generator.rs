@@ -14,12 +14,16 @@ use slog::{error, info, o, Logger};
 use structopt::StructOpt;
 
 use crate::kernel_cmdline::{MetalosCmdline, Root};
+use crate::net_utils::get_mac;
 use crate::switch_root::ROOTDISK_DIR;
 use generator_lib::{
-    materialize_boot_info, Environment, ExtraDependencies, ExtraDependency, MountUnit,
+    materialize_boot_info, Dropin, Environment, ExtraDependencies, ExtraDependency, MountUnit,
     ROOTDISK_MOUNT_SERVICE,
 };
-use systemd::render::{MountSection, UnitSection};
+use systemd::render::{MountSection, NetworkUnit, NetworkUnitMatchSection, UnitSection};
+
+// WARNING: keep in sync with the bzl/TARGETS file unit
+const ETH_NETWORK_UNIT_FILENAME: &str = "50-eth.network";
 
 #[derive(StructOpt)]
 #[cfg_attr(test, derive(Clone))]
@@ -33,6 +37,10 @@ pub struct Opts {
     /// What directory to place the environment file in.
     #[structopt(default_value = "/run/systemd/generator/")]
     environment_dir: PathBuf,
+
+    /// What directory to place the network unit dropin/override in
+    #[structopt(default_value = "/usr/lib/systemd/network/")]
+    network_unit_dir: PathBuf,
 }
 
 #[derive(Debug, PartialEq)]
@@ -128,6 +136,24 @@ fn make_mount_unit(root: Root, rootdisk: &Path) -> Result<MountUnit> {
     }
 }
 
+fn make_network_unit_dropin(
+    target: String,
+    name: String,
+    mac_address: Option<String>,
+    dropin_filename: String,
+) -> Option<Dropin<NetworkUnit>> {
+    mac_address.map(|mac| Dropin {
+        target: target.into(),
+        unit: NetworkUnit {
+            match_section: NetworkUnitMatchSection {
+                name,
+                mac_address: mac,
+            },
+        },
+        dropin_filename: Some(dropin_filename),
+    })
+}
+
 fn get_boot_id() -> Result<String> {
     let content = std::fs::read_to_string(Path::new("/proc/sys/kernel/random/boot_id"))
         .context("Can't read /proc/sys/kernel/random/boot_id")?;
@@ -135,11 +161,19 @@ fn get_boot_id() -> Result<String> {
     Ok(content.trim().replace("-", ""))
 }
 
+struct BootInfoResult<ENV: Environment> {
+    env: ENV,
+    extra_deps: ExtraDependencies,
+    mount_unit: MountUnit,
+    network_unit_dropin: Option<Dropin<NetworkUnit>>,
+}
+
 fn metalos_existing_boot_info(
     root: Root,
     host_config_uri: String,
     os_package: String,
-) -> Result<(MetalosEnvironment, ExtraDependencies, MountUnit)> {
+    mac_address: Option<String>,
+) -> Result<BootInfoResult<MetalosEnvironment>> {
     let rootdisk: &Path = Path::new(ROOTDISK_DIR);
     let boot_id = get_boot_id().context("Failed to get boot id")?;
     let env = MetalosEnvironment {
@@ -176,8 +210,19 @@ fn metalos_existing_boot_info(
     );
 
     let mount_unit = make_mount_unit(root, rootdisk).context("Failed to build mount unit")?;
+    let network_unit_dropin = make_network_unit_dropin(
+        ETH_NETWORK_UNIT_FILENAME.to_string(),
+        "eth*".to_string(),
+        mac_address,
+        "match.conf".to_string(),
+    );
 
-    Ok((env, extra_deps, mount_unit))
+    Ok(BootInfoResult {
+        env,
+        extra_deps,
+        mount_unit,
+        network_unit_dropin,
+    })
 }
 
 fn metalos_reimage_boot_info<FD: FindRootDisk>(
@@ -186,9 +231,10 @@ fn metalos_reimage_boot_info<FD: FindRootDisk>(
     os_package: String,
     disk_image_package: String,
     disk_finder: &FD,
-) -> Result<(MetalosReimageEnvironment, ExtraDependencies, MountUnit)> {
-    let (base_env, mut extra_deps, mount_unit) =
-        metalos_existing_boot_info(root, host_config_uri, os_package)
+    mac_address: Option<String>,
+) -> Result<BootInfoResult<MetalosReimageEnvironment>> {
+    let boot_info_result =
+        metalos_existing_boot_info(root, host_config_uri, os_package, mac_address)
             .context("failed to get base info for existing boot")?;
 
     let root_device = disk_finder
@@ -197,15 +243,20 @@ fn metalos_reimage_boot_info<FD: FindRootDisk>(
         .dev_node()
         .context("Failed to get the devnode for root disk")?;
 
-    let env = MetalosReimageEnvironment {
-        metalos_common: base_env,
-        rootdisk_device: root_device,
-        disk_image_package,
+    let mut new_boot_info_result = BootInfoResult {
+        env: MetalosReimageEnvironment {
+            metalos_common: boot_info_result.env,
+            rootdisk_device: root_device,
+            disk_image_package,
+        },
+        extra_deps: boot_info_result.extra_deps,
+        mount_unit: boot_info_result.mount_unit,
+        network_unit_dropin: boot_info_result.network_unit_dropin,
     };
 
     // For reimage we need to insert the image service just before we
     // mount the root disk.
-    extra_deps.insert(
+    new_boot_info_result.extra_deps.insert(
         "metalos_reimage_boot".to_string(),
         ExtraDependency {
             source: ROOTDISK_MOUNT_SERVICE.into(),
@@ -213,15 +264,25 @@ fn metalos_reimage_boot_info<FD: FindRootDisk>(
         },
     );
 
-    Ok((env, extra_deps, mount_unit))
+    Ok(new_boot_info_result)
 }
 
-fn legacy_boot_info(root: Root) -> Result<(LegacyEnvironment, ExtraDependencies, MountUnit)> {
-    Ok((
-        LegacyEnvironment {},
-        ExtraDependencies::new(),
-        make_mount_unit(root, Path::new(ROOTDISK_DIR)).context("Failed to build mount unit")?,
-    ))
+fn legacy_boot_info(
+    root: Root,
+    mac_address: Option<String>,
+) -> Result<BootInfoResult<LegacyEnvironment>> {
+    Ok(BootInfoResult {
+        env: LegacyEnvironment {},
+        extra_deps: ExtraDependencies::new(),
+        mount_unit: make_mount_unit(root, Path::new(ROOTDISK_DIR))
+            .context("Failed to build mount unit")?,
+        network_unit_dropin: make_network_unit_dropin(
+            ETH_NETWORK_UNIT_FILENAME.to_string(),
+            "eth*".to_string(),
+            mac_address,
+            "match.conf".to_string(),
+        ),
+    })
 }
 
 fn generator_maybe_err<FD: FindRootDisk>(
@@ -233,9 +294,22 @@ fn generator_maybe_err<FD: FindRootDisk>(
     let boot_mode = detect_mode(&cmdline).context("failed to detect boot mode")?;
     info!(log, "Booting with mode: {:?}", boot_mode);
 
+    // use the mac address in the kernel command line, otherwise try to infer it
+    // using crate::net_utils::get_mac()
+    let mac_address: Option<String> = match cmdline.mac_address {
+        Some(mac) => Some(mac),
+        None => match get_mac() {
+            Ok(m) => Some(m),
+            Err(error) => {
+                error!(log, "Skipping network dropin. Error was: {}", error);
+                None
+            }
+        },
+    };
+
     match &boot_mode {
         BootMode::MetalOSExisting => {
-            let (env, extra_deps, mount_units) = metalos_existing_boot_info(
+            let boot_info_result = metalos_existing_boot_info(
                 cmdline.root,
                 cmdline
                     .host_config_uri
@@ -243,6 +317,7 @@ fn generator_maybe_err<FD: FindRootDisk>(
                 cmdline
                     .os_package
                     .context("OS package must be provided for metalos boots")?,
+                mac_address,
             )
             .context("Failed to build normal metalos info")?;
 
@@ -250,13 +325,15 @@ fn generator_maybe_err<FD: FindRootDisk>(
                 log,
                 &opts.normal_dir,
                 &opts.environment_dir,
-                env,
-                extra_deps,
-                mount_units,
+                &opts.network_unit_dir,
+                boot_info_result.env,
+                boot_info_result.extra_deps,
+                boot_info_result.mount_unit,
+                boot_info_result.network_unit_dropin,
             )
         }
         BootMode::MetalOSReimage => {
-            let (env, extra_deps, mount_units) = metalos_reimage_boot_info(
+            let boot_info_result = metalos_reimage_boot_info(
                 cmdline.root,
                 cmdline
                     .host_config_uri
@@ -268,6 +345,7 @@ fn generator_maybe_err<FD: FindRootDisk>(
                     .root_disk_package
                     .context("Root disk package must be provided for metalos reimage boots")?,
                 disk_finder,
+                mac_address,
             )
             .context("Failed to build normal metalos info")?;
 
@@ -275,22 +353,26 @@ fn generator_maybe_err<FD: FindRootDisk>(
                 log,
                 &opts.normal_dir,
                 &opts.environment_dir,
-                env,
-                extra_deps,
-                mount_units,
+                &opts.network_unit_dir,
+                boot_info_result.env,
+                boot_info_result.extra_deps,
+                boot_info_result.mount_unit,
+                boot_info_result.network_unit_dropin,
             )
         }
         BootMode::Legacy => {
-            let (env, extra_deps, mount_units) =
-                legacy_boot_info(cmdline.root).context("failed to build legacy info")?;
+            let boot_info_result = legacy_boot_info(cmdline.root, mac_address)
+                .context("failed to build legacy info")?;
 
             materialize_boot_info(
                 log,
                 &opts.normal_dir,
                 &opts.environment_dir,
-                env,
-                extra_deps,
-                mount_units,
+                &opts.network_unit_dir,
+                boot_info_result.env,
+                boot_info_result.extra_deps,
+                boot_info_result.mount_unit,
+                boot_info_result.network_unit_dropin,
             )
         }
     }
@@ -411,18 +493,21 @@ mod tests {
         let early = tmpdir.join("early");
         let late = tmpdir.join("late");
         let env = tmpdir.join("env");
+        let network = tmpdir.join("network");
 
         std::fs::create_dir(&tmpdir).context("failed to create tmpdir")?;
         std::fs::create_dir(&normal).context("failed to create normal dir")?;
         std::fs::create_dir(&early).context("failed to create early dir")?;
         std::fs::create_dir(&late).context("failed to create late dir")?;
         std::fs::create_dir(&env).context("failed to create env dir")?;
+        std::fs::create_dir(&network).context("failed to create network dir")?;
 
         let opts = Opts {
             normal_dir: normal,
             early_dir: early,
             late_dir: late,
             environment_dir: env,
+            network_unit_dir: network,
         };
 
         let boot_id = get_boot_id().context("Failed to get boot id")?;
@@ -495,7 +580,8 @@ mod tests {
             metalos.write_root_disk_package=\"reimage_pkg\" \
             metalos.os_package=\"somePackage\" \
             rootfstype=btrfs \
-            root=LABEL=unittest\
+            root=LABEL=unittest \
+            macaddress=11:22:33:44:55:66\
             "
         .parse()?;
 
@@ -545,7 +631,12 @@ mod tests {
                     ROOTDISK_DIR=/rootdisk\n\
                     ",
                     boot_id
-                )
+                ),
+                opts.network_unit_dir.join("50-eth.network.d/match.conf") => "\
+                    [Match]\n\
+                    Name=eth*\n\
+                    MACAddress=11:22:33:44:55:66\n\
+                    ".to_string(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
@@ -562,7 +653,8 @@ mod tests {
             metalos.host-config-uri=\"https://server:8000/config\" \
             metalos.os_package=\"somePackage\" \
             rootfstype=btrfs \
-            root=LABEL=unittest\
+            root=LABEL=unittest \
+            macaddress=11:22:33:44:55:66\
             "
         .parse()?;
 
@@ -608,7 +700,12 @@ mod tests {
                     ROOTDISK_DIR=/rootdisk\n\
                     ",
                     boot_id
-                )
+                ),
+                opts.network_unit_dir.join("50-eth.network.d/match.conf") => "\
+                    [Match]\n\
+                    Name=eth*\n\
+                    MACAddress=11:22:33:44:55:66\n\
+                    ".to_string(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
@@ -624,7 +721,8 @@ mod tests {
         let cmdline: MetalosCmdline = "\
             root=LABEL=unittest \
             rootflags=f1,f2,f3 \
-            ro\
+            ro \
+            macaddress=11:22:33:44:55:66\
             "
         .parse()?;
 
@@ -650,6 +748,11 @@ mod tests {
                     Options=f1,f2,f3,ro\n\
                 ".to_string(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => "".to_string(),
+                opts.network_unit_dir.join("50-eth.network.d/match.conf") => "\
+                    [Match]\n\
+                    Name=eth*\n\
+                    MACAddress=11:22:33:44:55:66\n\
+                    ".to_string(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
@@ -659,7 +762,7 @@ mod tests {
 
     #[test]
     fn test_metalos_reimage_boot_info() -> Result<()> {
-        let (env, extra_deps, mount_unit) = metalos_reimage_boot_info(
+        let boot_info_result = metalos_reimage_boot_info(
             Root {
                 root: Some("LABEL=unittest".to_string()),
                 fstype: Some("testfs".to_string()),
@@ -675,13 +778,14 @@ mod tests {
                     disk: "/dev/unittest".into(),
                 },
             },
+            Some("11:22:33:44:55:66".to_string()),
         )
         .context("failed to get boot info")?;
 
         let boot_id = get_boot_id().context("failed to get boot id")?;
 
         assert_eq!(
-            env,
+            boot_info_result.env,
             MetalosReimageEnvironment {
                 metalos_common: MetalosEnvironment {
                     host_config_uri: "test_config_uri".to_string(),
@@ -697,7 +801,7 @@ mod tests {
         );
 
         assert_eq!(
-            extra_deps,
+            boot_info_result.extra_deps,
             btreemap! {
                 "metalos_boot".to_string() => ExtraDependency {
                     source: "metalos-switch-root.service".into(),
@@ -715,7 +819,7 @@ mod tests {
         );
 
         assert_eq!(
-            mount_unit,
+            boot_info_result.mount_unit,
             MountUnit {
                 unit_section: UnitSection::default(),
                 mount_section: MountSection {
@@ -727,12 +831,26 @@ mod tests {
             }
         );
 
+        assert_eq!(
+            boot_info_result.network_unit_dropin,
+            Some(Dropin {
+                target: ETH_NETWORK_UNIT_FILENAME.into(),
+                unit: NetworkUnit {
+                    match_section: NetworkUnitMatchSection {
+                        name: "eth*".to_string(),
+                        mac_address: "11:22:33:44:55:66".to_string()
+                    },
+                },
+                dropin_filename: Some("match.conf".to_string()),
+            })
+        );
+
         Ok(())
     }
 
     #[test]
     fn test_metalos_existing_boot_info() -> Result<()> {
-        let (env, extra_deps, mount_unit) = metalos_existing_boot_info(
+        let boot_info_result = metalos_existing_boot_info(
             Root {
                 root: Some("LABEL=unittest".to_string()),
                 fstype: Some("testfs".to_string()),
@@ -742,13 +860,14 @@ mod tests {
             },
             "test_config_uri".to_string(),
             "test_package:123".to_string(),
+            Some("11:22:33:44:55:66".to_string()),
         )
         .context("failed to get boot info")?;
 
         let boot_id = get_boot_id().context("failed to get boot id")?;
 
         assert_eq!(
-            env,
+            boot_info_result.env,
             MetalosEnvironment {
                 host_config_uri: "test_config_uri".to_string(),
                 rootdisk_dir: "/rootdisk".into(),
@@ -760,7 +879,7 @@ mod tests {
         );
 
         assert_eq!(
-            extra_deps,
+            boot_info_result.extra_deps,
             btreemap! {
                 "metalos_boot".to_string() => ExtraDependency {
                     source: "metalos-switch-root.service".into(),
@@ -774,7 +893,7 @@ mod tests {
         );
 
         assert_eq!(
-            mount_unit,
+            boot_info_result.mount_unit,
             MountUnit {
                 unit_section: UnitSection::default(),
                 mount_section: MountSection {
@@ -786,25 +905,42 @@ mod tests {
             }
         );
 
+        assert_eq!(
+            boot_info_result.network_unit_dropin,
+            Some(Dropin {
+                target: ETH_NETWORK_UNIT_FILENAME.into(),
+                unit: NetworkUnit {
+                    match_section: NetworkUnitMatchSection {
+                        name: "eth*".to_string(),
+                        mac_address: "11:22:33:44:55:66".to_string()
+                    },
+                },
+                dropin_filename: Some("match.conf".to_string()),
+            })
+        );
+
         Ok(())
     }
 
     #[test]
     fn test_legacy_boot_info() -> Result<()> {
-        let (env, extra_deps, mount_unit) = legacy_boot_info(Root {
-            root: Some("LABEL=unittest".to_string()),
-            fstype: Some("testfs".to_string()),
-            flags: Some(vec!["f1".to_string(), "f2".to_string(), "f3".to_string()]),
-            ro: false,
-            rw: true,
-        })
+        let boot_info_result = legacy_boot_info(
+            Root {
+                root: Some("LABEL=unittest".to_string()),
+                fstype: Some("testfs".to_string()),
+                flags: Some(vec!["f1".to_string(), "f2".to_string(), "f3".to_string()]),
+                ro: false,
+                rw: true,
+            },
+            Some("11:22:33:44:55:66".to_string()),
+        )
         .context("failed to get boot info")?;
 
-        assert_eq!(env, LegacyEnvironment {});
-        assert_eq!(extra_deps, ExtraDependencies::new());
+        assert_eq!(boot_info_result.env, LegacyEnvironment {});
+        assert_eq!(boot_info_result.extra_deps, ExtraDependencies::new());
 
         assert_eq!(
-            mount_unit,
+            boot_info_result.mount_unit,
             MountUnit {
                 unit_section: UnitSection::default(),
                 mount_section: MountSection {
@@ -814,6 +950,20 @@ mod tests {
                     type_: Some("testfs".to_string()),
                 }
             }
+        );
+
+        assert_eq!(
+            boot_info_result.network_unit_dropin,
+            Some(Dropin {
+                target: ETH_NETWORK_UNIT_FILENAME.into(),
+                unit: NetworkUnit {
+                    match_section: NetworkUnitMatchSection {
+                        name: "eth*".to_string(),
+                        mac_address: "11:22:33:44:55:66".to_string()
+                    },
+                },
+                dropin_filename: Some("match.conf".to_string()),
+            })
         );
 
         Ok(())

@@ -1,5 +1,14 @@
-[Match]
-Name=eth*
+# NOTE: The [Match] section is provided by a drop in network unit file deployed
+# by the initrd. And will look something like this:
+#
+# [Match]
+# Name=eth*
+# MACAddress=<mac address of the host>
+#
+# This is needed in case of multi home machines where one of the NICs is
+# unplugged.
+# The MAC address is provided as kernel argument when known, otherwise
+# it will be inferred programatically asking the OS.
 
 [Network]
 IPv6AcceptRA=yes

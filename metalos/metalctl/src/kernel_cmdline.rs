@@ -36,6 +36,7 @@ enum KnownArgs {
     RootFlagRo,
     RootFlagRw,
     EventBackendBaseUri,
+    MacAddress,
 }
 
 impl KnownArgs {
@@ -51,6 +52,7 @@ impl KnownArgs {
             Self::RootFlagRo => "--ro",
             Self::RootFlagRw => "--rw",
             Self::EventBackendBaseUri => "--metalos.event_backend_base_uri",
+            Self::MacAddress => "--macaddress",
         }
     }
 }
@@ -78,6 +80,9 @@ pub struct MetalosCmdline {
 
     #[structopt(flatten)]
     pub root: Root,
+
+    #[structopt(long = &KnownArgs::MacAddress.flag_name())]
+    pub mac_address: Option<String>,
 }
 
 #[derive(Debug, StructOpt, PartialEq)]
@@ -222,6 +227,13 @@ mod tests {
     }
 
     #[test]
+    fn test_mac_address_in_cmdlines() -> Result<()> {
+        let cmdline: MetalosCmdline = "macaddress=11:22:33:44:55:66".parse()?;
+        assert_eq!(Some("11:22:33:44:55:66".to_string()), cmdline.mac_address);
+        Ok(())
+    }
+
+    #[test]
     fn url_value() -> Result<()> {
         let cmdline: MetalosCmdline =
             "metalos.host-config-uri=\"https://$HOSTNAME:8000/v1/host/host001.01.abc0.facebook.com\"".parse()?;
@@ -234,7 +246,7 @@ mod tests {
 
     #[test]
     fn real_life_cmdline() -> Result<()> {
-        let cmdline = "BOOT_IMAGE=(hd0,msdos1)/vmlinuz-5.2.9-229_fbk15_hardened_4185_g357f49b36602 ro root=LABEL=/ biosdevname=0 net.ifnames=0 fsck.repair=yes systemd.gpt_auto=0 ipv6.autoconf=0 erst_disable cgroup_no_v1=all nox2apic crashkernel=128M hugetlb_cma=6G console=tty0 console=ttyS0,115200".parse()?;
+        let cmdline = "BOOT_IMAGE=(hd0,msdos1)/vmlinuz-5.2.9-229_fbk15_hardened_4185_g357f49b36602 ro root=LABEL=/ biosdevname=0 net.ifnames=0 fsck.repair=yes systemd.gpt_auto=0 ipv6.autoconf=0 erst_disable cgroup_no_v1=all nox2apic crashkernel=128M hugetlb_cma=6G console=tty0 console=ttyS0,115200 macaddress=11:22:33:44:55:66".parse()?;
         let kv = |key: &str, val: &str| super::KernelCmdlineOpt::Kv(key.to_owned(), val.to_owned());
         let on_off = |key: &str, val: bool| super::KernelCmdlineOpt::OnOff(key.to_owned(), val);
         assert_eq!(
@@ -262,6 +274,7 @@ mod tests {
                 host_config_uri: None,
                 package_format_uri: None,
                 event_backend_base_uri: None,
+                mac_address: Some("11:22:33:44:55:66".to_string()),
                 root: Root {
                     root: Some("LABEL=/".to_string()),
                     flags: None,

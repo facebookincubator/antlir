@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Context, Result};
 use serde::Serialize;
 use slog::{info, Logger};
-use systemd::render::{MountSection, Render, Unit, UnitBody, UnitSection};
+use systemd::render::{MountSection, NetworkUnit, Render, Unit, UnitBody, UnitSection};
 use systemd::UnitName;
 
 pub const ENVIRONMENT_FILENAME: &str = "metalos_environment";
@@ -84,9 +84,12 @@ pub struct MountUnit {
 /// This represents a dropin unit that the generator can make. The unit inside can be
 /// written to disk with the `systemd::render::Render` trait and we also hold a name
 /// of the unit that we are targeting
-struct Dropin {
-    target: UnitName,
-    unit: Unit,
+#[derive(Debug, PartialEq)]
+pub struct Dropin<UNIT: Render> {
+    pub target: UnitName,
+    pub unit: UNIT,
+    // this allows to personalise the name of the drop-in file
+    pub dropin_filename: Option<String>,
 }
 
 fn write_extra_dependency(
@@ -108,6 +111,7 @@ fn write_extra_dependency(
                 }),
                 body: None,
             },
+            dropin_filename: None,
         },
         log,
         normal_dir,
@@ -120,9 +124,11 @@ pub fn materialize_boot_info<ENV: Environment + std::fmt::Debug>(
     log: Logger,
     normal_dir: &Path,
     env_dir: &Path,
+    network_unit_dir: &Path,
     env: ENV,
     extra_deps: ExtraDependencies,
     mount_unit: MountUnit,
+    network_unit_dropin: Option<Dropin<NetworkUnit>>,
 ) -> Result<()> {
     info!(
         log,
@@ -154,10 +160,36 @@ pub fn materialize_boot_info<ENV: Environment + std::fmt::Debug>(
     )
     .context("Failed to write rootdisk mount")?;
 
+    match network_unit_dropin {
+        Some(n) => {
+            // if the dropin_filename is not provided we we use the target name
+            // e.g.:
+            //   $something.network translates into $something.network.conf
+            //   $something.service translates into $something.service.conf
+            let dropin_filename: String = match n.dropin_filename {
+                Some(ref filename) => filename.to_string(),
+                None => format!("{}.conf", n.target),
+            };
+            write_dropin_to_disk(
+                &n,
+                log.clone(),
+                network_unit_dir,
+                Path::new(&dropin_filename),
+            )
+            .context("Failed to write network unit drop in file")?;
+        }
+        None => {}
+    }
+
     Ok(())
 }
 
-fn write_unit_to_disk(unit: &Unit, log: Logger, base_dir: &Path, filename: &Path) -> Result<()> {
+fn write_unit_to_disk<UNIT: Render>(
+    unit: &UNIT,
+    log: Logger,
+    base_dir: &Path,
+    filename: &Path,
+) -> Result<()> {
     let unit_file_path = base_dir.join(filename);
     let mut file = std::fs::File::create(&unit_file_path).context(format!(
         "Failed to create unit file {:?} in {:?}",
@@ -170,27 +202,27 @@ fn write_unit_to_disk(unit: &Unit, log: Logger, base_dir: &Path, filename: &Path
     Ok(())
 }
 
-fn write_dropin_to_disk(
-    dropin: &Dropin,
+fn write_dropin_to_disk<UNIT: Render>(
+    dropin: &Dropin<UNIT>,
     log: Logger,
     base_dir: &Path,
     filename: &Path,
 ) -> Result<()> {
     let dropin_path: PathBuf = format!("{}.d", dropin.target).into();
-    let service_dir: PathBuf = base_dir.join(&dropin_path);
-    std::fs::create_dir_all(&service_dir)
+    let unit_dir: PathBuf = base_dir.join(&dropin_path);
+    std::fs::create_dir_all(&unit_dir)
         .context(format!("failed to create .d/ for {}", dropin.target))?;
 
     println!(
         "Writing drop-in {:?} into {:?} for {}",
-        filename, service_dir, dropin.target
+        filename, unit_dir, dropin.target
     );
     info!(
         log,
-        "Writing drop-in {:?} into {:?} for {}", filename, service_dir, dropin.target
+        "Writing drop-in {:?} into {:?} for {}", filename, unit_dir, dropin.target
     );
 
-    write_unit_to_disk(&dropin.unit, log, base_dir, &service_dir.join(filename))
+    write_unit_to_disk(&dropin.unit, log, base_dir, &unit_dir.join(filename))
 }
 
 #[cfg(test)]
@@ -200,6 +232,7 @@ mod tests {
     use maplit::btreemap;
     use slog::o;
     use std::time::SystemTime;
+    use systemd::render::{NetworkUnit, NetworkUnitMatchSection};
 
     #[derive(Clone, Debug, Serialize)]
     struct TestInner {
@@ -375,10 +408,12 @@ mod tests {
         let tmpdir = std::env::temp_dir().join(format!("test_environment_{:?}", ts));
         let env_dir = tmpdir.join("env_dir");
         let deps_dir = tmpdir.join("deps_dir");
+        let network_unit_dir = tmpdir.join("network_unit_dir");
 
         std::fs::create_dir(&tmpdir).context("failed to make tmp dir")?;
         std::fs::create_dir(&env_dir).context("failed to make env_dir")?;
         std::fs::create_dir(&deps_dir).context("failed to make deps")?;
+        std::fs::create_dir(&network_unit_dir).context("failed to make network_unit_dir")?;
 
         let env = TestEnvironment {
             req_string: "s1".to_string(),
@@ -395,6 +430,7 @@ mod tests {
             log,
             &deps_dir,
             &env_dir,
+            &network_unit_dir,
             env,
             btreemap! {
                 "extra_1".to_string() => ExtraDependency {
@@ -417,6 +453,16 @@ mod tests {
                     type_: None,
                 },
             },
+            Some(Dropin {
+                target: "eth.network".into(),
+                unit: NetworkUnit {
+                    match_section: NetworkUnitMatchSection {
+                        name: "eth*".to_string(),
+                        mac_address: "11:22:33:44:55:66".to_string(),
+                    },
+                },
+                dropin_filename: Some("match.conf".to_string()),
+            }),
         )
         .context("Failed to materialize_boot_info")?;
 
@@ -464,6 +510,17 @@ mod tests {
             Options=\n\
             "
         );
+
+        assert_eq!(
+            std::fs::read_to_string(network_unit_dir.join("eth.network.d/match.conf"))
+                .context("Can't read eth.network.d/match.conf file")?,
+            "\
+            [Match]\n\
+            Name=eth*\n\
+            MACAddress=11:22:33:44:55:66\n\
+            "
+        );
+
 
         Ok(())
     }
