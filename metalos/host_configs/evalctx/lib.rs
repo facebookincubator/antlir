@@ -33,6 +33,9 @@ pub enum Error {
         src: loader::ModuleId,
         missing: loader::ModuleId,
     },
+    /// The starlark module did not have a parent or was not a file name
+    #[error("Pathbuf did not pass invariant checks for ModuleId: {0}")]
+    CreateModule(anyhow::Error),
     /// The generator was parsed and the module was evaluated, but it failed or
     /// returned the wrong type of output.
     #[error("could not evaluate generator function: {0}")]
