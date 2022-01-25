@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io::{self};
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Error, Result};
+use anyhow::{anyhow, Context, Error, Result};
 use structopt::StructOpt;
 
 use evalctx::{Generator, Host};
@@ -53,10 +53,12 @@ fn main() -> Result<()> {
         .into_iter()
         .flatten()
         .collect();
-    let mut dry_run = opts.dry_run;
+    let dry_run = opts.dry_run;
     if !dry_run && opts.root.is_none() {
-        eprintln!("--root is missing, assuming --dry-run");
-        dry_run = true;
+        eprintln!("--root is missing, please pass a --dry-run flag ");
+        return Err(anyhow!(
+            "please include --dry-run flag for explicit dry run"
+        ));
     }
     if dry_run {
         for gen in generators {
