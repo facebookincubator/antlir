@@ -16,6 +16,23 @@ use crate::{Error, Result};
 pub struct ModuleId(PathBuf);
 
 impl ModuleId {
+    pub fn new(path: PathBuf) -> Result<Self> {
+        if path.parent().is_none() {
+            return Err(Error::CreateModule(anyhow!(
+                "Path must have a parent to create a valid ModuleId"
+            )));
+        }
+
+        if path.file_name().is_none() {
+            return Err(Error::CreateModule(anyhow!(
+                "Path must be a file to to create a valid ModuleId"
+            )));
+        }
+
+        Ok(Self(path))
+    }
+
+
     /// Convert a canonical id string to a [ModuleId]. Fails if the id is not
     /// canonical in any way.
     pub fn from_id(id: &str) -> Result<Self> {
@@ -27,7 +44,7 @@ impl ModuleId {
                         id
                     )));
                 }
-                Ok(Self(Path::new("/").join(path.replace(':', "/"))))
+                Self::new(Path::new("/").join(path.replace(':', "/")))
             }
             None => Err(Error::EvalModule(anyhow!(
                 "module id '{}' not absolute",
@@ -38,12 +55,15 @@ impl ModuleId {
 
     /// Create a canonical ModuleId from a module path given the root directory
     /// containing all modules.
-    pub fn from_path(root: impl AsRef<Path>, module: impl AsRef<Path>) -> Self {
-        let relpath = module
-            .as_ref()
-            .strip_prefix(root)
-            .expect("all modules are under root dir");
-        Self(Path::new("/").join(relpath))
+    pub fn from_path(root: impl AsRef<Path>, module: impl AsRef<Path>) -> Result<Self> {
+        let relpath = {
+            match module.as_ref().strip_prefix(root) {
+                Ok(path) => path,
+                Err(_) => return Err(Error::EvalModule(anyhow!("stripping prefix failed"))),
+            }
+        };
+
+        Self::new(Path::new("/").join(relpath))
     }
 
     /// Construct an absolute ModuleId from an absolute or relative load().
@@ -111,7 +131,13 @@ impl Loader {
             .filter(|e| e.path().extension() == Some(OsStr::new("star")))
             .map(|e| {
                 let src = std::fs::read_to_string(e.path()).map_err(Error::Load)?;
-                let id = ModuleId::from_path(&dir, e.path());
+                let id = ModuleId::from_path(&dir, e.path())
+                    .context(format!(
+                        "unable to created module from dir: {:?} and path: {:?}",
+                        dir.as_ref(),
+                        e.path(),
+                    ))
+                    .map_err(Error::CreateModule)?;
                 let id_str = id.to_string();
                 Ok((
                     id,
@@ -195,11 +221,11 @@ mod tests {
     fn module_id() -> Result<()> {
         assert_eq!(
             "//:top.star",
-            ModuleId::from_path("/some/dir", "/some/dir/top.star").to_string(),
+            ModuleId::from_path("/some/dir", "/some/dir/top.star")?.to_string(),
         );
         assert_eq!(
             "//nested/dir:mod.star",
-            ModuleId::from_path("/some/dir", "/some/dir/nested/dir/mod.star").to_string()
+            ModuleId::from_path("/some/dir", "/some/dir/nested/dir/mod.star")?.to_string()
         );
         assert_eq!("//:top.star", ModuleId::from_id("//:top.star")?.to_string());
         assert_eq!(
