@@ -1316,6 +1316,10 @@ def volume_dir(path_in_repo: Optional[Path] = None) -> Path:
     return find_artifacts_dir(path_in_repo) / "volume"
 
 
+def _tmp_volume_dir(path_in_repo: Optional[Path] = None) -> Path:
+    return volume_dir(path_in_repo) / "tmp"
+
+
 class TempSubvolumes:
     """
     Tracks the subvolumes it creates, and destroys them on context exit.
@@ -1349,7 +1353,7 @@ class TempSubvolumes:
     def __init__(self, path_in_repo: Optional[Path] = None):
         super().__init__()
         # The 'tmp' subdirectory simplifies cleanup of leaked temp subvolumes
-        volume_tmp_dir = volume_dir(path_in_repo) / "tmp"
+        volume_tmp_dir = _tmp_volume_dir(path_in_repo)
         try:
             os.mkdir(volume_tmp_dir)
         except FileExistsError:
