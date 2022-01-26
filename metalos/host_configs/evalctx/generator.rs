@@ -83,7 +83,7 @@ impl std::fmt::Debug for File {
 pub fn module(registry: &mut GlobalsBuilder) {
     // TODO: accept symbolic strings in 'mode' as well
     #[starlark(type("File"))]
-    fn file(path: &str, contents: &str, mode: Option<i32>) -> File {
+    fn file(path: &str, contents: &str, mode: Option<i32>) -> anyhow::Result<File> {
         Ok(File {
             path: path.into(),
             contents: contents.into(),
@@ -92,7 +92,7 @@ pub fn module(registry: &mut GlobalsBuilder) {
     }
 
     #[starlark(type("Dir"))]
-    fn dir(path: &str, mode: Option<i32>) -> Dir {
+    fn dir(path: &str, mode: Option<i32>) -> anyhow::Result<Dir> {
         Ok(Dir {
             path: path.into(),
             mode: mode.map(|i| i as u32).unwrap_or(0o555),
@@ -103,7 +103,7 @@ pub fn module(registry: &mut GlobalsBuilder) {
     fn GeneratorOutput(
         files: Option<ListOf<Value>>,
         pw_hashes: Option<DictOf<Value, Value>>,
-    ) -> GeneratorOutput {
+    ) -> anyhow::Result<GeneratorOutput> {
         let files: Vec<File> = match files {
             Some(files) => files
                 .to_vec()
