@@ -6,16 +6,15 @@
 
 import os
 import subprocess
-import sys
 from contextlib import contextmanager
+from unittest import mock
 
 from antlir.bzl_const import BZL_CONST
 from antlir.fs_utils import Path, temp_dir
 from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
 from antlir.rpm.yum_dnf_conf import YumDnf
-from antlir.subvol_utils import TempSubvolumes
+from antlir.subvol_utils import Subvol, TempSubvolumes
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
-from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import check_common_rpm_render, pop_path
 
 from ..common import PhaseOrder
@@ -56,14 +55,14 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
     def test_rpm_action_item_build_appliance(self):
         self._check_rpm_action_item_build_appliance(
-            layer_resource_subvol(__package__, "test-build-appliance")
+            Subvol("test-build-appliance", already_exists=True)
         )
 
     @contextmanager
     def _test_rpm_action_item_install_local_setup(self):
-        parent_subvol = layer_resource_subvol(__package__, "test-with-no-rpm")
-        local_rpm_path = Path(__file__).dirname() / "rpm-test-cheese-2-1.rpm"
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        parent_subvol = Subvol("test-with-no-rpm", already_exists=True)
+        local_rpm_path = "/rpm-test-cheese-2-1.rpm"
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.snapshot(parent_subvol, "add_cheese")
 
             RpmActionItem.get_phase_builder(
@@ -101,12 +100,11 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 subvol.path("var"),
             ]
         )
+        # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `assertEqual`
         self.assertEqual(["(Dir)", fs_render], render_subvol(subvol))
 
     def test_version_lock(self):
-        with TempSubvolumes(
-            Path(sys.argv[0])
-        ) as temp_subvolumes, temp_dir() as td:
+        with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
 
@@ -125,9 +123,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
     def test_version_override(self):
-        with TempSubvolumes(
-            Path(sys.argv[0])
-        ) as temp_subvolumes, temp_dir() as td:
+        with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
 
@@ -149,9 +145,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
     def test_version_override_with_dependency(self):
-        with TempSubvolumes(
-            Path(sys.argv[0])
-        ) as temp_subvolumes, temp_dir() as td:
+        with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
 
@@ -189,9 +183,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 )
 
     def test_version_lock_and_override(self):
-        with TempSubvolumes(
-            Path(sys.argv[0])
-        ) as temp_subvolumes, temp_dir() as td:
+        with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset_version_lock", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t2\trc0\tx86_64")
             with open(td / "vset_version_override", "w") as outfile:
@@ -220,12 +212,10 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
     def test_rpm_action_item_auto_downgrade(self):
-        parent_subvol = layer_resource_subvol(
-            __package__, "test-with-one-local-rpm"
-        )
-        src_rpm = Path(__file__).dirname() / "rpm-test-cheese-1-1.rpm"
+        parent_subvol = Subvol("test-with-one-local-rpm", already_exists=True)
+        src_rpm = Path("/rpm-test-cheese-1-1.rpm")
 
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
             # make sure the RPM we are installing is older in order to
@@ -233,7 +223,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             src_data = RpmMetadata.from_file(src_rpm)
             subvol_data = RpmMetadata.from_subvol(
                 parent_subvol,
-                layer_resource_subvol(__package__, "test-build-appliance"),
+                Subvol("test-build-appliance", already_exists=True),
                 src_data.name,
             )
             assert compare_rpm_versions(src_data, subvol_data) < 0
@@ -248,10 +238,8 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
     def _check_cheese_removal(self, local_rpm_path: Path):
-        parent_subvol = layer_resource_subvol(
-            __package__, "test-with-one-local-rpm"
-        )
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        parent_subvol = Subvol("test-with-one-local-rpm", already_exists=True)
+        with TempSubvolumes() as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
             subvol = temp_subvolumes.snapshot(parent_subvol, "remove_cheese")
@@ -268,9 +256,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
         # We expect the removal to be based just on the name of the RPM
         # in the metadata, so removing cheese-2 should be fine via either:
         for ver in [1, 2]:
-            self._check_cheese_removal(
-                Path(__file__).dirname() / f"rpm-test-cheese-{ver}-1.rpm"
-            )
+            self._check_cheese_removal(f"/rpm-test-cheese-{ver}-1.rpm")
 
     def test_rpm_action_conflict(self):
         # Test both install-install, install-remove, and install-downgrade
@@ -295,13 +281,11 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             RpmActionItem.get_phase_builder(
                 [
                     create_rpm_action_item(
-                        source=Path(__file__).dirname()
-                        / "rpm-test-cheese-2-1.rpm",
+                        source="/rpm-test-cheese-2-1.rpm",
                         action=RpmAction.install,
                     ),
                     create_rpm_action_item(
-                        source=Path(__file__).dirname()
-                        / "rpm-test-cheese-1-1.rpm",
+                        source="/rpm-test-cheese-1-1.rpm",
                         action=RpmAction.remove_if_exists,
                     ),
                 ],
@@ -311,11 +295,9 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
     def test_rpm_action_reinstall_same_exact_version(self):
         # installing the same exact version as an already installed package is
         # an explicit no-op
-        parent_subvol = layer_resource_subvol(
-            __package__, "test-with-one-local-rpm"
-        )
-        local_rpm_path = Path(__file__).dirname() / "rpm-test-cheese-2-1.rpm"
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        parent_subvol = Subvol("test-with-one-local-rpm", already_exists=True)
+        local_rpm_path = "/rpm-test-cheese-2-1.rpm"
+        with TempSubvolumes() as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
             subvol = temp_subvolumes.snapshot(parent_subvol, "remove_cheese")
@@ -332,8 +314,8 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
 
     def test_rpm_action_skip_wrong_flavor(self):
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
-            src_rpm = Path(__file__).dirname() / "rpm-test-cheese-1-1.rpm"
+        with TempSubvolumes() as temp_subvolumes:
+            src_rpm = Path("/rpm-test-cheese-1-1.rpm")
             subvol = temp_subvolumes.create("subvol")
             self._check_rpm_action_item_subvol(
                 subvol,
@@ -348,6 +330,9 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
 
+@mock.patch(
+    "antlir.subvol_utils._tmp_volume_dir", mock.Mock(return_value=Path("/"))
+)
 class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.yum
 
@@ -356,6 +341,9 @@ class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
             check_common_rpm_render(self, r, "yum")
 
 
+@mock.patch(
+    "antlir.subvol_utils._tmp_volume_dir", mock.Mock(return_value=Path("/"))
+)
 class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.dnf
 

@@ -5,13 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import subprocess
-import sys
 
 from antlir.bzl_const import BZL_CONST
 from antlir.fs_utils import Path, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.rpm.yum_dnf_conf import YumDnf
-from antlir.subvol_utils import TempSubvolumes
-from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.subvol_utils import Subvol, TempSubvolumes
 from pydantic import ValidationError
 
 from ..rpm_action import (
@@ -41,7 +39,7 @@ class RpmActionItemTestBase:
         return DUMMY_LAYER_OPTS._replace(
             **kwargs,
             build_appliance=build_appliance
-            or layer_resource_subvol(__package__, "test-build-appliance"),
+            or Subvol("test-build-appliance", already_exists=True),
             rpm_installer=self._YUM_DNF,
             rpm_repo_snapshot=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
             / self._YUM_DNF.value,
@@ -53,7 +51,7 @@ class RpmActionItemTestBase:
         )
 
     def _check_rpm_action_item(self, layer_opts):
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("rpm_action")
             self.assertEqual(["(Dir)", {}], render_subvol(subvol))
 
