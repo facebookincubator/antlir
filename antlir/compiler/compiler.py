@@ -19,19 +19,28 @@ import argparse
 import concurrent.futures
 import cProfile
 import os
+import pwd
 import stat
 import sys
 from contextlib import ExitStack, nullcontext
-from typing import Iterator
+from typing import Iterator, List
 
 from antlir.bzl.constants import flavor_config_t
 from antlir.cli import add_targets_and_outputs_arg
+from antlir.common import not_none
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
 from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import META_FLAVOR_FILE, Path
+from antlir.nspawn_in_subvol.args import (
+    PopenArgs,
+    new_nspawn_opts,
+    NspawnPluginArgs,
+)
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
+from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 
@@ -118,6 +127,18 @@ def parse_args(args) -> argparse.Namespace:
         help="Profile this image build and write pstats files into the given directory.",
     )
     parser.add_argument(
+        "--compiler-binary",
+        required=True,
+        help="The path to the compiler binary being invoked currently. "
+        "It is used to re-invoke the compiler inside the BA container as root.",
+    )
+    parser.add_argument(
+        "--is-nested",
+        action="store_true",
+        help="Indicates whether the compiler binary is being run nested inside "
+        "a BA container.",
+    )
+    parser.add_argument(
         "--internal-only-is-genrule-layer",
         action="store_true",
         help="Indicates whether the layer being compiled is a genrule layer. "
@@ -173,7 +194,43 @@ def get_parent_layer_flavor_config(parent_layer: Subvol) -> flavor_config_t:
     return repo_config().flavor_to_config[flavor]
 
 
-def build_image(args):
+def invoke_compiler_inside_build_appliance(
+    *,
+    build_appliance: Subvol,
+    argv: List[str],
+    snapshot_dir: Path,
+    compiler_binary: str,
+    subvol_dir: str,
+):
+    opts = new_nspawn_opts(
+        cmd=[
+            compiler_binary,
+            "--is-nested",
+            *argv,
+        ],
+        # Needed to btrfs receive subvol sendstreams
+        allow_mknod=True,
+        layer=build_appliance,
+        user=pwd.getpwnam("root"),
+        bind_repo_ro=True,
+        bind_artifacts_dir_rw=True,
+    )
+
+    run_nspawn(
+        opts,
+        PopenArgs(),
+        plugins=rpm_nspawn_plugins(
+            opts=opts,
+            plugin_args=NspawnPluginArgs(
+                serve_rpm_snapshots=[snapshot_dir],
+                # We'll explicitly call the RPM installer wrapper we need.
+                shadow_proxied_binaries=False,
+            ),
+        ),
+    )
+
+
+def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
     # We want check the umask since it can affect the result of the
     # `os.access` check for `image.install*` items.  That said, having a
     # umask that denies execute permission to "user" is likely to break this
@@ -202,42 +259,64 @@ def build_image(args):
         ]
         build_appliance = find_built_subvol(build_appliance_layer_path)
 
-    layer_opts = LayerOpts(
-        layer_target=args.child_layer_target,
-        build_appliance=build_appliance,
-        rpm_installer=YumDnf(flavor_config.rpm_installer),
-        rpm_repo_snapshot=Path(flavor_config.rpm_repo_snapshot),
-        artifacts_may_require_repo=args.artifacts_may_require_repo,
-        target_to_path=args.targets_and_outputs,
-        subvolumes_dir=args.subvolumes_dir,
-        version_set_override=args.version_set_override,
-        debug=args.debug,
-        allowed_host_mount_targets=frozenset(args.allowed_host_mount_target),
-        flavor=flavor_config.name,
-        # This value should never be inherited from the parent layer
-        # as it is generally used to create a new build appliance flavor
-        # by force overriding an existing flavor.
-        unsafe_bypass_flavor_check=flavor_config.unsafe_bypass_flavor_check,
-    )
-
-    # This stack allows build items to hold temporary state on disk.
-    with ExitStack() as exit_stack:
-        compile_items_to_subvol(
-            exit_stack=exit_stack,
-            subvol=subvol,
-            layer_opts=layer_opts,
-            iter_items=gen_items_for_features(
-                exit_stack=exit_stack,
-                features_or_paths=args.child_feature_json,
-                layer_opts=layer_opts,
-            ),
-            # use threads to speed up normal builds, but not while profiling
-            # because multithreaded profiling is terrible
-            use_threads=not args.profile_dir,
+    # Avoid running the compiler inside of the BA if:
+    # 1. The BA isn't set (ie. DO_NOT_USE_BUILD_APPLIANCE). Future: create a
+    #    separate lightweight compiler binary for this case.
+    # 2. We're already nested inside the BA container.
+    # 3. We're compiling a genrule layer. Future: support serving rpm snapshot
+    #    in the BA container to remove this restriction.
+    if (
+        build_appliance
+        and not args.is_nested
+        and not args.internal_only_is_genrule_layer
+    ):
+        invoke_compiler_inside_build_appliance(
+            build_appliance=build_appliance,
+            argv=argv,
+            snapshot_dir=not_none(Path(flavor_config.rpm_repo_snapshot)),
+            compiler_binary=args.compiler_binary,
+            subvol_dir=args.subvolumes_dir,
         )
-        # Build artifacts should never change. Run this BEFORE the exit_stack
-        # cleanup to enforce that the cleanup does not touch the image.
-        subvol.set_readonly(True)
+    else:
+        layer_opts = LayerOpts(
+            layer_target=args.child_layer_target,
+            build_appliance=build_appliance,
+            rpm_installer=YumDnf(flavor_config.rpm_installer),
+            rpm_repo_snapshot=Path(flavor_config.rpm_repo_snapshot),
+            artifacts_may_require_repo=args.artifacts_may_require_repo,
+            target_to_path=args.targets_and_outputs,
+            subvolumes_dir=args.subvolumes_dir,
+            version_set_override=args.version_set_override,
+            debug=args.debug,
+            allowed_host_mount_targets=frozenset(
+                args.allowed_host_mount_target
+            ),
+            flavor=flavor_config.name,
+            # This value should never be inherited from the parent layer
+            # as it is generally used to create a new build appliance flavor
+            # by force overriding an existing flavor.
+            unsafe_bypass_flavor_check=flavor_config.unsafe_bypass_flavor_check,
+        )
+
+        # This stack allows build items to hold temporary state on disk.
+        with ExitStack() as exit_stack:
+            compile_items_to_subvol(
+                exit_stack=exit_stack,
+                subvol=subvol,
+                layer_opts=layer_opts,
+                iter_items=gen_items_for_features(
+                    exit_stack=exit_stack,
+                    features_or_paths=args.child_feature_json,
+                    layer_opts=layer_opts,
+                ),
+                # use threads to speed up normal builds, but not while profiling
+                # because multithreaded profiling is terrible
+                use_threads=not args.profile_dir,
+            )
+            # Build artifacts should never change. Run this BEFORE the
+            # exit_stack cleanup to enforce that the cleanup does not
+            # touch the image.
+            subvol.set_readonly(True)
 
     try:
         return SubvolumeOnDisk.from_subvolume_path(
@@ -256,11 +335,14 @@ def build_image(args):
 if __name__ == "__main__":  # pragma: no cover
     from antlir.common import init_logging
 
-    args = parse_args(sys.argv[1:])
+    argv = sys.argv[1:]
+    args = parse_args(argv)
     init_logging(debug=args.debug)
 
     with (cProfile.Profile() if args.profile_dir else nullcontext()) as pr:
-        build_image(args).to_json_file(sys.stdout)
+        subvol = build_image(args, argv)
+        if not args.is_nested:
+            subvol.to_json_file(sys.stdout)
     if args.profile_dir:
         assert pr is not None
         filename = args.child_layer_target.replace("/", "_") + ".pstat"

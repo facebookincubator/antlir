@@ -321,38 +321,37 @@ class CompilerTestCase(unittest.TestCase):
             rpm_installer="dnf",
             rpm_repo_snapshot=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / "dnf",
         )
-        return (
-            build_image(
-                parse_args(
-                    [
-                        # Must match LayerOpts below
-                        "--artifacts-may-require-repo",
-                        "--subvolumes-dir",
-                        _SUBVOLS_DIR,
-                        "--subvolume-rel-path",
-                        _FAKE_SUBVOL,
-                        "--child-layer-target",
-                        "CHILD_TARGET",
-                        *(
-                            (
-                                "--child-feature-json",
-                                si.TARGET_TO_PATH[si.mangle(si.T_KITCHEN_SINK)],
-                            )
-                            if include_sample_items
-                            else ()
-                        ),
-                        *(
-                            (
-                                "--flavor-config",
-                                flavor_config.json(),
-                            )
-                            if include_flavor_config
-                            else ()
-                        ),
-                    ]
-                    + args
+        argv = [
+            # Must match LayerOpts below
+            "--artifacts-may-require-repo",
+            "--subvolumes-dir",
+            _SUBVOLS_DIR,
+            "--subvolume-rel-path",
+            _FAKE_SUBVOL,
+            "--child-layer-target",
+            "CHILD_TARGET",
+            *(
+                (
+                    "--child-feature-json",
+                    si.TARGET_TO_PATH[si.mangle(si.T_KITCHEN_SINK)],
                 )
+                if include_sample_items
+                else ()
             ),
+            *(
+                (
+                    "--flavor-config",
+                    flavor_config.json(),
+                )
+                if include_flavor_config
+                else ()
+            ),
+            "--is-nested",
+            "--compiler-binary",
+            "DUMMY_BINARY_PATH",
+        ] + args
+        return (
+            build_image(parse_args(argv), argv),
             run_as_root.call_args_list,
         )
 

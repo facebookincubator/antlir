@@ -151,6 +151,7 @@ EOF
           --child-layer-target {current_target_quoted} \
           {quoted_child_feature_json_args} \
           {targets_and_outputs} \
+          --compiler-binary $(location {compiler}) \
           {internal_only_is_genrule_layer} \
               > "$layer_json"
 
