@@ -18,6 +18,9 @@ use evalctx::{Generator, Host};
 pub struct Opts {
     host_config_uri: Url,
     root: PathBuf,
+
+    #[structopt(default_value = "/usr/lib/metalos/generators")]
+    generators_root: PathBuf,
 }
 
 pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
@@ -47,11 +50,54 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
         )),
     }?;
 
-    let generators = Generator::load("/usr/lib/metalos/generators")
-        .context("failed to load generators from /usr/lib/metalos/generators")?;
+    let generators = Generator::load(&opts.generators_root).context(format!(
+        "failed to load generators from {:?}",
+        &opts.generators_root
+    ))?;
     for gen in generators {
         let output = gen.eval(&host)?;
         output.apply(log.clone(), &opts.root)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{apply_host_config, Opts};
+    use anyhow::Result;
+    use tempfile::TempDir;
+    use url::Url;
+
+    #[test]
+    async fn test_generators() -> Result<()> {
+        let generators_dir = TempDir::new()?;
+        std::fs::write(
+            generators_dir.path().join("test.star"),
+            r#"
+def generator(host: metalos.Host) -> metalos.GeneratorOutput.type:
+    return metalos.GeneratorOutput(
+        files=[
+            metalos.file(path="test_output_file", contents="test output for " + host.hostname),
+        ]
+    )
+"#,
+        )?;
+
+        let host_config_dir = TempDir::new()?;
+        let host_config_file = host_config_dir.path().join("host_config");
+        std::fs::write(&host_config_file, r#"{"hostname": "test_host_name"}"#)?;
+
+        let root_dir = TempDir::new()?;
+
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
+        let opts = Opts {
+            host_config_uri: Url::from_file_path(host_config_file).unwrap(),
+            root: root_dir.path().to_path_buf(),
+            generators_root: generators_dir.path().to_path_buf(),
+        };
+        apply_host_config(log, opts).await?;
+        let result = std::fs::read_to_string(root_dir.path().join("test_output_file"))?;
+        assert_eq!(result, "test output for test_host_name");
+        Ok(())
+    }
 }
