@@ -158,7 +158,7 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> Result<&'a TypeRegistryRefCell>
 
 #[starlark_module]
 fn shape(builder: &mut GlobalsBuilder) {
-    fn shape(kwargs: DictOf<'v, &str, Value<'v>>) -> TypeId {
+    fn shape(kwargs: DictOf<'v, &str, Value<'v>>) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let fields = kwargs
             .to_dict()
@@ -175,7 +175,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         Ok(reg.add(ty))
     }
 
-    fn list(ty: Value<'v>) -> StarlarkType {
+    fn list(ty: Value<'v>) -> anyhow::Result<StarlarkType> {
         let reg = get_type_registry(eval)?.try_borrow()?;
         ty.try_to_type(&reg)
             .map(|ty| ir::Type::List { item_type: ty })
@@ -183,7 +183,7 @@ fn shape(builder: &mut GlobalsBuilder) {
             .map(StarlarkType)
     }
 
-    fn r#enum(args: Value<'v>) -> TypeId {
+    fn r#enum(args: Value<'v>) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let options = args
             .iterate_collect(heap)
@@ -200,7 +200,11 @@ fn shape(builder: &mut GlobalsBuilder) {
         Ok(reg.add(ty))
     }
 
-    fn field(ty: Value<'v>, optional @ false: bool, default: Option<Value<'v>>) -> StarlarkField {
+    fn field(
+        ty: Value<'v>,
+        optional @ false: bool,
+        default: Option<Value<'v>>,
+    ) -> anyhow::Result<StarlarkField> {
         let reg = get_type_registry(eval)?.try_borrow()?;
         ty.try_to_type(&reg)
             .and_then(|ty| {
@@ -222,13 +226,13 @@ fn shape(builder: &mut GlobalsBuilder) {
     fn new(
         _shape: Value<'v>,
         kwargs: DictOf<'v, StringValue<'v>, Value<'v>>,
-    ) -> StructGen<'v, Value<'v>> {
+    ) -> anyhow::Result<StructGen<'v, Value<'v>>> {
         // no need to type-check, since it will already be done at buck parse
         // time, and will also be done when loading the json
         Ok(StructGen::new(kwargs.to_dict()))
     }
 
-    fn dict(key_type: Value<'v>, value_type: Value<'v>) -> StarlarkType {
+    fn dict(key_type: Value<'v>, value_type: Value<'v>) -> anyhow::Result<StarlarkType> {
         let reg = get_type_registry(eval)?.try_borrow()?;
         let key_type = key_type
             .try_to_type(&reg)
@@ -242,7 +246,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         })))
     }
 
-    fn tuple(args: Value<'v>) -> StarlarkType {
+    fn tuple(args: Value<'v>) -> anyhow::Result<StarlarkType> {
         let reg = get_type_registry(eval)?.try_borrow()?;
         let item_types = args
             .iterate_collect(heap)?
@@ -256,7 +260,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         Ok(StarlarkType(Rc::new(ir::Type::Tuple { item_types })))
     }
 
-    fn union(args: Value<'v>) -> TypeId {
+    fn union(args: Value<'v>) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let types = args
             .iterate_collect(heap)?
@@ -276,7 +280,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         Ok(reg.add(ty))
     }
 
-    fn path() -> StarlarkField {
+    fn path() -> anyhow::Result<StarlarkField> {
         Err(anyhow!("shape.path is no longer a callable function"))
     }
 }
