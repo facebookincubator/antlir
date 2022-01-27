@@ -53,6 +53,7 @@
   "resolutions": {
     "**/node-fetch": "2.6.1",
     "**/highlight.js": "10.4.1",
-    "**/immer": "8.0.1"
+    "**/immer": "8.0.1",
+    "shelljs": "^0.8.5"
   }
 }
