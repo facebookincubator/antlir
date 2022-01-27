@@ -93,6 +93,7 @@ image.layer(
     visibility = [
         "//metalos/...",
         "//netos/...",
+        # @oss-disable: "//tupperware/agent/hostagent/metalos/...", 
     ],
 )
 
