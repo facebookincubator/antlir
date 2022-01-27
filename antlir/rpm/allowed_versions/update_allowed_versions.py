@@ -243,9 +243,7 @@ def _load_version_sets(
             for vset, policy_cfg in group_cfg.pop(
                 "version_set_to_policy"
             ).items():
-                vpgroups = vset_to_vpgroups.get(vset)
-                if vpgroups is None:
-                    raise RuntimeError(f"Unknown version set {vset}")
+                vpgroups = vset_to_vpgroups.setdefault(vset, [])
 
                 try:
                     vpgroup = VersionedPackageGroup(
@@ -491,14 +489,27 @@ def update_allowed_versions(args: argparse.Namespace) -> None:
         asyncio.run(plugin_driver.update_snapshots())
 
     with plugin_driver.prepare_load_config_fns() as load_config_fns:
+        version_sets: Set[str] = {
+            vs.decode()
+            for vs in (
+                os.listdir(args.version_sets_dir)
+                if args.version_sets_dir.exists()
+                else []
+            )
+        }
         vset_to_vpgroups = _load_version_sets(
-            sum(
-                [glob.glob(dir / "*.json") for dir in args.package_groups_dir],
-                [],
+            map(
+                lambda x: Path(x),
+                sum(
+                    [
+                        glob.glob(dir / "*.json")
+                        for dir in args.package_groups_dir
+                    ],
+                    [],
+                ),
             ),
             load_config_fns,
-            # pyre-fixme[16]: `str` has no attribute `decode`.
-            {vs.decode() for vs in os.listdir(args.version_sets_dir)},
+            version_sets,
         )
     log.info(f"XXXvsets {vset_to_vpgroups}")
     # pyre-fixme[16]: `Path` has no attribute `__enter__`.
