@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:oss_shim.bzl", "rust_bindgen_library", "third_party")
 load("//metalos:defs.bzl", "rust_library")
 

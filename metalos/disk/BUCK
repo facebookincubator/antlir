@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//metalos/disk:disk.bzl", "build_root_disk")
 
 # this is here mostly for testing reasons. We want to have an image
