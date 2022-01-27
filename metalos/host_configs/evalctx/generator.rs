@@ -253,26 +253,56 @@ mod tests {
     use crate::{Generator, Host};
     use tempfile::TempDir;
 
-    // The hostname.star generator is super simple, so use that to test the
-    // generator runtime implementation.
-    #[test]
-    fn hostname_generator() -> anyhow::Result<()> {
+    fn eval_one_generator(source: &'static str) -> anyhow::Result<GeneratorOutput> {
         let tmp_dir = TempDir::new()?;
-        std::fs::write(
-            tmp_dir.path().join("hostname.star"),
-            include_str!("../generators/hostname.star"),
-        )?;
+        std::fs::write(tmp_dir.path().join("test_generator.star"), source)?;
         let mut generators = Generator::load(tmp_dir.path())?;
         assert_eq!(1, generators.len());
         let gen = generators.remove(0);
         let host = Host::example_host_for_tests();
-        let output = gen.eval(&host)?;
+        let result = gen.eval(&host)?;
+        Ok(result)
+    }
+
+    // The hostname.star generator is super simple, so use that to test the
+    // generator runtime implementation.
+    #[test]
+    fn hostname_generator() -> anyhow::Result<()> {
         assert_eq!(
-            output,
+            eval_one_generator(include_str!("../generators/hostname.star"))?,
             GeneratorOutput {
                 files: vec![File {
                     path: "/etc/hostname".into(),
                     contents: "host001.01.abc0.facebook.com\n".into(),
+                    mode: 0o444,
+                }],
+                pw_hashes: None,
+            }
+        );
+        Ok(())
+    }
+
+    // We use "extended" version of the Starlark language which includes
+    // a built-in function that generates JSON, among other things. We may
+    // rely on the presence and behaviour of this function when generating
+    // some configs
+    #[test]
+    fn generator_with_json_call() -> anyhow::Result<()> {
+        assert_eq!(
+            eval_one_generator(
+                r#"
+def generator(host: metalos.Host) -> metalos.GeneratorOutput.type:
+    return metalos.GeneratorOutput(
+        files=[
+            metalos.file(path="/test.json", contents=json({"a":"b","c":None})),
+        ]
+    )
+        "#
+            )?,
+            GeneratorOutput {
+                files: vec![File {
+                    path: "/test.json".into(),
+                    contents: r#"{"a": "b", "c": null}"#.into(),
                     mode: 0o444,
                 }],
                 pw_hashes: None,
