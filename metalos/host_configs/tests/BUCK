@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//metalos:defs.bzl", "rust_binary")
 
 rust_binary(
