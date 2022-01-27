@@ -5,6 +5,7 @@
 
 import json
 import os
+import shutil
 import sqlite3
 from contextlib import contextmanager
 from typing import Iterator, List, Optional, Tuple
@@ -197,13 +198,26 @@ class UpdateAllowedVersionsTestCase(TestCase):
             with self.assertRaisesRegex(RuntimeError, "^Loading config "):
                 update_allowed_versions(parsed_args)
 
-    # _load_version_sets() raises RuntimeError if unknown version set
+    # _load_version_sets() should work if the version set directory is missing
     @patch_snapshots
-    def test_wrong_version_set(self):
-        with _test_args(version_set="WRONG") as (args, output_dir):
+    def test_missing_version_set(self):
+        with _test_args(versions=_DICT_VERSIONS) as (args, output_dir):
             parsed_args = parse_args(args)
-            with self.assertRaisesRegex(RuntimeError, "^Loading config "):
-                update_allowed_versions(parsed_args)
+            shutil.rmtree(parsed_args.version_sets_dir)
+            update_allowed_versions(parsed_args)
+            with open(output_dir / _RESULT_VSET_JSON) as f:
+                self.assertEqual(f.read().strip(), _FOO_BAR_OUTPUT)
+
+    # _load_version_sets() should work if the version set directory is empty
+    @patch_snapshots
+    def test_empty_version_set(self):
+        with _test_args(versions=_DICT_VERSIONS) as (args, output_dir):
+            parsed_args = parse_args(args)
+            shutil.rmtree(parsed_args.version_sets_dir)
+            os.mkdir(parsed_args.version_sets_dir)
+            update_allowed_versions(parsed_args)
+            with open(output_dir / _RESULT_VSET_JSON) as f:
+                self.assertEqual(f.read().strip(), _FOO_BAR_OUTPUT)
 
     # _load_version_sets() raises RuntimeError if
     # _load_policy_versions_for_packages() fails
