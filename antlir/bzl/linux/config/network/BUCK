@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
 

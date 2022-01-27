@@ -1,3 +1,5 @@
+# @noautodeps
+
 # IMPORTANT: Do NOT use `oss_shim.bzl` here, instead load fbcode macros via
 # the shim in `defs.bzl`.
 load("//antlir/bzl:constants.bzl", "REPO_CFG")

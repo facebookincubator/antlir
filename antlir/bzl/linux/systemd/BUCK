@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:template.bzl", "template")
 

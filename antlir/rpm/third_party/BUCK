@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 
 # This file is used for validating rpm version comparsion logic.  It is
