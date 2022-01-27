@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:oss_shim.bzl", "cxx_genrule", "export_file", "python_library", "python_unittest")
 
 export_file(

@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")

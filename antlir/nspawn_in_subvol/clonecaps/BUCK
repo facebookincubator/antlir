@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:oss_shim.bzl", "cpp_binary")
 
 cpp_binary(

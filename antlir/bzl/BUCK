@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":defs.bzl", "fake_macro_library")

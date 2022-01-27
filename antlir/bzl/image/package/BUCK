@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:defs.bzl", "fake_macro_library")
 
 fake_macro_library(
