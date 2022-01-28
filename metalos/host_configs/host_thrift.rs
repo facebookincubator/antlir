@@ -8,12 +8,11 @@
 #[cfg(feature = "facebook")]
 pub use host_facebook as facebook;
 
-impl Host {
+impl HostIdentity {
     pub fn example_host_for_tests() -> Self {
-        Host {
+        Self {
             id: format!("{:032x}", 1),
             hostname: "host001.01.abc0.facebook.com".to_owned(),
-            root_pw_hash: "$0$unit_test_hash".to_string(),
             network: Network {
                 dns: DNS {
                     servers: vec!["2606:4700:4700::1111".parse().unwrap()],
@@ -38,9 +37,8 @@ mod tests {
     #[test]
     fn test_exposed_to_starlark() {
         let mut a = Assert::new();
-        a.globals_add(|gb| gb.set("input", Host::example_host_for_tests()));
+        a.globals_add(|gb| gb.set("input", HostIdentity::example_host_for_tests()));
         a.eq("input.hostname", "\"host001.01.abc0.facebook.com\"");
-        a.eq("input.root_pw_hash", "\"$0$unit_test_hash\"");
         let expected_dir = "\"hostname\", \"id\", \"network\", \"root_pw_hash\"";
         if cfg!(feature = "facebook") {
             a.eq(
@@ -60,7 +58,7 @@ mod tests {
     #[cfg_attr(feature = "facebook", test)]
     fn facebook_exposed() {
         let mut a = Assert::new();
-        a.globals_add(|gb| gb.set("input", Host::default()));
+        a.globals_add(|gb| gb.set("input", HostIdentity::default()));
         a.eq("hasattr(input, \"facebook\")", "True");
     }
 }

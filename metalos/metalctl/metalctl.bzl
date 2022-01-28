@@ -18,6 +18,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     deps = [
         "//metalos/host_configs:evalctx",
         "//metalos/host_configs:package-manifest-rust",
+        "//metalos/host_configs:host-rust",
         "//metalos/lib/btrfs:btrfs",
         "//metalos/lib/image:image",
         "//metalos/lib/systemd:systemd",

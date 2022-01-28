@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Context, Error, Result};
 use structopt::StructOpt;
 
-use evalctx::{Generator, Host};
+use evalctx::{Generator, HostIdentity};
 
 #[derive(StructOpt)]
 struct Opts {
@@ -31,7 +31,7 @@ struct Opts {
 fn main() -> Result<()> {
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
     let opts = Opts::from_args();
-    let host: Host = {
+    let host: HostIdentity = {
         if opts.host == Path::new("-") {
             serde_json::from_reader(io::stdin())?
         } else {

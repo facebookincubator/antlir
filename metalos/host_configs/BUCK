@@ -37,6 +37,8 @@ thrift_library(
     thrift_rust_options = "serde",
     thrift_srcs = {"host.thrift": None},
     deps = [
+        ":runtime-config",
+    ] + [
         "//metalos/host_configs/facebook:host-facebook",
     ] if not (oss or oss_ci) else [],
 )
@@ -109,12 +111,6 @@ thrift_library(
     languages = ["rust"],
     thrift_rust_options = "serde",
     thrift_srcs = {"package_manifest.thrift": None},
-    visibility = [
-        "//metalos/lib/image/...",
-        # TODO(vmagro) remove visibility from metalctl when this is referenced
-        # from host.thrift exclusively, and not the kernel cmdline
-        "//metalos/metalctl/...",
-    ],
 )
 
 thrift_library(
