@@ -85,6 +85,7 @@ python_unittest(
         "//antlir:subvol_utils",
         "//antlir/compiler/items:ensure_dirs_exist",
         "//antlir/compiler/items:items",
+        "//antlir/compiler/items:symlink",
     ],
 )
 
