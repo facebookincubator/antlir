@@ -44,7 +44,7 @@ def auto_search_domains(name: str.type) -> [str.type]:
     return reversed(search)
 
 
-def generator(host: metalos.Host) -> metalos.GeneratorOutput.type:
+def generator(host: metalos.HostIdentity) -> metalos.GeneratorOutput.type:
     search = auto_search_domains(host.hostname) + host.network.dns.search_domains
     network_units = []
     link_units = []

@@ -33,5 +33,5 @@ safe transient server exception DownloadError {
 
 // Complete Manifest of software to be downloaded.
 struct Manifest {
-  1: list<Image> image;
+  1: list<Image> images;
 } (rust.exhaustive)

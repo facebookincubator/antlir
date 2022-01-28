@@ -14,7 +14,7 @@ pub use generator::Generator;
 pub use host;
 #[cfg(feature = "facebook")]
 pub use host::facebook;
-pub use host::Host;
+pub use host::HostIdentity;
 mod loader;
 mod path;
 mod template;

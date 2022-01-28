@@ -24,7 +24,7 @@ use xattr::FileExt;
 
 use crate::loader::{Loader, ModuleId};
 use crate::path::PathExt;
-use crate::{Error, Host, Result};
+use crate::{Error, HostIdentity, Result};
 
 // Macro-away all the Starlark boilerplate for structs that are _only_ returned
 // from Starlark, and are not expected to be able to be read/used from the
@@ -139,8 +139,8 @@ pub fn module(registry: &mut GlobalsBuilder) {
         Ok(GeneratorOutput { files, pw_hashes })
     }
 
-    // this must match the type name returned by the Host struct
-    const Host: &str = "Host";
+    // this must match the type name returned by the HostIdentity struct
+    const HostIdentity: &str = "HostIdentity";
 }
 
 pub struct Generator {
@@ -151,8 +151,8 @@ pub struct Generator {
 impl Generator {
     /// Recursively load a directory of starlark generators. These files must
     /// end in '.star' and define a function 'generator' that accepts a single
-    /// ['metalos.Host'](crate::Host) parameter. Starlark files in the
-    /// directory are available to be `load()`ed by generators.
+    /// [metalos.HostIdentity](crate::HostIdentity) parameter. Starlark files in
+    /// the directory are available to be `load()`ed by generators.
     pub fn load(path: impl AsRef<Path>) -> Result<Vec<Self>> {
         Loader::load(path)?
             .into_iter()
@@ -175,7 +175,7 @@ impl Generator {
         self.id.to_string()
     }
 
-    pub fn eval(self, host: &Host) -> Result<GeneratorOutput> {
+    pub fn eval(self, host: &HostIdentity) -> Result<GeneratorOutput> {
         let module = Module::new();
         let mut evaluator = Evaluator::new(&module);
         let host_value = evaluator.heap().alloc(host.clone());
@@ -250,7 +250,7 @@ impl GeneratorOutput {
 #[cfg(test)]
 mod tests {
     use super::{File, GeneratorOutput};
-    use crate::{Generator, Host};
+    use crate::{Generator, HostIdentity};
     use tempfile::TempDir;
 
     fn eval_one_generator(source: &'static str) -> anyhow::Result<GeneratorOutput> {
@@ -259,7 +259,7 @@ mod tests {
         let mut generators = Generator::load(tmp_dir.path())?;
         assert_eq!(1, generators.len());
         let gen = generators.remove(0);
-        let host = Host::example_host_for_tests();
+        let host = HostIdentity::example_host_for_tests();
         let result = gen.eval(&host)?;
         Ok(result)
     }
@@ -291,7 +291,7 @@ mod tests {
         assert_eq!(
             eval_one_generator(
                 r#"
-def generator(host: metalos.Host) -> metalos.GeneratorOutput.type:
+def generator(host: metalos.HostIdentity) -> metalos.GeneratorOutput.type:
     return metalos.GeneratorOutput(
         files=[
             metalos.file(path="/test.json", contents=json({"a":"b","c":None})),

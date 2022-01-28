@@ -12,7 +12,7 @@ include "metalos/host_configs/package_manifest.thrift"
 struct Service {
   1: package_manifest.Image image;
   2: package_manifest.Image config;
-}
+} (rust.exhaustive)
 
 // Define the acceptable levels of disruptiveness that are allowed during a
 // config application. MetalOS can compare this with the set of necessary
@@ -36,28 +36,31 @@ enum DisruptivenessAllowed {
   FullyDown = 1000,
 }
 
-// Options to give to MetalOS when applying a config.
-struct ApplyOpts {
-  1: DisruptivenessAllowed disruptiveness_allowed;
-}
-
-// Config describes the complete set of software that should be running on a
-// host.
-struct Config {
-  1: package_manifest.Image rootfs;
-  2: package_manifest.Image kernel;
-  3: list<Service> services;
-}
+// Describes the complete set of software that should be running on a host, as
+// well as any config data that must change during the host's lifecycle.
+struct RuntimeConfig {
+  // Full set of images that should be downloaded on the host
+  1: package_manifest.Manifest manifest;
+  2: package_manifest.Image rootfs;
+  3: package_manifest.Image kernel;
+  4: list<Service> services;
+  5: string root_pw_hash;
+} (rust.exhaustive)
 
 // When trying to apply a runtime config, the packages must already be persisted
 // to disk.
 safe permanent client exception ImageNotOnDisk {
   1: package_manifest.Image image;
-}
+} (rust.exhaustive)
+
+// Options to give to MetalOS when applying a config.
+struct ApplyOpts {
+  1: DisruptivenessAllowed disruptiveness_allowed;
+} (rust.exhaustive)
 
 // Switch into a new Config. All packages must be downloaded ahead-of-time, or
 // this request will fail.
 struct ApplyConfigRequest {
   1: ApplyOpts opts;
-  2: Config config;
-}
+  2: RuntimeConfig config;
+} (rust.exhaustive)

@@ -13,17 +13,32 @@
 
 // @oss-disable: include "metalos/host_configs/facebook/host.thrift"
 
-// Host is the main entrypoint to the Starlark config generator runtime. It is
-// the top level struct that should contain all the structured information about
-// a host that is necessary for the config generators to materialize config
-// files. This is designed to (eventually) be serializable by an external
-// service and provided directly to a MetalOS host's initrd.
-struct Host {
+include "metalos/host_configs/runtime_config.thrift"
+
+// HostConfig is the main entrypoint for a MetalOS host.
+struct HostConfig {
+  1: ProvisioningConfig provisioning_config;
+  3: runtime_config.RuntimeConfig runtime_config;
+} (rust.exhaustive)
+
+// ProvisioningConfig contains immutable host identity information, and anything
+// else required for provisioning a box.
+struct ProvisioningConfig {
+  1: HostIdentity identity;
+} (rust.exhaustive)
+
+// HostIdentity is the main entrypoint to the Starlark config generator runtime.
+// It is the top level struct that should contain all the structured information
+// about a host that is necessary for the config generators to materialize
+// config files.
+struct HostIdentity {
   1: string id;
   2: string hostname;
-  3: string root_pw_hash;
   4: Network network;
   // @oss-disable: 5: host.HostFacebook facebook;
+  // TODO: root_pw_hash should only be set in runtime_config.RuntimeConfig when the
+  // expose-to-starlark mechanism is improved to make that easier
+  6: string root_pw_hash;
 } (
   rust.exhaustive,
   rust.derive = "starlark::values::StarlarkAttrs, metalos_macros::StarlarkInput",
@@ -31,6 +46,8 @@ struct Host {
 
 // Top-level network settings.
 struct Network {
+  // TODO: dns should probably just be statically compiled into the image, just
+  // as it already is in the initrd
   1: DNS dns;
   2: list<NetworkInterface> interfaces;
 } (
