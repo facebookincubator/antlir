@@ -331,6 +331,43 @@ python_library(
     ],
 )
 
+python_library(
+    name = "symlink",
+    srcs = [
+        "symlink.py",
+    ],
+    deps = [
+        ":common",
+        "//antlir/bzl/image_actions:symlink.shape-python",
+        "//antlir/compiler:requires_provides",
+        "//antlir/nspawn_in_subvol:nspawn",
+        third_party.library(
+            "pydantic",
+            platform = "python",
+        ),
+    ],
+)
+
+python_unittest(
+    name = "test-symlink",
+    srcs = [
+        "tests/test_symlink.py",
+    ],
+    needed_coverage = [
+        (100, ":symlink"),
+    ],
+    resources = {
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "tests/test-build-appliance",
+    },
+    deps = [
+        ":common_testlib",
+        ":items",
+        ":symlink",
+    ],
+)
+
 # Future: Finish splitting this library, and tests, by item.  The only
 # challenge is to make sure that `common.py` gets coverage -- coverage of
 # its functions is currently distributed across various items.
@@ -339,7 +376,6 @@ python_library(
     srcs = [
         "install_file.py",
         "remove_path.py",
-        "symlink.py",
     ],
     deps = [
         ":common",
@@ -350,7 +386,6 @@ python_library(
         ":tarball",
         "//antlir/bzl/image/feature:install.shape-python",
         "//antlir/bzl/image/feature:remove.shape-python",
-        "//antlir/bzl/image_actions:symlink.shape-python",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:nspawn",
@@ -369,7 +404,6 @@ python_unittest(
         "tests/test_make_subvol.py",
         "tests/test_mount.py",
         "tests/test_remove_path.py",
-        "tests/test_symlink.py",
         "tests/test_tarball.py",
     ],
     needed_coverage = [
@@ -400,6 +434,7 @@ python_unittest(
         ":ensure_dirs_exist",
         ":items",
         ":phases_provide",  # test_mount.py uses this
+        ":symlink",
         "//antlir:find_built_subvol",
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
@@ -418,6 +453,7 @@ python_library(
         ":items",
         ":phases_provide",
         ":rpm_action",
+        ":symlink",
         ":user",
     ],
 )
