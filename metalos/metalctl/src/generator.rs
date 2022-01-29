@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
@@ -378,6 +379,15 @@ fn generator_maybe_err<FD: FindRootDisk>(
     }
     .context("Failed to materialize_boot_info")?;
 
+    // IMPORTANT: this MUST be the last thing that the generator does, otherwise
+    // any bugs in the generator can be masked and cause future hard-to-diagnose
+    // failures
+    symlink(
+        "/usr/lib/systemd/system/initrd.target",
+        opts.early_dir.join("default.target"),
+    )
+    .context("while changing default target to initrd.target")?;
+
     Ok(boot_mode)
 }
 
@@ -423,7 +433,7 @@ pub fn generator(log: Logger, opts: Opts) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::anyhow;
+    use anyhow::{anyhow, bail};
     use find_root_disk::DiskDiscovery;
     use maplit::btreemap;
     use std::collections::BTreeMap;
@@ -515,9 +525,33 @@ mod tests {
         Ok((log, tmpdir, opts, boot_id))
     }
 
+    #[derive(Debug)]
+    enum GeneratedFile {
+        Contents(String),
+        SymlinkTo(PathBuf),
+    }
+
+    impl From<String> for GeneratedFile {
+        fn from(s: String) -> Self {
+            Self::Contents(s)
+        }
+    }
+
+    impl From<&str> for GeneratedFile {
+        fn from(s: &str) -> Self {
+            s.to_string().into()
+        }
+    }
+
+    impl From<PathBuf> for GeneratedFile {
+        fn from(p: PathBuf) -> Self {
+            Self::SymlinkTo(p)
+        }
+    }
+
     fn compare_dir_inner(
         base_dir: &Path,
-        expected_contents: &mut BTreeMap<PathBuf, String>,
+        expected_contents: &mut BTreeMap<PathBuf, GeneratedFile>,
     ) -> Result<()> {
         for entry in std::fs::read_dir(base_dir).context("failed to read base dir")? {
             let entry = entry.context("failed to read next entry from base dir")?;
@@ -527,19 +561,41 @@ mod tests {
                     .context(format!("Failed to process directory {:?}", path))?;
             } else {
                 match expected_contents.remove(&path) {
-                    Some(expected_content) => {
-                        let content = std::fs::read_to_string(&path)
-                            .context(format!("Can't read file {:?}", path))?;
+                    Some(expected_content) => match expected_content {
+                        GeneratedFile::Contents(expected_content) => {
+                            let content = std::fs::read_to_string(&path)
+                                .context(format!("Can't read file {:?}", path))?;
 
-                        if expected_content != content {
-                            return Err(anyhow!(
-                                "File contents for {:?} differs from expected:\ncontents: {:?}\nexpected: {:?}\n",
-                                path,
-                                content,
-                                expected_content,
-                            ));
+                            if expected_content != content {
+                                return Err(anyhow!(
+                                    "File contents for {:?} differs from expected:\ncontents: {:?}\nexpected: {:?}\n",
+                                    path,
+                                    content,
+                                    expected_content,
+                                ));
+                            }
                         }
-                    }
+                        GeneratedFile::SymlinkTo(dst) => {
+                            match std::fs::read_link(&path) {
+                                Ok(link_dst) => {
+                                    if dst != link_dst {
+                                        bail!(
+                                            "Expected {:?} to link to {:?}, but actually pointed to {:?}",
+                                            path,
+                                            dst,
+                                            link_dst
+                                        );
+                                    }
+                                }
+                                Err(e) => bail!(
+                                    "Expected {:?} to link to {:?}, but reading the link failed: {:?}",
+                                    path,
+                                    dst,
+                                    e
+                                ),
+                            };
+                        }
+                    },
                     None => {
                         return Err(anyhow!(
                             "Found unexpected file {:?} in directory {:?}",
@@ -555,7 +611,7 @@ mod tests {
 
     fn compare_dir(
         base_dir: &Path,
-        mut expected_contents: BTreeMap<PathBuf, String>,
+        mut expected_contents: BTreeMap<PathBuf, GeneratedFile>,
     ) -> Result<()> {
         compare_dir_inner(base_dir, &mut expected_contents)?;
         if expected_contents.is_empty() {
@@ -604,22 +660,22 @@ mod tests {
                     Where=/rootdisk\n\
                     Options=\n\
                     Type=btrfs\n\
-                ".to_string(),
+                ".into(),
                 opts.normal_dir.join("metalos-switch-root.service.d/metalos_boot.conf") => "\
                     [Unit]\n\
                     After=metalos-snapshot-root.service\n\
                     Requires=metalos-snapshot-root.service\n\
-                    ".to_string(),
+                    ".into(),
                 opts.normal_dir.join("metalos-switch-root.service.d/apply_host_config.conf") => "\
                     [Unit]\n\
                     After=metalos-apply-host-config.service\n\
                     Requires=metalos-apply-host-config.service\n\
-                    ".to_string(),
+                    ".into(),
                 opts.normal_dir.join("rootdisk.mount.d/metalos_reimage_boot.conf") => "\
                     [Unit]\n\
                     After=metalos-image-root-disk.service\n\
                     Requires=metalos-image-root-disk.service\n\
-                    ".to_string(),
+                    ".into(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
                     HOST_CONFIG_URI=https://server:8000/config\n\
                     METALOS_BOOTS_DIR=/rootdisk/run/boot\n\
@@ -631,12 +687,13 @@ mod tests {
                     ROOTDISK_DIR=/rootdisk\n\
                     ",
                     boot_id
-                ),
+                ).into(),
                 opts.network_unit_dir.join("50-eth.network.d/match.conf") => "\
                     [Match]\n\
                     Name=eth*\n\
                     MACAddress=11:22:33:44:55:66\n\
-                    ".to_string(),
+                    ".into(),
+                opts.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
@@ -680,17 +737,17 @@ mod tests {
                     Where=/rootdisk\n\
                     Options=\n\
                     Type=btrfs\n\
-                ".to_string(),
+                ".into(),
                 opts.normal_dir.join("metalos-switch-root.service.d/metalos_boot.conf") => "\
                     [Unit]\n\
                     After=metalos-snapshot-root.service\n\
                     Requires=metalos-snapshot-root.service\n\
-                    ".to_string(),
+                    ".into(),
                 opts.normal_dir.join("metalos-switch-root.service.d/apply_host_config.conf") => "\
                     [Unit]\n\
                     After=metalos-apply-host-config.service\n\
                     Requires=metalos-apply-host-config.service\n\
-                    ".to_string(),
+                    ".into(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
                     HOST_CONFIG_URI=https://server:8000/config\n\
                     METALOS_BOOTS_DIR=/rootdisk/run/boot\n\
@@ -700,12 +757,13 @@ mod tests {
                     ROOTDISK_DIR=/rootdisk\n\
                     ",
                     boot_id
-                ),
+                ).into(),
                 opts.network_unit_dir.join("50-eth.network.d/match.conf") => "\
                     [Match]\n\
                     Name=eth*\n\
                     MACAddress=11:22:33:44:55:66\n\
-                    ".to_string(),
+                    ".into(),
+                opts.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
@@ -746,13 +804,14 @@ mod tests {
                     What=LABEL=unittest\n\
                     Where=/rootdisk\n\
                     Options=f1,f2,f3,ro\n\
-                ".to_string(),
-                opts.environment_dir.join(ENVIRONMENT_FILENAME) => "".to_string(),
+                ".into(),
+                opts.environment_dir.join(ENVIRONMENT_FILENAME) => "".into(),
                 opts.network_unit_dir.join("50-eth.network.d/match.conf") => "\
                     [Match]\n\
                     Name=eth*\n\
                     MACAddress=11:22:33:44:55:66\n\
-                    ".to_string(),
+                    ".into(),
+                opts.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;

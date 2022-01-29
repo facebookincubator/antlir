@@ -82,10 +82,11 @@ image.layer(
         image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/initrd-release"),
         image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/os-release"),
         image.ensure_file_symlink("/usr/lib/initrd-release", "/usr/lib/os-release"),
-        # This is automatically the target that systemd tries to reach when it
-        # detects /etc/initrd-release, but explicitly symlinking it makes
-        # systemd-analyze work as expected too
-        systemd.set_default_target("initrd.target"),
+        # The metalos generator will rewrite the default target to
+        # initrd.target, so explicitly set emergency.target as the default in
+        # the image so that the boot clearly fails if the generator fails during
+        # early boot for any reason
+        systemd.set_default_target("emergency.target"),
         # With our custom setup, just enable initrd-cleanup.service directly in
         # initrd.target instead of going through initrd-parse-etc.service as normal
         systemd.enable_unit(
