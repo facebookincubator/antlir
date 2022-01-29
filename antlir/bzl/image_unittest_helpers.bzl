@@ -121,7 +121,7 @@ def _nspawn_wrapper_properties(
     test_layer = name + "__test_layer"
 
     # Make a test-specific image containing the test binary.
-    binary_path = "/layer-test-binary.par"
+    binary_path = "/layer-test-binary"
     inner_test_target = ":" + _hidden_test_name(name, test_type)
     if test_type == "rust":
         # for the rust linter warning that the crate is not snake_case
