@@ -11,4 +11,4 @@ EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
 RemainAfterExit=true
 ExecStartPre=metalctl fetch-image ${METALOS_DISK_IMAGE_PKG} /tmp/root_image/ --decompress-download --download-only --download-filename metalos.img
-ExecStart=metalctl apply-disk-image /tmp/root_image/metalos.img ${ROOTDISK_DEVICE}
+ExecStart=metalctl apply-disk-image /tmp/root_image/metalos.img

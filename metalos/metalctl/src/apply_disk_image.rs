@@ -10,6 +10,7 @@ use slog::{info, warn, Logger};
 use structopt::StructOpt;
 
 use expand_partition::expand_last_partition;
+use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
 
 // define ioctl macros based on the codes in linux/fs.h
 nix::ioctl_none!(ioctl_blkrrpart, 0x12, 95);
@@ -19,7 +20,6 @@ const SYS_BLOCK: &str = "/sys/block";
 #[derive(StructOpt)]
 pub struct Opts {
     source: PathBuf,
-    dest: PathBuf,
 
     #[structopt(long, parse(from_os_str), default_value = "/tmp/expand_root_mnt")]
     tmp_mounts_dir: PathBuf,
@@ -172,6 +172,14 @@ pub fn get_partition_device(
     ))
 }
 
+fn find_root_disk<FD: FindRootDisk>(disk_finder: &FD) -> Result<PathBuf> {
+    disk_finder
+        .get_root_device()
+        .context("Failed to find root device to write root_disk_package to")?
+        .dev_node()
+        .context("Failed to get the devnode for root disk")
+}
+
 pub async fn apply_disk_image(log: Logger, opts: Opts) -> Result<()> {
     let src_metadata = opts
         .source
@@ -180,9 +188,12 @@ pub async fn apply_disk_image(log: Logger, opts: Opts) -> Result<()> {
     let src_len = src_metadata.len();
 
     let mut src = fs::File::open(&opts.source).context("Failed to open source file")?;
+
+    let dest = find_root_disk(&SingleDiskFinder::new()).context("Failed to get root disk")?;
+    info!(log, "Selected {:?} as root disk", dest);
     let mut dst = fs::OpenOptions::new()
         .write(true)
-        .open(&opts.dest)
+        .open(&dest)
         .context("Failed to open destination file")?;
 
     let mut buf = vec![0; opts.buffer_size];
@@ -198,17 +209,15 @@ pub async fn apply_disk_image(log: Logger, opts: Opts) -> Result<()> {
         dst.write_all(&buf[..len])
             .context("Failed to write next block to file")?;
     }
-    info!(log, "Wrote {} bytes to {:?}", src_len, opts.dest);
+    info!(log, "Wrote {} bytes to {:?}", src_len, dest);
 
-    info!(log, "Expanding last partition of {:?}", opts.dest);
-    let delta = expand_last_partition(&opts.dest).context(format!(
-        "Failed to expand last partition of: {:?}",
-        opts.dest
-    ))?;
+    info!(log, "Expanding last partition of {:?}", dest);
+    let delta = expand_last_partition(&dest)
+        .context(format!("Failed to expand last partition of: {:?}", dest))?;
     info!(
         log,
         "Expanded {:?} partition {} from {} bytes to {} bytes with new last lba = {}",
-        opts.dest,
+        dest,
         delta.partition_num,
         delta.old_size,
         delta.new_size,
@@ -219,13 +228,13 @@ pub async fn apply_disk_image(log: Logger, opts: Opts) -> Result<()> {
         return Err(nix::Error::last()).context("Failed to run syncfs");
     }
 
-    info!(log, "Rescanning partition table for {:?}", opts.dest);
+    info!(log, "Rescanning partition table for {:?}", dest);
     rescan_partitions(&dst).context("Failed to rescan partitions after writing image")?;
 
-    let partition_dev = get_partition_device(log.clone(), &opts.dest, delta.partition_num)
-        .context(format!(
+    let partition_dev =
+        get_partition_device(log.clone(), &dest, delta.partition_num).context(format!(
             "Failed to get partition {} of device {:?}",
-            delta.partition_num, opts.dest
+            delta.partition_num, dest
         ))?;
 
     info!(log, "Expanding filesystem in {:?}", partition_dev);
