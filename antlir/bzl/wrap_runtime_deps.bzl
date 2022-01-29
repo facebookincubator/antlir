@@ -174,7 +174,7 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
         name = name,
         bash = '''
 cat >> "$TMP/out" <<'EOF'
-#!/bin/bash
+#!/bin/sh
 {set_dynamic_path_in_output}\
 exec $(exe_target {target_to_wrap}){quoted_path_in_output}{dynamic_path_in_output} "$@"
 EOF
