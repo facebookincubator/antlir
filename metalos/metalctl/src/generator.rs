@@ -9,7 +9,6 @@ use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
-use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
 use serde::Serialize;
 use slog::{error, info, o, Logger};
 use structopt::StructOpt;
@@ -97,11 +96,6 @@ impl Environment for MetalosEnvironment {}
 struct MetalosReimageEnvironment {
     #[serde(flatten)]
     metalos_common: MetalosEnvironment,
-
-    // ROOTDISK_DEVICE is the device node path to the thing we want to mount
-    // as our root disk.
-    #[serde(rename = "ROOTDISK_DEVICE")]
-    rootdisk_device: PathBuf,
 
     // METALOS_DISK_IMAGE_PKG is the package name and version that should be
     // downloaded and used to image the root disk for this boot.
@@ -226,28 +220,20 @@ fn metalos_existing_boot_info(
     })
 }
 
-fn metalos_reimage_boot_info<FD: FindRootDisk>(
+fn metalos_reimage_boot_info(
     root: Root,
     host_config_uri: String,
     os_package: String,
     disk_image_package: String,
-    disk_finder: &FD,
     mac_address: Option<String>,
 ) -> Result<BootInfoResult<MetalosReimageEnvironment>> {
     let boot_info_result =
         metalos_existing_boot_info(root, host_config_uri, os_package, mac_address)
             .context("failed to get base info for existing boot")?;
 
-    let root_device = disk_finder
-        .get_root_device()
-        .context("Failed to find root device to write root_disk_package to")?
-        .dev_node()
-        .context("Failed to get the devnode for root disk")?;
-
     let mut new_boot_info_result = BootInfoResult {
         env: MetalosReimageEnvironment {
             metalos_common: boot_info_result.env,
-            rootdisk_device: root_device,
             disk_image_package,
         },
         extra_deps: boot_info_result.extra_deps,
@@ -286,12 +272,7 @@ fn legacy_boot_info(
     })
 }
 
-fn generator_maybe_err<FD: FindRootDisk>(
-    cmdline: MetalosCmdline,
-    log: Logger,
-    opts: Opts,
-    disk_finder: &FD,
-) -> Result<BootMode> {
+fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Result<BootMode> {
     let boot_mode = detect_mode(&cmdline).context("failed to detect boot mode")?;
     info!(log, "Booting with mode: {:?}", boot_mode);
 
@@ -345,7 +326,6 @@ fn generator_maybe_err<FD: FindRootDisk>(
                 cmdline
                     .root_disk_package
                     .context("Root disk package must be provided for metalos reimage boots")?,
-                disk_finder,
                 mac_address,
             )
             .context("Failed to build normal metalos info")?;
@@ -421,7 +401,7 @@ pub fn generator(log: Logger, opts: Opts) -> Result<()> {
         }
     }?;
 
-    match generator_maybe_err(cmdline, sublog, opts, &SingleDiskFinder::new()) {
+    match generator_maybe_err(cmdline, sublog, opts) {
         Ok(_) => Ok(()),
         Err(e) => {
             error!(log, "{}", e.to_string());
@@ -434,63 +414,12 @@ pub fn generator(log: Logger, opts: Opts) -> Result<()> {
 mod tests {
     use super::*;
     use anyhow::{anyhow, bail};
-    use find_root_disk::DiskDiscovery;
     use maplit::btreemap;
     use std::collections::BTreeMap;
     use std::path::{Path, PathBuf};
     use std::time::SystemTime;
 
     use generator_lib::ENVIRONMENT_FILENAME;
-
-    #[derive(Clone)]
-    struct MockDisk {
-        disk: PathBuf,
-    }
-    impl DiskPath for MockDisk {
-        fn dev_node(&self) -> Result<PathBuf> {
-            Ok(self.disk.clone())
-        }
-        fn sys_path(&self) -> &Path {
-            panic!("sys_path not implemented for mock");
-        }
-    }
-
-    struct MockDiskDiscovery {}
-    impl DiskDiscovery for MockDiskDiscovery {
-        type Output = MockDisk;
-        fn discover_devices() -> Result<Vec<Self::Output>> {
-            panic!("Discover devices not implemented for mock");
-        }
-    }
-
-    struct MockDiskFinder {
-        disk: MockDisk,
-    }
-    struct MockErrDiskFinder {}
-
-    impl FindRootDisk for MockDiskFinder {
-        type Output = MockDisk;
-        type Discovery = MockDiskDiscovery;
-        fn get_root_device(&self) -> Result<Self::Output> {
-            Ok(self.disk.clone())
-        }
-
-        fn find_root_disk(&self, _: Vec<Self::Output>) -> Result<Self::Output> {
-            Ok(self.disk.clone())
-        }
-    }
-
-    impl FindRootDisk for MockErrDiskFinder {
-        type Output = MockDisk;
-        type Discovery = MockDiskDiscovery;
-        fn get_root_device(&self) -> Result<Self::Output> {
-            Err(anyhow!("Forced unit test error"))
-        }
-
-        fn find_root_disk(&self, _: Vec<Self::Output>) -> Result<Self::Output> {
-            Err(anyhow!("Forced unit test error"))
-        }
-    }
 
     fn setup_generator_test(name: &'static str) -> Result<(Logger, PathBuf, Opts, String)> {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
@@ -641,12 +570,8 @@ mod tests {
             "
         .parse()?;
 
-        let disk = MockDisk {
-            disk: "/dev/unittest".into(),
-        };
-
-        let boot_mode = generator_maybe_err(cmdline, log, opts.clone(), &MockDiskFinder { disk })
-            .context("failed to run generator")?;
+        let boot_mode =
+            generator_maybe_err(cmdline, log, opts.clone()).context("failed to run generator")?;
 
         assert_eq!(boot_mode, BootMode::MetalOSReimage);
 
@@ -683,7 +608,6 @@ mod tests {
                     METALOS_DISK_IMAGE_PKG=reimage_pkg\n\
                     METALOS_IMAGES_DIR=/rootdisk/image\n\
                     METALOS_OS_PKG=somePackage\n\
-                    ROOTDISK_DEVICE=/dev/unittest\n\
                     ROOTDISK_DIR=/rootdisk\n\
                     ",
                     boot_id
@@ -715,15 +639,8 @@ mod tests {
             "
         .parse()?;
 
-        let boot_mode = generator_maybe_err(
-            cmdline,
-            log,
-            opts.clone(),
-            // We want to enforce that metalos setup doesn't use the disk searching functionality
-            // unless we are asking to reimage. It should be using the lables only otherwise
-            &MockErrDiskFinder {},
-        )
-        .context("failed to run generator")?;
+        let boot_mode =
+            generator_maybe_err(cmdline, log, opts.clone()).context("failed to run generator")?;
 
         assert_eq!(boot_mode, BootMode::MetalOSExisting);
 
@@ -784,14 +701,8 @@ mod tests {
             "
         .parse()?;
 
-        let boot_mode = generator_maybe_err(
-            cmdline,
-            log,
-            opts.clone(),
-            // We want to enforce that legacy doesn't use the disk searching functionality
-            &MockErrDiskFinder {},
-        )
-        .context("failed to run generator")?;
+        let boot_mode =
+            generator_maybe_err(cmdline, log, opts.clone()).context("failed to run generator")?;
 
         assert_eq!(boot_mode, BootMode::Legacy);
 
@@ -832,11 +743,6 @@ mod tests {
             "test_config_uri".to_string(),
             "test_package:123".to_string(),
             "test_reimage_package:123".to_string(),
-            &MockDiskFinder {
-                disk: MockDisk {
-                    disk: "/dev/unittest".into(),
-                },
-            },
             Some("11:22:33:44:55:66".to_string()),
         )
         .context("failed to get boot info")?;
@@ -854,7 +760,6 @@ mod tests {
                     metalos_images_dir: "/rootdisk/image".into(),
                     os_package: "test_package:123".into(),
                 },
-                rootdisk_device: "/dev/unittest".into(),
                 disk_image_package: "test_reimage_package:123".to_string(),
             }
         );
