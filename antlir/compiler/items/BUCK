@@ -1,12 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
-load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+load("//antlir/bzl:oss_shim.bzl", "python_library", "third_party")
 
 python_library(
     name = "clone",
@@ -15,24 +9,6 @@ python_library(
         ":common",
         ":phases_provide",
         "//antlir/bzl/image_actions:clone.shape-python",
-    ],
-)
-
-python_unittest(
-    name = "test-clone",
-    srcs = ["tests/test_clone.py"],
-    needed_coverage = [(100, ":clone")],
-    resources = {
-        layer_resource(TEST_IMAGE_PREFIX + "parent_layer"): "tests/src-layer",
-        layer_resource(TEST_IMAGE_PREFIX + "create_ops"): "tests/create_ops",
-    },
-    deps = [
-        ":clone",
-        ":common_testlib",
-        "//antlir:common",
-        "//antlir:find_built_subvol",
-        "//antlir:subvol_utils",
-        "//antlir:testlib_layer_resource",
     ],
 )
 
@@ -53,57 +29,12 @@ python_library(
     ],
 )
 
-# A helper for tests, so lacks its own tests.
-python_library(
-    name = "common_testlib",
-    srcs = ["tests/common.py"],
-    deps = [
-        ":common",
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-        "//antlir:testlib_layer_resource",
-        "//antlir:testlib_subvol_helpers",
-        "//antlir/compiler:requires_provides",
-        "//antlir/nspawn_in_subvol:nspawn",
-    ],
-)
-
 python_library(
     name = "group",
     srcs = ["group.py"],
     deps = [
         ":common",
         "//antlir/bzl/image/feature:usergroup.shape-python",
-    ],
-)
-
-python_unittest(
-    name = "test-group",
-    srcs = ["tests/test_group.py"],
-    needed_coverage = [(100, ":group")],
-    deps = [
-        ":common_testlib",
-        ":group",
-    ],
-)
-
-python_unittest(
-    name = "group-integration-test",
-    srcs = ["tests/group_integration_test.py"],
-    resources = {
-        layer_resource(
-            flavor_helpers.default_flavor_build_appliance,
-        ): "tests/base-layer",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "groups-added",
-        ): "tests/groups-added",
-    },
-    deps = [
-        ":common_testlib",
-        ":group",
-        "//antlir:find_built_subvol",
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
     ],
 )
 
@@ -114,16 +45,6 @@ python_library(
         ":common",
         ":group",
         ":user",
-    ],
-)
-
-python_unittest(
-    name = "test-phases-provide",
-    srcs = ["tests/test_phases_provide.py"],
-    needed_coverage = [(100, ":phases_provide")],
-    deps = [
-        ":common_testlib",
-        ":phases_provide",
     ],
 )
 
@@ -142,67 +63,6 @@ python_library(
 )
 
 python_library(
-    name = "rpm_action_base_testlib",
-    srcs = ["tests/rpm_action_base.py"],
-    deps = [
-        ":common_testlib",
-        ":rpm_action",
-        "//antlir:bzl_const",
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-        third_party.library(
-            "pydantic",
-            platform = "python",
-        ),
-    ],
-)
-
-image.layer(
-    name = "test_rpm_action_layer",
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
-    features = [
-        image.layer_mount(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-            "/test-build-appliance",
-        ),
-        image.layer_mount(
-            TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
-            "/test-with-one-local-rpm",
-        ),
-        image.layer_mount(
-            TEST_IMAGE_PREFIX + "layer-with-non-default-snapshot-no-rpms",
-            "/test-with-no-rpm",
-        ),
-        feature.install(
-            TEST_IMAGE_PREFIX + "rpm-test-cheese-2-1.rpm",
-            "/rpm-test-cheese-2-1.rpm",
-        ),
-        feature.install(
-            TEST_IMAGE_PREFIX + "rpm-test-cheese-1-1.rpm",
-            "/rpm-test-cheese-1-1.rpm",
-        ),
-    ],
-)
-
-image_python_unittest(
-    name = "test-rpm-action",
-    srcs = ["tests/test_rpm_action.py"],
-    container_opts = {
-        "serve_rpm_snapshots": ["//antlir/rpm:repo-snapshot-for-tests"],
-        "shadow_proxied_binaries": False,
-    },
-    layer = ":test_rpm_action_layer",
-    needed_coverage = [(100, ":rpm_action")],
-    run_as_user = "root",
-    deps = [
-        ":rpm_action_base_testlib",
-        "//antlir:bzl_const",
-        "//antlir:find_built_subvol",
-        "//antlir:testlib_layer_resource",
-    ],
-)
-
-python_library(
     name = "genrule_layer",
     srcs = ["genrule_layer.py"],
     deps = [
@@ -210,34 +70,6 @@ python_library(
         "//antlir/bzl:genrule_layer.shape-python",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:rpm",
-    ],
-)
-
-python_unittest(
-    name = "test-genrule-layer",
-    srcs = ["tests/test_genrule_layer.py"],
-    needed_coverage = [(100, ":genrule_layer")],
-    resources = {
-        layer_resource(
-            # We need something with the test RPM snapshot, with a working
-            # `sh`, `touch`, and `mkdir`, and `dnf`.  The former 3 could be
-            # provided through a busybox binary, but `dnf` pretty much
-            # presupposes a full OS, so use the test BA for now.
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/genrule-layer-base",
-        layer_resource(
-            # Must have a `busybox` binary as `/bin/sh`.
-            TEST_IMAGE_PREFIX + "validates-dnf-build-appliance",
-        ): "tests/genrule-layer-busybox-base",
-    },
-    deps = [
-        ":common_testlib",
-        ":make_subvol",
-        "//antlir:common",
-        "//antlir:find_built_subvol",
-        "//antlir:subvol_utils",
-        "//antlir:testlib_layer_resource",
-        "//antlir/rpm:find_snapshot",
     ],
 )
 
@@ -251,23 +83,6 @@ python_library(
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:nspawn",
-    ],
-)
-
-python_unittest(
-    name = "test-ensure-dirs-exist",
-    srcs = ["tests/test_ensure_dirs_exist.py"],
-    needed_coverage = [(100, ":ensure_dirs_exist")],
-    resources = {
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/test-build-appliance",
-    },
-    deps = [
-        ":common_testlib",
-        "//antlir:common",
-        "//antlir:find_built_subvol",
-        "//antlir:subvol_utils",
     ],
 )
 
@@ -317,12 +132,6 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-stat-options",
-    srcs = ["tests/test_stat_options.py"],
-    deps = [":stat_options"],
-)
-
 python_library(
     name = "tarball",
     srcs = ["tarball.py"],
@@ -345,26 +154,6 @@ python_library(
             "pydantic",
             platform = "python",
         ),
-    ],
-)
-
-python_unittest(
-    name = "test-symlink",
-    srcs = [
-        "tests/test_symlink.py",
-    ],
-    needed_coverage = [
-        (100, ":symlink"),
-    ],
-    resources = {
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/test-build-appliance",
-    },
-    deps = [
-        ":common_testlib",
-        ":items",
-        ":symlink",
     ],
 )
 
@@ -396,52 +185,6 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-items",
-    srcs = [
-        "tests/test_common.py",
-        "tests/test_install_file.py",
-        "tests/test_make_subvol.py",
-        "tests/test_mount.py",
-        "tests/test_remove_path.py",
-        "tests/test_tarball.py",
-    ],
-    needed_coverage = [
-        (100, ":common"),
-        (100, ":items"),
-        (100, ":make_subvol"),
-        (100, ":mount_utils"),
-        (100, ":mount"),
-        (100, ":tarball"),
-    ],
-    resources = {
-        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
-        TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "tests/test-with-one-local-rpm",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/test-build-appliance",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "small-layer-with-mounts",
-        ): "tests/small-layer-with-mounts",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "hello_world_base",
-        ): "tests/test-layer-without-mounts",
-        TEST_IMAGE_PREFIX + "small-layer-with-mounts.btrfs": "tests/small-layer-with-mounts.btrfs",
-        TEST_IMAGE_PREFIX + "create_ops.tar.gz": "tests/create_ops.tar.gz",
-    },
-    deps = [
-        ":common_testlib",
-        ":ensure_dirs_exist",
-        ":items",
-        ":phases_provide",  # test_mount.py uses this
-        ":symlink",
-        "//antlir:find_built_subvol",
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-        "//antlir/btrfs_diff:testlib_demo_sendstreams",
-    ],
-)
-
 # `items_for_features` and `sample_items` always depend on ~all items.
 python_library(
     name = "all-items",
@@ -465,41 +208,5 @@ python_library(
         ":common",
         ":group",
         "//antlir/bzl/image/feature:usergroup.shape-python",
-    ],
-)
-
-python_unittest(
-    name = "test-user",
-    srcs = ["tests/test_user.py"],
-    needed_coverage = [(100, ":user")],
-    resources = {
-        layer_resource(
-            TEST_IMAGE_PREFIX + "users-groups-from-scratch",
-        ): "tests/test-layer-users-groups-from-scratch",
-    },
-    deps = [
-        ":common_testlib",
-        ":user",
-    ],
-)
-
-python_unittest(
-    name = "user-integration-test",
-    srcs = ["tests/user_integration_test.py"],
-    resources = {
-        layer_resource(
-            flavor_helpers.default_flavor_build_appliance,
-        ): "tests/base-layer",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "users-added",
-        ): "tests/users-added",
-    },
-    deps = [
-        ":common_testlib",
-        ":user",
-        "//antlir:find_built_subvol",
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-        "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
