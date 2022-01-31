@@ -10,7 +10,7 @@ use serde_json;
 use slog::{info, Logger};
 use structopt::StructOpt;
 
-use crate::net_utils::get_mac;
+use net_utils::get_mac;
 use send_events::{Event, EventSender, EventSink, HttpSink, Source, SourceArgs};
 
 #[derive(StructOpt, Debug, Clone)]

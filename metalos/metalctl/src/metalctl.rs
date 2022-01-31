@@ -35,7 +35,6 @@ mod http;
 mod kernel_cmdline;
 mod mkdir;
 mod mount;
-mod net_utils;
 #[cfg(initrd)]
 mod network_cleanup;
 mod send_event;
