@@ -157,31 +157,33 @@ python_library(
     ],
 )
 
-# Future: Finish splitting this library, and tests, by item.  The only
-# challenge is to make sure that `common.py` gets coverage -- coverage of
-# its functions is currently distributed across various items.
+# Covered by `test-items`. Future: separate test & coverage.
 python_library(
-    name = "items",
-    srcs = [
-        "install_file.py",
-        "remove_path.py",
-    ],
+    name = "install_file",
+    srcs = ["install_file.py"],
     deps = [
         ":common",
-        ":make_subvol",
-        ":mount",
-        ":mount_utils",
         ":stat_options",
-        ":tarball",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
         "//antlir/bzl/image/feature:install.shape-python",
-        "//antlir/bzl/image/feature:remove.shape-python",
         "//antlir/compiler:requires_provides",
-        "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:nspawn",
         third_party.library(
             "pydantic",
             platform = "python",
         ),
+    ],
+)
+
+# Covered by `test-items`. Future: separate test & coverage.
+python_library(
+    name = "remove_path",
+    srcs = ["remove_path.py"],
+    deps = [
+        ":common",
+        "//antlir:subvol_utils",
+        "//antlir/bzl/image/feature:remove.shape-python",
     ],
 )
 
@@ -193,10 +195,14 @@ python_library(
         ":ensure_dirs_exist",
         ":genrule_layer",
         ":group",
-        ":items",
+        ":install_file",
+        ":make_subvol",
+        ":mount",
         ":phases_provide",
+        ":remove_path",
         ":rpm_action",
         ":symlink",
+        ":tarball",
         ":user",
     ],
 )

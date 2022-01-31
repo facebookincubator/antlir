@@ -208,7 +208,7 @@ python_unittest(
     },
     deps = [
         ":common_testlib",
-        "//antlir/compiler/items:items",
+        "//antlir/compiler/items:install_file",
         "//antlir/compiler/items:symlink",
     ],
 )
@@ -225,7 +225,8 @@ python_unittest(
     ],
     needed_coverage = [
         (100, "//antlir/compiler/items:common"),
-        (100, "//antlir/compiler/items:items"),
+        (100, "//antlir/compiler/items:install_file"),
+        (100, "//antlir/compiler/items:remove_path"),
         (100, "//antlir/compiler/items:make_subvol"),
         (100, "//antlir/compiler/items:mount_utils"),
         (100, "//antlir/compiler/items:mount"),
@@ -253,8 +254,9 @@ python_unittest(
         "//antlir:subvol_utils",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
         "//antlir/compiler/items:ensure_dirs_exist",
-        "//antlir/compiler/items:items",
+        "//antlir/compiler/items:install_file",
         "//antlir/compiler/items:phases_provide",  # test_mount.py uses this
+        "//antlir/compiler/items:remove_path",
         "//antlir/compiler/items:symlink",
     ],
 )
