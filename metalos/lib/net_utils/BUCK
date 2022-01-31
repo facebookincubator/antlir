@@ -1,0 +1,14 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "net_utils",
+    srcs = ["src/lib.rs"],
+    unittests = [
+        "plain",
+        "vm",
+    ],
+    deps = [
+        "anyhow",
+        "nix",
+    ],
+)
