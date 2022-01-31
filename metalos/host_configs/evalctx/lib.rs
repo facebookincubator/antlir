@@ -6,18 +6,16 @@
  */
 
 #![deny(warnings)]
-use starlark::environment::{Globals, GlobalsBuilder};
 use thiserror::Error;
 
 pub mod generator;
-pub use generator::Generator;
+mod starlark;
+pub use crate::starlark::generator::Generator;
 pub use host;
 #[cfg(feature = "facebook")]
 pub use host::facebook;
 pub use host::HostIdentity;
-mod loader;
 mod path;
-mod template;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -30,8 +28,8 @@ pub enum Error {
     /// The starlark module had valid syntax, but contained an invalid load().
     #[error("'{src}' attempted to import non-existent module '{missing}'")]
     MissingImport {
-        src: loader::ModuleId,
-        missing: loader::ModuleId,
+        src: crate::starlark::loader::ModuleId,
+        missing: crate::starlark::loader::ModuleId,
     },
     /// The starlark module did not have a parent or was not a file name
     #[error("Pathbuf did not pass invariant checks for ModuleId: {0}")]
@@ -65,26 +63,3 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
-
-pub fn metalos(builder: &mut GlobalsBuilder) {
-    builder.struct_("metalos", |builder: &mut GlobalsBuilder| {
-        generator::module(builder);
-        template::module(builder);
-    });
-}
-
-pub fn globals() -> Globals {
-    GlobalsBuilder::extended().with(metalos).build()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::metalos;
-    use starlark::assert::Assert;
-    #[test]
-    fn starlark_module_exposed() {
-        let mut a = Assert::new();
-        a.globals_add(metalos);
-        a.pass("metalos.template(\"\")");
-    }
-}

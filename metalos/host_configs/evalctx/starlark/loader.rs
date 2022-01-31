@@ -179,7 +179,7 @@ impl Loader {
             self.eval_and_freeze_module(&load_id, other_ast)?;
         }
         let module = Module::new();
-        let globals = crate::globals();
+        let globals = crate::starlark::globals();
         let mut evaluator: Evaluator = Evaluator::new(&module);
         let module_loader = ModuleLoader(id.clone(), &self.modules);
         evaluator.set_loader(&module_loader);

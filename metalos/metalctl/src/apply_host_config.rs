@@ -76,8 +76,8 @@ mod tests {
         std::fs::write(
             generators_dir.path().join("test.star"),
             r#"
-def generator(host: metalos.HostIdentity) -> metalos.GeneratorOutput.type:
-    return metalos.GeneratorOutput(
+def generator(host: metalos.HostIdentity) -> metalos.Output.type:
+    return metalos.Output(
         files=[
             metalos.file(path="test_output_file", contents="test output for " + host.hostname),
         ]
