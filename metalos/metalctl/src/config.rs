@@ -83,7 +83,7 @@ impl<'de> Deserialize<'de> for EventBackendBaseUri {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct EventBackend {
-    event_backend_base_uri: EventBackendBaseUri,
+    pub event_backend_base_uri: EventBackendBaseUri,
 }
 
 impl EventBackend {

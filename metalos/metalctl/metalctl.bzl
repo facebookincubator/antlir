@@ -25,6 +25,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         "//metalos/lib:expand_partition",
         "//metalos/lib:find_root_disk",
         "//metalos/lib:generator_lib",
+        "//metalos/lib:send_events",
         "anyhow",  # ~9.5k, very helpful for error handling
         "nix",  # ~5k: access to syscalls (mount, etc)
         "libc",
@@ -70,8 +71,10 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         crate_root = "src/metalctl.rs",
         deps = deps,
         test_deps = [
+            "http",
             "mockall",
             "tempfile",
+            "//metalos/lib:http_test",
         ],
         test_srcs = native.glob(["tests/**/*.rs"]),
         unittest_opts = shape.new(
