@@ -84,7 +84,8 @@ python_unittest(
         ":dep_graph",
         "//antlir:subvol_utils",
         "//antlir/compiler/items:ensure_dirs_exist",
-        "//antlir/compiler/items:items",
+        "//antlir/compiler/items:install_file",
+        "//antlir/compiler/items:remove_path",
         "//antlir/compiler/items:symlink",
     ],
 )
