@@ -26,6 +26,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         "//metalos/lib:find_root_disk",
         "//metalos/lib:generator_lib",
         "//metalos/lib:send_events",
+        "//metalos/lib/net_utils:net_utils",
         "anyhow",  # ~9.5k, very helpful for error handling
         "nix",  # ~5k: access to syscalls (mount, etc)
         "libc",
@@ -55,8 +56,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     rustc_flags = rustc_flags or []
     if facebook:
         rustc_flags.append("--cfg=facebook")
-        deps.append("//common/rust/fbwhoami:fbwhoami")
-        deps.append("//common/rust/asset_gating/device:asset_gating_device")
+        deps.append("//metalos/lib/facebook/chef:chef")
     if have_blkid:
         rustc_flags.append("--cfg=blkid")
         deps.append("//metalos/lib/blkid:blkid")

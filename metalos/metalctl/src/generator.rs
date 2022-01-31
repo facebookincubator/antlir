@@ -14,12 +14,12 @@ use slog::{error, info, o, Logger};
 use structopt::StructOpt;
 
 use crate::kernel_cmdline::{MetalosCmdline, Root};
-use crate::net_utils::get_mac;
 use crate::switch_root::ROOTDISK_DIR;
 use generator_lib::{
     materialize_boot_info, Dropin, Environment, ExtraDependencies, ExtraDependency, MountUnit,
     ROOTDISK_MOUNT_SERVICE,
 };
+use net_utils::get_mac;
 use systemd::render::{MountSection, NetworkUnit, NetworkUnitMatchSection, UnitSection};
 
 // WARNING: keep in sync with the bzl/TARGETS file unit
