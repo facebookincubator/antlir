@@ -109,7 +109,6 @@ python_library(
     ],
 )
 
-# Covered by `test-items`. Future: separate test & coverage.
 python_library(
     name = "make_subvol",
     srcs = ["make_subvol.py"],

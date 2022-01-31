@@ -214,11 +214,29 @@ python_unittest(
 )
 
 python_unittest(
+    name = "test-make-subvol",
+    srcs = ["test_make_subvol.py"],
+    needed_coverage = [(100, "//antlir/compiler/items:make_subvol")],
+    resources = {
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "test-build-appliance",
+        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "create_ops.sendstream",
+        TEST_IMAGE_PREFIX + "create_ops.tar.gz": "create_ops.tar.gz",
+    },
+    deps = [
+        ":common_testlib",
+        "//antlir/btrfs_diff:testlib_demo_sendstreams",
+        "//antlir/compiler/items:ensure_dirs_exist",
+        "//antlir/compiler/items:make_subvol",
+    ],
+)
+
+python_unittest(
     name = "test-items",
     srcs = [
         "test_common.py",
         "test_install_file.py",
-        "test_make_subvol.py",
         "test_mount.py",
         "test_remove_path.py",
         "test_tarball.py",
@@ -227,13 +245,11 @@ python_unittest(
         (100, "//antlir/compiler/items:common"),
         (100, "//antlir/compiler/items:install_file"),
         (100, "//antlir/compiler/items:remove_path"),
-        (100, "//antlir/compiler/items:make_subvol"),
         (100, "//antlir/compiler/items:mount_utils"),
         (100, "//antlir/compiler/items:mount"),
         (100, "//antlir/compiler/items:tarball"),
     ],
     resources = {
-        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "create_ops.sendstream",
         TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "test-with-one-local-rpm",
         layer_resource(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
@@ -245,7 +261,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "hello_world_base",
         ): "test-layer-without-mounts",
         TEST_IMAGE_PREFIX + "small-layer-with-mounts.btrfs": "small-layer-with-mounts.btrfs",
-        TEST_IMAGE_PREFIX + "create_ops.tar.gz": "create_ops.tar.gz",
     },
     deps = [
         ":common_testlib",
@@ -255,6 +270,7 @@ python_unittest(
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
         "//antlir/compiler/items:ensure_dirs_exist",
         "//antlir/compiler/items:install_file",
+        "//antlir/compiler/items:make_subvol",
         "//antlir/compiler/items:phases_provide",  # test_mount.py uses this
         "//antlir/compiler/items:remove_path",
         "//antlir/compiler/items:symlink",
