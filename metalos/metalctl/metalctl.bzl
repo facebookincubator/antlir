@@ -48,7 +48,6 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         "futures-util",
         "reqwest",
         "tokio",  # async runtime for http client
-        "tempfile",
         "zstd",
     ] + extra_deps
 
