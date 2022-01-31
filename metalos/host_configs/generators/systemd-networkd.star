@@ -44,7 +44,7 @@ def auto_search_domains(name: str.type) -> [str.type]:
     return reversed(search)
 
 
-def generator(host: metalos.HostIdentity) -> metalos.GeneratorOutput.type:
+def generator(host: metalos.HostIdentity) -> metalos.Output.type:
     search = auto_search_domains(host.hostname) + host.network.dns.search_domains
     network_units = []
     link_units = []
@@ -57,6 +57,6 @@ def generator(host: metalos.HostIdentity) -> metalos.GeneratorOutput.type:
             unit = LINK_TEMPLATE(mac=iface.mac, name=iface.name)
             link_units += [metalos.file(path="/etc/systemd/network/00-metalos-{}.link".format(iface.name), contents=unit)]
 
-    return metalos.GeneratorOutput(
+    return metalos.Output(
         files=network_units + link_units,
     )
