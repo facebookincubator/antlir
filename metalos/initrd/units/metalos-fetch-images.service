@@ -1,0 +1,19 @@
+[Unit]
+Description=Fetch required images
+Requires=network-online.target
+After=network-online.target
+
+Requires=rootdisk.mount
+After=rootdisk.mount
+
+Requires=metalos-load-host-config.service
+After=metalos-load-host-config.service
+# Waiting on metalos-load-host-config.service is not safe enough, since it will
+# be silently skipped if metalos.host-config-uri is missing
+AssertPathExists=/run/metalos/host-config
+
+[Service]
+EnvironmentFile=/run/systemd/generator/metalos_environment
+Type=oneshot
+RemainAfterExit=true
+ExecStart=metalctl fetch-images file:///run/metalos/host-config ${METALOS_IMAGES_DIR}

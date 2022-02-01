@@ -6,11 +6,14 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{anyhow, Context, Result};
-use slog::{info, warn, Logger};
+use bytes::{Buf, Bytes};
+use slog::{info, o, warn, Logger};
 use structopt::StructOpt;
 
 use expand_partition::expand_last_partition;
 use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
+use image::download::HttpsDownloader;
+use image::AnyImage;
 
 // define ioctl macros based on the codes in linux/fs.h
 nix::ioctl_none!(ioctl_blkrrpart, 0x12, 95);
@@ -19,7 +22,7 @@ const SYS_BLOCK: &str = "/sys/block";
 
 #[derive(StructOpt)]
 pub struct Opts {
-    source: PathBuf,
+    package: String,
 
     #[structopt(long, parse(from_os_str), default_value = "/tmp/expand_root_mnt")]
     tmp_mounts_dir: PathBuf,
@@ -180,14 +183,38 @@ fn find_root_disk<FD: FindRootDisk>(disk_finder: &FD) -> Result<PathBuf> {
         .context("Failed to get the devnode for root disk")
 }
 
-pub async fn apply_disk_image(log: Logger, opts: Opts) -> Result<()> {
-    let src_metadata = opts
-        .source
-        .metadata()
-        .context("Could not get metadata for source file")?;
-    let src_len = src_metadata.len();
+async fn download_disk_image(config: crate::Config, package: String) -> Result<Bytes> {
+    // TODO: make this an image::Image all the way through (add it to HostConfig)
+    let (name, id) = package
+        .split_once(':')
+        .context("package must have ':' separator")?;
+    let image: AnyImage = package_manifest::types::Image {
+        name: name.into(),
+        id: id.into(),
+        kind: package_manifest::types::Kind::GPT_ROOTDISK,
+    }
+    .try_into()
+    .context("converting image representation")?;
 
-    let mut src = fs::File::open(&opts.source).context("Failed to open source file")?;
+    let dl = HttpsDownloader::new(config.download.package_format_uri().to_string())
+        .context("while creating downloader")?;
+    let url = dl.image_url(&image).context("while getting image url")?;
+    let client: reqwest::Client = dl.into();
+    client
+        .get(url.clone())
+        .send()
+        .await
+        .with_context(|| format!("while opening {}", url))?
+        .bytes()
+        .await
+        .with_context(|| format!("while reading {}", url))
+}
+
+pub async fn apply_disk_image(log: Logger, opts: Opts, config: crate::Config) -> Result<()> {
+    let log = log.new(o!("package" => opts.package.clone()));
+    let src = download_disk_image(config, opts.package).await?;
+    let src_len = src.len();
+    let mut src = src.reader();
 
     let dest = find_root_disk(&SingleDiskFinder::new()).context("Failed to get root disk")?;
     info!(log, "Selected {:?} as root disk", dest);

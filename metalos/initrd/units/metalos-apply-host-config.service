@@ -14,6 +14,9 @@ After=metalos-snapshot-root.service
 # in many units
 Requires=metalos-load-host-config.service
 After=metalos-load-host-config.service
+# Waiting on metalos-load-host-config.service is not safe enough, since it will
+# be silently skipped if metalos.host-config-uri is missing
+AssertPathExists=/run/metalos/host-config
 
 # We only want this to run if we have been given a HOST_CONFIG_URI
 # which comes from metalctl adding this with `metalos-generator`.

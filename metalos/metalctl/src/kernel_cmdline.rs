@@ -27,7 +27,6 @@ use crate::config::EventBackendBaseUri;
 #[derive(EnumIter)]
 enum KnownArgs {
     RootDiskPackage,
-    OsPackage,
     HostConfigUri,
     PackageFormatUri,
     Root,
@@ -43,7 +42,6 @@ impl KnownArgs {
     fn flag_name(&self) -> &'static str {
         match self {
             Self::RootDiskPackage => "--metalos.write_root_disk_package",
-            Self::OsPackage => "--metalos.os_package",
             Self::HostConfigUri => "--metalos.host_config_uri",
             Self::PackageFormatUri => "--metalos.package_format_uri",
             Self::Root => "--root",
@@ -65,9 +63,6 @@ pub struct MetalosCmdline {
 
     #[structopt(long = &KnownArgs::RootDiskPackage.flag_name())]
     pub root_disk_package: Option<String>,
-
-    #[structopt(long = &KnownArgs::OsPackage.flag_name())]
-    pub os_package: Option<String>,
 
     #[structopt(long = &KnownArgs::HostConfigUri.flag_name())]
     pub host_config_uri: Option<String>,
@@ -214,19 +209,6 @@ mod tests {
     }
 
     #[test]
-    fn basic_cmdlines() -> Result<()> {
-        for cmdline in &[
-            "rd.systemd.debug_shell=1 quiet metalos.os_package=some-pkg:id",
-            "rd.systemd.debug_shell=1 quiet metalos.os-package=some-pkg:id",
-            "rd.systemd.debug_shell=1 quiet metalos.os_package=\"some-pkg:id\"",
-        ] {
-            let cmdline: MetalosCmdline = cmdline.parse()?;
-            assert_eq!(Some("some-pkg:id".to_string()), cmdline.os_package);
-        }
-        Ok(())
-    }
-
-    #[test]
     fn test_mac_address_in_cmdlines() -> Result<()> {
         let cmdline: MetalosCmdline = "macaddress=11:22:33:44:55:66".parse()?;
         assert_eq!(Some("11:22:33:44:55:66".to_string()), cmdline.mac_address);
@@ -270,7 +252,6 @@ mod tests {
                     kv("console", "ttyS0,115200")
                 ],
                 root_disk_package: None,
-                os_package: None,
                 host_config_uri: None,
                 package_format_uri: None,
                 event_backend_base_uri: None,

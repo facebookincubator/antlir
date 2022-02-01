@@ -13,6 +13,7 @@ enum Kind {
   KERNEL = 3,
   SERVICE = 4,
   WDS = 5,
+  GPT_ROOTDISK = 6,
 }
 
 // An image package that should be materialized in a btrfs subvolume on disk.

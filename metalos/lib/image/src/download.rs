@@ -28,6 +28,7 @@ pub trait Downloader {
     async fn open_sendstream(&self, image: &AnyImage) -> Result<Self::Sendstream>;
 }
 
+#[derive(Clone)]
 pub struct HttpsDownloader {
     client: Client,
     format_uri: String,

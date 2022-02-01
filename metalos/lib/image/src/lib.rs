@@ -1,6 +1,7 @@
 use derive_more::{Deref, Display, From, FromStr};
 use std::marker::PhantomData;
 use std::ops::Deref;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 /// Type parameters for [Image].
@@ -110,6 +111,10 @@ impl AnyImage {
 
     pub fn kind(&self) -> Kind {
         self.kind
+    }
+
+    pub fn path_on_disk(&self, basedir: &Path) -> PathBuf {
+        basedir.join(format!("{}/{}:{}", self.kind.as_str(), self.name, self.id))
     }
 }
 

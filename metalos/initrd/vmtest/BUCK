@@ -42,6 +42,17 @@ par_support = feature.install(
     mode = "a+rx",
 )
 
+host_config(
+    name = "host-config",
+    runtime_config = {
+        "rootfs": {
+            "id": "1",
+            "kind": 1,
+            "name": "metalos",
+        },
+    },
+)
+
 # Generic features that are needed to support vmtests that _stay_ in the
 # initrd, meant to test the initrd itself.
 image.layer(
@@ -81,6 +92,8 @@ image.layer(
             "initrd-parse-etc.service",
             "initrd-switch-root.service",
         ]),
+        image.ensure_subdirs_exist("/", "test"),
+        feature.install(":host-config", "/test/fake-host-config.json"),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
 )
@@ -141,10 +154,6 @@ vm.rust_unittest(
     # TODO(vmagro): re-enable this when the container runtime environment is
     # done and the sidecars can reliably run on Sandcastle
     tags = ["local_only"],
-)
-
-host_config(
-    name = "host-config",
 )
 
 # This needs to be as close as possible the prod initrd, with only the bare
@@ -232,10 +241,7 @@ vm.rust_unittest(
         kernel = TEST_KERNEL,
         append = [
             "metalos.package-format-uri=http://vmtest-host:8000/package/{package}",
-            # this doesn't actually serve anything (yet), but we need to pass
-            # something on the cmdline
             "metalos.host-config-uri=file:///test/fake-host-config.json",
-            "metalos.os-package=metalos:1",
             "rd.systemd.journald.forward_to_console=1",
         ],
         runtime = vm.types.runtime.new(
@@ -263,7 +269,6 @@ vm.rust_unittest(
             # this doesn't actually serve anything (yet), but we need to pass
             # something on the cmdline
             "metalos.host-config-uri=file:///test/fake-host-config.json",
-            "metalos.os-package=metalos:1",
             "metalos.write-root-disk-package=metalos_root:1",
             "rd.systemd.journald.forward_to_console=1",
         ],
@@ -315,6 +320,10 @@ vm.rust_unittest(
     vm_opts = vm.types.opts.new(
         initrd = ":vmtest-initrd.cpio.gz",
         kernel = TEST_KERNEL,
+        append = [
+            "metalos.host-config-uri=file:///test/fake-host-config.json",
+            "rd.systemd.journald.forward_to_console=1",
+        ],
         runtime = vm.types.runtime.new(
             sidecar_services = [
                 "$(exe :images-sidecar) $(location :image_packages)",
@@ -326,14 +335,11 @@ vm.rust_unittest(
         ),
     ),
     deps = [
-        "//metalos/lib:generator_lib",
-    ] + [
         third_party.library(
             name,
             platform = "rust",
         )
         for name in [
-            "serde",
             "anyhow",
         ]
     ],

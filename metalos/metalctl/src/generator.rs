@@ -83,11 +83,6 @@ struct MetalosEnvironment {
     // that metalos can download
     #[serde(rename = "METALOS_IMAGES_DIR")]
     metalos_images_dir: PathBuf,
-
-    // METALOS_OS_PKG is the package name and version that should be
-    // downloaded and used as the base operating system image for this boot
-    #[serde(rename = "METALOS_OS_PKG")]
-    os_package: String,
 }
 impl Environment for MetalosEnvironment {}
 
@@ -166,7 +161,6 @@ struct BootInfoResult<ENV: Environment> {
 fn metalos_existing_boot_info(
     root: Root,
     host_config_uri: String,
-    os_package: String,
     mac_address: Option<String>,
 ) -> Result<BootInfoResult<MetalosEnvironment>> {
     let rootdisk: &Path = Path::new(ROOTDISK_DIR);
@@ -177,7 +171,6 @@ fn metalos_existing_boot_info(
         metalos_boots_dir: rootdisk.join("run/boot"),
         metalos_current_boot_dir: rootdisk.join(format!("run/boot/{}:{}", 0, boot_id)),
         metalos_images_dir: rootdisk.join("image"),
-        os_package,
     };
 
     let mut extra_deps = ExtraDependencies::new();
@@ -223,13 +216,11 @@ fn metalos_existing_boot_info(
 fn metalos_reimage_boot_info(
     root: Root,
     host_config_uri: String,
-    os_package: String,
     disk_image_package: String,
     mac_address: Option<String>,
 ) -> Result<BootInfoResult<MetalosReimageEnvironment>> {
-    let boot_info_result =
-        metalos_existing_boot_info(root, host_config_uri, os_package, mac_address)
-            .context("failed to get base info for existing boot")?;
+    let boot_info_result = metalos_existing_boot_info(root, host_config_uri, mac_address)
+        .context("failed to get base info for existing boot")?;
 
     let mut new_boot_info_result = BootInfoResult {
         env: MetalosReimageEnvironment {
@@ -296,9 +287,6 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
                 cmdline
                     .host_config_uri
                     .context("host-config-uri must be provided for metalos boots")?,
-                cmdline
-                    .os_package
-                    .context("OS package must be provided for metalos boots")?,
                 mac_address,
             )
             .context("Failed to build normal metalos info")?;
@@ -320,9 +308,6 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
                 cmdline
                     .host_config_uri
                     .context("host-config-uri must be provided for metalos boots")?,
-                cmdline
-                    .os_package
-                    .context("OS package must be provided for metalos boots")?,
                 cmdline
                     .root_disk_package
                     .context("Root disk package must be provided for metalos reimage boots")?,
@@ -378,7 +363,7 @@ fn detect_mode(cmdline: &MetalosCmdline) -> Result<BootMode> {
     // If we have been asked to reimage that takes priority over all other things
     if cmdline.root_disk_package.is_some() {
         Ok(BootMode::MetalOSReimage)
-    } else if cmdline.os_package.is_some() {
+    } else if cmdline.host_config_uri.is_some() {
         Ok(BootMode::MetalOSExisting)
     } else {
         Ok(BootMode::Legacy)
@@ -563,7 +548,6 @@ mod tests {
         let cmdline: MetalosCmdline = "\
             metalos.host-config-uri=\"https://server:8000/config\" \
             metalos.write_root_disk_package=\"reimage_pkg\" \
-            metalos.os_package=\"somePackage\" \
             rootfstype=btrfs \
             root=LABEL=unittest \
             macaddress=11:22:33:44:55:66\
@@ -607,7 +591,6 @@ mod tests {
                     METALOS_CURRENT_BOOT_DIR=/rootdisk/run/boot/0:{}\n\
                     METALOS_DISK_IMAGE_PKG=reimage_pkg\n\
                     METALOS_IMAGES_DIR=/rootdisk/image\n\
-                    METALOS_OS_PKG=somePackage\n\
                     ROOTDISK_DIR=/rootdisk\n\
                     ",
                     boot_id
@@ -632,7 +615,6 @@ mod tests {
 
         let cmdline: MetalosCmdline = "\
             metalos.host-config-uri=\"https://server:8000/config\" \
-            metalos.os_package=\"somePackage\" \
             rootfstype=btrfs \
             root=LABEL=unittest \
             macaddress=11:22:33:44:55:66\
@@ -670,7 +652,6 @@ mod tests {
                     METALOS_BOOTS_DIR=/rootdisk/run/boot\n\
                     METALOS_CURRENT_BOOT_DIR=/rootdisk/run/boot/0:{}\n\
                     METALOS_IMAGES_DIR=/rootdisk/image\n\
-                    METALOS_OS_PKG=somePackage\n\
                     ROOTDISK_DIR=/rootdisk\n\
                     ",
                     boot_id
@@ -741,7 +722,6 @@ mod tests {
                 rw: true,
             },
             "test_config_uri".to_string(),
-            "test_package:123".to_string(),
             "test_reimage_package:123".to_string(),
             Some("11:22:33:44:55:66".to_string()),
         )
@@ -758,7 +738,6 @@ mod tests {
                     metalos_boots_dir: "/rootdisk/run/boot".into(),
                     metalos_current_boot_dir: format!("/rootdisk/run/boot/0:{}", boot_id).into(),
                     metalos_images_dir: "/rootdisk/image".into(),
-                    os_package: "test_package:123".into(),
                 },
                 disk_image_package: "test_reimage_package:123".to_string(),
             }
@@ -823,7 +802,6 @@ mod tests {
                 rw: true,
             },
             "test_config_uri".to_string(),
-            "test_package:123".to_string(),
             Some("11:22:33:44:55:66".to_string()),
         )
         .context("failed to get boot info")?;
@@ -838,7 +816,6 @@ mod tests {
                 metalos_boots_dir: "/rootdisk/run/boot".into(),
                 metalos_current_boot_dir: format!("/rootdisk/run/boot/0:{}", boot_id).into(),
                 metalos_images_dir: "/rootdisk/image".into(),
-                os_package: "test_package:123".into(),
             }
         );
 
