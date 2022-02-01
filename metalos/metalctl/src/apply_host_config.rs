@@ -12,7 +12,7 @@ use slog::{o, Logger};
 use structopt::StructOpt;
 use url::Url;
 
-use evalctx::Generator;
+use evalctx::{Generator, StarlarkGenerator};
 use host::types::HostConfig;
 
 #[derive(StructOpt)]
@@ -51,7 +51,7 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
         )),
     }?;
 
-    let generators = Generator::load(&opts.generators_root).context(format!(
+    let generators = StarlarkGenerator::load(&opts.generators_root).context(format!(
         "failed to load generators from {:?}",
         &opts.generators_root
     ))?;

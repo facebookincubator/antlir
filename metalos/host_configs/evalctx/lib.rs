@@ -9,13 +9,14 @@
 use thiserror::Error;
 
 pub mod generator;
+mod path;
 mod starlark;
-pub use crate::starlark::generator::Generator;
+pub use crate::starlark::generator::StarlarkGenerator;
+pub use generator::Generator;
 pub use host;
 #[cfg(feature = "facebook")]
 pub use host::facebook;
 pub use host::HostIdentity;
-mod path;
 
 #[derive(Error, Debug)]
 pub enum Error {

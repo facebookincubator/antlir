@@ -16,7 +16,7 @@ use starlark::eval::Evaluator;
 use starlark::starlark_module;
 use starlark::values::{dict::DictOf, list::ListOf, OwnedFrozenValue, Value, ValueLike};
 
-use crate::generator::{Dir, File, Output};
+use crate::generator::{Dir, File, Generator, Output};
 use crate::starlark::loader::{Loader, ModuleId};
 use crate::{Error, HostIdentity, Result};
 
@@ -109,12 +109,12 @@ pub fn module(registry: &mut GlobalsBuilder) {
     const HostIdentity: &str = "HostIdentity";
 }
 
-pub struct Generator {
+pub struct StarlarkGenerator {
     id: ModuleId,
     starlark_func: OwnedFrozenValue,
 }
 
-impl Generator {
+impl StarlarkGenerator {
     /// Recursively load a directory of starlark generators. These files must
     /// end in '.star' and define a function 'generator' that accepts a single
     /// [metalos.HostIdentity](crate::HostIdentity) parameter. Starlark files in
@@ -136,12 +136,14 @@ impl Generator {
     pub fn id(&self) -> &ModuleId {
         &self.id
     }
+}
 
-    pub fn name(&self) -> String {
-        self.id.to_string()
+impl Generator for StarlarkGenerator {
+    fn name(&self) -> &str {
+        self.id.as_str()
     }
 
-    pub fn eval(self, host: &HostIdentity) -> Result<Output> {
+    fn eval(&self, host: &HostIdentity) -> Result<Output> {
         let module = Module::new();
         let mut evaluator = Evaluator::new(&module);
         let host_value = evaluator.heap().alloc(host.clone());
@@ -165,7 +167,7 @@ mod tests {
     fn eval_one_generator(source: &'static str) -> anyhow::Result<Output> {
         let tmp_dir = TempDir::new()?;
         std::fs::write(tmp_dir.path().join("test_generator.star"), source)?;
-        let mut generators = Generator::load(tmp_dir.path())?;
+        let mut generators = StarlarkGenerator::load(tmp_dir.path())?;
         assert_eq!(1, generators.len());
         let gen = generators.remove(0);
         let host = HostIdentity::example_host_for_tests();
