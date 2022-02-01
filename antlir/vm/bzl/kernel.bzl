@@ -23,6 +23,7 @@ def normalize_kernel(kernel):
         artifacts = shape.new(
             kernel_artifacts_t,
             devel = kernel.artifacts.devel,
+            headers = kernel.artifacts.headers,
             modules = kernel.artifacts.modules,
             vmlinuz = kernel.artifacts.vmlinuz,
         ),
