@@ -33,6 +33,7 @@ mod fetch_image;
 mod generator;
 mod http;
 mod kernel_cmdline;
+mod load_host_config;
 mod mkdir;
 mod mount;
 #[cfg(initrd)]
@@ -61,6 +62,8 @@ enum Subcommand {
     NetworkCleanup(network_cleanup::Opts),
     /// Setup the new rootfs and switch-root into it
     SwitchRoot(switch_root::Opts),
+    /// Download a structured host config
+    LoadHostConfig(load_host_config::Opts),
     /// Generate and apply a structured host config
     ApplyHostConfig(apply_host_config::Opts),
     /// Send an event to the event endpoint
@@ -157,6 +160,7 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::NetworkCleanup(opts) => network_cleanup::network_cleanup(log, opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts).await,
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
+        Subcommand::LoadHostConfig(opts) => load_host_config::load_host_config(opts).await,
         Subcommand::SendEvent(opts) => send_event::send_event(log, config, opts).await,
         #[cfg(initrd)]
         Subcommand::ApplyDiskImage(opts) => apply_disk_image::apply_disk_image(log, opts).await,

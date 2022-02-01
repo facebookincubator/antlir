@@ -9,6 +9,12 @@ AllowIsolate=yes
 Requires=metalos-snapshot-root.service
 After=metalos-snapshot-root.service
 
+# While this unit is capable of downloading its own copy of the host config, we
+# prefer to download it explicitly in a separate unit, so it can easily be used
+# in many units
+Requires=metalos-load-host-config.service
+After=metalos-load-host-config.service
+
 # We only want this to run if we have been given a HOST_CONFIG_URI
 # which comes from metalctl adding this with `metalos-generator`.
 # However we can't check this directly because ConditionKernelCommandLine
@@ -19,4 +25,4 @@ ConditionKernelCommandLine=metalos.host-config-uri
 [Service]
 EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
-ExecStart=metalctl apply-host-config ${HOST_CONFIG_URI} ${METALOS_CURRENT_BOOT_DIR}
+ExecStart=metalctl apply-host-config file:///run/metalos/host-config ${METALOS_CURRENT_BOOT_DIR}

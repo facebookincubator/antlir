@@ -7,13 +7,14 @@
 
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use slog::{o, Logger};
 use structopt::StructOpt;
 use url::Url;
 
 use evalctx::{Generator, StarlarkGenerator};
-use host::types::HostConfig;
+
+use crate::load_host_config::get_host_config;
 
 #[derive(StructOpt)]
 pub struct Opts {
@@ -27,29 +28,9 @@ pub struct Opts {
 pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
     let log = log.new(o!("host-config-uri" => opts.host_config_uri.to_string(), "root" => opts.root.display().to_string()));
 
-    let host: HostConfig = match opts.host_config_uri.scheme() {
-        "http" | "https" => {
-            let client = crate::http::client()?;
-            client
-                .get(opts.host_config_uri.clone())
-                .send()
-                .await
-                .with_context(|| format!("while GETting {}", opts.host_config_uri))?
-                .json()
-                .await
-                .context("while parsing host json")
-        }
-        "file" => {
-            let f = std::fs::File::open(opts.host_config_uri.path())
-                .with_context(|| format!("while opening file {}", opts.host_config_uri.path()))?;
-            serde_json::from_reader(f).context("while deserializing json")
-        }
-        scheme => Err(anyhow!(
-            "Unsupported scheme {} in {:?}",
-            scheme,
-            opts.host_config_uri
-        )),
-    }?;
+    let host = get_host_config(&opts.host_config_uri)
+        .await
+        .with_context(|| format!("while loading host config from {} ", opts.host_config_uri))?;
 
     let generators = StarlarkGenerator::load(&opts.generators_root).context(format!(
         "failed to load generators from {:?}",

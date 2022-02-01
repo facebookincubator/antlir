@@ -1,0 +1,20 @@
+[Unit]
+Description=Load MetalOS host config
+Requires=network-online.target
+After=network-online.target
+
+# Only download the config if it doesn't already exist. This will short-circuit
+# the HTTPS request if the bootloader is able to ensure that this file exists
+# already
+ConditionPathExists=!/run/metalos/host-config
+
+# The presence of metalos.host-config-uri will indicate whether a host config
+# exists to be fetched. When already present in the filesystem, this cmdline arg
+# will be a file:// uri
+ConditionKernelCommandLine=metalos.host-config-uri
+
+[Service]
+EnvironmentFile=/run/systemd/generator/metalos_environment
+Type=oneshot
+RemainAfterExit=true
+ExecStart=metalctl load-host-config ${HOST_CONFIG_URI} /run/metalos/host-config
