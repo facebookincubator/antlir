@@ -33,7 +33,7 @@ import os
 import sys
 from configparser import ConfigParser
 from io import StringIO
-from typing import Callable, Dict, FrozenSet, Iterable, List
+from typing import Callable, Dict, FrozenSet, Iterable, List, Optional
 
 from antlir.common import get_logger, init_logging
 from antlir.fs_utils import Path, create_ro, populate_temp_dir_and_rename
@@ -62,8 +62,8 @@ log = get_logger()
 
 def _write_confs_get_repos(
     dest: Path,
-    yum_conf_content: str,
-    dnf_conf_content: str,
+    yum_conf_content: Optional[str],
+    dnf_conf_content: Optional[str],
     *,
     exclude_repos: FrozenSet[str],
 ) -> Iterable[YumDnfConfRepo]:
@@ -93,6 +93,11 @@ def _write_confs_get_repos(
                     ).gen_repos()
                 )
             )
+
+    # Only cento7 and centos8 use both yum.conf and dnf.conf.
+    if len(yum_dnf_repos) == 1:
+        return yum_dnf_repos[0]
+
     yum_repos, dnf_repos = yum_dnf_repos
     diff_repos = yum_repos.symmetric_difference(dnf_repos)
     if diff_repos:  # pragma: no cover
@@ -116,8 +121,8 @@ def snapshot_repos(
     dest: Path,
     *,
     repo_to_universe: Callable[[YumDnfConfRepo], str],
-    yum_conf_content: str,
-    dnf_conf_content: str,
+    yum_conf_content: Optional[str],
+    dnf_conf_content: Optional[str],
     db_cfg: Dict[str, str],
     storage_cfg: Dict[str, str],
     rpm_shard: RpmShard,
