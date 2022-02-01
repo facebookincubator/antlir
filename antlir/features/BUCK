@@ -1,6 +1,5 @@
 # This file is intended to become a collection of utility features commonly
 # used in constructing images.
-# @autodeps
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")

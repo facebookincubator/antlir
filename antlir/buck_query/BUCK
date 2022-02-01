@@ -1,5 +1,3 @@
-# @autodeps
-
 load("//antlir/bzl:oss_shim.bzl", "rust_library", "third_party")
 
 rust_library(
