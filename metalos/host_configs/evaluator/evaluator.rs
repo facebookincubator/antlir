@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Context, Error, Result};
 use structopt::StructOpt;
 
-use evalctx::{Generator, HostIdentity};
+use evalctx::{Generator, HostIdentity, StarlarkGenerator};
 
 #[derive(StructOpt)]
 struct Opts {
@@ -45,7 +45,7 @@ fn main() -> Result<()> {
         .generators
         .into_iter()
         .map(|path| {
-            Generator::load(&path)
+            StarlarkGenerator::load(&path)
                 .map_err(|e| Error::msg(format!("{:?}", e)))
                 .with_context(|| format!("failed to load generators in {:?}", path))
         })

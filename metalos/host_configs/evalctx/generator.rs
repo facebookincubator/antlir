@@ -18,6 +18,7 @@ use xattr::FileExt;
 
 use crate::path::PathExt;
 use crate::{Error, Result};
+use host::HostIdentity;
 
 pub type Username = String;
 pub type PWHash = String;
@@ -107,5 +108,28 @@ impl Output {
         );
 
         Ok(())
+    }
+}
+
+/// Abstract API that any MetalOS host config generator must implement.
+pub trait Generator {
+    fn name(&self) -> &str;
+
+    fn eval(&self, host: &HostIdentity) -> Result<Output>;
+}
+
+// This is explicitly implemented only for infallible functions, since
+// Generators are conceptually infallible (but in practice, Starlark code may
+// fail sometimes due to bugs like wrong types)
+impl<F> Generator for F
+where
+    F: Fn(&HostIdentity) -> Output,
+{
+    fn name(&self) -> &str {
+        std::any::type_name::<F>()
+    }
+
+    fn eval(&self, host: &HostIdentity) -> Result<Output> {
+        Ok(self(host))
     }
 }

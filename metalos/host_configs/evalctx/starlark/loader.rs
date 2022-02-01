@@ -29,9 +29,18 @@ impl ModuleId {
             )));
         }
 
+        if path.to_str().is_none() {
+            return Err(Error::CreateModule(anyhow!(
+                "Path must be UTF-8 to create a valid ModuleId"
+            )));
+        }
+
         Ok(Self(path))
     }
 
+    pub fn as_str(&self) -> &str {
+        self.0.to_str().expect("all ModuleIds are utf-8")
+    }
 
     /// Convert a canonical id string to a [ModuleId]. Fails if the id is not
     /// canonical in any way.
