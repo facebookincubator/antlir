@@ -144,9 +144,9 @@ class SnapshotReposTestCase(unittest.TestCase):
                 snapshot_repos_from_args(
                     common_args
                     + [
+                        # Don't specify yum.conf since it's going away.
                         f"--repo-to-universe-json={ru_json.name}",
                         f'--dnf-conf={repos_root / "1/dnf.conf"}',
-                        f'--yum-conf={repos_root / "1/yum.conf"}',
                         f'--snapshot-dir={td / "snap1"}',
                     ]
                 )
