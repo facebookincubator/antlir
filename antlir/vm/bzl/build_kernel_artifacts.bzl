@@ -10,13 +10,14 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":kernel.shape.bzl", "kernel_artifacts_t", "kernel_t")
 
-def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = True):
+def build_kernel_artifacts(uname, devel_rpm, headers_rpm, rpm_exploded, include_vmlinux = True):
     """
     Build the set of kernel artifact targets needed for `antlir.vm`.  This returns an instance
     of the `kernel_t` shape.
     """
 
-    # Install the devel rpm into a layer.  The reasons for this instead of using the same
+    # Install the devel rpm and headers rpm into a layer.
+    # The reasons for this instead of using the same
     # pattern as the `rpm-exploded` targets are:
     #  - The devel rpm contains some internally consistent symlinks that
     #    we'd like to preserve when creating the image layer.  Currently
@@ -27,12 +28,12 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = Tru
     #    implementation of `image.source` since `./` ends up conflicting
     #    with the always provided /.
     image.layer(
-        name = "{uname}--devel-installed".format(uname = uname),
+        name = "{uname}--devel-headers-installed".format(uname = uname),
         # This is used because we need the gpg keys that this rpm is signed
         # by and the build appliance should have it.
         parent_layer = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
         features = [
-            image.rpms_install([devel_rpm]),
+            image.rpms_install([devel_rpm, headers_rpm]),
         ],
         visibility = [],
     )
@@ -40,8 +41,21 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = Tru
         name = "{}-devel".format(uname),
         features = [
             image.clone(
-                ":{}--devel-installed".format(uname),
+                ":{}--devel-headers-installed".format(uname),
                 "usr/src/kernels/{}/".format(uname),
+                "./",
+            ),
+        ],
+        flavor = REPO_CFG.antlir_linux_flavor,
+        visibility = ["PUBLIC"],
+    )
+
+    image.layer(
+        name = "{}-headers".format(uname),
+        features = [
+            image.clone(
+                ":{}--devel-headers-installed".format(uname),
+                "usr/include/",
                 "./",
             ),
         ],
@@ -132,6 +146,7 @@ def build_kernel_artifacts(uname, devel_rpm, rpm_exploded, include_vmlinux = Tru
             kernel_artifacts_t,
             modules = ":{}-modules".format(uname),
             devel = ":{}-devel".format(uname),
+            headers = ":{}-headers".format(uname),
             vmlinuz = ":{}-vmlinuz".format(uname),
         ),
     )

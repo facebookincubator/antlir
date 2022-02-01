@@ -11,6 +11,7 @@ kernel_artifacts_t = shape.shape(
     # devel and modules may not exist, such as in the case of a vmlinuz with
     # all necessary features compiled with =y
     devel = shape.field(target_t, optional = True),
+    headers = shape.field(target_t, optional = True),
     modules = shape.field(target_t, optional = True),
 )
 

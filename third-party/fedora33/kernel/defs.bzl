@@ -53,6 +53,7 @@ def fedora_kernel(
     # Build kernel artifacts and get back a shape instance
     return build_kernel_artifacts(
         devel_rpm = ":{}-devel.rpm".format(kernel),
+        headers_rpm = ":{}-headers.rpm".format(kernel),
         include_vmlinux = False,
         rpm_exploded = ":{}-rpm-exploded".format(kernel),
         uname = kernel,
