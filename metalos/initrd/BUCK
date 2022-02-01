@@ -151,14 +151,18 @@ image.layer(
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/umount"),
         networking,
-        # We would one day like to make it so that this service isn't even present in
-        # the normal initrd and instead we have a separate one that is allowed to wipe
-        # the disks. This would give an extra layer of safety and make it so that disk
-        # reimage is a very explicit operation.
-        systemd.install_unit("units/metalos-image-root-disk.service"),
-        systemd.install_unit("units/metalos-fetch-image-rootfs.service"),
-        systemd.install_unit("units/metalos-snapshot-root.service"),
+        image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
+        feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),
         systemd.install_unit("units/metalos-apply-host-config.service"),
+        systemd.install_unit("units/metalos-fetch-image-rootfs.service"),
+        # We would one day like to make it so that
+        # metalos-image-root-disk.service isn't even present in the normal
+        # initrd and instead we have a separate one that is allowed to wipe the
+        # disks. This would give an extra layer of safety and make it so that
+        # disk reimage is a very explicit operation.
+        systemd.install_unit("units/metalos-image-root-disk.service"),
+        systemd.install_unit("units/metalos-load-host-config.service"),
+        systemd.install_unit("units/metalos-snapshot-root.service"),
         systemd.install_unit("units/metalos-switch-root.service"),
         systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
         image.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
