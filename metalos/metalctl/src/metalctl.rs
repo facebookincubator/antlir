@@ -28,7 +28,7 @@ mod apply_host_config;
 mod config;
 #[cfg(facebook)]
 mod facebook;
-mod fetch_image;
+mod fetch_images;
 #[cfg(initrd)]
 mod generator;
 mod http;
@@ -49,8 +49,8 @@ enum Subcommand {
     /// Systemd unit generator
     #[cfg(initrd)]
     MetalosGenerator(generator::Opts),
-    /// Download an image over HTTPS
-    FetchImage(fetch_image::Opts),
+    /// Download images specified in the MetalOS host config
+    FetchImages(fetch_images::Opts),
     /// Simplistic method to mount filesystems
     Mount(mount::Opts),
     /// Simplistic method to unmount filesystems
@@ -152,7 +152,7 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
     match options.command {
         #[cfg(initrd)]
         Subcommand::MetalosGenerator(opts) => generator::generator(log, opts),
-        Subcommand::FetchImage(opts) => fetch_image::fetch_image(log, config, opts).await,
+        Subcommand::FetchImages(opts) => fetch_images::fetch_images(log, config, opts).await,
         Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
         Subcommand::Mount(opts) => mount::mount(log, opts),
         Subcommand::Umount(opts) => umount::umount(opts),
@@ -163,7 +163,9 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::LoadHostConfig(opts) => load_host_config::load_host_config(opts).await,
         Subcommand::SendEvent(opts) => send_event::send_event(log, config, opts).await,
         #[cfg(initrd)]
-        Subcommand::ApplyDiskImage(opts) => apply_disk_image::apply_disk_image(log, opts).await,
+        Subcommand::ApplyDiskImage(opts) => {
+            apply_disk_image::apply_disk_image(log, opts, config).await
+        }
         #[cfg(facebook)]
         Subcommand::Facebook(fb) => fb.subcommand(log, config).await,
     }

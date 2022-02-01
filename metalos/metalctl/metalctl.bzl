@@ -46,6 +46,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         # Needed for HTTPS requests to download images
         "url",
         "bytes",
+        "futures",
         "futures-core",
         "futures-util",
         "reqwest",

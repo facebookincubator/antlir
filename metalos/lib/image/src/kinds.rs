@@ -12,6 +12,20 @@ pub enum Kind {
     Kernel,
     Service,
     Wds,
+    GptRootdisk,
+}
+
+impl Kind {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Rootfs => "rootfs",
+            Self::Config => "config",
+            Self::Kernel => "kernel",
+            Self::Service => "service",
+            Self::Wds => "wds",
+            Self::GptRootdisk => "gpt-rootdisk",
+        }
+    }
 }
 
 impl TryFrom<ThriftKind> for Kind {
@@ -24,6 +38,7 @@ impl TryFrom<ThriftKind> for Kind {
             ThriftKind::KERNEL => Ok(Self::Kernel),
             ThriftKind::SERVICE => Ok(Self::Service),
             ThriftKind::WDS => Ok(Self::Wds),
+            ThriftKind::GPT_ROOTDISK => Ok(Self::GptRootdisk),
             _ => Err(Error::UnknownKind(k.0)),
         }
     }
@@ -72,3 +87,11 @@ impl ConstKind for Wds {
 }
 impl Sealed for Wds {}
 pub type WdsImage = Image<Wds>;
+
+/// See [Kind::GptRootdisk].
+pub struct GptRootdisk();
+impl ConstKind for GptRootdisk {
+    const KIND: Kind = Kind::GptRootdisk;
+}
+impl Sealed for GptRootdisk {}
+pub type GptRootdiskImage = Image<GptRootdisk>;
