@@ -1,5 +1,3 @@
-# @autodeps
-
 load("//antlir/bzl:oss_shim.bzl", "python_binary", "rust_binary", "third_party")
 
 python_binary(
