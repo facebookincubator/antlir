@@ -24,6 +24,9 @@ struct Image {
   1: string name;
   2: string id;
   3: Kind kind;
+  // Explicitly point this image at an alternate location (eg a devserver
+  // instead of prod fbpkg)
+  4: optional string override_uri;
 } (rust.exhaustive)
 
 // Returned when an image could not be downloaded.

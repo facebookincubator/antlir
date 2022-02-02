@@ -192,6 +192,7 @@ async fn download_disk_image(config: crate::Config, package: String) -> Result<B
         name: name.into(),
         id: id.into(),
         kind: package_manifest::types::Kind::GPT_ROOTDISK,
+        override_uri: None,
     }
     .try_into()
     .context("converting image representation")?;

@@ -65,9 +65,12 @@ impl HttpsDownloader {
     }
 
     pub fn image_url(&self, img: &AnyImage) -> Result<Url> {
-        let uri = self
-            .format_uri
-            .replace("{package}", &format!("{}:{}", img.name, img.id));
+        let uri = match &img.override_uri {
+            Some(u) => u.clone(),
+            None => self
+                .format_uri
+                .replace("{package}", &format!("{}:{}", img.name, img.id)),
+        };
         Url::parse(&uri).map_err(|e| {
             Error::InvalidUri {
                 uri,
@@ -144,6 +147,16 @@ mod tests {
                 name: "abc".into(),
                 id: "123".into(),
                 kind: crate::kinds::Kind::Rootfs,
+                override_uri: None,
+            })?)
+        );
+        assert_eq!(
+            "https://otherhost/path/to/abc:123.sendstream.zst",
+            String::from(h.image_url(&AnyImage {
+                name: "abc".into(),
+                id: "123".into(),
+                kind: crate::kinds::Kind::Rootfs,
+                override_uri: Some("https://otherhost/path/to/abc:123.sendstream.zst".into()),
             })?)
         );
         Ok(())
