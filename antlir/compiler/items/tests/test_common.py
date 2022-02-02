@@ -25,6 +25,7 @@ from ..common import (
     protected_path_set,
     setup_meta_dir,
     is_path_protected,
+    make_path_normal_relative,
 )
 from ..ensure_dirs_exist import EnsureDirsExistItem
 from ..install_file import InstallFileItem
@@ -50,6 +51,23 @@ class ItemsCommonTestCase(BaseItemTestCase):
         )
         self.assertIsNone(it.source)
         self.assertEqual("meow", it.kitteh)
+
+    @with_temp_subvols
+    def test_image_source_item_from_layer(self, temp_subvols):
+        subvol = self._setup_flavor_test_subvol(temp_subvols)
+        setup_meta_dir(subvol, self._get_layer_opts())
+        path_in_layer = "test_source_dir"
+        subvol.run_as_root(["mkdir", subvol.path(path_in_layer)])
+        item = image_source_item(
+            FakeImageSourceItem,
+            exit_stack=None,
+            layer_opts=DUMMY_LAYER_OPTS,
+        )(
+            from_target="m",
+            source={"layer": subvol, "path": path_in_layer},
+            kitteh="meow",
+        )
+        self.assertEqual(subvol.path(path_in_layer), item.source)
 
     def test_enforce_no_parent_dir(self):
         with self.assertRaisesRegex(AssertionError, r"cannot start with \.\."):
@@ -223,3 +241,10 @@ class ItemsCommonTestCase(BaseItemTestCase):
         )
 
         self.assertEqual("antlir_test", subvol.read_path_text(META_FLAVOR_FILE))
+
+    def test_phase_order(self):
+        self.assertIsNone(ImageItem(from_target="t").phase_order())
+
+    def test_make_path_normal_relative_meta_check(self):
+        with self.assertRaisesRegex(AssertionError, "cannot start with .meta/"):
+            make_path_normal_relative("/.meta/foo")
