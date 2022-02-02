@@ -98,6 +98,7 @@ pub struct AnyImage {
     name: ImageName,
     id: ImageID,
     kind: Kind,
+    override_uri: Option<String>,
 }
 
 impl AnyImage {
@@ -126,6 +127,7 @@ impl TryFrom<ThriftImage> for AnyImage {
             name: i.name.into(),
             id: i.id.into(),
             kind: i.kind.try_into()?,
+            override_uri: i.override_uri,
         })
     }
 }
@@ -147,13 +149,15 @@ mod tests {
             name: "hello".into(),
             id: "world".into(),
             kind: ThriftKind::KERNEL,
+            override_uri: None,
         };
         let ai: AnyImage = t.try_into()?;
         assert_eq!(
             AnyImage {
                 name: "hello".into(),
                 id: "world".into(),
-                kind: Kind::Kernel
+                kind: Kind::Kernel,
+                override_uri: None,
             },
             ai,
         );
