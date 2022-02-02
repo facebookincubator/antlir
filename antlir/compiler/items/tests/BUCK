@@ -253,22 +253,32 @@ python_unittest(
 )
 
 python_unittest(
+    name = "test-install-file",
+    srcs = ["test_install_file.py"],
+    needed_coverage = [(100, "//antlir/compiler/items:install_file")],
+    resources = {
+        TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "test-with-one-local-rpm",
+    },
+    deps = [
+        ":common_testlib",
+        "//antlir/compiler/items:install_file",
+    ],
+)
+
+python_unittest(
     name = "test-items",
     srcs = [
         "test_common.py",
-        "test_install_file.py",
         "test_mount.py",
         "test_tarball.py",
     ],
     needed_coverage = [
         (100, "//antlir/compiler/items:common"),
-        (100, "//antlir/compiler/items:install_file"),
         (100, "//antlir/compiler/items:mount_utils"),
         (100, "//antlir/compiler/items:mount"),
         (100, "//antlir/compiler/items:tarball"),
     ],
     resources = {
-        TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "test-with-one-local-rpm",
         layer_resource(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "test-build-appliance",
