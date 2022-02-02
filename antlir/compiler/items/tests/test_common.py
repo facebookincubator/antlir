@@ -107,6 +107,11 @@ class ItemsCommonTestCase(BaseItemTestCase):
     def test_protected_path_set_no_subvol(self):
         self.assertEqual({META_DIR}, protected_path_set(None))
 
+    @with_temp_subvols
+    def test_protected_path_set_no_meta_dir(self, temp_subvols):
+        subvol = temp_subvols.create("protected_path_set")
+        self.assertEqual({META_DIR}, protected_path_set(subvol))
+
     def test_protected_path_set(self):
         with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("protected_path_set")
