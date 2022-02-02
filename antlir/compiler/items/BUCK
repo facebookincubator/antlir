@@ -175,7 +175,6 @@ python_library(
     ],
 )
 
-# Covered by `test-items`. Future: separate test & coverage.
 python_library(
     name = "remove_path",
     srcs = ["remove_path.py"],
