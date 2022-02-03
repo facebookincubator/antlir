@@ -126,3 +126,12 @@ def rust_binary(name, **kwargs):
 
 def rust_library(name, **kwargs):
     _rust_common(antlir_rust_library, name, **kwargs)
+
+def rust_unittest(name, srcs, deps, **kwargs):
+    deps = [_normalize_rust_dep(d) for d in deps]
+    antlir_rust_unittest(
+        name = name,
+        srcs = srcs,
+        deps = deps,
+        **kwargs
+    )
