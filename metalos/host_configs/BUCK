@@ -2,7 +2,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "third_party", "thrift_library")
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "third_party", "thrift_library")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//metalos:defs.bzl", "rust_binary", "rust_library")
 
@@ -46,6 +46,9 @@ thrift_library(
 rust_library(
     name = "evalctx",
     srcs = glob(["evalctx/**/*.rs"]),
+    env = {
+        "TEST_FILES_DIR": "$(location :all_starklark_files)",
+    },
     features =
         ["facebook"] if (not oss and not oss_ci) else [],
     test_deps = [
@@ -67,9 +70,15 @@ rust_library(
         "thiserror",
         "walkdir",
         "xattr",
+        ":all_starklark_files",
         ":host-rust",
         "//metalos/lib:shadow",
     ],
+)
+
+buck_filegroup(
+    name = "all_starklark_files",
+    srcs = glob(["**/*.star"]),
 )
 
 # This binary is useful to manually check what a host config generator would

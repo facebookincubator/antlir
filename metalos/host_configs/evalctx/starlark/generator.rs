@@ -162,7 +162,18 @@ impl Generator for StarlarkGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starlark::codemap::FileSpanRef;
+    use starlark::environment::Module;
+    use starlark::eval::Evaluator;
+    use starlark::syntax::{AstModule, Dialect};
+    use std::cell::{RefCell, RefMut};
+    use std::collections::HashSet;
+    use std::env;
+    use std::ffi::OsStr;
+    use std::path::Path;
+    use std::rc::Rc;
     use tempfile::TempDir;
+    use walkdir::WalkDir;
 
     fn eval_one_generator(source: &'static str) -> anyhow::Result<Output> {
         let tmp_dir = TempDir::new()?;
@@ -219,6 +230,100 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
                 pw_hashes: None,
             }
         );
+        Ok(())
+    }
+
+    fn eval_one_generator_coverage(file_path: &Path) -> anyhow::Result<()> {
+        // we need to put the test in a temp dir because `Generator::load` understands
+        // only directories.
+        let tmp_dir = TempDir::new()?;
+        let filename = file_path
+            .file_name()
+            .unwrap_or_else(|| OsStr::new("test.star"));
+        std::fs::copy(file_path, tmp_dir.path().join(filename))?;
+
+        // get total number of statements and the lines numebrs that are supposed to be executed,
+        // they will be used to calculate coverage.
+        let src_code = std::fs::read_to_string(file_path)?;
+        let ast =
+            AstModule::parse(&filename.to_string_lossy(), src_code, &Dialect::Extended).unwrap();
+        let total_num_statements = ast.stmt_locations().len();
+        assert_ne!(0, total_num_statements);
+        let to_visit_lines: Vec<u16> = ast
+            .stmt_locations()
+            .into_iter()
+            .map(|line| line.resolve_span().begin_line as u16)
+            .collect();
+        println!(
+            "Lines to visit for {:?}: {:?}",
+            file_path.file_name(),
+            to_visit_lines
+        );
+
+        let visited_lines: Rc<RefCell<_>> = Rc::new(RefCell::new(HashSet::new()));
+        let before_stmt = |span: FileSpanRef, _eval: &mut Evaluator<'_, '_>| {
+            let mut set: RefMut<_> = visited_lines.borrow_mut();
+            set.insert(span.resolve_span().begin_line as u16);
+        };
+
+        let module = Module::new();
+        let mut evaluator = Evaluator::new(&module);
+        evaluator.before_stmt(&before_stmt);
+        let globals = crate::starlark::globals();
+        evaluator.eval_module(ast, &globals)?;
+
+        let host = HostIdentity::example_host_for_tests();
+        let host_value = evaluator.heap().alloc(host);
+
+        match module.get("generator") {
+            None => anyhow::bail!(
+                "Starlark file {:?} does not have a generator function",
+                file_path.file_name()
+            ),
+            Some(function) => {
+                evaluator.eval_function(function, &[], &[("host", host_value)])?;
+                let mut sorted_visited_lines = visited_lines
+                    .borrow_mut()
+                    .clone()
+                    .into_iter()
+                    .collect::<Vec<_>>();
+                // When sorting primitive values (integers, bools, chars, as well as arrays,
+                // slices, and tuples of such items), it is better to use an unstable sort than
+                // a stable sort.
+                // https://rust-lang.github.io/rust-clippy/master/index.html#stable_sort_primitive
+                sorted_visited_lines.sort_unstable();
+                println!(
+                    "Visited lines for {:?}: {:?}",
+                    file_path.file_name(),
+                    sorted_visited_lines,
+                );
+                assert_eq!(
+                    to_visit_lines,
+                    sorted_visited_lines,
+                    "Stalark file {:?} has branches that are not executed",
+                    file_path.file_name()
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_all_generators_coverage() -> anyhow::Result<()> {
+        // find all *.star files and test them to make sure:
+        // * they run successufully
+        // * their coverage is 100% by using starlark::eval::Evaluator::before_stmt
+        let test_file_dir = env::var("TEST_FILES_DIR")?;
+        for entry in WalkDir::new(test_file_dir)
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+            .filter(|e| e.path().extension() == Some(OsStr::new("star")))
+        {
+            eval_one_generator_coverage(entry.path())?;
+            println!("Generator {:?}: ok", entry.file_name());
+        }
         Ok(())
     }
 }
