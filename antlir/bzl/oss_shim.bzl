@@ -122,6 +122,7 @@ _PYTHON_UNITTEST_KWARGS = _make_rule_kwargs_dict(
         "tags",
         "visibility",
         "flavor",
+        "package_style",
     ],
 )
 
