@@ -242,6 +242,13 @@ class ItemsCommonTestCase(BaseItemTestCase):
 
         self.assertEqual("antlir_test", subvol.read_path_text(META_FLAVOR_FILE))
 
+    @with_temp_subvols
+    def test_meta_dir_already_exists(self, temp_subvols):
+        subvol = self._setup_flavor_test_subvol(temp_subvols)
+        setup_meta_dir(subvol, self._get_layer_opts())
+        # run again to ensure META_ARTIFACTS_REQUIRE_REPO cleanup works
+        setup_meta_dir(subvol, self._get_layer_opts())
+
     def test_phase_order(self):
         self.assertIsNone(ImageItem(from_target="t").phase_order())
 

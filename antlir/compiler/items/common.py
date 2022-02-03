@@ -226,12 +226,6 @@ def make_path_normal_relative(orig_d: str, *, meta_check: bool = True) -> str:
     return d
 
 
-def coerce_path_field_normal_relative(kwargs, field: str):
-    d = kwargs.get(field)
-    if d is not None:
-        kwargs[field] = make_path_normal_relative(d)
-
-
 def validate_path_field_normal_relative(field: str):
     return validator(field, allow_reuse=True, pre=True)(
         lambda value: make_path_normal_relative(value)
