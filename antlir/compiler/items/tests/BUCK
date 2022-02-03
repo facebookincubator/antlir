@@ -266,42 +266,48 @@ python_unittest(
 )
 
 python_unittest(
-    name = "test-items",
-    srcs = [
-        "test_common.py",
-        "test_mount.py",
-        "test_tarball.py",
-    ],
-    needed_coverage = [
-        (100, "//antlir/compiler/items:common"),
-        (100, "//antlir/compiler/items:mount_utils"),
-        (100, "//antlir/compiler/items:mount"),
-        (100, "//antlir/compiler/items:tarball"),
-    ],
+    name = "test-mount",
+    srcs = ["test_mount.py"],
+    needed_coverage = [(100, "//antlir/compiler/items:mount")],
     resources = {
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "test-build-appliance",
+        TEST_IMAGE_PREFIX + "small-layer-with-mounts.btrfs": "small-layer-with-mounts.btrfs",
         layer_resource(
             TEST_IMAGE_PREFIX + "small-layer-with-mounts",
         ): "small-layer-with-mounts",
         layer_resource(
             TEST_IMAGE_PREFIX + "hello_world_base",
         ): "test-layer-without-mounts",
-        TEST_IMAGE_PREFIX + "small-layer-with-mounts.btrfs": "small-layer-with-mounts.btrfs",
+    },
+    deps = [
+        ":common_testlib",
+        "//antlir/compiler/items:make_subvol",
+        "//antlir/compiler/items:mount",
+        "//antlir/compiler/items:phases_provide",
+    ],
+)
+
+python_unittest(
+    name = "test-items",
+    srcs = [
+        "test_common.py",
+        "test_tarball.py",
+    ],
+    needed_coverage = [
+        (100, "//antlir/compiler/items:common"),
+        (100, "//antlir/compiler/items:mount_utils"),
+        (100, "//antlir/compiler/items:tarball"),
+    ],
+    resources = {
+        layer_resource(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+        ): "test-build-appliance",
     },
     deps = [
         ":common_testlib",
         "//antlir:find_built_subvol",
         "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-        "//antlir/btrfs_diff:testlib_demo_sendstreams",
         "//antlir/compiler/items:ensure_dirs_exist",
         "//antlir/compiler/items:install_file",
-        "//antlir/compiler/items:make_subvol",
-        "//antlir/compiler/items:phases_provide",  # test_mount.py uses this
-        "//antlir/compiler/items:remove_path",
-        "//antlir/compiler/items:symlink",
     ],
 )
 

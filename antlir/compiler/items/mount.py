@@ -26,7 +26,7 @@ from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import Subvol
 
-from .common import ImageItem, LayerOpts, coerce_path_field_normal_relative
+from .common import ImageItem, LayerOpts, make_path_normal_relative
 from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER
 
 
@@ -259,3 +259,9 @@ def mounts_from_image_meta(image: Path) -> Iterator[Mount]:
 
         for mount in mounts_from_meta(td / "volume"):
             yield mount
+
+
+def coerce_path_field_normal_relative(kwargs, field: str):
+    d = kwargs.get(field)
+    if d is not None:
+        kwargs[field] = make_path_normal_relative(d)
