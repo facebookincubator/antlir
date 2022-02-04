@@ -70,3 +70,18 @@ shape.impl(
         "//antlir/bzl:target_tagger.shape",
     ],
 )
+
+fake_macro_library(
+    name = "symlink",
+    srcs = ["symlink.bzl"],
+    deps = [
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+shape.impl(
+    name = "symlink.shape",
+    deps = [
+        "//antlir/bzl:target_tagger.shape",
+    ],
+)
