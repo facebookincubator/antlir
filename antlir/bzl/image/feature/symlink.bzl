@@ -17,7 +17,7 @@ def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
         new_target_tagger(),
         items = struct(**{symlinks_to_arg: [symlink_spec]}),
         # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image_actions:symlink"],
+        extra_deps = ["//antlir/bzl/image/feature:symlink"],
     )
 
 def image_ensure_dir_symlink(link_target, link_name):

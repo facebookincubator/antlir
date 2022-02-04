@@ -146,7 +146,7 @@ python_library(
     ],
     deps = [
         ":common",
-        "//antlir/bzl/image_actions:symlink.shape-python",
+        "//antlir/bzl/image/feature:symlink.shape-python",
         "//antlir/compiler:requires_provides",
         "//antlir/nspawn_in_subvol:nspawn",
         third_party.library(

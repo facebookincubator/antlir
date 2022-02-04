@@ -7,7 +7,7 @@
 import os
 import pwd
 
-from antlir.bzl.image_actions.symlink import symlink_t
+from antlir.bzl.image.feature.symlink import symlink_t
 from antlir.compiler.requires_provides import (
     ProvidesSymlink,
     RequireDirectory,
