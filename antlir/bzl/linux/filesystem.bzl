@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _install():
     return [
@@ -19,11 +20,11 @@ def _install():
         image.ensure_subdirs_exist("/usr", "lib64", mode = 0o555),
         image.ensure_subdirs_exist("/usr", "sbin", mode = 0o555),
         image.ensure_dirs_exist("/var"),
-        image.ensure_dir_symlink("/usr/bin", "/bin"),
-        image.ensure_dir_symlink("/usr/sbin", "/sbin"),
-        image.ensure_dir_symlink("/usr/lib", "/lib"),
-        image.ensure_dir_symlink("/usr/lib64", "/lib64"),
-        image.ensure_dir_symlink("/run", "/var/run"),
+        feature.ensure_dir_symlink("/usr/bin", "/bin"),
+        feature.ensure_dir_symlink("/usr/sbin", "/sbin"),
+        feature.ensure_dir_symlink("/usr/lib", "/lib"),
+        feature.ensure_dir_symlink("/usr/lib64", "/lib64"),
+        feature.ensure_dir_symlink("/run", "/var/run"),
     ]
 
 filesystem = struct(

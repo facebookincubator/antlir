@@ -20,7 +20,7 @@ def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
         extra_deps = ["//antlir/bzl/image/feature:symlink"],
     )
 
-def image_ensure_dir_symlink(link_target, link_name):
+def feature_ensure_dir_symlink(link_target, link_name):
     """
 The operation follows rsync convention for a destination (`link_name`):
 `ends/in/slash/` means "write into this directory", `does/not/end/with/slash`

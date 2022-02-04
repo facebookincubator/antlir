@@ -204,7 +204,7 @@ def ensure_subdirs_exist_factory(
 
     ```
         image.ensure_dirs_exist("/a/b/c/d"),
-        image.ensure_dir_symlink("/x/y", "/a/b/c/d"),
+        image.feature.ensure_dir_symlink("/x/y", "/a/b/c/d"),
     ```
 
     Here, `ensure_dir_symlink` requires dirs "/x/y" and "/a/b/c" and provides
