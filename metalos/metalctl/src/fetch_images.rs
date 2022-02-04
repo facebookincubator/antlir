@@ -35,6 +35,10 @@ async fn fetch_image(
 ) -> Result<Subvolume> {
     let dest = image.path_on_disk(basedir);
     let log = log.new(o!("package" => format!("{:?}", image), "dest" => format!("{:?}", dest)));
+    if dest.exists() {
+        trace!(log, "subvolume already exists, using pre-cached subvol")
+    }
+
     std::fs::create_dir_all(dest.parent().context("cannot receive directly into /")?)
         .with_context(|| format!("while creating parent directory for {:?}", dest))?;
 
