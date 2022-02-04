@@ -280,9 +280,9 @@ feature.new(
     name = "feature_symlinks",
     features = [
         feature.install(":hello_world.tar", "/foo/hello_world.tar"),
-        image.ensure_dir_symlink("/foo/bar", "/foo/fighter"),
-        image.ensure_dir_symlink("/foo/bar", "/foo/face"),
-        image.ensure_dir_symlink("/foo/bar", "/foo/bar/baz/"),  # / -> "bar" basename
+        feature.ensure_dir_symlink("/foo/bar", "/foo/fighter"),
+        feature.ensure_dir_symlink("/foo/bar", "/foo/face"),
+        feature.ensure_dir_symlink("/foo/bar", "/foo/bar/baz/"),  # / -> "bar" basename
         image.ensure_file_symlink("/foo/hello_world.tar", "/foo/symlink_to_hello_world.tar"),
         # /dev/null is allowlisted to be a dangling symlink
         image.ensure_file_symlink("/dev/null", "/foo/symlink_to_dev_null"),
