@@ -107,7 +107,7 @@ def _resolve_to_canonical_shadow_paths(
                 _ShadowCandidate(
                     # Do not `realpath` here because this would fail to
                     # resolve symlinks which the repo user cannot access.
-                    host_dest=subvol.path(candidate_dest),
+                    host_dest=subvol.path(candidate_dest, resolve_links=True),
                     host_src=subvol.path(src),
                     input_dest=dest,
                 )

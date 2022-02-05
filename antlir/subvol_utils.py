@@ -231,7 +231,11 @@ class Subvol(DoNotFreeze):
         return hash(self._path)
 
     def path(
-        self, path_in_subvol: AnyStr = b".", *, no_dereference_leaf=False
+        self,
+        path_in_subvol: AnyStr = b".",
+        *,
+        no_dereference_leaf=False,
+        resolve_links=False,
     ) -> Path:
         """
         The only safe way to access paths inside the subvolume.  Do NOT
@@ -244,7 +248,9 @@ class Subvol(DoNotFreeze):
         # very flexible, so it will try to name a subvol '.' if we do not
         # normalize `/subvol/.`.
         return self._path.normalized_subpath(
-            path_in_subvol, no_dereference_leaf=no_dereference_leaf
+            path_in_subvol,
+            no_dereference_leaf=no_dereference_leaf,
+            resolve_links=resolve_links,
         )
 
     def canonicalize_path(self, path: AnyStr) -> Path:

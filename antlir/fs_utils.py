@@ -7,6 +7,7 @@
 "Utilities to make Python systems programming more palatable."
 import argparse
 import base64
+import ctypes
 import errno
 import importlib.resources
 import json
@@ -32,6 +33,14 @@ log = get_logger()
 # We need this for lists that can contain a combination of `str` and `bytes`,
 # which is very common with `subprocess`. See https://fburl.com/wiki/dqrqyd8r.
 MehStr = Union[str, bytes]
+
+
+class _OpenHow(ctypes.Structure):
+    _fields_ = [
+        ("flags", ctypes.c_uint64),
+        ("mode", ctypes.c_uint64),
+        ("resolve", ctypes.c_uint64),
+    ]
 
 
 # `pathlib` refuses to operate on `bytes`, which is the only sane way on Linux.
@@ -172,8 +181,58 @@ class Path(bytes):
     def relpath(self, start: AnyStr) -> "Path":
         return Path(os.path.relpath(self, byteme(start)))
 
+    def _resolve_altroot_path(self, path: "Path") -> "Path":
+        """
+        Resolve a path relative to an alternate root. Useful when said path
+        may contain symlinks that point to absolute paths.
+        """
+
+        # Normalize altroot path.
+        altroot = self.realpath()
+
+        # Constants from headers
+        __NR_openat2 = 437
+        __RESOLVE_IN_ROOT = 0x10
+
+        #
+        # Define openat2(2) syscall wrapper. Note, glibc does not provide
+        # a wrapper for openat2() so we must use of syscall(2). The
+        # function signature is:
+        #
+        #     long syscall(SYS_openat2, int dirfd, const char *pathname,
+        #         struct open_how *how, size_t size);
+        #
+        _openat2 = ctypes.CDLL(None).syscall
+        _openat2.restype = ctypes.c_long
+        _openat2.argtypes = (
+            ctypes.c_long,
+            ctypes.c_uint,
+            ctypes.c_char_p,
+            ctypes.POINTER(_OpenHow),
+            ctypes.c_size_t,
+        )
+        altroot_fd = os.open(altroot, os.O_RDONLY)
+        open_how = _OpenHow(flags=0, mode=0, resolve=__RESOLVE_IN_ROOT)
+        fd = _openat2(
+            __NR_openat2, altroot_fd, path, open_how, ctypes.sizeof(open_how)
+        )
+        errno = ctypes.get_errno()
+        os.close(altroot_fd)
+        if fd == -1:
+            # It's possible this is a non-existent path, in which case return
+            # it as is.
+            log.debug(
+                f"Failed to resolve path '{path}'"
+                + f"within altroot '{self}' (errno: {errno})"
+            )
+            return self / path.lstrip(b"/")
+        resolved_path = Path(os.readlink(f"/proc/self/fd/{fd}"))
+        os.close(fd)
+        assert resolved_path.startswith(altroot)
+        return self / resolved_path[len(altroot) :].lstrip(b"/")
+
     def normalized_subpath(
-        self, path: AnyStr, *, no_dereference_leaf=False
+        self, path: AnyStr, *, no_dereference_leaf=False, resolve_links=False
     ) -> "Path":
         """
         Returns a normalized path to `path` interpreted as a child of the
@@ -185,16 +244,24 @@ class Path(bytes):
             something outside of `self`.
         If `path` is absolute, the leading `/` is ignored.
 
-        At present, the above check fail on attempting to traverse an
-        symlink within `self` that is an absolute path to another directory
-        within the `self` -- i.e.  if you think of `self` as the root of
-        another filesystem, absolute symlinks won't work.  If needed,
-        support could easily be added.
+        The above check fail on attempting to traverse an symlink within
+        `self` that is an absolute path to another directory within the `self`
+        -- i.e.  if you think of `self` as the root of another filesystem,
+        absolute symlinks won't work.
 
-        Such absolute symlinks are not supported now because at present, I
-        believe that the right idiom is to encourage image authors to
-        manipulate the "real" locations of files, and not to manipulate
+        Such absolute symlinks are not supported by default because at
+        present, I believe that the right idiom is to encourage image authors
+        to manipulate the "real" locations of files, and not to manipulate
         paths through symlinks.
+
+        In certain cases, we do want to resolve links relative to to 'self'
+        (treated as an alternative root). This behavior can be enabled via the
+        `resolve_links` option. If the link path can be resolved (within the
+        context of the alternate root), the fully resolved (not normalized)
+        path is returned. (This is done so that other callers can use the
+        returned path without having to jump through special altroot path
+        resolution hoops.) If the link path can't be resolved, it is returned
+        as is.
 
         In the rare case that you need to manipulate a symlink itself (e.g.
         remove or rename), you will want to pass `no_dereference_leaf`.
@@ -202,9 +269,21 @@ class Path(bytes):
         Future: consider using a file descriptor to refer to the base
         directory to better mitigate races due to renames in its path.
         """
+
+        # Can't have both no_dereference_leaf and resolve_links
+        assert not no_dereference_leaf or not resolve_links, (
+            "Error: no_dereference_leaf and resolve_links are incompatible."
+            + " The former disables link resolution, while the latter"
+            + " attempts to enable it."
+        )
+
+        if resolve_links:
+            return self._resolve_altroot_path(Path(path))
+
         # Without the lstrip, we would lose the `self` prefix if the
         # supplied path is absolute.
         result_path = (self / (Path(path).lstrip(b"/"))).normpath()
+
         # Paranoia: Make sure that, despite any symlinks in the path, the
         # resulting path is not outside of `self`.
         if (
