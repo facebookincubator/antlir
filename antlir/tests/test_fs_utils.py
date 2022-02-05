@@ -204,6 +204,29 @@ class TestFsUtils(unittest.TestCase):
 
             self.assertEqual(b"a/b", p.normalized_subpath("a/b").relpath(p))
 
+        with temp_dir() as td:
+            os.symlink("/dev/null", td / "my_null")
+
+            # We don't allow symlinks with absolute targets
+            with self.assertRaisesRegex(AssertionError, "is outside of"):
+                td.normalized_subpath("my_null")
+
+            # We allow symlinks with absolute targets if resolve_links=True
+            # Test case where the target is missing
+            self.assertEqual(
+                td / "my_null",
+                td.normalized_subpath("my_null", resolve_links=True),
+            )
+
+            # We allow symlinks with absolute targets if resolve_links=True
+            # Test case where the target is present
+            os.mkdir(td / "dev")
+            (td / "dev/null").touch()
+            self.assertEqual(
+                td / "dev/null",
+                td.normalized_subpath("my_null", resolve_links=True),
+            )
+
     def test_path_json(self):
         # We can serialize `Path` to JSON, including invalid UTF-8.
         # Unfortunately, `json` doesn't allow us to custom-serialize keys.
