@@ -56,7 +56,7 @@ def _mask_impl(
         _fail_if_path(item, description)
 
         symlink_actions.append(
-            image.ensure_file_symlink(
+            feature.ensure_file_symlink(
                 "/dev/null",
                 paths.join(root, item),
             ),
@@ -129,7 +129,7 @@ def _enable_impl(
 
     return [
         image.ensure_subdirs_exist(installed_root, target + "." + dep_type, mode = 0o755),
-        image.ensure_file_symlink(
+        feature.ensure_file_symlink(
             paths.join(installed_root, link_target),
             paths.join(installed_root, target + "." + dep_type, unit),
         ),
@@ -272,13 +272,13 @@ def _install_dropin(
 def _set_default_target(
         # An existing systemd target to be set as the default
         target):
-    return image.ensure_file_symlink(
+    return feature.ensure_file_symlink(
         paths.join(PROVIDER_ROOT, target),
         paths.join(PROVIDER_ROOT, "default.target"),
     )
 
 def _alias(unit, alias):
-    return image.ensure_file_symlink(
+    return feature.ensure_file_symlink(
         paths.join(PROVIDER_ROOT, unit),
         paths.join(ADMIN_ROOT, alias),
     )

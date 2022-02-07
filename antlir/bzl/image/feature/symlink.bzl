@@ -26,8 +26,8 @@ The operation follows rsync convention for a destination (`link_name`):
 `ends/in/slash/` means "write into this directory", `does/not/end/with/slash`
 means "write with the specified filename":
 
-- `image.ensure_dir_symlink("/d", "/e/")` symlinks directory `/d` to `/e/d`
-- `image.ensure_dir_symlink("/a", "/b/c")` symlinks directory `/a` to `/b/c`
+- `feature.ensure_dir_symlink("/d", "/e/")` symlinks directory `/d` to `/e/d`
+- `feature.ensure_dir_symlink("/a", "/b/c")` symlinks directory `/a` to `/b/c`
 
 Both arguments are mandatory:
 
@@ -53,14 +53,14 @@ matches the spec.
     """
     return _build_symlink_feature(link_target, link_name, "symlinks_to_dirs")
 
-def image_ensure_file_symlink(link_target, link_name):
+def feature_ensure_file_symlink(link_target, link_name):
     """
 The operation follows rsync convention for a destination (`link_name`):
 `ends/in/slash/` means "write into this directory", `does/not/end/with/slash`
 means "write with the specified filename":
 
-- `image.ensure_file_symlink("/d", "/e/")` symlinks file `/d` to `/e/d`
-- `image.ensure_file_symlink("/a", "/b/c")` symlinks file `/a` to `/b/c`
+- `feature.ensure_file_symlink("/d", "/e/")` symlinks file `/d` to `/e/d`
+- `feature.ensure_file_symlink("/a", "/b/c")` symlinks file `/a` to `/b/c`
 
 Both arguments are mandatory:
 

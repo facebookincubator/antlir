@@ -283,9 +283,9 @@ feature.new(
         feature.ensure_dir_symlink("/foo/bar", "/foo/fighter"),
         feature.ensure_dir_symlink("/foo/bar", "/foo/face"),
         feature.ensure_dir_symlink("/foo/bar", "/foo/bar/baz/"),  # / -> "bar" basename
-        image.ensure_file_symlink("/foo/hello_world.tar", "/foo/symlink_to_hello_world.tar"),
+        feature.ensure_file_symlink("/foo/hello_world.tar", "/foo/symlink_to_hello_world.tar"),
         # /dev/null is allowlisted to be a dangling symlink
-        image.ensure_file_symlink("/dev/null", "/foo/symlink_to_dev_null"),
+        feature.ensure_file_symlink("/dev/null", "/foo/symlink_to_dev_null"),
     ],
     visibility = ["//antlir/compiler/..."],
 )

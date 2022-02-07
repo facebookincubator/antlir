@@ -69,7 +69,7 @@ image.layer(
     features = [
         linux.filesystem.install(),
         clone_systemd_configs(REPO_CFG.artifact["metalos.layer.base"]),
-        image.ensure_file_symlink("/usr/lib/systemd/systemd", "/init"),
+        feature.ensure_file_symlink("/usr/lib/systemd/systemd", "/init"),
         # Systemd uses the presence of /etc/initrd-release to determine if it
         # is running in an initrd, however there are cases where it only parses
         # /{etc,usr/lib}/os-release, so just cover all our bases with symlinks
@@ -79,9 +79,9 @@ image.layer(
             os_name = "MetalOS",
             variant = "Initrd",
         ),
-        image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/initrd-release"),
-        image.ensure_file_symlink("/usr/lib/initrd-release", "/etc/os-release"),
-        image.ensure_file_symlink("/usr/lib/initrd-release", "/usr/lib/os-release"),
+        feature.ensure_file_symlink("/usr/lib/initrd-release", "/etc/initrd-release"),
+        feature.ensure_file_symlink("/usr/lib/initrd-release", "/etc/os-release"),
+        feature.ensure_file_symlink("/usr/lib/initrd-release", "/usr/lib/os-release"),
         # The metalos generator will rewrite the default target to
         # initrd.target, so explicitly set emergency.target as the default in
         # the image so that the boot clearly fails if the generator fails during
@@ -147,9 +147,9 @@ image.layer(
         feature.install("//metalos/metalctl:default-config.toml", "/etc/metalctl.toml"),
         # metalctl provides a few utility binaries that systemd calls so we can
         # avoid importing busybox for just a few tiny commands
-        image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mkdir"),
-        image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
-        image.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/umount"),
+        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mkdir"),
+        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
+        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/umount"),
         networking,
         image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
         feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),
@@ -165,7 +165,7 @@ image.layer(
         systemd.install_unit("units/metalos-snapshot-root.service"),
         systemd.install_unit("units/metalos-switch-root.service"),
         systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
-        image.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
+        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
         # generic metalos generators to be applied to the root fs
         "//metalos/host_configs:generators",
