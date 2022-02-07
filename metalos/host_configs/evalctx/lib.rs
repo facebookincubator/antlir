@@ -48,7 +48,7 @@ pub enum Error {
     Starlark(anyhow::Error),
     /// The generator produced output, but it could not be applied to the
     /// system.
-    #[error("could not apply generator output")]
+    #[error("could not apply generator output: {0}")]
     Apply(std::io::Error),
     /// Failed to load generator / other starlark source from the filesystem.
     #[error("could not load starlark source")]
