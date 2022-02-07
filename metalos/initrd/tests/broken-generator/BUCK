@@ -34,6 +34,7 @@ image.layer(
             target = "emergency.target",
             dep_type = "requires",
         ),
+        # @oss-disable: "//tupperware/image/features:fb_infra_support", 
     ],
 )
 
