@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _timezone(zone, timezone_dir = "/usr/share/zoneinfo"):
@@ -23,7 +22,7 @@ def _timezone(zone, timezone_dir = "/usr/share/zoneinfo"):
             dest,
             must_exist = False,
         ),
-        image.ensure_file_symlink(
+        feature.ensure_file_symlink(
             paths.join(timezone_dir, zone),
             dest,
         ),

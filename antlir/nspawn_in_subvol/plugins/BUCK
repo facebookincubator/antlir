@@ -151,8 +151,8 @@ image.layer(
         feature.install("tests/i_will_shadow", "real_i_will_shadow"),
         feature.install("tests/i_will_shadow", "other_file"),
         image.ensure_subdirs_exist("/", "link"),
-        image.ensure_file_symlink("real/shadow_me", "link/shadow_me"),
-        image.ensure_file_symlink("real_i_will_shadow", "link/i_will_shadow"),
+        feature.ensure_file_symlink("real/shadow_me", "link/shadow_me"),
+        feature.ensure_file_symlink("real_i_will_shadow", "link/i_will_shadow"),
         image.ensure_subdirs_exist(
             "/",
             "out",

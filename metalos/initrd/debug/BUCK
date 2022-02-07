@@ -76,7 +76,7 @@ feature.new(
             target = "initrd.target",
         ),
         # vmtest synchronizes on sshd.service, so alias it to dropbear
-        image.ensure_file_symlink("/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/sshd.service"),
+        feature.ensure_file_symlink("/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/sshd.service"),
         image.ensure_dirs_exist(
             "/root/.ssh",
             user = "root",

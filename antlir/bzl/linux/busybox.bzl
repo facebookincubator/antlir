@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 DEFAULT_APPLETS = sets.make([
     "basename",
@@ -67,7 +68,7 @@ def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/busybox
             paths.join(install_dir, "busybox"),
         ),
     ] + [
-        image.ensure_file_symlink(
+        feature.ensure_file_symlink(
             paths.join(install_dir, "busybox"),
             paths.join(install_dir, applet),
         )

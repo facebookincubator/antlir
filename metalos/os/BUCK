@@ -74,7 +74,7 @@ image.layer(
             layer = ":metalos",
             variant = "MetalOS",
         ),
-        image.ensure_file_symlink("/usr/lib/os-release", "/etc/metalos-release"),
+        feature.ensure_file_symlink("/usr/lib/os-release", "/etc/metalos-release"),
         # Ensure the root cgroup has all controllers enabled
         systemd.install_unit("systemd-workaround.service"),
         systemd.enable_unit("systemd-workaround.service", "core-services.target"),
