@@ -37,7 +37,9 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
         &opts.generators_root
     ))?;
     for gen in generators {
-        let output = gen.eval(&host.provisioning_config.identity)?;
+        let output = gen
+            .eval(&host.provisioning_config.identity)
+            .context(format!("could not apply eval generator for {}", gen.name()))?;
         output.apply(log.clone(), &opts.root)?;
     }
     Ok(())
