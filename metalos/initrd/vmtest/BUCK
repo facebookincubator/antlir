@@ -44,12 +44,14 @@ par_support = feature.install(
 
 host_config(
     name = "host-config",
-    runtime_config = {
-        "images": {
-            "rootfs": {
-                "id": "1",
-                "kind": 1,
-                "name": "metalos",
+    host_config = {
+        "runtime_config": {
+            "images": {
+                "rootfs": {
+                    "id": "1",
+                    "kind": 1,
+                    "name": "metalos",
+                },
             },
         },
     },
