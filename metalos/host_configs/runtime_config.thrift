@@ -36,15 +36,19 @@ enum DisruptivenessAllowed {
   FullyDown = 1000,
 }
 
-// Describes the complete set of software that should be running on a host, as
-// well as any config data that must change during the host's lifecycle.
-struct RuntimeConfig {
+struct Images {
   // Full set of images that should be downloaded on the host
   1: package_manifest.Manifest manifest;
   2: package_manifest.Image rootfs;
   3: package_manifest.Image kernel;
   4: list<Service> services;
-  5: string root_pw_hash;
+} (rust.exhaustive)
+
+// Describes the complete set of software that should be running on a host, as
+// well as any config data that must change during the host's lifecycle.
+struct RuntimeConfig {
+  1: Images images;
+  2: string root_pw_hash;
 } (rust.exhaustive)
 
 // When trying to apply a runtime config, the packages must already be persisted
