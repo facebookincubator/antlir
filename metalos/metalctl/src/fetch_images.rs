@@ -75,13 +75,14 @@ pub async fn fetch_images(log: Logger, config: crate::Config, opts: Opts) -> Res
             log,
             dl,
             host.runtime_config
+                .images
                 .rootfs
                 .clone()
                 .try_into()
                 .with_context(|| {
                     format!(
                         "while converting rootfs image {:?}",
-                        host.runtime_config.rootfs
+                        host.runtime_config.images.rootfs
                     )
                 })?,
             &opts.basedir,
@@ -99,7 +100,7 @@ pub async fn fetch_images(log: Logger, config: crate::Config, opts: Opts) -> Res
     }
     #[cfg(not(initrd))]
     {
-        try_join_all(host.runtime_config.manifest.images.iter().map(|i| {
+        try_join_all(host.runtime_config.images.manifest.images.iter().map(|i| {
             let log = log.clone();
             let dl = dl.clone();
             let basedir = &opts.basedir;
