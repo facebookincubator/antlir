@@ -18,7 +18,9 @@ oss_ci = read_config("antlir", "oss-ci-query", "") != ""
 
 thrift_library(
     name = "host",
-    languages = ["rust"],
+    languages = ["rust"] + [
+        "cpp2",
+    ] if not (oss or oss_ci) else [],
     rust_crate_name = "host",
     rust_deps = ["//metalos/metalos_macros:metalos_macros"] + third_party.libraries(
         [
@@ -36,6 +38,9 @@ thrift_library(
     rust_unittests = True,
     thrift_rust_options = "serde",
     thrift_srcs = {"host.thrift": None},
+    visibility = [
+        "PUBLIC",
+    ],
     deps = [
         ":runtime-config",
     ] + [
@@ -117,16 +122,26 @@ feature.new(
 
 thrift_library(
     name = "package-manifest",
-    languages = ["rust"],
+    languages = ["rust"] + [
+        "cpp2",
+    ] if not (oss or oss_ci) else [],
     thrift_rust_options = "serde",
     thrift_srcs = {"package_manifest.thrift": None},
+    visibility = [
+        "PUBLIC",
+    ],
 )
 
 thrift_library(
     name = "runtime-config",
-    languages = ["rust"],
+    languages = ["rust"] + [
+        "cpp2",
+    ] if not (oss or oss_ci) else [],
     thrift_rust_options = "serde",
     thrift_srcs = {"runtime_config.thrift": None},
+    visibility = [
+        "PUBLIC",
+    ],
     deps = [
         ":package-manifest",
     ],
