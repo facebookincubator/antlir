@@ -6,6 +6,9 @@ rust_library(
     name = "image",
     srcs = glob(["src/*.rs"]),
     test_deps = ["url"],
+    visibility = [
+        "PUBLIC",
+    ],
     deps = [
         "anyhow",
         "async-trait",

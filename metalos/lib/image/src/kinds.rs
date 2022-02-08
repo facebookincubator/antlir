@@ -44,11 +44,25 @@ impl TryFrom<ThriftKind> for Kind {
     }
 }
 
-pub trait ConstKind: Sealed {
+impl From<Kind> for ThriftKind {
+    fn from(k: Kind) -> Self {
+        match k {
+            Kind::Rootfs => ThriftKind::ROOTFS,
+            Kind::Config => ThriftKind::CONFIG,
+            Kind::Kernel => ThriftKind::KERNEL,
+            Kind::Service => ThriftKind::SERVICE,
+            Kind::Wds => ThriftKind::WDS,
+            Kind::GptRootdisk => ThriftKind::GPT_ROOTDISK,
+        }
+    }
+}
+
+pub trait ConstKind: Sealed + std::fmt::Debug {
     const KIND: Kind;
 }
 
 /// See [Kind::RootFs].
+#[derive(Debug, Clone, Copy)]
 pub struct Rootfs();
 impl ConstKind for Rootfs {
     const KIND: Kind = Kind::Rootfs;
@@ -57,6 +71,7 @@ impl Sealed for Rootfs {}
 pub type RootfsImage = Image<Rootfs>;
 
 /// See [Kind::Config].
+#[derive(Debug, Clone, Copy)]
 pub struct Config();
 impl ConstKind for Config {
     const KIND: Kind = Kind::Config;
@@ -65,6 +80,7 @@ impl Sealed for Config {}
 pub type ConfigImage = Image<Config>;
 
 /// See [Kind::Kernel].
+#[derive(Debug, Clone, Copy)]
 pub struct Kernel();
 impl ConstKind for Kernel {
     const KIND: Kind = Kind::Kernel;
@@ -73,6 +89,7 @@ impl Sealed for Kernel {}
 pub type KernelImage = Image<Kernel>;
 
 /// See [Kind::Service].
+#[derive(Debug, Clone, Copy)]
 pub struct Service();
 impl ConstKind for Service {
     const KIND: Kind = Kind::Service;
@@ -81,6 +98,7 @@ impl Sealed for Service {}
 pub type ServiceImage = Image<Service>;
 
 /// See [Kind::Wds].
+#[derive(Debug, Clone, Copy)]
 pub struct Wds();
 impl ConstKind for Wds {
     const KIND: Kind = Kind::Wds;
@@ -89,6 +107,7 @@ impl Sealed for Wds {}
 pub type WdsImage = Image<Wds>;
 
 /// See [Kind::GptRootdisk].
+#[derive(Debug, Clone, Copy)]
 pub struct GptRootdisk();
 impl ConstKind for GptRootdisk {
     const KIND: Kind = Kind::GptRootdisk;

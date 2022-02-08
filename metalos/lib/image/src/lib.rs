@@ -1,3 +1,4 @@
+use anyhow::Context;
 use derive_more::{Deref, Display, From, FromStr};
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -92,6 +93,32 @@ impl<K: kinds::ConstKind> TryFrom<ThriftImage> for Image<K> {
     }
 }
 
+impl<K: kinds::ConstKind> TryFrom<&str> for Image<K> {
+    type Error = anyhow::Error;
+
+    fn try_from(package_str: &str) -> anyhow::Result<Self> {
+        let (name, id) = package_str
+            .split_once(':')
+            .context("expected ':' separator")?;
+
+        Ok(Self(
+            AnyImage {
+                name: ImageName(name.to_string()),
+                id: ImageID(id.to_string()),
+                kind: K::KIND,
+                override_uri: None,
+            },
+            PhantomData,
+        ))
+    }
+}
+
+impl<K: kinds::ConstKind> From<Image<K>> for ThriftImage {
+    fn from(i: Image<K>) -> Self {
+        i.0.into()
+    }
+}
+
 /// Type-erased image of an arbitrary [Kind].
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AnyImage {
@@ -135,6 +162,17 @@ impl TryFrom<ThriftImage> for AnyImage {
 impl<K: kinds::ConstKind> From<Image<K>> for AnyImage {
     fn from(i: Image<K>) -> Self {
         i.0
+    }
+}
+
+impl From<AnyImage> for ThriftImage {
+    fn from(i: AnyImage) -> Self {
+        Self {
+            name: i.name.0,
+            id: i.id.0,
+            kind: i.kind.into(),
+            override_uri: i.override_uri,
+        }
     }
 }
 
