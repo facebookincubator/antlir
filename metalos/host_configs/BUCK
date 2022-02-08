@@ -58,6 +58,7 @@ rust_library(
         ["facebook"] if (not oss and not oss_ci) else [],
     test_deps = [
         "maplit",
+        "slog_glog_fmt",
         "tempfile",
     ],
     test_srcs = ["generators/hostname.star"],
