@@ -26,13 +26,13 @@ pub type PWHash = String;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Output {
     pub files: Vec<File>,
+    pub dirs: Vec<Dir>,
     pub pw_hashes: Option<BTreeMap<Username, PWHash>>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Dir {
     pub path: PathBuf,
-    pub mode: u32,
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -57,6 +57,12 @@ impl std::fmt::Debug for File {
 
 impl Output {
     pub fn apply(self, log: Logger, root: &Path) -> Result<()> {
+        for dir in self.dirs {
+            let dst = root.force_join(dir.path);
+            info!(log, "Creating dir: {:?}", dst);
+            fs::create_dir_all(dst).map_err(Error::Apply)?;
+        }
+
         for file in self.files {
             let dst = root.force_join(file.path);
             info!(log, "Writing file: {:?}", dst);
@@ -139,22 +145,41 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{File, Output};
+    use super::{Dir, File, Output};
     use tempfile::TempDir;
+
+    fn apply_one_output(output: Output) -> anyhow::Result<TempDir> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
+        let tmp_dir = TempDir::new()?;
+        output.apply(log, tmp_dir.path())?;
+        Ok(tmp_dir)
+    }
+
+    #[test]
+    fn apply_creates_dirs() -> anyhow::Result<()> {
+        let tmp_dir = apply_one_output(Output {
+            files: vec![],
+            dirs: vec![Dir {
+                path: "/a/b/c/d".into(),
+            }],
+            pw_hashes: None,
+        })?;
+        let dir = std::fs::metadata(tmp_dir.path().join("a/b/c/d"))?;
+        assert!(dir.is_dir());
+        Ok(())
+    }
 
     #[test]
     fn apply_creates_parent_dirs() -> anyhow::Result<()> {
-        let go = Output {
+        let tmp_dir = apply_one_output(Output {
             files: vec![File {
                 path: "/a/b/c/d".into(),
                 contents: "".into(),
                 mode: 0o444,
             }],
+            dirs: vec![],
             pw_hashes: None,
-        };
-        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
-        let tmp_dir = TempDir::new()?;
-        go.apply(log, tmp_dir.path())?;
+        })?;
         let dir = std::fs::metadata(tmp_dir.path().join("a/b/c"))?;
         assert!(dir.is_dir());
         let file = std::fs::metadata(tmp_dir.path().join("a/b/c/d"))?;

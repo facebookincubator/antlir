@@ -14,7 +14,9 @@ use anyhow::Context;
 use starlark::environment::{GlobalsBuilder, Module};
 use starlark::eval::Evaluator;
 use starlark::starlark_module;
-use starlark::values::{dict::DictOf, list::ListOf, OwnedFrozenValue, Value, ValueLike};
+use starlark::values::dict::DictOf;
+use starlark::values::list::ListOf;
+use starlark::values::{OwnedFrozenValue, StarlarkValue, Value, ValueLike};
 
 use crate::generator::{Dir, File, Generator, Output};
 use crate::starlark::loader::{Loader, ModuleId};
@@ -45,6 +47,22 @@ output_only_struct!(Output);
 output_only_struct!(Dir);
 output_only_struct!(File);
 
+fn collect_list_of<'v, T>(lst: ListOf<'v, Value<'v>>) -> anyhow::Result<Vec<T>>
+where
+    T: StarlarkValue<'v> + Clone,
+{
+    lst.to_vec()
+        .into_iter()
+        .map(|v| {
+            let owned: T = v
+                .downcast_ref()
+                .with_context(|| format!("{:?} is not a {}", v, std::any::type_name::<T>()))
+                .map(|v: &T| v.clone())?;
+            Ok(owned)
+        })
+        .collect()
+}
+
 #[starlark_module]
 pub fn module(registry: &mut GlobalsBuilder) {
     // TODO: accept symbolic strings in 'mode' as well
@@ -58,30 +76,18 @@ pub fn module(registry: &mut GlobalsBuilder) {
     }
 
     #[starlark(type("Dir"))]
-    fn dir(path: &str, mode: Option<i32>) -> anyhow::Result<Dir> {
-        Ok(Dir {
-            path: path.into(),
-            mode: mode.map_or(0o555, |i| i as u32),
-        })
+    fn dir(path: &str) -> anyhow::Result<Dir> {
+        Ok(Dir { path: path.into() })
     }
 
     #[starlark(type("Output"))]
     fn Output(
         files: Option<ListOf<Value>>,
+        dirs: Option<ListOf<Value>>,
         pw_hashes: Option<DictOf<Value, Value>>,
     ) -> anyhow::Result<Output> {
-        let files: Vec<File> = match files {
-            Some(files) => files
-                .to_vec()
-                .into_iter()
-                .map(|v| {
-                    v.downcast_ref::<File>()
-                        .with_context(|| format!("{:?} is not a File", v))
-                        .map(|f| f.deref().clone())
-                })
-                .collect::<anyhow::Result<_>>()?,
-            None => vec![],
-        };
+        let files = files.map_or_else(|| Ok(vec![]), collect_list_of)?;
+        let dirs = dirs.map_or_else(|| Ok(vec![]), collect_list_of)?;
         let pw_hashes: Option<BTreeMap<Username, PWHash>> = match pw_hashes {
             Some(hashes) => Some(
                 hashes
@@ -102,7 +108,11 @@ pub fn module(registry: &mut GlobalsBuilder) {
             ),
             None => None,
         };
-        Ok(Output { files, pw_hashes })
+        Ok(Output {
+            files,
+            dirs,
+            pw_hashes,
+        })
     }
 
     // this must match the type name returned by the HostIdentity struct
@@ -198,6 +208,7 @@ mod tests {
                     contents: "host001.01.abc0.facebook.com\n".into(),
                     mode: 0o444,
                 }],
+                dirs: vec![],
                 pw_hashes: None,
             }
         );
@@ -226,6 +237,31 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
                     path: "/test.json".into(),
                     contents: r#"{"a": "b", "c": null}"#.into(),
                     mode: 0o444,
+                }],
+                dirs: vec![],
+                pw_hashes: None,
+            }
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn generator_with_dir() -> anyhow::Result<()> {
+        assert_eq!(
+            eval_one_generator(
+                r#"
+def generator(host: metalos.HostIdentity) -> metalos.Output.type:
+    return metalos.Output(
+        dirs=[
+            metalos.dir(path="/dir"),
+        ]
+    )
+        "#
+            )?,
+            Output {
+                files: vec![],
+                dirs: vec![Dir {
+                    path: "/dir".into(),
                 }],
                 pw_hashes: None,
             }
