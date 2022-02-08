@@ -60,6 +60,9 @@ impl Output {
         for file in self.files {
             let dst = root.force_join(file.path);
             info!(log, "Writing file: {:?}", dst);
+            if let Some(parent) = dst.parent() {
+                fs::create_dir_all(parent).map_err(Error::Apply)?;
+            }
             let mut f = fs::File::create(&dst).map_err(Error::Apply)?;
             f.write_all(&file.contents).map_err(Error::Apply)?;
             let mut perms = f.metadata().map_err(Error::Apply)?.permissions();
@@ -131,5 +134,31 @@ where
 
     fn eval(&self, host: &HostIdentity) -> Result<Output> {
         Ok(self(host))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{File, Output};
+    use tempfile::TempDir;
+
+    #[test]
+    fn apply_creates_parent_dirs() -> anyhow::Result<()> {
+        let go = Output {
+            files: vec![File {
+                path: "/a/b/c/d".into(),
+                contents: "".into(),
+                mode: 0o444,
+            }],
+            pw_hashes: None,
+        };
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
+        let tmp_dir = TempDir::new()?;
+        go.apply(log, tmp_dir.path())?;
+        let dir = std::fs::metadata(tmp_dir.path().join("a/b/c"))?;
+        assert!(dir.is_dir());
+        let file = std::fs::metadata(tmp_dir.path().join("a/b/c/d"))?;
+        assert!(file.is_file());
+        Ok(())
     }
 }
