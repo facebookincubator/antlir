@@ -177,7 +177,7 @@ mod tests {
     use starlark::eval::Evaluator;
     use starlark::syntax::{AstModule, Dialect};
     use std::cell::{RefCell, RefMut};
-    use std::collections::HashSet;
+    use std::collections::BTreeSet;
     use std::env;
     use std::ffi::OsStr;
     use std::path::Path;
@@ -285,18 +285,13 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
             AstModule::parse(&filename.to_string_lossy(), src_code, &Dialect::Extended).unwrap();
         let total_num_statements = ast.stmt_locations().len();
         assert_ne!(0, total_num_statements);
-        let to_visit_lines: Vec<u16> = ast
+        let to_visit_lines: BTreeSet<u16> = ast
             .stmt_locations()
             .into_iter()
             .map(|line| line.resolve_span().begin_line as u16)
             .collect();
-        println!(
-            "Lines to visit for {:?}: {:?}",
-            file_path.file_name(),
-            to_visit_lines
-        );
 
-        let visited_lines: Rc<RefCell<_>> = Rc::new(RefCell::new(HashSet::new()));
+        let visited_lines: Rc<RefCell<_>> = Rc::new(RefCell::new(BTreeSet::new()));
         let before_stmt = |span: FileSpanRef, _eval: &mut Evaluator<'_, '_>| {
             let mut set: RefMut<_> = visited_lines.borrow_mut();
             set.insert(span.resolve_span().begin_line as u16);
@@ -318,25 +313,10 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
             ),
             Some(function) => {
                 evaluator.eval_function(function, &[], &[("host", host_value)])?;
-                let mut sorted_visited_lines = visited_lines
-                    .borrow_mut()
-                    .clone()
-                    .into_iter()
-                    .collect::<Vec<_>>();
-                // When sorting primitive values (integers, bools, chars, as well as arrays,
-                // slices, and tuples of such items), it is better to use an unstable sort than
-                // a stable sort.
-                // https://rust-lang.github.io/rust-clippy/master/index.html#stable_sort_primitive
-                sorted_visited_lines.sort_unstable();
-                println!(
-                    "Visited lines for {:?}: {:?}",
-                    file_path.file_name(),
-                    sorted_visited_lines,
-                );
                 assert_eq!(
                     to_visit_lines,
-                    sorted_visited_lines,
-                    "Stalark file {:?} has branches that are not executed",
+                    visited_lines.borrow().clone(),
+                    "Starlark file {:?} has branches that are not executed",
                     file_path.file_name()
                 );
             }
@@ -358,7 +338,6 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
             .filter(|e| e.path().extension() == Some(OsStr::new("star")))
         {
             eval_one_generator_coverage(entry.path())?;
-            println!("Generator {:?}: ok", entry.file_name());
         }
         Ok(())
     }
