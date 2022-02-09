@@ -139,6 +139,12 @@ module.exports = {
       items: [
         'metalos/overview',
         'metalos/apis',
+        ...fbInternalOnly([
+          {
+            type: 'doc',
+            id: 'metalos/fb/hacking_guide',
+          },
+        ]),
       ],
     }
   ],
