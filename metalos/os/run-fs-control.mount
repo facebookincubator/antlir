@@ -1,0 +1,7 @@
+[Unit]
+Description=Root Subvol Layout
+
+[Mount]
+Where=/run/fs/control
+What=LABEL=/
+Options=subvolid=5

@@ -88,6 +88,8 @@ image.layer(
             # the need to udpate it at runtime.
             "systemd-hwdb-update.service",
         ]),
+        systemd.install_unit("run-fs-control.mount"),
+        systemd.enable_unit("run-fs-control.mount", "core-services.target"),
     ],
     runtime = ["systemd"],
     visibility = [
