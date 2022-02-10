@@ -40,6 +40,7 @@ pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
     mount(
         log.clone(),
         MountOpts {
+            bind: false,
             source: device.clone(),
             target: "/sysroot".into(),
             fstype: Some("btrfs".into()),
