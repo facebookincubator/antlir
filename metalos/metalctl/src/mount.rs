@@ -29,6 +29,8 @@ use structopt::StructOpt;
 pub struct Opts {
     pub source: String,
     pub target: PathBuf,
+    #[structopt(long = "bind")]
+    pub bind: bool,
     #[structopt(short = "t")]
     pub fstype: Option<String>,
     #[structopt(short, require_delimiter(true))]
@@ -128,8 +130,22 @@ pub fn mount(log: Logger, opts: Opts) -> Result<()> {
 }
 
 fn _mount(log: Logger, opts: Opts, fstypes: &[String], mounter: impl Mounter) -> Result<()> {
-    let (data, flags) = parse_options(opts.options);
+    let (data, mut flags) = parse_options(opts.options);
     let source = evaluate_device_spec(&opts.source)?;
+
+    if opts.bind {
+        flags.insert(MsFlags::MS_BIND);
+        return mounter
+            .mount(
+                &source,
+                opts.target.as_path(),
+                None,
+                flags,
+                Some(data.join(",").as_str()),
+            )
+            .context("mount failed");
+    }
+
     let fstype = opts.fstype;
     #[cfg(blkid)]
     let fstype = fstype.or_else(|| match blkid::probe_fstype(&source) {
@@ -338,6 +354,7 @@ nodev   rpc_pipefs\n",
         )?;
 
         let opts = Opts {
+            bind: false,
             source: "fooSource".to_string(),
             target: PathBuf::from("fooPath"),
             fstype: None,
