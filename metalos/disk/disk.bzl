@@ -6,8 +6,10 @@ IMAGE_DIR = "/image"
 RUN_DIR = "/run"
 
 def build_root_disk(
-        name = "metalos-gpt-image",
-        root_size_mb = None):
+        name,
+        root_size_mb,
+        efi_layer_name,
+        efi_fat_size):
     image.layer(
         name = "root-disk-layer",
         features = [
@@ -47,9 +49,10 @@ def build_root_disk(
 
     package.new(
         name = "efi-package",
-        layer = ":empty-layer-boot-or-efi",
+        layer = ":" + efi_layer_name,
         format = "vfat",
         loopback_opts = image.opts(
+            fat_size = efi_fat_size,
             size_mb = 256,
             label = "metalos-efi",
         ),
