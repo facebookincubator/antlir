@@ -29,7 +29,7 @@ from .common import (
 
 
 class PhaseProvidesItemTestCase(BaseItemTestCase):
-    def test_phases_provide(self):
+    def test_phases_provide(self) -> None:
         with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             parent = temp_subvolumes.create("parent")
             # Permit _populate_temp_filesystem to make writes.
@@ -65,7 +65,7 @@ class PhaseProvidesItemTestCase(BaseItemTestCase):
                     set(),
                 )
 
-    def test_phases_provide_groups(self):
+    def test_phases_provide_groups(self) -> None:
         with TempSubvolumes() as ts:
             sv = ts.create("test_phases_provide_groups")
             sv.run_as_root(["mkdir", "-p", sv.path("/etc")]).check_returncode()
@@ -95,7 +95,7 @@ adm:x:4:
                 },
             )
 
-    def test_phases_provide_users(self):
+    def test_phases_provide_users(self) -> None:
         with TempSubvolumes() as ts:
             sv = ts.create("test_phases_provide_users")
             sv.run_as_root(["mkdir", "-p", sv.path("/etc")]).check_returncode()

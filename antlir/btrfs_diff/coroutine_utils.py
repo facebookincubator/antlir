@@ -19,7 +19,7 @@ class CoroutineContext:
 
     result: Any = None  # see `test_throw_from_sender` for why this is set.
 
-    def __init__(self, coroutine):
+    def __init__(self, coroutine) -> None:
         self.coroutine = coroutine
 
     # Syntax sugar -- remember that `send` and `throw` will exit the `with`

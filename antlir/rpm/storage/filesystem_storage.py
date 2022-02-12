@@ -25,7 +25,7 @@ class FilesystemStorage(Storage, plugin_kind="filesystem"):
     distributed store, and migrate there.
     """
 
-    def __init__(self, *, key: str, base_dir: AnyStr):
+    def __init__(self, *, key: str, base_dir: AnyStr) -> None:
         self.key = key
         self.base_dir = Path(base_dir).abspath()
 

@@ -13,7 +13,7 @@ parser.add_argument("template")
 parser.add_argument("name")
 
 
-def main():
+def main() -> None:
     args = parser.parse_args()
     env = Environment(
         trim_blocks=True,

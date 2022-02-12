@@ -16,7 +16,7 @@ from .. import volume_for_repo as vfr
 
 
 class VolumeForRepoTestCase(unittest.TestCase):
-    def test_volume_repo(self):
+    def test_volume_repo(self) -> None:
         artifacts_dir = Path(tempfile.mkdtemp(prefix="test_volume_repo"))
         volume_dir = artifacts_dir / vfr.VOLUME_DIR
         image_file = artifacts_dir / vfr.IMAGE_FILE

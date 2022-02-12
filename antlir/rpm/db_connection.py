@@ -40,7 +40,7 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
         db_path: str,
         readonly: bool = False,
         force_master: Optional[bool] = None,
-    ):
+    ) -> None:
         if (
             force_master is not None
             and not type(self)._warned_about_sqlite_force_master

@@ -16,11 +16,11 @@ from ..subvol_utils import with_temp_subvols, TempSubvolumes
 
 
 class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
-    def _touch(self, *path):
+    def _touch(self, *path) -> None:
         with open(os.path.join(*path), "a"):
             pass
 
-    def test_list_subvolume_wrappers(self):
+    def test_list_subvolume_wrappers(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             tdp = Path(td)
             self.assertEqual([], sgc.list_subvolume_wrappers(tdp))
@@ -39,38 +39,44 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 set(sgc.list_subvolume_wrappers(tdp)),
             )
 
-    def test_list_refcounts(self):
+    def test_list_refcounts(self) -> None:
         with tempfile.TemporaryDirectory() as td:
+            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             self.assertEqual({}, dict(sgc.list_refcounts(td)))
 
             self._touch(td, "foo:bar")  # No .json
             self._touch(td, "borf.json")  # No :
+            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             self.assertEqual({}, dict(sgc.list_refcounts(td)))
 
             banana_json = Path(td) / "ba:nana.json"
             os.mkdir(banana_json)  # Not a file
             with self.assertRaisesRegex(RuntimeError, "not a regular file"):
+                # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
                 dict(sgc.list_refcounts(td))
             os.rmdir(banana_json)
 
             self._touch(banana_json)  # This is a real refcount file now
+            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             self.assertEqual({Path("ba:nana"): 1}, dict(sgc.list_refcounts(td)))
 
             # The linking is pathological, but it doesn't seem worth detecting.
             os.link(banana_json, Path(td) / "ap:ple.json")
             self.assertEqual(
                 {Path("ba:nana"): 2, Path("ap:ple"): 2},
+                # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
                 dict(sgc.list_refcounts(td)),
             )
 
             os.unlink(banana_json)
+            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             self.assertEqual({Path("ap:ple"): 1}, dict(sgc.list_refcounts(td)))
 
     # Not bothering with a direct test for `parse_args` because (a) it is
     # entirely argparse declarations, and that module has decent validation,
     # (b) we test it indirectly in `test_has_new_subvolume` and others.
 
-    def test_has_new_subvolume(self):
+    def test_has_new_subvolume(self) -> None:
 
         # Instead of creating a fake namespace, actually parse some args
         def dir_json(wrapper_dir, json):
@@ -110,7 +116,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                     )
                 )
 
-    def test_gc_fails_when_wrapper_has_more_than_one(self):
+    def test_gc_fails_when_wrapper_has_more_than_one(self) -> None:
         with tempfile.TemporaryDirectory() as refs_dir, tempfile.TemporaryDirectory() as subs_dir:  # noqa: E501
             os.makedirs(Path(subs_dir) / "no:refs/subvol1")
             os.makedirs(Path(subs_dir) / "no:refs/subvol2")
@@ -125,7 +131,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 )
 
     @with_temp_subvols
-    def test_gc_clean_nspawn_lockfile(self, tmp_subvols):
+    def test_gc_clean_nspawn_lockfile(self, tmp_subvols) -> None:
         with temp_dir() as refs_dir:
             subs_dir = tmp_subvols.temp_dir
             os.makedirs(subs_dir / "no:refs")
@@ -210,12 +216,12 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 subs_dir=subs_dir,
             )
 
-    def _gc_only(self, n):
+    def _gc_only(self, n) -> None:
         sgc.subvolume_garbage_collector(
             [f"--refcounts-dir={n.refs_dir}", f"--subvolumes-dir={n.subs_dir}"]
         )
 
-    def test_garbage_collect_subvolumes(self):
+    def test_garbage_collect_subvolumes(self) -> None:
         for fn in [
             lambda n: sgc.garbage_collect_subvolumes(n.refs_dir, n.subs_dir),
             self._gc_only,
@@ -225,7 +231,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 self.assertEqual(n.kept_refs, set(n.refs_dir.listdir()))
                 self.assertEqual(n.kept_subs, set(n.subs_dir.listdir()))
 
-    def test_no_gc_due_to_lock(self):
+    def test_no_gc_due_to_lock(self) -> None:
         with self._gc_test_case() as n:
             fd = os.open(n.subs_dir, os.O_RDONLY)
             try:
@@ -257,7 +263,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 n.kept_subs | n.gcd_subs, set(n.subs_dir.listdir())
             )
 
-    def test_garbage_collect_and_make_new_subvolume(self):
+    def test_garbage_collect_and_make_new_subvolume(self) -> None:
         with self._gc_test_case() as n, temp_dir() as json_dir:
             sgc.subvolume_garbage_collector(
                 [

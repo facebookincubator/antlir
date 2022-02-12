@@ -73,13 +73,15 @@ enabled = 1
 
 # This is the base class for two test classes at the bottom of the file.
 class WriteYumDnfConfTestImpl:
-    def setUp(self):
+    def setUp(self) -> None:
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
+        # pyre-fixme[16]: `WriteYumDnfConfTestImpl` has no attribute `maxDiff`.
         self.maxDiff = 12345
 
-    def test_conf(self):
+    def test_conf(self) -> None:
         install_dir = "/INSTALL/DIR"
+        # pyre-fixme[16]: `WriteYumDnfConfTestImpl` has no attribute `_YUM_DNF`.
         prog_name = self._YUM_DNF.value
         expected_out = _CONF_OUT.format(
             prog_name=prog_name,
@@ -105,6 +107,8 @@ class WriteYumDnfConfTestImpl:
                 ]
             )
             with open(td / f"out/etc/{prog_name}/{prog_name}.conf") as infile:
+                # pyre-fixme[16]: `WriteYumDnfConfTestImpl` has no attribute
+                #  `assertEqual`.
                 self.assertEqual(expected_out, infile.read())
 
 

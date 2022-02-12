@@ -24,11 +24,11 @@ def _extract_features(infix: str):
 
 class ExtractNestedFeaturesTestCase(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         unittest.util._MAX_LENGTH = 12345
         cls.maxDiff = None
 
-    def _check_base_plus_one(self, ef):
+    def _check_base_plus_one(self, ef) -> None:
         # There are a bunch of empty `image_source` implementation fields
         # here that we don't want to assert since that'd be fragile.
         lfp = ef.packaged_root.layer_from_package
@@ -53,7 +53,7 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
             os.path.exists(ef.packaged_root.layer.path("/from/test_base/"))
         )
 
-    def test_custom(self):
+    def test_custom(self) -> None:
         ef = _extract_features("custom")
         # Omits "/from/test_base/" since it's in the base image.
         self.assertEqual({"/new/dir/"}, ef.make_dir_paths)
@@ -61,7 +61,7 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         self.assertEqual({"remove_paths"}, ef.features_needing_custom_image)
         self.assertIsNone(ef.features_to_replay)  # Deliberately not set!
 
-    def test_custom_remove_rpm(self):
+    def test_custom_remove_rpm(self) -> None:
         with self.assertLogs(enf_log, level="ERROR") as ctx:
             ef = _extract_features("custom-remove-rpm")
         self.assertIn(' besides "install" need a custom ', "".join(ctx.output))
@@ -70,7 +70,7 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         self.assertEqual({"rpms"}, ef.features_needing_custom_image)
         self.assertIsNone(ef.features_to_replay)
 
-    def test_custom_local_rpm(self):
+    def test_custom_local_rpm(self) -> None:
         with self.assertLogs(enf_log, level="ERROR") as ctx:
             ef = _extract_features("custom-local-rpm")
         self.assertIn("Installing an in-repo RPM ", "".join(ctx.output))
@@ -79,7 +79,7 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         self.assertEqual({"rpms"}, ef.features_needing_custom_image)
         self.assertIsNone(ef.features_to_replay)
 
-    def test_non_custom(self):
+    def test_non_custom(self) -> None:
         ef = _extract_features("non-custom")
         self.assertEqual({"/new/dir/", "/another/dir/"}, ef.make_dir_paths)
         self._check_base_plus_one(ef)

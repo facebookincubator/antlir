@@ -20,7 +20,7 @@ from .tarball import load_from_tarball
 
 # This checks to make sure that the parent layer of an layer has the same flavor
 # as the flavor specified by the current layer.
-def _check_parent_flavor(parent_subvol, flavor):
+def _check_parent_flavor(parent_subvol, flavor) -> None:
     flavor_path = parent_subvol.path(META_FLAVOR_FILE)
     if flavor_path.exists():
         subvol_flavor = flavor_path.read_text()

@@ -8,7 +8,7 @@
 import json
 
 
-def main(stdin, stdout, layer_target):
+def main(stdin, stdout, layer_target) -> None:
     mount_config = json.load(stdin)
 
     for key in ("build_source", "is_directory"):

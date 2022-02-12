@@ -77,7 +77,7 @@ def _drain_pipe_return_byte_count(f: BinaryIO) -> int:
 _UUID_TO_SUBVOLS = {}
 
 
-def _mark_deleted(uuid: str):
+def _mark_deleted(uuid: str) -> None:
     "Mark all the clones of this `Subvol` as deleted. Ignores unknown UUIDs."
     subvols = _UUID_TO_SUBVOLS.get(uuid)
     if not subvols:
@@ -163,9 +163,9 @@ class Subvol(DoNotFreeze):
         self,
         path: AnyStr,
         *,
-        already_exists=False,
+        already_exists: bool = False,
         _test_only_allow_existing=False,
-    ):
+    ) -> None:
         """
         `Subvol` can represent not-yet-created (or created-and-deleted)
         subvolumes.  Unless already_exists=True, you must call create() or
@@ -196,7 +196,7 @@ class Subvol(DoNotFreeze):
     def _exists(self):
         return self._USE_mark_created_deleted_INSTEAD_exists
 
-    def _mark_created(self):
+    def _mark_created(self) -> None:
         assert not self._exists and not self._uuid, (self._path, self._uuid)
         self._USE_mark_created_deleted_INSTEAD_exists = True
         # The UUID is valid only while `._exists == True`
@@ -205,7 +205,7 @@ class Subvol(DoNotFreeze):
         # we really care about object identity here.
         _UUID_TO_SUBVOLS.setdefault(self._uuid, []).append(self)
 
-    def _mark_deleted(self):
+    def _mark_deleted(self) -> None:
         assert self._exists and self._uuid, self._path
         assert any(
             # `_mark_deleted()` will ignore unknown UUIDs, but ours must be
@@ -234,8 +234,8 @@ class Subvol(DoNotFreeze):
         self,
         path_in_subvol: AnyStr = b".",
         *,
-        no_dereference_leaf=False,
-        resolve_links=False,
+        no_dereference_leaf: bool = False,
+        resolve_links: bool = False,
     ) -> Path:
         """
         The only safe way to access paths inside the subvolume.  Do NOT
@@ -285,7 +285,13 @@ class Subvol(DoNotFreeze):
     # new subvolumes, and not just touch existing ones.
     @contextmanager
     def popen_as_root(
-        self, args, *, _subvol_exists=True, stdout=None, check=True, **kwargs
+        self,
+        args,
+        *,
+        _subvol_exists=True,
+        stdout=None,
+        check: bool = True,
+        **kwargs,
     ):
         if "cwd" in kwargs:
             raise AssertionError(
@@ -341,7 +347,7 @@ class Subvol(DoNotFreeze):
         timeout=None,
         input=None,
         _subvol_exists=True,
-        check=True,
+        check: bool = True,
         **kwargs,
     ):
         """
@@ -413,7 +419,7 @@ class Subvol(DoNotFreeze):
             if self._exists:
                 self.delete()
 
-    def delete(self):
+    def delete(self) -> None:
         """
         This will delete the subvol AND all nested/inner subvolumes that
         exist underneath this subvol.
@@ -621,7 +627,7 @@ class Subvol(DoNotFreeze):
             assert inner_subvol == os.path.normpath(inner_subvol), inner_subvol
             yield self.path(inner_subvol)
 
-    def set_readonly(self, readonly: bool):
+    def set_readonly(self, readonly: bool) -> None:
         self.run_as_root(
             [
                 "btrfs",
@@ -634,7 +640,7 @@ class Subvol(DoNotFreeze):
             ]
         )
 
-    def set_seed_device(self, output_path: str):
+    def set_seed_device(self, output_path: str) -> None:
         # Clearing the seeding flag on a device may be dangerous. If a
         # previously-seeding device is changed, all filesystems that used that
         # device will become unmountable. Setting the seeding flag back will
@@ -643,7 +649,7 @@ class Subvol(DoNotFreeze):
         # clearing the seed flag.
         self.run_as_root(["btrfstune", "-S", "1", output_path])
 
-    def sync(self):
+    def sync(self) -> None:
         self.run_as_root(["btrfs", "filesystem", "sync", self.path()])
 
     @contextmanager
@@ -710,9 +716,9 @@ class Subvol(DoNotFreeze):
 
     def mark_readonly_and_send_to_new_loopback(
         self,
-        output_path,
+        output_path: str,
         loopback_opts: loopback_opts_t,
-        waste_factor=1.15,
+        waste_factor: float = 1.15,
     ) -> int:
         """
         Overwrites `ouput_path` with a new btrfs image, and send this
@@ -916,7 +922,7 @@ class Subvol(DoNotFreeze):
         ):
             yield
 
-    def _estimate_content_bytes(self):
+    def _estimate_content_bytes(self) -> int:
         """
         Returns a (usually) tight lower-bound guess of the filesystem size
         necessary to contain this subvolume.  The caller is responsible for
@@ -1286,7 +1292,7 @@ class Subvol(DoNotFreeze):
         res.check_returncode()
         return res.stdout
 
-    def overwrite_path_as_root(self, relpath: Path, contents: AnyStr):
+    def overwrite_path_as_root(self, relpath: Path, contents: AnyStr) -> None:
         # Future: support setting user, group, and mode
         if isinstance(contents, str):
             contents = contents.encode()
@@ -1356,7 +1362,7 @@ class TempSubvolumes:
         it would require using an `Unshare` object throughout `Subvol`.
     """
 
-    def __init__(self, path_in_repo: Optional[Path] = None):
+    def __init__(self, path_in_repo: Optional[Path] = None) -> None:
         super().__init__()
         # The 'tmp' subdirectory simplifies cleanup of leaked temp subvolumes
         volume_tmp_dir = _tmp_volume_dir(path_in_repo)
@@ -1369,12 +1375,14 @@ class TempSubvolumes:
             dir=volume_tmp_dir.decode(), prefix=self.__class__.__name__ + "_"
         )
 
-    def __enter__(self):
+    def __enter__(self) -> "TempSubvolumes":
         self._stack.__enter__()
+        # pyre-fixme[16]: `TempSubvolumes` has no attribute `_temp_dir`.
         self._temp_dir = self._stack.enter_context(self._temp_dir_ctx)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        # pyre-fixme[16]: `TempSubvolumes` has no attribute `_temp_dir`.
         self._temp_dir = None
         return self._stack.__exit__(exc_type, exc_val, exc_tb)
 

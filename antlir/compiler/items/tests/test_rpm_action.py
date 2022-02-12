@@ -29,7 +29,7 @@ from .rpm_action_base import create_rpm_action_item, RpmActionItemTestBase
 class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
     "Tests not using self._YUM_DNF"
 
-    def test_phase_orders(self):
+    def test_phase_orders(self) -> None:
         self.assertEqual(
             PhaseOrder.RPM_INSTALL,
             create_rpm_action_item(
@@ -47,14 +47,17 @@ class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
 class RpmActionItemTestImpl(RpmActionItemTestBase):
     "Subclasses run these tests with concrete values of `self._YUM_DNF`."
 
-    def setUp(self):
+    def setUp(self) -> None:
+        # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `_YUM_DNF`.
         if self._YUM_DNF.value not in get_rpm_installers_supported():
+            # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `skipTest`.
             self.skipTest(
                 f"'{self._YUM_DNF}' not in '{get_rpm_installers_supported()}'"
             )
 
-    def test_rpm_action_item_build_appliance(self):
+    def test_rpm_action_item_build_appliance(self) -> None:
         self._check_rpm_action_item_build_appliance(
+            # pyre-fixme[6]: For 1st param expected `Path` but got `Subvol`.
             Subvol("test-build-appliance", already_exists=True)
         )
 
@@ -86,7 +89,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
     def _check_rpm_action_item_subvol(
         self, subvol, rpm_item: RpmActionItem, fs_render, *, opts=None
-    ):
+    ) -> None:
         RpmActionItem.get_phase_builder(
             [rpm_item], opts if opts else self._opts()
         )(subvol)
@@ -103,7 +106,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
         # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `assertEqual`
         self.assertEqual(["(Dir)", fs_render], render_subvol(subvol))
 
-    def test_version_lock(self):
+    def test_version_lock(self) -> None:
         with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
@@ -122,7 +125,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
             )
 
-    def test_version_override(self):
+    def test_version_override(self) -> None:
         with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
@@ -139,12 +142,13 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
                 opts=layer_opts,
             )
+            # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `assertEquals`.
             self.assertEquals(
                 "carrot 1 lockme\n",
                 subvol.path("/rpm_test/carrot.txt").read_text(),
             )
 
-    def test_version_override_with_dependency(self):
+    def test_version_override_with_dependency(self) -> None:
         with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t1\tlockme\tx86_64")
@@ -172,17 +176,22 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     opts=layer_opts,
                 )
 
+            # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `_YUM_DNF`.
             if self._YUM_DNF == YumDnf.yum:
+                # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute
+                #  `assertRaises`.
                 with self.assertRaises(subprocess.CalledProcessError):
                     _self_check()
             else:
                 _self_check()
+                # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute
+                #  `assertEquals`.
                 self.assertEquals(
                     "veggie 1 rc0\n",
                     subvol.path("/rpm_test/veggie.txt").read_text(),
                 )
 
-    def test_version_lock_and_override(self):
+    def test_version_lock_and_override(self) -> None:
         with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset_version_lock", "w") as outfile:
                 outfile.write("0\trpm-test-carrot\t2\trc0\tx86_64")
@@ -206,12 +215,13 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
                 opts=layer_opts,
             )
+            # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `assertEquals`.
             self.assertEquals(
                 "carrot 1 lockme\n",
                 subvol.path("/rpm_test/carrot.txt").read_text(),
             )
 
-    def test_rpm_action_item_auto_downgrade(self):
+    def test_rpm_action_item_auto_downgrade(self) -> None:
         parent_subvol = Subvol("test-with-one-local-rpm", already_exists=True)
         src_rpm = Path("/rpm-test-cheese-1-1.rpm")
 
@@ -237,7 +247,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 {"rpm_test": ["(Dir)", {"cheese1.txt": ["(File d42)"]}]},
             )
 
-    def _check_cheese_removal(self, local_rpm_path: Path):
+    def _check_cheese_removal(self, local_rpm_path: Path) -> None:
         parent_subvol = Subvol("test-with-one-local-rpm", already_exists=True)
         with TempSubvolumes() as temp_subvolumes:
             # ensure cheese2 is installed in the parent from rpm-test-cheese-2-1
@@ -252,19 +262,22 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 {},  # No more `rpm_test/cheese2.txt` here.
             )
 
-    def test_rpm_action_item_remove_local(self):
+    def test_rpm_action_item_remove_local(self) -> None:
         # We expect the removal to be based just on the name of the RPM
         # in the metadata, so removing cheese-2 should be fine via either:
         for ver in [1, 2]:
+            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             self._check_cheese_removal(f"/rpm-test-cheese-{ver}-1.rpm")
 
-    def test_rpm_action_conflict(self):
+    def test_rpm_action_conflict(self) -> None:
         # Test both install-install, install-remove, and install-downgrade
         # conflicts.
         for rpm_actions in (
             (("cat", RpmAction.install), ("cat", RpmAction.install)),
             (("dog", RpmAction.remove_if_exists), ("dog", RpmAction.install)),
         ):
+            # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute
+            #  `assertRaisesRegex`.
             with self.assertRaisesRegex(RuntimeError, "RPM action conflict "):
                 # Note that we don't need to run the builder to hit the error
                 RpmActionItem.get_phase_builder(
@@ -292,7 +305,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 self._opts(),
             )
 
-    def test_rpm_action_reinstall_same_exact_version(self):
+    def test_rpm_action_reinstall_same_exact_version(self) -> None:
         # installing the same exact version as an already installed package is
         # an explicit no-op
         parent_subvol = Subvol("test-with-one-local-rpm", already_exists=True)
@@ -313,7 +326,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             # cheese2 file is still there
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
 
-    def test_rpm_action_skip_wrong_flavor(self):
+    def test_rpm_action_skip_wrong_flavor(self) -> None:
         with TempSubvolumes() as temp_subvolumes:
             src_rpm = Path("/rpm-test-cheese-1-1.rpm")
             subvol = temp_subvolumes.create("subvol")
@@ -336,7 +349,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.yum
 
-    def test_rpm_action_item_install_local_yum(self):
+    def test_rpm_action_item_install_local_yum(self) -> None:
         with self._test_rpm_action_item_install_local_setup() as r:
             check_common_rpm_render(self, r, "yum")
 
@@ -347,7 +360,7 @@ class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
 class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.dnf
 
-    def test_rpm_action_item_install_local_dnf(self):
+    def test_rpm_action_item_install_local_dnf(self) -> None:
         with self._test_rpm_action_item_install_local_setup() as r:
             pop_path(r, "var/lib/yum", None)
             pop_path(r, "var/log/yum.log", None)

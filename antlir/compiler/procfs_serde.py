@@ -127,7 +127,7 @@ def _make_script(dest: bytes, cmds: List[str]):
     ]
 
 
-def serialize(data: Any, subvol, path_with_ext: str):
+def serialize(data: Any, subvol, path_with_ext: str) -> None:
     """
     Writes `data` to `path_with_ext` inside `subvol`.  The extension
     part of `path_with_ext` determines the serialization mechanism.

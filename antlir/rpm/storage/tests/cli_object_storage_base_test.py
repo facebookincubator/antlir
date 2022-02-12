@@ -12,7 +12,7 @@ from .storage_base_test import Storage, StorageBaseTestCase
 
 
 class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
-    def _test_write_and_read_back(self, storage_type: Storage):
+    def _test_write_and_read_back(self, storage_type: Storage) -> None:
         # pyre-fixme[16]: `Storage` has no attribute `_make_storage_id`.
         old_make_storage_id = storage_type._make_storage_id
         with unittest.mock.patch.object(
@@ -72,7 +72,7 @@ class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
 
             return proc
 
-    def _test_error_cleanup(self, storage_kind: str, **kwargs):
+    def _test_error_cleanup(self, storage_kind: str, **kwargs) -> None:
         # Without a commit, all our failed cleanup is "behind the
         # scenes", and even though it errors and logs, it does not raise
         # an externally visible exception:

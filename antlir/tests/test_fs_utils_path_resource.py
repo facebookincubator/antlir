@@ -13,7 +13,7 @@ from ..fs_utils import Path
 # This is separate from `test_fs_utils.py` so we can run it for all
 # supported Python package formats.
 class TestFsUtilsPathResource(unittest.TestCase):
-    def test_path_resource(self):
+    def test_path_resource(self) -> None:
         # Thanks to `exe=True`, we should be able to run the resource.
         with Path.resource(__package__, "helper-binary", exe=True) as p:
             self.assertEqual(

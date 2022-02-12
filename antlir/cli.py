@@ -22,7 +22,7 @@ def _load_targets_and_outputs(arg: AnyStr) -> Mapping[AnyStr, Path]:
 
 def add_targets_and_outputs_arg(
     parser: argparse.ArgumentParser, *, action=None, suppress_help: bool = False
-):
+) -> None:
     parser.add_argument(
         "--targets-and-outputs",
         type=_load_targets_and_outputs,
@@ -34,7 +34,7 @@ def add_targets_and_outputs_arg(
     )
 
 
-def add_antlir_debug_arg(parser: argparse.ArgumentParser):
+def add_antlir_debug_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--debug",
         action="store_true",

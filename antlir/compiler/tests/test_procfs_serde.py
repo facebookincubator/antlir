@@ -15,7 +15,7 @@ from ..procfs_serde import deserialize_int, deserialize_untyped, serialize
 
 
 class TestProcfsSerDe(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self._next_dir_idx = 0
 
     # Gives a differend path for each new calls to `_check_serialize_scalar`.
@@ -42,7 +42,9 @@ class TestProcfsSerDe(unittest.TestCase):
             ["diff", "--recursive", subvol.path(orig_dir), subvol.path(new_dir)]
         )
 
-    def _check_serialize_scalar(self, expected, data, subvol, name_with_ext):
+    def _check_serialize_scalar(
+        self, expected, data, subvol, name_with_ext
+    ) -> None:
         outer_dir = self._next_dir()
         path_with_ext = os.path.join(outer_dir, name_with_ext)
         serialize(data, subvol, path_with_ext)
@@ -56,7 +58,9 @@ class TestProcfsSerDe(unittest.TestCase):
         with open(subvol.path(path_with_ext), "rb") as f:
             self.assertEqual(expected, f.read())
 
-    def _check_serialize_dict(self, expect_render, data, subvol, name_with_ext):
+    def _check_serialize_dict(
+        self, expect_render, data, subvol, name_with_ext
+    ) -> None:
         outer_dir = self._next_dir()
         path_with_ext = os.path.join(outer_dir, name_with_ext)
         serialize(data, subvol, path_with_ext)
@@ -69,7 +73,7 @@ class TestProcfsSerDe(unittest.TestCase):
         # NB: Not checking file contents because the scalar test cover that.
 
     @with_temp_subvols
-    def test_serialize(self, temp_subvols):
+    def test_serialize(self, temp_subvols) -> None:
         subvol = temp_subvols.create("x")
 
         # Valid scalar values
@@ -127,7 +131,7 @@ class TestProcfsSerDe(unittest.TestCase):
         )
 
     @with_temp_subvols
-    def test_deserialize(self, temp_subvols):
+    def test_deserialize(self, temp_subvols) -> None:
         subvol = temp_subvols.create("y")
         # Writing this test is easier if we don't need to write as root.
         subvol.run_as_root(

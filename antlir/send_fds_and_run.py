@@ -59,7 +59,7 @@ log = get_logger()
 
 
 # NB: This was copy-pasta'd from yum_dnf_from_snapshot.py
-def send_fds(sock, fds):
+def send_fds(sock, fds) -> None:
     msg = b"unused"
     num_sent = sock.sendmsg(
         [msg],

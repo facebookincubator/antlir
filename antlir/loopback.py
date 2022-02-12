@@ -44,7 +44,7 @@ class LoopbackVolume:
         # pyre-fixme[9]: mount_options has type `Iterable[str]`; used as `None`.
         mount_options: Iterable[str] = None,
         loopback_opts: Optional[loopback_opts_t] = None,
-    ):
+    ) -> None:
         self._unshare = unshare
         self._temp_dir_ctx = temp_dir()
         self._image_path = Path(image_path).abspath()
@@ -176,10 +176,14 @@ class LoopbackVolume:
         # pyre-fixme[7]: Expected `Path` but got `bytes`.
         return loop_dev
 
-    def unmount_if_mounted(self):
+    def unmount_if_mounted(self) -> None:
         if self._mount_dir:
             # Nothing might have been mounted, ignore exit code
             run_stdout_to_err(
+                # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
+                # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `Path`.
                 nsenter_as_root(self._unshare, "umount", self._mount_dir)
             )
 
@@ -188,13 +192,13 @@ class LoopbackVolume:
         return self._mount_dir
 
 
-def btrfs_compress_mount_opts():
+def btrfs_compress_mount_opts() -> str:
     # kernel versions pre-5.1 did not support compression level tuning
     return "compress=zstd" if kernel_version() < (5, 1) else "compress=zstd:19"
 
 
 class BtrfsLoopbackVolume(LoopbackVolume):
-    def __init__(self, size_bytes: int, **kwargs):
+    def __init__(self, size_bytes: int, **kwargs) -> None:
         if size_bytes < MIN_CREATE_BYTES:
             raise AttributeError(
                 f"A btrfs loopback must be at least {MIN_CREATE_BYTES} bytes. "
@@ -220,7 +224,7 @@ class BtrfsLoopbackVolume(LoopbackVolume):
         # `LoopbackVolume`.
         return super().__enter__()
 
-    def _create_or_resize_image_file(self, size_bytes: int):
+    def _create_or_resize_image_file(self, size_bytes: int) -> int:
         """
         If this is resizing an existing loopback that is mounted, then
         be sure to call `btrfs filesystem resize` and `losetup --set-capacity`
@@ -268,7 +272,7 @@ class BtrfsLoopbackVolume(LoopbackVolume):
             stderr=subprocess.PIPE,
         )
 
-    def _format(self):
+    def _format(self) -> None:
         """
         Format the loopback image with a btrfs filesystem of size
         `self._size_bytes`

@@ -20,7 +20,7 @@ class SubvolDiffTestCase(unittest.TestCase):
         msg: str,
         returncode: int,
         diff_output: Optional[bytes],
-    ):
+    ) -> None:
         left_subvol = mock.Mock()
         left_subvol.run_as_root.return_value = mock.Mock(
             returncode=returncode, stdout=diff_output
@@ -34,7 +34,7 @@ class SubvolDiffTestCase(unittest.TestCase):
             list(subvol_diff(left_subvol, right_subvol))
             left_subvol.run_as_root.assert_called_once()
 
-    def test_errors(self):
+    def test_errors(self) -> None:
         # internal diff fails to produce output
         self.mock_subvol_run_as_root_and_assert_raises(
             RuntimeError, "diff internal error: ", -1, None
@@ -53,12 +53,12 @@ class SubvolDiffTestCase(unittest.TestCase):
             b"Only in fake_path: fake_file",
         )
 
-    def test_identical_subvols(self):
+    def test_identical_subvols(self) -> None:
         with TempSubvolumes() as tmp_subvols:
             subvol = tmp_subvols.create("tmp")
             self.assertEqual(list(subvol_diff(subvol, subvol)), [])
 
-    def test_subvol_diff(self):
+    def test_subvol_diff(self) -> None:
         with TempSubvolumes() as tmp_subvols:
             left_subvol = tmp_subvols.create("left")
             right_subvol = tmp_subvols.create("right")

@@ -63,7 +63,7 @@ def _shadow_search_dirs(setenv: Iterable[AnyStr]) -> Iterable[Path]:
         seen_search_dirs.add(search_dir)
 
 
-def _nul_separated_tuples(n, data: bytes) -> List[Any]:
+def _nul_separated_tuples(n: int, data: bytes) -> List[Any]:
     "For `data` separated by NUL bytes, interpret it as a list of n-tuples."
     flat = data.split(b"\0")
     assert flat.pop() == b""  # remove the trailing \0
@@ -299,7 +299,7 @@ class ShadowPaths(NspawnPlugin):
         self,
         shadow_paths: Iterable[Tuple[Path, Path]],
         shadow_paths_allow_unmatched: List[Path],
-    ):
+    ) -> None:
         self._shadow_paths = shadow_paths
         self._shadow_paths_allow_unmatched = shadow_paths_allow_unmatched
 

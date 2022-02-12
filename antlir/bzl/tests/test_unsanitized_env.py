@@ -9,7 +9,7 @@ import unittest
 
 
 class UnsanitizedEnvTest(unittest.TestCase):
-    def test_env(self):
+    def test_env(self) -> None:
         # Comes from Buck
         self.assertIn("BUCK_BUILD_ID", os.environ)
         # Comes from the test's `env`

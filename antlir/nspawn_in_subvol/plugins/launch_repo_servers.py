@@ -27,7 +27,7 @@ log = get_logger()
 _mockable_popen_for_repo_server = subprocess.Popen
 
 
-def _make_debug_print(logger_name, fstring):
+def _make_debug_print(logger_name, fstring) -> str:
     t = time.time()
     ymdhms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
     msecs = int((t - int(t)) * 1000)
@@ -150,7 +150,8 @@ class RepoServer(NamedTuple):
     sock: socket.socket
     proc: Optional[subprocess.Popen] = None
 
-    def __format__(self, _spec):
+    # pyre-fixme[14]: `__format__` overrides method defined in `object` inconsistently.
+    def __format__(self, _spec) -> str:
         return f"RepoServer({self.rpm_repo_snapshot}, port={self.port})"
 
 

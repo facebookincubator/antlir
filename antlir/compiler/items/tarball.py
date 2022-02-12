@@ -31,7 +31,7 @@ def load_from_tarball(
     subvol: Subvol,
     layer_opts: LayerOpts,
     into_dir=None,
-    force_root_ownership=False,
+    force_root_ownership: bool = False,
 ) -> None:
     into_dir = into_dir or Path("")
 
@@ -106,6 +106,7 @@ def load_from_tarball(
             "-",
         ]
     )
+    # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
     with open_for_read_decompress(source) as tf:
         opts = new_nspawn_opts(
             # '0<&3' below redirects fd=3 to stdin, so 'tar ... -f -' will
@@ -164,12 +165,13 @@ class TarballItem(tarball_t, ImageItem):
     def requires(self):
         yield RequireDirectory(path=self.into_dir)
 
-    def build(self, subvol: Subvol, layer_opts: LayerOpts):
+    def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         load_from_tarball(
             # pyre-fixme[6]: Expected `str` for 1st param but got `Path`.
             self.source,
             subvol,
             layer_opts,
             into_dir=self.into_dir,
+            # pyre-fixme[6]: For 5th param expected `bool` but got `Optional[bool]`.
             force_root_ownership=self.force_root_ownership,
         )

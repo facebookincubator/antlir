@@ -13,7 +13,7 @@ from .coverage_test_helper import coverage_test_helper
 
 
 class ImagePythonUnittestTest(unittest.TestCase):
-    def test_container(self):
+    def test_container(self) -> None:
         # This should cause our 100% coverage assertion to pass.
         coverage_test_helper()
         self.assertEqual("nobody", getpass.getuser())
@@ -23,7 +23,7 @@ class ImagePythonUnittestTest(unittest.TestCase):
         # Future: add more assertions here as it becomes necessary what
         # aspects of test containers we actually care about.
 
-    def test_env(self):
+    def test_env(self) -> None:
         # Ensure that per-test `env` settings do reach the container.
         self.assertEqual("meow", os.environ.pop("kitteh"))
         # Ensure that the container's environment is sanitized.
@@ -72,7 +72,7 @@ class ImagePythonUnittestTest(unittest.TestCase):
         # so it ought to be absent.  See also `test-unsanitized-env`.
         self.assertNotIn("BUCK_BUILD_ID", os.environ)
 
-    def test_layer_mount(self):
+    def test_layer_mount(self) -> None:
         # Verify that `/meownt` exists and is a mount point
         self.assertTrue(os.path.exists("/meownt"))
         subprocess.check_output(["/usr/bin/mountpoint", "-q", "/meownt"])

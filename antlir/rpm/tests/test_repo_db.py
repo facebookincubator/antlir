@@ -42,12 +42,12 @@ def _get_schema(conn):
 
 
 class RepoDBTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
-    def _check_schema(self, conn):
+    def _check_schema(self, conn) -> None:
         for (a_name, a_sql), (e_name, e_sql) in zip(
             _get_schema(conn),
             [
@@ -118,7 +118,7 @@ class RepoDBTestCase(unittest.TestCase):
                 db_ctx.ensure_tables_exist()
                 yield db_ctx
 
-    def test_create_tables(self):
+    def test_create_tables(self) -> None:
         with self._make_conn_ctx() as conn_ctx:
             # At first, there are no tables.
             with conn_ctx as conn:
@@ -149,7 +149,7 @@ class RepoDBTestCase(unittest.TestCase):
             repomd = RepoMetadata.new(xml=repomd_xml)
         return repomd
 
-    def test_store_repomd_and_commit(self):
+    def test_store_repomd_and_commit(self) -> None:
         repomd37 = self._fake_repomd(37)
         repomd73 = self._fake_repomd(73)
         self.assertGreater(repomd73.fetch_timestamp, repomd37.fetch_timestamp)
@@ -182,7 +182,7 @@ class RepoDBTestCase(unittest.TestCase):
                     if do_commit:
                         db_ctx.commit()
 
-    def _check_maybe_store_and_get_storage_id(self, table, obj):
+    def _check_maybe_store_and_get_storage_id(self, table, obj) -> None:
         with self._make_db_ctx() as db_ctx:
             self.assertIs(None, db_ctx.get_storage_id(table, obj))
             self.assertEqual("fake1", db_ctx.maybe_store(table, obj, "fake1"))
@@ -200,7 +200,7 @@ class RepoDBTestCase(unittest.TestCase):
                     ),
                 )
 
-    def test_repodata_maybe_store_and_get_storage_id(self):
+    def test_repodata_maybe_store_and_get_storage_id(self) -> None:
         self._check_maybe_store_and_get_storage_id(
             RepodataTable(),
             Repodata(
@@ -211,7 +211,7 @@ class RepoDBTestCase(unittest.TestCase):
             ),
         )
 
-    def test_rpm_maybe_store_and_get_storage_id(self):
+    def test_rpm_maybe_store_and_get_storage_id(self) -> None:
         # NB: For RPMs, only `maybe_store` is used as part of the public API.
         self._check_maybe_store_and_get_storage_id(
             RpmTable("fake.verse"),
@@ -221,7 +221,7 @@ class RepoDBTestCase(unittest.TestCase):
             ),
         )
 
-    def test_get_rpm_storage_id_and_checksum(self):
+    def test_get_rpm_storage_id_and_checksum(self) -> None:
         table = RpmTable("fakeverse")
         # We'll have two entries for the same exact RPM, but the different
         # repos that contain it will have computed different checksums.
@@ -258,7 +258,7 @@ class RepoDBTestCase(unittest.TestCase):
                         db_ctx.get_rpm_storage_id_and_checksum(table, rpm),
                     )
 
-    def test_get_rpm_canonical_checksums(self):
+    def test_get_rpm_canonical_checksums(self) -> None:
         table = RpmTable("fakeverse")
         canonical1 = Checksum("can", "onical1")
         canonical2 = Checksum("can", "onical2")
@@ -313,7 +313,7 @@ class RepoDBTestCase(unittest.TestCase):
                 ),
             )
 
-    def test_universe_charset(self):
+    def test_universe_charset(self) -> None:
         # Until convinced otherwise, we hate underscores since they look
         # like spaces and needlessly exacerbate our RSI.
         with self.assertRaisesRegex(RuntimeError, "fake_verse must match"):

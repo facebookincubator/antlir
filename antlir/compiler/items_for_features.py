@@ -112,7 +112,7 @@ def gen_included_features(
 
 
 class ItemFactory:
-    def __init__(self, exit_stack: ExitStack, layer_opts: LayerOpts):
+    def __init__(self, exit_stack: ExitStack, layer_opts: LayerOpts) -> None:
         self._exit_stack = exit_stack
         self._layer_opts = layer_opts
         self._key_to_item_factory = {

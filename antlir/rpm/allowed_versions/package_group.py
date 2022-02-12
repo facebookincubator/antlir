@@ -33,10 +33,10 @@ except ImportError:  # pragma: no cover
 
 
 class ManualPackageGroup(PackageGroup, plugin_kind="manual"):
-    def __init__(self):
+    def __init__(self) -> None:
         pass  # This tells `add_argparse_arg` we take no args.
 
-    async def snapshot(self, snapshot_dir: Path):
+    async def snapshot(self, snapshot_dir: Path) -> None:
         '"manual" package groups do not need to snapshot anything'
 
     @contextmanager

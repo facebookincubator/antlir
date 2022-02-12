@@ -32,7 +32,7 @@ class LoopbackTestCases(unittest.TestCase):
         with Unshare([Namespace.MOUNT, Namespace.PID]) as ns, temp_dir() as td:
             yield (ns, td)
 
-    def test_loopback(self):
+    def test_loopback(self) -> None:
         with self._test_workspace() as (ns, td):
             image_path = td / "image.btrfs"
             test_message = "I am a beautiful loopback"
@@ -74,7 +74,7 @@ class LoopbackTestCases(unittest.TestCase):
                 self.assertEqual(test_message, msg_text)
 
     @unittest.mock.patch("antlir.loopback.kernel_version")
-    def test_btrfs_loopback_rounded_size(self, kernel_version):
+    def test_btrfs_loopback_rounded_size(self, kernel_version) -> None:
         # Mock a kernel version that requires the size to be
         # rounded up.
         kernel_version.return_value = (4, 6)
@@ -90,7 +90,7 @@ class LoopbackTestCases(unittest.TestCase):
                 # Confirm it has been rounded up
                 self.assertEqual(128 * MiB, vol.get_size())
 
-    def test_btrfs_loopback_min_create_size(self):
+    def test_btrfs_loopback_min_create_size(self) -> None:
         with self._test_workspace() as (ns, td):
             image_path = td / "image.btrfs"
 
@@ -106,7 +106,7 @@ class LoopbackTestCases(unittest.TestCase):
                 ):
                     pass
 
-    def test_btrfs_loopback_minimize(self):
+    def test_btrfs_loopback_minimize(self) -> None:
         # Make a btrfs loopback that is smaller than the min
         # shrink size to confirm that we don't shrink
         size = MIN_SHRINK_BYTES - (1 * MiB)
@@ -133,7 +133,7 @@ class LoopbackTestCases(unittest.TestCase):
                 self.assertEqual(size, vol.get_size())
                 self.assertEqual(MIN_SHRINK_BYTES, vol.minimize_size())
 
-    def test_btrfs_loopback_receive(self):
+    def test_btrfs_loopback_receive(self) -> None:
         with Unshare([Namespace.MOUNT, Namespace.PID]) as ns, temp_dir() as td:
             image_path = td / "image.btrfs"
 
@@ -144,6 +144,7 @@ class LoopbackTestCases(unittest.TestCase):
             ) as vol, open(
                 Path(__file__).dirname() / "create_ops.sendstream"
             ) as f:
+                # pyre-fixme[6]: For 1st param expected `int` but got `TextIOWrapper`.
                 ret = vol.receive(f)
                 self.assertEqual(0, ret.returncode)
                 self.assertIn(b"At subvol create_ops", ret.stderr)

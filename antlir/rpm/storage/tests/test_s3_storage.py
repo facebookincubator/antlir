@@ -19,10 +19,10 @@ class S3StorageTestCase(StorageBaseTestCase):
 
     # some methods to mock an in-memory s3 bucket
     # this matches the read-after-write consistency guarantee from the real s3
-    def _mock_upload_fileobj(self, contents, key: str):
+    def _mock_upload_fileobj(self, contents, key: str) -> None:
         self.objects[key] = contents.getbuffer()
 
-    def _mock_delete_objects(self, Delete):
+    def _mock_delete_objects(self, Delete) -> None:
         for key in [o["Key"] for o in Delete["Objects"]]:
             del self.objects[key]
 
@@ -33,7 +33,7 @@ class S3StorageTestCase(StorageBaseTestCase):
         key = url[len(urlprefix) :]
         yield io.BytesIO(self.objects[key])
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.objects = {}
         self.s3 = MagicMock()
         self.s3.upload_fileobj.side_effect = self._mock_upload_fileobj
@@ -59,10 +59,10 @@ class S3StorageTestCase(StorageBaseTestCase):
         mock_resource.Bucket.assert_called_with(self.bucket)
         s3_storage.open_url = self._mock_open_url
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.boto3_session_patch.stop()
 
-    def test_write_and_read_back(self):
+    def test_write_and_read_back(self) -> None:
         # Do a bunch of mock writes and ensure that the s3 client was called
         # with each storage id s3 key.
         # The s3 client does not do any partial writes or buffering, so as long
@@ -75,9 +75,11 @@ class S3StorageTestCase(StorageBaseTestCase):
             # blob regardless of how many chunks it was input as
             with self.storage.reader(sid) as f:
                 actual = f.read()
+                # pyre-fixme[6]: For 1st param expected `Iterable[Union[memoryview,
+                #  ByteString]]` but got `List[str]`.
                 self.assertEqual(actual, b"".join(contents))
 
-    def test_writer_prefix(self):
+    def test_writer_prefix(self) -> None:
         # Reads are expected to already have the prefix, but writes should
         # create new blobs under the set prefix
         with self.storage.writer() as out:
@@ -85,7 +87,7 @@ class S3StorageTestCase(StorageBaseTestCase):
             sid = out.commit()
         self.assertTrue(sid.startswith(f"test:{self.prefix}/"), sid)
 
-    def test_delete(self):
+    def test_delete(self) -> None:
         with self.storage.writer() as out:
             out.write(b"Hello world!")
             sid = out.commit()
@@ -95,7 +97,7 @@ class S3StorageTestCase(StorageBaseTestCase):
         self.assertNotIn(key, self.objects)
         self.s3.delete_objects.called_with(self.bucket, key)
 
-    def test_reader_url(self):
+    def test_reader_url(self) -> None:
         with patch("antlir.rpm.storage.s3_storage.open_url") as open_url:
             with self.storage.reader("test/prefix/1234") as _:
                 pass
@@ -104,7 +106,7 @@ class S3StorageTestCase(StorageBaseTestCase):
                 "test/prefix/1234"
             )
 
-    def test_object_key(self):
+    def test_object_key(self) -> None:
         blob_sid = "test/prefix/123"
         self.assertEqual(
             self.storage._object_key(blob_sid),

@@ -24,7 +24,7 @@ from ..common import (
 
 
 class TestCommon(unittest.TestCase):
-    def test_readonly_snapshot_db(self):
+    def test_readonly_snapshot_db(self) -> None:
         with self.assertRaises(FileNotFoundError):
             readonly_snapshot_db(Path("/DoEs/nOt/eXiSt"))
         with readonly_snapshot_db(
@@ -33,7 +33,7 @@ class TestCommon(unittest.TestCase):
             ((rows,),) = db.execute("SELECT COUNT(1) FROM `rpm`").fetchall()
             self.assertGreaterEqual(rows, 1)
 
-    def test_rpm_shard(self):
+    def test_rpm_shard(self) -> None:
         self.assertEqual(
             RpmShard(shard=3, modulo=7), RpmShard.from_string("3:7")
         )
@@ -54,7 +54,7 @@ class TestCommon(unittest.TestCase):
             ],
         )
 
-    def test_checksum(self):
+    def test_checksum(self) -> None:
         cs = Checksum(algorithm="oops", hexdigest="dada")
         self.assertEqual("oops:dada", str(cs))
         self.assertEqual(cs, Checksum.from_string(str(cs)))
@@ -65,20 +65,20 @@ class TestCommon(unittest.TestCase):
                 "250e77f12a5ab6972a0895d290c4792f0a326ea8", h.hexdigest()
             )
 
-    def test_read_chunks(self):
+    def test_read_chunks(self) -> None:
         self.assertEqual(
             [b"first", b"secon", b"d"],
             list(read_chunks(BytesIO(b"firstsecond"), 5)),
         )
 
-    def test_has_yum(self):
+    def test_has_yum(self) -> None:
         with mock.patch("shutil.which") as mock_which:
             mock_which.return_value = "/path/to/yum"
             self.assertTrue(has_yum())
             mock_which.return_value = None
             self.assertFalse(has_yum())
 
-    def test_yum_is_dnf(self):
+    def test_yum_is_dnf(self) -> None:
         # Setup for yum not being the same as dnf, modeled after fb
         with temp_dir() as td:
             yum_path = Path(td / "yum").touch()
@@ -105,7 +105,7 @@ class TestCommon(unittest.TestCase):
 
                 self.assertTrue(yum_is_dnf())
 
-    def test_decorate_context_entry(self):
+    def test_decorate_context_entry(self) -> None:
         class ExCustomErr(Exception):
             pass
 

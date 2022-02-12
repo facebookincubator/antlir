@@ -132,7 +132,7 @@ class Subvolume(NamedTuple):
             raise RuntimeError(f"Cannot apply {item}, {path} does not exist")
         return ino
 
-    def _delete(self, path):
+    def _delete(self, path: bytes) -> None:
         ino_id = self.id_map.remove_path(path)
         if not self.id_map.get_paths(ino_id):
             del self.id_to_inode[ino_id]
@@ -229,7 +229,7 @@ class Subvolume(NamedTuple):
         *,
         _memo,
         id_to_chunks: Optional[Mapping[InodeID, Sequence[Chunk]]] = None,
-    ):
+    ) -> "Subvolume":
         """
         Returns a recursively immutable copy of `self`, replacing
         `IncompleteInode`s by `Inode`s, using the provided `id_to_chunks` to
@@ -262,7 +262,7 @@ class Subvolume(NamedTuple):
         return self.id_to_inode.values()
 
     def gather_bottom_up(
-        self, top_path=b"."
+        self, top_path: bytes = b"."
     ) -> Coroutine[
         Tuple[
             bytes,  # full path to current inode
@@ -340,7 +340,7 @@ class Subvolume(NamedTuple):
             yield (top_path, self.id_to_inode[ino_id], child_results)
         )
 
-    def map_bottom_up(self, fn, top_path=b".") -> RenderedTree:
+    def map_bottom_up(self, fn, top_path: bytes = b".") -> RenderedTree:
         """
         Applies `fn` to each inode from `top_path` down, in the
         deterministic order of `gather_bottom_up`.  Returns the results
@@ -368,7 +368,7 @@ class Subvolume(NamedTuple):
                 )
         return ctx.result
 
-    def render(self, top_path=b".") -> RenderedTree:
+    def render(self, top_path: bytes = b".") -> RenderedTree:
         """
         Produces a JSON-friendly plain-old-data view of the Subvolume.
         Before this is actually JSON-ready, you will need to call one of the

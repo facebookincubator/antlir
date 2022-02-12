@@ -59,7 +59,7 @@ def parse_args(argv):
     return Path.parse_args(parser, argv)
 
 
-def make_gpt(argv):
+def make_gpt(argv) -> None:
     args = parse_args(argv)
     output_path = args.output_path
     assert not os.path.exists(output_path)

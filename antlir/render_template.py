@@ -15,11 +15,11 @@ from jinja2 import Environment, BaseLoader, TemplateNotFound
 class PrecompiledLoader(BaseLoader):
     has_source_access = False
 
-    def __init__(self, base: str):
+    def __init__(self, base: str) -> None:
         self.base = base
 
     @staticmethod
-    def get_template_key(name):
+    def get_template_key(name) -> str:
         if name.endswith(".jinja2"):
             name = name[: -len(".jinja2")]
         return "tmpl_" + name
@@ -36,7 +36,7 @@ class PrecompiledLoader(BaseLoader):
         )
 
 
-def main():
+def main() -> None:
     env = Environment(
         loader=PrecompiledLoader("antlir.__compiled_templates__"),
         trim_blocks=True,

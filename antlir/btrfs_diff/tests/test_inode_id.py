@@ -319,16 +319,16 @@ class InodeIDTestCase(DeepCopyTestCase):
             saved_frozen_map.inner.id_to_reverse_entries,
         )
 
-    def test_inode_id_and_map(self):
+    def test_inode_id_and_map(self) -> None:
         self.check_deepcopy_at_each_step(self._check_id_and_map)
 
-    def test_description(self):
+    def test_description(self) -> None:
         cat_map = InodeIDMap.new(description="cat")
         self.assertEqual(
             "cat@food", repr(cat_map.add_file(cat_map.next(), b"food"))
         )
 
-    def test_hashing_and_equality(self):
+    def test_hashing_and_equality(self) -> None:
         maps = [InodeIDMap.new() for i in range(100)]
         hashes = {hash(m.get_id(b".")) for m in maps}
         self.assertNotEqual({next(iter(hashes))}, hashes)
@@ -337,6 +337,7 @@ class InodeIDTestCase(DeepCopyTestCase):
         self.assertGreater(len(hashes), 95)
 
         id1 = InodeIDMap.new().get_id(b".")
+        # pyre-fixme[16]: Optional type has no attribute `inner_id_map`.
         id2 = InodeID(id=0, inner_id_map=id1.inner_id_map)
         self.assertEqual(id1, id2)
         self.assertEqual(hash(id1), hash(id2))

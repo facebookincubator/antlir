@@ -194,7 +194,7 @@ _RUN_BUSYBOX_SCRIPT = [
 #     parentheses are required because `bbexec` calls `exec`.
 #   - We don't close the forwarded FD 3 in this script, because
 #     `_wrap_systemd_exec` relies on it.
-_SCRIPT_TO_EXFILTRATE_CONTAINER_PROC_PID = textwrap.dedent(
+_SCRIPT_TO_EXFILTRATE_CONTAINER_PROC_PID: str = textwrap.dedent(
     f"""\
     function bbexec() {{
         applet="$1"

@@ -26,7 +26,7 @@ class UnionFind(object):
     https://en.wikipedia.org/wiki/Disjoint-set_data_structure
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Constructor.
         Note: This implementation of Union Find does not need to know
         the number of nodes in advance.
@@ -35,7 +35,7 @@ class UnionFind(object):
         # (representative)
         self._representative_dict = {}
 
-    def union(self, id1, id2):
+    def union(self, id1, id2) -> None:
         """Join two nodes <id1> and <id2> by connecting the representatives.
         The function adds nodes to the data structure if they do not already
         exist (indirectly through find() function). If at least one of the
@@ -67,12 +67,12 @@ class UnionFind(object):
         ] = root  # imperative, path compression heuristic !
         return root
 
-    def flatten(self):
+    def flatten(self) -> None:
         """Flattens the tree by running find with path compression on all ids"""
         for key in self._representative_dict:
             self.find(key)
 
-    def add(self, id):
+    def add(self, id) -> None:
         """Add a new node as a representative of itself"""
         if id not in self._representative_dict:
             self._representative_dict[id] = id

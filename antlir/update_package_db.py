@@ -53,7 +53,7 @@ from .common import get_logger, init_logging
 from .fs_utils import Path, populate_temp_dir_and_rename
 
 
-_GENERATED = "@" + "generated"
+_GENERATED: str = "@" + "generated"
 _JSON = ".json"
 
 log = get_logger()
@@ -111,17 +111,17 @@ class PackageDbUpdate(NamedTuple):
 
 
 class InvalidCommandError(Exception):  # noqa: B903
-    def __init__(self, pkg: Package, tag: Tag):
+    def __init__(self, pkg: Package, tag: Tag) -> None:
         self.pkg = pkg
         self.tag = tag
 
 
 class PackageExistsError(InvalidCommandError):
-    def __init__(self, pkg: Package, tag: Tag, db_info: DbInfo):
+    def __init__(self, pkg: Package, tag: Tag, db_info: DbInfo) -> None:
         super().__init__(pkg, tag)
         self.db_info = db_info
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             "Attempting to create a package:tag that already exists in the DB: "
             f"{self.pkg}:{self.tag}"
@@ -129,7 +129,7 @@ class PackageExistsError(InvalidCommandError):
 
 
 class PackageDoesNotExistError(InvalidCommandError):
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             "Attempting to replace a package:tag that does not exist in the "
             f"DB: {self.pkg}:{self.tag}"
@@ -140,7 +140,7 @@ class PackageDoesNotExistError(InvalidCommandError):
 ExplicitUpdates = Dict[Package, Dict[Tag, PackageDbUpdate]]
 
 
-def _with_generated_header_impl(s, token, how_to_generate):
+def _with_generated_header_impl(s, token, how_to_generate) -> str:
     return f"# {_GENERATED} {token}\n# Update via `{how_to_generate}`\n" + s
 
 
@@ -163,7 +163,9 @@ def _with_generated_header(contents, how_to_generate):
     )
 
 
-def _write_json_dir_db(db: PackageTagDb, path: Path, how_to_generate: str):
+def _write_json_dir_db(
+    db: PackageTagDb, path: Path, how_to_generate: str
+) -> None:
     # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(path, overwrite=True) as td:
         for package, tag_to_info in db.items():
@@ -178,7 +180,7 @@ def _write_json_dir_db(db: PackageTagDb, path: Path, how_to_generate: str):
                     )
 
 
-def _read_generated_header(infile):
+def _read_generated_header(infile) -> None:
     generated_header = infile.readline()
     # Note: We don't verify the signature verification on read, since it's
     # only point is to be checked by lint (doc on `_with_generated_header`).
@@ -199,7 +201,9 @@ def _read_json_dir_db(path: Path) -> PackageTagDb:
     return db
 
 
-def _validate_updates(existing_db: PackageTagDb, pkg_updates: ExplicitUpdates):
+def _validate_updates(
+    existing_db: PackageTagDb, pkg_updates: ExplicitUpdates
+) -> None:
     """Perform validations on any updates that were provided:
     - Don't create package:tag pairs that already exist
     - Don't replace package:tag pairs that don't already exist
@@ -272,7 +276,7 @@ async def update_package_db(
     out_db_path: Optional[Path] = None,
     update_all: bool = True,
     pkg_updates: Optional[ExplicitUpdates] = None,
-):
+) -> None:
     with get_db_info_factory as get_db_info:
         _write_json_dir_db(
             db=await _get_updated_db(
@@ -397,7 +401,7 @@ async def main_cli(
     options_doc: str,
     defaults: Optional[Dict[str, Any]] = None,
     show_oss_overview_doc: bool = True,
-):
+) -> None:
     """
     Implements the "update DB" CLI using your custom logic for obtaining
     `DbInfo` objects for package:tag pairs.

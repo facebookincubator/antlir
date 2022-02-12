@@ -15,13 +15,13 @@ import dataclasses
 import json
 
 
-def __dataclass_eq(left, right):
+def __dataclass_eq(left, right) -> bool:
     if not dataclasses.is_dataclass(right):
         return False
     return dataclasses.asdict(left) == dataclasses.asdict(right)
 
 
-def __struct_to_json(s):
+def __struct_to_json(s) -> str:
     return json.dumps(dataclasses.asdict(s))
 
 
@@ -35,7 +35,7 @@ def struct(**kwargs):
     return cls(**kwargs)
 
 
-def load(_file, *_symbols):
+def load(_file, *_symbols) -> None:
     pass
 
 
@@ -43,7 +43,7 @@ class Fail(Exception):
     pass
 
 
-def fail(msg, attr=None):
+def fail(msg: str, attr=None):
     if attr:  # pragma: no cover
         msg = f"{attr}: {msg}"
     raise Fail(msg)
@@ -51,7 +51,7 @@ def fail(msg, attr=None):
 
 class structs(object):
     @staticmethod
-    def is_struct(x):
+    def is_struct(x) -> bool:
         return dataclasses.is_dataclass(x)
 
     @staticmethod

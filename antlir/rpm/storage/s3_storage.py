@@ -31,7 +31,7 @@ class S3Storage(Storage, plugin_kind="s3"):
         prefix: str,
         region: str,
         timeout_seconds: float = 400,
-    ):
+    ) -> None:
         self.key = key
         self.bucket = bucket
         self.prefix = prefix

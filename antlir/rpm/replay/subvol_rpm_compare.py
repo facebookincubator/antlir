@@ -45,7 +45,7 @@ class NEVRA(NamedTuple):
     release: str
     arch: str
 
-    def download_path(self):
+    def download_path(self) -> str:
         "Path under `rpm_download_subvol`"
         return f"{self.name}-{self.version}-{self.release}.{self.arch}.rpm"
 
@@ -158,7 +158,7 @@ def _gen_nevras_from_installer_output(
     ), f"{requested_nevras - installed_nevras} were never installed"
 
 
-def _cmd_to_quoted_bash(cmd):
+def _cmd_to_quoted_bash(cmd) -> str:
     return " ".join(
         c.shell_quote() if isinstance(c, Path) else shlex.quote(c) for c in cmd
     )

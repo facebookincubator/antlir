@@ -36,7 +36,7 @@ from .demo_sendstreams_expected import render_demo_subvols
 
 
 class SendstreamToSubvolumeSetIntegrationTestCase(AntlirTestCase):
-    def test_integration(self):
+    def test_integration(self) -> None:
         # Generate brand-new sendstreams instead of using `gold`, since it
         # is useful for this test to exercise the live btrfs code paths as
         # new kernels and `btrfs-progs` get rolled out.  Besides checking
@@ -57,12 +57,16 @@ class SendstreamToSubvolumeSetIntegrationTestCase(AntlirTestCase):
         self.assertEqual(
             render_demo_subvols(create_ops="create_ops"),
             render_sv.render_subvolume(
+                # pyre-fixme[6]: For 1st param expected `Subvolume` but got
+                #  `Optional[Subvolume]`.
                 subvols.get_by_rendered_id("create_ops")
             ),
         )
         self.assertEqual(
             render_demo_subvols(mutate_ops="mutate_ops"),
             render_sv.render_subvolume(
+                # pyre-fixme[6]: For 1st param expected `Subvolume` but got
+                #  `Optional[Subvolume]`.
                 subvols.get_by_rendered_id("mutate_ops")
             ),
         )

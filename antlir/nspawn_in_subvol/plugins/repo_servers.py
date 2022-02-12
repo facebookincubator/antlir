@@ -125,7 +125,7 @@ class _ContainerPidExfiltrator:
             if not self._ready_sent:
                 self.send_ready()  # pragma: no cover
 
-    def send_ready(self):
+    def send_ready(self) -> None:
         assert (
             self._ready_sent is False
         ), "Can only send ready once, after calling `exfiltrate_container_pid`"
@@ -162,7 +162,7 @@ def _wrap_opts_with_container_pid_exfiltrator(
 
 
 class RepoServers(NspawnPlugin):
-    def __init__(self, serve_rpm_snapshots: Iterable[Path]):
+    def __init__(self, serve_rpm_snapshots: Iterable[Path]) -> None:
         self._serve_rpm_snapshots = serve_rpm_snapshots
 
     @contextmanager

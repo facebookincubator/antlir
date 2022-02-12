@@ -18,11 +18,11 @@ _FAKE_RPM = Rpm(*([None] * len(Rpm._fields)))
 
 
 class RepoSizerTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.sizes = {}
         self.final_size = 0
 
-    def _set_expected_unions(self, *expected_unions: Iterable[Set[str]]):
+    def _set_expected_unions(self, *expected_unions) -> None:
         for union in expected_unions:
             size = randint(10 ** 3, 10 ** 6)
             self.final_size += size
@@ -69,7 +69,7 @@ class RepoSizerTestCase(unittest.TestCase):
         # and `str`.
         return {Checksum(k, k + "v"): self.sizes[k] for k in ids}
 
-    def test_sizer(self):
+    def test_sizer(self) -> None:
         sizer = RepoSizer()
         rpm1 = _FAKE_RPM._replace(
             checksum=Checksum("a1", "a1v1"), size=1_000_000
@@ -130,42 +130,57 @@ class RepoSizerTestCase(unittest.TestCase):
         )
 
     # Ensure _checksum_size is structured as we'd expect
-    def test_counter_invariants(self):
+    def test_counter_invariants(self) -> None:
         self._set_expected_unions({"a", "b", "c"})
+        # pyre-fixme[6]: For 1st param expected `Iterable[Set[str]]` but got `Set[str]`.
+        # pyre-fixme[6]: For 2nd param expected `Iterable[Set[str]]` but got `Set[str]`.
         sizer = self._make_sizer({"a", "b"}, {"a", "c"})
 
         self.assertEqual(
             self._expected_chk_size_map("a", "b", "c"),
+            # pyre-fixme[16]: `Tuple` has no attribute `_type_to_counter`.
             sizer._type_to_counter[Rpm]._synonyms.checksum_size,
         )
 
     # Ensure synonyms are spread across sizers when merging
-    def test_merge_distinct_spread(self):
+    def test_merge_distinct_spread(self) -> None:
         self._set_expected_unions({"a", "b", "c", "d", "e", "f"}, {"g", "h"})
+        # pyre-fixme[6]: For 1st param expected `Iterable[Set[str]]` but got `Set[str]`.
+        # pyre-fixme[6]: For 2nd param expected `Iterable[Set[str]]` but got `Set[str]`.
         sizer_a = self._make_sizer({"a", "b", "c"}, {"d", "e"})
+        # pyre-fixme[6]: For 1st param expected `Iterable[Set[str]]` but got `Set[str]`.
+        # pyre-fixme[6]: For 2nd param expected `Iterable[Set[str]]` but got `Set[str]`.
         sizer_b = self._make_sizer({"c", "e", "f"}, {"g", "h"})
 
         sizer_a += sizer_b
         self.assertEqual(
-            {"Rpm": self.final_size}, sizer_a._get_classname_to_size()
+            {"Rpm": self.final_size},
+            # pyre-fixme[16]: `tuple` has no attribute `_get_classname_to_size`.
+            sizer_a._get_classname_to_size(),
         )
         self.assertEqual(
             self._expected_chk_size_map("a", "b", "c", "d", "e", "f", "g", "h"),
+            # pyre-fixme[16]: `tuple` has no attribute `_type_to_counter`.
             sizer_a._type_to_counter[Rpm]._synonyms.checksum_size,
         )
 
     # Distinct checksums are left alone
-    def test_merge_distinct(self):
+    def test_merge_distinct(self) -> None:
         self._set_expected_unions({"a", "b"}, {"c", "d"}, {"e", "f"})
+        # pyre-fixme[6]: For 1st param expected `Iterable[Set[str]]` but got `Set[str]`.
         sizer_a = self._make_sizer({"a", "b"})
+        # pyre-fixme[6]: For 1st param expected `Iterable[Set[str]]` but got `Set[str]`.
+        # pyre-fixme[6]: For 2nd param expected `Iterable[Set[str]]` but got `Set[str]`.
         sizer_b = self._make_sizer({"c", "d"}, {"e", "f"})
 
         sizer_a += sizer_b
         self.assertEqual(
-            {"Rpm": self.final_size}, sizer_a._get_classname_to_size()
+            {"Rpm": self.final_size},
+            # pyre-fixme[16]: `tuple` has no attribute `_get_classname_to_size`.
+            sizer_a._get_classname_to_size(),
         )
 
-    def test_multiple_types(self):
+    def test_multiple_types(self) -> None:
         sizer_a = RepoSizer()
         sizer_b = RepoSizer()
 
@@ -177,13 +192,17 @@ class RepoSizerTestCase(unittest.TestCase):
         repodata_a = Repodata(
             checksum=Checksum("a2", "a2v"),
             size=3_000_000,
+            # pyre-fixme[6]: For 3rd param expected `str` but got `None`.
             location=None,
+            # pyre-fixme[6]: For 4th param expected `int` but got `None`.
             build_timestamp=None,
         )
         repodata_b = Repodata(
             checksum=Checksum("a3", "a3v"),
             size=2_000_001,
+            # pyre-fixme[6]: For 3rd param expected `str` but got `None`.
             location=None,
+            # pyre-fixme[6]: For 4th param expected `int` but got `None`.
             build_timestamp=None,
         )
         sizer_b.visit_repodata(repodata_a)
@@ -194,7 +213,7 @@ class RepoSizerTestCase(unittest.TestCase):
             sizer_a._get_classname_to_size(),
         )
 
-    def test_multiple_types_same_checksum(self):
+    def test_multiple_types_same_checksum(self) -> None:
         sizer_a = RepoSizer()
         sizer_b = RepoSizer()
 
@@ -205,7 +224,9 @@ class RepoSizerTestCase(unittest.TestCase):
         repodata = Repodata(
             checksum=Checksum("a1", "a1v1"),
             size=3_000_000,
+            # pyre-fixme[6]: For 3rd param expected `str` but got `None`.
             location=None,
+            # pyre-fixme[6]: For 4th param expected `int` but got `None`.
             build_timestamp=None,
         )
         sizer_b.visit_repodata(repodata)

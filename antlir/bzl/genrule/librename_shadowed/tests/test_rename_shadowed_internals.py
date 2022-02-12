@@ -19,7 +19,7 @@ class _Namespace:
 
 
 @contextmanager
-def _capture_fd(fd, *, inheritable=True):
+def _capture_fd(fd: int, *, inheritable: bool = True):
     with tempfile.TemporaryFile() as tf_out:
         fd_backup = os.dup(fd)
         try:
@@ -27,6 +27,7 @@ def _capture_fd(fd, *, inheritable=True):
             res = _Namespace()
             yield res
             tf_out.seek(0)
+            # pyre-fixme[16]: `_Namespace` has no attribute `contents`.
             res.contents = tf_out.read()
         finally:
             os.dup2(fd_backup, fd, inheritable=inheritable)
@@ -38,7 +39,7 @@ def _capture_fd(fd, *, inheritable=True):
 # Note: we gleefully leak the returned pointers here. #ramischeap
 class TestRenameShadowedInternals(unittest.TestCase):
     @classmethod
-    def addClassCleanup(cls, func, *args, **kwargs):
+    def addClassCleanup(cls, func, *args, **kwargs) -> None:
         cls._fakeClassCleanup = []
         # If we're not on 3.8, use our own, leakier cleanup strategy.  Test
         # cleanup methods leak on `SystemExit` et al anyway, so **shrug**.
@@ -48,14 +49,14 @@ class TestRenameShadowedInternals(unittest.TestCase):
             cls._fakeClassCleanup.append((func, args, kwargs))
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         for func, args, kwargs in cls._fakeClassCleanup:
             func(*args, **kwargs)
 
     # This has to be class-level, with `cls._shadow` shared among test
     # cases, because we can only load (and configure) the library once.
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         td_ctx = temp_dir()
         cls._shadow = td_ctx.__enter__()
         # NB: This may leak on SystemExit et al
@@ -68,6 +69,7 @@ class TestRenameShadowedInternals(unittest.TestCase):
         # NB: This may leak a tempfile on SystemExit et al
         cls.addClassCleanup(lib_ctx.__exit__, None, None, None)
 
+        # pyre-fixme[6]: For 1st param expected `str` but got `Path`.
         lib = ctypes.cdll.LoadLibrary(lib_path)
 
         cls._get_shadowed_original = lib.get_shadowed_original
@@ -85,7 +87,7 @@ class TestRenameShadowedInternals(unittest.TestCase):
         cls._rename.restype = ctypes.c_int
         cls._rename.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
 
-    def test_get_shadowed_original(self):
+    def test_get_shadowed_original(self) -> None:
         self.assertEqual(
             self._shadow / "etc/slon",
             self._get_shadowed_original(b"/etc//systemd/../slon"),
@@ -114,7 +116,7 @@ class TestRenameShadowedInternals(unittest.TestCase):
             None, self._get_shadowed_original(b"/dir_that_does_not_exist/foo")
         )
 
-    def test_get_shadowed_rename_dest(self):
+    def test_get_shadowed_rename_dest(self) -> None:
         with temp_dir() as td:
             shadow_td = self._shadow / td.strip_leading_slashes()
             os.makedirs(shadow_td)
@@ -193,12 +195,12 @@ class TestRenameShadowedInternals(unittest.TestCase):
                 ),
             )
 
-    def _check_file_contents(self, file_contents):
+    def _check_file_contents(self, file_contents) -> None:
         for f, c in file_contents:
             with open(f, "r") as f:
                 self.assertEqual(c, f.read())
 
-    def test_interposed_rename(self):
+    def test_interposed_rename(self) -> None:
         with temp_dir() as td:
             shadow_td = self._shadow / td.strip_leading_slashes()
             os.makedirs(shadow_td)

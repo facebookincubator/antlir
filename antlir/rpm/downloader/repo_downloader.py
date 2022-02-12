@@ -62,7 +62,7 @@ log = get_logger()
 
 def visit_results(
     results: Iterable[DownloadResult], visitors: Iterable[RepoObjectVisitor]
-):
+) -> None:
     for res in results:
         for visitor in visitors:
             visitor.visit_repomd(res.repomd)

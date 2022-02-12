@@ -63,7 +63,7 @@ def _install_rpms_into_subvol(
     install_subvol: Subvol,
     rpms_in_order: Sequence[NEVRA],
     rpm_download_subvol: Subvol,
-):
+) -> None:
     """
     Use `_RPM_INSTALL_CMD` to install the specified RPMs, in order, from
     `rpm_download_subvol`, using into `install_subvol`.

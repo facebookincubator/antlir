@@ -59,7 +59,7 @@ class SymlinkBase(symlink_t, ImageItem):
     def provides(self):
         yield ProvidesSymlink(path=self.dest, target=self.source)
 
-    def build(self, subvol: Subvol, layer_opts: LayerOpts):
+    def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         dest = subvol.path(self.dest)
         # Best-practice would tell us to do `subvol.path(self.source)`.
         # However, this will trigger the paranoid check in the `path()`

@@ -71,7 +71,7 @@ def _build_req_prov(path, req_items, prov_items, prov_t=None):
 
 
 class ItemProvTest(unittest.TestCase):
-    def test_no_conflict_with_dup_ensure_dirs(self):
+    def test_no_conflict_with_dup_ensure_dirs(self) -> None:
         self.assertFalse(
             ItemProv(
                 provides=ProvidesDirectory(path=Path("/a/b")),
@@ -92,7 +92,7 @@ class ItemProvTest(unittest.TestCase):
             )
         )
 
-    def test_no_conflict_with_dup_symlink(self):
+    def test_no_conflict_with_dup_symlink(self) -> None:
         self.assertFalse(
             ItemProv(
                 provides=ProvidesDirectory(path=Path("/a/b")),
@@ -124,7 +124,7 @@ class ItemProvTest(unittest.TestCase):
             )
         )
 
-    def test_no_conflict_with_symlink_and_ensure_dirs(self):
+    def test_no_conflict_with_symlink_and_ensure_dirs(self) -> None:
         self.assertFalse(
             ItemProv(
                 provides=ProvidesDirectory(path=Path("/a/b")),
@@ -160,7 +160,7 @@ class ItemProvTest(unittest.TestCase):
             )
         )
 
-    def test_conflict_with_different_items(self):
+    def test_conflict_with_different_items(self) -> None:
         self.assertTrue(
             ItemProv(
                 provides=ProvidesFile(path=Path("/y/x")),
@@ -175,7 +175,7 @@ class ItemProvTest(unittest.TestCase):
             )
         )
 
-    def test_conflict_with_symlink_dest_mismatch(self):
+    def test_conflict_with_symlink_dest_mismatch(self) -> None:
         self.assertTrue(
             ItemProv(
                 provides=ProvidesFile(path=Path("/a/b")),
@@ -221,7 +221,7 @@ class TestImageItem(ImageItem):
         provs: Iterator[ItemProv] = None,
         # pyre-fixme[9]: reqs has type `Iterator[ItemReq]`; used as `None`.
         reqs: Iterator[ItemReq] = None,
-    ):
+    ) -> None:
         # pyre-fixme[9]: provs has type `Iterator[ItemProv]`; used as
         #  `Union[Tuple[], typing.Tuple[ItemProv, ...]]`.
         provs = tuple(provs) if provs else ()
@@ -238,7 +238,7 @@ class TestImageItem(ImageItem):
 
 
 class ItemReqsProvsTest(unittest.TestCase):
-    def test_item_self_conflict(self):
+    def test_item_self_conflict(self) -> None:
         @dataclass
         class TestCase:
             item_reqs_provs: ItemReqsProvs
@@ -247,29 +247,57 @@ class ItemReqsProvsTest(unittest.TestCase):
 
         req = RequireFile(path=Path("foo"))
         prov = ProvidesFile(path=Path("foo"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+        #  `List[RequireFile]`.
+        # pyre-fixme[6]: For 2nd param expected `Iterator[ItemProv]` but got
+        #  `List[ProvidesFile]`.
         item_with_both = TestImageItem(reqs=[req], provs=[prov])
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+        #  `List[RequireFile]`.
         item_with_duplicate_req = TestImageItem(reqs=[req, req])
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+        #  `List[ProvidesFile]`.
         item_with_duplicate_prov = TestImageItem(provs=[prov, prov])
 
         tests = [
             TestCase(
+                # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
+                #  `List[Variable[_T]]`.
+                # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
+                #  `List[Variable[_T]]`.
                 item_reqs_provs=ItemReqsProvs(item_provs=[], item_reqs=[]),
                 item=TestImageItem(),
                 want=False,
             ),
             TestCase(
+                # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
+                #  `List[Variable[_T]]`.
+                # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
+                #  `List[Variable[_T]]`.
                 item_reqs_provs=ItemReqsProvs(item_provs=[], item_reqs=[]),
+                # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+                #  `List[RequireFile]`.
                 item=TestImageItem(reqs=[RequireFile(path=Path("foo"))]),
                 want=False,
             ),
             TestCase(
+                # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
+                #  `List[Variable[_T]]`.
+                # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
+                #  `List[Variable[_T]]`.
                 item_reqs_provs=ItemReqsProvs(item_provs=[], item_reqs=[]),
+                # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+                #  `List[RequireFile]`.
                 item=TestImageItem(provs=[RequireFile(path=Path("foo"))]),
                 want=False,
             ),
             TestCase(
                 item_reqs_provs=ItemReqsProvs(
+                    # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
+                    #  `List[ItemProv]`.
                     item_provs=[ItemProv(provides=prov, item=item_with_both)],
+                    # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
+                    #  `List[Variable[_T]]`.
                     item_reqs=[],
                 ),
                 item=item_with_both,
@@ -277,7 +305,11 @@ class ItemReqsProvsTest(unittest.TestCase):
             ),
             TestCase(
                 item_reqs_provs=ItemReqsProvs(
+                    # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
+                    #  `List[Variable[_T]]`.
                     item_provs=[],
+                    # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
+                    #  `List[ItemReq]`.
                     item_reqs=[ItemReq(requires=req, item=item_with_both)],
                 ),
                 item=item_with_both,
@@ -285,7 +317,11 @@ class ItemReqsProvsTest(unittest.TestCase):
             ),
             TestCase(
                 item_reqs_provs=ItemReqsProvs(
+                    # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
+                    #  `List[Variable[_T]]`.
                     item_provs=[],
+                    # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
+                    #  `List[ItemReq]`.
                     item_reqs=[
                         ItemReq(requires=req, item=item_with_duplicate_req)
                     ],
@@ -295,9 +331,13 @@ class ItemReqsProvsTest(unittest.TestCase):
             ),
             TestCase(
                 item_reqs_provs=ItemReqsProvs(
+                    # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
+                    #  `List[ItemProv]`.
                     item_provs=[
                         ItemProv(provides=prov, item=item_with_duplicate_prov)
                     ],
+                    # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
+                    #  `List[Variable[_T]]`.
                     item_reqs=[],
                 ),
                 item=item_with_duplicate_prov,
@@ -308,23 +348,40 @@ class ItemReqsProvsTest(unittest.TestCase):
             # `ImageItem` instances.
             TestCase(
                 item_reqs_provs=ItemReqsProvs(
+                    # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
+                    #  `List[Variable[_T]]`.
                     item_provs=[],
+                    # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
+                    #  `List[ItemReq]`.
                     item_reqs=[
+                        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]`
+                        #  but got `List[RequireFile]`.
                         ItemReq(requires=req, item=TestImageItem(reqs=[req])),
                     ],
                 ),
+                # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+                #  `List[RequireFile]`.
                 item=TestImageItem(reqs=[req]),
                 want=False,
             ),
             TestCase(
                 item_reqs_provs=ItemReqsProvs(
+                    # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
+                    #  `List[ItemProv]`.
                     item_provs=[
                         ItemProv(
-                            provides=prov, item=TestImageItem(provs=[prov])
+                            provides=prov,
+                            # pyre-fixme[6]: For 1st param expected
+                            #  `Iterator[ItemProv]` but got `List[ProvidesFile]`.
+                            item=TestImageItem(provs=[prov]),
                         ),
                     ],
+                    # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
+                    #  `List[Variable[_T]]`.
                     item_reqs=[],
                 ),
+                # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+                #  `List[ProvidesFile]`.
                 item=TestImageItem(provs=[prov]),
                 want=False,
             ),
@@ -336,7 +393,7 @@ class ItemReqsProvsTest(unittest.TestCase):
                 test.want, have, f"{i}: {test}, want={test.want} have={have}"
             )
 
-    def test_symlink_item_prov(self):
+    def test_symlink_item_prov(self) -> None:
         @dataclass
         class Test:
             item_provs: Set[ItemProv]
@@ -344,18 +401,27 @@ class ItemReqsProvsTest(unittest.TestCase):
 
         symlink_item_prov = ItemProv(
             provides=ProvidesSymlink(path=Path("/foo"), target=Path("/bar")),
+            # pyre-fixme[6]: For 2nd param expected `ImageItem` but got `None`.
             item=None,
         )
 
+        # pyre-fixme[24]: Generic type `dict` expects 2 type parameters, received 1,
+        #  use `typing.Dict` to avoid runtime subscripting errors.
         tests: Dict[Test] = {
             "empty": Test(item_provs=set(), want=None),
             "no symlink": Test(
                 item_provs={
                     ItemProv(
-                        provides=ProvidesFile(path=Path("/foo")), item=None
+                        provides=ProvidesFile(path=Path("/foo")),
+                        # pyre-fixme[6]: For 2nd param expected `ImageItem` but got
+                        #  `None`.
+                        item=None,
                     ),
                     ItemProv(
-                        provides=ProvidesDirectory(path=Path("/bar")), item=None
+                        provides=ProvidesDirectory(path=Path("/bar")),
+                        # pyre-fixme[6]: For 2nd param expected `ImageItem` but got
+                        #  `None`.
+                        item=None,
                     ),
                 },
                 want=None,
@@ -363,11 +429,17 @@ class ItemReqsProvsTest(unittest.TestCase):
             "has symlink": Test(
                 item_provs={
                     ItemProv(
-                        provides=ProvidesFile(path=Path("/foo")), item=None
+                        provides=ProvidesFile(path=Path("/foo")),
+                        # pyre-fixme[6]: For 2nd param expected `ImageItem` but got
+                        #  `None`.
+                        item=None,
                     ),
                     symlink_item_prov,
                     ItemProv(
-                        provides=ProvidesDirectory(path=Path("/bar")), item=None
+                        provides=ProvidesDirectory(path=Path("/bar")),
+                        # pyre-fixme[6]: For 2nd param expected `ImageItem` but got
+                        #  `None`.
+                        item=None,
                     ),
                 },
                 want=symlink_item_prov,
@@ -383,18 +455,24 @@ class ItemReqsProvsTest(unittest.TestCase):
 
 
 class PathItemReqsProvsTestCase(unittest.TestCase):
-    def test_symlinked_dir(self):
+    def test_symlinked_dir(self) -> None:
         pirp = PathItemReqsProvs()
 
         prov_usr = ProvidesDirectory(path=Path("/usr"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+        #  `List[ProvidesDirectory]`.
         prov_usr_item = TestImageItem(provs=[prov_usr])
         pirp.add_provider(prov_usr, prov_usr_item)
 
         prov_usr_bin = ProvidesDirectory(path=Path("/usr/bin"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+        #  `List[ProvidesDirectory]`.
         prov_usr_bin_item = TestImageItem(provs=[prov_usr_bin])
         pirp.add_provider(prov_usr_bin, prov_usr_bin_item)
 
         prov_usr_bin_bash = ProvidesFile(path=Path("/usr/bin/bash"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+        #  `List[ProvidesDirectory]`.
         prov_usr_bin_bash_item = TestImageItem(provs=[prov_usr_bin])
         pirp.add_provider(prov_usr_bin_bash, prov_usr_bin_bash_item)
 
@@ -403,7 +481,11 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
             path=Path("/bin"), target=Path("/usr/bin")
         )
         prov_symlink_item = TestImageItem(
+            # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+            #  `List[RequireDirectory]`.
             reqs=[req_usr_bin],
+            # pyre-fixme[6]: For 2nd param expected `Iterator[ItemProv]` but got
+            #  `List[ProvidesSymlink]`.
             provs=[prov_symlink],
         )
         pirp.add_requirement(req_usr_bin, prov_symlink_item)
@@ -411,27 +493,37 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
 
         # this requirement needs to be fulfilled via /bin -> /usr/bin
         req_bin_bash = RequireFile(path=Path("/bin/bash"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+        #  `List[RequireFile]`.
         req_bin_bash_item = TestImageItem(reqs=[req_bin_bash])
         pirp.add_requirement(req_bin_bash, req_bin_bash_item)
         pirp.validate()
 
         # also make sure directly requiring the symlink works
         req_symlink = RequireSymlink(path=Path("/bin"), target=Path("/usr/bin"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+        #  `List[RequireSymlink]`.
         req_symlink_item = TestImageItem(reqs=[req_symlink])
         pirp.add_requirement(req_symlink, req_symlink_item)
         pirp.validate()
 
-    def test_symlinked_dir_does_not_satisfy_require_file(self):
+    def test_symlinked_dir_does_not_satisfy_require_file(self) -> None:
         pirp = PathItemReqsProvs()
 
         prov_a = ProvidesDirectory(path=Path("/a"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+        #  `List[ProvidesDirectory]`.
         prov_a_item = TestImageItem(provs=[prov_a])
         pirp.add_provider(prov_a, prov_a_item)
 
         req_a = RequireDirectory(path=Path("/a"))
         prov_symlink = ProvidesSymlink(path=Path("/b"), target=Path("/a"))
         prov_symlink_item = TestImageItem(
+            # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+            #  `List[RequireDirectory]`.
             reqs=[req_a],
+            # pyre-fixme[6]: For 2nd param expected `Iterator[ItemProv]` but got
+            #  `List[ProvidesSymlink]`.
             provs=[prov_symlink],
         )
         pirp.add_requirement(req_a, prov_symlink_item)
@@ -439,6 +531,8 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
 
         # this requires a file, but the symlink is pointing to a dir
         req_b = RequireFile(path=Path("/b"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+        #  `List[RequireFile]`.
         req_b_item = TestImageItem(reqs=[req_b])
         pirp.add_requirement(req_b, req_b_item)
 
@@ -447,17 +541,23 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         ):
             pirp.validate()
 
-    def test_symlinked_file_does_not_satisfy_require_dir(self):
+    def test_symlinked_file_does_not_satisfy_require_dir(self) -> None:
         pirp = PathItemReqsProvs()
 
         prov_a = ProvidesFile(path=Path("/a"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+        #  `List[ProvidesFile]`.
         prov_a_item = TestImageItem(provs=[prov_a])
         pirp.add_provider(prov_a, prov_a_item)
 
         req_a = RequireFile(path=Path("/a"))
         prov_symlink = ProvidesSymlink(path=Path("/b"), target=Path("/a"))
         prov_symlink_item = TestImageItem(
+            # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+            #  `List[RequireFile]`.
             reqs=[req_a],
+            # pyre-fixme[6]: For 2nd param expected `Iterator[ItemProv]` but got
+            #  `List[ProvidesSymlink]`.
             provs=[prov_symlink],
         )
         pirp.add_requirement(req_a, prov_symlink_item)
@@ -465,6 +565,8 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
 
         # this requires a dir, but the symlink is pointing to a file
         req_b = RequireDirectory(path=Path("/b"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+        #  `List[RequireDirectory]`.
         req_b_item = TestImageItem(reqs=[req_b])
         pirp.add_requirement(req_b, req_b_item)
 
@@ -473,22 +575,30 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         ):
             pirp.validate()
 
-    def test_requires_symlink_explicitly_satisfied(self):
+    def test_requires_symlink_explicitly_satisfied(self) -> None:
         pirp = PathItemReqsProvs()
 
         prov_a = ProvidesFile(path=Path("/a"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+        #  `List[ProvidesFile]`.
         prov_a_item = TestImageItem(provs=[prov_a])
         pirp.add_provider(prov_a, prov_a_item)
 
         prov_symlink = ProvidesSymlink(path=Path("/b"), target=Path("/foo"))
         prov_symlink_item = TestImageItem(
+            # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+            #  `List[Variable[_T]]`.
             reqs=[],
+            # pyre-fixme[6]: For 2nd param expected `Iterator[ItemProv]` but got
+            #  `List[ProvidesSymlink]`.
             provs=[prov_symlink],
         )
         pirp.add_provider(prov_symlink, prov_symlink_item)
 
         # this requires a dir, but the symlink is pointing to a file
         req_b = RequireSymlink(path=Path("/b"), target=Path("/bar"))
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+        #  `List[RequireSymlink]`.
         req_b_item = TestImageItem(reqs=[req_b])
         pirp.add_requirement(req_b, req_b_item)
 
@@ -499,7 +609,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         ):
             pirp.validate()
 
-    def test_realpath_item_provs(self):
+    def test_realpath_item_provs(self) -> None:
         @dataclass
         class Test:
             path_to_item_reqs_provs: Dict[Path, ItemReqsProvs]
@@ -508,21 +618,27 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
 
         foo_bar_symlink_prov = ItemProv(
             provides=ProvidesSymlink(path=Path("/foo"), target=Path("/bar")),
+            # pyre-fixme[6]: For 2nd param expected `ImageItem` but got `None`.
             item=None,
         )
         bar_prov = ItemProv(
             provides=ProvidesFile(path=Path("/bar")),
+            # pyre-fixme[6]: For 2nd param expected `ImageItem` but got `None`.
             item=None,
         )
         bar_baz_symlink_prov = ItemProv(
             provides=ProvidesSymlink(path=Path("/bar"), target=Path("baz")),
+            # pyre-fixme[6]: For 2nd param expected `ImageItem` but got `None`.
             item=None,
         )
         baz_prov = ItemProv(
             provides=ProvidesDirectory(path=Path("/baz")),
+            # pyre-fixme[6]: For 2nd param expected `ImageItem` but got `None`.
             item=None,
         )
 
+        # pyre-fixme[24]: Generic type `dict` expects 2 type parameters, received 1,
+        #  use `typing.Dict` to avoid runtime subscripting errors.
         tests: Dict[Test] = {
             "no paths": Test(
                 path_to_item_reqs_provs={}, path=Path("/foo"), want=None
@@ -535,6 +651,8 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
                                 provides=ProvidesSymlink(
                                     path=Path("/foo"), target=Path("/missing")
                                 ),
+                                # pyre-fixme[6]: For 2nd param expected `ImageItem`
+                                #  but got `None`.
                                 item=None,
                             ),
                         },
@@ -585,12 +703,12 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
                 have, test.want, f"{desc}: have={have}, want={test.want}"
             )
 
-    def test_realpath_item_provs_absolute(self):
+    def test_realpath_item_provs_absolute(self) -> None:
         pirp = PathItemReqsProvs()
         with self.assertRaisesRegex(AssertionError, r"foo must be absolute"):
             pirp._realpath_item_provs(Path("foo"))
 
-    def test_circular_realpath_item_provs(self):
+    def test_circular_realpath_item_provs(self) -> None:
         pirp = PathItemReqsProvs()
         pirp.path_to_item_reqs_provs = {
             Path("/a"): ItemReqsProvs(
@@ -600,12 +718,16 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
                             path=Path("/a"),
                             target=Path("/b"),
                         ),
+                        # pyre-fixme[6]: For 2nd param expected `ImageItem` but got
+                        #  `None`.
                         item=None,
                     ),
                 },
                 item_reqs={
                     ItemReq(
                         requires=RequireDirectory(path=Path("/a")),
+                        # pyre-fixme[6]: For 2nd param expected `ImageItem` but got
+                        #  `None`.
                         item=None,
                     )
                 },
@@ -617,6 +739,8 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
                             path=Path("/b"),
                             target=Path("/a"),
                         ),
+                        # pyre-fixme[6]: For 2nd param expected `ImageItem` but got
+                        #  `None`.
                         item=None,
                     ),
                 },
@@ -626,7 +750,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, r"^Circular realpath"):
             pirp._realpath_item_provs(Path("/a"))
 
-    def test_symlink_target_normpath(self):
+    def test_symlink_target_normpath(self) -> None:
         @dataclass
         class Test:
             path: Path
@@ -670,7 +794,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
 
 
 class DepGraphTestBase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.maxDiff = None
         unittest.util._MAX_LENGTH = 12345
         self._temp_svs_ctx = TempSubvolumes(Path(sys.argv[0]))
@@ -762,28 +886,38 @@ class DepGraphTestBase(unittest.TestCase):
 
 
 class ValidateReqsProvsTestCase(DepGraphTestBase):
-    def test_duplicate_paths_in_same_item(self):
+    def test_duplicate_paths_in_same_item(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError,
             r"ProvidesDirectory.*TestImageItem.*conflicts in",
         ):
             ValidatedReqsProvs(
+                # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+                #  `List[TestImageItem]`.
                 [
                     TestImageItem(
+                        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]`
+                        #  but got `List[RequireDirectory]`.
                         reqs=[RequireDirectory(path=Path("a"))],
+                        # pyre-fixme[6]: For 2nd param expected `Iterator[ItemProv]`
+                        #  but got `List[ProvidesDirectory]`.
                         provs=[ProvidesDirectory(path=Path("a"))],
                     ),
                 ],
             )
 
-    def test_duplicate_requires_in_same_item(self):
+    def test_duplicate_requires_in_same_item(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError,
             r"RequireDirectory.*TestImageItem.*conflicts in",
         ):
             ValidatedReqsProvs(
+                # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+                #  `List[TestImageItem]`.
                 [
                     TestImageItem(
+                        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]`
+                        #  but got `List[RequireDirectory]`.
                         reqs=[
                             RequireDirectory(path=Path("a")),
                             RequireDirectory(path=Path("a")),
@@ -792,11 +926,14 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                 ],
             )
 
-    def test_duplicate_paths_provided_different_types(self):
+    def test_duplicate_paths_provided_different_types(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
+                # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+                #  `List[Union[EnsureDirsExistItem, InstallFileItem,
+                #  PhasesProvideItem]]`.
                 [
                     self.provides_root,
                     InstallFileItem(from_target="", source=_FILE1, dest="y/x"),
@@ -806,11 +943,14 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                 ]
             )
 
-    def test_duplicate_paths_provided(self):
+    def test_duplicate_paths_provided(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
+                # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+                #  `List[Union[InstallFileItem, PhasesProvideItem,
+                #  SymlinkToFileItem]]`.
                 [
                     self.provides_root,
                     InstallFileItem(from_target="", source=_FILE1, dest="y/x"),
@@ -818,11 +958,13 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                 ]
             )
 
-    def test_path_provided_twice(self):
+    def test_path_provided_twice(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
+                # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+                #  `List[Union[InstallFileItem, PhasesProvideItem]]`.
                 [
                     self.provides_root,
                     InstallFileItem(from_target="", source=_FILE1, dest="y"),
@@ -830,8 +972,10 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                 ]
             )
 
-    def test_duplicate_symlink_paths_provided(self):
+    def test_duplicate_symlink_paths_provided(self) -> None:
         ValidatedReqsProvs(
+            # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+            #  `List[Union[InstallFileItem, PhasesProvideItem, SymlinkToFileItem]]`.
             [
                 self.provides_root,
                 InstallFileItem(from_target="", source=_FILE1, dest="a"),
@@ -840,6 +984,8 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             ]
         )
         ValidatedReqsProvs(
+            # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+            #  `List[Union[EnsureDirsExistItem, PhasesProvideItem, SymlinkToDirItem]]`.
             [
                 self.provides_root,
                 SymlinkToDirItem(from_target="", source="/y", dest="/y/x/z"),
@@ -850,11 +996,14 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             ]
         )
 
-    def test_duplicate_symlink_paths_different_sources(self):
+    def test_duplicate_symlink_paths_different_sources(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
+                # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+                #  `List[Union[InstallFileItem, PhasesProvideItem,
+                #  SymlinkToFileItem]]`.
                 [
                     self.provides_root,
                     InstallFileItem(from_target="", source=_FILE1, dest="a"),
@@ -864,11 +1013,14 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                 ]
             )
 
-    def test_duplicate_symlink_file_and_dir_conflict(self):
+    def test_duplicate_symlink_file_and_dir_conflict(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
+                # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+                #  `List[Union[EnsureDirsExistItem, InstallFileItem, PhasesProvideItem,
+                #  SymlinkToDirItem, SymlinkToFileItem]]`.
                 [
                     self.provides_root,
                     *ensure_subdirs_exist_factory(
@@ -880,8 +1032,10 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                 ]
             )
 
-    def test_allowed_duplicate_paths(self):
+    def test_allowed_duplicate_paths(self) -> None:
         ValidatedReqsProvs(
+            # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+            #  `List[Union[EnsureDirsExistItem, PhasesProvideItem, SymlinkToDirItem]]`.
             [
                 self.provides_root,
                 SymlinkToDirItem(from_target="", source="/y", dest="/y/x/z"),
@@ -891,10 +1045,16 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             ]
         )
 
-    def test_non_path_requirements(self):
+    def test_non_path_requirements(self) -> None:
         ValidatedReqsProvs(
+            # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+            #  `List[TestImageItem]`.
             [
+                # pyre-fixme[6]: For 1st param expected `Iterator[ItemProv]` but got
+                #  `List[ProvidesGroup]`.
                 TestImageItem(provs=[ProvidesGroup(groupname="adm")]),
+                # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+                #  `List[RequireGroup]`.
                 TestImageItem(reqs=[RequireGroup(name="adm")]),
             ],
         )
@@ -903,18 +1063,24 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             RuntimeError,
             r"set\(\) does not provide ItemReq\(requires=RequireGroup",
         ):
+            # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+            #  `List[TestImageItem]`.
+            # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+            #  `List[RequireGroup]`.
             ValidatedReqsProvs([TestImageItem(reqs=[RequireGroup(name="adm")])])
 
-    def test_unmatched_requirement(self):
+    def test_unmatched_requirement(self) -> None:
         item = InstallFileItem(from_target="", source=_FILE1, dest="y")
         with self.assertRaises(
             RuntimeError,
             msg="^At /: nothing in set() matches the requirement "
             f'{ItemReq(requires=RequireDirectory(path=Path("/")), item=item)}$',
         ):
+            # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+            #  `List[InstallFileItem]`.
             ValidatedReqsProvs([item])
 
-    def test_symlinked_dir(self):
+    def test_symlinked_dir(self) -> None:
         usrbin, usr = list(
             ensure_subdirs_exist_factory(
                 from_target="t", into_dir="/", subdirs_to_create="usr/bin"
@@ -926,13 +1092,18 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         symlink = SymlinkToDirItem(
             from_target="t", source="/usr/bin", dest="/bin"
         )
+        # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+        #  `List[RequireFile]`.
         test_item = TestImageItem(reqs=[RequireFile(path=Path("/bin/bash"))])
 
         ValidatedReqsProvs(
+            # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
+            #  `List[Union[EnsureDirsExistItem, InstallFileItem, PhasesProvideItem,
+            #  SymlinkToDirItem, TestImageItem]]`.
             [self.provides_root, usrbin, usr, bash, symlink, test_item]
         )
 
-    def test_paths_to_reqs_provs(self):
+    def test_paths_to_reqs_provs(self) -> None:
         self.assertDictEqual(
             ValidatedReqsProvs(
                 {self.provides_root, *self.items}
@@ -942,7 +1113,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
 
 class DependencyGraphTestCase(DepGraphTestBase):
-    def test_item_predecessors(self):
+    def test_item_predecessors(self) -> None:
         dg = DependencyGraph(self.items, layer_target="t-34")
         self.assertEqual(
             _fs_root_phases(FilesystemRootItem(from_target="t-34")),
@@ -961,11 +1132,12 @@ class DependencyGraphTestCase(DepGraphTestBase):
         )
         self.assertEqual(ns.items_without_predecessors, {self.provides_root})
 
-    def test_genrule_layer_assert(self):
+    def test_genrule_layer_assert(self) -> None:
         genrule1 = GenruleLayerItem(
             from_target="t1",
             cmd=["x"],
             user="y",
+            # pyre-fixme[16]: `genrule_layer_t` has no attribute `types`.
             container_opts=genrule_layer_t.types.container_opts(),
         )
         genrule2 = GenruleLayerItem(
@@ -976,15 +1148,21 @@ class DependencyGraphTestCase(DepGraphTestBase):
         )
 
         # Good path: one GENRULE_LAYER & default MAKE_SUBVOL
+        # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
+        #  `List[GenruleLayerItem]`.
         DependencyGraph([genrule1], "layer_t")
 
         # Too many genrule layers
         with self.assertRaises(AssertionError):
+            # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
+            #  `List[GenruleLayerItem]`.
             DependencyGraph([genrule1, genrule2], "layer_t")
 
         # Cannot mix genrule layer & depedency-sortable item
         with self.assertRaises(AssertionError):
             DependencyGraph(
+                # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but
+                #  got `List[Union[EnsureDirsExistItem, GenruleLayerItem]]`.
                 [
                     genrule1,
                     *ensure_subdirs_exist_factory(
@@ -997,6 +1175,8 @@ class DependencyGraphTestCase(DepGraphTestBase):
         # Cannot have other phase items
         with self.assertRaises(AssertionError):
             DependencyGraph(
+                # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but
+                #  got `List[Union[GenruleLayerItem, RemovePathItem]]`.
                 [
                     genrule1,
                     RemovePathItem(from_target="", path="x", must_exist=False),
@@ -1006,18 +1186,21 @@ class DependencyGraphTestCase(DepGraphTestBase):
 
 
 class DependencyOrderItemsTestCase(DepGraphTestBase):
-    def assert_before(self, res, x, y):
+    def assert_before(self, res, x, y) -> None:
         self.assertLess(res.index(x), res.index(y))
 
-    def test_skip_phases_provide(self):
+    def test_skip_phases_provide(self) -> None:
         dg = DependencyGraph(
-            [FilesystemRootItem(from_target="t-55")], layer_target="t-34"
+            # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
+            #  `List[FilesystemRootItem]`.
+            [FilesystemRootItem(from_target="t-55")],
+            layer_target="t-34",
         )
         mock_pp = unittest.mock.MagicMock()
         self.assertEqual([], list(dg.gen_dependency_order_items(mock_pp)))
         mock_pp.provides.assert_not_called()
 
-    def test_gen_dependency_graph(self):
+    def test_gen_dependency_graph(self) -> None:
         dg = DependencyGraph(self.items, layer_target="t-72")
         self.assertEqual(
             _fs_root_phases(FilesystemRootItem(from_target="t-72")),
@@ -1049,7 +1232,7 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
                     f"{item} was not before {item_requiring_it}",
                 )
 
-    def test_cycle_detection(self):
+    def test_cycle_detection(self) -> None:
         def requires_provides_directory_class(requires_dir, provides_dirs):
             return TestImageItem(
                 reqs=[RequireDirectory(path=Path(requires_dir))],
@@ -1060,11 +1243,15 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         first = FilesystemRootItem(from_target="")
         second = requires_provides_directory_class("/", ["a"])
         third = requires_provides_directory_class("/a", ["/a/b", "/a/b/c"])
+        # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
+        #  `List[typing.Any]`.
         dg_ok = DependencyGraph([second, first, third], layer_target="t")
         self.assertEqual(_fs_root_phases(first), list(dg_ok.ordered_phases()))
 
         # `dg_bad`: changes `second` to get a cycle
         dg_bad = DependencyGraph(
+            # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
+            #  `List[typing.Any]`.
             [
                 requires_provides_directory_class("a/b", ["a"]),
                 first,
@@ -1081,7 +1268,7 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         with self.assertRaisesRegex(AssertionError, "^Cycle in "):
             list(dg_bad.gen_dependency_order_items(self.provides_root))
 
-    def test_phase_order(self):
+    def test_phase_order(self) -> None:
         class FakeRemovePaths:
             get_phase_builder = "kittycat"
 
@@ -1095,6 +1282,8 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
                 from_target="", into_dir="/", subdirs_to_create="a/b"
             )
         )[::-1]
+        # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
+        #  `List[Union[FakeRemovePaths, EnsureDirsExistItem, FilesystemRootItem]]`.
         dg = DependencyGraph([second, first, *rest], layer_target="t")
         self.assertEqual(
             _fs_root_phases(first)
@@ -1110,7 +1299,7 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
             ),
         )
 
-    def test_parallel_items(self):
+    def test_parallel_items(self) -> None:
         def requires_provides_directory_class(requires_dir, provides_dirs):
             return TestImageItem(
                 reqs=[RequireDirectory(path=Path(requires_dir))],
@@ -1122,6 +1311,8 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
             requires_provides_directory_class("/a", [f"/a/{x}"])
             for x in ("b", "c", "d")
         }
+        # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
+        #  `List[typing.Any]`.
         dg = DependencyGraph([a, *a_children], layer_target="t")
         self.assertEqual(
             [{a}, a_children],

@@ -60,7 +60,7 @@ class CloneItem(clone_t, ImageItem):
             path=self.dest if self.pre_existing_dest else self.dest.dirname()
         )
 
-    def build(self, subvol: Subvol, layer_opts: LayerOpts):
+    def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         # The compiler should have caught this, this is just paranoia.
         if self.pre_existing_dest:
             subvol.run_as_root(["test", "-d", subvol.path(self.dest)])

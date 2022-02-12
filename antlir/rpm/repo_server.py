@@ -132,17 +132,15 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
     def __init__(
         self,
         *args,
-        # BEWARE: Mutated if we discover checksum errors to prevent client
-        # retries from succeeding.
         location_to_obj: Mapping[str, dict],
         storage: Storage,
         **kwargs,
-    ):
+    ) -> None:
         self.location_to_obj = location_to_obj
         self.storage = storage
         super().__init__(*args, **kwargs)
 
-    def _memoize_error(self, obj, error: ReportableError):
+    def _memoize_error(self, obj, error: ReportableError) -> None:
         """
         Any size or checksum errors we see are likely to be permanent, so we
         MUTATE `obj` with the error, hiding the old `storage_id` inside.
@@ -155,7 +153,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         set_new_key(obj, "error", error_dict)
 
     # The default logging implementation does not flush. Gross.
-    def log_message(self, format, *args, _antlir_logger=log.debug):
+    def log_message(self, format: str, *args, _antlir_logger=log.debug) -> None:
         _antlir_logger(
             "%s - - [%s] %s\n"
             % (
@@ -165,7 +163,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             )
         )
 
-    def log_error(self, format, *args):
+    def log_error(self, format: str, *args) -> None:
         # `repo-server` errors should be visible when e.g.  `yum` or `dnf`
         # are running in a default `buck run :foo=container`.
         self.log_message(format, *args, _antlir_logger=log.warning)
@@ -248,7 +246,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
 
         log.debug(f"Normal exit for GET {location}")
 
-    def do_HEAD(self):
+    def do_HEAD(self) -> None:
         self.send_head()
 
     def send_head(self) -> Tuple[str, dict]:
@@ -324,7 +322,7 @@ class HTTPSocketServer(BaseServer):
     around the fact that they do not accept pre-existing sockets.
     """
 
-    def __init__(self, sock: socket.socket, RequestHandlerClass):
+    def __init__(self, sock: socket.socket, RequestHandlerClass) -> None:
         """
         We just listen on `sock`. It may or may not be bound to any host or
         port **yet** -- and in fact, the binding will be done by another
@@ -340,19 +338,19 @@ class HTTPSocketServer(BaseServer):
             "self.socket must be bound externally before self.server_activate"
         )
 
-    def server_activate(self):
+    def server_activate(self) -> None:
         self.socket.listen()  # leave the request queue size at default
 
-    def server_close(self):
+    def server_close(self) -> None:
         self.socket.close()
 
-    def fileno(self):
+    def fileno(self) -> int:
         return self.socket.fileno()
 
     def get_request(self):
         return self.socket.accept()
 
-    def shutdown_request(self, request):
+    def shutdown_request(self, request) -> None:
         try:
             # Explicitly shutdown -- `socket.close()` merely releases the
             # socket and waits for GC to perform the actual close.
@@ -363,11 +361,13 @@ class HTTPSocketServer(BaseServer):
             pass  # Some platforms may raise ENOTCONN here
         self.close_request(request)
 
-    def close_request(self, request):
+    def close_request(self, request) -> None:
         request.close()
 
 
-def repo_server(sock, location_to_obj: Mapping[str, dict], storage: Storage):
+def repo_server(
+    sock, location_to_obj: Mapping[str, dict], storage: Storage
+) -> HTTPSocketServer:
     """
     BEWARE: `location_to_obj` is mutated if we discover checksum errors to
     prevent client retries from succeeding.
@@ -381,7 +381,7 @@ def repo_server(sock, location_to_obj: Mapping[str, dict], storage: Storage):
 
 
 # Tested manually, as described in the file-level docblock.
-def main():  # pragma: no cover
+def main() -> None:  # pragma: no cover
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -423,6 +423,7 @@ def main():  # pragma: no cover
     with repo_server(
         socket.socket(fileno=args.socket_fd),
         read_snapshot_dir(args.snapshot_dir),
+        # pyre-fixme[6]: For 3rd param expected `Storage` but got `Pluggable`.
         Storage.from_json(storage),
     ) as httpd:
         # In the current usage, we start listening in `_launch_repo_server`,

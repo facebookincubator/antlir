@@ -79,7 +79,7 @@ class YumDnfVersionlock(NspawnPlugin):
         self,
         snapshots_and_versionlocks: Iterable[Tuple[Path, Path]],
         serve_rpm_snapshots: Iterable[Path],
-    ):
+    ) -> None:
         self._snapshots_and_versionlocks = snapshots_and_versionlocks
         self._serve_rpm_snapshots = serve_rpm_snapshots
 

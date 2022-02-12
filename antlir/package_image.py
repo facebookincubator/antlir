@@ -243,7 +243,7 @@ class Format:
 
     NAME_TO_CLASS: Mapping[str, "Format"] = {}
 
-    def __init_subclass__(cls, format_name: str, **kwargs):
+    def __init_subclass__(cls, format_name: str, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         prev_cls = cls.NAME_TO_CLASS.get(format_name)
         if prev_cls:
@@ -252,7 +252,7 @@ class Format:
         cls.NAME_TO_CLASS[format_name] = cls
 
     @classmethod
-    def make(cls, format_name) -> "Format":
+    def make(cls, format_name: str) -> "Format":
         # pyre-fixme[29]: `Format` is not a function.
         return cls.NAME_TO_CLASS[format_name]()
 
@@ -263,7 +263,9 @@ class Sendstream(Format, format_name="sendstream"):
     See the script-level docs for details on supporting incremental ones.
     """
 
-    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+    def package_full(
+        self, subvol: Subvol, output_path: str, opts: _Opts
+    ) -> None:
         with create_ro(
             output_path, "wb"
         ) as outfile, subvol.mark_readonly_and_write_sendstream_to_file(
@@ -281,7 +283,9 @@ class SendstreamZst(Format, format_name="sendstream.zst"):
     `TarballZst`, `SendstreamGz`, etc.
     """
 
-    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+    def package_full(
+        self, subvol: Subvol, output_path: str, opts: _Opts
+    ) -> None:
         with create_ro(output_path, "wb") as outfile, subprocess.Popen(
             ["zstd", "--stdout"],
             stdin=subprocess.PIPE,
@@ -299,7 +303,9 @@ class SquashfsImage(Format, format_name="squashfs"):
       mount -t squashfs image.squashfs dest/ -o loop
     """
 
-    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+    def package_full(
+        self, subvol: Subvol, output_path: str, opts: _Opts
+    ) -> None:
         create_ro(output_path, "wb").close()  # Ensure non-root ownership
         subvol.run_as_root(
             [
@@ -319,7 +325,9 @@ class BtrfsImage(Format, format_name="btrfs"):
       mount -t btrfs image.btrfs dest/ -o loop
     """
 
-    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+    def package_full(
+        self, subvol: Subvol, output_path: str, opts: _Opts
+    ) -> None:
         subvol.mark_readonly_and_send_to_new_loopback(
             output_path, loopback_opts=opts.loopback_opts
         )
@@ -331,7 +339,9 @@ class TarballGzipImage(Format, format_name="tar.gz"):
       tar xzf image.tar.gz -C dest/
     """
 
-    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+    def package_full(
+        self, subvol: Subvol, output_path: str, opts: _Opts
+    ) -> None:
         with create_ro(output_path, "wb") as outfile, subprocess.Popen(
             ["gzip", "--stdout"],
             stdin=subprocess.PIPE,
@@ -349,7 +359,9 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
     Packages the subvol as a gzip-compressed cpio.
     """
 
-    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+    def package_full(
+        self, subvol: Subvol, output_path: str, opts: _Opts
+    ) -> None:
         work_dir = generate_work_dir()
 
         # This command is partly based on the recomendations of
@@ -399,7 +411,7 @@ def _bash_cmd_in_build_appliance(
     opts: _Opts,
     subvol: Subvol,
     get_bash: Callable[[str, str], str],
-):
+) -> None:
     """
     Spin up a new nspawn build appliance with bind mounts
     and run cmd provided by get_bash.
@@ -444,7 +456,9 @@ class VfatImage(Format, format_name="vfat"):
     packaging regular files/dirs into a vfat image.
     """
 
-    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+    def package_full(
+        self, subvol: Subvol, output_path: str, opts: _Opts
+    ) -> None:
         if opts.loopback_opts.size_mb is None:
             raise ValueError(
                 "loopback_opts.size_mb is required when packaging a vfat image"
@@ -480,7 +494,9 @@ class Ext3Image(Format, format_name="ext3"):
       mount -t ext3 image.ext3 dest/ -o loop
     """
 
-    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts):
+    def package_full(
+        self, subvol: Subvol, output_path: str, opts: _Opts
+    ) -> None:
         if opts.loopback_opts.size_mb is None:
             raise ValueError(
                 "loopback_opts.size_mb is required when packaging an ext3 image"
@@ -549,7 +565,7 @@ def _get_build_appliance_from_layer_flavor_config(
     ]
 
 
-def package_image(args):
+def package_image(args) -> None:
     with init_cli(description=__doc__, argv=args) as cli:
         cli.parser.add_argument(
             "--subvolumes-dir",
@@ -567,6 +583,8 @@ def package_image(args):
             "--format",
             choices=Format.NAME_TO_CLASS.keys(),
             required=True,
+            # pyre-fixme[58]: `+` is not supported for operand types `str` and
+            #  `Optional[str]`.
             help=f"""
             Brief format descriptions -- see the code docblocks for more detail:
                 {'; '.join(
@@ -616,6 +634,7 @@ def package_image(args):
         )
     )
 
+    # pyre-fixme[16]: `Format` has no attribute `package_full`.
     Format.make(cli.args.format).package_full(
         output_path=cli.args.output_path,
         opts=_Opts(

@@ -29,12 +29,12 @@ from ..requires_provides import (
 
 
 class RequiresProvidesTestCase(unittest.TestCase):
-    def test_normalize_path(self):
+    def test_normalize_path(self) -> None:
         self.assertEqual(Path("/a"), _normalize_path(Path("a//.")))
         self.assertEqual(Path("/b/d"), _normalize_path(Path("/b/c//../d")))
         self.assertEqual(Path("/x/y"), _normalize_path(Path("///x/./y/")))
 
-    def test_path_normalization(self):
+    def test_path_normalization(self) -> None:
         self.assertEqual(Path("/a"), RequireDirectory(path=Path("a//.")).path)
         self.assertEqual(
             Path("/b/d"), ProvidesDirectory(path=Path("/b/c//../d")).req.path
@@ -43,7 +43,7 @@ class RequiresProvidesTestCase(unittest.TestCase):
             Path("/x/y"), ProvidesFile(path=Path("///x/./y/")).req.path
         )
 
-    def test_provides_requires(self):
+    def test_provides_requires(self) -> None:
         pf1 = ProvidesFile(path=Path("f"))
         pf2 = ProvidesFile(path=Path("f/b"))
         pf3 = ProvidesFile(path=Path("f/b/c"))
@@ -68,14 +68,14 @@ class RequiresProvidesTestCase(unittest.TestCase):
                     f"{p}.provides({r})",
                 )
 
-    def test_provides_do_not_access(self):
+    def test_provides_do_not_access(self) -> None:
         self.assertFalse(
             ProvidesDoNotAccess(path=Path("//a/b")).provides(
                 RequireFile(path=Path("/a/b"))
             )
         )
 
-    def test_with_new_path(self):
+    def test_with_new_path(self) -> None:
         for new_path in ["b", "b/", "/b", "/../a/../b/c/.."]:
             self.assertEqual(
                 ProvidesDirectory(path=Path("unused")).with_new_path(
@@ -84,25 +84,26 @@ class RequiresProvidesTestCase(unittest.TestCase):
                 ProvidesDirectory(path=Path("b")),
             )
 
-    def test_provides_path_object_path(self):
+    def test_provides_path_object_path(self) -> None:
         p = Path("/a/b/c")
         self.assertEqual(p, ProvidesDirectory(p).path())
         self.assertEqual(p, ProvidesDirectory(p).path())
 
-    def test_require_group(self):
+    def test_require_group(self) -> None:
         groupname = "foo"
         g = RequireGroup(groupname)
         self.assertEqual(g.name, groupname)
         self.assertEqual(g.kind, RequirementKind.GROUP)
 
-    def test_provides_group(self):
+    def test_provides_group(self) -> None:
         groupname = "foo"
         pg = ProvidesGroup(groupname)
+        # pyre-fixme[16]: `Requirement` has no attribute `name`.
         self.assertEqual(pg.req.name, groupname)
         self.assertEqual(pg.req.kind, RequirementKind.GROUP)
         self.assertTrue(pg.provides(RequireGroup(groupname)))
 
-    def test_require_user(self):
+    def test_require_user(self) -> None:
         username = "user"
         ru = RequireUser(username)
         self.assertEqual(ru.name, username)
@@ -110,15 +111,16 @@ class RequiresProvidesTestCase(unittest.TestCase):
         ru2 = RequireUser(username)
         self.assertEqual(ru, ru2)
 
-    def test_provides_user(self):
+    def test_provides_user(self) -> None:
         username = "user"
         pu = ProvidesUser(username)
+        # pyre-fixme[16]: `Requirement` has no attribute `name`.
         self.assertEqual(pu.req.name, username)
         self.assertEqual(pu.req.kind, RequirementKind.USER)
         self.assertTrue(pu.provides(RequireUser(username)))
         self.assertFalse(pu.provides(RequireUser("user2")))
 
-    def test_require_symlink(self):
+    def test_require_symlink(self) -> None:
         path = Path("/foo")
         target = Path("/bar")
         rs = RequireSymlink(path=path, target=target)
@@ -126,7 +128,7 @@ class RequiresProvidesTestCase(unittest.TestCase):
         self.assertEqual(rs.path, path)
         self.assertEqual(rs.target, target)
 
-    def test_provides_symlink(self):
+    def test_provides_symlink(self) -> None:
         path = Path("/foo")
         target = Path("/bar")
         ps = ProvidesSymlink(path=path, target=target)

@@ -83,13 +83,13 @@ def _tdep(target, dep):
 
 
 class TestSystemdFeatures(unittest.TestCase):
-    def test_units_installed(self):
+    def test_units_installed(self) -> None:
         for unit in unit_test_specs:
             unit_file = unit.installed_root / unit.name
 
             self.assertTrue(os.path.exists(unit_file), unit_file)
 
-    def test_units_enabled(self):
+    def test_units_enabled(self) -> None:
         for unit in unit_test_specs:
             # Get a list of available .wants dirs for all targets to validate
             available_targets = [
@@ -129,13 +129,14 @@ class TestSystemdFeatures(unittest.TestCase):
                     != _tdep(unit.enabled_target, "requires")
                 )
             ]:
+                # pyre-fixme[61]: `link_name` is undefined, or not always defined.
                 unit_in_target_wants = avail_target / link_name
 
                 self.assertFalse(
                     os.path.exists(unit_in_target_wants), unit_in_target_wants
                 )
 
-    def test_units_masked(self):
+    def test_units_masked(self) -> None:
         for unit in unit_test_specs:
             if unit.is_masked:
                 masked_unit = ADMIN_ROOT / unit.name
@@ -147,7 +148,7 @@ class TestSystemdFeatures(unittest.TestCase):
             os.readlink(TMPFILES_ROOT / "testconfig.conf"), b"../../dev/null"
         )
 
-    def test_dropins(self):
+    def test_dropins(self) -> None:
         for unit in unit_test_specs:
             if unit.dropin_name is None:
                 continue

@@ -12,7 +12,7 @@ from ..stat_options import mode_to_octal_str
 
 
 class StatOptionsTestCase(unittest.TestCase):
-    def test_mode_to_octal_str(self):
+    def test_mode_to_octal_str(self) -> None:
         inputs = [
             # Regular permissions 'rwx'
             "",
@@ -58,7 +58,7 @@ class StatOptionsTestCase(unittest.TestCase):
                     f"Expected {val} to produce {stat_oct}, got {conversion}",
                 )
 
-    def test_mode_to_octal_str_errs(self):
+    def test_mode_to_octal_str_errs(self) -> None:
         with self.assertRaisesRegex(AssertionError, "Only append actions"):
             mode_to_octal_str("u-wx")
         with self.assertRaisesRegex(AssertionError, "Only append actions"):

@@ -56,7 +56,7 @@ class LogOp(Enum):
     RPM_QUERY = auto()
     REPO_DOWNLOAD = auto()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.name)
 
 
@@ -154,14 +154,14 @@ def verify_chunk_stream(
             )
 
 
-def _log_if_storage_ids_differ(obj, storage_id, db_storage_id):
+def _log_if_storage_ids_differ(obj, storage_id, db_storage_id) -> None:
     if db_storage_id != storage_id:
         log.warning(
             f"Another writer already committed {obj} at {db_storage_id}"
         )
 
 
-def log_size(what_str: str, total_bytes: float):
+def log_size(what_str: str, total_bytes: float) -> None:
     log.info(f"{what_str} {total_bytes/10**9:,.4f} GB")
 
 
@@ -212,7 +212,7 @@ def maybe_write_id(
     storage_id: str,
     table: StorageTable,
     db_conn: DBConnectionContext,
-):
+) -> str:
     """Used to write a storage_id to repo_db after a download."""
     with retryable_db_ctx(db_conn) as repo_db_ctx:
         db_storage_id = repo_db_ctx.maybe_store(table, repo_obj, storage_id)

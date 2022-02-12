@@ -59,7 +59,7 @@ class IncompleteInode(ABC):
     # If any of these are None, the filesystem was created badly.
     # Exception: symlinks don't have permissions.
 
-    def __init__(self, *, item: SendStreamItem):
+    def __init__(self, *, item: SendStreamItem) -> None:
         assert isinstance(item, self.INITIAL_ITEM)
         self.file_type = self.FILE_TYPE
         self.mode = None
@@ -127,7 +127,7 @@ class IncompleteFile(IncompleteInode):
     FILE_TYPE = stat.S_IFREG
     INITIAL_ITEM = SendStreamItems.mkfile
 
-    def __init__(self, *, item: SendStreamItem):
+    def __init__(self, *, item: SendStreamItem) -> None:
         super().__init__(item=item)
         self.extent = Extent.empty()
 
@@ -210,7 +210,7 @@ class IncompleteDevice(IncompleteInode):
 
     INITIAL_ITEM = SendStreamItems.mknod
 
-    def __init__(self, *, item: SendStreamItem):
+    def __init__(self, *, item: SendStreamItem) -> None:
         if not isinstance(item, self.INITIAL_ITEM):
             raise RuntimeError(
                 f"unexpected {type(item)}, expected {self.INITIAL_ITEM}"
@@ -237,7 +237,7 @@ class IncompleteSymlink(IncompleteInode):
     FILE_TYPE = stat.S_IFLNK
     INITIAL_ITEM = SendStreamItems.symlink
 
-    def __init__(self, *, item: SendStreamItem):
+    def __init__(self, *, item: SendStreamItem) -> None:
         if not isinstance(item, self.INITIAL_ITEM):
             raise RuntimeError(
                 f"unexpected {type(item)}, expected {self.INITIAL_ITEM}"

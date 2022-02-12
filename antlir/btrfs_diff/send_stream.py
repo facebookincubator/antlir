@@ -32,7 +32,7 @@ class SendStreamItem:
     # with a default. Using init=False avoids that issue altogether.
     sets_subvol_name: ClassVar[bool] = False
 
-    def __str__(self):
+    def __str__(self) -> str:
         # The default __repr__ of a dataclass includes the __qualname__ of the
         # class, which in our case includes the outer class SendStreamItems.
         #

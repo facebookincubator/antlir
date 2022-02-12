@@ -92,7 +92,7 @@ class MountItem(ImageItem):
     layer_publisher: str
 
     @classmethod
-    def customize_fields(cls, kwargs):
+    def customize_fields(cls, kwargs) -> None:
         layer_opts = kwargs.pop("layer_opts", None)
         target = kwargs.pop("target")
         cfg = kwargs.pop("mount_config")
@@ -154,7 +154,7 @@ class MountItem(ImageItem):
         # so this item just makes it with default permissions.
         yield RequireDirectory(path=Path(self.mountpoint).dirname())
 
-    def build(self, subvol: Subvol, layer_opts: LayerOpts):
+    def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         mount_dir = META_MOUNTS_DIR / self.mountpoint / MOUNT_MARKER
         for name, data in (
             # NB: Not exporting self.mountpoint since it's implicit in the path.
@@ -261,7 +261,7 @@ def mounts_from_image_meta(image: Path) -> Iterator[Mount]:
             yield mount
 
 
-def coerce_path_field_normal_relative(kwargs, field: str):
+def coerce_path_field_normal_relative(kwargs, field: str) -> None:
     d = kwargs.get(field)
     if d is not None:
         kwargs[field] = make_path_normal_relative(d)

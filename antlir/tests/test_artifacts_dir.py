@@ -15,7 +15,7 @@ from antlir.fs_utils import Path, temp_dir
 
 
 class ArtifactsDirTests(unittest.TestCase):
-    def test_git_repo_root(self):
+    def test_git_repo_root(self) -> None:
         with temp_dir() as td:
             # Make the td the repo root
             os.makedirs(td / b".git")
@@ -36,7 +36,7 @@ class ArtifactsDirTests(unittest.TestCase):
                 find_repo_root(path_in_repo=repo_submodule_subdir), td
             )
 
-    def test_hg_repo_root(self):
+    def test_hg_repo_root(self) -> None:
         with temp_dir() as td:
             # Make the td the repo root
             os.makedirs(td / b".hg")
@@ -48,7 +48,7 @@ class ArtifactsDirTests(unittest.TestCase):
             self.assertEqual(find_repo_root(path_in_repo=td), td)
             self.assertEqual(find_repo_root(path_in_repo=repo_subdir), td)
 
-    def test_ensure_per_repo_artifacts_dir_exists(self):
+    def test_ensure_per_repo_artifacts_dir_exists(self) -> None:
         with temp_dir() as td:
             # Make the td the buck cell root and the repo root
             (td / b".buckconfig").touch()
@@ -65,7 +65,7 @@ class ArtifactsDirTests(unittest.TestCase):
             # Call it again to make sure we don't fail on the already exists
             ensure_per_repo_artifacts_dir_exists(repo_subdir)
 
-    def test_find_buck_cell_root(self):
+    def test_find_buck_cell_root(self) -> None:
         with temp_dir() as td:
             # Make the td the buck cell root
             (td / b".buckconfig").touch()
@@ -75,7 +75,7 @@ class ArtifactsDirTests(unittest.TestCase):
             have = find_buck_cell_root(repo_subdir)
             self.assertEqual(td, have)
 
-    def test_find_buck_cell_root_missing(self):
+    def test_find_buck_cell_root_missing(self) -> None:
         with temp_dir() as td:
             try:
                 find_buck_cell_root(td)

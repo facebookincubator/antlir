@@ -142,19 +142,19 @@ class ProvidesPath(Provider):
 
 
 class ProvidesDirectory(ProvidesPath):
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
         super().__init__(req=RequireDirectory(path=path))
 
 
 class ProvidesFile(ProvidesPath):
     "Does not have to be a regular file, just any leaf in the FS tree"
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
         super().__init__(req=RequireFile(path=path))
 
 
 class ProvidesSymlink(ProvidesPath):
-    def __init__(self, path: Path, target: Path):
+    def __init__(self, path: Path, target: Path) -> None:
         super().__init__(req=RequireSymlink(path, target))
 
     def with_new_path(self, new_path: Path) -> "ProvidesSymlink":
@@ -163,15 +163,15 @@ class ProvidesSymlink(ProvidesPath):
 
 
 class ProvidesDoNotAccess(ProvidesPath):
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
         super().__init__(req=_RequireDoNotAccess(path=path))
 
 
 class ProvidesGroup(Provider):
-    def __init__(self, groupname: str):
+    def __init__(self, groupname: str) -> None:
         super().__init__(req=RequireGroup(groupname))
 
 
 class ProvidesUser(Provider):
-    def __init__(self, username: str):
+    def __init__(self, username: str) -> None:
         super().__init__(req=RequireUser(username))

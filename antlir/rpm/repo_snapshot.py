@@ -42,7 +42,7 @@ class ReportableError(Exception):
     as part of RepoSnapshot.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         # Even though this is morally a dict, writing a tuple to `args`
         # better honors Python's interesting exception norms, and gets us
         # usable-looking backtraces for "free".
@@ -58,7 +58,7 @@ class ReportableError(Exception):
 
 
 class FileIntegrityError(ReportableError):
-    def __init__(self, *, location, failed_check, expected, actual):
+    def __init__(self, *, location, failed_check, expected, actual) -> None:
         super().__init__(
             error="file_integrity",
             message="File had unexpected size or checksum",
@@ -70,7 +70,7 @@ class FileIntegrityError(ReportableError):
 
 
 class HTTPError(ReportableError):
-    def __init__(self, *, location, http_status):
+    def __init__(self, *, location, http_status) -> None:
         super().__init__(
             error="http",
             message="Failed HTTP request while downloading a repo object",
@@ -82,7 +82,7 @@ class HTTPError(ReportableError):
 class MutableRpmError(ReportableError):
     def __init__(
         self, *, location, storage_id, checksum, other_checksums_and_universes
-    ):
+    ) -> None:
         super().__init__(
             error="mutable_rpm",
             message="Found MULTIPLE canonical checksums for one RPM NEVRA. "
@@ -143,7 +143,7 @@ class RepoSnapshot(NamedTuple):
     }
 
     @classmethod
-    def _create_sqlite_tables(cls, db: sqlite3.Connection):
+    def _create_sqlite_tables(cls, db: sqlite3.Connection) -> None:
         # For `repo_server.py` we need repo + path lookup, so that's the
         # primary key.
         #
@@ -256,7 +256,7 @@ class RepoSnapshot(NamedTuple):
             assert set(d) == set(expected_columns), (d, expected_columns)
             yield d
 
-    def to_sqlite(self, repo: str, db: sqlite3.Connection):
+    def to_sqlite(self, repo: str, db: sqlite3.Connection) -> None:
         for table, columns, gen_rows in [
             (
                 "rpm",
@@ -304,7 +304,7 @@ class RepoSnapshot(NamedTuple):
                 ([d[k] for k in columns] for d in gen_rows),
             )
 
-    def visit(self, visitor):
+    def visit(self, visitor) -> "RepoSnapshot":
         "Visits the objects in this snapshot (i.e. this shard)"
         visitor.visit_repomd(self.repomd)
         for repodata in self.storage_id_to_repodata.values():

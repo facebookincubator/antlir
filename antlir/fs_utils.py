@@ -80,7 +80,7 @@ class Path(bytes):
         yield cls._validate
 
     @classmethod
-    def _validate(cls, v):
+    def _validate(cls, v) -> "Path":
         return cls(v)
 
     def __eq__(self, obj) -> bool:
@@ -120,7 +120,7 @@ class Path(bytes):
     def __rtruediv__(self, left: AnyStr) -> "Path":
         return Path(os.path.join(byteme(left), self))
 
-    def exists(self, raise_permission_error=False) -> bool:
+    def exists(self, raise_permission_error: bool = False) -> bool:
         if not raise_permission_error:
             return os.path.exists(self)
         try:
@@ -129,7 +129,7 @@ class Path(bytes):
         except FileNotFoundError:
             return False
 
-    def wait_for(self, timeout_ms=5000) -> int:
+    def wait_for(self, timeout_ms: int = 5000) -> int:
         start_ms = int(time.monotonic() * 1000)
         elapsed_ms = 0
         while elapsed_ms < timeout_ms:
@@ -232,7 +232,11 @@ class Path(bytes):
         return self / resolved_path[len(altroot) :].lstrip(b"/")
 
     def normalized_subpath(
-        self, path: AnyStr, *, no_dereference_leaf=False, resolve_links=False
+        self,
+        path: AnyStr,
+        *,
+        no_dereference_leaf: bool = False,
+        resolve_links: bool = False,
     ) -> "Path":
         """
         Returns a normalized path to `path` interpreted as a child of the
@@ -303,7 +307,8 @@ class Path(bytes):
     def shell_quote(self) -> str:
         return shlex.quote(self.decode())
 
-    def decode(self, encoding="utf-8", errors=None) -> str:
+    # pyre-fixme[9]: errors has type `str`; used as `None`.
+    def decode(self, encoding: str = "utf-8", errors: str = None) -> str:
         # Python uses `surrogateescape` for invalid UTF-8 from the filesystem.
         if errors is None:
             errors = "surrogateescape"
@@ -340,7 +345,7 @@ class Path(bytes):
             return infile.read()
 
     @contextmanager
-    def open(self, mode="r") -> IO:
+    def open(self, mode: str = "r") -> IO:
         with open(self, mode=mode) as f:
             # pyre-fixme[7]: Expected `IO[typing.Any]` but got
             #  `Generator[io.TextIOWrapper, None, None]`.
@@ -434,7 +439,7 @@ class Path(bytes):
 
     # pyre-fixme[14]: `__format__` overrides method defined in `object`
     # inconsistently.
-    def __format__(self, spec) -> str:
+    def __format__(self, spec: str) -> str:
         "Allow usage of `Path` in f-strings."
         return self.decode(errors="surrogateescape").__format__(spec)
 
@@ -462,7 +467,7 @@ RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR = Path(
 ANTLIR_DIR = Path("/__antlir__")
 
 # The name of the flavor file in the meta directory
-META_FLAVOR_FILE = META_DIR / "flavor"
+META_FLAVOR_FILE: Path = META_DIR / "flavor"
 
 
 # Future: If it becomes necessary to serialize dict keys that are `Path`,
@@ -472,7 +477,9 @@ META_FLAVOR_FILE = META_DIR / "flavor"
 class _PathJSONEncoder(json.JSONEncoder):
     "Implementation detail for `Path.json_dump` & `Path.json_dumps`."
 
-    def default(self, obj):
+    # pyre-fixme[14]: `default` overrides method defined in `JSONEncoder`
+    #  inconsistently.
+    def default(self, obj: Path) -> str:
         if isinstance(obj, Path):
             return obj.decode(errors="surrogateescape")
         return super().default(self, obj)
@@ -494,7 +501,7 @@ def generate_work_dir() -> Path:
 
 
 @contextmanager
-def open_for_read_decompress(path):
+def open_for_read_decompress(path: Path):
     'Wraps `open(path, "rb")` to add transparent `.zst` or `.gz` decompression.'
     path = Path(path)
     if path.endswith(b".zst"):
@@ -539,7 +546,7 @@ def create_ro(path, mode):
 
 
 @contextmanager
-def populate_temp_dir_and_rename(dest_path, *, overwrite=False) -> Path:
+def populate_temp_dir_and_rename(dest_path, *, overwrite: bool = False) -> Path:
     """
     Returns a Path to a temporary directory. The context block may populate
     this directory, which will then be renamed to `dest_path`, optionally
@@ -597,7 +604,7 @@ def populate_temp_dir_and_rename(dest_path, *, overwrite=False) -> Path:
 
 @contextmanager
 def populate_temp_file_and_rename(
-    dest_path: Path, *, overwrite=False, mode="w"
+    dest_path: Path, *, overwrite: bool = False, mode: str = "w"
 ):
     """
     Opens a temporary file for writing in the same directory as the desired

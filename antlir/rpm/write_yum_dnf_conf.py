@@ -27,7 +27,7 @@ from antlir.rpm.yum_dnf_conf import YumDnf, YumDnfConfParser
 
 def populate_versionlock_conf(
     yum_dnf: YumDnf, out_dir: Path, install_dir: Path
-):
+) -> None:
     with create_ro(out_dir / "versionlock.conf", "w") as outf:
         outf.write(
             textwrap.dedent(
@@ -51,7 +51,7 @@ def write_yum_dnf_conf(
     out_dir: Path,
     install_dir: Path,
     ports: Iterable[int],
-):
+) -> None:
     # `yum-dnf-from-snapshot` implicitly depends on this path convention for
     # the main config and for the plugin configs under `<snapshot_dir>/etc`.
     plugin_dir = f"etc/{yum_dnf.value}/plugins"
@@ -101,7 +101,7 @@ def write_yum_dnf_conf(
         isolated_yc.write(conf_out)
 
 
-def main(argv: List[str]):
+def main(argv: List[str]) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,

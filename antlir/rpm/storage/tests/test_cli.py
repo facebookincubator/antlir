@@ -13,7 +13,7 @@ from .. import cli
 
 
 class StorageCliTestCase(unittest.TestCase):
-    def test_cli(self):
+    def test_cli(self) -> None:
         with temp_dir() as td:
             p = b"Hello, world!"  # Write ~1.67 chunks of this phrase
             f_in = BytesIO(p * int(cli._CHUNK_SIZE * 5 / (3 * len(p))))
@@ -51,6 +51,7 @@ class StorageCliTestCase(unittest.TestCase):
                     "get",
                     sid,
                 ],
+                # pyre-fixme[6]: For 2nd param expected `BytesIO` but got `None`.
                 from_file=None,
                 to_file=f_out,
             )

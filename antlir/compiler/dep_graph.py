@@ -114,7 +114,7 @@ class ItemReqsProvs(NamedTuple):
     item_provs: Set[ItemProv]
     item_reqs: Set[ItemReq]
 
-    def _item_self_conflict(self, item: ImageItem):
+    def _item_self_conflict(self, item: ImageItem) -> bool:
         """
         One ImageItem should not emit provides or requires clauses that
         collide on the path. Such duplication can always be avoided by
@@ -131,12 +131,12 @@ class ItemReqsProvs(NamedTuple):
             ir.item is item for ir in self.item_reqs
         )
 
-    def add_item_req(self, req: Requirement, item: ImageItem):
+    def add_item_req(self, req: Requirement, item: ImageItem) -> None:
         if self._item_self_conflict(item):
             raise RuntimeError(f"{req} from {item} conflicts in {self}")
         self.item_reqs.add(ItemReq(requires=req, item=item))
 
-    def add_item_prov(self, prov: Provider, item: ImageItem):
+    def add_item_prov(self, prov: Provider, item: ImageItem) -> None:
         if self._item_self_conflict(item):
             raise RuntimeError(f"{prov} from {item} conflicts in {self}")
 
@@ -201,7 +201,7 @@ class PathItemReqsProvs:
 
     path_to_item_reqs_provs: Dict[Path, ItemReqsProvs]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.path_to_item_reqs_provs = {}
 
     def _get_item_reqs_provs(self, path: Path) -> ItemReqsProvs:
@@ -210,13 +210,13 @@ class PathItemReqsProvs:
             ItemReqsProvs(item_provs=set(), item_reqs=set()),
         )
 
-    def add_requirement(self, req: RequirePath, item: ImageItem):
+    def add_requirement(self, req: RequirePath, item: ImageItem) -> None:
         self._get_item_reqs_provs(req.path).add_item_req(req, item)
 
-    def add_provider(self, prov: ProvidesPath, item: ImageItem):
+    def add_provider(self, prov: ProvidesPath, item: ImageItem) -> None:
         self._get_item_reqs_provs(prov.req.path).add_item_prov(prov, item)
 
-    def validate(self):
+    def validate(self) -> None:
         for path, irps in self.path_to_item_reqs_provs.items():
             irs = irps.unfulfilled_item_reqs()
             if not irs:
@@ -319,7 +319,7 @@ class ValidatedReqsProvs:
     # handling for collisions. See `PathItemReqsProvs` for more info.
     _path_item_reqs_provs: PathItemReqsProvs
 
-    def __init__(self, items: Set[ImageItem]):
+    def __init__(self, items: Set[ImageItem]) -> None:
         self._item_reqs_provs = {}
         self._path_item_reqs_provs = PathItemReqsProvs()
 
@@ -365,7 +365,9 @@ class DependencyGraph:
     """
 
     # Consumes a mix of dependency-ordered and `PhaseOrder`ed `ImageItem`s.
-    def __init__(self, iter_items: Iterator[ImageItem], layer_target: str):
+    def __init__(
+        self, iter_items: Iterator[ImageItem], layer_target: str
+    ) -> None:
         # Without deduping, dependency diamonds would cause a lot of
         # redundant work below.  `_prep_item_predecessors` mutates this.
         self.items = set()
@@ -406,7 +408,7 @@ class DependencyGraph:
             yield all_builder_makers.pop(), tuple(items)
 
     @staticmethod
-    def _add_dir_deps_for_item_provs(ns, item_provs: Set[ItemProv]):
+    def _add_dir_deps_for_item_provs(ns, item_provs: Set[ItemProv]) -> None:
         """EnsureDirsExist items are a special case in the dependency graph in
         that, for a given path, we want to ensure they're the last providers to
         be run. This is because they're the only items that will explicitly

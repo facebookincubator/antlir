@@ -38,13 +38,17 @@ def _temp_subvol(name: str):
 
 
 class YumDnfFromSnapshotTestImpl:
-    def setUp(self):  # More output for easier debugging
+    def setUp(self) -> None:  # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
+        # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `maxDiff`.
         self.maxDiff = 12345
 
-    def _yum_dnf_from_snapshot(self, **kwargs):
+    def _yum_dnf_from_snapshot(self, **kwargs) -> None:
         yum_dnf_from_snapshot.yum_dnf_from_snapshot(
-            yum_dnf=self._YUM_DNF, snapshot_dir=_SNAPSHOT_DIR, **kwargs
+            # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `_YUM_DNF`.
+            yum_dnf=self._YUM_DNF,
+            snapshot_dir=_SNAPSHOT_DIR,
+            **kwargs,
         )
 
     @contextmanager
@@ -55,7 +59,7 @@ class YumDnfFromSnapshotTestImpl:
         install_args=None,
         # Create IMAGE_ROOT/<META_DIR> by default, since it's always
         # protected, if it exists.
-        extra_mkdirs=frozenset([META_DIR.decode()]),
+        extra_mkdirs: frozenset[str] = frozenset([META_DIR.decode()]),
     ):
         if install_args is None:
             install_args = _INSTALL_ARGS
@@ -79,7 +83,7 @@ class YumDnfFromSnapshotTestImpl:
             )
             yield install_root
 
-    def _check_installed_content(self, install_root, installed_content):
+    def _check_installed_content(self, install_root, installed_content) -> None:
         # Remove known content so we can check there is nothing else.
         remove = []
 
@@ -87,11 +91,14 @@ class YumDnfFromSnapshotTestImpl:
         for path, content in installed_content.items():
             remove.append(install_root / "rpm_test" / path)
             with open(remove[-1]) as f:
+                # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+                #  `assertEqual`.
                 self.assertEqual(content, f.read())
 
         # Remove /bin/sh
         remove.append(install_root / "bin/sh")
 
+        # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `_YUM_DNF`.
         prog_name = self._YUM_DNF.value
 
         # `yum` & `dnf` also write some indexes & metadata.
@@ -101,6 +108,8 @@ class YumDnfFromSnapshotTestImpl:
             "usr/lib/.build-id",
         ]:
             remove.append(install_root / path)
+            # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+            #  `assertTrue`.
             self.assertTrue(os.path.isdir(remove[-1]), remove[-1])
         remove.append(install_root / f"var/log/{prog_name}.log")
         self.assertTrue(os.path.exists(remove[-1]))
@@ -141,7 +150,7 @@ class YumDnfFromSnapshotTestImpl:
         for d in required_dirs:
             self.assertEqual([], (install_root / d).listdir())
 
-    def test_verify_contents_of_install_from_snapshot(self):
+    def test_verify_contents_of_install_from_snapshot(self) -> None:
         milk = {
             "milk.txt": "milk 2.71 8\n",
             "post.txt": "stuff\n",  # From `milk-2.71` post-install
@@ -166,7 +175,10 @@ class YumDnfFromSnapshotTestImpl:
                 ],
             )
 
+        # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `_YUM_DNF`.
         if self._YUM_DNF == YumDnf.yum:
+            # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+            #  `assertRaises`.
             with self.assertRaises(subprocess.CalledProcessError):
                 with _install_by_provides():
                     pass
@@ -181,14 +193,17 @@ class YumDnfFromSnapshotTestImpl:
         else:
             raise NotImplementedError(self._YUM_DNF)
 
-    def test_fail_to_write_to_protected_path(self):
+    def test_fail_to_write_to_protected_path(self) -> None:
         # Nothing fails with no specified protection, or with META_DIR
         # explicitly protected, whether or not META_DIR exists.
         for p in [[], [META_DIR.decode()]]:
             with self._install(protected_paths=p):
                 pass
+            # pyre-fixme[6]: For 2nd param expected `frozenset[str]` but got
+            #  `Set[Variable[_T]]`.
             with self._install(protected_paths=p, extra_mkdirs=set()):
                 pass
+        # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `assertRaises`.
         with self.assertRaises(subprocess.CalledProcessError) as ctx:
             with self._install(protected_paths=["rpm_test/"]):
                 pass
@@ -196,11 +211,12 @@ class YumDnfFromSnapshotTestImpl:
             with self._install(protected_paths=["rpm_test/milk.txt"]):
                 pass
         # It was none other than `yum install` that failed.
+        # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `assertEqual`.
         self.assertEqual(
             _INSTALL_ARGS, ctx.exception.cmd[-len(_INSTALL_ARGS) :]
         )
 
-    def test_verify_install_to_container_root(self):
+    def test_verify_install_to_container_root(self) -> None:
         # Hack alert: if we run both `{Dnf,Yum}FromSnapshotTestCase` in one
         # test invocation, the package manager that runs will just say that
         # the package is already install, and succeed.  That's OK.
@@ -222,6 +238,7 @@ class YumDnfFromSnapshotTestImpl:
         # container "after", (c) rendered the incremental sendstream.  Since
         # incremental rendering is not implemented, settle for this basic
         # smoke-test for now.
+        # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `assertEqual`.
         self.assertEqual("lala\n", Path("/rpm_test/milk-no-sh.txt").read_text())
         # Check that our post-install scriptlet worked
         self.assertEqual("stuff\n", Path("/rpm_test/post.txt").read_text())
@@ -246,7 +263,7 @@ class YumDnfFromSnapshotTestImpl:
             # Required so that our temporary dirs can be cleaned up.
             subprocess.check_call(["umount", to_shadow])
 
-    def test_update_shadowed(self):
+    def test_update_shadowed(self) -> None:
         with temp_dir() as root, mock.patch.object(
             # Note that the shadowed root is under the install root, since
             # the `rename` runs under chroot.
@@ -267,6 +284,8 @@ class YumDnfFromSnapshotTestImpl:
                 outfile.write("`rpm` writes here")
 
             with self._set_up_shadow(replacement, to_shadow):
+                # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+                #  `assertEqual`.
                 self.assertEqual("shadows carrot", to_shadow.read_text())
                 self.assertEqual("`rpm` writes here", shadowed.read_text())
 
@@ -285,7 +304,7 @@ class YumDnfFromSnapshotTestImpl:
                 # But we updated the shadowed file
                 self.assertEqual("carrot 2 rc0\n", shadowed.read_text())
 
-    def _check_test_macro_contents(self, install_root: Path, prog):
+    def _check_test_macro_contents(self, install_root: Path, prog) -> None:
         # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
         # `assertEqual`.
         self.assertEqual(
@@ -304,7 +323,8 @@ class YumDnfFromSnapshotTestImpl:
     # The `yum` and `dnf` variants of this tests install separate,
     # independent RPMs, so they won't collide even if they run in the same
     # test container.
-    def test_install_to_host_etc(self):
+    def test_install_to_host_etc(self) -> None:
+        # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `_YUM_DNF`.
         prog = self._YUM_DNF.value
         self._yum_dnf_from_snapshot(
             protected_paths=[],
@@ -316,8 +336,9 @@ class YumDnfFromSnapshotTestImpl:
         )
         self._check_test_macro_contents(Path("/"), prog)
 
-    def test_install_to_installroot_etc(self):
+    def test_install_to_installroot_etc(self) -> None:
         with _temp_subvol("test_install_to_installroot_etc") as sv:
+            # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `_YUM_DNF`.
             prog = self._YUM_DNF.value
             self._yum_dnf_from_snapshot(
                 protected_paths=[],
@@ -330,6 +351,8 @@ class YumDnfFromSnapshotTestImpl:
             )
             self._check_test_macro_contents(sv.path(), prog)
             r = render_subvol(sv)
+            # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+            #  `assertEqual`.
             self.assertEqual(
                 ["(Dir)", {f"macros.test-{prog}": ["(File d18)"]}],
                 pop_path(r, "etc/rpm"),
@@ -338,7 +361,7 @@ class YumDnfFromSnapshotTestImpl:
                 self.assertEqual(["(Dir)", {}], pop_path(r, "etc"))
             check_common_rpm_render(self, r, prog, no_meta=True)
 
-    def test_makecache(self):
+    def test_makecache(self) -> None:
         # The preceding tests implicitly assert that we leak no cache in
         # normal usage.  But `makecache` must write one!  Note that this is
         # not exercised in the expected `--installroot=/` because that would
@@ -350,6 +373,8 @@ class YumDnfFromSnapshotTestImpl:
                 yum_dnf_args=[
                     "makecache",  # our implementation needs this to be argv[1]
                     f"--installroot={sv.path()}",
+                    # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+                    #  `_YUM_DNF`.
                     *(["fast"] if self._YUM_DNF == "yum" else []),
                 ],
             )
@@ -357,12 +382,16 @@ class YumDnfFromSnapshotTestImpl:
             r = render_subvol(sv)
             antlir_r = pop_path(r, "__antlir__")
             snap_r = pop_path(antlir_r, "rpm/repo-snapshot")
+            # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+            #  `assertEqual`.
             self.assertEqual(["(Dir)", {"rpm": ["(Dir)", {}]}], antlir_r)
             (snap_name,) = snap_r[1].keys()
             cache_ino, cache_contents = pop_path(
                 snap_r, f"{snap_name}/{prog}/var/cache/{prog}"
             )
             self.assertEqual("(Dir)", cache_ino)
+            # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
+            #  `assertLess`.
             self.assertLess(0, len(cache_contents))
             self.assertEqual(
                 ["(Dir)", {"var": ["(Dir)", {"cache": ["(Dir)", {}]}]}],
@@ -381,7 +410,7 @@ class YumDnfFromSnapshotTestImpl:
 class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
     _YUM_DNF = YumDnf.yum
 
-    def test_yum_builddep(self):
+    def test_yum_builddep(self) -> None:
         with _temp_subvol("test_yum_builddep") as sv, Path.resource(
             __package__, "needs-carrot.spec", exe=False
         ) as spec_path:

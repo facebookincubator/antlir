@@ -25,7 +25,7 @@ from ..inode_id import InodeIDMap
 
 
 class InodeTestCase(AntlirTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.id_map = InodeIDMap.new()
 
@@ -39,7 +39,7 @@ class InodeTestCase(AntlirTestCase):
             **kwargs,
         )
 
-    def test_inode(self):
+    def test_inode(self) -> None:
         # Shared `repr` boilerplate for the output of `self._complete_inode`.
         O = "o3:5"
         T = "t70/01/01.00:00:02+5+2"
@@ -84,6 +84,7 @@ class InodeTestCase(AntlirTestCase):
         # Trip the remaining `assert_valid_and_complete` checks, while also
         # ensuring that `repr` works in each of the cases.  Each failure is
         # preceded by a nearly-identical success.
+        # pyre-fixme[6]: For 3rd param expected `Set[ChunkClone]` but got `Tuple[]`.
         chunk_d11 = Chunk(kind=Extent.Kind.DATA, length=11, chunk_clones=())
         for good, expected_repr, kwargs in [
             (1, f"(Dir {R})", {"file_type": stat.S_IFDIR, "mode": 0o644}),
@@ -161,7 +162,7 @@ class InodeTestCase(AntlirTestCase):
                     with self.assertRaises(RuntimeError):
                         ino.assert_valid_and_complete()
 
-    def test_chunk_clone(self):
+    def test_chunk_clone(self) -> None:
         clone = Clone(
             inode_id=self.id_map.add_file(self.id_map.next(), b"a"),
             offset=17,
@@ -170,7 +171,7 @@ class InodeTestCase(AntlirTestCase):
         self.assertEqual("a:17+3", repr(clone))
         self.assertEqual("a:17+3@22", repr(ChunkClone(offset=22, clone=clone)))
 
-    def test_chunk(self):
+    def test_chunk(self) -> None:
         chunk = Chunk(kind=Extent.Kind.DATA, length=12, chunk_clones=set())
         self.assertEqual("(DATA/12)", repr(chunk))
         ino_id = self.id_map.add_file(self.id_map.next(), b"a")
@@ -190,16 +191,16 @@ class InodeTestCase(AntlirTestCase):
             ("(DATA/12: a:7+2@3, a:5+6@4)", "(DATA/12: a:5+6@4, a:7+2@3)"),
         )
 
-    def test_repr_owner(self):
+    def test_repr_owner(self) -> None:
         self.assertEqual("12:345", repr(InodeOwner(uid=12, gid=345)))
 
-    def test_time_delta(self):
+    def test_time_delta(self) -> None:
         self.assertEqual((-1, 999999999), _time_delta((0, 0), (0, 1)))
         self.assertEqual((0, 1), _time_delta((0, 1), (0, 0)))
         self.assertEqual((-4, 999999999), _time_delta((3, 0), (6, 1)))
         self.assertEqual((3, 2), _time_delta((5, 4), (2, 2)))
 
-    def test_repr_time_delta(self):
+    def test_repr_time_delta(self) -> None:
         self.assertEqual("-3", _repr_time_delta(-3, 0))
         self.assertEqual("-3", _repr_time_delta(-4, 999999999))
         self.assertEqual("-3.001", _repr_time_delta(-4, 999000000))
@@ -207,12 +208,12 @@ class InodeTestCase(AntlirTestCase):
         self.assertEqual("+3", _repr_time_delta(3, 1))
         self.assertEqual("+3.001", _repr_time_delta(3, 1000000))
 
-    def test_repr_time(self):
+    def test_repr_time(self) -> None:
         self.assertEqual(
             "70/05/23.21:21:18.91", _repr_time(12345678, 910111213)
         )
 
-    def test_repr_utimes(self):
+    def test_repr_utimes(self) -> None:
         self.assertEqual(
             "70/05/23.21:21:18.001+7230.01-3610.6",
             repr(

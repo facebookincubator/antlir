@@ -41,9 +41,9 @@ TEMP_PATH_MIDDLES = {"create_ops": 2099, "mutate_ops": 2103}
 TEMP_PATH_COUNTER_START = 257
 
 # We have a 56KB file, and `btrfs send` emits 48KB writes.
-FILE_SZ1 = 48 * 1024
-FILE_SZ2 = 8 * 1024
-FILE_SZ = FILE_SZ1 + FILE_SZ2
+FILE_SZ1: int = 48 * 1024
+FILE_SZ2: int = 8 * 1024
+FILE_SZ: int = FILE_SZ1 + FILE_SZ2
 
 
 _dir_with_acls_system_posix_acl = (

@@ -46,8 +46,13 @@ def pop_path(render, path, *default):
 # 2 places that need it, and it's annoying to create a whole new module just
 # for this helper.
 def check_common_rpm_render(
-    test, rendered_subvol, yum_dnf: str, *, no_meta=False, is_makecache=False
-):
+    test,
+    rendered_subvol,
+    yum_dnf: str,
+    *,
+    no_meta: bool = False,
+    is_makecache: bool = False,
+) -> None:
     r = copy.deepcopy(rendered_subvol)
 
     # Ignore a bunch of yum / dnf / rpm spam

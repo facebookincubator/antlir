@@ -51,7 +51,7 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
                 ret[target[len(main_cell) :]] = str(loc)
         return ret
 
-    def _run_test(self, targets_and_locs, delim, main_cell=""):
+    def _run_test(self, targets_and_locs, delim, main_cell: str = "") -> None:
         with self._cell_root(main_cell) as cell_root:
             targets_and_locs = {
                 target: cell_root / "buck-out" / loc
@@ -81,7 +81,7 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
             self._expected_output(targets_and_locs, main_cell),
         )
 
-    def test_simple_case(self):
+    def test_simple_case(self) -> None:
         self._run_test(
             targets_and_locs={
                 "//this/is/a:target": "this/is/the/target/location"
@@ -89,13 +89,13 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
             delim="|",
         )
 
-    def test_unicode_case(self):
+    def test_unicode_case(self) -> None:
         self._run_test(
             targets_and_locs={"//this/is/crap:💩": "this/is/crap/💩"},
             delim="☃",
         )
 
-    def test_space_case(self):
+    def test_space_case(self) -> None:
         self._run_test(
             targets_and_locs={
                 "//this/has a/space:in it": "this/has a/space/in it"
@@ -103,7 +103,7 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
             delim="|",
         )
 
-    def test_multi_cell(self):
+    def test_multi_cell(self) -> None:
         self._run_test(
             targets_and_locs={
                 "//foo:bar": "foo/bar",
@@ -114,7 +114,7 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
             main_cell="A",
         )
 
-    def test_multi_cell_no_main_cell_name(self):
+    def test_multi_cell_no_main_cell_name(self) -> None:
         self._run_test(
             targets_and_locs={
                 "//foo:bar": "foo/bar",
@@ -124,7 +124,7 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
             main_cell="",
         )
 
-    def test_cannot_find_cell_root(self):
+    def test_cannot_find_cell_root(self) -> None:
         self.assertRaises(
             RuntimeError,
             self._run_test,
