@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 
-def coverage_test_helper():
+def coverage_test_helper() -> int:
     one = 10 + 3 - 12
     print("This function should be called {one} time to achieve 100% coverage")
     return one

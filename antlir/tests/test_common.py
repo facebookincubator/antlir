@@ -23,7 +23,7 @@ from ..common import (
 
 
 class TestCommon(unittest.IsolatedAsyncioTestCase):
-    def test_retry_fn(self):
+    def test_retry_fn(self) -> None:
         class Retriable:
             def __init__(self, attempts_to_fail=0):
                 self.attempts = 0
@@ -106,7 +106,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             )
         self.assertEqual((1,), ex_ctx.exception.args)
 
-    def test_retryable(self):
+    def test_retryable(self) -> None:
         @retryable("got {a}, {b}, {c}", [0])
         def to_be_retried(a: int, b: int, c: int = 5):
             raise RuntimeError("retrying...")
@@ -117,7 +117,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             to_be_retried(1, b=2)
         self.assertIn("got 1, 2, 5", "".join(logs.output))
 
-    async def test_async_retry_fn(self):
+    async def test_async_retry_fn(self) -> None:
         class Retriable:
             def __init__(self, attempts_to_fail=0):
                 self.attempts = 0
@@ -205,7 +205,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             )
         self.assertEqual((1,), ex_ctx.exception.args)
 
-    async def test_async_retryable(self):
+    async def test_async_retryable(self) -> None:
         @async_retryable("got {a}, {b}, {c}", [0])
         async def to_be_retried(a: int, b: int, c: int = 5):
             raise RuntimeError("retrying...")
@@ -216,7 +216,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             await to_be_retried(1, b=2)
         self.assertIn("got 1, 2, 5", "".join(logs.output))
 
-    def test_retryable_skip(self):
+    def test_retryable_skip(self) -> None:
         iters = 0
 
         @retryable(
@@ -234,7 +234,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(1, iters)
 
     @unittest.mock.patch("antlir.common._mockable_platform_release")
-    def test_kernel_version(self, platform_release):
+    def test_kernel_version(self, platform_release) -> None:
         uname_to_tuples = {
             "5.2.9-129_fbk13_hardened_3948_ga3d2430737fa": (5, 2),
             "5.11.4-arch1-1": (5, 11),
@@ -246,18 +246,20 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
 
             self.assertEqual(kernel_version(), parsed)
 
-    async def test_async_run(self):
+    async def test_async_run(self) -> None:
         cmd = ["echo", "-n", "hithere"]
+        # pyre-fixme[6]: For 1st param expected `List[Union[bytes, str]]` but got
+        #  `List[str]`.
         res = await async_run(cmd, check=True, stdout=asyncio.subprocess.PIPE)
         self.assertEqual(b"hithere", res.stdout)
         self.assertFalse(res.stderr)
         self.assertEqual(0, res.returncode)
         self.assertEqual(cmd, res.args)
 
-    async def test_async_run_check_failure(self):
+    async def test_async_run_check_failure(self) -> None:
         with self.assertRaises(subprocess.CalledProcessError):
             await async_run(["sh", "exit", "1"], check=True)
 
-    async def test_async_run_missing_pipe_stdin(self):
+    async def test_async_run_missing_pipe_stdin(self) -> None:
         with self.assertRaisesRegex(AssertionError, "You must set"):
             await async_run(["foo"], input=b"hello there")

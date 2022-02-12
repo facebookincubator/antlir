@@ -10,7 +10,7 @@ from ..find_snapshot import mangle_target, snapshot_install_dir
 
 
 class TestCommon(unittest.TestCase):
-    def test_mangle_target(self):
+    def test_mangle_target(self) -> None:
         self.assertEqual(
             "non-default-rep...pshot-for-tests__XFsi7Ukto4Zfl6vp4e0F",
             mangle_target("//antlir/rpm:non-default-repo-snapshot-for-tests"),
@@ -20,7 +20,7 @@ class TestCommon(unittest.TestCase):
             mangle_target("//antlir/rpm:repo-snapshot-for-tests"),
         )
 
-    def test_snapshot_install_dir(self):
+    def test_snapshot_install_dir(self) -> None:
         self.assertEqual(
             b"/__antlir__/rpm/repo-snapshot/chicken__DPPfV4lnzLJ-mvxxFHHM",
             snapshot_install_dir("//well/fed:chicken"),

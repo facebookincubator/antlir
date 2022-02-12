@@ -303,7 +303,7 @@ class Extent(NamedTuple):
             else:
                 raise AssertionError(leaf.content)  # pragma: no cover
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "".join(
             # merge adjacent leaves of the same type
             f"{k}{sum(l for _, l in leaves)}"
@@ -312,8 +312,8 @@ class Extent(NamedTuple):
             )
         )
 
-    def __copy__(self):
+    def __copy__(self) -> "Extent":
         return self  # See the docstring
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo) -> "Extent":
         return self  # See the docstring

@@ -21,7 +21,7 @@ class SubvolumeSetTestCase(AntlirTestCase):
     `IncompleteInode` becasuse those classes have their own tests.
     """
 
-    def _check_repr(self, expected, subvol_set: SubvolumeSet):
+    def _check_repr(self, expected, subvol_set: SubvolumeSet) -> None:
         self.assertEqual(
             *[
                 {desc: emit_all_traversal_ids(sv) for desc, sv in ser.items()}
@@ -36,7 +36,7 @@ class SubvolumeSetTestCase(AntlirTestCase):
             ]
         )
 
-    def test_subvolume_set(self):
+    def test_subvolume_set(self) -> None:
         si = SendStreamItems
         subvols = SubvolumeSet.new()
         # We'll check that freezing the SubvolumeSet at various points
@@ -48,6 +48,7 @@ class SubvolumeSetTestCase(AntlirTestCase):
             subvols, si.subvol(path=b"cat", uuid=b"abe", transid=3)
         )
         cat_mutator.apply_item(si.mkfile(path=b"from"))
+        # pyre-fixme[6]: For 3rd param expected `bytes` but got `str`.
         cat_mutator.apply_item(si.write(path=b"from", offset=0, data="hi"))
         cat_mutator.apply_item(si.mkfile(path=b"to"))
         cat_mutator.apply_item(si.mkfile(path=b"hole"))
@@ -56,6 +57,7 @@ class SubvolumeSetTestCase(AntlirTestCase):
             path=b"to",
             offset=0,
             from_uuid=b"BAD",
+            # pyre-fixme[6]: For 4th param expected `bytes` but got `int`.
             from_transid=3,
             from_path=b"from",
             clone_offset=0,
@@ -146,6 +148,7 @@ class SubvolumeSetTestCase(AntlirTestCase):
         )
         self.assertEqual(
             "(File h5)",
+            # pyre-fixme[16]: Optional type has no attribute `inode_at_path`.
             repr(subvols.get_by_rendered_id("cat").inode_at_path(b"hole")),
         )
 
@@ -156,6 +159,7 @@ class SubvolumeSetTestCase(AntlirTestCase):
                 offset=1,
                 len=2,
                 from_uuid=b"abe",
+                # pyre-fixme[6]: For 5th param expected `bytes` but got `int`.
                 from_transid=3,
                 from_path=b"hole",
                 clone_offset=2,
@@ -247,7 +251,7 @@ class SubvolumeSetTestCase(AntlirTestCase):
         for expected, frozen in reprs_and_frozens:
             self._check_repr(expected, frozen)
 
-    def test_errors(self):
+    def test_errors(self) -> None:
         si = SendStreamItems
         subvols = SubvolumeSet.new()
 

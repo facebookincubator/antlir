@@ -18,22 +18,24 @@ from .storage import Storage
 _CHUNK_SIZE = 2 ** 20  # Not too important, anything large enough is fine.
 
 
-def put(args):
+def put(args) -> None:
     storage = Storage.from_json(args.storage)
+    # pyre-fixme[16]: `Pluggable` has no attribute `writer`.
     with storage.writer() as fout:
         for chunk in read_chunks(args.from_file, _CHUNK_SIZE):
             fout.write(chunk)
         args.to_file.write((fout.commit() + "\n").encode())
 
 
-def get(args):
+def get(args) -> None:
     storage = Storage.from_json(args.storage)
+    # pyre-fixme[16]: `Pluggable` has no attribute `reader`.
     with storage.reader(args.storage_id) as fin:
         for chunk in read_chunks(fin, _CHUNK_SIZE):
             args.to_file.write(chunk)
 
 
-def main(argv, from_file: BytesIO, to_file: BytesIO):
+def main(argv, from_file: BytesIO, to_file: BytesIO) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -227,7 +227,7 @@ def parse_args(argv):
     return Path.parse_args(parser, argv)
 
 
-def has_new_subvolume(args):
+def has_new_subvolume(args) -> bool:
     new_subvolume_args = (
         args.new_subvolume_wrapper_dir,
         args.new_subvolume_json,
@@ -254,7 +254,7 @@ def has_new_subvolume(args):
     return False
 
 
-def subvolume_garbage_collector(argv):
+def subvolume_garbage_collector(argv) -> None:
     """
     IMPORTANT:
 

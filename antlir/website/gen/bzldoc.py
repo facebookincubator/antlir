@@ -171,7 +171,7 @@ generated: """
         return md
 
 
-def bzldoc():
+def bzldoc() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("bzls", type=Path.from_argparse, nargs="+")
     parser.add_argument("outdir", type=Path.from_argparse)
@@ -191,6 +191,7 @@ def bzldoc():
         assert bzl.endswith(b".bzl")
         module_path = Path(bzl[:-4])
         module = BzlFile(module_path, parsed)
+        # pyre-fixme[16]: `Mapping` has no attribute `__setitem__`.
         all_modules[module_path] = module
 
     for mod in all_modules.values():

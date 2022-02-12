@@ -73,7 +73,7 @@ def make_target_path_map(targets_locations: Sequence[str]) -> Dict[str, str]:
     return targets_to_outputs
 
 
-def main(stdin, stdout, delim):
+def main(stdin, stdout, delim) -> None:
     """
     This reads a list that contains a delimited list of buck target ->
     on disk location mappings.  Since this binary exists entirely

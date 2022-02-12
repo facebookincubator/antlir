@@ -43,7 +43,7 @@ class SQLiteRpmParser(AbstractContextManager):
     XML is simply not competitive.
     """
 
-    def __init__(self, path: str):
+    def __init__(self, path: str) -> None:
         self._path = path
         # Sadly, we must support both formats. Luckily, the APIs are similar.
         if path.endswith(".gz"):
@@ -67,8 +67,10 @@ class SQLiteRpmParser(AbstractContextManager):
         else:  # pragma: no cover -- testing this is not useful
             raise NotImplementedError(path)
 
-    def __enter__(self):
+    def __enter__(self) -> "SQLiteRpmParser":
+        # pyre-fixme[16]: `SQLiteRpmParser` has no attribute `_tmp_db_ctx`.
         self._tmp_db_ctx = tempfile.NamedTemporaryFile()
+        # pyre-fixme[16]: `SQLiteRpmParser` has no attribute `_tmp_db`.
         self._tmp_db = self._tmp_db_ctx.__enter__()
         return self
 
@@ -178,7 +180,7 @@ class XMLRpmParser(AbstractContextManager):
     )
     assert len(_KNOWN_TAGS) == len(set(_KNOWN_TAGS))
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.decompressor = zlib.decompressobj(wbits=zlib.MAX_WBITS + 16)
         self.xml_parser = ElementTree.XMLPullParser(["end"])
         # ElementTree mangles the tags thus: '{xml_namespace}tag_name'

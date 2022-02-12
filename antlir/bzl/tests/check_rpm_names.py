@@ -9,7 +9,7 @@ import subprocess
 from antlir.fs_utils import Path
 
 
-def check_rpm_names(test_case, package, resource):
+def check_rpm_names(test_case, package, resource: str) -> None:
     with Path.resource(package, resource, exe=False) as expected_path, open(
         expected_path
     ) as expected_file:

@@ -40,7 +40,7 @@ def _clean_err(err):
 
 
 class SendFdsAndRunTestCase(unittest.TestCase):
-    def test_send_fds(self):
+    def test_send_fds(self) -> None:
         for sudo_args in [[], ["--sudo"], ["--sudo", "--sudo-arg", "moo=cow"]]:
             # Check basic wrapper execution, except for FD passing (we
             # pass 0 FDs), and `--no-set-listen-fds`.

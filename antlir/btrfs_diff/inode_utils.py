@@ -27,7 +27,7 @@ def erase_mode_and_owner(
     owner: "InodeOwner",
     file_mode: int,
     dir_mode: int,
-):
+) -> None:
     if ino.owner == owner:
         # pyre-fixme[41]: Cannot reassign final attribute `owner`.
         ino.owner = None
@@ -44,7 +44,7 @@ def erase_utimes_in_range(
     ino: Union[IncompleteInode, Inode],
     start: Tuple[int, int],
     end: Tuple[int, int],
-):
+) -> None:
     utimes = ino.utimes
     if utimes is not None and all(
         start <= t <= end for t in (utimes.ctime, utimes.mtime, utimes.atime)
@@ -53,7 +53,7 @@ def erase_utimes_in_range(
         ino.utimes = None
 
 
-def erase_selinux_xattr(ino: Union[IncompleteInode, Inode]):
+def erase_selinux_xattr(ino: Union[IncompleteInode, Inode]) -> None:
     # Getting coverage for this line would force us to have a hard
     # dependency on running this test on an SELinux-enabled filesystem.
     # Mocking that seems like useless effort, so let's waive coverage.

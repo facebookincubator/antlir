@@ -20,9 +20,7 @@ from .common import DUMMY_LAYER_OPTS, render_subvol
 
 
 def create_rpm_action_item(
-    from_target="t",
-    flavor_to_version_set=None,
-    **kwargs,
+    from_target: str = "t", flavor_to_version_set=None, **kwargs
 ):
     flavor_to_version_set = flavor_to_version_set or {
         "antlir_test": BZL_CONST.version_set_allow_all_versions
@@ -45,14 +43,15 @@ class RpmActionItemTestBase:
             / self._YUM_DNF.value,
         )
 
-    def _check_rpm_action_item_build_appliance(self, ba_path: Path):
+    def _check_rpm_action_item_build_appliance(self, ba_path: Path) -> None:
         self._check_rpm_action_item(
             layer_opts=self._opts(build_appliance=ba_path),
         )
 
-    def _check_rpm_action_item(self, layer_opts):
+    def _check_rpm_action_item(self, layer_opts) -> None:
         with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("rpm_action")
+            # pyre-fixme[16]: `RpmActionItemTestBase` has no attribute `assertEqual`.
             self.assertEqual(["(Dir)", {}], render_subvol(subvol))
 
             # The empty action is a no-op
@@ -69,6 +68,7 @@ class RpmActionItemTestBase:
             )
 
             # Specifying RPM versions is prohibited
+            # pyre-fixme[16]: `RpmActionItemTestBase` has no attribute `assertRaises`.
             with self.assertRaises(subprocess.CalledProcessError):
                 RpmActionItem.get_phase_builder(
                     [
@@ -83,6 +83,8 @@ class RpmActionItemTestBase:
                 )(subvol)
 
             # Cannot pass both `name` and `source`
+            # pyre-fixme[16]: `RpmActionItemTestBase` has no attribute
+            #  `assertRaisesRegex`.
             with self.assertRaisesRegex(
                 ValidationError,
                 "Exactly one of `name` or `source` must be set .*",
@@ -137,6 +139,7 @@ class RpmActionItemTestBase:
                     subvol.path("bin/sh"),
                 ]
             )
+            # pyre-fixme[16]: `RpmActionItemTestBase` has no attribute `_YUM_DNF`.
             if self._YUM_DNF == YumDnf.dnf:
                 subvol.run_as_root(
                     [

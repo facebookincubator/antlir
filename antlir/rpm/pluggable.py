@@ -58,7 +58,7 @@ class Pluggable:
         return json_cfg
 
     @classmethod
-    def add_argparse_arg(cls, parser, *args, help="", **kwargs):
+    def add_argparse_arg(cls, parser, *args, help: str = "", **kwargs) -> None:
         plugins = "; ".join(
             f"""`{n}` taking {', '.join(
                 f'`{p}`' for p in list(

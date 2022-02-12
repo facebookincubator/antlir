@@ -34,7 +34,7 @@ def _parse_stream_bytes(s: bytes) -> Iterable[SendStreamItem]:
 
 
 class ParseSendStreamTestCase(AntlirTestCase):
-    def test_verify_gold_parse(self):
+    def test_verify_gold_parse(self) -> None:
         stream_dict = gold_demo_sendstreams()
         filtered_items, expected_items = get_filtered_and_expected_items(
             items=[
@@ -47,7 +47,7 @@ class ParseSendStreamTestCase(AntlirTestCase):
         )
         self.assertEqual(filtered_items, expected_items)
 
-    def test_errors(self):
+    def test_errors(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "Magic b'xxx', not "):
             check_magic(io.BytesIO(b"xxx"))
         with self.assertRaisesRegex(RuntimeError, "we require version 1"):

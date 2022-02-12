@@ -32,11 +32,11 @@ def _get_db_rows(db: sqlite3.Connection, table: str):
 
 
 class RepoSnapshotTestCase(unittest.TestCase):
-    def setUp(self):  # More output for easier debugging
+    def setUp(self) -> None:  # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
-    def test_serialize_and_visit(self):
+    def test_serialize_and_visit(self) -> None:
         repodata = Repodata(
             location="repodata_loc",
             checksum=Checksum("a", "b"),
@@ -47,9 +47,13 @@ class RepoSnapshotTestCase(unittest.TestCase):
             xml=b"foo",
             # This object is only as populated as this test requires, in
             # practice these would not be None.
+            # pyre-fixme[6]: For 2nd param expected `int` but got `None`.
             fetch_timestamp=None,
+            # pyre-fixme[6]: For 3rd param expected `List[Repodata]` but got `None`.
             repodatas=None,
+            # pyre-fixme[6]: For 4th param expected `Checksum` but got `None`.
             checksum=None,
+            # pyre-fixme[6]: For 5th param expected `int` but got `None`.
             size=None,
             build_timestamp=7654321,
         )
@@ -62,6 +66,7 @@ class RepoSnapshotTestCase(unittest.TestCase):
             build_timestamp=90,
             canonical_checksum=Checksum("e", "f"),
             checksum=Checksum("c", "d"),
+            # pyre-fixme[6]: For 9th param expected `str` but got `None`.
             location=None,  # `_replace`d below
             size=78,
             source_rpm="foo-bar-3.14-rc0.src.rpm",
@@ -101,6 +106,7 @@ class RepoSnapshotTestCase(unittest.TestCase):
         with temp_dir() as td:
             storage = FilesystemStorage(key="test", base_dir=td / "storage")
             os.mkdir(td / "snapshot")
+            # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
             with RepoSnapshot.add_sqlite_to_storage(
                 storage, td / "snapshot"
             ) as db:

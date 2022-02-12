@@ -18,7 +18,7 @@ from antlir.nspawn_in_subvol.run_test import (
 
 
 class NspawnTestInSubvolTestCase(unittest.TestCase):
-    def test_forward_env_vars(self):
+    def test_forward_env_vars(self) -> None:
         self.assertEqual([], list(forward_env_vars({"a": "b"})))
         self.assertEqual(
             ["--setenv=TEST_PILOT=xyz"],
@@ -33,15 +33,17 @@ class NspawnTestInSubvolTestCase(unittest.TestCase):
             ),
         )
 
-    def test_do_not_rewrite_cmd(self):
+    def test_do_not_rewrite_cmd(self) -> None:
+        # pyre-fixme[16]: `Tuple` has no attribute `__enter__`.
         with do_not_rewrite_cmd(["a", "b"], 3) as cmd_and_fds:
             self.assertEqual((["a", "b"], []), cmd_and_fds)
 
-    def test_rewrite_testpilot_python_cmd(self):
+    def test_rewrite_testpilot_python_cmd(self) -> None:
         bin = "/layer-test-binary"
 
         # Test no-op rewriting
         cmd = [bin, "foo", "--bar", "beep", "--baz", "-xack", "7", "9"]
+        # pyre-fixme[16]: `Tuple` has no attribute `__enter__`.
         with rewrite_testpilot_python_cmd(cmd, next_fd=1337) as cmd_and_fd:
             self.assertEqual((cmd, []), cmd_and_fd)
 
@@ -78,14 +80,16 @@ class NspawnTestInSubvolTestCase(unittest.TestCase):
                     )
                     self.assertTrue(os.path.exists(tmp))  # Was created
 
-    def test_rewrite_tpx_gtest_cmd(self):
+    def test_rewrite_tpx_gtest_cmd(self) -> None:
         bin = "/layer-test-binary"
         # The last argument deliberately requires shell quoting.
         cmd = [bin, "foo", "--bar", "beep", "--baz", '--e"f']
 
         # Test no-op rewriting
         with mock.patch.dict(
-            os.environ, {"NO_GTEST": "env is set"}
+            os.environ,
+            {"NO_GTEST": "env is set"}
+            # pyre-fixme[16]: `Tuple` has no attribute `__enter__`.
         ), rewrite_tpx_gtest_cmd(cmd, next_fd=1337) as cmd_and_fd:
             self.assertEqual((cmd, []), cmd_and_fd)
 

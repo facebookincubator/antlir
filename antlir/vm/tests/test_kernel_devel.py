@@ -12,7 +12,7 @@ from antlir.tests.common import AntlirTestCase
 
 
 class KernelDevelTest(AntlirTestCase):
-    def test_vm_has_devel(self):
+    def test_vm_has_devel(self) -> None:
         uname = platform.release()
 
         self.assertTrue(

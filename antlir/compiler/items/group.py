@@ -35,7 +35,7 @@ class GroupFileLine(NamedTuple):
     id: int
     members: List[str]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ":".join((self.name, "x", str(self.id), ",".join(self.members)))
 
 
@@ -43,7 +43,7 @@ class GroupFile:
     lines: "OrderedDict[int, GroupFileLine]"
     nameToGID: Dict[str, int]
 
-    def __init__(self, group_file: str = ""):
+    def __init__(self, group_file: str = "") -> None:
         """
         Parse input `f` as /etc/group file. See `man 5 group`
         """
@@ -78,7 +78,7 @@ class GroupFile:
                 next_gid = gid + 1
         return next_gid
 
-    def add(self, name: str, gid: int):
+    def add(self, name: str, gid: int) -> None:
         if gid in self.lines:
             line = self.lines[gid]
             raise ValueError(
@@ -89,7 +89,7 @@ class GroupFile:
         self.lines[gid] = GroupFileLine(name=name, id=gid, members=[])
         self.nameToGID[name] = gid
 
-    def join(self, groupname: str, username: str):
+    def join(self, groupname: str, username: str) -> None:
         if groupname not in self.nameToGID:
             raise ValueError(f"{groupname} not found")
         gid = self.nameToGID[groupname]
@@ -100,7 +100,7 @@ class GroupFile:
         for name in self.nameToGID:
             yield ProvidesGroup(name)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "\n".join((str(gfl) for gfl in self.lines.values())) + "\n"
 
 
@@ -109,7 +109,7 @@ def _read_group_file(subvol: Subvol) -> str:
     return subvol.read_path_text(GROUP_FILE_PATH)
 
 
-def _write_group_file(subvol: Subvol, contents: AnyStr):
+def _write_group_file(subvol: Subvol, contents: AnyStr) -> None:
     subvol.overwrite_path_as_root(GROUP_FILE_PATH, str(contents))
 
 
@@ -129,7 +129,7 @@ class GroupItem(group_t, ImageItem):
         yield ProvidesGroup(self.name)
 
     # pyre-fixme[9]: layer_opts has type `LayerOpts`; used as `None`.
-    def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
+    def build(self, subvol: Subvol, layer_opts: LayerOpts = None) -> None:
         with USERGROUP_LOCK:
             group_file = GroupFile(_read_group_file(subvol))
             gid = self.id or group_file.next_group_id()

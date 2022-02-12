@@ -15,7 +15,7 @@ from antlir.fs_utils import Path
 log = get_logger()
 
 
-async def _pump(r, w):
+async def _pump(r, w) -> None:
     while True:
         data = r.read(4096)
         if not data:

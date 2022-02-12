@@ -21,7 +21,7 @@ from ..parse_dump import SendStreamItem, SendStreamItems as SSI
 
 
 class IncompleteInodeTestCase(unittest.TestCase):
-    def test_incomplete_file_including_common_attributes(self):
+    def test_incomplete_file_including_common_attributes(self) -> None:
         ino = IncompleteFile(item=SSI.mkfile(path=b"a"))
 
         self.assertEqual("(File)", repr(ino))
@@ -85,7 +85,7 @@ class IncompleteInodeTestCase(unittest.TestCase):
 
     # These have no special logic, so this exercise is mildly redundant,
     # but hey, unexecuted Python is a dead, smelly, broken Python.
-    def test_simple_file_types(self):
+    def test_simple_file_types(self) -> None:
         for item_type, file_type, inode_type, ino_repr in (
             (SSI.mkdir, stat.S_IFDIR, IncompleteDir, "(Dir)"),
             (SSI.mkfifo, stat.S_IFIFO, IncompleteFifo, "(FIFO)"),
@@ -95,7 +95,7 @@ class IncompleteInodeTestCase(unittest.TestCase):
             self.assertEqual(ino_repr, repr(ino))
             self.assertEqual(file_type, ino.file_type)
 
-    def test_devices(self):
+    def test_devices(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, "unexpected [^,]*, expected.*$"
         ):
@@ -120,7 +120,7 @@ class IncompleteInodeTestCase(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "unexpected device mode"):
             IncompleteDevice(item=SSI.mknod(path=b"e", mode=0o10644, dev=3))
 
-    def test_symlink(self):
+    def test_symlink(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, "unexpected [^,]*, expected.*$"
         ):
@@ -141,7 +141,7 @@ class IncompleteInodeTestCase(unittest.TestCase):
 
         self.assertEqual("(Symlink o1:2 cat)", repr(ino))
 
-    def test_apply_clone(self):
+    def test_apply_clone(self) -> None:
         f1 = IncompleteFile(item=SSI.mkfile(path=b"unused"))
         f1.apply_item(SSI.write(path=b"unused", offset=10, data=b"a" * 10))
         self.assertEqual("(File h10d10)", repr(f1))
@@ -150,7 +150,9 @@ class IncompleteInodeTestCase(unittest.TestCase):
             path=b"unused",
             offset=5,
             len=10,
+            # pyre-fixme[6]: For 4th param expected `bytes` but got `str`.
             from_uuid="",
+            # pyre-fixme[6]: For 5th param expected `bytes` but got `int`.
             from_transid=0,
             from_path=b"",
             clone_offset=5,

@@ -54,7 +54,7 @@ import re
 import subprocess
 
 
-def print_required_by(rpm, wanted, required_by, cost=None):
+def print_required_by(rpm, wanted, required_by, cost=None) -> None:
     notes = []
     if rpm in wanted:
         notes.append("wanted")
@@ -68,7 +68,7 @@ def print_required_by(rpm, wanted, required_by, cost=None):
     print(f"{rpm}\t{'; '.join(notes)}")
 
 
-def print_rpms_with_reason(wanted_rpms):
+def print_rpms_with_reason(wanted_rpms) -> None:
     wanted = set(wanted_rpms)
     # Bug alert: I was too lazy to make this handle packages that exist in
     # both i686 & x86_64 architectures, but it should be OK for our usage.
@@ -109,6 +109,7 @@ def print_rpms_with_reason(wanted_rpms):
                 rpm,
                 wanted,
                 wanted.intersection(removed),
+                # pyre-fixme[16]: Optional type has no attribute `group`.
                 cost=re.search("\nFreed space: (.*)\n", p.stdout).group(1),
             )
             continue

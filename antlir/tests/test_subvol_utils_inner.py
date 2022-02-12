@@ -13,7 +13,7 @@ from ..subvol_utils import Subvol, volume_dir
 
 
 class InnerSubvolTestCase(unittest.TestCase):
-    def test_delete_inner_subvols(self):
+    def test_delete_inner_subvols(self) -> None:
         # This branch is used for testing inside an image via the
         # `:test-subvol-utils-inner` test. The hostname is set in the
         # test definition.

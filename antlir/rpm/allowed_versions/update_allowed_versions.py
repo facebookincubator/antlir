@@ -68,7 +68,7 @@ LoadConfigFns = Mapping[LiteralKnownPluggable, Mapping[str, Callable[..., Any]]]
 
 # FB's TARGETS file auto-formatting requires double-quotes, while Python
 # (much more reasonably) prefers single quotes.
-def _drepr(s):
+def _drepr(s) -> str:
     return (
         '"'
         + s.encode("unicode_escape").decode("ascii").replace('"', '\\"')
@@ -98,7 +98,7 @@ class _PluginRef(NamedTuple):
 
 
 class _PluginDriver:
-    def __init__(self, snapshot_root: Path, flavor: str):
+    def __init__(self, snapshot_root: Path, flavor: str) -> None:
         self._snapshot_root = snapshot_root
         self._flavor = flavor
 
@@ -118,14 +118,15 @@ class _PluginDriver:
             for cls in pluggable._pluggable_kind_to_cls.values()
         ]
 
-    async def _update_snapshot(self, plugin):
+    async def _update_snapshot(self, plugin) -> None:
         if hasattr(plugin.plugin, "snapshot"):
             plugin_dir = plugin.dir(self._snapshot_root)
             os.makedirs(plugin_dir.dirname(), exist_ok=True)
+            # pyre-fixme[16]: `Path` has no attribute `__enter__`.
             with populate_temp_dir_and_rename(plugin_dir, overwrite=True) as td:
                 await plugin.plugin.snapshot(td)
 
-    async def update_snapshots(self):
+    async def update_snapshots(self) -> None:
         "Runs the snapshots in parallel for a modest speedup"
         await asyncio.gather(
             *(self._update_snapshot(plugin) for plugin in self._plugins)

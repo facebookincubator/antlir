@@ -16,14 +16,14 @@ from antlir.tests.common import AntlirTestCase
 
 
 class BasicVMTest(AntlirTestCase):
-    def test_env(self):
+    def test_env(self) -> None:
         self.assertEqual(os.environ.pop("kitteh"), "meow")
         self.assertEqual(os.environ.pop("dogsgo"), "woof")
 
-    def test_running_in_vm(self):
+    def test_running_in_vm(self) -> None:
         self.assertEqual(socket.gethostname(), "vmtest")
 
-    def test_load_resource(self):
+    def test_load_resource(self) -> None:
         with importlib.resources.path(__package__, "resource") as path:
             with open(path, "r") as f:
                 self.assertEqual(
@@ -32,23 +32,23 @@ class BasicVMTest(AntlirTestCase):
                     "but thinking makes it so.\n",
                 )
 
-    def test_running_as_root(self):
+    def test_running_as_root(self) -> None:
         self.assertEqual(os.getuid(), 0)
 
-    def test_rootfs_is_writable(self):
+    def test_rootfs_is_writable(self) -> None:
         with open("/set_us_up", "w") as f:
             f.write("All your base are belong to us!\n")
 
         with open("/set_us_up", "r") as f:
             self.assertEqual(f.read(), "All your base are belong to us!\n")
 
-    def test_running_multiple_cpus(self):
+    def test_running_multiple_cpus(self) -> None:
         self.assertEqual(multiprocessing.cpu_count(), 4)
 
-    def test_custom_rootfs(self):
+    def test_custom_rootfs(self) -> None:
         self.assertTrue(os.path.exists("/etc/i_am_a_custom_rootfs"))
 
-    def test_kernel_modules(self):
+    def test_kernel_modules(self) -> None:
         modules_path = Path("/usr/lib/modules") / platform.uname().release
         self.assertTrue(modules_path.exists())
         self.assertTrue(os.path.ismount(modules_path))

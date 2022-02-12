@@ -42,7 +42,7 @@ class frozendict(Mapping, tuple, DoNotFreeze):
     def __getitem__(self, key):
         return tuple.__getitem__(self, 0)[key]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(tuple.__getitem__(self, 0))
 
     def __iter__(self):
@@ -65,15 +65,15 @@ class frozendict(Mapping, tuple, DoNotFreeze):
             other = tuple.__getitem__(other, 0)
         return tuple.__getitem__(self, 0).__eq__(other)
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> bool:
         return not self == other
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"{type(self).__name__}({repr(dict(tuple.__getitem__(self, 0)))})"
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         # Although python dictionaries are order preserving,
         # we hash order-insensitive because that's how dict equality works.
         return hash(frozenset(self.items()))  # Future: more efficient hash?

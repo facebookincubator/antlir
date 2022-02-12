@@ -105,7 +105,7 @@ class InstallFileItem(install_files_t, ImageItem):
 
     _paths: Optional[Iterable[_InstallablePath]] = PrivateAttr()
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         customize_stat_options(kwargs, default_mode=None)  # Defaulted later
 
         source = kwargs["source"]
@@ -163,7 +163,7 @@ class InstallFileItem(install_files_t, ImageItem):
         yield RequireUser(user)
         yield RequireGroup(group)
 
-    def build(self, subvol: Subvol, layer_opts: LayerOpts):
+    def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         dest = subvol.path(self.dest)
         # The compiler should have detected any collisons, so `--no-clobber`
         # is just a failsafe.  `--no-dereference` is also a failsafe since

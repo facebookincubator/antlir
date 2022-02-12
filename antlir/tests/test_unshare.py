@@ -22,8 +22,16 @@ _NS_FILES = ["cgroup", "ipc", "mnt", "net", "pid", "uts"]
 
 
 class UnshareTestCase(unittest.TestCase):
-    def test_nsenter_wrappers(self):
+    def test_nsenter_wrappers(self) -> None:
+        # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <: [str,
+        #  bytes]]]` but got `str`.
+        # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <: [str,
+        #  bytes]]]` but got `str`.
         self.assertEqual(("a", "b"), nsenter_as_user(None, "a", "b"))
+        # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <: [str,
+        #  bytes]]]` but got `str`.
+        # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <: [str,
+        #  bytes]]]` but got `str`.
         self.assertEqual(("sudo", "c", "d"), nsenter_as_root(None, "c", "d"))
 
     def _popen_sleep_forever(self, unshare: Unshare):
@@ -57,7 +65,7 @@ class UnshareTestCase(unittest.TestCase):
         # not inside a PID namespace.
         return proc, int(ready_and_pid[1])
 
-    def _check_ns_diff(self, unshare: Unshare, ns_diff: Iterable[str]):
+    def _check_ns_diff(self, unshare: Unshare, ns_diff: Iterable[str]) -> None:
         list_ns_cmd = [
             "readlink",
             *(f"/proc/self/ns/{name}" for name in _NS_FILES),
@@ -78,7 +86,7 @@ class UnshareTestCase(unittest.TestCase):
             self.assertNotEqual(in_ns.pop(ns), out_ns.pop(ns), ns)
         self.assertEqual(in_ns, out_ns)
 
-    def _kill_keepalive(self, unshare: Unshare):
+    def _kill_keepalive(self, unshare: Unshare) -> None:
         # We can kill the inner keepalive `cat` since it runs w/ our UID
         # Since it's an `init` of a PID namespace, we must use SIGKILL.
         cat_pid = int(
@@ -91,12 +99,16 @@ class UnshareTestCase(unittest.TestCase):
         print("Sending SIGKILL to", cat_pid)
         os.kill(cat_pid, signal.SIGKILL)
 
-    def test_pid_namespace(self):
+    def test_pid_namespace(self) -> None:
         with Unshare([Namespace.PID]) as unshare:
             proc, _ = self._popen_sleep_forever(unshare)
             # Check that "as user" works.
             for arg, expected in (("-u", os.geteuid()), ("-g", os.getegid())):
                 actual = int(
+                    # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
+                    # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     subprocess.check_output(nsenter_as_user(unshare, "id", arg))
                 )
                 self.assertEqual(expected, actual)
@@ -107,10 +119,12 @@ class UnshareTestCase(unittest.TestCase):
 
         self.assertEqual(-signal.SIGKILL, proc.poll())  # Reaped by PID NS
 
-    def test_pid_namespace_dead_keepalive(self):
+    def test_pid_namespace_dead_keepalive(self) -> None:
         with Unshare([Namespace.PID]) as unshare:
             self._check_ns_diff(unshare, {"pid"})
 
+            # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <: [str,
+            #  bytes]]]` but got `str`.
             good_echo = nsenter_as_user(unshare, "echo")
             subprocess.check_call(good_echo)  # Will fail once the NS is dead
 
@@ -143,7 +157,7 @@ class UnshareTestCase(unittest.TestCase):
         self.assertEqual(None, unshare._keepalive_proc)
         self.assertEqual(None, unshare._namespace_to_file)
 
-    def test_no_namespaces(self):
+    def test_no_namespaces(self) -> None:
         """
         A silly test that shows that unsharing nothing still works -- which
         is useful to distinguish self._namespace_to_file {} vs None.  That
@@ -152,12 +166,12 @@ class UnshareTestCase(unittest.TestCase):
         with Unshare([]) as unshare:
             self._check_ns_diff(unshare, {})
 
-    def test_multiple_namespaces(self):
+    def test_multiple_namespaces(self) -> None:
         "Just a smoke test for multiple namespaces being entered at once"
         with Unshare([Namespace.PID, Namespace.MOUNT]) as unshare:
             self._check_ns_diff(unshare, {"mnt", "pid"})
 
-    def test_mount_namespace(self):
+    def test_mount_namespace(self) -> None:
         try:
             sleep_pid = None
             with tempfile.TemporaryDirectory() as mnt_src, tempfile.TemporaryDirectory() as mnt_dest1, tempfile.TemporaryDirectory() as mnt_dest2:  # noqa: E501
@@ -187,7 +201,22 @@ class UnshareTestCase(unittest.TestCase):
 
                     subprocess.check_call(
                         nsenter_as_root(
-                            unshare, "mount", mnt_src, mnt_dest1, "-o", "bind"
+                            unshare,
+                            # pyre-fixme[6]: For 2nd param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            "mount",
+                            # pyre-fixme[6]: For 3rd param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            mnt_src,
+                            # pyre-fixme[6]: For 4th param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            mnt_dest1,
+                            # pyre-fixme[6]: For 5th param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            "-o",
+                            # pyre-fixme[6]: For 6th param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            "bind",
                         )
                     )
                     check_mnt_dest(mnt_dest1)
@@ -198,7 +227,22 @@ class UnshareTestCase(unittest.TestCase):
                     # We can make a second mount inside the namespace
                     subprocess.check_call(
                         nsenter_as_root(
-                            unshare, "mount", mnt_src, mnt_dest2, "-o", "bind"
+                            unshare,
+                            # pyre-fixme[6]: For 2nd param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            "mount",
+                            # pyre-fixme[6]: For 3rd param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            mnt_src,
+                            # pyre-fixme[6]: For 4th param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            mnt_dest2,
+                            # pyre-fixme[6]: For 5th param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            "-o",
+                            # pyre-fixme[6]: For 6th param expected
+                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
+                            "bind",
                         )
                     )
                     check_mnt_dest(mnt_dest2)
@@ -222,7 +266,7 @@ class UnshareTestCase(unittest.TestCase):
                     os.kill(sleep_pid, signal.SIGTERM)
                 proc.wait()
 
-    def test_network_namespace(self):
+    def test_network_namespace(self) -> None:
         # create a network namespace and a tap device within it, ensuring that
         # it is only visible within the namespace
         with Unshare([Namespace.NETWORK]) as unshare:
@@ -230,6 +274,10 @@ class UnshareTestCase(unittest.TestCase):
             self.assertNotIn(
                 "ns-tap",
                 subprocess.run(
+                    # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
+                    # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     nsenter_as_root(unshare, "ip", "link"),
                     check=True,
                     stdout=subprocess.PIPE,
@@ -240,12 +288,26 @@ class UnshareTestCase(unittest.TestCase):
             subprocess.run(
                 nsenter_as_root(
                     unshare,
+                    # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     "ip",
+                    # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     "tuntap",
+                    # pyre-fixme[6]: For 4th param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     "add",
+                    # pyre-fixme[6]: For 5th param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     "dev",
+                    # pyre-fixme[6]: For 6th param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     "ns-tap",
+                    # pyre-fixme[6]: For 7th param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     "mode",
+                    # pyre-fixme[6]: For 8th param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     "tap",
                 ),
                 check=True,
@@ -254,6 +316,10 @@ class UnshareTestCase(unittest.TestCase):
             self.assertIn(
                 "ns-tap",
                 subprocess.run(
+                    # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
+                    # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
+                    #  [str, bytes]]]` but got `str`.
                     nsenter_as_root(unshare, "ip", "link"),
                     check=True,
                     stdout=subprocess.PIPE,
@@ -273,13 +339,15 @@ class UnshareTestCase(unittest.TestCase):
                 ).stdout,
             )
 
-    def test_nsenter_without_sudo(self):
+    def test_nsenter_without_sudo(self) -> None:
         # This just creates the namespace and then compares commands generated
         # to confirm that the `sudo` is dropped.  Since `nsenter` requires
         # root to enter a namespace, if we tried to actually run the command
         # it would surely break.
         with Unshare([Namespace.MOUNT]) as unshare:
+            # pyre-fixme[6]: For 1st param expected `AnyStr` but got `List[str]`.
             sudo_cmd = unshare.nsenter_as_root(["/bin/ls"])
+            # pyre-fixme[6]: For 1st param expected `AnyStr` but got `List[str]`.
             no_sudo_cmd = unshare.nsenter_without_sudo(["/bin/ls"])
 
         self.assertEqual(no_sudo_cmd, sudo_cmd[1:])

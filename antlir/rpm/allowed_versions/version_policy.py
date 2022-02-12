@@ -73,10 +73,10 @@ def _deserialize_evra(
 
 
 class ManualVersionPolicy(VersionPolicy, plugin_kind="manual"):
-    def __init__(self):
+    def __init__(self) -> None:
         pass  # This tells `add_argparse_arg` we take no args.
 
-    async def snapshot(self, snapshot_dir: Path):
+    async def snapshot(self, snapshot_dir: Path) -> None:
         '"manual" version policies do not need to snapshot anything'
 
     @contextmanager

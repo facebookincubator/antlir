@@ -106,7 +106,7 @@ class SubvolumeOnDisk(
         subvol_path: Path,
         subvolumes_dir: Path,
         build_appliance_path: Optional[Path] = None,
-    ):
+    ) -> "SubvolumeOnDisk":
         subvol_rel_path = subvol_path.relpath(subvolumes_dir)
         pieces = subvol_rel_path.split(b"/")
         if pieces[:1] == [b""] or b".." in pieces:
@@ -133,7 +133,9 @@ class SubvolumeOnDisk(
         return self
 
     @classmethod
-    def from_serializable_dict(cls, d, subvolumes_dir: Path):
+    def from_serializable_dict(
+        cls, d, subvolumes_dir: Path
+    ) -> "SubvolumeOnDisk":
         subvol_rel_path = Path(d[_SUBVOLUME_REL_PATH])
         # This is copypasta of subvolume_path() but I need it before
         # creating the object. The assert below keeps them in sync.
@@ -218,5 +220,5 @@ class SubvolumeOnDisk(
                 f"Parsed subvolume JSON from {infile}: {parsed_json}"
             ) from ex
 
-    def to_json_file(self, outfile):
+    def to_json_file(self, outfile) -> None:
         outfile.write(json.dumps(self.to_serializable_dict()))

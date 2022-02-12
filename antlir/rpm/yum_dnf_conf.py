@@ -40,18 +40,20 @@ class YumDnfConfRepo(NamedTuple):
     gpg_key_urls: Tuple[str]
 
     @classmethod
-    def from_config_section(cls, name, cfg_sec):
+    def from_config_section(cls, name, cfg_sec) -> "YumDnfConfRepo":
         assert "/" not in name and "\0" not in name, f"Bad repo name {name}"
         return YumDnfConfRepo(
             name=name,
             base_url=cfg_sec["baseurl"],
+            # pyre-fixme[6]: For 3rd param expected `Tuple[str]` but got
+            #  `Union[Tuple[], typing.Tuple[typing.Any, ...]]`.
             gpg_key_urls=tuple(re.findall(r"[^\n\s,]+", cfg_sec["gpgkey"]))
             if "gpgkey" in cfg_sec
             else (),
         )
 
 
-def _isolate_ssl_options(cfg):
+def _isolate_ssl_options(cfg) -> None:
     # We don't actually need the SSL options, because we serve everything
     # over HTTP from the local `repo-server`, so they shouldn't affect
     # anything.  However, `yum` prints this annoying logspam when the
@@ -92,7 +94,7 @@ class YumDnfConfIsolator:
     off-host repo accesses.
     """
 
-    def __init__(self, yum_dnf: YumDnf, cp: ConfigParser):
+    def __init__(self, yum_dnf: YumDnf, cp: ConfigParser) -> None:
         self._yum_dnf = yum_dnf
         self._cp = ConfigParser()
         self._cp.read_dict(cp)  # Make a copy
@@ -222,14 +224,14 @@ class YumDnfConfIsolator:
         self._isolated_main = True
         return self
 
-    def write(self, out: TextIO):
+    def write(self, out: TextIO) -> None:
         "Outputs a `{yum,dnf}.conf` file with the changed configuration."
         assert self._isolated_main and self._isolated_repos
         self._cp.write(out)
 
 
 class YumDnfConfParser:
-    def __init__(self, yum_dnf: YumDnf, conf: TextIO):
+    def __init__(self, yum_dnf: YumDnf, conf: TextIO) -> None:
         self._yum_dnf = yum_dnf
         self._cp = ConfigParser()
         self._cp.read_file(conf)

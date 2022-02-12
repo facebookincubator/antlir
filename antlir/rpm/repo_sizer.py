@@ -41,14 +41,14 @@ class Synonyms(NamedTuple):
 
 
 class _ObjectCounter:
-    def __init__(self):
+    def __init__(self) -> None:
         # An alternative to keying everything on checksum would be to use
         # keys like `checksum` for `Repodata` and `nevra` for `Rpm`.
         # Uniformly using checksums gracefully handles `MutableRpmError`,
         # and keeps this code generic.
         self._synonyms = Synonyms({}, UnionFind())
 
-    def _set_size(self, chk, obj_size):
+    def _set_size(self, chk, obj_size) -> None:
         """Helper to add a key into `checksum_size` while also performing
         a sanity check to ensure that, if the checksum already existed in the
         map, the size is the same.
@@ -85,7 +85,7 @@ class _ObjectCounter:
 
 
 class RepoSizer:
-    def __init__(self):
+    def __init__(self) -> None:
         # Count each type of objects separately
         self._type_to_counter = defaultdict(_ObjectCounter)
 

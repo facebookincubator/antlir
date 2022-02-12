@@ -24,7 +24,7 @@ from .common import AntlirTestCase
 
 
 class ImagePackageTestCaseBase(AntlirTestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         # Works in @mode/opt since the files of interest are baked into the XAR
         self.my_dir = Path(__file__).dirname()
@@ -44,7 +44,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
 
     def _assert_filesystem_label(
         self, unshare: Unshare, mount_dir: Path, label: str
-    ):
+    ) -> None:
         self.assertEqual(
             subprocess.check_output(
                 nsenter_as_root(
@@ -74,7 +74,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
             label,
         )
 
-    def _assert_ignore_original_extents(self, original_render):
+    def _assert_ignore_original_extents(self, original_render) -> None:
         """
         Some filesystem formats do not preserve the original's cloned extents
         of zeros, nor the zero-hole-zero patter.
@@ -101,7 +101,9 @@ class ImagePackageTestCaseBase(AntlirTestCase):
         )
         original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
 
-    def _assert_meta_valid_and_sendstreams_equal(self, expected_stream, stream):
+    def _assert_meta_valid_and_sendstreams_equal(
+        self, expected_stream, stream
+    ) -> None:
         self.assertEqual(get_meta_dir_contents(), pop_path(stream, ".meta"))
         self.assertEqual(
             expected_stream,
@@ -109,18 +111,34 @@ class ImagePackageTestCaseBase(AntlirTestCase):
         )
 
     @with_temp_subvols
-    def _verify_ext3_mount(self, temp_subvolumes, unshare, mount_dir, label):
+    def _verify_ext3_mount(
+        self, temp_subvolumes, unshare, mount_dir, label: str
+    ) -> None:
         self._assert_filesystem_label(unshare, mount_dir, label)
         subvol = temp_subvolumes.create("subvol")
         subprocess.check_call(
             nsenter_as_root(
                 unshare,
+                # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
                 "rsync",
+                # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
                 "--archive",
+                # pyre-fixme[6]: For 4th param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
                 "--hard-links",
+                # pyre-fixme[6]: For 5th param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
                 "--sparse",
+                # pyre-fixme[6]: For 6th param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
                 "--xattrs",
+                # pyre-fixme[6]: For 7th param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
                 "--acls",
+                # pyre-fixme[6]: For 8th param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
                 f"{mount_dir}/",
                 subvol.path(),
             )
@@ -149,13 +167,19 @@ class ImagePackageTestCaseBase(AntlirTestCase):
             )
 
     @with_temp_subvols
-    def _verify_vfat_mount(self, temp_subvolumes, unshare, mount_dir, label):
+    def _verify_vfat_mount(
+        self, temp_subvolumes, unshare, mount_dir, label: str
+    ) -> None:
         self._assert_filesystem_label(unshare, mount_dir, label)
         subvol = temp_subvolumes.create("subvol")
         subprocess.check_call(
             nsenter_as_root(
                 unshare,
+                # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
                 "cp",
+                # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `str`.
                 "-a",
                 mount_dir / ".",
                 subvol.path(),

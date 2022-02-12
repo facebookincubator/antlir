@@ -22,7 +22,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
             return self._mock_uuid_stack.pop()
         return f"test_uuid_of:{subvolume_path}"
 
-    def setUp(self):
+    def setUp(self) -> None:
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
@@ -49,7 +49,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
         self.mock_gethostname.side_effect = lambda: _MY_HOST
         self.addCleanup(self.patch_gethostname.stop)
 
-    def _check(self, actual_subvol, expected_path, expected_subvol):
+    def _check(self, actual_subvol, expected_path, expected_subvol) -> None:
         self.assertEqual(expected_path, actual_subvol.subvolume_path())
         self.assertEqual(expected_subvol, actual_subvol)
 
@@ -74,7 +74,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
         )
         self.assertEqual(stack_size, len(self._mock_uuid_stack))
 
-    def test_from_json_file_errors(self):
+    def test_from_json_file_errors(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "Parsing subvolume JSON"):
             subvolume_on_disk.SubvolumeOnDisk.from_json_file(
                 io.StringIO("invalid json"), Path("/subvols")
@@ -84,7 +84,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                 io.StringIO("5"), Path("/subvols")
             )
 
-    def test_from_serializable_dict_and_validation(self):
+    def test_from_serializable_dict_and_validation(self) -> None:
         with temp_dir() as td:
             # Note: Unlike test_from_subvolume_path, this test uses a
             # trailing / (to increase coverage).
@@ -143,7 +143,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                 ),
             )
 
-    def test_from_subvolume_path(self):
+    def test_from_subvolume_path(self) -> None:
         with temp_dir() as td:
             # Note: Unlike test_from_serializable_dict_and_validation, this
             # test does NOT use a trailing / (to increase coverage).
@@ -196,7 +196,7 @@ class BtrfsVolumePropsTestCase(unittest.TestCase):
     "Separate from SubvolumeOnDiskTestCase because to avoid its mocks."
 
     @unittest.mock.patch("subprocess.check_output")
-    def test_btrfs_get_volume_props(self, check_output):
+    def test_btrfs_get_volume_props(self, check_output) -> None:
         parent = "/subvols/dir/parent"
         check_output.return_value = b"""\
 dir/parent
@@ -216,6 +216,7 @@ dir/parent
 \t\t\t\tdir/bar
 """
         self.assertEquals(
+            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             subvolume_on_disk._btrfs_get_volume_props(parent),
             {
                 "Name": "parent",
@@ -255,6 +256,7 @@ dir/child
 \tSnapshot(s):
 """
         self.assertEquals(
+            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             subvolume_on_disk._btrfs_get_volume_props(child),
             {
                 "Name": "child",

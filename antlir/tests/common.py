@@ -13,14 +13,14 @@ class AntlirTestCase(unittest.IsolatedAsyncioTestCase):
     Also supplies some testing helpers.
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         # `unittest`'s output shortening makes tests hard to debug, e.g.
         #   i[Mixin(requiresHelper=False, fbpkgs=i[Mi[108 chars]x'])] !=
         #   [Mixin(requiresHelper=False, fbpkgs=i[Mix[100 chars]i[])]
         unittest.util._MAX_LENGTH = 20000  # 250 lines of 80 chars
         self.maxDiff = 20000
 
-    def assert_call_count(self, mock, expected_count):
+    def assert_call_count(self, mock, expected_count) -> None:
         self.assertEqual(
             len(mock.mock_calls),
             expected_count,
@@ -28,7 +28,7 @@ class AntlirTestCase(unittest.IsolatedAsyncioTestCase):
             f"{expected_count}: {mock.mock_calls}",
         )
 
-    def assert_call_equality(self, mock, expected_calls, **kwargs):
+    def assert_call_equality(self, mock, expected_calls, **kwargs) -> None:
         """Helper to ensure a given mock had *only* the expected calls by also
         asserting the length of the iterable.
         """

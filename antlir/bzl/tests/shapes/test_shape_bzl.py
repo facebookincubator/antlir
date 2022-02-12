@@ -27,11 +27,11 @@ target_t = shape.shape(
 
 
 class TestShapeBzl(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.maxDiff = None
         unittest.util._MAX_LENGTH = 12345
 
-    def test_check_type(self):
+    def test_check_type(self) -> None:
         def check_type(x, t):
             res = _check_type(x, t)
             assert res is None, res
@@ -80,12 +80,12 @@ class TestShapeBzl(unittest.TestCase):
                 with self.assertRaises(Exception):
                     check_type(x, t)
 
-    def test_shape_with_defaults(self):
+    def test_shape_with_defaults(self) -> None:
         t = shape.shape(answer=shape.field(int, default=42))
         self.assertEqual(shape.new(t), struct(answer=42, __shape__=t))
         self.assertEqual(shape.new(t, answer=3), struct(answer=3, __shape__=t))
 
-    def test_simple_shape(self):
+    def test_simple_shape(self) -> None:
         t = shape.shape(answer=int)
         for answer in ("hello", True, {"a": "b"}):
             with self.subTest(answer=answer):
@@ -111,7 +111,7 @@ class TestShapeBzl(unittest.TestCase):
             expected,
         )
 
-    def test_nested_simple_shape(self):
+    def test_nested_simple_shape(self) -> None:
         t = shape.shape(nested=shape.shape(answer=int))
         for answer in ("hello", True, {"a": "b"}):
             with self.subTest(answer=answer):
@@ -125,7 +125,7 @@ class TestShapeBzl(unittest.TestCase):
             ),
         )
 
-    def test_simple_list(self):
+    def test_simple_list(self) -> None:
         t = shape.shape(lst=shape.list(int))
         self.assertEqual(
             shape.new(t, lst=[1, 2, 3]), struct(lst=[1, 2, 3], __shape__=t)
@@ -133,7 +133,7 @@ class TestShapeBzl(unittest.TestCase):
         with self.assertRaises(Fail):
             shape.new(t, lst=[1, 2, "3"])
 
-    def test_simple_dict(self):
+    def test_simple_dict(self) -> None:
         t = shape.shape(dct=shape.dict(str, int))
         self.assertEqual(
             shape.new(t, dct={"a": 1, "b": 2}),
@@ -142,7 +142,7 @@ class TestShapeBzl(unittest.TestCase):
         with self.assertRaises(Fail):
             shape.new(t, dct={"a": "b"})
 
-    def test_simple_tuple(self):
+    def test_simple_tuple(self) -> None:
         t = shape.shape(tup=shape.tuple(str, int))
         self.assertEqual(
             shape.new(t, tup=("hello", 1)),
@@ -153,7 +153,7 @@ class TestShapeBzl(unittest.TestCase):
         with self.assertRaisesRegex(Fail, "length of .* does not match"):
             shape.new(t, tup=("hello",))
 
-    def test_enum(self):
+    def test_enum(self) -> None:
         t = shape.shape(e=shape.enum("hello", "world"))
         self.assertEqual(
             shape.new(t, e="world"),
@@ -164,7 +164,7 @@ class TestShapeBzl(unittest.TestCase):
         with self.assertRaises(Fail):
             shape.shape(e=shape.enum("hello", 42))
 
-    def test_nested_list(self):
+    def test_nested_list(self) -> None:
         t = shape.shape(lst=shape.list(shape.shape(answer=int)))
         self.assertEqual(
             shape.new(t, lst=[shape.new(t.lst.item_type, answer=42)]),
@@ -174,7 +174,7 @@ class TestShapeBzl(unittest.TestCase):
             ),
         )
 
-    def test_nested_dict(self):
+    def test_nested_dict(self) -> None:
         t = shape.shape(dct=shape.dict(str, shape.shape(answer=int)))
         self.assertEqual(
             shape.new(t, dct={"a": shape.new(t.dct.item_type[1], answer=42)}),
@@ -184,7 +184,7 @@ class TestShapeBzl(unittest.TestCase):
             ),
         )
 
-    def test_nested_collection_with_shape(self):
+    def test_nested_collection_with_shape(self) -> None:
         bottom = shape.shape(answer=int)
         t = shape.shape(dct=shape.dict(str, shape.list(bottom)))
         self.assertEqual(
@@ -195,18 +195,18 @@ class TestShapeBzl(unittest.TestCase):
             ),
         )
 
-    def test_empty_union_type(self):
+    def test_empty_union_type(self) -> None:
         with self.assertRaises(Fail):
             shape.union()
 
-    def test_nested_union(self):
+    def test_nested_union(self) -> None:
         t = shape.shape(
             nested=shape.union_t(shape.union_t(str, int), shape.union_t(bool))
         )
         for v in ("hi", 1, True):
             shape.new(t, nested=v)
 
-    def test_union_of_shapes(self):
+    def test_union_of_shapes(self) -> None:
         s = shape.shape(s=str)
         n = shape.shape(n=int)
         b = shape.shape(b=bool)
@@ -218,7 +218,7 @@ class TestShapeBzl(unittest.TestCase):
         ):
             shape.new(t, u=v)
 
-    def test_location_serialization(self):
+    def test_location_serialization(self) -> None:
         shape_with_target = shape.shape(target=target_t)
         target = shape.new(shape_with_target, target="//example:target")
         for i in [
@@ -255,7 +255,7 @@ class TestShapeBzl(unittest.TestCase):
                 # and not cache the results
                 json.loads(shape.do_not_cache_me_json(i))
 
-    def test_as_dict_for_target_tagger(self):
+    def test_as_dict_for_target_tagger(self) -> None:
         t = shape.shape(num=int, targ=shape.shape(inner=target_t))
         i = shape.new(t, num=5, targ=shape.new(t.targ, inner="//foo:bar"))
         self.assertEqual(
@@ -272,12 +272,12 @@ class TestShapeBzl(unittest.TestCase):
             {"num": 5, "targ": {"inner": "//foo:bar"}},
         )
 
-    def test_as_dict_shallow(self):
+    def test_as_dict_shallow(self) -> None:
         t = shape.shape(x=str, y=shape.shape(z=int))
         i = shape.new(t, x="a", y=shape.new(t.y, z=3))
         self.assertEqual({"x": "a", "y": i.y}, shape.as_dict_shallow(i))
 
-    def test_as_serializable_dict(self):
+    def test_as_serializable_dict(self) -> None:
         t = shape.shape(x=str, y=shape.shape(z=shape.field(int, optional=True)))
         # Cover the `t.optional and val == None`, and the `val` is set branches
         for z in [3, None]:
@@ -288,11 +288,11 @@ class TestShapeBzl(unittest.TestCase):
                 ),
             )
 
-    def test_target_is_shape(self):
+    def test_target_is_shape(self) -> None:
         t = shape.shape(__I_AM_TARGET__=True)
         self.assertTrue(shape.is_shape(t))
 
-    def test_is_instance(self):
+    def test_is_instance(self) -> None:
         t = shape.shape(x=str, y=shape.shape(z=int))
         i = shape.new(t, x="a", y=shape.new(t.y, z=3))
 
@@ -321,7 +321,7 @@ class TestShapeBzl(unittest.TestCase):
         with self.assertRaisesRegex(Fail, " is not a shape"):
             shape.is_instance(i.y, i.y)
 
-    def test_unionT_typedef(self):
+    def test_unionT_typedef(self) -> None:
         self.assertIsNone(_check_type(True, TestUnionType))
         self.assertIsNone(_check_type(False, TestUnionType))
         self.assertIsNone(_check_type(0, TestUnionType))
@@ -332,12 +332,12 @@ class TestShapeBzl(unittest.TestCase):
             _check_type("foo", TestUnionType),
         )
 
-    def test_no_underscore_fields(self):
+    def test_no_underscore_fields(self) -> None:
         shape.shape(ohai=int)  # this is fine
         with self.assertRaisesRegex(Fail, " must not start with _:"):
             shape.shape(_ohai=int)  # but the _ ruins everything
 
-    def test_fail_on_dict_coercion(self):
+    def test_fail_on_dict_coercion(self) -> None:
         inner_t = shape.shape(is_in=shape.dict(str, str, optional=True))
         outer_t = shape.shape(is_out=shape.path, nested=inner_t)
         self.assertEqual(
@@ -363,13 +363,13 @@ class TestShapeBzl(unittest.TestCase):
                 nested={"is_in": {"hello": "world"}},
             )
 
-    def test_optional_with_default(self):
+    def test_optional_with_default(self) -> None:
         with self.assertRaisesRegex(
             Fail, "default_value must not be specified with optional"
         ):
             shape.field(str, optional=True, default="def")
 
-    def test_target_and_path_unsupported(self):
+    def test_target_and_path_unsupported(self) -> None:
         with self.assertRaisesRegex(Fail, "no longer supported"):
             shape.path()
         with self.assertRaisesRegex(Fail, "no longer supported"):

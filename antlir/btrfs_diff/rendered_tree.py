@@ -180,7 +180,7 @@ class TraversalID:
     id: int
     refcount: int
 
-    def __init__(self, id):
+    def __init__(self, id: int) -> None:
         self.id = id
         self.refcount = 0
 
@@ -200,12 +200,12 @@ class TraversalID:
     def __hash__(self):  # pragma: no cover
         raise NotImplementedError
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         # This is verbose because we shouldn't use `TraversalID`s directly,
         # but should rather always emit them to finish the rendering.
         return f"TraversalID({self.id}/{self.refcount})"
 
-    def wrap(self, wrapped: Any):
+    def wrap(self, wrapped: Any) -> TraversalIDWrapper:
         return TraversalIDWrapper(id=self, wrapped=wrapped)
 
 
@@ -220,7 +220,7 @@ class TraversalIDMaker:
     extents).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.counter = count()
         self.nonce_to_id = {}
 

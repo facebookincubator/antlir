@@ -50,14 +50,14 @@ class RepoConfigTestCase(unittest.TestCase):
         defaults.update(kwargs)
         return base_repo_config_t(**defaults).dict()
 
-    def test_repo_config(self):
+    def test_repo_config(self) -> None:
         config = repo_config()
         self.assertIs(config, repo_config())  # memoized!
         self.assertIsInstance(config, repo_config_t)
         self.assertEqual(config.repo_root, find_repo_root())
 
     @unittest.mock.patch("antlir.config.repo_config_data")
-    def test_repo_config_artifacts_require_repo_false(self, mock_data):
+    def test_repo_config_artifacts_require_repo_false(self, mock_data) -> None:
         # Test case for loading the config and finding the repo root
         # where the artifacts don't require the repo.  This is a possible
         # case if the binaries are built standalone (mode/opt internally).
@@ -79,7 +79,9 @@ class RepoConfigTestCase(unittest.TestCase):
         self.assertIsNone(config.repo_root)
 
     @unittest.mock.patch("antlir.config.repo_config_data")
-    def test_repo_config_fail_artifacts_require_repo_true(self, mock_data):
+    def test_repo_config_fail_artifacts_require_repo_true(
+        self, mock_data
+    ) -> None:
         # Test the case where the artifacts require the repo, but we can't
         # find it.
 
@@ -95,7 +97,9 @@ class RepoConfigTestCase(unittest.TestCase):
 
     @unittest.mock.patch("antlir.config.find_artifacts_dir")
     @unittest.mock.patch("antlir.config.repo_config_data")
-    def test_repo_config_host_mounts(self, mock_data, artifacts_dir_mock):
+    def test_repo_config_host_mounts(
+        self, mock_data, artifacts_dir_mock
+    ) -> None:
         # Force the value of `artifacts_require_repo` to True so we can force
         # looking for the artifacts_dir
         mock_data.dict = unittest.mock.Mock()
@@ -117,7 +121,7 @@ class RepoConfigTestCase(unittest.TestCase):
                 _unmemoized_repo_config().host_mounts_for_repo_artifacts,
             )
 
-    def test_antlir_dep(self):
+    def test_antlir_dep(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "Antlir deps should be "):
             antlir_dep("//bad/antlir/dep")
 

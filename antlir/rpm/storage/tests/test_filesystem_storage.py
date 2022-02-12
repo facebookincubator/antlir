@@ -19,10 +19,12 @@ class FilesystemStorageTestCase(StorageBaseTestCase):
         with tempfile.TemporaryDirectory() as td:
             yield Storage.make(key="test", kind="filesystem", base_dir=td)
 
-    def test_write_and_read_back(self):
+    def test_write_and_read_back(self) -> None:
         expected_content_count = Counter()
         with self._temp_storage() as storage:
             for writes, _ in self.check_storage_impl(storage):
+                # pyre-fixme[6]: For 1st param expected `Iterable[Union[memoryview,
+                #  ByteString]]` but got `List[str]`.
                 expected_content_count[b"".join(writes)] += 1
 
             # Make a histogram of the contents of the output files

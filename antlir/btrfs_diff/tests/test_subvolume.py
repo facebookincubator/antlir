@@ -23,7 +23,9 @@ from .subvolume_utils import InodeRepr, expected_subvol_add_traversal_ids
 
 
 class SubvolumeTestCase(DeepCopyTestCase):
-    def _check_render(self, expected_ser, subvol: Subvolume, path: str = "."):
+    def _check_render(
+        self, expected_ser, subvol: Subvolume, path: str = "."
+    ) -> None:
         self.assertEqual(
             *[
                 emit_all_traversal_ids(ser)
@@ -36,7 +38,7 @@ class SubvolumeTestCase(DeepCopyTestCase):
 
     def _check_both_renders(
         self, expected_ser, subvol: Subvolume, path: str = "."
-    ):
+    ) -> None:
         self._check_render(expected_ser, subvol, path)
         # Always check the frozen variant, too.
         self._check_render(expected_ser, freeze(subvol), path)
@@ -389,7 +391,7 @@ class SubvolumeTestCase(DeepCopyTestCase):
         # Neither the error-testing, nor changing the parent changed us.
         self._check_render(frozen_repr, frozen_tiger)
 
-    def test_stays_frozen(self):
+    def test_stays_frozen(self) -> None:
         """
         Freeze the yielded subvolume at every step, and ensure that the
         frozen object does not change even as we evolve its source.
@@ -414,20 +416,30 @@ class SubvolumeTestCase(DeepCopyTestCase):
                         emit_fn(frozen_repr), emit_fn(frozen_subvol.render())
                     )
 
-    def test_subvolume(self):
+    def test_subvolume(self) -> None:
         self.check_deepcopy_at_each_step(self._check_subvolume)
 
-    def test_rendered_tree(self):
+    def test_rendered_tree(self) -> None:
         "Miscellaneous coverage over `rendered_tree.py`."
         with self.assertRaisesRegex(RuntimeError, "Unknown type in rendered"):
+            # pyre-fixme[6]: For 1st param expected `Union[Tuple[typing.Any],
+            #  Tuple[typing.Any, Mapping[bytes, typing.Any]]]` but got `str`.
             map_bottom_up("not a list", lambda x: x)
         with self.assertRaisesRegex(RuntimeError, "inode list length != 1, 2"):
+            # pyre-fixme[6]: For 1st param expected `Union[Tuple[typing.Any],
+            #  Tuple[typing.Any, Mapping[bytes, typing.Any]]]` but got
+            #  `List[Variable[_T]]`.
             map_bottom_up([], lambda x: x)
         # Ensure 'if children is None:' is equivalent to `list(ser) == 1`.
         all_equal = {
             tuple(l)
             for l in (
+                # pyre-fixme[6]: For 1st param expected `Union[Tuple[typing.Any],
+                #  Tuple[typing.Any, Mapping[bytes, typing.Any]]]` but got `List[str]`.
                 map_bottom_up(["ino"], lambda x: x),
+                # pyre-fixme[6]: For 1st param expected `Union[Tuple[typing.Any],
+                #  Tuple[typing.Any, Mapping[bytes, typing.Any]]]` but got
+                #  `List[Optional[str]]`.
                 map_bottom_up(["ino", None], lambda x: x),
                 ["ino"],
             )

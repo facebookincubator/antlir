@@ -17,7 +17,7 @@ from ..common import (
 
 
 class CommonTestCase(unittest.TestCase):
-    def test_nspawn_version(self):
+    def test_nspawn_version(self) -> None:
         with mock.patch("subprocess.check_output") as version:
             version.return_value = (
                 "systemd 602214076 (v602214076-2.fb1)\n+AVOGADROS SYSTEMD\n"
@@ -34,7 +34,7 @@ class CommonTestCase(unittest.TestCase):
         self.assertTrue(nspawn_version().major > 239)
         self.assertTrue(nspawn_version().major < 1000)
 
-    def test_arch_version(self):
+    def test_arch_version(self) -> None:
         # the above version check unit test is biased towards an fb environment
         # systemd in other distributions can have different version formats
         with mock.patch("subprocess.check_output") as version:
@@ -49,7 +49,7 @@ class CommonTestCase(unittest.TestCase):
                 NSpawnVersion(major=246, full="246.4-1-arch"), nspawn_version()
             )
 
-    def test_cgroup2_mountpoint_usual(self):
+    def test_cgroup2_mountpoint_usual(self) -> None:
         with patch(
             "antlir.nspawn_in_subvol.common._open_mounts",
             mock_open(
@@ -62,7 +62,7 @@ class CommonTestCase(unittest.TestCase):
         ):
             self.assertEqual(b"/sys/fs/cgroup", find_cgroup2_mountpoint())
 
-    def test_cgroup2_mountpoint_unified(self):
+    def test_cgroup2_mountpoint_unified(self) -> None:
         with patch(
             "antlir.nspawn_in_subvol.common._open_mounts",
             mock_open(
@@ -77,7 +77,7 @@ class CommonTestCase(unittest.TestCase):
                 b"/sys/fs/cgroup/unified", find_cgroup2_mountpoint()
             )
 
-    def test_cgroup2_custom_fs_spec(self):
+    def test_cgroup2_custom_fs_spec(self) -> None:
         with patch(
             "antlir.nspawn_in_subvol.common._open_mounts",
             mock_open(
@@ -90,7 +90,7 @@ class CommonTestCase(unittest.TestCase):
         ):
             self.assertEqual(b"/sys/fs/cgroup", find_cgroup2_mountpoint())
 
-    def test_cgroup2_no_mountpoint_found(self):
+    def test_cgroup2_no_mountpoint_found(self) -> None:
         with patch(
             "antlir.nspawn_in_subvol.common._open_mounts",
             mock_open(
@@ -106,7 +106,7 @@ class CommonTestCase(unittest.TestCase):
             ):
                 find_cgroup2_mountpoint()
 
-    def test_parse_cgroup_path(self):
+    def test_parse_cgroup_path(self) -> None:
         # usually there is only this one line
         proc_self_cgroup = b"0::/user.slice/foo.slice/bar.scope\n"
         self.assertEqual(

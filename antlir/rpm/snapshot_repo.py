@@ -28,7 +28,7 @@ from .yum_dnf_conf import YumDnfConfRepo
 log = get_logger()
 
 
-def snapshot_repo(argv):
+def snapshot_repo(argv) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -65,10 +65,15 @@ def snapshot_repo(argv):
 
     init_logging(debug=args.debug)
 
+    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(
-        args.snapshot_dir, overwrite=True
+        args.snapshot_dir,
+        overwrite=True
+        # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
     ) as td, RepoSnapshot.add_sqlite_to_storage(
-        Storage.from_json(args.storage), td
+        # pyre-fixme[6]: For 1st param expected `Storage` but got `Pluggable`.
+        Storage.from_json(args.storage),
+        td,
     ) as sqlite_db:
         sizer = RepoSizer()
         snapshot_gpg_keys(

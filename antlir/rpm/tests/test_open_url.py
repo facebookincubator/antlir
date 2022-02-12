@@ -14,7 +14,7 @@ from ..open_url import open_url
 
 
 class OpenUrlTestCase(unittest.TestCase):
-    def test_open_http_url(self):
+    def test_open_http_url(self) -> None:
         with temp_dir() as server_dir:
             hello_path = server_dir / "hello"
             with open(hello_path, "w") as out_f:
@@ -41,7 +41,9 @@ with hs.HTTPServer(('localhost', 0), hs.SimpleHTTPRequestHandler) as httpd:
             ) as proc:
                 try:
                     with open_url(
-                        proc.stdout.readline().decode().rstrip("\n") + "hello"
+                        # pyre-fixme[16]: Optional type has no attribute `readline`.
+                        proc.stdout.readline().decode().rstrip("\n")
+                        + "hello"
                     ) as in_f:
                         self.assertEqual(b"world", in_f.read())
                 finally:

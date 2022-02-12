@@ -45,7 +45,7 @@ def _exists_in_image(subvol, path):
     return os.path.exists(subvol.path(path))
 
 
-def bind_args(src, dest=None, *, readonly=True):
+def bind_args(src, dest=None, *, readonly: bool = True):
     "dest is relative to the nspawn container root"
     if dest is None:
         dest = src
@@ -191,7 +191,7 @@ def _nspawn_cmd(
 
 
 # This is a separate helper so that tests can mock it easily
-def _artifacts_require_repo(src_subvol: Subvol):
+def _artifacts_require_repo(src_subvol: Subvol) -> int:
     return procfs_serde.deserialize_int(
         src_subvol.path(), META_ARTIFACTS_REQUIRE_REPO.decode()
     )

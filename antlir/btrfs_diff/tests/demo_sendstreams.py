@@ -302,7 +302,7 @@ def make_demo_sendstreams(path_in_repo: Path):
         return res
 
 
-def _main():
+def _main() -> None:
     p = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -334,6 +334,7 @@ def _main():
 
     # __file__ won't let us find the repo in @mode/opt, but that's OK, since
     # this is only used as a binary for development purposes.
+    # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
     sendstream_dict = make_demo_sendstreams(__file__)
 
     # This width makes the `--dump`ed commands fit on one line.

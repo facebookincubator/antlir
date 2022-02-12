@@ -28,7 +28,7 @@ class TestTap(AntlirTestCase):
         )
         return {l.split(" ")[1].rstrip(":") for l in links}
 
-    def test_create(self):
+    def test_create(self) -> None:
         with Unshare([Namespace.NETWORK]) as ns:
             before = self.get_links(ns)
             self.assertNotIn(TAPDEV, before)
@@ -39,7 +39,7 @@ class TestTap(AntlirTestCase):
             self.assertIn(TAPDEV, after)
             self.assertEqual(len(after), len(before) + 1)
 
-    def test_create_dev_net_tun(self):
+    def test_create_dev_net_tun(self) -> None:
         # remove /dev/net/tun so that the caller has to create it
         subprocess.run(["sudo", "rm", "-f", "/dev/net/tun"], check=True)
         subprocess.run(["sudo", "rm", "-rf", "/dev/net"], check=True)

@@ -12,7 +12,7 @@ from antlir.rpm.rpm_metadata import RpmMetadata
 
 
 class ToyRpmBuildUnittestTest(unittest.TestCase):
-    def test_built_files(self):
+    def test_built_files(self) -> None:
         # This test doesn't need to be a "rendered subvol" test, because we
         # only really care about the files that `image_rpmbuild` build layer
         # outputs into `/rpmbuild/RPMS/`, everything else is not part of the
@@ -27,6 +27,7 @@ class ToyRpmBuildUnittestTest(unittest.TestCase):
         rpm_path = b"/rpmbuild/RPMS/toy.rpm"
         self.assertTrue(os.path.exists(rpm_path))
 
+        # pyre-fixme[6]: For 1st param expected `Path` but got `bytes`.
         a = RpmMetadata.from_file(rpm_path)
         self.assertEqual(a.epoch, 0)
         self.assertEqual(a.version, "1.0")
@@ -36,6 +37,6 @@ class ToyRpmBuildUnittestTest(unittest.TestCase):
         files = subprocess.check_output(["rpm", "-qlp", rpm_path], text=True)
         self.assertEqual(files, "/usr/bin/toy_src_file\n")
 
-    def test_build_dep(self):
+    def test_build_dep(self) -> None:
         output = subprocess.check_output(["rpm", "-qa", "tree"], text=True)
         self.assertIn("tree-", output)

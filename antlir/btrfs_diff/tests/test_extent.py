@@ -17,7 +17,7 @@ from ..extent import Extent
 
 
 class ExtentTestCase(AntlirTestCase):
-    def test_write_into_empty(self):
+    def test_write_into_empty(self) -> None:
         # Writing at offset 0 does not create a hole.
         self.assertEqual(
             Extent(Extent.Kind.DATA, 0, 3),
@@ -37,7 +37,7 @@ class ExtentTestCase(AntlirTestCase):
         )
 
     # When `gen_trimmed_leaves` was recursive, this would fail.
-    def test_deep_recursion(self):
+    def test_deep_recursion(self) -> None:
         n = sys.getrecursionlimit()
         # Stitch together hole-data `n` times.
         e = Extent.empty()
@@ -45,7 +45,7 @@ class ExtentTestCase(AntlirTestCase):
             e = e.write(offset=2 * i + 1, length=1)
         self.assertEqual("h1d1" * n, repr(e))
 
-    def test_write_and_clone(self):
+    def test_write_and_clone(self) -> None:
         # 3-byte hole, 4-byte data, 5-byte hole, 6-byte data
         four = (
             Extent.empty().write(offset=3, length=4).write(offset=12, length=6)
@@ -403,12 +403,18 @@ class ExtentTestCase(AntlirTestCase):
                 leaves=[a, (0, 2, b), (3, 2, ca), cb, (2, 1, cc), d],
             ),
         ]:
+            # pyre-fixme[16]: `SimpleNamespace` has no attribute `msg`.
             with self.subTest(ns.msg):
+                # pyre-fixme[16]: `SimpleNamespace` has no attribute `into`.
                 _, _, orig_leaves = zip(*ns.into.gen_trimmed_leaves())
+                # pyre-fixme[16]: `SimpleNamespace` has no attribute `action`.
                 result = ns.action(ns.into)
+                # pyre-fixme[16]: `SimpleNamespace` has no attribute `result`.
                 self.assertEqual(ns.result, result)
                 for expected_leaf, leaf in itertools.zip_longest(
-                    ns.leaves, result.gen_trimmed_leaves()
+                    # pyre-fixme[16]: `SimpleNamespace` has no attribute `leaves`.
+                    ns.leaves,
+                    result.gen_trimmed_leaves(),
                 ):
                     expected_leaf = (
                         (0, expected_leaf.length, expected_leaf)
@@ -421,7 +427,7 @@ class ExtentTestCase(AntlirTestCase):
                         self.assertIs(expected_leaf[2], leaf[2])
 
     # `test_leaf_commutativity` also tests `truncate`.
-    def test_truncate(self):
+    def test_truncate(self) -> None:
         e = Extent.empty().write(offset=3, length=7)
         for i in range(1, 10):
             self.assertEqual(Extent((e,), 0, i), e.truncate(length=i))
@@ -439,7 +445,7 @@ class ExtentTestCase(AntlirTestCase):
     # sequences of operations with no manual effort.
     #
     # Additionally, it contributes "complex" case coverage for `truncate`.
-    def test_leaf_commutativity(self):
+    def test_leaf_commutativity(self) -> None:
         clone = (
             Extent.empty().write(offset=0, length=2).write(offset=3, length=1)
         )
@@ -517,7 +523,7 @@ class ExtentTestCase(AntlirTestCase):
 
     # test_write_and_clone covers leaf identity, but it's still nice to
     # explicitly check that the whole nested object is cloned.
-    def test_clone_preserves_identity(self):
+    def test_clone_preserves_identity(self) -> None:
         clone = Extent.empty().truncate(length=5)
         self.assertEqual("h5", repr(clone))
         result = (
@@ -527,14 +533,14 @@ class ExtentTestCase(AntlirTestCase):
         )
         self.assertIs(clone, result.content[1].content[0])
 
-    def test_repr_kind(self):
+    def test_repr_kind(self) -> None:
         self.assertEqual("Extent.Kind.DATA", repr(Extent.Kind.DATA))
 
-    def test_empty(self):
+    def test_empty(self) -> None:
         self.assertEqual("", repr(Extent.empty()))
         self.assertEqual([], list(Extent.empty().gen_trimmed_leaves()))
 
-    def test_copy(self):
+    def test_copy(self) -> None:
         e = Extent.empty().write(offset=5, length=5)
         self.assertIs(e, copy.deepcopy(e))
         self.assertIs(e, copy.copy(e))

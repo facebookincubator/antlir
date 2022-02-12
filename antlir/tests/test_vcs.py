@@ -12,11 +12,11 @@ from antlir.vcs import rev_id, rev_timestamp
 
 
 class TestVCS(unittest.TestCase):
-    def test_rev_id(self):
+    def test_rev_id(self) -> None:
         # Assert it is a 40 char sha-1 looking thing
         self.assertTrue(re.match(r"\b([a-f0-9]{40})\b", rev_id()))
 
-    def test_rev_timestamp(self):
+    def test_rev_timestamp(self) -> None:
         # We get a datetime instance back from this, so just
         # test that the current (as of the test run) timestamp
         # doesn't go backwards in time.

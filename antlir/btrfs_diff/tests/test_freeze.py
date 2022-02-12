@@ -12,11 +12,11 @@ from ..freeze import DoNotFreeze, freeze, frozendict
 
 
 class FreezeTestCase(unittest.TestCase):
-    def test_primitive(self):
+    def test_primitive(self) -> None:
         s = "abracadabra"
         self.assertIs(s, freeze(s))
 
-    def test_memo(self):
+    def test_memo(self) -> None:
         l = []
         memo = {}
         d = {"inner": {1: l, 2: l}}
@@ -27,7 +27,7 @@ class FreezeTestCase(unittest.TestCase):
         self.assertIs(fd["inner"][1], fd["inner"][2])
         self.assertEqual({id(d), id(d["inner"]), id(l)}, set(memo.keys()))
 
-    def test_custom_freeze_and_memo(self):
+    def test_custom_freeze_and_memo(self) -> None:
         first = ["first"]
         test_case = self
 
@@ -42,7 +42,7 @@ class FreezeTestCase(unittest.TestCase):
             self.assertEqual((("first",), "banana"), freeze([first, Foo()]))
             self.assertEqual("hi", freeze(first, _memo={id(first): "hi"}))
 
-    def test_namedtuple(self):
+    def test_namedtuple(self) -> None:
         class UnpairedSamples(NamedTuple):
             x: Sequence[float]
             y: Sequence[float]
@@ -52,7 +52,7 @@ class FreezeTestCase(unittest.TestCase):
             freeze(UnpairedSamples(x=[5.0, 6.0, 7.0], y=[3.0])),
         )
 
-    def test_containers(self):
+    def test_containers(self) -> None:
         f = freeze([([]), {5}, frozenset([7]), {"a": "b"}])
         self.assertEqual(((()), {5}, {7}, {"a": "b"}), f)
         self.assertEqual(
@@ -60,15 +60,15 @@ class FreezeTestCase(unittest.TestCase):
             [type(i) for i in f],
         )
 
-    def test_not_implemented(self):
+    def test_not_implemented(self) -> None:
         with self.assertRaises(NotImplementedError):
             freeze(object())
 
-    def test_skip_do_not_freeze(self):
+    def test_skip_do_not_freeze(self) -> None:
         obj = DoNotFreeze()
         self.assertIs(obj, freeze(obj))
 
-    def test_frozendict(self):
+    def test_frozendict(self) -> None:
         data = {"one": "1", "two": "2"}
         fd = frozendict(data)
 

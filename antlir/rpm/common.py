@@ -44,7 +44,7 @@ def readonly_snapshot_db(snapshot_dir: Path) -> sqlite3.Connection:
 class DecorateContextEntry(Generic[T], AbstractContextManager):
     """Lightweight helper class to decorate context manager __enter__"""
 
-    def __init__(self, ctx_mgr: ContextManager[T], decorator):
+    def __init__(self, ctx_mgr: ContextManager[T], decorator) -> None:
         self._ctx_mgr = ctx_mgr
         self._decorator = decorator
 
@@ -94,7 +94,7 @@ class Checksum(NamedTuple):
         algorithm, hexdigest = s.split(":")
         return cls(algorithm=algorithm, hexdigest=hexdigest)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.algorithm}:{self.hexdigest}"
 
     def hasher(self):
@@ -113,7 +113,7 @@ def read_chunks(input: BytesIO, chunk_size: int) -> Iterable[bytes]:
         yield chunk
 
 
-def has_yum():
+def has_yum() -> bool:
     """Determine if our system might have yum with `which yum`"""
     if not shutil.which("yum"):
         return False

@@ -35,7 +35,7 @@ def _parse_lines_to_list(s: Sequence[bytes]) -> List[SendStreamItem]:
 
 
 class ParseBtrfsDumpTestCase(AntlirTestCase):
-    def test_unquote(self):
+    def test_unquote(self) -> None:
         self.assertEqual(
             (b"\a\b\x1b\f\n\r\t\v " br"\XYZ\F\0\O\P"),
             unquote_btrfs_progs_path(
@@ -48,7 +48,7 @@ class ParseBtrfsDumpTestCase(AntlirTestCase):
             ),
         )
 
-    def test_ensure_demo_sendstreams_cover_all_operations(self):
+    def test_ensure_demo_sendstreams_cover_all_operations(self) -> None:
         # Ensure we have implemented all the operations from here:
         # https://github.com/kdave/btrfs-progs/blob/master/send-dump.c#L319
         expected_ops = {
@@ -105,22 +105,26 @@ class ParseBtrfsDumpTestCase(AntlirTestCase):
 
     # The reason we want to parse a gold file instead of, as above, running
     # `demo_sendstreams.py` is explained in its top docblock.
-    def test_verify_gold_parse(self):
+    def test_verify_gold_parse(self) -> None:
         stream_dict = gold_demo_sendstreams()
         filtered_items, expected_items = get_filtered_and_expected_items(
             items=_parse_demo_lines_to_list(stream_dict["create_ops"]["dump"])
             + _parse_demo_lines_to_list(stream_dict["mutate_ops"]["dump"]),
             # `--dump` does not show fractional seconds at present.
+            # pyre-fixme[6]: For 2nd param expected `float` but got
+            #  `Tuple[typing.Any, int]`.
             build_start_time=(
                 stream_dict["create_ops"]["build_start_time"][0],
                 0,
             ),
+            # pyre-fixme[6]: For 3rd param expected `float` but got
+            #  `Tuple[typing.Any, int]`.
             build_end_time=(stream_dict["mutate_ops"]["build_end_time"][0], 0),
             dump_mode=True,
         )
         self.assertEqual(filtered_items, expected_items)
 
-    def test_common_errors(self):
+    def test_common_errors(self) -> None:
         # Before testing errors, check we can parse the unmodified setup.
         uuid = "01234567-0123-0123-0123-012345678901"
         subvol_line = f"subvol ./s uuid={uuid} transid=12".encode()
@@ -153,7 +157,7 @@ class ParseBtrfsDumpTestCase(AntlirTestCase):
         with self.assertRaisesRegex(RuntimeError, "s/t' contains /"):
             _parse_lines_to_list([subvol_line.replace(b"./s", b"./s/t")])
 
-    def test_set_xattr_errors(self):
+    def test_set_xattr_errors(self) -> None:
         uuid = "01234567-0123-0123-0123-012345678901"
 
         def make_lines(len_k="len", len_v=7, name_k="name", data_k="data"):
@@ -191,8 +195,9 @@ class ParseBtrfsDumpTestCase(AntlirTestCase):
             with self.assertRaisesRegex(RuntimeError, "in line details:"):
                 _parse_lines_to_list(bad_lines)
 
-    def test_str_uses_unqualified_class_name(self):
+    def test_str_uses_unqualified_class_name(self) -> None:
         self.assertEqual(
             "mkfile(path='cat and dog')",
+            # pyre-fixme[6]: For 1st param expected `bytes` but got `str`.
             str(SendStreamItems.mkfile(path="cat and dog")),
         )

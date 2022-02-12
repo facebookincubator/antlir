@@ -11,7 +11,7 @@ from antlir.rpm.replay.fake_pty_wrapper import fake_pty_cmd, fake_pty_resource
 
 
 class FakePtyTestCase(unittest.TestCase):
-    def test_col_count(self):
+    def test_col_count(self) -> None:
         with fake_pty_resource() as fake_pty:
             col_count = (
                 subprocess.run(

@@ -68,14 +68,14 @@ def augment_group_file(contents: str, groupname: str, gid: int) -> str:
 class GroupItemTest(BaseItemTestCase):
     "Tests GroupItem"
 
-    def test_group_item(self):
+    def test_group_item(self) -> None:
         self._check_item(
             GroupItem(from_target="t", name="foo"),
             {ProvidesGroup("foo")},
             {RequireFile(path=Path("/etc/group"))},
         )
 
-    def test_build(self):
+    def test_build(self) -> None:
         with TempSubvolumes(Path(sys.argv[0])) as ts:
             sv = ts.create("root")
             sv.run_as_root(["mkdir", sv.path("/etc")]).check_returncode()
@@ -86,7 +86,7 @@ class GroupItemTest(BaseItemTestCase):
                 sv.path("/etc/group").read_text(),
             )
 
-    def test_build_twice(self):
+    def test_build_twice(self) -> None:
         with TempSubvolumes(Path(sys.argv[0])) as ts:
             sv = ts.create("root")
             sv.run_as_root(["mkdir", sv.path("/etc")]).check_returncode()
@@ -102,7 +102,7 @@ class GroupItemTest(BaseItemTestCase):
                 sv.path("/etc/group").read_text(),
             )
 
-    def test_build_with_gid(self):
+    def test_build_with_gid(self) -> None:
         with TempSubvolumes(Path(sys.argv[0])) as ts:
             sv = ts.create("root")
             sv.run_as_root(["mkdir", sv.path("/etc")]).check_returncode()
@@ -115,7 +115,7 @@ class GroupItemTest(BaseItemTestCase):
 
 
 class GroupFileTest(unittest.TestCase):
-    def test_init(self):
+    def test_init(self) -> None:
         gf = GroupFile("root:x:0:td-agent\nbin:x:1:a,b\n\ndaemon:x:2:\n\n")
         self.assertEqual(
             [
@@ -126,25 +126,25 @@ class GroupFileTest(unittest.TestCase):
             list(gf.lines.values()),
         )
 
-    def test_init_with_bad_line(self):
+    def test_init_with_bad_line(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, r"^Invalid line in group file"
         ):
             GroupFile("root:0\n")
 
-    def test_init_with_duplicate_gid(self):
+    def test_init_with_duplicate_gid(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, r"^Duplicate GID in group file"
         ):
             GroupFile("root:x:42:\nbin:x:42:")
 
-    def test_init_with_duplicate_groupname(self):
+    def test_init_with_duplicate_groupname(self) -> None:
         with self.assertRaisesRegex(
             RuntimeError, r"^Duplicate groupname in group file"
         ):
             GroupFile("root:x:1:\nroot:x:2:")
 
-    def test_add(self):
+    def test_add(self) -> None:
         gf = GroupFile()
         gf.add("group1", 1)
         self.assertEqual(
@@ -164,7 +164,7 @@ class GroupFileTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             gf.add("anothergroup2", 2)
 
-    def test_next_group_id(self):
+    def test_next_group_id(self) -> None:
         gf = GroupFile()
         gf.add("a", 1)
         self.assertEqual(1000, gf.next_group_id())
@@ -177,7 +177,7 @@ class GroupFileTest(unittest.TestCase):
         gf.add("e", 65534)
         self.assertEqual(30001, gf.next_group_id())
 
-    def test_join(self):
+    def test_join(self) -> None:
         gf = GroupFile()
         with self.assertRaisesRegex(ValueError, r"^a not found"):
             gf.join("a", "me")
@@ -192,7 +192,7 @@ class GroupFileTest(unittest.TestCase):
             gf.lines[1], GroupFileLine(name="a", id=1, members=["me", "you"])
         )
 
-    def test_str(self):
+    def test_str(self) -> None:
         gf = GroupFile()
         gf.add("a", 1)
         gf.add("b", 1000)
@@ -202,13 +202,13 @@ class GroupFileTest(unittest.TestCase):
         gf.join("c", "me")
         self.assertEqual("a:x:1:\nb:x:1000:me,you\nc:x:10000:me\n", str(gf))
 
-    def test_add_duplicate_name(self):
+    def test_add_duplicate_name(self) -> None:
         gf = GroupFile()
         gf.add("a", 1)
         with self.assertRaisesRegex(ValueError, r"^group a already exists"):
             gf.add("a", 2)
 
-    def test_provides(self):
+    def test_provides(self) -> None:
         gf = GroupFile("root:x:0:td-agent\nbin:x:1:a,b\n\ndaemon:x:2:\n\n")
         self.assertEqual(
             {

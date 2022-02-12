@@ -95,12 +95,12 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
         raise AssertionError(subdirs_to_create)
 
     @validator("into_dir")
-    def validate_into_dir(cls, into_dir):  # noqa B902
+    def validate_into_dir(cls, into_dir) -> str:  # noqa B902
         # Validators are classmethods but flake8 doesn't catch that.
         return make_path_normal_relative(_validate_into_dir(into_dir))
 
     @validator("basename")
-    def validate_basename(cls, basename):  # noqa B902
+    def validate_basename(cls, basename: str) -> str:  # noqa B902
         basename = make_path_normal_relative(basename)
         # We want this to be a single path component (the dir being made)
         assert "/" not in basename
@@ -120,7 +120,7 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
         yield RequireUser(user)
         yield RequireGroup(group)
 
-    def build(self, subvol: Subvol, layer_opts: LayerOpts):
+    def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         # If path already exists ensure it has expected attrs, else make it.
         work_dir = generate_work_dir()
         full_path = work_dir / self.into_dir / self.basename

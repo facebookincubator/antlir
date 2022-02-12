@@ -9,16 +9,20 @@ import unittest
 
 
 class LayerWithLocalesTestCase:
-    def test_expected_locales(self):
+    def test_expected_locales(self) -> None:
         installed_locales = subprocess.check_output(
             [
                 "/usr/bin/localedef",
                 "--list-archive",
+                # pyre-fixme[16]: `LayerWithLocalesTestCase` has no attribute
+                #  `_TEST_LOCALE_ARCHIVE`.
                 self._TEST_LOCALE_ARCHIVE,
             ],
             text=True,
         ).splitlines()
 
+        # pyre-fixme[16]: `LayerWithLocalesTestCase` has no attribute `assertEqual`.
+        # pyre-fixme[16]: `LayerWithLocalesTestCase` has no attribute `_TEST_LOCALES`.
         self.assertEqual(installed_locales, self._TEST_LOCALES.split(","))
 
 

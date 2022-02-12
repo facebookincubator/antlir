@@ -47,7 +47,7 @@ def _mocks_for_extra_nspawn_args(*, artifacts_require_repo):
 
 
 class NspawnTestBase(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         # Setup expected stdout line endings depending on the version of
         # systemd-nspawn.  Version 242 'fixed' stdout line endings.  The
         # extra newline for versions < 242 is due to T40936918 mentioned in
@@ -71,12 +71,13 @@ class NspawnTestBase(TestCase):
         return ret
 
     def _wrapper_args_to_nspawn_args(
-        self, argv, *, artifacts_require_repo=False
+        self, argv, *, artifacts_require_repo: bool = False
     ):
         with _mocks_for_parse_cli_args():
             args = _parse_cli_args(argv, allow_debug_only_opts=True)
         with _mocks_for_extra_nspawn_args(
             artifacts_require_repo=artifacts_require_repo
         ):
+            # pyre-fixme[16]: `_NspawnOpts` has no attribute `opts`.
             args, _env = _extra_nspawn_args_and_env(args.opts)
             return args

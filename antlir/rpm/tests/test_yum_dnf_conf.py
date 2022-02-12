@@ -13,9 +13,10 @@ from ..yum_dnf_conf import YumDnf, YumDnfConfParser, YumDnfConfRepo
 
 # This is the base class for two test classes at the bottom of the file.
 class YumDnfConfTestCaseImpl:
-    def setUp(self):
+    def setUp(self) -> None:
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
+        # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `maxDiff`.
         self.maxDiff = 12345
 
         conf_str = io.StringIO(
@@ -42,15 +43,21 @@ class YumDnfConfTestCaseImpl:
         """
             )
         )
+        # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `conf`.
+        # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `_YUM_DNF`.
         self.conf = YumDnfConfParser(self._YUM_DNF, conf_str)
 
-    def test_gen_repos(self):
+    def test_gen_repos(self) -> None:
+        # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `assertEqual`.
         self.assertEqual(
             [
+                # pyre-fixme[6]: For 3rd param expected `Tuple[str]` but got `Tuple[]`.
                 YumDnfConfRepo("potato", "file:///pot.at/to", ()),
                 YumDnfConfRepo(
                     name="oleander",
                     base_url="http://example.com/oleander",
+                    # pyre-fixme[6]: For 3rd param expected `Tuple[str]` but got
+                    #  `Tuple[str, str, str, str]`.
                     gpg_key_urls=(
                         "https://example.com/zupa",
                         "https://example.com/list/comma",
@@ -59,26 +66,32 @@ class YumDnfConfTestCaseImpl:
                     ),
                 ),
             ],
+            # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `conf`.
             list(self.conf.gen_repos()),
         )
 
-    def test_isolate_repos(self):
+    def test_isolate_repos(self) -> None:
         isolated_repos = [
             YumDnfConfRepo(
                 name="potato",
                 base_url="https://example.com/potato",
+                # pyre-fixme[6]: For 3rd param expected `Tuple[str]` but got
+                #  `Tuple[str, str]`.
                 gpg_key_urls=(
                     "file:///much/secure/so/hack_proof",
                     "https://cat",
                 ),
             )
         ]
+        # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `assertRaisesRegex`.
         with self.assertRaisesRegex(AssertionError, "Failed to isolate "):
+            # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `conf`.
             self.conf.isolate().isolate_repos(isolated_repos)
         isolated_repos.append(
             YumDnfConfRepo(
                 name="oleander",
                 base_url="https://zupa.example.com/sup",
+                # pyre-fixme[6]: For 3rd param expected `Tuple[str]` but got `Tuple[]`.
                 gpg_key_urls=(),
             )
         )
@@ -91,6 +104,7 @@ class YumDnfConfTestCaseImpl:
         ).write(out)
 
         extra_directives = ""
+        # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `_YUM_DNF`.
         if self._YUM_DNF == YumDnf.yum:
             extra_directives = textwrap.dedent(
                 """\
@@ -99,6 +113,7 @@ class YumDnfConfTestCaseImpl:
             """
             )
 
+        # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `assertEqual`.
         self.assertEqual(
             textwrap.dedent(
                 """\

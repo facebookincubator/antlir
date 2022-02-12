@@ -13,7 +13,7 @@ from .. import update_package_db as updb
 from ..fs_utils import temp_dir
 
 
-def _get_js_content(ss_hash: str, content: str):
+def _get_js_content(ss_hash: str, content: str) -> str:
     return f"""\
 # {updb._GENERATED} SignedSource<<{ss_hash}>>
 # Update via `how`
@@ -21,7 +21,7 @@ def _get_js_content(ss_hash: str, content: str):
 """
 
 
-def _write_json_db(json_path, dct):
+def _write_json_db(json_path, dct) -> None:
     os.makedirs(json_path.dirname())
     with open(json_path, "w") as outfile:
         # Not using `_with_generated_header` to ensure that we are
@@ -38,8 +38,9 @@ async def _base_get_db_info_fn(pkg, tag, opts):
 # test both to ensure behaviour doesn't diverge. We thus use a base class to
 # define most shared test cases.
 class UpdatePackageDbTestBase:
-    def _check_file(self, path, content):
+    def _check_file(self, path, content) -> None:
         with open(path) as infile:
+            # pyre-fixme[16]: `UpdatePackageDbTestBase` has no attribute `assertEqual`.
             self.assertEqual(content, infile.read())
 
     async def _update(
@@ -47,16 +48,17 @@ class UpdatePackageDbTestBase:
         db,
         pkg_updates=None,
         out_db=None,
-        update_all=True,
+        update_all: bool = True,
         get_db_info_fn=None,
     ):
         raise NotImplementedError
 
-    async def test_default_update(self):
+    async def test_default_update(self) -> None:
         with temp_dir() as td:
             in_db = td / "idb"
             _write_json_db(in_db / "pkg" / "tag.json", {"foo": "bar"})
             _write_json_db(in_db / "pkg2" / "tag2.json", {"j": "k"})
+            # pyre-fixme[16]: `UpdatePackageDbTestBase` has no attribute `assertEqual`.
             self.assertEqual(
                 {"pkg": {"tag": {"foo": "bar"}}, "pkg2": {"tag2": {"j": "k"}}},
                 updb._read_json_dir_db(in_db),
@@ -65,20 +67,24 @@ class UpdatePackageDbTestBase:
             p1_out_path = out_db / "pkg" / "tag.json"
             p2_out_path = out_db / "pkg2" / "tag2.json"
             await self._update(db=in_db, out_db=out_db)
+            # pyre-fixme[16]: `UpdatePackageDbTestBase` has no attribute
+            #  `assertCountEqual`.
             self.assertCountEqual([b"pkg", b"pkg2"], (out_db).listdir())
             self.assertEqual([b"tag.json"], p1_out_path.dirname().listdir())
             self.assertEqual([b"tag2.json"], p2_out_path.dirname().listdir())
             # Note the x/z dict is returned for `opts` in `_main` above
             self._check_file(
                 p1_out_path,
+                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("e8b8ab0d998b5fe5429777af98579c12", {"x": "z"}),
             )
             self._check_file(
                 p2_out_path,
+                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("e8b8ab0d998b5fe5429777af98579c12", {"x": "z"}),
             )
 
-    async def test_explicit_update(self):
+    async def test_explicit_update(self) -> None:
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(
@@ -95,7 +101,10 @@ class UpdatePackageDbTestBase:
                     },
                     "p2": {
                         "tak": updb.PackageDbUpdate(
-                            updb.UpdateAction.CREATE, {"boo": True}
+                            updb.UpdateAction.CREATE,
+                            # pyre-fixme[6]: For 2nd param expected `Dict[str, str]`
+                            #  but got `Dict[str, bool]`.
+                            {"boo": True},
                         )
                     },
                     "never": {
@@ -109,31 +118,43 @@ class UpdatePackageDbTestBase:
             self._check_file(
                 db_path / "p1" / "tik.json",
                 _get_js_content(
-                    "b5c458dc21f07f3d4437a01c634876db", {"choo": "choo"}
+                    "b5c458dc21f07f3d4437a01c634876db",
+                    # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str,
+                    #  str]`.
+                    {"choo": "choo"},
                 ),
             )
             self._check_file(
                 db_path / "p2" / "tok.json",
+                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("4897f4457e120a6852fc3873d70ad543", {"a": "b"}),
             )
             self._check_file(
                 db_path / "p2" / "tak.json",
                 _get_js_content(
-                    "c6e75caa1da9ac63b0ef9151e783520f", {"boo": True}
+                    "c6e75caa1da9ac63b0ef9151e783520f",
+                    # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str,
+                    #  bool]`.
+                    {"boo": True},
                 ),
             )
             self._check_file(
                 db_path / "never" / "seen.json",
                 _get_js_content(
-                    "6846ca9d4c83b71baa720d9791724ac0", {"oompa": "loompa"}
+                    "6846ca9d4c83b71baa720d9791724ac0",
+                    # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str,
+                    #  str]`.
+                    {"oompa": "loompa"},
                 ),
             )
 
-    async def test_explicit_update_conflicts(self):
+    async def test_explicit_update_conflicts(self) -> None:
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "a.json", {})
             _write_json_db(db_path / "p2" / "b.json", {})
+            # pyre-fixme[16]: `UpdatePackageDbTestBase` has no attribute
+            #  `assertRaisesRegex`.
             with self.assertRaisesRegex(
                 updb.PackageExistsError, r".*create.*p1:a"
             ):
@@ -161,7 +182,7 @@ class UpdatePackageDbTestBase:
                     },
                 )
 
-    async def test_tag_deletion(self):
+    async def test_tag_deletion(self) -> None:
         async def _get_db_info_fn_none(pkg, tag, opts):
             return pkg, tag, opts if opts else None
 
@@ -190,13 +211,16 @@ class UpdatePackageDbTestBase:
             )
             self._check_file(
                 db_path / "p1" / "tik.json",
+                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("1003a3786a74bb5fc2b817e752d3499c", {"c": "d"}),
             )
             self._check_file(
                 db_path / "never" / "seen.json",
+                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("3b96485ebd8dad07ef3393861364407a", {"m": "n"}),
             )
             # Should have been deleted
+            # pyre-fixme[16]: `UpdatePackageDbTestBase` has no attribute `assertFalse`.
             self.assertFalse((db_path / "p2" / "tok.json").exists())
 
 
@@ -208,9 +232,9 @@ class UpdatePackageDbCliTestCase(
         db,
         pkg_updates=None,
         out_db=None,
-        update_all=True,
+        update_all: bool = True,
         get_db_info_fn=None,
-    ):
+    ) -> None:
         args = [
             f"--db={db}",
             *([f"--out-db={out_db}"] if out_db else []),
@@ -236,7 +260,7 @@ class UpdatePackageDbCliTestCase(
             options_doc="opts doc",
         )
 
-    async def test_cli_option_conflicts(self):
+    async def test_cli_option_conflicts(self) -> None:
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "a.json", {})
@@ -274,7 +298,7 @@ class UpdatePackageDbCliTestCase(
                     options_doc="opts doc",
                 )
 
-    async def test_cli_invalid_options_count(self):
+    async def test_cli_invalid_options_count(self) -> None:
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "a.json", {})
@@ -302,9 +326,9 @@ class UpdatePackageDbLibraryTestCase(
         db,
         pkg_updates=None,
         out_db=None,
-        update_all=True,
+        update_all: bool = True,
         get_db_info_fn=None,
-    ):
+    ) -> None:
         if get_db_info_fn is None:
             get_db_info_fn = nullcontext(_base_get_db_info_fn)
         await updb.update_package_db(

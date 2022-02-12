@@ -12,13 +12,13 @@ from ..layer_mount_config import main
 
 
 class TestLayerMountConfig(unittest.TestCase):
-    def test_error(self):
+    def test_error(self) -> None:
         out = StringIO()
         with self.assertRaisesRegex(RuntimeError, "`build_source` must not "):
             main(StringIO('{"build_source": "bad"}'), out, "//layer:path")
         self.assertEqual("", out.getvalue())
 
-    def test_config_merging(self):
+    def test_config_merging(self) -> None:
         out = StringIO()
         main(StringIO('{"runtime_source": "meow"}'), out, "//layer:path")
         self.assertEqual(

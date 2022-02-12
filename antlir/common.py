@@ -65,10 +65,10 @@ class ColorFormatter(logging.Formatter):
         logging.CRITICAL: "\x1b[95mF",  # Magenta
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(datefmt="%Y%m%d %H:%M:%S")
 
-    def format(self, record):
+    def format(self, record) -> str:
         try:
             self._style._fmt = (
                 self._level_to_prefix[record.levelno] + self._base_fmt
@@ -81,7 +81,7 @@ class ColorFormatter(logging.Formatter):
 
 # NB: Many callsites in antlir rely on the assumption that this function will
 # result in logging to the default stream of StreamHandler, which is stderr.
-def init_logging(*, debug: bool = False):
+def init_logging(*, debug: bool = False) -> None:
     global _INITIALIZED_LOGGING
     level = logging.DEBUG if debug else logging.INFO
     logger = logging.getLogger(_ANTLIR_ROOT_LOGGER)
@@ -115,7 +115,7 @@ def get_logger():
 log = get_logger()
 
 
-def check_popen_returncode(proc: subprocess.Popen):
+def check_popen_returncode(proc: subprocess.Popen) -> None:
     if proc.returncode != 0:  # pragma: no cover
         # Providing a meaningful coverage test for this is annoying, so I just
         # tested manually:
@@ -130,7 +130,7 @@ def check_popen_returncode(proc: subprocess.Popen):
         )
 
 
-def set_new_key(d, k, v):
+def set_new_key(d, k, v) -> None:
     "`d[k] = v` that raises if it would it would overwrite an existing value"
     if k in d:
         raise KeyError(f"{k} was already set to {d[k]}, new value: {v}")
@@ -156,7 +156,7 @@ def listen_temporary_unix_socket() -> Iterator[Tuple[str, socket.socket]]:
         yield sock_path, lsock
 
 
-def recv_fds(sock, msglen, maxfds, inheritable=False):
+def recv_fds(sock, msglen, maxfds, inheritable: bool = False):
     """
     Receives via a Unix domain socket a message of at most `msglen` bytes,
     with at most `maxfds` file descriptors in the ancillary data.  The file
@@ -394,7 +394,7 @@ class AsyncCompletedProc(NamedTuple):
     stdout: Optional[bytes]
     stderr: Optional[bytes]
 
-    def check_returncode(self):
+    def check_returncode(self) -> None:
         if self.returncode != 0:
             raise subprocess.CalledProcessError(
                 returncode=self.returncode,

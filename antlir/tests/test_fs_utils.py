@@ -34,12 +34,13 @@ _BAD_UTF = b"\xc3("
 
 
 class TestFsUtils(unittest.TestCase):
-    def test_path_basics(self):
+    def test_path_basics(self) -> None:
         self.assertEqual(
             byteme(os.getcwd()) + b"/foo/bar", Path("foo/bar").abspath()
         )
         self.assertEqual(b"/a/c", Path("/a/b/../c").realpath())
         self.assertEqual(b"foo/bar", Path("foo") / "bar")
+        # pyre-fixme[58]: `/` is not supported for operand types `bytes` and `Any`.
         self.assertEqual(b"/foo/bar", b"/foo" / Path.or_none("bar"))
         self.assertEqual(b"/baz", b"/be/bop" / Path(b"/baz"))
         self.assertEqual("file:///a%2Cb", Path("/a,b").file_url())
@@ -56,24 +57,28 @@ class TestFsUtils(unittest.TestCase):
         with self.assertRaises(TypeError):
             Path("foo") != "foo"
         with self.assertRaises(TypeError):
+            # pyre-fixme[58]: `>` is not supported for operand types `Path` and `str`.
             Path("foo") > "foo"
         with self.assertRaises(TypeError):
+            # pyre-fixme[58]: `>=` is not supported for operand types `Path` and `str`.
             Path("foo") >= "foo"
         with self.assertRaises(TypeError):
+            # pyre-fixme[58]: `<` is not supported for operand types `Path` and `str`.
             Path("foo") < "foo"
         with self.assertRaises(TypeError):
+            # pyre-fixme[58]: `<=` is not supported for operand types `Path` and `str`.
             Path("foo") <= "foo"
 
-    def test_path_is_hashable(self):
+    def test_path_is_hashable(self) -> None:
         # Path must be hashable to be added to a set
         ts = set()
         ts.add(Path("foo"))
 
-    def test_bad_utf_is_bad(self):
+    def test_bad_utf_is_bad(self) -> None:
         with self.assertRaises(UnicodeDecodeError):
             _BAD_UTF.decode()
 
-    def test_path_decode(self):
+    def test_path_decode(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             bad_utf_path = Path(td) / _BAD_UTF
             self.assertTrue(bad_utf_path.endswith(b"/" + _BAD_UTF))
@@ -95,7 +100,7 @@ class TestFsUtils(unittest.TestCase):
                 res.stdout.decode(),
             )
 
-    def test_path_exists(self):
+    def test_path_exists(self) -> None:
         does_not_exist = Path("non/existent")
         for err in [True, False]:
             self.assertFalse(does_not_exist.exists(raise_permission_error=err))
@@ -118,7 +123,7 @@ class TestFsUtils(unittest.TestCase):
             finally:
                 os.chmod(td, old_mode)
 
-    def test_path_islink(self):
+    def test_path_islink(self) -> None:
         with temp_dir() as td:
             target = td / "target"
             link = td / "link"
@@ -135,7 +140,7 @@ class TestFsUtils(unittest.TestCase):
             target.touch()
             self.assertTrue(link.islink())
 
-    def test_path_readlink(self):
+    def test_path_readlink(self) -> None:
         with temp_dir() as td:
             target = td / "target"
             link = td / "link"
@@ -143,7 +148,7 @@ class TestFsUtils(unittest.TestCase):
 
             self.assertEqual(target, link.readlink())
 
-    def test_path_wait_for(self):
+    def test_path_wait_for(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             to_wait_for = Path(td) / "will_you_wait_for_me"
 
@@ -166,13 +171,13 @@ class TestFsUtils(unittest.TestCase):
             with self.assertRaises(FileNotFoundError):
                 to_wait_for.wait_for(timeout_ms=100)
 
-    def test_path_format(self):
+    def test_path_format(self) -> None:
         first = Path("a/b")
         second = Path(_BAD_UTF)
         formatted = "^a/b       >" + _BAD_UTF.decode(errors="surrogateescape")
         self.assertEqual(formatted, f"^{first:10}>{second}")
 
-    def test_path_from_argparse(self):
+    def test_path_from_argparse(self) -> None:
         res = subprocess.run(
             [
                 sys.executable,
@@ -190,7 +195,7 @@ class TestFsUtils(unittest.TestCase):
             ),
         )
 
-    def test_normalized_subpath(self):
+    def test_normalized_subpath(self) -> None:
         for p in [Path("/need/not/exist"), Path("something/relative")]:
             self.assertEqual(p, p.normalized_subpath("."))
 
@@ -227,7 +232,7 @@ class TestFsUtils(unittest.TestCase):
                 td.normalized_subpath("my_null", resolve_links=True),
             )
 
-    def test_path_json(self):
+    def test_path_json(self) -> None:
         # We can serialize `Path` to JSON, including invalid UTF-8.
         # Unfortunately, `json` doesn't allow us to custom-serialize keys.
         obj_in = {"a": Path("b"), "c": Path(_BAD_UTF), "builtin": 3}
@@ -246,31 +251,33 @@ class TestFsUtils(unittest.TestCase):
         with self.assertRaises(TypeError):
             Path.json_dumps({"not serializable": object()})
 
-    def test_path_listdir(self):
+    def test_path_listdir(self) -> None:
         with temp_dir() as td:
             (td / "a").touch()
             (a,) = td.listdir()
             self.assertIsInstance(a, Path)
             self.assertEqual(b"a", a)
 
-    def test_path_parse_args(self):
+    def test_path_parse_args(self) -> None:
         p = argparse.ArgumentParser()
         p.add_argument("--path", action="append", type=Path.from_argparse)
         # Check that `Path` is now allowed, and that we can round-trip bad UTF.
         argv = ["--path", Path("a"), "--path", Path(_BAD_UTF)]
         with self.assertRaises(TypeError):
+            # pyre-fixme[6]: For 1st param expected `Optional[Sequence[str]]` but
+            #  got `List[Union[Path, str]]`.
             p.parse_args(argv)
         args = Path.parse_args(p, argv)
         self.assertEqual([Path("a"), Path(_BAD_UTF)], args.path)
 
-    def test_path_read_text(self):
+    def test_path_read_text(self) -> None:
         with temp_dir() as td:
             tmp_path = Path(td / "foo.txt")
             with open(tmp_path, "w+") as f:
                 f.write("hello\n")
             self.assertEqual("hello\n", tmp_path.read_text())
 
-    def test_path_open(self):
+    def test_path_open(self) -> None:
         with temp_dir() as td:
             tmp_path = Path(td / "foo.txt")
             with tmp_path.open(mode="w+") as f:
@@ -278,19 +285,19 @@ class TestFsUtils(unittest.TestCase):
             with tmp_path.open() as f:
                 self.assertEqual("hello\n", f.read())
 
-    def test_path_shell_quote(self):
+    def test_path_shell_quote(self) -> None:
         self.assertEqual(
             Path(r"""/a\ b/c d/e'"f/( \t/""").shell_quote(),
             r"""'/a\ b/c d/e'"'"'"f/( \t/'""",
         )
 
-    def test_path_str(self):
+    def test_path_str(self) -> None:
         self.assertEqual("a/b", str(Path("a/b")))
         self.assertEqual(
             _BAD_UTF.decode(errors="surrogateescape"), str(Path(_BAD_UTF))
         )
 
-    def test_path_has_leading_dot_dot(self):
+    def test_path_has_leading_dot_dot(self) -> None:
         self.assertTrue(Path("..").has_leading_dot_dot())
         self.assertTrue(Path("../a/b/c").has_leading_dot_dot())
         self.assertFalse(Path("..a/b/c").has_leading_dot_dot())
@@ -299,21 +306,21 @@ class TestFsUtils(unittest.TestCase):
         # check whether the relative path refers outside of its base.
         self.assertFalse(Path("a/../../b/c").has_leading_dot_dot())
 
-    def test_path_touch(self):
+    def test_path_touch(self) -> None:
         with temp_dir() as td:
             tmp_path = td / "touchme"
             tmp_path.touch()
 
             self.assertTrue(os.path.exists(tmp_path))
 
-    def test_path_validate(self):
+    def test_path_validate(self) -> None:
         result = "a/b"
         for validator in Path.__get_validators__():
             result = validator(result)
         self.assertEqual(result, Path("a/b"))
         self.assertIsInstance(result, Path)
 
-    def test_open_for_read_decompress(self):
+    def test_open_for_read_decompress(self) -> None:
         # The goal is that our stream should be bigger than any buffers
         # involved (so we get to test edge effects), but not so big that the
         # test takes more than 1-2 seconds.
@@ -326,6 +333,7 @@ class TestFsUtils(unittest.TestCase):
                     [compress, "-"], stdin=subprocess.PIPE, stdout=outf
                 ) as proc:
                     for _ in range(n_bytes // len(my_line)):
+                        # pyre-fixme[16]: `Optional` has no attribute `write`.
                         proc.stdin.write(my_line)
                 check_popen_returncode(proc)
 
@@ -353,7 +361,7 @@ class TestFsUtils(unittest.TestCase):
             ), open_for_read_decompress(td / "kitteh.gz") as infile:
                 infile.read()
 
-    def test_create_ro(self):
+    def test_create_ro(self) -> None:
         with temp_dir() as td:
             with create_ro(td / "hello_ro", "w") as out_f:
                 out_f.write("world_ro")
@@ -378,15 +386,16 @@ class TestFsUtils(unittest.TestCase):
             with open(td / "hello_rw") as in_f:
                 self.assertEqual("world_rw -- appended", in_f.read())
 
-    def _check_has_one_file(self, dir_path, filename, contents):
+    def _check_has_one_file(self, dir_path, filename, contents) -> None:
         self.assertEqual([filename.encode()], os.listdir(dir_path))
         with open(dir_path / filename) as in_f:
             self.assertEqual(contents, in_f.read())
 
-    def test_populate_temp_dir_and_rename(self):
+    def test_populate_temp_dir_and_rename(self) -> None:
         with temp_dir() as td:
             # Create and populate "foo"
             foo_path = td / "foo"
+            # pyre-fixme[16]: `Path` has no attribute `__enter__`.
             with populate_temp_dir_and_rename(foo_path) as td2:
                 self.assertTrue(td2.startswith(td + b"/"))
                 self.assertEqual(td2, td / td2.basename())
@@ -409,7 +418,7 @@ class TestFsUtils(unittest.TestCase):
                     out_f.write("arms")
             self._check_has_one_file(foo_path, "farewell", "arms")
 
-    def test_populate_temp_file_and_rename_success(self):
+    def test_populate_temp_file_and_rename_success(self) -> None:
         with temp_dir() as td:
             path = td / "dog"
             with populate_temp_file_and_rename(path) as outfile:
@@ -421,7 +430,7 @@ class TestFsUtils(unittest.TestCase):
             self.assertTrue(os.path.exists(path))
             self.assertEqual(path.read_text(), "woof")
 
-    def test_populate_temp_file_fail_to_overwrite(self):
+    def test_populate_temp_file_fail_to_overwrite(self) -> None:
         with temp_dir() as td:
             path = td / "dog"
             with open(path, "w") as outfile:
@@ -436,7 +445,7 @@ class TestFsUtils(unittest.TestCase):
             # Original file is untouched
             self.assertEqual(path.read_text(), "woof")
 
-    def test_populate_temp_file_force_overwrite(self):
+    def test_populate_temp_file_force_overwrite(self) -> None:
         with temp_dir() as td:
             path = td / "dog"
             with open(path, "w") as outfile:
@@ -465,7 +474,7 @@ class TestFsUtils(unittest.TestCase):
             # the original file is untouched
             self.assertEqual(path.read_text(), "woof")
 
-    def test_unlink(self):
+    def test_unlink(self) -> None:
         with temp_dir() as td:
             path = td / "dog"
             with open(path, "w") as outfile:
@@ -480,7 +489,7 @@ class TestFsUtils(unittest.TestCase):
             with self.assertRaises(FileNotFoundError):
                 path.unlink()
 
-    def test_generate_work_dir(self):
+    def test_generate_work_dir(self) -> None:
         work_dir = generate_work_dir()
 
         # make sure we stripped the = padding out
@@ -490,7 +499,7 @@ class TestFsUtils(unittest.TestCase):
         # '/work' prefix is 27 chars,
         self.assertTrue(len(work_dir) == 27)
 
-    def test_strip_leading_slashes(self):
+    def test_strip_leading_slashes(self) -> None:
         for p, want in (
             ("", ""),
             ("/", ""),
@@ -501,22 +510,36 @@ class TestFsUtils(unittest.TestCase):
         ):
             self.assertEqual(Path(p).strip_leading_slashes(), Path(want))
 
-    def test_join(self):
+    def test_join(self) -> None:
         @dataclass
         class Test:
             paths: Iterator[AnyStr]
             want: Optional[Path]
 
         tests: Dict[str, Test] = {
+            # pyre-fixme[6]: For 1st param expected `Iterator[Variable[AnyStr <:
+            #  [str, bytes]]]` but got `List[Variable[_T]]`.
             "empty args": Test(paths=[], want=None),
+            # pyre-fixme[6]: For 1st param expected `Iterator[Variable[AnyStr <:
+            #  [str, bytes]]]` but got `List[str]`.
             "single str": Test(paths=["foo"], want=Path("foo")),
+            # pyre-fixme[6]: For 1st param expected `Iterator[Variable[AnyStr <:
+            #  [str, bytes]]]` but got `List[bytes]`.
             "single bytes": Test(paths=[b"foo"], want=Path("foo")),
+            # pyre-fixme[6]: For 1st param expected `Iterator[Variable[AnyStr <:
+            #  [str, bytes]]]` but got `Tuple[str, bytes]`.
             "mix str/bytes": Test(paths=("foo", b"bar"), want=Path("foo/bar")),
             "incl leading slash": Test(
-                paths=(b"/foo", "bar"), want=Path("/foo/bar")
+                # pyre-fixme[6]: For 1st param expected `Iterator[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `Tuple[bytes, str]`.
+                paths=(b"/foo", "bar"),
+                want=Path("/foo/bar"),
             ),
             "mix path/str/bytes": Test(
-                paths=(Path("foo"), "bar", b"baz"), want=Path("foo/bar/baz")
+                # pyre-fixme[6]: For 1st param expected `Iterator[Variable[AnyStr <:
+                #  [str, bytes]]]` but got `Tuple[Path, str, bytes]`.
+                paths=(Path("foo"), "bar", b"baz"),
+                want=Path("foo/bar/baz"),
             ),
         }
         for desc, test in tests.items():

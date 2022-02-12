@@ -34,15 +34,15 @@ class StorageBaseTestCase(unittest.TestCase):
         self,
         storage: Storage,
         *,
-        no_empty_blobs=False,
-        skip_empty_writes=False,
+        no_empty_blobs: bool = False,
+        skip_empty_writes: bool = False,
         # To make testing more meaningful, it's useful to make sure that
         # some writes fill up any output buffers.  For filesystem writes
         # from Python, this default is probably enough.
-        mul=314159,  # just about 300KB
+        mul: int = 314159,  # just about 300KB
         # If the blob-store has a read-through cache, we cannot effectively
         # test that the remove actually happened.
-        remove_is_immediate=True,
+        remove_is_immediate: bool = True,
     ) -> List[Tuple[List[str], str]]:  # Writes + their storage ID
         # Make sure nothing bad happens if an exception flies before a
         # commit.  Since we don't have an ID, we can't really test that the

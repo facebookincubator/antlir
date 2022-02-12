@@ -10,25 +10,25 @@ import unittest
 
 
 class InstallSignedToyRpmTestCase(unittest.TestCase):
-    def test_contents(self):
+    def test_contents(self) -> None:
         self.assertTrue(os.path.exists("/usr/bin/toy_src_file"))
         self.assertFalse(os.path.exists("/antlir-rpm-gpg-keys"))
 
-    def test_installed_rpm_signature(self):
+    def test_installed_rpm_signature(self) -> None:
         info = subprocess.check_output(
             ["rpm", "-qi", "toy"],
             text=True,
         )
         self.assertIn("Key ID 4785998712764132", info)
 
-    def test_rpm_file_signature(self):
+    def test_rpm_file_signature(self) -> None:
         info = subprocess.check_output(
             ["rpm", "-qip", "/antlir/toy.rpm"],
             text=True,
         )
         self.assertIn("Key ID 4785998712764132", info)
 
-    def test_key_import(self):
+    def test_key_import(self) -> None:
         keys = subprocess.check_output(
             ["rpm", "-q", "gpg-pubkey", "--queryformat", "%{SUMMARY}"],
             text=True,

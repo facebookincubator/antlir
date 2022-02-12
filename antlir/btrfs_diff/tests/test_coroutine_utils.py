@@ -41,7 +41,7 @@ class SendToCoroutineTestCase(unittest.TestCase):
         self.assertFalse(hasattr(ctx, "coroutine"))
         return ctx.result, self.events
 
-    def test_while_not_exited(self):
+    def test_while_not_exited(self) -> None:
         for do_close in [False, True]:
 
             def send_to_demo(coroutine_steps: int, close_on_step: int):
@@ -89,7 +89,7 @@ class SendToCoroutineTestCase(unittest.TestCase):
         yield "init"  # we need a `yield` to make this a generator
         self.fail("not reached")
 
-    def test_coroutines_that_raise(self):
+    def test_coroutines_that_raise(self) -> None:
         with while_not_exited(self.yield_and_raise_coroutine()) as ctx:
             self.events = []
             self.assertEqual("init", ctx.send(None))
@@ -104,7 +104,7 @@ class SendToCoroutineTestCase(unittest.TestCase):
                 ctx.send(None)
         self.assertIsNone(ctx.result)  # The coroutine never returned.
 
-    def test_throw_from_sender(self):
+    def test_throw_from_sender(self) -> None:
         with while_not_exited(self.demo_coroutine(100)) as ctx:
             with self.assertRaises(CoroutineTestError):
                 ctx.throw(CoroutineTestError)
@@ -117,7 +117,7 @@ class SendToCoroutineTestCase(unittest.TestCase):
             self.fail("the coroutine should have exited, skipping this")
         self.assertIsNone(ctx.result)
 
-    def test_sender_closes_immediately(self):
+    def test_sender_closes_immediately(self) -> None:
         with while_not_exited(self.demo_coroutine(5)) as ctx:
             ctx.close()
         self.assertIsNone(ctx.result)  # The coroutine never ran.

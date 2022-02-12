@@ -54,7 +54,7 @@ class InodeID(NamedTuple):
     #  - An identifiable repr is nice for ease of testing/debugging.
     inner_id_map: "_InnerInodeIDMap"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         paths = list(self.inner_id_map.gen_paths(self))
         desc = ""
         if self.inner_id_map.description:
@@ -74,7 +74,7 @@ class InodeID(NamedTuple):
     #    identity.  We don't care if two different objects have the same
     #    content.
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.id, id(self.inner_id_map)))
 
     def __eq__(self, other):
@@ -190,7 +190,7 @@ class InodeIDMap(NamedTuple):
     inner: _InnerInodeIDMap
 
     @classmethod
-    def new(cls, *, description: Any = ""):
+    def new(cls, *, description: Any = "") -> "InodeIDMap":
         inner = _InnerInodeIDMap(
             description=description, id_to_reverse_entries=defaultdict(set)
         )
@@ -351,7 +351,7 @@ class InodeIDMap(NamedTuple):
 
         return entry
 
-    def rename_path(self, src: bytes, dest: bytes):
+    def rename_path(self, src: bytes, dest: bytes) -> None:
         """
         It may be tempting to `add_*(remove_*(src), dest)`. However,
         that idiom:

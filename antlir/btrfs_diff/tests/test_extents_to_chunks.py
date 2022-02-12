@@ -126,12 +126,16 @@ class ExtentsToChunksTestCase(AntlirTestCase):
     and the downstream failure will be hard to debug.
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.id_map = InodeIDMap.new()
 
     def _gen_ids_and_extents_from_figure(
-        self, s, extent_left=0, extent_right=0, slice_spacing=0
+        self,
+        s: str,
+        extent_left: int = 0,
+        extent_right: int = 0,
+        slice_spacing: int = 0,
     ):
         """
         Given a figure,
@@ -184,7 +188,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             )
         )
 
-    def test_gen_ranges_from_figure(self):
+    def test_gen_ranges_from_figure(self) -> None:
         self.assertEqual(
             [
                 ("A", 0, 9),
@@ -198,14 +202,14 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             sorted(_gen_ranges_from_figure(self.FIG1)),
         )
 
-    def test_gen_ranges_from_figure_empty(self):
+    def test_gen_ranges_from_figure_empty(self) -> None:
         self.assertEqual([], list(_gen_ranges_from_figure("01234")))
 
-    def test_gen_ranges_from_figure_bad_number_line(self):
+    def test_gen_ranges_from_figure_bad_number_line(self) -> None:
         with self.assertRaises(AssertionError):
             list(_gen_ranges_from_figure("10234"))
 
-    def test_gen_ids_and_extents_from_figure(self):
+    def test_gen_ids_and_extents_from_figure(self) -> None:
         # The numeric line has 21 chars, but it is not counted.
         e = Extent(Extent.Kind.DATA, 0, 19)
         self.assertEqual(
@@ -225,7 +229,9 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             },
         )
 
-    def test_gen_ids_and_extents_from_figure_with_extent_left_and_right(self):
+    def test_gen_ids_and_extents_from_figure_with_extent_left_and_right(
+        self,
+    ) -> None:
         # Check extent_left & extent_right
         e = Extent(Extent.Kind.DATA, 0, 2119)
         self.assertEqual(
@@ -245,7 +251,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             },
         )
 
-    def test_gen_ids_and_extents_from_figure_with_all_kwargs(self):
+    def test_gen_ids_and_extents_from_figure_with_all_kwargs(self) -> None:
         # Check slice_spacing -- the leaf trimming offsets & lengths do not
         # change, but we do get HOLEs in the expected places.
         e = Extent(Extent.Kind.DATA, 0, 2119)
@@ -301,13 +307,13 @@ class ExtentsToChunksTestCase(AntlirTestCase):
     # enough that using it to exercise these offset variations gives us a
     # confidence in our position arithmetic.
 
-    def test_finalize_FIG1(self):
+    def test_finalize_FIG1(self) -> None:
         self.assertEqual(
             self.FIG1_repr_chunks_no_spacing,
             self._repr_chunks_from_figure(self.FIG1),
         )
 
-    def test_finalize_FIG1_with_extent_left_and_right(self):
+    def test_finalize_FIG1_with_extent_left_and_right(self) -> None:
         self.assertEqual(
             self.FIG1_repr_chunks_no_spacing,
             self._repr_chunks_from_figure(
@@ -315,7 +321,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             ),
         )
 
-    def test_finalize_FIG1_with_spacing_extent_left_and_right(self):
+    def test_finalize_FIG1_with_spacing_extent_left_and_right(self) -> None:
         # Adding slice_spacing shifts all the file offsets, and adds holes
         hole = ("HOLE/100", set())
         self.assertEqual(
@@ -368,13 +374,13 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             ),
         )
 
-    def test_nothing_cloned(self):
+    def test_nothing_cloned(self) -> None:
         self.assertEqual(
             {"a": [("DATA/4", set())], "b": [("DATA/6", set())]},
             self._repr_chunks_from_figure("aabbbaabbb"),
         )
 
-    def test_docstring_example(self):
+    def test_docstring_example(self) -> None:
         # Note that A's and C's disjoint chunks are merged before output.
         self.assertEqual(
             {
@@ -392,7 +398,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             ),
         )
 
-    def test_a_and_b_are_subsequences_of_c(self):
+    def test_a_and_b_are_subsequences_of_c(self) -> None:
         self.assertEqual(
             {
                 "a": [("DATA/6", {"c:0+3@0", "c:5+2@3", "c:12+1@5"})],
@@ -419,7 +425,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             ),
         )
 
-    def test_four_identical_clones(self):
+    def test_four_identical_clones(self) -> None:
         self.assertEqual(
             {
                 "a": [("DATA/1", {"b:0+1@0", "c:0+1@0", "d:0+1@0"})],
@@ -430,7 +436,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             self._repr_chunks_from_figure("d\nc\na\nb"),
         )
 
-    def test_ladder_of_clones(self):
+    def test_ladder_of_clones(self) -> None:
         self.assertEqual(
             {
                 "a": [("DATA/3", {"b:0+2@1", "c:0+1@2"})],
@@ -451,7 +457,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             ),
         )
 
-    def test_cannot_merge_adjacent_clones(self):
+    def test_cannot_merge_adjacent_clones(self) -> None:
         # Shows that we don't currently have merging of adjacent clones
         self.assertEqual(
             {
@@ -467,7 +473,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             ),
         )
 
-    def test_multi_extent(self):
+    def test_multi_extent(self) -> None:
         # There are 3 `write` commands below, one for each of `a`, `b`, and
         # `c`.  We also create a few HOLE leaf extents along the way.  All
         # of these extents are spread around by a few clone operations, so
@@ -703,4 +709,6 @@ class ExtentsToChunksTestCase(AntlirTestCase):
         # I iteratively built this up from the "trimmed leaves" data above,
         # and checked against the real output, one file at a time.  So, this
         # is not just "blind gold data", but a real worked example.
+        # pyre-fixme[6]: For 1st param expected `Iterable[Tuple[InodeID, Chunk]]`
+        #  but got `List[Tuple[InodeID, Sequence[Chunk]]]`.
         self.assertEqual(expected_dict, _repr_ids_and_chunks(ids_and_chunks))
