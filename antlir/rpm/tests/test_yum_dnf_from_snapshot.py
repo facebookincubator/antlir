@@ -9,6 +9,7 @@ import subprocess
 import unittest
 import uuid
 from contextlib import contextmanager
+from typing import FrozenSet
 from unittest import mock
 
 from antlir.config import antlir_dep
@@ -59,7 +60,7 @@ class YumDnfFromSnapshotTestImpl:
         install_args=None,
         # Create IMAGE_ROOT/<META_DIR> by default, since it's always
         # protected, if it exists.
-        extra_mkdirs: frozenset[str] = frozenset([META_DIR.decode()]),
+        extra_mkdirs: FrozenSet[str] = frozenset([META_DIR.decode()]),
     ):
         if install_args is None:
             install_args = _INSTALL_ARGS
