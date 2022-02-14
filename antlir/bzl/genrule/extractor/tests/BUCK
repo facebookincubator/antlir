@@ -7,6 +7,7 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 image.layer(
     name = "deps",
+    flavor = "antlir_test",
     features = [
         extract.extract(
             binaries = [

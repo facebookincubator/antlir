@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":constants.bzl", "REPO_CFG")
 load(":hoist.bzl", "hoist")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", "python_unittest")
@@ -10,6 +11,7 @@ load(":oss_shim.bzl", "python_unittest")
 def test_hoist(name):
     image.layer(
         name = "{}-base-layer".format(name),
+        flavor = REPO_CFG.antlir_linux_flavor,
         features = [image.rpms_install([
             "coreutils",
             "findutils",
