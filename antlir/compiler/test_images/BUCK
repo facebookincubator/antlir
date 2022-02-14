@@ -898,6 +898,7 @@ image.layer_from_package(
 
 image.layer(
     name = "create_ops-layer",
+    flavor = "antlir_test",
     features = [
         feature.install(":create_ops-original.sendstream", "/sendstream"),
     ],
@@ -921,7 +922,10 @@ image.layer_alias(
     visibility = ["//antlir/compiler/..."],
 )
 
-image.layer("empty")  # Just ensure this builds, not checking contents :)
+image.layer(
+    name = "empty",
+    flavor = "antlir_test",
+)  # Just ensure this builds, not checking contents :)
 
 package.new(
     name = "create_ops.tar.gz",
@@ -1021,6 +1025,7 @@ image.layer(
 
 image.layer(
     name = "vfat-test.layer",
+    flavor = "antlir_test",
     features = [
         image.ensure_dirs_exist("/EFI/BOOT"),
         feature.install(
@@ -1071,6 +1076,7 @@ image.gpt(
 
 image.layer(
     name = "users-groups-from-scratch",
+    flavor = "antlir_test",
     features = [
         image.ensure_dirs_exist("/etc"),
         # Importantly for this test, /etc/passwd must be installed first. Prior

@@ -13,6 +13,7 @@ load("//antlir/bzl/linux:defs.bzl", "linux")
 # `third_party.library` target.
 image.layer(
     name = "busybox-src-from-ba",
+    flavor = "antlir_test",
     features = [
         image.clone(
             flavor_helpers.default_flavor_build_appliance,
@@ -24,6 +25,7 @@ image.layer(
 
 image.layer(
     name = "busybox-src-from-third-party",
+    flavor = "antlir_test",
     features = [
         feature.install(
             third_party.library("busybox", "bin/busybox"),
@@ -36,6 +38,7 @@ image.layer(
 # test linux layers.
 image.layer(
     name = "test-linux-busybox-from-ba",
+    flavor = "antlir_test",
     features = [
         linux.filesystem.install(),
         linux.busybox.install(
@@ -46,6 +49,7 @@ image.layer(
 
 image.layer(
     name = "test-linux-busybox-from-third-party",
+    flavor = "antlir_test",
     features = [
         linux.filesystem.install(),
         linux.busybox.install(
