@@ -206,7 +206,7 @@ class SubvolumeOnDisk(
         return d
 
     @classmethod
-    def from_json_file(cls, infile, subvolumes_dir: Path):
+    def from_json_file(cls, infile, subvolumes_dir: Path) -> "SubvolumeOnDisk":
         parsed_json = "<NO JSON PARSED>"
         try:
             parsed_json = json.load(infile)

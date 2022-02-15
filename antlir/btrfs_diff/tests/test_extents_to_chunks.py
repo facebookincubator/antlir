@@ -181,8 +181,10 @@ class ExtentsToChunksTestCase(AntlirTestCase):
                 file_extent,
             )
 
-    def _repr_chunks_from_figure(self, s, **kwargs):
+    def _repr_chunks_from_figure(self, s: str, **kwargs):
         return _repr_ids_and_chunks(
+            # pyre-fixme[6]: For 1st param expected `Iterable[Tuple[InodeID,
+            #  Chunk]]` but got `Iterable[Tuple[InodeID, Sequence[Chunk]]]`.
             extents_to_chunks_with_clones(
                 list(self._gen_ids_and_extents_from_figure(s, **kwargs))
             )

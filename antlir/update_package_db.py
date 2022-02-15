@@ -144,7 +144,7 @@ def _with_generated_header_impl(s, token, how_to_generate) -> str:
     return f"# {_GENERATED} {token}\n# Update via `{how_to_generate}`\n" + s
 
 
-def _with_generated_header(contents, how_to_generate):
+def _with_generated_header(contents, how_to_generate) -> str:
     # We'll inject the MD5 of the contents of the file into the header.
     # Lint complains if the MD5 in the header does not match the contents.
     # This is not a security measure.  It is only intended to discourage
