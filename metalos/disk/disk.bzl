@@ -12,6 +12,7 @@ def build_root_disk(
         efi_fat_size):
     image.layer(
         name = "root-disk-layer",
+        flavor = "centos8",
         features = [
             # Image directories
             image.ensure_dirs_exist(IMAGE_DIR),
@@ -41,6 +42,7 @@ def build_root_disk(
     # Currently unused boot and efi
     image.layer(
         name = "empty-layer-boot-or-efi",
+        flavor = "centos8",
         features = [
             image.ensure_dirs_exist("/PLACEHOLDER"),
         ],
