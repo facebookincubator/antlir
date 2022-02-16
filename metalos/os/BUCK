@@ -33,6 +33,7 @@ image.layer(
     name = "metalos",
     parent_layer = ":basesystem-strip",
     features = [
+        image.ensure_subdirs_exist("/usr/lib", "metalos"),
         feature.install_buck_runnable(
             "//metalos/metalctl:metalctl",
             "/usr/bin/metalctl",
@@ -90,6 +91,7 @@ image.layer(
         ]),
         systemd.install_unit("run-fs-control.mount"),
         systemd.enable_unit("run-fs-control.mount", "core-services.target"),
+        "//metalos/host_configs:generators",
     ],
     runtime = ["systemd"],
     visibility = [
