@@ -347,11 +347,15 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
     // IMPORTANT: this MUST be the last thing that the generator does, otherwise
     // any bugs in the generator can be masked and cause future hard-to-diagnose
     // failures
-    symlink(
-        "/usr/lib/systemd/system/initrd.target",
-        opts.early_dir.join("default.target"),
-    )
-    .context("while changing default target to initrd.target")?;
+    let default_target_path = opts.early_dir.join("default.target");
+    match std::fs::remove_file(&default_target_path) {
+        // NotFound error is Ok, others are not
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        x => x,
+    }
+    .context("while removing original default.target")?;
+    symlink("/usr/lib/systemd/system/initrd.target", default_target_path)
+        .context("while changing default target to initrd.target")?;
 
     Ok(boot_mode)
 }
@@ -425,6 +429,8 @@ mod tests {
         std::fs::create_dir(&late).context("failed to create late dir")?;
         std::fs::create_dir(&env).context("failed to create env dir")?;
         std::fs::create_dir(&network).context("failed to create network dir")?;
+
+        symlink("emergency.target", early.join("default.target"))?;
 
         let opts = Opts {
             normal_dir: normal,
@@ -662,6 +668,26 @@ mod tests {
                     MACAddress=11:22:33:44:55:66\n\
                     ".into(),
                 opts.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
+            },
+        )
+        .context("Failed to ensure tmpdir is setup correctly")?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_generator_fail() -> Result<()> {
+        let (log, tmpdir, opts, _) =
+            setup_generator_test("generator_fail").context("failed to setup test environment")?;
+
+        let cmdline: MetalosCmdline = "".parse()?;
+
+        assert!(generator_maybe_err(cmdline, log, opts.clone()).is_err());
+
+        compare_dir(
+            &tmpdir,
+            btreemap! {
+                opts.early_dir.join("default.target") => PathBuf::from("emergency.target").into(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
