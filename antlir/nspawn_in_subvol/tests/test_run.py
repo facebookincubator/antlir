@@ -717,6 +717,25 @@ class NspawnTestCase(NspawnTestBase):
                 check=True,
             )
 
+    def test_chdir(self):
+        repo_root = _unmemoized_repo_config().repo_root
+        ret = self._nspawn_in(
+            (__package__, "bootable-systemd-os"),
+            [f"--chdir={repo_root}", "--bind-repo-ro", "--", "/bin/pwd"],
+            stdout=subprocess.PIPE,
+            check=True,
+        )
+        self.assertEqual(0, ret.returncode)
+        self.assertEqual(repo_root, ret.stdout.strip())
+
+        with self.assertRaisesRegex(
+            AssertionError, "chdir must be an absolute path:"
+        ):
+            ret = self._nspawn_in(
+                (__package__, "bootable-systemd-os"),
+                ["--chdir=tmp", "--", "/bin/pwd"],
+            )
+
     # The default path determines which binaries get shadowed, so it's
     # important that it be the same across the board.
     def test_path_env(self):
