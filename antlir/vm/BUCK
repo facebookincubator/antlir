@@ -201,6 +201,9 @@ vm.run(
             kernel_get.base_target,
             kernel_get.default.uname,
         ),
+        append = [
+            "initrd.break",
+        ],
     ),
     args = [
         "--append-console",
