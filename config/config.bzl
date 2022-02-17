@@ -17,6 +17,7 @@ do_not_use_repo_cfg = {
             "vm.rootfs.layer": "//images/base:fedora.vm",
         }.items()
     ]),
+    "default_image_flavors": " ".join(["fedora33"]),
     "flavor_available": " ".join(["fedora33"]),
     "flavor_default": "fedora33",
     # KEEP THIS DICTIONARY SMALL.

@@ -205,6 +205,7 @@ REPO_CFG = shape.new(
         "host_mounts_for_repo_artifacts",
     ),
     flavor_available = _get_str_list_cfg("flavor_available"),
+    default_image_flavors = _get_str_list_cfg("default_image_flavors"),
     flavor_default = _get_str_cfg("flavor_default"),
     flavor_to_config = _get_flavor_to_config(),
     # KEEP THIS DICTIONARY SMALL.
