@@ -102,6 +102,10 @@ def _build_test_tags(unittest_rule, tags):
         wrapper_tags.append("tpx:list-format-migration:json")
         inner_tags.append("use-testpilot-adapter")
 
+        # annotate both inner and wrapper target with a framework
+        wrapper_tags.append("test-framework=vmtest")
+        inner_tags.append("test-framework=vmtest")
+
     return inner_tags, wrapper_tags
 
 def _vm_unittest(
