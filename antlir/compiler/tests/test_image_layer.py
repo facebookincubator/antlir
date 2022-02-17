@@ -387,9 +387,7 @@ class ImageLayerTestCase(unittest.TestCase):
             check_common_rpm_render(
                 self,
                 r,
-                REPO_CFG.flavor_to_config[
-                    REPO_CFG.flavor_default
-                ].rpm_installer,
+                REPO_CFG.flavor_to_config["centos7"].rpm_installer,
             )
 
     def _check_installed_files_bar(self, r, clones_re=""):

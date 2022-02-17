@@ -965,10 +965,11 @@ add_rpm_repo_snapshots_layer(
     # time, it has to derive from a real, working, production BA, whose
     # flavor is surely different.
     flavor = "antlir_test",
+    # We have to use "centos7" as a build appliance as long as we have to support yum
     flavor_config_override = image.opts(
         # We must set `build_appliance` since the default would cause
         # a circular dependency -- this very target **IS** the flavor's BA.
-        build_appliance = flavor_helpers.default_flavor_build_appliance,
+        build_appliance = flavor_helpers.get_build_appliance("centos7"),
         # `parent_layer`'s flavor does not match ours, and this is OK here.
         unsafe_bypass_flavor_check = True,
     ),
@@ -979,7 +980,7 @@ add_rpm_repo_snapshots_layer(
         ("//antlir/rpm:rpm-replay-repo-snapshot-for-tests", installer)
         for installer in flavor_helpers.get_rpm_installers_supported()
     ],
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    parent_layer = flavor_helpers.get_build_appliance("centos7"),
     visibility = [
         "//antlir/...",
         "//hermetic_infra/hermit/integration/...",
