@@ -492,6 +492,11 @@ def _popen_nsenter_into_container(
         "--all",
         f"--setuid={opts.user.pw_uid}",
         f"--setgid={opts.user.pw_gid}",
+        *(
+            [f"--wd=/proc/{container_proc_pid}/root{opts.chdir}"]
+            if opts.chdir
+            else []
+        ),
         *opts.cmd,
     ]
 
@@ -499,8 +504,6 @@ def _popen_nsenter_into_container(
     # pyre-fixme[7]: Expected `ContextManager[subprocess.Popen[typing.Any]]`
     # but got `Iterable[subprocess.Popen[typing.Any]]`.
     return maybe_popen_and_inject_fds(
-        # pyre-fixme[6]: Expected `List[str]` for 1st param but got
-        #  `List[typing.Union[None, bytes, str]]`.
         nsenter_cmd,
         opts,
         popen=functools.partial(

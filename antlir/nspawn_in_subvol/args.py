@@ -220,6 +220,7 @@ class _NspawnOpts(NamedTuple):
     boot: bool = False
     bind_repo_ro: bool = False  # to support @mode/dev
     bind_artifacts_dir_rw: bool = False
+    chdir: Optional[Path] = None
     # Future: maybe make these `Path`?
     # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
     #  bytes]]`.
@@ -257,6 +258,10 @@ def new_nspawn_opts(**kwargs):
     opts = _NspawnOpts(**kwargs)
     assert not (opts.quiet and opts.debug_only_opts.debug), opts
     assert not opts.debug_only_opts.snapshot_into or opts.snapshot, opts
+    if opts.chdir:
+        assert opts.chdir.startswith(
+            b"/"
+        ), f"chdir must be an absolute path: {opts.chdir}"
     return opts
 
 
@@ -270,6 +275,12 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         help="Boot the container with nspawn.  This means invoke `systemd` "
         "as PID 1 and let it start up services",
     )
+    parser.add_argument(
+        "--chdir",
+        required=False,
+        type=Path.from_argparse,
+        help="ABS path for working directory when running a command",
+    ),
     parser.add_argument(
         "--layer",
         required=True,
