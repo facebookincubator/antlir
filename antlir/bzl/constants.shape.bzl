@@ -80,6 +80,7 @@ repo_config_t = shape.shape(
     # Compared to `flavor_to_config`, it does not contain the
     # `antlir_test` flavor, which shouldn't be always defined.
     flavor_available = shape.list(str),
+    default_image_flavors = shape.list(str),
     flavor_default = str,
     flavor_to_config = shape.dict(str, flavor_config_t),
     antlir_linux_flavor = str,
