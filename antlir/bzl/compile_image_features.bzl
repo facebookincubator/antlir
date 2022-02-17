@@ -46,9 +46,7 @@ def compile_image_features(
                 "you must explicitly set `flavor` to  the parent's `flavor`.",
             )
         elif not parent_layer:
-            flavor = REPO_CFG.flavor_default
-
-        # else: no override and `parent_layer` is set, so we'll read the flavor from the parent.
+            fail("Build for {}, target {} failed: either `flavor` or `parent_layer` must be provided.".format(name, current_target))
 
     flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override) if flavor else None
 

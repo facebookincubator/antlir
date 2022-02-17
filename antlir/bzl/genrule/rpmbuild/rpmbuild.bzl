@@ -136,7 +136,7 @@ def private_image_rpmbuild_impl(
             image_layer_kwargs.get("flavor_config_override"),
         ),
         "rpm_installer",
-        flavor_helpers.get_rpm_installer(REPO_CFG.flavor_default),
+        flavor_helpers.get_rpm_installer(flavor),
     )
 
     install_deps_layer = name + "-rpmbuild-install-deps"
