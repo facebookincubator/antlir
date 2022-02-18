@@ -7,6 +7,9 @@
 
 include "metalos/host_configs/package_manifest.thrift"
 
+namespace cpp2 metalos.host_configs
+namespace py3 metalos.host_configs
+
 // A service is composed of a service image containing the binary and any
 // supporting files, and a config override package to apply.
 struct Service {

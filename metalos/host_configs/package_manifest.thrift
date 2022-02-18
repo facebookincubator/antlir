@@ -5,6 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+namespace cpp2 metalos.host_configs
+namespace py3 metalos.host_configs
+
 // This informs MetalOS where an image should be persisted to on disk, as well
 // as giving MetalOS the ability to implement per-kind quotas etc.
 enum Kind {

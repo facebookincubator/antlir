@@ -11,6 +11,9 @@
 // identity" and some other assorted settings that are needed to setup a
 // function system.
 
+namespace cpp2 metalos.host_configs
+namespace py3 metalos.host_configs
+
 // @oss-disable: include "metalos/host_configs/facebook/host.thrift"
 
 include "metalos/host_configs/runtime_config.thrift"
