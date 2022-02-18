@@ -20,7 +20,9 @@ thrift_library(
     name = "host",
     languages = ["rust"] + [
         "cpp2",
+        "py3",
     ] if not (oss or oss_ci) else [],
+    # @oss-disable: py3_namespace = "metalos.host_configs", 
     rust_crate_name = "host",
     rust_deps = ["//metalos/metalos_macros:metalos_macros"] + third_party.libraries(
         [
@@ -125,7 +127,9 @@ thrift_library(
     name = "package-manifest",
     languages = ["rust"] + [
         "cpp2",
+        "py3",
     ] if not (oss or oss_ci) else [],
+    # @oss-disable: py3_namespace = "metalos.host_configs", 
     thrift_rust_options = "serde",
     thrift_srcs = {"package_manifest.thrift": None},
     visibility = [
@@ -137,7 +141,9 @@ thrift_library(
     name = "runtime-config",
     languages = ["rust"] + [
         "cpp2",
+        "py3",
     ] if not (oss or oss_ci) else [],
+    # @oss-disable: py3_namespace = "metalos.host_configs", 
     thrift_rust_options = "serde",
     thrift_srcs = {"runtime_config.thrift": None},
     visibility = [
