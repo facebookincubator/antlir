@@ -383,7 +383,7 @@ def nspawn_sanitize_env():
 # be used, while that of `popen_and_inject_fds` must be.
 @contextmanager
 def maybe_popen_and_inject_fds(
-    cmd: List[str], opts: _NspawnOpts, popen, *, set_listen_fds
+    cmd: List[str], opts: _NspawnOpts, popen, *, set_listen_fds: bool
 ) -> Iterable[subprocess.Popen]:
     with (
         popen_and_inject_fds_after_sudo(

@@ -164,7 +164,7 @@ class Subvol(DoNotFreeze):
         path: AnyStr,
         *,
         already_exists: bool = False,
-        _test_only_allow_existing=False,
+        _test_only_allow_existing: bool = False,
     ) -> None:
         """
         `Subvol` can represent not-yet-created (or created-and-deleted)
@@ -288,7 +288,7 @@ class Subvol(DoNotFreeze):
         self,
         args,
         *,
-        _subvol_exists=True,
+        _subvol_exists: bool = True,
         stdout=None,
         check: bool = True,
         **kwargs,
@@ -346,7 +346,7 @@ class Subvol(DoNotFreeze):
         args,
         timeout=None,
         input=None,
-        _subvol_exists=True,
+        _subvol_exists: bool = True,
         check: bool = True,
         **kwargs,
     ):
