@@ -48,7 +48,7 @@ class _ObjectCounter:
         # and keeps this code generic.
         self._synonyms = Synonyms({}, UnionFind())
 
-    def _set_size(self, chk, obj_size) -> None:
+    def _set_size(self, chk, obj_size: int) -> None:
         """Helper to add a key into `checksum_size` while also performing
         a sanity check to ensure that, if the checksum already existed in the
         map, the size is the same.
