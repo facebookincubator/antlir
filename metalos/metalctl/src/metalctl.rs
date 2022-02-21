@@ -41,6 +41,8 @@ mod network_cleanup;
 mod send_event;
 mod switch_root;
 mod umount;
+#[cfg(not(initrd))]
+mod update;
 
 pub use config::Config;
 
@@ -72,6 +74,9 @@ enum Subcommand {
     /// upsize it to the maximum size
     #[cfg(initrd)]
     ApplyDiskImage(apply_disk_image::Opts),
+    #[cfg(not(initrd))]
+    #[structopt(flatten)]
+    Update(update::Update),
     #[cfg(facebook)]
     #[structopt(flatten)]
     Facebook(facebook::Subcommand),
@@ -166,6 +171,8 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::ApplyDiskImage(opts) => {
             apply_disk_image::apply_disk_image(log, opts, config).await
         }
+        #[cfg(not(initrd))]
+        Subcommand::Update(update) => update.subcommand(log).await,
         #[cfg(facebook)]
         Subcommand::Facebook(fb) => fb.subcommand(log, config).await,
     }
