@@ -49,23 +49,11 @@ class ImagePackageTestCaseBase(AntlirTestCase):
             subprocess.check_output(
                 nsenter_as_root(
                     unshare,
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <:
-                    #  [str, bytes]]]` for 2nd param but got `str`.
                     "findmnt",
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                    #  bytes]]]` for 3rd param but got `str`.
                     "--mountpoint",
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                    #  bytes]]]` for 4th param but got `str`.
                     mount_dir,
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                    #  bytes]]]` for 5th param but got `str`.
                     "--noheadings",
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                    #  bytes]]]` for 6th param but got `str`.
                     "-o",
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                    #  bytes]]]` for 7th param but got `str`.
                     "LABEL",
                 )
             )
@@ -119,26 +107,12 @@ class ImagePackageTestCaseBase(AntlirTestCase):
         subprocess.check_call(
             nsenter_as_root(
                 unshare,
-                # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
                 "rsync",
-                # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
                 "--archive",
-                # pyre-fixme[6]: For 4th param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
                 "--hard-links",
-                # pyre-fixme[6]: For 5th param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
                 "--sparse",
-                # pyre-fixme[6]: For 6th param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
                 "--xattrs",
-                # pyre-fixme[6]: For 7th param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
                 "--acls",
-                # pyre-fixme[6]: For 8th param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
                 f"{mount_dir}/",
                 subvol.path(),
             )
@@ -175,11 +149,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
         subprocess.check_call(
             nsenter_as_root(
                 unshare,
-                # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
                 "cp",
-                # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
                 "-a",
                 mount_dir / ".",
                 subvol.path(),

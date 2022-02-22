@@ -1044,23 +1044,11 @@ class Subvol(DoNotFreeze):
                     size_ret = subprocess.run(
                         nsenter_as_user(
                             ns,
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <:
-                            # [str, bytes]]]` for 2nd param but got `str`.
                             "findmnt",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 3rd param but got `str`.
                             "--noheadings",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 4th param but got `str`.
                             "--bytes",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 5th param but got `str`.
                             "--output",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 6th param but got `str`.
                             "AVAIL",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 7th param but got `Path`.
                             loop_vol.dir(),
                         ),
                         stdout=subprocess.PIPE,
@@ -1117,26 +1105,12 @@ class Subvol(DoNotFreeze):
                     run_stdout_to_err(
                         nsenter_as_root(
                             ns,
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <:
-                            # [str, bytes]]]` for 2nd param but got `str`.
                             "btrfs",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 3rd param but got `str`.
                             "property",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 4th param but got `str`.
                             "set",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 5th param but got `str`.
                             "-ts",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 6th param but got `Path`.
                             subvol_path_dst,
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 7th param but got `str`.
                             "ro",
-                            # pyre-fixme[6]: Expected `List[Variable[AnyStr <: [str,
-                            #  bytes]]]` for 8th param but got `str`.
                             "false",
                         )
                     ).check_returncode()

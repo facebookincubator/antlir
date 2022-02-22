@@ -97,20 +97,10 @@ class LoopbackVolume:
         run_stdout_to_err(
             nsenter_as_root(
                 self._unshare,
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 2nd param but got `str`.
                 "mount",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 3rd param but got `str`.
                 "-t",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 4th param but got `str`.
                 self._fs_type,
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 5th param but got `str`.
                 "-o",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 6th param but got `str`.
                 mount_opts,
                 self._image_path,
                 # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
@@ -123,17 +113,9 @@ class LoopbackVolume:
         loop_dev = subprocess.check_output(
             nsenter_as_user(
                 self._unshare,
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 2nd param but got `str`.
                 "findmnt",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 3rd param but got `str`.
                 "--noheadings",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 4th param but got `str`.
                 "--output",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 5th param but got `str`.
                 "SOURCE",
                 # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
                 #  bytes]]]` for 6th param but got `Optional[Path]`.
@@ -147,9 +129,6 @@ class LoopbackVolume:
         # we've seen in production have sector sizes of 512, 1024, or 4096).
         if (
             run_stdout_to_err(
-                # pyre-fixme[6]: Expected `Iterable[Variable[typing.AnyStr <:
-                #  [str, bytes]]]` for 1st param but got
-                #  `List[typing.Union[bytes, str]]`.
                 ["sudo", "losetup", "--sector-size=4096", loop_dev]
             ).returncode
             != 0
@@ -162,9 +141,6 @@ class LoopbackVolume:
         # Also, when the image is on tmpfs, setting direct IO fails.
         if (
             run_stdout_to_err(
-                # pyre-fixme[6]: Expected `Iterable[Variable[typing.AnyStr <:
-                #  [str, bytes]]]` for 1st param but got
-                #  `List[typing.Union[bytes, str]]`.
                 ["sudo", "losetup", "--direct-io=on", loop_dev]
             ).returncode
             != 0
@@ -180,10 +156,6 @@ class LoopbackVolume:
         if self._mount_dir:
             # Nothing might have been mounted, ignore exit code
             run_stdout_to_err(
-                # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `str`.
-                # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
-                #  [str, bytes]]]` but got `Path`.
                 nsenter_as_root(self._unshare, "umount", self._mount_dir)
             )
 
@@ -324,14 +296,8 @@ class BtrfsLoopbackVolume(LoopbackVolume):
         min_size_out = subprocess.check_output(
             nsenter_as_root(
                 self._unshare,
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 2nd param but got `str`.
                 "btrfs",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 3rd param but got `str`.
                 "inspect-internal",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 4th param but got `str`.
                 "min-dev-size",
                 # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
                 #  bytes]]]` for 5th param but got `Optional[Path]`.
@@ -363,14 +329,8 @@ class BtrfsLoopbackVolume(LoopbackVolume):
         run_stdout_to_err(
             nsenter_as_root(
                 self._unshare,
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 2nd param but got `str`.
                 "btrfs",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 3rd param but got `str`.
                 "filesystem",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 4th param but got `str`.
                 "resize",
                 str(min_size_bytes),
                 # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
@@ -384,20 +344,10 @@ class BtrfsLoopbackVolume(LoopbackVolume):
             subprocess.check_output(
                 nsenter_as_user(
                     self._unshare,
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <:
-                    #  [str, bytes]]]` for 2nd param but got `str`.
                     "findmnt",
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                    #  bytes]]]` for 3rd param but got `str`.
                     "--bytes",
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                    #  bytes]]]` for 4th param but got `str`.
                     "--noheadings",
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                    #  bytes]]]` for 5th param but got `str`.
                     "--output",
-                    # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                    #  bytes]]]` for 6th param but got `str`.
                     "SIZE",
                     # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
                     #  bytes]]]` for 7th param but got `Optional[Path]`.

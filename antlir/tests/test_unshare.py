@@ -23,16 +23,8 @@ _NS_FILES = ["cgroup", "ipc", "mnt", "net", "pid", "uts"]
 
 class UnshareTestCase(unittest.TestCase):
     def test_nsenter_wrappers(self) -> None:
-        # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <: [str,
-        #  bytes]]]` but got `str`.
-        # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <: [str,
-        #  bytes]]]` but got `str`.
-        self.assertEqual(("a", "b"), nsenter_as_user(None, "a", "b"))
-        # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <: [str,
-        #  bytes]]]` but got `str`.
-        # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <: [str,
-        #  bytes]]]` but got `str`.
-        self.assertEqual(("sudo", "c", "d"), nsenter_as_root(None, "c", "d"))
+        self.assertEqual(["a", "b"], nsenter_as_user(None, "a", "b"))
+        self.assertEqual(["sudo", "c", "d"], nsenter_as_root(None, "c", "d"))
 
     def _popen_sleep_forever(self, unshare: Unshare):
         # We need the ready signal to know when we've actually executed the
@@ -41,14 +33,8 @@ class UnshareTestCase(unittest.TestCase):
         proc = subprocess.Popen(
             nsenter_as_user(
                 unshare,
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 2nd param but got `str`.
                 "bash",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 3rd param but got `str`.
                 "-uec",
-                # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-                #  bytes]]]` for 4th param but got `str`.
                 "echo ready $$ ; exec sleep infinity",
             ),
             stdout=subprocess.PIPE,
@@ -78,8 +64,6 @@ class UnshareTestCase(unittest.TestCase):
                 .strip()
                 .split("\n")
             )
-            # pyre-fixme[6]: Expected `List[Variable[typing.AnyStr <: [str,
-            #  bytes]]]` for 2nd param but got `str`.
             for cmd in [list_ns_cmd, nsenter_as_root(unshare, *list_ns_cmd)]
         ]
         for ns in ns_diff:
@@ -105,10 +89,6 @@ class UnshareTestCase(unittest.TestCase):
             # Check that "as user" works.
             for arg, expected in (("-u", os.geteuid()), ("-g", os.getegid())):
                 actual = int(
-                    # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
-                    # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     subprocess.check_output(nsenter_as_user(unshare, "id", arg))
                 )
                 self.assertEqual(expected, actual)
@@ -123,8 +103,6 @@ class UnshareTestCase(unittest.TestCase):
         with Unshare([Namespace.PID]) as unshare:
             self._check_ns_diff(unshare, {"pid"})
 
-            # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <: [str,
-            #  bytes]]]` but got `str`.
             good_echo = nsenter_as_user(unshare, "echo")
             subprocess.check_call(good_echo)  # Will fail once the NS is dead
 
@@ -186,9 +164,6 @@ class UnshareTestCase(unittest.TestCase):
                     self.assertEqual(
                         b"kvoh",
                         subprocess.check_output(
-                            # pyre-fixme[6]: Expected
-                            #  `List[Variable[typing.AnyStr <: [str, bytes]]]`
-                            #  for 2nd param but got `str`.
                             nsenter_as_user(unshare, "cat", cypa)
                         ),
                     )
@@ -202,20 +177,10 @@ class UnshareTestCase(unittest.TestCase):
                     subprocess.check_call(
                         nsenter_as_root(
                             unshare,
-                            # pyre-fixme[6]: For 2nd param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             "mount",
-                            # pyre-fixme[6]: For 3rd param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             mnt_src,
-                            # pyre-fixme[6]: For 4th param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             mnt_dest1,
-                            # pyre-fixme[6]: For 5th param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             "-o",
-                            # pyre-fixme[6]: For 6th param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             "bind",
                         )
                     )
@@ -228,20 +193,10 @@ class UnshareTestCase(unittest.TestCase):
                     subprocess.check_call(
                         nsenter_as_root(
                             unshare,
-                            # pyre-fixme[6]: For 2nd param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             "mount",
-                            # pyre-fixme[6]: For 3rd param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             mnt_src,
-                            # pyre-fixme[6]: For 4th param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             mnt_dest2,
-                            # pyre-fixme[6]: For 5th param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             "-o",
-                            # pyre-fixme[6]: For 6th param expected
-                            #  `List[Variable[AnyStr <: [str, bytes]]]` but got `str`.
                             "bind",
                         )
                     )
@@ -274,10 +229,6 @@ class UnshareTestCase(unittest.TestCase):
             self.assertNotIn(
                 "ns-tap",
                 subprocess.run(
-                    # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
-                    # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     nsenter_as_root(unshare, "ip", "link"),
                     check=True,
                     stdout=subprocess.PIPE,
@@ -288,26 +239,12 @@ class UnshareTestCase(unittest.TestCase):
             subprocess.run(
                 nsenter_as_root(
                     unshare,
-                    # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     "ip",
-                    # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     "tuntap",
-                    # pyre-fixme[6]: For 4th param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     "add",
-                    # pyre-fixme[6]: For 5th param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     "dev",
-                    # pyre-fixme[6]: For 6th param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     "ns-tap",
-                    # pyre-fixme[6]: For 7th param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     "mode",
-                    # pyre-fixme[6]: For 8th param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     "tap",
                 ),
                 check=True,
@@ -316,10 +253,6 @@ class UnshareTestCase(unittest.TestCase):
             self.assertIn(
                 "ns-tap",
                 subprocess.run(
-                    # pyre-fixme[6]: For 2nd param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
-                    # pyre-fixme[6]: For 3rd param expected `List[Variable[AnyStr <:
-                    #  [str, bytes]]]` but got `str`.
                     nsenter_as_root(unshare, "ip", "link"),
                     check=True,
                     stdout=subprocess.PIPE,
