@@ -287,19 +287,15 @@ class Unshare:
         ]
 
 
-def nsenter_as_root(unshare, *cmd: List[AnyStr]) -> List[AnyStr]:
+def nsenter_as_root(unshare, *cmd: AnyStr) -> List[Union[str, bytes]]:
     "Unshare.nsenter_as_root that also handles unshare=None"
     if unshare is None:
-        # pyre-fixme[7]: Expected `List[Variable[AnyStr <: [str, bytes]]]` but
-        # got `Tuple[str, *Tuple[List[Variable[AnyStr <: [str, bytes]]], ...]]`.
-        return ("sudo", *cmd)
+        return ["sudo", *cmd]
     return unshare.nsenter_as_root(*cmd)
 
 
-def nsenter_as_user(unshare, *cmd: List[AnyStr]) -> List[AnyStr]:
+def nsenter_as_user(unshare, *cmd: AnyStr) -> List[Union[str, bytes]]:
     "Unshare.nsenter_as_user that also handles unshare=None"
     if unshare is None:
-        # pyre-fixme[7]: Expected `List[Variable[AnyStr <: [str, bytes]]]` but
-        # got `Tuple[List[Variable[AnyStr <: [str, bytes]]], ...]`.
-        return cmd
+        return [*cmd]
     return unshare.nsenter_as_user(*cmd)

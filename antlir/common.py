@@ -196,7 +196,7 @@ def recv_fds_from_unix_sock(sock_path, max_fds):
 
 
 def run_stdout_to_err(
-    args: Iterable[AnyStr], *, stdout: None = None, **kwargs
+    args: Iterable[Union[str, bytes]], *, stdout: None = None, **kwargs
 ) -> subprocess.CompletedProcess:
     """
     Use this instead of `subprocess.{run,call,check_call}()` to prevent
