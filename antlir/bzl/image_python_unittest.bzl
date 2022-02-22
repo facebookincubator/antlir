@@ -38,6 +38,9 @@ def image_python_unittest(
         container_opts = container_opts,
     )
 
+    wrapper_props.outer_test_kwargs["tags"] = \
+        wrapper_props.outer_test_kwargs.pop("tags", []) + ["test-framework=antlir_image_test"]
+
     # `par_style` only applies to the inner test that runs the actual user
     # code, because there is only one working choice for the outer test.
     # For the inner test:
@@ -60,7 +63,7 @@ def image_python_unittest(
 
     python_unittest(
         name = helpers.hidden_test_name(name),
-        tags = helpers.tags_to_hide_test() + (
+        tags = helpers.tags_to_hide_test() + ["test-framework=antlir_image_test"] + (
             [] if _TEMP_TP_TAG not in wrapper_props.outer_test_kwargs.get(
                 "tags",
                 {},
