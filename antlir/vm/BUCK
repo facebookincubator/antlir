@@ -4,6 +4,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/linux/boot/systemd:defs.bzl", "boot")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
 roms = [
@@ -208,5 +209,19 @@ vm.run(
     args = [
         "--append-console",
         "--shell=console",
+    ],
+)
+
+# Build a bootable EFI package using systemd-boot
+boot.build(
+    # The target name of the boot package
+    # Use this in a gpt.image as a partition
+    name = "systemd-boot",
+    # The LABEL assigned to the rootfs
+    label = "/",
+    # List of kernels to install
+    # Note: this will also install the initrd
+    kernels = [
+        kernel_get.default,
     ],
 )

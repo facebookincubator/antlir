@@ -1,0 +1,6 @@
+title {{ title }}
+linux {{ kernel }}
+{% for initrd in initrds %}
+initrd {{ initrd }}
+{% endfor %}
+options {{ options | join(" ") }}
