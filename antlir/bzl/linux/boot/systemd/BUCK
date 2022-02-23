@@ -1,0 +1,28 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image.bzl", "image")
+
+# The base image.layer for a systemd boot partition
+# There is no kernel, initrd, or loader entries
+# configured in this layer.
+image.layer(
+    name = "base",
+    features = [
+        image.ensure_subdirs_exist("/", "EFI"),
+        image.ensure_subdirs_exist("/EFI", "BOOT"),
+        image.ensure_subdirs_exist("/EFI", "systemd"),
+        image.ensure_subdirs_exist("/", "loader"),
+        image.ensure_subdirs_exist("/loader", "entries"),
+        image.clone(
+            "//metalos/os:metalos",
+            "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
+            "/EFI/systemd/systemd-bootx64.efi",
+        ),
+        image.clone(
+            "//metalos/os:metalos",
+            "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
+            "/EFI/BOOT/BOOTX64.efi",
+        ),
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+    visibility = ["PUBLIC"],
+)

@@ -1,0 +1,9 @@
+load("//antlir/bzl:template.bzl", "template")
+
+template(
+    name = "loader",
+    srcs = [
+        "loader.jinja2",
+    ],
+    visibility = ["PUBLIC"],
+)
