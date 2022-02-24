@@ -1,4 +1,3 @@
-#![deny(warnings)]
 /*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -6,12 +5,16 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![deny(warnings)]
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
+
 use std::path::PathBuf;
 
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
-pub struct Target {
+pub struct target_t {
     pub name: String,
     pub path: PathBuf,
 }

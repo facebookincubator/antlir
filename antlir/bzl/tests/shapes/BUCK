@@ -164,6 +164,7 @@ python_unittest(
             module = "data",
             type_name = "hashable_t",
         ),
+        "//antlir/bzl:target.shape",
     ],
 )
 

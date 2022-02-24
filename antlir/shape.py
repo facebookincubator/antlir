@@ -114,15 +114,6 @@ class Shape(pydantic.BaseModel, DoNotFreeze, metaclass=ShapeMeta):
         return f"shape({fields})"
 
 
-# A Target is special mapping of a buck target name -> on disk path to the
-# constructed artifact
-# pyre-fixme[13]: Attribute `name` is never initialized.
-# pyre-fixme[13]: Attribute `path` is never initialized.
-class Target(Shape):
-    name: str
-    path: Path
-
-
 class Enum(enum.Enum):
     def __repr__(self) -> str:
         return self.name

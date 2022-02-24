@@ -1,7 +1,8 @@
 # @noautodeps
 
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "rust_library", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":defs.bzl", "fake_macro_library")
 load(":test_hoist.bzl", "test_hoist")
 
@@ -334,7 +335,50 @@ test_hoist(
     name = "test-hoist",
 )
 
-shape.impl(name = "target.shape")
+####
+# Here lies a custom implementation of the target.shape backing code.
+# You almost certainly _DO NOT_ want to copy this behavior anywhere
+# else.  This is very specific to this shape and not for general use.
+####
+python_library(
+    name = "target.shape-python",
+    srcs = {
+        "shape2/target.py": "__init__.py",
+    },
+    antlir_rule = "user-facing",
+    base_module = "antlir.bzl.target",
+    visibility = ["PUBLIC"],
+    deps = [
+        antlir_dep(":shape"),
+        antlir_dep(":cli"),
+    ],
+)
+
+rust_library(
+    name = "target.shape-rust",
+    srcs = [
+        "shape2/target.rs",
+    ],
+    antlir_rule = "user-facing",
+    crate = "target",
+    crate_root = "shape2/target.rs",
+    visibility = ["PUBLIC"],
+    deps = third_party.libraries(
+        [
+            "serde",
+            "serde_json",
+        ],
+        platform = "rust",
+    ),
+)
+
+shape.impl(
+    name = "target.shape",
+    expert_only_custom_impl = True,
+)
+####
+# End dumb shit
+####
 
 shape.impl(
     name = "constants.shape",
