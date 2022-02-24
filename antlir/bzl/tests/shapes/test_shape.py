@@ -9,8 +9,9 @@ import unittest
 from typing import Mapping, Optional, Sequence, Tuple
 
 from antlir.btrfs_diff.freeze import frozendict
+from antlir.bzl.target import target_t
 from antlir.fs_utils import Path
-from antlir.shape import Shape, Target
+from antlir.shape import Shape
 
 # TODO remove all references to hashable and just use characters once
 # read-only dicts land
@@ -51,7 +52,7 @@ class TestShape(unittest.TestCase):
             lightsaber_fixed,
             lightsaber_t(
                 color=lightsaber_t.types.color.GREEN,
-                target=Target(
+                target=target_t(
                     name=":luke-lightsaber",
                     path=b"/static/target/path",
                 ),
@@ -153,7 +154,7 @@ class TestShape(unittest.TestCase):
             "weapon=shape("
             + (
                 "color=GREEN, "
-                "target=shape("
+                "target=target_t("
                 "name=':luke-lightsaber', path=b'/static/target/path'"
                 ")"
             )

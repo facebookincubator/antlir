@@ -58,19 +58,3 @@ rust_binary(
                platform = "rust",
            ),
 )
-
-# supporting lib for rust shape definitions
-rust_library(
-    name = "shape-rust",
-    srcs = ["shape.rs"],
-    crate = "shape",
-    visibility = ["PUBLIC"],
-    deps = third_party.libraries(
-        [
-            "derive_more",
-            "serde",
-            "serde_json",
-        ],
-        platform = "rust",
-    ),
-)

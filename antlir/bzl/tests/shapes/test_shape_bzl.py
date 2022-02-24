@@ -372,5 +372,3 @@ class TestShapeBzl(unittest.TestCase):
     def test_target_and_path_unsupported(self) -> None:
         with self.assertRaisesRegex(Fail, "no longer supported"):
             shape.path()
-        with self.assertRaisesRegex(Fail, "no longer supported"):
-            shape.target()

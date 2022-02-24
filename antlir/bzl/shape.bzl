@@ -403,12 +403,6 @@ def _shape(**fields):
         **{key: f.type for key, f in fields.items()}
     )
 
-# A target is special kind of Path in that it will be resolved to an on-disk location
-# when the shape is rendered to json.  But when the shape instance is being
-# used in bzl macros, the field will be a valid buck target.
-def _target(**field_kwargs):
-    fail("shape.target() is no longer supported, use `target_t` from `//antlir/bzl:target.shape`")
-
 def _is_shape(x):
     if not structs.is_struct(x):
         return False
@@ -446,9 +440,12 @@ def _new_shape(shape, **fields):
         if error:
             fail(error)
 
-    return struct(__shape__ = shape, **with_defaults)
+    return struct(
+        __shape__ = shape,
+        **with_defaults
+    )
 
-def _impl(name, deps = (), visibility = None, **kwargs):  # pragma: no cover
+def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, **kwargs):  # pragma: no cover
     if not name.endswith(".shape"):
         fail("shape.impl target must be named with a .shape suffix")
     export_file(
@@ -467,35 +464,37 @@ def _impl(name, deps = (), visibility = None, **kwargs):  # pragma: no cover
         ),
         antlir_rule = "user-internal",
     )
-    buck_genrule(
-        name = "{}.py".format(name),
-        cmd = "$(exe {}) pydantic $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
-        antlir_rule = "user-internal",
-    )
-    python_library(
-        name = "{}-python".format(name),
-        srcs = {":{}.py".format(name): "__init__.py"},
-        base_module = native.package_name() + "." + name.replace(".shape", ""),
-        deps = [antlir_dep(":shape")] + ["{}-python".format(d) for d in deps],
-        visibility = visibility,
-        antlir_rule = "user-facing",
-        **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
-    )
-    buck_genrule(
-        name = "{}.rs".format(name),
-        cmd = "$(exe {}) rust $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
-        antlir_rule = "user-internal",
-    )
-    rust_library(
-        name = "{}-rust".format(name),
-        crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
-        mapped_srcs = {":{}.rs".format(name): "src/lib.rs"},
-        deps = [antlir_dep("bzl/shape2:shape-rust")] + ["{}-rust".format(d) for d in deps] + third_party.libraries(["serde", "serde_json"], platform = "rust"),
-        visibility = visibility,
-        antlir_rule = "user-facing",
-        unittests = False,
-        **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
-    )
+
+    if not expert_only_custom_impl:
+        buck_genrule(
+            name = "{}.py".format(name),
+            cmd = "$(exe {}) pydantic $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
+            antlir_rule = "user-internal",
+        )
+        python_library(
+            name = "{}-python".format(name),
+            srcs = {":{}.py".format(name): "__init__.py"},
+            base_module = native.package_name() + "." + name.replace(".shape", ""),
+            deps = [antlir_dep(":shape")] + ["{}-python".format(d) for d in deps],
+            visibility = visibility,
+            antlir_rule = "user-facing",
+            **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
+        )
+        buck_genrule(
+            name = "{}.rs".format(name),
+            cmd = "$(exe {}) rust $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
+            antlir_rule = "user-internal",
+        )
+        rust_library(
+            name = "{}-rust".format(name),
+            crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
+            mapped_srcs = {":{}.rs".format(name): "src/lib.rs"},
+            deps = ["{}-rust".format(d) for d in deps] + third_party.libraries(["serde", "serde_json"], platform = "rust"),
+            visibility = visibility,
+            antlir_rule = "user-facing",
+            unittests = False,
+            **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
+        )
 
 _SERIALIZING_LOCATION_MSG = (
     "shapes with layer/target fields cannot safely be serialized in the" +
@@ -806,7 +805,6 @@ shape = struct(
     path = _path,
     pretty = _pretty,
     shape = _shape,
-    target = _target,
     tuple = _tuple,
     union = _union,
     union_t = _union_type,
