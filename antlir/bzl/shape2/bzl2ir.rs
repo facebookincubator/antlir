@@ -10,6 +10,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use derive_more::{Deref, Display};
 use gazebo::any::AnyLifetime;
 use serde::Deserialize;
+use slotmap::SlotMap;
 use starlark::environment::{FrozenModule, Globals, GlobalsBuilder, Module};
 use starlark::eval::{Evaluator, FileLoader};
 use starlark::syntax::{AstModule, Dialect};
@@ -20,7 +21,7 @@ use starlark::values::structs::StructGen;
 use starlark::values::{AllocValue, StarlarkValue, StringValue, UnpackValue, Value, ValueLike};
 use starlark::{starlark_module, starlark_simple_value, starlark_type};
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use structopt::StructOpt;
@@ -32,7 +33,7 @@ use structopt::StructOpt;
 fn eval_and_freeze_module(
     deps: &Dependencies,
     ast: AstModule,
-) -> Result<(FrozenModule, HashMap<TypeId, Rc<ir::Type>>)> {
+) -> Result<(FrozenModule, SlotMap<TypeId, Rc<ir::Type>>)> {
     let module = Module::new();
     let globals = Globals::extended();
     let mut evaluator: Evaluator = Evaluator::new(&module);
@@ -51,12 +52,16 @@ fn eval_and_freeze_module(
     ))
 }
 
-/// TypeId and TypeRegistry exist to store unique references to complex types.
-/// These are types that end up getting codegenned, not primitives.
-#[derive(Debug, Display, Deref, Clone, Copy, PartialEq, Eq, Hash)]
-#[repr(transparent)]
-#[display(fmt = "{:?}", self)]
-struct TypeId(usize);
+slotmap::new_key_type! {
+    /// TypeId and TypeRegistry exist to store unique references to complex types.
+    /// These are types that end up getting codegenned, not primitives.
+    struct TypeId;
+}
+impl std::fmt::Display for TypeId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 starlark_simple_value!(TypeId);
 impl<'v> StarlarkValue<'v> for TypeId {
     starlark_type!("TypeId");
@@ -66,17 +71,15 @@ impl<'v> StarlarkValue<'v> for TypeId {
 struct TypeRegistryRefCell(RefCell<TypeRegistry>);
 
 #[derive(Debug, AnyLifetime, Default)]
-struct TypeRegistry(HashMap<TypeId, Rc<ir::Type>>);
+struct TypeRegistry(SlotMap<TypeId, Rc<ir::Type>>);
 
 impl TypeRegistry {
     fn add(&mut self, ty: ir::Type) -> TypeId {
-        let tid = TypeId(self.0.len());
-        self.0.insert(tid, Rc::new(ty));
-        tid
+        self.0.insert(Rc::new(ty))
     }
 
     fn get(&self, id: TypeId) -> Option<Rc<ir::Type>> {
-        self.0.get(&id).cloned()
+        self.0.get(id).cloned()
     }
 }
 
@@ -340,7 +343,7 @@ fn ir_to_module(m: ir::Module) -> Result<FrozenModule> {
 
 fn starlark_to_ir(
     f: FrozenModule,
-    types: HashMap<TypeId, Rc<ir::Type>>,
+    types: SlotMap<TypeId, Rc<ir::Type>>,
     target: ir::Target,
 ) -> Result<ir::Module> {
     let named_types: BTreeMap<ir::TypeName, _> = f
@@ -357,7 +360,7 @@ fn starlark_to_ir(
         })
         .map(|(name, tid)| {
             let mut ty = types
-                .get(&tid)
+                .get(tid)
                 .with_context(|| format!("{:?} was not found in the registry", tid))?
                 .clone();
             // Yeah, this is technically unsafe, but all we're doing is setting the

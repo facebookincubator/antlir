@@ -33,6 +33,7 @@ rust_binary(
                    "gazebo",
                    "serde",
                    "serde_json",
+                   "slotmap",
                    "starlark",
                    "structopt",
                ],
