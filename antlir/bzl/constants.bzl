@@ -27,6 +27,8 @@ BZL_CONST = shape.new(
     # detailed explanation.
     PRIVATE_feature_suffix = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN",
     version_set_allow_all_versions = "__VERSION_SET_ALLOW_ALL_VERSIONS__",
+    # hostnames can't contain underscores.
+    hostname_for_compiler_in_ba = "INTERNAL-ONLY-HOSTNAME-FOR-COMPILER-IN-BA",
 )
 
 def version_set_override_name(current_target):

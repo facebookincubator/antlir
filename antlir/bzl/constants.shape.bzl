@@ -9,6 +9,7 @@ bzl_const_t = shape.shape(
     layer_feature_suffix = str,
     PRIVATE_feature_suffix = str,
     version_set_allow_all_versions = str,
+    hostname_for_compiler_in_ba = str,
 )
 
 nevra_t = shape.shape(
