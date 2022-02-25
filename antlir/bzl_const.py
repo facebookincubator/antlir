@@ -17,3 +17,7 @@ def feature_for_layer(layer_name):
         BZL_CONST.PRIVATE_feature_suffix not in layer_name
     ), f"Got feature target instead of layer: {layer_name}"
     return feature_target_name(layer_name + BZL_CONST.layer_feature_suffix)
+
+
+def hostname_for_compiler_in_ba():
+    return BZL_CONST.hostname_for_compiler_in_ba

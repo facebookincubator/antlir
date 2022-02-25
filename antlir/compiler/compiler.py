@@ -26,6 +26,7 @@ from contextlib import ExitStack, nullcontext
 from typing import Iterator, List
 
 from antlir.bzl.constants import flavor_config_t
+from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.cli import add_targets_and_outputs_arg
 from antlir.common import not_none
 from antlir.compiler.items.common import LayerOpts
@@ -214,6 +215,7 @@ def invoke_compiler_inside_build_appliance(
         user=pwd.getpwnam("root"),
         bind_repo_ro=True,
         bind_artifacts_dir_rw=True,
+        hostname=hostname_for_compiler_in_ba(),
     )
 
     run_nspawn(

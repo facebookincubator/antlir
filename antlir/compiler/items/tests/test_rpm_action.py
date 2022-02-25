@@ -7,7 +7,6 @@
 import os
 import subprocess
 from contextlib import contextmanager
-from unittest import mock
 
 from antlir.bzl_const import BZL_CONST
 from antlir.fs_utils import Path, temp_dir
@@ -22,7 +21,7 @@ from ..rpm_action import (
     RpmAction,
     RpmActionItem,
 )
-from .common import BaseItemTestCase, render_subvol
+from .common import BaseItemTestCase, render_subvol, with_mocked_temp_volume_dir
 from .rpm_action_base import create_rpm_action_item, RpmActionItemTestBase
 
 
@@ -106,6 +105,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
         # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `assertEqual`
         self.assertEqual(["(Dir)", fs_render], render_subvol(subvol))
 
+    @with_mocked_temp_volume_dir
     def test_version_lock(self) -> None:
         with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
@@ -125,6 +125,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
             )
 
+    @with_mocked_temp_volume_dir
     def test_version_override(self) -> None:
         with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
@@ -148,6 +149,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 subvol.path("/rpm_test/carrot.txt").read_text(),
             )
 
+    @with_mocked_temp_volume_dir
     def test_version_override_with_dependency(self) -> None:
         with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset", "w") as outfile:
@@ -191,6 +193,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     subvol.path("/rpm_test/veggie.txt").read_text(),
                 )
 
+    @with_mocked_temp_volume_dir
     def test_version_lock_and_override(self) -> None:
         with TempSubvolumes() as temp_subvolumes, temp_dir() as td:
             with open(td / "vset_version_lock", "w") as outfile:
@@ -221,6 +224,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 subvol.path("/rpm_test/carrot.txt").read_text(),
             )
 
+    @with_mocked_temp_volume_dir
     def test_rpm_action_item_auto_downgrade(self) -> None:
         parent_subvol = Subvol("test-with-one-local-rpm", already_exists=True)
         src_rpm = Path("/rpm-test-cheese-1-1.rpm")
@@ -247,6 +251,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 {"rpm_test": ["(Dir)", {"cheese1.txt": ["(File d42)"]}]},
             )
 
+    @with_mocked_temp_volume_dir
     def _check_cheese_removal(self, local_rpm_path: Path) -> None:
         parent_subvol = Subvol("test-with-one-local-rpm", already_exists=True)
         with TempSubvolumes() as temp_subvolumes:
@@ -266,7 +271,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
         # We expect the removal to be based just on the name of the RPM
         # in the metadata, so removing cheese-2 should be fine via either:
         for ver in [1, 2]:
-            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             self._check_cheese_removal(f"/rpm-test-cheese-{ver}-1.rpm")
 
     def test_rpm_action_conflict(self) -> None:
@@ -305,6 +309,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 self._opts(),
             )
 
+    @with_mocked_temp_volume_dir
     def test_rpm_action_reinstall_same_exact_version(self) -> None:
         # installing the same exact version as an already installed package is
         # an explicit no-op
@@ -326,6 +331,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             # cheese2 file is still there
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
 
+    @with_mocked_temp_volume_dir
     def test_rpm_action_skip_wrong_flavor(self) -> None:
         with TempSubvolumes() as temp_subvolumes:
             src_rpm = Path("/rpm-test-cheese-1-1.rpm")
@@ -343,23 +349,19 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
 
-@mock.patch(
-    "antlir.subvol_utils._tmp_volume_dir", mock.Mock(return_value=Path("/"))
-)
 class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.yum
 
+    @with_mocked_temp_volume_dir
     def test_rpm_action_item_install_local_yum(self) -> None:
         with self._test_rpm_action_item_install_local_setup() as r:
             check_common_rpm_render(self, r, "yum")
 
 
-@mock.patch(
-    "antlir.subvol_utils._tmp_volume_dir", mock.Mock(return_value=Path("/"))
-)
 class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.dnf
 
+    @with_mocked_temp_volume_dir
     def test_rpm_action_item_install_local_dnf(self) -> None:
         with self._test_rpm_action_item_install_local_setup() as r:
             pop_path(r, "var/lib/yum", None)

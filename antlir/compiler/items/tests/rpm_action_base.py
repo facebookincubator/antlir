@@ -16,7 +16,7 @@ from ..rpm_action import (
     RpmAction,
     RpmActionItem,
 )
-from .common import DUMMY_LAYER_OPTS, render_subvol
+from .common import DUMMY_LAYER_OPTS, render_subvol, with_mocked_temp_volume_dir
 
 
 def create_rpm_action_item(
@@ -48,6 +48,7 @@ class RpmActionItemTestBase:
             layer_opts=self._opts(build_appliance=ba_path),
         )
 
+    @with_mocked_temp_volume_dir
     def _check_rpm_action_item(self, layer_opts) -> None:
         with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("rpm_action")

@@ -4,12 +4,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import functools
 import os
+import socket
 import subprocess
 import tempfile
 import unittest
 from contextlib import contextmanager
+from unittest import mock
 
+from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -52,11 +56,10 @@ DUMMY_LAYER_OPTS = LayerOpts(
 
 # This has to be a function because using `importlib` while loading a module
 # results in incorrect behavior (I did not debug the specifics).
-def get_dummy_layer_opts_ba():
+def get_dummy_layer_opts_ba(ba_subvol=None):
     return DUMMY_LAYER_OPTS._replace(
-        build_appliance=layer_resource_subvol(
-            __package__, "test-build-appliance"
-        )
+        build_appliance=ba_subvol
+        or layer_resource_subvol(__package__, "test-build-appliance")
     )
 
 
@@ -136,3 +139,19 @@ class BaseItemTestCase(unittest.TestCase):
     def _check_item(self, i, provides, requires) -> None:
         self.assertEqual(provides, set(i.provides()))
         self.assertEqual(requires, set(i.requires()))
+
+
+def with_mocked_temp_volume_dir(method):
+    assert (
+        socket.gethostname() == hostname_for_compiler_in_ba()
+    ), "Only mock the volume dir for compiler tests that are run inside the BA"
+
+    @functools.wraps(method)
+    def decorated(self, *args, **kwargs):
+        with mock.patch(
+            "antlir.subvol_utils._tmp_volume_dir",
+            mock.Mock(return_value=Path("/")),
+        ):
+            return method(self, *args, **kwargs)
+
+    return decorated

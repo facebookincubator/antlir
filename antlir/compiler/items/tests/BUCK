@@ -1,5 +1,6 @@
 # @noautodeps
 
+load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
@@ -7,6 +8,17 @@ load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+
+image.layer(
+    name = "test_compiler_item_layer",
+    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
+    features = [
+        image.layer_mount(
+            TEST_IMAGE_PREFIX + "build_appliance_testing",
+            "/test-build-appliance",
+        ),
+    ],
+)
 
 python_unittest(
     name = "test-clone",
@@ -31,6 +43,7 @@ python_library(
     name = "common_testlib",
     srcs = ["common.py"],
     deps = [
+        "//antlir:bzl_const",
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
         "//antlir:testlib_layer_resource",
@@ -99,12 +112,8 @@ python_library(
 
 image.layer(
     name = "test_rpm_action_layer",
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
+    parent_layer = ":test_compiler_item_layer",
     features = [
-        image.layer_mount(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-            "/test-build-appliance",
-        ),
         image.layer_mount(
             TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
             "/test-with-one-local-rpm",
@@ -131,6 +140,7 @@ image_python_unittest(
         "serve_rpm_snapshots": ["//antlir/rpm:repo-snapshot-for-tests"],
         "shadow_proxied_binaries": False,
     },
+    hostname = BZL_CONST.hostname_for_compiler_in_ba,
     layer = ":test_rpm_action_layer",
     needed_coverage = [(100, "//antlir/compiler/items:rpm_action")],
     run_as_user = "root",
