@@ -83,7 +83,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
             container = shape.new(
                 container_unittest_opts_t,
                 boot = True,
-                layer = "//metalos/metalctl/tests/facebook:test-layer" if facebook else "//metalos/os:metalos",
+                layer = "//metalos/metalctl/tests/facebook:test-layer" if facebook else "//metalos/os/tests:test-layer",
             ),
         ),
         unittests = ["plain", "container", "vm"],
