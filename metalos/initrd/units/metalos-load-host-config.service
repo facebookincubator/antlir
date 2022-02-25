@@ -17,4 +17,6 @@ ConditionKernelCommandLine=metalos.host-config-uri
 EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
 RemainAfterExit=true
+# Ideally this would be done by systemd-tmpfiles-setup; however this conflicts with metalos-switchroot
+ExecStartPre=mkdir -p /run/metalos
 ExecStart=metalctl load-host-config ${HOST_CONFIG_URI} /run/metalos/host-config
