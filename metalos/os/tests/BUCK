@@ -1,6 +1,9 @@
 # @noautodeps
 
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "export_file")
+load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 export_file(
     name = "systemd_expectations.rs",
@@ -14,4 +17,44 @@ export_file(
 
 export_file(
     name = "systemd-expectations.toml",
+)
+
+# systemd units and configuration to mount a test subvolume at /run/fs/control,
+# since the real root disk is not available in container tests
+feature.new(
+    name = "mock-run-fs-control",
+    features = [
+        systemd.install_dropin("run-fs-control.conf", "run-fs-control.mount"),
+        image.ensure_subdirs_exist("/", "test-control-subvol"),
+        image.ensure_subdirs_exist("/test-control-subvol", "run"),
+        image.ensure_subdirs_exist("/test-control-subvol/run", "state"),
+        image.ensure_subdirs_exist("/test-control-subvol/run/state", "metalos"),
+        image.ensure_subdirs_exist("/test-control-subvol", "image"),
+        image.ensure_subdirs_exist("/test-control-subvol/image", "service"),
+    ],
+)
+
+feature.new(
+    name = "test-features",
+    features = [
+        ":mock-run-fs-control",
+        systemd.install_dropin("skip-network-wait.conf", "systemd-networkd-wait-online.service"),
+        systemd.mask_units([
+            "attestd2.service",  # no tpm
+            "metalos-report-boot.service",  # no network
+            "sshd-keygen.service",  # slow
+        ]),
+    ],
+    visibility = ["//metalos/..."],
+)
+
+# common test layer that is just the base rootfs plus some common test
+# requirements
+image.layer(
+    name = "test-layer",
+    parent_layer = "//metalos/os:metalos",
+    features = [
+        ":test-features",
+    ],
+    visibility = ["//metalos/..."],
 )

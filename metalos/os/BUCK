@@ -90,7 +90,7 @@ image.layer(
             "systemd-hwdb-update.service",
         ]),
         systemd.install_unit("run-fs-control.mount"),
-        systemd.enable_unit("run-fs-control.mount", "core-services.target"),
+        systemd.enable_unit("run-fs-control.mount", "core-services.target", "requires"),
         "//metalos/host_configs:generators",
     ],
     runtime = ["systemd"],

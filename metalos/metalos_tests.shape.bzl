@@ -5,7 +5,7 @@ container_unittest_opts_t = shape.shape(
     boot = shape.field(bool, default = False),
     layer = shape.field(
         target_t,
-        default = "//metalos/os:metalos",
+        default = "//metalos/os/tests:test-layer",
     ),
 )
 
