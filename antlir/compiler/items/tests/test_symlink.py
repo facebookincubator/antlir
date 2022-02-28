@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import sys
 import tempfile
 
 from antlir.compiler.requires_provides import (
@@ -13,7 +12,7 @@ from antlir.compiler.requires_provides import (
     RequireFile,
 )
 from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes, Subvol
 
 from ..install_file import InstallFileItem
 from ..symlink import SymlinkToDirItem, SymlinkToFileItem
@@ -22,10 +21,13 @@ from .common import (
     BaseItemTestCase,
     get_dummy_layer_opts_ba,
     render_subvol,
+    with_mocked_temp_volume_dir,
 )
 
 
-DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
+DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(
+    Subvol("test-build-appliance", already_exists=True)
+)
 
 
 class SymlinkItemsTestCase(BaseItemTestCase):
@@ -54,6 +56,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             },
         )
 
+    @with_mocked_temp_volume_dir
     def test_symlink_idempotent(self):
         with TempSubvolumes() as ts:
             sv = ts.create("test")
@@ -73,6 +76,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 sv, DUMMY_LAYER_OPTS
             )
 
+    @with_mocked_temp_volume_dir
     def test_symlink_already_exists(self):
         with TempSubvolumes() as ts:
             sv = ts.create("test")
@@ -86,6 +90,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                     sv, DUMMY_LAYER_OPTS
                 )
 
+    @with_mocked_temp_volume_dir
     def test_symlink_already_matches(self):
         with TempSubvolumes() as ts:
             sv = ts.create("test")
@@ -96,6 +101,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 sv, DUMMY_LAYER_OPTS
             )
 
+    @with_mocked_temp_volume_dir
     def test_symlink_already_exists_different_source(self):
         with TempSubvolumes() as ts:
             sv = ts.create("test")
@@ -111,8 +117,9 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                     sv, DUMMY_LAYER_OPTS
                 )
 
+    @with_mocked_temp_volume_dir
     def _test_symlink_command(self, layer_opts):
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("tar-sv")
             subvol.run_as_root(["mkdir", subvol.path("dir")])
 
