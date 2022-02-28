@@ -16,6 +16,7 @@ from contextlib import contextmanager
 
 from antlir import subvol_utils
 from antlir.bzl.constants import flavor_config_t
+from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.config import repo_config
 from antlir.fs_utils import (
     META_FLAVOR_FILE,
@@ -91,7 +92,7 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
         "antlir.compiler.items.ensure_dirs_exist.mode_to_octal_str",
         "antlir.compiler.items.rpm_action.run_nspawn",
         "antlir.compiler.items.stat_options.run_nspawn",
-        "antlir.compiler.items.symlink.run_nspawn",
+        "antlir.compiler.items.symlink.os.symlink",
         "antlir.compiler.items.tarball.run_nspawn",
         "antlir.rpm.rpm_metadata.run_nspawn",
     ]:
@@ -489,6 +490,10 @@ class CompilerTestCase(unittest.TestCase):
         for e in fix_stdin_expected:
             self.assertIn(e, fix_stdin_actual)
 
+    @unittest.mock.patch(
+        "socket.gethostname",
+        unittest.mock.Mock(return_value=hostname_for_compiler_in_ba()),
+    )
     def test_compile(self):
         with mock_user_group_read_write():
             # First, test compilation with no parent layer.

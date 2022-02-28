@@ -5,17 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import pwd
+import socket
 
 from antlir.bzl.image.feature.symlink import symlink_t
+from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler.requires_provides import (
     ProvidesSymlink,
     RequireDirectory,
     RequireFile,
 )
-from antlir.fs_utils import Path, generate_work_dir
-from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
-from antlir.nspawn_in_subvol.nspawn import run_nspawn
+from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
 
@@ -95,22 +94,13 @@ class SymlinkBase(symlink_t, ImageItem):
                 f"{self}: {self.dest} -> {self.source} exists to {current_link}"
             )
         if layer_opts.build_appliance:
-            build_appliance = layer_opts.build_appliance
-            work_dir = generate_work_dir()
-            rel_dest = work_dir / self.dest
-            opts = new_nspawn_opts(
-                cmd=[
-                    "ln",
-                    "--symbolic",
-                    "--no-dereference",
-                    rel_source,
-                    rel_dest,
-                ],
-                layer=build_appliance,
-                bindmount_rw=[(subvol.path(), work_dir)],
-                user=pwd.getpwnam("root"),
+            assert (
+                socket.gethostname() == hostname_for_compiler_in_ba()
+            ), "This compiler item expects to be compiled inside a BA."
+            os.symlink(
+                src=rel_source,
+                dst=dest,
             )
-            run_nspawn(opts, PopenArgs())
         else:
             subvol.run_as_root(
                 ["ln", "--symbolic", "--no-dereference", rel_source, dest]
