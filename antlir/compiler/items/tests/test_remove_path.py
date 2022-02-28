@@ -4,29 +4,33 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import sys
 import tempfile
 import unittest.mock
 
 from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes
+from antlir.subvol_utils import TempSubvolumes, Subvol
 
 from ..common import PhaseOrder, protected_path_set
 from ..ensure_dirs_exist import ensure_subdirs_exist_factory
 from ..install_file import InstallFileItem
 from ..remove_path import RemovePathItem
 from ..symlink import SymlinkToDirItem
-from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
+from .common import (
+    BaseItemTestCase,
+    get_dummy_layer_opts_ba,
+    render_subvol,
+    with_mocked_temp_volume_dir,
+)
 
-
-DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
+DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(
+    Subvol("test-build-appliance", already_exists=True)
+)
 
 
 class RemovePathItemTestCase(BaseItemTestCase):
+    @with_mocked_temp_volume_dir
     def test_remove_item(self):
-        with TempSubvolumes(
-            Path(sys.argv[0])
-        ) as temp_subvolumes, tempfile.NamedTemporaryFile() as empty_tf:
+        with TempSubvolumes() as temp_subvolumes, tempfile.NamedTemporaryFile() as empty_tf:  # noqa: E501
             subvol = temp_subvolumes.create("remove_action")
             self.assertEqual(["(Dir)", {}], render_subvol(subvol))
 

@@ -242,17 +242,15 @@ python_unittest(
     ],
 )
 
-python_unittest(
+image_python_unittest(
     name = "test-remove-path",
     srcs = ["test_remove_path.py"],
+    hostname = BZL_CONST.hostname_for_compiler_in_ba,
+    layer = ":test_compiler_item_layer",
     needed_coverage = [
         (100, "//antlir/compiler/items:remove_path"),
     ],
-    resources = {
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "test-build-appliance",
-    },
+    run_as_user = "root",
     deps = [
         ":common_testlib",
         "//antlir/compiler/items:ensure_dirs_exist",
