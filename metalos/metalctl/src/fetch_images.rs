@@ -71,30 +71,52 @@ pub async fn fetch_images(log: Logger, config: crate::Config, opts: Opts) -> Res
 
     #[cfg(initrd)]
     {
-        let root_subvol = fetch_image(
-            log,
-            dl,
-            host.runtime_config
-                .images
-                .rootfs
-                .clone()
-                .try_into()
-                .with_context(|| {
-                    format!(
-                        "while converting rootfs image {:?}",
-                        host.runtime_config.images.rootfs
-                    )
-                })?,
-            &opts.basedir,
-        )
-        .await
-        .context("while downloading the rootfs")?;
+        let (root_subvol, kernel_subvol) = tokio::join!(
+            fetch_image(
+                log.clone(),
+                dl.clone(),
+                host.runtime_config
+                    .images
+                    .rootfs
+                    .clone()
+                    .try_into()
+                    .with_context(|| {
+                        format!(
+                            "while converting rootfs image {:?}",
+                            host.runtime_config.images.rootfs
+                        )
+                    })?,
+                &opts.basedir,
+            ),
+            fetch_image(
+                log.clone(),
+                dl.clone(),
+                host.runtime_config
+                    .images
+                    .kernel
+                    .clone()
+                    .try_into()
+                    .with_context(|| {
+                        format!(
+                            "while converting kernel image {:?}",
+                            host.runtime_config.images.kernel
+                        )
+                    })?,
+                &opts.basedir,
+            ),
+        );
+        let root_subvol = root_subvol.context("while downloading rootfs")?;
+        let kernel_subvol = kernel_subvol.context("while downloading kernel")?;
 
         // TODO: onboard this to generator_lib if there is more than one thing that
         // needs to be included here
         std::fs::write(
             "/run/metalos/image_paths_environment",
-            format!("METALOS_OS_VOLUME={}\n", root_subvol.path().display()),
+            format!(
+                "METALOS_OS_VOLUME={}\nMETALOS_KERNEL_VOLUME={}\n",
+                root_subvol.path().display(),
+                kernel_subvol.path().display()
+            ),
         )
         .context("while writing /run/metalos/image_paths_environment")?
     }

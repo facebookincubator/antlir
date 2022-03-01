@@ -8,6 +8,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/package:defs.bzl", "package")
 load(":kernel.shape.bzl", "kernel_artifacts_t", "kernel_t")
 
 def build_kernel_artifacts(uname, devel_rpm, headers_rpm, rpm_exploded, include_vmlinux = True):
@@ -135,6 +136,13 @@ def build_kernel_artifacts(uname, devel_rpm, headers_rpm, rpm_exploded, include_
             image.ensure_subdirs_exist("/", "build"),
         ],
         flavor = REPO_CFG.antlir_linux_flavor,
+        visibility = ["PUBLIC"],
+    )
+
+    package.new(
+        name = "{}-modules.sendstream.zst".format(uname),
+        format = "sendstream.zst",
+        layer = ":{}-modules".format(uname),
         visibility = ["PUBLIC"],
     )
 

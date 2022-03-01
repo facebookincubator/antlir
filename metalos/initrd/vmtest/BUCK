@@ -19,6 +19,8 @@ load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/disk:disk.bzl", "build_root_disk")
 load("//metalos/host_configs/tests:host.bzl", "host_config")
 
+TEST_KERNEL = kernel_get.default
+
 binaries = extract.extract(
     binaries = [
         "/usr/sbin/dropbear",
@@ -47,6 +49,11 @@ host_config(
     host_config = {
         "runtime_config": {
             "images": {
+                "kernel": {
+                    "id": "1",
+                    "kind": 3,
+                    "name": "kernel." + TEST_KERNEL.uname,
+                },
                 "rootfs": {
                     "id": "1",
                     "kind": 1,
@@ -108,11 +115,6 @@ package.new(
     layer = ":initrd-vmtest",
     visibility = [],
 )
-
-# Create the default Antlir Linux initrd for this test kernel.
-# This is composed of the base initrd and any kernel modules required to boot,
-# as well as some basic setup for the vmtest VM environment
-TEST_KERNEL = kernel_get.default
 
 initrd(kernel = TEST_KERNEL)
 
@@ -318,7 +320,11 @@ buck_genrule(
     cmd = """
         cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:1
         zstd -i $(location //metalos/disk:metalos-gpt-image) -o $OUT/metalos_root:1
-    """,
+        cp --reflink=auto $(location {}) $OUT/kernel.{}:1
+    """.format(
+        TEST_KERNEL.artifacts.modules_sendstream,
+        TEST_KERNEL.uname,
+    ),
 )
 
 vm.rust_unittest(
@@ -337,7 +343,7 @@ vm.rust_unittest(
         ),
         disk = vm.types.disk.new(
             layer = ":root-disk-layer",
-            layer_size_mb = 2048,
+            layer_size_mb = 4096,
         ),
     ),
     deps = [
