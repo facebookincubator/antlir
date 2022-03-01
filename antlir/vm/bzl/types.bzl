@@ -119,7 +119,6 @@ _vm_runtime_api = struct(
 )
 
 def _new_vm_opts(
-        bios = None,
         cpus = 1,
         kernel = None,
         initrd = None,
