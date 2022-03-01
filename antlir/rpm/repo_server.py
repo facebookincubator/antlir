@@ -29,17 +29,16 @@ Here is how to run a test invocation of this server:
 import json
 import os
 import socket
-import sqlite3
 import time
 import urllib.parse
 
 # pyre-fixme[21]: Could not find name `HTTPStatus` in `http.server`.
 from http.server import BaseHTTPRequestHandler, HTTPStatus
-from socketserver import BaseServer
 from typing import Mapping, Tuple
 
 from antlir.common import get_logger, init_logging, set_new_key
 from antlir.fs_utils import Path
+from antlir.proxy.http_socket_server import HTTPSocketServer
 
 from .common import Checksum, readonly_snapshot_db, snapshot_subdir
 from .repo_snapshot import FileIntegrityError, ReportableError
@@ -314,55 +313,6 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         if len(parts) < 2 or mimetype is None:
             return "application/octet-stream"
         return mimetype
-
-
-class HTTPSocketServer(BaseServer):
-    """
-    A lightweight clone of the built-in HTTPServer & TCPServer to work
-    around the fact that they do not accept pre-existing sockets.
-    """
-
-    def __init__(self, sock: socket.socket, RequestHandlerClass) -> None:
-        """
-        We just listen on `sock`. It may or may not be bound to any host or
-        port **yet** -- and in fact, the binding will be done by another
-        process on our behalf.
-        """
-        # No server address since nothing actually needs to know it.
-        super().__init__(None, RequestHandlerClass)
-        self.socket = sock
-
-    # This is only here as part of the BaseServer API, never to be run.
-    def server_bind(self):  # pragma: no cover
-        raise AssertionError(
-            "self.socket must be bound externally before self.server_activate"
-        )
-
-    def server_activate(self) -> None:
-        self.socket.listen()  # leave the request queue size at default
-
-    def server_close(self) -> None:
-        self.socket.close()
-
-    def fileno(self) -> int:
-        return self.socket.fileno()
-
-    def get_request(self):
-        return self.socket.accept()
-
-    def shutdown_request(self, request) -> None:
-        try:
-            # Explicitly shutdown -- `socket.close()` merely releases the
-            # socket and waits for GC to perform the actual close.
-            request.shutdown(socket.SHUT_WR)
-        # This is cribbed from the Python standard library, but I have no
-        # idea how to test it, hence the pragma.
-        except OSError:  # pragma: no cover
-            pass  # Some platforms may raise ENOTCONN here
-        self.close_request(request)
-
-    def close_request(self, request) -> None:
-        request.close()
 
 
 def repo_server(
