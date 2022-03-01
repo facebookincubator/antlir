@@ -63,6 +63,7 @@ python_library(
         "//metalos/initrd/facebook/...",
         "//scripts/jtru/tw:mixin-check",
         "//scripts/jtru/tw:mixin-check-library",
+        "//syseng/yard/installer/...",
         "//tupperware/cm/antlir/...",
         "//tupperware/image/composable_services/tests:systemd_test_framework",
         "//tupperware/image/scripts/...",
