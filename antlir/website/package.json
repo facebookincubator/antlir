@@ -7,7 +7,7 @@
     "build": "yarn gen-pages && yarn docusaurus build",
     "gen-pages": "yarn bzldoc && yarn metalos-api",
     "metalos-api": "/bin/bash -c 'buck run //antlir/website/gen:generate-metalos-apis > docs/metalos/apis.md'",
-    "bzldoc": "/bin/bash -c 'shopt -s globstar && cd .. && buck run //antlir/website/gen:bzldoc -- $(pwd)/bzl/**/*.bzl $(pwd)/website/docs/api/'",
+    "bzldoc": "node ./bzldoc.js --files='//antlir/bzl:image.bzl //antlir/bzl:shape.bzl //antlir/bzl/image/feature:defs.bzl //antlir/bzl/image/package:defs.bzl //antlir/vm/bzl:defs.bzl //antlir/bzl:flavor_helpers.bzl //antlir/bzl:test_rpms.bzl'",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "ci": "yarn lint && yarn prettier:diff",

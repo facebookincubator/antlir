@@ -37,4 +37,4 @@ A common Antlir workflow is:
 To get started with building images, you may want to study the pages under
 Concepts & Designs, or take the plunge and try the tutorial on [Defining an
 Image](tutorials/defining-an-image).  In both cases, you will want to refer
-to the [Image API](api/image) as you go.
+to the [Image API](api/bzl/image.bzl.md) as you go.
