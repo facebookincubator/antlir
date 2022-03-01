@@ -188,7 +188,7 @@ def _tmp_qcow2_disk(
     size_mb: int = 4096,
 ) -> Path:
     """
-    Create a qcow2 scratch disk using qemu-img.  The default size is 256MB.
+    Create a qcow2 scratch disk using qemu-img.
     """
     disk = stack.enter_context(
         tempfile.NamedTemporaryFile(
