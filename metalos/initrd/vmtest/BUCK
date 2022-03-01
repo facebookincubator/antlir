@@ -157,9 +157,6 @@ vm.rust_unittest(
             "nix",
         ]
     ],
-    # TODO(vmagro): re-enable this when the container runtime environment is
-    # done and the sidecars can reliably run on Sandcastle
-    tags = ["local_only"],
 )
 
 # This needs to be as close as possible the prod initrd, with only the bare
