@@ -16,7 +16,8 @@ def build_root_disk(
         features = [
             # Image directories
             image.ensure_dirs_exist(IMAGE_DIR),
-            image.ensure_subdirs_exist(IMAGE_DIR, "rootfs/metalos"),
+            image.ensure_subdirs_exist(IMAGE_DIR, "rootfs"),
+            image.ensure_subdirs_exist(IMAGE_DIR, "kernel"),
 
             # Runtime directories
             image.ensure_dirs_exist(RUN_DIR),

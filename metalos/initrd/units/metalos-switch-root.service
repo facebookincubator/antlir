@@ -24,6 +24,10 @@ After=systemd-tmpfiles-setup.service
 Requires=dbus.service
 After=dbus.service
 
+# Kernel modules must be mounted
+Requires=metalos-mount-kernel-modules.service
+After=metalos-mount-kernel-modules.service
+
 [Service]
 EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
