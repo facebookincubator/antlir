@@ -1,15 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "python_binary", "rust_binary", "third_party")
-
-python_binary(
-    name = "bzldoc",
-    srcs = ["bzldoc.py"],
-    main_module = "antlir.website.gen.bzldoc",
-    deps = [
-        "//antlir:artifacts_dir",
-        "//antlir:common",
-        "//antlir:fs_utils",
-    ],
-)
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
 
 rust_binary(
     name = "generate-metalos-apis",

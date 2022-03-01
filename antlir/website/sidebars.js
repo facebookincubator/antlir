@@ -77,16 +77,18 @@ module.exports = {
       label: 'API',
       collapsed: false,
       items: [
-        'api/image',
+        'api/bzl/image.bzl',
+        'api/bzl/image/feature/defs.bzl',
+        'api/bzl/image/package/defs.bzl',
+        'api/bzl/shape.bzl',
+        'api/vm/bzl/defs.bzl',
+        'api/bzl/test_rpms.bzl',
+        'api/bzl/flavor_helpers.bzl',
         'genrule-layer',
         {
           'nspawn Runtime': ['runtime/nspawn-runtime/image-unittest'],
           'VM Runtime': ['runtime/vm-runtime/vm-unittest'],
         },
-        'api/shape',
-        ...fbInternalOnly(['api/genrule/facebook/chef_solo/chef_solo']),
-        'api/flavor_helpers',
-        'api/test_rpms',
       ],
     },
     {

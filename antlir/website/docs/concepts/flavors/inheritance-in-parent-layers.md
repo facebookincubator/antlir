@@ -97,5 +97,5 @@ image.layer(
 )
 ```
 
-When attempting to install test rpms of flavor `antlir_test` we have helpers in [`antlir/bzl/test_rpms.bzl`](/docs/api/test_rpms)
+When attempting to install test rpms of flavor `antlir_test` we have helpers in [`antlir/bzl/test_rpms.bzl`](../../api/bzl/test_rpms.bzl.md)
 that wrap adding the empty `rpms_install` to simplify the api.

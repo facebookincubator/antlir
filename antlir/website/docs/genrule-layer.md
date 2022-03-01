@@ -146,4 +146,4 @@ but only in a few artifacts that were built inside of it.  The example of
 
 ## Ok, I will be very careful &mdash; where are the API docs?
 
-The [regular API docs](api/image#genrule_layer) describe the function arguments.
+The [regular API docs](api/bzl/image.bzl.md#genrule_layer) describe the function arguments.
