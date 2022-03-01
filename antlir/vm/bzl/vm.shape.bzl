@@ -46,6 +46,8 @@ runtime_t = shape.shape(
 )
 
 vm_opts_t = shape.shape(
+    # Boot the VM directly from the provided disk
+    boot_from_disk = shape.field(bool, default = False),
     # Number of cpus to provide
     cpus = shape.field(int, default = 1),
     # Flag to mount the kernel.artifacts.devel layer into the vm at runtime.

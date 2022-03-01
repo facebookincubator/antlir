@@ -394,24 +394,6 @@ async def vm(
         "virtio-rng-pci,rng=rng0",
         "-device",
         "virtio-serial",
-        "-kernel",
-        str(opts.kernel.artifacts.vmlinuz.path),
-        "-initrd",
-        str(opts.initrd.path),
-        "-append",
-        (
-            "console=ttyS0,115200"
-            " noapic"
-            " panic=-1"
-            " cgroup_no_v1=all"
-            " systemd.unified_cgroup_hierarchy=1"
-            " rd.emergency=poweroff "
-            " systemd.hostname=vmtest "
-            f" root=LABEL={opts.root_label} "
-            + " ".join(root_disk.kernel_args)
-            + " "
-            + " ".join(opts.append)
-        ),
         # socket/serial device pair (for use by _wait_for_boot)
         "-chardev",
         f"socket,path={notify_sockfile},id=notify,server",
@@ -443,6 +425,30 @@ async def vm(
     )
     # Additional roms path
     args.extend(["-L", str(opts.runtime.emulator.roms_dir.path)])
+
+    if not opts.boot_from_disk:
+        args.extend(
+            [
+                "-kernel",
+                str(opts.kernel.artifacts.vmlinuz.path),
+                "-initrd",
+                str(opts.initrd.path),
+                "-append",
+                (
+                    "console=ttyS0,115200"
+                    " noapic"
+                    " panic=-1"
+                    " cgroup_no_v1=all"
+                    " systemd.unified_cgroup_hierarchy=1"
+                    " rd.emergency=poweroff "
+                    " systemd.hostname=vmtest "
+                    f" root=LABEL={opts.root_label} "
+                    + " ".join(root_disk.kernel_args)
+                    + " "
+                    + " ".join(opts.append)
+                ),
+            ]
+        )
 
     if os.access("/dev/kvm", os.R_OK | os.W_OK):
         args.append("-enable-kvm")

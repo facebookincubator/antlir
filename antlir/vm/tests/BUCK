@@ -2,9 +2,11 @@
 
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get", "python_unittest", "rust_binary", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/package:defs.bzl", "package")
+load("//antlir/bzl/linux/boot/systemd:defs.bzl", "boot")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
 # Future: when we run a VM the tap device is actually created
@@ -194,5 +196,51 @@ vm.rust_unittest(
             "tokio",
         ],
         platform = "rust",
+    ),
+)
+
+boot.build(
+    # The target name of the boot partition
+    name = "systemd-boot",
+    # The LABEL assigned to the rootfs
+    label = "root",
+    kernels = [
+        kernel_get.default,
+    ],
+    args = [
+        "rootflags=subvol=volume,rw",
+    ],
+)
+
+package.new(
+    name = "root-disk",
+    layer = ":vmtest-custom-layer",
+    format = "btrfs",
+    loopback_opts = image.opts(
+        writable_subvolume = True,
+        label = "root",
+    ),
+)
+
+image.gpt(
+    name = "gpt-boot-disk",
+    table = [
+        image.gpt_partition(
+            package = ":systemd-boot",
+            is_esp = True,
+        ),
+        image.gpt_partition(
+            package = ":root-disk",
+        ),
+    ],
+)
+
+vm.run(
+    name = "boot-from-disk",
+    vm_opts = vm.types.opts.new(
+        boot_from_disk = True,
+        disk = vm.types.disk.new(
+            package = ":gpt-boot-disk",
+        ),
     ),
 )
