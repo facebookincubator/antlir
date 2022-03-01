@@ -82,17 +82,13 @@ fn is_eth_network_drop_in_in_place() {
     wait_for_systemd();
 
     assert!(Path::new("/usr/lib/systemd/network/50-eth.network").exists());
-    assert_eq!(
-        std::fs::read_to_string("/usr/lib/systemd/network/50-eth.network")
-            .expect("Can't read /usr/lib/systemd/network/50-eth.network file"),
-        "\
-        [Network]\n\
-        IPv6AcceptRA=yes\n\n\
-        [IPv6AcceptRA]\n\
-        # Force SLAAC only for early boot, otherwise systemd-networkd will start the\n\
-        # dhcpv6 client after receiving a RA.\n\
-        DHCPv6Client=false\n\
-        "
+    let static_unit = std::fs::read_to_string("/usr/lib/systemd/network/50-eth.network")
+        .expect("Can't read /usr/lib/systemd/network/50-eth.network file");
+
+    assert!(
+        !static_unit.contains("MACAddress=11:22:33:44:55:66"),
+        "{}",
+        static_unit
     );
 
     assert_eq!(
