@@ -200,6 +200,7 @@ python_library(
         ":common",
         ":repo_snapshot",
         "//antlir:fs_utils",
+        "//antlir/proxy:http_socket_server",
         "//antlir/rpm/storage:storage",
     ],
 )

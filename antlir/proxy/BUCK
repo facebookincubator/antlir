@@ -1,0 +1,15 @@
+load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
+
+python_library(
+    name = "http_socket_server",
+    srcs = ["http_socket_server.py"],
+)
+
+python_unittest(
+    name = "test-http-socket-server",
+    srcs = ["tests/test_http_socket_server.py"],
+    needed_coverage = [
+        (100, ":http_socket_server"),
+    ],
+    deps = [":http_socket_server"],
+)
