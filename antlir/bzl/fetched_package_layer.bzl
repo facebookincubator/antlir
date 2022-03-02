@@ -142,8 +142,9 @@ def fetched_package_layers_from_json_dir_db(
         export_file(name = p, antlir_rule = "user-internal")
         print_how_to_fetch_json = _print_how_to_fetch_json(":" + p)
         _fetched_package_layer(
-            name = package + "/" + tag + layer_suffix,
             package = package,
+            tag = tag,
+            name_suffix = layer_suffix,
             print_how_to_fetch_json = print_how_to_fetch_json,
             fetcher = fetcher,
             visibility = visibility,
@@ -172,12 +173,14 @@ def _print_how_to_fetch_json(how_to_fetch):
 # to define packages uniformly in one project.  This ensures each package is
 # only fetched once.
 def _fetched_package_layer(
-        name,
         package,
+        tag,
+        name_suffix,
         print_how_to_fetch_json,
         fetcher,  # `_PackageInfoFetcher`
         visibility,
         flavor = REPO_CFG.antlir_linux_flavor):
+    name = package + "/" + tag + name_suffix
     visibility = get_visibility(visibility, name)
 
     fetched_pkg_target_name = name + "-fetched-package"
@@ -251,6 +254,12 @@ def _fetched_package_layer(
         features = [":" + package_feature],
         mount_config = ":" + mount_config,
         visibility = visibility,
+        # Useful for queries on leaf image layers to determine the packages
+        # being fetched throughout the image layer stack
+        labels = [
+            "antlir_fetched_package__name={}".format(package),
+            "antlir_fetched_package__tag={}".format(tag),
+        ],
     )
 
 # Deliberately not usable stand-alone, use `fetched_package_layers_from_db`
