@@ -89,6 +89,7 @@ def _image_layer_impl(
         # A target with runtime suffix `container` is always emitted by default.
         # See [docs](/docs/tutorials/helper-buck-targets#imagelayer).
         runtime = None,
+        labels = None,
         visibility = None):
     runtime = runtime or []
     if "container" not in runtime:
@@ -210,7 +211,7 @@ def _image_layer_impl(
         type = _rule_type,  # For queries
         visibility = visibility,
         antlir_rule = antlir_rule,
-        labels = ["image_layer"],
+        labels = ["image_layer"] + (labels or []),
     )
 
     for elem in runtime:
