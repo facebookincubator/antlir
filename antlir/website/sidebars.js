@@ -68,6 +68,7 @@ module.exports = {
           Flavors: [
             'concepts/flavors/overview',
             'concepts/flavors/inheritance-in-parent-layers',
+            'concepts/flavors/stable-flavors',
           ],
         },
       ],
