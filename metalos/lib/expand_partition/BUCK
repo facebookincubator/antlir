@@ -1,0 +1,16 @@
+# @noautodeps
+
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "expand_partition",
+    srcs = ["src/expand_partition.rs"],
+    unittests = [
+        "vm",
+    ],
+    deps = [
+        "anyhow",
+        "gpt",
+        "nix",
+    ],
+)

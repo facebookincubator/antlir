@@ -4,7 +4,6 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "third_party", "thrift_library")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//metalos:defs.bzl", "rust_binary")
 
 # @oss-disable: facebook = True 
 # @oss-enable facebook = False
@@ -46,26 +45,6 @@ thrift_library(
 buck_filegroup(
     name = "all_starklark_files",
     srcs = glob(["**/*.star"]),
-)
-
-# This binary is useful to manually check what a host config generator would
-# produce for a given host input, without having to boot a physical server or go
-# through vmtest
-# Usage:
-#   construct a host json input (by hand or download it from the proxy service in facebook/service)
-#   buck run //metalos/host_configs:evaluator -- host.json path/to/generator.star
-rust_binary(
-    name = "evaluator",
-    srcs = glob(["evaluator/**/*.rs"]),
-    visibility = [],
-    deps = [
-        "anyhow",
-        "serde_json",
-        "slog",
-        "slog_glog_fmt",
-        "structopt",
-        "//metalos/host_configs/evalctx:evalctx",
-    ],
 )
 
 feature.new(

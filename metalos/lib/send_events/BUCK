@@ -1,0 +1,27 @@
+# @noautodeps
+
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "send_events",
+    srcs = ["src/send_events.rs"],
+    test_deps = [
+        "http",
+        "maplit",
+        "//metalos/lib/http_test:http_test",
+    ],
+    unittests = [
+        "container",
+        "plain",
+    ],
+    deps = [
+        "anyhow",
+        "async-trait",
+        "reqwest",
+        "serde_json",
+        "slog",
+        "structopt",
+        "tokio",
+        "url",
+    ],
+)
