@@ -24,6 +24,7 @@ from typing import (
 from antlir.bzl.image_actions.rpms import rpm_action_item_t
 from antlir.bzl_const import BZL_CONST
 from antlir.common import get_logger, not_none
+from antlir.config import repo_config
 from antlir.fs_utils import (
     Path,
     generate_work_dir,
@@ -311,6 +312,24 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
         for item in items or []:
             if layer_opts.flavor in item.flavor_to_version_set:
                 matching_flavor_items.append(item)
+            elif (
+                not item.flavors_specified
+                and layer_opts.flavor not in repo_config().stable_flavors
+            ):
+                unspecified_rpms = ",".join(
+                    [
+                        f"{{{item}}}"
+                        for item in items
+                        if not item.flavors_specified
+                    ]
+                )
+                raise RuntimeError(
+                    "You must specify the flavor on rpms "
+                    f"`{unspecified_rpms}` as "
+                    f"your image `{layer_opts.layer_target}` "
+                    f"has flavor `{layer_opts.flavor}` which "
+                    "is not a stable flavor."
+                )
             else:
                 log.info(
                     f"Rpm {item.name} does not match flavor "
