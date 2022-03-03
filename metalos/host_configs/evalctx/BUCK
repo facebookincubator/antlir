@@ -34,6 +34,6 @@ rust_library(
         "xattr",
         "//metalos/host_configs:all_starklark_files",
         "//metalos/host_configs:host-rust",
-        "//metalos/lib:shadow",
+        "//metalos/lib/shadow:shadow",
     ],
 )
