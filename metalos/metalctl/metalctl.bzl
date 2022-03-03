@@ -16,7 +16,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     # ever want to pxe-boot it directly. Be prepared to justify any size increases
     # brought in by large dependencies.
     deps = [
-        "//metalos/host_configs:evalctx",
+        "//metalos/host_configs/evalctx:evalctx",
         "//metalos/host_configs:package-manifest-rust",
         "//metalos/host_configs:host-rust",
         "//metalos/lib/btrfs:btrfs",

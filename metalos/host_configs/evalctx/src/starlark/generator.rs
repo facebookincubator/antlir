@@ -201,7 +201,16 @@ mod tests {
     #[test]
     fn hostname_generator() -> anyhow::Result<()> {
         assert_eq!(
-            eval_one_generator(include_str!("../../generators/hostname.star"))?,
+            eval_one_generator(
+                r#"
+def generator(host: metalos.HostIdentity) -> metalos.Output.type:
+    return metalos.Output(
+        files=[
+            metalos.file(path="/etc/hostname", contents=host.hostname + "\n"),
+        ]
+    )
+            "#
+            )?,
             Output {
                 files: vec![File {
                     path: "/etc/hostname".into(),

@@ -4,24 +4,17 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "third_party", "thrift_library")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//metalos:defs.bzl", "rust_binary", "rust_library")
+load("//metalos:defs.bzl", "rust_binary")
 
-# @oss-disable: oss = False 
-
-oss = True # @oss-enable
-
-# Introduce a buckconfig option that will be used only at query time so that we
-# can control the target graph before running shipit at all.
-# If this becomes used by more than this one TARGETS file (and it really should
-# not), it should be extracted to REPO_CFG.
-oss_ci = read_config("antlir", "oss-ci-query", "") != ""
+# @oss-disable: facebook = True 
+# @oss-enable facebook = False
 
 thrift_library(
     name = "host",
     languages = ["rust"] + [
         "cpp2",
         "py3",
-    ] if not (oss or oss_ci) else [],
+    ] if facebook else [],
     # @oss-disable: py3_namespace = "metalos.host_configs", 
     rust_crate_name = "host",
     rust_deps = ["//metalos/metalos_macros:metalos_macros"] + third_party.libraries(
@@ -47,41 +40,7 @@ thrift_library(
         ":runtime-config",
     ] + [
         "//metalos/host_configs/facebook:host-facebook",
-    ] if not (oss or oss_ci) else [],
-)
-
-rust_library(
-    name = "evalctx",
-    srcs = glob(["evalctx/**/*.rs"]),
-    env = {
-        "TEST_FILES_DIR": "$(location :all_starklark_files)",
-    },
-    features =
-        ["facebook"] if (not oss and not oss_ci) else [],
-    test_deps = [
-        "maplit",
-        "slog_glog_fmt",
-        "tempfile",
-    ],
-    test_srcs = ["generators/hostname.star"],
-    deps = [
-        "anyhow",
-        "derive_more",
-        "handlebars",
-        "once_cell",
-        "serde",
-        "serde_json",
-        "slog",
-        "slog_glog_fmt",
-        "starlark",
-        "starlark_derive",
-        "thiserror",
-        "walkdir",
-        "xattr",
-        ":all_starklark_files",
-        ":host-rust",
-        "//metalos/lib:shadow",
-    ],
+    ] if facebook else [],
 )
 
 buck_filegroup(
@@ -105,7 +64,7 @@ rust_binary(
         "slog",
         "slog_glog_fmt",
         "structopt",
-        ":evalctx",
+        "//metalos/host_configs/evalctx:evalctx",
     ],
 )
 
@@ -128,7 +87,7 @@ thrift_library(
     languages = ["rust"] + [
         "cpp2",
         "py3",
-    ] if not (oss or oss_ci) else [],
+    ] if facebook else [],
     # @oss-disable: py3_namespace = "metalos.host_configs", 
     thrift_rust_options = "serde",
     thrift_srcs = {"package_manifest.thrift": None},
@@ -142,7 +101,7 @@ thrift_library(
     languages = ["rust"] + [
         "cpp2",
         "py3",
-    ] if not (oss or oss_ci) else [],
+    ] if facebook else [],
     # @oss-disable: py3_namespace = "metalos.host_configs", 
     thrift_rust_options = "serde",
     thrift_srcs = {"runtime_config.thrift": None},
