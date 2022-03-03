@@ -42,7 +42,7 @@ in the repo snapshot to make sure we only add valid RPMs. But since
 we don't know what the flavor is, we don't know which dependencies we need.
 
 The behavior we have is that we just add all dependencies for all possible
-flavors in `REPO_CFG.flavor_to_config`. For rpms that only available for specific
+flavors in [`REPO_CFG.stable_flavors`](stable-flavors.md). For rpms that only available for specific
 flavors like `centos8` you will have to explicitly specify the flavor on `rpms_install`
 
 ```
