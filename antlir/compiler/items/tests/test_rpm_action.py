@@ -348,6 +348,28 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 {},
             )
 
+    def test_unspecified_rpm_flavor_with_unstable_image_flavor(self) -> None:
+        # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute
+        #  `assertRaisesRegex`.
+        with self.assertRaisesRegex(
+            RuntimeError,
+            (
+                "You must specify the flavor on rpms "
+                "`.*` as your image `fake target` has "
+                "flavor `unstable` which is not a stable flavor."
+            ),
+        ):
+            RpmActionItem.get_phase_builder(
+                [
+                    create_rpm_action_item(
+                        name="rpm",
+                        action=RpmAction.install,
+                        flavors_specified=False,
+                    )
+                ],
+                self._opts(flavor="unstable"),
+            )
+
 
 class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.yum
