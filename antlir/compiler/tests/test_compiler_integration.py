@@ -27,8 +27,10 @@ from ..compiler import build_image, parse_args
 class CompilerIntegrationTestCase(unittest.TestCase):
     def test_compile(self):
         with Path.resource(
-            __package__, "compiler-binary", exe=True
-        ) as binary, TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+            __package__, "compiler-binary-path", exe=False
+        ) as binary_path, open(binary_path) as binary_path_file, TempSubvolumes(
+            Path(sys.argv[0])
+        ) as temp_subvolumes:
             flavor_config = flavor_config_t(
                 name="antlir_test",
                 build_appliance="build-appliance-testing",
@@ -65,7 +67,7 @@ class CompilerIntegrationTestCase(unittest.TestCase):
                     "--flavor-config",
                     flavor_config.json(),
                     "--compiler-binary",
-                    binary,
+                    binary_path_file.read(),
                     "--child-layer-target",
                     "CHILD_TARGET",
                     "--targets-and-outputs",

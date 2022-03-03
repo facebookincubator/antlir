@@ -6,7 +6,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:layer_resource.bzl", "LAYER_SLASH_ENCODE", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 load("//antlir/compiler:defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_IMAGE_PREFIX", "image_feature_python_unittest")
 
 python_unittest(
@@ -114,6 +114,11 @@ image_feature_python_unittest(
     ],
 )
 
+buck_genrule(
+    name = "compiler-binary-path",
+    cmd = 'echo -n $(location //antlir:compiler) > "$OUT"',
+)
+
 image_feature_python_unittest(
     name = "test-compiler",
     srcs = [
@@ -125,7 +130,7 @@ image_feature_python_unittest(
         "//antlir/compiler:compiler",
     )],
     resources = {
-        "//antlir:compiler": "compiler-binary",
+        ":compiler-binary-path": "compiler-binary-path",
         layer_resource(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "test-build-appliance",
