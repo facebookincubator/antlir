@@ -30,7 +30,7 @@ class RepoConfigTestCase(unittest.TestCase):
                 "test.artifact": "//build:artifact",
             },
             "flavor_available": ["no_vset", "with_vset"],
-            "default_image_flavors": [],
+            "stable_flavors": [],
             "flavor_default": "no_vset",
             "antlir_linux_flavor": "no_vset",
             "antlir_cell_name": "test",

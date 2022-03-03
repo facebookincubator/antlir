@@ -28,6 +28,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
     flavors = flavors or []
 
     target_tagger = new_target_tagger()
+    flavors_specified = len(flavors) > 0
 
     res_rpms = []
     if action == "install":
@@ -52,6 +53,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
                 name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
                 action = action,
                 flavor_to_version_set = {flavor: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
+                flavors_specified = flavors_specified,
             ),
         )
 
@@ -85,6 +87,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
         rpm_action_item = shape.new(
             rpm_action_item_t,
             action = action,
+            flavors_specified = flavors_specified,
             flavor_to_version_set = flavor_to_version_set,
             source = source,
             name = name,
