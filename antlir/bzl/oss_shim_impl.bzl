@@ -476,6 +476,7 @@ def _rust_binary(*args, **kwargs):
         _rust_unittest(**test_kwargs)
 
 def _rust_library(*args, **kwargs):
+    kwargs.pop("autocargo", None)
     kwargs, test_kwargs = _split_rust_kwargs(kwargs)
     _wrap_internal(native.rust_library, args, kwargs)
 
