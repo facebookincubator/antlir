@@ -163,14 +163,16 @@ def _normalize_feature_and_get_deps(feature, flavors):
 
         for flavor, version_set in rpm_item.get("flavor_to_version_set", {}).items():
             # If flavors are not provided, we are reading the flavor
-            # from the parent layer, so we should include rpm dependencies
-            # for all the default flavors since the final flavor is not
-            # known until we are in python.
-            if not flavors and (
-                flavor in REPO_CFG.default_image_flavors + ["antlir_test"]
+            # from the parent layer, so we should include all possible flavors
+            # for the rpm as the final flavor is not known until we are in python.
+            if (
+                not flavors and (
+                    rpm_item.get("flavors_specified") or
+                    flavor in REPO_CFG.stable_flavors
+                )
+            ) or (
+                flavors and flavor in flavors
             ):
-                flavor_to_version_set[flavor] = version_set
-            elif flavors and flavor in flavors:
                 flavor_to_version_set[flavor] = version_set
             elif version_set != BZL_CONST.version_set_allow_all_versions:
                 target = extract_tagged_target(version_set)
@@ -231,7 +233,9 @@ def normalize_features(
             feature_dict["target"] = human_readable_target
             inline_features.append(feature_dict)
 
-    required_flavors = flavors or REPO_CFG.default_image_flavors
+    # Skip coverage check for `antlir_test` since it's just for testing purposes and doesn't always
+    # need to be covered.
+    required_flavors = flavors or [flavor for flavor in REPO_CFG.stable_flavors if flavor != "antlir_test"]
     missing_flavors = [flavor for flavor in required_flavors if flavor not in rpm_install_flavors]
     if rpm_install_flavors and missing_flavors:
         fail("Missing `rpms_install` for flavors `{}`. Expected `{}`".format(missing_flavors, required_flavors))

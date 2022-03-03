@@ -278,6 +278,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     # `rpm_action_item_t` inconsistently.
     action: RpmAction
     flavor_to_version_set: Dict[str, Union[str, Dict[str, str]]]
+    flavors_specified: bool = False
     name: Optional[str] = None
     source: Optional[Path] = None
 
