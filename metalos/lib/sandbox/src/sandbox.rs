@@ -7,7 +7,6 @@
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
-use std::io::Write;
 use std::ops::{Deref, DerefMut};
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -152,6 +151,9 @@ pub fn sandbox<S: AsRef<OsStr>>(binary: S, opts: SandboxOpts) -> Result<Command>
 mod tests {
     use super::*;
     use maplit::hashmap;
+    use nix::net::if_::InterfaceFlags;
+    use std::collections::HashMap;
+    use std::io::Write;
 
     fn is_sandboxed() -> bool {
         std::env::var_os("IN_SANDBOX").is_some()
@@ -193,23 +195,33 @@ mod tests {
     #[test]
     fn network_sandboxed() -> Result<()> {
         if is_sandboxed() {
-            let ifaddrs: Vec<_> = nix::ifaddrs::getifaddrs()?.collect();
-            assert_eq!(
-                ifaddrs.len(),
-                1,
-                "sandbox should only see a single loopback device, instead it sees {:?}",
-                ifaddrs
-                    .iter()
-                    .map(|i| &i.interface_name)
-                    .collect::<Vec<_>>()
-            );
+            let mut ifaddrs: HashMap<String, InterfaceFlags> = nix::ifaddrs::getifaddrs()?
+                .map(|i| (i.interface_name, i.flags))
+                .collect();
+
             assert!(
-                ifaddrs[0]
-                    .flags
-                    .contains(nix::net::if_::InterfaceFlags::IFF_LOOPBACK),
-                "single network device in sandbox is not a loopback: {:?}",
-                ifaddrs[0]
+                ifaddrs.contains_key("lo"),
+                "missing loopback interface: {:?}",
+                ifaddrs
             );
+            let lo = ifaddrs.remove("lo").unwrap();
+            assert!(
+                lo.contains(InterfaceFlags::IFF_LOOPBACK),
+                "lo was not a loopback, what? {:?}",
+                lo
+            );
+
+            // there might be two other interfaces for ipv6 tunneling that are
+            // created by kernel modules so are still present in the namespace
+            if !ifaddrs.is_empty() {
+                ifaddrs.remove("ip6tnl0");
+                ifaddrs.remove("tunl0");
+                assert!(
+                    ifaddrs.is_empty(),
+                    "unexpected interfaces available in sandbox: {:?}",
+                    ifaddrs,
+                )
+            }
         } else {
             assert!(nix::ifaddrs::getifaddrs()?.count() > 1);
             run_test_in_sandbox("network_sandboxed", Default::default());
