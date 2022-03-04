@@ -22,7 +22,7 @@ path = "src/send_events.rs"
 [dependencies]
 anyhow = "1.0.51"
 async-trait = "0.1.52"
-reqwest = { version = "0.11.4", features = ["blocking", "json", "rustls-tls", "rustls-tls-native-roots", "stream", "trust-dns-optional"] }
+reqwest = { version = "0.11.6", features = ["blocking", "json", "rustls-tls", "rustls-tls-native-roots", "stream", "trust-dns-optional"] }
 serde_json = { version = "1.0.64", features = ["float_roundtrip", "unbounded_depth"] }
 slog = { version = "2.7", features = ["max_level_trace", "nested-values"] }
 structopt = "0.3.23"
