@@ -57,7 +57,7 @@ root template from JSON data provided on stdin.
         srcs = compiled_srcs,
         base_module = "antlir.__compiled_templates__",
         deps = deps,
-        visibility = get_visibility(visibility, name),
+        visibility = get_visibility(visibility),
     )
 
     # Compile the name of the root template into the python_binary for
@@ -82,5 +82,5 @@ root template from JSON data provided on stdin.
         resources = {
             ":" + root_template_target: "__root_template_name__",
         },
-        visibility = get_visibility(visibility, name),
+        visibility = get_visibility(visibility),
     )

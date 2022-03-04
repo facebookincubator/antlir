@@ -90,7 +90,7 @@ def private_image_rpmbuild_impl(
     Implementation of image_rpmbuild, see docs in `image_rpmbuild`.
     """
 
-    visibility = get_visibility(visibility, name)
+    visibility = get_visibility(visibility)
 
     # Future: We tar the source directory and untar it inside the subvolume
     # before building because the "install_*_trees" feature does not yet

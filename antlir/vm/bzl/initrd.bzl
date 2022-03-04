@@ -37,7 +37,7 @@ def initrd(kernel, module_list = None, visibility = None):
 
     name = "{}-initrd".format(kernel.uname)
     module_list = module_list or DEFAULT_MODULE_LIST
-    visibility = get_visibility(visibility, name)
+    visibility = get_visibility(visibility)
 
     systemd.units.mount_file(
         name = name + "--modules.mount",

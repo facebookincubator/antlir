@@ -216,7 +216,7 @@ echo {quoted_storage_cfg} > "$OUT"/snapshot/storage.json
         # useful to move the binary installation as `install_buck_runnable`
         # into `install_rpm_repo_snapshot`.
         cacheable = False,
-        visibility = get_visibility(visibility, name),
+        visibility = get_visibility(visibility),
     )
 
 def _set_up_rpm_repo_snapshots():

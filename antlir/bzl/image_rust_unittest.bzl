@@ -54,5 +54,5 @@ def image_rust_unittest(
         antlir_rule = "user-facing",
         test = ":" + wrapper_binary,
         type = "rust",
-        visibility = get_visibility(visibility, name),
+        visibility = get_visibility(visibility),
     )

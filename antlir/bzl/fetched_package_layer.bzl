@@ -181,7 +181,7 @@ def _fetched_package_layer(
         visibility,
         flavor = REPO_CFG.antlir_linux_flavor):
     name = package + "/" + tag + name_suffix
-    visibility = get_visibility(visibility, name)
+    visibility = get_visibility(visibility)
 
     fetched_pkg_target_name = name + "-fetched-package"
     buck_genrule(
@@ -290,6 +290,6 @@ def _fetched_package_with_nondeterministic_fs_metadata(
             print_how_to_fetch_json = print_how_to_fetch_json,
         ),
         type = "fetched_package_with_nondeterministic_fs_metadata",
-        visibility = get_visibility(visibility, name),
+        visibility = get_visibility(visibility),
         antlir_rule = "user-internal",
     )
