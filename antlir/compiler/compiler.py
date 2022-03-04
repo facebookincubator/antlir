@@ -23,6 +23,7 @@ import pwd
 import stat
 import sys
 from contextlib import ExitStack, nullcontext
+from subprocess import CalledProcessError
 from typing import Iterator, List
 
 from antlir.bzl.constants import flavor_config_t
@@ -202,6 +203,7 @@ def invoke_compiler_inside_build_appliance(
     snapshot_dir: Path,
     compiler_binary: str,
     subvol_dir: str,
+    debug: bool,
 ):
     opts = new_nspawn_opts(
         cmd=[
@@ -217,19 +219,29 @@ def invoke_compiler_inside_build_appliance(
         bind_artifacts_dir_rw=True,
         hostname=hostname_for_compiler_in_ba(),
     )
-
-    run_nspawn(
-        opts,
-        PopenArgs(),
-        plugins=rpm_nspawn_plugins(
-            opts=opts,
-            plugin_args=NspawnPluginArgs(
-                serve_rpm_snapshots=[snapshot_dir],
-                # We'll explicitly call the RPM installer wrapper we need.
-                shadow_proxied_binaries=False,
+    try:
+        run_nspawn(
+            opts,
+            PopenArgs(),
+            plugins=rpm_nspawn_plugins(
+                opts=opts,
+                plugin_args=NspawnPluginArgs(
+                    serve_rpm_snapshots=[snapshot_dir],
+                    # We'll explicitly call the RPM installer wrapper we need.
+                    shadow_proxied_binaries=False,
+                ),
             ),
-        ),
-    )
+        )
+    except CalledProcessError as e:  # pragma: no cover
+        # If this failed, it's exceedingly unlikely for this backtrace to
+        # actually be useful, and instead it just makes it harder to find the
+        # "real" backtrace from the internal compiler. However, in the rare
+        # chance that it is useful, ANTLIR_DEBUG voids all warranties for a
+        # possibly-actually-readable stderr, and will includ the outer backtrace
+        # as well as any inner failures
+        if debug:
+            raise e
+        sys.exit(e.returncode)
 
 
 def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
@@ -278,6 +290,7 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
             snapshot_dir=not_none(Path(flavor_config.rpm_repo_snapshot)),
             compiler_binary=args.compiler_binary,
             subvol_dir=args.subvolumes_dir,
+            debug=args.debug,
         )
     else:
         layer_opts = LayerOpts(
