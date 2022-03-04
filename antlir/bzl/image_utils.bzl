@@ -65,8 +65,12 @@ def _wrap_bash_build_in_common_boilerplate(
     trap log_on_error EXIT
 
     (
-      # Log all commands now that stderr is redirected.
-      set -x
+      # Log all commands now that stderr is redirected, but only if ANTLIR_DEBUG
+      # is on, otherwise don't clutter regular image build failures with all the
+      # internal commands that were run
+      if [ -n "${{ANTLIR_DEBUG-}}" ]; then
+        set -x
+      fi
 
       {bash}
 
