@@ -39,6 +39,7 @@ from .requires_provides import (
     RequirePath,
     RequireSymlink,
 )
+from .user_error import UserError
 
 
 # To build the item-to-item dependency graph, we need to first build up a
@@ -133,12 +134,12 @@ class ItemReqsProvs(NamedTuple):
 
     def add_item_req(self, req: Requirement, item: ImageItem) -> None:
         if self._item_self_conflict(item):
-            raise RuntimeError(f"{req} from {item} conflicts in {self}")
+            raise UserError(f"{req} from {item} conflicts in {self}")
         self.item_reqs.add(ItemReq(requires=req, item=item))
 
     def add_item_prov(self, prov: Provider, item: ImageItem) -> None:
         if self._item_self_conflict(item):
-            raise RuntimeError(f"{prov} from {item} conflicts in {self}")
+            raise UserError(f"{prov} from {item} conflicts in {self}")
 
         # For the majority of cases, we do not allow two `Providers` to
         # provide the same `Requirement`. There are some cases that are allowed
@@ -147,7 +148,7 @@ class ItemReqsProvs(NamedTuple):
         new_ip = ItemProv(provides=prov, item=item)
         for ip in self.item_provs:
             if new_ip.conflicts(ip):
-                raise RuntimeError(f"{new_ip} conflicts with {ip}")
+                raise UserError(f"{new_ip} conflicts with {ip}")
         self.item_provs.add(new_ip)
 
     def item_req_fulfilled(self, item_req: ItemReq) -> bool:
@@ -224,7 +225,7 @@ class PathItemReqsProvs:
 
             for ir in irs:
                 if isinstance(ir.requires, RequireSymlink):
-                    raise RuntimeError(
+                    raise UserError(
                         f"{path}: {irps.item_provs} does not provide {ir}; "
                         "RequireSymlink must be explicitly fulfilled"
                     )
@@ -244,9 +245,7 @@ class PathItemReqsProvs:
                     irps.item_provs.update(symlink_item_provs)
                     continue
 
-            raise RuntimeError(
-                f"{path}: {irps.item_provs} does not provide {irs}"
-            )
+            raise UserError(f"{path}: {irps.item_provs} does not provide {irs}")
 
     def item_reqs_provs(self) -> Generator[ItemReqsProvs, None, None]:
         yield from self.path_to_item_reqs_provs.values()
@@ -342,7 +341,7 @@ class ValidatedReqsProvs:
         self._path_item_reqs_provs.validate()
         for irps in self._item_reqs_provs.values():
             for item_req in irps.unfulfilled_item_reqs():
-                raise RuntimeError(
+                raise UserError(
                     f"{irps.item_provs} does not provide {item_req}"
                 )
 

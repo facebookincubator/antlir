@@ -232,6 +232,8 @@ def _extra_nspawn_args_and_env(
             )
 
     if opts.quiet:
+        # Otherwise stderr is polluted by useless messages like
+        # 'Container 7fb953cb2c05457796e4b17351a12a36 exited successfully'
         extra_nspawn_args.append("--quiet")
 
     if opts.debug_only_opts.private_network:

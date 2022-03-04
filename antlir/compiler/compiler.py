@@ -48,6 +48,7 @@ from antlir.subvol_utils import Subvol
 
 from .dep_graph import DependencyGraph, ImageItem
 from .subvolume_on_disk import SubvolumeOnDisk
+from .user_error import UserError
 
 
 def parse_args(args) -> argparse.Namespace:
@@ -355,9 +356,16 @@ if __name__ == "__main__":  # pragma: no cover
     init_logging(debug=args.debug)
 
     with (cProfile.Profile() if args.profile_dir else nullcontext()) as pr:
-        subvol = build_image(args, argv)
-        if not args.is_nested:
-            subvol.to_json_file(sys.stdout)
+        try:
+            subvol = build_image(args, argv)
+            if not args.is_nested:
+                subvol.to_json_file(sys.stdout)
+        except UserError as e:
+            if args.debug:
+                raise e
+            sys.stderr.write("\n")
+            sys.stderr.write(str(e))
+            sys.exit(1)
     if args.profile_dir:
         assert pr is not None
         filename = args.child_layer_target.replace("/", "_") + ".pstat"
