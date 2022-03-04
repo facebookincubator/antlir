@@ -25,6 +25,7 @@ from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.user import UserItem
+from antlir.compiler.user_error import UserError
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import TempSubvolumes
 
@@ -536,9 +537,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         req_b_item = TestImageItem(reqs=[req_b])
         pirp.add_requirement(req_b, req_b_item)
 
-        with self.assertRaisesRegex(
-            RuntimeError, r"/b: .* does not provide .*$"
-        ):
+        with self.assertRaisesRegex(UserError, r"/b: .* does not provide .*$"):
             pirp.validate()
 
     def test_symlinked_file_does_not_satisfy_require_dir(self) -> None:
@@ -570,9 +569,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         req_b_item = TestImageItem(reqs=[req_b])
         pirp.add_requirement(req_b, req_b_item)
 
-        with self.assertRaisesRegex(
-            RuntimeError, r"/b: .* does not provide .*$"
-        ):
+        with self.assertRaisesRegex(UserError, r"/b: .* does not provide .*$"):
             pirp.validate()
 
     def test_requires_symlink_explicitly_satisfied(self) -> None:
@@ -603,7 +600,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         pirp.add_requirement(req_b, req_b_item)
 
         with self.assertRaisesRegex(
-            RuntimeError,
+            UserError,
             r"^/b: .* does not provide .*; "
             r"RequireSymlink must be explicitly fulfilled$",
         ):
@@ -888,7 +885,7 @@ class DepGraphTestBase(unittest.TestCase):
 class ValidateReqsProvsTestCase(DepGraphTestBase):
     def test_duplicate_paths_in_same_item(self) -> None:
         with self.assertRaisesRegex(
-            RuntimeError,
+            UserError,
             r"ProvidesDirectory.*TestImageItem.*conflicts in",
         ):
             ValidatedReqsProvs(
@@ -908,7 +905,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_requires_in_same_item(self) -> None:
         with self.assertRaisesRegex(
-            RuntimeError,
+            UserError,
             r"RequireDirectory.*TestImageItem.*conflicts in",
         ):
             ValidatedReqsProvs(
@@ -928,7 +925,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_paths_provided_different_types(self) -> None:
         with self.assertRaisesRegex(
-            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -945,7 +942,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_paths_provided(self) -> None:
         with self.assertRaisesRegex(
-            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -960,7 +957,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_path_provided_twice(self) -> None:
         with self.assertRaisesRegex(
-            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -998,7 +995,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_symlink_paths_different_sources(self) -> None:
         with self.assertRaisesRegex(
-            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -1015,7 +1012,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_symlink_file_and_dir_conflict(self) -> None:
         with self.assertRaisesRegex(
-            RuntimeError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"^ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -1060,7 +1057,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         )
 
         with self.assertRaisesRegex(
-            RuntimeError,
+            UserError,
             r"set\(\) does not provide ItemReq\(requires=RequireGroup",
         ):
             # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -1072,7 +1069,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
     def test_unmatched_requirement(self) -> None:
         item = InstallFileItem(from_target="", source=_FILE1, dest="y")
         with self.assertRaises(
-            RuntimeError,
+            UserError,
             msg="^At /: nothing in set() matches the requirement "
             f'{ItemReq(requires=RequireDirectory(path=Path("/")), item=item)}$',
         ):

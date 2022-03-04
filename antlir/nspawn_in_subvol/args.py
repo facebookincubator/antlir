@@ -231,7 +231,7 @@ class _NspawnOpts(NamedTuple):
     forward_fd: Iterable[int] = ()  # for `image.*_unittest`
     # The default is to let `systemd-nspawn` pick a random hostname.
     hostname: Optional[str] = None  # for `image.*_unittest`
-    quiet: bool = False
+    quiet: bool = True
     # For now, these have the form `K=V`. Future: make this a map?
     # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
     #  bytes]]`.
@@ -255,6 +255,8 @@ def new_nspawn_opts(**kwargs):
     debug-only options may be more fragile, more poorly tested, or otherwise
     not appropriate for use outside of human-at-the-keyboard debugging.
     """
+    if getattr(kwargs.get("debug_only_opts"), "debug", False):
+        kwargs["quiet"] = False
     opts = _NspawnOpts(**kwargs)
     assert not (opts.quiet and opts.debug_only_opts.debug), opts
     assert not opts.debug_only_opts.snapshot_into or opts.snapshot, opts
@@ -352,7 +354,10 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         "from `machine`.",
     )
     parser.add_argument(
-        "--quiet", action="store_true", help="See `man systemd-nspawn`."
+        "--quiet",
+        default=True,
+        action="store_false",
+        help="See `man systemd-nspawn`.",
     )
     assert defaults["setenv"] == ()  # The argparse default must be mutable
     parser.add_argument(

@@ -217,7 +217,7 @@ class NspawnTestCase(NspawnTestBase):
             ),
         )
 
-    def test_extra_nspawn_args_quiet_opts(self):
+    def test_quiet_by_default(self):
         # opts.quiet
         self.assertIn(
             "--quiet",
@@ -225,7 +225,18 @@ class NspawnTestCase(NspawnTestBase):
                 [
                     "--layer",
                     layer_resource(__package__, "test-layer"),
-                    "--quiet",
+                ]
+            ),
+        )
+
+    def test_not_quiet_in_debug(self):
+        self.assertNotIn(
+            "--quiet",
+            self._wrapper_args_to_nspawn_args(
+                [
+                    "--layer",
+                    layer_resource(__package__, "test-layer"),
+                    "--debug",
                 ]
             ),
         )
