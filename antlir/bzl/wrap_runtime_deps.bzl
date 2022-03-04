@@ -196,7 +196,7 @@ mv "$TMP/out" "$OUT"
         cacheable = False,
         # Whatever we wrap was executable, so the wrapper might as well be, too
         executable = True,
-        visibility = get_visibility(visibility, name),
+        visibility = get_visibility(visibility),
         antlir_rule = "user-internal",
     )
     return True, ":" + name
