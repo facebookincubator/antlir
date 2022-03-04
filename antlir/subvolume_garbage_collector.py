@@ -129,7 +129,7 @@ def garbage_collect_subvolumes(
             log.info(f"{nlink} > 2 links to subvolume {subvol_wrapper}")
             continue
         refcount_path = Path(refcounts_dir) / f"{subvol_wrapper}.json"
-        log.warning(
+        log.info(
             f"Deleting {subvol_wrapper} since its refcount has {nlink} links"
         )
         # Start by unlinking the refcount to dramatically decrease the
