@@ -118,7 +118,7 @@ class _FeatureHandlers:
             # fb.workplace.com/groups/btrmeup/permalink/3969652289781074
             log.error(
                 "Installing an in-repo RPM requires a custom image (for now), "
-                " got {self.config}"
+                f" got {self.config}"
             )
             # pyre-fixme[7]: Expected `ExtractedFeatures` but got `None`.
             return None
