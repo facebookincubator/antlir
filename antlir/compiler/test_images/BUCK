@@ -1024,6 +1024,20 @@ image.layer(
     visibility = ["//antlir/compiler/..."],
 )
 
+# This layer will build with no issue, because all it does is assert that the
+# users/groups added in the ":users-added" layer exist in /etc/{passwd,group}
+image.layer(
+    name = "users-required",
+    parent_layer = ":users-added",
+    features = [
+        feature.requires(
+            groups = ["newuser"],
+            users = ["newuser"],
+        ),
+    ],
+    visibility = ["//antlir/compiler/..."],
+)
+
 image.layer(
     name = "vfat-test.layer",
     flavor = "antlir_test",

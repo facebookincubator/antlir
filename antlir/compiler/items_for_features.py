@@ -22,6 +22,7 @@ from antlir.compiler.items.make_subvol import (
 )
 from antlir.compiler.items.mount import MountItem
 from antlir.compiler.items.remove_path import RemovePathItem
+from antlir.compiler.items.requires import RequiresItem
 from antlir.compiler.items.rpm_action import RpmActionItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
@@ -133,6 +134,7 @@ class ItemFactory:
             "symlinks_to_files": SymlinkToFileItem,
             "tarballs": self._image_sourcify(TarballItem),
             "users": UserItem,
+            "requires": RequiresItem,
         }
         self._key_to_items_factory = {
             "ensure_subdirs_exist": ensure_subdirs_exist_factory,
