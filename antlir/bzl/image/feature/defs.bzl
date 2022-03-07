@@ -8,11 +8,13 @@
 load("//antlir/bzl/image/feature:install.bzl", "feature_install", "feature_install_buck_runnable")
 load("//antlir/bzl/image/feature:new.bzl", "feature_new")
 load("//antlir/bzl/image/feature:remove.bzl", "feature_remove")
+load("//antlir/bzl/image/feature:requires.bzl", "feature_requires")
 load("//antlir/bzl/image/feature:symlink.bzl", "feature_ensure_dir_symlink", "feature_ensure_file_symlink")
 load("//antlir/bzl/image/feature:tarball.bzl", "feature_tarball")
 load("//antlir/bzl/image/feature:usergroup.bzl", "feature_group_add", "feature_user_add")
 
 feature = struct(
+    requires = feature_requires,
     group_add = feature_group_add,
     install = feature_install,
     install_buck_runnable = feature_install_buck_runnable,

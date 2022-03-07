@@ -240,6 +240,16 @@ python_unittest(
     ],
 )
 
+python_unittest(
+    name = "test-requires",
+    srcs = ["test_requires.py"],
+    needed_coverage = [(100, "//antlir/compiler/items:requires")],
+    deps = [
+        ":common_testlib",
+        "//antlir/compiler/items:requires",
+    ],
+)
+
 image_python_unittest(
     name = "test-remove-path",
     srcs = ["test_remove_path.py"],

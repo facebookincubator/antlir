@@ -49,6 +49,15 @@ python_library(
 )
 
 python_library(
+    name = "requires",
+    srcs = ["requires.py"],
+    deps = [
+        ":common",
+        "//antlir/bzl/image/feature:requires.shape-python",
+    ],
+)
+
+python_library(
     name = "rpm_action",
     srcs = ["rpm_action.py"],
     deps = [
@@ -198,6 +207,7 @@ python_library(
         ":mount",
         ":phases_provide",
         ":remove_path",
+        ":requires",
         ":rpm_action",
         ":symlink",
         ":tarball",

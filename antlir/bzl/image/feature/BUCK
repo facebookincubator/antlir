@@ -41,6 +41,18 @@ shape.impl(
 )
 
 fake_macro_library(
+    name = "requires",
+    srcs = ["requires.bzl"],
+    deps = [
+        "//antlir/bzl:target_tagger",
+    ],
+)
+
+shape.impl(
+    name = "requires.shape",
+)
+
+fake_macro_library(
     name = "usergroup",
     srcs = ["usergroup.bzl"],
     deps = [
