@@ -21,6 +21,17 @@ load("//metalos/host_configs/tests:host.bzl", "host_config")
 
 TEST_KERNEL = kernel_get.default
 
+image.layer(
+    name = "deps",
+    parent_layer = "//metalos/os:metalos",
+    features = [
+        image.rpms_install([
+            "dropbear",
+        ]),
+    ],
+    visibility = ["//metalos/initrd/..."],
+)
+
 binaries = extract.extract(
     binaries = [
         "/usr/sbin/dropbear",
@@ -30,10 +41,22 @@ binaries = extract.extract(
         "/usr/bin/systemd-run",
     ],
     dest = "/",
-    source = "//metalos/initrd/debug:debug-deps",
+    source = ":deps",
 )
 
 ssh_server = [
+    image.clone(":deps", "/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/dropbear.service"),
+    image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
+    feature.install("dropbear.tmpfiles.conf", "/usr/lib/tmpfiles.d/dropbear.conf"),
+    image.ensure_dirs_exist("/etc/sysconfig"),
+    feature.install("dropbear", "/etc/sysconfig/dropbear"),
+    systemd.install_unit("dropbear-keygen.service"),
+    systemd.enable_unit(
+        "dropbear.service",
+        target = "initrd.target",
+    ),
+    # vmtest synchronizes on sshd.service, so alias it to dropbear
+    feature.ensure_file_symlink("/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/sshd.service"),
     image.ensure_dirs_exist("/root"),
     ssh.test_only_login(),
 ]
@@ -124,7 +147,7 @@ initrd(kernel = TEST_KERNEL)
 buck_genrule(
     name = "vmtest-initrd.cpio.gz",
     out = "initrd.cpio.gz",
-    cmd = "cat $(location :{}-initrd-debug) $(location :initrd-vmtest--append.cpio.gz) > $OUT".format(TEST_KERNEL.uname),
+    cmd = "cat $(location :{}-initrd) $(location :initrd-vmtest--append.cpio.gz) > $OUT".format(TEST_KERNEL.uname),
 )
 
 vm.rust_unittest(
@@ -165,7 +188,7 @@ vm.rust_unittest(
 # close to the base as possible.
 image.layer(
     name = "switch-root-initrd",
-    parent_layer = "//metalos/initrd:base",
+    parent_layer = "//metalos/initrd:initrd",
     features = [
         image.ensure_subdirs_exist("/etc", "systemd/system"),
         # to avoid having to unmount this when switch-rooting, just don't mount

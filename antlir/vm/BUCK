@@ -198,10 +198,6 @@ vm.run(
     vm_opts = vm.types.opts.new(
         kernel = kernel_get.default,
         disk = vm.artifacts.rootfs.disk,
-        initrd = "{}:{}-initrd-debug".format(
-            kernel_get.base_target,
-            kernel_get.default.uname,
-        ),
         append = [
             "initrd.break",
         ],
