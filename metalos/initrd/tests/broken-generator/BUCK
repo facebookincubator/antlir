@@ -17,7 +17,7 @@ rust_binary(
 
 image.layer(
     name = "layer",
-    parent_layer = "//metalos/initrd/debug:debug",
+    parent_layer = "//metalos/initrd:initrd",
     features = [
         feature.remove("/usr/lib/systemd/system-generators/metalos-generator"),
         feature.install(

@@ -77,16 +77,7 @@ def initrd(kernel, module_list = None, visibility = None):
 
     image.layer(
         name = name + "--layer",
-        parent_layer = "//metalos/initrd:base",
-        # Do not add features directly here, instead add them to
-        # initrd_vm_features so they are shared with the debug initrd.
-        features = initrd_vm_features,
-        visibility = [],
-    )
-
-    image.layer(
-        name = name + "--layer--debug",
-        parent_layer = "//metalos/initrd/debug:debug",
+        parent_layer = "//metalos/initrd:initrd",
         # Do not add features directly here, instead add them to
         # initrd_vm_features so they are shared with the debug initrd.
         features = initrd_vm_features,
@@ -96,13 +87,6 @@ def initrd(kernel, module_list = None, visibility = None):
     package.new(
         name = name,
         layer = ":" + name + "--layer",
-        format = "cpio.gz",
-        visibility = visibility,
-    )
-
-    package.new(
-        name = name + "-debug",
-        layer = ":" + name + "--layer--debug",
         format = "cpio.gz",
         visibility = visibility,
     )

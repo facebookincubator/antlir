@@ -33,6 +33,7 @@ TARGETS = [
 UNITS = [
     "dbus.service",
     "dbus.socket",
+    "emergency.service",
     "initrd-cleanup.service",
     "initrd-udevadm-cleanup-db.service",
     "systemd-journald-dev-log.socket",
@@ -53,7 +54,9 @@ UNITS = [
 BINARIES = [
     "/usr/bin/dbus-daemon",
     "/usr/bin/journalctl",
+    "/usr/bin/networkctl",
     "/usr/bin/systemctl",
+    "/usr/bin/systemd-analyze",
     "/usr/bin/systemd-escape",
     "/usr/bin/systemd-tmpfiles",
     "/usr/bin/udevadm",

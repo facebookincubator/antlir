@@ -9,7 +9,6 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
-load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
@@ -63,6 +62,12 @@ udev = [
         "95-dm-notify.rules",
         "99-systemd.rules",
     ]
+]
+
+debug = [
+    systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
+    systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
+    systemd.install_dropin("emergency.conf", "emergency.service"),
 ]
 
 image.layer(
@@ -147,7 +152,7 @@ image.layer(
 
 # Kernel-agnostic base initrd
 image.layer(
-    name = "base",
+    name = "initrd",
     parent_layer = ":bare-systemd",
     features = [
         linux.busybox.install(
@@ -174,6 +179,7 @@ image.layer(
         ),
         feature.install("//metalos/metalctl:default-config.toml", "/etc/metalctl.toml"),
         networking,
+        debug,
         image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
         feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),
         systemd.install_unit("units/metalos-apply-host-config.service"),
@@ -191,6 +197,7 @@ image.layer(
         systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
         feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
+        image.ensure_subdirs_exist("/", "rootdisk"),
         # generic metalos generators to be applied to the root fs
         "//metalos/host_configs:generators",
     ],
@@ -200,14 +207,4 @@ image.layer(
         "//metalos/...",
         "//scripts/dschatzberg/vm:",
     ],
-)
-
-# CPIO archive to which environment specific overlays are appended. For
-# example, vmtest appends units that load required kernel modules and sets up
-# the BTRFS seed device on /
-package.new(
-    name = "base.cpio.gz",
-    format = "cpio.gz",
-    layer = ":base",
-    visibility = ["PUBLIC"],
 )
