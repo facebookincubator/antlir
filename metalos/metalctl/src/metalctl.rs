@@ -34,12 +34,12 @@ mod generator;
 mod http;
 mod kernel_cmdline;
 mod load_host_config;
-mod mkdir;
 mod mount;
 #[cfg(initrd)]
 mod network_cleanup;
 mod send_event;
 mod switch_root;
+#[cfg(initrd)]
 mod umount;
 #[cfg(not(initrd))]
 mod update;
@@ -51,14 +51,14 @@ enum Subcommand {
     /// Systemd unit generator
     #[cfg(initrd)]
     MetalosGenerator(generator::Opts),
+    /// Mount a filesystem
+    #[cfg(initrd)]
+    Mount(mount::Opts),
+    /// Unmount a filesystem
+    #[cfg(initrd)]
+    Umount(umount::Opts),
     /// Download images specified in the MetalOS host config
     FetchImages(fetch_images::Opts),
-    /// Simplistic method to mount filesystems
-    Mount(mount::Opts),
-    /// Simplistic method to unmount filesystems
-    Umount(umount::Opts),
-    /// Simple implementation of /bin/mkdir
-    Mkdir(mkdir::Opts),
     /// Cleanup networking in preperation for switchroot
     #[cfg(initrd)]
     NetworkCleanup(network_cleanup::Opts),
@@ -157,10 +157,11 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
     match options.command {
         #[cfg(initrd)]
         Subcommand::MetalosGenerator(opts) => generator::generator(log, opts),
-        Subcommand::FetchImages(opts) => fetch_images::fetch_images(log, config, opts).await,
-        Subcommand::Mkdir(opts) => mkdir::mkdir(opts),
+        #[cfg(initrd)]
         Subcommand::Mount(opts) => mount::mount(log, opts),
+        #[cfg(initrd)]
         Subcommand::Umount(opts) => umount::umount(opts),
+        Subcommand::FetchImages(opts) => fetch_images::fetch_images(log, config, opts).await,
         #[cfg(initrd)]
         Subcommand::NetworkCleanup(opts) => network_cleanup::network_cleanup(log, opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts).await,

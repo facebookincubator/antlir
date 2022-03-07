@@ -236,7 +236,7 @@ build_root_disk(
     name = "metalos-gpt-image",
     efi_fat_size = 16,
     efi_layer_name = "empty-layer-boot-or-efi",
-    root_size_mb = 1024 * 2,
+    root_size_mb = 1024 * 4,
 )
 
 vm.rust_unittest(

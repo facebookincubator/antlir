@@ -1,6 +1,5 @@
 # @noautodeps
 
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
@@ -9,8 +8,6 @@ load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_RO
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
-load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
-load("//antlir/bzl/linux:defs.bzl", "linux")
 
 VISIBILITY = [
     "//metalos/initrd/...",
@@ -22,7 +19,6 @@ image.layer(
     parent_layer = "//metalos/os:metalos",
     features = [
         image.rpms_install([
-            "busybox",
             "strace",
             "dropbear",
         ]),
@@ -90,19 +86,6 @@ feature.new(
 feature.new(
     name = "binaries",
     features = [
-        linux.busybox.install(
-            ":debug-deps",
-            sets.difference(
-                DEFAULT_APPLETS,
-                # these are implemented in metalctl
-                sets.make([
-                    "mkdir",
-                    "mount",
-                    "umount",
-                ]),
-            ),
-            src_path = "/usr/sbin/busybox",
-        ),
         extract.extract(
             binaries = [
                 "/usr/bin/dropbearkey",
