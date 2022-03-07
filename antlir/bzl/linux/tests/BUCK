@@ -41,6 +41,7 @@ image.layer(
         linux.filesystem.install(),
         linux.busybox.install(
             src = ":busybox-src-from-ba",
+            src_path = "/busybox",
         ),
     ],
 )
@@ -52,6 +53,7 @@ image.layer(
         linux.filesystem.install(),
         linux.busybox.install(
             src = ":busybox-src-from-third-party",
+            src_path = "/busybox",
         ),
     ],
 )

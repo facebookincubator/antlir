@@ -1,5 +1,6 @@
 # @noautodeps
 
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
@@ -9,6 +10,7 @@ load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
 load("//antlir/bzl/image/package:defs.bzl", "package")
+load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
 
@@ -62,6 +64,17 @@ udev = [
         "99-systemd.rules",
     ]
 ]
+
+image.layer(
+    name = "busybox",
+    flavor = REPO_CFG.antlir_linux_flavor,
+    features = [
+        image.rpms_install([
+            "busybox",
+        ]),
+    ],
+    visibility = ["//metalos/initrd/..."],
+)
 
 # A bare layer with only systemd essentials included
 image.layer(
@@ -137,6 +150,21 @@ image.layer(
     name = "base",
     parent_layer = ":bare-systemd",
     features = [
+        linux.busybox.install(
+            src = ":busybox",
+            src_path = "/sbin/busybox",
+            applets = sets.difference(
+                DEFAULT_APPLETS,
+                sets.make([
+                    "mount",
+                    "umount",
+                ]),
+            ),
+        ),
+        # metalctl's implementation of (u)mount works better, systemd passes
+        # some options that busybox does not understand
+        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
+        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/umount"),
         extract.extract(
             binaries = [
                 "/usr/bin/metalctl",
@@ -145,11 +173,6 @@ image.layer(
             source = ":with-metalctl",
         ),
         feature.install("//metalos/metalctl:default-config.toml", "/etc/metalctl.toml"),
-        # metalctl provides a few utility binaries that systemd calls so we can
-        # avoid importing busybox for just a few tiny commands
-        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mkdir"),
-        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
-        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/umount"),
         networking,
         image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
         feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),

@@ -52,7 +52,7 @@ DEFAULT_APPLETS = sets.make([
     "xargs",
 ])
 
-def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/busybox"):
+def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/usr/sbin/busybox"):
     """
     Generate features to install a statically linked `busybox` binary
     from the supplied `src` layer into an `install_dir` (default `/usr/bin`)
@@ -62,11 +62,7 @@ def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/busybox
     """
     applets = sets.to_list(applets or DEFAULT_APPLETS)
     return [
-        image.clone(
-            src,
-            src_path,
-            paths.join(install_dir, "busybox"),
-        ),
+        image.clone(src, src_path, paths.join(install_dir, "busybox")),
     ] + [
         feature.ensure_file_symlink(
             paths.join(install_dir, "busybox"),
