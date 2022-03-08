@@ -8,6 +8,7 @@ from typing import Generator
 
 from antlir.bzl.image.feature.requires import requires_t
 from antlir.compiler.requires_provides import (
+    RequireFile,
     RequireGroup,
     RequireUser,
     Requirement,
@@ -25,3 +26,5 @@ class RequiresItem(requires_t, ImageItem):
             yield RequireUser(user)
         for user in self.groups or []:
             yield RequireGroup(user)
+        for f in self.files or []:
+            yield RequireFile(f)
