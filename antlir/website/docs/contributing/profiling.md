@@ -42,7 +42,7 @@ $ snakeviz /home/antliruser/my_image:target.pstat
 </OssOnly>
 
 This will print out a URL that you can visit in your browser to get an
-explorable icicle graph.
+explorable icicle graph. If you're unable to load the site in Chrome, trying a different browser (ex: Safari) may solve the problem.
 
 ## Caveats
 
