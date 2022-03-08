@@ -33,3 +33,9 @@ EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
 ExecStartPre=metalctl network-cleanup
 ExecStart=metalctl switch-root ${METALOS_CURRENT_BOOT_DIR}
+#
+# Setting KillMode to none is deprecated in systemd and comes with dire warnings
+# that the functionality will be removed, but this seems to be the least
+# racy way we can have metalctl survive the systemd killing spree.
+#
+KillMode=none
