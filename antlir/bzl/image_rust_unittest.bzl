@@ -10,7 +10,7 @@ def image_rust_unittest(
         name,
         layer,
         boot = False,
-        run_as_user = "nobody",
+        run_as_user = None,
         hostname = None,
         container_opts = None,
         visibility = None,

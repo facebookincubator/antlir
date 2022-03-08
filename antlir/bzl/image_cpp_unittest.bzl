@@ -10,7 +10,7 @@ def image_cpp_unittest(
         name,
         layer,
         boot = False,
-        run_as_user = "nobody",
+        run_as_user = None,
         visibility = None,
         hostname = None,
         container_opts = None,
