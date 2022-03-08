@@ -155,7 +155,7 @@ TEST_TYPE={test_type_repr}
 def nspawn_in_subvol_args():
     return [
         *(['--debug'] if os.environ.get('ANTLIR_DEBUG') else []),
-        '--user', {user_repr},
+        *[{maybe_user}],
         *[
             '--setenv={{}}={{}}'.format(k, os.environ.get(k, ''))
                 for k in {pass_through_env_repr}
@@ -210,7 +210,9 @@ mv $TMP/out "$OUT"
                 ),
             ),
             test_type_repr = repr(test_type),
-            user_repr = repr(run_as_user),
+            maybe_user = (
+                "'--user={user}'".format(user = run_as_user) if run_as_user else ""
+            ),
         ),
         visibility = visibility,
         antlir_rule = "user-internal",
