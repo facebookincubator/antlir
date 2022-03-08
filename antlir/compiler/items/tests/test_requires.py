@@ -7,24 +7,28 @@
 from antlir.compiler.requires_provides import (
     RequireGroup,
     RequireUser,
+    RequireFile,
 )
+from antlir.fs_utils import Path
 
 from ..requires import RequiresItem
 from .common import BaseItemTestCase
 
 
-class UserItemTest(BaseItemTestCase):
-    def test_usergroups(self):
+class BuckRequiresTest(BaseItemTestCase):
+    def test_user_groups_files(self):
         self._check_item(
             RequiresItem(
                 from_target="t",
                 users=["foo", "bar"],
                 groups=["users"],
+                files=[Path("/a/b")],
             ),
             set(),  # this item never provides anything
             {
                 RequireGroup("users"),
                 RequireUser("foo"),
                 RequireUser("bar"),
+                RequireFile(Path("/a/b")),
             },
         )

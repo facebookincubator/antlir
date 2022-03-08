@@ -9,24 +9,26 @@ load(":requires.shape.bzl", "requires_t")
 
 def feature_requires(
         users = None,
-        groups = None):
+        groups = None,
+        files = None):
     """
 `feature.requires(...)` adds macro-level requirements on image layers.
 
-Currently this supports requiring users and groups to exist in the layer being
-built. This feature doesn't materialize anything in the built image, but it will
-cause a compiler error if any of the users/groups that are requested do not
+Currently this supports requiring users, groups and files to exist in the layer
+being built. This feature doesn't materialize anything in the built image, but it
+will cause a compiler error if any of the users/groups that are requested do not
 exist in either the `parent_layer` or the layer being built.
 
 An example of a reasonable use-case of this functionality is defining a macro
 that generates systemd units that run as a specific user, where
-`feature.requires` can be used for additional compile-time safety that the user
-does indeed exist.
+`feature.requires` can be used for additional compile-time safety that the user,
+groups or files do indeed exist.
 """
     req = shape.new(
         requires_t,
         users = users,
         groups = groups,
+        files = files,
     )
     return target_tagger_to_feature(
         new_target_tagger(),

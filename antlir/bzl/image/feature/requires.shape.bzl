@@ -8,4 +8,5 @@ load("//antlir/bzl:shape.bzl", "shape")
 requires_t = shape.shape(
     users = shape.field(shape.list(str), optional = True),
     groups = shape.field(shape.list(str), optional = True),
+    files = shape.field(shape.list(shape.path), optional = True),
 )

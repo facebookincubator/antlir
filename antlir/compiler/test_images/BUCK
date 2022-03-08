@@ -100,7 +100,10 @@ image.layer(
         "//antlir/features:build_artifact_cleanup",
     ],
     runtime = ["systemd"],
-    visibility = ["//antlir/..."],
+    visibility = [
+        "//antlir/...",
+        "//metalos/...",
+    ],
 )
 
 image.layer(
