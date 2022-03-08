@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":usergroup.shape.bzl", "group_t", "user_t")
@@ -85,3 +86,26 @@ are auto-assigned, they may change if underlying layers add/remove groups.
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image/feature:usergroup"],
     )
+
+def feature_setup_standard_user(user, group, homedir = None, shell = SHELL_BASH):
+    """
+A convenient function that wraps `feature.group_add`, `feature.user_add`,
+and home dir creation logic.
+    """
+    if homedir == None:
+        homedir = "/home/" + user
+    return [
+        feature_group_add(group),
+        feature_user_add(
+            user,
+            group,
+            homedir,
+            shell,
+        ),
+        image.ensure_dirs_exist(
+            homedir,
+            user = user,
+            group = group,
+            mode = 0o0770,
+        ),
+    ]
