@@ -31,8 +31,9 @@ Flavors not included in `REPO_CFG.stable_flavors` are considered unstable,
 and can have incorrect rpm snapshots that do not include rpms.
 
 We cannot include rpms from unstable flavors by default into layers
-with inherited flavors. This a failing snapshot would cause a
-missing dependency for all layers with inherited flavors and break their build.
+with inherited flavors. This is because when an rpm snapshot fails for unstable
+flavor it will have no available rpms. Then all layers using inherited flavors
+will have a missing dependency.
 
 Instead, if a user wants to install an rpm onto a layer with an
 unstable flavor, they have to explicitly mark the flavor with
