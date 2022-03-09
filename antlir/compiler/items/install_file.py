@@ -81,21 +81,7 @@ def _recurse_into_source(
 
 # Future enhancement notes:
 #
-# (1) Although `install_buck_runnable` does not support handling
-#     directories at present, this is not explicitly checked here.  What
-#     I expect to happen if somebody does try installing a `buck
-#     run`nable directory is that it will build, but any in-place
-#     executables inside that directory will not work in @mode/dev.  If
-#     a need to fix this comes up, the fix would involve the `.bzl` code
-#     in @mode/dev passing to us (i) the source, as today, (ii) the
-#     wrapped source using a wrapper with `dynamic_path_in_output=True`.
-#     This code here would just need a branch to convert all the
-#     executable files to use the wrapper.  Hint 1: Review the long
-#     comment in D16042669 for a discussion of the details.  Hint 2:
-#     look at mentions of `is_buck_runnable_` in D18905604 for a list of
-#     locations, where you would need to add the "wrapper path" field.
-#
-#  (2) If we ever need to support layer sources, generalize
+#  (1) If we ever need to support layer sources, generalize
 #      `PhasesProvideItem` -- we would need to do the same traversal,
 #      but disallowing non-regular files.
 # pyre-fixme[13]: Attribute `source` is never initialized.
