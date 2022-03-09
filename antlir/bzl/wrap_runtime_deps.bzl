@@ -12,8 +12,7 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
         name,
         target,
         visibility,
-        path_in_output = None,
-        dynamic_path_in_output = False):
+        path_in_output = None):
     """
     If necessary (see "When..."), wraps `target` with a new target named
     `name`, in the current project.
@@ -35,22 +34,6 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
 
       - `path_in_output` sets the wrapper to execute a fixed file out of a
         directory that is output by an executable rule.
-
-      - `dynamic_path_in_output` was made for `install_buck_runnable_trees`,
-         where we need the wrapper to be able to execute multiple files from
-         a directory that was output by an executable target, and the file
-         paths are not known at runtime.
-
-         DANGER: This DRASTICALLY changes the API of the wrapper target.
-         When you execute a `dynamic_path_in_output=True` wrapper, its
-         `$1` is interpreted as a path inside the output directory,
-         under `path_in_output`. In other words, the wrapper runs:
-
-             buck-out/gen/<target>/out/<path_in_output>/$1
-
-         This means that when you use `dynamic_path_in_output=True`, you
-         must separately handle the case when the target is returned
-         unwrapped -- the wrapped & unwrapped targets work DIFFERENTLY.
 
     ## Why is wrapping needed?
 
@@ -175,22 +158,16 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
         bash = '''
 cat >> "$TMP/out" <<'EOF'
 #!/bin/sh
-{set_dynamic_path_in_output}\
-exec $(exe_target {target_to_wrap}){quoted_path_in_output}{dynamic_path_in_output} "$@"
+exec $(exe_target {target_to_wrap}){quoted_path_in_output} "$@"
 EOF
 echo "# New output each build: \\$(date) $$ $PID $RANDOM $RANDOM" >> "$TMP/out"
 chmod a+rx "$TMP/out"
 mv "$TMP/out" "$OUT"
         '''.format(
             target_to_wrap = target,
-            set_dynamic_path_in_output = "" if not dynamic_path_in_output else (
-                "dynamic_path_in_output=$1\n" +
-                "shift\n"
-            ),
             quoted_path_in_output = "" if path_in_output == None else (
                 "/" + shell.quote(path_in_output)
             ),
-            dynamic_path_in_output = "" if not dynamic_path_in_output else '/"$dynamic_path_in_output"',
         ),
         # We deliberately generate a unique output on each rebuild.
         cacheable = False,
