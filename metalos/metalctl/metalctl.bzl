@@ -24,7 +24,6 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         "//metalos/lib/systemd:systemd",
         "//metalos/lib/expand_partition:expand_partition",
         "//metalos/lib/find_root_disk:find_root_disk",
-        "//metalos/lib/generator_lib:generator_lib",
         "//metalos/lib/send_events:send_events",
         "//metalos/lib/net_utils:net_utils",
         "anyhow",  # ~9.5k, very helpful for error handling

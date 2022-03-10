@@ -11,6 +11,7 @@ metalctl(
     allocator = "malloc",
     extra_deps = [
         "//metalos/lib/netlink:netlink",
+        "//metalos/lib/systemd_generator_lib:systemd_generator_lib",
     ],
     link_style = "static",
     linker_flags = [
