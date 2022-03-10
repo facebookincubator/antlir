@@ -28,7 +28,7 @@ from typing import Iterator, List
 
 from antlir.bzl.constants import flavor_config_t
 from antlir.bzl_const import hostname_for_compiler_in_ba
-from antlir.cli import add_targets_and_outputs_arg
+from antlir.cli import add_targets_and_outputs_arg, normalize_buck_path
 from antlir.common import not_none
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
@@ -118,6 +118,7 @@ def parse_args(args) -> argparse.Namespace:
     )
     parser.add_argument(
         "--parent-layer",
+        type=normalize_buck_path,
         help="The directory of the buck image output of the parent layer. "
         "We will read the flavor from the parent layer to deduce the flavor "
         "of the child layer",
@@ -126,12 +127,13 @@ def parse_args(args) -> argparse.Namespace:
         "--profile",
         default=os.environ.get("ANTLIR_PROFILE"),
         dest="profile_dir",
-        type=Path.from_argparse,
+        type=normalize_buck_path,
         help="Profile this image build and write pstats files into the given directory.",
     )
     parser.add_argument(
         "--compiler-binary",
         required=True,
+        type=normalize_buck_path,
         help="The path to the compiler binary being invoked currently. "
         "It is used to re-invoke the compiler inside the BA container as root.",
     )
@@ -202,7 +204,7 @@ def invoke_compiler_inside_build_appliance(
     build_appliance: Subvol,
     argv: List[str],
     snapshot_dir: Path,
-    compiler_binary: str,
+    compiler_binary: Path,
     subvol_dir: str,
     debug: bool,
 ):
@@ -322,7 +324,10 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
                 layer_opts=layer_opts,
                 iter_items=gen_items_for_features(
                     exit_stack=exit_stack,
-                    features_or_paths=args.child_feature_json,
+                    features_or_paths=[
+                        normalize_buck_path(output)
+                        for output in args.child_feature_json
+                    ],
                     layer_opts=layer_opts,
                 ),
                 # use threads to speed up normal builds, but not while profiling

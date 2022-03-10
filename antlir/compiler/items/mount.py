@@ -102,7 +102,7 @@ class MountItem(ImageItem):
         if cfg is not None:
             cfg = cfg.copy()  # We must not mutate our input!
         else:
-            with open(os.path.join(target, "mountconfig.json")) as f:
+            with open(Path(target) / "mountconfig.json") as f:
                 cfg = json.load(f)
 
         default_mountpoint = cfg.pop("default_mountpoint", None)

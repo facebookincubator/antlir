@@ -104,7 +104,7 @@ class InstallFileItem(install_files_t, ImageItem):
             kwargs.pop(a, None) for a in popped_args
         )
 
-        st_source = os.stat(source, follow_symlinks=False)
+        st_source = os.stat(str(source), follow_symlinks=False)
         if stat.S_ISDIR(st_source.st_mode):
             assert mode is None, "Cannot use `mode` for directory sources."
             self._paths = tuple(

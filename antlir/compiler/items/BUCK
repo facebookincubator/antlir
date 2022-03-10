@@ -76,6 +76,7 @@ python_library(
     srcs = ["genrule_layer.py"],
     deps = [
         ":common",
+        "//antlir:fs_utils",
         "//antlir/bzl:genrule_layer.shape-python",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:rpm",

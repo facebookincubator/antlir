@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import pydantic
+from antlir.cli import normalize_buck_path
 from antlir.fs_utils import Path
 from antlir.shape import Shape
 
@@ -12,3 +14,7 @@ from antlir.shape import Shape
 class target_t(Shape):
     name: str
     path: Path
+
+    @pydantic.validator("path")
+    def normalize_path(cls, v) -> Path:  # noqa: B902 - This _is_ a class method
+        return normalize_buck_path(v)

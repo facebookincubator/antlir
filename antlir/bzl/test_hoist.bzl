@@ -30,6 +30,7 @@ def test_hoist(name):
             """
             set -eo pipefail
 
+            cd /
             mkdir test
             pushd test
 

@@ -19,8 +19,8 @@ def install_kernel_modules(kernel, module_list):
         name = kernel.uname + "-selected--modules",
         out = ".",
         cmd = """
-            mkdir -p $OUT
-            pushd $OUT 2>/dev/null
+            # Make sure the build fails if this script fails
+            set -e
 
             # copy the needed modules out of the module layer
             binary_path=( $(exe {find_built_subvol}) )
@@ -32,8 +32,8 @@ def install_kernel_modules(kernel, module_list):
                 mod_src="$mod_layer_path/kernel/$mod"
                 if [[ -f "$mod_src" ]]; then
                     mod_dir=\\$(dirname "$mod")
-                    mkdir -p "$mod_dir"
-                    cp "$mod_src" "$mod_dir"
+                    mkdir -p "$OUT/$mod_dir"
+                    cp "$mod_src" "$OUT/$mod_dir"
                 fi
             done
         """.format(

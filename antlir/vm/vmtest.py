@@ -13,7 +13,9 @@ import uuid
 from typing import Any, Dict, AsyncGenerator, List, Optional, Tuple, Union
 
 from antlir.artifacts_dir import find_buck_cell_root
+from antlir.cli import normalize_buck_path
 from antlir.common import get_logger
+from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.vm.bzl.vm import vm_opts_t
@@ -166,14 +168,14 @@ class VMTestExecOpts(VMExecOpts):
         )
         parser.add_argument(
             "--test-binary",
-            type=Path,
+            type=normalize_buck_path,
             help="Path to the actual test binary that will be invoked.  This "
             "is used to discover tests before they are executed inside the VM",
             required=True,
         )
         parser.add_argument(
             "--test-binary-wrapper",
-            type=Path,
+            type=normalize_buck_path,
             help="Path to the test binary wrapper",
             required=True,
         )
@@ -349,7 +351,8 @@ async def run(
                     # repo.  Once we have proper support for `runtime_files`
                     # this can be removed.  See here for more details:
                     # https://fburl.com/xt322rks
-                    cwd=find_buck_cell_root(path_in_repo=Path(sys.argv[0])),
+                    cwd=repo_config().repo_root
+                    / repo_config().antlir_cell_name,
                     # Always dump stderr/stdout back to the calling terminal
                     stderr=None,
                     stdout=None,

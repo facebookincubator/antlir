@@ -221,7 +221,11 @@ import pwd
 import subprocess
 from typing import AnyStr, Callable, Mapping, NamedTuple, Optional
 
-from antlir.cli import add_targets_and_outputs_arg, init_cli
+from antlir.cli import (
+    add_targets_and_outputs_arg,
+    init_cli,
+    normalize_buck_path,
+)
 from antlir.config import repo_config
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
@@ -264,7 +268,7 @@ class Sendstream(Format, format_name="sendstream"):
     """
 
     def package_full(
-        self, subvol: Subvol, output_path: str, opts: _Opts
+        self, subvol: Subvol, output_path: Path, opts: _Opts
     ) -> None:
         with create_ro(
             output_path, "wb"
@@ -284,7 +288,7 @@ class SendstreamZst(Format, format_name="sendstream.zst"):
     """
 
     def package_full(
-        self, subvol: Subvol, output_path: str, opts: _Opts
+        self, subvol: Subvol, output_path: Path, opts: _Opts
     ) -> None:
         with create_ro(output_path, "wb") as outfile, subprocess.Popen(
             ["zstd", "--stdout"],
@@ -407,7 +411,7 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
 
 
 def _bash_cmd_in_build_appliance(
-    output_path: str,
+    output_path: Path,
     opts: _Opts,
     subvol: Subvol,
     get_bash: Callable[[str, str], str],
@@ -421,9 +425,9 @@ def _bash_cmd_in_build_appliance(
     create_ro(output_path, "wb").close()  # Ensure non-root ownership
 
     work_dir = generate_work_dir()
-    output_dir = "/output"
+    output_dir = Path("/output")
     o_basepath, o_file = os.path.split(output_path)
-    image_path = os.path.join(output_dir, o_file)
+    image_path = output_dir / o_file
     cmd = [
         "/bin/bash",
         "-eux",
@@ -457,7 +461,7 @@ class VfatImage(Format, format_name="vfat"):
     """
 
     def package_full(
-        self, subvol: Subvol, output_path: str, opts: _Opts
+        self, subvol: Subvol, output_path: Path, opts: _Opts
     ) -> None:
         if opts.loopback_opts.size_mb is None:
             raise ValueError(
@@ -495,7 +499,7 @@ class Ext3Image(Format, format_name="ext3"):
     """
 
     def package_full(
-        self, subvol: Subvol, output_path: str, opts: _Opts
+        self, subvol: Subvol, output_path: Path, opts: _Opts
     ) -> None:
         if opts.loopback_opts.size_mb is None:
             raise ValueError(
@@ -596,6 +600,7 @@ def package_image(args) -> None:
         cli.parser.add_argument(
             "--output-path",
             required=True,
+            type=normalize_buck_path,
             help="Write the image package file(s) to this path. This "
             "path must not already exist.",
         )
@@ -622,7 +627,7 @@ def package_image(args) -> None:
     # Buck should remove this path if the target needs to be rebuilt.
     # This is a safety check to make sure we're not doing anything behind buck's
     # back.
-    assert not os.path.exists(cli.args.output_path)
+    assert not cli.args.output_path.exists()
 
     layer = find_built_subvol(
         cli.args.layer_path, subvolumes_dir=cli.args.subvolumes_dir

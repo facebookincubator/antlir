@@ -8,6 +8,8 @@ import pwd
 from typing import Iterable
 
 from antlir.bzl.genrule_layer import genrule_layer_t
+from antlir.config import repo_config
+from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import (
     NspawnPluginArgs,
     PopenArgs,
@@ -47,6 +49,9 @@ class GenruleLayerItem(genrule_layer_t):
                 layer=subvol,
                 snapshot=False,
                 cmd=item.cmd,
+                chdir=repo_config().repo_root
+                if repo_config().artifacts_require_repo
+                else Path("/"),
                 bindmount_ro=(
                     # The command can never change `/.meta`.
                     (subvol.path("/.meta"), "/.meta"),

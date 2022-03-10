@@ -4,7 +4,7 @@ load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file", "python_binary", "python_library", "python_unittest", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
 load("//antlir/bzl:query.bzl", "query")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -51,6 +51,7 @@ python_library(
     ],
     deps = [
         ":common",
+        ":config",
         ":fs_utils",
     ],
 )
@@ -129,7 +130,10 @@ python_library(
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
         "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
     ],
-    deps = [":find_built_subvol"],
+    deps = [
+        ":cli",
+        ":find_built_subvol",
+    ],
 )
 
 python_library(
@@ -171,6 +175,9 @@ python_unittest(
         100,
         ":unshare",
     )],
+    deps = [
+        ":unshare",
+    ],
 )
 
 python_library(
@@ -363,6 +370,9 @@ python_unittest(
     name = "test-layer-mount-config",
     srcs = ["tests/test_layer_mount_config.py"],
     needed_coverage = [(100, ":layer-mount-config-library")],
+    deps = [
+        ":layer-mount-config-library",
+    ],
 )
 
 python_unittest(
@@ -636,6 +646,16 @@ python_library(
             shape_impl = "//antlir/bzl:constants.shape",
             type_name = "repo_config_t",
         ),
+    ],
+)
+
+rust_binary(
+    name = "repo-root",
+    srcs = ["repo_root.rs"],
+    crate_root = "repo_root.rs",
+    visibility = ["PUBLIC"],
+    deps = [
+        ":find_root",
     ],
 )
 

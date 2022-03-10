@@ -175,6 +175,8 @@ python_unittest(
         "//antlir:find_built_subvol",
         "//antlir:subvol_utils",
         "//antlir:testlib_layer_resource",
+        "//antlir/bzl:genrule_layer.shape-python",
+        "//antlir/compiler/items:genrule_layer",
         "//antlir/compiler/items:make_subvol",
         "//antlir/rpm:find_snapshot",
     ],
@@ -194,6 +196,7 @@ python_unittest(
         "//antlir:common",
         "//antlir:find_built_subvol",
         "//antlir:subvol_utils",
+        "//antlir/compiler/items:ensure_dirs_exist",
     ],
 )
 
@@ -324,6 +327,7 @@ python_unittest(
         "//antlir:fs_utils",
         "//antlir/compiler/items:ensure_dirs_exist",
         "//antlir/compiler/items:install_file",
+        "//antlir/compiler/items:tarball",
     ],
 )
 

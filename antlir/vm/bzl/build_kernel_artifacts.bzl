@@ -74,9 +74,9 @@ def build_kernel_artifacts(uname, devel_rpm, headers_rpm, rpm_exploded, include_
         out = ".",
         cmd = """
             mkdir -p "$OUT/lib/modules/{uname}"
-            cd "$OUT"
-
-            cp --reflink=auto -R "$(location {rpm_exploded})/lib/modules/{uname}"/* "lib/modules/{uname}/"
+            cp --reflink=auto --recursive \
+                $(location {rpm_exploded})/lib/modules/{uname}/* \
+                "$OUT/lib/modules/{uname}/"
 
             # run depmod here so that we can include the results in the layer we build
             # from this.
@@ -84,7 +84,8 @@ def build_kernel_artifacts(uname, devel_rpm, headers_rpm, rpm_exploded, include_
 
             # if vmlinux is just 'vmlinux', copy it to be uniquely identified by its uname
             if [ -f $(location {rpm_exploded})/lib/modules/{uname}/vmlinux ]; then
-                cp $(location {rpm_exploded})/lib/modules/{uname}/vmlinux "lib/modules/{uname}/vmlinux-{uname}"
+                cp "$(location {rpm_exploded})/lib/modules/{uname}/vmlinux" \
+                    "$OUT/lib/modules/{uname}/vmlinux-{uname}"
             fi
         """.format(
             uname = uname,
