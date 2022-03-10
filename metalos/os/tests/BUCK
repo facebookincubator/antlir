@@ -11,7 +11,7 @@ export_file(
 )
 
 export_file(
-    name = "skip-network-wait.conf",
+    name = "skip-unit.conf",
     visibility = ["PUBLIC"],
 )
 
@@ -38,7 +38,8 @@ feature.new(
     name = "test-features",
     features = [
         ":mock-run-fs-control",
-        systemd.install_dropin("skip-network-wait.conf", "systemd-networkd-wait-online.service"),
+        # Otherwise systemd-networkd will wait for a non-lo link that will never come
+        systemd.install_dropin("skip-unit.conf", "systemd-networkd-wait-online.service"),
         systemd.mask_units([
             "attestd2.service",  # no tpm
             "metalos-report-boot.service",  # no network

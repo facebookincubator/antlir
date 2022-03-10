@@ -7,7 +7,7 @@ def systemd_expectations_test(name, layer, expectations):
         name = name + "--layer",
         parent_layer = layer,
         features = [
-            systemd.install_dropin("//metalos/os/tests:skip-network-wait.conf", "systemd-networkd-wait-online.service"),
+            systemd.install_dropin("//metalos/os/tests:skip-unit.conf", "systemd-networkd-wait-online.service"),
         ],
     )
     image.rust_unittest(
