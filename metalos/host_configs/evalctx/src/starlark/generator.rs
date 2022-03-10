@@ -27,6 +27,12 @@ use crate::{Error, HostIdentity, Result};
 // generator Starlark code.
 macro_rules! output_only_struct {
     ($x:ident) => {
+        // TODO(nga): this is normally done with `derive(AnyLifetime)`.
+        //   Thrift types should better be wrapped in local struct to make it possible.
+        unsafe impl starlark::values::ProvidesStaticType for $x {
+            type StaticType = $x;
+        }
+
         starlark::starlark_simple_value!($x);
         impl<'v> starlark::values::StarlarkValue<'v> for $x {
             starlark::starlark_type!(stringify!($x));
