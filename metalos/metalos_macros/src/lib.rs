@@ -21,6 +21,12 @@ pub fn derive_starlark_input(input: TokenStream) -> TokenStream {
     let name = input.ident;
 
     let expanded = quote! {
+        // TODO(nga): this is normally done with `derive(AnyLifetime)`.
+        //   Thrift types should better be wrapped in local struct to make it possible.
+        unsafe impl starlark::values::ProvidesStaticType for #name {
+            type StaticType = #name;
+        }
+
         starlark::starlark_simple_value!(#name);
         impl<'v> starlark::values::StarlarkValue<'v> for #name {
             starlark::starlark_type!(stringify!(#name));

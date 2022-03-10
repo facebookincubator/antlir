@@ -21,6 +21,7 @@ rust_library(
     deps = [
         "anyhow",
         "derive_more",
+        "gazebo",
         "handlebars",
         "once_cell",
         "serde",
