@@ -54,7 +54,10 @@ def _sign_rpm_test_file(name, filename):
         out = "signed_test.rpm",
         bash = '''
         set -ue -o pipefail
-        export GNUPGHOME=\\$(mktemp -d)
+        set -x
+        TMPGNUPGHOME=\\$(mktemp -d)
+        export GNUPGHOME=/tmp/\\$(basename $TMPGNUPGHOME)
+        ln -s $TMPGNUPGHOME $GNUPGHOME
         cp $(location :{filename}) "$OUT"
         keypair_path=$(location //antlir/rpm/tests/gpg_test_keypair:gpg-test-keypair)
         gpg --import "$keypair_path/private.key"

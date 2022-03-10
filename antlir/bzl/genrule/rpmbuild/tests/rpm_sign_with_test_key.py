@@ -14,7 +14,15 @@ def sign_with_test_key(rpm: str) -> None:
     # Since we're using a test key, create a temporary directory to house the
     # gpg configuration and trust data so as not to pollute the user's host
     # data.
-    with tempfile.TemporaryDirectory() as gnupg_home, importlib.resources.path(
+    # TODO(ls): This usage of `/tmp` for the dir is to work around an issue with
+    # gpg and buck2.  Buck2 overrides the TMPDIR variable to put tmp files in a
+    # managed location on disk, this path though can be quite long which gpg
+    # does not like and fails with:
+    #  Stderr: gpg: can't connect to the agent: File name too long
+    #
+    with tempfile.TemporaryDirectory(
+        dir="/tmp"
+    ) as gnupg_home, importlib.resources.path(
         __package__, "gpg-test-signing-key"
     ) as signing_key:
         subprocess.run(

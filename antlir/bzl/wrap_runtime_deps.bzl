@@ -5,8 +5,8 @@
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load(":constants.bzl", "REPO_CFG")
-load(":oss_shim.bzl", "buck_genrule", "get_visibility")
-load(":target_helpers.bzl", "wrap_target")
+load(":oss_shim.bzl", "buck_genrule", "get_visibility", "is_buck2")
+load(":target_helpers.bzl", "antlir_dep", "wrap_target")
 
 def _maybe_wrap_runtime_deps_as_build_time_deps(
         name,
@@ -136,7 +136,8 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
         return False, target
 
     # Note:  Notice here that we are using the `$(exe_target ...)` macro
-    # instead of just plain old `$(exe ...)`.  The behavior difference is
+    # instead of just plain old `$(exe ...)` when invoking the wrapped target
+    # binary.  The behavior difference is
     # that buck will compile the resolved target path against the
     # `target platform` when using `$(exe_target ...)` vs using the
     # `host platform` when using `$(exe ...)`.  This matters here
@@ -156,14 +157,44 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
     buck_genrule(
         name = name,
         bash = '''
-cat >> "$TMP/out" <<'EOF'
-#!/bin/sh
-exec $(exe_target {target_to_wrap}){quoted_path_in_output} "$@"
+# This needs to be first to ensure it is the first line when the preamble is used
+echo "#!/bin/sh" > "$TMP/out"
+{maybe_repo_root_preamble}
+cat >> "$TMP/out" << 'EOF'
+exec {maybe_repo_root_prefix}$(exe_target {target_to_wrap}){quoted_path_in_output} "$@"
 EOF
 echo "# New output each build: \\$(date) $$ $PID $RANDOM $RANDOM" >> "$TMP/out"
 chmod a+rx "$TMP/out"
 mv "$TMP/out" "$OUT"
         '''.format(
+            # The preamble is inserted as part of the genrule script itself
+            # as opposed to the script the genule is creating.  This is used
+            # to discover the repository root dynamically during build time
+            # to build a full ABS path to the executable when using buck2.
+            # At first glance it would appear that we should just be
+            # able to use `realpath` to find the ABS path of the
+            # $(exe_target ..). That turned out to be fragile for
+            # two reasons:
+            #   - It relies on buck/buck2 to execute the construction of the
+            #     genrule with a cwd of the repository root.  While this is
+            #     currently the case as of this commit, it has changed
+            #     multiple times in the recent past for buck2.  This approach
+            #     makes the cwd irrelevant.
+            #   - buck (v1) resolves certain binary types (looking at you python)
+            #     via $(exe_target ...) as a full path + additional args, which
+            #     means that the bash would have to parse it to get the path of
+            #     the _actual_ buck runnable.  That is a nightmare.
+            maybe_repo_root_preamble = """
+                binary_path=( $(exe {repo_root}))
+                repo_root=\\$( $binary_path )
+                echo "REPO_ROOT=$repo_root" >> "$TMP/out"
+            """.format(
+                repo_root = antlir_dep(":repo-root"),
+            ) if is_buck2() else "",
+            # The prefix is inserted into the generated script so that at
+            # runtime the repository root which is discovered at build time is
+            # properly expanded.
+            maybe_repo_root_prefix = "$REPO_ROOT/" if is_buck2() else "",
             target_to_wrap = target,
             quoted_path_in_output = "" if path_in_output == None else (
                 "/" + shell.quote(path_in_output)

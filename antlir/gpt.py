@@ -15,6 +15,7 @@ import subprocess
 from enum import Enum
 
 from antlir.bzl.gpt import gpt_t
+from antlir.cli import normalize_buck_path
 from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 
@@ -42,6 +43,7 @@ def parse_args(argv):
     parser.add_argument(
         "--output-path",
         required=True,
+        type=normalize_buck_path,
         help="Write the GPT disk image to this path -- must not exist",
     )
     parser.add_argument(

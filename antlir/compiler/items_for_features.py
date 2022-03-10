@@ -91,7 +91,9 @@ def gen_included_features(
     features_ctx: GenFeaturesContext,
 ):
     for feature_or_path in features_or_paths:
-        if isinstance(feature_or_path, str):
+        if isinstance(feature_or_path, Path) or isinstance(
+            feature_or_path, str
+        ):
             with open(feature_or_path) as f:
                 items = replace_targets_by_paths(json.load(f), features_ctx)
         else:
@@ -161,7 +163,7 @@ class ItemFactory:
 def gen_items_for_features(
     *,
     exit_stack,
-    features_or_paths: Iterable[Union[str, dict]],
+    features_or_paths: Iterable[Union[str, dict, Path]],
     layer_opts: LayerOpts,
 ):
     factory = ItemFactory(exit_stack, layer_opts)

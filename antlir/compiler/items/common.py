@@ -32,6 +32,7 @@ from typing import (
 )
 
 from antlir.compiler import procfs_serde
+from antlir.config import repo_config
 from antlir.fs_utils import META_DIR, META_FLAVOR_FILE, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
@@ -362,7 +363,8 @@ def _generate_file(
     # filesystem writes.  At the moment, we trust rule authors not to abuse
     # this feature and write stuff outside the given directory.
     output_filename = subprocess.check_output(
-        [generator, *generator_args, temp_dir]
+        [generator, *generator_args, temp_dir],
+        cwd=repo_config().repo_root,
     ).decode()
     assert output_filename.endswith("\n"), (generator, output_filename)
     output_filename = os.path.normpath(output_filename[:-1])
@@ -402,7 +404,7 @@ def _make_image_source_item(
     exit_stack,
     layer_opts: LayerOpts,
     *,
-    source: Optional[Mapping[str, str]],
+    source: Optional[Mapping[str, Path]],
     **kwargs,
 ):
     if source is None:

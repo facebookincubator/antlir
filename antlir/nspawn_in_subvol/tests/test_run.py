@@ -431,6 +431,7 @@ class NspawnTestCase(NspawnTestBase):
         self.assertTrue(os.path.exists(dest_subvol.path("/bin/bash")))
 
     def test_bind_repo(self):
+        repo_config = _unmemoized_repo_config()
         self._nspawn_in(
             (__package__, "test-layer"),
             [
@@ -439,7 +440,8 @@ class NspawnTestCase(NspawnTestBase):
                 "grep",
                 "supercalifragilisticexpialidocious",
                 (
-                    find_buck_cell_root().realpath()
+                    repo_config.repo_root
+                    / repo_config.antlir_cell_name
                     / "antlir/nspawn_in_subvol/tests"
                     / os.path.basename(__file__)
                 ),

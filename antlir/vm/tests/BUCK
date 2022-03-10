@@ -103,6 +103,7 @@ python_unittest(
         ":create-kernel-panic=vmtest": "create-kernel-panic",
     },
     deps = [
+        ":create-kernel-panic",
         "//antlir:fs_utils",
         "//antlir:testlib_common",
         "//antlir/nspawn_in_subvol:common",

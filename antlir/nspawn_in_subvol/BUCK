@@ -28,6 +28,9 @@ python_unittest(
     name = "test-common",
     srcs = ["tests/test_common.py"],
     needed_coverage = [(100, ":common")],
+    deps = [
+        ":common",
+    ],
 )
 
 # Gets test coverage via `:test-run`

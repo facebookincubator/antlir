@@ -7,6 +7,7 @@
 import importlib.resources
 from typing import AnyStr
 
+from antlir.cli import normalize_buck_path
 from antlir.find_built_subvol import Subvol, find_built_subvol
 from antlir.fs_utils import Path
 
@@ -22,7 +23,7 @@ def layer_resource_subvol(package: AnyStr, name: AnyStr) -> Subvol:
 
 def layer_resource(package: AnyStr, name: AnyStr) -> Path:
     "Like `layer_resource_subvol`, but for the `buck-out` layer artifact."
-    return Path(
+    return normalize_buck_path(
         importlib.resources.read_text(
             # pyre-fixme[6]: Expected `Union[str, types.ModuleType]` for 1st
             # param but got `AnyStr`.

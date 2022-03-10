@@ -10,14 +10,27 @@ import json
 import os
 import sys
 from contextlib import contextmanager
-from typing import AnyStr, Iterable, Iterator, Mapping, Optional
+from typing import AnyStr, Iterable, Iterator, Mapping, Optional, Union
 
 from antlir.common import init_logging
+from antlir.config import repo_config
 from antlir.fs_utils import Path, MehStr
 
 
+def normalize_buck_path(bucked: Union[MehStr, Path]) -> Path:
+    parsed = Path.from_argparse(str(bucked))
+    if not parsed.startswith(b"/"):
+        parsed = repo_config().repo_root / parsed
+    return parsed
+
+
 def _load_targets_and_outputs(arg: AnyStr) -> Mapping[AnyStr, Path]:
-    return json.loads(Path(arg).read_text())
+    return {
+        target: normalize_buck_path(output)
+        for target, output in json.loads(
+            normalize_buck_path(arg).read_text()
+        ).items()
+    }
 
 
 def add_targets_and_outputs_arg(
