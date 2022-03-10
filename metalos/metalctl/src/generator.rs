@@ -15,12 +15,12 @@ use structopt::StructOpt;
 
 use crate::kernel_cmdline::{MetalosCmdline, Root};
 use crate::switch_root::ROOTDISK_DIR;
-use generator_lib::{
+use net_utils::get_mac;
+use systemd::render::{MountSection, NetworkUnit, NetworkUnitMatchSection, UnitSection};
+use systemd_generator_lib::{
     materialize_boot_info, Dropin, Environment, ExtraDependencies, ExtraDependency, MountUnit,
     ROOTDISK_MOUNT_SERVICE,
 };
-use net_utils::get_mac;
-use systemd::render::{MountSection, NetworkUnit, NetworkUnitMatchSection, UnitSection};
 
 // WARNING: keep in sync with the bzl/TARGETS file unit
 const ETH_NETWORK_UNIT_FILENAME: &str = "50-eth.network";
@@ -408,7 +408,7 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::time::SystemTime;
 
-    use generator_lib::ENVIRONMENT_FILENAME;
+    use systemd_generator_lib::ENVIRONMENT_FILENAME;
 
     fn setup_generator_test(name: &'static str) -> Result<(Logger, PathBuf, Opts, String)> {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());

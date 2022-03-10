@@ -108,8 +108,8 @@ pub async fn fetch_images(log: Logger, config: crate::Config, opts: Opts) -> Res
         let root_subvol = root_subvol.context("while downloading rootfs")?;
         let kernel_subvol = kernel_subvol.context("while downloading kernel")?;
 
-        // TODO: onboard this to generator_lib if there is more than one thing that
-        // needs to be included here
+        // TODO: onboard this to systemd_generator_lib if there is more than one
+        // thing that needs to be included here
         std::fs::write(
             "/run/metalos/image_paths_environment",
             format!(

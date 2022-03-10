@@ -3,8 +3,8 @@
 load("//metalos:defs.bzl", "rust_library")
 
 rust_library(
-    name = "generator_lib",
-    srcs = ["src/generator_lib.rs"],
+    name = "systemd_generator_lib",
+    srcs = ["src/systemd_generator_lib.rs"],
     test_deps = [
         "maplit",
         "slog_glog_fmt",
