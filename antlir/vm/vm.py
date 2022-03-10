@@ -361,6 +361,7 @@ async def vm(
     logger.debug(
         f"Starting custom sidecars {opts.runtime.sidecar_services} before QEMU"
     )
+
     sidecar_procs.extend(
         await asyncio.gather(
             # Execing in the shell is not the safest thing, but it makes it easy
@@ -369,7 +370,12 @@ async def vm(
             # expansion of `python_binary` rules into `python3 -Es $par`
             *(
                 create_sidecar_subprocess(
-                    *ns.nsenter_as_user("/bin/sh", "-c", sidecar)
+                    *ns.nsenter_as_user(
+                        "/bin/sh",
+                        "-c",
+                        sidecar,
+                    ),
+                    cwd=repo_config().repo_root,
                 )
                 for sidecar in opts.runtime.sidecar_services
             )
