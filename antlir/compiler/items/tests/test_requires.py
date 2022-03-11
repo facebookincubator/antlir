@@ -16,7 +16,7 @@ from .common import BaseItemTestCase
 
 
 class BuckRequiresTest(BaseItemTestCase):
-    def test_user_groups_files(self):
+    def test_user_groups_files(self) -> None:
         self._check_item(
             RequiresItem(
                 from_target="t",

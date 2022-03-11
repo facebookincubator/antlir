@@ -31,7 +31,7 @@ DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(
 
 
 class SymlinkItemsTestCase(BaseItemTestCase):
-    def test_symlink(self):
+    def test_symlink(self) -> None:
         self._check_item(
             SymlinkToDirItem(from_target="t", source="x", dest="y"),
             {ProvidesSymlink(path=Path("y"), target=Path("x"))},
@@ -57,7 +57,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
         )
 
     @with_mocked_temp_volume_dir
-    def test_symlink_idempotent(self):
+    def test_symlink_idempotent(self) -> None:
         with TempSubvolumes() as ts:
             sv = ts.create("test")
             sv.run_as_root(["touch", sv.path("a")])
@@ -77,7 +77,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             )
 
     @with_mocked_temp_volume_dir
-    def test_symlink_already_exists(self):
+    def test_symlink_already_exists(self) -> None:
         with TempSubvolumes() as ts:
             sv = ts.create("test")
             sv.run_as_root(["touch", sv.path("a")])
@@ -91,7 +91,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 )
 
     @with_mocked_temp_volume_dir
-    def test_symlink_already_matches(self):
+    def test_symlink_already_matches(self) -> None:
         with TempSubvolumes() as ts:
             sv = ts.create("test")
             sv.run_as_root(["touch", sv.path("a")])
@@ -102,7 +102,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             )
 
     @with_mocked_temp_volume_dir
-    def test_symlink_already_exists_different_source(self):
+    def test_symlink_already_exists_different_source(self) -> None:
         with TempSubvolumes() as ts:
             sv = ts.create("test")
             sv.run_as_root(["touch", sv.path("a")])
@@ -118,7 +118,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 )
 
     @with_mocked_temp_volume_dir
-    def _test_symlink_command(self, layer_opts):
+    def _test_symlink_command(self, layer_opts) -> None:
         with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("tar-sv")
             subvol.run_as_root(["mkdir", subvol.path("dir")])
@@ -185,8 +185,8 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 render_subvol(subvol),
             )
 
-    def test_symlink_command_non_ba(self):
+    def test_symlink_command_non_ba(self) -> None:
         self._test_symlink_command(DUMMY_LAYER_OPTS)
 
-    def test_symlink_command_ba(self):
+    def test_symlink_command_ba(self) -> None:
         self._test_symlink_command(DUMMY_LAYER_OPTS_BA)
