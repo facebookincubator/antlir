@@ -29,7 +29,7 @@ DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(
 
 class RemovePathItemTestCase(BaseItemTestCase):
     @with_mocked_temp_volume_dir
-    def test_remove_item(self):
+    def test_remove_item(self) -> None:
         with TempSubvolumes() as temp_subvolumes, tempfile.NamedTemporaryFile() as empty_tf:  # noqa: E501
             subvol = temp_subvolumes.create("remove_action")
             self.assertEqual(["(Dir)", {}], render_subvol(subvol))
@@ -198,7 +198,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
                 render_subvol(subvol),
             )
 
-    def test_remove_path_item_sort_order(self):
+    def test_remove_path_item_sort_order(self) -> None:
         self.assertEqual(
             [
                 RemovePathItem(path="a", must_exist=False),
