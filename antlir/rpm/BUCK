@@ -47,6 +47,9 @@ python_unittest(
     name = "test-find-snapshot",
     srcs = ["tests/test_find_snapshot.py"],
     needed_coverage = [(100, ":find_snapshot")],
+    deps = [
+        ":find_snapshot",
+    ],
 )
 
 python_library(
