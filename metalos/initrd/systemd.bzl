@@ -33,6 +33,7 @@ TARGETS = [
 UNITS = [
     "dbus.service",
     "dbus.socket",
+    "debug-shell.service",
     "emergency.service",
     "initrd-cleanup.service",
     "initrd-udevadm-cleanup-db.service",
