@@ -1,0 +1,9 @@
+[Unit]
+Description=Root Subvol Layout
+After=local-fs.target
+DefaultDependencies=no
+
+[Mount]
+Where=/rootdisk
+What=LABEL=/
+Options=subvol=/volume
