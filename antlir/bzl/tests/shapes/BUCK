@@ -201,6 +201,9 @@ python_unittest(
     needed_coverage = [
         (100, ":shape_bzl"),
     ],
+    deps = [
+        ":shape_bzl",
+    ],
 )
 
 rust_unittest(
