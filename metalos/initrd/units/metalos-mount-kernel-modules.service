@@ -6,6 +6,5 @@ After=metalos-snapshot-root.service
 EnvironmentFile=/run/systemd/generator/metalos_environment
 EnvironmentFile=/run/metalos/image_paths_environment
 Type=oneshot
-RemainAfterExit=true
 ExecStart=mkdir -p ${METALOS_CURRENT_BOOT_DIR}/usr/lib/modules/%v
 ExecStart=mount --bind ${METALOS_KERNEL_VOLUME} ${METALOS_CURRENT_BOOT_DIR}/usr/lib/modules/%v
