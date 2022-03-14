@@ -48,7 +48,7 @@ default value in the flavor with custom ones.
 ```
 image.layer(
     flavor = "your_flavor_here",
-    flavor_config_overrides = image.opts(
+    flavor_config_override = image.opts(
         build_appliance = "//your/override/build/appliance",
         rpm_version_set_overrides = [
             image.rpm.nevra(
