@@ -3,6 +3,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//metalos:defs.bzl", "rust_library")
 load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
@@ -12,6 +13,10 @@ image.layer(
     features = [
         # otherwise we have to wait for this to timeout
         systemd.mask_units(["systemd-networkd-wait-online.service"]),
+        # The rootdisk.mount unit will not work in a container
+        # test so lets remove it.
+        feature.remove("/usr/lib/systemd/system/rootdisk.mount"),
+        feature.remove("/usr/lib/systemd/system/basic.target.requires/rootdisk.mount"),
     ],
 )
 
