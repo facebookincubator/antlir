@@ -18,7 +18,9 @@ use starlark::values::dict::DictOf;
 use starlark::values::docs::DocItem;
 use starlark::values::function::NativeFunction;
 use starlark::values::structs::StructGen;
-use starlark::values::{AllocValue, StarlarkValue, StringValue, UnpackValue, Value, ValueLike};
+use starlark::values::{
+    AllocValue, NoSerialize, StarlarkValue, StringValue, UnpackValue, Value, ValueLike,
+};
 use starlark::{starlark_module, starlark_simple_value, starlark_type};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -137,7 +139,7 @@ impl<'v> TryToField for Value<'v> {
     }
 }
 
-#[derive(Debug, Clone, Display, AnyLifetime)]
+#[derive(Debug, Clone, Display, AnyLifetime, NoSerialize)]
 #[display(fmt = "{:?}", self)]
 #[repr(transparent)]
 struct StarlarkField(ir::Field);
