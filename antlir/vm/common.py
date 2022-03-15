@@ -80,6 +80,8 @@ class SidecarProcess:
 async def create_sidecar_subprocess(
     program: str, *args, stdin=None, stdout=None, stderr=None, **kwargs
 ) -> SidecarProcess:
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
     # NOTE(aeh): in order to end all the process tree for the sidecars,
     # the exec below sets each one as a process group leader; the kill
     # then sends the signal to all of the children that the sidecar
@@ -91,6 +93,7 @@ async def create_sidecar_subprocess(
         stdin=stdin,
         stdout=stdout,
         stderr=stderr,
+        env=env,
         **kwargs,
     )
 

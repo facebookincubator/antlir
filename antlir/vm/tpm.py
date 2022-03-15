@@ -30,12 +30,15 @@ class TPMError(Exception):
 # The wait method here is marked async for the same reason.
 class PseudoAsyncProcess(SidecarProcess):
     def __init__(self, args: List[Union[str, bytes]]):
+        env = os.environ.copy()
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
         proc = subprocess.Popen(
             args,
             preexec_fn=os.setpgrp,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
             text=True,
+            env=env,
         )
         super().__init__(proc)
 
