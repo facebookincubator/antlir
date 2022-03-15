@@ -140,6 +140,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct DbusService<T> {
     log: Logger,
     proxy: T,
