@@ -35,6 +35,7 @@ def _rust_common(
         unittest_opts = None,
         deps = (),
         test_deps = (),
+        test_env = None,
         tests = (),
         features = (),
         vm_opts = (),
@@ -75,6 +76,8 @@ def _rust_common(
     test_kwargs.pop("allocator", None)
     test_kwargs.pop("linker_flags", None)
     test_kwargs.pop("proc_macro", None)
+    if test_env:
+        test_kwargs["env"] = test_env
 
     srcs = list(srcs)
     test_srcs = list(test_srcs) if test_srcs else []
