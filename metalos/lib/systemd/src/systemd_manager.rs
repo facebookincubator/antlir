@@ -18,7 +18,16 @@ use crate::dbus_types::*;
 use crate::system_state::SystemState;
 use systemd_macros::{SystemdEnum, TransparentZvariant};
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, TransparentZvariant)]
+#[derive(
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Clone,
+    TransparentZvariant
+)]
 pub struct UnitName(String);
 
 impl AsRef<Path> for UnitName {
@@ -27,7 +36,7 @@ impl AsRef<Path> for UnitName {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone, TransparentZvariant)]
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, TransparentZvariant)]
 pub struct JobId(u32);
 
 /// Install state of a unit file.
@@ -338,6 +347,8 @@ pub enum LoadState {
     Error,
     /// Unit is currently masked (i.e. symlinked to /dev/null or empty)
     Masked,
+    /// Unit file does not exist (and possibly never did)
+    NotFound,
     Unknown(String),
 }
 
@@ -409,7 +420,7 @@ trait Manager {
     #[dbus_proxy(name = "DisableUnitFilesWithFlags")]
     fn disable_unit_files(
         &self,
-        files: &[&FilePath],
+        units: &[&UnitName],
         flags: EnableDisableUnitFlags,
     ) -> zbus::Result<Vec<UnitFileChange>>;
 
@@ -424,7 +435,7 @@ trait Manager {
     #[dbus_proxy(name = "EnableUnitFilesWithFlags")]
     fn enable_unit_files(
         &self,
-        files: &[&FilePath],
+        files: &[&UnitName],
         flags: EnableDisableUnitFlags,
     ) -> zbus::Result<(bool, Vec<UnitFileChange>)>;
 

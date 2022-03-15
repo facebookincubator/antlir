@@ -7,7 +7,9 @@
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -280,7 +282,27 @@ impl<T> PartialEq for TypedObjectPath<T> {
     }
 }
 
+impl<T> PartialEq<zvariant::OwnedObjectPath> for TypedObjectPath<T> {
+    fn eq(&self, other: &zvariant::OwnedObjectPath) -> bool {
+        &self.0 == other
+    }
+}
+
 impl<T> Eq for TypedObjectPath<T> {}
+
+impl<T> Hash for TypedObjectPath<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
+
+impl<T> Deref for TypedObjectPath<T> {
+    type Target = zvariant::OwnedObjectPath;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl<T> Type for TypedObjectPath<T> {
     fn signature() -> Signature<'static> {
