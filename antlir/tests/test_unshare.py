@@ -97,7 +97,9 @@ class UnshareTestCase(unittest.TestCase):
 
             self._check_ns_diff(unshare, {"pid"})
 
-        self.assertEqual(-signal.SIGKILL, proc.poll())  # Reaped by PID NS
+        self.assertEqual(
+            -signal.SIGKILL, proc.wait(timeout=30)
+        )  # Reaped by PID NS
 
     def test_pid_namespace_dead_keepalive(self) -> None:
         with Unshare([Namespace.PID]) as unshare:
