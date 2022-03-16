@@ -21,7 +21,7 @@ use std::marker::PhantomData;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use uuid::Uuid;
@@ -29,12 +29,19 @@ use uuid::Uuid;
 /// MetalOS internal state goes here
 static METALOS_STATE_BASE: &str = "/run/fs/control/run/state/metalos";
 
+/// Special UUID for the "staged" value which holds special meaning
+/// c4dbff2e-2c0a-4e35-85a2-2ccb7dd8d8a9
+static UUID_STAGED: Uuid = Uuid::from_u128(261670975858436844194139735623489607849);
+/// Special UUID for the "current" value which holds special meaning
+/// 80e27f0c-75dd-4855-9ada-addea2d90a1b
+static UUID_CURRENT: Uuid = Uuid::from_u128(171317219403732977053801729476395600411);
+
 pub trait State = DeserializeOwned + Serialize;
 
 #[derive(PartialEq, Eq)]
 /// Unique reference to a piece of state of a specific type. Can be used to
 /// retrieve the state from disk via [load]
-pub struct Token<S>(String, PhantomData<S>)
+pub struct Token<S>(Uuid, PhantomData<S>)
 where
     S: State;
 
@@ -43,9 +50,11 @@ where
     S: State,
 {
     fn clone(&self) -> Token<S> {
-        Token::new(self.0.clone())
+        Token::new(self.0)
     }
 }
+
+impl<S> Copy for Token<S> where S: State {}
 
 impl<S> std::fmt::Debug for Token<S>
 where
@@ -64,12 +73,35 @@ where
     S: State,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}::{}", &std::any::type_name::<S>(), self.0)
+        write!(f, "{}::{}", &std::any::type_name::<S>(), self.0.to_simple())
     }
 }
 
 unsafe impl<S> Send for Token<S> where S: State {}
 unsafe impl<S> Sync for Token<S> where S: State {}
+
+impl<S> std::str::FromStr for Token<S>
+where
+    S: State,
+{
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let (ty, uuid) = s
+            .rsplit_once("::")
+            .with_context(|| format!("'{}' missing '::' separator", s))?;
+        ensure!(
+            ty == std::any::type_name::<S>(),
+            "expected type '{}', got '{}'",
+            std::any::type_name::<S>(),
+            ty
+        );
+        let uuid: Uuid = uuid
+            .parse()
+            .with_context(|| format!("'{}' is not a valid uuid", uuid))?;
+        Ok(Self(uuid, PhantomData))
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 /// There are a few special cased tokens that hold meaning in MetalOS.
@@ -85,13 +117,10 @@ impl Alias {
     where
         S: State,
     {
-        Token::new(
-            match self {
-                Self::Current => "current",
-                Self::Staged => "staged",
-            }
-            .to_string(),
-        )
+        Token::new(match self {
+            Self::Current => UUID_CURRENT,
+            Self::Staged => UUID_STAGED,
+        })
     }
 }
 
@@ -99,8 +128,8 @@ impl<S> Token<S>
 where
     S: State,
 {
-    fn new(key: String) -> Self {
-        Self(key, PhantomData)
+    fn new(uuid: Uuid) -> Self {
+        Self(uuid, PhantomData)
     }
 
     fn path(&self) -> PathBuf {
@@ -126,7 +155,7 @@ where
     ///
     /// See also [commit](Token::commit).
     pub fn stage(&self) -> Result<()> {
-        alias(self, Alias::Staged)
+        alias(*self, Alias::Staged)
     }
 
     /// Mark this token as the current version of a state item.
@@ -135,7 +164,7 @@ where
     /// [stage](Token::stage) and [commit](Token::commit) hold special meaning
     /// and can be used to retrieve states without knowing the unique [Token].
     pub fn commit(&self) -> Result<()> {
-        alias(self, Alias::Current)
+        alias(*self, Alias::Current)
     }
 }
 
@@ -145,7 +174,7 @@ pub fn save<S>(state: S) -> Result<Token<S>>
 where
     S: State,
 {
-    let token = Token::new(Uuid::new_v4().to_string());
+    let token = Token::new(Uuid::new_v4());
     let p = token.path();
     let mut f = File::create(&p).with_context(|| format!("while creating {}", p.display()))?;
     serde_json::to_writer(&mut f, &state)
@@ -155,7 +184,7 @@ where
 
 /// Save this specific token as a special [Alias]. If this alias already exists,
 /// it will be replaced.
-fn alias<S>(token: &Token<S>, alias: Alias) -> Result<()>
+fn alias<S>(token: Token<S>, alias: Alias) -> Result<()>
 where
     S: State,
 {
@@ -177,7 +206,7 @@ where
 }
 
 /// Load a specific version of a state type, using the key returned by [save]
-pub fn load<S>(token: &Token<S>) -> Result<Option<S>>
+pub fn load<S>(token: Token<S>) -> Result<Option<S>>
 where
     S: State,
 {
@@ -206,19 +235,49 @@ mod tests {
         hello: String,
     }
 
+    #[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
+    struct Other {
+        goodbye: String,
+    }
+
+    #[test]
+    fn parse() -> Result<()> {
+        assert_eq!(
+            Token::new("0e2d4f4a-b09b-4a55-b6fd-fd57a60b9de8".parse().unwrap()),
+            "state::tests::ExampleState::0e2d4f4a-b09b-4a55-b6fd-fd57a60b9de8"
+                .parse::<Token<ExampleState>>()
+                .unwrap()
+        );
+        assert_eq!(
+            "expected type 'state::tests::Other', got 'state::tests::ExampleState'",
+            "state::tests::ExampleState::0e2d4f4a-b09b-4a55-b6fd-fd57a60b9de8"
+                .parse::<Token<Other>>()
+                .unwrap_err()
+                .to_string()
+        );
+        assert_eq!(
+            "'not-a-uuid' is not a valid uuid",
+            "state::tests::ExampleState::not-a-uuid"
+                .parse::<Token<ExampleState>>()
+                .unwrap_err()
+                .to_string()
+        );
+        Ok(())
+    }
+
     #[containertest]
     fn current() -> Result<()> {
         std::fs::create_dir_all(METALOS_STATE_BASE)?;
         let current: Option<ExampleState> =
-            load(&Token::current()).context("while loading non-existent current")?;
+            load(Token::current()).context("while loading non-existent current")?;
         assert_eq!(None, current);
         let token = save(ExampleState {
             hello: "world".into(),
         })
         .context("while saving")?;
-        alias(&token, Alias::Current).context("while writing current alias")?;
+        alias(token, Alias::Current).context("while writing current alias")?;
         let current_token = Token::current();
-        let current = load(&current_token).context("while loading current")?;
+        let current = load(current_token).context("while loading current")?;
         assert_eq!(
             Some(ExampleState {
                 hello: "world".into()
@@ -235,7 +294,7 @@ mod tests {
             hello: "world".into(),
         })
         .context("while saving")?;
-        let loaded = load(&token).context("while loading current")?;
+        let loaded = load(token).context("while loading current")?;
         assert_eq!(
             Some(ExampleState {
                 hello: "world".into()
