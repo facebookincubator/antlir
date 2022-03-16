@@ -42,3 +42,18 @@ safe transient server exception DownloadError {
 struct Manifest {
   1: list<Image> images;
 } (rust.exhaustive)
+
+// A service is composed of a service image containing the binary and any
+// supporting files, and a config override package to apply.
+struct Service {
+  1: package_manifest.Image image;
+  2: package_manifest.Image config;
+} (rust.exhaustive)
+
+struct Images {
+  // Full set of images that should be downloaded on the host
+  1: package_manifest.Manifest manifest;
+  2: package_manifest.Image rootfs;
+  3: package_manifest.Image kernel;
+  4: list<Service> services;
+} (rust.exhaustive)

@@ -10,13 +10,6 @@ include "metalos/host_configs/package_manifest.thrift"
 namespace cpp2 metalos.host_configs
 namespace py3 metalos.host_configs
 
-// A service is composed of a service image containing the binary and any
-// supporting files, and a config override package to apply.
-struct Service {
-  1: package_manifest.Image image;
-  2: package_manifest.Image config;
-} (rust.exhaustive)
-
 // Define the acceptable levels of disruptiveness that are allowed during a
 // config application. MetalOS can compare this with the set of necessary
 // changes in a new Config to determine if the update is safe or not.
@@ -39,18 +32,10 @@ enum DisruptivenessAllowed {
   FullyDown = 1000,
 }
 
-struct Images {
-  // Full set of images that should be downloaded on the host
-  1: package_manifest.Manifest manifest;
-  2: package_manifest.Image rootfs;
-  3: package_manifest.Image kernel;
-  4: list<Service> services;
-} (rust.exhaustive)
-
 // Describes the complete set of software that should be running on a host, as
 // well as any config data that must change during the host's lifecycle.
 struct RuntimeConfig {
-  1: Images images;
+  1: package_manifest.Images images;
   2: string root_pw_hash;
 } (rust.exhaustive)
 
