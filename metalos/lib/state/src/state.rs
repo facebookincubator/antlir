@@ -27,7 +27,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 /// MetalOS internal state goes here
-static METALOS_STATE_BASE: &str = "/rootdisk/run/state/metalos";
+static METALOS_STATE_BASE: &str = "/run/fs/control/run/state/metalos";
 
 pub trait State = DeserializeOwned + Serialize;
 
