@@ -138,3 +138,6 @@ def rust_unittest(name, srcs, deps, **kwargs):
         deps = deps,
         **kwargs
     )
+
+def default_test_layer():
+    return shape.new(container_unittest_opts_t).layer
