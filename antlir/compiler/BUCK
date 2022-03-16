@@ -5,6 +5,8 @@
 
 load("//antlir/bzl:oss_shim.bzl", "python_library")
 
+facebook = glob(["facebook/*"])
+
 python_library(
     name = "subvolume_on_disk",
     srcs = ["subvolume_on_disk.py"],
@@ -58,5 +60,7 @@ python_library(
         "//antlir:errors",
         "//antlir:fs_utils",
         "//antlir/bzl:constants.shape-python",
-    ],
+    ] + ([
+        "//rfe/scubadata:scubadata_py3",
+    ] if facebook else []),
 )
