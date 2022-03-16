@@ -1,0 +1,7 @@
+[Unit]
+Description=demo service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/bin/demo --run="${RUNTIME_DIRECTORY}" --state="${STATE_DIRECTORY}" --cache="${CACHE_DIRECTORY}" --logs="${LOGS_DIRECTORY}"
