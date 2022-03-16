@@ -136,6 +136,11 @@ def _third_party_libraries(names, platform = None):
         for name in names
     ]
 
+def rust_python_extension(*args, **kwargs):
+    if not kwargs.get("types", []):
+        fail("rust_python_extension is taking a step backwards without pyre")
+    shim.rust_python_extension(*args, **kwargs)
+
 buck_command_alias = shim.buck_command_alias
 buck_filegroup = shim.buck_filegroup
 buck_genrule = shim.buck_genrule
@@ -155,7 +160,6 @@ repository_name = shim.repository_name
 rust_binary = shim.rust_binary
 rust_bindgen_library = shim.rust_bindgen_library
 rust_library = shim.rust_library
-rust_python_extension = shim.rust_python_extension
 rust_unittest = shim.rust_unittest
 target_utils = shim.target_utils
 third_party = struct(

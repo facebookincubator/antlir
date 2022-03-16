@@ -3,6 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import traceback
+from typing import List
+
 
 class UserError(Exception):
     """A user-understandable Antlir error.
@@ -23,3 +26,20 @@ class ToolMissing(Exception):
     def __init__(self, tool):
         self.tool = tool
         super().__init__(f"Missing tool '{tool}'")
+
+
+class SerializedException(Exception):
+    exception: Exception
+    traceback: List[str]
+
+    def __init__(self, exception: Exception, traceback: List[str]):
+        self.exception = exception
+        self.traceback = traceback
+        super().__init__(self.exception, self.traceback)
+
+
+def serialize_exception(e: Exception) -> SerializedException:
+    return SerializedException(
+        exception=e,
+        traceback=[l.rstrip() for l in traceback.format_tb(e.__traceback__)],
+    )
