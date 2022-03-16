@@ -25,9 +25,7 @@ thrift_library(
         ],
         platform = "rust",
     ),
-    rust_features = [
-        # @oss-disable: "facebook", 
-    ],
+    rust_features = ["facebook"] if facebook else [],
     rust_include_srcs = ["host_thrift.rs"],
     rust_unittests = True,
     thrift_rust_options = "serde",
@@ -39,6 +37,7 @@ thrift_library(
         ":runtime-config",
     ] + [
         "//metalos/host_configs/facebook:host-facebook",
+        "//metalos/host_configs/facebook/proxy/if:config_provider",
     ] if facebook else [],
 )
 
@@ -89,5 +88,7 @@ thrift_library(
     ],
     deps = [
         ":package-manifest",
-    ],
+    ] + [
+        "//metalos/host_configs/facebook/proxy/if:config_provider",
+    ] if facebook else [],
 )

@@ -15,6 +15,7 @@ namespace cpp2 metalos.host_configs
 namespace py3 metalos.host_configs
 
 // @oss-disable: include "metalos/host_configs/facebook/host.thrift"
+// @oss-disable: include "metalos/host_configs/facebook/proxy/if/ConfigProvider.thrift"
 
 include "metalos/host_configs/runtime_config.thrift"
 
@@ -27,7 +28,8 @@ struct HostConfig {
 // ProvisioningConfig contains immutable host identity information, and anything
 // else required for provisioning a box.
 struct ProvisioningConfig {
-  1: HostIdentity identity;
+  // @oss-disable: 1: ConfigProvider.DeploymentProvisioningConfig deployment_specific;
+  2: HostIdentity identity;
 } (rust.exhaustive)
 
 // HostIdentity is the main entrypoint to the Starlark config generator runtime.
