@@ -141,6 +141,7 @@ module.exports = {
       collapsed: false,
       items: [
         'metalos/overview',
+        'metalos/native-services',
         'metalos/apis',
         ...fbInternalOnly([
           {
