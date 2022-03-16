@@ -816,3 +816,8 @@ python_unittest(
     srcs = ["tests/test_vcs.py"],
     deps = [":vcs-library"],
 )
+
+python_library(
+    name = "errors",
+    srcs = ["errors.py"],
+)

@@ -74,6 +74,7 @@ python_library(
         ":common",
         ":plugin_hooks",
         "//antlir:common",
+        "//antlir:errors",
         "//antlir:send_fds_and_run",
     ],
 )

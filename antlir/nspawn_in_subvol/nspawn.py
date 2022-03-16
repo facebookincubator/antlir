@@ -73,6 +73,7 @@ from contextlib import closing, contextmanager, nullcontext
 from typing import ContextManager, Iterable, List, Tuple
 
 from antlir.common import byteme, get_logger, pipe
+from antlir.errors import ToolMissing
 from antlir.fs_utils import MehStr, Path, temp_dir
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 
@@ -449,6 +450,11 @@ def _popen_nsenter_into_container(
         cgroup_procs.exists()
     ), f"{cgroup_procs} does not exist, cannot nsenter"
 
+    # Resolve `nsenter` here, since `env` may change `PATH`
+    nsenter = shutil.which("nsenter")
+    if nsenter is None:  # pragma: no cover
+        raise ToolMissing("nsenter")
+
     # Set the user properly for the nsenter'd command to run.
     # Future: consider properly logging in as the user with su
     # or something better so that a real user session is created
@@ -487,7 +493,7 @@ def _popen_nsenter_into_container(
         # required to control `HOME` for `rpmbuild` in `temp_repos.py`.
         *setup.cmd_env,
         # `nsenter` is last, because the container may lack `env`.
-        shutil.which("nsenter"),  # Resolve here, since `env` may change `PATH`
+        nsenter,
         f"--target={container_proc_pid}",
         "--all",
         f"--setuid={opts.user.pw_uid}",
