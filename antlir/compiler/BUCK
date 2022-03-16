@@ -28,7 +28,7 @@ python_library(
     srcs = ["dep_graph.py"],
     # NB: Don't use `all-items` here, just use the ones we need.
     deps = [
-        ":user_error",
+        "//antlir:errors",
         "//antlir:fs_utils",
         "//antlir/compiler/items:genrule_layer",
         "//antlir/compiler/items:make_subvol",
@@ -53,15 +53,10 @@ python_library(
         ":dep_graph",
         ":items_for_features",
         ":subvolume_on_disk",
-        ":user_error",
         "//antlir:cli",
         "//antlir:config",
+        "//antlir:errors",
         "//antlir:fs_utils",
         "//antlir/bzl:constants.shape-python",
     ],
-)
-
-python_library(
-    name = "user_error",
-    srcs = ["user_error.py"],
 )

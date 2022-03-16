@@ -34,6 +34,7 @@ from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
 from antlir.config import repo_config
+from antlir.errors import UserError
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import META_FLAVOR_FILE, Path
 from antlir.nspawn_in_subvol.args import (
@@ -48,7 +49,6 @@ from antlir.subvol_utils import Subvol
 
 from .dep_graph import DependencyGraph, ImageItem
 from .subvolume_on_disk import SubvolumeOnDisk
-from .user_error import UserError
 
 
 def parse_args(args) -> argparse.Namespace:
