@@ -1,0 +1,93 @@
+---
+id: native-services
+title: Native Services
+---
+
+# What is a Native Service?
+
+A Native Service is a service that is built for MetalOS. MetalOS will manage its
+lifecycle as long as the service meets a few simple requirements.
+
+A simple demo of a native service image may be found at
+`metalos/lib/service/tests/demo_service`
+
+# Requirements
+
+## Image
+Native services are defined in (almost entirely) standalone images.
+This image must include all binaries that a service needs to run, as well as any
+other kinds of dependencies.
+
+In the early stages of the MVP, native service images will be used as the
+`RootDirectory` of the service, so it should have some resemblance to a full OS
+tree. In the future this may change to thinner images as a size optimization.
+
+## MetalOS directory
+Each native service image must contain a top-level directory `/metalos` under
+which all MetalOS-specific information must be stored.
+
+## Service units
+Native service images must provide exactly one systemd service unit under the
+top-level `/metalos` directory.
+In some cases, this service unit will start a more full-featured container via
+`systemd-nspawn`, that is a perfectly valid use case and ensures that MetalOS
+must only concern itself with a single `.service` unit for each native service.
+
+The service unit name must match the name of the service itself. For example, a
+native service with the package name `metalos.demo` must include
+`/metalos/metalos.demo.service`.
+
+## Generators
+Native services may define a Service Config Generator that MetalOS will run
+before the unit starts. This generator is sandboxed and only receives the
+MetalOS runtime config (TODO: link to thrift when this exists) on stdin.
+Generators are allowed to produce output to write files in the
+`RUNTIME_DIRECTORY` (see below) or set systemd drop-in settings.
+
+The generator binary must be contained in a separate image (TODO: link to thrift
+when refactor is finished).
+
+### Generator Lifecycle
+The generator will be invoked every time the service (re)starts.
+The generator will also be invoked every time the generator package itself
+changes, which will also trigger a service restart if the generator's output
+changes.
+
+## Lifecycle
+MetalOS will only update native service images at well-defined points, but the
+underlying service must be able to be started/stopped/reloaded at any time. In
+other words, service restarts should not take an inordinate amount of time or
+have hard dependencies on external services that would block the service from
+starting.
+
+Units in a service image must not have external dependencies beyond basic system
+features (such as networking being up) or other native services.
+
+## Filesystem access
+Native services have a read-only view of the entire filesystem, and may only
+write to certain directories set in environment variables:
+
+- `RUNTIME_DIRECTORY` is volatile and will be dropped after a service is stopped
+- `STATE_DIRECTORY` is persistent across all invocations of a service
+- `CACHE_DIRECTORY` is persistent across all invocations of a service, but is
+  only kept on a best-effort basis. MetalOS may arbitrarily purge cache
+  directories (but only if a service is stopped)
+- `LOGS_DIRECTORY` has similar semantics to `CACHE_DIRECTORY`. Where possible,
+  usage of journald is highly preferred over writing text logs to `LOGS_DIRECTORY`
+
+Service units may also add extra writable paths via `BindPaths`, but this should
+be used sparingly in favor of `metalctl` natively managing contents of the
+rootfs where possible.
+
+# Implementation details
+
+This section will be more detailed with follow-up diffs as more is implemented,
+but the high level idea is as follows:
+
+1) image downloaded (this is done ahead-of-time via `metalctl runtime-config stage`)
+2) service config generator is evaluated
+  a) service unit from the generator is linked into `/run/systemd/system`
+3) MetalOS drop-ins written to `/run/systemd/system/`
+  a) `RootDirectory` is set to a RW snapshot of the service image
+  b) `{RUNTIME,STATE,CACHE,LOGS}_DIRECTORY` environment variables are set for
+     the service unit
