@@ -57,7 +57,7 @@ fn eval_and_freeze_module(
 slotmap::new_key_type! {
     /// TypeId and TypeRegistry exist to store unique references to complex types.
     /// These are types that end up getting codegenned, not primitives.
-    #[derive(AnyLifetime)]
+    #[derive(AnyLifetime, NoSerialize)]
     struct TypeId;
 }
 impl std::fmt::Display for TypeId {
@@ -86,7 +86,7 @@ impl TypeRegistry {
     }
 }
 
-#[derive(Debug, Clone, Display, AnyLifetime)]
+#[derive(Debug, Clone, Display, AnyLifetime, NoSerialize)]
 #[display(fmt = "{:?}", self)]
 #[repr(transparent)]
 struct StarlarkType(Rc<ir::Type>);
