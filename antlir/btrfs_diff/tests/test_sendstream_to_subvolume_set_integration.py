@@ -24,8 +24,10 @@ In effect, we jointly test the Linux kernel, btrfs-progs, and this library.
 """
 import sys
 
+from antlir.artifacts_dir import ensure_per_repo_artifacts_dir_exists
 from antlir.fs_utils import Path
 from antlir.tests.common import AntlirTestCase
+from antlir.volume_for_repo import get_volume_for_current_repo
 
 from ..freeze import freeze
 from ..rendered_tree import emit_non_unique_traversal_ids
@@ -36,13 +38,20 @@ from .demo_sendstreams_expected import render_demo_subvols
 
 
 class SendstreamToSubvolumeSetIntegrationTestCase(AntlirTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        # Make sure we have a volume to work with
+        get_volume_for_current_repo(
+            ensure_per_repo_artifacts_dir_exists(Path(sys.argv[0]))
+        )
+
     def test_integration(self) -> None:
         # Generate brand-new sendstreams instead of using `gold`, since it
         # is useful for this test to exercise the live btrfs code paths as
         # new kernels and `btrfs-progs` get rolled out.  Besides checking
         # the infra, this also indirectly validates that our subvolume
         # rendering is stable and independent of the send-stream specifics.
-        stream_dict = make_demo_sendstreams(Path(sys.argv[1]))
+        stream_dict = make_demo_sendstreams(Path(sys.argv[0]))
         subvols = SubvolumeSet.new()
         for d in stream_dict.values():
             render_sv.add_sendstream_to_subvol_set(subvols, d["sendstream"])

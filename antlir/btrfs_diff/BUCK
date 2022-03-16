@@ -323,7 +323,9 @@ python_unittest(
         ":subvolume_set",
         ":testlib_demo_sendstreams",
         ":testlib_render_subvols",
+        "//antlir:artifacts_dir",
         "//antlir:fs_utils",
         "//antlir:testlib_common",
+        "//antlir:volume_for_repo",
     ],
 )
