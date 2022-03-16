@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// @oss-disable: include "metalos/host_configs/facebook/proxy/if/ConfigProvider.thrift"
+
 include "metalos/host_configs/package_manifest.thrift"
 
 namespace cpp2 metalos.host_configs
@@ -35,8 +37,9 @@ enum DisruptivenessAllowed {
 // Describes the complete set of software that should be running on a host, as
 // well as any config data that must change during the host's lifecycle.
 struct RuntimeConfig {
-  1: package_manifest.Images images;
-  2: string root_pw_hash;
+  // @oss-disable: 1: ConfigProvider.DeploymentRuntimeConfig deployment_specific;
+  2: package_manifest.Images images;
+  3: string root_pw_hash;
 } (rust.exhaustive)
 
 // When trying to apply a runtime config, the packages must already be persisted

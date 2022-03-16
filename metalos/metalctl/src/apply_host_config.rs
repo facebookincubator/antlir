@@ -74,6 +74,7 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
             &evalctx::host::HostConfig {
                 provisioning_config: evalctx::host::ProvisioningConfig {
                     identity: HostIdentity::example_host_for_tests(),
+                    deployment_specific: Default::default(),
                 },
                 runtime_config: Default::default(),
             },
