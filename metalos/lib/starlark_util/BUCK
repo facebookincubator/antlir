@@ -1,0 +1,17 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "starlark_util",
+    srcs = glob(["src/*.rs"]),
+    test_deps = ["maplit"],
+    deps = [
+        "anyhow",
+        "fbthrift",
+        "gazebo",
+        "itertools",
+        "serde",
+        "serde_json",
+        "starlark",
+        "//metalos/lib/starlark_util/tests:example-rust",
+    ],
+)
