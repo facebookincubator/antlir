@@ -38,6 +38,18 @@ macro_rules! output_only_struct {
             starlark::starlark_type!(stringify!($x));
         }
 
+        impl serde::Serialize for $x {
+            fn serialize<S>(&self, _s: S) -> std::result::Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                Err(serde::ser::Error::custom(format!(
+                    "{} isn't serializable",
+                    stringify!($x)
+                )))
+            }
+        }
+
         impl Display for $x {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(f, "{:#?}", self)
