@@ -205,7 +205,31 @@ image.genrule_layer(
     parent_layer = ":test-layer",
     rule_type = "test_genrule_layer",
     bind_repo_ro = True,
-    visibility = ["//antlir/compiler/..."],
+)
+
+image.layer(
+    name = "test-layer-no-antlir-dir",
+    parent_layer = ":test-layer",
+    features = [feature.remove("/__antlir__")],
+)
+
+# Test that `dnf` just works in a non-BA parent with `attach_antlir_dir`
+image.genrule_layer(
+    name = "genrule-layer-validate-attach-antlir-dir",
+    antlir_rule = "user-internal",
+    cmd = [
+        "dnf",
+        "install",
+        "-y",
+        "rpm-test-carrot",
+    ],
+    rule_type = "test_genrule_layer",
+    parent_layer = ":test-layer-no-antlir-dir",
+    user = "root",
+    container_opts = image.opts(
+        attach_antlir_dir = True,
+        shadow_proxied_binaries = True,
+    ),
 )
 
 # The next two targets exercise:

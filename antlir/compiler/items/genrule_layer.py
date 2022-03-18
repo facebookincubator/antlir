@@ -8,12 +8,15 @@ import pwd
 from typing import Iterable
 
 from antlir.bzl.genrule_layer import genrule_layer_t
+from antlir.common import not_none
+from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.config import repo_config
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import (
     NspawnPluginArgs,
     PopenArgs,
     new_nspawn_opts,
+    AttachAntlirDirMode,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
@@ -66,6 +69,13 @@ class GenruleLayerItem(genrule_layer_t):
                 targets_and_outputs=layer_opts.target_to_path,
                 bind_repo_ro=item.bind_repo_ro,
                 boot=item.boot,
+                subvolume_on_disk=SubvolumeOnDisk.from_subvolume_path(
+                    subvol.path(),
+                    layer_opts.subvolumes_dir,
+                    not_none(layer_opts.build_appliance).path(),
+                )
+                if c_opts.attach_antlir_dir
+                else None,
             )
             run_nspawn(  # NB: stdout redirects to stderr by default
                 opts,
@@ -76,6 +86,11 @@ class GenruleLayerItem(genrule_layer_t):
                         serve_rpm_snapshots=c_opts.serve_rpm_snapshots,
                         shadow_proxied_binaries=c_opts.shadow_proxied_binaries,
                         shadow_paths=c_opts.shadow_paths,
+                        attach_antlir_dir=(
+                            AttachAntlirDirMode.EXPLICIT_ON
+                            if c_opts.attach_antlir_dir
+                            else AttachAntlirDirMode.OFF
+                        ),
                     ),
                 ),
             )
