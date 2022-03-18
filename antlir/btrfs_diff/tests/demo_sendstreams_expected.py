@@ -31,12 +31,12 @@ from .subvolume_utils import InodeRepr
 
 # Update these constants to make the tests pass again after running
 # `demo_sendstreams` with `--update-gold`.
-UUID_CREATE = b"ea0ab6c0-e3a7-e940-9b91-ed266a77bd3b"
-TRANSID_CREATE = 2101
-UUID_MUTATE = b"5b874cb1-f480-3849-afba-4b4422eed625"
-TRANSID_MUTATE = 2104
+UUID_CREATE = b"58136d43-bc05-444a-a046-0ee20724f0ed"
+TRANSID_CREATE = 1798
+UUID_MUTATE = b"12667dcf-3f03-834b-b552-966fb4aae237"
+TRANSID_MUTATE = 1801
 # Take a `oNUM-NUM-NUM` file from the send-stream, and use the middle number.
-TEMP_PATH_MIDDLES = {"create_ops": 2099, "mutate_ops": 2103}
+TEMP_PATH_MIDDLES = {"create_ops": 1796, "mutate_ops": 1800}
 # I have never seen this initial value change. First number in `oN-N-N`.
 TEMP_PATH_COUNTER_START = 257
 
@@ -158,14 +158,18 @@ def get_filtered_and_expected_items(
             *base_metadata("goodbye"),
             *and_rename(
                 di.mknod(
-                    path=temp_path("create_ops"), mode=0o60600, dev=0x7A539B7
+                    path=temp_path("create_ops"),
+                    mode=0o60600,
+                    dev=os.makedev(42, 31),
                 ),
                 b"buffered",
             ),
             *base_metadata("buffered", mode=0o600),
             *and_rename(
                 di.mknod(
-                    path=temp_path("create_ops"), mode=0o20644, dev=0x7A539B7
+                    path=temp_path("create_ops"),
+                    mode=0o20644,
+                    dev=os.makedev(42, 31),
                 ),
                 b"unbuffered",
             ),
@@ -264,6 +268,11 @@ def get_filtered_and_expected_items(
             *and_rename(
                 di.mkfile(path=temp_path("mutate_ops")), b"hello_renamed/een"
             ),
+            di.set_xattr(
+                path=p("hello_renamed/een"),
+                name=b"btrfs.compression",
+                data=b"zlib",
+            ),
             # Not using `write` since we pass `--no-data` for `mutate_ops`.
             di.update_extent(path=p("hello_renamed/een"), offset=0, len=5),
             *base_metadata("hello_renamed/een"),
@@ -305,8 +314,8 @@ def render_demo_subvols(
                         {"world": [goodbye_world]},
                     ],
                     "dir_to_remove": ["(Dir)", {}],
-                    "buffered": [f"(Block m600 {os.makedev(1337, 31415):x})"],
-                    "unbuffered": [f"(Char {os.makedev(1337, 31415):x})"],
+                    "buffered": [f"(Block m600 {os.makedev(42, 31):x})"],
+                    "unbuffered": [f"(Char {os.makedev(42, 31):x})"],
                     "fifo": ["(FIFO)"],
                     **(
                         {"unix_sock": ["(Sock m755)"]}
@@ -356,8 +365,8 @@ def render_demo_subvols(
                         "(Dir)",
                         {"een": ["(File x'btrfs.compression'='zlib' d5)"]},
                     ],
-                    "buffered": [f"(Block m600 {os.makedev(1337, 31415):x})"],
-                    "unbuffered": [f"(Char {os.makedev(1337, 31415):x})"],
+                    "buffered": [f"(Block m600 {os.makedev(42, 31):x})"],
+                    "unbuffered": [f"(Char {os.makedev(42, 31):x})"],
                     "fifo": ["(FIFO)"],
                     **(
                         {"unix_sock": ["(Sock m755)"]}
