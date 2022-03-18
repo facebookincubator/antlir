@@ -93,6 +93,7 @@ def _nspawn_wrapper_properties(
         k
         for k in structs.to_dict(container_opts).keys()
         if not k.startswith("_") and not k in [
+            "attach_antlir_dir",
             "internal_only_logs_tmpfs",
             "serve_rpm_snapshots",
             "shadow_paths",
@@ -109,6 +110,8 @@ def _nspawn_wrapper_properties(
         )
     if container_opts.internal_only_unprotect_antlir_dir:
         fail("`internal_only_unprotect_antlir_dir` is not allowed in tests")
+    if container_opts.attach_antlir_dir:
+        fail("`attach_antlir_dir` is not yet implemented in tests")
 
     # These args must be on the outer wrapper test, regardless of language.
     outer_kwarg_names = ["tags", "labels", "env"]

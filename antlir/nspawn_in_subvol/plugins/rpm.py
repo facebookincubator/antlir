@@ -67,9 +67,9 @@ def _get_snapshot_dir(opts: _NspawnOpts, plugin_args: NspawnPluginArgs):
 
     if plugin_args.attach_antlir_dir == AttachAntlirDirMode.EXPLICIT_ON:
         raise AttachAntlirDirError(
-            "ERROR: Could not attach antlir dir. Please"
+            "ERROR: Could not attach /__antlir__ dir. Please "
             "check to make sure that you do not have an existing antlir "
-            "directory in your image and that the image has a "
+            "directory in your image, and that the image has a "
             "discoverable build appliance (usually through its flavor)."
         )
 

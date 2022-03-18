@@ -120,7 +120,7 @@ class RpmPluginsTestCase(unittest.TestCase):
     def test_get_snapshot_dir_explicit_error(self):
         with self.assertRaisesRegex(
             AttachAntlirDirError,
-            "Could not attach antlir dir",
+            "Could not attach /__antlir__ dir",
         ):
             self._create_snapshot_dir(AttachAntlirDirMode.EXPLICIT_ON)
 

@@ -20,6 +20,9 @@ container_opts_t = shape.shape(
         ),
         default = [],
     ),
+    # Setting this to `True` corresponds to `--attach-antlir-dir=explicit_on`,
+    # see `buck run :YOURLAYER=container -- --help` for the docs.
+    attach_antlir_dir = shape.field(bool, default = False),
     # Do not use this, it is only exposed so that Antlir can populate the
     # repodata caches for the RPM snapshots.
     internal_only_unprotect_antlir_dir = shape.field(bool, default = False),
