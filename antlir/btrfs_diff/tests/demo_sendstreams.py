@@ -90,9 +90,9 @@ def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:
             p("hello/"),
         ]
     )
-    run(["mknod", p("buffered"), "b", "1337", "31415"])  # mknod
+    run(["mknod", p("buffered"), "b", "42", "31"])  # mknod
     run(["chmod", "og-r", p("buffered")])  # chmod a device
-    run(["mknod", p("unbuffered"), "c", "1337", "31415"])
+    run(["mknod", p("unbuffered"), "c", "42", "31"])
     run(["mkfifo", p("fifo")])  # mkfifo
     run(
         [
@@ -334,8 +334,7 @@ def _main() -> None:
 
     # __file__ won't let us find the repo in @mode/opt, but that's OK, since
     # this is only used as a binary for development purposes.
-    # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
-    sendstream_dict = make_demo_sendstreams(__file__)
+    sendstream_dict = make_demo_sendstreams(Path(__file__))
 
     # This width makes the `--dump`ed commands fit on one line.
     prettified = pprint.pformat(sendstream_dict, width=200).encode()
