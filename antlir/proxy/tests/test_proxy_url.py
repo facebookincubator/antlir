@@ -31,39 +31,48 @@ class TestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
+def _mock_handler():
+    handler = MagicMock()
+    handler.send_error = MagicMock()
+    handler.send_response = MagicMock()
+    handler.wfile = BytesIO()
+    return handler
+
+
 class TestProxyURL(TestCase):
-    def setUp(self):
-        self.path_to_cert = None
+    @classmethod
+    def setUpClass(cls):
+        cls.path_to_cert = None
         with importlib.resources.path(__package__, "test-cert") as p:
-            self.path_to_cert = p / "localhost.pem"
+            cls.path_to_cert = p / "localhost.pem"
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind(("127.0.0.1", 0))
-        self.port = sock.getsockname()[1]
+        cls.port = sock.getsockname()[1]
         sock.close()
 
-        self.server = HTTPServer(("127.0.0.1", self.port), TestHandler)
-        self.server.socket = ssl.wrap_socket(
-            self.server.socket, certfile=self.path_to_cert, server_side=True
+        cls.server = HTTPServer(("127.0.0.1", cls.port), TestHandler)
+        cls.server.socket = ssl.wrap_socket(
+            cls.server.socket, certfile=cls.path_to_cert, server_side=True
         )
 
-        server_thread = Thread(target=self.server.serve_forever)
+        cls.ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        cls.ssl_context.load_verify_locations(cafile=cls.path_to_cert)
+
+        server_thread = Thread(target=cls.server.serve_forever)
         server_thread.setDaemon(True)
         server_thread.start()
 
-    def tearDown(self):
-        self.server.server_close
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.server_close()
 
     def test_proxy_url(self):
-        handler = MagicMock()
-        handler.send_error = MagicMock()
-        handler.send_response = MagicMock()
-        handler.wfile = BytesIO()
+        handler = _mock_handler()
 
-        context = ssl.create_default_context()
-
-        context.load_verify_locations(cafile=self.path_to_cert)
-        proxy_url(f"https://localhost:{self.port}", handler, context=context)
+        proxy_url(
+            f"https://localhost:{self.port}", handler, context=self.ssl_context
+        )
 
         handler.send_response.assert_called_once_with(HTTPStatus.OK)
         self.assertEqual(
@@ -72,15 +81,12 @@ class TestProxyURL(TestCase):
         )
 
     def test_proxy_url_error(self):
-        handler = MagicMock()
-        handler.send_error = MagicMock()
-        handler.send_response = MagicMock()
-        handler.wfile = BytesIO()
+        handler = _mock_handler()
 
-        context = ssl.create_default_context()
-        context.load_verify_locations(cafile=self.path_to_cert)
         proxy_url(
-            f"https://localhost:{self.port}/error", handler, context=context
+            f"https://localhost:{self.port}/error",
+            handler,
+            context=self.ssl_context,
         )
 
         handler.send_response.assert_called_once_with(
@@ -88,10 +94,7 @@ class TestProxyURL(TestCase):
         )
 
     def test_proxy_url_http(self):
-        handler = MagicMock()
-        handler.send_error = MagicMock()
-        handler.send_response = MagicMock()
-        handler.wfile = BytesIO()
+        handler = _mock_handler()
 
         proxy_url(
             f"http://localhost:{self.port}/", handler, allow_insecure_http=True
