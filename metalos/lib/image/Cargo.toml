@@ -25,7 +25,7 @@ reqwest = { version = "0.11.6", features = ["blocking", "json", "rustls-tls", "r
 slog = { version = "2.7", features = ["max_level_trace", "nested-values"] }
 thiserror = "1.0.29"
 tokio = { version = "1.15", features = ["full", "test-util", "tracing"] }
-zstd = "=0.8.0+zstd.1.4.9"
+zstd = "0.9.0+zstd.1.5.0"
 
 [dev-dependencies]
 url = "2.2.2"
