@@ -23,12 +23,13 @@ pub use sendstream::{Sendstream, SendstreamExt};
 
 use btrfsutil_sys::{
     btrfs_util_create_snapshot, btrfs_util_create_subvolume, btrfs_util_create_subvolume_iterator,
-    btrfs_util_destroy_subvolume_iterator, btrfs_util_error,
+    btrfs_util_delete_subvolume, btrfs_util_destroy_subvolume_iterator, btrfs_util_error,
     btrfs_util_error_BTRFS_UTIL_ERROR_STOP_ITERATION as BTRFS_UTIL_ERROR_STOP_ITERATION,
     btrfs_util_set_subvolume_read_only, btrfs_util_strerror, btrfs_util_subvolume_id,
     btrfs_util_subvolume_info, btrfs_util_subvolume_iterator,
     btrfs_util_subvolume_iterator_next_info, BTRFS_SUBVOL_RDONLY,
     BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY, BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE,
+    BTRFS_UTIL_DELETE_SUBVOLUME_RECURSIVE,
 };
 
 pub static BTRFS_FS_TREE_OBJECTID: u64 = 5;
@@ -96,6 +97,12 @@ bitflags! {
     pub struct SnapshotFlags: i32 {
         const RECURSIVE = BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE as i32;
         const READONLY = BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY as i32;
+    }
+}
+
+bitflags! {
+    pub struct DeleteFlags: i32 {
+        const RECURSIVE = BTRFS_UTIL_DELETE_SUBVOLUME_RECURSIVE as i32;
     }
 }
 
@@ -201,7 +208,19 @@ impl Subvolume {
         let path = self.path_cstr()?;
         check!({ btrfs_util_set_subvolume_read_only(path.as_ptr(), ro) })
             .with_context(|| format!("while setting subvolid={} ro={}", self.id, ro))?;
-        self.info.flags.set(SubvolumeInfoFlags::READONLY, true);
+        self.info.flags.set(SubvolumeInfoFlags::READONLY, ro);
+        Ok(())
+    }
+
+    pub fn delete(self, flags: DeleteFlags) -> Result<()> {
+        let path = self.path_cstr()?;
+        check!({ btrfs_util_delete_subvolume(path.as_ptr(), flags.bits()) }).with_context(|| {
+            format!(
+                "while deleting subvolid={} path={}",
+                self.id,
+                self.path().display()
+            )
+        })?;
         Ok(())
     }
 }
