@@ -1,5 +1,15 @@
 load("//antlir/bzl:image.bzl", "image")
-load("//metalos:defs.bzl", "default_test_layer")
+load("//metalos:defs.bzl", "default_test_layer", "rust_library")
+
+rust_library(
+    name = "service",
+    srcs = glob(["src/*.rs"]),
+    deps = [
+        "serde",
+        "uuid",
+        "//metalos/lib/btrfs:btrfs",
+    ],
+)
 
 image.layer(
     name = "test-layer",
@@ -13,4 +23,5 @@ image.layer(
         image.layer_mount("//metalos/lib/service/tests/demo_service:layer", "/test-control-subvol/image/service/metalos.demo:00000000000040008000000000000002/volume"),
         image.layer_mount("//metalos/lib/service/tests/demo_service:layer", "/test-control-subvol/image/service/metalos.demo:00000000000040008000000000000003/volume"),
     ],
+    visibility = ["//metalos/lib/service/..."],
 )

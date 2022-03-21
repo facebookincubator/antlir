@@ -39,6 +39,14 @@ image.layer(
             "/usr/bin/metalctl",
             mode = "a+rx",
         ),
+        feature.install_buck_runnable(
+            "//metalos/lib/service/helper:helper",
+            "/usr/lib/metalos/native-service-helper",
+            mode = "a+rx",
+        ),
+        systemd.install_unit(
+            "//metalos/lib/service/helper:metalos-native-service@.service",
+        ),
         systemd.install_unit("core-services.target"),
         systemd.install_unit("workload-pre.target"),
         systemd.install_unit("workload.target"),
