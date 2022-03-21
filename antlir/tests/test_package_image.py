@@ -393,10 +393,6 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         ) as pkg_path:
             self._verify_package_as_squashfs(pkg_path)
 
-        self._verify_package_as_squashfs(
-            self._sibling_path("create_ops_squashfs")
-        )
-
     @with_temp_subvols
     def _verify_package_as_cpio(self, temp_subvolumes, pkg_path):
         with tempfile.NamedTemporaryFile() as temp_sendstream:
