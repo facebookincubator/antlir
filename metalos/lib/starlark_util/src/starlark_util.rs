@@ -7,6 +7,7 @@
 
 use anyhow::{anyhow, Result};
 use gazebo::any::ProvidesStaticType;
+use serde::Serialize;
 use starlark::const_frozen_string;
 use starlark::values::{
     AllocFrozenValue, AllocValue, FrozenHeap, FrozenValue, Heap, StarlarkValue, Value,
@@ -20,7 +21,7 @@ use value::Value as ThriftValue;
 /// Expose a Thrift struct to Starlark. All the fields on this struct will be
 /// exposed to any Starlark code, including recursive structs or other
 /// collections.
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Struct<T>(value::Struct, PhantomData<T>);
 
 impl<T> Struct<T> {

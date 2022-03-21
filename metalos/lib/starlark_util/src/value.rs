@@ -9,13 +9,14 @@
 //! [Value] abstraction to treat thrift structs generically.
 
 use anyhow::{Error, Result};
-use fbthrift::{MessageType, ProtocolWriter, Serialize, TType};
+use fbthrift::{MessageType, ProtocolWriter, Serialize as ThriftSerialize, TType};
 use itertools::Itertools;
+use serde::Serialize;
 use std::cmp::{Ord, Ordering};
 use std::collections::{BTreeMap, BTreeSet};
 use std::panic::RefUnwindSafe;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub enum Value {
     Bool(bool),
     Byte(i8),
@@ -53,8 +54,9 @@ impl Value {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize)]
 #[repr(transparent)]
+#[serde(transparent)]
 pub struct Float(f32);
 impl From<f32> for Float {
     fn from(f: f32) -> Self {
@@ -62,8 +64,9 @@ impl From<f32> for Float {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Serialize)]
 #[repr(transparent)]
+#[serde(transparent)]
 pub struct Double(f64);
 impl From<f64> for Double {
     fn from(f: f64) -> Self {
@@ -123,7 +126,7 @@ impl From<&str> for Value {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub struct Struct {
     ty: String,
     pub fields: BTreeMap<String, Value>,
@@ -328,7 +331,7 @@ impl ProtocolWriter for Protocol {
 
 pub fn to_value<T>(t: &T) -> Result<Value>
 where
-    T: Serialize<Protocol> + RefUnwindSafe,
+    T: ThriftSerialize<Protocol> + RefUnwindSafe,
 {
     let mut p = Protocol::new();
     match std::panic::catch_unwind(|| {
