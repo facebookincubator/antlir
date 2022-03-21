@@ -506,7 +506,6 @@ TEST_PACKAGE_RESOURCES = {
     TEST_IMAGE_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
     TEST_IMAGE_PREFIX + "create_ops": "tests/create_ops.layer",
     TEST_IMAGE_PREFIX + "create_ops_cpio_gz": "tests/create_ops_cpio_gz",
-    TEST_IMAGE_PREFIX + "create_ops_squashfs": "tests/create_ops_squashfs",
     TEST_IMAGE_PREFIX + "create_ops_ext3": "tests/create_ops_ext3",
     TEST_IMAGE_PREFIX + "create_ops-layer-via-tarball-package": "tests/create_ops-layer-via-tarball-package",
     TEST_IMAGE_PREFIX + "vfat-test.layer": "tests/vfat-test.layer",
