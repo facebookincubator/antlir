@@ -24,10 +24,11 @@ import pwd
 import socket
 import stat
 import sys
+import uuid
 from contextlib import ExitStack, nullcontext
 from multiprocessing import Pipe
 from subprocess import CalledProcessError
-from typing import Iterator, List, cast
+from typing import Iterator, List
 
 from antlir.bzl.constants import flavor_config_t
 from antlir.bzl_const import hostname_for_compiler_in_ba
@@ -202,19 +203,46 @@ def get_parent_layer_flavor_config(parent_layer: Subvol) -> flavor_config_t:
     return repo_config().flavor_to_config[flavor]
 
 
+def construct_profile_filename(
+    layer_target: str, is_nested: bool = True
+) -> Path:
+    return Path(
+        layer_target.replace("/", "_")
+        + ("_outer" if not is_nested else "")
+        + ".pstat"
+    )
+
+
 def invoke_compiler_inside_build_appliance(
     *,
     build_appliance: Subvol,
-    argv: List[str],
     snapshot_dir: Path,
-    compiler_binary: Path,
-    subvol_dir: str,
-    debug: bool,
+    args: argparse.Namespace,
+    argv: List[str],
 ):
     (error_pipe_recv, error_pipe_send) = Pipe(duplex=False)
+    rw_bindmounts = []
+    if args.profile_dir:
+        prof_filename = construct_profile_filename(args.child_layer_target)
+        nested_profile_dir = f"/antlir_prof_{uuid.uuid4().hex}"
+
+        # For encapsulation purposes, we make the pstat file ahead of time to
+        # restrict the bindmount to be a single controlled file rather than the
+        # entire `profile_dir`.
+        os.makedirs(args.profile_dir, exist_ok=True)
+        (args.profile_dir / prof_filename).touch()
+
+        rw_bindmounts.append(
+            (
+                args.profile_dir / prof_filename,
+                nested_profile_dir / prof_filename,
+            )
+        )
+        argv = ["--profile", nested_profile_dir] + argv
+
     opts = new_nspawn_opts(
         cmd=[
-            compiler_binary,
+            args.compiler_binary,
             "--is-nested",
             *argv,
         ],
@@ -226,6 +254,7 @@ def invoke_compiler_inside_build_appliance(
         bind_artifacts_dir_rw=True,
         hostname=hostname_for_compiler_in_ba(),
         forward_fd=[error_pipe_send.fileno()],
+        bindmount_rw=rw_bindmounts,
     )
     try:
         run_nspawn(
@@ -297,11 +326,9 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
     ):
         invoke_compiler_inside_build_appliance(
             build_appliance=build_appliance,
-            argv=argv,
             snapshot_dir=not_none(Path(flavor_config.rpm_repo_snapshot)),
-            compiler_binary=args.compiler_binary,
-            subvol_dir=args.subvolumes_dir,
-            debug=args.debug,
+            args=args,
+            argv=argv,
         )
     else:
         layer_opts = LayerOpts(
@@ -382,7 +409,9 @@ if __name__ == "__main__":  # pragma: no cover
                 sys.exit(1)
         if args.profile_dir:
             assert pr is not None
-            filename = args.child_layer_target.replace("/", "_") + ".pstat"
+            filename = construct_profile_filename(
+                args.child_layer_target, is_nested=args.is_nested
+            )
             os.makedirs(args.profile_dir, exist_ok=True)
             pr.dump_stats(args.profile_dir / filename)
     # an exception was received from the nested compiler, log it if possible
