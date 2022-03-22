@@ -262,7 +262,7 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
             Output {
                 files: vec![File {
                     path: "/test.json".into(),
-                    contents: r#"{"a": "b", "c": null}"#.into(),
+                    contents: r#"{"a":"b","c":null}"#.into(),
                     mode: 0o444,
                 }],
                 dirs: vec![],
