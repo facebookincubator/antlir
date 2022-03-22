@@ -185,7 +185,7 @@ Options=subvol={self.subvol},{ro_rw}
 def _tmp_qcow2_disk(
     qemu_img: Path,
     stack: AsyncExitStack,
-    size_mb: int = 6160,
+    backing_file: Path,
 ) -> Path:
     """
     Create a qcow2 scratch disk using qemu-img.
@@ -213,7 +213,8 @@ def _tmp_qcow2_disk(
         "-f",  # format
         "qcow2",
         disk.name,
-        f"{size_mb}M",
+        "-b",
+        backing_file,
     ]
     log.debug(f"Creating tmp qcow2 img: {cmd}")
 
@@ -260,6 +261,7 @@ class QCow2RootDisk(Share):
             _tmp_qcow2_disk(
                 qemu_img=self.qemu_img,
                 stack=self.stack,
+                backing_file=self.path,
             ),
         )
 
@@ -270,8 +272,6 @@ class QCow2RootDisk(Share):
             (
                 "driver=qcow2,node-name=root-drive,"
                 f"file.driver=file,file.filename={self.cow_disk!s},"
-                "backing.driver=raw,backing.file.driver=file,"
-                f"backing.file.filename={self.path!s}"
             ),
             "--device",
             "virtio-blk,drive=root-drive,serial=ROOT_DISK_SERIAL",
