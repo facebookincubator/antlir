@@ -18,7 +18,7 @@ path = "src/expand_partition.rs"
 [dependencies]
 anyhow = "1.0.51"
 gpt = "3.0.0"
-nix = "0.22"
+nix = "0.23"
 
 [features]
 default = ["metalos_vm_test"]
