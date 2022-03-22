@@ -10,12 +10,15 @@ See `test_compiler.py` for more granular compiler unit tests.
 
 import os
 import socket
-import sys
 import tempfile
 import unittest
 
 from antlir.bzl.constants import flavor_config_t
-from antlir.fs_utils import RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR, Path
+from antlir.fs_utils import (
+    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
+    Path,
+    temp_dir,
+)
 from antlir.subvol_utils import TempSubvolumes, _query_uuid, Subvol
 from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
@@ -27,7 +30,7 @@ from ..compiler import build_image, parse_args
 
 class CompilerIntegrationTestCase(unittest.TestCase):
     def test_compile(self):
-        with TempSubvolumes() as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes, temp_dir() as profile_dir:  # noqa: E501
             flavor_config = flavor_config_t(
                 name="antlir_test",
                 build_appliance="build-appliance-testing",
@@ -69,6 +72,7 @@ class CompilerIntegrationTestCase(unittest.TestCase):
                     "CHILD_TARGET",
                     "--targets-and-outputs",
                     tf.name,
+                    f"--profile={profile_dir}",
                 ]
                 res = build_image(parse_args(argv), argv)
 
@@ -118,3 +122,7 @@ class CompilerIntegrationTestCase(unittest.TestCase):
                 ),
                 res,
             )
+
+            # This profile won't actually be populated since the profiling and
+            # pstat dump should occur outside `build_image`.
+            self.assertTrue((profile_dir / "CHILD_TARGET.pstat").exists())
