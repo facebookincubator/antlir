@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "rust_library", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
@@ -54,7 +52,9 @@ fake_macro_library(
     ],
 )
 
-shape.impl(name = "container_opts.shape")
+shape.impl(
+    name = "container_opts.shape",
+)
 
 fake_macro_library(
     name = "layer_resource",
@@ -328,7 +328,10 @@ python_binary(
     srcs = ["fail_with_message.py"],
     main_module = "antlir.bzl.fail_with_message",
     visibility = ["PUBLIC"],
-    deps = ["//antlir:cli"],
+    deps = [
+        "//antlir:cli",
+        "//antlir:common",
+    ],
 )
 
 test_hoist(
@@ -341,6 +344,7 @@ test_hoist(
 # else.  This is very specific to this shape and not for general use.
 ####
 python_library(
+    # @autodeps-skip
     name = "target.shape-python",
     srcs = {
         "shape2/target.py": "__init__.py",
@@ -388,13 +392,19 @@ shape.impl(
     ],
 )
 
-shape.impl(name = "loopback_opts.shape")
+shape.impl(
+    name = "loopback_opts.shape",
+)
 
 shape.impl(
     name = "gpt.shape",
     deps = ["//antlir/bzl:target.shape"],
 )
 
-shape.impl(name = "mode.shape")
+shape.impl(
+    name = "mode.shape",
+)
 
-shape.impl(name = "target_tagger.shape")
+shape.impl(
+    name = "target_tagger.shape",
+)
