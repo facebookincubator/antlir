@@ -591,13 +591,20 @@ image.layer(
 )
 
 # Exercises `image.clone`, covering the 3 supported trailings / patterns.
-image.layer(
-    name = "cloned-files",
+feature.new(
+    name = "feature_clone",
     features = [
         image.clone(":installed-files", "/foo/bar", "/"),
         image.clone(":installed-files", "/foo/bar", "/bar3"),
         image.ensure_subdirs_exist("/", "bar2"),
         image.clone(":installed-files", "/foo/bar/", "/bar2/"),
+    ],
+)
+
+image.layer(
+    name = "cloned-files",
+    features = [
+        ":feature_clone",
     ],
     flavor = "antlir_test",
     visibility = ["//antlir/compiler/..."],
@@ -636,6 +643,37 @@ feature.new(
     # We can only build for "no version set" because our child
     # `feature_tar_and_rpms` provides no other version sets.
     visibility = ["//antlir/compiler/..."],
+)
+
+image.layer(
+    name = "kitchen_sink_layer_parent",
+    features = [
+        image.ensure_dirs_exist(
+            "/path/to/remove",
+        ),
+    ],
+    flavor = "antlir_test",
+)
+
+image.layer(
+    name = "kitchen_sink_layer",
+    parent_layer = ":kitchen_sink_layer_parent",
+    features = [
+        ":feature_dirs",
+        ":feature_install_files",
+        ":feature_mount",
+        ":feature_tar_and_rpms",
+        image.ensure_subdirs_exist("/foo", "borf"),  # for :feature_tar
+        ":feature_symlinks",
+        ":feature_usergroup",
+        ":feature_clone",
+        feature.remove("/path/to/remove"),
+        feature.remove(
+            "/non_existent_path/to/remove",
+            must_exist = False,
+        ),
+    ],
+    flavor = "antlir_test",
 )
 
 ##
@@ -1116,9 +1154,8 @@ image.gpt(
     visibility = ["//antlir/..."],
 )
 
-image.layer(
-    name = "users-groups-from-scratch",
-    flavor = "antlir_test",
+feature.new(
+    name = "feature_usergroup",
     features = [
         image.ensure_dirs_exist("/etc"),
         # Importantly for this test, /etc/passwd must be installed first. Prior
@@ -1131,6 +1168,14 @@ image.layer(
         feature.install("//antlir:empty", SHELL_NOLOGIN),
         feature.group_add("example"),
         feature.user_add("example", "example", "/", SHELL_NOLOGIN),
+    ],
+)
+
+image.layer(
+    name = "users-groups-from-scratch",
+    flavor = "antlir_test",
+    features = [
+        ":feature_usergroup",
     ],
     visibility = ["//antlir/..."],
 )
