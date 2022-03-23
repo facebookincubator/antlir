@@ -18,11 +18,12 @@ import textwrap
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple, Dict, Generator, Any
 
 from antlir.common import get_logger, pipe
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
+from antlir.nspawn_in_subvol.netns_socket import create_sockets_inside_netns
 from antlir.nspawn_in_subvol.plugin_hooks import (
     _NspawnSetup,
     _NspawnSetupCtxMgr,
@@ -60,7 +61,7 @@ class _ContainerPidExfiltrator:
     @contextmanager
     def new(
         cls, exfil_w_dest_fd: int, ready_r_dest_fd: int
-    ) -> "_ContainerPidExfiltrator":
+    ) -> Generator["_ContainerPidExfiltrator", Any, Any]:
         # The first pipe's write end is forwarded into the container, and
         # will be used to exfiltrated data about its PID namespace, before
         # we start the user command.
@@ -68,8 +69,6 @@ class _ContainerPidExfiltrator:
         # The read end of the second pipe signals our exfiltration script
         # that it should continue to execute the user command.
         with pipe() as (exfil_r, exfil_w), pipe() as (ready_r, ready_w):
-            # pyre-fixme[7]: Expected `_ContainerPidExfiltrator` but got
-            #  `Generator[_ContainerPidExfiltrator, None, None]`.
             yield _ContainerPidExfiltrator(
                 exfil_r=exfil_r,
                 exfil_w=exfil_w,
@@ -104,7 +103,7 @@ class _ContainerPidExfiltrator:
         return ["/bin/bash", "-eu", "-o", "pipefail", "-c", wrap, "--", *cmd]
 
     @contextmanager
-    def exfiltrate_container_pid(self) -> int:
+    def exfiltrate_container_pid(self) -> Generator[int, Any, Any]:
         "Yields the outer PID of a process inside the container."
         assert self._ready_sent is None, "exfiltrate_container_pid called twice"
         self._ready_sent = False
@@ -117,9 +116,6 @@ class _ContainerPidExfiltrator:
             # wait for `exfil_w` to get closed, the `nsenter` process also
             # inherits it, and will hold it open for as long as the user command
             # runs, causing us to deadlock here.
-            #
-            # pyre-fixme[7]: Expected `int` but got `Generator[int, None,
-            # None]`.
             yield int(self.exfil_r.readline().decode().split(":")[1].strip())
         finally:
             if not self._ready_sent:
@@ -137,18 +133,13 @@ class _ContainerPidExfiltrator:
 @contextmanager
 def _wrap_opts_with_container_pid_exfiltrator(
     opts: _NspawnOpts,
-) -> Tuple[_NspawnOpts, _ContainerPidExfiltrator]:
-    # pyre-fixme[16]: `_ContainerPidExfiltrator` has no attribute `__enter__`.
+) -> Generator[Tuple[_NspawnOpts, Any], Any, Any]:
     with _ContainerPidExfiltrator.new(
         # Below, we append FDs to `forward_fd`.  In the container, these
         # will map sequentially to `3 + len(opts.forward_fd)` and up.
-        # pyre-fixme[6]: Expected `Sized` for 1st param but got `Iterable[int]`.
-        exfil_w_dest_fd=3 + len(opts.forward_fd),
-        # pyre-fixme[6]: Expected `Sized` for 1st param but got `Iterable[int]`.
-        ready_r_dest_fd=4 + len(opts.forward_fd),
+        exfil_w_dest_fd=3 + len(list(opts.forward_fd)),
+        ready_r_dest_fd=4 + len(list(opts.forward_fd)),
     ) as cpe:
-        # pyre-fixme[7]: Expected `Tuple[_NspawnOpts, _ContainerPidExfiltrator]`
-        #  but got `Generator[Tuple[_NspawnOpts, typing.Any], None, None]`.
         yield opts._replace(
             forward_fd=(
                 *opts.forward_fd,
@@ -165,6 +156,21 @@ class RepoServers(NspawnPlugin):
     def __init__(self, serve_rpm_snapshots: Iterable[Path]) -> None:
         self._serve_rpm_snapshots = serve_rpm_snapshots
 
+    @staticmethod
+    def _ns_sockets_needed(
+        serve_rpm_snapshots: Iterable[Path], snap_subvol: Subvol
+    ) -> Tuple[int, Dict[Path, int]]:
+        socks_needed, socks_per_snapshot = 0, {}
+        for snap_dir in serve_rpm_snapshots:
+            with open(
+                snap_subvol.path(snap_dir) / "ports-for-repo-server"
+            ) as f:
+                s_count = len({int(v) for v in f.read().split() if v})
+                socks_needed += s_count
+                socks_per_snapshot[snap_dir] = s_count
+
+        return socks_needed, socks_per_snapshot
+
     @contextmanager
     def wrap_setup(
         self,
@@ -172,7 +178,7 @@ class RepoServers(NspawnPlugin):
         subvol: Subvol,
         opts: _NspawnOpts,
         popen_args: PopenArgs,
-    ) -> _NspawnSetup:
+    ) -> Generator[_NspawnSetup, Any, Any]:
         # Future: bring this back, so we don't have to install it into
         # the snapshot.  The reason this is commented out for now is
         # that the FB-internal repo-server is a bit expensive to build,
@@ -195,7 +201,7 @@ class RepoServers(NspawnPlugin):
         #    __package__, 'repo-server', exe=True,
         # ))
         # Rewrite `opts` with a plugin script and some forwarded FDs
-        # pyre-fixme[16]: `Tuple` has no attribute `__enter__`.
+
         with _wrap_opts_with_container_pid_exfiltrator(opts) as (
             opts,
             cpe,
@@ -204,15 +210,13 @@ class RepoServers(NspawnPlugin):
             # pyre-fixme[16]: `RepoServers` has no attribute
             #  `_container_pid_exfiltrator`.
             self._container_pid_exfiltrator = cpe
-            # pyre-fixme[7]: Expected `_NspawnSetup` but got
-            #  `Generator[antlir.nspawn_in_subvol.cmd._NspawnSetup, None,
-            #  None]`.
+
             yield setup
 
     @contextmanager
     def wrap_post_setup_popen(
         self, post_setup_popen_ctx: _PostSetupPopenCtxMgr, setup: _NspawnSetup
-    ) -> _PopenResult:
+    ) -> Generator[_PopenResult, Any, Any]:
         snap_subvol = setup.subvol
 
         with ExitStack() as stack:
@@ -232,21 +236,32 @@ class RepoServers(NspawnPlugin):
                 for p in self._serve_rpm_snapshots
             )
 
+            ns_count, sockets_per_snapshot = self._ns_sockets_needed(
+                serve_rpm_snapshots, snap_subvol
+            )
+            ns_sockets_pool = create_sockets_inside_netns(
+                container_pid, ns_count
+            )
+            log.debug(f"Created {ns_count} sockets in {container_pid} ns ")
+
             # To speed up startup, launch all the servers, and then await them.
-            snap_to_servers = {
-                snap_dir: stack.enter_context(
-                    # pyre-fixme[6]: Expected `ContextManager[Variable[
-                    # contextlib._T]...
+            snap_to_servers = {}
+            for snap_dir in serve_rpm_snapshots:
+                snap_to_servers[snap_dir] = stack.enter_context(
                     launch_repo_servers_for_netns(
-                        target_pid=container_pid,
+                        ns_sockets=ns_sockets_pool[
+                            0 : sockets_per_snapshot[snap_dir]
+                        ],
                         snapshot_dir=snap_subvol.path(snap_dir),
                         repo_server_bin=snap_subvol.path(
                             snap_dir / "repo-server"
                         ),
                     )
                 )
-                for snap_dir in serve_rpm_snapshots
-            }
+                ns_sockets_pool = ns_sockets_pool[
+                    sockets_per_snapshot[snap_dir] :
+                ]
+
             log.info(
                 "Started `repo-server` for snapshots (ports): "
                 + ", ".join(
@@ -257,8 +272,4 @@ class RepoServers(NspawnPlugin):
                 )
             )
             self._container_pid_exfiltrator.send_ready()
-            # pyre-fixme[7]: Expected `Tuple[subprocess.Popen[typing.Any],
-            #  subprocess.Popen[typing.Any]]` but got
-            #  `Generator[Tuple[subprocess.Popen[typing.Any],
-            #  subprocess.Popen[typing.Any]], None, None]`.
             yield popen_res

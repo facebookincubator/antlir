@@ -9,11 +9,10 @@ import signal
 import socket
 import subprocess
 from contextlib import ExitStack, contextmanager
-from typing import List, NamedTuple, Optional
+from typing import List, NamedTuple, Optional, Generator, Any
 
 from antlir.common import check_popen_returncode, get_logger
 from antlir.fs_utils import Path
-from antlir.nspawn_in_subvol.netns_socket import create_sockets_inside_netns
 
 
 log = get_logger()
@@ -33,7 +32,9 @@ class RepoServer(NamedTuple):
 
 
 @contextmanager
-def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
+def _launch_repo_server(
+    repo_server_bin: Path, rs: RepoServer
+) -> Generator[RepoServer, Any, Any]:
     """
     Invokes `repo-server` with the given snapshot; passes it ownership of
     the bound TCP socket -- it listens & accepts connections.
@@ -60,8 +61,6 @@ def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
         pass_fds=[rs.sock.fileno()],
     ) as server_proc:
         try:
-            # pyre-fixme[7]: Expected `RepoServer` but got
-            # `Generator[RepoServer, None, None]`.
             yield rs._replace(proc=server_proc)
         finally:
             # Uh-oh, the server already exited. Did it crash?
@@ -89,8 +88,11 @@ def _launch_repo_server(repo_server_bin: Path, rs: RepoServer) -> RepoServer:
 
 @contextmanager
 def launch_repo_servers_for_netns(
-    *, target_pid: int, snapshot_dir: Path, repo_server_bin: Path
-) -> List[RepoServer]:
+    *,
+    ns_sockets: List[socket.socket],
+    snapshot_dir: Path,
+    repo_server_bin: Path,
+) -> Generator[List[RepoServer], Any, Any]:
     """
     Creates sockets inside the supplied netns, and binds them to the
     supplied ports on localhost.
@@ -105,12 +107,10 @@ def launch_repo_servers_for_netns(
         # `__enter__` the sockets since the servers take ownership of them.
         servers = []
         for sock, port in zip(
-            create_sockets_inside_netns(target_pid, len(repo_server_ports)),
+            ns_sockets,
             repo_server_ports,
         ):
             rs = stack.enter_context(
-                # pyre-fixme[6]: Expected `ContextManager[Variable[
-                # contextlib._T]]` for 1st param but got `RepoServer`.
                 _launch_repo_server(
                     repo_server_bin,
                     RepoServer(
@@ -120,8 +120,7 @@ def launch_repo_servers_for_netns(
                     ),
                 )
             )
-            log.debug(f"Launched {rs} in {target_pid}'s netns")
+            log.debug(f"Launched {rs}")
             servers.append(rs)
-        # pyre-fixme[7]: Expected `List[RepoServer]` but got
-        #  `Generator[List[typing.Any], None, None]`.
+
         yield servers
