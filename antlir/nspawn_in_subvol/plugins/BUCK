@@ -25,11 +25,21 @@ python_library(
     ],
 )
 
+python_library(
+    name = "server_launcher",
+    srcs = ["server_launcher.py"],
+    deps = [
+        "//antlir:common",
+        "//antlir:fs_utils",
+    ],
+)
+
 # Gets test coverage via `:test-repo-servers`
 python_library(
     name = "launch_repo_servers",
     srcs = ["launch_repo_servers.py"],
     deps = [
+        ":server_launcher",
         "//antlir:common",
         "//antlir:fs_utils",
     ],
@@ -58,12 +68,14 @@ python_unittest(
     needed_coverage = [
         (100, ":launch_repo_servers"),
         (100, ":repo_servers"),
+        (100, ":server_launcher"),
     ],
     resources = {
         layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-build-appliance",
     },
     deps = [
         ":launch_repo_servers",
+        ":server_launcher",
         ":testlib_rpm_base",
         "//antlir:common",
         "//antlir:testlib_flavor_helpers",
