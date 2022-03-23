@@ -32,7 +32,6 @@ python_library(
     deps = [
         "//antlir:common",
         "//antlir:fs_utils",
-        "//antlir/nspawn_in_subvol:netns_socket",
     ],
 )
 
@@ -48,6 +47,7 @@ python_library(
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
         "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:netns_socket",
         "//antlir/nspawn_in_subvol:plugin_hooks",
     ],
 )
