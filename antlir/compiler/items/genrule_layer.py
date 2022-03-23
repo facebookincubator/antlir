@@ -53,7 +53,7 @@ class GenruleLayerItem(genrule_layer_t):
                 snapshot=False,
                 cmd=item.cmd,
                 chdir=repo_config().repo_root
-                if repo_config().artifacts_require_repo
+                if item.bind_repo_ro
                 else Path("/"),
                 bindmount_ro=(
                     # The command can never change `/.meta`.
