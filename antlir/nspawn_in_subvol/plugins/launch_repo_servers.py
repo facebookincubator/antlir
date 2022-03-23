@@ -5,85 +5,40 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
-import signal
 import socket
 import subprocess
 from contextlib import ExitStack, contextmanager
-from typing import List, NamedTuple, Optional, Generator, Any
+from typing import List, Generator, Any
 
-from antlir.common import check_popen_returncode, get_logger
+from antlir.common import get_logger
 from antlir.fs_utils import Path
+
+from .server_launcher import ServerLauncher
 
 
 log = get_logger()
 _mockable_popen_for_repo_server = subprocess.Popen
 
 
-class RepoServer(NamedTuple):
-    rpm_repo_snapshot: Path
-    port: int
-    # The socket & server are invalid after the `_launch_repo_server` context
-    sock: socket.socket
-    proc: Optional[subprocess.Popen] = None
+class RepoServer(ServerLauncher):
+    def __init__(self, rpm_repo_snapshot: Path, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.rpm_repo_snapshot = rpm_repo_snapshot
 
-    # pyre-fixme[14]: `__format__` overrides method defined in `object` inconsistently.
-    def __format__(self, _spec) -> str:
+    def __format__(self, format_spec) -> str:
         return f"RepoServer({self.rpm_repo_snapshot}, port={self.port})"
 
-
-@contextmanager
-def _launch_repo_server(
-    repo_server_bin: Path, rs: RepoServer
-) -> Generator[RepoServer, Any, Any]:
-    """
-    Invokes `repo-server` with the given snapshot; passes it ownership of
-    the bound TCP socket -- it listens & accepts connections.
-
-    Returns a copy of the `RepoServer` with `server` populated.
-    """
-    assert rs.proc is None
-    rs.sock.bind(("127.0.0.1", rs.port))
-    # Socket activation: allow requests to queue up, which means that
-    # we don't have to explicitly wait for the repo servers to start --
-    # any in-container clients will do so if/when needed. This reduces
-    # interactive `=container` boot time by hundreds of ms.
-    rs.sock.listen()  # leave the request queue size at default
-    with rs.sock, _mockable_popen_for_repo_server(
-        [
-            repo_server_bin,
-            f"--socket-fd={rs.sock.fileno()}",
+    @property
+    def command_line(self):
+        return [
+            self.bin_path,
+            f"--socket-fd={self.sock.fileno()}",
             # TODO: Once the committed BAs all have a `repo-server` that
             # knows to append `/snapshot` to the path, remove it here, and
             # tidy up the snapshot resolution code in `repo_server.py`.
-            f"--snapshot-dir={rs.rpm_repo_snapshot / 'snapshot'}",
+            f"--snapshot-dir={self.rpm_repo_snapshot / 'snapshot'}",
             *(["--debug"] if log.isEnabledFor(logging.DEBUG) else []),
-        ],
-        pass_fds=[rs.sock.fileno()],
-    ) as server_proc:
-        try:
-            yield rs._replace(proc=server_proc)
-        finally:
-            # Uh-oh, the server already exited. Did it crash?
-            if server_proc.poll() is not None:  # pragma: no cover
-                check_popen_returncode(server_proc)
-            else:
-                # Although `repo-server` is a read-only proxy, give it the
-                # chance to do graceful cleanup.
-                log.debug("Trying to gracefully terminate `repo-server`")
-                # `atexit` (used in an FB-specific `repo-server` plugin) only
-                # works on graceful termination.  In `repo_server_main.py`, we
-                # graceful set up handling of `SIGTERM`.  We signal once, and
-                # need to wait for it to clean up the resources it must to free.
-                # Signaling twice would interrupt cleanup (because this is
-                # Python, lol).
-                server_proc.send_signal(signal.SIGTERM)
-                try:
-                    server_proc.wait(60.0)
-                except subprocess.TimeoutExpired:  # pragma: no cover
-                    log.warning(
-                        f"Killing unresponsive `repo-server` {server_proc.pid}"
-                    )
-                    server_proc.kill()
+        ]
 
 
 @contextmanager
@@ -94,9 +49,6 @@ def launch_repo_servers_for_netns(
     repo_server_bin: Path,
 ) -> Generator[List[RepoServer], Any, Any]:
     """
-    Creates sockets inside the supplied netns, and binds them to the
-    supplied ports on localhost.
-
     Yields a list of (host, port) pairs where the servers will listen.
     """
     with open(snapshot_dir / "ports-for-repo-server") as infile:
@@ -110,16 +62,14 @@ def launch_repo_servers_for_netns(
             ns_sockets,
             repo_server_ports,
         ):
-            rs = stack.enter_context(
-                _launch_repo_server(
-                    repo_server_bin,
-                    RepoServer(
-                        rpm_repo_snapshot=snapshot_dir,
-                        port=port,
-                        sock=sock,
-                    ),
-                )
+            repo_server = RepoServer(
+                rpm_repo_snapshot=snapshot_dir,
+                port=port,
+                sock=sock,
+                bin_path=repo_server_bin,
             )
+
+            rs = stack.enter_context(repo_server.launch())
             log.debug(f"Launched {rs}")
             servers.append(rs)
 

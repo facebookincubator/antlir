@@ -16,6 +16,7 @@ from antlir.common import check_popen_returncode
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
 
 from .. import launch_repo_servers
+from .. import server_launcher
 from .rpm_base import RpmNspawnTestBase
 
 
@@ -32,7 +33,7 @@ class TestImpl:
         with tempfile.NamedTemporaryFile("r") as logfile, subprocess.Popen(
             ["tee", logfile.name], stdout=2, stdin=subprocess.PIPE
         ) as tee, unittest.mock.patch.object(
-            launch_repo_servers, "_mockable_popen_for_repo_server"
+            server_launcher, "_mockable_popen_for_server"
         ) as mock_popen:
             mock_popen.side_effect = lambda *args, **kwargs: subprocess.Popen(
                 *args, **kwargs, stderr=tee.stdin
