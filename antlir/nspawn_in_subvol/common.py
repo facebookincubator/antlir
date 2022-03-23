@@ -5,11 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 "No externally useful functions here.  Read the `run.py` docblock instead."
+
 import subprocess
 from typing import NamedTuple
 
 from antlir.fs_utils import Path
-
 
 # Our container runtimes are required to make this the `PATH` for the user
 # command in the container.  This also determines which container binaries
