@@ -20,7 +20,7 @@ path = "src/lib.rs"
 
 [dependencies]
 anyhow = "1.0.51"
-libc = "0.2.98"
+libc = "0.2.121"
 
 [features]
 default = ["metalos_plain_test", "metalos_vm_test"]
