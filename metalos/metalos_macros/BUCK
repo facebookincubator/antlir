@@ -6,6 +6,10 @@ rust_library(
     name = "metalos_macros",
     srcs = glob(["src/*.rs"]),
     proc_macro = True,
+    visibility = [
+        "//metalos/...",
+        "//netos/...",
+    ],
     deps = [
         "proc-macro-error",
         "proc-macro2",

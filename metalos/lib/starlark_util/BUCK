@@ -4,6 +4,10 @@ rust_library(
     name = "starlark_util",
     srcs = glob(["src/*.rs"]),
     test_deps = ["maplit"],
+    visibility = [
+        "//metalos/...",
+        "//netos/...",
+    ],
     deps = [
         "anyhow",
         "fbthrift",
