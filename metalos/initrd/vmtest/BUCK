@@ -224,7 +224,7 @@ buck_genrule(
 
 image.layer(
     name = "metalos-vmtest",
-    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
+    parent_layer = "//metalos/os:metalos",
     features = [
         ssh.test_only_login(),
         console.autologin(),
