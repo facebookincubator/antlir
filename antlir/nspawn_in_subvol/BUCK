@@ -33,6 +33,22 @@ python_unittest(
     ],
 )
 
+python_library(
+    name = "netns_socket",
+    srcs = ["netns_socket.py"],
+    deps = ["//antlir:common"],
+)
+
+python_unittest(
+    name = "test-netns-socket",
+    srcs = ["tests/test_netns_socket.py"],
+    needed_coverage = [(100, ":netns_socket")],
+    deps = [
+        ":netns_socket",
+        "//antlir:testlib_common",
+    ],
+)
+
 # Gets test coverage via `:test-run`
 python_library(
     name = "cmd",
