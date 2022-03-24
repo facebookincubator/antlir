@@ -146,7 +146,7 @@ module.exports = {
         ...fbInternalOnly([
           {
             'type': 'doc',
-            'id': 'metalos/fb/hacking_index',
+            'id': 'metalos/fb/hacking_guide',
           },
           {
             'type': 'category',
