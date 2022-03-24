@@ -145,9 +145,56 @@ module.exports = {
         'metalos/apis',
         ...fbInternalOnly([
           {
-            type: 'doc',
-            id: 'metalos/fb/hacking_guide',
+            'type': 'doc',
+            'id': 'metalos/fb/hacking_index',
           },
+          {
+            'type': 'category',
+            'label': 'Hacking items @ FB',
+            collapsed: false,
+            items: [
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/permissions',
+              },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/devices',
+              },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/provisioning',
+              },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/initrd',
+              },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/rootfs',
+              },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/wds_layer',
+              },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/hw_layer',
+              },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/hostconfig_proxy',
+              },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/hostagent',
+              },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/pwm_flow',
+              },
+            ],
+          }
         ]),
       ],
     }
