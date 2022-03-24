@@ -17,6 +17,10 @@ rust_library(
     name = "btrfs",
     srcs = glob(["src/*.rs"]),
     unittests = ["container"],
+    visibility = [
+        "//metalos/...",
+        "//sandcastle/...",
+    ],
     deps = [
         "anyhow",
         "async-compression",
