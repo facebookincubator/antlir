@@ -211,7 +211,7 @@ def _image_layer_impl(
         type = _rule_type,  # For queries
         visibility = visibility,
         antlir_rule = antlir_rule,
-        labels = ["image_layer"] + (labels or []),
+        labels = ["image_layer", "uses_sudo"] + (labels or []),
     )
 
     for elem in runtime:
