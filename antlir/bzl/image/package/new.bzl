@@ -105,6 +105,6 @@ def package_new(
             volume_min_free_bytes = 0,  # We are not writing to the volume.
         ),
         visibility = visibility,
-        labels = labels or [],
+        labels = ["uses_sudo"] + (labels or []),
         antlir_rule = antlir_rule,
     )
