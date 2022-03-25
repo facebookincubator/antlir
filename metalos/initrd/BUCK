@@ -1,7 +1,6 @@
 # @noautodeps
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
@@ -48,18 +47,15 @@ users = [
 udev = [
     image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
 ] + [
-    image.clone(
-        REPO_CFG.artifact["metalos.layer.base"],
-        paths.join("usr/lib/udev/rules.d/", f),
-        paths.join("usr/lib/udev/rules.d/", f),
+    feature.install(
+        "udev/{}".format(f),
+        "/usr/lib/udev/rules.d/{}".format(f),
     )
     for f in [
-        "10-dm.rules",
         "50-udev-default.rules",
         "60-block.rules",
         "60-persistent-storage.rules",
         "80-drivers.rules",
-        "95-dm-notify.rules",
         "99-systemd.rules",
     ]
 ]
