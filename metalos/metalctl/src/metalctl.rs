@@ -26,8 +26,6 @@ use structopt::StructOpt;
 mod apply_disk_image;
 mod apply_host_config;
 mod config;
-#[cfg(facebook)]
-mod facebook;
 mod fetch_images;
 #[cfg(initrd)]
 mod generator;
@@ -77,9 +75,6 @@ enum Subcommand {
     #[cfg(not(initrd))]
     #[structopt(flatten)]
     Update(update::Update),
-    #[cfg(facebook)]
-    #[structopt(flatten)]
-    Facebook(facebook::Subcommand),
 }
 
 #[derive(StructOpt)]
@@ -174,8 +169,6 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         }
         #[cfg(not(initrd))]
         Subcommand::Update(update) => update.subcommand(log).await,
-        #[cfg(facebook)]
-        Subcommand::Facebook(fb) => fb.subcommand(log, config).await,
     }
 }
 

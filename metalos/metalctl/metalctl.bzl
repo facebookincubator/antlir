@@ -6,8 +6,6 @@ load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest
 def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     srcs = native.glob(["src/**/*.rs"])
 
-    facebook = "src/facebook/mod.rs" in srcs
-
     # we don't yet have blkid support in oss
     have_blkid = third_party.library("util-linux", "blkid") != None
 
@@ -55,9 +53,6 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     ] + extra_deps
 
     rustc_flags = rustc_flags or []
-    if facebook:
-        rustc_flags.append("--cfg=facebook")
-        deps.append("//metalos/lib/facebook/chef:chef")
     if have_blkid:
         rustc_flags.append("--cfg=blkid")
         deps.append("//metalos/lib/blkid:blkid")
@@ -83,7 +78,6 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
             container = shape.new(
                 container_unittest_opts_t,
                 boot = True,
-                layer = "//metalos/metalctl/tests/facebook:test-layer" if facebook else "//metalos/os/tests:test-layer",
             ),
         ),
         unittests = ["plain", "container", "vm"],
