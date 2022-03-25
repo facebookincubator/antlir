@@ -12,5 +12,6 @@ rust_library(
         "serde",
         "serde_json",
         "uuid",
+        "//metalos/lib/metalos_paths:metalos_paths",
     ],
 )

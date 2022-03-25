@@ -10,7 +10,7 @@ use systemd::UnitName;
 
 pub const ENVIRONMENT_FILENAME: &str = "metalos_environment";
 
-pub const ROOTDISK_MOUNT_SERVICE: &str = "rootdisk.mount";
+pub const ROOTDISK_MOUNT_SERVICE: &str = "run-fs-control.mount";
 
 /// This represents some static set of known environment variables we want to build and put into
 /// all units that want metalos info. You should add your variables names as
@@ -500,8 +500,8 @@ mod tests {
         );
 
         assert_eq!(
-            std::fs::read_to_string(deps_dir.join("rootdisk.mount"))
-                .context("Can't read rootdisk.mount file")?,
+            std::fs::read_to_string(deps_dir.join("run-fs-control.mount"))
+                .context("Can't read run-fs-control.mount file")?,
             "\
             [Unit]\n\
             [Mount]\n\

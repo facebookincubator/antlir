@@ -22,5 +22,6 @@ rust_library(
         "zstd",
         "//metalos/host_configs:package-manifest-rust",
         "//metalos/lib/btrfs:btrfs",
+        "//metalos/lib/metalos_paths:metalos_paths",
     ],
 )

@@ -5,14 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::path::Path;
+
 use anyhow::{anyhow, Context, Result};
 use slog::{debug, o, Logger};
 use structopt::StructOpt;
 use systemd::{FilePath, Systemd};
 
 use crate::mount::{mount, Opts as MountOpts};
-
-pub const ROOTDISK_DIR: &str = "/rootdisk";
 
 #[derive(StructOpt)]
 pub struct Opts {
@@ -78,19 +78,24 @@ fn replace_subvol<S: AsRef<str>, T: AsRef<str>>(options: Vec<S>, new: T) -> Resu
             Some(subvol) => {
                 // the subvolume that we are switch-rooting into is guaranteed
                 // to be nested under whatever subvolume is already mounted at
-                // /rootdisk. So we want to strip off the /rootdisk so that we
-                // can get the path relative to the top of the volume
-                let new = match new.as_ref().strip_prefix(ROOTDISK_DIR) {
-                    Some(subvol) => subvol.trim_start_matches('/'),
-                    None => {
+                // /run/fs/control. So we want to strip off the /run/fs/control
+                // so that we can get the path relative to the top of the volume
+                let new = match Path::new(new.as_ref()).strip_prefix(metalos_paths::control()) {
+                    Ok(subvol) => subvol,
+                    Err(_) => {
                         return Err(anyhow!(
                             "Found subvolume ({}) option but it didn't start with {}",
                             new.as_ref(),
-                            ROOTDISK_DIR
+                            metalos_paths::control().display(),
                         ));
                     }
                 };
-                format!("subvol={}/{}", subvol, new)
+                format!(
+                    "subvol={}/{}",
+                    subvol,
+                    new.to_str()
+                        .with_context(|| format!("new subvol {:?} was not utf-8", new))?
+                )
             }
             None => opt.as_ref().into(),
         };
@@ -109,19 +114,20 @@ fn find_rootdisk_device() -> Result<(String, String)> {
     Ok((dev, opts))
 }
 
-/// Parse /proc/mounts output to find the device which is mounted at /rootdisk
+/// Parse /proc/mounts output to find the device which is mounted at /run/fs/control
 fn parse_rootdisk_device(mounts: String) -> Result<(String, String)> {
     let (mut dev, opts): (String, String) = mounts
         .lines()
         .filter_map(|l| {
             let fields: Vec<_> = l.split_whitespace().collect();
-            match fields[1] {
-                ROOTDISK_DIR => Some((fields[0].into(), fields[3].into())),
-                _ => None,
+            if Path::new(fields[1]) == metalos_paths::control() {
+                Some((fields[0].into(), fields[3].into()))
+            } else {
+                None
             }
         })
         .next()
-        .ok_or_else(|| anyhow!("{} not in mounts", ROOTDISK_DIR))?;
+        .ok_or_else(|| anyhow!("{} not in mounts", metalos_paths::control().display()))?;
 
     // /proc/mounts escapes characters with octal
     if dev.contains('\\') {
@@ -174,8 +180,7 @@ fs2 /data/users/vmagro/scratch/dataZusersZvmagroZfbsource/buck-image-out 9p ro,d
 fs1 /mnt/gvfs 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0
 usr-local-fbcode /usr/local/fbcode 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0
 /dev/vdc /vmtest btrfs ro,relatime,space_cache,subvolid=256,subvol=/volume 0 0
-/dev/vda /rootdisk btrfs rw,relatime,space_cache,subvolid=256,subvol=/volume 0 0
-kernel-modules /rootdisk/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b36602 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0"#.to_string();
+/dev/vda /run/fs/control btrfs rw,relatime,space_cache,subvolid=256,subvol=/volume 0 0"#.to_string();
         assert_eq!(
             parse_rootdisk_device(input)?,
             (
@@ -185,8 +190,7 @@ kernel-modules /rootdisk/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b3
         );
         let input = r#"rootfs / rootfs rw 0 0
 /dev/vdc /vmtest btrfs ro,relatime,space_cache,subvolid=256,subvol=/volume 0 0
-/dev/disk/by-label/\134x2f /rootdisk btrfs rw,relatime,space_cache,subvolid=256,subvol=/volume 0 0
-kernel-modules /rootdisk/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b36602 9p ro,dirsync,relatime,loose,access=client,trans=virtio 0 0"#.to_string();
+/dev/disk/by-label/\134x2f /run/fs/control btrfs rw,relatime,space_cache,subvolid=256,subvol=/volume 0 0"#.to_string();
         assert_eq!(
             parse_rootdisk_device(input)?,
             (
@@ -208,7 +212,7 @@ kernel-modules /rootdisk/usr/lib/modules/5.2.9-229_fbk15_hardened_4185_g357f49b3
                     "subvolid=256",
                     "subvol=volume"
                 ],
-                "/rootdisk/run/boot/0:bootid",
+                "/run/fs/control/run/boot/0:bootid",
             )
             .expect("Failed to call replace_subvol"),
             vec![

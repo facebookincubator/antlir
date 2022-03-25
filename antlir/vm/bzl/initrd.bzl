@@ -51,12 +51,12 @@ def initrd(kernel, module_list = None, visibility = None):
                 before = ["initrd-fs.target"],
             ),
             what = "kernel-modules",
-            where = "/rootdisk/usr/lib/modules/{}".format(kernel.uname),
+            where = "/sysroot/usr/lib/modules/{}".format(kernel.uname),
             type = "9p",
             options = ["ro", "trans=virtio", "version=9p2000.L", "cache=loose", "posixacl"],
         ),
     )
-    mount_unit_name = systemd.escape("/rootdisk/usr/lib/modules/{}.mount".format(kernel.uname), path = True)
+    mount_unit_name = systemd.escape("/sysroot/usr/lib/modules/{}.mount".format(kernel.uname), path = True)
 
     # Build an initrd specifically for operating as a VM. This is built on top of the
     # MetalOS initrd and modified to support 9p shared mounts for the repository,
@@ -68,6 +68,7 @@ def initrd(kernel, module_list = None, visibility = None):
         feature.remove("/usr/lib/systemd/system/initrd-switch-root.target.requires/metalos-switch-root.service"),
         systemd.install_unit(antlir_dep("vm/initrd:initrd-switch-root.service")),
         systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
+        systemd.install_unit(antlir_dep("vm/initrd:sysroot.mount")),
         install_kernel_modules(kernel, module_list),
         # mount kernel modules over 9p in the initrd so they are available
         # immediately in the base os.

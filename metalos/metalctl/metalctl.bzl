@@ -20,12 +20,13 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         "//metalos/host_configs:package-manifest-rust",
         "//metalos/host_configs:host-rust",
         "//metalos/lib/btrfs:btrfs",
-        "//metalos/lib/image:image",
-        "//metalos/lib/systemd:systemd",
         "//metalos/lib/expand_partition:expand_partition",
         "//metalos/lib/find_root_disk:find_root_disk",
-        "//metalos/lib/send_events:send_events",
+        "//metalos/lib/image:image",
+        "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/net_utils:net_utils",
+        "//metalos/lib/send_events:send_events",
+        "//metalos/lib/systemd:systemd",
         "anyhow",  # ~9.5k, very helpful for error handling
         "nix",  # ~5k: access to syscalls (mount, etc)
         "libc",

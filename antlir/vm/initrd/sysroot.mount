@@ -1,0 +1,4 @@
+[Mount]
+What=LABEL=/
+Where=/sysroot
+Options=subvol=volume

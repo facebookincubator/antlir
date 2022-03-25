@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::path::{Path, PathBuf};
-
 use anyhow::{Context, Result};
 #[cfg_attr(initrd, allow(unused_imports))]
 use futures::future::try_join_all;
@@ -23,17 +21,11 @@ use crate::load_host_config::get_host_config;
 #[derive(StructOpt)]
 pub struct Opts {
     host_config_uri: Url,
-    basedir: PathBuf,
 }
 
 /// Download a single image into the given destination
-async fn fetch_image(
-    log: Logger,
-    dl: impl Downloader,
-    image: AnyImage,
-    basedir: &Path,
-) -> Result<Subvolume> {
-    let dest = image.path_on_disk(basedir);
+async fn fetch_image(log: Logger, dl: impl Downloader, image: AnyImage) -> Result<Subvolume> {
+    let dest = image.path_on_disk();
     let log = log.new(o!("package" => format!("{:?}", image), "dest" => format!("{:?}", dest)));
     if dest.exists() {
         trace!(log, "subvolume already exists, using pre-cached subvol")
@@ -86,7 +78,6 @@ pub async fn fetch_images(log: Logger, config: crate::Config, opts: Opts) -> Res
                             host.runtime_config.images.rootfs
                         )
                     })?,
-                &opts.basedir,
             ),
             fetch_image(
                 log.clone(),
@@ -102,7 +93,6 @@ pub async fn fetch_images(log: Logger, config: crate::Config, opts: Opts) -> Res
                             host.runtime_config.images.kernel
                         )
                     })?,
-                &opts.basedir,
             ),
         );
         let root_subvol = root_subvol.context("while downloading rootfs")?;
@@ -113,9 +103,10 @@ pub async fn fetch_images(log: Logger, config: crate::Config, opts: Opts) -> Res
         std::fs::write(
             "/run/metalos/image_paths_environment",
             format!(
-                "METALOS_OS_VOLUME={}\nMETALOS_KERNEL_VOLUME={}\n",
+                "METALOS_OS_VOLUME={}\nMETALOS_KERNEL_VOLUME={}\nMETALOS_KERNEL_SUBVOLID={}\n",
                 root_subvol.path().display(),
-                kernel_subvol.path().display()
+                kernel_subvol.path().display(),
+                kernel_subvol.id(),
             ),
         )
         .context("while writing /run/metalos/image_paths_environment")?
@@ -125,13 +116,12 @@ pub async fn fetch_images(log: Logger, config: crate::Config, opts: Opts) -> Res
         try_join_all(host.runtime_config.images.manifest.images.iter().map(|i| {
             let log = log.clone();
             let dl = dl.clone();
-            let basedir = &opts.basedir;
             async move {
                 let image = i
                     .clone()
                     .try_into()
                     .with_context(|| format!("while converting {:?}", i))?;
-                fetch_image(log, dl, image, basedir)
+                fetch_image(log, dl, image)
                     .await
                     .with_context(|| format!("while downloading {:?}", i))
             }
