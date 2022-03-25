@@ -26,9 +26,6 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use uuid::Uuid;
 
-/// MetalOS internal state goes here
-static METALOS_STATE_BASE: &str = "/run/fs/control/run/state/metalos";
-
 /// Special UUID for the "staged" value which holds special meaning
 /// c4dbff2e-2c0a-4e35-85a2-2ccb7dd8d8a9
 static UUID_STAGED: Uuid = Uuid::from_u128(261670975858436844194139735623489607849);
@@ -136,7 +133,7 @@ where
         // the type name is used to provide somewhat human-readable information
         // about the files on disk (eg if someone runs `ls`)
         let filename = format!("{}-{}.json", std::any::type_name::<S>(), &self.0);
-        Path::new(METALOS_STATE_BASE).join(filename)
+        metalos_paths::metalos_state().join(filename)
     }
 
     /// Token pointing to the most recently staged state item. This may or may
@@ -267,7 +264,7 @@ mod tests {
 
     #[containertest]
     fn current() -> Result<()> {
-        std::fs::create_dir_all(METALOS_STATE_BASE)?;
+        std::fs::create_dir_all(metalos_paths::metalos_state())?;
         let current: Option<ExampleState> =
             load(Token::current()).context("while loading non-existent current")?;
         assert_eq!(None, current);
@@ -289,7 +286,7 @@ mod tests {
 
     #[containertest]
     fn kv() -> Result<()> {
-        std::fs::create_dir_all(METALOS_STATE_BASE)?;
+        std::fs::create_dir_all(metalos_paths::metalos_state())?;
         let token = save(ExampleState {
             hello: "world".into(),
         })

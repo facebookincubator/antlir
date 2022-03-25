@@ -1,0 +1,7 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "metalos_paths",
+    srcs = glob(["src/*.rs"]),
+    visibility = ["//metalos/..."],
+)

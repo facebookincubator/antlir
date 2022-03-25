@@ -5,8 +5,8 @@ OnFailure=emergency.target
 OnFailureJobMode=replace-irreversibly
 AllowIsolate=yes
 
-Requires=rootdisk.mount
-After=rootdisk.mount
+Requires=run-fs-control.mount
+After=run-fs-control.mount
 
 # This lists all the packages require for assembling
 # the boot. Currently this is only the rootfs.

@@ -14,7 +14,6 @@ use slog::{error, info, o, Logger};
 use structopt::StructOpt;
 
 use crate::kernel_cmdline::{MetalosCmdline, Root};
-use crate::switch_root::ROOTDISK_DIR;
 use net_utils::get_mac;
 use systemd::render::{MountSection, NetworkUnit, NetworkUnitMatchSection, UnitSection};
 use systemd_generator_lib::{
@@ -115,13 +114,13 @@ fn make_mount_unit(root: Root, rootdisk: &Path) -> Result<MountUnit> {
             })
         } else {
             Err(anyhow!(
-                "Not writing rootdisk.mount root (\"{}\") doesn't start with LABEL=",
+                "Not writing run-fs-control.mount root (\"{}\") doesn't start with LABEL=",
                 what
             ))
         }
     } else {
         Err(anyhow!(
-            "Not writing rootdisk.mount because no root kernel parameter was provided"
+            "Not writing run-fs-control.mount because no root kernel parameter was provided"
         ))
     }
 }
@@ -163,11 +162,11 @@ fn metalos_existing_boot_info(
     host_config_uri: String,
     mac_address: Option<String>,
 ) -> Result<BootInfoResult<MetalosEnvironment>> {
-    let rootdisk: &Path = Path::new(ROOTDISK_DIR);
+    let rootdisk: &Path = metalos_paths::control();
     let boot_id = get_boot_id().context("Failed to get boot id")?;
     let env = MetalosEnvironment {
         host_config_uri,
-        rootdisk_dir: ROOTDISK_DIR.into(),
+        rootdisk_dir: metalos_paths::control().into(),
         metalos_boots_dir: rootdisk.join("run/boot"),
         metalos_current_boot_dir: rootdisk.join(format!("run/boot/{}:{}", 0, boot_id)),
         metalos_images_dir: rootdisk.join("image"),
@@ -252,7 +251,7 @@ fn legacy_boot_info(
     Ok(BootInfoResult {
         env: LegacyEnvironment {},
         extra_deps: ExtraDependencies::new(),
-        mount_unit: make_mount_unit(root, Path::new(ROOTDISK_DIR))
+        mount_unit: make_mount_unit(root, metalos_paths::control())
             .context("Failed to build mount unit")?,
         network_unit_dropin: make_network_unit_dropin(
             ETH_NETWORK_UNIT_FILENAME.to_string(),
@@ -572,7 +571,7 @@ mod tests {
                     [Unit]\n\
                     [Mount]\n\
                     What=LABEL=unittest\n\
-                    Where=/rootdisk\n\
+                    Where=/run/fs/control\n\
                     Options=\n\
                     Type=btrfs\n\
                 ".into(),
@@ -586,18 +585,18 @@ mod tests {
                     After=metalos-apply-host-config.service\n\
                     Requires=metalos-apply-host-config.service\n\
                     ".into(),
-                opts.normal_dir.join("rootdisk.mount.d/metalos_reimage_boot.conf") => "\
+                opts.normal_dir.join("run-fs-control.mount.d/metalos_reimage_boot.conf") => "\
                     [Unit]\n\
                     After=metalos-image-root-disk.service\n\
                     Requires=metalos-image-root-disk.service\n\
                     ".into(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
                     HOST_CONFIG_URI=https://server:8000/config\n\
-                    METALOS_BOOTS_DIR=/rootdisk/run/boot\n\
-                    METALOS_CURRENT_BOOT_DIR=/rootdisk/run/boot/0:{}\n\
+                    METALOS_BOOTS_DIR=/run/fs/control/run/boot\n\
+                    METALOS_CURRENT_BOOT_DIR=/run/fs/control/run/boot/0:{}\n\
                     METALOS_DISK_IMAGE_PKG=reimage_pkg\n\
-                    METALOS_IMAGES_DIR=/rootdisk/image\n\
-                    ROOTDISK_DIR=/rootdisk\n\
+                    METALOS_IMAGES_DIR=/run/fs/control/image\n\
+                    ROOTDISK_DIR=/run/fs/control\n\
                     ",
                     boot_id
                 ).into(),
@@ -639,7 +638,7 @@ mod tests {
                     [Unit]\n\
                     [Mount]\n\
                     What=LABEL=unittest\n\
-                    Where=/rootdisk\n\
+                    Where=/run/fs/control\n\
                     Options=\n\
                     Type=btrfs\n\
                 ".into(),
@@ -655,10 +654,10 @@ mod tests {
                     ".into(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
                     HOST_CONFIG_URI=https://server:8000/config\n\
-                    METALOS_BOOTS_DIR=/rootdisk/run/boot\n\
-                    METALOS_CURRENT_BOOT_DIR=/rootdisk/run/boot/0:{}\n\
-                    METALOS_IMAGES_DIR=/rootdisk/image\n\
-                    ROOTDISK_DIR=/rootdisk\n\
+                    METALOS_BOOTS_DIR=/run/fs/control/run/boot\n\
+                    METALOS_CURRENT_BOOT_DIR=/run/fs/control/run/boot/0:{}\n\
+                    METALOS_IMAGES_DIR=/run/fs/control/image\n\
+                    ROOTDISK_DIR=/run/fs/control\n\
                     ",
                     boot_id
                 ).into(),
@@ -720,7 +719,7 @@ mod tests {
                     [Unit]\n\
                     [Mount]\n\
                     What=LABEL=unittest\n\
-                    Where=/rootdisk\n\
+                    Where=/run/fs/control\n\
                     Options=f1,f2,f3,ro\n\
                 ".into(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => "".into(),
@@ -760,10 +759,11 @@ mod tests {
             MetalosReimageEnvironment {
                 metalos_common: MetalosEnvironment {
                     host_config_uri: "test_config_uri".to_string(),
-                    rootdisk_dir: "/rootdisk".into(),
-                    metalos_boots_dir: "/rootdisk/run/boot".into(),
-                    metalos_current_boot_dir: format!("/rootdisk/run/boot/0:{}", boot_id).into(),
-                    metalos_images_dir: "/rootdisk/image".into(),
+                    rootdisk_dir: "/run/fs/control".into(),
+                    metalos_boots_dir: "/run/fs/control/run/boot".into(),
+                    metalos_current_boot_dir: format!("/run/fs/control/run/boot/0:{}", boot_id)
+                        .into(),
+                    metalos_images_dir: "/run/fs/control/image".into(),
                 },
                 disk_image_package: "test_reimage_package:123".to_string(),
             }
@@ -777,7 +777,7 @@ mod tests {
                     requires: "metalos-snapshot-root.service".into(),
                 },
                 "metalos_reimage_boot".to_string() => ExtraDependency {
-                    source: "rootdisk.mount".into(),
+                    source: "run-fs-control.mount".into(),
                     requires: "metalos-image-root-disk.service".into(),
                 },
                 "apply_host_config".to_string() => ExtraDependency {
@@ -793,7 +793,7 @@ mod tests {
                 unit_section: UnitSection::default(),
                 mount_section: MountSection {
                     what: "LABEL=unittest".into(),
-                    where_: "/rootdisk".into(),
+                    where_: "/run/fs/control".into(),
                     options: Some("f1,f2,f3,rw".to_string()),
                     type_: Some("testfs".to_string()),
                 }
@@ -838,10 +838,10 @@ mod tests {
             boot_info_result.env,
             MetalosEnvironment {
                 host_config_uri: "test_config_uri".to_string(),
-                rootdisk_dir: "/rootdisk".into(),
-                metalos_boots_dir: "/rootdisk/run/boot".into(),
-                metalos_current_boot_dir: format!("/rootdisk/run/boot/0:{}", boot_id).into(),
-                metalos_images_dir: "/rootdisk/image".into(),
+                rootdisk_dir: "/run/fs/control".into(),
+                metalos_boots_dir: "/run/fs/control/run/boot".into(),
+                metalos_current_boot_dir: format!("/run/fs/control/run/boot/0:{}", boot_id).into(),
+                metalos_images_dir: "/run/fs/control/image".into(),
             }
         );
 
@@ -865,7 +865,7 @@ mod tests {
                 unit_section: UnitSection::default(),
                 mount_section: MountSection {
                     what: "LABEL=unittest".into(),
-                    where_: "/rootdisk".into(),
+                    where_: "/run/fs/control".into(),
                     options: Some("f1,f2,f3,rw".to_string()),
                     type_: Some("testfs".to_string()),
                 }
@@ -912,7 +912,7 @@ mod tests {
                 unit_section: UnitSection::default(),
                 mount_section: MountSection {
                     what: "LABEL=unittest".into(),
-                    where_: "/rootdisk".into(),
+                    where_: "/run/fs/control".into(),
                     options: Some("f1,f2,f3,rw".to_string()),
                     type_: Some("testfs".to_string()),
                 }

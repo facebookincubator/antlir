@@ -3,8 +3,8 @@ Description=Fetch required images
 Requires=network-online.target
 After=network-online.target
 
-Requires=rootdisk.mount
-After=rootdisk.mount
+Requires=run-fs-control.mount
+After=run-fs-control.mount
 
 Requires=metalos-load-host-config.service
 After=metalos-load-host-config.service
@@ -16,4 +16,4 @@ AssertPathExists=/run/metalos/host-config
 EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
 RemainAfterExit=true
-ExecStart=metalctl fetch-images file:///run/metalos/host-config ${METALOS_IMAGES_DIR}
+ExecStart=metalctl fetch-images file:///run/metalos/host-config

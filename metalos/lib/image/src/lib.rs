@@ -141,8 +141,8 @@ impl AnyImage {
         self.kind
     }
 
-    pub fn path_on_disk(&self, basedir: &Path) -> PathBuf {
-        basedir.join(format!("{}/{}:{}", self.kind.as_str(), self.name, self.id))
+    pub fn path_on_disk(&self) -> PathBuf {
+        metalos_paths::images().join(format!("{}/{}:{}", self.kind.as_str(), self.name, self.id))
     }
 }
 

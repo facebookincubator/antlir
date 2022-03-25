@@ -13,10 +13,7 @@ image.layer(
     features = [
         # otherwise we have to wait for this to timeout
         systemd.mask_units(["systemd-networkd-wait-online.service"]),
-        # The rootdisk.mount unit will not work in a container
-        # test so lets remove it.
-        feature.remove("/usr/lib/systemd/system/rootdisk.mount"),
-        feature.remove("/usr/lib/systemd/system/basic.target.requires/rootdisk.mount"),
+        # This mount unit will not work in a container test so lets remove it.
         feature.remove("/usr/lib/systemd/system/run-fs-control.mount"),
         feature.remove("/usr/lib/systemd/system/basic.target.requires/run-fs-control.mount"),
     ],

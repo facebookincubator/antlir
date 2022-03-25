@@ -187,13 +187,11 @@ image.layer(
         # disk reimage is a very explicit operation.
         systemd.install_unit("units/metalos-image-root-disk.service"),
         systemd.install_unit("units/metalos-load-host-config.service"),
-        systemd.install_unit("units/metalos-mount-kernel-modules.service"),
         systemd.install_unit("units/metalos-snapshot-root.service"),
         systemd.install_unit("units/metalos-switch-root.service"),
         systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
         feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
-        image.ensure_subdirs_exist("/", "rootdisk"),
         # generic metalos generators to be applied to the root fs
         "//metalos/host_configs:generators",
     ],

@@ -7,8 +7,8 @@ AllowIsolate=yes
 
 # We require this mount because we only sometimes will depend on
 # metalos-snapshot-root.target which is controlled by the generator
-Requires=rootdisk.mount
-After=rootdisk.mount
+Requires=run-fs-control.mount
+After=run-fs-control.mount
 
 # Disable systemd-networkd.service because we're going to cleanup the
 # network configuration before doing the switch-root.
@@ -23,10 +23,6 @@ After=systemd-tmpfiles-setup.service
 # We must communicate with the systemd manager over dbus
 Requires=dbus.service
 After=dbus.service
-
-# Kernel modules must be mounted
-Requires=metalos-mount-kernel-modules.service
-After=metalos-mount-kernel-modules.service
 
 [Service]
 EnvironmentFile=/run/systemd/generator/metalos_environment

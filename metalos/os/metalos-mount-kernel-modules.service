@@ -1,6 +1,5 @@
 [Unit]
 Description=Mount metalOS kernel modules
-After=rootdisk.mount
 DefaultDependencies=no
 
 [Service]
@@ -8,4 +7,4 @@ EnvironmentFile=/run/metalos/image_paths_environment
 Type=oneshot
 RemainAfterExit=true
 ExecStart=mkdir -p /usr/lib/modules/%v
-ExecStart=mount --bind ${METALOS_KERNEL_VOLUME} /usr/lib/modules/%v
+ExecStart=mount LABEL=/ -o subvolid=${METALOS_KERNEL_SUBVOLID} /usr/lib/modules/%v
