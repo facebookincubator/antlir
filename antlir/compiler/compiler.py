@@ -18,15 +18,12 @@ and invokes `.build()` to apply each item to actually construct the subvol.
 import argparse
 import concurrent.futures
 import cProfile
-import multiprocessing.connection
 import os
 import pwd
-import socket
 import stat
 import sys
 import uuid
 from contextlib import ExitStack, nullcontext
-from multiprocessing import Pipe
 from subprocess import CalledProcessError
 from typing import Iterator, List
 
@@ -38,7 +35,7 @@ from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items_for_features import gen_items_for_features
 from antlir.config import repo_config
-from antlir.errors import UserError, SerializedException, serialize_exception
+from antlir.errors import UserError
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import META_FLAVOR_FILE, Path
 from antlir.nspawn_in_subvol.args import (
@@ -220,7 +217,6 @@ def invoke_compiler_inside_build_appliance(
     args: argparse.Namespace,
     argv: List[str],
 ):
-    (error_pipe_recv, error_pipe_send) = Pipe(duplex=False)
     rw_bindmounts = []
     if args.profile_dir:
         prof_filename = construct_profile_filename(args.child_layer_target)
@@ -253,7 +249,6 @@ def invoke_compiler_inside_build_appliance(
         bind_repo_ro=True,
         bind_artifacts_dir_rw=True,
         hostname=hostname_for_compiler_in_ba(),
-        forward_fd=[error_pipe_send.fileno()],
         bindmount_rw=rw_bindmounts,
     )
     try:
@@ -270,18 +265,15 @@ def invoke_compiler_inside_build_appliance(
             ),
         )
     except CalledProcessError as e:  # pragma: no cover
-        # If the inner compiler failed with an exception, it will send it on the
-        # error pipe created above. If it failed catastrophically (or never
-        # started), we will only get the CalledProcessError
-        if not error_pipe_recv.poll(1):
-            raise RuntimeError(
-                "inner compiler failed, but didn't send a nice Exception"
-            ) from e
-        exc: SerializedException = error_pipe_recv.recv()
-        # This is the real error that we want to raise, since the outer
-        # compiler did its job correctly. `raise from None` so that the
-        # CalledProcessError is not present at all (it adds no extra value)
-        raise exc from None
+        # If this failed, it's exceedingly unlikely for this backtrace to
+        # actually be useful, and instead it just makes it harder to find the
+        # "real" backtrace from the internal compiler. However, in the rare
+        # chance that it is useful, ANTLIR_DEBUG voids all warranties for a
+        # possibly-actually-readable stderr, and will includ the outer backtrace
+        # as well as any inner failures
+        if args.debug:
+            raise e
+        sys.exit(e.returncode)
 
 
 def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
@@ -395,64 +387,21 @@ if __name__ == "__main__":  # pragma: no cover
     args = parse_args(argv)
     init_logging(debug=args.debug)
 
-    try:
-        with (cProfile.Profile() if args.profile_dir else nullcontext()) as pr:
-            try:
-                subvol = build_image(args, argv)
-                if not args.is_nested:
-                    subvol.to_json_file(sys.stdout)
-            except UserError as e:
-                if args.debug:
-                    raise e
-                sys.stderr.write("\n")
-                sys.stderr.write(str(e))
-                sys.exit(1)
-        if args.profile_dir:
-            assert pr is not None
-            filename = construct_profile_filename(
-                args.child_layer_target, is_nested=args.is_nested
-            )
-            os.makedirs(args.profile_dir, exist_ok=True)
-            pr.dump_stats(args.profile_dir / filename)
-    # an exception was received from the nested compiler, log it if possible
-    except SerializedException as ex:
+    with (cProfile.Profile() if args.profile_dir else nullcontext()) as pr:
         try:
-            from rfe.scubadata.scubadata_py3 import ScubaData, Sample
-
-            sample = Sample()
-            sample.add_normal("class", type(ex.exception).__name__)
-            sample.add_normal("msg", str(ex.exception))
-            sample.add_normal("hostname", socket.gethostname())
-            sample.add_normal(
-                "sandcastle_id", os.environ.get("SANDCASTLE_INSTANCE_ID")
-            )
-            if isinstance(ex.exception, CalledProcessError):
-                cpe: CalledProcessError = ex.exception  # i <3 pyre
-                sample.add_normal("code", str(cpe.returncode))
-                sample.add_normvector("cmd", cpe.cmd)
-            sample.add_normvector("traceback", ex.traceback)
-
-            with ScubaData("antlir_errors") as scubadata:
-                scubadata.addSample(sample)
-
-        except ImportError:
-            print(
-                "scuba is unavailable, not logging errors anywhere",
-                file=sys.stderr,
-            )
-
-        print(ex.exception, file=sys.stderr)
-        print("\n".join(ex.traceback), file=sys.stderr)
-        sys.exit(1)
-    except Exception as ex:
-        if args.is_nested:
-            # error pipe is the only forwarded fd, so it's #3 automatically
-            c = multiprocessing.connection.Connection(3)
-            c.send(serialize_exception(ex))
-            c.close()
-            # the actual Exception will be `raise`d in the outer compiler, so
-            # keep the log clean and just exit(1) here instead of printing the
-            # same exception twice
+            subvol = build_image(args, argv)
+            if not args.is_nested:
+                subvol.to_json_file(sys.stdout)
+        except UserError as e:
+            if args.debug:
+                raise e
+            sys.stderr.write("\n")
+            sys.stderr.write(str(e))
             sys.exit(1)
-        else:
-            raise
+    if args.profile_dir:
+        assert pr is not None
+        filename = construct_profile_filename(
+            args.child_layer_target, is_nested=args.is_nested
+        )
+        os.makedirs(args.profile_dir, exist_ok=True)
+        pr.dump_stats(args.profile_dir / filename)
