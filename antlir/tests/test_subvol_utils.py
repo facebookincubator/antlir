@@ -233,11 +233,8 @@ class SubvolTestCase(AntlirTestCase):
             self.assertEqual(sendstream, outfile.read())
 
     @with_temp_subvols
-    def _test_mark_readonly_and_send_to_new_loopback(
-        self, temp_subvols, multi_pass_size_minimization
-    ):
+    def _test_mark_readonly_and_send_to_new_loopback(self, temp_subvols):
         loopback_opts = loopback_opts_t(
-            minimize_size=multi_pass_size_minimization,
             subvol_name="check_subvol_rename",
         )
         sv = temp_subvols.create("subvol")
@@ -253,22 +250,7 @@ class SubvolTestCase(AntlirTestCase):
         sv.run_as_root(["mkdir", sv.path("0")])
         sv.run_as_root(["tee", sv.path("0/0")], input=b"0123456789")
 
-        # The default waste factor succeeds in 1 try, but a too-low
-        # factor results in 2 tries.
-        waste_too_low = 1.00015
-
         with tempfile.NamedTemporaryFile() as loop_path:
-            self.assertEqual(
-                2,
-                sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name,
-                    loopback_opts=loopback_opts,
-                    waste_factor=waste_too_low,
-                ),
-            )
-
-            # Now do it again without the waste factor so that
-            # it only takes one pass
             self.assertEqual(
                 1,
                 sv.mark_readonly_and_send_to_new_loopback(
@@ -290,14 +272,7 @@ class SubvolTestCase(AntlirTestCase):
                 )
 
     def test_mark_readonly_and_send_to_new_loopback(self):
-        self._test_mark_readonly_and_send_to_new_loopback(
-            multi_pass_size_minimization=False
-        )
-
-    def test_mark_readonly_and_send_to_new_loopback_with_multi_pass(self):
-        self._test_mark_readonly_and_send_to_new_loopback(
-            multi_pass_size_minimization=True
-        )
+        self._test_mark_readonly_and_send_to_new_loopback()
 
     @with_temp_subvols
     def test_mark_readonly_and_send_to_new_loopback_writable(
