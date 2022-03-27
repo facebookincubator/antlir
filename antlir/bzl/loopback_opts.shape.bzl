@@ -15,12 +15,6 @@ loopback_opts_t = shape.shape(
     # known.  Until that issue is fixed, we will just embed these
     # here.
     #
-    # Optionally force enable/disable the minimization of a btrfs
-    # loopback.  By default, if the the package is built when
-    # REPO_CFG.artifacts_require_repo == False it will be minimized.
-    # In some situations, it is desireable to control this behavior
-    # explicitly.
-    minimize_size = shape.field(bool, default = False),
     writable_subvolume = shape.field(bool, default = False),
     seed_device = shape.field(bool, default = False),
     default_subvolume = shape.field(bool, default = False),

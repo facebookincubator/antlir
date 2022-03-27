@@ -763,7 +763,7 @@ class Subvol(DoNotFreeze):
             filesystem that needed more than 5%.  Later, we can add
             monitoring and gradually dial this down.
 
-          - If your subvolume's `_estimate_content_bytes` is X, and it
+          - If your subvolume's `estimate_content_bytes` is X, and it
             fits in a loopback of size Y, it is not guaranteed that you
             could have used `waste_factor = Y / X`, because lazy writes make
             it possible to resize a populated filesystem to have a size
@@ -824,7 +824,7 @@ class Subvol(DoNotFreeze):
             # circumstances, and this initial overhead is not multiplicative.
             # To be specific, I tried single-file subvolumes with files of size
             # 27, 69, 94, 129, 175, 220MiB.
-            fs_bytes = self._estimate_content_bytes() + 81 * MiB
+            fs_bytes = self.estimate_content_bytes() + 81 * MiB
             # We also need to build an image of at least the MIN_CREATE_BYTES
             # size required by btrfs.
             fs_bytes = (
@@ -839,28 +839,6 @@ class Subvol(DoNotFreeze):
                 )
 
                 if leftover_bytes == 0:
-                    if not loopback_opts.minimize_size:
-                        break
-                    # The following simple trick saves about 30% of image size.
-                    # The reason is that btrfs auto-allocates more metadata
-                    # blocks for larger filesystems, but `resize` does not
-                    # release them. For many practical use-cases the compression
-                    # ratio is close to 2, hence initial `fs_bytes` estimate is
-                    # too high.
-                    (
-                        leftover_bytes,
-                        new_size,
-                    ) = self._send_to_loopback_second_pass(
-                        output_path, image_size, loopback_opts
-                    )
-                    assert leftover_bytes == 0, (
-                        f"Cannot fit {self._path} in {image_size} bytes, "
-                        f"{leftover_bytes} sendstream bytes were left over"
-                    )
-                    assert new_size <= image_size, (
-                        "The second pass of btrfs send-receive produced worse"
-                        f"results that the first: {new_size} vs. {image_size}"
-                    )
                     break  # pragma: no cover
                 fs_bytes += leftover_bytes
                 log.warning(
@@ -922,7 +900,7 @@ class Subvol(DoNotFreeze):
         ):
             yield
 
-    def _estimate_content_bytes(self) -> int:
+    def estimate_content_bytes(self) -> int:
         """
         Returns a (usually) tight lower-bound guess of the filesystem size
         necessary to contain this subvolume.  The caller is responsible for
@@ -933,7 +911,7 @@ class Subvol(DoNotFreeze):
           - If quotas are enabled, this should be an `O(1)` operation
             instead of the more costly filesystem tree traversal.  NB:
             qgroup size estimates tend to run a bit (~1%) lower than `du`,
-            so growth factors may need a tweak.  `_estimate_content_bytes()`
+            so growth factors may need a tweak.  `estimate_content_bytes()`
             should `log.warning` and fall back to `du` if quotas are
             disabled in an older `buck-image-out`.  It's also an option to
             enable quotas and to trigger a `rescan -w`, but requires more
@@ -1152,59 +1130,6 @@ class Subvol(DoNotFreeze):
                 if not loopback_opts.size_mb
                 else loop_vol.get_size(),
             )
-
-    def _send_to_loopback_second_pass(
-        self,
-        output_path,
-        initial_size_bytes,
-        loopback_opts: loopback_opts_t
-        # pyre-fixme[31]: Expression `(int, int)` is not a valid type.
-    ) -> (int, int):
-        size_bytes_to_try = 512 * os.stat(output_path).st_blocks
-
-        # we cannot make a loopback that is smaller than MIN_CREATE_BYTES
-        size_bytes_to_try = (
-            size_bytes_to_try
-            if size_bytes_to_try >= MIN_CREATE_BYTES
-            else MIN_CREATE_BYTES
-        )
-        attempts = 0
-        last_effort = False
-        while True:
-            attempts += 1
-            size_bytes_to_try *= 1.1
-            if size_bytes_to_try >= initial_size_bytes:
-                # If we got here we could just use the output of the first pass.
-                # This is a possible future disk vs time optimization.
-                size_bytes_to_try = initial_size_bytes
-                last_effort = True
-            leftover_bytes, new_size = self._send_to_loopback_if_fits(
-                output_path, int(size_bytes_to_try), loopback_opts
-            )
-            if leftover_bytes != 0:
-                log.warning(
-                    f"{self._path} did not fit in {size_bytes_to_try} bytes, "
-                    f"{leftover_bytes} sendstream bytes were left over, "
-                    f"attempts {attempts}"
-                )
-
-                # The new size might be larger than `size_bytes_to_try` because
-                # there is a minimum size for a loopback image.  That is
-                # defined by MIN_CREATE_BYTES.  Lets be paranoid
-                # and check to make sure that we either had to use the
-                # min size, or we got back the size we were trying.
-                assert (
-                    int(size_bytes_to_try) < MIN_CREATE_BYTES
-                    or int(size_bytes_to_try) == new_size
-                )
-
-                size_bytes_to_try = new_size
-
-            if leftover_bytes == 0 or last_effort:
-                return (leftover_bytes, new_size)
-            assert (
-                attempts <= 10
-            ), f"{attempts} attempts were not enough for {self._path}"
 
     @contextmanager
     def receive(self, from_file) -> Iterator[None]:
