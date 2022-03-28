@@ -8,11 +8,13 @@
 Serve RPM repo snapshots inside the container by adding this to `plugins`
 kwarg of the `run_*` or `popen_*` functions: `RepoServers(snapshot_paths)`
 
-In practice, you will want `rpm_nspawn_plugins` instead.
+In practice, you will want `repo_nspawn_plugins` instead.
 
 The snapshots must already be in the container's image, and must have been
 built by the `rpm_repo_snapshot()` target, and installed via
 `install_rpm_repo_snapshot()`.
+
+Also starts FBPKG proxy server if needed.
 """
 import textwrap
 from contextlib import ExitStack, contextmanager
@@ -33,6 +35,10 @@ from antlir.nspawn_in_subvol.plugin_hooks import (
 from antlir.subvol_utils import Subvol
 
 from . import NspawnPlugin
+from .launch_proxy_server import (
+    launch_proxy_server_for_netns,
+    PROXY_SERVER_PORT,
+)
 from .launch_repo_servers import launch_repo_servers_for_netns
 
 
@@ -153,8 +159,20 @@ def _wrap_opts_with_container_pid_exfiltrator(
 
 
 class RepoServers(NspawnPlugin):
-    def __init__(self, serve_rpm_snapshots: Iterable[Path]) -> None:
+    def __init__(
+        self,
+        serve_rpm_snapshots: Iterable[Path],
+        run_proxy_server: bool = False,
+        fbpkg_db_path: Optional[Path] = None,
+    ) -> None:
         self._serve_rpm_snapshots = serve_rpm_snapshots
+        self._run_proxy_server = run_proxy_server
+        self._fbpkg_db_path = fbpkg_db_path
+
+        if (
+            self._run_proxy_server and not self._fbpkg_db_path
+        ):  # pragma: no cover
+            raise RuntimeError("fbpkg_db_path is requiered to run proxy_server")
 
     @staticmethod
     def _ns_sockets_needed(
@@ -239,6 +257,10 @@ class RepoServers(NspawnPlugin):
             ns_count, sockets_per_snapshot = self._ns_sockets_needed(
                 serve_rpm_snapshots, snap_subvol
             )
+
+            if self._run_proxy_server:
+                ns_count += 1
+
             ns_sockets_pool = create_sockets_inside_netns(
                 container_pid, ns_count
             )
@@ -246,6 +268,7 @@ class RepoServers(NspawnPlugin):
 
             # To speed up startup, launch all the servers, and then await them.
             snap_to_servers = {}
+
             for snap_dir in serve_rpm_snapshots:
                 snap_to_servers[snap_dir] = stack.enter_context(
                     launch_repo_servers_for_netns(
@@ -262,14 +285,28 @@ class RepoServers(NspawnPlugin):
                     sockets_per_snapshot[snap_dir] :
                 ]
 
-            log.info(
-                "Started `repo-server` for snapshots (ports): "
-                + ", ".join(
-                    f"""{snap.basename()} ({' '.join(
-                        str(s.port) for s in servers
-                    )})"""
-                    for snap, servers in snap_to_servers.items()
+            if snap_to_servers:
+                log.info(
+                    "Started `repo-server` for snapshots (ports): "
+                    + ", ".join(
+                        f"""{snap.basename()} ({' '.join(
+                            str(s.port) for s in servers
+                        )})"""
+                        for snap, servers in snap_to_servers.items()
+                    )
                 )
-            )
+
+            if self._run_proxy_server:
+                stack.enter_context(
+                    launch_proxy_server_for_netns(
+                        ns_socket=ns_sockets_pool.pop(),
+                        # pyre-fixme[6]: For seconde parameter expected Path
+                        # but got Optional[Path]
+                        fbpkg_db_path=self._fbpkg_db_path,
+                    )
+                )
+
+                log.info(f"Started `proxy-server` on port {PROXY_SERVER_PORT}")
+
             self._container_pid_exfiltrator.send_ready()
             yield popen_res

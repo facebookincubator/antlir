@@ -65,7 +65,7 @@ python_library(
         "//antlir:bzl_const",
         "//antlir/bzl/image_actions:rpms.shape-python",
         "//antlir/nspawn_in_subvol:nspawn",
-        "//antlir/nspawn_in_subvol/plugins:rpm",
+        "//antlir/nspawn_in_subvol/plugins:repo_plugins",
         "//antlir/rpm:find_snapshot",
         "//antlir/rpm:rpm_metadata",
     ],
@@ -79,7 +79,7 @@ python_library(
         "//antlir:fs_utils",
         "//antlir/bzl:genrule_layer.shape-python",
         "//antlir/nspawn_in_subvol:nspawn",
-        "//antlir/nspawn_in_subvol/plugins:rpm",
+        "//antlir/nspawn_in_subvol/plugins:repo_plugins",
     ],
 )
 

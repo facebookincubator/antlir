@@ -8,7 +8,7 @@ import logging
 import socket
 import subprocess
 from contextlib import ExitStack, contextmanager
-from typing import List, Generator, Any
+from typing import List, Generator
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path
@@ -47,7 +47,7 @@ def launch_repo_servers_for_netns(
     ns_sockets: List[socket.socket],
     snapshot_dir: Path,
     repo_server_bin: Path,
-) -> Generator[List[RepoServer], Any, Any]:
+) -> Generator[List[RepoServer], None, None]:
     """
     Yields a list of (host, port) pairs where the servers will listen.
     """

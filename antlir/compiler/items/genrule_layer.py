@@ -19,7 +19,7 @@ from antlir.nspawn_in_subvol.args import (
     AttachAntlirDirMode,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
+from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins
 from antlir.subvol_utils import Subvol
 
 from .common import LayerOpts, PhaseOrder
@@ -80,7 +80,7 @@ class GenruleLayerItem(genrule_layer_t):
             run_nspawn(  # NB: stdout redirects to stderr by default
                 opts,
                 PopenArgs(),
-                plugins=rpm_nspawn_plugins(
+                plugins=repo_nspawn_plugins(
                     opts=opts,
                     plugin_args=NspawnPluginArgs(
                         serve_rpm_snapshots=c_opts.serve_rpm_snapshots,

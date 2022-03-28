@@ -472,6 +472,8 @@ class NspawnPluginArgs(NamedTuple):
     shadow_paths: Iterable[Tuple[Path, Path]] = ()
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
     attach_antlir_dir: AttachAntlirDirMode = AttachAntlirDirMode.OFF
+    run_proxy_server: bool = False
+    fbpkg_db_path: Path = Path("")
 
 
 def _parser_add_plugin_args(parser: argparse.ArgumentParser):
@@ -565,6 +567,17 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser):
         "debugging layers to figure out why the BA `__antlir__` "
         "directory cannot be attached to the layer.",
     )
+    parser.add_argument(
+        "--run-proxy-server",
+        action="store_true",
+        dest="run_proxy_server",
+        help="Enabling this flag will start proxy server in the container.",
+    )
+    parser.add_argument(
+        "--fbpkg-db-path",
+        dest="fbpkg_db_path",
+        help="Path to the Repo DB. Requiered parameter for proxy_server",
+    )
 
 
 # Only for internal use by `nspawn-{run,test}-in-subvol`.
@@ -634,7 +647,6 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     del args.layer_path
     args.layer = find_built_subvol(layer_path)
     args.subvolume_on_disk = find_subvolume_on_disk(layer_path)
-
     return _extract_opts_from_dict(
         _new_nspawn_cli_args,
         _NspawnCLIArgs._fields,

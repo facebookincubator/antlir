@@ -5,8 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-The RPM-related plugins need to be composed in a specific way with one
-another, and with the plugin that handles shadowing proxied binaries.
+The Repo (RPM and others)-related plugins need to be composed in a specific way
+with one another, and with the plugin that handles shadowing proxied binaries.
 
 This here is the easiest implementation, which is simple at the cost of
 tight coupling.
@@ -31,7 +31,6 @@ plugins. Specifically:
 
 from typing import Iterable
 
-from antlir.common import set_new_key
 from antlir.fs_utils import ANTLIR_DIR, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.nspawn_in_subvol.args import (
     AttachAntlirDirMode,
@@ -76,7 +75,7 @@ def _get_snapshot_dir(opts: _NspawnOpts, plugin_args: NspawnPluginArgs):
     return opts.layer.path(RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR)
 
 
-def rpm_nspawn_plugins(
+def repo_nspawn_plugins(
     *, opts: _NspawnOpts, plugin_args: NspawnPluginArgs
 ) -> Iterable[NspawnPlugin]:
     serve_rpm_snapshots = set(plugin_args.serve_rpm_snapshots)
@@ -102,7 +101,8 @@ def rpm_nspawn_plugins(
             if plugin_args.attach_antlir_dir == AttachAntlirDirMode.DEFAULT_ON:
                 shadow_paths_allow_unmatched.append(prog_name)
 
-    # pyre-fixme[60]: Concatenation not yet support for multiple variadic tuples: `*[...
+    # pyre-fixme[60]: Concatenation not yet support for multiple
+    # variadic tuples: `*[...
     return (
         *(
             [AttachAntlirDir()]
@@ -144,9 +144,13 @@ def rpm_nspawn_plugins(
                     if plugin_args.snapshots_and_versionlocks
                     else []
                 ),
-                RepoServers(serve_rpm_snapshots),
+                RepoServers(
+                    serve_rpm_snapshots,
+                    plugin_args.run_proxy_server,
+                    plugin_args.fbpkg_db_path,
+                ),
             ]
-            if serve_rpm_snapshots
+            if serve_rpm_snapshots or plugin_args.run_proxy_server
             else ()
         ),
     )
