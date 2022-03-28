@@ -9,7 +9,7 @@ Populate the `versionlock.list` files inside the specified repo snapshots
 inside the container by adding this to `plugins` kwarg of the `run_*` or
 `popen_*` functions: `YumDnfVersionlock(snapshot_to_versionlock)`
 
-In practice, you will want `rpm_nspawn_plugins` instead.
+In practice, you will want `repo_nspawn_plugins` instead.
 
 To provide `versionlock.list` files in the container, this parses our own
 "version lock" format documented in `args.py` (or `--help` on the CLI),

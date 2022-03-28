@@ -25,7 +25,7 @@ python_library(
         "//antlir:subvol_utils",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
-        "//antlir/nspawn_in_subvol/plugins:rpm",
+        "//antlir/nspawn_in_subvol/plugins:repo_plugins",
     ],
 )
 

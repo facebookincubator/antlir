@@ -23,6 +23,11 @@ container_opts_t = shape.shape(
     # Setting this to `True` corresponds to `--attach-antlir-dir=explicit_on`,
     # see `buck run :YOURLAYER=container -- --help` for the docs.
     attach_antlir_dir = shape.field(bool, default = False),
+
+    # Run proxy
+    run_proxy_server = shape.field(bool, default = False),
+    # @oss-disable: fbpkg_db_path = shape.field(shape.path, optional = True), 
+
     # Do not use this, it is only exposed so that Antlir can populate the
     # repodata caches for the RPM snapshots.
     internal_only_unprotect_antlir_dir = shape.field(bool, default = False),

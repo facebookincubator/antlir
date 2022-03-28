@@ -21,7 +21,7 @@ from antlir.nspawn_in_subvol.args import (
     new_nspawn_opts,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
+from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol, TempSubvolumes
 
@@ -256,7 +256,7 @@ set -o pipefail
     res, _ = run_nspawn(
         opts,
         PopenArgs(stdout=subprocess.PIPE),
-        plugins=rpm_nspawn_plugins(
+        plugins=repo_nspawn_plugins(
             opts=opts,
             plugin_args=NspawnPluginArgs(
                 serve_rpm_snapshots=[subvols.rpm_repo_snapshot],

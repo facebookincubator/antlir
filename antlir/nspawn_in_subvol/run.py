@@ -116,7 +116,7 @@ from .args import PopenArgs, _NspawnOpts, _parse_cli_args
 from .common import UserFacingError
 from .nspawn import run_nspawn
 from .plugins import NspawnPlugin
-from .plugins.rpm import rpm_nspawn_plugins
+from .plugins.repo_plugins import repo_nspawn_plugins
 
 
 class _CliSetup(NamedTuple):
@@ -156,7 +156,7 @@ def _set_up_run_cli(argv: Iterable[Union[str, Path]]) -> _CliSetup:
         yield _CliSetup(
             console=console,
             opts=args.opts,
-            plugins=rpm_nspawn_plugins(
+            plugins=repo_nspawn_plugins(
                 opts=args.opts,
                 # pyre-fixme[16]: `_NspawnOpts` has no attribute `plugin_args`.
                 plugin_args=args.plugin_args,

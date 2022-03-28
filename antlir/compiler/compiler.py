@@ -44,7 +44,7 @@ from antlir.nspawn_in_subvol.args import (
     NspawnPluginArgs,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.nspawn_in_subvol.plugins.rpm import rpm_nspawn_plugins
+from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 
@@ -255,7 +255,7 @@ def invoke_compiler_inside_build_appliance(
         run_nspawn(
             opts,
             PopenArgs(),
-            plugins=rpm_nspawn_plugins(
+            plugins=repo_nspawn_plugins(
                 opts=opts,
                 plugin_args=NspawnPluginArgs(
                     serve_rpm_snapshots=[snapshot_dir],

@@ -9,7 +9,7 @@ Shadow certain paths inside the container with other container paths, by
 adding this to `plugins` kwarg of the `run_*` or `popen_*` functions:
   `ShadowPaths(shadow_paths)`
 
-In practice, you will want `rpm_nspawn_plugins` instead.
+In practice, you will want `repo_nspawn_plugins` instead.
 
 One application of path shadowing is to (transiently) replace the system's
 package manager with one that talks to our deterministic repo snaphot.

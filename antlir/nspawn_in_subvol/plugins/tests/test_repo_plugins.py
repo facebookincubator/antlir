@@ -23,22 +23,22 @@ from antlir.nspawn_in_subvol.common import AttachAntlirDirError
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
 from antlir.tests.layer_resource import layer_resource_subvol
 
-from .. import rpm as rpm_plugins
+from .. import repo_plugins
 
 
 def with_mock_plugins(method):
     @functools.wraps(method)
     def decorated(self, *args, **kwargs):
         with unittest.mock.patch.object(
-            rpm_plugins,
+            repo_plugins,
             "YumDnfVersionlock",
             side_effect=lambda x, y: ("fake_version_lock", x, y),
         ) as _, unittest.mock.patch.object(
-            rpm_plugins,
+            repo_plugins,
             "RepoServers",
-            side_effect=lambda x: ("fake_repo_server", x),
+            side_effect=lambda x, y, z: ("fake_repo_server", x),
         ) as _, unittest.mock.patch.object(
-            rpm_plugins,
+            repo_plugins,
             "ShadowPaths",
             side_effect=lambda x, y: (
                 "fake_shadow_paths",
@@ -46,7 +46,7 @@ def with_mock_plugins(method):
                 set(y),
             ),
         ) as _, unittest.mock.patch.object(
-            rpm_plugins,
+            repo_plugins,
             "AttachAntlirDir",
             side_effect=lambda: ("fake_attach_antlir_dir"),
         ) as _:
@@ -69,7 +69,7 @@ class RpmPluginsTestCase(unittest.TestCase):
         mock_subvol.path = mock.Mock(return_value=mock_path)
 
         return (
-            rpm_plugins._get_snapshot_dir(
+            repo_plugins._get_snapshot_dir(
                 opts=new_nspawn_opts(
                     cmd=[], layer=mock_subvol, subvolume_on_disk=svod
                 ),
@@ -124,7 +124,7 @@ class RpmPluginsTestCase(unittest.TestCase):
         ):
             self._create_snapshot_dir(AttachAntlirDirMode.EXPLICIT_ON)
 
-    def _check_rpm_nspawn_plugins(
+    def _check_repo_nspawn_plugins(
         self,
         attach_antlir_dir,
         shadow_proxied_binaries,
@@ -157,7 +157,7 @@ class RpmPluginsTestCase(unittest.TestCase):
                 ),
                 ("fake_repo_server", {"a", "b", "c"}),
             ),
-            rpm_plugins.rpm_nspawn_plugins(
+            repo_plugins.repo_nspawn_plugins(
                 opts=new_nspawn_opts(
                     cmd=[],
                     layer=mock_subvol,
@@ -170,11 +170,12 @@ class RpmPluginsTestCase(unittest.TestCase):
                     serve_rpm_snapshots=("a", "b", "c"),
                     snapshots_and_versionlocks=[("a", "vla"), ("c", "vlc")],
                     attach_antlir_dir=attach_antlir_dir,
+                    run_proxy_server=False,
                 ),
             ),
         )
 
-    def _create_test_rpm_nspawn_plugins_subvol(self, paths, paths_exist):
+    def _create_test_repo_nspawn_plugins_subvol(self, paths, paths_exist):
         mock_subvol = mock.Mock()
         mocks = {}
         for i, path in enumerate(paths):
@@ -188,7 +189,7 @@ class RpmPluginsTestCase(unittest.TestCase):
     #   - the per-plugin tests
     #   - `test-rpm-installer-shadow-paths`
     @with_mock_plugins
-    def test_rpm_nspawn_plugins(self):
+    def test_repo_nspawn_plugins(self):
         paths = [ANTLIR_DIR, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR]
 
         # None of these will trigger automatic shadowing
@@ -235,11 +236,11 @@ class RpmPluginsTestCase(unittest.TestCase):
             assert len(paths) == len(
                 paths_exist
             ), "Path must have a corresponding path existence"
-            mock_subvol = self._create_test_rpm_nspawn_plugins_subvol(
+            mock_subvol = self._create_test_repo_nspawn_plugins_subvol(
                 paths, paths_exist
             )
 
-            self._check_rpm_nspawn_plugins(
+            self._check_repo_nspawn_plugins(
                 attach_antlir_dir,
                 shadow_proxied_binaries,
                 mock_subvol,
@@ -286,7 +287,7 @@ class RpmPluginsTestCase(unittest.TestCase):
                     },
                 ),
             ),
-            rpm_plugins.rpm_nspawn_plugins(
+            repo_plugins.repo_nspawn_plugins(
                 opts=new_nspawn_opts(
                     cmd=[], layer=mock_subvol, user=pwd.getpwnam("root")
                 ),
@@ -310,7 +311,7 @@ class RpmPluginsTestCase(unittest.TestCase):
         subvol = layer_resource_subvol(__package__, "build-appliance")
         self.assertEqual(
             (),
-            rpm_plugins.rpm_nspawn_plugins(
+            repo_plugins.repo_nspawn_plugins(
                 opts=new_nspawn_opts(
                     cmd=[], layer=subvol, user=pwd.getpwnam("root")
                 ),
@@ -327,7 +328,7 @@ class RpmPluginsTestCase(unittest.TestCase):
         rpm_installers = {Path(rpm) for rpm in get_rpm_installers_supported()}
 
         plugins = (
-            rpm_plugins.rpm_nspawn_plugins(
+            repo_plugins.repo_nspawn_plugins(
                 opts=new_nspawn_opts(
                     cmd=[], layer=subvol, user=pwd.getpwnam("root")
                 ),

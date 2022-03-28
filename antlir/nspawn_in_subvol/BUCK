@@ -106,7 +106,7 @@ python_binary(
         ":nspawn",
         "//antlir:common",
         "//antlir/nspawn_in_subvol/plugins:plugins",
-        "//antlir/nspawn_in_subvol/plugins:rpm",
+        "//antlir/nspawn_in_subvol/plugins:repo_plugins",
     ],
 )
 

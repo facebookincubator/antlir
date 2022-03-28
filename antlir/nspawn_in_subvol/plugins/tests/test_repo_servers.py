@@ -17,7 +17,7 @@ from antlir.tests.flavor_helpers import get_rpm_installers_supported
 
 from .. import launch_repo_servers
 from .. import server_launcher
-from .rpm_base import RpmNspawnTestBase
+from .rpm_base import RpmNspawnTestBase, NspawnTestBase
 
 
 class TestImpl:
@@ -101,3 +101,35 @@ class DnfRepoServersTestCase(TestImpl, RpmNspawnTestBase):
 
 class YumRepoServersTestCase(TestImpl, RpmNspawnTestBase):
     _PROG = "yum"
+
+
+class ProxyServerTestCase(NspawnTestBase):
+    # This is a basic test that we can spin up the server.
+    # Full integration test will be done in chef_solo layer.
+    def test_proxy_server(self):
+        build_appliance_pair = (__package__, "build-appliance")
+
+        with tempfile.TemporaryFile(
+            mode="w+b"
+        ) as curl_stdout, tempfile.TemporaryDirectory() as tmpdir:
+            self._nspawn_in(
+                build_appliance_pair,
+                [
+                    "--user=root",
+                    "--run-proxy-server",
+                    f"--forward-fd={curl_stdout.fileno()}",
+                    f"--fbpkg-db-path={tmpdir}",
+                    "--",
+                    "/bin/sh",
+                    "-c",
+                    "curl -X GET -I http://localhost:45063/blah 2>/dev/null \
+                    | head -1 > /proc/self/fd/3",
+                ],
+            )
+
+            curl_stdout.seek(0)
+
+            self.assertEqual(
+                curl_stdout.readline().strip(),
+                b"HTTP/1.0 404 Unknown route: blah",
+            )
