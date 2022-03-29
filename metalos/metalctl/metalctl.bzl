@@ -18,6 +18,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         "//metalos/host_configs:package-manifest-rust",
         "//metalos/host_configs:host-rust",
         "//metalos/lib/btrfs:btrfs",
+        "//metalos/lib/kernel_cmdline:kernel_cmdline",
         "//metalos/lib/expand_partition:expand_partition",
         "//metalos/lib/find_root_disk:find_root_disk",
         "//metalos/lib/image:image",

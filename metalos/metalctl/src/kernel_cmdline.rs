@@ -5,14 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::BTreeSet;
-use std::fs;
-
-use anyhow::{anyhow, Context, Error, Result};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
+
+use kernel_cmdline::{GenericCmdlineOpt, KernelCmdArgs, KnownArgs};
 
 use crate::config::EventBackendBaseUri;
 
@@ -25,7 +22,7 @@ use crate::config::EventBackendBaseUri;
 // be out of sync which flags exist (assuming we always use the enum variant in the structopt
 // which should be easy to enforce).
 #[derive(EnumIter)]
-enum KnownArgs {
+pub enum MetalCtlArgs {
     RootDiskPackage,
     HostConfigUri,
     PackageFormatUri,
@@ -38,7 +35,7 @@ enum KnownArgs {
     MacAddress,
 }
 
-impl KnownArgs {
+impl KnownArgs for MetalCtlArgs {
     fn flag_name(&self) -> &'static str {
         match self {
             Self::RootDiskPackage => "--metalos.write_root_disk_package",
@@ -58,43 +55,47 @@ impl KnownArgs {
 #[derive(Debug, StructOpt, PartialEq)]
 #[structopt(name = "kernel-cmdline", setting(AppSettings::NoBinaryName))]
 pub struct MetalosCmdline {
-    #[structopt(parse(from_str = parse_opt))]
-    non_metalos_opts: Vec<KernelCmdlineOpt>,
+    #[structopt(parse(from_str = GenericCmdlineOpt::parse_arg))]
+    non_metalos_opts: Vec<GenericCmdlineOpt>,
 
-    #[structopt(long = &KnownArgs::RootDiskPackage.flag_name())]
+    #[structopt(long = &MetalCtlArgs::RootDiskPackage.flag_name())]
     pub root_disk_package: Option<String>,
 
-    #[structopt(long = &KnownArgs::HostConfigUri.flag_name())]
+    #[structopt(long = &MetalCtlArgs::HostConfigUri.flag_name())]
     pub host_config_uri: Option<String>,
 
-    #[structopt(long = &KnownArgs::PackageFormatUri.flag_name())]
+    #[structopt(long = &MetalCtlArgs::PackageFormatUri.flag_name())]
     pub package_format_uri: Option<String>,
 
-    #[structopt(long = &KnownArgs::EventBackendBaseUri.flag_name())]
+    #[structopt(long = &MetalCtlArgs::EventBackendBaseUri.flag_name())]
     pub event_backend_base_uri: Option<EventBackendBaseUri>,
 
     #[structopt(flatten)]
     pub root: Root,
 
-    #[structopt(long = &KnownArgs::MacAddress.flag_name())]
+    #[structopt(long = &MetalCtlArgs::MacAddress.flag_name())]
     pub mac_address: Option<String>,
+}
+
+impl KernelCmdArgs for MetalosCmdline {
+    type Args = MetalCtlArgs;
 }
 
 #[derive(Debug, StructOpt, PartialEq)]
 pub struct Root {
-    #[structopt(long = &KnownArgs::Root.flag_name())]
+    #[structopt(long = &MetalCtlArgs::Root.flag_name())]
     pub root: Option<String>,
 
-    #[structopt(long = &KnownArgs::RootFsType.flag_name())]
+    #[structopt(long = &MetalCtlArgs::RootFsType.flag_name())]
     pub fstype: Option<String>,
 
-    #[structopt(long = &KnownArgs::RootFlags.flag_name())]
+    #[structopt(long = &MetalCtlArgs::RootFlags.flag_name())]
     pub(crate) flags: Option<Vec<String>>,
 
-    #[structopt(long = &KnownArgs::RootFlagRo.flag_name())]
+    #[structopt(long = &MetalCtlArgs::RootFlagRo.flag_name())]
     pub(crate) ro: bool,
 
-    #[structopt(long = &KnownArgs::RootFlagRw.flag_name())]
+    #[structopt(long = &MetalCtlArgs::RootFlagRw.flag_name())]
     pub(crate) rw: bool,
 }
 
@@ -121,87 +122,22 @@ impl Root {
     }
 }
 
-impl MetalosCmdline {
-    pub fn from_kernel() -> Result<Self> {
-        fs::read_to_string("/proc/cmdline")
-            .context("failed to read /proc/cmdline")?
-            .parse()
-    }
-}
-
-#[derive(Debug, PartialEq)]
-enum KernelCmdlineOpt {
-    OnOff(String, bool),
-    Kv(String, String),
-}
-
-fn parse_opt(src: &str) -> KernelCmdlineOpt {
-    match src.split_once("=") {
-        Some((key, val)) => match val {
-            "0" | "false" | "no" => KernelCmdlineOpt::OnOff(key.to_string(), false),
-            "1" | "true" | "yes" => KernelCmdlineOpt::OnOff(key.to_string(), true),
-            _ => KernelCmdlineOpt::Kv(key.to_string(), val.to_owned()),
-        },
-        None => KernelCmdlineOpt::OnOff(src.to_string(), true),
-    }
-}
-
-impl std::str::FromStr for MetalosCmdline {
-    type Err = Error;
-
-    /// Parse /proc/cmdline to get values from the booted kernel cmdline. Some
-    /// selected options are available when they have significance for MetalOS
-    /// code, for example 'metalos.os_uri'.
-    fn from_str(s: &str) -> Result<Self> {
-        let known_args: BTreeSet<&'static str> = KnownArgs::iter().map(|v| v.flag_name()).collect();
-
-        let mut iter = shlex::Shlex::new(s);
-        let mut args = Vec::new();
-        for token in &mut iter {
-            let (key, value) = match token.split_once("=") {
-                Some((key, val)) => (key, Some(val)),
-                None => (token.as_str(), None),
-            };
-            let key = key.replace("-", "_");
-            let key = if known_args.contains(&format!("--{}", key).as_ref()) {
-                format!("--{}", key)
-            } else {
-                key
-            };
-
-            args.push(match value {
-                Some(value) => format!("{}={}", key, value),
-                None => key,
-            });
-        }
-
-        if iter.had_error {
-            Err(anyhow!(
-                "{} is invalid, successfully parsed {:?} so far",
-                s,
-                args,
-            ))
-        } else {
-            Self::from_iter_safe(args).context("Failed to parse args")
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{KnownArgs, MetalosCmdline, Root};
+    use super::{MetalCtlArgs, MetalosCmdline, Root};
     use anyhow::{anyhow, Result};
+    use kernel_cmdline::{GenericCmdlineOpt, KernelCmdArgs, KnownArgs};
     use std::collections::BTreeSet;
     use strum::IntoEnumIterator;
 
     #[test]
     fn test_known_args() -> Result<()> {
-        let args_list: Vec<&str> = KnownArgs::iter().map(|v| v.flag_name()).collect();
+        let args_list: Vec<&str> = MetalCtlArgs::iter().map(|v| v.flag_name()).collect();
         let args_set: BTreeSet<&str> = args_list.clone().into_iter().collect();
 
         if args_set.len() != args_list.len() {
             return Err(anyhow!(
-                "Duplicate flag detected in KnownArgs:\n{:#?}",
+                "Duplicate flag detected in MetalCtlArgs:\n{:#?}",
                 args_list
             ));
         }
@@ -210,15 +146,16 @@ mod tests {
 
     #[test]
     fn test_mac_address_in_cmdlines() -> Result<()> {
-        let cmdline: MetalosCmdline = "macaddress=11:22:33:44:55:66".parse()?;
+        let cmdline = MetalosCmdline::from_kernel_args("macaddress=11:22:33:44:55:66")?;
         assert_eq!(Some("11:22:33:44:55:66".to_string()), cmdline.mac_address);
         Ok(())
     }
 
     #[test]
     fn url_value() -> Result<()> {
-        let cmdline: MetalosCmdline =
-            "metalos.host-config-uri=\"https://$HOSTNAME:8000/v1/host/host001.01.abc0.facebook.com\"".parse()?;
+        let cmdline = MetalosCmdline::from_kernel_args(
+            "metalos.host-config-uri=\"https://$HOSTNAME:8000/v1/host/host001.01.abc0.facebook.com\"",
+        )?;
         assert_eq!(
             Some("https://$HOSTNAME:8000/v1/host/host001.01.abc0.facebook.com".to_string()),
             cmdline.host_config_uri
@@ -228,9 +165,11 @@ mod tests {
 
     #[test]
     fn real_life_cmdline() -> Result<()> {
-        let cmdline = "BOOT_IMAGE=(hd0,msdos1)/vmlinuz-5.2.9-229_fbk15_hardened_4185_g357f49b36602 ro root=LABEL=/ biosdevname=0 net.ifnames=0 fsck.repair=yes systemd.gpt_auto=0 ipv6.autoconf=0 erst_disable cgroup_no_v1=all nox2apic crashkernel=128M hugetlb_cma=6G console=tty0 console=ttyS0,115200 macaddress=11:22:33:44:55:66".parse()?;
-        let kv = |key: &str, val: &str| super::KernelCmdlineOpt::Kv(key.to_owned(), val.to_owned());
-        let on_off = |key: &str, val: bool| super::KernelCmdlineOpt::OnOff(key.to_owned(), val);
+        let cmdline = MetalosCmdline::from_kernel_args(
+            "BOOT_IMAGE=(hd0,msdos1)/vmlinuz-5.2.9-229_fbk15_hardened_4185_g357f49b36602 ro root=LABEL=/ biosdevname=0 net.ifnames=0 fsck.repair=yes systemd.gpt_auto=0 ipv6.autoconf=0 erst_disable cgroup_no_v1=all nox2apic crashkernel=128M hugetlb_cma=6G console=tty0 console=ttyS0,115200 macaddress=11:22:33:44:55:66",
+        )?;
+        let kv = |key: &str, val: &str| GenericCmdlineOpt::Kv(key.to_owned(), val.to_owned());
+        let on_off = |key: &str, val: bool| GenericCmdlineOpt::OnOff(key.to_owned(), val);
         assert_eq!(
             MetalosCmdline {
                 non_metalos_opts: vec![
@@ -289,10 +228,11 @@ mod tests {
                 ro: true,
                 rw: false,
             },
-            "root=LABEL=/ ro rootflags=subvol=volume rootfstype=btrfs"
-                .parse::<MetalosCmdline>()
-                .unwrap()
-                .root,
+            MetalosCmdline::from_kernel_args(
+                "root=LABEL=/ ro rootflags=subvol=volume rootfstype=btrfs"
+            )
+            .unwrap()
+            .root,
         );
     }
 }

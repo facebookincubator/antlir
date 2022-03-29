@@ -8,6 +8,7 @@
 use std::str::FromStr;
 
 use anyhow::{Context, Error, Result};
+use kernel_cmdline::KernelCmdArgs;
 use reqwest::Url;
 use serde::{de, Deserialize, Deserializer};
 
@@ -27,7 +28,7 @@ impl Config {
     /// (/etc/metalctl.toml), and then any args present on the kernel cmdline
     /// are processed.
     pub fn apply_kernel_cmdline_overrides(&mut self) -> Result<()> {
-        self.apply_overrides(MetalosCmdline::from_kernel()?)
+        self.apply_overrides(MetalosCmdline::from_proc_cmdline()?)
     }
 
     fn apply_overrides(&mut self, cmdline: MetalosCmdline) -> Result<()> {
@@ -103,6 +104,7 @@ impl Default for EventBackend {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use kernel_cmdline::KernelCmdArgs;
 
     use super::{Config, MetalosCmdline};
     #[test]
@@ -116,10 +118,10 @@ mod tests {
             "https://metalos/sendEvent",
             config.event_backend.event_backend_base_uri().to_string()
         );
-        let cmdline: MetalosCmdline =
+        let cmdline = MetalosCmdline::from_kernel_args(
             "metalos.package_format_uri=\"https://package-host/pkg/{package}\" \
-            metalos.event_backend_base_uri=\"https://event-host/sendEvent\""
-                .parse()?;
+            metalos.event_backend_base_uri=\"https://event-host/sendEvent\"",
+        )?;
         config.apply_overrides(cmdline)?;
         assert_eq!(
             "https://package-host/pkg/{package}",

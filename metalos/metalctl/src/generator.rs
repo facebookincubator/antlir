@@ -14,6 +14,7 @@ use slog::{error, info, o, Logger};
 use structopt::StructOpt;
 
 use crate::kernel_cmdline::{MetalosCmdline, Root};
+use kernel_cmdline::KernelCmdArgs;
 use net_utils::get_mac;
 use systemd::render::{MountSection, NetworkUnit, NetworkUnitMatchSection, UnitSection};
 use systemd_generator_lib::{
@@ -378,7 +379,7 @@ pub fn generator(log: Logger, opts: Opts) -> Result<()> {
 
     let sublog = log.new(o!());
 
-    let cmdline = match MetalosCmdline::from_kernel() {
+    let cmdline = match MetalosCmdline::from_proc_cmdline() {
         Ok(c) => Ok(c),
         Err(e) => {
             error!(
@@ -407,6 +408,7 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::time::SystemTime;
 
+    use kernel_cmdline::KernelCmdArgs;
     use systemd_generator_lib::ENVIRONMENT_FILENAME;
 
     fn setup_generator_test(name: &'static str) -> Result<(Logger, PathBuf, Opts, String)> {
@@ -550,14 +552,15 @@ mod tests {
         let (log, tmpdir, opts, boot_id) =
             setup_generator_test("metalos_reimage").context("failed to setup test environment")?;
 
-        let cmdline: MetalosCmdline = "\
+        let cmdline = MetalosCmdline::from_kernel_args(
+            "\
             metalos.host-config-uri=\"https://server:8000/config\" \
             metalos.write_root_disk_package=\"reimage_pkg\" \
             rootfstype=btrfs \
             root=LABEL=unittest \
             macaddress=11:22:33:44:55:66\
-            "
-        .parse()?;
+            ",
+        )?;
 
         let boot_mode =
             generator_maybe_err(cmdline, log, opts.clone()).context("failed to run generator")?;
@@ -618,13 +621,14 @@ mod tests {
         let (log, tmpdir, opts, boot_id) =
             setup_generator_test("metalos_existing").context("failed to setup test environment")?;
 
-        let cmdline: MetalosCmdline = "\
+        let cmdline = MetalosCmdline::from_kernel_args(
+            "\
             metalos.host-config-uri=\"https://server:8000/config\" \
             rootfstype=btrfs \
             root=LABEL=unittest \
             macaddress=11:22:33:44:55:66\
-            "
-        .parse()?;
+            ",
+        )?;
 
         let boot_mode =
             generator_maybe_err(cmdline, log, opts.clone()).context("failed to run generator")?;
@@ -679,7 +683,7 @@ mod tests {
         let (log, tmpdir, opts, _) =
             setup_generator_test("generator_fail").context("failed to setup test environment")?;
 
-        let cmdline: MetalosCmdline = "".parse()?;
+        let cmdline = MetalosCmdline::from_kernel_args("")?;
 
         assert!(generator_maybe_err(cmdline, log, opts.clone()).is_err());
 
@@ -699,13 +703,14 @@ mod tests {
         let (log, tmpdir, opts, _) =
             setup_generator_test("legacy").context("failed to setup test environment")?;
 
-        let cmdline: MetalosCmdline = "\
+        let cmdline = MetalosCmdline::from_kernel_args(
+            "\
             root=LABEL=unittest \
             rootflags=f1,f2,f3 \
             ro \
             macaddress=11:22:33:44:55:66\
-            "
-        .parse()?;
+            ",
+        )?;
 
         let boot_mode =
             generator_maybe_err(cmdline, log, opts.clone()).context("failed to run generator")?;
