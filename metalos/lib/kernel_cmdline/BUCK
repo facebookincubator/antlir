@@ -1,0 +1,17 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "kernel_cmdline",
+    srcs = [
+        "src/lib.rs",
+    ],
+    test_deps = [
+        "strum_macros",
+    ],
+    deps = [
+        "anyhow",
+        "shlex",
+        "structopt",
+        "strum",
+    ],
+)
