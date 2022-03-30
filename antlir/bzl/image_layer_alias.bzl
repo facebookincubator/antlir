@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load(":image_layer_runtime.bzl", "add_runtime_targets")
 
 """
 USE WITH CARE -- this was added to aid in implementing `released_layer`.
@@ -29,7 +30,7 @@ view of Buck:
   - Their "type" attribute will differ.
 """
 
-def image_layer_alias(name, layer, visibility = None):
+def image_layer_alias(name, layer, runtime = None, visibility = None):
     visibility = visibility or []
 
     # IMPORTANT: If you touch this genrule, update `_image_layer_impl`.
@@ -54,3 +55,5 @@ def image_layer_alias(name, layer, visibility = None):
         type = "image_layer_alias",
         visibility = visibility,
     )
+
+    add_runtime_targets(name, runtime)

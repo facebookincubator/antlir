@@ -5,41 +5,10 @@
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load(":image_layer_runtime.bzl", "add_runtime_targets")
 load(":image_utils.bzl", "image_utils")
-load(":oss_shim.bzl", "buck_command_alias", "buck_genrule", "config", "is_buck2")
-load(":query.bzl", "layer_deps_query")
-load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
-
-def _add_run_in_subvol_target(name, kind, extra_args = None):
-    target = name + "=" + kind
-    buck_command_alias(
-        name = target,
-        exe = antlir_dep("nspawn_in_subvol:run"),
-        args = [
-            "--layer",
-            "$(location {})".format(shell.quote(":" + name)),
-        ] + (extra_args or []) + targets_and_outputs_arg_list(
-            name = target,
-            query = layer_deps_query(
-                layer = image_utils.current_target(name),
-            ),
-        ),
-        antlir_rule = "user-internal",
-    )
-
-# In an attempt to preserve some form of backwards compatibility,
-# create targets that will be invoked when users use deprecated
-# helper targets (eg. -boot) for a more pleasant and informative failure.
-# These targets are intended to exist temporarily, and should be deleted
-# once all deprecated helper targets are deemed archaic enough.
-def _add_fail_with_message_target(name, kind, message):
-    target = name + "-" + kind
-    buck_command_alias(
-        name = target,
-        exe = antlir_dep("bzl:fail-with-message"),
-        args = ["--message", message],
-        antlir_rule = "user-internal",
-    )
+load(":oss_shim.bzl", "buck_genrule", "config", "is_buck2")
+load(":target_helpers.bzl", "antlir_dep")
 
 def container_target_name(name):
     return name + "=container"
@@ -91,9 +60,6 @@ def _image_layer_impl(
         runtime = None,
         labels = None,
         visibility = None):
-    runtime = runtime or []
-    if "container" not in runtime:
-        runtime.append("container")
     visibility = visibility or []
     if mount_config == None:
         mount_config = {}
@@ -214,23 +180,7 @@ def _image_layer_impl(
         labels = ["image_layer", "uses_sudo"] + (labels or []),
     )
 
-    for elem in runtime:
-        if elem == "container":
-            _add_run_in_subvol_target(_layer_name, "container")
-            _add_fail_with_message_target(
-                _layer_name,
-                "container",
-                "The '-container' helper target is deprecated, use '=container' instead.",
-            )
-        elif elem == "systemd":
-            _add_run_in_subvol_target(_layer_name, "systemd", extra_args = ["--boot", "--append-console"])
-            _add_fail_with_message_target(
-                _layer_name,
-                "boot",
-                "The '-boot' helper target is deprecated, use '=systemd' instead.",
-            )
-        else:
-            fail("Unsupported runtime encountered: {}".format(elem))
+    add_runtime_targets(_layer_name, runtime)
 
 image_layer_utils = struct(
     image_layer_impl = _image_layer_impl,
