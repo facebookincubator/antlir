@@ -124,20 +124,28 @@ def _new_vm_opts(
         initrd = None,
         disk = None,
         runtime = None,
+        boot_from_disk = False,
         **kwargs):
     # Don't allow an invalid cpu count
     if cpus == 2:
         fail("ncpus=2 will cause kernel panic: https://fburl.com/md27i5k8")
 
+    if boot_from_disk and kernel != None:
+        fail("Can't specify `kernel` when `boot_from_disk` is True")
+    if boot_from_disk and initrd != None:
+        fail("Can't specify `initrd` when `boot_from_disk` is True")
+
     # Convert the (optionally) provided kernel struct into a shape type
-    kernel = normalize_kernel(kernel or kernel_get.default)
+    if not boot_from_disk:
+        kernel = normalize_kernel(kernel or kernel_get.default)
 
     # Allow the user to provide their own initrd. Currently there is no way for
     # us to verify that this initrd will actually work with the given kernel,
     # but if someone is using this (eg, the vm appliance), assume they are
     # accepting the risks.
     # The default initrd target is derived from the kernel uname.
-    initrd = initrd or "{}:{}-initrd".format(kernel_get.base_target, kernel.uname)
+    if not boot_from_disk:
+        initrd = initrd or "{}:{}-initrd".format(kernel_get.base_target, kernel.uname)
 
     disk = disk or _new_vm_disk()
 
@@ -150,6 +158,7 @@ def _new_vm_opts(
         kernel = kernel,
         disk = disk,
         runtime = runtime,
+        boot_from_disk = boot_from_disk,
         **kwargs
     )
 
