@@ -84,10 +84,10 @@ rootfs where possible.
 This section will be more detailed with follow-up diffs as more is implemented,
 but the high level idea is as follows:
 
-1) image downloaded (this is done ahead-of-time via `metalctl runtime-config stage`)
-2) service config generator is evaluated
-  a) service unit from the generator is linked into `/run/systemd/system`
-3) MetalOS drop-ins written to `/run/systemd/system/`
-  a) `RootDirectory` is set to a RW snapshot of the service image
-  b) `{RUNTIME,STATE,CACHE,LOGS}_DIRECTORY` environment variables are set for
+1. image downloaded (this is done ahead-of-time via `metalctl runtime-config stage`)
+2. service config generator is evaluated
+  - service unit from the generator is linked into `/run/systemd/system`
+3. MetalOS drop-ins written to `/run/systemd/system/`
+  - `RootDirectory` is set to a RW snapshot of the service image
+  - `{RUNTIME,STATE,CACHE,LOGS}_DIRECTORY` environment variables are set for
      the service unit
