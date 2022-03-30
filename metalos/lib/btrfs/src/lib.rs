@@ -214,13 +214,15 @@ impl Subvolume {
 
     pub fn delete(self, flags: DeleteFlags) -> Result<()> {
         let path = self.path_cstr()?;
-        check!({ btrfs_util_delete_subvolume(path.as_ptr(), flags.bits()) }).with_context(|| {
-            format!(
-                "while deleting subvolid={} path={}",
-                self.id,
-                self.path().display()
-            )
-        })?;
+        check!({ btrfs_util_delete_subvolume(path.as_ptr(), flags.bits()) }).with_context(
+            || {
+                format!(
+                    "while deleting subvolid={} path={}",
+                    self.id,
+                    self.path().display()
+                )
+            },
+        )?;
         Ok(())
     }
 }
@@ -297,9 +299,7 @@ impl Iterator for SubvolIterator {
                 // that the iteration was started from, for convenience join
                 // them to the parent so that they are absolute
                 let subvol_path = self.0.join(OsStr::from_bytes(path_cstr.to_bytes()));
-                unsafe {
-                    libc::free(path as *mut c_void)
-                };
+                unsafe { libc::free(path as *mut c_void) };
                 let info: SubvolumeInfo = info.into();
                 Some(Ok(Subvolume {
                     id: info.id,
@@ -317,9 +317,7 @@ impl Iterator for SubvolIterator {
 
 impl Drop for SubvolIterator {
     fn drop(&mut self) {
-        unsafe {
-            btrfs_util_destroy_subvolume_iterator(self.1)
-        };
+        unsafe { btrfs_util_destroy_subvolume_iterator(self.1) };
     }
 }
 

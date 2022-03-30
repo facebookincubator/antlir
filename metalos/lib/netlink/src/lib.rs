@@ -76,9 +76,7 @@ impl NlSocket {
 impl Drop for NlSocket {
     /// Cleanup a NlSocket.
     fn drop(&mut self) {
-        unsafe {
-            nl_socket_free(self.0)
-        };
+        unsafe { nl_socket_free(self.0) };
     }
 }
 
@@ -98,9 +96,7 @@ impl NlConnectedSocket {
 impl Drop for NlConnectedSocket {
     /// Cleanup a NlSocket.
     fn drop(&mut self) {
-        unsafe {
-            nl_close(*self.nl_sock())
-        };
+        unsafe { nl_close(*self.nl_sock()) };
     }
 }
 
@@ -220,9 +216,7 @@ impl RtnlLink {
 impl Drop for RtnlLink {
     /// Cleanup a RtnlLink.
     fn drop(&mut self) {
-        unsafe {
-            rtnl_link_put(self.0)
-        };
+        unsafe { rtnl_link_put(self.0) };
     }
 }
 
@@ -358,9 +352,7 @@ impl<'a> RtnlLinkCache<'a> {
 impl<'a> Drop for RtnlLinkCache<'a> {
     /// Cleanup a RtnlLinkCache.
     fn drop(&mut self) {
-        unsafe {
-            nl_cache_put(self.rlc_cache)
-        };
+        unsafe { nl_cache_put(self.rlc_cache) };
     }
 }
 
