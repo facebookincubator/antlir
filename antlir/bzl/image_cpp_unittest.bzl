@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "buck_genrule", "cpp_unittest", "python_binary")
+load(":oss_shim.bzl", "buck_sh_test", "cpp_unittest", "python_binary")
 
 def image_cpp_unittest(
         name,
@@ -51,68 +51,6 @@ def image_cpp_unittest(
         antlir_rule = "user-internal",
     )
 
-    # Here, we generate a C file, whose only job is to `execv` the Python
-    # binary that executes our `cpp_unittest` in a container.  It has to be
-    # a C program so that it can act as the main of the outer `cpp_unittest`
-    # below (its doc hints how to make this hack unnecessary).
-    #
-    # Naively, we want to call `execv($(location :<wrapper_binary>),
-    # argv);`.  However, the resulting C file, and thus outer `cpp_unittest`
-    # would end up containing a local filesystem path, instantly breaking
-    # these tests if the artifacts got pulled from Buck's distributed cache.
-    #
-    # So instead, the C file just contains the `basename` of the output
-    # path, which should be stable. Then, we trust that the outer test
-    # will be a sibling of `wrapper_binary` in `buck-out`, and compute
-    #
-    #     dirname(argv[0]) + "/" + basename($(location :<wrapper_binary>))
-    #
-    # at test runtime.  The good news: if Buck ever breaks this convention,
-    # CI will tell us promptly.
-    exec_wrapper_c = name + "__test-exec-in-c-wrapper"
-    buck_genrule(
-        name = exec_wrapper_c,
-        out = "exec_nspawn_wrapper.c",
-        cmd = """
-        set -e
-        # Buck macro expansions are (hopefully) shell-escaped.  This
-        # Bash+Python pipeline takes the basename of the `wrapper_binary`
-        # output path, and converts the shell-escaping to C-escaping.
-        echo -n $(location :""" + wrapper_binary + """) | python3 -c '\
-import os.path, sys
-print(sys.argv[1].format(
-    wrapper_filename="".join(
-        # Do not escape printable chars besides backslash or double-quote
-        chr(c) if c not in [34, 92] and (32 <= c <= 127)
-            else "\\{:03o}".format(c)
-        for c in os.path.basename(sys.stdin.buffer.read())
-    ),
-))
-        ' '\
-#include <errno.h>
-#include <libgen.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-int main(int argc, char **argv) {{
-    (void) argc;  // Many FB codebases build with -Wunused-parameter
-    const char* my_dir = dirname(argv[0]);
-    const char* wrapper_binary = "{wrapper_filename}";
-    // The 2 extra bytes are slash & nul
-    const size_t len = strlen(my_dir) + strlen(wrapper_binary) + 2;
-    char *wrapper_path = calloc(len, 1);
-    strncat(wrapper_path, my_dir, len - 1);
-    strncat(wrapper_path, "/", len - 1);
-    strncat(wrapper_path, wrapper_binary, len - 1);
-    execv(wrapper_path, argv);
-    return errno;
-}}
-' > "$OUT"
-        """,
-        visibility = visibility,
-        antlir_rule = "user-internal",
-    )
-
     env = wrapper_props.outer_test_kwargs.pop("env")
     env.update({
         # These dependencies must be on the user-visible "porcelain"
@@ -129,14 +67,13 @@ int main(int argc, char **argv) {{
         ])
     })
 
-    # This is a `cpp_unittest` for reasons very similar to why the wrapper
-    # binary in `image_python_unittest.bzl` is a `python_unittest`.  We
-    # could eliminate all of the above contortions if Buck adds support for
-    # passing through a handful of arguments from its `sh_test` into the
-    # JSON info that is handed to test runners, see Q18889.
-    cpp_unittest(
+    # This is a `buck_sh_test` so that we don't have to wrap the wrapper
+    # with another binary.  This works just fine for the limited uses we
+    # have of `image_cpp_unittest`.
+    buck_sh_test(
         name = name,
-        srcs = [":" + exec_wrapper_c],
+        test = ":" + wrapper_binary,
+        type = "gtest",
         env = env,
         visibility = visibility,
         **wrapper_props.outer_test_kwargs
