@@ -19,9 +19,7 @@ pub fn evaluate_spec(spec: impl AsRef<str>) -> Option<PathBuf> {
     }
     let device_cstr = unsafe { CStr::from_ptr(device_ptr) };
     let device = Path::new(OsStr::from_bytes(device_cstr.to_bytes())).to_path_buf();
-    unsafe {
-        libc::free(device_ptr as *mut c_void)
-    };
+    unsafe { libc::free(device_ptr as *mut c_void) };
     Some(device)
 }
 

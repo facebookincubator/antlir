@@ -592,7 +592,7 @@ trait Manager {
 
     /// Change the default.target link. See bootup(7) for more information.
     fn set_default_target(&self, name: &UnitName, force: bool)
-        -> zbus::Result<Vec<UnitFileChange>>;
+    -> zbus::Result<Vec<UnitFileChange>>;
 
     /// Alter the environment block that is passed to all spawned processes.
     /// Any previously set environment variables will be overridden.

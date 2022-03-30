@@ -367,13 +367,11 @@ nodev   rpc_pipefs\n",
         mock_mounter
             .expect_mount()
             .withf(
-                |
-                    source: &Path,
-                    target: &Path,
-                    fstype: &Option<&str>,
-                    flags: &MsFlags,
-                    _data: &Option<&str>,
-                | {
+                |source: &Path,
+                 target: &Path,
+                 fstype: &Option<&str>,
+                 flags: &MsFlags,
+                 _data: &Option<&str>| {
                     *source == *(Path::new("fooSource"))
                         && target == Path::new("fooPath")
                         && *fstype == Some("btrfs")
