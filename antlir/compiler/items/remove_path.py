@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import shutil
 from typing import Iterable
 
 from antlir.bzl.image.feature.remove import remove_paths_t
@@ -74,18 +75,9 @@ class RemovePathItem(remove_paths_t, ImageItem):
                         continue
                     raise AssertionError(f"Path does not exist: {item}")
 
-                subvol.run_as_root(
-                    [
-                        "rm",
-                        # This prevents us from making removes outside of the
-                        # per-repo loopback, which is an important safeguard.
-                        # It does not stop us from reaching into other subvols,
-                        # but since those have random IDs in the path, this is
-                        # nearly impossible to do by accident.
-                        "--one-file-system",
-                        "--recursive",
-                        path,
-                    ]
-                )
+                if os.path.isdir(path) and not os.path.islink(path):
+                    shutil.rmtree(path)
+                else:
+                    os.remove(path)
 
         return builder

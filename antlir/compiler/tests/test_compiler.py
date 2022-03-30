@@ -95,6 +95,7 @@ def _subvol_mock_lexists_is_btrfs_and_run_as_root(fn):
         "antlir.compiler.items.symlink.os.symlink",
         "antlir.compiler.items.tarball.run_nspawn",
         "antlir.rpm.rpm_metadata.run_nspawn",
+        "antlir.compiler.items.remove_path.os.remove",
     ]:
         fn = unittest.mock.patch(ignored_mock)(fn)
     return fn
