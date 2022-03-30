@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
@@ -91,9 +92,12 @@ def feature_setup_standard_user(user, group, homedir = None, shell = SHELL_BASH)
     """
 A convenient function that wraps `feature.group_add`, `feature.user_add`,
 and home dir creation logic.
+The parent directory of `homedir` must already exist.
     """
     if homedir == None:
         homedir = "/home/" + user
+    homedir_parent = paths.dirname(homedir)
+    homedir_basename = paths.basename(homedir)
     return [
         feature_group_add(group),
         feature_user_add(
@@ -102,8 +106,9 @@ and home dir creation logic.
             homedir,
             shell,
         ),
-        image.ensure_dirs_exist(
-            homedir,
+        image.ensure_subdirs_exist(
+            homedir_parent,
+            homedir_basename,
             user = user,
             group = group,
             mode = 0o0770,

@@ -180,12 +180,21 @@ def compile_items_to_subvol(
     for par_items in dep_graph.gen_dependency_order_items(
         PhasesProvideItem(from_target=layer_opts.layer_target, subvol=subvol)
     ):
+        # Some items exist just for dependency resolution / ordering. Make sure
+        # to filter those out before trying to do `item.build`
+        par_items = [item for item in par_items if hasattr(item, "build")]
+        if not par_items:  # pragma: no cover
+            continue
         if use_threads:
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=len(par_items)
             ) as executor:
-                executor.map(
-                    lambda item: item.build(subvol, layer_opts), par_items
+                # this has to be wrapped in list() in order to drain the
+                # iterable, which is when any Exceptions will be raised
+                list(
+                    executor.map(
+                        lambda item: item.build(subvol, layer_opts), par_items
+                    )
                 )
         else:  # pragma: no cover (only used for profiling)
             for item in par_items:
