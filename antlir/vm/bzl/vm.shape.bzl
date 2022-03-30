@@ -57,9 +57,9 @@ vm_opts_t = shape.shape(
     # The initrd to boot the vm with.  This target is always derived
     # from the provided kernel version since the initrd must contain
     # modules that match the booted kernel.
-    initrd = target_t,
+    initrd = shape.field(target_t, optional = True),
     # The kernel to boot the vm with
-    kernel = shape.field(kernel_t),
+    kernel = shape.field(kernel_t, optional = True),
     # Append extra kernel cmdline args
     append = shape.field(shape.list(str), default = []),
     # Amount of memory in mb
