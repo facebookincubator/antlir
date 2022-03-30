@@ -276,7 +276,6 @@ pub mod tests {
             .open("/dev/vda")
             .context("failed to open device")?;
 
-
         let output = std::process::Command::new("cat")
             .args(&["/sys/block/vda/size"])
             .output()
