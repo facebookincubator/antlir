@@ -135,7 +135,7 @@ class TestAntlirVM(AntlirTestCase):
                 )
 
             proc = await instance.run(
-                cmd=["/bin/file", "/tmp/test.sock"],
+                cmd=["test", "-S", "/tmp/test.sock"],
                 timeout_ms=timeout_ms,
                 forward={"/tmp/test.sock": "/tmp/test.sock"},
             )
