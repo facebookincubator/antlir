@@ -1,7 +1,9 @@
 # @noautodeps
 
 load("//antlir/bzl:oss_shim.bzl", "rust_bindgen_library", "third_party")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "rust_library")
+load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
 rust_bindgen_library(
     name = "btrfsutil-sys",
@@ -16,6 +18,13 @@ rust_bindgen_library(
 rust_library(
     name = "btrfs",
     srcs = glob(["src/*.rs"]),
+    unittest_opts = shape.new(
+        unittest_opts_t,
+        container = shape.new(
+            container_unittest_opts_t,
+            boot = True,
+        ),
+    ),
     unittests = ["container"],
     visibility = [
         "//metalos/...",
@@ -30,11 +39,13 @@ rust_library(
         "futures",
         "libc",
         "nix",
+        "tempfile",
         "thiserror",
         "tokio",
         "tokio-util",
         "uuid",
         "zstd",
         ":btrfsutil-sys",
+        "//metalos/lib/metalos_paths:metalos_paths",
     ],
 )

@@ -34,3 +34,10 @@ pub fn runtime() -> &'static Path {
 pub fn metalos_state() -> &'static Path {
     Path::new("/run/fs/control/run/state/metalos")
 }
+
+/// Temporary storage space, but for things that need to be on BTRFS. For
+/// example, sendstreams are temporarily received here before being moved to
+/// their actual destination.
+pub fn scratch() -> &'static Path {
+    Path::new("/run/fs/control/run/scratch")
+}

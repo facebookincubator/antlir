@@ -71,8 +71,11 @@ fn fetch_unit() -> Result<()> {
 
     assert!(fetch_output.status.success());
 
-    let dir = fake_root.join("volume/image/rootfs/metalos:1/volume");
+    let dir = fake_root.join("volume/image/rootfs/metalos:1");
     assert!(dir.is_dir(), "{:?} is not a directory: {}", dir, journal);
+
+    let test_file = fake_root.join("volume/image/rootfs/metalos:1/etc/os-release");
+    assert!(test_file.exists(), "{:?} does not exist", test_file);
 
     Ok(())
 }

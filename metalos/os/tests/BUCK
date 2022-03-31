@@ -33,6 +33,7 @@ feature.new(
         image.ensure_subdirs_exist("/test-control-subvol/run", "logs"),
         image.ensure_subdirs_exist("/test-control-subvol/run", "runtime"),
         image.ensure_subdirs_exist("/test-control-subvol/run", "service_roots"),
+        image.ensure_subdirs_exist("/test-control-subvol/run", "scratch"),
         image.ensure_subdirs_exist("/test-control-subvol", "image"),
         image.ensure_subdirs_exist("/test-control-subvol/image", "service"),
     ],

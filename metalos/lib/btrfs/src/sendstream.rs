@@ -10,6 +10,7 @@ use std::ffi::CString;
 use std::fs::File;
 use std::marker::{PhantomData, Unpin};
 use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use thiserror::Error;
 use tokio::io::{AsyncWriteExt, BufWriter};
@@ -28,10 +29,18 @@ pub enum Error {
     WriteChunk(std::io::Error),
     #[error("btrfs-receive failed to start: {0}")]
     StartReceive(std::io::Error),
-    #[error("(de)compression error {0}")]
+    #[error("(de)compression error: {0}")]
     Compress(std::io::Error),
     #[error("could not find subvol name in {0:?}")]
     ParseReceived(Option<String>),
+    #[error("failed to prepare tempdir: {0:?}")]
+    Prepare(std::io::Error),
+    #[error("failed to move received subvol from {received_path:?} to {dst:?}: {err:?}")]
+    Move {
+        received_path: PathBuf,
+        dst: PathBuf,
+        err: Box<crate::Error>,
+    },
     #[error("btrfs receive failed: {0}")]
     Finish(anyhow::Error),
 }
@@ -70,14 +79,17 @@ where
     }
 
     /// Common pieces of `btrfs receive`, that dumps an uncompressed sendstream
-    /// into a `btrfs receive` process.
+    /// into a `btrfs receive` process. If successfully received, the subvolume
+    /// will be moved into `dst`, but will intermediately be received to a
+    /// temporary directory.
     async fn receive_into(
         mut uncompressed: impl Stream<Item = std::io::Result<Bytes>> + Unpin,
-        parent: &Subvolume,
+        dst: impl AsRef<Path>,
     ) -> Result<Subvolume> {
+        let tmpdir = tempfile::tempdir_in(metalos_paths::scratch()).map_err(Error::Prepare)?;
         let mut child = Command::new("/sbin/btrfs")
             .arg("receive")
-            .arg(parent.path())
+            .arg(tmpdir.path())
             .stdin(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -109,13 +121,39 @@ where
 
         let at_subvol = stderr.lines().next().ok_or(Error::ParseReceived(None))?;
         let subvol = parse_at_subvol(at_subvol.to_string())?;
-        Subvolume::get(parent.path().join(subvol))
+        let received_path = tmpdir.path().join(subvol);
+        let mut received_subvol = Subvolume::get(&received_path)?;
+        let dst = dst.as_ref();
+        // the subvol must first be marked as readwrite to move, then marked
+        // readonly for obvious reasons
+        received_subvol
+            .set_readonly(false)
+            .map_err(|err| Error::Move {
+                received_path: received_path.clone(),
+                dst: dst.to_path_buf(),
+                err: Box::new(err),
+            })?;
+        std::fs::rename(&received_path, &dst).map_err(|err| Error::Move {
+            received_path: received_path.clone(),
+            dst: dst.to_path_buf(),
+            err: Box::new(anyhow::Error::from(err).into()),
+        })?;
+        let mut received_subvol = Subvolume::get(&dst)?;
+        received_subvol
+            .set_readonly(true)
+            .map_err(|err| Error::Move {
+                received_path,
+                dst: dst.to_path_buf(),
+                err: Box::new(err),
+            })?;
+
+        Subvolume::get(dst)
     }
 }
 
 #[async_trait]
 pub trait SendstreamExt {
-    async fn receive_into(mut self, parent: &Subvolume) -> Result<Subvolume>;
+    async fn receive_into(mut self, path: &Path) -> Result<Subvolume>;
 }
 
 fn parse_at_subvol(at_subvol: String) -> std::result::Result<String, Error> {
@@ -130,8 +168,8 @@ impl<S> SendstreamExt for Sendstream<Uncompressed, S>
 where
     S: Stream<Item = std::io::Result<Bytes>> + Unpin + Send,
 {
-    async fn receive_into(mut self, parent: &Subvolume) -> Result<Subvolume> {
-        Self::receive_into(self.stream, parent).await
+    async fn receive_into(mut self, path: &Path) -> Result<Subvolume> {
+        Self::receive_into(self.stream, path).await
     }
 }
 
@@ -140,12 +178,12 @@ impl<S> SendstreamExt for Sendstream<Zstd, S>
 where
     S: Stream<Item = std::io::Result<Bytes>> + Unpin + Send,
 {
-    async fn receive_into(mut self, parent: &Subvolume) -> Result<Subvolume> {
+    async fn receive_into(mut self, path: &Path) -> Result<Subvolume> {
         let stream =
             tokio_util::io::ReaderStream::new(async_compression::tokio::bufread::ZstdDecoder::new(
                 tokio_util::io::StreamReader::new(self.stream),
             ));
-        Self::receive_into(stream, parent).await
+        Self::receive_into(stream, path).await
     }
 }
 
@@ -215,6 +253,7 @@ impl Subvolume {
 mod tests {
     use super::*;
     use crate::SnapshotFlags;
+    use anyhow::Result;
     use metalos_macros::containertest;
     use std::path::Path;
 
@@ -228,20 +267,19 @@ mod tests {
         Ok(())
     }
 
-    fn setup_for_send_recv() -> Result<(Subvolume, Subvolume)> {
+    fn setup_for_send_recv() -> Result<(Subvolume, &'static Path)> {
         let mut src = Subvolume::create("/var/tmp/src")?;
         assert_eq!(Path::new("/var/tmp/src"), src.path());
-        let dst = Subvolume::create("/var/tmp/dst")?;
         std::fs::write("/var/tmp/src/hello", b"world\n").context("writing test file")?;
         src.set_readonly(true)?;
-        Ok((src, dst))
+        Ok((src, Path::new("/run/fs/control/dst")))
     }
 
-    fn recv_post_test(dst: Subvolume, recv: Subvolume) -> Result<()> {
-        assert_eq!(Path::new("/var/tmp/dst/src"), recv.path());
-        let children: Vec<_> = dst.children()?.collect::<Result<_>>()?;
-        assert_eq!(1, children.len());
-        let s = std::fs::read_to_string("/var/tmp/dst/src/hello").context("reading test file")?;
+    fn recv_post_test(dst: &Path, recv: Subvolume) -> Result<()> {
+        assert_eq!(dst, recv.path());
+        assert_eq!(Path::new("/run/fs/control/dst"), recv.path());
+        let s =
+            std::fs::read_to_string("/run/fs/control/dst/hello").context("reading test file")?;
         assert_eq!("world\n", s);
         Ok(())
     }
@@ -268,9 +306,9 @@ mod tests {
         let mut snap = root.snapshot("/var/tmp/rootfs", SnapshotFlags::READONLY)?;
         snap.set_readonly(true)?;
         let sendstream = snap.send_uncompressed()?;
-        let dst = Subvolume::create("/var/tmp/rootfs-recv")?;
-        let recv = sendstream.receive_into(&dst).await?;
-        assert_eq!(Path::new("/var/tmp/rootfs-recv/rootfs"), recv.path());
+        let dst = Path::new("/run/fs/control/dst");
+        let recv = sendstream.receive_into(dst).await?;
+        assert_eq!(Path::new("/run/fs/control/dst"), recv.path());
         assert!(recv.path().join("etc/machine-id").exists());
         Ok(())
     }
@@ -281,9 +319,9 @@ mod tests {
         let mut snap = root.snapshot("/var/tmp/rootfs", SnapshotFlags::READONLY)?;
         snap.set_readonly(true)?;
         let sendstream = snap.send(Level::Fastest)?;
-        let dst = Subvolume::create("/var/tmp/rootfs-recv")?;
-        let recv = sendstream.receive_into(&dst).await?;
-        assert_eq!(Path::new("/var/tmp/rootfs-recv/rootfs"), recv.path());
+        let dst = Path::new("/run/fs/control/dst");
+        let recv = sendstream.receive_into(dst).await?;
+        assert_eq!(Path::new("/run/fs/control/dst"), recv.path());
         assert!(recv.path().join("etc/machine-id").exists());
         Ok(())
     }
