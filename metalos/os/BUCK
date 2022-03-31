@@ -10,28 +10,11 @@ load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//metalos/os/tests:defs.bzl", "systemd_expectations_test")
 
-image.layer(
-    name = "basesystem-strip",
-    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
-    features = [
-        # remove any reference to rpm repositories (upstream or antlir)
-        feature.remove("/etc/yum.repos.d"),
-        feature.remove(
-            "/etc/dnf/dnf.conf",
-            must_exist = False,
-        ),
-        # recreate an empty /etc/yum.repos.d for any tooling that expects it to
-        # always exist
-        image.ensure_subdirs_exist("/etc", "yum.repos.d"),
-        image.rpms_remove_if_exists(["dracut"]),
-    ],
-)
-
 export_file(name = "eth.network")
 
 image.layer(
     name = "metalos",
-    parent_layer = ":basesystem-strip",
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
         feature.install_buck_runnable(
