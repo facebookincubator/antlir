@@ -183,7 +183,7 @@ fn find_root_disk<FD: FindRootDisk>(disk_finder: &FD) -> Result<PathBuf> {
         .context("Failed to get the devnode for root disk")
 }
 
-async fn download_disk_image(config: crate::Config, package: String) -> Result<Bytes> {
+async fn download_disk_image(package: String) -> Result<Bytes> {
     // TODO: make this an image::Image all the way through (add it to HostConfig)
     let (name, id) = package
         .split_once(':')
@@ -197,8 +197,7 @@ async fn download_disk_image(config: crate::Config, package: String) -> Result<B
     .try_into()
     .context("converting image representation")?;
 
-    let dl = HttpsDownloader::new(config.download.package_format_uri().to_string())
-        .context("while creating downloader")?;
+    let dl = HttpsDownloader::new().context("while creating downloader")?;
     let url = dl.image_url(&image).context("while getting image url")?;
     let client: reqwest::Client = dl.into();
     client
@@ -211,9 +210,9 @@ async fn download_disk_image(config: crate::Config, package: String) -> Result<B
         .with_context(|| format!("while reading {}", url))
 }
 
-pub async fn apply_disk_image(log: Logger, opts: Opts, config: crate::Config) -> Result<()> {
+pub async fn apply_disk_image(log: Logger, opts: Opts) -> Result<()> {
     let log = log.new(o!("package" => opts.package.clone()));
-    let src = download_disk_image(config, opts.package).await?;
+    let src = download_disk_image(opts.package).await?;
     let src_len = src.len();
     let mut src = src.reader();
 

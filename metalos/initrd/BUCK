@@ -173,7 +173,6 @@ image.layer(
             dest = "/",
             source = ":with-metalctl",
         ),
-        feature.install("//metalos/metalctl:default-config.toml", "/etc/metalctl.toml"),
         networking,
         debug,
         image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),

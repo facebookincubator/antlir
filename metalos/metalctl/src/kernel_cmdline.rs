@@ -25,7 +25,6 @@ use crate::config::EventBackendBaseUri;
 pub enum MetalCtlArgs {
     RootDiskPackage,
     HostConfigUri,
-    PackageFormatUri,
     Root,
     RootFsType,
     RootFlags,
@@ -40,7 +39,6 @@ impl KnownArgs for MetalCtlArgs {
         match self {
             Self::RootDiskPackage => "--metalos.write_root_disk_package",
             Self::HostConfigUri => "--metalos.host_config_uri",
-            Self::PackageFormatUri => "--metalos.package_format_uri",
             Self::Root => "--root",
             Self::RootFsType => "--rootfstype",
             Self::RootFlags => "--rootflags",
@@ -63,9 +61,6 @@ pub struct MetalosCmdline {
 
     #[structopt(long = &MetalCtlArgs::HostConfigUri.flag_name())]
     pub host_config_uri: Option<String>,
-
-    #[structopt(long = &MetalCtlArgs::PackageFormatUri.flag_name())]
-    pub package_format_uri: Option<String>,
 
     #[structopt(long = &MetalCtlArgs::EventBackendBaseUri.flag_name())]
     pub event_backend_base_uri: Option<EventBackendBaseUri>,
@@ -192,7 +187,6 @@ mod tests {
                 ],
                 root_disk_package: None,
                 host_config_uri: None,
-                package_format_uri: None,
                 event_backend_base_uri: None,
                 mac_address: Some("11:22:33:44:55:66".to_string()),
                 root: Root {
