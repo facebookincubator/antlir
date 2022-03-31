@@ -245,3 +245,39 @@ vm.run(
         ),
     ),
 )
+
+boot.grub2.build(
+    # The target name of the boot partition
+    name = "grub2-boot",
+    # The LABEL assigned to the rootfs
+    label = "root",
+    kernels = [
+        kernel_get.default,
+    ],
+    args = [
+        "rootflags=subvol=volume,rw",
+    ],
+)
+
+image.gpt(
+    name = "gpt-grub2-boot-disk",
+    table = [
+        image.gpt_partition(
+            package = ":grub2-boot",
+            is_esp = True,
+        ),
+        image.gpt_partition(
+            package = ":root-disk",
+        ),
+    ],
+)
+
+vm.run(
+    name = "grub2-boot-from-disk",
+    vm_opts = vm.types.opts.new(
+        boot_from_disk = True,
+        disk = vm.types.disk.new(
+            package = ":gpt-grub2-boot-disk",
+        ),
+    ),
+)
