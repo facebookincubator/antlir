@@ -91,3 +91,9 @@ but the high level idea is as follows:
   - `RootDirectory` is set to a RW snapshot of the service image
   - `{RUNTIME,STATE,CACHE,LOGS}_DIRECTORY` environment variables are set for
      the service unit
+
+## Generate service image
+
+A convenience buck function at `metalos/bzl/service/service.bzl` is provided to help
+the user create a service image.
+Example usage can be found in `metalos/lib/service/tests/demo_service/`.
