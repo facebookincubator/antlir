@@ -94,7 +94,6 @@ mod tests {
                     send_event(
                         log,
                         Config {
-                            download: Default::default(),
                             event_backend: EventBackend {
                                 event_backend_base_uri: format!("http://{}/sendEvent", addr)
                                     .parse()

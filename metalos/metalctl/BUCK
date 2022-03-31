@@ -1,6 +1,5 @@
 # @noautodeps
 
-load("//antlir/bzl:oss_shim.bzl", "export_file")
 load(":metalctl.bzl", "metalctl")
 
 # metalctl is split into two binary targets, so that code that requires features
@@ -28,8 +27,4 @@ metalctl(
 
 metalctl(
     name = "metalctl",
-)
-
-export_file(
-    name = "default-config.toml",
 )

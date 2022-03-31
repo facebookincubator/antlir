@@ -76,11 +76,13 @@ host_config(
                     "id": "1",
                     "kind": 3,
                     "name": "kernel." + TEST_KERNEL.uname,
+                    "override_uri": "http://vmtest-host:8000/package/kernel.{}:1".format(TEST_KERNEL.uname),
                 },
                 "rootfs": {
                     "id": "1",
                     "kind": 1,
                     "name": "metalos",
+                    "override_uri": "http://vmtest-host:8000/package/metalos:1",
                 },
             },
         },
@@ -102,7 +104,6 @@ image.layer(
         notify.install(),
         # initrd-specific things below:
         binaries,
-        feature.install("metalctl.toml", "/etc/metalctl.toml"),
         # This is just appended to the base initrd, so make sure all the
         # directories that are needed get created
         image.ensure_subdirs_exist("/usr/lib", "systemd"),
@@ -268,7 +269,6 @@ vm.rust_unittest(
         initrd = ":switch-root-initrd.cpio.gz",
         kernel = TEST_KERNEL,
         append = [
-            "metalos.package-format-uri=http://vmtest-host:8000/package/{package}",
             "metalos.host-config-uri=file:///test/fake-host-config.json",
             "rd.systemd.journald.forward_to_console=1",
         ],
@@ -293,9 +293,6 @@ vm.rust_unittest(
         initrd = ":switch-root-initrd.cpio.gz",
         kernel = TEST_KERNEL,
         append = [
-            "metalos.package-format-uri=http://vmtest-host:8000/package/{package}",
-            # this doesn't actually serve anything (yet), but we need to pass
-            # something on the cmdline
             "metalos.host-config-uri=file:///test/fake-host-config.json",
             "metalos.write-root-disk-package=metalos_root:1",
             "rd.systemd.journald.forward_to_console=1",

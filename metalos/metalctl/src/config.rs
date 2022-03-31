@@ -17,8 +17,6 @@ use crate::kernel_cmdline::MetalosCmdline;
 #[derive(Default, Debug, Deserialize, Clone)]
 pub struct Config {
     #[serde(default)]
-    pub download: Download,
-    #[serde(default)]
     pub event_backend: EventBackend,
 }
 
@@ -32,32 +30,10 @@ impl Config {
     }
 
     fn apply_overrides(&mut self, cmdline: MetalosCmdline) -> Result<()> {
-        if let Some(uri) = cmdline.package_format_uri {
-            self.download.package_format_uri = uri;
-        }
         if let Some(uri) = cmdline.event_backend_base_uri {
             self.event_backend.event_backend_base_uri = uri;
         }
         Ok(())
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Download {
-    package_format_uri: String,
-}
-
-impl Download {
-    pub fn package_format_uri(&self) -> &str {
-        &self.package_format_uri
-    }
-}
-
-impl Default for Download {
-    fn default() -> Self {
-        Self {
-            package_format_uri: "https://metalos/package/{package}".into(),
-        }
     }
 }
 
@@ -111,22 +87,13 @@ mod tests {
     fn overrides() -> Result<()> {
         let mut config = Config::default();
         assert_eq!(
-            "https://metalos/package/{package}",
-            config.download.package_format_uri
-        );
-        assert_eq!(
             "https://metalos/sendEvent",
             config.event_backend.event_backend_base_uri().to_string()
         );
         let cmdline = MetalosCmdline::from_kernel_args(
-            "metalos.package_format_uri=\"https://package-host/pkg/{package}\" \
-            metalos.event_backend_base_uri=\"https://event-host/sendEvent\"",
+            "metalos.event_backend_base_uri=\"https://event-host/sendEvent\"",
         )?;
         config.apply_overrides(cmdline)?;
-        assert_eq!(
-            "https://package-host/pkg/{package}",
-            config.download.package_format_uri
-        );
         assert_eq!(
             "https://event-host/sendEvent",
             config.event_backend.event_backend_base_uri().to_string()

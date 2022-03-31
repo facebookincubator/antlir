@@ -51,15 +51,14 @@ async fn fetch_image(log: Logger, dl: impl Downloader, image: AnyImage) -> Resul
 }
 
 /// Fetch all the immediately-necessary images from the host config. If in the
-/// initrd, this is just the rootfs (and very soon the kernel).
-pub async fn fetch_images(log: Logger, config: crate::Config, opts: Opts) -> Result<()> {
+/// initrd, this is just the rootfs and kernel.
+pub async fn fetch_images(log: Logger, opts: Opts) -> Result<()> {
     let host = get_host_config(&opts.host_config_uri)
         .await
         .with_context(|| format!("while loading host config from {} ", opts.host_config_uri))?;
 
     // TODO: use fbpkg.proxy when in the rootfs
-    let dl = HttpsDownloader::new(config.download.package_format_uri().to_string())
-        .context("while creating downloader")?;
+    let dl = HttpsDownloader::new().context("while creating downloader")?;
 
     #[cfg(initrd)]
     {

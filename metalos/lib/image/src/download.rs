@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::{Stream, StreamExt};
@@ -31,11 +30,21 @@ pub trait Downloader {
 #[derive(Clone)]
 pub struct HttpsDownloader {
     client: Client,
-    format_uri: String,
 }
 
+static FORMAT_URI: &str = {
+    #[cfg(facebook)]
+    {
+        "https://fbpkg.fbinfra.net/fbpkg/{package}"
+    }
+    #[cfg(not(facebook))]
+    {
+        "https://metalos/package/{package}"
+    }
+};
+
 impl HttpsDownloader {
-    pub fn new(format_uri: String) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         // TODO: it would be nice to restrict to https only, but we use plain
         // http for tests, and https doesn't do much for security compared to
         // something like checking image signatures
@@ -44,32 +53,13 @@ impl HttpsDownloader {
             .user_agent("metalos::image/1")
             .build()
             .map_err(Error::InitClient)?;
-        if !format_uri.contains("{package}") {
-            return Err(Error::InvalidUri {
-                uri: format_uri,
-                error: anyhow!("must contain '{{package}}' placeholder"),
-            }
-            .into());
-        }
-        if let Err(e) = format_uri
-            .replace("{package}", "placeholder")
-            .parse::<Url>()
-        {
-            return Err(Error::InvalidUri {
-                uri: format_uri,
-                error: e.into(),
-            }
-            .into());
-        }
-        Ok(Self { client, format_uri })
+        Ok(Self { client })
     }
 
     pub fn image_url(&self, img: &AnyImage) -> Result<Url> {
         let uri = match &img.override_uri {
             Some(u) => u.clone(),
-            None => self
-                .format_uri
-                .replace("{package}", &format!("{}:{}", img.name, img.id)),
+            None => FORMAT_URI.replace("{package}", &format!("{}:{}", img.name, img.id)),
         };
         Url::parse(&uri).map_err(|e| {
             Error::InvalidUri {
@@ -110,53 +100,18 @@ mod tests {
     use url::ParseError;
 
     #[test]
-    fn format_uri_missing_package() {
-        match HttpsDownloader::new("baduri".into()) {
-            Err(crate::Error::Download(Error::InvalidUri { uri: _, error })) => {
-                assert_eq!("must contain '{package}' placeholder", error.to_string());
-            }
-            _ => panic!("expected Error::InvalidUri"),
-        }
-    }
-
-    #[test]
-    fn format_uri_bad() {
-        match HttpsDownloader::new("baduri-but-has-{package}".into()) {
-            Err(crate::Error::Download(Error::InvalidUri { uri: _, error })) => {
-                assert_eq!(
-                    ParseError::RelativeUrlWithoutBase,
-                    error.downcast().unwrap()
-                );
-            }
-            _ => panic!("expected Error::InvalidUri"),
-        };
-        match HttpsDownloader::new("https://baduri:abc/but-has-{package}".into()) {
-            Err(crate::Error::Download(Error::InvalidUri { uri: _, error })) => {
-                assert_eq!(ParseError::InvalidPort, error.downcast().unwrap());
-            }
-            _ => panic!("expected Error::InvalidUri"),
-        }
-    }
-
-    #[test]
     fn image_url() -> anyhow::Result<()> {
-        let h = HttpsDownloader::new("https://metalos/path/to/{package}.sendstream.zst".into())?;
+        let h = HttpsDownloader::new()?;
         assert_eq!(
-            "https://metalos/path/to/abc:123.sendstream.zst",
+            format!(
+                "{}/abc:123",
+                FORMAT_URI.replace("{package}", "").trim_end_matches('/')
+            ),
             String::from(h.image_url(&AnyImage {
                 name: "abc".into(),
                 id: "123".into(),
                 kind: crate::kinds::Kind::Rootfs,
                 override_uri: None,
-            })?)
-        );
-        assert_eq!(
-            "https://otherhost/path/to/abc:123.sendstream.zst",
-            String::from(h.image_url(&AnyImage {
-                name: "abc".into(),
-                id: "123".into(),
-                kind: crate::kinds::Kind::Rootfs,
-                override_uri: Some("https://otherhost/path/to/abc:123.sendstream.zst".into()),
             })?)
         );
         Ok(())

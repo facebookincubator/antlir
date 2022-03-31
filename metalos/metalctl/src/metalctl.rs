@@ -156,7 +156,7 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::Mount(opts) => mount::mount(log, opts),
         #[cfg(initrd)]
         Subcommand::Umount(opts) => umount::umount(opts),
-        Subcommand::FetchImages(opts) => fetch_images::fetch_images(log, config, opts).await,
+        Subcommand::FetchImages(opts) => fetch_images::fetch_images(log, opts).await,
         #[cfg(initrd)]
         Subcommand::NetworkCleanup(opts) => network_cleanup::network_cleanup(log, opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts).await,
@@ -164,9 +164,7 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::LoadHostConfig(opts) => load_host_config::load_host_config(opts).await,
         Subcommand::SendEvent(opts) => send_event::send_event(log, config, opts).await,
         #[cfg(initrd)]
-        Subcommand::ApplyDiskImage(opts) => {
-            apply_disk_image::apply_disk_image(log, opts, config).await
-        }
+        Subcommand::ApplyDiskImage(opts) => apply_disk_image::apply_disk_image(log, opts).await,
         #[cfg(not(initrd))]
         Subcommand::Update(update) => update.subcommand(log).await,
     }
