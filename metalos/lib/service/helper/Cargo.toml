@@ -26,7 +26,7 @@ service = { path = ".." }
 state = { path = "../../state" }
 structopt = "0.3.23"
 systemd = { path = "../../systemd" }
-thiserror = "1.0.29"
+thiserror = "1.0.30"
 uuid = { version = "0.8.1", features = ["serde", "v4", "v5"] }
 
 [features]

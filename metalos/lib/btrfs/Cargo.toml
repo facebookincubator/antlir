@@ -23,7 +23,7 @@ bytes = { version = "1.1", features = ["serde"] }
 futures = { version = "0.3.13", features = ["async-await", "compat"] }
 libc = "0.2.121"
 nix = "0.23"
-thiserror = "1.0.29"
+thiserror = "1.0.30"
 tokio = { version = "1.15", features = ["full", "test-util", "tracing"] }
 tokio-util = { version = "0.6", features = ["full"] }
 uuid = { version = "0.8.1", features = ["serde", "v4", "v5"] }
