@@ -22,6 +22,7 @@ def build_root_disk(
             # Runtime directories
             image.ensure_dirs_exist(RUN_DIR),
             image.ensure_subdirs_exist(RUN_DIR, "boot"),
+            image.ensure_subdirs_exist(RUN_DIR, "scratch"),
             image.ensure_subdirs_exist(RUN_DIR, "state"),
         ],
         visibility = [

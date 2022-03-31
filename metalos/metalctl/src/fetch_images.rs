@@ -34,10 +34,6 @@ async fn fetch_image(log: Logger, dl: impl Downloader, image: AnyImage) -> Resul
     std::fs::create_dir_all(dest.parent().context("cannot receive directly into /")?)
         .with_context(|| format!("while creating parent directory for {:?}", dest))?;
 
-    let dst = Subvolume::create(&dest)
-        .with_context(|| format!("while creating destination subvol {:?}", dest))?;
-    trace!(log, "created destination subvolume");
-
     trace!(log, "opening sendstream https connection");
     let sendstream = dl
         .open_sendstream(&image)
@@ -45,7 +41,7 @@ async fn fetch_image(log: Logger, dl: impl Downloader, image: AnyImage) -> Resul
         .with_context(|| format!("while starting sendstream for {:?}", image))?;
     trace!(log, "receiving sendstream");
     sendstream
-        .receive_into(&dst)
+        .receive_into(&dest)
         .await
         .context("while receiving")
 }

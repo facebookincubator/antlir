@@ -340,10 +340,19 @@ mod tests {
     #[containertest]
     fn iter_root() -> Result<()> {
         let subvol = Subvolume::get("/")?;
+        // systemd creates other subvols like /var/lib/portable, so just make
+        // sure that at least /example is here, and that there is one more
+        // subvol than when we started
+        let count = subvol.children()?.count();
         Subvolume::create("/example")?;
         let children: Vec<Subvolume> = subvol.children()?.collect::<Result<_>>()?;
-        assert!(children.len() == 1);
-        assert!(children[0].path() == Path::new("/example"));
+        assert!(children.len() == count + 1);
+        assert!(
+            children
+                .into_iter()
+                .any(|c| c.path() == Path::new("/example")),
+            "/example was not in root subvol iter"
+        );
         Ok(())
     }
 
