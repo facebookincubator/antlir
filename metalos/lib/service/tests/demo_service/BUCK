@@ -1,7 +1,5 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//metalos:defs.bzl", "rust_binary")
+load("//metalos/bzl/service:service.bzl", "native_service")
 
 rust_binary(
     name = "demo-service",
@@ -17,18 +15,11 @@ rust_binary(
     ],
 )
 
-image.layer(
+native_service(
     name = "layer",
-    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
-    features = [
-        feature.install(
-            ":demo-service",
-            "/usr/bin/demo",
-            mode = "a+rx",
-        ),
-        image.ensure_subdirs_exist("/", "metalos"),
-        feature.install("metalos.demo.service", "/metalos/metalos.demo.service"),
-    ],
+    binary = ":demo-service",
+    service_binary_path = "/usr/bin/demo",
+    service_name = "metalos.demo",
+    systemd_service_unit = "metalos.demo.service",
     visibility = ["//metalos/lib/service/..."],
-    flavor = REPO_CFG.antlir_linux_flavor,
 )
