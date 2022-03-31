@@ -20,8 +20,11 @@ use crate::load_host_config::get_host_config;
 pub struct Opts {
     host_config_uri: Url,
     root: PathBuf,
-
-    #[structopt(default_value = "/usr/lib/metalos/generators")]
+    #[structopt(
+        default_value = "usr/lib/metalos/generators",
+        help = "Root of starlark generator files. If a relative path, it will \
+        be interpreted as relative to --root."
+    )]
     generators_root: PathBuf,
 }
 
@@ -32,9 +35,14 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
         .await
         .with_context(|| format!("while loading host config from {} ", opts.host_config_uri))?;
 
-    let generators = StarlarkGenerator::load(&opts.generators_root).context(format!(
+    // if --generators-root is absolute, this join will still do the right
+    // thing, but otherwise makes it possible for users to pass a different
+    // relative path if desired
+    let generators_root = opts.root.join(opts.generators_root);
+
+    let generators = StarlarkGenerator::load(&generators_root).context(format!(
         "failed to load generators from {:?}",
-        &opts.generators_root
+        &generators_root
     ))?;
     for gen in generators {
         let output = gen

@@ -191,8 +191,6 @@ image.layer(
         systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
         feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
-        # generic metalos generators to be applied to the root fs
-        "//metalos/host_configs:generators",
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
