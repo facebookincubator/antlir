@@ -29,3 +29,6 @@ def systemd_expectations_test(name, layer, expectations):
             "tokio",
         ], platform = "rust"),
     )
+
+def skip_unit(unit):
+    return systemd.install_dropin("//metalos/os/tests:skip-unit.conf", unit)

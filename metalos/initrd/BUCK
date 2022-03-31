@@ -8,6 +8,7 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
+load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:busybox.bzl", "DEFAULT_APPLETS")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
@@ -191,6 +192,7 @@ image.layer(
         systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
         feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
+        # @oss-disable: "//metalos/initrd/facebook:features", 
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
@@ -198,4 +200,11 @@ image.layer(
         "//metalos/...",
         "//scripts/dschatzberg/vm:",
     ],
+)
+
+package.new(
+    name = "initrd.cpio.gz",
+    format = "cpio.gz",
+    layer = ":initrd",
+    visibility = ["PUBLIC"],
 )
