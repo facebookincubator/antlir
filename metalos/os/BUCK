@@ -3,14 +3,11 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//metalos/os/tests:defs.bzl", "systemd_expectations_test")
-
-export_file(name = "eth.network")
 
 image.layer(
     name = "metalos",
@@ -38,7 +35,6 @@ image.layer(
         systemd.set_default_target("workload.target"),
         # networking config to use DHCP is a generic workload-pre.target
         # dependency
-        feature.install("eth.network", "/usr/lib/systemd/network/20-eth.network"),
         systemd.enable_unit("systemd-networkd.service", "core-services.target"),
         systemd.enable_unit("systemd-resolved.service", "core-services.target"),
         systemd.alias("systemd-resolved.service", "dbus-org.freedesktop.resolve1.service"),
@@ -85,19 +81,22 @@ image.layer(
         systemd.install_unit("metalos-mount-kernel-modules.service"),
         systemd.enable_unit("metalos-mount-kernel-modules.service", "basic.target", "requires"),
         "//metalos/host_configs:generators",
+        # @oss-disable: "//metalos/os/facebook:features", 
     ],
     runtime = ["systemd"],
     visibility = [
         "//antlir/...",
+        "//kernel/kerneltest/image/...",
         "//metalos/...",
         "//netos/...",
-        # @oss-disable: "//tupperware/agent/hostagent/metalos/...", 
+        "//tupperware/agent/hostagent/metalos/...",
     ],
 )
 
 systemd_expectations_test(
     name = "systemd-expectations",
-    expectations = "//metalos/os/tests:systemd-expectations.toml",
+    # @oss-disable: expectations = "//metalos/os/facebook/tests:systemd-expectations.toml", 
+    expectations = "//metalos/os/tests:systemd-expectations.toml", # @oss-enable
     layer = ":metalos",
 )
 

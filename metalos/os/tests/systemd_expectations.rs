@@ -33,7 +33,6 @@ async fn unit_expectations() -> Result<()> {
 
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
     let sd = Systemd::connect(log.clone()).await?;
-    sd.wait(WaitableSystemState::Operational).await?;
 
     let unit_file_states: BTreeMap<UnitName, UnitFileState> = sd
         .list_unit_files()

@@ -203,6 +203,7 @@ image.layer(
         # the default kernel-specific vm initrd includes this unit to
         # switch-root into /sysroot, which we don't want for MetalOS
         systemd.mask_units(["initrd-switch-root.service"]),
+        feature.remove("/etc/resolv.conf"),
         network.host(),
         image.ensure_subdirs_exist("/", "test"),
         feature.install(":host-config", "/test/fake-host-config.json"),
