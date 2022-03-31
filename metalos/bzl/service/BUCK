@@ -1,0 +1,12 @@
+load("//antlir/bzl:template.bzl", "template")
+
+template(
+    name = "systemd-expectations-template",
+    srcs = [
+        "systemd-expectations.jinja2",
+    ],
+    visibility = [
+        "//metalos/...",
+        "//netos/...",
+    ],
+)
