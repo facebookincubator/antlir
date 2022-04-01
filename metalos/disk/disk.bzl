@@ -24,6 +24,8 @@ def build_root_disk(
             image.ensure_subdirs_exist(RUN_DIR, "boot"),
             image.ensure_subdirs_exist(RUN_DIR, "scratch"),
             image.ensure_subdirs_exist(RUN_DIR, "state"),
+            # this is /run/state/metalos
+            image.ensure_subdirs_exist("{}/state".format(RUN_DIR), "metalos"),
         ],
         visibility = [
             "//metalos/...",
