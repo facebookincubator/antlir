@@ -19,7 +19,6 @@ def ble_build(
     args = args or []
     args.extend([
         "root=LABEL={}".format(label),
-        "rw",
         "console=ttyS0",
         "rootfstype=btrfs",
     ])

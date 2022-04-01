@@ -1,3 +1,8 @@
+[Unit]
+Description=Mount sysroot
+After=local-fs.target
+DefaultDependencies=no
+
 [Mount]
 What=LABEL=/
 Where=/sysroot

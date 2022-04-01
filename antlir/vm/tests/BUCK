@@ -130,7 +130,10 @@ image.layer(
 
 vm.python_unittest(
     name = "python",
-    srcs = ["test_basic_vm.py"],
+    srcs = [
+        "test_basic_vm.py",
+        "test_vm_boot.py",
+    ],
     env = test_env_vars,
     resources = {
         ":resource.txt": "resource",
@@ -203,13 +206,12 @@ vm.rust_unittest(
 boot.systemd.build(
     # The target name of the boot partition
     name = "systemd-boot",
-    # The LABEL assigned to the rootfs
-    label = "root",
     kernels = [
         kernel_get.default,
     ],
     args = [
         "rootflags=subvol=volume,rw",
+        "systemd.hostname=vmtest",
     ],
 )
 
@@ -219,7 +221,7 @@ package.new(
     format = "btrfs",
     loopback_opts = image.opts(
         writable_subvolume = True,
-        label = "root",
+        label = "/",
     ),
 )
 
@@ -236,26 +238,30 @@ image.gpt(
     ],
 )
 
-vm.run(
-    name = "systemd-boot-from-disk",
+vm.python_unittest(
+    name = "test-systemd-boot-from-disk",
+    srcs = ["test_vm_boot.py"],
     vm_opts = vm.types.opts.new(
         boot_from_disk = True,
         disk = vm.types.disk.new(
             package = ":gpt-systemd-boot-disk",
         ),
     ),
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir:testlib_common",
+    ],
 )
 
 boot.grub2.build(
     # The target name of the boot partition
     name = "grub2-boot",
-    # The LABEL assigned to the rootfs
-    label = "root",
     kernels = [
         kernel_get.default,
     ],
     args = [
         "rootflags=subvol=volume,rw",
+        "systemd.hostname=vmtest",
     ],
 )
 
@@ -272,12 +278,17 @@ image.gpt(
     ],
 )
 
-vm.run(
-    name = "grub2-boot-from-disk",
+vm.python_unittest(
+    name = "test-grub2-boot-from-disk",
+    srcs = ["test_vm_boot.py"],
     vm_opts = vm.types.opts.new(
         boot_from_disk = True,
         disk = vm.types.disk.new(
             package = ":gpt-grub2-boot-disk",
         ),
     ),
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir:testlib_common",
+    ],
 )
