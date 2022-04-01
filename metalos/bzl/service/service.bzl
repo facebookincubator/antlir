@@ -1,5 +1,6 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "target_utils")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -17,6 +18,7 @@ METALOS_PATH = "metalos"
 # - service_binary_path is the path in the layer where the binary should be installed
 # - user and group are the unix groups
 # - visibility is a list of path that can use this macro, defaults to //metalos/... and //netos/...
+# - extra_features is used to personalise your layer
 def native_service(
         name,
         service_name,
@@ -26,9 +28,10 @@ def native_service(
         service_binary_path = None,
         user = "root",
         group = "root",
-        visibility = None):
+        visibility = None,
+        extra_features = []):
     if not service_binary_path:
-        service_binary_path = "/bin/{}".name
+        service_binary_path = "/usr/bin/{}".format(service_name)
 
     if not visibility:
         visibility = ["//metalos//...", "//netos/..."]
@@ -58,7 +61,7 @@ def native_service(
                 systemd_service_unit,
                 "/{}/{}.service".format(METALOS_PATH, service_name),
             ),
-        ],
+        ] + extra_features,
     )
 
     _generate_systemd_expectations_test(name, service_name, systemd_service_unit, visibility)
@@ -70,6 +73,13 @@ def _generate_systemd_expectations_test(layer_name, service_name, systemd_servic
         service_name = service_name,
     )
 
+    # if systemd_service_unit resembles a buck path extract the filename part which is basically
+    # the systemd unit name
+    if ":" in systemd_service_unit:
+        unit_name = target_utils.parse_target(systemd_service_unit).name
+    else:
+        unit_name = systemd_service_unit
+
     # because the service is installed in /metalos/<service_name.service and not in a standard
     # systemd path we need to create another layer where we install the unit so it will be
     # visible to systemd and the systemd_expectations_test
@@ -79,8 +89,8 @@ def _generate_systemd_expectations_test(layer_name, service_name, systemd_servic
         features = [
             systemd.install_unit(systemd_service_unit),
             # we do not want the unit to start but we still want to analyse it
-            systemd.install_dropin("//metalos/os/tests:skip-unit.conf", systemd_service_unit),
-            systemd.enable_unit(systemd_service_unit, "multi-user.target"),
+            systemd.install_dropin("//metalos/os/tests:skip-unit.conf", unit_name),
+            systemd.enable_unit(unit_name, "multi-user.target"),
         ],
     )
     systemd_expectations_rendered_template = shape.render_template(
