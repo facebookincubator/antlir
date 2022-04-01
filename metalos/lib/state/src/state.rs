@@ -167,14 +167,22 @@ where
 
 /// Persist a new version of a state type, getting back a unique key to later
 /// load it with.
-pub fn save<S>(state: S) -> Result<Token<S>>
+pub fn save<S>(state: &S) -> Result<Token<S>>
 where
     S: State,
 {
-    let token = Token::new(Uuid::new_v4());
+    save_with_uuid(state, Uuid::new_v4())
+}
+
+/// Persist a new version of a state type with a preset UUID.
+pub fn save_with_uuid<S>(state: &S, uuid: Uuid) -> Result<Token<S>>
+where
+    S: State,
+{
+    let token = Token::new(uuid);
     let p = token.path();
     let mut f = File::create(&p).with_context(|| format!("while creating {}", p.display()))?;
-    serde_json::to_writer(&mut f, &state)
+    serde_json::to_writer(&mut f, state)
         .with_context(|| format!("while serializing {}", p.display()))?;
     Ok(token)
 }
@@ -268,7 +276,7 @@ mod tests {
         let current: Option<ExampleState> =
             load(Token::current()).context("while loading non-existent current")?;
         assert_eq!(None, current);
-        let token = save(ExampleState {
+        let token = save(&ExampleState {
             hello: "world".into(),
         })
         .context("while saving")?;
@@ -287,7 +295,7 @@ mod tests {
     #[containertest]
     fn kv() -> Result<()> {
         std::fs::create_dir_all(metalos_paths::metalos_state())?;
-        let token = save(ExampleState {
+        let token = save(&ExampleState {
             hello: "world".into(),
         })
         .context("while saving")?;

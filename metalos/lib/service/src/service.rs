@@ -10,6 +10,10 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use systemd::UnitName;
+
+mod dropin;
+
 /// Run details for a single execution of a Native Service.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ServiceInstance {
@@ -17,6 +21,7 @@ pub struct ServiceInstance {
     version: Uuid,
     run_uuid: Uuid,
     paths: Paths,
+    unit_name: UnitName,
 }
 
 impl ServiceInstance {
@@ -36,11 +41,13 @@ impl ServiceInstance {
             logs: base.join("logs").join(&name),
             runtime: base.join("runtime").join(unique),
         };
+        let unit_name = format!("{}.service", name).into();
         Self {
             name,
             version,
             run_uuid,
             paths,
+            unit_name,
         }
     }
 
@@ -58,6 +65,10 @@ impl ServiceInstance {
 
     pub fn paths(&self) -> &Paths {
         &self.paths
+    }
+
+    pub fn unit_name(&self) -> &UnitName {
+        &self.unit_name
     }
 }
 

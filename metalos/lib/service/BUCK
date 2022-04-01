@@ -1,13 +1,36 @@
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "default_test_layer", "rust_library")
+load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
 rust_library(
     name = "service",
     srcs = glob(["src/*.rs"]),
+    test_deps = [
+        "pretty_assertions",
+        "tokio",
+    ],
+    unittest_opts = shape.new(
+        unittest_opts_t,
+        container = shape.new(
+            container_unittest_opts_t,
+            boot = True,
+            layer = "//metalos/lib/service:test-layer",
+        ),
+    ),
+    unittests = [
+        "plain",
+        "container",
+    ],
     deps = [
+        "anyhow",
+        "maplit",
         "serde",
         "uuid",
         "//metalos/lib/btrfs:btrfs",
+        "//metalos/lib/serde_systemd:serde_systemd",
+        "//metalos/lib/state:state",
+        "//metalos/lib/systemd:systemd",
     ],
 )
 
