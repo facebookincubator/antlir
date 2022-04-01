@@ -13,6 +13,9 @@ use uuid::Uuid;
 use systemd::UnitName;
 
 mod dropin;
+mod set;
+
+pub type Version = Uuid;
 
 /// Run details for a single execution of a Native Service.
 #[derive(Debug, Deserialize, Serialize)]
