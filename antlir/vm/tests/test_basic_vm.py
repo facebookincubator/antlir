@@ -8,7 +8,6 @@ import importlib.resources
 import multiprocessing
 import os
 import platform
-import socket
 import unittest
 
 from antlir.fs_utils import Path
@@ -19,9 +18,6 @@ class BasicVMTest(AntlirTestCase):
     def test_env(self) -> None:
         self.assertEqual(os.environ.pop("kitteh"), "meow")
         self.assertEqual(os.environ.pop("dogsgo"), "woof")
-
-    def test_running_in_vm(self) -> None:
-        self.assertEqual(socket.gethostname(), "vmtest")
 
     def test_load_resource(self) -> None:
         with importlib.resources.path(__package__, "resource") as path:
