@@ -210,6 +210,7 @@ boot.systemd.build(
         kernel_get.default,
     ],
     args = [
+        "audit=0",
         "rootflags=subvol=volume,rw",
         "systemd.hostname=vmtest",
     ],
@@ -260,6 +261,7 @@ boot.grub2.build(
         kernel_get.default,
     ],
     args = [
+        "audit=0",
         "rootflags=subvol=volume,rw",
         "systemd.hostname=vmtest",
     ],

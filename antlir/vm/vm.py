@@ -445,6 +445,7 @@ async def vm(
                     "console=ttyS0,115200"
                     " noapic"
                     " panic=-1"
+                    " audit=0"
                     " cgroup_no_v1=all"
                     " systemd.unified_cgroup_hierarchy=1"
                     " rd.emergency=poweroff "
