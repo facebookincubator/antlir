@@ -41,7 +41,7 @@ def build_exec_wrapper(runnable, path_in_output = None, args = None):
 echo "#!/bin/sh" > "$TMP/out"
 {maybe_repo_root_preamble}
 cat >> "$TMP/out" << 'EOF'
-exec {maybe_repo_root_prefix}$(exe {runnable}){maybe_quoted_path_in_output} {args}
+exec {maybe_repo_root_prefix}$(exe_target {runnable}){maybe_quoted_path_in_output} {args}
 EOF
 chmod +x "$TMP/out"
 mv "$TMP/out" "$OUT"
@@ -62,9 +62,9 @@ mv "$TMP/out" "$OUT"
         #     means that the bash would have to parse it to get the path of the
         #     _actual_ buck runnable.  That is a nightmare.
         maybe_repo_root_preamble = """
-            binary_path=( $(exe {repo_root}))
-            repo_root=\\$( $binary_path )
-            echo "REPO_ROOT=$repo_root" >> "$TMP/out"
+binary_path=( $(exe {repo_root}))
+repo_root=\\$( $binary_path )
+echo "REPO_ROOT=$repo_root" >> "$TMP/out"
         """.format(
             repo_root = antlir_dep(":repo-root"),
         ) if is_buck2() else "",
