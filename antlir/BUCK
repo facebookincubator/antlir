@@ -15,7 +15,7 @@ python_library(
     visibility = [
         "//antlir/...",
         "//metalos/initrd/facebook/...",
-        "//tupperware/cm/antlir/...",
+        "//tupperware/cm/...",
         "//tupperware/image/scripts/...",
     ],
 )
