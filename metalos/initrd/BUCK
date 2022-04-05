@@ -117,6 +117,9 @@ image.layer(
         udev,
         extract.extract(
             binaries = SYSTEMD_BINARIES + [
+                # Metalctl uses libblkid for device discover, so include
+                # blkid.8 for debugging purposes.
+                "/usr/sbin/blkid",
                 "/usr/sbin/btrfs",
             ],
             dest = "/",
