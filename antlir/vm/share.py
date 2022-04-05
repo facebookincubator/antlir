@@ -10,7 +10,7 @@ import tempfile
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, contextmanager
 from dataclasses import dataclass, field
-from typing import Generator, Iterable, Optional, Tuple
+from typing import Generator, Iterable, Optional, Tuple, List
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path, temp_dir
@@ -182,10 +182,35 @@ Options=subvol={self.subvol},{ro_rw}
         )
 
 
+def _run_qemu_img(qemu_img: Path, args: List) -> None:
+    cmd = [qemu_img, *args]
+    log.debug(f"Running qemu-img: {cmd}")
+
+    try:
+        # Combine stdout and stderr.
+        ret = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=True,
+        )
+        log.debug(f"qemu-img complete: {ret}")
+
+    except subprocess.CalledProcessError as e:  # pragma: no cover
+        log.error(
+            "Failed to run qemu-img. "
+            f'Command: "{cmd}"; '
+            f"Return value: {e.returncode}; "
+            f"Output:\n {e.output.decode('utf-8')}"
+        )
+        raise
+
+
 def _tmp_qcow2_disk(
     qemu_img: Path,
     stack: AsyncExitStack,
     backing_file: Path,
+    additional_scratch_mb: Optional[int],
 ) -> Path:
     """
     Create a qcow2 scratch disk using qemu-img.
@@ -206,36 +231,27 @@ def _tmp_qcow2_disk(
             dir=os.getenv("DISK_TEMP"),
         )
     )
-
-    cmd = [
+    _run_qemu_img(
         qemu_img,
-        "create",
-        "-f",  # format
-        "qcow2",
-        disk.name,
-        "-b",
-        backing_file,
-    ]
-    log.debug(f"Creating tmp qcow2 img: {cmd}")
+        [
+            "create",
+            "-f",  # format
+            "qcow2",
+            disk.name,
+            "-b",
+            backing_file,
+        ],
+    )
 
-    try:
-        # Combine stdout and stderr.
-        ret = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=True,
+    if additional_scratch_mb is not None:
+        _run_qemu_img(
+            qemu_img,
+            [
+                "resize",
+                disk.name,
+                f"+{additional_scratch_mb}M",
+            ],
         )
-        log.debug(f"qemu-img complete: {ret}")
-
-    except subprocess.CalledProcessError as e:  # pragma: no cover
-        log.error(
-            "Failed to create qemu disk image. "
-            f'Command: "{cmd}"; '
-            f"Return value: {e.returncode}; "
-            f"Output:\n {e.output.decode('utf-8')}"
-        )
-        raise
 
     return Path(disk.name)
 
@@ -252,6 +268,7 @@ class QCow2RootDisk(Share):
     stack: AsyncExitStack
     subvol: str = "volume"
     dev: str = "vda"
+    additional_scratch_mb: Optional[int] = None
     cow_disk: Optional[Path] = None
 
     def __post_init__(self) -> None:
@@ -262,6 +279,7 @@ class QCow2RootDisk(Share):
                 qemu_img=self.qemu_img,
                 stack=self.stack,
                 backing_file=self.path,
+                additional_scratch_mb=self.additional_scratch_mb,
             ),
         )
 

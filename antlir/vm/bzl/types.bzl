@@ -48,7 +48,8 @@ def _new_vm_disk(
         package = None,
         layer = None,
         layer_size_mb = None,
-        layer_label = "/"):
+        layer_label = "/",
+        additional_scratch_mb = None):
     if package and layer:
         fail("disk.new() accepts `package` OR `layer`, not both")
 
@@ -79,6 +80,7 @@ def _new_vm_disk(
     return shape.new(
         disk_t,
         package = package,
+        additional_scratch_mb = additional_scratch_mb,
     )
 
 _vm_disk_api = struct(
