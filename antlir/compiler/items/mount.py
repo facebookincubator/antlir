@@ -65,8 +65,8 @@ class RuntimeSource:
 @dataclass(frozen=True)
 class LayerPublisher:
     package: str
-    # Output location of a shape target which can then be parsed
-    shape_target_output: str
+    # JSON contents of a shape target which can then be parsed
+    shape_target_contents: str
 
 
 @dataclass(frozen=True)
