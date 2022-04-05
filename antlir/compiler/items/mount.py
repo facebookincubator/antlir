@@ -67,6 +67,8 @@ class LayerPublisher:
     package: str
     # Path to the target, e.g. //foo:bar
     target_path: str
+    # Output location of a shape target which can then be parsed
+    shape_target_output: str
 
 
 @dataclass(frozen=True)
