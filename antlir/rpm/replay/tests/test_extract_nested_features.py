@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import re
 import unittest
 
 from antlir.config import antlir_dep
@@ -15,12 +14,6 @@ from antlir.rpm.replay.tests.test_utils import (
 )
 
 from ..extract_nested_features import log as enf_log
-
-
-_SENDSTREAM_PATH_RE = re.compile(
-    r".*/antlir/rpm/replay/tests/"
-    r"(__)?base.sendstream(__)?/(out/)?layer.sendstream$"
-)
 
 
 def _extract_features(infix: str):
@@ -40,10 +33,6 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         # here that we don't want to assert since that'd be fragile.
         lfp = ef.packaged_root.layer_from_package
         self.assertEqual("sendstream", lfp["format"])
-        sendstream_path = lfp["source"]["source"]
-        self.assertTrue(
-            _SENDSTREAM_PATH_RE.match(sendstream_path),
-        )
         self.assertIsNone(lfp["source"]["path"])
 
         # This would only exit in the test's base, but not on a host running us

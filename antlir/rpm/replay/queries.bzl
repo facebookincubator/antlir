@@ -40,24 +40,6 @@ def layer_included_features_query(layer):
         ),
     )
 
-# Any "layer package builder" implementations need to tag themselves with
-# this label to be included when packaging a layer for replay deployment.
-ANTLIR_INTERNAL_BUILD_PKG_LABEL = "antlir_build_pkg"
-
-# Find all package builders for any mounted packages in `layer` (and its
-# parents).  We use these to package the mounts when we package the layer.
-def layer_included_builders_query(layer):
-    return "$(query_targets_and_outputs '{query}')".format(
-        query = query.attrfilter(
-            label = "labels",
-            value = ANTLIR_INTERNAL_BUILD_PKG_LABEL,
-            expr = query.deps(
-                expr = query.set([layer]),
-                depth = query.UNBOUNDED,
-            ),
-        ),
-    )
-
 def _location(target):
     return "$(location {})".format(target)
 
@@ -68,7 +50,6 @@ def test_env_map(infix_to_layer):
         "antlir_test__{}__{}".format(infix, env_name): query_fn(target)
         for infix, target in infix_to_layer
         for env_name, query_fn in [
-            ("builders", layer_included_builders_query),
             ("layer_feature_json", layer_features_json_query),
             ("layer_output", _location),
             ("target_path_pairs", layer_included_features_query),
