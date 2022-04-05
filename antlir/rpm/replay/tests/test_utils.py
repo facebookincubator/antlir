@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Dict
+from typing import Mapping, Any, Dict
 
 from antlir.fs_utils import Path
 from antlir.serialize_targets_and_outputs import make_target_path_map
@@ -12,7 +12,7 @@ from antlir.serialize_targets_and_outputs import make_target_path_map
 from ..extract_nested_features import extract_nested_features, ExtractedFeatures
 
 
-def build_env_map(environ: Dict[str, str], infix: str) -> Dict[str, Any]:
+def build_env_map(environ: Mapping[str, str], infix: str) -> Dict[str, Any]:
     prefix = f"antlir_test__{infix}__"
     layer_output = Path(environ[prefix + "layer_output"])
     _, layer_feature_json = environ[prefix + "layer_feature_json"].split()

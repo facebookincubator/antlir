@@ -137,7 +137,7 @@ class _FeatureHandlers:
 
 def extract_nested_features(
     *,
-    layer_features_out: Union[Path, str],
+    layer_features_out: Path,
     layer_out: Path,
     target_to_path: Mapping[str, Path],
 ) -> ExtractedFeatures:
