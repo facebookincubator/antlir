@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 TARGETS = [
     "basic.target",
@@ -24,7 +25,6 @@ TARGETS = [
     "shutdown.target",
     "sockets.target",
     "sysinit.target",
-    "sysinit.target.wants",
     "umount.target",
     "cryptsetup.target",
     "cryptsetup-pre.target",
@@ -50,6 +50,20 @@ UNITS = [
     "systemd-udevd-control.socket",
     "systemd-udevd-kernel.socket",
     "systemd-udevd.service",
+]
+
+WANTS = [
+    ("sockets.target", "dbus.socket"),
+    ("sockets.target", "systemd-journald-dev-log.socket"),
+    ("sockets.target", "systemd-journald.socket"),
+    ("sockets.target", "systemd-udevd-control.socket"),
+    ("sockets.target", "systemd-udevd-kernel.socket"),
+    ("sysinit.target", "systemd-journald.service"),
+    ("sysinit.target", "systemd-modules-load.service"),
+    ("sysinit.target", "systemd-tmpfiles-setup-dev.service"),
+    ("sysinit.target", "systemd-tmpfiles-setup.service"),
+    ("sysinit.target", "systemd-udevd.service"),
+    ("sysinit.target", "systemd-udev-trigger.service"),
 ]
 
 BINARIES = [
@@ -98,6 +112,8 @@ def clone_systemd_configs(src):
     units = [
         image.ensure_subdirs_exist("/usr/lib", paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib")),
         image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
+        image.ensure_subdirs_exist(SYSTEMD_PROVIDER_ROOT, "sockets.target.wants"),
+        image.ensure_subdirs_exist(SYSTEMD_PROVIDER_ROOT, "sysinit.target.wants"),
     ] + [
         image.clone(
             src,
@@ -105,6 +121,12 @@ def clone_systemd_configs(src):
             paths.join(SYSTEMD_PROVIDER_ROOT, unit),
         )
         for unit in UNITS + TARGETS
+    ] + [
+        feature.ensure_file_symlink(
+            paths.join(SYSTEMD_PROVIDER_ROOT, tgt),
+            paths.join(SYSTEMD_PROVIDER_ROOT, src + ".wants", tgt),
+        )
+        for src, tgt in WANTS
     ]
 
     configs = [

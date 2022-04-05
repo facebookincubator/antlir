@@ -16,7 +16,6 @@ load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
 dbus = [
     feature.group_add("dbus"),
     feature.user_add("dbus", "dbus", "/", SHELL_NOLOGIN),
-    systemd.enable_unit("dbus.socket", "sockets.target"),
 ]
 
 networking = [
@@ -111,10 +110,6 @@ image.layer(
         systemd.install_dropin(
             "dropins/reload-before-cleanup.conf",
             unit = "initrd-cleanup.service",
-        ),
-        systemd.install_dropin(
-            "dropins/udevd-before-trigger.conf",
-            unit = "systemd-udevd.service",
         ),
         dbus,
         nss,
