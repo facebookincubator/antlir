@@ -143,7 +143,7 @@ class TestProcfsSerDe(unittest.TestCase):
 
         with open(subvol.path("valid_int"), "wb") as f:
             f.write(b"37\n")
-        self.assertEquals(37, deserialize_int(subvol.path(), "valid_int"))
+        self.assertEqual(37, deserialize_int(subvol.path(), "valid_int"))
 
         # Now check error conditions unrelated to type coercion
 

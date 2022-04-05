@@ -215,7 +215,7 @@ dir/parent
 \t\t\t\tdir/foo
 \t\t\t\tdir/bar
 """
-        self.assertEquals(
+        self.assertEqual(
             # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             subvolume_on_disk._btrfs_get_volume_props(parent),
             {
@@ -255,7 +255,7 @@ dir/child
 \tFlags: \t\t\t-
 \tSnapshot(s):
 """
-        self.assertEquals(
+        self.assertEqual(
             # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             subvolume_on_disk._btrfs_get_volume_props(child),
             {
