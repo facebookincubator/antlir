@@ -25,6 +25,10 @@ emulator_t = shape.shape(
 # or an existing `package.new` target.
 disk_t = shape.shape(
     package = target_t,
+    # additional size to add to disk image at VM runtime,
+    # this might be necessary when the OS tries to dynanically
+    # request more disk space (e.g creating a new GPT partition)
+    additional_scratch_mb = shape.field(int, optional = True),
 )
 
 connection_t = shape.shape(
@@ -46,6 +50,8 @@ runtime_t = shape.shape(
 )
 
 vm_opts_t = shape.shape(
+    # index of the serial port of vm (starts from 0)
+    serial_index = shape.field(int, default = 0),
     # Boot the VM directly from the provided disk
     boot_from_disk = shape.field(bool, default = False),
     # Number of cpus to provide

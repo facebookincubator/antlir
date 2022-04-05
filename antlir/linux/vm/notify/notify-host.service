@@ -2,6 +2,7 @@
 Description=Send a notification that the machine has booted
 After=sshd.service systemd-networkd-wait-online.service
 Requires=sshd.service
+ConditionPathExists=/dev/virtio-ports/notify-host
 
 [Service]
 Type=oneshot

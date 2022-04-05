@@ -301,6 +301,7 @@ async def vm(
     root_disk = QCow2RootDisk(
         path=opts.disk.package.path,
         qemu_img=opts.runtime.emulator.img_util.path,
+        additional_scratch_mb=opts.disk.additional_scratch_mb,
         stack=stack,
     )
 
@@ -387,6 +388,7 @@ async def vm(
         "-no-reboot",
         "-display",
         "none",
+        *(("-serial", "null") * opts.serial_index),
         "-serial",
         "mon:stdio",
         "-cpu",
@@ -480,6 +482,7 @@ async def vm(
         console = stack.enter_context(console.open(mode="a"))
     try:
         logger.debug(f"Booting VM using ShellMode: {shell}")
+        logger.debug(f"qemu_cmd: {qemu_cmd}")
         # If we are asking for a shell, and more specifically a *console* shell
         # then we need to start the emulator process with stdin, stdout, and
         # stderr attached to the users tty.  This is a special case
@@ -488,7 +491,6 @@ async def vm(
         if shell and shell == ShellMode.console:  # pragma: no cover
             proc = subprocess.Popen(qemu_cmd)
         else:
-            logger.debug(f"qemu_cmd: {qemu_cmd}")
             proc = subprocess.Popen(
                 qemu_cmd,
                 # Never have stdin connected unless we are in shell mode

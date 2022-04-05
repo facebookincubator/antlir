@@ -46,6 +46,8 @@ python_unittest(
                 ),
                 disk = vm.types.disk.new(
                     layer = ":vmtest-custom-layer",
+                    # to cover the additional_scratch_mb branch in antlir/vm/share.py
+                    additional_scratch_mb = 2048,
                 ),
             ),
         ),
