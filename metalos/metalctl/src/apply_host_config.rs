@@ -13,8 +13,7 @@ use structopt::StructOpt;
 use url::Url;
 
 use evalctx::{Generator, StarlarkGenerator};
-
-use crate::load_host_config::get_host_config;
+use get_host_config::get_host_config;
 
 #[derive(StructOpt)]
 pub struct Opts {

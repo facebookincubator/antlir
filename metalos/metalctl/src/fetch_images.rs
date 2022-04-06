@@ -16,7 +16,7 @@ use btrfs::{SendstreamExt, Subvolume};
 use image::download::{Downloader, HttpsDownloader};
 use image::AnyImage;
 
-use crate::load_host_config::get_host_config;
+use get_host_config::get_host_config;
 
 #[derive(StructOpt)]
 pub struct Opts {
