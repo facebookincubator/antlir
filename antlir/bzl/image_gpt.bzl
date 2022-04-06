@@ -10,8 +10,14 @@ load(":flavor_helpers.bzl", "flavor_helpers")
 load(":gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 load(":image_utils.bzl", "image_utils")
 
-def image_gpt_partition(package, is_esp = False, name = None):
-    return shape.new(gpt_partition_t, package = package, is_esp = is_esp, name = name)
+def image_gpt_partition(package, is_esp = False, is_bios_boot = False, name = None):
+    return shape.new(
+        gpt_partition_t,
+        package = package,
+        is_esp = is_esp,
+        is_bios_boot = is_bios_boot,
+        name = name,
+    )
 
 def image_gpt(
         name,

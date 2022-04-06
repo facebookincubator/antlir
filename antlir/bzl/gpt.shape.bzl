@@ -9,6 +9,7 @@ load("//antlir/bzl:target.shape.bzl", "target_t")
 gpt_partition_t = shape.shape(
     package = target_t,
     is_esp = bool,
+    is_bios_boot = bool,
     name = shape.field(str, optional = True),
 )
 
