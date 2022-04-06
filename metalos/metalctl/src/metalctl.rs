@@ -29,7 +29,6 @@ mod config;
 mod fetch_images;
 #[cfg(initrd)]
 mod generator;
-mod http;
 mod kernel_cmdline;
 mod load_host_config;
 mod mount;

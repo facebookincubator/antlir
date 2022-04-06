@@ -1,0 +1,14 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "get_host_config",
+    srcs = ["src/get_host_config.rs"],
+    deps = [
+        "anyhow",
+        "reqwest",
+        "serde",
+        "serde_json",
+        "url",
+        "//metalos/host_configs:host-rust",
+    ],
+)

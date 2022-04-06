@@ -8,38 +8,16 @@
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use structopt::StructOpt;
 use url::Url;
 
-use host::types::HostConfig;
+use get_host_config::get_host_config;
 
 #[derive(StructOpt)]
 pub struct Opts {
     uri: Url,
     out: PathBuf,
-}
-
-pub async fn get_host_config(uri: &Url) -> Result<HostConfig> {
-    match uri.scheme() {
-        "http" | "https" => {
-            let client = crate::http::client()?;
-            client
-                .get(uri.clone())
-                .send()
-                .await
-                .with_context(|| format!("while GETting {}", uri))?
-                .json()
-                .await
-                .context("while parsing host json")
-        }
-        "file" => {
-            let f = std::fs::File::open(uri.path())
-                .with_context(|| format!("while opening file {}", uri.path()))?;
-            serde_json::from_reader(f).context("while deserializing json")
-        }
-        scheme => Err(anyhow!("Unsupported scheme {} in {:?}", scheme, uri)),
-    }
 }
 
 pub async fn load_host_config(opts: Opts) -> Result<()> {
