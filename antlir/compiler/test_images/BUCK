@@ -1139,6 +1139,26 @@ package.new(
     visibility = ["//antlir/..."],
 )
 
+image.layer(
+    name = "empty.layer",
+    flavor = "centos8",
+    features = [
+        image.ensure_dirs_exist("/PLACEHOLDER"),
+    ],
+    visibility = ["//antlir/..."],
+)
+
+package.new(
+    name = "empty_bios_boot",
+    layer = ":empty.layer",
+    format = "ext3",
+    loopback_opts = image.opts(
+        size_mb = 1,
+        label = "cats",
+    ),
+    visibility = ["//antlir/..."],
+)
+
 image.gpt(
     name = "gpt_test",
     table = [
@@ -1149,6 +1169,10 @@ image.gpt(
         image.gpt_partition(
             package = ":create_ops_ext3",
             name = "create_ops_ext3",
+        ),
+        image.gpt_partition(
+            package = ":empty_bios_boot",
+            is_bios_boot = True,
         ),
     ],
     visibility = ["//antlir/..."],

@@ -27,11 +27,12 @@ from .subvol_utils import MiB
 
 class SgdiskTypeCodes(Enum):
     """
-    Current we only support these 2 types (ESP and Linux filesystem)
+    Current we only support these 3 types (ESP, BIOS_BOOT and Linux filesystem)
     see `sgdisk -L` for details
     """
 
     ESP = "ef00"
+    BIOS_BOOT = "ef02"
     LINUX = "8300"
 
 
@@ -85,7 +86,13 @@ def make_gpt(argv) -> None:
         p_size_mb = int(os.path.getsize(p.package.path.decode()) / MiB)
         ops.append(f"-n 0:0:+{p_size_mb}M")
         # set partition type
-        p_type_code = SgdiskTypeCodes.ESP if p.is_esp else SgdiskTypeCodes.LINUX
+        p_type_code = (
+            SgdiskTypeCodes.ESP
+            if p.is_esp
+            else SgdiskTypeCodes.BIOS_BOOT
+            if p.is_bios_boot
+            else SgdiskTypeCodes.LINUX
+        )
         ops.append(f"-t 0:{p_type_code.value}")
         if p.name:
             # optionally set partition name

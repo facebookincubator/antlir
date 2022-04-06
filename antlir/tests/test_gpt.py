@@ -55,6 +55,26 @@ class GptTestCase(ImagePackageTestCaseBase):
             )
             self.assertEqual(res, "create_ops_ext3")
 
+            # verify that the third partition is a BIOS boot partition
+            res = (
+                subprocess.check_output(
+                    nsenter_as_root(
+                        unshare,
+                        "partx",
+                        "-n",
+                        "3",
+                        "-o",
+                        "TYPE",
+                        "-g",
+                        "--raw",
+                        image_path,
+                    )
+                )
+                .decode()
+                .strip()
+            )
+            self.assertEqual(res, "21686148-6449-6e6f-744e-656564454649")
+
             # verify partitiion contents
             res = (
                 subprocess.check_output(
