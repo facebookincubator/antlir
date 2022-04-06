@@ -248,6 +248,7 @@ vm.rust_unittest(
     deps = ["//metalos/lib/systemd:systemd"] + third_party.libraries(
         [
             "anyhow",
+            "nix",
             "slog",
             "slog_glog_fmt",
             "tokio",
@@ -290,6 +291,7 @@ vm.rust_unittest(
     deps = ["//metalos/lib/systemd:systemd"] + third_party.libraries(
         [
             "anyhow",
+            "nix",
             "slog",
             "slog_glog_fmt",
             "tokio",

@@ -9,7 +9,10 @@
 /// This uses the regular initrd so that it goes through the regular boot
 /// process, and this unit test is run inside a snapshot of the metalos base
 /// image.
-use anyhow::Result;
+use anyhow::{Context, Result};
+use std::collections::{BTreeMap, HashSet};
+use std::path::Path;
+use std::process::Command;
 use systemd::{Systemd, WaitableSystemState};
 
 async fn wait_for_systemd() -> Result<()> {
@@ -24,6 +27,18 @@ async fn systemd_running() {
     wait_for_systemd().await.unwrap();
 }
 
+// parse (mountpoint, opts) from /proc/mounts
+fn parse_mounts() -> BTreeMap<String, String> {
+    let mounts = std::fs::read_to_string("/proc/mounts").unwrap();
+    mounts
+        .lines()
+        .map(|line| {
+            let fields: Vec<_> = line.split_whitespace().collect();
+            (fields[1].to_string(), fields[3].to_string())
+        })
+        .collect()
+}
+
 #[tokio::test]
 async fn in_boot_snapshot() {
     wait_for_systemd().await.unwrap();
@@ -32,20 +47,55 @@ async fn in_boot_snapshot() {
         .trim()
         // systemd's format specifier for boot id strips out dashes
         .replace("-", "");
-    let mounts = std::fs::read_to_string("/proc/mounts").unwrap();
-    for line in mounts.lines() {
-        let fields: Vec<_> = line.split_whitespace().collect();
-        if fields[1] == "/" {
-            // don't really care about the exact format, but the current boot id
-            // should at least be present in the subvolume mounted at /
-            assert!(
-                fields[3].contains(&boot_id),
-                "could not find boot id '{}' in subvol '{}'",
-                boot_id,
-                fields[3],
-            );
-            return;
-        }
-    }
-    panic!("could not find / mount")
+    let mounts = parse_mounts();
+    let rootfs_mount_opts = mounts.get("/").expect("/ not found in /proc/mounts");
+    assert!(
+        rootfs_mount_opts.contains(&boot_id),
+        "could not find boot id '{}' in subvol '{}'",
+        boot_id,
+        rootfs_mount_opts
+    );
+}
+
+fn loaded_kmods() -> Result<HashSet<String>> {
+    let mods = std::fs::read_to_string("/proc/modules").context("while reading /proc/modules")?;
+    Ok(mods
+        .lines()
+        .map(|l| l.split_once(" ").unwrap().0.to_string())
+        .collect())
+}
+
+#[tokio::test]
+async fn kernel_modules_work() {
+    wait_for_systemd().await.unwrap();
+    let uname = nix::sys::utsname::uname();
+    let mountpoint = format!("/usr/lib/modules/{}", uname.release());
+    let mounts = parse_mounts();
+    let mount_opts = mounts
+        .get(&mountpoint)
+        .expect(&format!("'{}' not found in /proc/mounts", mountpoint));
+    assert!(
+        mount_opts.contains("subvolid="),
+        "kernel mounts should have a subvolid, but it was not present in '{}'",
+        mount_opts
+    );
+    // check to make sure that fuse.ko exists, since it's a very critical
+    // module, is not included in the initrd and serves to show that the modules
+    // are really present instead of just some arbitrary subvol being mounted
+    let fuse_path = Path::new(&mountpoint).join("kernel/fs/fuse/fuse.ko");
+    assert!(
+        fuse_path.exists(),
+        "'{}' does not exist",
+        fuse_path.display()
+    );
+    let mods = loaded_kmods().unwrap();
+    assert!(!mods.contains("fuse"));
+    Command::new("modprobe")
+        .arg("fuse")
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap();
+    let mods = loaded_kmods().unwrap();
+    assert!(mods.contains("fuse"));
 }
