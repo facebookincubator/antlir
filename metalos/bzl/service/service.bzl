@@ -1,6 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "target_utils")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -73,24 +72,17 @@ def _generate_systemd_expectations_test(layer_name, service_name, systemd_servic
         service_name = service_name,
     )
 
-    # if systemd_service_unit resembles a buck path extract the filename part which is basically
-    # the systemd unit name
-    if ":" in systemd_service_unit:
-        unit_name = target_utils.parse_target(systemd_service_unit).name
-    else:
-        unit_name = systemd_service_unit
-
-    # because the service is installed in /metalos/<service_name.service and not in a standard
+    # because the service is installed in /metalos/<service_name>.service and not in a standard
     # systemd path we need to create another layer where we install the unit so it will be
     # visible to systemd and the systemd_expectations_test
     image.layer(
         name = "{}-native-service-systemd-expectations".format(layer_name),
         parent_layer = ":{}".format(layer_name),
         features = [
-            systemd.install_unit(systemd_service_unit),
+            systemd.install_unit(systemd_service_unit, "{}.service".format(service_name)),
             # we do not want the unit to start but we still want to analyse it
-            systemd.install_dropin("//metalos/os/tests:skip-unit.conf", unit_name),
-            systemd.enable_unit(unit_name, "multi-user.target"),
+            systemd.install_dropin("//metalos/os/tests:skip-unit.conf", "{}.service".format(service_name)),
+            systemd.enable_unit("{}.service".format(service_name), "multi-user.target"),
         ],
     )
     systemd_expectations_rendered_template = shape.render_template(
