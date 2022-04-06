@@ -7,19 +7,21 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
-load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 load("//antlir/vm/bzl:defs.bzl", "vm")
-load("//antlir/vm/bzl:initrd.bzl", "initrd")
+load("//antlir/vm/bzl:initrd.bzl", "DEFAULT_MODULE_LIST")
+load("//antlir/vm/bzl:install_kernel_modules.bzl", "install_kernel_modules")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/disk:disk.bzl", "build_root_disk")
 load("//metalos/host_configs/tests:host.bzl", "host_config")
 
 TEST_KERNEL = kernel_get.default
+
+TEST_KERNEL_MODULES = install_kernel_modules(TEST_KERNEL, DEFAULT_MODULE_LIST)
 
 image.layer(
     name = "deps",
@@ -93,40 +95,27 @@ host_config(
 # initrd, meant to test the initrd itself.
 image.layer(
     name = "initrd-vmtest",
+    parent_layer = "//metalos/initrd:initrd",
     features = [
-        linux.filesystem.install(),
         # shared features straight from vmtest
         console.autologin(),
         generator.mounts(),
+        feature.remove(
+            "/etc/resolv.conf",
+            must_exist = False,
+        ),
         network.host(),
         par_support,
         ssh_server,
         notify.install(),
         # initrd-specific things below:
         binaries,
-        # This is just appended to the base initrd, so make sure all the
-        # directories that are needed get created
-        image.ensure_subdirs_exist("/usr/lib", "systemd"),
-        image.ensure_subdirs_exist("/usr/lib/systemd", "system"),
-        image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
-        image.ensure_subdirs_exist("/usr/lib/systemd", "network"),
-        image.ensure_subdirs_exist("/usr/lib", "udev/rules.d"),
-        image.ensure_dirs_exist("/etc/systemd/system"),
         # Some fixups for vmtest features in the limited initrd environment
         feature.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
         systemd.install_dropin("after-network.conf", "sshd.service"),
-        # We want to stay in the initrd, so mask out the units that switch-root
-        # into the base os
-        systemd.mask_units([
-            # debug-shell.service is always enabled in the initrd, but prevents
-            # initrd.target from being reached. Debugging for vmtest should be
-            # using ssh anyway unless in extra broken circumstances when
-            # this can just be temporarily unmasked.
-            "debug-shell.service",
-            "initrd-cleanup.service",
-            "initrd-parse-etc.service",
-            "initrd-switch-root.service",
-        ]),
+        # don't use the full test-kernel initrd, but we do need the modules
+        TEST_KERNEL_MODULES,
+        # install a host config in the initrd directly
         image.ensure_subdirs_exist("/", "test"),
         feature.install(":host-config", "/test/fake-host-config.json"),
     ],
@@ -134,21 +123,10 @@ image.layer(
 )
 
 package.new(
-    name = "initrd-vmtest--append.cpio.gz",
+    name = "vmtest-initrd.cpio.gz",
     format = "cpio.gz",
     layer = ":initrd-vmtest",
     visibility = [],
-)
-
-initrd(kernel = TEST_KERNEL)
-
-# This mimics how production will actually work, a base initrd package
-# concatenated with a kernel-specific cpio package containing modules followed
-# by a third cpio archive with vmtest features
-buck_genrule(
-    name = "vmtest-initrd.cpio.gz",
-    out = "initrd.cpio.gz",
-    cmd = "cat $(location :{}-initrd) $(location :initrd-vmtest--append.cpio.gz) > $OUT".format(TEST_KERNEL.uname),
 )
 
 vm.rust_unittest(
@@ -191,20 +169,11 @@ image.layer(
     name = "switch-root-initrd",
     parent_layer = "//metalos/initrd:initrd",
     features = [
-        image.ensure_subdirs_exist("/etc", "systemd/system"),
-        # to avoid having to unmount this when switch-rooting, just don't mount
-        # it in the first place - it should be mounted later by the generator
-        # in the root fs if required
-        systemd.mask_units([systemd.escape(
-            "/rootdisk/usr/lib/modules/{}.mount".format(TEST_KERNEL.uname),
-            path = True,
-        )]),
-        systemd.enable_unit("systemd-modules-load.service", "initrd-switch-root.target"),
-        # the default kernel-specific vm initrd includes this unit to
-        # switch-root into /sysroot, which we don't want for MetalOS
-        systemd.mask_units(["initrd-switch-root.service"]),
         feature.remove("/etc/resolv.conf"),
         network.host(),
+        # don't use the full test-kernel initrd, but we do need the modules
+        TEST_KERNEL_MODULES,
+        # install a host config in the initrd directly
         image.ensure_subdirs_exist("/", "test"),
         feature.install(":host-config", "/test/fake-host-config.json"),
     ],
@@ -212,16 +181,10 @@ image.layer(
 )
 
 package.new(
-    name = "switch-root-initrd-base.cpio.gz",
+    name = "switch-root-initrd.cpio.gz",
     layer = ":switch-root-initrd",
     format = "cpio.gz",
     visibility = [],
-)
-
-buck_genrule(
-    name = "switch-root-initrd.cpio.gz",
-    out = "initrd.cpio.gz",
-    cmd = "cat $(location :{}-initrd) $(location :switch-root-initrd-base.cpio.gz) > $OUT".format(TEST_KERNEL.uname),
 )
 
 image.layer(
@@ -282,6 +245,15 @@ vm.rust_unittest(
     ),
     timeout_secs = 600,
     srcs = ["test_switch_root.rs"],
+    deps = ["//metalos/lib/systemd:systemd"] + third_party.libraries(
+        [
+            "anyhow",
+            "slog",
+            "slog_glog_fmt",
+            "tokio",
+        ],
+        platform = "rust",
+    ),
     crate_root = "test_switch_root.rs",
     # TODO(vmagro): re-enable this when the container runtime environment is
     # done and the sidecars can reliably run on Sandcastle
@@ -315,6 +287,15 @@ vm.rust_unittest(
     # the two images and write them to disk
     timeout_secs = 600,
     srcs = ["test_switch_root.rs"],
+    deps = ["//metalos/lib/systemd:systemd"] + third_party.libraries(
+        [
+            "anyhow",
+            "slog",
+            "slog_glog_fmt",
+            "tokio",
+        ],
+        platform = "rust",
+    ),
     crate_root = "test_switch_root.rs",
     # TODO(vmagro): re-enable this when the container runtime environment is
     # done and the sidecars can reliably run on Sandcastle

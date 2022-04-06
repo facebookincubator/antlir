@@ -9,28 +9,24 @@
 /// This uses the regular initrd so that it goes through the regular boot
 /// process, and this unit test is run inside a snapshot of the metalos base
 /// image.
-use std::process::Command;
+use anyhow::Result;
+use systemd::{Systemd, WaitableSystemState};
 
-fn wait_for_systemd() -> String {
-    String::from_utf8(
-        Command::new("systemctl")
-            .arg("is-system-running")
-            .arg("--wait")
-            .output()
-            .expect("failed to execute 'systemctl is-system-running'")
-            .stdout,
-    )
-    .expect("output not UTF-8")
+async fn wait_for_systemd() -> Result<()> {
+    let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
+    let sd = Systemd::connect(log).await?;
+    sd.wait(WaitableSystemState::Starting).await?;
+    Ok(())
 }
 
-#[test]
-fn system_running() {
-    assert_eq!("running", wait_for_systemd().trim());
+#[tokio::test]
+async fn systemd_running() {
+    wait_for_systemd().await.unwrap();
 }
 
-#[test]
-fn in_boot_snapshot() {
-    assert_eq!("running", wait_for_systemd().trim());
+#[tokio::test]
+async fn in_boot_snapshot() {
+    wait_for_systemd().await.unwrap();
     let boot_id = std::fs::read_to_string("/proc/sys/kernel/random/boot_id")
         .unwrap()
         .trim()
