@@ -1,5 +1,6 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:systemd.bzl", "systemd")
 load("//metalos:defs.bzl", "default_test_layer", "rust_library")
 load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
@@ -28,6 +29,7 @@ rust_library(
         "serde",
         "uuid",
         "//metalos/lib/btrfs:btrfs",
+        "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/serde_systemd:serde_systemd",
         "//metalos/lib/state:state",
         "//metalos/lib/systemd:systemd",
@@ -38,13 +40,8 @@ image.layer(
     name = "test-layer",
     parent_layer = default_test_layer(),
     features = [
-        image.ensure_subdirs_exist("/test-control-subvol", "image/service"),
-        image.ensure_subdirs_exist("/test-control-subvol/image/service", "metalos.demo:00000000000040008000000000000001"),
-        image.ensure_subdirs_exist("/test-control-subvol/image/service", "metalos.demo:00000000000040008000000000000002"),
-        image.ensure_subdirs_exist("/test-control-subvol/image/service", "metalos.demo:00000000000040008000000000000003"),
-        image.layer_mount("//metalos/lib/service/tests/demo_service:layer", "/test-control-subvol/image/service/metalos.demo:00000000000040008000000000000001/volume"),
-        image.layer_mount("//metalos/lib/service/tests/demo_service:layer", "/test-control-subvol/image/service/metalos.demo:00000000000040008000000000000002/volume"),
-        image.layer_mount("//metalos/lib/service/tests/demo_service:layer", "/test-control-subvol/image/service/metalos.demo:00000000000040008000000000000003/volume"),
+        image.layer_mount("//metalos/lib/service/tests/demo_service:layer", "/demo-service"),
+        systemd.install_dropin("snapshot-demo-service.conf", "snapshot-test-control.service"),
     ],
     visibility = ["//metalos/lib/service/..."],
 )
