@@ -16,7 +16,7 @@ load("//antlir/vm/bzl:defs.bzl", "vm")
 load("//antlir/vm/bzl:initrd.bzl", "DEFAULT_MODULE_LIST")
 load("//antlir/vm/bzl:install_kernel_modules.bzl", "install_kernel_modules")
 load("//metalos:defs.bzl", "rust_binary")
-load("//metalos/disk:disk.bzl", "build_root_disk")
+load("//metalos/disk:disk.bzl", "disk")
 load("//metalos/host_configs/tests:host.bzl", "host_config")
 
 TEST_KERNEL = kernel_get.default
@@ -220,11 +220,21 @@ image.layer(
 # test so that the image is sized correctly. Otherwise we
 # keep the image minimal and expand at runtime which we don't
 # do for existing boots
-build_root_disk(
+package.new(
+    name = "rootdisk.btrfs",
+    layer = "//metalos/disk:control",
+    format = "btrfs",
+    loopback_opts = image.opts(
+        label = "/",
+        writable_subvolume = True,
+        size_mb = 4096,
+    ),
+)
+
+disk(
     name = "metalos-gpt-image",
-    efi_fat_size = 16,
-    efi_layer_name = "empty-layer-boot-or-efi",
-    root_size_mb = 1024 * 4,
+    efi_vfat = "//metalos/disk:empty-efi.vfat",
+    root_btrfs = ":rootdisk.btrfs",
 )
 
 vm.rust_unittest(
@@ -343,7 +353,7 @@ vm.rust_unittest(
             ],
         ),
         disk = vm.types.disk.new(
-            layer = ":root-disk-layer",
+            layer = "//metalos/disk:control",
             layer_size_mb = 4096,
         ),
     ),

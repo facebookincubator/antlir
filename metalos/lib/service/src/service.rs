@@ -31,10 +31,10 @@ impl ServiceInstance {
     pub fn new(name: String, version: Uuid) -> Self {
         let run_uuid = Uuid::new_v4();
         let unique = format!("{}-{}-{}", name, version.to_simple(), run_uuid.to_simple());
-        let base = Path::new("/run/fs/control/run");
+        let base = metalos_paths::runtime();
         let paths = Paths {
-            root_source: Path::new("/run/fs/control/image/service").join(format!(
-                "{}:{}/volume",
+            root_source: metalos_paths::images().join("service").join(format!(
+                "{}:{}",
                 name,
                 version.to_simple()
             )),
@@ -122,5 +122,17 @@ impl Paths {
     /// and will be deleted as soon as the service stops.
     pub fn runtime(&self) -> &Path {
         &self.runtime
+    }
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+    pub(crate) fn wait_for_systemd() -> anyhow::Result<()> {
+        let mut proc = std::process::Command::new("systemctl")
+            .arg("is-system-running")
+            .arg("--wait")
+            .spawn()?;
+        proc.wait()?;
+        Ok(())
     }
 }

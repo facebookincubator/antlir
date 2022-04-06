@@ -1,14 +1,67 @@
 # @noautodeps
 
-load("//metalos/disk:disk.bzl", "build_root_disk")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/package:defs.bzl", "package")
+load(":disk.bzl", "disk")
 
-# this is here mostly for testing reasons. We want to have an image
-# that is as small as possible to distribute here but in other places
-# we need to have a disk image with enough spare space to include the
-# metalos image too.
-build_root_disk(
+# This layer is mounted at /run/fs/control on MetalOS systems, and is the root
+# subvolume hierarchy. It contains the below directories to serve as places to
+# store subvolumes for MetalOS images and runtime state
+image.layer(
+    name = "control",
+    flavor = REPO_CFG.antlir_linux_flavor,
+    features = [
+        image.ensure_dirs_exist("/image"),
+        image.ensure_subdirs_exist("/image", "kernel"),
+        image.ensure_subdirs_exist("/image", "rootfs"),
+        image.ensure_subdirs_exist("/image", "service"),
+        image.ensure_dirs_exist("/run"),
+        image.ensure_subdirs_exist("/run", "boot"),
+        image.ensure_subdirs_exist("/run", "cache"),
+        image.ensure_subdirs_exist("/run", "logs"),
+        image.ensure_subdirs_exist("/run", "runtime"),
+        image.ensure_subdirs_exist("/run", "scratch"),
+        image.ensure_subdirs_exist("/run", "service_roots"),
+        image.ensure_subdirs_exist("/run", "state"),
+        image.ensure_subdirs_exist("/run/state", "metalos"),
+    ],
+    visibility = ["//metalos/..."],
+)
+
+package.new(
+    name = "control.btrfs",
+    layer = ":control",
+    format = "btrfs",
+    loopback_opts = image.opts(
+        label = "/",
+        writable_subvolume = True,
+    ),
+    visibility = ["//metalos/disk/..."],
+)
+
+image.layer(
+    name = "empty-efi",
+    flavor = REPO_CFG.antlir_linux_flavor,
+    features = [
+        image.ensure_dirs_exist("/EFI"),
+    ],
+)
+
+package.new(
+    name = "empty-efi.vfat",
+    layer = ":empty-efi",
+    format = "vfat",
+    loopback_opts = image.opts(
+        fat_size = 16,
+        size_mb = 256,
+    ),
+    visibility = ["//metalos/..."],
+)
+
+disk(
     name = "metalos-gpt-image",
-    efi_fat_size = 16,
-    efi_layer_name = "empty-layer-boot-or-efi",
-    root_size_mb = None,
+    efi_vfat = ":empty-efi.vfat",
+    root_btrfs = ":control.btrfs",
+    visibility = ["//metalos/..."],
 )

@@ -22,17 +22,9 @@ export_file(
 # since the real root disk is not available in container tests
 mock_run_fs_control = [
     systemd.install_dropin("run-fs-control.conf", "run-fs-control.mount"),
-    image.ensure_subdirs_exist("/", "test-control-subvol"),
-    image.ensure_subdirs_exist("/test-control-subvol", "run"),
-    image.ensure_subdirs_exist("/test-control-subvol/run", "state"),
-    image.ensure_subdirs_exist("/test-control-subvol/run/state", "metalos"),
-    image.ensure_subdirs_exist("/test-control-subvol/run", "cache"),
-    image.ensure_subdirs_exist("/test-control-subvol/run", "logs"),
-    image.ensure_subdirs_exist("/test-control-subvol/run", "runtime"),
-    image.ensure_subdirs_exist("/test-control-subvol/run", "service_roots"),
-    image.ensure_subdirs_exist("/test-control-subvol/run", "scratch"),
-    image.ensure_subdirs_exist("/test-control-subvol", "image"),
-    image.ensure_subdirs_exist("/test-control-subvol/image", "service"),
+    image.layer_mount("//metalos/disk:control", "/test-control-subvol-src"),
+    systemd.install_unit("snapshot-test-control.service"),
+    image.ensure_dirs_exist("/test-control-subvol-addons"),
 ]
 
 test_features = [
