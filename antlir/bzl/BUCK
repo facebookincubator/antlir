@@ -323,6 +323,11 @@ fake_macro_library(
     ],
 )
 
+fake_macro_library(
+    name = "rpm_manifest",
+    srcs = ["rpm_manifest.bzl"],
+)
+
 python_binary(
     name = "fail-with-message",
     srcs = ["fail_with_message.py"],
