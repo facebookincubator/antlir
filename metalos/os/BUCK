@@ -3,6 +3,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:rpm_manifest.bzl", "extract_rpm_manifest")
 load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
@@ -91,6 +92,11 @@ image.layer(
         "//netos/...",
         "//tupperware/agent/hostagent/metalos/...",
     ],
+)
+
+extract_rpm_manifest(
+    name = "metalos-rpm-manifest",
+    layer = ":metalos",
 )
 
 systemd_expectations_test(
