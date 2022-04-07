@@ -15,7 +15,7 @@ name = "systemd_expectations_test_binary"
 path = "systemd_expectations.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 structopt = "0.3.23"
 
 [dev-dependencies]

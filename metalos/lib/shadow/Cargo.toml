@@ -16,7 +16,7 @@ name = "shadow"
 path = "src/shadow.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 
 [features]
 default = ["metalos_plain_test"]

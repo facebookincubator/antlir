@@ -20,7 +20,7 @@ name = "service"
 path = "src/service.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 btrfs = { path = "../btrfs" }
 maplit = "1.0"
 metalos_paths = { path = "../metalos_paths" }

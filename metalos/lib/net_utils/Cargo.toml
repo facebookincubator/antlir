@@ -19,7 +19,7 @@ name = "net_utils"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 nix = "0.23"
 
 [features]
