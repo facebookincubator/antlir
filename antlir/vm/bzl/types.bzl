@@ -132,14 +132,11 @@ def _new_vm_opts(
     if cpus == 2:
         fail("ncpus=2 will cause kernel panic: https://fburl.com/md27i5k8")
 
-    if boot_from_disk and kernel != None:
-        fail("Can't specify `kernel` when `boot_from_disk` is True")
     if boot_from_disk and initrd != None:
         fail("Can't specify `initrd` when `boot_from_disk` is True")
 
     # Convert the (optionally) provided kernel struct into a shape type
-    if not boot_from_disk:
-        kernel = normalize_kernel(kernel or kernel_get.default)
+    kernel = normalize_kernel(kernel or kernel_get.default)
 
     # Allow the user to provide their own initrd. Currently there is no way for
     # us to verify that this initrd will actually work with the given kernel,

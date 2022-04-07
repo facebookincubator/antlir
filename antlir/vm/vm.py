@@ -312,18 +312,16 @@ async def vm(
     # export for them here.  Note: This Share used "generator=False" because
     # the initrd will mount these into the rootfs before the switch-root.
     # (see: //antlir/vm/bzl:initrd.bzl)
-    if not opts.boot_from_disk:
-        shares.append(
-            Plan9Export(
-                path=find_built_subvol(
-                    # pyre-fixme [16]: `Optional` has no attribute `path`
-                    opts.kernel.artifacts.modules.path
-                ).path(),
-                mountpoint=Path("/usr/lib/modules") / opts.kernel.uname,
-                mount_tag="kernel-modules",
-                generator=False,
-            )
+    shares.append(
+        Plan9Export(
+            path=find_built_subvol(
+                # pyre-fixme [16]: `Optional` has no attribute `path`
+                opts.kernel.artifacts.modules.path
+            ).path(),
+            mount_tag="kernel-modules",
+            generator=False,
         )
+    )
 
     if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
