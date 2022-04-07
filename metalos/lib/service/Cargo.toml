@@ -23,6 +23,7 @@ path = "src/service.rs"
 anyhow = "1.0.51"
 btrfs = { path = "../btrfs" }
 maplit = "1.0"
+metalos_paths = { path = "../metalos_paths" }
 serde = { version = "1.0.126", features = ["derive", "rc"] }
 serde_systemd = { path = "../serde_systemd" }
 state = { path = "../state" }

@@ -31,6 +31,11 @@ tokio-util = { version = "0.6", features = ["full"] }
 uuid = { version = "0.8.1", features = ["serde", "v4", "v5"] }
 zstd = "0.9.0+zstd.1.5.0"
 
+[dev-dependencies]
+slog = { version = "2.7", features = ["max_level_trace", "nested-values"] }
+slog_glog_fmt = { path = "../../../common/rust/shed/slog_glog_fmt" }
+systemd = { path = "../systemd" }
+
 [features]
 default = ["metalos_container_test"]
 metalos_container_test = []
