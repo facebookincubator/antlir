@@ -131,22 +131,18 @@ files without warning, while aiming to preserve their intent.
 
 Update version files for each flavor affected:
 ```
-$ buck run antlir/rpm/allowed_versions:update-allowed-versions -- \
+for f in centos7 centos8 centos8-untested centos9 centos9-untested; do
+  buck2 run antlir/rpm/allowed_versions:update-allowed-versions -- \
     --no-update-data-snapshot \
-    --flavor centos8 \
-    --data-snapshot-dir antlir/rpm/allowed_versions/facebook/snapshot/centos8 \
+    --flavor $f \
+    --version-sets-dir bot_generated/antlir/version_sets/$f \
+    --data-snapshot-dir bot_generated/antlir/rpm/allowed_versions/snapshot/$f \
     --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups \
-    --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups/centos8 \
-    --version-sets-dir bot_generated/antlir/version_sets/centos8 \
-    --rpm-repo-snapshot $(buck build antlir/rpm/facebook:centos8 --show-full-output | cut -d ' ' -f2)
-$ buck run antlir/rpm/allowed_versions:update-allowed-versions -- \
-    --no-update-data-snapshot \
-    --flavor centos7 \
-    --data-snapshot-dir antlir/rpm/allowed_versions/facebook/snapshot/centos7 \
-    --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups \
-    --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups/centos7 \
-    --version-sets-dir bot_generated/antlir/version_sets/centos7 \
-    --rpm-repo-snapshot $(buck build antlir/rpm/facebook:centos7 --show-full-output | cut -d ' ' -f2)
+    --package-groups-dir antlir/rpm/allowed_versions/facebook/package_groups/$f \
+    --rpm-repo-snapshot $(
+      buck2 build antlir/rpm/facebook:$f --show-full-output |
+      cut -d ' ' -f2)
+done
 ```
 
 At this point you can manually inspect updated version files (they are in
