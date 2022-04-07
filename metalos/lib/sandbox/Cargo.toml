@@ -16,7 +16,7 @@ name = "sandbox"
 path = "src/sandbox.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 derive_builder = "0.9"
 goblin = "0.3"
 nix = "0.23"

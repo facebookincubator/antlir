@@ -16,7 +16,7 @@ name = "find_root_disk"
 path = "src/find_root_disk.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 udev = "0.6.2"
 
 [dev-dependencies]

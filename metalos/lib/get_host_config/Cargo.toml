@@ -16,7 +16,7 @@ name = "get_host_config"
 path = "src/get_host_config.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 reqwest = { version = "0.11.6", features = ["blocking", "json", "rustls-tls", "rustls-tls-native-roots", "stream", "trust-dns-optional"] }
 serde = { version = "1.0.126", features = ["derive", "rc"] }
 serde_json = { version = "1.0.64", features = ["float_roundtrip", "unbounded_depth"] }

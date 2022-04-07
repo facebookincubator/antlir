@@ -16,7 +16,7 @@ name = "starlark_util"
 path = "src/starlark_util.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 example = { path = "tests" }
 fbthrift = { path = "../../../thrift/lib/rust" }
 itertools = "0.10.3"

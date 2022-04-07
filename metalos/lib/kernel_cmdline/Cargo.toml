@@ -15,7 +15,7 @@ name = "kernel_cmdline"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 shlex = "1.0"
 structopt = "0.3.23"
 strum = "0.21"

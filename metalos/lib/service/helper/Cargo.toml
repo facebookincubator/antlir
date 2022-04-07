@@ -20,7 +20,7 @@ name = "helper"
 path = "src/helper.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 btrfs = { path = "../../btrfs" }
 service = { path = ".." }
 state = { path = "../../state" }

@@ -15,7 +15,7 @@ name = "btrfs"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 async-compression = { version = "0.3.8", features = ["all-implementations", "brotli", "bzip2", "deflate", "gzip", "zlib", "zstd"] }
 async-trait = "0.1.52"
 bitflags = "1.3"

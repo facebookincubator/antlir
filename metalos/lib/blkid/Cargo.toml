@@ -19,7 +19,7 @@ name = "blkid"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.56"
 libc = "0.2.121"
 
 [features]
