@@ -115,6 +115,14 @@ image.layer(
         systemd.install_dropin("after-network.conf", "sshd.service"),
         # don't use the full test-kernel initrd, but we do need the modules
         TEST_KERNEL_MODULES,
+        # We want to stay in the initrd, so mask out the units that switch-root
+        # into the base os
+        image.ensure_dirs_exist("/etc/systemd/system"),
+        systemd.mask_units([
+            "initrd-cleanup.service",
+            "initrd-parse-etc.service",
+            "initrd-switch-root.service",
+        ]),
         # install a host config in the initrd directly
         image.ensure_subdirs_exist("/", "test"),
         feature.install(":host-config", "/test/fake-host-config.json"),

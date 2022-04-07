@@ -65,7 +65,7 @@ pub trait Environment: Serialize + Sized {
 }
 
 /// This struct represents an extra dependency that we add between two units.
-/// it says that `target` requires `requires` and that `target` is after `requires`
+/// it says that `source` requires `requires`.
 #[derive(Debug, PartialEq)]
 pub struct ExtraDependency {
     pub source: UnitName,
@@ -73,7 +73,7 @@ pub struct ExtraDependency {
 }
 
 /// A mapping of dependency name (must be valid as a filename) and a extra dependency
-pub type ExtraDependencies = BTreeMap<String, ExtraDependency>;
+pub type ExtraDependencies = Vec<(String, ExtraDependency)>;
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct MountUnit {
@@ -432,16 +432,22 @@ mod tests {
             &env_dir,
             &network_unit_dir,
             env,
-            btreemap! {
-                "extra_1".to_string() => ExtraDependency {
-                    source: "source_1.service".into(),
-                    requires: "required_1.service".into(),
-                },
-                "extra_2".to_string() => ExtraDependency {
-                    source: "source_2.service".into(),
-                    requires: "required_2.service".into(),
-                },
-            },
+            vec![
+                (
+                    "extra_1".to_string(),
+                    ExtraDependency {
+                        source: "source_1.service".into(),
+                        requires: "required_1.service".into(),
+                    },
+                ),
+                (
+                    "extra_2".to_string(),
+                    ExtraDependency {
+                        source: "source_2.service".into(),
+                        requires: "required_2.service".into(),
+                    },
+                ),
+            ],
             MountUnit {
                 unit_section: UnitSection {
                     ..Default::default()
